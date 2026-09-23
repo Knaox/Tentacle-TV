@@ -20,6 +20,8 @@ interface OmniboxNoticeProps {
   pending: boolean;
   /** Aucune option hors « tous les résultats ». */
   empty: boolean;
+  /** Un plugin cherche encore hors bibliothèque. */
+  externalPending?: boolean;
   onPick: (query: string) => void;
 }
 
@@ -39,7 +41,7 @@ function Skeleton() {
   );
 }
 
-export const OmniboxNotice = memo(function OmniboxNotice({ query, response, current, pending, empty, onPick }: OmniboxNoticeProps) {
+export const OmniboxNotice = memo(function OmniboxNotice({ query, response, current, pending, empty, externalPending = false, onPick }: OmniboxNoticeProps) {
   const { t } = useTranslation("search");
   const trimmed = query.trim();
 
@@ -54,6 +56,16 @@ export const OmniboxNotice = memo(function OmniboxNotice({ query, response, curr
   }
   if (pending) return <Skeleton />;
   if (response === undefined) return null;
+
+  if (current && empty && externalPending) {
+    // Rien dans la bibliothèque, mais un plugin cherche encore ailleurs.
+    return (
+      <div role="status">
+        <p className="px-3 pb-1 pt-2 text-[13px] text-content-tertiary">{t("externalSearching")}</p>
+        <Skeleton />
+      </div>
+    );
+  }
 
   if (current && empty) {
     return (
