@@ -18,11 +18,13 @@
 
 import type { MediaItem, PlayerOverlay } from "@tentacle-tv/shared";
 import { useEndCardRating } from "@tentacle-tv/api-client";
-import { LoadingBar } from "./PlayerLoadingScreen";
+import { LoadingBackButton, LoadingBar } from "./PlayerLoadingScreen";
 import { PlaybackOverlay } from "./PlaybackOverlay";
 
 interface DesktopPlayerOverlaysProps {
   showLoadingOverlay: boolean;
+  /** La sortie de l'écran de chargement — l'habillage en est retiré. */
+  onBack: () => void;
   buffering: boolean;
   /** Réserve mpv en secondes (`demuxer-cache-duration`) — affichée en debug. */
   buffered: number;
@@ -50,7 +52,7 @@ interface DesktopPlayerOverlaysProps {
 }
 
 export function DesktopPlayerOverlays({
-  showLoadingOverlay, buffering, buffered, posterUrl,
+  showLoadingOverlay, onBack, buffering, buffered, posterUrl,
   overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible, panelOpen,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
@@ -80,6 +82,11 @@ export function DesktopPlayerOverlays({
           </div>
         </div>
       )}
+
+      {/* Sa sortie, HORS de la couche ci-dessus : son `z-[5]` en fait un
+          contexte d'empilement, où la pilule resterait sous l'habillage
+          (`z-10`) qui, même effacé, prend les clics. */}
+      {showLoadingOverlay && <LoadingBackButton onClick={onBack} />}
 
       {/* Buffering spinner (during playback — seeking, network stall) */}
       {buffering && !showLoadingOverlay && (
