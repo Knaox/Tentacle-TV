@@ -17,7 +17,7 @@ import {
 import { emitProxyEvents } from "./jellyfinProxy/events";
 import { carriesPlaybackUrl, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
-import { sendBuffered } from "./jellyfinProxy/bufferedReply";
+import { readsInFull, sendBuffered } from "./jellyfinProxy/bufferedReply";
 import { isOutOfScope, userIdFromPath } from "./jellyfinProxy/userScope";
 import { resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
@@ -208,7 +208,8 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
 
       // Cacheable routes (Latest/Resume/NextUp/Views): buffer once in RAM so
       // future hits can reply from cache. Media/error routes: stream as-is.
-      if (cacheTtl !== null && !isMediaResponse && response.status < 400) {
+      // La liste des bibliothèques y passe aussi : elle se trie (libraryViews).
+      if (readsInFull(wildcardPath, cacheTtl) && !isMediaResponse && response.status < 400) {
         return sendBuffered(request, reply, response, {
           path: wildcardPath, queryString, token: incomingToken, ttlMs: cacheTtl,
         });
