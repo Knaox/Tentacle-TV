@@ -11,6 +11,7 @@ export type CarouselId =
   | (string & {}); // extensible for plugins
 
 import type { WtClientMessage, WtServerMessage } from "./watchTogether";
+import type { SessionClientMessage, SessionServerMessage } from "./sessionChannelMessages";
 
 /** Messages sent from the server to clients.
  *  `pong` porte optionnellement `t` (echo du ping client) et `serverTime`
@@ -32,6 +33,7 @@ export type WsServerMessage =
    *  page de l'accueil ou réglages de recommandation) : relire ce bloc. L'auteur
    *  de l'écriture n'est jamais destinataire. */
   | { type: "preferences:update"; scope: PreferencesScope }
+  | SessionServerMessage
   | WtServerMessage;
 
 /** Les blocs de préférences diffusés en direct — les clés de cache des clients. */
@@ -41,4 +43,5 @@ export type PreferencesScope = "home-layout" | "reco-settings";
 export type WsClientMessage =
   | { type: "auth"; token: string }
   | { type: "ping"; t?: number }
+  | SessionClientMessage
   | WtClientMessage;
