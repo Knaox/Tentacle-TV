@@ -6,6 +6,8 @@ export default {
   // Message banner (any user)
   messageFrom: "Message from the administrator",
   dismissMessage: "Dismiss message",
+  vanishesIn: "Disappears in {{count}}s",
+  vanishHeld: "Paused · {{count}}s",
 
   // Dashboard
   title: "Live sessions",

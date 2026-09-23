@@ -6,6 +6,8 @@ export default {
   // Bandeau de message (tout utilisateur)
   messageFrom: "Message de l'administrateur",
   dismissMessage: "Fermer le message",
+  vanishesIn: "Disparaît dans {{count}} s",
+  vanishHeld: "En pause · {{count}} s",
 
   // Tableau de bord
   title: "Sessions en direct",
