@@ -14,6 +14,13 @@ description: >-
 # L'ATTENTE. Pousser puis lancer une livraison dans la foulée est le geste
 # normal ; le run de qualité est alors encore en cours. On l'attend plutôt que
 # de refuser bêtement — d'où le sondage.
+#
+# L'HÉRITAGE. Les commits que la CI pousse elle-même (manifestes, bump) partent
+# avec GITHUB_TOKEN : quality.yml ne tourne jamais sur eux, et la livraison
+# suivante attendait un run qui ne viendrait pas. Un commit visé SANS run qui ne
+# touche que des fichiers neutres hérite donc du verdict de son parent — la
+# règle et la liste fermée vivent dans .github/scripts/quality-target.mjs. Un
+# run présent sur le commit visé l'emporte toujours, vert ou rouge.
 
 inputs:
   sha:
@@ -37,33 +44,43 @@ runs:
         SHA: ${{ inputs.sha }}
         WAIT_MINUTES: ${{ inputs.wait-minutes }}
         REPO: ${{ github.repository }}
+      # Le calcul de l'héritage lit l'historique : il doit tourner dans le clone.
+      working-directory: ${{ github.workspace }}
       run: |
         set -euo pipefail
+        # Le commit dont le verdict compte : le commit visé, ou l'ancêtre dont il
+        # hérite. Toute panne du calcul ramène au commit visé — la garde ne se
+        # relâche jamais sur une erreur.
+        TARGET=$(node .github/scripts/quality-target.mjs "$SHA") || TARGET="$SHA"
+        [[ "$TARGET" =~ ^[0-9a-f]{40}$ ]] || TARGET="$SHA"
+        if [ "$TARGET" = "$SHA" ]; then LABEL="$SHA"; else LABEL="$TARGET (verdict hérité par $SHA)"; fi
+
         DEADLINE=$(( $(date +%s) + WAIT_MINUTES * 60 ))
         while :; do
-          RUNS=$(gh api "repos/${REPO}/actions/workflows/quality.yml/runs?head_sha=${SHA}&per_page=20" \
+          RUNS=$(gh api "repos/${REPO}/actions/workflows/quality.yml/runs?head_sha=${TARGET}&per_page=20" \
                    --jq '[.workflow_runs[] | {status, conclusion}]')
           SUCCESS=$(echo "$RUNS" | jq '[.[] | select(.conclusion == "success")] | length')
           PENDING=$(echo "$RUNS" | jq '[.[] | select(.status != "completed")] | length')
           TOTAL=$(echo "$RUNS" | jq 'length')
 
           if [ "$SUCCESS" -gt 0 ]; then
-            echo "✓ qualité verte sur ${SHA}."
+            echo "✓ qualité verte sur ${LABEL}."
             exit 0
           fi
           if [ "$PENDING" -gt 0 ]; then
-            echo "⏳ contrôle qualité en cours sur ${SHA} — on attend."
+            echo "⏳ contrôle qualité en cours sur ${LABEL} — on attend."
           elif [ "$TOTAL" -eq 0 ]; then
-            echo "⏳ aucun contrôle qualité lancé sur ${SHA} — on attend qu'il démarre."
+            echo "⏳ aucun contrôle qualité lancé sur ${LABEL} — on attend qu'il démarre."
           else
-            echo "::error::Le contrôle qualité a ÉCHOUÉ sur ${SHA} : rien ne part."
+            echo "::error::Le contrôle qualité a ÉCHOUÉ sur ${LABEL} : rien ne part."
             echo "Voir l'onglet Actions → Qualité. Corrige, pousse, relance la livraison."
             exit 1
           fi
 
           if [ "$(date +%s)" -ge "$DEADLINE" ]; then
-            echo "::error::Pas de contrôle qualité vert sur ${SHA} après ${WAIT_MINUTES} min."
+            echo "::error::Pas de contrôle qualité vert sur ${LABEL} après ${WAIT_MINUTES} min."
             echo "Si le commit n'a jamais été poussé sur main, quality.yml n'a pas pu tourner."
+            echo "S'il a été poussé par la CI et touche plus que des fichiers neutres : gh workflow run quality.yml --ref main"
             exit 1
           fi
           sleep 30

@@ -97,7 +97,11 @@ cran `store` ; c'est la CI qui les pose quand on demande une version.
   échouent, AVANT qu'il parte. Il ne contrôle que les paquets touchés et ceux
   qui en dépendent. Il s'active seul (`pnpm install` pose `core.hooksPath`).
 - **`quality.yml`** rejoue le même contrôle sur GitHub, et **aucun workflow de
-  livraison n'accepte de tourner sans son feu vert** sur le commit visé.
+  livraison n'accepte de tourner sans son feu vert** sur le commit visé. Les
+  commits que la CI pousse elle-même (manifestes, bump) n'ont jamais de run :
+  s'ils ne touchent que des fichiers neutres, ils héritent du verdict de leur
+  parent (`.github/scripts/quality-target.mjs`, qui tient la liste fermée). Un
+  bump `desktop` n'en fait pas partie — `registry.test.ts` lit cette clé.
 - **Le pré-vol** (`check-changelog.mjs`) exige le bloc `## [X.Y.Z]` de la version
   livrée AVANT le moindre build. Un bloc manquant ne donne plus une publication
   silencieusement sans notes.
