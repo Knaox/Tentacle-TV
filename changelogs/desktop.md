@@ -21,10 +21,11 @@ et Linux reçoivent l'ensemble.
 - **Les recherches des bibliothèques, de Ma liste et de Mes favoris** : une croix pour effacer, le nombre de titres trouvés au bout du champ, et quand rien ne répond, la bonne orthographe proposée (« Essayer « dune » ») et la recherche dans tout Tentacle
 - **Watch Together : créer un groupe ne lance plus l'invitation d'office** — on arrive sur le groupe (ce qui est au programme, qui est là), puis on invite une ou plusieurs personnes ; les invitations restent affichées « en attente » jusqu'à la réponse
 - **« Retour » dès l'écran de chargement** : un film qui tarde à démarrer (serveur lent, transcodage qui s'amorce) se quitte d'un clic ou d'Échap, sans attendre
+- **Seulement des films et des séries** : les bibliothèques que Tentacle ne sait pas lire (musique, livres, photos, vidéos personnelles…) n'apparaissent plus — ni onglet, ni rangée, ni page vide ; les films, les séries et les animés restent
 - **Fermer l'application en pleine lecture arrête vraiment la lecture sur le serveur** : Jellyfin continuait d'afficher le film « en cours » pendant cinq minutes après la fermeture de la fenêtre — le message de fin, parti de la page, n'atteignait jamais le serveur. L'application l'envoie désormais elle-même avant de quitter, à la bonne position, que la lecture passe en direct ou par le serveur Tentacle
 - **C'est le serveur Tentacle qui suit la lecture** : l'application lui confie sa position sur la connexion déjà ouverte, et Jellyfin ne reçoit plus un report toutes les dix secondes — seulement ce qui change (pause, reprise, saut, pistes) et un signe de vie toutes les quatre minutes. Si l'application plante ou perd le réseau, le serveur arrête la lecture de lui-même, à la bonne position
 - **Le tableau de bord de Jellyfin pilote l'application** : pause, reprise, arrêt, saut, pistes — et les messages de l'administrateur s'affichent, même en pleine lecture ; un message temporaire affiche son compte à rebours, suspendu tant qu'on le survole
-- **Administrateurs : « Sessions en direct »** montre qui regarde quoi, comment le média arrive — lecture directe, remux (sans perte, presque rien pour le serveur), transcodage audio ou transcodage (le plus lourd), et pourquoi — et les séances Watch Together. Pause, arrêt et message, pour une personne ou tout un groupe : chaque commande se voit, de l'envoi (« Pause demandée… ») à l'effet constaté (« ✓ En pause »)
+- **Administrateurs : « Sessions en direct »** montre qui regarde quoi, sur quelle application et en quelle version, comment le média arrive — lecture directe, remux (sans perte, presque rien pour le serveur), transcodage audio ou transcodage (le plus lourd), et pourquoi — et les séances Watch Together. Pause, arrêt et message, pour une personne ou tout un groupe : chaque commande se voit, de l'envoi (« Pause demandée… ») à l'effet constaté (« ✓ En pause »)
 - **Sous Linux, la vidéo suit la fenêtre réduite** : réduire l'application en pleine lecture laissait l'image à l'écran, détachée de tout ; elle se réduit et revient désormais avec la fenêtre (KDE Plasma et X11)
 - **Alt+Tab montre la lecture en cours** (Linux, KDE Plasma) : le sélecteur de fenêtres ne présentait que l'interface ; la vidéo y paraît sous le nom et l'icône de Tentacle
 - Nécessite un serveur 1.19.0 ou plus
@@ -36,10 +37,11 @@ et Linux reçoivent l'ensemble.
 - **Library, My List and My Favorites search**: a cross to clear, the number of titles found at the end of the field, and when nothing matches, the right spelling suggested ("Try 'dune'") and a search across all of Tentacle
 - **Watch Together: creating a group no longer jumps straight to invitations** — you land on the group (what is playing, who is there), then invite one or more people; invites stay listed as "waiting" until they get an answer
 - **"Back" right from the loading screen**: a film that is slow to start (slow server, transcoding spinning up) can be left with a click or Esc, without waiting
+- **Movies and shows only**: libraries Tentacle cannot play (music, books, photos, home videos…) no longer appear — no tab, no row, no empty page; movies, shows and anime stay
 - **Closing the app during playback really stops playback on the server**: Jellyfin kept showing the film as "playing" for five minutes after the window was closed — the final message, sent from the page, never reached the server. The app now sends it itself before quitting, at the right position, whether playback goes direct or through the Tentacle server
 - **The Tentacle server tracks playback**: the app hands it its position over the connection it already holds, and Jellyfin no longer gets a report every ten seconds — only what changes (pause, resume, seek, tracks) and a sign of life every four minutes. If the app crashes or loses the network, the server stops playback on its own, at the right position
 - **Jellyfin's dashboard controls the app**: pause, resume, stop, seek, tracks — and the administrator's messages show up, even during playback; a temporary message shows its countdown, held while you hover it
-- **Administrators: "Live sessions"** shows who is watching what, how the media gets there — direct play, remux (lossless, next to nothing for the server), audio transcode or transcoding (the heaviest), and why — and Watch Together sessions. Pause, stop and message, for one person or a whole group: every command shows, from sending ("Pause requested…") to the observed effect ("✓ Paused")
+- **Administrators: "Live sessions"** shows who is watching what, on which app and version, how the media gets there — direct play, remux (lossless, next to nothing for the server), audio transcode or transcoding (the heaviest), and why — and Watch Together sessions. Pause, stop and message, for one person or a whole group: every command shows, from sending ("Pause requested…") to the observed effect ("✓ Paused")
 - **On Linux, the video follows the minimized window**: minimizing the app during playback left the picture on screen, detached from everything; it now minimizes and comes back with the window (KDE Plasma and X11)
 - **Alt+Tab shows what is playing** (Linux, KDE Plasma): the window switcher only showed the interface; the video now appears there under Tentacle's name and icon
 - Requires a server on 1.19.0 or newer
@@ -54,10 +56,11 @@ et Linux reçoivent l'ensemble.
 - **Une nouvelle barre de navigation** : un onglet par bibliothèque, à réordonner, retirer ou épingler (clic droit, « Personnaliser la barre »)
 - **Watch Together** : créer un groupe n'impose plus l'invitation, on invite ensuite une ou plusieurs personnes
 - **« Retour » dès l'écran de chargement** : un film qui tarde à démarrer se quitte d'un clic ou d'Échap
+- **Seulement des films et des séries** : les bibliothèques de musique, de livres ou de photos n'apparaissent plus
 - **Fermer l'application en pleine lecture arrête vraiment la lecture sur le serveur** : Jellyfin ne la montre plus « en cours » pendant cinq minutes
 - **C'est le serveur Tentacle qui suit la lecture** : bien moins de requêtes vers Jellyfin, et un arrêt à la bonne position même après un plantage
 - **Le tableau de bord de Jellyfin pilote l'application** : pause, reprise, arrêt, saut, pistes — et les messages de l'administrateur s'affichent, même en pleine lecture
-- **Administrateurs : « Sessions en direct »** : qui regarde quoi, remux et transcodages distingués, chaque commande suivie jusqu'à son effet
+- **Administrateurs : « Sessions en direct »** : qui regarde quoi et en quelle version, remux et transcodages distingués, chaque commande suivie jusqu'à son effet
 - Nécessite un serveur 1.19.0 ou plus
 
 ### EN
@@ -65,10 +68,11 @@ et Linux reçoivent l'ensemble.
 - **A new navigation bar**: one tab per library, to reorder, remove or pin (right-click, "Customize the bar")
 - **Watch Together**: creating a group no longer forces the invite step; invite one or more people afterwards
 - **"Back" right from the loading screen**: a film that is slow to start can be left with a click or Esc
+- **Movies and shows only**: music, book and photo libraries no longer appear
 - **Closing the app during playback really stops playback on the server**: Jellyfin no longer shows it as "playing" for five minutes
 - **The Tentacle server tracks playback**: far fewer requests to Jellyfin, and a stop at the right position even after a crash
 - **Jellyfin's dashboard controls the app**: pause, resume, stop, seek, tracks — and the administrator's messages show up, even during playback
-- **Administrators: "Live sessions"**: who is watching what, remux and transcodes told apart, every command tracked to its effect
+- **Administrators: "Live sessions"**: who is watching what and on which version, remux and transcodes told apart, every command tracked to its effect
 - Requires a server on 1.19.0 or newer
 
 ## [1.21.4]
