@@ -37,14 +37,21 @@ export function CollectionToolbar({ filters, name, showFavorite, actions }: Coll
             {tab.label}
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-2">
-          {/* Le libellé se compose depuis la clé existante, qui interpole déjà
-              un nom : « Rechercher dans Ma liste… ». Aucune clé nouvelle. */}
-          <LibrarySearchField
-            value={filters.input}
-            onChange={filters.setInput}
-            libraryName={name}
-          />
+        {/* Le champ vit DANS la rangée des onglets, sans les marges de page
+            du mode bibliothèque (`inline`) : il s'y alignait mal, décalé vers
+            le haut, son invite coupée. Sur mobile, il prend toute la ligne et
+            les actions passent dessous — côte à côte, elles l'écrasaient. */}
+        <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
+          <div className="w-full sm:w-80 lg:w-96">
+            <LibrarySearchField
+              inline
+              value={filters.input}
+              onChange={filters.setInput}
+              libraryName={name}
+              busy={filters.searchPending}
+              resultCount={filters.search.trim() !== "" ? filters.resultCount : null}
+            />
+          </div>
           {actions}
         </div>
       </div>
