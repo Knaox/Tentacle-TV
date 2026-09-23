@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { updateDebugEnabled } from "../lib/updateSimulation";
 import { WHATS_NEW_RELEASES, findRelease } from "./releases";
-import { selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
+import { forAudience, selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
+import { getUserInfo } from "../components/userMenu/menuItems";
 
 /**
  * `?whatsnewgate=1` : dans la préviz navigateur, où `isDesktopApp()` est faux,
@@ -19,7 +20,9 @@ export function whatsNewGateForced(): boolean {
 
 /** La sélection d'une release précise (À propos, crochet avec version) : rien si elle est vide ou inconnue. */
 export function selectionForRelease(version: string): WhatsNewSelection | null {
-  const release = findRelease(version);
+  const found = findRelease(version);
+  // « À propos » rejoue pour CE compte : sans les nouveautés d'administrateur, s'il ne l'est pas.
+  const release = found ? forAudience([found], getUserInfo().isAdmin)[0] : undefined;
   if (!release || release.features.length === 0) return null;
   return {
     features: release.features.map((feature) => ({ ...feature, version: release.version })),

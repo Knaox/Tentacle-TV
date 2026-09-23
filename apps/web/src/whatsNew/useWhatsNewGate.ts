@@ -3,7 +3,8 @@ import { isDesktopApp } from "../desktop/detect";
 import { resolveDesktopVersion } from "../hooks/useDesktopVersion";
 import { isNewerVersion } from "../lib/updateCheckers";
 import { WHATS_NEW_RELEASES } from "./releases";
-import { selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
+import { forAudience, selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
+import { getUserInfo } from "../components/userMenu/menuItems";
 import { readSeenVersion, writeSeenVersion } from "./whatsNewStorage";
 
 interface GateOptions {
@@ -57,7 +58,7 @@ export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): 
     // Égale ou rétrogradée : rien à montrer, et rien à écrire. Absente : tout
     // le registre jusqu'à la version courante (mise à jour depuis avant l'écran).
     if (seen !== null && !isNewerVersion(version, seen)) return;
-    const next = selectWhatsNewFeatures(version, seen, WHATS_NEW_RELEASES);
+    const next = selectWhatsNewFeatures(version, seen, forAudience(WHATS_NEW_RELEASES, getUserInfo().isAdmin));
     if (next.features.length === 0) {
       writeSeenVersion(version);
       return;

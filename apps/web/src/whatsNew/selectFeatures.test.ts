@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { selectWhatsNewFeatures } from "./selectFeatures";
+import { forAudience, selectWhatsNewFeatures } from "./selectFeatures";
 import type { WhatsNewFeature, WhatsNewRelease } from "./types";
 
 const Scene = () => null;
@@ -44,5 +44,20 @@ describe("sélection des nouveautés à montrer", () => {
     const selection = selectWhatsNewFeatures(null, null, REGISTRY, Infinity);
     expect(selection.features.map((f) => f.id)).toEqual(["future", "d", "a", "b", "old"]);
     expect(selection.to).toBe("1.22.0");
+  });
+});
+
+describe("nouveautés réservées aux administrateurs", () => {
+  const adminOnly: WhatsNewFeature = { ...feature("dashboard"), audience: "admin" };
+  const mixed: WhatsNewRelease[] = [{ version: "1.22.0", features: [feature("remote"), adminOnly] }];
+
+  it("un administrateur voit tout", () => {
+    expect(forAudience(mixed, true)[0]?.features.map((f) => f.id)).toEqual(["remote", "dashboard"]);
+  });
+
+  it("les autres ne voient pas ce qui leur parlerait d'un écran qu'ils n'ont pas", () => {
+    expect(forAudience(mixed, false)[0]?.features.map((f) => f.id)).toEqual(["remote"]);
+    const onlyAdmin: WhatsNewRelease[] = [{ version: "1.22.0", features: [adminOnly] }];
+    expect(selectWhatsNewFeatures("1.22.0", "1.21.4", forAudience(onlyAdmin, false)).features).toEqual([]);
   });
 });

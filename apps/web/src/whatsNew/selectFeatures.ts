@@ -47,3 +47,17 @@ export function selectWhatsNewFeatures(
     spansReleases: versionsWithFeatures.size > 1,
   };
 }
+
+/**
+ * Le registre tel que CE compte doit le voir : une nouveauté réservée aux
+ * administrateurs (`audience: "admin"`) disparaît pour les autres — elle leur
+ * parlerait d'un écran qu'ils n'ont pas. Une release ainsi vidée reste dans
+ * la liste, vide : la sélection la saute comme les autres.
+ */
+export function forAudience(releases: readonly WhatsNewRelease[], isAdmin: boolean): WhatsNewRelease[] {
+  if (isAdmin) return [...releases];
+  return releases.map((release) => ({
+    ...release,
+    features: release.features.filter((feature) => feature.audience !== "admin"),
+  }));
+}
