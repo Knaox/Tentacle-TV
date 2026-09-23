@@ -33,6 +33,12 @@ TEST_RUNNER_AGENT_HOST=$(ipconfig getifaddr en0) xcodebuild \
 `TEST_RUNNER_*` : xcodebuild transmet ces variables au processus de test en
 retirant le préfixe (`AGENT_HOST`, `AGENT_PORT`, `AGENT_BUNDLE`).
 
+**Sur le simulateur tvOS**, le même agent, sans signature : destination
+`'platform=tvOS Simulator,id=<UDID>'` et `TEST_RUNNER_AGENT_HOST=127.0.0.1`.
+Le lanceur de tests passe devant l'application en démarrant : commencer par
+`activate`, sinon `focus` échoue (`kAXErrorServerNotFound`) et met fin au
+test. C'est ce que sert le banc de focus (`../focus-bench`), sans compte.
+
 ## Commander
 
 ```bash
