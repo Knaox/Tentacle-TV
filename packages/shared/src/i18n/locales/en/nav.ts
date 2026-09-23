@@ -38,6 +38,10 @@ export default {
   railLabel: "Main navigation",
   railHint: "Hold OK to hide an entry",
   railShowAll: "Show all",
-  scrollLeft: "Scroll navigation left",
-  scrollRight: "Scroll navigation right",
+  lists: "My lists",
+  pinToBar: "Pin to the bar",
+  unpinFromBar: "Remove from the bar",
+  brandHome: "Tentacle TV — Home",
+  libraryTitles_one: "{{count}} title",
+  libraryTitles_other: "{{count}} titles",
 } as const;

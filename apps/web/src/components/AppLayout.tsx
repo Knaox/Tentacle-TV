@@ -9,6 +9,11 @@ import { AdminKeyBanner } from "./AdminKeyBanner";
 import { TmdbKeyBanner } from "./TmdbKeyBanner";
 import { useLeaderboardOpen, closeLeaderboard } from "./easterEggs/logoEggStore";
 
+/**
+ * Pages où la barre MOBILE ne propose pas la recherche (elle y manque de
+ * place). Sur desktop, la recherche est au cœur de la barre, partout : une
+ * barre qui change de forme d'une page à l'autre désoriente.
+ */
 const HIDE_SEARCH_ROUTES = ["/support", "/settings", "/about", "/admin", "/pair-device"];
 
 /**
@@ -33,7 +38,7 @@ export function AppLayout() {
       {isMobile ? (
         <TopNavMobile showSearch={showSearch} />
       ) : (
-        <TopNav showSearch={showSearch} />
+        <TopNav />
       )}
 
       <div

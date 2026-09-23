@@ -1,12 +1,29 @@
-import { Link } from "react-router-dom";
-import { TopNavLinks } from "./TopNavLinks";
+/**
+ * La barre de navigation desktop — une CAPSULE de verre qui flotte au-dessus
+ * du contenu : les bannières passent dessous, la page défile dessous, et la
+ * barre reste lisible sur n'importe quelle image (verre sombre, puis assise
+ * qui s'opacifie au défilement).
+ *
+ * De gauche à droite : la marque ; les destinations, icône et libellé,
+ * bibliothèques comprises — plus de menu à ouvrir pour atteindre « Films » —,
+ * avec « Plus » pour le reste ; la RECHERCHE, au cœur de la barre (⌘K) ;
+ * puis ce qui se passe maintenant : téléchargements, Watch Together,
+ * notifications, profil.
+ *
+ * Hors ligne (bureau), la navigation serveur s'efface : restent le catalogue
+ * local, l'état de la connexion et le profil.
+ *
+ * Zone de 68 px, comme avant : les pages gardent leur marge haute, et celles
+ * qui remontent leur bannière dessous (`-mt-[68px]`) continuent de le faire.
+ * Le bandeau d'hôte de macOS (feux tricolores) reste au-dessus.
+ */
+
 import { useScrollScrim } from "./useScrollScrim";
+import { NavBrand } from "./NavBrand";
+import { NavTabs } from "./NavTabs";
 import { SearchLauncher } from "../search/SearchLauncher";
 import { NotificationBell } from "../NotificationBell";
 import { UserAvatarMenu } from "../UserAvatarMenu";
-import { TentacleLogo } from "../ui/TentacleLogo";
-import { countLogoClick } from "../easterEggs/logoEggStore";
-import { BrowseButton } from "./BrowseButton";
 import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
 import { ConnectivityChip } from "../../offline/ConnectivityChip";
 import { DataSaverChip } from "../../offline/DataSaverChip";
@@ -14,91 +31,49 @@ import { DownloadsNavButton } from "../../downloads/DownloadsNavButton";
 import { OfflineNavLinks } from "../../offline/OfflineNavLinks";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 
-interface TopNavProps {
-  showSearch?: boolean;
-}
-
-/**
- * Desktop horizontal top navigation — replaces the legacy 62px sidebar.
- * Behaviour: fully transparent at scroll=0, fades to opaque black with a subtle
- * bottom border once content scrolls underneath. Mirrors the Netflix pattern.
- */
-export function TopNav({ showSearch = true }: TopNavProps) {
-  // Hors ligne (desktop) : la navigation serveur n'est PAS rendue — restent
-  // le logo, la pastille d'état, les téléchargements et le menu utilisateur.
+export function TopNav() {
   const offline = useOfflineMode();
 
-  // Assise 0.28 dès le haut de page : elle garantit la lisibilité de la barre
-  // par-dessus n'importe quelle bannière. Montée jusqu'à 0.92 au défilement,
-  // pour rester cohérent avec le motif « transparent en haut, opaque sur les
-  // rangées ». L'opacité est écrite sur la SEULE couche d'assise, jamais sur la
-  // barre : celle-ci porte un `backdrop-filter` et la repeindre à chaque image
-  // de défilement redemandait une passe de flou pleine largeur.
+  // L'assise : nulle en haut de page (le verre seul, par-dessus la bannière),
+  // puis jusqu'à 0,78 au défilement. Seule son OPACITÉ varie — la couche de
+  // verre, qui porte le flou, n'est jamais repeinte (theme/chrome.css).
   const scrim = useScrollScrim<HTMLDivElement>({
-    threshold: 120,
-    opacityAt: (p) => Math.min(0.92, 0.28 + p * 0.85),
-    crossAt: 0.95,
+    threshold: 140,
+    opacityAt: (p) => Math.min(0.78, p * 0.95),
   });
 
   return (
     <header
-      data-hote-voile="topbar"
-      className="fixed inset-x-0 z-40 h-[68px]"
-      style={{
-        // Sous le bandeau d'hôte, quand il y en a un : une position fixe se
-        // repère sur la FENÊTRE, le remplissage du `body` ne la décale pas.
-        // Vaut `0px` partout ailleurs (`index.css`).
-        top: "var(--hote-bandeau)",
-        // Transition sur la SEULE bordure, qui apparaît sur un seuil : son
-        // fondu est réel. Elle suit le token `--border-subtle` — un blanc en
-        // dur dessinait un liseré incongru sur fond clair.
-        transition: "border-color 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-        borderBottom: scrim.crossed ? "1px solid var(--border-subtle)" : "1px solid transparent",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-        paddingTop: "env(safe-area-inset-top, 0px)",
-      }}
+      // La zone est transparente aux clics : seule la capsule en prend.
+      className="pointer-events-none fixed inset-x-0 z-40 h-[68px] px-3 md:px-4 lg:px-6"
+      style={{ top: "var(--hote-bandeau)", paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      {/* Assise colorée. `--surface-0` et non un noir figé : la barre doit se
-          fondre dans le fond de page, qui devient nacré en thème clair. */}
-      <div ref={scrim.ref} aria-hidden className="nav-scrim" />
+      {/* Le voile des greffons (`hostChromeVeil`) vise la CAPSULE, pas
+          l'en-tête : son `pointer-events: none` posé sur l'en-tête ne
+          l'atteindrait pas, puisqu'elle rétablit les clics pour elle-même. */}
+      <div
+        data-hote-voile="topbar"
+        className="pointer-events-auto relative mx-auto mt-2 flex h-[52px] max-w-[1840px] items-center gap-1 rounded-[18px] px-1.5"
+      >
+        <div aria-hidden className="nav-capsule-glass" />
+        <div ref={scrim.ref} aria-hidden className="nav-capsule-scrim" />
 
-      <div className="nav-content flex h-full items-center gap-6 px-4 md:px-12">
-        <Link
-          to="/"
-          // Le compteur ne PRÉVIENT pas la navigation : le logo doit continuer
-          // de ramener à l'accueil comme tout le monde s'y attend. Les clics
-          // suivants tombent sur l'accueil, où revenir à l'accueil n'est rien.
-          onClick={countLogoClick}
-          className="flex flex-shrink-0 items-center gap-2.5 transition-opacity duration-200 hover:opacity-80"
-          aria-label="Tentacle TV — Accueil"
-        >
-          <TentacleLogo size="md" variant="bare" />
-          <span
-            className="hidden text-base font-bold tracking-tight text-content-primary sm:inline"
-            style={{ letterSpacing: "-0.02em" }}
-          >
-            Tentacle TV
-          </span>
-        </Link>
-
-        {/* Browse menu (libraries pin manager) */}
-        {!offline && <BrowseButton />}
-
-        {/* Primary nav (horizontal) — only shows pinned items.
-            Hors ligne, les bibliothèques du serveur sont injoignables : la
-            barre reste sinon VIDE, et depuis « Gérer les téléchargements » plus
-            rien ne ramenait au catalogue. */}
-        <div className="min-w-0 flex-1">
-          {offline ? <OfflineNavLinks /> : <TopNavLinks />}
+        <div className="relative flex min-w-0 flex-1 items-center gap-1">
+          <NavBrand />
+          <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-line-subtle" />
+          {offline ? <OfflineNavLinks /> : <NavTabs />}
         </div>
 
-        {/* Right cluster: offline chip (desktop) + search + watch-together + notif + avatar */}
-        <div className="flex flex-shrink-0 items-center gap-2">
+        <div className="relative flex shrink-0 items-center gap-1.5 pl-2">
           <ConnectivityChip />
           <DataSaverChip />
+          {!offline && (
+            <>
+              <SearchLauncher variant="field" className="hidden w-[clamp(220px,21vw,360px)] lg:flex" />
+              <SearchLauncher variant="icon" className="lg:hidden" />
+            </>
+          )}
           <DownloadsNavButton />
-          {showSearch && !offline && <SearchLauncher variant="field" className="w-[clamp(200px,22vw,320px)]" />}
           {!offline && <WatchTogetherButton />}
           {!offline && <NotificationBell />}
           <UserAvatarMenu />
