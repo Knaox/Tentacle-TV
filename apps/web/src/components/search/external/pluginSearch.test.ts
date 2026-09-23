@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ActivePluginMeta } from "@tentacle-tv/plugins-api";
 import {
-  providerAccepts, providerUrl, readExternalResponse, searchProviders, shortPluginName, withoutLibraryTwins,
-  type SearchProvider,
+  personProviderUrl, providerAccepts, providerUrl, readExternalResponse, searchProviders, shortPluginName,
+  withoutLibraryTwins, type SearchProvider,
 } from "./pluginSearch";
 
 function plugin(partial: Partial<ActivePluginMeta>): ActivePluginMeta {
@@ -12,7 +12,9 @@ function plugin(partial: Partial<ActivePluginMeta>): ActivePluginMeta {
   };
 }
 
-const PROVIDER: SearchProvider = { pluginId: "seer", path: "/search/provider", types: ["movie", "series"], label: "Ailleurs", source: "Vigie" };
+const PROVIDER: SearchProvider = {
+  pluginId: "seer", path: "/search/provider", personPath: null, types: ["movie", "series"], label: "Ailleurs", source: "Vigie",
+};
 
 describe("searchProviders — qui sait chercher hors bibliothèque", () => {
   it("un plugin actif, configuré et qui déclare search", () => {
@@ -20,7 +22,20 @@ describe("searchProviders — qui sait chercher hors bibliothèque", () => {
       [plugin({ search: { path: "/search/provider", types: ["movie"], labels: { fr: "Pas encore là", en: "Not here yet" } } })],
       "fr", "Hors bibliothèque",
     );
-    expect(p).toEqual({ pluginId: "seer", path: "/search/provider", types: ["movie"], label: "Pas encore là", source: "Vigie" });
+    expect(p).toEqual({ pluginId: "seer", path: "/search/provider", personPath: null, types: ["movie"], label: "Pas encore là", source: "Vigie" });
+  });
+
+  it("la route de filmographie est relayée — ignorée seule si elle sort du plugin", () => {
+    expect(searchProviders([plugin({ search: { path: "/s", person: "/search/person" } })], "fr", "x")[0].personPath).toBe("/search/person");
+    expect(searchProviders([plugin({ search: { path: "/s", person: "//evil.example" } })], "fr", "x")[0].personPath).toBeNull();
+  });
+
+  it("la filmographie se demande par nom, et par identifiant TMDB s'il est connu", () => {
+    const provider = { ...PROVIDER, personPath: "/search/person" };
+    expect(personProviderUrl(provider, { name: "Keanu Reeves", tmdbId: "6384" }, { lang: "fr", limit: 20 }))
+      .toBe("/api/plugins/seer/search/person?name=Keanu+Reeves&lang=fr&limit=20&tmdb=6384");
+    expect(personProviderUrl(provider, { name: "Keanu Reeves", tmdbId: null }, { lang: "fr", limit: 20 }))
+      .toBe("/api/plugins/seer/search/person?name=Keanu+Reeves&lang=fr&limit=20");
   });
 
   it("aucun plugin, ou intégration éteinte, ou pas de search : aucune source", () => {

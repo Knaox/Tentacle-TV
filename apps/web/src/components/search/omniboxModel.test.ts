@@ -65,7 +65,7 @@ describe("groupBySection", () => {
 });
 
 describe("hors bibliothèque", () => {
-  const provider = { pluginId: "seer", path: "/search/provider", types: null, label: "Pas encore là", source: "Vigie" };
+  const provider = { pluginId: "seer", path: "/search/provider", personPath: null, types: null, label: "Pas encore là", source: "Vigie" };
   const item = {
     id: "movie:603", kind: "movie" as const, title: "Matrix", year: 1999, subtitle: "Film · 1999",
     imageUrl: null, href: "/discover?media=movie:603", badge: null,

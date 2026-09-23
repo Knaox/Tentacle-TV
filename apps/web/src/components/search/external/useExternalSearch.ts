@@ -41,6 +41,24 @@ export interface ExternalSearchState {
   available: boolean;
 }
 
+/** Les réponses des plugins, réduites à ce qui s'affiche — partagé par la recherche et les filmographies. */
+export function combineExternal(
+  all: ReadonlyArray<UseQueryResult<ExternalSearchResult | null>>,
+  enabled: boolean,
+  providerCount: number,
+): ExternalSearchState {
+  const results: ExternalSearchResult[] = [];
+  let pending = false;
+  for (const result of all) {
+    if (result.isPending && enabled) pending = true;
+    const data = result.data;
+    // Une réponse d'avant (frappe plus rapide que le réseau) reste affichée,
+    // mais une section vide ne s'affiche jamais.
+    if (enabled && data && data.items.length > 0) results.push(data);
+  }
+  return { results, pending, available: providerCount > 0 };
+}
+
 export function useExternalSearch(query: string, options: ExternalSearchOptions = {}): ExternalSearchState {
   const { t, i18n } = useTranslation("search");
   const plugins = useActivePluginsMeta();
@@ -56,18 +74,10 @@ export function useExternalSearch(query: string, options: ExternalSearchOptions 
   );
 
   // `combine` : le résultat ne change que si une réponse change — pas à chaque rendu.
-  const combine = useCallback((all: Array<UseQueryResult<ExternalSearchResult | null>>): ExternalSearchState => {
-    const results: ExternalSearchResult[] = [];
-    let pending = false;
-    for (const result of all) {
-      if (result.isPending && enabled) pending = true;
-      const data = result.data;
-      // Une réponse d'avant (frappe plus rapide que le réseau) reste affichée,
-      // mais une section vide ne s'affiche jamais.
-      if (enabled && data && data.items.length > 0) results.push(data);
-    }
-    return { results, pending, available: providers.length > 0 };
-  }, [enabled, providers.length]);
+  const combine = useCallback(
+    (all: Array<UseQueryResult<ExternalSearchResult | null>>) => combineExternal(all, enabled, providers.length),
+    [enabled, providers.length],
+  );
 
   return useQueries({
     queries: providers.map((provider) => ({

@@ -3,14 +3,20 @@
  * bibliothèque (du plus récent au plus ancien), les titres d'un GENRE ou d'un
  * STUDIO (les mieux notés d'abord). L'app n'a pas de page dédiée à chacun :
  * c'est ici qu'ils vivent, à une adresse partageable.
+ *
+ * Sous une filmographie, les plugins qui savent le faire (`search.person`)
+ * ajoutent ce que la personne a fait et que la bibliothèque n'a pas — rien
+ * du tout sans plugin actif et configuré.
  */
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchBrowse, type SearchBrowseTarget } from "@tentacle-tv/api-client";
+import { useMediaItem, useSearchBrowse, type SearchBrowseTarget } from "@tentacle-tv/api-client";
 import type { SearchMediaItem } from "@tentacle-tv/shared";
 import { PersonAvatar } from "../SearchThumbs";
 import { personMeta } from "../searchLabels";
+import { ExternalSections } from "../external/ExternalSections";
+import { useExternalFilmography } from "../external/useExternalFilmography";
 import { PosterGrid } from "./SearchSections";
 
 export const SearchBrowseView = memo(function SearchBrowseView({ target, personName, onOpenItem }: {
@@ -26,6 +32,18 @@ export const SearchBrowseView = memo(function SearchBrowseView({ target, personN
     : (data?.genre ?? data?.studio ?? target.name);
   const kicker = target.kind === "person" ? t("filmographyTitle") : t(target.kind);
   const sorted = target.kind === "person" ? t("sortedByYear") : t("sortedByRating");
+
+  // L'identifiant TMDB de la personne, quand Jellyfin le connaît : il vaut
+  // mieux qu'un nom, que deux acteurs peuvent porter.
+  const personItem = useMediaItem(target.kind === "person" ? target.id : undefined);
+  const tmdbId = personItem.data?.ProviderIds?.Tmdb ?? null;
+  const external = useExternalFilmography(
+    target.kind === "person" && title !== "" && !personItem.isPending ? { name: title, tmdbId } : null,
+  );
+  const owned = useMemo(
+    () => (data?.items ?? []).map((hit) => ({ name: hit.item.Name, year: hit.item.ProductionYear ?? null })),
+    [data],
+  );
 
   return (
     <div className="px-4 pt-8 md:px-12">
@@ -50,6 +68,7 @@ export const SearchBrowseView = memo(function SearchBrowseView({ target, personN
         )}
         {isError && <p className="py-16 text-center text-content-tertiary">{t("noResults", { query: title })}</p>}
         {data && <PosterGrid items={data.items.map((hit) => hit.item)} onOpen={onOpenItem} />}
+        {target.kind === "person" && <ExternalSections external={external} library={owned} className="mt-12" />}
       </div>
     </div>
   );
