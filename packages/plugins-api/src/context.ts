@@ -19,6 +19,12 @@ export interface ActivePluginMeta {
   }>;
   /** Onglet mobile de l'extension (champ `tab` du manifeste), relayé s'il est bien formé. */
   tab?: { icon?: string; labels?: Record<string, string> };
+  /**
+   * Recherche hors bibliothèque (champ `search` du manifeste) : une route du
+   * serveur du plugin que la recherche de Tentacle interroge, et le nom de la
+   * section où ses résultats s'affichent. Absent si l'intégration est éteinte.
+   */
+  search?: { path: string; types?: Array<"movie" | "series">; labels?: Record<string, string> };
 }
 
 export interface PluginContextValue {

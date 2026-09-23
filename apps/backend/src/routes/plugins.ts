@@ -26,6 +26,7 @@ import { downloadPlugin, extractPlugin, removePluginFiles } from "../services/pl
 import { isPrivateIp } from "../services/networkUtils";
 import { lookup } from "dns/promises";
 import { readTabMeta, type PluginTabMeta } from "./pluginTabMeta";
+import { readSearchMeta, type PluginSearchMeta } from "./pluginSearchMeta";
 
 /** Validate :id param — must be a UUID or a valid pluginId (blocks path traversal). */
 function isValidRouteId(id: string): boolean {
@@ -123,12 +124,15 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       let navItems: unknown[] = [];
       // L'onglet mobile de l'extension (icône, libellés) — cf. pluginTabMeta.
       let tab: PluginTabMeta | undefined;
+      // La recherche hors bibliothèque que le plugin sait mener — cf. pluginSearchMeta.
+      let search: PluginSearchMeta | undefined;
       const manifestPath = resolve(pluginDir, "plugin.json");
       if (existsSync(manifestPath)) {
         try {
           const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
           if (Array.isArray(manifest.navItems)) navItems = manifest.navItems;
           tab = readTabMeta(manifest);
+          search = readSearchMeta(manifest);
         } catch { /* ignore malformed manifest */ }
       }
       const configEnabled = (p.config as Record<string, unknown>)?.enabled === true;
@@ -141,6 +145,8 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
           : navItems.filter((n: any) => n.admin),
         configEnabled,
         tab,
+        // Comme les pages : une intégration éteinte ne cherche rien.
+        ...(configEnabled && search ? { search } : {}),
       };
     });
   });
