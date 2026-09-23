@@ -27,8 +27,10 @@ export function ModalHeader({ title, subtitle, onClose, titleId }: ModalHeaderPr
         >
           {title}
         </h2>
+        {/* Un `div` et non un `p` : le sous-titre peut porter un avatar,
+            qui est un bloc (le destinataire d'un message, par exemple). */}
         {subtitle && (
-          <p className="mt-1 text-sm text-content-tertiary">{subtitle}</p>
+          <div className="mt-1 text-sm text-content-tertiary">{subtitle}</div>
         )}
       </div>
       {onClose && (

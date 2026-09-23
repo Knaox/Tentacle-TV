@@ -10,6 +10,7 @@ import { IdleSessions } from "../components/admin/sessions/IdleSessions";
 import { WatchGroupCard } from "../components/admin/sessions/WatchGroupCard";
 import { MessageComposer } from "../components/admin/sessions/MessageComposer";
 import { SessionsSummary } from "../components/admin/sessions/SessionsSummary";
+import { GroupRecipient, SessionRecipient } from "../components/admin/sessions/ComposerRecipient";
 import { useCommandFeedback } from "../components/admin/sessions/useCommandFeedback";
 import type { CommandKind, TargetState } from "../components/admin/sessions/commandFeedback";
 import { cls } from "./adminUtils";
@@ -39,7 +40,13 @@ export function AdminSessions() {
   const toast = useToast();
   const query = useAdminSessions();
   const { playstate, message, groupMessage, groupStop } = useAdminSessionActions();
-  const [composer, setComposer] = useState<ComposerTarget>(null);
+  const [composer, setComposerState] = useState<ComposerTarget>(null);
+  const [composerFailed, setComposerFailed] = useState(false);
+  // Ouvrir (ou fermer) la rédaction repart d'une feuille sans erreur.
+  const setComposer = useCallback((target: ComposerTarget) => {
+    setComposerFailed(false);
+    setComposerState(target);
+  }, []);
   const ids = { playing: useId(), groups: useId(), idle: useId() };
   const data = query.data;
 
@@ -93,9 +100,9 @@ export function AdminSessions() {
   const actions = useMemo<SessionCardActions>(() => ({
     onPlaystate,
     onMessage: (session) => setComposer({ kind: "session", session }),
-  }), [onPlaystate]);
+  }), [onPlaystate, setComposer]);
 
-  const onGroupMessage = useCallback((group: AdminWatchGroupDto) => setComposer({ kind: "group", group }), []);
+  const onGroupMessage = useCallback((group: AdminWatchGroupDto) => setComposer({ kind: "group", group }), [setComposer]);
 
   const sendGroupStop = groupStop.mutateAsync;
   const onGroupStop = useCallback((group: AdminWatchGroupDto) => {
@@ -116,6 +123,7 @@ export function AdminSessions() {
   const send = (input: MessageInput) => {
     if (composer === null) return;
     const done = () => setComposer(null);
+    setComposerFailed(false);
     if (composer.kind === "session") {
       const { id, userName } = composer.session;
       begin(id, "message");
@@ -127,7 +135,7 @@ export function AdminSessions() {
         },
         () => {
           fail(id);
-          toast.show("error", t("actionFailed"));
+          setComposerFailed(true);
         },
       );
       return;
@@ -143,7 +151,7 @@ export function AdminSessions() {
       },
       () => {
         fail(groupId);
-        toast.show("error", t("actionFailed"));
+        setComposerFailed(true);
       },
     );
   };
@@ -236,7 +244,10 @@ export function AdminSessions() {
       {composer !== null && (
         <MessageComposer
           title={composer.kind === "session" ? t("composerTitle", { name: composer.session.userName }) : t("composerGroupTitle")}
+          recipient={composer.kind === "session" ? <SessionRecipient session={composer.session} /> : <GroupRecipient group={composer.group} />}
+          previewName={composer.kind === "session" ? composer.session.userName : null}
           pending={message.isPending || groupMessage.isPending}
+          failed={composerFailed}
           onSend={send}
           onClose={() => setComposer(null)}
         />
