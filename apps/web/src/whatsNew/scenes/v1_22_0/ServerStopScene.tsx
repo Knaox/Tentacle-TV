@@ -38,7 +38,7 @@ export function ServerStopScene({ active, reduced }: SceneProps) {
         w={SERVER.w}
         title={title}
         poster={poster}
-        subtitle="Tentacle TV - Desktop"
+        subtitle="Tentacle Desktop 1.22.0"
         progress={0.42}
         chip={closed ? { label: t("sessions:stopped"), tone: "neutral" } : { label: t("sessions:playing"), tone: "success" }}
       />

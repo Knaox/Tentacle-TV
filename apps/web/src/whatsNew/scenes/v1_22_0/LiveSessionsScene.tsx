@@ -43,7 +43,7 @@ export function LiveSessionsScene({ active, reduced }: SceneProps) {
         poster={work}
         tone={0}
         title={title}
-        subtitle="Tentacle TV - Web · Chrome"
+        subtitle="Tentacle Web 1.19.0"
         progress={progress}
         chip={stopped ? { label: t("sessions:stopped"), tone: "neutral" } : { label: t("sessions:directPlay"), tone: "success" }}
       />
@@ -54,7 +54,7 @@ export function LiveSessionsScene({ active, reduced }: SceneProps) {
         poster={work}
         tone={0}
         title={title}
-        subtitle="Tentacle TV - Desktop · HEVC 4K → H.264 1080p"
+        subtitle="Tentacle Desktop 1.22.0 · HEVC 4K → H.264 1080p"
         progress={progress}
         chip={stopped ? { label: t("sessions:stopped"), tone: "neutral" } : { label: t("sessions:transcode"), tone: "warning" }}
       />
