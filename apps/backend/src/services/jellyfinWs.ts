@@ -5,6 +5,8 @@ import { poke as pokeLibraryAdded } from "./libraryAddedNotifier";
 import { pokeWatchTime } from "./watchTime/collector";
 import { pokeProfile } from "./reco/jobs";
 import { refreshLibraryMemo } from "./reco/candidates/libraryMemo";
+import { markCatalogChanged } from "./search/catalog";
+import { markAllUserAccessStale, refreshUserAccess } from "./search/userAccess";
 import { sessionSignatures } from "./jellyfinWsSessions";
 
 /**
@@ -136,6 +138,10 @@ function handleMessage(data: WebSocket.Data): void {
         // Accélère la détection + fournit les IDs exacts des ajouts (pour titrer
         // la notif, même si la date n'est pas fiable). Poll aussi périodiquement.
         pokeLibraryAdded(msg?.Data?.ItemsAdded);
+        // Le moteur de recherche relève ce qui a changé (une fois par salve de
+        // scan), et les droits des comptes se relèveront à leur recherche.
+        markCatalogChanged();
+        markAllUserAccessStale();
         break;
       case "UserDataChanged":
         broadcastAll("watchlist");
@@ -146,6 +152,8 @@ function handleMessage(data: WebSocket.Data): void {
         // (débouncé 8 s côté jobs — une salve ne coûte qu'un rebuild).
         refreshLibraryMemo(msg?.Data?.UserId ?? "");
         pokeProfile(msg?.Data?.UserId);
+        // Vu, en cours, favori : la recherche de CE compte les reflète.
+        refreshUserAccess(msg?.Data?.UserId ?? "");
         break;
       case "PlaybackStart":
       case "PlaybackStopped":
