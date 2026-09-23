@@ -8,6 +8,8 @@ export interface MediaItem {
   Genres?: string[];
   ProductionYear?: number;
   PremiereDate?: string;
+  /** Série terminée : sa dernière diffusion. */
+  EndDate?: string;
   DateCreated?: string;
   CommunityRating?: number;
   CriticRating?: number;
