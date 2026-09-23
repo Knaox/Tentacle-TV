@@ -16,6 +16,7 @@ import { SearchPageEmpty } from "../components/search/page/SearchPageEmpty";
 import { SearchPageHeader } from "../components/search/page/SearchPageHeader";
 import { SearchResultsView } from "../components/search/page/SearchResultsView";
 import { readSearchParams, searchHref, type SearchTab } from "../components/search/page/searchParams";
+import { useExternalSearch } from "../components/search/external/useExternalSearch";
 
 export function Search() {
   const [params] = useSearchParams();
@@ -25,6 +26,11 @@ export function Search() {
   const search = useTentacleSearch(state.query, { limit: state.tab === "all" ? 12 : 60, enabled: searching });
   const withEpisodes = state.tab === "all" || state.tab === "episodes";
   const episodes = useSearchEpisodes(state.query, { limit: state.tab === "episodes" ? 40 : 8, enabled: searching && withEpisodes });
+  // Hors bibliothèque : seulement là où l'on cherche des œuvres (tout, films, séries).
+  const external = useExternalSearch(state.query, {
+    limit: 18,
+    enabled: searching && (state.tab === "all" || state.tab === "movies" || state.tab === "series"),
+  });
   const terms = useMemo(
     () => parseSearchQuery(search.data?.correction ?? state.query).terms,
     [search.data?.correction, state.query],
@@ -67,6 +73,7 @@ export function Search() {
               <SearchResultsView
                 response={search.data}
                 episodes={episodes.data?.episodes ?? []}
+                external={external}
                 tab={state.tab}
                 terms={terms}
                 onTab={setTab}
