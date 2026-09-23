@@ -16,24 +16,30 @@ et Linux reçoivent l'ensemble.
 ## [1.22.0]
 ### FR
 - **Une recherche digne de ce nom** : ⌘K ou Ctrl+K où que vous soyez, ou un clic dans la barre — les résultats arrivent à chaque lettre, en quelques millisecondes, calculés par le serveur Tentacle. Les fautes de frappe se corrigent (« Résultats pour … »), la suite du titre se propose en gris (⇥ l'accepte), et l'on trouve aussi par acteur, réalisateur, genre ou studio, chacun avec sa page. Le meilleur résultat se lance d'un clic
-- **Une nouvelle barre de navigation** : une capsule qui flotte au-dessus du contenu, avec un onglet par bibliothèque — plus de menu à ouvrir pour atteindre « Films ». Ce qui n'a pas de place passe dans « Plus », qui prend le nom de la page courante quand elle y est rangée ; Ma liste, Mes favoris et les pages d'extensions s'épinglent dans la barre d'un clic
+- **Une nouvelle barre de navigation** : une capsule qui flotte au-dessus du contenu, avec un onglet par bibliothèque — plus de menu à ouvrir pour atteindre « Films ». Ce qui n'a pas de place passe dans « Plus », qui prend le nom de la page courante quand elle y est rangée
+- **La barre se personnalise** : un clic droit sur un onglet le retire — bibliothèques comprises —, et « Personnaliser la barre » (dans « Plus ») permet de tout réordonner en glissant, d'épingler Ma liste, Mes favoris ou une extension, et de revenir à la barre d'origine
+- **Les recherches des bibliothèques, de Ma liste et de Mes favoris** : une croix pour effacer, le nombre de titres trouvés au bout du champ, et quand rien ne répond, la bonne orthographe proposée (« Essayer « dune » ») et la recherche dans tout Tentacle
+- **Watch Together : créer un groupe ne lance plus l'invitation d'office** — on arrive sur le groupe (ce qui est au programme, qui est là), puis on invite une ou plusieurs personnes ; les invitations restent affichées « en attente » jusqu'à la réponse
 - **« Retour » dès l'écran de chargement** : un film qui tarde à démarrer (serveur lent, transcodage qui s'amorce) se quitte d'un clic ou d'Échap, sans attendre
 - **Fermer l'application en pleine lecture arrête vraiment la lecture sur le serveur** : Jellyfin continuait d'afficher le film « en cours » pendant cinq minutes après la fermeture de la fenêtre — le message de fin, parti de la page, n'atteignait jamais le serveur. L'application l'envoie désormais elle-même avant de quitter, à la bonne position, que la lecture passe en direct ou par le serveur Tentacle
 - **C'est le serveur Tentacle qui suit la lecture** : l'application lui confie sa position sur la connexion déjà ouverte, et Jellyfin ne reçoit plus un report toutes les dix secondes — seulement ce qui change (pause, reprise, saut, pistes) et un signe de vie toutes les quatre minutes. Si l'application plante ou perd le réseau, le serveur arrête la lecture de lui-même, à la bonne position
-- **Le tableau de bord de Jellyfin pilote l'application** : pause, reprise, arrêt, saut, pistes — et les messages de l'administrateur s'affichent, même en pleine lecture
-- **Administrateurs : « Sessions en direct »** montre qui regarde quoi, comment le média arrive (lecture directe ou transcodage, et pourquoi), et les séances Watch Together — avec pause, arrêt et message, pour une personne ou tout un groupe
+- **Le tableau de bord de Jellyfin pilote l'application** : pause, reprise, arrêt, saut, pistes — et les messages de l'administrateur s'affichent, même en pleine lecture ; un message temporaire affiche son compte à rebours, suspendu tant qu'on le survole
+- **Administrateurs : « Sessions en direct »** montre qui regarde quoi, comment le média arrive — lecture directe, remux (sans perte, presque rien pour le serveur), transcodage audio ou transcodage (le plus lourd), et pourquoi — et les séances Watch Together. Pause, arrêt et message, pour une personne ou tout un groupe : chaque commande se voit, de l'envoi (« Pause demandée… ») à l'effet constaté (« ✓ En pause »)
 - **Sous Linux, la vidéo suit la fenêtre réduite** : réduire l'application en pleine lecture laissait l'image à l'écran, détachée de tout ; elle se réduit et revient désormais avec la fenêtre (KDE Plasma et X11)
 - **Alt+Tab montre la lecture en cours** (Linux, KDE Plasma) : le sélecteur de fenêtres ne présentait que l'interface ; la vidéo y paraît sous le nom et l'icône de Tentacle
 - Nécessite un serveur 1.19.0 ou plus
 
 ### EN
 - **Search worthy of the name**: ⌘K or Ctrl+K from anywhere, or a click in the bar — results arrive with every letter, in a few milliseconds, computed by the Tentacle server. Typos get corrected ("Results for …"), the rest of the title is suggested in grey (⇥ accepts it), and you can also search by actor, director, genre or studio, each with its own page. The top result plays in one click
-- **A new navigation bar**: a capsule floating above the content, with one tab per library — no more menu to open to reach "Movies". What does not fit goes into "More", which takes the current page's name when it lives there; My List, My Favorites and extension pages pin to the bar in one click
+- **A new navigation bar**: a capsule floating above the content, with one tab per library — no more menu to open to reach "Movies". What does not fit goes into "More", which takes the current page's name when it lives there
+- **Make the bar your own**: right-click a tab to remove it — libraries included — and "Customize the bar" (in "More") lets you reorder everything by dragging, pin My List, My Favorites or an extension, and go back to the original bar
+- **Library, My List and My Favorites search**: a cross to clear, the number of titles found at the end of the field, and when nothing matches, the right spelling suggested ("Try 'dune'") and a search across all of Tentacle
+- **Watch Together: creating a group no longer jumps straight to invitations** — you land on the group (what is playing, who is there), then invite one or more people; invites stay listed as "waiting" until they get an answer
 - **"Back" right from the loading screen**: a film that is slow to start (slow server, transcoding spinning up) can be left with a click or Esc, without waiting
 - **Closing the app during playback really stops playback on the server**: Jellyfin kept showing the film as "playing" for five minutes after the window was closed — the final message, sent from the page, never reached the server. The app now sends it itself before quitting, at the right position, whether playback goes direct or through the Tentacle server
 - **The Tentacle server tracks playback**: the app hands it its position over the connection it already holds, and Jellyfin no longer gets a report every ten seconds — only what changes (pause, resume, seek, tracks) and a sign of life every four minutes. If the app crashes or loses the network, the server stops playback on its own, at the right position
-- **Jellyfin's dashboard controls the app**: pause, resume, stop, seek, tracks — and the administrator's messages show up, even during playback
-- **Administrators: "Live sessions"** shows who is watching what, how the media gets there (direct play or transcoding, and why), and Watch Together sessions — with pause, stop and message, for one person or a whole group
+- **Jellyfin's dashboard controls the app**: pause, resume, stop, seek, tracks — and the administrator's messages show up, even during playback; a temporary message shows its countdown, held while you hover it
+- **Administrators: "Live sessions"** shows who is watching what, how the media gets there — direct play, remux (lossless, next to nothing for the server), audio transcode or transcoding (the heaviest), and why — and Watch Together sessions. Pause, stop and message, for one person or a whole group: every command shows, from sending ("Pause requested…") to the observed effect ("✓ Paused")
 - **On Linux, the video follows the minimized window**: minimizing the app during playback left the picture on screen, detached from everything; it now minimizes and comes back with the window (KDE Plasma and X11)
 - **Alt+Tab shows what is playing** (Linux, KDE Plasma): the window switcher only showed the interface; the video now appears there under Tentacle's name and icon
 - Requires a server on 1.19.0 or newer
@@ -45,22 +51,24 @@ et Linux reçoivent l'ensemble.
      ne concerne que Linux. -->
 ### FR
 - **Une recherche digne de ce nom** : Ctrl+K ou la barre — des résultats à chaque lettre, en quelques millisecondes, les fautes de frappe corrigées, et la recherche par acteur, réalisateur, genre ou studio
-- **Une nouvelle barre de navigation** : un onglet par bibliothèque, « Plus » pour le reste, Ma liste et Mes favoris épinglables d'un clic
+- **Une nouvelle barre de navigation** : un onglet par bibliothèque, à réordonner, retirer ou épingler (clic droit, « Personnaliser la barre »)
+- **Watch Together** : créer un groupe n'impose plus l'invitation, on invite ensuite une ou plusieurs personnes
 - **« Retour » dès l'écran de chargement** : un film qui tarde à démarrer se quitte d'un clic ou d'Échap
 - **Fermer l'application en pleine lecture arrête vraiment la lecture sur le serveur** : Jellyfin ne la montre plus « en cours » pendant cinq minutes
 - **C'est le serveur Tentacle qui suit la lecture** : bien moins de requêtes vers Jellyfin, et un arrêt à la bonne position même après un plantage
 - **Le tableau de bord de Jellyfin pilote l'application** : pause, reprise, arrêt, saut, pistes — et les messages de l'administrateur s'affichent, même en pleine lecture
-- **Administrateurs : « Sessions en direct »** : qui regarde quoi, comment le média arrive, et les séances Watch Together
+- **Administrateurs : « Sessions en direct »** : qui regarde quoi, remux et transcodages distingués, chaque commande suivie jusqu'à son effet
 - Nécessite un serveur 1.19.0 ou plus
 
 ### EN
 - **Search worthy of the name**: Ctrl+K or the bar — results with every letter, in a few milliseconds, typos corrected, and search by actor, director, genre or studio
-- **A new navigation bar**: one tab per library, "More" for the rest, My List and My Favorites pinnable in one click
+- **A new navigation bar**: one tab per library, to reorder, remove or pin (right-click, "Customize the bar")
+- **Watch Together**: creating a group no longer forces the invite step; invite one or more people afterwards
 - **"Back" right from the loading screen**: a film that is slow to start can be left with a click or Esc
 - **Closing the app during playback really stops playback on the server**: Jellyfin no longer shows it as "playing" for five minutes
 - **The Tentacle server tracks playback**: far fewer requests to Jellyfin, and a stop at the right position even after a crash
 - **Jellyfin's dashboard controls the app**: pause, resume, stop, seek, tracks — and the administrator's messages show up, even during playback
-- **Administrators: "Live sessions"**: who is watching what, how the media gets there, and Watch Together sessions
+- **Administrators: "Live sessions"**: who is watching what, remux and transcodes told apart, every command tracked to its effect
 - Requires a server on 1.19.0 or newer
 
 ## [1.21.4]
