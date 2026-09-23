@@ -16,6 +16,18 @@
  * Mesuré le 25.08.2026 sur serveur X imbriqué, fenêtre de 900x532 sur un écran
  * de 1600x900 : la vidéo occupe la zone client au pixel, le repère HTML se
  * compose par-dessus.
+ *
+ * # Deux fenêtres, donc deux vies — ce que la surface recoud (23.09.2026)
+ *
+ * Réduire notre fenêtre laissait la vidéo seule à l'écran : rien n'écoutait
+ * `minimize`. Elle suit désormais la réduction et la restauration, par le
+ * gestionnaire (`XIconifyWindow`, pas un démappage : la fenêtre reste gérée).
+ *
+ * Et le gestionnaire peut ACTIVER la fenêtre mpv — Alt+Tab la propose, elle
+ * est de premier niveau : elle passait alors devant l'interface, sourde au
+ * clavier, sans que rien ne rende la main. Comme la colle KWin sous Wayland,
+ * on rend l'activation à notre fenêtre — sauf réduite : l'activer la
+ * restaurerait, c'est précisément le défaut qu'avait la colle.
  */
 
 import { screen, type BrowserWindow } from "electron";
@@ -26,6 +38,9 @@ import {
   setRectangle,
   sync,
   findMpvWindow,
+  iconify,
+  deiconify,
+  activeWindow,
 } from "./x11";
 import type { VideoSurface } from "../video/surface";
 
@@ -34,16 +49,22 @@ const POLL_MS = 100;
 const POLL_MAX = 100;
 /** Un repositionnement par image suffit. */
 const ALIGN_MS = 16;
+/** Le temps que le gestionnaire ait désigné la nouvelle fenêtre active. */
+const ACTIVATION_CHECK_MS = 120;
 
 export class SurfaceX11 implements VideoSurface {
   private hostWid = 0n;
   private video: bigint | null = null;
   private search: ReturnType<typeof setInterval> | null = null;
   private alignTimer: ReturnType<typeof setTimeout> | null = null;
+  private activationTimer: ReturnType<typeof setTimeout> | null = null;
   private attached = false;
 
-  /** Référence stable — sans elle, `off()` ne retirerait rien. */
+  /** Références stables — sans elles, `off()` ne retirerait rien. */
   private readonly follow = (): void => this.scheduleAlign();
+  private readonly onMinimize = (): void => this.minimizeVideo();
+  private readonly onRestore = (): void => this.restoreVideo();
+  private readonly onBlur = (): void => this.scheduleActivationCheck();
 
   constructor(private readonly host: BrowserWindow) {}
 
@@ -57,6 +78,9 @@ export class SurfaceX11 implements VideoSurface {
     this.host.on("move", this.follow);
     this.host.on("enter-full-screen", this.follow);
     this.host.on("leave-full-screen", this.follow);
+    this.host.on("minimize", this.onMinimize);
+    this.host.on("restore", this.onRestore);
+    this.host.on("blur", this.onBlur);
 
     // La fenêtre de mpv n'existe qu'au premier `loadfile` (`force-window=no`) :
     // elle se cherche à plusieurs reprises, pas une fois.
@@ -69,7 +93,9 @@ export class SurfaceX11 implements VideoSurface {
         this.stopSearch();
         this.video = found;
         console.info(`[x11] fenêtre mpv trouvée : 0x${found.toString(16)}`);
-        this.align();
+        // Réduite pendant le chargement : la vidéo naît réduite avec elle.
+        if (this.host.isMinimized()) this.minimizeVideo();
+        else this.align();
       } else if (++tries > POLL_MAX) {
         this.stopSearch();
         // Tracé même en cas d'échec : « rien ne s'est passé » est le symptôme le
@@ -111,11 +137,16 @@ export class SurfaceX11 implements VideoSurface {
     this.stopSearch();
     if (this.alignTimer !== null) clearTimeout(this.alignTimer);
     this.alignTimer = null;
+    if (this.activationTimer !== null) clearTimeout(this.activationTimer);
+    this.activationTimer = null;
     if (this.attached && !this.host.isDestroyed()) {
       this.host.off("resize", this.follow);
       this.host.off("move", this.follow);
       this.host.off("enter-full-screen", this.follow);
       this.host.off("leave-full-screen", this.follow);
+      this.host.off("minimize", this.onMinimize);
+      this.host.off("restore", this.onRestore);
+      this.host.off("blur", this.onBlur);
     }
     this.attached = false;
     this.video = null;
@@ -141,6 +172,39 @@ export class SurfaceX11 implements VideoSurface {
       this.alignTimer = null;
       this.align();
     }, ALIGN_MS);
+  }
+
+  /** Notre fenêtre se réduit : la vidéo la suit, par le gestionnaire. */
+  private minimizeVideo(): void {
+    const dpy = x11Display();
+    if (this.video === null || dpy === null) return;
+    iconify(dpy, this.video);
+    sync(dpy);
+  }
+
+  /** Notre fenêtre revient : la vidéo aussi, recalée SOUS elle. */
+  private restoreVideo(): void {
+    const dpy = x11Display();
+    if (this.video === null || dpy === null) return;
+    deiconify(dpy, this.video);
+    this.align();
+  }
+
+  /**
+   * Notre fenêtre perd le focus : si c'est au profit de la fenêtre vidéo, on
+   * le reprend — elle est passée devant l'interface et n'entend rien. Jamais
+   * quand notre fenêtre est réduite : l'activer la restaurerait.
+   */
+  private scheduleActivationCheck(): void {
+    if (this.video === null || this.activationTimer !== null) return;
+    this.activationTimer = setTimeout(() => {
+      this.activationTimer = null;
+      const dpy = x11Display();
+      if (this.video === null || dpy === null || this.host.isDestroyed()) return;
+      if (this.host.isMinimized() || activeWindow(dpy) !== this.video) return;
+      this.host.focus();
+      this.align();
+    }, ACTIVATION_CHECK_MS);
   }
 
   private stopSearch(): void {
