@@ -24,7 +24,13 @@ export interface ActivePluginMeta {
    * serveur du plugin que la recherche de Tentacle interroge, et le nom de la
    * section où ses résultats s'affichent. Absent si l'intégration est éteinte.
    */
-  search?: { path: string; types?: Array<"movie" | "series">; labels?: Record<string, string> };
+  search?: {
+    path: string;
+    /** Route de la filmographie hors bibliothèque (champ `search.person`), si le plugin en sert une. */
+    person?: string;
+    types?: Array<"movie" | "series">;
+    labels?: Record<string, string>;
+  };
 }
 
 export interface PluginContextValue {
