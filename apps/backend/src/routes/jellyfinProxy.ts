@@ -3,7 +3,7 @@ import { Readable } from "stream";
 import { fetch as undiciFetch, type RequestInit as UndiciRequestInit } from "undici";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { verifyDeviceToken } from "../services/jwt";
-import { getCached, setCached, getCacheTtl } from "../services/jellyfinCache";
+import { getCached, getCacheTtl } from "../services/jellyfinCache";
 import { getJellyfinDispatcher } from "../services/jellyfinHttpAgent";
 import { clearDeviceTokenIfInvalid } from "../services/deviceTokenHealth";
 import { isAllowedProxyPath } from "./jellyfinProxy/patterns";
@@ -17,6 +17,7 @@ import {
 import { emitProxyEvents } from "./jellyfinProxy/events";
 import { carriesPlaybackUrl, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
+import { sendBuffered } from "./jellyfinProxy/bufferedReply";
 import { isOutOfScope, userIdFromPath } from "./jellyfinProxy/userScope";
 import { resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
@@ -208,26 +209,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // Cacheable routes (Latest/Resume/NextUp/Views): buffer once in RAM so
       // future hits can reply from cache. Media/error routes: stream as-is.
       if (cacheTtl !== null && !isMediaResponse && response.status < 400) {
-        const arrayBuf = await response.arrayBuffer();
-        // FILET. Ces corps sont déjà en mémoire : les relire ne coûte rien, et
-        // aucune route de catalogue n'est censée porter la clé admin. Si l'une
-        // s'y met un jour, elle est nettoyée ici et la trace le dit — plutôt que
-        // de fuir en silence jusqu'au prochain audit. Le cache est clé PAR
-        // JETON, donc y ranger un corps portant le jeton du demandeur est
-        // cohérent : personne d'autre ne le relira.
-        const raw = Buffer.from(arrayBuf).toString("utf8");
-        const { body, replacements } = scrubAdminKey(raw, getJellyfinApiKey(), incomingToken);
-        if (replacements > 0) {
-          request.log.warn(
-            { path: wildcardPath, replacements },
-            "cle admin retiree d'une reponse mise en cache",
-          );
-        }
-        const buf = replacements > 0 ? Buffer.from(body, "utf8") : Buffer.from(arrayBuf);
-        const contentType = response.headers.get("content-type") ?? "application/json";
-        setCached(wildcardPath, queryString, incomingToken, buf, contentType, response.status, cacheTtl);
-        reply.header("x-tentacle-cache", "MISS");
-        return reply.send(buf);
+        return sendBuffered(request, reply, response, {
+          path: wildcardPath, queryString, token: incomingToken, ttlMs: cacheTtl,
+        });
       }
 
       // Manifeste HLS (.m3u8) : bufferiser (petit) et injecter l'api_key du
