@@ -36,12 +36,18 @@ export default {
   sceneMessageText: "Le serveur redémarre à 23 h. Pensez à mettre votre lecture en pause.",
 
   // 1.22.0
+  v1_22_0_search_title: "Une recherche qui vous comprend",
+  v1_22_0_search_body: "Depuis la barre ou au clavier : les résultats arrivent en quelques millisecondes, les fautes de frappe se corrigent, et l'on cherche aussi par acteur, réalisateur, genre ou studio.",
+  v1_22_0_navBar_title: "Une barre de navigation repensée",
+  v1_22_0_navBar_body: "Chaque bibliothèque y a son onglet, la recherche est toujours à portée, et « Plus » réunit le reste : Ma liste et vos favoris s'épinglent dans la barre d'un clic.",
   v1_22_0_serverStop_title: "Fermer, c'est vraiment arrêter",
   v1_22_0_serverStop_body: "Quitter l'application en pleine lecture prévient aussitôt le serveur : plus de film « en cours » pendant cinq minutes dans Jellyfin. Même après un plantage, le serveur Tentacle s'en charge.",
   v1_22_0_adminMessage_title: "Les messages de l'administrateur",
   v1_22_0_adminMessage_body: "Un message envoyé depuis Jellyfin ou Tentacle s'affiche dans l'application, même en pleine lecture — et reste jusqu'à ce que vous le fermiez.",
   v1_22_0_remote_title: "Le tableau de bord a la télécommande",
   v1_22_0_remote_body: "Depuis le tableau de bord de Jellyfin ou de Tentacle, votre lecture se met en pause, reprend, s'arrête ou change de piste.",
+  v1_22_0_quitLoading_title: "Quitter pendant le chargement",
+  v1_22_0_quitLoading_body: "Un film qui tarde à démarrer ne vous retient plus : « Retour », ou Échap, dès l'écran de chargement.",
   v1_22_0_liveSessions_title: "Sessions en direct",
   v1_22_0_liveSessions_body: "Dans Administration : qui regarde quoi, comment le média arrive et pourquoi il est transcodé — avec pause, arrêt et message, pour une personne ou tout un groupe Watch Together.",
 
