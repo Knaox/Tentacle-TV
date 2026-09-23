@@ -35,7 +35,7 @@ export function RemoteControlScene({ active, reduced }: SceneProps) {
         w={CARD.w}
         title={title}
         poster={poster}
-        subtitle="Tentacle TV - Desktop"
+        subtitle="Tentacle Desktop 1.22.0"
         progress={0.35}
         chip={paused ? { label: t("sessions:paused"), tone: "neutral" } : { label: t("sessions:playing"), tone: "success" }}
         actions={[
@@ -44,7 +44,7 @@ export function RemoteControlScene({ active, reduced }: SceneProps) {
         ]}
       />
 
-      <ScenePlayerPanel x={PLAYER.x} y={PLAYER.y} w={PLAYER.w} progress={0.35} caption="Tentacle TV - Desktop" />
+      <ScenePlayerPanel x={PLAYER.x} y={PLAYER.y} w={PLAYER.w} progress={0.35} caption="Tentacle Desktop" />
       <FauxChip
         x={PLAYER.x + PLAYER.w / 2 - 40}
         y={PLAYER.y + 52}
