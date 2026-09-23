@@ -16,6 +16,45 @@ export function LoadingBar({ className = "" }: { className?: string }) {
   );
 }
 
+/**
+ * La sortie des écrans de chargement : une pilule « Retour » au coin haut-gauche.
+ *
+ * Une seule pour toute l'attente, au pixel près au même endroit. La page
+ * d'attente la pose avant que le lecteur existe, et le lecteur de bureau la
+ * reprend tant qu'il n'a pas d'image : préparation de mpv
+ * (`DesktopPlayerLoading`), puis ouverture du flux et réserve
+ * (`DesktopPlayerOverlays`). Son habillage est retiré pendant ce temps ; sans
+ * elle, la sortie disparaissait au montage du lecteur, et l'attente la plus
+ * longue — celle du serveur — n'en avait plus aucune à l'écran.
+ *
+ * `z-20` : dans le lecteur de bureau, l'habillage (`z-10`) reste posé pendant
+ * le chargement, effacé mais toujours cliquable. En dessous, la pilule perdait
+ * ses clics au profit d'une barre invisible.
+ *
+ * Posée sur l'affiche ou sur le noir → couleurs en dur dans les deux thèmes.
+ */
+export function LoadingBackButton({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation("player");
+  return (
+    <button
+      type="button"
+      onClick={() => onClick()}
+      aria-label={t("player:back")}
+      // Le focus lui revient d'emblée : c'est la seule chose à faire sur ces
+      // écrans. Au clavier, Entrée suffit donc ; sur le téléviseur LG, qui rend
+      // la page d'attente, c'est ce qui la rend pilotable du tout — sans focus,
+      // une télécommande n'a aucune prise.
+      autoFocus
+      className="absolute left-4 top-4 z-20 flex min-h-11 items-center gap-2 rounded-full border border-white/20 bg-black/45 px-5 text-sm font-semibold text-white transition-colors hover:bg-black/70 md:left-8 md:top-8"
+    >
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      {t("player:back")}
+    </button>
+  );
+}
+
 interface PlayerLoadingScreenProps {
   /** Backdrop de l'épisode/film à afficher en fond (peut être absent au tout début). */
   posterUrl?: string;
@@ -29,8 +68,9 @@ interface PlayerLoadingScreenProps {
    * L'écran occupe toute la fenêtre AVANT que le lecteur existe : ni ses
    * contrôles, ni son raccourci d'échappement ne sont encore montés. Une
    * ouverture qui traîne — serveur lent, transcodage qui démarre — enfermait
-   * donc devant une barre qui tourne. Le bouton et la touche Échap sont ici,
-   * et nulle part ailleurs, pour cette raison.
+   * donc devant une barre qui tourne. Le bouton et la touche Échap sont ici
+   * pour cette raison ; le lecteur de bureau reprend le même bouton tant
+   * qu'il n'a pas d'image (`LoadingBackButton`).
    */
   onCancel?: () => void;
 }
@@ -69,24 +109,7 @@ export function PlayerLoadingScreen({ posterUrl, title, subtitle, onCancel }: Pl
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/35" />
 
       {/* La sortie — au coin haut-gauche, là où le lecteur posera la sienne. */}
-      {onCancel && (
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label={t("player:back")}
-          // Le focus lui revient d'emblée : c'est la seule chose à faire sur
-          // cet écran. Au clavier, Entrée suffit donc ; sur le téléviseur LG,
-          // qui rend cette même page, c'est ce qui la rend pilotable du tout —
-          // sans focus, une télécommande n'a aucune prise.
-          autoFocus
-          className="absolute left-4 top-4 z-10 flex min-h-11 items-center gap-2 rounded-full border border-white/20 bg-black/45 px-5 text-sm font-semibold text-white transition-colors hover:bg-black/70 md:left-8 md:top-8"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          {t("player:back")}
-        </button>
-      )}
+      {onCancel && <LoadingBackButton onClick={onCancel} />}
 
       <div className="absolute inset-x-0 bottom-0 px-8 pb-14 md:px-16 md:pb-20">
         {title && (

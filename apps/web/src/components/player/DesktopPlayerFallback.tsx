@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { PlaybackFailure } from "../../hooks/playbackFailure";
+import { LoadingBackButton } from "./PlayerLoadingScreen";
 
 /**
  * Les deux toiles plein écran du lecteur desktop : l'erreur mpv, et l'attente
@@ -32,7 +33,7 @@ export function DesktopPlayerError({ failure, onBack }: { failure: PlaybackFailu
   );
 }
 
-export function DesktopPlayerLoading({ posterUrl }: { posterUrl?: string }) {
+export function DesktopPlayerLoading({ posterUrl, onBack }: { posterUrl?: string; onBack: () => void }) {
   return (
     <div className="relative flex h-screen w-screen items-center justify-center bg-black">
       {posterUrl && <img src={posterUrl} className="absolute inset-0 h-full w-full object-cover" alt="" />}
@@ -42,6 +43,9 @@ export function DesktopPlayerLoading({ posterUrl }: { posterUrl?: string }) {
             recette que les spinners de buffering des overlays. */}
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white" />
       </div>
+      {/* La pilule de la page d'attente, reprise au même endroit — sinon la
+          sortie s'effaçait à l'instant où le lecteur se montait. */}
+      <LoadingBackButton onClick={onBack} />
     </div>
   );
 }

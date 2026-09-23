@@ -238,7 +238,7 @@ export function DesktopPlayer({
   // Pas encore d'image : le repli occupe seul l'écran (cf. DesktopPlayerFallback).
   if (failure && (failure.kind === "media" ? onMediaMissing : onFallbackToWeb)) return null;
   if (failure) return <DesktopPlayerError failure={failure} onBack={goBack} />;
-  if (!ready) return <DesktopPlayerLoading posterUrl={posterUrl} />;
+  if (!ready) return <DesktopPlayerLoading posterUrl={posterUrl} onBack={goBack} />;
 
   return (
     // cursor-none : souris immobile → l'OSD se cache ET le curseur disparaît (revient au moindre mouvement).
@@ -247,7 +247,7 @@ export function DesktopPlayer({
       <div className="absolute inset-0" onClick={() => { togglePause(); setShowSettings(false); setShowEpisodes(false); }} onDoubleClick={() => toggleFullscreen()} />
 
       <DesktopPlayerOverlays
-        showLoadingOverlay={showLoadingOverlay} buffering={state.buffering}
+        showLoadingOverlay={showLoadingOverlay} onBack={goBack} buffering={state.buffering}
         buffered={state.buffered} posterUrl={posterUrl}
         overlay={playback.overlay} countdownTotals={playback.countdownTotals}
         onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
@@ -268,8 +268,8 @@ export function DesktopPlayer({
       <PlaybackBadge flash={playbackFlash} />
 
       {/* Pendant le CHARGEMENT, rien à commander : l'habillage cède la place à
-          l'écran de chargement, comme sur le web. Échap et la télécommande
-          continuent de sortir — les raccourcis ne passent pas par la barre. */}
+          l'écran de chargement, comme sur le web. La sortie y reste : sa
+          pilule Retour, Échap et la télécommande, qui ignorent la barre. */}
       <DesktopPlayerControls
         visible={showControls && !showLoadingOverlay} state={state} title={title} subtitle={subtitle}
         isDirectPlay={isDirectPlay} isEpisode={isEpisode} item={item} itemId={itemId}
