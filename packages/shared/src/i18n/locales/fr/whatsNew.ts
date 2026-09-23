@@ -29,6 +29,21 @@ export default {
   sceneLogoAccent: "Rose d'accent",
   sceneGuest: "Invité",
   sceneRefusalShared: "Le refus vaut pour toute la salle",
+  sceneOnServer: "Côté serveur",
+  sceneDashboard: "Tableau de bord",
+  sceneNowPlaying: "En cours de lecture",
+  sceneMessageHeader: "Maintenance ce soir",
+  sceneMessageText: "Le serveur redémarre à 23 h. Pensez à mettre votre lecture en pause.",
+
+  // 1.22.0
+  v1_22_0_serverStop_title: "Fermer, c'est vraiment arrêter",
+  v1_22_0_serverStop_body: "Quitter l'application en pleine lecture prévient aussitôt le serveur : plus de film « en cours » pendant cinq minutes dans Jellyfin. Même après un plantage, le serveur Tentacle s'en charge.",
+  v1_22_0_adminMessage_title: "Les messages de l'administrateur",
+  v1_22_0_adminMessage_body: "Un message envoyé depuis Jellyfin ou Tentacle s'affiche dans l'application, même en pleine lecture — et reste jusqu'à ce que vous le fermiez.",
+  v1_22_0_remote_title: "Le tableau de bord a la télécommande",
+  v1_22_0_remote_body: "Depuis le tableau de bord de Jellyfin ou de Tentacle, votre lecture se met en pause, reprend, s'arrête ou change de piste.",
+  v1_22_0_liveSessions_title: "Sessions en direct",
+  v1_22_0_liveSessions_body: "Dans Administration : qui regarde quoi, comment le média arrive et pourquoi il est transcodé — avec pause, arrêt et message, pour une personne ou tout un groupe Watch Together.",
 
   // 1.21.2
   v1_21_2_ratings_title: "La note, sur toutes les cartes",

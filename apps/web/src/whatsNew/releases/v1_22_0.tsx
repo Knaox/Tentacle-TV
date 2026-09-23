@@ -1,17 +1,30 @@
 import type { WhatsNewRelease } from "../types";
+import { AdminMessageScene, LiveSessionsScene, RemoteControlScene, ServerStopScene } from "../scenes/v1_22_0";
 
 /**
- * 1.22.0 — entrée VIDE, en connaissance de cause.
+ * 1.22.0 — la lecture suivie par le serveur. Trois nouveautés pour tous :
+ * fermer l'application arrête vraiment la lecture chez Jellyfin, les messages
+ * de l'administrateur s'affichent, et le tableau de bord a la télécommande —
+ * plus « Sessions en direct », montrée aux seuls administrateurs
+ * (`audience`) et sans lien profond : jamais une route admin (cf.
+ * docs/NOUVEAUTES.md). Moins de requêtes vers Jellyfin, c'est vrai mais ça
+ * ne se montre pas : c'est le changelog qui le raconte.
  *
- * La version corrige ce que le serveur voit quand on ferme l'application en
- * pleine lecture : Jellyfin gardait le film « en cours » cinq minutes, faute
- * d'avoir reçu l'arrêt. Le correctif vit entre le programme et le serveur —
- * rien ne change à l'écran, et une scène qui le mettrait en scène inventerait.
- *
- * L'entrée existe quand même : elle dit « rien à montrer », là où son absence
- * laisserait supposer un oubli (cf. registry.test.ts).
+ * Les textes vivent dans l'espace i18n `whatsNew` (v1_22_0_<id>_title / _body).
  */
 export const RELEASE_1_22_0: WhatsNewRelease = {
   version: "1.22.0",
-  features: [],
+  features: [
+    { id: "serverStop", kind: "fixed", titleKey: "v1_22_0_serverStop_title", bodyKey: "v1_22_0_serverStop_body", Scene: ServerStopScene },
+    { id: "adminMessage", kind: "new", titleKey: "v1_22_0_adminMessage_title", bodyKey: "v1_22_0_adminMessage_body", Scene: AdminMessageScene },
+    { id: "remote", kind: "new", titleKey: "v1_22_0_remote_title", bodyKey: "v1_22_0_remote_body", Scene: RemoteControlScene },
+    {
+      id: "liveSessions",
+      kind: "new",
+      titleKey: "v1_22_0_liveSessions_title",
+      bodyKey: "v1_22_0_liveSessions_body",
+      Scene: LiveSessionsScene,
+      audience: "admin",
+    },
+  ],
 };
