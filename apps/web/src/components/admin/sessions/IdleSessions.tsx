@@ -4,8 +4,8 @@ import { MessageSquare, Radio } from "lucide-react";
 import type { AdminSessionDto } from "@tentacle-tv/shared";
 import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
 import { ActionPill } from "./ActionPill";
+import { SessionAppLabel } from "./SessionAppLabel";
 import { buttonStatus, type Feedback } from "./commandFeedback";
-import { joinParts } from "./format";
 
 /**
  * Les appareils connectés qui ne lisent rien : une ligne chacun, compacte —
@@ -45,9 +45,11 @@ export const IdleSessions = memo(function IdleSessions({
                 <Radio size={12} aria-label={t("viaTentacle")} className="shrink-0 text-brand" />
               )}
             </p>
-            <p className="truncate text-xs text-content-tertiary">
-              {joinParts([session.client, session.deviceName, t("lastActive", { time: relativeTime(session.lastActivity, now, i18n.language) })])}
-            </p>
+            <SessionAppLabel
+              session={session}
+              after={t("lastActive", { time: relativeTime(session.lastActivity, now, i18n.language) })}
+              className="block truncate text-xs text-content-tertiary"
+            />
           </div>
           {session.supportsRemoteControl && (
             <ActionPill

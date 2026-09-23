@@ -11,7 +11,9 @@ import { CommandStatus } from "./CommandStatus";
 import { ConfirmButton } from "./ConfirmButton";
 import { PlaybackDetails } from "./PlaybackDetails";
 import { Poster } from "./Poster";
+import { SessionAppLabel } from "./SessionAppLabel";
 import { buttonStatus, type Feedback } from "./commandFeedback";
+import { sessionApp, sessionDeviceName } from "./sessionApp";
 import { formatClock, joinParts, livePositionTicks } from "./format";
 
 /**
@@ -60,7 +62,7 @@ export const SessionCard = memo(function SessionCard({
       ])
     : item.productionYear !== undefined ? String(item.productionYear) : "";
   const poster = client.getImageUrl(item.imageItemId, "Primary", { width: 160, quality: 80, tag: item.imageTag });
-  const device = session.deviceName || session.client;
+  const device = sessionDeviceName(sessionApp(session));
 
   return (
     <motion.article
@@ -80,7 +82,7 @@ export const SessionCard = memo(function SessionCard({
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-content-secondary">
           <LeaderboardAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} size={24} />
           <span className="font-medium text-content-primary">{session.userName}</span>
-          <span className="truncate text-content-tertiary">{joinParts([session.client, session.deviceName])}</span>
+          <SessionAppLabel session={session} className="truncate text-content-tertiary" />
           {session.viaTentacle && (
             <span
               className="inline-flex h-6 items-center gap-1 rounded-full bg-[var(--brand-soft)] px-2 text-[11px] font-semibold tracking-wide text-content-primary"
