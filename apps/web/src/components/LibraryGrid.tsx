@@ -52,7 +52,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   } = useLibraryFilters();
 
   // La frappe reste locale, l'adresse ne prend que la valeur stabilisée.
-  const { input, setInput } = useSearchInput(search, setSearch);
+  const { input, setInput, pending } = useSearchInput(search, setSearch);
 
   // Les genres proposés par les menus. UN seul abonnement : ils étaient
   // demandés deux fois — par le menu et par les pastilles — sur la même clé de
@@ -64,6 +64,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   const {
     data,
     isLoading,
+    isFetching,
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
@@ -151,7 +152,15 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
 
   return (
     <div>
-      <LibrarySearchField value={input} onChange={setInput} libraryName={libraryName} />
+      <LibrarySearchField
+        value={input}
+        onChange={setInput}
+        libraryName={libraryName}
+        // La saisie pas encore partie, ou la page de résultats en route : l'anneau
+        // tourne ; ensuite, le compte du serveur.
+        busy={pending || (isFetching && !isFetchingNextPage)}
+        resultCount={search.length > 0 && !isLoading ? totalCount : null}
+      />
 
       {/* Filtres rapides + avancés */}
       <div className="mb-6 px-4 md:px-8">
@@ -188,6 +197,9 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
           <LibraryGridEmpty
             filtered={search.length >= 2 || hasActiveFilters}
             onReset={() => { setInput(""); resetFilters(); }}
+            query={search}
+            scopeName={libraryName}
+            onApplyQuery={setInput}
           />
         ) : (
           <div>

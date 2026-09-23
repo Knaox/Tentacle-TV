@@ -48,7 +48,7 @@ export function useCollectionFilters(
 
   // Le champ répond à la frappe, l'adresse attend — le même débrayage que la
   // grille de bibliothèque.
-  const { input, setInput } = useSearchInput(base.search, base.setSearch);
+  const { input, setInput, pending } = useSearchInput(base.search, base.setSearch);
 
   // Les genres proposés sortent des titres chargés : ces pages n'ont pas de
   // bibliothèque parente à interroger.
@@ -101,6 +101,8 @@ export function useCollectionFilters(
     /** Ce que le champ affiche, avant le débrayage. */
     input,
     setInput,
+    /** La saisie n'est pas encore partie. */
+    searchPending: pending,
     filtered: visible,
     resultCount: visible.length,
     /** Vrai dès qu'un filtre OU une recherche réduit la liste. */

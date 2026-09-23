@@ -1,9 +1,9 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CollectionGridBody } from "./collection/CollectionGridBody";
 import { CollectionToolbar } from "./collection/CollectionToolbar";
+import { LibraryGridEmpty } from "./library/LibraryGridEmpty";
 import type { CollectionFiltersApi } from "./collection/useCollectionFilters";
 import type { SelectionMode } from "./collection/selectionMode";
 
@@ -51,7 +51,6 @@ export function CollectionGrid({
   filters, searchName, showFavorite, hideHeader,
 }: CollectionGridProps) {
   const navigate = useNavigate();
-  const { t } = useTranslation("common");
   // Sans filtres fournis (webOS), la liste est rendue telle quelle et les
   // identifiants remontent quand même : « tout sélectionner » continue de voir
   // la collection entière.
@@ -96,25 +95,21 @@ export function CollectionGrid({
             <div key={i} className="skeleton-shimmer aspect-[2/3] rounded-[var(--radius-lg)]" />
           ))}
         </div>
+      ) : (!filtered || filtered.length === 0) && filters?.isFiltered ? (
+        // Filtré à zéro : la même réponse que la bibliothèque — correction du
+        // moteur et recherche partout pour un texte, la clé pour des filtres.
+        <LibraryGridEmpty
+          filtered
+          onReset={() => { filters.setInput(""); filters.resetFilters(); }}
+          query={filters.search}
+          scopeName={searchName ?? title}
+          onApplyQuery={filters.setInput}
+        />
       ) : !filtered || filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-center">
-          {filters?.isFiltered ? (
-            <>
-              <p className="text-lg text-content-quaternary">{t("common:noResults")}</p>
-              <button
-                onClick={filters.resetFilters}
-                className="mt-3 text-sm font-medium text-content-tertiary underline-offset-4 transition-colors hover:text-content-primary hover:underline"
-              >
-                {t("common:resetFilters")}
-              </button>
-            </>
-          ) : (
-            <>
-              {emptyIcon && <div className="mb-4 text-5xl opacity-40">{emptyIcon}</div>}
-              <p className="text-lg text-content-quaternary">{emptyMessage}</p>
-              {emptyHint && <p className="mt-2 text-sm text-content-disabled">{emptyHint}</p>}
-            </>
-          )}
+          {emptyIcon && <div className="mb-4 text-5xl opacity-40">{emptyIcon}</div>}
+          <p className="text-lg text-content-quaternary">{emptyMessage}</p>
+          {emptyHint && <p className="mt-2 text-sm text-content-disabled">{emptyHint}</p>}
         </div>
       ) : (
         <CollectionGridBody
