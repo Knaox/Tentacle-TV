@@ -1,5 +1,5 @@
 /**
- * La modale de RÉCEPTION d'une invitation — le pendant d'`InviteUsersModal`,
+ * La modale de RÉCEPTION d'une invitation — le pendant de la modale de groupe (`room/WatchTogetherRoomModal`),
  * qui n'en couvre que l'envoi.
  *
  * Une invitation ne produisait jusqu'ici qu'un toast, qui s'efface, et une
@@ -44,7 +44,7 @@ export function InviteInboxModal({ onClose }: InviteInboxModalProps) {
     }
   };
 
-  // Portal vers <body>, même motif qu'`InviteUsersModal` : rendue depuis le
+  // Portal vers <body>, même motif que les autres modales : rendue depuis le
   // fournisseur, la modale serait sinon piégée par le containing block d'un
   // ancêtre filtré.
   return createPortal(
