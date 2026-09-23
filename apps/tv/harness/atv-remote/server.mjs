@@ -5,8 +5,11 @@ import net from "node:net";
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const OUT = process.env.AGENT_OUT ?? path.join(path.dirname(new URL(import.meta.url).pathname), "out");
+// `fileURLToPath` et non `.pathname` : le chemin du dépôt a des espaces, que
+// l'URL garde encodés (`%20`) — les captures partaient dans un dossier fantôme.
+const OUT = process.env.AGENT_OUT ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "out");
 fs.mkdirSync(OUT, { recursive: true });
 
 let agent = null;
