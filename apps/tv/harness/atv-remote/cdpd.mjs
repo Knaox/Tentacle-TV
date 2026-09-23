@@ -4,8 +4,11 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const DIR = path.dirname(new URL(import.meta.url).pathname);
+// `fileURLToPath` et non `.pathname` : le chemin du dépôt a des espaces, que
+// l'URL garde encodés (`%20`) — le journal partait dans un dossier fantôme.
+const DIR = path.dirname(fileURLToPath(import.meta.url));
 const LOG = process.env.AGENT_CONSOLE ?? path.join(DIR, "console.log");
 let ws = null;
 let nextId = 1;
