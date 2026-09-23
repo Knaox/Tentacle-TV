@@ -32,6 +32,8 @@ export interface ExternalSearchItem {
 export interface SearchProvider {
   pluginId: string;
   path: string;
+  /** Route de la filmographie hors bibliothèque (`search.person`), sinon `null`. */
+  personPath: string | null;
   types: ExternalKind[] | null;
   /** Le nom de la section : celui du manifeste, dans la langue de l'interface. */
   label: string;
@@ -53,6 +55,10 @@ const MAX_ITEMS = 20;
 /* Même garde que le serveur : un chemin simple, sous la racine du plugin. */
 const SAFE_PATH = /^\/[A-Za-z0-9_\-/]{1,100}$/;
 
+function isSafePath(value: unknown): value is string {
+  return typeof value === "string" && SAFE_PATH.test(value) && !value.includes("//");
+}
+
 /** « Vigie — Jellyseerr (unofficial) » se présente comme « Vigie ». */
 export function shortPluginName(name: string): string {
   return name.split(/\s+[—–-]\s+/)[0]?.trim() || name;
@@ -67,13 +73,14 @@ export function searchProviders(
   const out: SearchProvider[] = [];
   for (const plugin of plugins) {
     const search = plugin.configEnabled === true ? plugin.search : undefined;
-    if (!search || typeof search.path !== "string" || !SAFE_PATH.test(search.path) || search.path.includes("//")) continue;
+    if (!search || !isSafePath(search.path)) continue;
     const types = Array.isArray(search.types)
       ? search.types.filter((t): t is ExternalKind => t === "movie" || t === "series")
       : [];
     out.push({
       pluginId: plugin.pluginId,
       path: search.path,
+      personPath: isSafePath(search.person) ? search.person : null,
       types: types.length > 0 ? types : null,
       label: search.labels?.[lang] ?? search.labels?.en ?? fallbackLabel,
       source: shortPluginName(plugin.name),
@@ -95,6 +102,17 @@ export function providerUrl(
   const params = new URLSearchParams({ q: query, lang: options.lang, limit: String(options.limit) });
   if (options.kind !== null) params.set("type", options.kind);
   return `/api/plugins/${encodeURIComponent(provider.pluginId)}${provider.path}?${params.toString()}`;
+}
+
+/** La filmographie d'une personne chez ce plugin : son nom, et son identifiant TMDB s'il est connu. */
+export function personProviderUrl(
+  provider: SearchProvider & { personPath: string },
+  person: { name: string; tmdbId: string | null },
+  options: { lang: string; limit: number },
+): string {
+  const params = new URLSearchParams({ name: person.name, lang: options.lang, limit: String(options.limit) });
+  if (person.tmdbId !== null) params.set("tmdb", person.tmdbId);
+  return `/api/plugins/${encodeURIComponent(provider.pluginId)}${provider.personPath}?${params.toString()}`;
 }
 
 /* Un lien interne, jamais un autre site : le plugin désigne une de ses pages. */
