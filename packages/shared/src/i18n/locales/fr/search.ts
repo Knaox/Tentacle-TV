@@ -74,4 +74,10 @@ export default {
   sortedByRating: "Les mieux notés d'abord",
   countTitles_one: "{{count}} titre",
   countTitles_other: "{{count}} titres",
+  // Hors bibliothèque : ce que les extensions (plugins) trouvent ailleurs.
+  externalFallback: "Hors bibliothèque",
+  externalBy: "via {{name}}",
+  externalSeeAll: "Tout voir dans {{name}}",
+  externalSearching: "Recherche hors bibliothèque…",
+  noLibraryResults: "Rien dans la bibliothèque pour « {{query}} »",
 } as const;

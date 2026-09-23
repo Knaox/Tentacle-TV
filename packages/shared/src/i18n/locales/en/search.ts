@@ -69,4 +69,10 @@ export default {
   sortedByRating: "Top rated first",
   countTitles_one: "{{count}} title",
   countTitles_other: "{{count}} titles",
+  // Beyond the library: what extensions (plugins) find elsewhere.
+  externalFallback: "Beyond your library",
+  externalBy: "via {{name}}",
+  externalSeeAll: "See all in {{name}}",
+  externalSearching: "Searching beyond your library…",
+  noLibraryResults: "Nothing in your library for “{{query}}”",
 } as const;
