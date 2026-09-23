@@ -105,6 +105,18 @@ function serializeQuery(q: LibraryQuery, base: URLSearchParams): URLSearchParams
  * cinq filtres empilerait cinq entrées et il faudrait cinq retours pour
  * ressortir de la page.
  */
+/**
+ * Les années d'un intervalle, au format que Jellyfin attend (`Years`) —
+ * `undefined` quand aucune borne n'est posée. Une borne seule court jusqu'à
+ * l'année courante, ou depuis 1900.
+ */
+export function yearsBetween(yearFrom: number | null, yearTo: number | null): string[] | undefined {
+  if (!yearFrom && !yearTo) return undefined;
+  const years: string[] = [];
+  for (let y = yearFrom ?? 1900; y <= (yearTo ?? new Date().getFullYear()); y++) years.push(String(y));
+  return years;
+}
+
 export function useLibraryFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { search, filters } = useMemo(() => parseQuery(searchParams), [searchParams]);

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { collectionGenres, filterCollection, type CollectionTypeTab } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useLibraryFilters } from "../../hooks/useLibraryFilters";
 import { usePlatformFilter } from "../../hooks/usePlatformFilter";
+import { useSearchInput } from "../../hooks/useSearchInput";
 
 export type { CollectionTypeTab };
 
@@ -45,16 +46,9 @@ export function useCollectionFilters(
     );
   };
 
-  // Le champ répond à la frappe, l'adresse attend 300 ms — le même débrayage
-  // que la grille de bibliothèque.
-  const [input, setInput] = useState(base.search);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const value = input.trim();
-      if (value !== base.search) base.setSearch(value);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [input, base]);
+  // Le champ répond à la frappe, l'adresse attend — le même débrayage que la
+  // grille de bibliothèque.
+  const { input, setInput } = useSearchInput(base.search, base.setSearch);
 
   // Les genres proposés sortent des titres chargés : ces pages n'ont pas de
   // bibliothèque parente à interroger.
