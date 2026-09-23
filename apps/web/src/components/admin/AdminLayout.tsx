@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   Database,
   HardDriveDownload,
+  MonitorPlay,
   LifeBuoy,
   Mail,
   Puzzle,
@@ -31,12 +32,14 @@ const ICON_SIZE = 17;
 
 export function AdminLayout() {
   const { t } = useTranslation("admin");
+  const { t: tSessions } = useTranslation("sessions");
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { isAdmin } = getUserInfo();
 
   const sections = useMemo<SettingsShellSection[]>(
     () => [
+      { id: "sessions", label: tSessions("title"), icon: <MonitorPlay size={ICON_SIZE} /> },
       { id: "users", label: t("usersTitle"), icon: <Users size={ICON_SIZE} /> },
       { id: "downloads", label: t("downloadsTitle"), icon: <HardDriveDownload size={ICON_SIZE} /> },
       { id: "invites", label: t("invitesTitle"), icon: <Mail size={ICON_SIZE} /> },
@@ -45,7 +48,7 @@ export function AdminLayout() {
       { id: "services", label: t("services"), icon: <Server size={ICON_SIZE} /> },
       { id: "metadata", label: t("metadataTitle"), icon: <Database size={ICON_SIZE} /> },
     ],
-    [t],
+    [t, tSessions],
   );
 
   // `/admin/plugins/<id>` doit garder « plugins » actif dans le rail : on ne
@@ -74,9 +77,10 @@ export function AdminLayout() {
         description={active ? undefined : t("overviewDescription")}
         onBack={() => navigate("/admin")}
         backLabel={t("title")}
-        /* Le tableau des tickets étale quatre colonnes : il prend toute la
-           largeur, les autres sections gardent leur colonne de lecture. */
-        fluid={activeId === "tickets"}
+        /* Le tableau des tickets étale quatre colonnes, les sessions en direct
+           deux colonnes de cartes : ils prennent toute la largeur, les autres
+           sections gardent leur colonne de lecture. */
+        fluid={activeId === "tickets" || activeId === "sessions"}
       >
         <Outlet />
       </SettingsShell>

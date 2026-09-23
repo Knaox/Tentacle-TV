@@ -94,6 +94,7 @@ export interface AdminSessionDto {
 export interface AdminWatchMemberDto {
   userId: string;
   userName: string;
+  hasAvatar: boolean;
   isHost: boolean;
   inPlayback: boolean;
   buffering: boolean;

@@ -20,7 +20,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads
 } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 
@@ -171,6 +171,7 @@ export function App() {
                 simplement des enfants — aucun lien profond ne casse. */}
             <Route path="admin" element={onlineOnly(<AdminLayout />)}>
               <Route index element={null} />
+              <Route path="sessions" element={<AdminSessions />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="downloads" element={<AdminDownloads />} />
               <Route path="invites" element={<AdminInvites />} />
