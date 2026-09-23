@@ -2,19 +2,30 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Response } from "undici";
 import { getJellyfinApiKey } from "../../services/configStore";
 import { setCached } from "../../services/jellyfinCache";
+import { isLibraryViewsPath, keepSupportedLibraries } from "./libraryViews";
 import { scrubAdminKey } from "./scrubAdminKey";
 
 /**
  * Les réponses que le proxy lit EN ENTIER avant de les rendre : celles qu'il
- * met en cache (Latest, Resume, NextUp, Views). Une fois en mémoire, elles
- * sont rangées pour le prochain appel — qui repartira sans toucher Jellyfin.
+ * met en cache (Latest, Resume, NextUp, Views) — une fois en mémoire, elles
+ * sont rangées pour le prochain appel, qui repartira sans toucher Jellyfin —
+ * et la liste des bibliothèques, qu'il trie (cf. `libraryViews`).
  */
+
+/**
+ * La liste des bibliothèques est lue en entier même si elle sortait un jour
+ * du cache : son tri ne doit pas dépendre d'un réglage de performance.
+ */
+export function readsInFull(path: string, cacheTtl: number | null): boolean {
+  return cacheTtl !== null || isLibraryViewsPath(path);
+}
 
 export interface BufferedReplyContext {
   path: string;
   queryString: string;
   token: string | undefined;
-  ttlMs: number;
+  /** `null` : la réponse n'est pas mise en cache. */
+  ttlMs: number | null;
 }
 
 export async function sendBuffered(
@@ -38,9 +49,14 @@ export async function sendBuffered(
       "cle admin retiree d'une reponse mise en cache",
     );
   }
-  const buf = replacements > 0 ? Buffer.from(body, "utf8") : Buffer.from(arrayBuf);
-  const contentType = response.headers.get("content-type") ?? "application/json";
-  setCached(ctx.path, ctx.queryString, ctx.token, buf, contentType, response.status, ctx.ttlMs);
-  reply.header("x-tentacle-cache", "MISS");
+  const scrubbed = replacements > 0 ? Buffer.from(body, "utf8") : Buffer.from(arrayBuf);
+  // Films et séries seulement, et AVANT le cache : une réponse resservie
+  // rendrait sinon la liste complète.
+  const buf = isLibraryViewsPath(ctx.path) ? keepSupportedLibraries(scrubbed) : scrubbed;
+  if (ctx.ttlMs !== null) {
+    const contentType = response.headers.get("content-type") ?? "application/json";
+    setCached(ctx.path, ctx.queryString, ctx.token, buf, contentType, response.status, ctx.ttlMs);
+    reply.header("x-tentacle-cache", "MISS");
+  }
   return reply.send(buf);
 }
