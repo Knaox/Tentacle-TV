@@ -13,6 +13,7 @@ import { useMpvTrackSync } from "../hooks/useMpvTrackSync";
 import { useLocalPlaybackTracks } from "../hooks/useLocalPlaybackTracks";
 import { useMpvSource } from "../hooks/useMpvSource";
 import { useDesktopPlayerExit } from "../hooks/useDesktopPlayerExit";
+import { useSessionRemote } from "../hooks/useSessionRemote";
 import { useDesktopSegmentsOverlay } from "../hooks/useDesktopSegmentsOverlay";
 import { useWaylandFullscreenNotice } from "../hooks/useWaylandFullscreenNotice";
 import { useDesktopTransport } from "../hooks/useDesktopTransport";
@@ -149,6 +150,11 @@ export function DesktopPlayer({
   // QUAND sortir en fin de lecture est décidé par la coquille partagée, qui
   // appelle `onEndOfPlayback` (plus bas) → `goToDetail`.
   const { goBack, goToDetail } = useDesktopPlayerExit({ itemId });
+  // La télécommande de Jellyfin — stop, pause, saut, pistes (`useSessionRemote`).
+  useSessionRemote({
+    transportRef, onStop: () => { void goBack(); }, onNext: onNextEpisode, onPrevious: onPreviousEpisode,
+    onAudioChange, onSubtitleChange,
+  });
 
   // Touches média du système, incrustation de volume, Stream Deck (SMTC).
   useDesktopMediaControls({
