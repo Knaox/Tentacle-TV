@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -22,6 +23,16 @@ interface PlayerLoadingScreenProps {
   title?: string;
   /** Sous-titre (ex. « S02E04 — On ne prend plus de gants »). */
   subtitle?: string;
+  /**
+   * Quitter sans attendre le démarrage.
+   *
+   * L'écran occupe toute la fenêtre AVANT que le lecteur existe : ni ses
+   * contrôles, ni son raccourci d'échappement ne sont encore montés. Une
+   * ouverture qui traîne — serveur lent, transcodage qui démarre — enfermait
+   * donc devant une barre qui tourne. Le bouton et la touche Échap sont ici,
+   * et nulle part ailleurs, pour cette raison.
+   */
+  onCancel?: () => void;
 }
 
 /**
@@ -32,8 +43,16 @@ interface PlayerLoadingScreenProps {
  * Posé sur le backdrop de l'épisode/film → couleurs volontairement en dur
  * (text-white, scrim bg-black) dans les deux thèmes clair/sombre.
  */
-export function PlayerLoadingScreen({ posterUrl, title, subtitle }: PlayerLoadingScreenProps) {
+export function PlayerLoadingScreen({ posterUrl, title, subtitle, onCancel }: PlayerLoadingScreenProps) {
   const { t } = useTranslation("player");
+
+  useEffect(() => {
+    if (!onCancel) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#0a0a12]">
       {/* Fond de repli teinté marque, visible tant que le backdrop n'est pas chargé */}
@@ -48,6 +67,26 @@ export function PlayerLoadingScreen({ posterUrl, title, subtitle }: PlayerLoadin
       )}
       {/* Scrim pour la lisibilité du titre + de la barre */}
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/35" />
+
+      {/* La sortie — au coin haut-gauche, là où le lecteur posera la sienne. */}
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          aria-label={t("player:back")}
+          // Le focus lui revient d'emblée : c'est la seule chose à faire sur
+          // cet écran. Au clavier, Entrée suffit donc ; sur le téléviseur LG,
+          // qui rend cette même page, c'est ce qui la rend pilotable du tout —
+          // sans focus, une télécommande n'a aucune prise.
+          autoFocus
+          className="absolute left-4 top-4 z-10 flex min-h-11 items-center gap-2 rounded-full border border-white/20 bg-black/45 px-5 text-sm font-semibold text-white transition-colors hover:bg-black/70 md:left-8 md:top-8"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          {t("player:back")}
+        </button>
+      )}
 
       <div className="absolute inset-x-0 bottom-0 px-8 pb-14 md:px-16 md:pb-20">
         {title && (
