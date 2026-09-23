@@ -2,7 +2,7 @@
  * Le strict nécessaire de Xlib, atteint par koffi — le pendant de `win32.ts`.
  *
  * Aucun addon compilé : `libX11.so.6` est une bibliothèque C ordinaire, et les
- * six fonctions dont la surface vidéo a besoin s'appellent en ABI C directe.
+ * quelques fonctions dont la surface vidéo a besoin s'appellent en ABI C directe.
  *
  * ⚠️ **Chargement à l'import.** Comme `win32.ts` avec `user32.dll`, ce module
  * ouvre la bibliothèque dès qu'il est importé : tous ses appelants passent donc
@@ -48,6 +48,9 @@ koffi.struct("XClassHint", { res_name: "char*", res_class: "char*" });
 const XGetClassHint = lib.func(`int XGetClassHint(void* dpy, ${Window} w, _Out_ XClassHint* hint)`);
 const XLowerWindow = lib.func(`int XLowerWindow(void* dpy, ${Window} w)`);
 const XRaiseWindow = lib.func(`int XRaiseWindow(void* dpy, ${Window} w)`);
+const XDefaultScreen = lib.func("int XDefaultScreen(void* dpy)");
+const XIconifyWindow = lib.func(`int XIconifyWindow(void* dpy, ${Window} w, int screen_number)`);
+const XMapWindow = lib.func(`int XMapWindow(void* dpy, ${Window} w)`);
 
 /** Une connexion au serveur X, ouverte une fois pour toutes. */
 let display: unknown = null;
@@ -169,6 +172,24 @@ export function moveBelow(dpy: unknown, video: bigint, host: bigint): void {
 export function x11WindowNumber(buffer: Buffer): bigint {
   if (buffer.length < 4) return 0n;
   return BigInt(buffer.readUInt32LE(0));
+}
+
+/**
+ * Réduit la fenêtre PAR LE GESTIONNAIRE : `XIconifyWindow` lui adresse le
+ * `WM_CHANGE_STATE` de l'ICCCM, comme un clic sur le bouton de réduction.
+ */
+export function iconify(dpy: unknown, window: bigint): void {
+  XIconifyWindow(dpy, window, XDefaultScreen(dpy) as number);
+}
+
+/** Rend une fenêtre réduite : mapper une fenêtre iconique la repasse à l'état normal (ICCCM 4.1.4). */
+export function deiconify(dpy: unknown, window: bigint): void {
+  XMapWindow(dpy, window);
+}
+
+/** La fenêtre active selon le gestionnaire (`_NET_ACTIVE_WINDOW`), ou `0n`. */
+export function activeWindow(dpy: unknown): bigint {
+  return readIntegers(dpy, XDefaultRootWindow(dpy) as number, "_NET_ACTIVE_WINDOW")[0] ?? 0n;
 }
 
 /** Vide la file de requêtes et attend le serveur. */
