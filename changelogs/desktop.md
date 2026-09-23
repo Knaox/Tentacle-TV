@@ -13,6 +13,15 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.21.5]
+### FR
+- **Fermer l'application en pleine lecture arrête vraiment la lecture sur le serveur** : Jellyfin continuait d'afficher le film « en cours » pendant cinq minutes après la fermeture de la fenêtre — le message de fin, parti de la page, n'atteignait jamais le serveur. L'application l'envoie désormais elle-même avant de quitter, à la bonne position, que la lecture passe en direct ou par le serveur Tentacle
+- Nécessite un serveur 1.18.1 ou plus
+
+### EN
+- **Closing the app during playback really stops playback on the server**: Jellyfin kept showing the film as "playing" for five minutes after the window was closed — the final message, sent from the page, never reached the server. The app now sends it itself before quitting, at the right position, whether playback goes direct or through the Tentacle server
+- Requires a server on 1.18.1 or newer
+
 ## [1.21.4]
 ### FR
 - **Sous Linux, l'épisode suivant démarre en un quart de seconde** (KDE Plasma) : mpv reste au chaud entre deux lectures — sa sortie vidéo, son décodeur et sa fenêtre survivent au changement de fichier, là où chaque épisode recréait tout, trois quarts de seconde de pilote graphique puis une demi-seconde d'attente fixe à l'arrêt. Mesuré : 262 ms au lieu de 1,9 s
