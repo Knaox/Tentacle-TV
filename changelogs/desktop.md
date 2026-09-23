@@ -16,10 +16,16 @@ et Linux reçoivent l'ensemble.
 ## [1.21.5]
 ### FR
 - **Fermer l'application en pleine lecture arrête vraiment la lecture sur le serveur** : Jellyfin continuait d'afficher le film « en cours » pendant cinq minutes après la fermeture de la fenêtre — le message de fin, parti de la page, n'atteignait jamais le serveur. L'application l'envoie désormais elle-même avant de quitter, à la bonne position, que la lecture passe en direct ou par le serveur Tentacle
+- **Avec un serveur Tentacle à jour, c'est lui qui suit la lecture** : l'application lui confie sa position sur la connexion déjà ouverte, et Jellyfin ne reçoit plus un report toutes les dix secondes — seulement ce qui change (pause, reprise, saut, pistes) et un signe de vie toutes les quatre minutes. Si l'application plante ou perd le réseau, le serveur arrête la lecture de lui-même, à la bonne position
+- **Le tableau de bord de Jellyfin pilote l'application** : pause, reprise, arrêt, saut, pistes — et les messages de l'administrateur s'affichent, même en pleine lecture
+- **Administrateurs : « Sessions en direct »** montre qui regarde quoi, comment le média arrive (lecture directe ou transcodage, et pourquoi), et les séances Watch Together — avec pause, arrêt et message, pour une personne ou tout un groupe
 - Nécessite un serveur 1.18.1 ou plus
 
 ### EN
 - **Closing the app during playback really stops playback on the server**: Jellyfin kept showing the film as "playing" for five minutes after the window was closed — the final message, sent from the page, never reached the server. The app now sends it itself before quitting, at the right position, whether playback goes direct or through the Tentacle server
+- **With an up-to-date Tentacle server, the server tracks playback**: the app hands it its position over the connection it already holds, and Jellyfin no longer gets a report every ten seconds — only what changes (pause, resume, seek, tracks) and a sign of life every four minutes. If the app crashes or loses the network, the server stops playback on its own, at the right position
+- **Jellyfin's dashboard controls the app**: pause, resume, stop, seek, tracks — and the administrator's messages show up, even during playback
+- **Administrators: "Live sessions"** shows who is watching what, how the media gets there (direct play or transcoding, and why), and Watch Together sessions — with pause, stop and message, for one person or a whole group
 - Requires a server on 1.18.1 or newer
 
 ## [1.21.4]
