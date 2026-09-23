@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ComponentProps } from "react";
 import { useLocation } from "react-router-dom";
-import { LibraryFilterBar as WebBar } from "@/components/LibraryFilters";
+import { LibraryFilterBar as WebBar } from "@/components/LibraryFilters?original";
 // Le hook et son état ont quitté le composant pour `hooks/` côté web : la
 // substitution est un greffon de build, `tsc` ne la connaît pas, et c'est ce
 // import-ci qui casse quand `apps/web` se réorganise.
@@ -31,7 +31,7 @@ import { keptFilters, replayFilters, keepFilters } from "./filtersMemory";
  * `LibraryGrid`.
  */
 
-export { CHIP_BASE } from "@/components/LibraryFilters";
+export { CHIP_BASE } from "@/components/LibraryFilters?original";
 export type { LibraryFilterState } from "@/hooks/useLibraryFilters";
 
 /**
