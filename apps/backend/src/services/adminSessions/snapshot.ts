@@ -69,6 +69,7 @@ export function buildSnapshot(input: SnapshotInput): AdminSessionsSnapshotDto {
       return {
         userId: member.userId,
         userName: member.username,
+        hasAvatar: member.hasAvatar,
         isHost: member.userId === room.hostUserId,
         inPlayback: member.inPlayback,
         buffering: member.buffering,
