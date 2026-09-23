@@ -40,6 +40,7 @@
 
 import { net } from "electron";
 import { z } from "zod";
+import { playbackFarewell, type FarewellStop } from "../playbackFarewell";
 import { CommandRegistry } from "./registry";
 
 /**
@@ -90,29 +91,42 @@ const KILL_ENCODINGS = z.object({
   authHeader: z.string().min(1),
 });
 
+/** Un report de lecture, posté par le processus principal. Rend le statut HTTP. */
+async function postSession(baseUrl: string, path: string, token: string, authHeader: string, body: string): Promise<number> {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
+  try {
+    const response = await net.fetch(`${baseUrl}${path}`, {
+      method: "POST",
+      body,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Emby-Token": token,
+        "X-Emby-Authorization": authHeader,
+      },
+      signal: abort.signal,
+    });
+    return response.status;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** L'arrêt posté à la sortie pour une lecture restée ouverte (`playbackFarewell.ts`). */
+export function postFarewellStop(stop: FarewellStop): Promise<number> {
+  return postSession(stop.baseUrl, "/Sessions/Playing/Stopped", stop.token, stop.authHeader, stop.body);
+}
+
 export function registerJellyfinCommands(registry: CommandRegistry): void {
   registry.add("jellyfin_session_post", {
     schema: POST,
     run: async ({ baseUrl, path, token, authHeader, body }) => {
       if (!PATHS.has(path)) throw new Error(`chemin de session refuse: ${path}`);
-
-      const abort = new AbortController();
-      const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
-      try {
-        const response = await net.fetch(`${baseUrl}${path}`, {
-          method: "POST",
-          body,
-          headers: {
-            "Content-Type": "application/json",
-            "X-Emby-Token": token,
-            "X-Emby-Authorization": authHeader,
-          },
-          signal: abort.signal,
-        });
-        return { status: response.status };
-      } finally {
-        clearTimeout(timer);
-      }
+      // Noté AVANT l'envoi, et l'envoi suivi : une fermeture qui arrive
+      // pendant qu'il vole l'attendra (voir `playbackFarewell.ts`).
+      playbackFarewell.note({ baseUrl, path, token, authHeader, body });
+      const status = await playbackFarewell.track(postSession(baseUrl, path, token, authHeader, body));
+      return { status };
     },
   });
 

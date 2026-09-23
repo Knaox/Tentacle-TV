@@ -29,6 +29,7 @@ vi.mock("electron", () => ({
 }));
 
 import { registerJellyfinCommands } from "./jellyfin";
+import { playbackFarewell } from "../playbackFarewell";
 import type { CommandRegistry } from "./registry";
 
 interface TestCommand {
@@ -107,5 +108,37 @@ describe("jellyfin_kill_encodings", () => {
       "https://serveur.example/Videos/ActiveEncodings?deviceId=appareil%20un&playSessionId=ps%261",
     );
     expect(net.calls[0]?.init.method).toBe("DELETE");
+  });
+});
+
+describe("jellyfin_session_post", () => {
+  const args = {
+    baseUrl: "https://serveur.example",
+    token: "jeton",
+    authHeader: "MediaBrowser …",
+  };
+
+  it("retient la lecture qu'il relaie, et l'oublie à son arrêt", async () => {
+    net.status = 204;
+    await command("jellyfin_session_post").run({
+      ...args,
+      path: "/Sessions/Playing",
+      body: JSON.stringify({ ItemId: "item1", PlaySessionId: "ps1", PositionTicks: 0 }),
+    } as never);
+    expect(playbackFarewell.pending()).toBe(true);
+    await command("jellyfin_session_post").run({
+      ...args,
+      path: "/Sessions/Playing/Stopped",
+      body: JSON.stringify({ ItemId: "item1", PlaySessionId: "ps1", PositionTicks: 10 }),
+    } as never);
+    expect(playbackFarewell.pending()).toBe(false);
+  });
+
+  it("refuse un chemin hors de la liste, sans rien retenir", async () => {
+    await expect(
+      command("jellyfin_session_post").run({ ...args, path: "/System/Restart", body: "{}" } as never),
+    ).rejects.toThrow(/refuse/);
+    expect(net.calls).toHaveLength(0);
+    expect(playbackFarewell.pending()).toBe(false);
   });
 });
