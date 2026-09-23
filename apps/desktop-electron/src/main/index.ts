@@ -33,6 +33,7 @@ import { registerDownloadsEngineCommands } from "./ipc/downloadsEngine";
 import { registerDownloadsPlaybackCommands } from "./ipc/downloadsPlayback";
 import { registerDownloadsStorageCommands } from "./ipc/downloadsStorage";
 import { registerJellyfinCommands } from "./ipc/jellyfin";
+import { holdQuitForFarewell } from "./quitFarewell";
 import { stopDownloadsRuntime, transfersInFlight } from "./downloadsRuntime";
 import { closeLocalDb } from "./localDb";
 import { askNative, installQuitGuard } from "./quitGuard";
@@ -275,7 +276,10 @@ function main(): void {
   // fermeture court-circuite `mpv_destroy`. La base est refermée dans la
   // foulée — WAL laisse sinon un journal à rejouer au prochain lecteur du
   // fichier, qui peut être l'app Tauri sur une machine de développement.
-  app.on("will-quit", () => {
+  app.on("will-quit", (event) => {
+    // D'abord l'arrêt de la lecture chez Jellyfin, seul travail ASYNCHRONE de
+    // la sortie : le nettoyage synchrone ci-dessous attend le second passage.
+    if (holdQuitForFarewell(event)) return;
     restoreDisplay();
     // Les touches média sont captées pour TOUT le système : les rendre est un
     // devoir, pas un nettoyage. Une fermeture qui court-circuite `smtc_clear`
