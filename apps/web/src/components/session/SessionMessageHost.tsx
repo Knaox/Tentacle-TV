@@ -80,7 +80,6 @@ const MessageBanner = memo(function MessageBanner({
   message: Shown;
   onDismiss: (id: number) => void;
 }) {
-  const { t } = useTranslation("sessions");
   const reduced = useReducedMotion() ?? false;
   return (
     <motion.div
@@ -89,24 +88,35 @@ const MessageBanner = memo(function MessageBanner({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: reduced ? 0 : -8, transition: { duration: 0.14 } }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className="pointer-events-auto flex w-[min(28rem,100%)] items-stretch gap-3 overflow-hidden rounded-xl border border-line-strong bg-surface-3 py-3 pl-3 pr-1 text-content-primary"
+      className="pointer-events-auto w-[min(28rem,100%)]"
     >
+      <MessageBannerCard header={message.header} text={message.text} onDismiss={() => onDismiss(message.id)} />
+    </motion.div>
+  );
+});
+
+/**
+ * Le bandeau lui-même, sans son mouvement — exporté pour l'écran de
+ * nouveautés, dont la scène le montre tel quel.
+ */
+export function MessageBannerCard({ header, text, onDismiss }: { header: string; text: string; onDismiss?: () => void }) {
+  const { t } = useTranslation("sessions");
+  return (
+    <div className="flex items-stretch gap-3 overflow-hidden rounded-xl border border-line-strong bg-surface-3 py-3 pl-3 pr-1 text-content-primary">
       <span aria-hidden className="w-1 shrink-0 rounded-full bg-brand" />
       <div className="min-w-0 flex-1 py-0.5">
         <p className="text-xs font-medium text-content-tertiary">{t("messageFrom")}</p>
-        {message.header && <p className="mt-0.5 break-words text-sm font-semibold">{message.header}</p>}
-        <p className="mt-1 whitespace-pre-line break-words text-sm leading-relaxed text-content-secondary">
-          {message.text}
-        </p>
+        {header && <p className="mt-0.5 break-words text-sm font-semibold">{header}</p>}
+        <p className="mt-1 whitespace-pre-line break-words text-sm leading-relaxed text-content-secondary">{text}</p>
       </div>
       <button
         type="button"
-        onClick={() => onDismiss(message.id)}
+        onClick={onDismiss}
         aria-label={t("dismissMessage")}
         className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center self-start rounded-lg text-content-tertiary hover:bg-fill-soft hover:text-content-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-line-focus"
       >
         <X size={18} aria-hidden />
       </button>
-    </motion.div>
+    </div>
   );
-});
+}

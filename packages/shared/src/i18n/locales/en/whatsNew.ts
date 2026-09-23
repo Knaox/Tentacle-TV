@@ -25,6 +25,21 @@ export default {
   sceneLogoAccent: "Accent pink",
   sceneGuest: "Guest",
   sceneRefusalShared: "The refusal holds for the whole room",
+  sceneOnServer: "On the server",
+  sceneDashboard: "Dashboard",
+  sceneNowPlaying: "Now playing",
+  sceneMessageHeader: "Maintenance tonight",
+  sceneMessageText: "The server restarts at 11 pm. Remember to pause your playback.",
+
+  // 1.22.0
+  v1_22_0_serverStop_title: "Closing really means stopping",
+  v1_22_0_serverStop_body: "Quitting the app during playback tells the server at once: no more film shown as \"playing\" for five minutes in Jellyfin. Even after a crash, the Tentacle server takes care of it.",
+  v1_22_0_adminMessage_title: "Messages from the administrator",
+  v1_22_0_adminMessage_body: "A message sent from Jellyfin or Tentacle shows up in the app, even during playback — and stays until you dismiss it.",
+  v1_22_0_remote_title: "The dashboard has the remote",
+  v1_22_0_remote_body: "From the Jellyfin or Tentacle dashboard, your playback can be paused, resumed, stopped or switched to another track.",
+  v1_22_0_liveSessions_title: "Live sessions",
+  v1_22_0_liveSessions_body: "In Administration: who is watching what, how the media gets there and why it is transcoded — with pause, stop and message, for one person or a whole Watch Together group.",
 
   // 1.21.2
   v1_21_2_ratings_title: "Every card shows its score",
