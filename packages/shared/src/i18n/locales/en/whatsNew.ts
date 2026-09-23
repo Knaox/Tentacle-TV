@@ -32,12 +32,18 @@ export default {
   sceneMessageText: "The server restarts at 11 pm. Remember to pause your playback.",
 
   // 1.22.0
+  v1_22_0_search_title: "Search that understands you",
+  v1_22_0_search_body: "From the bar or the keyboard: results arrive in milliseconds, typos get fixed, and you can also search by actor, director, genre or studio.",
+  v1_22_0_navBar_title: "A redesigned navigation bar",
+  v1_22_0_navBar_body: "Every library gets its own tab, search is always within reach, and \"More\" gathers the rest — pin My List and your favorites to the bar in one click.",
   v1_22_0_serverStop_title: "Closing really means stopping",
   v1_22_0_serverStop_body: "Quitting the app during playback tells the server at once: no more film shown as \"playing\" for five minutes in Jellyfin. Even after a crash, the Tentacle server takes care of it.",
   v1_22_0_adminMessage_title: "Messages from the administrator",
   v1_22_0_adminMessage_body: "A message sent from Jellyfin or Tentacle shows up in the app, even during playback — and stays until you dismiss it.",
   v1_22_0_remote_title: "The dashboard has the remote",
   v1_22_0_remote_body: "From the Jellyfin or Tentacle dashboard, your playback can be paused, resumed, stopped or switched to another track.",
+  v1_22_0_quitLoading_title: "Leave while it loads",
+  v1_22_0_quitLoading_body: "A film that is slow to start no longer holds you back: \"Back\", or Esc, right from the loading screen.",
   v1_22_0_liveSessions_title: "Live sessions",
   v1_22_0_liveSessions_body: "In Administration: who is watching what, how the media gets there and why it is transcoded — with pause, stop and message, for one person or a whole Watch Together group.",
 

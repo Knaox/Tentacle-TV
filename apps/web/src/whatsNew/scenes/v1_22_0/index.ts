@@ -3,5 +3,8 @@
 // aucune donnée inventée que le texte n'assume.
 export { AdminMessageScene } from "./AdminMessageScene";
 export { LiveSessionsScene } from "./LiveSessionsScene";
+export { NavBarScene } from "./NavBarScene";
+export { QuitLoadingScene } from "./QuitLoadingScene";
 export { RemoteControlScene } from "./RemoteControlScene";
+export { SearchScene } from "./SearchScene";
 export { ServerStopScene } from "./ServerStopScene";
