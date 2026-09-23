@@ -13,6 +13,8 @@ import { formatEpisodeCode, type MediaItem, type SearchItemHit, type SearchMedia
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar, PosterThumb } from "../SearchThumbs";
 import { itemMeta, matchReason, personMeta } from "../searchLabels";
+import { ExternalBadge, ExternalPoster } from "../external/ExternalVisuals";
+import type { ExternalSearchItem } from "../external/pluginSearch";
 
 export interface RowProps {
   index: number;
@@ -181,6 +183,22 @@ export const AllResultsRow = memo(function AllResultsRow({ query, ...row }: RowP
         </svg>
       </span>
       <p className="min-w-0 flex-1 truncate text-sm font-medium text-content-primary">{t("allResults", { query })}</p>
+    </RowShell>
+  );
+});
+
+/** Un titre hors bibliothèque : l'affiche du plugin, sa ligne d'identité, sa pastille. */
+export const ExternalRow = memo(function ExternalRow({ item, terms, ...row }: RowProps & { item: ExternalSearchItem; terms: readonly string[] }) {
+  return (
+    <RowShell {...row}>
+      <ExternalPoster item={item} className="h-[54px] w-9 rounded-md" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-content-secondary">
+          <HighlightedText text={item.title} terms={terms} />
+        </p>
+        {item.subtitle !== null && <p className="mt-0.5 truncate text-xs text-content-tertiary">{item.subtitle}</p>}
+      </div>
+      <ExternalBadge badge={item.badge} />
     </RowShell>
   );
 });

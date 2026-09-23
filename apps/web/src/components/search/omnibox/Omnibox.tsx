@@ -188,6 +188,7 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
               current={data.current}
               pending={data.pending}
               empty={empty}
+              externalPending={data.externalPending}
               onPick={setQuery}
             />
             <div id="omnibox-listbox" role="listbox" aria-label={t("dialog")}>

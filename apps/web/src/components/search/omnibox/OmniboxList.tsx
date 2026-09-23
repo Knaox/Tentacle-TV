@@ -10,7 +10,7 @@ import type { SearchResponse } from "@tentacle-tv/shared";
 import { groupBySection, type OmniboxOption, type OmniboxSection } from "../omniboxModel";
 import { FacetChip } from "./OmniboxChips";
 import {
-  AllResultsRow, EpisodeRow, ItemRow, PersonRow, RecentRow, ResumeRow, type RowProps,
+  AllResultsRow, EpisodeRow, ExternalRow, ItemRow, PersonRow, RecentRow, ResumeRow, type RowProps,
 } from "./OmniboxRows";
 import { TopItemHit, TopPersonHit } from "./OmniboxTopHit";
 
@@ -74,6 +74,8 @@ function OptionView({ option, row, terms, onPlay, onRemoveRecent }: {
       return <RecentRow {...row} query={target.query} onRemove={onRemoveRecent} />;
     case "resume":
       return <ResumeRow {...row} item={target.item} />;
+    case "external":
+      return <ExternalRow {...row} item={target.item} terms={terms} />;
     case "all":
       return <AllResultsRow {...row} query={target.query} />;
   }
@@ -86,15 +88,23 @@ export const OmniboxList = memo(function OmniboxList({
   const indexOf = new Map(options.map((option, index) => [option.key, index]));
   return (
     <>
-      {groupBySection(options).map(({ section, options: group }) => {
-        const title = TITLES[section];
+      {groupBySection(options).map(({ section, key, options: group }) => {
+        // Hors bibliothèque, le titre est celui du plugin (« Pas encore sur le serveur · via Vigie »).
+        const first = group[0]?.target;
+        const external = first?.type === "external" ? first.provider : null;
+        const title = external !== null ? external.label : TITLES[section] ? t(TITLES[section] as string) : undefined;
         const total = sectionTotal(section, response);
         const chips = section === "facets" || section === "genres";
         return (
-          <div key={section} role="group" aria-label={title ? t(title) : undefined} className={section === "all" ? "mt-1" : "mt-1.5 first:mt-0"}>
+          <div key={key} role="group" aria-label={title} className={section === "all" ? "mt-1" : "mt-1.5 first:mt-0"}>
             {title && (
               <div className="flex items-center justify-between px-3 pb-1.5 pt-2.5">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-content-quaternary">{t(title)}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-content-quaternary">
+                  {title}
+                  {external !== null && (
+                    <span className="ml-1.5 font-medium normal-case tracking-normal">{t("externalBy", { name: external.source })}</span>
+                  )}
+                </span>
                 {section === "recent" && (
                   <button type="button" tabIndex={-1} onClick={onClearRecents} className="text-[11px] font-medium text-content-tertiary transition-colors hover:text-content-primary">
                     {t("clearRecent")}

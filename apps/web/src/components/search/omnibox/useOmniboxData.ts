@@ -12,11 +12,14 @@ import {
 import { parseSearchQuery } from "@tentacle-tv/shared";
 import { clearRecentSearches, readRecentSearches, removeRecentSearch } from "../recentSearches";
 import { resultOptions, zeroOptions } from "../omniboxModel";
+import { useExternalSearch } from "../external/useExternalSearch";
+import { withoutLibraryTwins } from "../external/pluginSearch";
 
 /** Le temps de laisser finir un mot tapé d'un trait. */
 const DEBOUNCE_MS = 90;
 const RESUME_SHOWN = 4;
 const GENRES_SHOWN = 12;
+const EXTERNAL_SHOWN = 4;
 
 function useDebounced(value: string, ms: number): string {
   const [debounced, setDebounced] = useState(value);
@@ -37,18 +40,30 @@ export function useOmniboxData(query: string) {
   const debounced = useDebounced(trimmed, DEBOUNCE_MS);
   const search = useTentacleSearch(debounced, { limit: 5 });
   const episodes = useSearchEpisodes(debounced, { limit: 4 });
+  // Hors bibliothèque : les plugins qui savent chercher, rangés après la bibliothèque.
+  const external = useExternalSearch(debounced, { limit: EXTERNAL_SHOWN });
   const resume = useResumeItems();
   const discover = useSearchDiscover(trimmed === "");
   const [recents, setRecents] = useState(readRecentSearches);
 
   const response = debounced === "" ? undefined : search.data;
   const episodeList = debounced === "" ? undefined : episodes.data?.episodes;
+  const beyond = useMemo(() => {
+    const owned = [
+      ...(response?.top?.kind === "item" ? [response.top.hit] : []),
+      ...(response?.movies ?? []),
+      ...(response?.series ?? []),
+    ].map((hit) => ({ name: hit.item.Name, year: hit.item.ProductionYear ?? null }));
+    return external.results
+      .map((result) => ({ ...result, items: withoutLibraryTwins(result.items, owned) }))
+      .filter((result) => result.items.length > 0);
+  }, [external.results, response]);
   const options = useMemo(() => {
     if (debounced === "") {
       return zeroOptions(recents, (resume.data ?? []).slice(0, RESUME_SHOWN), (discover.data?.genres ?? []).slice(0, GENRES_SHOWN));
     }
-    return resultOptions(response, episodeList ?? [], debounced);
-  }, [debounced, response, episodeList, recents, resume.data, discover.data]);
+    return resultOptions(response, episodeList ?? [], debounced, beyond);
+  }, [debounced, response, episodeList, beyond, recents, resume.data, discover.data]);
 
   // Les termes à faire ressortir : ceux de la correction quand le moteur a
   // cherché autre chose que ce qui a été tapé.
@@ -71,5 +86,7 @@ export function useOmniboxData(query: string) {
     current: response !== undefined && response.query.trim() === trimmed,
     /** Rien encore pour cette saisie : le squelette plutôt qu'un vide. */
     pending: debounced !== "" && response === undefined,
+    /** Un plugin cherche encore hors bibliothèque : « aucun résultat » serait prématuré. */
+    externalPending: debounced !== "" && external.pending,
   };
 }

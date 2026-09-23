@@ -9,9 +9,10 @@
 import type {
   MediaItem, SearchFacetHit, SearchItemHit, SearchMediaItem, SearchPersonHit, SearchResponse,
 } from "@tentacle-tv/shared";
+import type { ExternalSearchItem, ExternalSearchResult, SearchProvider } from "./external/pluginSearch";
 
 export type OmniboxSection =
-  | "top" | "movies" | "series" | "collections" | "people" | "episodes" | "facets"
+  | "top" | "movies" | "series" | "collections" | "people" | "episodes" | "external" | "facets"
   | "recent" | "resume" | "genres" | "all";
 
 export type OmniboxTarget =
@@ -21,11 +22,14 @@ export type OmniboxTarget =
   | { type: "facet"; kind: "genre" | "studio"; facet: SearchFacetHit }
   | { type: "recent"; query: string }
   | { type: "resume"; item: MediaItem }
+  | { type: "external"; item: ExternalSearchItem; provider: SearchProvider }
   | { type: "all"; query: string };
 
 export interface OmniboxOption {
   key: string;
   section: OmniboxSection;
+  /** Sépare deux groupes d'une même section — un par plugin hors bibliothèque. */
+  group?: string;
   target: OmniboxTarget;
 }
 
@@ -38,6 +42,7 @@ export function resultOptions(
   response: SearchResponse | undefined,
   episodes: readonly SearchMediaItem[],
   query: string,
+  external: readonly ExternalSearchResult[] = [],
 ): OmniboxOption[] {
   const out: OmniboxOption[] = [];
   const top = response?.top ?? null;
@@ -52,6 +57,13 @@ export function resultOptions(
     }
   }
   for (const item of episodes) out.push({ key: `episodes:${item.Id}`, section: "episodes", target: { type: "episode", item } });
+  // Hors bibliothèque : après tout ce qui se lit ici, jamais devant.
+  for (const result of external) {
+    const group = `external:${result.provider.pluginId}`;
+    for (const item of result.items) {
+      out.push({ key: `${group}:${item.id}`, section: "external", group, target: { type: "external", item, provider: result.provider } });
+    }
+  }
   for (const facet of response?.genres ?? []) {
     out.push({ key: `genre:${facet.name}`, section: "facets", target: { type: "facet", kind: "genre", facet } });
   }
@@ -92,18 +104,21 @@ export function optionPath(target: OmniboxTarget): string | null {
       return `/search?${target.kind}=${encodeURIComponent(target.facet.name)}`;
     case "all":
       return `/search?q=${encodeURIComponent(target.query)}`;
+    case "external":
+      return target.item.href;
     case "recent":
       return null;
   }
 }
 
 /** Les options regroupées par section, dans l'ordre — pour les en-têtes. */
-export function groupBySection(options: readonly OmniboxOption[]): Array<{ section: OmniboxSection; options: OmniboxOption[] }> {
-  const groups: Array<{ section: OmniboxSection; options: OmniboxOption[] }> = [];
+export function groupBySection(options: readonly OmniboxOption[]): Array<{ section: OmniboxSection; key: string; options: OmniboxOption[] }> {
+  const groups: Array<{ section: OmniboxSection; key: string; options: OmniboxOption[] }> = [];
   for (const option of options) {
+    const key = option.group ?? option.section;
     const last = groups[groups.length - 1];
-    if (last !== undefined && last.section === option.section) last.options.push(option);
-    else groups.push({ section: option.section, options: [option] });
+    if (last !== undefined && last.key === key) last.options.push(option);
+    else groups.push({ section: option.section, key, options: [option] });
   }
   return groups;
 }
