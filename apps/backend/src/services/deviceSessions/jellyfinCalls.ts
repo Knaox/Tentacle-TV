@@ -67,17 +67,9 @@ export function jellyfinCaller(token: string): JellyfinCaller {
  */
 export const DEVICE_CAPABILITIES = {
   PlayableMediaTypes: ["Video", "Audio"],
-  SupportedCommands: [
-    "DisplayMessage",
-    "SetAudioStreamIndex",
-    "SetSubtitleStreamIndex",
-    "SetVolume",
-    "VolumeUp",
-    "VolumeDown",
-    "Mute",
-    "Unmute",
-    "ToggleMute",
-  ],
+  // Ce que les lecteurs web et bureau savent réellement exécuter
+  // (`useSessionRemote`) — Jellyfin n'offre que ce qui est annoncé ici.
+  SupportedCommands: ["DisplayMessage", "SetAudioStreamIndex", "SetSubtitleStreamIndex"],
   SupportsMediaControl: true,
   SupportsPersistentIdentifier: true,
 };

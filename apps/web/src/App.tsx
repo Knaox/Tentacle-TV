@@ -14,6 +14,7 @@ import { OfflineSessionGate } from "./offline/OfflineSessionGate";
 import { AppBindings } from "./AppBindings";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
+import { SessionMessageHost } from "./components/session/SessionMessageHost";
 import { isDesktopApp } from "./desktop/bridge";
 import { Disclaimer } from "./pages/Disclaimer";
 
@@ -105,6 +106,8 @@ export function App() {
     <ToastProvider>
       <WatchTogetherProvider>
       <AppBindings authed={authed} offlineMode={offlineMode} />
+      {/* Les messages de l'administrateur à cette session — au-dessus de tout, lecteur compris. */}
+      <SessionMessageHost />
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public */}

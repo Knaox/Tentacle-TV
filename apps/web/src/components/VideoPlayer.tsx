@@ -15,6 +15,7 @@ import { useWebSegmentsOverlay } from "../hooks/useWebSegmentsOverlay";
 import { useNativeMediaTracks } from "../hooks/useNativeMediaTracks";
 import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { useWebTransport } from "../hooks/useWebTransport";
+import { useSessionRemote } from "../hooks/useSessionRemote";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
 import { VideoPlayerControlsLayer } from "./player/VideoPlayerControlsLayer";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
@@ -48,6 +49,11 @@ export function VideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  // La télécommande de Jellyfin — stop, pause, saut, pistes (`useSessionRemote`).
+  useSessionRemote({
+    transportRef, onStop: () => { markPlayerExit(); navigate(-1); }, onNext: onNextEpisode, onPrevious: onPreviousEpisode,
+    onAudioChange, onSubtitleChange,
+  });
   // Une balise `<video>` par SORTE de source : passer d'une lecture directe à
   // une session MSE sur le même élément fige le décodeur (cf. `isMseSource`).
   const mediaKind = isMseSource(src, useNativeHls) ? "mse" : "native";
