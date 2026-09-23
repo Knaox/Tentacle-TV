@@ -56,6 +56,9 @@ export default {
         // Un refus qui SE VOIT : le bouton dont la commande a échoué tremble
         // une fois, de trois pixels — en `transform` seul, rien n'est repeint.
         shake: "shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both",
+        // La barre d'un message temporaire : sa DURÉE est posée en ligne, celle
+        // que l'administrateur a choisie — ici, seulement la course, linéaire.
+        countdown: "countdown 1s linear forwards",
       },
       keyframes: {
         fadeSlideUp: {
@@ -114,6 +117,10 @@ export default {
         loadingBar: {
           "0%":   { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(400%)" },
+        },
+        countdown: {
+          from: { transform: "scaleX(1)" },
+          to: { transform: "scaleX(0)" },
         },
         shake: {
           "10%, 90%": { transform: "translateX(-1px)" },
