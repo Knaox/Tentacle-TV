@@ -67,6 +67,14 @@ let playingSignature = "";
 let statesSignature = "";
 /** La toute première trame sert d'empreinte de départ, pas de nouvelle. */
 let sessionsPrimed = false;
+/** La dernière trame, telle quelle : le tableau de bord des sessions la lit
+ *  au lieu d'interroger Jellyfin (`adminSessions/source.ts`). */
+let latestFrame: { sessions: unknown[]; at: number } | null = null;
+
+/** La dernière liste de sessions reçue, et quand — `null` avant la première. */
+export function latestSessionsFrame(): { sessions: unknown[]; at: number } | null {
+  return latestFrame;
+}
 
 /** Le WebSocket tient-il vraiment le direct des sessions ?
  *
@@ -89,6 +97,7 @@ function buildWsUrl(): string | null {
 /** Trame `Sessions` : ne réveiller la maison que sur un vrai changement. */
 function handleSessions(data: unknown): void {
   lastSessionsFrameMs = Date.now();
+  latestFrame = { sessions: Array.isArray(data) ? data : [], at: lastSessionsFrameMs };
   const { playing, states } = sessionSignatures(data as never);
 
   const segmentEdge = states !== statesSignature;

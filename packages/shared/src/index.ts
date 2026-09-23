@@ -14,6 +14,7 @@ export * from "./utils/episodeCode";
 export * from "./utils/textSearch";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
+export * from "./types/adminSessionsDto";
 export * from "./types/watchTogether";
 export * from "./constants";
 // Familles de plateformes de streaming (ids TMDB frères, motifs de nom) :
