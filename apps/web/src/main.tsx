@@ -24,6 +24,7 @@ import {
   setWsBackendUrl,
   setWatchTogetherBackendUrl,
   setRequestTimeoutMs,
+  configureSessionChannel,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
@@ -183,6 +184,11 @@ if (supportsNativePlayerRelay()) {
   jellyfinClient.nativePlaybackInfo = nativePlaybackInfo;
   jellyfinClient.nativeKillEncodings = nativeKillEncodings;
 }
+
+// Canal de session : la télémétrie de lecture et la télécommande Jellyfin
+// passent par le backend, sur le socket déjà ouvert. Face à un serveur qui ne
+// le connaît pas, rien ne change — les reports repartent en HTTP.
+configureSessionChannel({ deviceId: () => jellyfinClient.getDeviceId() });
 
 // Restore token from storage (mobile/desktop only — web uses httpOnly cookies)
 const savedToken = storage.getItem("tentacle_token");
