@@ -6,7 +6,9 @@
  * décider des options est un métier distinct d'exposer des commandes.
  */
 
+import path from "node:path";
 import { app, type BrowserWindow } from "electron";
+import { windowIconPath } from "../appIcon";
 import { filterInitOptions, type MpvValue } from "../video/mpvAllowlist";
 import { adaptToFullscreen } from "../video/macosWindowOptions";
 import { withWritableLogFile } from "../video/mpvLogFile";
@@ -15,6 +17,7 @@ import { videoMontage } from "../video/surface";
 import { pageMeasure } from "../linux/displayTarget";
 import { initialGeometryOption } from "../linux/initialGeometry";
 import { linuxWindowing, linuxMontage } from "../linux/session";
+import { mpvWindowTitle, prepareVideoWindowIdentity } from "../linux/videoWindowIdentity";
 
 /**
  * Les options mpv adaptées à l'écran — macOS SEULEMENT, et chargé à la demande :
@@ -46,6 +49,21 @@ function renderApiOptions(
   const { adaptForRenderApi } =
     require("../video/macosRenderOptions") as typeof import("../video/macosRenderOptions");
   return adaptForRenderApi(kept);
+}
+
+/**
+ * Montage collé : le titre et l'app-id de la fenêtre mpv. Pendant la lecture,
+ * c'est elle qu'Alt+Tab montre — sous notre nom et notre icône, pas sous ceux
+ * de mpv. Voir `linux/videoWindowIdentity.ts`. Constants pour un lancement :
+ * ils n'empêchent pas la reprise d'une instance garée (`mpvPark.ts`).
+ */
+function videoWindowIdentityOptions(win: BrowserWindow): Record<string, MpvValue> {
+  const folder = path.join(app.getPath("userData"), "video-window");
+  const appId = prepareVideoWindowIdentity(folder, windowIconPath());
+  return {
+    title: mpvWindowTitle(win.getTitle()),
+    ...(appId === null ? {} : { "wayland-app-id": appId }),
+  };
 }
 
 /** Les options que mpv recevra, dans l'ordre où la page, la coquille et le montage les posent. */
@@ -86,5 +104,6 @@ export async function assembleInitOptions(
   const glued = linuxMontage() === "wayland" && linuxWindowing() === "libre";
   const measure = glued ? await pageMeasure(win.webContents) : null;
   const geometry = initialGeometryOption(linuxMontage(), linuxWindowing(), measure);
-  return { ...mpvOptions, ...geometry };
+  const identity = glued ? videoWindowIdentityOptions(win) : {};
+  return { ...mpvOptions, ...geometry, ...identity };
 }

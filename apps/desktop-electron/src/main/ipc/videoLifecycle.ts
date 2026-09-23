@@ -39,7 +39,7 @@
  */
 
 import { linuxMontage, linuxWindowing } from "../linux/session";
-import { command, destroy, isRunning, reobserve } from "../video/mpv";
+import { command, destroy, isRunning, reobserve, setProperty } from "../video/mpv";
 import type { MpvValue } from "../video/mpvAllowlist";
 import { Park, optionsSignature } from "../video/mpvPark";
 import { stop } from "../video/mpvShutdown";
@@ -111,6 +111,13 @@ export async function releasePlayer(): Promise<void> {
     // `force-window=yes` AVANT `stop` : c'est à l'idle que mpv décide de garder
     // ou non sa sortie vidéo (`player/playloop.c`, `idle_loop`).
     void command(["set", "force-window", "yes"]);
+    // Le titre VIDE dit « garée » à la colle KWin : l'hôte reprend sa place dans
+    // Alt+Tab, dont la vignette montrerait sinon l'image noire de l'idle
+    // (`linux/kwinGlueTemplate.ts`). AVANT `stop` lui aussi : l'idle avec
+    // `force-window` reconfigure la sortie et y pousse le titre
+    // (`handle_force_window` → `update_window_title(…, true)`) — posé après,
+    // il pourrait attendre la prochaine mise à jour de l'OSD.
+    void setProperty("title", "");
     void command(["stop"]);
     park.park(liveSignature);
     console.info("[mpv] instance gardée au chaud — reprise si une lecture suit dans les 3 s");
@@ -127,6 +134,11 @@ export async function releasePlayer(): Promise<void> {
  */
 export function reuseParked(options: Readonly<Record<string, MpvValue>>, observed: Observed): boolean {
   if (!isRunning() || !park.reuse(optionsSignature(options, observed))) return false;
+  // Le titre que le parking avait vidé : la fenêtre vidéo représente de
+  // nouveau l'application dans Alt+Tab. Parti avant le `loadfile` de la page,
+  // il est poussé à la reconfiguration vidéo du fichier suivant.
+  const title = options["title"];
+  if (typeof title === "string") void setProperty("title", title);
   reobserve(observed);
   markStartup("reused");
   return true;

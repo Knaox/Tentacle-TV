@@ -18,16 +18,24 @@
  * - couche : `keepAbove` sur mpv tant que l'hôte est plein écran ET actif,
  *   sinon le panneau du bureau s'intercale entre les deux et se voit par la
  *   transparence de notre fenêtre (mesuré le 15.09) ;
- * - habillage : mpv sans bordure, absent de la barre des tâches et d'alt-tab ;
+ * - habillage : mpv sans bordure, absent de la barre des tâches ; dans
+ *   Alt+Tab, c'est LUI qui représente l'application pendant la lecture (sa
+ *   vignette montre l'image), l'hôte hors lecture ;
  * - activation : le compositeur active volontiers la fenêtre mpv à sa
  *   naissance — la colle rend aussitôt l'activation à l'hôte, sinon le clavier
- *   (espace, flèches) parlerait à une fenêtre sourde (`input-*=no`).
+ *   (espace, flèches) parlerait à une fenêtre sourde (`input-*=no`). JAMAIS à
+ *   un hôte réduit : l'activer le restaurerait (le 23.09, la réduction
+ *   s'annulait ainsi elle-même) ;
+ * - réduction, bureaux virtuels, activités : la vidéo suit l'hôte.
+ *
+ * Le détail de chaque geste est dans le gabarit, `kwinGlueTemplate.ts`.
  *
  * # L'appariement par PID
  *
  * libmpv vit DANS notre processus : la fenêtre mpv porte le pid du processus
  * principal, comme la nôtre. Le couple (pid, resourceClass) identifie donc les
- * deux fenêtres sans dépendre d'un nom d'application : `mpv` = la vidéo, tout
+ * deux fenêtres sans dépendre d'un nom d'application : la classe de la vidéo
+ * (l'app-id de `videoWindowIdentity.ts`, ou `mpv` à défaut) = la vidéo, tout
  * autre classe du même pid = l'hôte (les fenêtres DevTools, mêmes pid et
  * classe, sont écartées par leur titre).
  *
@@ -92,123 +100,13 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { glueFolder, removeFolder, pluginName } from "./glueCleanup";
+import { glueTemplate } from "./kwinGlueTemplate";
 import { loadDeclarativeScript, unloadScript, runScript } from "./kwinScripting";
+import { videoWindowAppId } from "./videoWindowIdentity";
 
-const TEMPLATE = `import QtQml as Qml
-import org.kde.kwin as Kwin
-
-Qml.QtObject {
-    id: racine
-    property var hote: null
-    property var video: null
-    // Rattrapage du PREMIER coller : l'écriture de géométrie est asynchrone
-    // et windowAdded précède le mappage effectif — la copie posée à l'adoption
-    // peut être perdue, et sans elle mpv reste à sa taille de naissance
-    // jusqu'au détour d'activation (~0,5 s d'éclair, mesuré). Une minuterie
-    // UNIQUE la rejoue. JAMAIS via frameGeometryChanged de la vidéo : notre
-    // propre écriture déclencherait le signal qu'elle écoute (boucle).
-    property var rattrapage: Qml.Timer {
-        interval: 150
-        repeat: false
-        onTriggered: racine.coller()
-    }
-
-    function coller() {
-        if (racine.hote === null || racine.video === null) return;
-        var g = racine.hote.frameGeometry;
-        racine.video.frameGeometry = Qt.rect(g.x, g.y, g.width, g.height);
-        Kwin.Workspace.raiseWindow(racine.video);
-        Kwin.Workspace.raiseWindow(racine.hote);
-    }
-    // Le panneau du bureau (barre des tâches, dock) vit dans une couche AU-DESSUS
-    // des fenêtres ordinaires. En plein écran, l'hôte ACTIF la passe — mpv, lui,
-    // reste dessous, et notre fenêtre étant transparente, le panneau se voit À
-    // TRAVERS elle dès qu'il se montre. 'keepAbove' monte mpv d'une couche :
-    // au-dessus du panneau, sous l'hôte plein écran actif (mesuré sur KWin 6.7.5,
-    // docs/LINUX-FENETRE-VIDEO.md). La condition n'est pas décorative : un hôte
-    // plein écran INACTIF retombe en couche normale, et mpv laissé au-dessus
-    // recouvrirait l'interface — et tout le reste du bureau.
-    function suivreCouche() {
-        if (racine.hote === null || racine.video === null) return;
-        racine.video.keepAbove = racine.hote.fullScreen && racine.hote.active;
-        if (racine.hote.active) racine.coller();
-    }
-    function reprendreActivation() {
-        if (racine.hote !== null && racine.video !== null && racine.video.active) {
-            Kwin.Workspace.activeWindow = racine.hote;
-        }
-    }
-    function suivreMinimise() {
-        if (racine.hote === null || racine.video === null) return;
-        racine.video.minimized = racine.hote.minimized;
-    }
-    // Nommées, et non anonymes : disconnect() exige la même référence.
-    function videoFermee() { racine.video = null; }
-    function hoteFerme() { racine.hote = null; }
-    function prendre(w) {
-        if (w.pid !== __PID__) return;
-        if (w.resourceClass === "mpv") {
-            if (racine.video !== null) return;
-            racine.video = w;
-            w.noBorder = true;
-            w.skipTaskbar = true;
-            w.skipSwitcher = true;
-            w.skipPager = true;
-            w.closed.connect(racine.videoFermee);
-            w.activeChanged.connect(racine.reprendreActivation);
-            racine.reprendreActivation();
-            racine.suivreMinimise();
-            racine.suivreCouche();
-            racine.coller();
-            racine.rattrapage.restart();
-            return;
-        }
-        if (racine.hote !== null) return;
-        if (w.caption.indexOf("Developer Tools") === 0) return;
-        racine.hote = w;
-        w.frameGeometryChanged.connect(racine.coller);
-        w.activeChanged.connect(racine.suivreCouche);
-        try { w.fullScreenChanged.connect(racine.suivreCouche); } catch (e) { }
-        try { w.minimizedChanged.connect(racine.suivreMinimise); } catch (e) { }
-        w.closed.connect(racine.hoteFerme);
-        racine.suivreCouche();
-        racine.coller();
-    }
-    // Décrochée, l'instance meurt — mais pas ses connexions : KWin les garde
-    // et les rappelle avec racine à null (voir l'en-tête). On défait TOUT ce
-    // que prendre() a noué, et l'on rend la couche : décrochée en pleine
-    // lecture, la fenêtre mpv survit quelques instants au démontage du lecteur
-    // et resterait sinon seule au-dessus du bureau entier.
-    function lacher() {
-        if (racine.video !== null) {
-            racine.video.keepAbove = false;
-            racine.video.closed.disconnect(racine.videoFermee);
-            racine.video.activeChanged.disconnect(racine.reprendreActivation);
-        }
-        if (racine.hote !== null) {
-            racine.hote.frameGeometryChanged.disconnect(racine.coller);
-            racine.hote.activeChanged.disconnect(racine.suivreCouche);
-            try { racine.hote.fullScreenChanged.disconnect(racine.suivreCouche); } catch (e) { }
-            try { racine.hote.minimizedChanged.disconnect(racine.suivreMinimise); } catch (e) { }
-            racine.hote.closed.disconnect(racine.hoteFerme);
-        }
-        Kwin.Workspace.windowAdded.disconnect(racine.prendre);
-    }
-    Qml.Component.onDestruction: racine.lacher()
-    Qml.Component.onCompleted: {
-        var ws = Kwin.Workspace.windows;
-        for (var i = 0; i < ws.length; i++) racine.prendre(ws[i]);
-        Kwin.Workspace.windowAdded.connect(racine.prendre);
-        console.warn("[tentacle-colle] posée — pid __PID__, hote="
-            + (racine.hote !== null) + ", video=" + (racine.video !== null));
-    }
-}
-`;
-
-/** Le QML de la colle pour un processus donné. Exporté pour les tests. */
-export function glueTemplate(pid: number): string {
-  return TEMPLATE.replaceAll("__PID__", String(pid));
-}
+// Le gabarit vit à part (`kwinGlueTemplate.ts`, ce que la colle suit) ; les
+// tests le lisent encore d'ici.
+export { glueTemplate };
 
 /** Numéro de pose du processus : deux poses ne partagent JAMAIS un dossier. */
 let applied = 0;
@@ -233,7 +131,7 @@ export class KwinGlue {
     const filePath = path.join(folder, "glue.qml");
     try {
       mkdirSync(folder, { recursive: true });
-      writeFileSync(filePath, glueTemplate(process.pid), "utf8");
+      writeFileSync(filePath, glueTemplate(process.pid, videoWindowAppId()), "utf8");
     } catch {
       return false;
     }

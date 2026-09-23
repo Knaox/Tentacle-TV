@@ -264,13 +264,18 @@ fenêtré (mesuré : KWin sert le PQ aux surfaces fenêtrées) ; Wayland sans AP
 placement (GNOME, wlroots) → HDR réel, lecture plein écran forcée ; X11 →
 lecture fenêtrée à la main, pas de HDR. Un réglage force Wayland/X11 (relance).
 
-Quatre conséquences à ne pas défaire :
+Cinq conséquences à ne pas défaire :
 - **`transparent: true` à la CONSTRUCTION** de la fenêtre (comme macOS, PAS comme
   Windows). Mesuré : posé à l'exécution, la page peint du noir sur la vidéo.
 - **`target-colorspace-hint=yes`** sans condition sur Wayland. `auto` n'y décide
   de rien (mpv#16305) et `no` supprime la transmission.
 - **Un compositeur est nécessaire sous X11.** Sans composition, X11 ne mélange
   pas le canal alpha et l'overlay masque la vidéo.
+- **La colle ne rend JAMAIS l'activation à un hôte réduit** (`kwinGlueTemplate.ts`) :
+  `activateWindow` dé-réduit ce qu'il active, et KWin passe le focus à mpv
+  PENDANT la réduction — la réduction s'annulait elle-même. Pendant la lecture,
+  c'est la fenêtre mpv qui représente l'app dans Alt+Tab (la vignette n'y rend
+  qu'UNE fenêtre) ; son titre vide veut dire « garée ».
 - **mpv reste au chaud entre deux épisodes sur le montage collé**
   (`ipc/videoLifecycle.ts`, `video/mpvPark.ts`) : `vkCreateDevice` coûte 569 ms
   sur NVIDIA, par instance. Et hors Windows, aucune lecture ni écriture

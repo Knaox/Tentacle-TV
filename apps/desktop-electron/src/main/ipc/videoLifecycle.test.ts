@@ -25,6 +25,12 @@ vi.mock("../video/mpv", () => ({
   destroy: h.mpv.destroy,
   isRunning: () => h.mpv.running,
   reobserve: h.mpv.reobserve,
+  // Sous Linux, l'écriture passe par la même file que les commandes : elle est
+  // rangée dans la même liste, pour que l'ORDRE se vérifie.
+  setProperty: (name: string, value: string) => {
+    h.mpv.commands.push(["set", name, value]);
+    return Promise.resolve(null);
+  },
 }));
 vi.mock("../video/mpvShutdown", () => ({ stop: h.stop }));
 vi.mock("../linux/session", () => ({
@@ -62,9 +68,21 @@ describe("le parking entre deux épisodes", () => {
     rememberInit(OPTIONS, OBSERVED);
     await releasePlayer();
     expect(h.stop).not.toHaveBeenCalled();
-    expect(h.mpv.commands).toEqual([["set", "force-window", "yes"], ["stop"]]);
+    expect(h.mpv.commands).toEqual([["set", "force-window", "yes"], ["set", "title", ""], ["stop"]]);
     expect(reuseParked({ ...OPTIONS, geometry: "1920x1080" }, OBSERVED)).toBe(true);
     expect(h.mpv.reobserve).toHaveBeenCalledWith(OBSERVED);
+  });
+
+  it("le titre vidé AVANT l'arrêt, rétabli à la reprise — le signal d'Alt+Tab pour la colle", async () => {
+    const titled = { ...OPTIONS, title: "Tentacle TV" };
+    rememberInit(titled, OBSERVED);
+    await releasePlayer();
+    // Vide avant `stop` : l'idle avec force-window pousse le titre à la fenêtre.
+    const commands = h.mpv.commands.map((c) => c.join(" "));
+    expect(commands.indexOf("set title ")).toBeLessThan(commands.indexOf("stop"));
+    h.mpv.commands.length = 0;
+    expect(reuseParked(titled, OBSERVED)).toBe(true);
+    expect(h.mpv.commands).toEqual([["set", "title", "Tentacle TV"]]);
   });
 
   it("des options différentes ne reprennent rien : l'appelant arrêtera", async () => {

@@ -478,6 +478,58 @@ mpv (`osd-dimensions`) est comparée à celle de l'hôte ; si elle ne suit pas, 
 colle est reposée une fois, et le journal porte les deux tailles
 (`linux/glueCheck.ts`).
 
+### La réduction s'annulait, et Alt+Tab montrait une fenêtre vide (23.09.2026)
+
+Deux symptômes rapportés ensemble, sous KDE Wayland : « quand je réduis la
+fenêtre avec mpv démarré, la fenêtre mpv ne suit pas et tout bugue », et « dans
+Alt+Tab je vois l'application mais pas la vidéo ». Diagnostiqués dans les
+sources de KWin 6.7 (branche `Plasma/6.7`), faute de pouvoir rejouer au banc.
+
+**La réduction.** `Window::setMinimized` passe `m_minimized` à vrai, puis
+`XdgToplevelWindow::doMinimize()` appelle `activateNextWindow` : le focus va à
+la fenêtre suivante de la chaîne — mpv, juste dessous. La colle, voyant mpv
+actif, rendait l'activation à l'hôte… et `Workspace::activateWindow` dé-réduit
+ce qu'il active (`activation.cpp` : `if (window->isMinimized())
+window->setMinimized(false)`). La réduction s'annulait dans son propre élan ;
+`minimizedChanged` partait avec un hôte déjà restauré, mpv ne se réduisait
+jamais. Remède : `reprendreActivation` ne touche JAMAIS à un hôte réduit — elle
+réduit la vidéo un tour de boucle plus tard (`Qml.Timer` à 0 ms, hors de la pile
+d'activation de KWin). L'ordre de KWin rend la ré-entrance sûre :
+`Workspace::setActiveWindow` pose `m_activeWindow` AVANT d'émettre
+`activeChanged`.
+
+**Alt+Tab.** `WindowThumbnailItem` ne rend que le `windowItem()` de la fenêtre
+désignée : la vignette de l'hôte est l'interface, transparente là où la vidéo se
+trouve. Pendant la lecture, la colle échange donc `skipSwitcher` — la fenêtre
+mpv représente l'application, sa vignette montre l'image, et la choisir rend la
+main à l'hôte. Pour qu'elle y porte notre identité :
+
+| Quoi | Comment | Source |
+|---|---|---|
+| titre | option `title` = titre de notre fenêtre (`$` doublé : mpv développe `${…}`) | `update_window_title` |
+| icône | app-id = CHEMIN ABSOLU d'un `.desktop` écrit dans `userData/video-window/`, `Icon=` absolu | `Window::findDesktopFile`, `QIcon::fromTheme` |
+| reconnaissance | la colle reçoit cet app-id comme classe de la vidéo ; « mpv » reste accepté | `kwinGlueTemplate.ts` |
+
+Garée (3 s entre deux épisodes), la fenêtre mpv montre du noir : son titre est
+vidé AVANT `stop` — l'idle avec `force-window` le pousse à la fenêtre
+(`handle_force_window` → `update_window_title(…, true)`) — et un titre vide rend
+la place à l'hôte. Il est rétabli à la reprise, avant le `loadfile`.
+
+Au passage, la vidéo suit aussi les bureaux virtuels, les activités, et le
+« toujours au-dessus / en dessous » de l'hôte : sans quoi une fenêtre
+s'intercalait entre les deux, visible par la transparence.
+
+**X11** (repli) : la surface n'écoutait pas `minimize` non plus. Elle réduit et
+rend la fenêtre mpv par le gestionnaire (`XIconifyWindow`, `XMapWindow`), et
+reprend le focus quand `_NET_ACTIVE_WINDOW` désigne mpv (Alt+Tab l'y propose,
+elle passait devant l'interface) — jamais quand l'hôte est réduit. L'entrée
+« mpv » reste visible dans Alt+Tab sous X11 : la retirer demanderait un message
+client EWMH (`_NET_WM_STATE`), non écrit faute de banc.
+
+À vérifier sur le poste : réduire / restaurer en lecture (fenêtré et plein
+écran), Alt+Tab pendant la lecture et pendant les 3 s de parking, déplacer la
+fenêtre sur un autre bureau virtuel.
+
 ### La frontière, assumée
 
 La colle demande l'API de script de KWin : **KDE Plasma seulement**. Ailleurs
