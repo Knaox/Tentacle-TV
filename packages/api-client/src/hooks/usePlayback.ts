@@ -3,6 +3,8 @@ import { useJellyfinClient } from "./useJellyfinClient";
 import { killActiveEncoding, safePositionTicks, sessionPost } from "./playbackTransport";
 import { usePlaybackBeacons } from "./usePlaybackBeacons";
 import { isDataSaverActive, localReportMode, subscribeDataSaver } from "../net/dataSaver";
+import { channelStart, clearActivePlayback, setActivePlayback } from "../socket/sessionChannel";
+import { applyPosition, channelEdge, reportStopped, stateFromRefs, type PlaybackStateRefs } from "./playbackChannelReport";
 
 const REPORT_INTERVAL_MS = 10_000;
 
@@ -86,6 +88,18 @@ export function usePlaybackReporting({
   subIdxRef.current = subtitleStreamIndex;
   playMethodRef.current = playMethod;
 
+  // Vue « état de lecture » des refs pour le canal de session : quand le backend
+  // porte la télémétrie, un report est un message sur le socket (voir `playbackChannelReport`).
+  const stateRefsRef = useRef<PlaybackStateRefs | null>(null);
+  stateRefsRef.current ??= {
+    itemId: itemIdRef, mediaSourceId: msIdRef, playSessionId: playSessionIdRef, playMethod: playMethodRef,
+    audioStreamIndex: audioIdxRef, subtitleStreamIndex: subIdxRef, position: positionRef, paused: pausedRef,
+  };
+  const stateRefs = stateRefsRef.current;
+  /** Relu par le canal à chaque (ré)ouverture en pleine lecture. */
+  const activeProviderRef = useRef(() => (startedRef.current ? stateFromRefs(stateRefs) : null));
+  const lastUpdateAtRef = useRef(0); // dernier `updatePosition` : c'est de là qu'on lit un saut
+
   // --- Interval management (declared early — used by all stop paths) ---
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Background beacon interval (sendBeacon-based, for when tab is hidden). */
@@ -114,19 +128,21 @@ export function usePlaybackReporting({
     if (prevId && prevId !== itemId && startedRef.current) {
       clearProgressInterval();
       killActiveEncoding(clientRef.current, playSessionIdRef.current);
-      sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
-        ItemId: prevId,
-        MediaSourceId: prevId,
-        PositionTicks: safePositionTicks(positionRef.current),
-        PlaySessionId: playSessionIdRef.current ?? undefined,
-      }, "stopOldEpisode");
+      const previous = stateFromRefs(stateRefs);
+      if (previous) {
+        void reportStopped(clientRef.current, { ...previous, itemId: prevId, mediaSourceId: prevId }, "stopOldEpisode");
+      }
+      clearActivePlayback(activeProviderRef.current);
       startedRef.current = false;
       positionRef.current = 0;
     }
-  }, [itemId, clearProgressInterval]);
+  }, [itemId, clearProgressInterval, stateRefs]);
 
   const reportProgress = useCallback(() => {
     if (!itemId || !startedRef.current) return;
+    // Par le canal, le battement tient la position du backend à jour — c'est
+    // elle qui part si ce lecteur disparaît. Jellyfin n'en voit rien.
+    if (channelEdge(stateRefs, "tick")) return;
     const pos = positionRef.current;
     const paused = pausedRef.current;
     sessionPost(client, "/Sessions/Playing/Progress", {
@@ -140,12 +156,11 @@ export function usePlaybackReporting({
       AudioStreamIndex: audioStreamIndex,
       SubtitleStreamIndex: subtitleStreamIndex ?? -1,
     }, "progress");
-  }, [client, itemId, mediaSourceId, playMethod, playSessionId, audioStreamIndex, subtitleStreamIndex]);
+  }, [client, itemId, mediaSourceId, playMethod, playSessionId, audioStreamIndex, subtitleStreamIndex, stateRefs]);
 
   const updatePosition = useCallback((seconds: number, isPaused: boolean) => {
-    positionRef.current = seconds;
-    pausedRef.current = isPaused;
-  }, []);
+    applyPosition(stateRefs, lastUpdateAtRef, startedRef.current, seconds, isPaused);
+  }, [stateRefs]);
 
   const resetInterval = useCallback(() => {
     clearProgressInterval();
@@ -160,6 +175,13 @@ export function usePlaybackReporting({
     if (initialPositionSeconds != null && initialPositionSeconds > 0) {
       positionRef.current = initialPositionSeconds;
     }
+    lastUpdateAtRef.current = 0;
+    setActivePlayback(activeProviderRef.current);
+    const state = stateFromRefs(stateRefs);
+    if (state && channelStart(state)) {
+      resetInterval();
+      return;
+    }
     sessionPost(client, "/Sessions/Playing", {
       ItemId: itemId,
       MediaSourceId: mediaSourceId ?? itemId,
@@ -172,7 +194,13 @@ export function usePlaybackReporting({
       IsPaused: false,
     }, "reportStart");
     resetInterval();
-  }, [client, itemId, mediaSourceId, playMethod, playSessionId, audioStreamIndex, subtitleStreamIndex, resetInterval]);
+  }, [client, itemId, mediaSourceId, playMethod, playSessionId, audioStreamIndex, subtitleStreamIndex, resetInterval, stateRefs]);
+
+  // Par le canal, un changement de piste est un bord ; sans canal, le prochain
+  // battement le porte (les refs sont déjà à jour).
+  useEffect(() => {
+    if (startedRef.current) channelEdge(stateRefs, "tracks");
+  }, [audioStreamIndex, subtitleStreamIndex, stateRefs]);
 
   // Ref to latest resetInterval — used by visibilitychange handler ([] deps effect).
   const resetIntervalRef = useRef(resetInterval);
@@ -189,12 +217,14 @@ export function usePlaybackReporting({
   const reportSeek = useCallback((seconds: number, isPaused: boolean) => {
     positionRef.current = seconds;
     pausedRef.current = isPaused;
+    lastUpdateAtRef.current = Date.now();
+    if (startedRef.current && channelEdge(stateRefs, "seek")) return;
     // Mode « bords » : un seek ne vaut pas un aller-retour réseau — la position
     // est de toute façon écrite en SQLite et envoyée à la fermeture.
     if (edgesOnlyRef.current) return;
     reportProgress();   // send immediately with new position
     resetInterval();    // restart 10s timer from now
-  }, [reportProgress, resetInterval]);
+  }, [reportProgress, resetInterval, stateRefs]);
 
   // Résilience arrière-plan / fermeture (beacons) — extrait dans son propre
   // fichier pour tenir la limite de 300 lignes.
@@ -224,19 +254,16 @@ export function usePlaybackReporting({
   // triggering cleanup on every dependency change.
   // Saves the Promise so Watch.tsx can chain cache invalidation after it.
   useEffect(() => {
+    const provider = activeProviderRef.current;
     return () => {
       clearProgressInterval();
       // Le kill passe DEVANT le garde « la lecture a démarré » (cf. reportStop).
       killActiveEncoding(clientRef.current, playSessionIdRef.current);
-      const id = itemIdRef.current;
-      if (!id || !startedRef.current) return;
+      const state = stateFromRefs(stateRefs);
+      clearActivePlayback(provider);
+      if (!state || !startedRef.current) return;
       startedRef.current = false;
-      lastStopPromiseRef.current = sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
-        ItemId: id,
-        MediaSourceId: msIdRef.current ?? id,
-        PlaySessionId: playSessionIdRef.current ?? undefined,
-        PositionTicks: safePositionTicks(positionRef.current),
-      }, "stopOnUnmount");
+      lastStopPromiseRef.current = reportStopped(clientRef.current, state, "stopOnUnmount");
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -255,18 +282,14 @@ export function usePlaybackReporting({
     // façon. Le `/Sessions/Playing/Stopped`, lui, reste gardé — rapporter
     // l'arrêt d'une lecture jamais commencée serait faux.
     killActiveEncoding(clientRef.current, playSessionIdRef.current);
-    const id = itemIdRef.current;
-    if (!id || !startedRef.current) return Promise.resolve();
+    const state = stateFromRefs(stateRefs);
+    clearActivePlayback(activeProviderRef.current);
+    if (!state || !startedRef.current) return Promise.resolve();
     startedRef.current = false;
-    const stopped = sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
-      ItemId: id,
-      MediaSourceId: msIdRef.current ?? id,
-      PlaySessionId: playSessionIdRef.current ?? undefined,
-      PositionTicks: safePositionTicks(positionRef.current),
-    }, "reportStop");
+    const stopped = reportStopped(clientRef.current, state, "reportStop");
     lastStopPromiseRef.current = stopped;
     return stopped;
-  }, []);
+  }, [stateRefs, clearProgressInterval]);
 
   /** Kill the active transcode — exposed for seek in transcoded mode. */
   const killTranscode = useCallback((sessionId?: string): Promise<void> => {

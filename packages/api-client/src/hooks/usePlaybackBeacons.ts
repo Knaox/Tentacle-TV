@@ -9,11 +9,17 @@
  * `beforeunload` / `pagehide` envoient un `/Sessions/Playing/Stopped` par
  * beacon — par le relais natif sur la coquille, où le beacon ne passe pas :
  * c'est LE filet qui sauve la position quand on ferme en pleine lecture.
+ *
+ * Quand le backend porte la télémétrie (canal de session), rien de tout ça
+ * n'est nécessaire : le socket marche en arrière-plan, et l'arrêt part en
+ * message — le backend l'annonce de lui-même si le socket tombe avant.
  */
 
 import { useEffect, type MutableRefObject } from "react";
 import type { JellyfinClient } from "../jellyfin";
 import { beaconUrl, killActiveEncoding, safePositionTicks, sessionPost } from "./playbackTransport";
+import { channelStop, isChannelReporting } from "../socket/sessionChannel";
+import { channelEdge, stateFromRefs } from "./playbackChannelReport";
 
 export interface PlaybackBeaconRefs {
   client: MutableRefObject<JellyfinClient>;
@@ -57,6 +63,8 @@ export function usePlaybackBeacons({
 
     const sendProgressBeacon = () => {
       if (!refs.itemId.current || !refs.started.current) return;
+      // Le canal ouvert pendant que l'onglet dormait : il prend le relais.
+      if (channelEdge(refs, "tick")) return;
       post("/Sessions/Playing/Progress", {
         ItemId: refs.itemId.current,
         MediaSourceId: refs.mediaSourceId.current ?? refs.itemId.current,
@@ -89,6 +97,14 @@ export function usePlaybackBeacons({
       refs.started.current = false;
       const client = refs.client.current;
       killActiveEncoding(client, refs.playSessionId.current, true);
+      // Par le canal : un message sur le socket, qui part avant la page. S'il
+      // se perdait, le backend verrait le socket se fermer et arrêterait la
+      // lecture de lui-même (à la dernière position reçue).
+      const state = stateFromRefs(refs);
+      if (state && isChannelReporting()) {
+        void channelStop(state);
+        return;
+      }
       // Envoyé même en mode « bords » : c'est un message de fin, pas un
       // battement — et c'est ce qui sauve la position à la fermeture.
       const stopped = {
@@ -110,6 +126,10 @@ export function usePlaybackBeacons({
     const onVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         if (!refs.itemId.current || !refs.started.current) return;
+        // Par le canal, le socket marche aussi en arrière-plan : le battement
+        // normal continue, rien à basculer. (Le retour au premier plan, lui,
+        // restaure toujours — il remet d'aplomb un basculement d'avant.)
+        if (isChannelReporting()) return;
         // Onglet → arrière-plan : on tue l'intervalle fetch (qui serait gelé)
         // et on bascule sur le beacon.
         if (refs.interval.current) {
