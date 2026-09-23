@@ -27,6 +27,13 @@ describe("readSearchMeta — le champ search d'un manifeste de plugin", () => {
     expect(readSearchMeta({ search: { path: "/s", types: ["music"] } })).toEqual({ path: "/s" });
   });
 
+  it("relaie la route de filmographie, et l'ignore seule si elle est mal formée", () => {
+    expect(readSearchMeta({ search: { path: "/s", person: "/search/person" } })).toEqual({ path: "/s", person: "/search/person" });
+    for (const person of ["//evil.example/x", "/../admin", "https://x.y/z", 3, ""]) {
+      expect(readSearchMeta({ search: { path: "/s", person } }), String(person)).toEqual({ path: "/s" });
+    }
+  });
+
   it("ne garde que les libellés qui sont des chaînes non vides", () => {
     expect(readSearchMeta({ search: { path: "/s", labels: { fr: " Ailleurs ", en: 3, de: "" } } })).toEqual({
       path: "/s",
