@@ -61,6 +61,8 @@ export interface WtEventHelpers {
    * n'a pas à les apprendre pour cela.
    */
   onInviteArrived?: (invite: WtInviteDto) => void;
+  /** L'invitation envoyée à `toUserId` a reçu sa réponse : elle n'attend plus. */
+  onInviteResult?: (toUserId: string, accepted: boolean) => void;
 }
 
 /** Anti-rafale : un seek se coalesce désormais côté serveur, mais chaque
@@ -177,6 +179,7 @@ export function handleWtServerMessage(msg: WsServerMessage, h: WtEventHelpers): 
         : h.t("invitedBy", { name: msg.invite.fromUsername }));
       break;
     case "wt:inviteResult":
+      h.onInviteResult?.(msg.toUserId, msg.accepted);
       h.toast(msg.accepted ? "success" : "info", h.t(
         msg.accepted ? "inviteAccepted" : "inviteDeclined",
         { name: msg.toUsername },

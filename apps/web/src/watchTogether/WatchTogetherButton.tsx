@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import { WatchTogetherPanel } from "./WatchTogetherPanel";
-import { InviteUsersModal } from "./InviteUsersModal";
 
 interface WatchTogetherButtonProps {
   dropdownPosition?: "below" | "right";
@@ -19,10 +18,9 @@ interface WatchTogetherButtonProps {
 export function WatchTogetherButton({ dropdownPosition = "below" }: WatchTogetherButtonProps) {
   const { invites, isInGroup } = useWatchTogether();
   const [open, setOpen] = useState(false);
-  const [inviteOpen, setInviteOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on click outside (la modale d'invitation vit hors du dropdown).
+  // Close on click outside (la modale de salle vit hors du dropdown).
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -73,14 +71,9 @@ export function WatchTogetherButton({ dropdownPosition = "below" }: WatchTogethe
             boxShadow: "var(--shadow-dropdown)",
           }}
         >
-          <WatchTogetherPanel
-            onOpenInvite={() => { setInviteOpen(true); setOpen(false); }}
-            onClose={() => setOpen(false)}
-          />
+          <WatchTogetherPanel onClose={() => setOpen(false)} />
         </div>
       )}
-
-      {inviteOpen && <InviteUsersModal onClose={() => setInviteOpen(false)} />}
     </div>
   );
 }

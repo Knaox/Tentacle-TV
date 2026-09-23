@@ -10,12 +10,14 @@ import {
   createGroup as apiCreateGroup, kickGroupMember, leaveGroup as apiLeaveGroup,
   setGroupPlaybackSettings,
 } from "@tentacle-tv/api-client";
-import type { WsClientMessage, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/shared";
+import type { WsClientMessage, WtInvitableUserDto, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { useToast } from "../contexts/ToastContext";
 import { handleWtServerMessage, wtReducer, type WtEventHelpers } from "./wtEvents";
 import { GroupPlaybackPill } from "./GroupPlaybackPill";
 import { InviteInboxModal } from "./InviteInboxModal";
 import { ChatRoot } from "./chat/ChatRoot";
+import { WatchTogetherRoomModal } from "./room/WatchTogetherRoomModal";
+import { usePendingInvites, type WtPendingInvite } from "./usePendingInvites";
 
 /** Watch Together — état global du groupe (app-level, sous le Router). */
 
@@ -25,13 +27,16 @@ export interface WatchTogetherContextValue {
   selfId: string | null;
   isInGroup: boolean;
   isHost: boolean;
+  /** Invitations envoyées par l'hôte, sans réponse encore. */
+  pendingInvites: WtPendingInvite[];
   /** Envoie un message wt:* sur le socket partagé (false si déconnecté). */
   send: (msg: WsClientMessage) => boolean;
   /** Horloge serveur estimée : Date.now() + offset (0 si non mesuré). */
   serverNow: () => number;
   actions: {
     create: (itemId?: string) => Promise<WtRoomStateDto>;
-    invite: (userIds: string[]) => Promise<number>;
+    /** Invite ces personnes ; rend le nombre d'invitations parties. */
+    invite: (users: WtInvitableUserDto[]) => Promise<number>;
     respond: (inviteId: string, accept: boolean) => Promise<void>;
     leave: () => Promise<void>;
     kick: (userId: string) => Promise<void>;
@@ -54,6 +59,8 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   const [state, dispatch] = useReducer(wtReducer, { room: null, invites: [] });
+  const pendingInvites = usePendingInvites(state.room);
+  const { add: addPending, resolve: resolvePending } = pendingInvites;
   /**
    * La boîte aux invitations, ouverte d'office à l'ACCUEIL.
    *
@@ -85,6 +92,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     isOnWatchPage: (itemId) => locationRef.current === `/watch/${itemId}`,
     isWatching: () => locationRef.current.startsWith("/watch/"),
     onInviteArrived: () => { if (locationRef.current === "/") setInboxOpen(true); },
+    onInviteResult: (toUserId) => resolvePending(toUserId),
   };
 
   // Connexion + abonnements + resynchronisation d'état.
@@ -141,8 +149,11 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "set_room", room });
       return room;
     },
-    async invite(userIds) {
-      const { invited } = await sendGroupInvites(userIds);
+    async invite(users) {
+      const { invited } = await sendGroupInvites(users.map((u) => u.id));
+      addPending(users
+        .filter((u) => invited.includes(u.id))
+        .map((u) => ({ userId: u.id, username: u.name, hasAvatar: u.hasAvatar })));
       return invited.length;
     },
     async respond(inviteId, accept) {
@@ -163,7 +174,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     async kick(userId) {
       await kickGroupMember(userId);
     },
-  }), [navigate]);
+  }), [navigate, addPending]);
 
   // Les réglages de lecture de l'HÔTE gouvernent la séance : posés tant qu'on
   // est dans un groupe sans en être l'hôte, retirés à la sortie. Le magasin
@@ -181,15 +192,17 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     selfId,
     isInGroup: !!state.room,
     isHost: selfIsHost,
+    pendingInvites: pendingInvites.pending,
     send,
     serverNow,
     actions,
-  }), [state.room, state.invites, selfId, selfIsHost, send, serverNow, actions]);
+  }), [state.room, state.invites, selfId, selfIsHost, pendingInvites.pending, send, serverNow, actions]);
 
   return (
     <Ctx.Provider value={value}>
       {children}
       {inboxOpen && <InviteInboxModal onClose={() => setInboxOpen(false)} />}
+      <WatchTogetherRoomModal />
       <GroupPlaybackPill />
       {state.room && <ChatRoot />}
     </Ctx.Provider>

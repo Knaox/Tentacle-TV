@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -18,7 +17,7 @@ import { TrailerButton } from "./TrailerButton";
 import { DetailDownloadAction } from "../../downloads/DetailDownloadAction";
 import { DetailRating } from "../rating/DetailRating";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
-import { InviteUsersModal } from "../../watchTogether/InviteUsersModal";
+import { openRoomModal } from "../../watchTogether/roomModalStore";
 import { useToast } from "../../contexts/ToastContext";
 
 interface DetailActionsProps {
@@ -37,7 +36,6 @@ export function DetailActions({ item }: DetailActionsProps) {
   const navigate = useNavigate();
   const { show } = useToast();
   const { isInGroup, isHost, actions: wtActions } = useWatchTogether();
-  const [wtInviteOpen, setWtInviteOpen] = useState(false);
   const isSeries = item.Type === "Series";
   const isEpisode = item.Type === "Episode";
   const { data: watchState } = useSeriesWatchState(isSeries ? item.Id : undefined);
@@ -126,17 +124,18 @@ export function DetailActions({ item }: DetailActionsProps) {
           le composant s'efface totalement sinon (invisibilité stricte). */}
       <DetailDownloadAction item={item} />
 
-      {/* Watch Together : crée le groupe (média en contexte) puis invite ;
-          en groupe, l'hôte peut inviter d'ici. Lancer la lecture = bouton
-          Lire normal (le moteur de sync propage le média au groupe). */}
+      {/* Watch Together : crée la salle, ce média au programme, et l'ouvre —
+          on invite ensuite, d'un geste, qui l'on veut. En salle, l'hôte
+          invite d'ici. Lancer la lecture = bouton Lire normal (le moteur de
+          sync propage le média au groupe). */}
       {item.Type !== "BoxSet" && (!isInGroup || isHost) && (
         <CircleAction
           active={isInGroup}
           onClick={async () => {
-            if (isInGroup) { setWtInviteOpen(true); return; }
+            if (isInGroup) { openRoomModal("invite"); return; }
             try {
               await wtActions.create(item.Id);
-              setWtInviteOpen(true);
+              openRoomModal("room", { fresh: true });
             } catch {
               show("error", tWt("alreadyInGroup"));
             }
@@ -168,7 +167,6 @@ export function DetailActions({ item }: DetailActionsProps) {
         </span>
       )}
 
-      {wtInviteOpen && <InviteUsersModal onClose={() => setWtInviteOpen(false)} />}
     </motion.div>
   );
 }
