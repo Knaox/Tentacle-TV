@@ -7,9 +7,19 @@
  * rangée fantôme mesure (`usePriorityOverflow`). Il est rendu en gras, la
  * largeur de l'onglet actif : un onglet ne doit jamais déborder en devenant
  * courant.
+ *
+ * Un clic droit (ou la touche Menu) ouvre le menu de la barre (`onMenu`) :
+ * retirer l'onglet, personnaliser la barre.
  */
 
-import { memo, type ReactNode } from "react";
+/** Où ouvrir un menu contextuel : au pointeur, ou — ouvert au clavier — sous l'élément. */
+export function menuAnchor(event: MouseEvent<HTMLElement>): { x: number; y: number } {
+  if (event.clientX !== 0 || event.clientY !== 0) return { x: event.clientX, y: event.clientY };
+  const box = event.currentTarget.getBoundingClientRect();
+  return { x: box.left, y: box.bottom + 6 };
+}
+
+import { memo, type MouseEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { springSoft } from "../../theme/motion";
@@ -48,7 +58,9 @@ export function tabTone(active: boolean): string {
     : "font-medium text-content-tertiary hover:bg-fill-subtle hover:text-content-primary";
 }
 
-export const NavTab = memo(function NavTab({ label, path, icon, active, reduced, onIntent }: {
+export const NavTab = memo(function NavTab({ id, label, path, icon, active, reduced, onIntent, onMenu }: {
+  /** La clé de la destination — ce que le menu retire. */
+  id?: string;
   label: string;
   path: string;
   icon: NavIcon;
@@ -56,6 +68,7 @@ export const NavTab = memo(function NavTab({ label, path, icon, active, reduced,
   reduced: boolean;
   /** Survol ou focus : l'intention d'y aller (préchargement). */
   onIntent?: () => void;
+  onMenu?: (anchor: { x: number; y: number }, key: string, label: string) => void;
 }) {
   return (
     <Link
@@ -63,6 +76,10 @@ export const NavTab = memo(function NavTab({ label, path, icon, active, reduced,
       aria-current={active ? "page" : undefined}
       onMouseEnter={onIntent}
       onFocus={onIntent}
+      onContextMenu={onMenu && id !== undefined ? (event) => {
+        event.preventDefault();
+        onMenu(menuAnchor(event), id, label);
+      } : undefined}
       className={`${TAB_CLASS} ${tabTone(active)}`}
     >
       {active && <ActiveIndicator reduced={reduced} />}
