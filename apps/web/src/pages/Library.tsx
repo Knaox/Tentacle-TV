@@ -43,7 +43,7 @@ export function Library() {
 
       {/* Chevauchement du bas de bannière, comme les rangées de l'accueil. */}
       <div className="relative z-10 -mt-10 md:-mt-14">
-        <LibraryGrid libraryId={libraryId} libraryName={library?.Name ?? ""} />
+        <LibraryGrid libraryId={libraryId} libraryName={library?.Name ?? ""} collectionType={library?.CollectionType} />
       </div>
     </PageTransition>
   );

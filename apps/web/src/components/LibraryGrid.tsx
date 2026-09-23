@@ -9,12 +9,15 @@ import { useLibraryFilters, yearsBetween } from "../hooks/useLibraryFilters";
 import { LibrarySearchField } from "./library/LibrarySearchField";
 import { LibraryGridCard } from "./LibraryGridCard";
 import { LibraryGridEmpty } from "./library/LibraryGridEmpty";
+import { LibraryExternalResults } from "./library/LibraryExternalResults";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 import { useSearchInput } from "../hooks/useSearchInput";
 
 interface LibraryGridProps {
   libraryId: string;
   libraryName: string;
+  /** `movies`, `tvshows`… — ce que la recherche hors bibliothèque doit chercher. */
+  collectionType?: string;
 }
 
 const POSTER_ASPECT = 2 / 3;
@@ -42,7 +45,7 @@ const POSTER_ASPECT = 2 / 3;
 const TEXT_HEIGHT = 52;
 const GAP = 16;
 
-export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
+export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryGridProps) {
   const { t } = useTranslation("common");
   const {
     filters, search, setSearch, queryKey,
@@ -288,6 +291,9 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
           </div>
         )}
       </div>
+
+      {/* Ce que la bibliothèque n'a pas — seulement quand on cherche. */}
+      <LibraryExternalResults search={search} collectionType={collectionType} items={items} show={!isLoading && !hasNextPage} />
     </div>
   );
 }
