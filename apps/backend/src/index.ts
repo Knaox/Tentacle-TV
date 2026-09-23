@@ -49,10 +49,12 @@ import { likeRoutes } from "./routes/likes";
 import { watchlistRoutes } from "./routes/watchlist";
 import { recoRoutes } from "./routes/reco";
 import { recoPeopleRoutes } from "./routes/recoPeople";
+import { searchRoutes } from "./routes/search";
 import { recoPageRoutes } from "./routes/recoPage";
 import { recoRowRoutes } from "./routes/recoRows";
 import { externalAccountRoutes } from "./routes/externalAccounts";
 import { startRecoJobs, stopRecoJobs } from "./services/reco/jobs";
+import { startSearchJobs, stopSearchJobs } from "./services/search/jobs";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
@@ -259,6 +261,7 @@ async function main() {
   await app.register(recoRowRoutes, { prefix: "/api/reco" });
   await app.register(recoPeopleRoutes, { prefix: "/api/reco" });
   await app.register(recoPageRoutes, { prefix: "/api/reco" });
+  await app.register(searchRoutes, { prefix: "/api/search" });
   await app.register(externalAccountRoutes, { prefix: "/api/external" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
@@ -332,6 +335,8 @@ async function main() {
     startFingerprintPurge();
     startWatchTime();
     startRecoJobs();
+    // Le moteur de recherche : son index se construit peu après le démarrage.
+    startSearchJobs();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }
@@ -342,6 +347,7 @@ async function main() {
   // lieu d'attendre l'expiration.
   app.addHook("onClose", async () => {
     stopRecoJobs();
+    stopSearchJobs();
     await stopWatchTime();
   });
   for (const signal of ["SIGTERM", "SIGINT"] as const) {
