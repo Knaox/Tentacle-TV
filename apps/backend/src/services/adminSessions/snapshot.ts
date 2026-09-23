@@ -28,10 +28,12 @@ export interface SnapshotInput {
 }
 
 function overlayTentacle(session: AdminSessionDto, connections: readonly ConnectionView[], now: number): void {
-  const connection = connections.find((c) => c.userId === session.userId && c.deviceId === session.deviceId);
-  if (!connection) return;
+  const mine = connections.filter((c) => c.userId === session.userId && c.deviceId === session.deviceId);
+  if (mine.length === 0) return;
   session.viaTentacle = true;
-  const playback = connection.playback;
+  // Deux onglets d'un même navigateur partagent l'appareil : la position vient
+  // de celui qui LIT ce média, pas du premier venu.
+  const playback = mine.find((c) => c.playback?.itemId === session.nowPlaying?.itemId)?.playback ?? null;
   if (playback && session.nowPlaying && playback.itemId === session.nowPlaying.itemId) {
     session.positionTicks = playback.positionTicks;
     session.positionAt = now;
