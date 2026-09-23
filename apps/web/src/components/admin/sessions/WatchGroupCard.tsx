@@ -14,6 +14,7 @@ import { DeliveryChip } from "./DeliveryChip";
 import { deliveryOf } from "./delivery";
 import { formatClock, joinParts, livePositionTicks } from "./format";
 import { Poster } from "./Poster";
+import { SessionAppLabel } from "./SessionAppLabel";
 
 /**
  * Une salle Watch Together : ce qu'elle regarde, où elle en est, chacun de
@@ -98,11 +99,8 @@ export const WatchGroupCard = memo(function WatchGroupCard({
                   {member.isHost && <Crown size={12} aria-label={t("host")} className="shrink-0 text-brand" />}
                 </p>
                 <p className="truncate text-xs text-content-tertiary">
-                  {joinParts([
-                    status,
-                    !session && member.inPlayback ? t("noSession") : null,
-                    session ? joinParts([session.client, session.deviceName]) : null,
-                  ])}
+                  {joinParts([status, !session && member.inPlayback ? t("noSession") : null])}
+                  {session && <>{" · "}<SessionAppLabel session={session} /></>}
                 </p>
               </div>
               {session?.nowPlaying && <DeliveryChip kind={deliveryOf(session)} size="sm" />}
