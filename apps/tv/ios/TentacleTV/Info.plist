@@ -22,6 +22,15 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- L'ancienne architecture, comme Android (`newArchEnabled=false` dans
+	     android/gradle.properties) et comme le Podfile qui bâtit les pods tiers.
+	     SANS cette clé, RCTIsNewArchEnabled() renvoie YES (clé absente = activée,
+	     cf. RCTUtils.mm) : le runtime passait en bridgeless pendant que
+	     Reanimated, svg et screens restaient en paper. Les vues legacy passent
+	     alors par la couche d'interop, où les styles animés ne s'appliquent plus
+	     — le focus se déplaçait, son anneau ne se peignait jamais. -->
+	<key>RCTNewArchEnabled</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
