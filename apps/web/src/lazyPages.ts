@@ -18,6 +18,7 @@ export const SharedItemDetail = lazy(() => import("./pages/SharedItemDetail").th
 export const Watch = lazy(() => import("./pages/Watch").then((m) => ({ default: m.Watch })));
 export const MediaDetail = lazy(() => import("./pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
 export const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
+export const Search = lazy(() => import("./pages/Search").then((m) => ({ default: m.Search })));
 
 export const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.Support })));
 export const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));

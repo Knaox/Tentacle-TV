@@ -54,3 +54,15 @@ export function clearRecentSearches(): string[] {
   }
   return [];
 }
+
+/** Retire UNE requête de l'historique — la croix d'une ligne de l'omnibox. */
+export function removeRecentSearch(query: string): string[] {
+  const key = query.trim().toLocaleLowerCase();
+  const next = readRecentSearches().filter((v) => v.toLocaleLowerCase() !== key);
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {
+    /* idem */
+  }
+  return next;
+}

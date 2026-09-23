@@ -18,6 +18,7 @@
 @import "./theme/rendering.css";
 @import "./theme/reveal.css";
 @import "./theme/chrome.css";
+@import "./theme/search.css";
 @import "./theme/motion-reduce.css";
 
 @tailwind base;

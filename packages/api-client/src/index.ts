@@ -4,6 +4,15 @@ export { JellyfinClientContext, useJellyfinClient } from "./hooks/useJellyfinCli
 export { useLibraries, useLibraryItems, useSeasons, useEpisodes, useSeriesEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useGenres, useStudios } from "./hooks/useLibrary";
 export { useRandomLibraryBackdrop, getLibraryBackdropKey, prefetchLibraryBackdrop } from "./hooks/useLibraryBackdrop";
 export { useSearchItems } from "./hooks/useSearchItems";
+// Le moteur de recherche du serveur Tentacle (web et bureau).
+export {
+  useTentacleSearch,
+  useSearchEpisodes,
+  useSearchBrowse,
+  useSearchDiscover,
+  type SearchBrowseTarget,
+  type TentacleSearchOptions,
+} from "./hooks/useTentacleSearch";
 export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog } from "./hooks/useLibraryCatalog";
 export type { CatalogFilters } from "./hooks/useLibraryCatalog";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useScrollScrim } from "./useScrollScrim";
-import { GlobalSearch } from "../GlobalSearch";
+import { SearchLauncher } from "../search/SearchLauncher";
 import { NotificationBell } from "../NotificationBell";
 import { TentacleLogo } from "../ui/TentacleLogo";
 import { countLogoClick } from "../easterEggs/logoEggStore";
@@ -62,7 +62,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
           </Link>
 
           <div className="flex flex-shrink-0 items-center gap-2">
-            {showSearch && <GlobalSearch />}
+            {showSearch && <SearchLauncher variant="icon" />}
             {!offline && <WatchTogetherButton />}
             <NotificationBell />
             <button
