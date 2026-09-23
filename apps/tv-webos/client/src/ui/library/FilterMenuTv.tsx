@@ -107,13 +107,18 @@ function equipPanel(frame: HTMLElement, served: { current: HTMLElement | null })
  * document, et désignait le champ de recherche.
  */
 function markEntry(panel: HTMLElement): void {
-  // Le curseur de la note en dernier recours : sans cases à cocher, la cascade
-  // tombait sur le premier focusable du panneau — la croix de l'en-tête depuis
-  // qu'il en a une —, et l'on n'entrait plus dans le seul contrôle du menu.
+  // Le curseur de la note, puis le premier champ, en derniers recours : sans
+  // cases à cocher, la cascade tombait sur le premier focusable du panneau — la
+  // croix de l'en-tête depuis qu'il en a une —, et l'on n'entrait plus dans le
+  // seul contrôle du menu. Pour les années, pire : la croix prenait le focus à
+  // l'ouverture, un OK refermait le menu, et « bas » menait au second champ.
+  // Le premier champ fait surgir le clavier : `enterThePanel` ne l'occupe pas
+  // à l'ouverture, mais c'est par lui qu'on entre en descendant.
   const target =
     panel.querySelector<HTMLElement>('[aria-checked="true"]') ??
     panel.querySelector<HTMLElement>('[role="menuitemcheckbox"]') ??
-    panel.querySelector<HTMLElement>('input[type="range"]');
+    panel.querySelector<HTMLElement>('input[type="range"]') ??
+    panel.querySelector<HTMLElement>("input");
   const current2 = panel.querySelector<HTMLElement>(`[${ENTRY_ATTRIBUTE}]`);
   if (current2 === target) return;
 
