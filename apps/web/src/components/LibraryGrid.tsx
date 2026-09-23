@@ -5,11 +5,12 @@ import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useGenres, useLibraryCatalog } from "@tentacle-tv/api-client";
 import { useItemsPerRow } from "../hooks/useItemsPerRow";
 import { LibraryFilterBar } from "./LibraryFilters";
-import { useLibraryFilters } from "../hooks/useLibraryFilters";
+import { useLibraryFilters, yearsBetween } from "../hooks/useLibraryFilters";
 import { LibrarySearchField } from "./library/LibrarySearchField";
 import { LibraryGridCard } from "./LibraryGridCard";
 import { LibraryGridEmpty } from "./library/LibraryGridEmpty";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
+import { useSearchInput } from "../hooks/useSearchInput";
 
 interface LibraryGridProps {
   libraryId: string;
@@ -50,33 +51,15 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
     resetFilters, clearYears, clearRating, activeCount, hasActiveFilters,
   } = useLibraryFilters();
 
-  // La frappe reste locale — l'adresse ne prend que la valeur stabilisée, sans
-  // quoi chaque lettre écrirait dans l'historique. Le champ part de ce que
-  // porte l'adresse : revenir d'une fiche retrouve la recherche en cours.
-  const [input, setInput] = useState(search);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const value = input.trim();
-      if (value !== search) setSearch(value);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [input, search, setSearch]);
+  // La frappe reste locale, l'adresse ne prend que la valeur stabilisée.
+  const { input, setInput } = useSearchInput(search, setSearch);
 
   // Les genres proposés par les menus. UN seul abonnement : ils étaient
   // demandés deux fois — par le menu et par les pastilles — sur la même clé de
   // cache, donc sans requête en double, mais avec deux composants re-rendus.
   const { data: genres } = useGenres(libraryId);
 
-  // Construire les années pour le hook
-  const yearsParam = useMemo(() => {
-    if (!filters.yearFrom && !filters.yearTo) return undefined;
-    const from = filters.yearFrom ?? 1900;
-    const to = filters.yearTo ?? new Date().getFullYear();
-    const arr: string[] = [];
-    for (let y = from; y <= to; y++) arr.push(String(y));
-    return arr;
-  }, [filters.yearFrom, filters.yearTo]);
+  const yearsParam = useMemo(() => yearsBetween(filters.yearFrom, filters.yearTo), [filters.yearFrom, filters.yearTo]);
 
   const {
     data,
