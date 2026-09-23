@@ -23,6 +23,8 @@ export interface WhatsNewFeature {
   Scene: ComponentType<SceneProps>;
   /** Lien profond « Voir dans l'app » : un chemin absolu de l'app. */
   route?: string;
+  /** Réservée à un public : `admin` n'est montrée qu'aux administrateurs (cf. `forAudience`). */
+  audience?: "admin";
 }
 
 export interface WhatsNewRelease {

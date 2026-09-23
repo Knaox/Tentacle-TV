@@ -51,6 +51,9 @@ apps/web/src/components/StartupOverlays.tsx           l'orchestration avec la po
    `new` / `improved` / `fixed`. `route` : un chemin ABSOLU de l'app (`/recommendations`,
    `/settings/personalization`…) — jamais une route admin. Six à huit nouveautés qui se
    MONTRENT ; le plafond de l'écran est de douze, toutes releases confondues.
+   `audience: "admin"` réserve une nouveauté aux administrateurs (`forAudience`, appliqué
+   par la porte et par « À propos ») : elle parlerait aux autres d'un écran qu'ils n'ont
+   pas. Toujours sans `route` — le lien profond reste interdit, même pour eux.
 4. **Les textes** dans `locales/{fr,en}/whatsNew.ts` : `vX_Y_Z_<id>_title` (40 caractères
    max) et `vX_Y_Z_<id>_body` (une à deux phrases), écrits pour l'écran, pas copiés du
    changelog. Clés plates, sans point. `titleKey`/`bodyKey` portent la clé NUE, l'écran préfixe.
