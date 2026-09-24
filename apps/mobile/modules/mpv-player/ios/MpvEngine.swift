@@ -48,8 +48,13 @@ final class MpvEngine: NSObject {
 
   /// Ouverture automatique de l'image dans l'image en quittant l'app.
   var pipAutoStart = true {
-    didSet { pipController.setAutoStartEnabled(pipAutoStart) }
+    didSet { if !isShutDown { pipController.setAutoStartEnabled(pipAutoStart) } }
   }
+
+  /// Les moteurs qui tiennent la session audio (thread principal) — voir
+  /// `releaseAudioSession`.
+  static var audioSessionHolders = Set<ObjectIdentifier>()
+  static let deactivationRetries = 3
 
   override init() {
     displayLayer.videoGravity = .resizeAspect
@@ -73,6 +78,7 @@ final class MpvEngine: NSObject {
   /// Charge une source ; la même URL sous le même jeton n'est pas rechargée
   /// (les écrans re-rendent souvent avec une prop identique).
   func load(_ config: MpvLoadConfig) {
+    guard !isShutDown else { return }
     if let current = currentConfig, current.isSameMedia(as: config) { return }
     currentConfig = config
     cachedPosition = config.startPosition ?? 0
@@ -88,6 +94,9 @@ final class MpvEngine: NSObject {
   }
 
   func play() {
+    // Démonté : une prop `paused` qui arrive après `release` ne doit rien
+    // rallumer — ni session audio, ni commandes de l'écran verrouillé.
+    guard !isShutDown else { return }
     intendedPlayState = true
     pausedByInterruption = false
     configureAudioSession()
@@ -135,33 +144,55 @@ final class MpvEngine: NSObject {
     }
   }
 
-  /// Démontage complet, idempotent : PiP → rendu → couche → Now Playing →
-  /// session audio. Le rendu détruit mpv sur une file d'arrière-plan.
+  /// Démontage complet, idempotent : image dans l'image (désarmée PUIS
+  /// fermée) → couche → écran verrouillé → rendu → session audio.
+  ///
+  /// Appelé par JS au moment de quitter le lecteur (`release`), et en filet
+  /// quand la vue quitte l'arbre ou meurt. Tant qu'il n'avait lieu qu'au
+  /// `deinit`, un moteur qui survivait à son écran gardait tout : le PiP
+  /// automatique armé (il s'ouvrait en passant sur une notification), les
+  /// commandes de l'écran verrouillé, la session audio active — iOS croyait
+  /// l'app encore en lecture. La session n'est rendue qu'une fois mpv détruit :
+  /// avant, sa sortie audio tournait encore et iOS refusait la désactivation
+  /// (échec que le `try?` d'alors avalait).
   func shutdown() {
     guard !isShutDown else { return }
     isShutDown = true
+    intendedPlayState = false
+    MpvLogger.shared.log("moteur démonté", type: "Info")
+    pipController.setAutoStartEnabled(false)
     pipController.stopPictureInPicture()
-    renderer.stop()
     displayLayer.removeFromSuperlayer()
-    nowPlaying.cleanupRemoteCommands()
-    nowPlaying.clear()
-    tearDownAudioSession()
+    nowPlaying.cleanupRemoteCommands(for: self)
+    nowPlaying.clear(for: self)
     NotificationCenter.default.removeObserver(self)
+    // La complétion ne capture pas `self` : `shutdown` tourne aussi depuis `deinit`.
+    let holder = ObjectIdentifier(self)
+    renderer.stop { MpvEngine.releaseAudioSession(holder: holder) }
   }
 
   deinit {
     shutdown()
   }
 
+  /// L'image dans l'image automatique ne vaut que pour une vue À L'ÉCRAN : une
+  /// vue sortie de la fenêtre (écran quitté, en cours de démontage) la désarme.
+  func setOnScreen(_ onScreen: Bool) {
+    guard !isShutDown, !pipEngaged else { return }
+    pipController.setAutoStartEnabled(onScreen && pipAutoStart && currentConfig != nil)
+  }
+
   // MARK: - Now Playing
 
   func syncNowPlaying(isPlaying: Bool) {
-    nowPlaying.updatePlayback(position: cachedPosition, duration: cachedDuration, isPlaying: isPlaying)
+    guard !isShutDown else { return }
+    nowPlaying.updatePlayback(for: self, position: cachedPosition, duration: cachedDuration, isPlaying: isPlaying)
   }
 
   func setNowPlayingMetadata(_ metadata: [String: Any]?) {
-    guard let metadata else { return }
+    guard let metadata, !isShutDown else { return }
     nowPlaying.setMetadata(
+      for: self,
       title: metadata["title"] as? String,
       artist: metadata["artist"] as? String,
       artworkUrl: metadata["artworkUrl"] as? String,

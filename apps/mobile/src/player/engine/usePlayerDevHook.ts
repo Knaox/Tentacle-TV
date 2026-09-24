@@ -17,6 +17,8 @@ export interface PlayerDevHook {
   changeQuality: (key: string) => void;
   /** Lecteur avancé : décodeur, images perdues, journal natif. */
   technicalInfo: () => Promise<Record<string, unknown>>;
+  /** Quitter le lecteur, par le même chemin que le bouton Retour. */
+  leave: () => void;
 }
 
 type DevGlobal = typeof globalThis & { __tentaclePlayer?: PlayerDevHook };

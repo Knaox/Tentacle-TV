@@ -147,9 +147,16 @@ public class MpvPlayerModule: Module {
         view.isPictureInPictureActive()
       }
 
-      /// Détruit l'instance mpv (décodeur, cache) avant de quitter l'écran.
+      /// Détruit l'instance mpv (décodeur, cache) et en recrée une vide : la vue
+      /// reste utilisable pour une autre source.
       AsyncFunction("stop") { (view: MpvPlayerView) in
         view.stop()
+      }
+
+      /// Quitter le lecteur : mpv, image dans l'image, écran verrouillé et
+      /// session audio s'éteignent pour de bon. Appelé AVANT de fermer l'écran.
+      AsyncFunction("release") { (view: MpvPlayerView) in
+        view.release()
       }
     }
   }

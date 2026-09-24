@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { EngineLoadData, EngineProgressData, PlayerEngineHandle } from "@/player/engine/types";
+import { registerOpenPlayer } from "@/player/openPlayer";
 import { backOrHome } from "@/utils/backOrHome";
 import type { PlayerSessionCore } from "./usePlayerPlayback";
 
@@ -56,13 +57,23 @@ export function usePlayerHandlers({
   const queryClient = useQueryClient();
   const runStopInvalidation = useWatchStopInvalidation();
 
-  // Sortie du lecteur : la navigation, rien d'autre. Le rangement — arrêt de
-  // session, Ma liste, hubs de l'accueil — vit dans le cleanup de démontage, en
-  // bas de ce hook : le seul point que TOUTES les sorties traversent, bouton
-  // Retour matériel d'Android compris, qui dépile la route sans passer ici.
+  // Sortie du lecteur : le moteur s'éteint d'abord — mpv, image dans l'image,
+  // écran verrouillé, session audio —, pendant que sa vue existe encore, puis
+  // la navigation. Laissé au démontage, le moteur survivait parfois à l'écran :
+  // iOS le croyait toujours en lecture, et son image dans l'image s'ouvrait au
+  // passage sur une notification. Le rangement — arrêt de session, Ma liste,
+  // hubs de l'accueil — vit dans le cleanup de démontage, en bas de ce hook :
+  // le seul point que TOUTES les sorties traversent, bouton Retour matériel
+  // d'Android compris, qui dépile la route sans passer ici.
+  const releaseEngine = useCallback(() => {
+    engineRef.current?.release();
+  }, [engineRef]);
   const leavePlayer = useCallback(() => {
+    releaseEngine();
     backOrHome(router);
-  }, [router]);
+  }, [releaseEngine, router]);
+  // Une notification tapée en pleine lecture quitte le lecteur par ici.
+  useEffect(() => registerOpenPlayer(releaseEngine), [releaseEngine]);
 
   const handleLoad = useCallback((_data: EngineLoadData) => {
     setIsBuffering(false);
@@ -155,15 +166,17 @@ export function usePlayerHandlers({
     const next = pb.episodeNav.nextEpisode;
     if (!next) return;
     pb.reporting.reportStop();
+    releaseEngine();
     router.replace(`/watch/${next.Id}`);
-  }, [pb.episodeNav.nextEpisode, pb.reporting, router]);
+  }, [pb.episodeNav.nextEpisode, pb.reporting, releaseEngine, router]);
 
   const handlePrevEpisode = useCallback(() => {
     const prev = pb.episodeNav.previousEpisode;
     if (!prev) return;
     pb.reporting.reportStop();
+    releaseEngine();
     router.replace(`/watch/${prev.Id}`);
-  }, [pb.episodeNav.previousEpisode, pb.reporting, router]);
+  }, [pb.episodeNav.previousEpisode, pb.reporting, releaseEngine, router]);
 
   // Rangement de SORTIE, au démontage — la règle partagée avec le web et le
   // bureau (`useWatchStopInvalidation`) : Ma liste n'est évaluée qu'après un
