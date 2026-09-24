@@ -203,6 +203,22 @@ body {
  * sont montées à la demande par `useHoverMount`, et sur une dalle il n'y a
  * pas de survol — elles n'entrent jamais dans le document. */
 
+/* ── Aucun défilement lisse, nulle part ──────────────────────────────────
+ *
+ * Sur un téléviseur, c'est le moteur de focus qui fait défiler — une écriture
+ * de `scrollLeft` ou de `scrollTop` par appui, qu'il relit aussitôt pour
+ * savoir si le pas a pris. `HorizontalScrollRow` pose `scroll-behavior:
+ * smooth` en style EN LIGNE sur son conteneur (bonus d'une fiche, saisons,
+ * sélecteur d'épisodes du lecteur) : à partir de Chrome 61, chaque écriture y
+ * devenait une glissade de plusieurs centaines de millisecondes. Touche
+ * maintenue, chaque répétition relançait la sienne depuis une position à
+ * mi-course — le défilement s'enlisait, et la relecture voyait un pas « qui
+ * n'avait pas pris ». Le saut est net et immédiat, comme partout ailleurs sur
+ * la dalle ; `!important` est le seul outil qui atteigne un style en ligne. */
+* {
+  scroll-behavior: auto !important;
+}
+
 /* ── Aucun flou d'arrière-plan, nulle part ───────────────────────────────
  *
  * `glassPass` retire tous les `backdrop-filter` de la FEUILLE, et c'est le bon
