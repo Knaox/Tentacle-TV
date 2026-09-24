@@ -63,3 +63,11 @@ plan), `quit`.
 - Le rechargement à chaud de Metro laisse parfois des hooks désaccordés
   (« Rendered more hooks ») : relancer l'application à froid
   (`devicectl device process launch --terminate-existing`).
+- **Menu à la racine de l'accueil QUITTE l'application** (règle tvOS) : elle
+  passe en arrière-plan, tvOS la suspend deux secondes plus tard, et les appuis
+  suivants partent dans l'écran d'accueil d'Apple. Tout ressemble alors à un
+  gel — console CDP coupée, battement JS arrêté, `focus` sans réponse — jusqu'à
+  ce qu'un outil (Instruments) réveille le processus. Pour ouvrir le rail depuis
+  l'accueil : `left`. `focus` et `tree` répondent `background:<état>` au lieu
+  d'attendre en vain (l'échec d'une requête clôturait le test, et son
+  démontage tuait l'application).
