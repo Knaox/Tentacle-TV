@@ -136,7 +136,13 @@ export function TVLibraryGrid({
       contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingBottom: 80 }}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
-      drawDistance={800}
+      // Une rangée d'avance, pas huit cents points : au montage, l'écart
+      // valait deux rangées de plus (≈ 14 cartes et leurs styles animés) sur
+      // le fil JS d'un boîtier Android, avant même le premier appui.
+      drawDistance={estimatedItemSize}
+      // Une page qui arrive change la dernière carte : sans cela, l'ancienne
+      // gardait son `nextFocusRight` sur elle-même et bloquait la droite.
+      extraData={items.length}
       overrideItemLayout={(layout) => { layout.size = estimatedItemSize; }}
       ListFooterComponent={isFetchingNextPage ? <FooterLoader /> : null}
       overScrollMode="never"
@@ -172,12 +178,15 @@ const GridItem = memo(function GridItem({ item, index, columns, cellW, cardW, is
     if (index === 0) entryRef?.(node);
   }, [index, entryRef]);
 
+  const isLastInRow = index % columns === columns - 1 || isLastItem;
+
+  // Seule une fin de rangée a besoin de son handle (droite bouclée sur
+  // elle-même) : les autres cellules ne se re-rendaient que pour rien.
   useEffect(() => {
+    if (!isLastInRow) return;
     const handle = findNodeHandle(ref.current);
     if (handle) setNodeId(handle);
-  }, []);
-
-  const isLastInRow = index % columns === columns - 1 || isLastItem;
+  }, [isLastInRow]);
 
   return (
     <View style={{ width: cellW, marginBottom: ROW_GAP }}>
