@@ -1,8 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve } from "path";
+import { DATA_ROOT } from "./dataDir";
 
-const DATA_DIR = resolve(__dirname, "../../data");
+const DATA_DIR = DATA_ROOT;
 const DB_CONFIG_FILE = resolve(DATA_DIR, "database.json");
 const ENV_FILE = resolve(__dirname, "../../.env");
 

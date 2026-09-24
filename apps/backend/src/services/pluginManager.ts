@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs";
 import { resolve, sep } from "path";
+import { DATA_ROOT } from "./dataDir";
 
 // ── Types ──
 
@@ -82,7 +83,7 @@ export function assertPathUnderDataDir(resolvedPath: string): void {
 }
 
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
-export const DATA_DIR = resolve(__dirname, "../../data/plugins");
+export const DATA_DIR = resolve(DATA_ROOT, "plugins");
 const SOURCES_FILE = "sources.json";
 const INSTALLED_FILE = "installed.json";
 
