@@ -16,6 +16,7 @@ import { PlayerSettingsScreen } from "../screens/player/PlayerSettingsScreen";
 const MediaDetailScreen = React.lazy(() => import("../screens/MediaDetailScreen").then(m => ({ default: m.MediaDetailScreen })));
 const PlayerScreen = React.lazy(() => import("../screens/PlayerScreen").then(m => ({ default: m.PlayerScreen })));
 const SearchScreen = React.lazy(() => import("../screens/SearchScreen").then(m => ({ default: m.SearchScreen })));
+const RecommendationsScreen = React.lazy(() => import("../screens/RecommendationsScreen").then(m => ({ default: m.RecommendationsScreen })));
 const SearchBrowseScreen = React.lazy(() => import("../screens/SearchBrowseScreen").then(m => ({ default: m.SearchBrowseScreen })));
 const SettingsScreen = React.lazy(() => import("../screens/SettingsScreen").then(m => ({ default: m.SettingsScreen })));
 const LibraryScreen = React.lazy(() => import("../screens/LibraryScreen").then(m => ({ default: m.LibraryScreen })));
@@ -39,6 +40,7 @@ export function preloadCoreScreens() {
   void import("../screens/PlayerScreen");
   void import("../screens/SearchScreen");
   void import("../screens/SearchBrowseScreen");
+  void import("../screens/RecommendationsScreen");
   void import("../screens/SettingsScreen");
   void import("../screens/WatchlistScreen");
   void import("../screens/FavoritesScreen");
@@ -86,6 +88,7 @@ export function AppNavigator() {
           l'auto-collapse du rail au retour sur l'Accueil (pop). */}
       <Stack.Screen name="Home" component={HomeScreen} options={{ animation: "none" }} />
       <Stack.Screen name="Library" component={LibraryScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="Recommendations" component={RecommendationsScreen} options={{ animation: "none" }} />
       <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
       {/* `animation: none` : une sortie instantanée. Le Menu qu'un panneau
           ouvert doit consommer (usePreventRemove) ne dépile plus rien : le

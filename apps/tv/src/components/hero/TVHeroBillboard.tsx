@@ -16,6 +16,8 @@ interface TVHeroBillboardProps {
   onBannerFocus?: () => void;
   /** Called whenever the active item changes (auto-rotate or manual). */
   onItemChange?: (item: MediaItem) => void;
+  /** Ligne au-dessus du titre (cf. `TVHeroContent`). */
+  kicker?: string;
 }
 
 /**
@@ -34,6 +36,7 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
   onDetail,
   onBannerFocus,
   onItemChange,
+  kicker,
 }: TVHeroBillboardProps) {
   const client = useJellyfinClient();
   const [index, setIndex] = useState(0);
@@ -92,6 +95,7 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
         onPlay={onPlay}
         onDetail={onDetail}
         onButtonFocus={onBannerFocus}
+        kicker={kicker}
       />
 
       <TVHeroIndicators count={items.length} activeIndex={index} />
