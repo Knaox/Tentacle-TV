@@ -21,6 +21,11 @@ export {
   type ExternalSearchOptions,
   type ExternalSearchState,
 } from "./hooks/useExternalSearch";
+export {
+  useExternalFilmography,
+  type ExternalFilmographyOptions,
+  type FilmographyPerson,
+} from "./hooks/useExternalFilmography";
 export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog } from "./hooks/useLibraryCatalog";
 export type { CatalogFilters } from "./hooks/useLibraryCatalog";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
