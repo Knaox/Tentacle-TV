@@ -8,6 +8,7 @@ import { scrollByStep } from "./scroll";
 import { reviewAfterMount } from "./wait";
 import { closeExpandedMenu } from "./expandedMenu";
 import { redirectTrackEntry, trackExit } from "./trackEntry";
+import { holdWhileRevealing } from "./repeatGate";
 import {
   RAIL_SELECTOR,
   inRail,
@@ -87,6 +88,7 @@ export function move(direction: Direction): void {
   // et une carte non montée ne peut pas recevoir le focus.
   const first = scrollByStep(activeElement(), direction, trap);
   if (!first) return;
+  holdWhileRevealing(direction);
 
   reviewAfterMount(() => aim(direction), {
     budgetMs: STEP_BUDGET_MS,
