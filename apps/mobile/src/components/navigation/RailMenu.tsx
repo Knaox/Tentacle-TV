@@ -2,11 +2,11 @@ import { useEffect, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { useRouter, usePathname, type Href } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { spacing, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { GlassSurface } from "@/components/ui/GlassSurface";
+import { useHeaderHeight } from "@/components/PersistentHeader";
 import { TabIndicator } from "./TabIndicator";
 import { useSlidingIndicator } from "./useSlidingIndicator";
 import { useTabPressFeedback } from "./useTabPressFeedback";
@@ -43,6 +43,10 @@ interface RailMenuProps {
  * naviguent via expo-router (actif = pathname), puis le menu se referme.
  * L'entrée active porte la même pilule glissante que la barre et le rail
  * (TabIndicator) — masquée sur une route hors liste.
+ *
+ * Posé AU-DESSUS de l'en-tête flottant (qui l'aurait sinon recouvert, bouton
+ * de fermeture compris), son bouton ☰ tombe exactement sur celui du rail : on
+ * ouvre et on referme au même endroit.
  */
 export function RailMenu({ open, onClose, items }: RailMenuProps) {
   const { t } = useTranslation("common");
@@ -50,7 +54,7 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
   const st = useThemedStyles(makeStyles);
   const router = useRouter();
   const pathname = usePathname();
-  const insets = useSafeAreaInsets();
+  const headerH = useHeaderHeight();
   const anim = useSharedValue(0);
 
   useEffect(() => {
@@ -73,7 +77,7 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
   }));
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents={open ? "auto" : "none"}>
+    <View style={[StyleSheet.absoluteFill, st.layer]} pointerEvents={open ? "auto" : "none"}>
       <Animated.View style={[StyleSheet.absoluteFill, st.scrim, scrimStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("close")} />
       </Animated.View>
@@ -81,7 +85,7 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
       <Animated.View style={[st.panel, panelStyle]} accessibilityViewIsModal>
         {/* intensity 50 = valeur pixel-perfect historique du panneau rail. */}
         <GlassSurface tint="strong" intensity={50} radius={0} bordered={false} style={styles.panelFill}>
-          <View style={{ paddingTop: Math.max(insets.top, 24) + 10, paddingHorizontal: PANEL_PAD_H, flex: 1 }}>
+          <View style={{ paddingTop: headerH + spacing.md, paddingHorizontal: PANEL_PAD_H, flex: 1 }}>
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
@@ -154,6 +158,8 @@ const styles = StyleSheet.create({
 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
+    // Au-dessus de l'en-tête flottant (zIndex 20).
+    layer: { zIndex: 30 },
     scrim: { backgroundColor: t.colors.overlay.scrimSoft },
     panel: {
       position: "absolute" as const,
