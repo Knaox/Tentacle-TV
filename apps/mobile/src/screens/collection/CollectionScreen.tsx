@@ -22,6 +22,7 @@ import { ListHeader } from "@/components/watchlist/ListHeader";
 import { SelectableGridCard } from "@/components/watchlist/SelectableGridCard";
 import { useMultiSelect } from "@/hooks/useMultiSelect";
 import { CollectionFilterHeader } from "@/components/collection/CollectionFilterHeader";
+import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
 import { useCollectionFilters } from "./useCollectionFilters";
 import {
   spacing,
@@ -182,7 +183,11 @@ export function CollectionScreen({
           >
             {/* Une collection VIDE et une collection filtrée à zéro ne se
                 disent pas pareil : la première invite à ajouter, la seconde
-                propose de lever les filtres. */}
+                propose de lever les filtres — et une RECHERCHE sans réponse
+                propose la bonne orthographe et toute la recherche. */}
+            {totalBrut > 0 && filters.state.search.length >= 2 ? (
+              <ScopedSearchEmpty query={filters.state.search} onApply={filters.setInput} external={false} />
+            ) : (
             <View style={styles.emptyContainer}>
               <Feather name={titleIcon} size={48} color={colors.brand.light} style={{ opacity: 0.6 }} />
               <Text style={styles.emptyTitle}>
@@ -192,6 +197,7 @@ export function CollectionScreen({
                 {totalBrut > 0 ? t("noResultsHint") : emptyHint}
               </Text>
             </View>
+            )}
           </ScrollView>
         ) : (
           <FadeIn delay={80} style={{ flex: 1 }}>
