@@ -1,4 +1,4 @@
-import { getItemCount, getAllLibraryItemIds, getItemsByIds, type LibItem } from "./jellyfin";
+import { getItemCount, getAllLibraryItemIds, getItemsByIds, type LibItem } from "./jellyfinLibrary";
 import { getPrisma, hasPrisma } from "./db";
 import { sendToUser } from "./pushService";
 import { composeItems } from "./libraryAddedFormat";

@@ -48,7 +48,7 @@ vi.mock("./db", () => ({
   }),
 }));
 
-import type { LibItem } from "./jellyfin";
+import type { LibItem } from "./jellyfinLibrary";
 import { forgetRemovedSeries, restoreAutoRetiredSeries, seriesIdsToRestore } from "./watchlistAutoRetired";
 
 function episode(season: number, number: number, seriesId = "s1"): LibItem {

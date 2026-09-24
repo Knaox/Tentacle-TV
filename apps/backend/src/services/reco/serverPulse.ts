@@ -1,5 +1,5 @@
 import { getPrisma } from "../db";
-import { getItemsByIds } from "../jellyfin";
+import { getItemsByIds } from "../jellyfinLibrary";
 import { getCachedMetaMany } from "../tmdb/metaCache";
 import { canonicalKey } from "./candidates/exclusions";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";

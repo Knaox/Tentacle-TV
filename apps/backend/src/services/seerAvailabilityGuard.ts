@@ -1,6 +1,6 @@
 import { getPrisma } from "./db";
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
-import { getAdminUserId } from "./jellyfin";
+import { getAdminUserId } from "./jellyfinLibrary";
 import { normalizeTitle } from "./libraryAddedDedup";
 import type { RegistryClaim } from "./announcedRegistry";
 

@@ -1,4 +1,4 @@
-import type { LibItem } from "./jellyfin";
+import type { LibItem } from "./jellyfinLibrary";
 
 // Construction des titres/corps de notification d'ajout bibliothèque.
 // Formulation : « <média> est sorti·e sur Tentacle TV » avec accord

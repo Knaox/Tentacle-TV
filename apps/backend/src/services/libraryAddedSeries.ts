@@ -1,4 +1,4 @@
-import { getItemsByIds } from "./jellyfin";
+import { getItemsByIds } from "./jellyfinLibrary";
 
 // Résout le tmdbId TMDB de la SÉRIE parente d'un épisode. Indispensable à
 // l'anti-doublon (claims Seer) : le `ProviderIds.Tmdb` d'un Episode est le tmdb
