@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioLines, CircleCheck, Cpu, Package, type LucideIcon } from "lucide-react";
-import type { DeliveryKind } from "./delivery";
+import type { DeliveryKind } from "@tentacle-tv/shared";
 
 /**
  * La pastille qui dit comment le média arrive — une couleur par poids pour le

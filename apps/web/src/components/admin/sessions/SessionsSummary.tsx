@@ -1,8 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import type { AdminSessionDto } from "@tentacle-tv/shared";
+import { countDeliveries, DELIVERY_ORDER, type AdminSessionDto } from "@tentacle-tv/shared";
 import { DeliveryChip } from "./DeliveryChip";
-import { DELIVERY_ORDER, countDeliveries } from "./delivery";
 
 /**
  * L'en-tête chiffré du tableau de bord : combien de lectures, et ce qu'elles

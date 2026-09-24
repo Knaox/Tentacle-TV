@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { AdminSessionDto, AdminTranscodingDto } from "@tentacle-tv/shared";
+import type { AdminSessionDto, AdminTranscodingDto } from "../types/adminSessionsDto";
 import { countDeliveries, deliveryOf } from "./delivery";
 
 function transcoding(isVideoDirect: boolean, isAudioDirect: boolean): AdminTranscodingDto {
