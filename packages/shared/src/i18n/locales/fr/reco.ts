@@ -122,4 +122,12 @@ export default {
   coldCta: "Voir mes recommandations",
   coldLater: "Plus tard",
   coldMore: "Afficher d'autres titres",
+
+  // Téléviseurs : la page « Pour vous » (bibliothèque seule, pas de sélecteur
+  // de démarrage à froid à la télécommande — il vit sur le téléphone et le web).
+  tvColdHint: "Regardez et notez quelques titres : vos recommandations se précisent au fil de vos soirées.",
+  tvDisabledHint:
+    "Les recommandations personnalisées sont désactivées pour votre compte — activez-les depuis Tentacle sur votre téléphone ou votre ordinateur. En attendant, le meilleur de votre bibliothèque.",
+  tvEmpty: "Rien à vous recommander pour l'instant : vos premiers visionnages nourriront cette page.",
+  tvReason: "Pourquoi : {{reason}}",
 };
