@@ -79,23 +79,19 @@ export function ProfileScreen() {
         </View>
       </FadeIn>
 
-      {!offline && (
-        <FadeIn delay={80}>
-          <SettingsSection title={tp("sectionPersonalization")}>
+      {/* « Personnalisation » ouvre les Préférences : une section d'une seule
+          ligne, au même nom qu'elle, répétait le titre pour rien. */}
+      <FadeIn delay={80}>
+        <SettingsSection title={t("preferences")}>
+          {!offline && (
             <SettingsRow
               icon="sliders"
               label={tp("sectionPersonalization")}
               description={t("personalizationHint")}
               chevron
-              last
               onPress={() => router.push("/settings/personalization")}
             />
-          </SettingsSection>
-        </FadeIn>
-      )}
-
-      <FadeIn delay={140}>
-        <SettingsSection title={t("preferences")}>
+          )}
           <SettingsRow icon="sun" label={t("appearance")} value={tp(THEME_MODE_LABEL[mode])} chevron onPress={() => router.push("/settings/appearance")} />
           {!offline && <SettingsRow icon="bell" label={t("notifications")} chevron onPress={() => router.push("/settings/notifications")} />}
           <SettingsRow icon="play-circle" label={t("playback")} chevron onPress={() => router.push("/settings/playback")} />
@@ -112,10 +108,13 @@ export function ProfileScreen() {
         </SettingsSection>
       </FadeIn>
 
+      {/* Les appareils ensemble : jumeler une TV et gérer ceux qui sont
+          appairés (auparavant une section d'une ligne et une ligne de Sécurité). */}
       {!offline && (
         <FadeIn delay={260}>
-          <SettingsSection title={t("pairTV")}>
-            <SettingsRow icon="cast" label={t("pairTV")} chevron last onPress={() => router.push("/pair-tv")} />
+          <SettingsSection title={t("sectionDevices")}>
+            <SettingsRow icon="cast" label={t("pairTV")} chevron onPress={() => router.push("/pair-tv")} />
+            <SettingsRow icon="smartphone" label={t("pairedDevices")} chevron last onPress={() => router.push("/settings/devices")} />
           </SettingsSection>
         </FadeIn>
       )}
@@ -157,7 +156,6 @@ export function ProfileScreen() {
           {!offline && (
             <>
               <SettingsRow icon="lock" label={t("password")} chevron onPress={() => router.push("/settings/password")} />
-              <SettingsRow icon="smartphone" label={t("pairedDevices")} chevron onPress={() => router.push("/settings/devices")} />
               <SettingsRow icon="server" label={t("changeServer")} description={serverUrl || undefined} chevron last onPress={handleChangeServer} />
               {/* Les actions destructives, séparées et en rouge, ferment la carte. */}
               <Divider intensity="strong" style={st.dangerDivider} />

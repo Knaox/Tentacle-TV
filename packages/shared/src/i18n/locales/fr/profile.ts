@@ -42,6 +42,7 @@ export default {
   account: "Compte",
   help: "Aide",
   serverSection: "Serveur",
+  sectionDevices: "Appareils",
   pairedDevices: "Appareils appairés",
   password: "Mot de passe",
   appearance: "Apparence",

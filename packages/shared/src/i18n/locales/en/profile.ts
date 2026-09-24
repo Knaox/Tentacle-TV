@@ -42,6 +42,7 @@ export default {
   account: "Account",
   help: "Help",
   serverSection: "Server",
+  sectionDevices: "Devices",
   pairedDevices: "Paired devices",
   password: "Password",
   appearance: "Appearance",
