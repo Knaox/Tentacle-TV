@@ -11,6 +11,8 @@ export type RootStackParamList = {
   PlayerSettings: undefined;
   Trailer: { url: string; name?: string };
   Search: undefined;
+  /** Recherche approfondie : filmographie d'une personne, genre ou studio. */
+  SearchBrowse: { kind: "person" | "genre" | "studio"; id?: string; name: string };
   Watchlist: undefined;
   Favorites: undefined;
   Settings: undefined;
