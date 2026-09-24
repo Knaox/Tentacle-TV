@@ -36,7 +36,7 @@ import { useSearchOpen } from "../search/searchState";
  * pendant la lecture, rien ne doit être composé derrière l'image.
  */
 
-const PATHS = ["/", "/library", "/watchlist", "/favorites"];
+const PATHS = ["/", "/library", "/watchlist", "/favorites", "/recommendations"];
 
 function onBrowseScreen(path: string): boolean {
   if (path === "/") return true;

@@ -27,6 +27,7 @@ import { useRailPinning } from "./pinningTv";
 export type RailIcon =
   | "recherche"
   | "accueil"
+  | "forYou"
   | "liste"
   | "favoris"
   | "bibliotheque"
@@ -68,7 +69,16 @@ export function useRailEntries(): RailEntryItem[] {
       { key: "accueil", label: t("home"), path: "/", icon: "accueil", hideable: false },
     ];
 
+    // « Pour vous » juste après l'accueil, masquable comme Ma liste — la même
+    // place que sur l'Apple TV et Android TV.
     const offered: RailEntryItem[] = [
+      {
+        key: "recommendations",
+        label: t("forYou"),
+        path: "/recommendations",
+        icon: "forYou",
+        hideable: true,
+      },
       {
         key: "watchlist",
         label: t("myList"),

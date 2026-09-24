@@ -1,0 +1,47 @@
+/* « Pour vous » — `ui/reco/`.
+ *
+ * La page réemploie la bannière et les rangées de l'accueil ; ne restent ici
+ * que ses deux phrases à elle. La raison se pose SUR l'affiche : tokens
+ * `on-media-*`, et une teinte de marque sans flou d'arrière-plan. La phrase
+ * d'état se pose sur le fond de page, à la gouttière des rangées. */
+
+.reco-tv-reason {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  margin: 0 0 24px 0;
+  padding: 8px 20px 8px 16px;
+  border: 1px solid rgba(var(--brand-rgb), 0.5);
+  border-radius: 999px;
+  background: rgba(var(--brand-rgb), 0.28);
+  box-sizing: border-box;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--on-media-primary);
+  text-shadow: 0 1px 4px var(--on-media-shadow);
+}
+
+.reco-tv-reason-icon {
+  flex-shrink: 0;
+  margin-right: 10px;
+  color: var(--brand-accent-light);
+}
+
+/* Deux lignes au plus : une raison longue (« Parce que vous avez aimé … »)
+   ne pousse pas les boutons hors de la bannière. */
+.reco-tv-reason-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.reco-tv-notice {
+  max-width: 1100px;
+  margin: 0 0 32px 0;
+  padding: 0 var(--row-gutter-desktop);
+  font-size: 26px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}

@@ -132,8 +132,11 @@ export const MobileProfile = Unavailable;
 
 // L'accueil se compose depuis un ordinateur ou un téléphone : le téléviseur
 // LIT la mise en page du compte (rangées, ordre, recommandations), il ne la
-// règle pas. La page Recommandations n'a pas de version télécommande — ses
-// rangées vivent sur l'accueil ; `preloadable`, car le préchargement de
-// session appelle `Recommendations.preload()` au démarrage.
+// règle pas.
 export const SettingsPersonalization = Unavailable;
-export const Recommendations = preloadable(async () => UnavailableScreen);
+
+// « Pour vous » a sa version de salon : une tête, des étagères de la
+// bibliothèque (`ui/reco/`). `preloadable`, car le préchargement de session
+// appelle `Recommendations.preload()` en temps mort (`recoPrefetchTv.ts`).
+export const Recommendations = preloadable(() =>
+  import("../ui/reco/RecommendationsTv").then((m) => m.RecommendationsTv));
