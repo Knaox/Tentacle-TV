@@ -19,17 +19,42 @@ export interface SendResult {
   sent: number;
   /** Nombre de tokens purgés (forme invalide ou DeviceNotRegistered). */
   invalid: number;
+  /** Vrai quand l'envoi a été coupé parce que le serveur tourne en dev. */
+  suppressed?: boolean;
+}
+
+export interface SendOptions {
+  /** Passe outre la coupure du dev : réservé au geste explicite d'un admin
+   *  (bouton « notification de test »), jamais à un envoi automatique. */
+  allowInDev?: boolean;
+}
+
+/**
+ * Livraison réelle ? En production, oui. En dev, NON par défaut : le backend de
+ * dev lit le même Jellyfin que la prod, et chaque ajout à la bibliothèque
+ * partait vers les vrais téléphones inscrits dans la base locale.
+ * `TENTACLE_DEV_PUSH=1` rouvre l'envoi en dev — c'est ce que fait le banc de
+ * bout en bout, qui pointe `EXPO_BASE_URL` (lu par expo-server-sdk) vers un
+ * faux Expo.
+ */
+export function isPushDeliveryEnabled(): boolean {
+  return process.env.NODE_ENV === "production" || process.env.TENTACLE_DEV_PUSH === "1";
 }
 
 /** Envoie une push à tous les appareils d'un utilisateur. */
-export function sendToUser(jellyfinUserId: string, payload: PushPayload): Promise<SendResult> {
-  return sendToUsers([jellyfinUserId], payload);
+export function sendToUser(
+  jellyfinUserId: string,
+  payload: PushPayload,
+  options?: SendOptions,
+): Promise<SendResult> {
+  return sendToUsers([jellyfinUserId], payload, options);
 }
 
 /** Envoie le même message à tous les appareils de plusieurs utilisateurs. */
 export async function sendToUsers(
   jellyfinUserIds: string[],
   payload: PushPayload,
+  options?: SendOptions,
 ): Promise<SendResult> {
   if (!hasPrisma() || jellyfinUserIds.length === 0) return { sent: 0, invalid: 0 };
   const prisma = getPrisma();
@@ -38,6 +63,11 @@ export async function sendToUsers(
     where: { jellyfinUserId: { in: jellyfinUserIds } },
   });
   if (devices.length === 0) return { sent: 0, invalid: 0 };
+
+  if (!isPushDeliveryEnabled() && !options?.allowInDev) {
+    console.log(`[Push] dev : envoi coupé — « ${payload.title} » (${devices.length} appareil(s))`);
+    return { sent: 0, invalid: 0, suppressed: true };
+  }
 
   // Tokens de forme invalide → à purger d'emblée.
   const invalidTokens = new Set<string>(
