@@ -16,6 +16,7 @@ import { useServerCompat } from "@/hooks/useServerCompat";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
 import { OfflineShell } from "@/offline/OfflineShell";
+import { SessionMessageHost } from "@/session/SessionMessageHost";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
 
@@ -202,6 +203,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         <Stack.Screen name="settings/notifications" options={{ presentation: "card" }} />
         <Stack.Screen name="settings/devices" options={{ presentation: "card" }} />
         <Stack.Screen name="settings/invites" options={{ presentation: "card" }} />
+        <Stack.Screen name="admin/sessions" options={{ presentation: "card" }} />
         <Stack.Screen name="settings/data" options={{ presentation: "card" }} />
         <Stack.Screen name="on-device/index" options={{ presentation: "card" }} />
         <Stack.Screen name="on-device/series/[seriesKey]" options={{ presentation: "card" }} />
@@ -213,6 +215,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       </Stack>
       <OfflineShell />
       <ServerNoticeOverlay />
+      {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
+      <SessionMessageHost />
       {showLoading && (
         <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>
           <BrandSpinner size="large" />

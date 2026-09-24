@@ -230,9 +230,13 @@ final class MpvRenderer {
     isRunning = true
   }
 
-  func stop() {
-    if isStopping { return }
-    if !isRunning, mpv == nil { return }
+  /// `completion` arrive sur le thread principal une fois mpv DÉTRUIT — sa
+  /// sortie audio arrêtée, c'est ce qu'attend la session audio pour être
+  /// rendue —, ou tout de suite s'il n'y avait rien à arrêter.
+  func stop(completion: (() -> Void)? = nil) {
+    let finish = { if let completion { DispatchQueue.main.async(execute: completion) } }
+    if isStopping { finish(); return }
+    if !isRunning, mpv == nil { finish(); return }
     isRunning = false
     isStopping = true
 
@@ -253,8 +257,11 @@ final class MpvRenderer {
         // nettoyage AVFoundation : hors de cette file aussi.
         DispatchQueue.global(qos: .userInitiated).async {
           mpv_terminate_destroy(handle)
+          finish()
         }
       }
+    } else {
+      finish()
     }
 
     DispatchQueue.main.async { [weak self] in

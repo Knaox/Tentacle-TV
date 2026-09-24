@@ -14,6 +14,8 @@ export default {
   cancel: "Annuler",
   escape: "Échap",
   topResult: "Meilleur résultat",
+  suggestions: "Suggestions",
+  bestResults: "Meilleurs résultats",
   movies: "Films",
   series: "Séries",
   collections: "Collections",

@@ -7,9 +7,16 @@
  */
 
 import type {
-  MediaItem, SearchFacetHit, SearchItemHit, SearchMediaItem, SearchPersonHit, SearchResponse,
+  ExternalSearchItem,
+  ExternalSearchResult,
+  MediaItem,
+  SearchFacetHit,
+  SearchItemHit,
+  SearchMediaItem,
+  SearchPersonHit,
+  SearchProvider,
+  SearchResponse,
 } from "@tentacle-tv/shared";
-import type { ExternalSearchItem, ExternalSearchResult, SearchProvider } from "./external/pluginSearch";
 
 export type OmniboxSection =
   | "top" | "movies" | "series" | "collections" | "people" | "episodes" | "external" | "facets"

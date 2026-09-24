@@ -69,7 +69,7 @@
       "eas": {
         "projectId": "9ec680e1-8591-44c4-98e0-79867fac32ca"
       },
-      "minServer": "1.18.1"
+      "minServer": "1.19.0"
     }
   }
 }

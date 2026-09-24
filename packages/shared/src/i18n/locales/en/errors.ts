@@ -7,4 +7,5 @@ export default {
   userInfoNotFound: "User info not found",
   unexpectedError: "An unexpected error occurred",
   webViewNotAvailable: "WebView not available. Build a development client to use plugins.",
+  pluginLoadFailed: "This extension can't be opened right now.",
 } as const;

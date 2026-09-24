@@ -8,6 +8,16 @@ import { getPrisma, hasPrisma } from "./db";
 
 const expo = new Expo();
 
+/**
+ * `TENTACLE_PUSH=off` coupe l'envoi, et lui seul. Un backend de vérification
+ * partage la base des vrais appareils : sans ce coupe-circuit, son simple
+ * démarrage leur poussait « N nouveautés » (diff de bibliothèque au boot).
+ * Les appelants ne voient qu'un envoi à zéro appareil ; rien n'est purgé.
+ */
+function pushDisabled(): boolean {
+  return process.env.TENTACLE_PUSH === "off";
+}
+
 export interface PushPayload {
   title: string;
   body: string;
@@ -63,6 +73,10 @@ export async function sendToUsers(
     where: { jellyfinUserId: { in: jellyfinUserIds } },
   });
   if (devices.length === 0) return { sent: 0, invalid: 0 };
+  if (pushDisabled()) {
+    console.log(`[Push] coupé (TENTACLE_PUSH=off) : « ${payload.title} » retenu pour ${devices.length} appareil(s)`);
+    return { sent: 0, invalid: 0 };
+  }
 
   if (!isPushDeliveryEnabled() && !options?.allowInDev) {
     console.log(`[Push] dev : envoi coupé — « ${payload.title} » (${devices.length} appareil(s))`);

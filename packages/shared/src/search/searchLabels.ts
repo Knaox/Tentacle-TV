@@ -5,7 +5,7 @@
  */
 
 import type { TFunction } from "i18next";
-import type { SearchMatch, SearchMediaItem, SearchPersonHit } from "@tentacle-tv/shared";
+import type { SearchMatch, SearchMediaItem, SearchPersonHit } from "./searchTypes";
 
 const MATCH_ROLES = new Set(["Actor", "Director", "Writer", "Creator"]);
 

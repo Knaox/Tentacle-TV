@@ -1,16 +1,25 @@
 // Dérivé de Streamyfin — https://github.com/streamyfin/streamyfin
 // (modules/mpv-player/ios/MPVNowPlayingManager.swift, révision 4faddc5f du
 // 2026-09-12), publié sous Mozilla Public License 2.0. Ce fichier reste couvert
-// par la MPL-2.0 (https://mozilla.org/MPL/2.0/) ; adaptation Tentacle TV.
+// par la MPL-2.0 (https://mozilla.org/MPL/2.0/) ; adaptation Tentacle TV :
+// un propriétaire, et des commandes éteintes au départ du lecteur.
 import AVFoundation
 import Foundation
 import MediaPlayer
 import UIKit
 
 /// Écran verrouillé et centre de contrôle : métadonnées, position, commandes.
+///
+/// Un singleton, parce que le système n'en a qu'un — mais deux lecteurs s'y
+/// croisent : au passage d'un épisode au suivant, ou d'un moteur à l'autre, le
+/// nouveau publie avant que l'ancien soit démonté. Le moteur qui publie en
+/// dernier devient PROPRIÉTAIRE ; les autres ne peuvent plus rien effacer. Sans
+/// cela, le sortant effaçait l'écran verrouillé de l'entrant et retirait ses
+/// commandes — l'épisode suivant n'avait plus de contrôles.
 final class MpvNowPlayingManager {
   static let shared = MpvNowPlayingManager()
 
+  private var owner: ObjectIdentifier?
   private var title: String?
   private var artist: String?
   private var cachedArtwork: MPMediaItemArtwork?
@@ -22,9 +31,14 @@ final class MpvNowPlayingManager {
 
   private init() {}
 
+  private func owns(_ engine: AnyObject) -> Bool {
+    owner == ObjectIdentifier(engine)
+  }
+
   // MARK: - Commandes
 
   func setupRemoteCommands(
+    for engine: AnyObject,
     playHandler: @escaping () -> Void,
     pauseHandler: @escaping () -> Void,
     toggleHandler: @escaping () -> Void,
@@ -32,7 +46,10 @@ final class MpvNowPlayingManager {
     skipForward: @escaping (TimeInterval) -> Void,
     skipBackward: @escaping (TimeInterval) -> Void
   ) {
-    guard !isCommandsSetup else { return }
+    if isCommandsSetup && owns(engine) { return }
+    // Un autre lecteur les tenait : ses cibles partent, les nôtres les remplacent.
+    if isCommandsSetup { removeTargets() }
+    owner = ObjectIdentifier(engine)
     isCommandsSetup = true
     DispatchQueue.main.async { UIApplication.shared.beginReceivingRemoteControlEvents() }
 
@@ -62,8 +79,25 @@ final class MpvNowPlayingManager {
     }
   }
 
-  func cleanupRemoteCommands() {
-    guard isCommandsSetup else { return }
+  /// Le lecteur s'en va : ses cibles partent, et les commandes s'ÉTEIGNENT.
+  /// Une commande laissée active sans cible gardait le lecteur de l'écran
+  /// verrouillé (±15 s, lecture) après la fermeture — iOS croyait l'app encore
+  /// en lecture en arrière-plan.
+  func cleanupRemoteCommands(for engine: AnyObject) {
+    guard isCommandsSetup, owns(engine) else { return }
+    removeTargets()
+    let center = MPRemoteCommandCenter.shared()
+    center.playCommand.isEnabled = false
+    center.pauseCommand.isEnabled = false
+    center.togglePlayPauseCommand.isEnabled = false
+    center.skipForwardCommand.isEnabled = false
+    center.skipBackwardCommand.isEnabled = false
+    center.changePlaybackPositionCommand.isEnabled = false
+    DispatchQueue.main.async { UIApplication.shared.endReceivingRemoteControlEvents() }
+    isCommandsSetup = false
+  }
+
+  private func removeTargets() {
     let center = MPRemoteCommandCenter.shared()
     center.playCommand.removeTarget(nil)
     center.pauseCommand.removeTarget(nil)
@@ -71,13 +105,14 @@ final class MpvNowPlayingManager {
     center.skipForwardCommand.removeTarget(nil)
     center.skipBackwardCommand.removeTarget(nil)
     center.changePlaybackPositionCommand.removeTarget(nil)
-    DispatchQueue.main.async { UIApplication.shared.endReceivingRemoteControlEvents() }
-    isCommandsSetup = false
   }
 
   // MARK: - État
 
-  func setMetadata(title: String?, artist: String?, artworkUrl: String?, artworkHeaders: [String: String]?) {
+  /// Publier des métadonnées, c'est prendre l'écran verrouillé : le lecteur
+  /// qui arrive les pose avant même sa première image.
+  func setMetadata(for engine: AnyObject, title: String?, artist: String?, artworkUrl: String?, artworkHeaders: [String: String]?) {
+    owner = ObjectIdentifier(engine)
     self.title = title
     self.artist = artist
     artworkTask?.cancel()
@@ -95,14 +130,19 @@ final class MpvNowPlayingManager {
     refresh()
   }
 
-  func updatePlayback(position: TimeInterval, duration: TimeInterval, isPlaying: Bool) {
+  func updatePlayback(for engine: AnyObject, position: TimeInterval, duration: TimeInterval, isPlaying: Bool) {
+    // Un lecteur supplanté se tait : sa progression ne recouvre pas l'autre.
+    guard owner == nil || owns(engine) else { return }
+    owner = ObjectIdentifier(engine)
     self.position = position
     self.duration = duration
     self.isPlaying = isPlaying
     refresh()
   }
 
-  func clear() {
+  func clear(for engine: AnyObject) {
+    guard owns(engine) else { return }
+    owner = nil
     artworkTask?.cancel()
     title = nil
     artist = nil

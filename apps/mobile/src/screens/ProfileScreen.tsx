@@ -10,6 +10,7 @@ import { Badge, Divider, FadeIn, SubtleBackground } from "../components/ui";
 import { SettingsSection, SettingsRow } from "../components/settings";
 import { LanguageToggle } from "../components/profile/LanguageToggle";
 import { ProfileAvatar } from "../components/profile/ProfileAvatar";
+import { AdminSessionsRow } from "../components/profile/AdminSessionsRow";
 import { OnDeviceSection } from "../components/profile/OnDeviceSection";
 import { useHeaderHeight } from "../components/PersistentHeader";
 import { useScrollChromeHandler } from "../components/navigation/scrollChrome";
@@ -126,6 +127,7 @@ export function ProfileScreen() {
       {isAdmin && !offline ? (
         <FadeIn delay={300}>
           <SettingsSection title={t("administration")}>
+            <AdminSessionsRow />
             <SettingsRow icon="mail" label={t("invitations")} chevron last onPress={() => router.push("/settings/invites")} />
           </SettingsSection>
         </FadeIn>

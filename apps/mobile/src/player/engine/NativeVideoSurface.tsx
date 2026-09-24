@@ -24,6 +24,9 @@ export function NativeVideoSurface({
   const videoRef = useRef<VideoRef>(null);
   useImperativeHandle(engineRef, () => ({
     seek: (seconds: number) => videoRef.current?.seek(seconds),
+    // react-native-video s'éteint seul au démontage ; d'ici là, plus un son —
+    // et plus d'image dans l'image automatique pendant la fermeture.
+    release: () => videoRef.current?.pause(),
   }), []);
 
   // La source est MÉMOÏSÉE sur ses valeurs : react-native-video (Android,

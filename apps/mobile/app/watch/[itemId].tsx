@@ -2,9 +2,11 @@ import { useRef } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { useMediaItem } from "@tentacle-tv/api-client";
 import { MediaMissingView } from "@/components/player/MediaMissingView";
-import { PlayerLoadingView } from "@/components/player/PlayerLoadingView";
+import { PlayerLoadingScreen } from "@/components/player/loading/PlayerLoadingScreen";
 import { useLocalSource } from "@/hooks/offline/useLocalSource";
+import { backOrHome } from "@/utils/backOrHome";
 import { probeNow, setManualOffline } from "@/offline/connectivityStore";
 import type { OfflineLocalSource } from "@/offline/engineApi";
 import { useConnectivity } from "@/offline/useConnectivity";
@@ -36,11 +38,14 @@ export default function WatchRoute() {
   const frozen = useRef<OfflineLocalSource | null>(null);
   if (localSource === null) frozen.current = null;
   else if (frozen.current === null || frozen.current.fileId !== localSource.fileId) frozen.current = localSource;
+  // Le titre, pour habiller l'écran de chargement dès l'ouverture — la même
+  // requête (et le même cache) que le lecteur ; rien hors ligne.
+  const { data: item } = useMediaItem(itemId, { enabled: !offline });
 
   if (waiting) {
     return (
       <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
-        <PlayerLoadingView />
+        <PlayerLoadingScreen item={item} onCancel={() => backOrHome(router)} />
       </View>
     );
   }

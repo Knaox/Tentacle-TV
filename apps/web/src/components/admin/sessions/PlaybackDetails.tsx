@@ -1,19 +1,20 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
-import type { AdminSessionDto } from "@tentacle-tv/shared";
-import { DeliveryChip } from "./DeliveryChip";
-import { deliveryOf, type DeliveryKind } from "./delivery";
 import {
   acceleratorLabel,
   channelsLabel,
   codecLabel,
+  deliveryOf,
   formatBitrate,
   humanizeReason,
   joinParts,
   rangeLabel,
   resolutionLabel,
-} from "./format";
+  type AdminSessionDto,
+  type DeliveryKind,
+} from "@tentacle-tv/shared";
+import { DeliveryChip } from "./DeliveryChip";
 
 /**
  * Comment le média arrive à l'appareil : lecture directe, remux, transcodage

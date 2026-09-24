@@ -54,6 +54,8 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     var pipAutoStart = true
     /** L'intention de JS (la prop `paused`) : la reprise après une perte de surface s'y réfère. */
     private var jsPaused = false
+    /** Lecteur quitté (`release`) : une prop tardive ne relance rien. */
+    private var released = false
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var hasAudioFocus = false
     /**
@@ -115,6 +117,7 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     // MARK: - Source et transport
 
     fun load(config: MpvLoadConfig) {
+        if (released) return
         currentConfig?.let { if (it.isSameMedia(config)) return }
         if (!surfaceReady) {
             pendingConfig = config
@@ -139,6 +142,7 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     }
 
     private fun resumePlayback() {
+        if (released) return
         requestAudioFocus()
         renderer.play()
     }
@@ -152,6 +156,16 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
         currentConfig = null
         pendingConfig = null
         abandonAudioFocus()
+    }
+
+    /**
+     * Quitter le lecteur, AVANT la fermeture de l'écran : le handle meurt et
+     * le focus audio est rendu tout de suite, sans attendre que React Native
+     * détruise la vue à la fin de la transition. Même contrat qu'iOS.
+     */
+    fun release() {
+        released = true
+        destroy()
     }
 
     /** Destruction par React Native : plus rien ne remonte, le handle meurt. */

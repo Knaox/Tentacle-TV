@@ -1,4 +1,4 @@
-import type { AdminSessionDto } from "@tentacle-tv/shared";
+import type { AdminSessionDto } from "../types/adminSessionsDto";
 
 /**
  * L'application d'une session telle que l'administrateur la lit : son nom, sa

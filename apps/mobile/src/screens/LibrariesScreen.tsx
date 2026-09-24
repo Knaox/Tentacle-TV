@@ -1,156 +1,235 @@
-import { useCallback, useMemo } from "react";
-import { View, Text, RefreshControl, StyleSheet } from "react-native";
-import Animated from "react-native-reanimated";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, Text, Pressable, StyleSheet, useWindowDimensions, type FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useLibraries } from "@tentacle-tv/api-client";
-import type { LibraryView } from "@tentacle-tv/shared";
 import { Feather } from "@expo/vector-icons";
-import { SkeletonCard, FadeIn, SubtleBackground } from "@/components/ui";
-import { LibraryCard } from "@/components/LibraryCard";
+import { useLibraries } from "@tentacle-tv/api-client";
+import type { LibraryView, MediaItem } from "@tentacle-tv/shared";
+import { SkeletonCard, SubtleBackground } from "@/components/ui";
+import { CatalogGrid } from "@/components/catalog";
+import { LibraryCapsule } from "@/components/library/LibraryCapsule";
+import { LIBRARY_HERO_HEIGHT, LibraryHero, collectionIcon } from "@/components/library/LibraryHero";
 import { useHeaderHeight } from "@/components/PersistentHeader";
+import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
-import { spacing, typography, FONT_FAMILY, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
+import { ScopedSearchField } from "@/components/search/ScopedSearchField";
+import { SearchAssistPane } from "@/components/search/SearchAssistPane";
+import { FONT_FAMILY, RADIUS, spacing, typography, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { LibraryFilterBar, LibrarySheets } from "./library/LibraryFilterBar";
+import { useLibraryCatalogState } from "./library/useLibraryCatalogState";
 
-const CARD_GAP = 18;
+const NONE: MediaItem[] = [];
+/** La bibliothèque choisie survit au changement d'onglet (le temps de la session). */
+let lastLibraryId: string | null = null;
 
 /**
- * Écran "Bibliothèques" — pattern Disney+ "Collections" :
- *  1. Hero featured pleine largeur pour la première lib (Ken Burns + glow violet)
- *  2. Section header "Explorer" au-dessus du reste
- *  3. Grille verticale 16:9 cards pour les autres libs avec backdrop rotate
+ * L'onglet Bibliothèque — la capsule du bureau 1.22.0 transposée au pouce :
+ * plus de page d'accueil des bibliothèques à traverser, on arrive DANS la
+ * dernière ouverte, et la capsule passe de Films à Séries à Animés d'un
+ * geste. L'ambiance (une image de la bibliothèque, sous l'en-tête de verre)
+ * change avec elle.
  *
- * Ambient orbe violet renforcé. Cascade entry par card (80ms stagger).
+ * Tout défile d'un seul tenant — héros, capsule, recherche, filtres, grille —
+ * et replie le chrome comme les autres onglets. La recherche est celle des
+ * barres locales : complétion, suggestions, hors bibliothèque.
  */
 export function LibrariesScreen() {
   const { t } = useTranslation("common");
   const { colors } = useTheme();
-  const styles = useThemedStyles(makeStyles);
+  const st = useThemedStyles(makeStyles);
+  const { data, isLoading } = useLibraries();
+  const [selectedId, setSelectedId] = useState<string | null>(lastLibraryId);
+  const libraries = data ?? [];
+  const current = libraries.find((lib) => lib.Id === selectedId) ?? libraries[0] ?? null;
+
+  const select = useCallback((id: string) => {
+    lastLibraryId = id;
+    setSelectedId(id);
+  }, []);
+
+  if (isLoading) return <LibrariesSkeleton />;
+  if (!current) {
+    return (
+      <SubtleBackground ambient>
+        <View style={st.empty}>
+          <Feather name="folder" size={48} color={colors.brand.light} style={{ opacity: 0.6 }} />
+          <Text style={st.emptyText}>{t("noResults")}</Text>
+        </View>
+      </SubtleBackground>
+    );
+  }
+  return <LibraryTab libraries={libraries} current={current} onSelect={select} />;
+}
+
+function LibraryTab({ libraries, current, onSelect }: {
+  libraries: LibraryView[];
+  current: LibraryView;
+  onSelect: (id: string) => void;
+}) {
+  const { t } = useTranslation("common");
+  const st = useThemedStyles(makeStyles);
   const router = useRouter();
   const headerH = useHeaderHeight();
+  const tabBarH = useGlassTabBarHeight();
+  const { height: windowH } = useWindowDimensions();
   const onScrollChrome = useScrollChromeHandler();
-  const { data, isLoading, refetch, isRefetching } = useLibraries();
+  const listRef = useRef<FlatList<MediaItem>>(null);
+  const state = useLibraryCatalogState(current.Id);
+  const { assist, catalog, searching, totalCount } = state;
+  const emptySearch = searching && !catalog.isLoading && totalCount === 0;
 
-  // 1 colonne pleine largeur sur iPhone (inchangé), grille 2–3 colonnes 16:9 sur iPad.
-  const { numColumns, itemWidth: cardWidth } = useGrid({
-    phoneColumns: 1,
-    targetTablet: 340,
-    maxColumns: 3,
-    gutter: CARD_GAP,
-  });
+  const capsuleItems = useMemo(
+    () => libraries.map((lib) => ({ id: lib.Id, label: lib.Name, icon: collectionIcon(lib.CollectionType) })),
+    [libraries],
+  );
+  const select = useCallback((id: string) => {
+    // La nouvelle bibliothèque s'ouvre en haut : garder la position d'une
+    // autre grille n'aurait aucun sens.
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    onSelect(id);
+  }, [onSelect]);
+  const openItem = useCallback((item: MediaItem) => router.push(`/media/${item.Id}`), [router]);
 
-  const handlePress = useCallback(
-    (lib: LibraryView) => {
-      router.push({ pathname: "/library/[libraryId]", params: { libraryId: lib.Id, libraryName: lib.Name } });
-    },
-    [router],
+  // Le champ monte sous l'en-tête quand on y tape, comme une barre de
+  // recherche iOS : le héros et la capsule s'effacent, le panneau des
+  // suggestions a la place au-dessus du clavier.
+  const searchRowY = useRef(0);
+  useEffect(() => {
+    if (!assist.focused) return;
+    listRef.current?.scrollToOffset({ offset: Math.max(0, searchRowY.current - spacing.sm), animated: true });
+  }, [assist.focused]);
+
+  const header = (
+    <View>
+      <LibraryHero library={current} topInset={headerH} />
+      <LibraryCapsule items={capsuleItems} selected={current.Id} onSelect={select} accessibilityLabel={t("librariesTitle")} />
+      <View style={st.searchRow} onLayout={(e) => { searchRowY.current = e.nativeEvent.layout.y; }}>
+        <ScopedSearchField
+          assist={assist}
+          placeholder={t("searchInLibrary", { name: current.Name })}
+          count={searching && !catalog.isLoading ? totalCount : null}
+          inset={false}
+        />
+        <FilterButton count={state.advancedActiveCount} onPress={() => state.setSheet("advanced")} />
+      </View>
+      {/* Pendant la frappe, les suggestions prennent la place des filtres et de la grille. */}
+      {assist.open ? (
+        <>
+          <SearchAssistPane assist={assist} inline />
+          {/* La grille s'efface pendant la frappe : sans cette réserve, la liste
+              raccourcie redescendrait et le panneau passerait sous la barre. */}
+          <View style={{ height: windowH }} />
+        </>
+      ) : (
+        <>
+          {/* Le total est déjà sous le titre : le compte ne revient qu'avec un filtre. */}
+          <LibraryFilterBar state={state} showCount={state.isFiltered} />
+          {emptySearch && <ScopedSearchEmpty query={state.debouncedSearch} onApply={state.setSearchQuery} />}
+        </>
+      )}
+    </View>
   );
 
-  const totalCount = useMemo(() => {
-    if (!data) return 0;
-    return data.reduce((sum, l) => sum + (l.RecursiveItemCount ?? l.ChildCount ?? 0), 0);
-  }, [data]);
-
-  const skeletons = useMemo(() => {
-    const rowH = cardWidth * (9 / 16);
-    return Array.from({ length: numColumns > 1 ? numColumns * 2 : 4 }).map((_, i) => (
-      <View key={i} style={{ width: cardWidth }}>
-        <SkeletonCard width={cardWidth} height={rowH} />
-      </View>
-    ));
-  }, [cardWidth, numColumns]);
-
-  if (isLoading) {
-    return (
-      <SubtleBackground ambient>
-        <View style={styles.container}>
-          <Header title={t("librariesTitle")} subtitle={t("librariesSubtitle", { defaultValue: "" })} />
-          <View style={styles.listContainer}>{skeletons}</View>
-        </View>
-      </SubtleBackground>
-    );
-  }
-
-  if (!data || data.length === 0) {
-    return (
-      <SubtleBackground ambient>
-        <View style={styles.container}>
-          <Header title={t("librariesTitle")} />
-          <View style={styles.emptyContainer}>
-            <Feather name="folder" size={48} color={colors.brand.light} style={{ marginBottom: 16, opacity: 0.6 }} />
-            <Text style={styles.emptyText}>{t("noResults")}</Text>
-          </View>
-        </View>
-      </SubtleBackground>
-    );
-  }
-
-  const countLabel = t("librarySummary", { count: data.length, items: totalCount, defaultValue: `${data.length} collections · ${totalCount} titres` });
-
+  const hideGrid = assist.open || emptySearch;
   return (
     <SubtleBackground ambient>
-      <Animated.ScrollView
-        style={styles.container}
+      <CatalogGrid
+        listRef={listRef}
+        catalog={catalog}
+        onItemPress={openItem}
+        overrideItems={hideGrid ? NONE : state.platformActive ? state.platformFiltered : undefined}
+        empty={hideGrid ? null : undefined}
+        header={header}
         onScroll={onScrollChrome}
-        scrollEventThrottle={16}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: headerH }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={colors.brand.violet}
-            progressBackgroundColor={colors.surface.s1}
-          />
-        }
-      >
-        <Header title={t("librariesTitle")} subtitle={countLabel} />
-
-        {/* Grille cohérente — toutes les libs sont équivalentes, pas de hiérarchie arbitraire */}
-        <View style={styles.listContainer}>
-          {data.map((lib, index) => (
-            <FadeIn key={lib.Id} delay={index * 80} translateY={16} style={{ width: cardWidth }}>
-              <LibraryCard library={lib} width={cardWidth} onPress={() => handlePress(lib)} />
-            </FadeIn>
-          ))}
-        </View>
-      </Animated.ScrollView>
+        topInset={headerH}
+        bottomInset={tabBarH}
+      />
+      <LibrarySheets state={state} />
     </SubtleBackground>
   );
 }
 
-function Header({ title, subtitle }: { title: string; subtitle?: string }) {
-  const styles = useThemedStyles(makeStyles);
+/** Les filtres avancés, à côté du champ — avec leur nombre quand il y en a. */
+function FilterButton({ count, onPress }: { count: number; onPress: () => void }) {
+  const { t } = useTranslation("common");
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
+  const active = count > 0;
   return (
-    <View style={styles.header}>
-      <Text style={styles.title} accessibilityRole="header">{title}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-    </View>
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={active ? `${t("filters")} (${count})` : t("filters")}
+      style={({ pressed }) => [st.filterBtn, active && st.filterBtnActive, pressed && st.pressed]}
+    >
+      <Feather name="sliders" size={18} color={active ? theme.colors.brand.light : theme.colors.text.secondary} />
+      {active && (
+        <View style={st.badge}>
+          <Text style={st.badgeText}>{count}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+function LibrariesSkeleton() {
+  const st = useThemedStyles(makeStyles);
+  const headerH = useHeaderHeight();
+  const { itemWidth, numColumns, gutter, padding } = useGrid({ phoneColumns: 3 });
+  return (
+    <SubtleBackground ambient>
+      <View style={{ paddingTop: headerH + LIBRARY_HERO_HEIGHT - 80 }}>
+        <View style={[st.skeletonTitle, { marginHorizontal: spacing.screenPadding }]} />
+        <View style={st.skeletonCapsule} />
+        <View style={[st.skeletonGrid, { paddingHorizontal: padding, gap: gutter }]}>
+          {Array.from({ length: numColumns * 2 }, (_, i) => (
+            <SkeletonCard key={i} width={itemWidth} height={itemWidth * 1.5} />
+          ))}
+        </View>
+      </View>
+    </SubtleBackground>
   );
 }
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingBottom: spacing.xxxl + 60 },
-  header: {
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
     paddingHorizontal: spacing.screenPadding,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
-  title: {
-    fontSize: 32,
-    fontFamily: FONT_FAMILY.extrabold,
-    color: t.colors.text.primary,
-    letterSpacing: -0.8,
+  filterBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: t.colors.border.strong,
+    backgroundColor: t.colors.surface.s2,
   },
-  subtitle: {
-    ...typography.caption,
-    fontFamily: FONT_FAMILY.medium,
-    color: t.colors.brand.light,
-    marginTop: 6,
-    letterSpacing: 0.3,
+  filterBtnActive: { borderColor: t.colors.border.focus, backgroundColor: t.colors.brand.soft },
+  pressed: { opacity: 0.75, transform: [{ scale: 0.96 }] },
+  badge: {
+    position: "absolute",
+    top: -3,
+    right: -3,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: t.colors.brand.violet,
   },
-  listContainer: { paddingHorizontal: spacing.screenPadding, flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP },
-  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 80 },
+  badgeText: { color: t.colors.cta.brandFg, fontSize: 10, fontFamily: FONT_FAMILY.extrabold },
+  empty: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16 },
   emptyText: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, textAlign: "center" },
+  skeletonTitle: { width: 180, height: 40, borderRadius: RADIUS.md, backgroundColor: t.colors.fill.subtle, marginBottom: spacing.lg },
+  skeletonCapsule: { height: 48, borderRadius: RADIUS.pill, marginHorizontal: spacing.screenPadding, backgroundColor: t.colors.fill.subtle, marginBottom: spacing.lg },
+  skeletonGrid: { flexDirection: "row", flexWrap: "wrap" },
 });

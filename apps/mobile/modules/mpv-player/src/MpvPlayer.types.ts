@@ -173,4 +173,10 @@ export interface MpvPlayerViewHandle {
   isPictureInPictureActive(): Promise<boolean>;
   /** Détruit l'instance mpv (décodeur, cache) ; la vue reste utilisable. */
   stop(): Promise<void>;
+  /**
+   * Quitter le lecteur : mpv, image dans l'image, écran verrouillé et session
+   * audio s'éteignent pour de bon — à appeler AVANT de fermer l'écran, pendant
+   * que la vue existe encore. La vue ne se relance plus.
+   */
+  release(): Promise<void>;
 }

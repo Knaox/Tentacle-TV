@@ -197,6 +197,33 @@ développement et TestFlight seulement.
    le paquet soumis. TestFlight avec les binaires GPL du fork reste le chemin
    de test (décision de session).
 
+## 5 bis. Quitter le lecteur éteint tout (1.8.1)
+
+Symptôme rapporté : après avoir quitté une lecture, un passage sur une
+notification faisait réapparaître l'habillage du lecteur mpv ; iOS croyait
+l'app encore en lecture en arrière-plan. Le moteur ne s'éteignait qu'au
+`deinit` de sa vue, et son démontage laissait trois choses derrière lui :
+
+- la session audio était désactivée AVANT que mpv ait fini de s'arrêter (sa
+  destruction est asynchrone) : iOS refuse de désactiver une session dont une
+  sortie tourne (`isBusy`), et le `try?` avalait l'échec ;
+- les commandes de l'écran verrouillé perdaient leurs cibles mais restaient
+  ACTIVES — le lecteur (±15 s) survivait à la fermeture ;
+- le singleton Now Playing, sans propriétaire, était effacé par le lecteur
+  SORTANT quand l'épisode suivant venait de le publier.
+
+Désormais : `release()` (vue native, iOS et Android) est appelé par JS AVANT
+de fermer l'écran (`leavePlayer`, épisode suivant/précédent, notification
+tapée en pleine lecture — `src/player/openPlayer.ts`) ; la session audio est
+rendue par le DERNIER moteur vivant, une fois mpv détruit, avec trois relances
+sur `isBusy` ; les commandes s'éteignent ; Now Playing a un propriétaire ;
+l'image dans l'image automatique se désarme dès que la vue quitte la fenêtre ;
+et une vue retirée de l'arbre sans `release` s'éteint d'elle-même après une
+seconde (hors image dans l'image). Vérifié au simulateur (journal natif :
+`moteur démonté` puis `session audio rendue`, par Retour comme par une
+notification tapée en lecture). L'image dans l'image elle-même n'existe pas au
+simulateur : à confirmer sur iPhone.
+
 ## 6. Ouvert, non vérifié, à trancher
 
 - **Rejet silencieux au traitement App Store Connect (vécu deux fois, builds

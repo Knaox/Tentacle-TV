@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { ActivePluginMeta } from "@tentacle-tv/plugins-api";
 import {
   personProviderUrl, providerAccepts, providerUrl, readExternalResponse, searchProviders, shortPluginName,
-  withoutLibraryTwins, type SearchProvider,
+  withoutLibraryTwins, type SearchablePlugin, type SearchProvider,
 } from "./pluginSearch";
 
-function plugin(partial: Partial<ActivePluginMeta>): ActivePluginMeta {
+type TestPlugin = SearchablePlugin & { id: string; version: string; hasBundle: boolean; navItems: unknown[] };
+
+function plugin(partial: Partial<TestPlugin>): TestPlugin {
   return {
     id: "uuid", pluginId: "seer", name: "Vigie — Jellyseerr (unofficial)", version: "2.0.0",
     hasBundle: true, configEnabled: true, navItems: [], ...partial,

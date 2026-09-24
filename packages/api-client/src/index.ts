@@ -5,7 +5,8 @@ export { useLibraries, useLibraryItems, useEpisodes, useSeriesEpisodes, useMedia
 export { useSeasons, prefetchSeasons, useSeasonEpisodesLite, prefetchSeasonEpisodesLite, getSeasonEpisodesLiteKey } from "./hooks/useSeasons";
 export { useRandomLibraryBackdrop, getLibraryBackdropKey, prefetchLibraryBackdrop } from "./hooks/useLibraryBackdrop";
 export { useSearchItems } from "./hooks/useSearchItems";
-// Le moteur de recherche du serveur Tentacle (web et bureau).
+// Le moteur de recherche du serveur Tentacle (web, bureau et mobile), et ce
+// que les plugins trouvent hors de la bibliothèque.
 export {
   useTentacleSearch,
   useSearchEpisodes,
@@ -14,6 +15,17 @@ export {
   type SearchBrowseTarget,
   type TentacleSearchOptions,
 } from "./hooks/useTentacleSearch";
+export {
+  useExternalSearch,
+  combineExternal,
+  type ExternalSearchOptions,
+  type ExternalSearchState,
+} from "./hooks/useExternalSearch";
+export {
+  useExternalFilmography,
+  type ExternalFilmographyOptions,
+  type FilmographyPerson,
+} from "./hooks/useExternalFilmography";
 export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog } from "./hooks/useLibraryCatalog";
 export type { CatalogFilters } from "./hooks/useLibraryCatalog";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
@@ -101,12 +113,22 @@ export { getClockOffsetMs, getClockRttMs } from "./socket/clockSync";
 export type { SocketStatus } from "./socket/tentacleSocket";
 
 // Canal de session : la télémétrie de lecture et la télécommande Jellyfin
-// passent par le backend (opt-in de l'hôte — web et bureau)
+// passent par le backend (opt-in de l'hôte — web, bureau et mobile)
 export {
   configureSessionChannel, getChannelStatus, isChannelReporting, onChannelStatus,
   onSessionCommand, onSessionGeneral, onSessionMessage,
 } from "./socket/sessionChannel";
 export type { ChannelStatus, SessionCommand, SessionGeneral, SessionMessage } from "./socket/sessionChannel";
+
+// La télécommande appliquée au lecteur (commande Jellyfin → geste), la même
+// traduction pour le web, le bureau et le mobile.
+export {
+  useSessionRemoteTarget, REMOTE_REWIND_SECONDS, REMOTE_FAST_FORWARD_SECONDS, type SessionRemoteTarget,
+} from "./hooks/useSessionRemote";
+
+// Le retour d'une commande du tableau de bord des sessions, de l'appui à
+// l'effet constaté — le même pour le web et le mobile.
+export { useCommandFeedback, type CommandFeedbackApi } from "./hooks/useCommandFeedback";
 
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le
 // cap automatique de qualité des clients TV.
