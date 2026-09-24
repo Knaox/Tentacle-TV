@@ -5,20 +5,24 @@ import { SORT_OPTIONS, type AdvancedFilters } from "@/components/catalog";
 import { useSearchAssist } from "@/components/search/useSearchAssist";
 import { usePlatformFilter } from "@/hooks/usePlatformFilter";
 
-export type CatalogSheet = "sort" | "year" | "advanced" | null;
+/** Une seule feuille désormais : « Trier et filtrer ». */
+export type CatalogSheet = "filters" | null;
 
 const DEFAULT_ADVANCED: AdvancedFilters = {
-  genreIds: [], studioIds: [], platformIds: [], yearFrom: null, yearTo: null,
+  studioIds: [], platformIds: [], yearFrom: null, yearTo: null,
   ratingMin: null, isFavorite: false,
-  sortBy: SORT_OPTIONS[0].sortBy, sortOrder: SORT_OPTIONS[0].sortOrder,
 };
 
 /**
  * Tout l'état d'un catalogue de bibliothèque — recherche, genres, tri,
- * année, statut, filtres avancés, plateformes —, la requête qui en découle
+ * années, statut, plateformes, note, favoris —, la requête qui en découle
  * et l'assistance de la barre. Partagé par l'écran empilé
  * (`/library/[id]`) et l'onglet Bibliothèque : les deux filtrent, trient et
  * suggèrent au geste près.
+ *
+ * UN état par filtre : la feuille « Filtres avancés » tenait sa propre copie
+ * du tri, de l'ordre et des genres, que la requête ne lisait jamais — ses
+ * pastilles ne changeaient rien à la grille.
  */
 export function useLibraryCatalogState(libraryId: string) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,7 +30,6 @@ export function useLibraryCatalogState(libraryId: string) {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedPlatformIds, setSelectedPlatformIds] = useState<number[]>([]);
   const [sortIndex, setSortIndex] = useState(0);
-  const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [sheet, setSheet] = useState<CatalogSheet>(null);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>(DEFAULT_ADVANCED);
@@ -42,7 +45,6 @@ export function useLibraryCatalogState(libraryId: string) {
     setDebouncedSearch("");
     setSelectedGenres([]);
     setSelectedPlatformIds([]);
-    setSelectedYear(null);
     setSheet(null);
     setAdvancedFilters(DEFAULT_ADVANCED);
   }
@@ -61,16 +63,15 @@ export function useLibraryCatalogState(libraryId: string) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Une plage (« De » / « À ») ; une seule année, c'est la même aux deux bouts.
   const yearsParam = useMemo(() => {
-    if (advancedFilters.yearFrom != null || advancedFilters.yearTo != null) {
-      const from = advancedFilters.yearFrom ?? 1900;
-      const to = advancedFilters.yearTo ?? new Date().getFullYear();
-      const arr: string[] = [];
-      for (let y = from; y <= to; y++) arr.push(String(y));
-      return arr;
-    }
-    return selectedYear ? [selectedYear] : undefined;
-  }, [advancedFilters.yearFrom, advancedFilters.yearTo, selectedYear]);
+    if (advancedFilters.yearFrom == null && advancedFilters.yearTo == null) return undefined;
+    const from = advancedFilters.yearFrom ?? 1900;
+    const to = advancedFilters.yearTo ?? new Date().getFullYear();
+    const arr: string[] = [];
+    for (let y = from; y <= to; y++) arr.push(String(y));
+    return arr;
+  }, [advancedFilters.yearFrom, advancedFilters.yearTo]);
 
   const catalog = useLibraryCatalog(libraryId, {
     sortBy: SORT_OPTIONS[sortIndex].sortBy,
@@ -91,8 +92,12 @@ export function useLibraryCatalogState(libraryId: string) {
   const totalCount = platformActive ? platformFiltered.length : (catalog.data?.pages[0]?.TotalRecordCount ?? 0);
   const searching = debouncedSearch.length >= 2;
   // Un filtre posé — là seulement, « N résultats » dit autre chose que le total.
-  const isFiltered = searching || selectedGenres.length > 0 || selectedYear !== null
+  const isFiltered = searching || selectedGenres.length > 0
     || statusFilter !== null || advancedActiveCount > 0 || platformActive;
+  // Tout ce que la feuille règle et que la barre rappelle — le tri compris
+  // quand il n'est pas celui par défaut : c'est le nombre du bouton.
+  const filterCount = advancedActiveCount + (selectedGenres.length > 0 ? 1 : 0)
+    + (statusFilter !== null ? 1 : 0) + (platformActive ? 1 : 0) + (sortIndex !== 0 ? 1 : 0);
 
   // Une bibliothèque de films ne suggère que des films (le moteur est global).
   const collectionType = useLibraries().data?.find((lib) => lib.Id === libraryId)?.CollectionType;
@@ -106,14 +111,14 @@ export function useLibraryCatalogState(libraryId: string) {
     searchQuery, setSearchQuery, debouncedSearch, searching, assist,
     selectedGenres, setSelectedGenres,
     sortIndex, setSortIndex,
-    selectedYear, setSelectedYear,
     statusFilter, setStatusFilter,
     sheet, setSheet,
-    advancedFilters, advancedActiveCount,
+    advancedFilters, advancedActiveCount, filterCount,
     catalog,
     platformActive, platformFiltered, totalCount, isFiltered,
     advanced: {
-      onToggleGenre: (id: string) => setAdvancedFilters((f) => ({ ...f, genreIds: toggle(f.genreIds, id) })),
+      onToggleGenre: (id: string) => setSelectedGenres((g) => toggle(g, id)),
+      onClearGenres: () => setSelectedGenres([]),
       onToggleStudio: (id: string) => setAdvancedFilters((f) => ({ ...f, studioIds: toggle(f.studioIds, id) })),
       onTogglePlatform: (id: number) => {
         setAdvancedFilters((f) => ({ ...f, platformIds: toggle(f.platformIds, id) }));
@@ -123,8 +128,11 @@ export function useLibraryCatalogState(libraryId: string) {
       onYearToChange: (v: number | null) => setAdvancedFilters((f) => ({ ...f, yearTo: v })),
       onRatingMinChange: (v: number | null) => setAdvancedFilters((f) => ({ ...f, ratingMin: v })),
       onFavoriteChange: (v: boolean) => setAdvancedFilters((f) => ({ ...f, isFavorite: v })),
-      onSortByChange: (sortBy: string, sortOrder: string) => setAdvancedFilters((f) => ({ ...f, sortBy, sortOrder })),
+      // « Réinitialiser » : tout ce que la feuille règle, le tri compris.
       onReset: () => {
+        setSelectedGenres([]);
+        setStatusFilter(null);
+        setSortIndex(0);
         setSelectedPlatformIds([]);
         setAdvancedFilters(DEFAULT_ADVANCED);
       },
