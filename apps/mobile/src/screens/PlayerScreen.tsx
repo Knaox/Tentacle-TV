@@ -1,22 +1,20 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, StatusBar } from "react-native";
 import { PLAYER } from "@/theme";
-import { TICKS_PER_SECOND, itemTrackChoiceFromStreams } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { useMediaItem, useUserId } from "@tentacle-tv/api-client";
+import { useMediaItem } from "@tentacle-tv/api-client";
 import { usePlayerPlayback, startTicksOf } from "../hooks/usePlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { usePlayerBackground } from "../hooks/usePlayerBackground";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
-import { useRememberLocalTracks } from "../hooks/offline/useRememberLocalTracks";
+import { usePlayerAirPlay } from "../hooks/usePlayerAirPlay";
+import { usePlayerTracks } from "../hooks/usePlayerTracks";
 import { useEngineSettings } from "../player/engine/engineSettings";
 import { usePlayerEngine } from "../player/engine/usePlayerEngine";
-import { useAirPlayRestoreSeek, useAirPlayRouteWatch } from "../player/engine/useAirPlayRoute";
-import { isAirPlayRouteActive } from "../../modules/mpv-player";
 import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import type { PlayerEngineHandle } from "../player/engine/types";
-import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { AutoCapBadge } from "../components/player/AutoCapBadge";
 import { PlayerLoadingView } from "../components/player/PlayerLoadingView";
@@ -47,7 +45,6 @@ export function PlayerScreen({ itemId }: Props) {
   const hasEverPlayed = useRef(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [playerDetail, setPlayerDetail] = useState<string | null>(null);
-  const [isAirPlaying, setIsAirPlaying] = useState(false);
   /** Le flux est allé au bout — donné à l'arbitre, qui en tire l'écran de fin. */
   const [ended, setEnded] = useState(false);
   /** Un scrub est en cours — l'arbitre suspend décomptes et surcouches. */
@@ -131,28 +128,9 @@ export function PlayerScreen({ itemId }: Props) {
     onSubtitleResolved: (idx) => pb.changeSubtitle(idx),
   });
 
-  // Un changement EXPLICITE de piste est mémorisé pour ce contenu (miroir
-  // local, puis serveur) — des langues, jamais des index. La résolution
+  // Les choix EXPLICITES de piste, mémorisés pour ce contenu ; la résolution
   // automatique ci-dessus ne compte pas comme un choix.
-  const userId = useUserId();
-  const [trackOverride, setTrackOverride] = useState(false);
-  const handleSelectAudio = useCallback((idx: number) => { setTrackOverride(true); pb.changeAudio(idx); }, [pb.changeAudio]);
-  const handleSelectSubtitle = useCallback((idx: number) => { setTrackOverride(true); pb.changeSubtitle(idx); }, [pb.changeSubtitle]);
-  const trackChoice = useMemo(
-    () => (trackOverride ? itemTrackChoiceFromStreams(pb.streams, pb.audioIndex, pb.subtitleIndex) : null),
-    [trackOverride, pb.streams, pb.audioIndex, pb.subtitleIndex],
-  );
-  useRememberLocalTracks({ userId, itemId, choice: trackChoice });
-
-  // Audio/subtitle track lists for the modal
-  const audioTracks = useMemo(() =>
-    pb.streams.filter((s) => s.Type === "Audio").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
-    [pb.streams],
-  );
-  const subtitleTracks = useMemo(() =>
-    pb.streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
-    [pb.streams],
-  );
+  const { handleSelectAudio, handleSelectSubtitle, audioTracks, subtitleTracks } = usePlayerTracks(itemId, pb);
 
   // Une lecture directe a échoué : l'autre moteur, s'il est plausible, avec le
   // profil de CE moteur et la position courante — sans transcodage.
@@ -164,34 +142,10 @@ export function PlayerScreen({ itemId }: Props) {
     return true;
   }, [eng, pb.fetchPlaybackInfo, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // AirPlay, dans les deux sens. Apparu pendant une lecture par le lecteur
-  // avancé (qui ne diffuse pas) : le lecteur système prend le relais à la même
-  // position, avec SON profil — remux ou transcodage serveur acceptés, c'est le
-  // cas nécessaire. Éteint : le lecteur avancé reprend à la même seconde, là où
-  // le système ne le remplaçait que pour AirPlay. Une négociation par bascule.
-  const onAirPlayRoute = useCallback((active: boolean) => {
-    setIsAirPlaying(active);
-    const next = eng.setAirPlayRoute(active);
-    if (next === pb.engine) return;
-    console.log("[Tentacle:Player] AirPlay", active ? "actif" : "éteint", "— bascule vers", next, "à", Math.round(pb.positionRef.current), "s");
-    retryCount.current = 0;
-    pb.fetchPlaybackInfo({ engine: next, startTimeTicks: startTicksOf(pb.positionRef.current) });
-  }, [eng, pb.engine, pb.fetchPlaybackInfo, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Le lecteur système annonce l'état AirPlay de son AVPlayer — qui passe par
-  // `false` puis `true` à chaque remplacement d'item. Le front descendant se
-  // vérifie contre la route audio, seule vérité une fois la vue mpv démontée.
-  const restoreAfterAirPlay = useAirPlayRestoreSeek({
-    engineRef, positionRef: pb.positionRef, streamOffset: pb.streamOffset, videoReady,
+  // AirPlay, dans les deux sens (voir le crochet).
+  const { isAirPlaying, onAirPlayRoute, onExternalPlaybackChange } = usePlayerAirPlay({
+    eng, pb, engineRef, videoReady, retryCount,
   });
-  const onExternalPlaybackChange = useCallback((active: boolean) => {
-    restoreAfterAirPlay(active);
-    onAirPlayRoute(active || isAirPlayRouteActive());
-  }, [restoreAfterAirPlay, onAirPlayRoute]);
-  // Filet : si l'AVPlayer annonce la fin d'AirPlay avant que la route audio
-  // ne bascule, personne ne rappellerait — la route est relue chaque seconde
-  // tant que le lecteur système diffuse.
-  useAirPlayRouteWatch(isAirPlaying && pb.engine === "native", onAirPlayRoute);
 
   // Image dans l'image : l'habillage n'a rien à faire dans la petite fenêtre.
   const onPipChange = useCallback((active: boolean) => {
