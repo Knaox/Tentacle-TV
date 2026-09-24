@@ -18,6 +18,11 @@ import { locateAres, aresUsable, runAres, NPM_COMMAND } from "./tooling.mjs";
  *
  * Aucun téléviseur n'est nécessaire : `--version` ne parle à personne.
  */
+/** Quatre démarrages de la CLI de LG à la suite : sous la charge d'un
+ *  contrôle qui teste tous les paquets en parallèle (crochet pre-push,
+ *  quality.yml), les 5 s par défaut de Vitest ne suffisaient pas. */
+const CLI_STARTS_TIMEOUT_MS = 30_000;
+
 describe("le repérage de la CLI de LG", () => {
   it("rend une racine que lancerAres sait exploiter", () => {
     const root = locateAres();
@@ -27,7 +32,7 @@ describe("le repérage de la CLI de LG", () => {
       const issue = runAres(root, tool, ["--version"]);
       expect(issue.code, `${tool} devait répondre`).toBe(0);
     }
-  });
+  }, CLI_STARTS_TIMEOUT_MS);
 
   it("échoue clairement quand la racine ne porte rien", () => {
     expect(() => runAres("/dev/null/nulle-part", "ares-install", [])).toThrow(
