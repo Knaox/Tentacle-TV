@@ -1,4 +1,5 @@
 import { parseTicketNotifBody } from "./ticketNotifTypes";
+import type { PushLang } from "./pushLang";
 
 /**
  * Texte POUSSÉ sur le téléphone pour une notification de ticket.
@@ -6,20 +7,14 @@ import { parseTicketNotifBody } from "./ticketNotifTypes";
  * La base reste brute (sujet, statut, « auteur puis extrait ») et les cloches
  * traduisent elles-mêmes ; mais un push s'affiche tel quel, et le serveur n'a
  * pas la locale de l'appareil. On compose donc ici, dans la langue d'interface
- * que l'utilisateur a choisie côté serveur (`server_config` → `user_lang_<id>`),
- * français par défaut — comme libraryAddedNotifier compose ses annonces.
+ * que l'utilisateur a choisie côté serveur (cf. pushLang.ts), français par
+ * défaut — comme libraryAddedNotifier compose ses annonces.
  */
-
-export type PushLang = "fr" | "en";
 
 const STATUS_LABELS: Record<PushLang, Record<string, string>> = {
   fr: { open: "Ouvert", in_progress: "En cours", resolved: "Résolu", closed: "Fermé" },
   en: { open: "Open", in_progress: "In progress", resolved: "Resolved", closed: "Closed" },
 };
-
-export function normalizePushLang(raw: string | null | undefined): PushLang {
-  return raw?.trim().toLowerCase().startsWith("en") ? "en" : "fr";
-}
 
 export function ticketPushText(
   n: { type: string; title: string; body: string | null },

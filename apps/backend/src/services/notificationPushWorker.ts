@@ -4,7 +4,8 @@ import { exactPushKey, isAnnounced, recordAnnounced } from "./announcedRegistry"
 import { planSeerAvailabilityPush } from "./seerPushPlanner";
 import { isPushPrefEnabled, type PushPrefKey } from "./pushPreferences";
 import { isTicketNotifType } from "./ticketNotifTypes";
-import { normalizePushLang, ticketPushText, type PushLang } from "./ticketPushText";
+import { ticketPushText } from "./ticketPushText";
+import { loadPushLangs, type PushLang } from "./pushLang";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -152,16 +153,6 @@ async function tick(): Promise<void> {
   } finally {
     running = false;
   }
-}
-
-/** La langue d'interface choisie côté serveur par chaque utilisateur du lot
- *  (`user_lang_<id>`, cf. routes/preferences.ts) — le texte poussé la suit. */
-async function loadPushLangs(userIds: string[]): Promise<Map<string, PushLang>> {
-  const prefix = "user_lang_";
-  const rows = await getPrisma().serverConfig.findMany({
-    where: { key: { in: userIds.map((id) => `${prefix}${id}`) } },
-  });
-  return new Map(rows.map((r) => [r.key.slice(prefix.length), normalizePushLang(r.value)]));
 }
 
 export function startNotificationPushWorker(): void {

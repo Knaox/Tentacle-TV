@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { normalizePushLang, ticketPushText } from "./ticketPushText";
+import { normalizePushLang } from "./pushLang";
+import { ticketPushText } from "./ticketPushText";
 import { composeTicketNotifBody, parseTicketNotifBody } from "./ticketNotifTypes";
 
 describe("corps « auteur puis extrait »", () => {
