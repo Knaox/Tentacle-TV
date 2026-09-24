@@ -79,11 +79,13 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
     if (!user.isAdmin) {
       return reply.status(403).send({ message: "Réservé aux administrateurs" });
     }
-    const result = await sendToUser(user.userId, {
-      title: "Tentacle TV",
-      body: "Notification de test ✓",
-      data: { type: "test" },
-    });
+    // Seul envoi qui franchit la coupure du dev : c'est précisément l'outil
+    // pour éprouver un vrai téléphone depuis un backend de dev.
+    const result = await sendToUser(
+      user.userId,
+      { title: "Tentacle TV", body: "Notification de test ✓", data: { type: "test" } },
+      { allowInDev: true },
+    );
     return result.sent === 0 ? { sent: 0, reason: "no_device" } : { sent: result.sent };
   });
 };
