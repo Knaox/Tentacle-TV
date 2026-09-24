@@ -62,8 +62,18 @@ export type SessionPlaystateCommandDto =
 export type SessionClientMessage =
   /** Ce lecteur sait parler par le canal. `deviceId` n'est qu'une étiquette
    *  de corrélation : le backend ne le présente JAMAIS à Jellyfin (qui
-   *  réattribue une session à quiconque annonce son identifiant). */
-  | { type: "session:hello"; version: number; deviceId?: string }
+   *  réattribue une session à quiconque annonce son identifiant). `client`,
+   *  `device` et `appVersion` nomment l'application d'un appareil JUMELÉ : le
+   *  backend les présente avec l'identifiant qu'il dérive lui-même pour cet
+   *  appareil, jamais avec `deviceId`. */
+  | {
+      type: "session:hello";
+      version: number;
+      deviceId?: string;
+      client?: string;
+      device?: string;
+      appVersion?: string;
+    }
   /** `resumed` : la lecture était déjà en cours (reconnexion, canal ouvert en
    *  cours de route) — le backend la reprend sans annoncer un nouveau début. */
   | { type: "playback:start"; state: PlaybackStateDto; resumed?: boolean }

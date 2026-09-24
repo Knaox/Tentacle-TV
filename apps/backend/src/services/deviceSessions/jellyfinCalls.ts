@@ -1,12 +1,13 @@
 import { fetch as undiciFetch } from "undici";
 import { getJellyfinUrl } from "../configStore";
 import { getJellyfinDispatcher } from "../jellyfinHttpAgent";
+import { deviceAuthHeader, type DeviceAuth } from "./deviceAuth";
 
 /**
  * Les requêtes que le canal de session adresse à Jellyfin AU NOM d'un
  * appareil : reports de lecture, ping de transcodage, capacités.
  *
- * # L'en-tête ne porte QUE le jeton
+ * # L'en-tête ne porte QUE le jeton — sauf pour un appareil jumelé
  *
  * Jellyfin range ses sessions par (Client, DeviceId), et RÉATTRIBUE une
  * session existante à quiconque annonce cette clé (`SessionManager.
@@ -17,14 +18,13 @@ import { getJellyfinDispatcher } from "../jellyfinHttpAgent";
  * la session touchée est exactement celle du jeton — celle dont le lecteur
  * se sert pour ses propres requêtes, puisqu'il a adopté cette identité à la
  * connexion (`jellyfinIdentity`).
+ *
+ * Un appareil jumelé, lui, porte un jeton emprunté : il présente l'identité
+ * que le SERVEUR a dérivée pour lui (`deviceAuth.ts`).
  */
 
 /** Au-delà, Jellyfin ne répond pas : le report est perdu, pas la lecture. */
 const TIMEOUT_MS = 10_000;
-
-export function tokenOnlyAuthHeader(token: string): string {
-  return `MediaBrowser Token="${token.replace(/[^A-Za-z0-9._~-]/g, "")}"`;
-}
 
 /** Ce qu'il faut pour parler à Jellyfin au nom d'un appareil. */
 export interface JellyfinCaller {
@@ -32,7 +32,8 @@ export interface JellyfinCaller {
   post(path: string, body: unknown): Promise<boolean>;
 }
 
-export function jellyfinCaller(token: string): JellyfinCaller {
+export function jellyfinCaller(auth: DeviceAuth): JellyfinCaller {
+  const authorization = deviceAuthHeader(auth);
   return {
     async post(path, body) {
       const base = getJellyfinUrl();
@@ -42,7 +43,7 @@ export function jellyfinCaller(token: string): JellyfinCaller {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: tokenOnlyAuthHeader(token),
+            Authorization: authorization,
           },
           body: body === undefined ? undefined : JSON.stringify(body),
           signal: AbortSignal.timeout(TIMEOUT_MS),
