@@ -2,12 +2,7 @@ import { isHorizontal, directionSign, type Direction } from "./keys";
 import { correction, type Slack } from "./framing";
 import { candidateBeyond, inFixedLayer } from "./beyond";
 import { decide } from "./border";
-import {
-  horizontalScroller,
-  verticalScroller,
-  horizontalScrollers,
-  verticalScrollers,
-} from "./scrollers";
+import { horizontalScroller, verticalScroller, scrollChain, type ScrollChain } from "./scrollers";
 
 /**
  * Amener un élément en vue, et faire défiler quand il n'y a pas de voisin.
@@ -43,8 +38,8 @@ export { horizontalScroller, verticalScroller };
  * nulle. Ne traiter que le premier laissait un résultat hors écran dès qu'il y
  * avait deux niveaux — la liste de résultats dans le corps de la recherche.
  */
-export function bringIntoView(element: HTMLElement): void {
-  for (const scroller of horizontalScrollers(element)) {
+export function bringIntoView(element: HTMLElement, chain: ScrollChain = scrollChain(element)): void {
+  for (const scroller of chain.horizontal) {
     const delta = correction(
       segmentHorizontal(element.getBoundingClientRect()),
       segmentHorizontal(scroller.getBoundingClientRect()),
@@ -54,7 +49,7 @@ export function bringIntoView(element: HTMLElement): void {
     if (delta !== 0) scroller.scrollLeft += delta;
   }
 
-  for (const scroller of verticalScrollers(element)) {
+  for (const scroller of chain.vertical) {
     const delta = correction(
       segmentVertical(element.getBoundingClientRect()),
       segmentVertical(scroller.getBoundingClientRect()),
@@ -70,7 +65,7 @@ export function bringIntoView(element: HTMLElement): void {
   // rien ne converge jamais, en violation de la règle « la page ne défile pas
   // sans que le focus bouge ». Ses conteneurs INTERNES, eux, viennent d'être
   // servis : un panneau fixe qui défile intérieurement défile toujours.
-  if (inFixedLayer(element)) return;
+  if (chain.fixed) return;
 
   const delta = correction(
     segmentVertical(element.getBoundingClientRect()),

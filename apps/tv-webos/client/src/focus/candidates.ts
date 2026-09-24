@@ -46,9 +46,15 @@ export function collect(root: ParentNode = document): Candidate[] {
   // centaines, sur un processeur qui n'en a pas les moyens.
   const styles = new Map<Element, CSSStyleDeclaration>();
 
+  // L'ordre des filtres est celui de leur COÛT, pas de leur sens — l'ensemble
+  // retenu est le même, chaque filtre écartant indépendamment. Les attributs
+  // d'abord, puis la géométrie : après la première lecture la mise en page est
+  // à jour, un rectangle ne coûte presque rien, et il écarte d'un coup tout ce
+  // qui est loin de l'écran — la plus grande part d'un accueil. Les styles
+  // calculés, les plus chers, ne sont lus que pour ce qui reste. Un élément
+  // `display: none` a une boîte nulle : le rectangle l'écarte aussi.
   for (const node of root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
-    if (!isReachable(node)) continue;
-    if (!visibleAncestors(node, styles)) continue;
+    if (!attributesAllow(node)) continue;
 
     const rect = node.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) continue;
@@ -61,9 +67,13 @@ export function collect(root: ParentNode = document): Candidate[] {
     if (rect.right < -viewWidth * margin) continue;
     if (rect.left > viewWidth * (1 + margin)) continue;
 
+    const style = window.getComputedStyle(node);
+    if (!styleAllows(style)) continue;
+    if (!visibleAncestors(node, styles)) continue;
+
     // La boîte de NAVIGATION, débarrassée de l'agrandissement au focus : la
     // fenêtre ci-dessus juge la position à l'écran, le rect brut lui suffit.
-    candidates.push({ element: node, box: navBox(node, rect) });
+    candidates.push({ element: node, box: navBox(node, rect, style) });
   }
 
   return withoutWrappers(candidates);
@@ -171,26 +181,33 @@ function withoutWrappers(candidates: Candidate[]): Candidate[] {
   return candidates.filter((candidate) => !spread.has(candidate.element));
 }
 
-/** Visible, actif, et pas explicitement retiré du parcours. */
-function isReachable(element: HTMLElement): boolean {
+/** Actif, et pas explicitement retiré du parcours — sans rien lire du rendu. */
+function attributesAllow(element: HTMLElement): boolean {
   if (element.hasAttribute("disabled")) return false;
   if (element.getAttribute("aria-hidden") === "true") return false;
-  if (element.getAttribute("tabindex") === "-1") return false;
+  return element.getAttribute("tabindex") !== "-1";
+}
+
+/** Ni caché, ni transparent, ni traversé par le pointeur. */
+function styleAllows(style: CSSStyleDeclaration): boolean {
+  if (style.visibility === "hidden" || style.opacity === "0") return false;
+  return style.pointerEvents !== "none";
+}
+
+/** Visible, actif, et pas explicitement retiré du parcours. */
+function isReachable(element: HTMLElement): boolean {
+  if (!attributesAllow(element)) return false;
 
   // `offsetParent` nul signale `display: none` sur l'élément ou un ancêtre —
   // le test le plus court et le moins coûteux. Il répond aussi nul pour un
   // élément en `position: fixed`, d'où la seconde branche.
+  const style = window.getComputedStyle(element);
   if (element.offsetParent === null) {
-    const style = window.getComputedStyle(element);
     if (style.position !== "fixed") return false;
     if (style.display === "none") return false;
   }
 
-  const style = window.getComputedStyle(element);
-  if (style.visibility === "hidden" || style.opacity === "0") return false;
-  if (style.pointerEvents === "none") return false;
-
-  return true;
+  return styleAllows(style);
 }
 
 /**

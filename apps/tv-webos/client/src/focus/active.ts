@@ -1,5 +1,5 @@
 import { bringIntoView } from "./scroll";
-import { horizontalScrollers, verticalScrollers } from "./scrollers";
+import { scrollChain, type ScrollChain } from "./scrollers";
 
 /**
  * L'élément qui porte le focus, et comment le lui donner.
@@ -25,16 +25,13 @@ interface Anchor {
   y: number;
 }
 
-function read(element: HTMLElement): Anchor[] {
+function read(chain: ScrollChain): Anchor[] {
   const anchors: Anchor[] = [{ target: null, x: window.pageXOffset, y: window.pageYOffset }];
 
   // Un `Set` : un conteneur qui défile dans les deux sens serait relevé — donc
   // restauré — deux fois, la seconde écrasant la première avec les mêmes
   // valeurs. Inoffensif, mais inutile.
-  const containers = new Set<HTMLElement>([
-    ...verticalScrollers(element),
-    ...horizontalScrollers(element),
-  ]);
+  const containers = new Set<HTMLElement>([...chain.vertical, ...chain.horizontal]);
   containers.forEach((target) => {
     anchors.push({ target, x: target.scrollLeft, y: target.scrollTop });
   });
@@ -77,8 +74,10 @@ function restore(anchors: Anchor[]): void {
  * et sur la dalle**, ce qu'il n'était pas.
  */
 export function giveFocus(element: HTMLElement): void {
-  const anchors = read(element);
+  // Une seule montée d'ancêtres pour les deux temps (cf. `scrollChain`).
+  const chain = scrollChain(element);
+  const anchors = read(chain);
   element.focus({ preventScroll: true });
   restore(anchors);
-  bringIntoView(element);
+  bringIntoView(element, chain);
 }
