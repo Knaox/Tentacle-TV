@@ -13,3 +13,4 @@ export * from "./hero";
 export * from "./nav";
 export * from "./player";
 export * from "./search";
+export * from "./reco";
