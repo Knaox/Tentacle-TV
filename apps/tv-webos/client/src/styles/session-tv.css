@@ -1,0 +1,104 @@
+/* Les messages de l'administrateur, à la télécommande — `ui/session/`.
+ *
+ * En haut à droite, dans l'overscan, au-dessus de tout — lecteur et recherche
+ * compris. Aucune cible : rien ne se vise, rien ne se ferme, le bandeau
+ * s'efface seul et sa barre le dit. Surface OPAQUE, sans flou : elle se lit sur
+ * une affiche claire comme sur une scène sombre du film.
+ *
+ * Seuls `transform` et `opacity` sont animés : l'entrée, et la barre qui se
+ * vide — une mise à l'échelle, pas une largeur, donc rien à repeindre. */
+
+.tv-session-messages {
+  position: fixed;
+  top: var(--tv-overscan-y);
+  right: var(--tv-overscan-x);
+  z-index: 200;
+  width: 640px;
+  pointer-events: none;
+}
+
+.tv-session-message {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 22px 28px 26px 28px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-3);
+  box-shadow: var(--elev-2);
+  animation: tv-session-message-in 220ms ease-out both;
+}
+
+.tv-session-message-label {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-light);
+}
+
+.tv-session-message-header,
+.tv-session-message-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  word-wrap: break-word;
+}
+
+.tv-session-message-header {
+  margin: 0;
+  -webkit-line-clamp: 2;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.tv-session-message-text {
+  margin: 6px 0 0 0;
+  -webkit-line-clamp: 6;
+  font-size: 26px;
+  line-height: 1.45;
+  white-space: pre-line;
+  color: var(--text-secondary);
+}
+
+.tv-session-message-track {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: var(--surface-2);
+}
+
+.tv-session-message-bar {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+  transform-origin: left center;
+  animation-name: tv-session-message-countdown;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+@keyframes tv-session-message-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes tv-session-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

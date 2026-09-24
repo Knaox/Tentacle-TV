@@ -269,6 +269,11 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // porte pas le fichier, « Originale » seulement (un choix manuel prime).
   [resolve(WEB, "lib/bitratePolicy.ts")]: resolve(CLIENT, "playback/bitratePolicyTv.ts"),
 
+  // Les messages de l'administrateur : un bandeau focalisable volerait le
+  // focus au film. Ils s'effacent seuls, une barre qui se vide le dit.
+  [resolve(WEB, "components/session/SessionMessageHost.tsx")]:
+    resolve(CLIENT, "ui/session/SessionMessageHostTv.tsx"),
+
   // Hôte des plugins : une iframe qui charge un bundle distant.
   [resolve(WEB, "components/PluginIframe.tsx")]: resolve(CLIENT, "shims/pluginIframe.ts"),
 

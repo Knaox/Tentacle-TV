@@ -21,6 +21,7 @@ import {
   setShareLinkBackendUrl,
   setWsBackendUrl,
   setWatchTogetherBackendUrl,
+  configureSessionChannel,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { App } from "@/App";
@@ -35,6 +36,8 @@ import { installFocusEngine } from "./focus/engine";
 import { primeFocus } from "./focus/entry";
 import { installBack } from "./focus/back";
 import { installPlayerKeys } from "./playback/playerKeys";
+import { installSessionRemoteOsd } from "./playback/sessionRemoteOsd";
+import { SessionChannelTv } from "./session/SessionChannelTv";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
 // classes — puis ce que le téléviseur change par-dessus. Importées ici plutôt
 // que chaînées par `@import` : la racine de Vite est `client/`, et un `@import`
@@ -141,6 +144,22 @@ const pairingToken = deviceToken();
 jellyfinClient.useCredentials = !pairingToken;
 if (pairingToken) jellyfinClient.setAccessToken(pairingToken);
 
+// Canal de session : la télémétrie de lecture et la télécommande de Jellyfin
+// passent par le backend, sur le socket Tentacle. Le téléviseur s'y annonce
+// avec le nom de SON application — « Tentacle TV - webOS », « LG TV », la
+// version webOS — et l'identifiant que le serveur a dérivé pour lui, adopté
+// par `SessionChannelTv`. Face à un serveur d'avant le canal, rien ne répond et
+// les reports repartent en HTTP.
+configureSessionChannel({
+  deviceId: () => jellyfinClient.getDeviceId(),
+  app: () => ({
+    client: jellyfinClient.getClientName(),
+    device: jellyfinClient.getDeviceName(),
+    version: jellyfinClient.getAppVersion(),
+  }),
+});
+installSessionRemoteOsd();
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -218,6 +237,7 @@ createRoot(document.getElementById("root")!).render(
       <ThemeProvider>
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={jellyfinClient}>
+            <SessionChannelTv />
             {/* Le serveur sert cette variante sous `/tv` ; le `basename` doit
                 rester aligné sur la `base` de la configuration de build. */}
             <BrowserRouter basename="/tv">

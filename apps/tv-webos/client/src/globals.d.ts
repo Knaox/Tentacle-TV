@@ -73,6 +73,10 @@ declare module "@/components/detail/ExtrasRow?original" {
   export * from "@/components/detail/ExtrasRow";
 }
 
+declare module "@/components/session/SessionMessageHost?original" {
+  export * from "@/components/session/SessionMessageHost";
+}
+
 /**
  * Le pont vers les services Luna, injecté par le gestionnaire d'applications.
  *
