@@ -23,6 +23,8 @@ import { SelectableGridCard } from "@/components/watchlist/SelectableGridCard";
 import { useMultiSelect } from "@/hooks/useMultiSelect";
 import { CollectionFilterHeader } from "@/components/collection/CollectionFilterHeader";
 import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
+import { SearchAssistPane } from "@/components/search/SearchAssistPane";
+import { useSearchAssist } from "@/components/search/useSearchAssist";
 import { useCollectionFilters } from "./useCollectionFilters";
 import {
   spacing,
@@ -77,6 +79,7 @@ export function CollectionScreen({
   const client = useJellyfinClient();
   const { data: brut, isLoading, refetch, isRefetching } = query;
   const filters = useCollectionFilters(brut);
+  const assist = useSearchAssist(filters.input, filters.setInput);
   const data = filters.filtered;
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
@@ -170,10 +173,13 @@ export function CollectionScreen({
             prend le relais, et sur une collection vraiment vide, où il n'y
             aurait rien à trier. */}
         {!selection.active && !isLoading && (brut?.length ?? 0) > 0 && (
-          <CollectionFilterHeader filters={filters} />
+          <CollectionFilterHeader filters={filters} assist={assist} />
         )}
 
-        {isLoading ? (
+        {/* Pendant la frappe, les suggestions prennent la place de la grille. */}
+        {assist.open ? (
+          <SearchAssistPane assist={assist} />
+        ) : isLoading ? (
           <View style={styles.skeletonGrid}>{skeletons}</View>
         ) : count === 0 ? (
           <ScrollView

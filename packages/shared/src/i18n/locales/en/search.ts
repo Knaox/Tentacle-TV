@@ -9,6 +9,8 @@ export default {
   cancel: "Cancel",
   escape: "Esc",
   topResult: "Top result",
+  suggestions: "Suggestions",
+  bestResults: "Top results",
   movies: "Movies",
   series: "Shows",
   collections: "Collections",
