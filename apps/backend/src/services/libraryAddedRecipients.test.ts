@@ -115,6 +115,12 @@ describe("qui reçoit une arrivée", () => {
     expect(ids(plan.others)).toEqual(["m-heat"]);
   });
 
+  it("sans ligne de préférences, le demandeur est prévenu : c'est le défaut", async () => {
+    store.claims = [claim("alice", 438631, "Dune")];
+    const plans = byUser(await planRecipients([dune], NOW));
+    expect(ids(plans.get("alice")!.requested)).toEqual(["m-dune"]);
+  });
+
   it("« demandé disponible » coupé et rien d'autre : silence", async () => {
     store.claims = [claim("alice", 438631, "Dune")];
     store.prefs = [pref("alice", false, false)];

@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS `push_devices` (
 CREATE TABLE IF NOT EXISTS `notification_preferences` (
   `jellyfinUserId` varchar(255) NOT NULL,
   `libraryAdded` tinyint(1) NOT NULL DEFAULT 0,
-  `seerAvailable` tinyint(1) NOT NULL DEFAULT 0,
+  `seerAvailable` tinyint(1) NOT NULL DEFAULT 1,
   `tickets` tinyint(1) NOT NULL DEFAULT 1,
   `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`jellyfinUserId`)
@@ -76,6 +76,10 @@ CREATE TABLE IF NOT EXISTS `notification_preferences` (
 -- opt-in). Une base existante ne repasse pas par le CREATE ci-dessus — ajout
 -- idempotent (MariaDB).
 ALTER TABLE `notification_preferences` ADD COLUMN IF NOT EXISTS `tickets` tinyint(1) NOT NULL DEFAULT 1;
+
+-- 1.19.1 : « contenu demandé disponible » ACTIVÉE par défaut. Les lignes
+-- existantes gardent leur valeur ; seul le défaut des lignes à venir change.
+ALTER TABLE `notification_preferences` ALTER COLUMN `seerAvailable` SET DEFAULT 1;
 
 -- Colonne de livraison push sur les notifications existantes (additif, idempotent MariaDB).
 ALTER TABLE `notifications` ADD COLUMN IF NOT EXISTS `pushedAt` datetime(3) NULL;
