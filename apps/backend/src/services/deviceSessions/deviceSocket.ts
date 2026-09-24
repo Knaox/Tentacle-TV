@@ -1,5 +1,5 @@
 import WebSocket from "ws";
-import { tokenOnlyAuthHeader } from "./jellyfinCalls";
+import { deviceAuthHeader, type DeviceAuth } from "./deviceAuth";
 import type { SessionPlaystateCommandDto } from "./protocolMessages";
 
 /**
@@ -51,7 +51,8 @@ export interface SocketLike {
 export interface DeviceSocketOptions {
   /** Base HTTP de Jellyfin (interne), lue à chaque connexion. */
   baseUrl: () => string | undefined;
-  token: string;
+  /** Le jeton, et l'identité de l'appareil jumelé quand c'est à nous de la présenter. */
+  auth: DeviceAuth;
   /** Capacités de l'appareil, postées à chaque ouverture (voir `jellyfinCalls.ts`). */
   postCapabilities: () => Promise<boolean>;
   onOpen: () => void;
@@ -117,7 +118,7 @@ export class DeviceSocket {
     const url = `${base.replace(/^http/, "ws").replace(/\/$/, "")}/socket`;
     let socket: SocketLike;
     try {
-      socket = (this.opts.createSocket ?? defaultSocket)(url, { Authorization: tokenOnlyAuthHeader(this.opts.token) });
+      socket = (this.opts.createSocket ?? defaultSocket)(url, { Authorization: deviceAuthHeader(this.opts.auth) });
     } catch {
       this.scheduleReconnect();
       return;

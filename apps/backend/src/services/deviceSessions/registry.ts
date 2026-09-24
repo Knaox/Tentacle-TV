@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import type { DeviceAuth } from "./deviceAuth";
 import type { PlaybackReporter } from "./playbackReporter";
 import type {
   PlaybackEventDto,
@@ -11,9 +12,11 @@ import type {
  * Le registre du canal de session : quelles connexions de lecteurs, sur quels
  * appareils Jellyfin, avec quelle lecture en cours.
  *
- * Un APPAREIL, ici, c'est un jeton Jellyfin : c'est lui qui désigne la
- * session chez Jellyfin (voir `jellyfinCalls.ts`). Deux onglets d'un même
- * navigateur partagent le cookie, donc le jeton, donc la connexion Jellyfin.
+ * Un APPAREIL, ici, c'est un jeton Jellyfin — et, pour un appareil jumelé,
+ * l'identité que le serveur présente pour lui (`deviceAuth.ts`) : c'est ce
+ * couple qui désigne la session chez Jellyfin. Deux onglets d'un même
+ * navigateur partagent le cookie, donc le jeton, donc la connexion Jellyfin ;
+ * deux TV d'un compte qui partagent un jeton restent deux appareils.
  *
  * L'ordre qui compte, à la disparition d'un lecteur : l'arrêt de sa lecture
  * part D'ABORD, la connexion Jellyfin ne se ferme qu'ENSUITE — Jellyfin retire
@@ -44,11 +47,19 @@ export interface DeviceHandlers {
   onGeneralCommand(name: string, args: Record<string, string>): void;
 }
 
+/** Ce que dit `session:hello` : une étiquette, et le nom d'une application jumelée. */
+export interface HelloInfo {
+  deviceId?: string;
+  client?: string;
+  device?: string;
+  appVersion?: string;
+}
+
 export interface RegistryDeps {
   enabled(): boolean;
-  resolveToken(conn: ChannelConnection, authToken: string): Promise<string | null>;
-  createDevice(token: string, handlers: DeviceHandlers): DeviceLink;
-  createReporter(token: string): PlaybackReporter;
+  resolveAuth(conn: ChannelConnection, authToken: string, hello: HelloInfo): Promise<DeviceAuth | null>;
+  createDevice(auth: DeviceAuth, handlers: DeviceHandlers): DeviceLink;
+  createReporter(auth: DeviceAuth): PlaybackReporter;
 }
 
 interface ConnectionEntry {
@@ -66,7 +77,7 @@ interface Orphan {
 
 interface DeviceEntry {
   key: string;
-  token: string;
+  auth: DeviceAuth;
   link: DeviceLink;
   connections: Set<ConnectionEntry>;
   orphans: Set<Orphan>;
@@ -83,8 +94,12 @@ export interface ConnectionView {
   playback: PlaybackStateDto | null;
 }
 
-function keyOf(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
+function keyOf(auth: DeviceAuth): string {
+  return createHash("sha256")
+    .update(auth.token)
+    .update("\u0000")
+    .update(auth.identity?.deviceId ?? "")
+    .digest("hex");
 }
 
 function samePlayback(reporter: PlaybackReporter, state: PlaybackStateDto): boolean {
@@ -99,18 +114,21 @@ export class SessionRegistry {
   constructor(private readonly deps: RegistryDeps) {}
 
   /** `session:hello` — rattache la connexion à la connexion Jellyfin de son appareil. */
-  async hello(conn: ChannelConnection, authToken: string, deviceId?: string): Promise<void> {
+  async hello(conn: ChannelConnection, authToken: string, hello: HelloInfo = {}): Promise<void> {
     const entry = this.entryOf(conn);
-    entry.deviceId = deviceId;
-    const token = this.deps.enabled() ? await this.deps.resolveToken(conn, authToken) : null;
+    entry.deviceId = hello.deviceId;
+    const auth = this.deps.enabled() ? await this.deps.resolveAuth(conn, authToken, hello) : null;
     if (!this.connections.has(conn)) return; // partie pendant la résolution
-    const key = token === null ? null : keyOf(token);
+    const key = auth === null ? null : keyOf(auth);
     if (entry.device !== null && entry.device.key !== key) this.detach(entry);
-    if (token === null || key === null) {
+    if (auth === null || key === null) {
       conn.send({ type: "session:ready", reporting: false, remoteControl: false });
       return;
     }
-    const device = entry.device ?? this.deviceFor(key, token);
+    // Un appareil jumelé est connu de Jellyfin sous l'identifiant dérivé :
+    // c'est celui-là que le tableau de bord rapproche de la session.
+    if (auth.identity) entry.deviceId = auth.identity.deviceId;
+    const device = entry.device ?? this.deviceFor(key, auth);
     entry.device = device;
     device.connections.add(entry);
     conn.send({ type: "session:ready", reporting: true, remoteControl: device.link.isLive() });
@@ -130,7 +148,7 @@ export class SessionRegistry {
       entry.reporter = orphan.reporter;
       break;
     }
-    entry.reporter ??= this.deps.createReporter(device.token);
+    entry.reporter ??= this.deps.createReporter(device.auth);
     await entry.reporter.start(state, resumed);
   }
 
@@ -213,7 +231,7 @@ export class SessionRegistry {
     device.link.close();
   }
 
-  private deviceFor(key: string, token: string): DeviceEntry {
+  private deviceFor(key: string, auth: DeviceAuth): DeviceEntry {
     const existing = this.devices.get(key);
     if (existing) return existing;
     const handlers: DeviceHandlers = {
@@ -235,8 +253,8 @@ export class SessionRegistry {
     };
     const device: DeviceEntry = {
       key,
-      token,
-      link: this.deps.createDevice(token, handlers),
+      auth,
+      link: this.deps.createDevice(auth, handlers),
       connections: new Set(),
       orphans: new Set(),
       openedOnce: false,

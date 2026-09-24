@@ -4,7 +4,7 @@ import { DEVICE_CAPABILITIES, jellyfinCaller } from "./jellyfinCalls";
 import { PlaybackReporter } from "./playbackReporter";
 import { parseSessionMessage } from "./protocolParse";
 import { SessionRegistry, type ChannelConnection, type ConnectionView } from "./registry";
-import { resolveJellyfinToken } from "./tokenResolver";
+import { resolveDeviceAuth } from "./tokenResolver";
 
 /**
  * Le canal de session, branché : le registre et ses vraies dépendances, et ce
@@ -16,18 +16,18 @@ import { resolveJellyfinToken } from "./tokenResolver";
 
 const registry = new SessionRegistry({
   enabled: () => process.env.TENTACLE_SESSION_CHANNEL !== "off",
-  resolveToken: (_conn, authToken) => resolveJellyfinToken(authToken),
-  createDevice: (token, handlers) =>
+  resolveAuth: (_conn, authToken, hello) => resolveDeviceAuth(authToken, hello),
+  createDevice: (auth, handlers) =>
     new DeviceSocket({
       baseUrl: getJellyfinUrl,
-      token,
-      postCapabilities: () => jellyfinCaller(token).post("/Sessions/Capabilities/Full", DEVICE_CAPABILITIES),
+      auth,
+      postCapabilities: () => jellyfinCaller(auth).post("/Sessions/Capabilities/Full", DEVICE_CAPABILITIES),
       onOpen: handlers.onOpen,
       onLost: handlers.onLost,
       onPlaystate: handlers.onPlaystate,
       onGeneralCommand: handlers.onGeneralCommand,
     }),
-  createReporter: (token) => new PlaybackReporter(jellyfinCaller(token)),
+  createReporter: (auth) => new PlaybackReporter(jellyfinCaller(auth)),
 });
 
 export type { ChannelConnection, ConnectionView };
@@ -38,7 +38,12 @@ export function handleSessionMessage(conn: ChannelConnection, authToken: string,
   if (msg === null) return;
   switch (msg.type) {
     case "session:hello":
-      void registry.hello(conn, authToken, msg.deviceId);
+      void registry.hello(conn, authToken, {
+        deviceId: msg.deviceId,
+        client: msg.client,
+        device: msg.device,
+        appVersion: msg.appVersion,
+      });
       break;
     case "playback:start":
       void registry.start(conn, msg.state, msg.resumed ?? false);

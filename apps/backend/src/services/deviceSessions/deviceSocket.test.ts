@@ -50,7 +50,7 @@ function setup(overrides: Partial<DeviceSocketOptions> = {}) {
   };
   const device = new DeviceSocket({
     baseUrl: () => "http://jellyfin:8096",
-    token: "jeton",
+    auth: { token: "jeton" },
     postCapabilities: events.capabilities,
     onOpen: events.open,
     onLost: events.lost,

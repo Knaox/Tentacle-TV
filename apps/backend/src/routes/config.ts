@@ -4,6 +4,7 @@ import { getMaxResumePct } from "../services/jellyfinSystemConfig";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken } from "../services/jwt";
 import { resolvePairedDeviceToken } from "../services/deviceTokenHealth";
+import { pairedJellyfinDeviceId } from "../services/deviceSessions/deviceAuth";
 import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
 import { BACKEND_VERSION } from "../services/version";
 
@@ -73,6 +74,11 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
 
     let jellyfinToken: string | null = null;
     let tokenExpired = false;
+    // L'identifiant Jellyfin qu'un appareil jumelé doit adopter : celui que le
+    // canal de session présente pour lui (`deviceSessions/deviceAuth.ts`).
+    // Adopté, ses propres requêtes et le canal touchent la MÊME session —
+    // c'est elle que le tableau de bord pilote.
+    let deviceId: string | null = null;
 
     if (isPairedDevice && bearerToken) {
       // Appareil jumelé : son jeton Jellyfin est en base — rendu seulement s'il
@@ -84,6 +90,7 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
         const resolved = await resolvePairedDeviceToken(bearerToken, payload.userId);
         jellyfinToken = resolved.token;
         tokenExpired = resolved.purged;
+        deviceId = await pairedJellyfinDeviceId(bearerToken).catch(() => null);
         if (resolved.purged) {
           request.log.warn("Paired device jellyfinAccessToken invalide ou d'un autre compte — retiré, aucun appareil frère");
         }
@@ -100,6 +107,7 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
         enabled: true,
         mediaBaseUrl,
         jellyfinToken,
+        ...(deviceId && { deviceId }),
         ...(tokenExpired && { tokenExpired: true }),
       },
     };

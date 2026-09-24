@@ -31,6 +31,11 @@ const message = z.discriminatedUnion("type", [
     type: z.literal("session:hello"),
     version: z.number().int().positive(),
     deviceId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
+    // Des étiquettes lisibles, ASCII imprimable sans guillemet : elles
+    // finissent dans un en-tête `MediaBrowser`, que Kestrel refuse hors ASCII.
+    client: z.string().regex(/^[\x20-\x21\x23-\x7E]{1,64}$/).optional(),
+    device: z.string().regex(/^[\x20-\x21\x23-\x7E]{1,64}$/).optional(),
+    appVersion: z.string().regex(/^[0-9A-Za-z.+-]{1,32}$/).optional(),
   }),
   z.object({ type: z.literal("playback:start"), state, resumed: z.boolean().optional() }),
   z.object({

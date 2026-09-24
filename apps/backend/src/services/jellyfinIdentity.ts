@@ -29,7 +29,9 @@ const DEVICE_SECRET_KEY = "device_id_secret";
  *  sans lui, ("ab", "c") et ("a", "bc") donneraient le même identifiant. */
 const PART_SEPARATOR = "\u0000";
 
-export type IdentityKind = "web" | "setup" | "provisioning" | "backend";
+/** `paired` : un appareil jumelé (TV native, LG) — son identifiant vient du
+ *  hachage de son jeton de jumelage, jamais de lui (`deviceSessions/deviceAuth.ts`). */
+export type IdentityKind = "web" | "setup" | "provisioning" | "backend" | "paired";
 
 /** Mémoïsation de la PROMESSE (pas de la valeur) : deux appels concurrents au
  *  démarrage ne doivent pas générer deux valeurs concurrentes. */
@@ -161,6 +163,10 @@ export interface AuthHeaderParts {
   client?: string;
   /** Présent uniquement quand on porte un token déjà obtenu. */
   token?: string;
+  /** Version de l'application présentée ; par défaut celle du backend. Un
+   *  appareil jumelé parle en son nom : sa version, pas la nôtre, sinon le
+   *  tableau de bord verrait sa version osciller à chaque report. */
+  version?: string;
 }
 
 /** Retire ce qui casserait l'en-tête : hors-ASCII (rejeté en 400 par Kestrel) et
@@ -180,12 +186,12 @@ function asciiId(value: string): string {
 
 /** En-tête `MediaBrowser …`, schéma d'auth pérenne (les X-Emby-* sont dépréciés
  *  depuis Jellyfin 10.11). Source unique des quatre gabarits qui coexistaient. */
-export function buildAuthHeader({ device, deviceId, client, token }: AuthHeaderParts): string {
+export function buildAuthHeader({ device, deviceId, client, token, version }: AuthHeaderParts): string {
   const parts = [
     `MediaBrowser Client="${asciiLabel(client ?? "Tentacle TV")}"`,
     `Device="${asciiLabel(device)}"`,
     `DeviceId="${asciiId(deviceId)}"`,
-    `Version="${BACKEND_VERSION}"`,
+    `Version="${asciiLabel(version ?? BACKEND_VERSION)}"`,
   ];
   if (token) parts.push(`Token="${token}"`);
   return parts.join(", ");

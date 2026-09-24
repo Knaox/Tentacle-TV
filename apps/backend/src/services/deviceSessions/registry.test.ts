@@ -1,3 +1,4 @@
+import type { DeviceAuth } from "./deviceAuth";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { JellyfinCaller } from "./jellyfinCalls";
 import { PlaybackReporter } from "./playbackReporter";
@@ -24,7 +25,10 @@ interface FakeDevice extends DeviceLink {
   closed: boolean;
 }
 
-function harness(opts: { token?: string | null; enabled?: boolean } = {}) {
+/** Le nom d'un appareil dans le journal : son jeton, et son identifiant quand il en a un. */
+const nameOf = (auth: DeviceAuth) => (auth.identity ? `${auth.token}#${auth.identity.deviceId}` : auth.token);
+
+function harness(opts: { token?: string | null; enabled?: boolean; paired?: boolean } = {}) {
   const log: string[] = [];
   const devices: FakeDevice[] = [];
   const caller = (token: string): JellyfinCaller => ({
@@ -35,8 +39,18 @@ function harness(opts: { token?: string | null; enabled?: boolean } = {}) {
   });
   const registry = new SessionRegistry({
     enabled: () => opts.enabled ?? true,
-    resolveToken: (_conn, authToken) => Promise.resolve(opts.token === undefined ? authToken : opts.token),
-    createDevice: (token, handlers) => {
+    resolveAuth: (_conn, authToken, hello) => {
+      const token = opts.token === undefined ? authToken : opts.token;
+      if (token === null) return Promise.resolve(null);
+      if (!opts.paired) return Promise.resolve({ token });
+      // Un jumelé : le jeton emprunté est commun, l'identifiant dérive du JWT.
+      return Promise.resolve({
+        token,
+        identity: { client: hello.client ?? "Tentacle TV - TV", device: "TV", deviceId: `paired-${authToken}`, version: "1.3.0" },
+      });
+    },
+    createDevice: (auth, handlers) => {
+      const token = nameOf(auth);
       const device: FakeDevice = {
         token,
         handlers,
@@ -52,7 +66,7 @@ function harness(opts: { token?: string | null; enabled?: boolean } = {}) {
       devices.push(device);
       return device;
     },
-    createReporter: (token) => new PlaybackReporter(caller(token)),
+    createReporter: (auth) => new PlaybackReporter(caller(nameOf(auth))),
   });
   return { registry, log, devices };
 }
@@ -197,3 +211,18 @@ describe("SessionRegistry — commandes de Jellyfin", () => {
     expect(log.at(-1)).toBe("jeton /Sessions/Playing/Progress");
   });
 });
+
+describe("SessionRegistry — appareils jumelés", () => {
+  it("deux TV qui empruntent le même jeton restent deux appareils Jellyfin", async () => {
+    const { registry, log, devices } = harness({ token: "emprunte", paired: true });
+    const salon = connection();
+    const chambre = connection();
+    await registry.hello(salon, "jwt-salon", { deviceId: "etiquette" });
+    await registry.hello(chambre, "jwt-chambre");
+    expect(devices.map((d) => d.token)).toEqual(["emprunte#paired-jwt-salon", "emprunte#paired-jwt-chambre"]);
+    expect(log).toContain("emprunte#paired-jwt-salon open");
+    // Le tableau de bord rapproche la connexion par l'identifiant DÉRIVÉ, pas l'étiquette.
+    expect(registry.list().map((v) => v.deviceId).sort()).toEqual(["paired-jwt-chambre", "paired-jwt-salon"]);
+  });
+});
+
