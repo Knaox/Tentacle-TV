@@ -11,7 +11,8 @@
     "./focus": "./src/focus/index.ts",
     "./hero": "./src/hero/index.ts",
     "./player": "./src/player/index.ts",
-    "./search": "./src/search/index.ts"
+    "./search": "./src/search/index.ts",
+    "./reco": "./src/reco/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
