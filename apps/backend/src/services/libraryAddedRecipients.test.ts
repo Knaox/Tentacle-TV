@@ -13,7 +13,7 @@ const HOUR = 60 * 60_000;
 
 const store = {
   devices: [] as Array<{ jellyfinUserId: string }>,
-  claims: [] as Array<{ tmdbId: number; jellyfinUserId: string; title: string; expiresAt: Date }>,
+  claims: [] as Array<{ tmdbId: number; jellyfinUserId: string; title: string; mediaType: string; expiresAt: Date }>,
   prefs: [] as Array<{ jellyfinUserId: string; libraryAdded: boolean; seerAvailable: boolean; tickets: boolean }>,
   announced: [] as Array<{ jellyfinUserId: string; contentKey: string; notifiedAt: Date }>,
   langs: [] as Array<{ key: string; value: string }>,
@@ -65,12 +65,14 @@ const bear = (e: number, s = 2): LibItem => ({
   ParentIndexNumber: s,
   IndexNumber: e,
 });
-const claim = (userId: string, tmdbId: number, title: string, expiresIn = HOUR) => ({
+const claim = (userId: string, tmdbId: number, title: string, expiresIn = HOUR, mediaType = "movie") => ({
   tmdbId,
   jellyfinUserId: userId,
   title,
+  mediaType,
   expiresAt: new Date(NOW + expiresIn),
 });
+const showClaim = (userId: string, tmdbId: number, title: string) => claim(userId, tmdbId, title, HOUR, "tv");
 const pref = (userId: string, libraryAdded: boolean, seerAvailable = true) => ({
   jellyfinUserId: userId,
   libraryAdded,
@@ -133,9 +135,23 @@ describe("qui reçoit une arrivée", () => {
   });
 
   it("un épisode se rattache à la demande par le TMDB de sa série", async () => {
-    store.claims = [claim("alice", 136315, "The Bear")];
+    store.claims = [showClaim("alice", 136315, "The Bear")];
     store.prefs = [pref("alice", false, true)];
     const plan = byUser(await planRecipients([bear(1)], NOW)).get("alice")!;
+    expect(ids(plan.requested)).toEqual(["bear-2-1"]);
+  });
+
+  it("un film demandé au même numéro TMDB qu'une série n'est pas cette série", async () => {
+    // TMDB numérote films et séries dans deux espaces qui se chevauchent.
+    store.claims = [claim("alice", 136315, "Un film")];
+    store.prefs = [pref("alice", false, true)];
+    expect(await planRecipients([bear(1)], NOW)).toEqual([]);
+  });
+
+  it("une série demandée se reconnaît à son nom quand son TMDB manque", async () => {
+    store.claims = [showClaim("alice", 1, "The Bear")];
+    store.prefs = [pref("alice", false, true)];
+    const plan = byUser(await planRecipients([{ ...bear(1), seriesTmdbId: undefined }], NOW)).get("alice")!;
     expect(ids(plan.requested)).toEqual(["bear-2-1"]);
   });
 
