@@ -5,6 +5,18 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [Unreleased]
+### FR
+- **Les téléviseurs se pilotent depuis les tableaux de bord** de Jellyfin et de Tentacle : une TV jumelée — Apple TV, Android TV, LG — s'y présente sous son nom et son appareil, et obéit à la pause, à la reprise, à l'arrêt et aux messages
+- **TV LG : la recherche de Tentacle et la page « Pour vous »**, avec le client servi par le serveur
+- **Une TV jumelée ne lit plus au nom d'un autre compte** : un jeton Jellyfin égaré d'un autre utilisateur est écarté, la progression s'enregistre sur le bon compte
+- **L'identifiant d'une TV jumelée lui est donné même lecture directe coupée**
+### EN
+- **TVs can be controlled from the dashboards** of Jellyfin and Tentacle: a paired TV — Apple TV, Android TV, LG — shows up under its own name and device, and obeys pause, resume, stop and messages
+- **LG TV: Tentacle search and the "For You" page**, with the client served by the server
+- **A paired TV no longer plays on another account's behalf**: a stray Jellyfin token of another user is discarded, progress is saved to the right account
+- **A paired TV gets its device identifier even with direct play off**
+
 ## [1.19.1]
 ### FR
 - **Une arrivée s'annonce dès que Jellyfin l'a** : qui a demandé un film ou une série reçoit « Votre demande est disponible » à l'arrivée réelle du contenu dans la bibliothèque — il n'attend plus que Jellyseerr la voie (son scan périodique, puis la synchronisation de Vigie). Les abonnés à « Ajouts en bibliothèque » la reçoivent aussi, demandes des autres comprises : elles leur étaient cachées
