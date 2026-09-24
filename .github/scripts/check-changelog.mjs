@@ -10,13 +10,15 @@
 //
 // CE QUI FAIT ÉCHOUER : bloc introuvable pour la version exacte, ou vide dans
 // l'une des deux langues. « ## [Unreleased] » ne peut pas passer — on cherche
-// le bloc de la version, et lui seul.
+// le bloc de la version, et lui seul. Pour App Store Connect (`asc`), aussi un
+// caractère qu'Apple refuse (ASC_FORBIDDEN, lib/changelog.mjs) : les notes y
+// seraient rejetées en silence, et la soumission à l'examen échouerait ensuite.
 //
 // CE QUI FAIT SEULEMENT AVERTIR : un texte plus long que la limite du store.
 // La coupe à la puce est voulue, mais elle est SILENCIEUSE — c'est elle qui a
 // fait naître les blocs « ## [win-X.Y.Z] » de changelogs/desktop.md. Autant la
 // voir arriver, et de combien.
-import { loadNotes, extractSection, toPlainText, LIMITS } from './lib/changelog.mjs';
+import { loadNotes, extractSection, findAscForbidden, toPlainText, LIMITS } from './lib/changelog.mjs';
 import fs from 'node:fs';
 
 const args = process.argv.slice(2);
@@ -64,6 +66,20 @@ for (const spec of checks) {
     continue;
   }
 
+  // L'annotation `file=…,line=…` pointe la ligne dans l'onglet du run ; la
+  // ligne est aussi écrite en clair pour qui lit le journal brut.
+  if (format === 'asc') {
+    const hits = findAscForbidden(md, section, { fr: notes.fr, en: notes.en });
+    for (const hit of hits) {
+      const where = `ligne ${hit.line}${hit.lang ? ` (${hit.lang})` : ''}`;
+      console.error(`::error file=${changelog},line=${hit.line}::${label} — ${where} : « ${hit.char} » (${hit.code}) ${hit.why}. Retire-le : les notes seraient rejetées et la version ne pourrait pas être soumise.`);
+    }
+    if (hits.length > 0) {
+      failed = true;
+      continue;
+    }
+  }
+
   const limit = LIMITS[format];
   const parts = [];
   for (const lang of ['fr', 'en']) {
@@ -79,7 +95,7 @@ for (const spec of checks) {
 }
 
 if (failed) {
-  console.error(`\n::error::Notes de version incomplètes pour ${version} : rien ne part.`);
+  console.error(`\n::error::Notes de version ${version} incomplètes ou refusées : rien ne part.`);
   process.exit(1);
 }
 console.log(`\nNotes de version ${version} complètes (${changelog}).`);

@@ -7,13 +7,34 @@ import fs from 'node:fs';
 /** Limites de caractères par cible (texte brut). GitHub : aucune. */
 export const LIMITS = { asc: 4000, play: 500, msstore: 1500 };
 
+/**
+ * Caractères qu'App Store Connect REFUSE dans les notes, aussi bien dans
+ * « Nouveautés de cette version » que dans « À tester » de TestFlight. Liste
+ * FERMÉE, tenue sur ce qu'Apple a réellement renvoyé : le refus vise des
+ * caractères précis, pas les symboles en général — ⌘ ⇥ « » — et … sont passés
+ * dans le même texte. Un nouveau refus observé s'ajoute ici, daté.
+ *
+ * Pourquoi c'est grave : les scripts de notes sont non bloquants, une version
+ * refusée reste donc SANS « Nouveautés », et c'est la soumission à l'examen qui
+ * échoue ensuite (409 ENTITY_STATE_INVALID).
+ */
+export const ASC_FORBIDDEN = [
+  // Observé le 2026-09-23 (macOS 1.22.0) : 409 INVALID_CHARACTERS sur les
+  // Nouveautés, 409 INVALID_TEXT sur « À tester ».
+  { char: '✓', code: 'U+2713', why: 'refusé par App Store Connect (observé le 2026-09-23)' },
+  // NON observé : écarté par analogie, c'est la variante grasse de ✓.
+  { char: '✔', code: 'U+2714', why: 'variante grasse de ✓, écartée par analogie (refus non observé)' },
+];
+
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Extrait la section du CHANGELOG pour (channel, version).
  * Cherche `## [<channel>-<version>]` puis replie sur `## [<version>]` nu.
- * @returns {{ raw: string, fr: string|null, en: string|null } | null}
- *   raw = bloc markdown brut (sans le titre), fr/en = sous-sections markdown.
+ * @returns {{ raw: string, fr: string|null, en: string|null, start: number, end: number } | null}
+ *   raw = bloc markdown brut (sans le titre), fr/en = sous-sections markdown,
+ *   start/end = indices (base 0) de la ligne de titre et de la fin exclue, pour
+ *   pouvoir désigner une ligne du fichier.
  */
 export function extractSection(md, { channel, version }) {
   const lines = md.split('\n');
@@ -49,7 +70,34 @@ export function extractSection(md, { channel, version }) {
     raw: block.join('\n').trim(),
     fr: fr ?? block.join('\n').trim(),
     en: en ?? fr ?? block.join('\n').trim(),
+    start,
+    end,
   };
+}
+
+/**
+ * Les caractères d'ASC_FORBIDDEN du bloc retenu, ligne par ligne, numérotées
+ * comme dans le fichier. `sent` porte les textes RÉELLEMENT envoyés par langue
+ * (après mise en forme et coupe) : un caractère qui n'y figure pas — coupé par
+ * la limite, ou dans une sous-section qui ne part pas — ne compte pas.
+ * @returns {{ char: string, code: string, why: string, line: number, lang: string|null }[]}
+ */
+export function findAscForbidden(md, section, sent) {
+  const block = md.split('\n').slice(section.start + 1, section.end);
+  const hits = [];
+  let lang = null;
+  block.forEach((text, i) => {
+    if (/^###/.test(text)) {
+      lang = /^###\s*FR\b/i.test(text) ? 'FR' : /^###\s*(EN|English)\b/i.test(text) ? 'EN' : null;
+      return;
+    }
+    for (const forbidden of ASC_FORBIDDEN) {
+      if (!text.includes(forbidden.char)) continue;
+      if (!Object.values(sent).some((t) => t?.includes(forbidden.char))) continue;
+      hits.push({ ...forbidden, line: section.start + 2 + i, lang });
+    }
+  });
+  return hits;
 }
 
 /** Markdown → texte brut store-safe (gras/italique/code/liens/puces). */
