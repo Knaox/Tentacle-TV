@@ -11,6 +11,7 @@ import { watchHover } from "./hoverFocus";
 import { watchCursorScroll } from "./cursorScroll";
 import { inWindow } from "./measure";
 import { systemKeyboardVisible, watchSystemKeyboard } from "./systemKeyboard";
+import { admitMove } from "./repeatGate";
 import { osdNavigationActive } from "@tentacle-tv/tv-core";
 
 /**
@@ -153,6 +154,10 @@ export function installFocusEngine(): () => void {
 
     event.preventDefault();
     event.stopPropagation();
+    // Une répétition qui arrive avant que le déplacement précédent soit à
+    // l'écran est avalée, pas mise en file (`repeatGate.ts`) : la touche
+    // maintenue va aussi vite que la dalle affiche, et s'arrête avec elle.
+    if (!admitMove(intention.direction)) return;
     move(intention.direction);
   };
 
