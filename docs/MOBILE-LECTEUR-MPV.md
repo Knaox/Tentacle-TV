@@ -197,7 +197,7 @@ développement et TestFlight seulement.
    le paquet soumis. TestFlight avec les binaires GPL du fork reste le chemin
    de test (décision de session).
 
-## 5 bis. Quitter le lecteur éteint tout (1.22.0)
+## 5 bis. Quitter le lecteur éteint tout (1.8.1)
 
 Symptôme rapporté : après avoir quitté une lecture, un passage sur une
 notification faisait réapparaître l'habillage du lecteur mpv ; iOS croyait
