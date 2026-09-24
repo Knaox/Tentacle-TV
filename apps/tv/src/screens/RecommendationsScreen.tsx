@@ -48,7 +48,7 @@ function RecommendationsInner({ navigation }: Props) {
   const { storage } = useTentacleConfig();
   const jfClient = useJellyfinClient();
   const setFocusedItem = useAmbientSetter();
-  const { requestRailFocus } = useTVNavActions();
+  const { requestRailFocus, railFocusedRef } = useTVNavActions();
   useRecoLive({ token: storage.getItem("tentacle_token") });
 
   const settings = useRecoSettings();
@@ -93,7 +93,7 @@ function RecommendationsInner({ navigation }: Props) {
 
   // Arrivée par le rail : le bouton Lecture de la tête publie lui-même
   // l'entrée du contenu (`TVHeroContent`), comme sur l'accueil.
-  useTVRemote({ onBack: () => requestRailFocus() });
+  useTVRemote({ onBack: () => (railFocusedRef.current ? false : requestRailFocus()) });
 
   const loading = !page && !isError;
 

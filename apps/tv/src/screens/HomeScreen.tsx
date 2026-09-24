@@ -65,7 +65,7 @@ function HomeScreenInner({ navigation }: Props) {
   // La mise en page de l'accueil et les réglages changés ailleurs arrivent en direct.
   usePreferencesLive({ token });
   const setFocusedItem = useAmbientSetter();
-  const { requestRailFocus, lastContentNodeRef } = useTVNavActions();
+  const { requestRailFocus, lastContentNodeRef, railFocusedRef } = useTVNavActions();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
   const [ctxTarget, setCtxTarget] = useState<HomeContextTarget | null>(null);
 
@@ -91,8 +91,9 @@ function HomeScreenInner({ navigation }: Props) {
   // Retour sur l'accueil : le focus revient sur la dernière carte focalisée.
   useHomeFocusRestore(lastContentNodeRef);
 
-  // BACK sur l'accueil → focus sur le rail (pattern tvOS/Netflix)
-  useTVRemote({ onBack: () => requestRailFocus() });
+  // Retour ouvre le rail (le geste de Netflix) ; depuis le rail, il rend la main au système — sur
+  // Android, c'est quitter l'application (tvOS le fait seul à la racine).
+  useTVRemote({ onBack: () => (railFocusedRef.current ? false : requestRailFocus()) });
 
   // Préchauffe les écrans lazy (Library/MediaDetail/Player) une fois l'accueil
   // interactif — le premier accès n'attend plus le parse/exec du module.

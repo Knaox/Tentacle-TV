@@ -3,13 +3,14 @@ import { BackHandler, Platform } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 
 // react-native-tvos exports useTVEventHandler as a hook (not a class)
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { useTVEventHandler } = require("react-native") as {
   useTVEventHandler: (callback: (evt: { eventType: string; eventKeyAction?: number }) => void) => void;
 };
 
 interface TVRemoteOptions {
-  onBack?: () => void;
+  /** Retour. Rendre `false` passe l'appui au suivant — au système en dernier
+   *  recours (Android : quitter l'application). */
+  onBack?: () => void | boolean;
   onPlayPause?: () => void;
   onLeft?: () => void;
   onRight?: () => void;
@@ -71,8 +72,7 @@ export function useTVRemote(options: TVRemoteOptions) {
       if (!focusedRef.current) return false;
       const onBack = optRef.current.onBack;
       if (!onBack) return false;
-      onBack();
-      return true;
+      return onBack() !== false;
     });
     return () => handler.remove();
   }, []);
