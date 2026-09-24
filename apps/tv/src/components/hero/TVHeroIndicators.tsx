@@ -57,27 +57,34 @@ function GaugePill({ active }: { active: boolean }) {
     }).start();
   }, [active, width]);
 
+  // La lueur de la pastille active (webOS : `0 0 14px`, 0,6) vit sur un
+  // contenant NON rogné et OPAQUE. Rogné (`overflow: hidden`), iOS coupait
+  // l'ombre elle-même : elle n'avait jamais été visible. Sans fond opaque,
+  // le moteur la déduisait des pixels, hors écran, à chaque image de
+  // l'animation de largeur ; avec, il la trace d'après le contour. Le
+  // dégradé, lui, est rogné à l'intérieur. (Android ignore ces ombres.)
   return (
     <Animated.View
       style={{
         width,
         height: GAUGE.height,
         borderRadius: GAUGE.height / 2,
-        overflow: "hidden",
-        backgroundColor: active ? "transparent" : "rgba(255,255,255,0.28)",
-        shadowColor: active ? Colors.accentPurple : "transparent",
+        backgroundColor: active ? Colors.accentPurple : "rgba(255,255,255,0.28)",
+        shadowColor: Colors.accentPurple,
         shadowOpacity: active ? 0.6 : 0,
         shadowRadius: 7,
         shadowOffset: { width: 0, height: 0 },
       }}
     >
       {active && (
-        <LinearGradient
-          colors={[Colors.accentPurple, Colors.accentPink]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={{ flex: 1 }}
-        />
+        <View style={{ flex: 1, borderRadius: GAUGE.height / 2, overflow: "hidden" }}>
+          <LinearGradient
+            colors={[Colors.accentPurple, Colors.accentPink]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ flex: 1 }}
+          />
+        </View>
       )}
     </Animated.View>
   );
