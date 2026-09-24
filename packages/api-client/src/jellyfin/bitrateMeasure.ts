@@ -12,6 +12,14 @@ import type { JellyfinClient } from "../jellyfin";
  * 10 min, single-flight, et tout échec (proxy sans l'entrée, timeout, réseau)
  * rend `null` — l'appelant n'applique alors AUCUN cap (dégradation gracieuse,
  * indispensable face à un serveur pas encore à jour).
+ *
+ * **La mesure suit la voie du média.** Avec `preferDirect`, et quand le direct
+ * streaming est actif, le témoin part vers le serveur Jellyfin lui-même — là
+ * où iront les segments. Mesurer le proxy quand le film passe à côté bridait
+ * à tort : une Apple TV en Wi-Fi mesurait 18 Mb/s à travers un Tentacle
+ * distant et transcodait en 720p un 4K HDR que son réseau local portait sans
+ * peine. Réservé aux runtimes sans CORS (clients natifs) : une page web qui
+ * appellerait Jellyfin en direct se heurterait au mur de l'origine.
  */
 
 const SIZE_BYTES = 3_000_000;
@@ -22,8 +30,22 @@ const CACHE_MS = 10 * 60_000;
 const MIN_BPS = 100_000;
 const MAX_BPS = 1_000_000_000;
 
+export interface BitrateMeasureOptions {
+  /** Mesurer la voie directe (serveur Jellyfin) quand le direct streaming est actif. */
+  preferDirect?: boolean;
+}
+
+interface MeasureRoute {
+  /** Clé de cache : une mesure de la voie proxy ne vaut pas pour la voie directe. */
+  key: string;
+  url: string;
+  headers: Record<string, string>;
+  withCookies: boolean;
+}
+
 let measuredBps: number | null = null;
 let measuredAt = 0;
+let measuredRoute: string | null = null;
 let inFlight: Promise<number | null> | null = null;
 
 /** Dernière mesure (bits/s) si elle a moins de 10 min, sinon null. */
@@ -32,35 +54,58 @@ export function cachedBitrate(): number | null {
   return Date.now() - measuredAt <= CACHE_MS ? measuredBps : null;
 }
 
-/** Lance la mesure en tâche de fond si le cache est froid (fire-and-forget). */
-export function primeBitrateMeasure(client: JellyfinClient): void {
-  if (cachedBitrate() != null || inFlight) return;
-  void measureBitrate(client);
+/** La voie à mesurer : directe si demandée et disponible, sinon le proxy. */
+function routeFor(client: JellyfinClient, options: BitrateMeasureOptions): MeasureRoute {
+  const direct = options.preferDirect ? client.getDirectStreaming?.() : null;
+  if (direct?.enabled && direct.mediaBaseUrl && direct.jellyfinToken) {
+    return {
+      key: `direct:${direct.mediaBaseUrl}`,
+      url: `${direct.mediaBaseUrl}/Playback/BitrateTest?size=${SIZE_BYTES}`,
+      headers: {
+        [JELLYFIN_AUTH_HEADER]: client.getAuthHeader(direct.jellyfinToken),
+        [JELLYFIN_TOKEN_HEADER]: direct.jellyfinToken,
+      },
+      withCookies: false,
+    };
+  }
+  const token = client.getAccessToken();
+  return {
+    key: "proxy",
+    url: `${client.getBaseUrl()}/Playback/BitrateTest?size=${SIZE_BYTES}`,
+    headers: {
+      [JELLYFIN_AUTH_HEADER]: client.getAuthHeader(),
+      ...(token ? { [JELLYFIN_TOKEN_HEADER]: token } : {}),
+    },
+    withCookies: client.useCredentials,
+  };
+}
+
+/** Lance la mesure en tâche de fond si le cache est froid (fire-and-forget).
+ *  Une mesure encore fraîche mais prise sur une AUTRE voie est refaite. */
+export function primeBitrateMeasure(client: JellyfinClient, options: BitrateMeasureOptions = {}): void {
+  if (inFlight) return;
+  if (cachedBitrate() != null && measuredRoute === routeFor(client, options).key) return;
+  void measureBitrate(client, options);
 }
 
 /** Télécharge le témoin et chronomètre. Renvoie des bits/s bornés, ou null. */
-export function measureBitrate(client: JellyfinClient): Promise<number | null> {
+export function measureBitrate(client: JellyfinClient, options: BitrateMeasureOptions = {}): Promise<number | null> {
+  const route = routeFor(client, options);
   const fresh = cachedBitrate();
-  if (fresh != null) return Promise.resolve(fresh);
+  if (fresh != null && measuredRoute === route.key) return Promise.resolve(fresh);
   if (inFlight) return inFlight;
-  inFlight = runMeasure(client).finally(() => { inFlight = null; });
+  inFlight = runMeasure(route).finally(() => { inFlight = null; });
   return inFlight;
 }
 
-async function runMeasure(client: JellyfinClient): Promise<number | null> {
-  const url = `${client.getBaseUrl()}/Playback/BitrateTest?size=${SIZE_BYTES}`;
-  const token = client.getAccessToken();
-  const headers: Record<string, string> = {
-    [JELLYFIN_AUTH_HEADER]: client.getAuthHeader(),
-    ...(token ? { [JELLYFIN_TOKEN_HEADER]: token } : {}),
-  };
+async function runMeasure(route: MeasureRoute): Promise<number | null> {
   try {
     const startedAt = Date.now();
     // Timeout par Promise.race, PAS d'AbortController : même arbitrage que
     // fetchWithRetry (un signal casse certains fetch React Native). Le fetch
     // abandonné continue en arrière-plan, son résultat est simplement ignoré.
     const body = await Promise.race([
-      download(url, headers, client.useCredentials),
+      download(route.url, route.headers, route.withCookies),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), TIMEOUT_MS)),
     ]);
     if (body == null) return null;
@@ -72,6 +117,7 @@ async function runMeasure(client: JellyfinClient): Promise<number | null> {
     if (bps < MIN_BPS || bps > MAX_BPS) return null;
     measuredBps = bps;
     measuredAt = Date.now();
+    measuredRoute = route.key;
     return bps;
   } catch {
     return null;

@@ -39,8 +39,10 @@ export function DirectStreamingSync({ storage }: Props) {
   // Préchauffe la mesure de débit (cache 10 min, fire-and-forget) dès qu'une
   // session existe : la PREMIÈRE lecture peut ainsi être capée si la connexion
   // ne suit pas — la décision de flux part au montage du player, trop tôt pour
-  // mesurer sur place (cf. useTVAutoQualityCap).
-  useEffect(() => { if (token) primeBitrateMeasure(client); }, [client, token]);
+  // mesurer sur place (cf. useTVAutoQualityCap). Voie DIRECTE dès qu'elle est
+  // active (runtime natif, pas de CORS) : c'est elle que prendront les
+  // segments, et l'effet ci-dessous remesure quand elle s'ouvre.
+  useEffect(() => { if (token) primeBitrateMeasure(client, { preferDirect: true }); }, [client, token]);
 
   useEffect(() => {
     if (data?.tokenExpired) {
@@ -60,6 +62,9 @@ export function DirectStreamingSync({ storage }: Props) {
         mediaBaseUrl: data.mediaBaseUrl,
         jellyfinToken: data.jellyfinToken,
       });
+      // Une mesure prise par le proxy avant l'ouverture du direct ne dit rien
+      // de la voie qu'emprunteront les segments : elle est refaite.
+      primeBitrateMeasure(client, { preferDirect: true });
     } else if (isFetched && !isError) {
       // Le backend a répondu et le direct n'est PAS actif (désactivé, ou pas de
       // token) → mode proxy : tout passe par Tentacle (bon serveur Jellyfin).
