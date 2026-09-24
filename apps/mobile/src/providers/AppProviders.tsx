@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo } from "react";
 import { AppState, Platform } from "react-native";
 import { QueryClient, QueryClientProvider, focusManager, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
 
 // Refetch les queries stale quand l'app revient au premier plan
 focusManager.setEventListener((handleFocus) => {
@@ -37,24 +36,13 @@ import {
   RECO_PAGE_KEY,
 } from "@tentacle-tv/api-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { setSessionExpired } from "@/auth/sessionState";
-import { attemptReAuth, loginIdentity } from "@/auth/credentialManager";
+import { useAuthRefresh } from "@/auth/useAuthRefresh";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
 import { ThemeProvider } from "@/theme";
 import { PushRegistrationSync } from "@/hooks/usePushRegistration";
 import { TranscodeCleanupSync } from "@/providers/TranscodeCleanupSync";
 import { SessionChannelSync } from "@/session/SessionChannelSync";
 import { StorageReadyContext } from "./StorageReadyContext";
-
-/** AbortSignal.timeout() polyfill for React Native */
-function timeoutSignal(ms: number): AbortSignal {
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), ms);
-  return controller.signal;
-}
-
-/** Mutex to prevent concurrent auth refresh from onAuthExpired + foreground handler */
-let isRefreshing = false;
 
 interface AppProvidersProps {
   storage: StorageAdapter;
@@ -95,8 +83,6 @@ attachQueryPersister(queryClient, mobilePersistStorage, {
 });
 
 export function AppProviders({ storage, uuid, serverUrl, storageReady, children }: AppProvidersProps) {
-  const router = useRouter();
-
   const client = useMemo(() => {
     const jellyfinBase = serverUrl ? `${serverUrl}/api/jellyfin` : "";
     const MOBILE_VERSION: string = require("../../package.json").version ?? "1.0.0";
@@ -115,130 +101,9 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
     if (storageReady) client.rehydrateIdentity();
   }, [storageReady, client]);
 
-  // Handle auth expiration: try to refresh before logging out
-  useEffect(() => {
-    client.setOnAuthExpired(async () => {
-      if (isRefreshing) return;
-      isRefreshing = true;
-      try {
-        const token = storage.getItem("tentacle_token");
-        if (!token || !serverUrl) {
-          setSessionExpired(true);
-          setPreferencesToken(null);
-          setShareLinkToken(null); setPairingToken(null); setPushToken(null);
-          client.setAccessToken(null);
-          queryClient.clear();
-          router.replace("/(auth)/login");
-          return;
-        }
-
-        try {
-          const res = await fetch(`${serverUrl}/api/auth/refresh`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token }),
-            signal: timeoutSignal(8000),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            client.setAccessToken(data.AccessToken);
-            setPreferencesToken(data.AccessToken);
-            setShareLinkToken(data.AccessToken); setPairingToken(data.AccessToken); setPushToken(data.AccessToken);
-            client.resetAuthState();
-            queryClient.invalidateQueries();
-            return;
-          }
-
-          if (res.status === 401) {
-            const reAuth = await attemptReAuth(storage, serverUrl, loginIdentity(client));
-            if (reAuth) {
-              client.setAccessToken(reAuth.AccessToken);
-              if (reAuth.DeviceId) client.adoptJellyfinDeviceId(reAuth.DeviceId);
-              storage.setItem("tentacle_token", reAuth.AccessToken);
-              storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
-              setPreferencesToken(reAuth.AccessToken);
-              setShareLinkToken(reAuth.AccessToken); setPairingToken(reAuth.AccessToken); setPushToken(reAuth.AccessToken);
-              client.resetAuthState();
-              queryClient.invalidateQueries();
-              return;
-            }
-            storage.removeItem("tentacle_token");
-            storage.removeItem("tentacle_user");
-            setSessionExpired(true);
-            setPreferencesToken(null);
-            setShareLinkToken(null); setPairingToken(null); setPushToken(null);
-            client.setAccessToken(null);
-            queryClient.clear();
-            router.replace("/(auth)/login");
-            return;
-          }
-
-          // Server error (503, etc.) — keep token, don't disconnect
-        } catch {
-          // Network error / timeout — don't disconnect
-        }
-      } finally {
-        isRefreshing = false;
-      }
-    });
-  }, [client, storage, router, serverUrl]);
-
-  // Validate token when app returns to foreground
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", async (state) => {
-      if (state !== "active" || !serverUrl) return;
-      if (isRefreshing) return;
-      const token = storage.getItem("tentacle_token");
-      if (!token) return;
-
-      isRefreshing = true;
-      try {
-        const res = await fetch(`${serverUrl}/api/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-          signal: timeoutSignal(8000),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          client.setAccessToken(data.AccessToken);
-          setPreferencesToken(data.AccessToken);
-          setShareLinkToken(data.AccessToken); setPairingToken(data.AccessToken); setPushToken(data.AccessToken);
-          client.resetAuthState();
-          queryClient.invalidateQueries();
-        } else if (res.status === 401) {
-          const reAuth = await attemptReAuth(storage, serverUrl, loginIdentity(client));
-          if (reAuth) {
-            client.setAccessToken(reAuth.AccessToken);
-            if (reAuth.DeviceId) client.adoptJellyfinDeviceId(reAuth.DeviceId);
-            storage.setItem("tentacle_token", reAuth.AccessToken);
-            storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
-            setPreferencesToken(reAuth.AccessToken);
-            setShareLinkToken(reAuth.AccessToken); setPairingToken(reAuth.AccessToken); setPushToken(reAuth.AccessToken);
-            client.resetAuthState();
-            queryClient.invalidateQueries();
-          } else {
-            storage.removeItem("tentacle_token");
-            storage.removeItem("tentacle_user");
-            setSessionExpired(true);
-            setPreferencesToken(null);
-            setShareLinkToken(null); setPairingToken(null); setPushToken(null);
-            client.setAccessToken(null);
-            queryClient.clear();
-            router.replace("/(auth)/login");
-          }
-        }
-        // 503/network error: silently ignore, keep current session
-      } catch {
-        // Network error — keep session
-      } finally {
-        isRefreshing = false;
-      }
-    });
-    return () => sub.remove();
-  }, [client, storage, router, serverUrl]);
+  // Rafraîchissement du jeton : à l'expiration signalée par le client et au
+  // retour au premier plan (cf. auth/useAuthRefresh)
+  useAuthRefresh({ client, storage, serverUrl, queryClient });
 
   useEffect(() => {
     if (!serverUrl) return;
