@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Platform, type View } from "react-native";
+import { requestAndroidTvFocus } from "./useTvFocusClaim";
 
 // react-native-tvos expose `useTVEventHandler` comme un hook (cf. useTVRemote).
 const { useTVEventHandler } = require("react-native") as {
@@ -106,7 +107,7 @@ export function useContentFocusCapture(contentFocusNode: View | null): () => voi
     const target = (): FocusableNode => nodeRef.current as FocusableNode;
 
     if (Platform.OS !== "ios") {
-      const id = setTimeout(() => target()?.setNativeProps?.({ hasTVPreferredFocus: true }), SET_DELAY_MS);
+      const id = setTimeout(() => requestAndroidTvFocus(target()), SET_DELAY_MS);
       return () => clearTimeout(id);
     }
 

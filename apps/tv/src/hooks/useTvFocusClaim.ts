@@ -51,6 +51,23 @@ export function useTvFocusClaim(
 }
 
 /**
+ * Déplacer le focus sur Android TV — toujours par une transition faux → vrai.
+ *
+ * `ReactViewManager.setTVPreferredFocus` compare la valeur à l'état de la vue
+ * et n'appelle `requestFocus()` que sur une TRANSITION : poser `true` sur une
+ * vue qui l'a déjà ne fait rien. On le croyait « immédiat, une fois pour
+ * toutes » ; c'était une fois par vue. Retour sur l'accueil ne rendait le
+ * focus au rail qu'une seule fois par session, et une pastille de filtre ne le
+ * reprenait qu'à la fermeture de son premier menu. Les deux écritures partent
+ * dans l'ordre, dans le même lot : la première remet l'état, la seconde agit.
+ */
+export function requestAndroidTvFocus(target: unknown): void {
+  const node = target as FocusableNode;
+  node?.setNativeProps?.({ hasTVPreferredFocus: false });
+  node?.setNativeProps?.({ hasTVPreferredFocus: true });
+}
+
+/**
  * La réclamation elle-même, hors cycle de rendu — pour un geste qui DÉCIDE où
  * va le focus (fermer un menu rend le focus à ce qui l'a ouvert). Rend
  * l'annulation des minuteurs.
@@ -60,9 +77,9 @@ export function claimTvFocus(target: unknown): () => void {
   if (!node?.setNativeProps) return () => {};
 
   if (Platform.OS !== "ios") {
-    // Android : le moteur de focus honore la demande immédiatement. Le délai
-    // laisse la vue être posée quand la réclamation part de son montage.
-    const id = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 120);
+    // Android : le délai laisse la vue être posée quand la réclamation part
+    // de son montage (cf. `requestAndroidTvFocus` pour la transition).
+    const id = setTimeout(() => requestAndroidTvFocus(node), 120);
     return () => clearTimeout(id);
   }
 

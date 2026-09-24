@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { Platform } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { requestAndroidTvFocus } from "./useTvFocusClaim";
 
 type FocusNode = { setNativeProps?: (p: object) => void } | null;
 
@@ -32,8 +33,9 @@ export function useHomeFocusRestore(lastContentNodeRef: { readonly current: unkn
         }, 60);
         return () => { clearTimeout(id1); clearTimeout(id2); };
       }
-      // Android : le set vaut requestFocus() immédiat (one-shot).
-      const id = setTimeout(() => target()?.setNativeProps?.({ hasTVPreferredFocus: true }), 60);
+      // Android : transition faux → vrai, sinon la même carte ne reprend le
+      // focus qu'au premier retour (cf. `requestAndroidTvFocus`).
+      const id = setTimeout(() => requestAndroidTvFocus(target()), 60);
       return () => clearTimeout(id);
     }, [lastContentNodeRef])
   );
