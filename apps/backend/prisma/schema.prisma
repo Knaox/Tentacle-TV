@@ -64,6 +64,8 @@ model TicketMessage {
   @@map("ticket_messages")
 }
 
+// La cloche. Une ligne supprimée par l'utilisateur quitte la base aussitôt ;
+// les autres sont purgées au-delà de 30 jours (services/notificationPurge.ts).
 model Notification {
   id              String    @id @default(cuid())
   jellyfinUserId  String    @db.VarChar(255)

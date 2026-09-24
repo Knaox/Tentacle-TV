@@ -62,6 +62,7 @@ import { startNotificationPushWorker } from "./services/notificationPushWorker";
 import { startTicketLifecycleWorker } from "./services/ticketLifecycle";
 import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
 import { startAnnouncedPurge } from "./services/announcedRegistry";
+import { startNotificationPurge } from "./services/notificationPurge";
 import { startFingerprintPurge, sweepStaleTempDirs } from "./services/audioFingerprint";
 import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
@@ -330,6 +331,7 @@ async function main() {
     startTicketLifecycleWorker();
     startLibraryAddedNotifier();
     startAnnouncedPurge();
+    startNotificationPurge();
     // Analyse audio : les temporaires d'une analyse interrompue, les empreintes de plus de 90 jours.
     void sweepStaleTempDirs();
     startFingerprintPurge();
