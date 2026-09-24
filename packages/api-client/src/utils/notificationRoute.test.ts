@@ -23,6 +23,14 @@ describe("resolveNotificationRoute — tickets", () => {
   });
 });
 
+describe("resolveNotificationRoute — annonces d'arrivée (library_added)", () => {
+  it("ouvre la fiche du contenu, l'accueil sans cible", () => {
+    expect(resolveNotificationRoute({ type: "library_added", refId: "abc" }, "mobile")).toBe("/media/abc");
+    expect(resolveNotificationRoute({ type: "library_added", refId: "abc" }, "web")).toBe("/media/abc");
+    expect(resolveNotificationRoute({ type: "library_added", refId: null }, "mobile")).toBeNull();
+  });
+});
+
 const VIGIE = {
   pluginId: "seer",
   navItems: [
