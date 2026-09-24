@@ -69,6 +69,40 @@ android {
     }
 }
 
+/*
+ * Le libc++_shared.so du NDK de l'app, embarqué par l'app elle-même.
+ *
+ * libmpv 1.0.0 est construit avec le NDK 29 et réclame un libc++ de cette
+ * génération (le `std::from_chars` flottant). Au paquetage, chaque AAR apporte
+ * sa copie et la première rencontrée gagne (`pickFirst` du plugin React
+ * Native) : c'était celle de react-android, construite avec le NDK 27 — et la
+ * lecture plantait à l'ouverture de mpv (« cannot locate symbol », mesuré à
+ * l'émulateur Android TV sur une build release). Le mobile y échappe parce
+ * qu'il compile du natif lui-même ; l'ancienne architecture de la TV ne
+ * compile rien. Les jniLibs du module passent AVANT ceux des dépendances : on
+ * y dépose ceux du NDK déclaré — un libc++ plus récent lit les binaires plus
+ * anciens, pas l'inverse. Le CI installe ce même NDK (tv.yml).
+ */
+def ndkLibcxxDir = layout.buildDirectory.dir("generated/ndk-libcxx")
+def ndkLibcxxAbis = [
+    "arm64-v8a"  : "aarch64-linux-android",
+    "armeabi-v7a": "arm-linux-androideabi",
+    "x86"        : "i686-linux-android",
+    "x86_64"     : "x86_64-linux-android",
+]
+def copyNdkLibcxx = tasks.register("copyNdkLibcxx", Copy) {
+    def prebuilt = new File(android.ndkDirectory, "toolchains/llvm/prebuilt")
+    ndkLibcxxAbis.each { abi, triple ->
+        from(fileTree(dir: prebuilt, include: "*/sysroot/usr/lib/${triple}/libc++_shared.so")) {
+            eachFile { it.path = "${abi}/${it.name}" }
+        }
+    }
+    includeEmptyDirs = false
+    into(ndkLibcxxDir)
+}
+android.sourceSets.main.jniLibs.srcDir(ndkLibcxxDir)
+preBuild.dependsOn(copyNdkLibcxx)
+
 dependencies {
     implementation("com.facebook.react:react-android")
     // libmpv-android 1.0.0 — la version du mobile (API par instance, cf. mpv/MPVLib.kt).
