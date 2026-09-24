@@ -662,6 +662,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      # Les « Nouveautés » sont reposées ICI, juste avant l'envoi — même geste
+      # que mac-review (desktop.yml). Au cran « promote », aucun autre job ne
+      # les écrit : c'est le seul moyen de réparer des notes refusées sans
+      # reconstruire, et sans elles la version ne peut pas entrer dans la
+      # soumission (macOS 1.22.0 : « ✓ » refusé, 409). Mêmes variables que la
+      # pose du premier passage ; au promote, BUILD ne désigne aucun build
+      # existant : « À tester » est ignoré, seules les notes App Store partent.
+      - name: Poser les notes (App Store)
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: IOS
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
+          CHANGELOG: changelogs/mobile.md
+        run: node .github/scripts/asc-release-notes.mjs
       - name: Soumettre à l'examen App Store
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
