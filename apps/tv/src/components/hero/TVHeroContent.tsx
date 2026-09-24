@@ -21,6 +21,8 @@ interface TVHeroContentProps {
   onDetail: (item: MediaItem) => void;
   onButtonFocus?: () => void;
   onButtonBlur?: () => void;
+  /** Une ligne au-dessus du titre : pourquoi ce titre est là (« Pour vous »). */
+  kicker?: string;
 }
 
 /**
@@ -34,6 +36,7 @@ export const TVHeroContent = memo(function TVHeroContent({
   onDetail,
   onButtonFocus,
   onButtonBlur,
+  kicker,
 }: TVHeroContentProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
@@ -95,6 +98,18 @@ export const TVHeroContent = memo(function TVHeroContent({
         maxWidth: TV_BANNER_CARD.textMaxWidth,
       }}
     >
+      {kicker ? (
+        <Text
+          numberOfLines={1}
+          style={{
+            color: Colors.accentPurpleLight, fontSize: 14, fontWeight: "700", letterSpacing: 1.2,
+            textTransform: "uppercase", marginBottom: 10,
+            textShadowColor: "rgba(0,0,0,0.8)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6,
+          }}
+        >
+          {kicker}
+        </Text>
+      ) : null}
       {logoUri ? (
         <Image
           source={{ uri: logoUri }}

@@ -7,7 +7,7 @@ import {
   HomeIcon, SearchIcon, LibraryIcon, SettingsIcon,
   TVIcon, MusicIcon, BookIcon, BookmarkIcon,
 } from "../icons/TVIcons";
-import { EyeIcon, HeartNavIcon } from "../icons/TVNavIcons";
+import { EyeIcon, HeartNavIcon, SparklesNavIcon } from "../icons/TVNavIcons";
 import { useRailPinning } from "./railPinning";
 
 const ICON_SIZE = 26;
@@ -59,6 +59,16 @@ export function useRailEntries(): { top: RailItem[]; bottom: RailItem[] } {
       { key: "Search", label: t("search"), icon: (c) => <SearchIcon size={ICON_SIZE} color={c} /> },
       { key: "Home", label: t("home"), icon: (c) => <HomeIcon size={ICON_SIZE} color={c} /> },
     ];
+
+    // « Pour vous » juste après l'accueil, masquable — la même place que sur la LG.
+    if (!pinning.isHidden("Recommendations")) {
+      top.push({
+        key: "Recommendations",
+        label: t("forYou"),
+        icon: (c) => <SparklesNavIcon size={ICON_SIZE} color={c} />,
+        hideable: true,
+      });
+    }
 
     // Ma liste et Favoris — entre l'accueil et les bibliothèques, masquables,
     // exactement l'ordre du rail de la LG.

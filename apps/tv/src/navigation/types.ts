@@ -2,6 +2,8 @@ export type RootStackParamList = {
   Disclaimer: undefined;
   PairCode: undefined;
   Home: undefined;
+  /** « Pour vous » : recommandations de la bibliothèque seule. */
+  Recommendations: undefined;
   Library: { libraryId: string; libraryName: string };
   MediaDetail: { itemId: string };
   Player: { itemId: string };

@@ -17,6 +17,7 @@ export function deriveRailKey(state: NavStateLike): string | null {
   if (!route) return null;
   switch (route.name) {
     case "Home": return "Home";
+    case "Recommendations": return "Recommendations";
     case "Search": return "Search";
     case "Watchlist": return "Watchlist";
     case "Favorites": return "Favorites";
@@ -59,6 +60,7 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
     armContentFocus(); // le focus ira au contenu dès que l'écran l'aura publié
     if (key === "Home") navigationRef.navigate("Home");
     else if (key === "Search") navigationRef.navigate("Search");
+    else if (key === "Recommendations") navigationRef.navigate("Recommendations");
     else if (key === "Watchlist") navigationRef.navigate("Watchlist");
     else if (key === "Favorites") navigationRef.navigate("Favorites");
     else if (key === "Settings") navigationRef.navigate("Settings");
