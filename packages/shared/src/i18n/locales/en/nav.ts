@@ -38,6 +38,7 @@ export default {
   railLabel: "Main navigation",
   railHint: "Hold OK to hide an entry",
   railShowAll: "Show all",
+  myContent: "My content",
   lists: "My lists",
   pinToBar: "Pin to the bar",
   unpinFromBar: "Remove from the bar",
