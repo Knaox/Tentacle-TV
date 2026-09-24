@@ -205,6 +205,11 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "components/session/SessionMessageHost.tsx")]:
     resolve(CLIENT, "ui/session/SessionMessageHostTv.tsx"),
 
+  // Le préchargement de « Pour vous » : la page du filtre du compte et les
+  // affiches de la bibliothèque, jamais les affiches TMDB de titres que le
+  // téléviseur écarte (`ui/reco/recoPrefetchTv.ts`).
+  [resolve(WEB, "lib/recoPrefetch.ts")]: resolve(CLIENT, "ui/reco/recoPrefetchTv.ts"),
+
   // Hôte des plugins : une iframe qui charge un bundle distant.
   [resolve(WEB, "components/PluginIframe.tsx")]: resolve(CLIENT, "shims/pluginIframe.ts"),
 

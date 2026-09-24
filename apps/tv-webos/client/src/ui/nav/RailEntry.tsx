@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Home, Bookmark, Heart, Library, Settings, Eye } from "lucide-react";
+import { Search, Home, Sparkles, Bookmark, Heart, Library, Settings, Eye } from "lucide-react";
 import { createLongPress } from "../../focus/longPress";
 import { primeFocus } from "../../focus/entry";
 import { openSearch } from "../search/searchState";
@@ -30,6 +30,7 @@ import type { RailEntryItem, RailIcon } from "./railEntries";
 const ICONS: Record<RailIcon, typeof Home> = {
   recherche: Search,
   accueil: Home,
+  forYou: Sparkles,
   liste: Bookmark,
   favoris: Heart,
   bibliotheque: Library,
