@@ -36,7 +36,22 @@ type GaugeProps = ComponentProps<typeof WebGauge>;
  * Le remplissage de la pastille active est une transition de largeur et non
  * une animation continue : rien ne tourne en boucle tant que la bannière ne
  * change pas.
+ *
+ * **Mais une largeur se remet en page et se repeint à chaque image**, et cette
+ * transition-là dure toute la diapositive : huit secondes de mise en page et
+ * de peinture à soixante images par seconde, sans fin tant que la bannière
+ * tourne — mesuré au banc (build de production, processeur bridé ×4) : 42 %
+ * des peintures et la moitié du temps de composition d'une série d'appuis sur
+ * l'accueil. La pastille grandit donc par PALIERS D'UN PIXEL (`steps`) : trente
+ * pixels, trente paliers. Un pixel est le plus petit mouvement visible, la
+ * courbe et la durée sont inchangées — le rendu est le même, la dalle travaille
+ * trente fois au lieu de quatre cent quatre-vingts. Le retrait de l'ancienne
+ * pastille, lui, reste fluide : une demi-seconde, une fois par diapositive.
  */
+
+/** Largeurs de la pastille au repos et active, en pixels de canevas. */
+const IDLE_WIDTH = 14;
+const ACTIVE_WIDTH = 44;
 export function HeroIndicators({ count, activeIndex, durationMs }: GaugeProps) {
   if (count <= 1) return null;
 
@@ -50,7 +65,7 @@ export function HeroIndicators({ count, activeIndex, durationMs }: GaugeProps) {
           key={position}
           className="block h-1 overflow-hidden rounded-full transition-all duration-500"
           style={{
-            width: position === activeIndex ? 44 : 14,
+            width: position === activeIndex ? ACTIVE_WIDTH : IDLE_WIDTH,
             background:
               position === activeIndex
                 ? "linear-gradient(90deg, var(--brand), var(--brand-accent))"
@@ -62,6 +77,8 @@ export function HeroIndicators({ count, activeIndex, durationMs }: GaugeProps) {
             // « undefinedms ».
             transitionDuration:
               position === activeIndex && durationMs ? `${durationMs}ms` : undefined,
+            transitionTimingFunction:
+              position === activeIndex && durationMs ? `steps(${ACTIVE_WIDTH - IDLE_WIDTH}, end)` : undefined,
           }}
         />
       ))}

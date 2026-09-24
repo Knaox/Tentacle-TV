@@ -97,13 +97,14 @@ function readOrigin(transformOrigin: string): Origin | null {
 /**
  * La boîte de navigation d'un élément.
  *
- * `rect` évite une seconde mesure quand l'appelant vient d'en faire une —
- * le recensement mesure déjà chaque candidat pour la fenêtre de viewport.
+ * `rect` et `computed` évitent une seconde mesure et un second style calculé
+ * quand l'appelant vient de les lire — le recensement le fait pour chaque
+ * candidat.
  */
-export function navBox(element: HTMLElement, rect?: DOMRect): Box {
+export function navBox(element: HTMLElement, rect?: DOMRect, computed?: CSSStyleDeclaration): Box {
   const box = boxFromRect(rect ?? element.getBoundingClientRect());
 
-  const style = window.getComputedStyle(element);
+  const style = computed ?? window.getComputedStyle(element);
   const scale = readPureScale(style.transform);
   if (!scale) return box;
 

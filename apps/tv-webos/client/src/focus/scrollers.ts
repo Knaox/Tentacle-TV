@@ -69,3 +69,38 @@ export function verticalScroller(element: HTMLElement): HTMLElement | null {
 export function horizontalScroller(element: HTMLElement): HTMLElement | null {
   return horizontalScrollers(element)[0] ?? null;
 }
+
+/** La chaîne d'un élément relevée en UNE montée — cf. `scrollChain`. */
+export interface ScrollChain {
+  vertical: HTMLElement[];
+  horizontal: HTMLElement[];
+  /** L'élément ou un de ses ancêtres est `position: fixed` (cf. `inFixedLayer`). */
+  fixed: boolean;
+}
+
+/**
+ * Les deux chaînes de conteneurs ET l'appartenance à un calque fixe, en une
+ * seule montée.
+ *
+ * Poser le focus les demandait trois fois, à trois montées distinctes : les
+ * positions relevées autour de `focus()` (`active.ts`), puis les deux chaînes
+ * et le calque fixe de `bringIntoView` — cinq parcours d'ancêtres et autant de
+ * styles calculés par appui, sur un processeur de téléviseur. Les réponses ne
+ * changent pas entre les deux : `focus()` agrandit la carte par `transform`,
+ * qui ne touche ni aux débordements des conteneurs ni à leur positionnement.
+ */
+export function scrollChain(element: HTMLElement): ScrollChain {
+  const vertical: HTMLElement[] = [];
+  const horizontal: HTMLElement[] = [];
+  let fixed = window.getComputedStyle(element).position === "fixed";
+  for (let current = element.parentElement; current; current = current.parentElement) {
+    const style = window.getComputedStyle(current);
+    if (style.position === "fixed") fixed = true;
+    // Le corps et la racine bornent les chaînes : au-delà, c'est la fenêtre,
+    // traitée à part — mais un calque fixe se déclare aussi haut qu'il veut.
+    if (current === document.body || current === document.documentElement) continue;
+    if (scrollsVertically(current, style)) vertical.push(current);
+    if (scrollsHorizontally(current, style)) horizontal.push(current);
+  }
+  return { vertical, horizontal, fixed };
+}
