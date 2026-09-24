@@ -45,6 +45,11 @@ export function resolveNotificationRoute(
       return null;
     }
 
+    // Annonce d'arrivée poussée : la fiche du contenu quand elle n'en porte
+    // qu'un (le serveur met alors son ID dans refId), l'accueil sinon.
+    case "library_added":
+      return refId ? `/media/${refId}` : null;
+
     case "watchlist_share":
       return platform === "mobile" && refId
         ? `/shared-watchlist/${refId}`
