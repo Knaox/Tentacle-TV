@@ -57,6 +57,12 @@ final class AgentUITests: XCTestCase {
                 let shot = XCUIScreen.main.screenshot()
                 payload = jpeg(shot.image, width: (obj["w"] as? Double) ?? 1920)
                 kind = "jpg"
+            // Une application passée en arrière-plan (Menu à la racine renvoie à
+            // l'accueil de tvOS) est suspendue : l'interroger bloquait 3 × 31 s,
+            // puis l'échec clôturait le test — et le démontage tuait l'appli.
+            case "tree" where app.state != .runningForeground,
+                 "focus" where app.state != .runningForeground:
+                info = "background:\(app.state.rawValue)"
             case "tree":
                 payload = app.debugDescription.data(using: .utf8) ?? Data()
                 kind = "txt"
