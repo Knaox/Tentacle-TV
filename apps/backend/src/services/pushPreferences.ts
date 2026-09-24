@@ -2,17 +2,19 @@
  * Préférences push : la table des défauts, UNE fois pour toutes.
  *
  * Deux règles qu'on ne veut pas voir réécrites au petit bonheur dans chaque
- * consommateur : `tickets` est ACTIVÉE par défaut (les deux autres sont
- * opt-in), et une ligne ABSENTE en base vaut les défauts de chaque clé — pas
- * « tout désactivé ». Le worker push et la route de préférences lisent ici ;
- * le client mobile porte la même table (api-client) pour un serveur ancien.
+ * consommateur : `tickets` et `seerAvailable` sont ACTIVÉES par défaut — une
+ * conversation directe, une demande qu'on a faite soi-même : on veut savoir
+ * quand elle arrive —, `libraryAdded` (tous les ajouts) est opt-in ; et une
+ * ligne ABSENTE en base vaut les défauts de chaque clé — pas « tout
+ * désactivé ». Le worker push, le notifier bibliothèque et la route de
+ * préférences lisent ici ; le client mobile porte la même table (api-client).
  */
 
 export type PushPrefKey = "libraryAdded" | "seerAvailable" | "tickets";
 
 export const PUSH_PREF_DEFAULTS: Record<PushPrefKey, boolean> = {
   libraryAdded: false,
-  seerAvailable: false,
+  seerAvailable: true,
   tickets: true,
 };
 

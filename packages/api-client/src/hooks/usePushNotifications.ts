@@ -58,12 +58,13 @@ export interface PushPreferences {
 /**
  * Défauts des préférences push — la même table que le serveur
  * (apps/backend/src/services/pushPreferences.ts). Sert de repli au client
- * face à un serveur plus ancien qui ne renvoie pas encore une clé : `tickets`
- * est ACTIVÉE par défaut, les deux autres sont opt-in.
+ * le temps du chargement, ou face à un serveur qui ne renvoie pas une clé :
+ * `tickets` et `seerAvailable` sont ACTIVÉES par défaut, `libraryAdded` est
+ * opt-in.
  */
 export const PUSH_PREF_DEFAULTS: PushPreferences = {
   libraryAdded: false,
-  seerAvailable: false,
+  seerAvailable: true,
   tickets: true,
 };
 
