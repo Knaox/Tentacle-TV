@@ -106,6 +106,12 @@ describe("completionFor", () => {
     const s = suggestionsFrom("tom", data);
     expect(completionFor("tom", s)).toBe(" Hanks");
     expect(s.queries).toEqual(["Tom Holland", "Tom Cruise"]);
+    // Le nom entier tapé : rien à compléter — surtout pas vers un homonyme plus long.
+    const exact = response({
+      top: { kind: "person", hit: person("p0", "Tom Holland") },
+      people: [person("p1", "Tom Hollander")],
+    });
+    expect(completionFor("tom holland", suggestionsFrom("tom holland", exact))).toBeNull();
     // Une barre locale ne compare que des titres : la personne n'y mène à rien.
     expect(suggestionsFrom("tom", data, { people: false }).lead).toBeNull();
   });
