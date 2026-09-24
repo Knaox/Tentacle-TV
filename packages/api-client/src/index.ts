@@ -101,12 +101,16 @@ export { getClockOffsetMs, getClockRttMs } from "./socket/clockSync";
 export type { SocketStatus } from "./socket/tentacleSocket";
 
 // Canal de session : la télémétrie de lecture et la télécommande Jellyfin
-// passent par le backend (opt-in de l'hôte — web et bureau)
+// passent par le backend (opt-in de l'hôte — web, bureau et mobile)
 export {
   configureSessionChannel, getChannelStatus, isChannelReporting, onChannelStatus,
   onSessionCommand, onSessionGeneral, onSessionMessage,
 } from "./socket/sessionChannel";
 export type { ChannelStatus, SessionCommand, SessionGeneral, SessionMessage } from "./socket/sessionChannel";
+
+// Le retour d'une commande du tableau de bord des sessions, de l'appui à
+// l'effet constaté — le même pour le web et le mobile.
+export { useCommandFeedback, type CommandFeedbackApi } from "./hooks/useCommandFeedback";
 
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le
 // cap automatique de qualité des clients TV.

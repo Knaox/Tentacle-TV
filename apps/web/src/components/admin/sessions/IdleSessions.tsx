@@ -1,11 +1,10 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { MessageSquare, Radio } from "lucide-react";
-import type { AdminSessionDto } from "@tentacle-tv/shared";
+import { buttonStatus, type AdminSessionDto, type Feedback } from "@tentacle-tv/shared";
 import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
 import { ActionPill } from "./ActionPill";
 import { SessionAppLabel } from "./SessionAppLabel";
-import { buttonStatus, type Feedback } from "./commandFeedback";
 
 /**
  * Les appareils connectés qui ne lisent rien : une ligne chacun, compacte —

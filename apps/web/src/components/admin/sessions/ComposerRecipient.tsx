@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
-import type { AdminSessionDto, AdminWatchGroupDto } from "@tentacle-tv/shared";
+import { joinParts, type AdminSessionDto, type AdminWatchGroupDto } from "@tentacle-tv/shared";
 import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
-import { joinParts } from "./format";
 import { SessionAppLabel } from "./SessionAppLabel";
 
 /**

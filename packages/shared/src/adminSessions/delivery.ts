@@ -1,4 +1,4 @@
-import type { AdminSessionDto } from "@tentacle-tv/shared";
+import type { AdminSessionDto } from "../types/adminSessionsDto";
 
 /**
  * Comment le média arrive à l'appareil — rangé du plus léger au plus lourd
