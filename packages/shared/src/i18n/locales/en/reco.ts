@@ -89,4 +89,12 @@ export default {
   coldCta: "See my recommendations",
   coldLater: "Later",
   coldMore: "Show more titles",
+
+  // TVs: the "For you" page (library only, no cold-start picker on the
+  // remote — it lives on the phone and the web).
+  tvColdHint: "Watch and rate a few titles: your recommendations sharpen evening after evening.",
+  tvDisabledHint:
+    "Personalized recommendations are turned off for your account — turn them on from Tentacle on your phone or computer. Meanwhile, the best of your library.",
+  tvEmpty: "Nothing to recommend yet: your first views will feed this page.",
+  tvReason: "Why: {{reason}}",
 };
