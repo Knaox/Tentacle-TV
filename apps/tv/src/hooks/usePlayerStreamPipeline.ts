@@ -144,8 +144,14 @@ export function usePlayerStreamPipeline(args: {
   );
 
   // Master PrismCore refusé par AVPlayer : rejouer en forme muxée, UNE fois par
-  // session (PrismCore ne mint qu'un successeur) ; si c'est impossible, transcode
-  // serveur à la position courante. Refs : le handler d'erreur vit à deps figées.
+  // LECTURE ; si c'est impossible, transcode serveur à la position courante.
+  // Refs : le handler d'erreur vit à deps figées.
+  //
+  // Une fois par lecture, pas par génération : le successeur muxé EST une
+  // nouvelle génération, qui peut à son tour minter le sien. Gardé par
+  // génération, un titre dont la forme muxée échoue aussi (4K à pistes DTS
+  // pontées, mesuré sur l'Apple TV « Chambre ») ouvrait une session toutes les
+  // 350 ms, sans fin, sans jamais atteindre le transcode.
   const retryMuxedRef = useRef(retryMuxed);
   retryMuxedRef.current = retryMuxed;
   const prismGenRef = useRef(0);
@@ -154,7 +160,7 @@ export function usePlayerStreamPipeline(args: {
   const onMasterRejected = useCallback(() => {
     const gen = prismGenRef.current;
     const bail = () => { captureReloadTicks(); setForceTranscode(true); };
-    if (gen <= 0 || muxedTriedGenRef.current === gen) { bail(); return; }
+    if (gen <= 0 || muxedTriedGenRef.current > 0) { bail(); return; }
     muxedTriedGenRef.current = gen;
     softReloadRef.current = true;
     setReloadFrameSec(positionRef.current);
