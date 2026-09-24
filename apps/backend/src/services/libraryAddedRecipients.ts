@@ -49,7 +49,7 @@ export async function planRecipients(items: LibItem[], now = Date.now()): Promis
 
   const claims = await prisma.contentClaim.findMany({
     where: { expiresAt: { gt: new Date(now) } },
-    select: { tmdbId: true, jellyfinUserId: true, title: true },
+    select: { tmdbId: true, jellyfinUserId: true, title: true, mediaType: true },
   });
   const claimIndex = indexClaims(claims);
   const prefs = await prisma.notificationPreference.findMany({ where: { jellyfinUserId: { in: userIds } } });
