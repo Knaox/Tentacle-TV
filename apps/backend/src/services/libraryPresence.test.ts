@@ -39,11 +39,13 @@ const movie = (id: string, tmdbId?: number, name = "Dune", year?: number): LibIt
   tmdbId,
   ProductionYear: year,
 });
-const episode = (id: string, s: number | undefined, e: number | undefined): LibItem => ({
+const episode = (id: string, s: number | undefined, e: number | undefined, seriesTmdbId = 136315): LibItem => ({
   Id: id,
   Name: "Pilot",
   Type: "Episode",
   SeriesName: "The Bear",
+  SeriesId: "series-bear",
+  seriesTmdbId,
   ParentIndexNumber: s,
   IndexNumber: e,
 });
@@ -59,10 +61,15 @@ describe("clé de contenu", () => {
     expect(presenceKey(movie("b", undefined, "Dune", 2021))).not.toBe(presenceKey(movie("a", undefined, "Dune", 1984)));
   });
 
-  it("épisode : série + saison + épisode, par le nom (le TMDB série arrive en décalé)", () => {
-    const withTmdb = { ...episode("e", 1, 2), seriesTmdbId: 136315 };
-    expect(presenceKey(withTmdb)).toBe("e:n:the bear:1:2");
-    expect(presenceKey(episode("e", 1, 2))).toBe("e:n:the bear:1:2");
+  it("épisode : TMDB de la série + numéros, à défaut l'ID Jellyfin de la série — jamais le nom", () => {
+    expect(presenceKey(episode("e", 1, 2))).toBe("e:t:136315:1:2");
+    expect(presenceKey({ ...episode("e", 1, 2), seriesTmdbId: undefined })).toBe("e:i:series-bear:1:2");
+  });
+
+  it("deux séries homonymes (l'animé et la série live) ne partagent pas de clé", () => {
+    const anime = { ...episode("a", 1, 1, 37854), SeriesName: "One Piece", SeriesId: "op-anime" };
+    const live = { ...episode("b", 1, 1, 111110), SeriesName: "One Piece", SeriesId: "op-live" };
+    expect(presenceKey(anime)).not.toBe(presenceKey(live));
   });
 
   it("série, saison ou épisode sans numéros : pas de clé", () => {
@@ -85,9 +92,22 @@ describe("tri des arrivées", () => {
   });
 
   it("un fichier remplacé (parti il y a moins de 24 h) n'en est pas une", async () => {
-    rows.push({ itemId: "old", contentKey: "e:n:the bear:1:2", removedAt: new Date(NOW - 2 * HOUR) });
+    rows.push({ itemId: "old", contentKey: "e:t:136315:1:2", removedAt: new Date(NOW - 2 * HOUR) });
     const v = await classifyArrivals([episode("new", 1, 2)], NOW);
     expect(v.known.map((i) => i.Id)).toEqual(["new"]);
+  });
+
+  it("l'ancien fichier enregistré sous une clé plus faible est reconnu quand même", async () => {
+    rows.push({ itemId: "old", contentKey: "e:i:series-bear:1:2", removedAt: new Date(NOW - HOUR) });
+    const v = await classifyArrivals([episode("new", 1, 2)], NOW);
+    expect(v.known.map((i) => i.Id)).toEqual(["new"]);
+  });
+
+  it("le nouvel épisode d'une série homonyme reste une nouveauté", async () => {
+    rows.push({ itemId: "anime", contentKey: "e:t:37854:2:1", removedAt: null });
+    const live = { ...episode("live", 2, 1, 111110), SeriesName: "One Piece", SeriesId: "op-live" };
+    const v = await classifyArrivals([live], NOW);
+    expect(v.news.map((i) => i.Id)).toEqual(["live"]);
   });
 
   it("un contenu parti depuis plus de 24 h qui revient en redevient une", async () => {

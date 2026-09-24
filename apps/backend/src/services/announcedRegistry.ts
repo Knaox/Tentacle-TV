@@ -55,6 +55,16 @@ export function libraryIdentityKeys(it: LibItem): string[] {
   return keys.map(clamp);
 }
 
+/**
+ * Pour VÉRIFIER une annonce : l'identifiant TMDB quand on l'a, le nom
+ * seulement à défaut — deux séries homonymes (l'animé « One Piece » et la
+ * série live) ne se confondent pas. On ENREGISTRE toujours les deux.
+ */
+export function strongestKeys(keys: string[]): string[] {
+  const tmdb = keys.filter((k) => /^[mes]:t:/.test(k));
+  return tmdb.length > 0 ? tmdb : keys;
+}
+
 /** Clés de la SAISON d'un épisode (vide pour un film ou un épisode sans saison). */
 export function librarySeasonKeys(it: LibItem): string[] {
   if (it.Type !== "Episode" || it.ParentIndexNumber == null) return [];

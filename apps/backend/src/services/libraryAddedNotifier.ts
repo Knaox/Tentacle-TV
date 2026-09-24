@@ -52,8 +52,10 @@ const hold = new ArrivalHold();
 
 /** Métadonnées prêtes pour un titre propre et une reconnaissance fiable ? */
 function isReady(it: LibItem): boolean {
+  // Épisode : le TMDB de sa série aussi — sa clé de contenu, et ce qui le
+  // relie à une demande (appelé après attachSeriesTmdb).
   if (it.Type === "Episode") {
-    return it.SeriesName != null && it.ParentIndexNumber != null && it.IndexNumber != null;
+    return it.SeriesName != null && it.ParentIndexNumber != null && it.IndexNumber != null && it.seriesTmdbId != null;
   }
   // Film : attendre AUSSI le TMDB (ProviderIds.Tmdb, indexé en asynchrone) —
   // c'est sa clé de contenu et ce qui le relie à une demande.
