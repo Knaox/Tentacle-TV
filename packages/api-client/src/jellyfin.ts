@@ -226,6 +226,7 @@ export class JellyfinClient {
    */
   getClientName() { return this.clientName; }
   getDeviceName() { return this.deviceName; }
+  getAppVersion() { return this.version; }
 
   /** Adopte l'identité d'appareil du token (cf. `getDeviceId`). Persistée : elle
    *  doit survivre au rechargement de la page, comme le cookie de session. */

@@ -47,6 +47,7 @@ let measuredBps: number | null = null;
 let measuredAt = 0;
 let measuredRoute: string | null = null;
 let inFlight: Promise<number | null> | null = null;
+let inFlightRoute: string | null = null;
 
 /** Dernière mesure (bits/s) si elle a moins de 10 min, sinon null. */
 export function cachedBitrate(): number | null {
@@ -81,10 +82,17 @@ function routeFor(client: JellyfinClient, options: BitrateMeasureOptions): Measu
 }
 
 /** Lance la mesure en tâche de fond si le cache est froid (fire-and-forget).
- *  Une mesure encore fraîche mais prise sur une AUTRE voie est refaite. */
+ *  Une mesure encore fraîche mais prise sur une AUTRE voie est refaite — et
+ *  si une mesure d'une autre voie est en vol (le proxy, mesuré au démarrage,
+ *  avant que le direct ne s'ouvre), la nouvelle est enchaînée derrière au lieu
+ *  d'être perdue : c'est elle que lira la première lecture. */
 export function primeBitrateMeasure(client: JellyfinClient, options: BitrateMeasureOptions = {}): void {
-  if (inFlight) return;
-  if (cachedBitrate() != null && measuredRoute === routeFor(client, options).key) return;
+  const route = routeFor(client, options).key;
+  if (inFlight) {
+    if (inFlightRoute !== route) void inFlight.finally(() => primeBitrateMeasure(client, options));
+    return;
+  }
+  if (cachedBitrate() != null && measuredRoute === route) return;
   void measureBitrate(client, options);
 }
 
@@ -94,7 +102,8 @@ export function measureBitrate(client: JellyfinClient, options: BitrateMeasureOp
   const fresh = cachedBitrate();
   if (fresh != null && measuredRoute === route.key) return Promise.resolve(fresh);
   if (inFlight) return inFlight;
-  inFlight = runMeasure(route).finally(() => { inFlight = null; });
+  inFlightRoute = route.key;
+  inFlight = runMeasure(route).finally(() => { inFlight = null; inFlightRoute = null; });
   return inFlight;
 }
 

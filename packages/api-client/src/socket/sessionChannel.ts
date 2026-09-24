@@ -45,6 +45,7 @@ export interface SessionMessage {
 const STOP_ACK_TIMEOUT_MS = 4_000;
 
 let deviceIdProvider: (() => string) | null = null;
+let appProvider: (() => SessionChannelApp) | null = null;
 let status: ChannelStatus = { reporting: false, remoteControl: false };
 let activePlayback: (() => PlaybackStateDto | null) | null = null;
 let requestSeq = 0;
@@ -92,19 +93,34 @@ function handle(msg: WsServerMessage): void {
   }
 }
 
+/** Le nom d'une application jumelée, tel que Jellyfin doit l'afficher. */
+export interface SessionChannelApp {
+  client: string;
+  device: string;
+  version: string;
+}
+
 /**
  * Active le canal pour cet hôte. `deviceId` n'est qu'une étiquette de
  * corrélation pour le tableau de bord — le backend ne la présente jamais à
- * Jellyfin. Idempotent.
+ * Jellyfin. `app` : un appareil JUMELÉ (TV, LG) nomme son application, que le
+ * backend présente avec l'identifiant qu'il dérive pour lui. Idempotent.
  */
-export function configureSessionChannel(options: { deviceId: () => string }): void {
+export function configureSessionChannel(options: { deviceId: () => string; app?: () => SessionChannelApp }): void {
   const first = deviceIdProvider === null;
   deviceIdProvider = options.deviceId;
+  appProvider = options.app ?? null;
   if (!first) return;
   subscribeSocket(handle);
   onSocketStatus((socketStatus) => {
     if (socketStatus === "open") {
-      sendSocketMessage({ type: "session:hello", version: SESSION_CHANNEL_VERSION, deviceId: deviceIdProvider?.() });
+      const app = appProvider?.();
+      sendSocketMessage({
+        type: "session:hello",
+        version: SESSION_CHANNEL_VERSION,
+        deviceId: deviceIdProvider?.(),
+        ...(app ? { client: app.client, device: app.device, appVersion: app.version } : {}),
+      });
       return;
     }
     // Socket fermé : plus de canal tant qu'un nouveau `session:ready` n'arrive pas.
