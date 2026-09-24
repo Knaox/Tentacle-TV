@@ -30,6 +30,10 @@ export default {
   episodeCode: "S{{season}}:É{{episode}}",
   lastActive: "Actif {{time}}",
   noRemote: "Cet appareil ne se laisse pas piloter à distance.",
+  // « Actif il y a 3 min » — Hermes n'a pas Intl.RelativeTimeFormat.
+  agoNow: "à l'instant",
+  agoMinutes: "il y a {{count}} min",
+  agoHours: "il y a {{count}} h",
 
   // La façon dont le média arrive, du plus léger au plus lourd pour le serveur.
   directPlay: "Lecture directe",
