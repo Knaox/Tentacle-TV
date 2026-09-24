@@ -22,6 +22,7 @@ import { useTVNavActions } from "../context/TVNavContext";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { Spacing } from "../theme/colors";
+import { SHOWS_VERTICAL_SCROLL_INDICATOR } from "../theme/focus";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Recommendations">;
 
@@ -104,6 +105,7 @@ function RecommendationsInner({ navigation }: Props) {
           style={{ flex: 1, marginLeft: -RAIL_COLLAPSED, marginRight: -TV_OVERSCAN_PT.x }}
           contentContainerStyle={{ paddingLeft: RAIL_COLLAPSED, paddingRight: TV_OVERSCAN_PT.x, paddingBottom: 96 }}
           overScrollMode="never"
+          showsVerticalScrollIndicator={SHOWS_VERTICAL_SCROLL_INDICATOR}
         >
           {loading ? (
             <>

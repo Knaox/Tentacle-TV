@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { BRAND } from "@tentacle-tv/shared";
 import { TV_CARD_FOCUS, TV_FOCUS_RING, TV_OSD } from "@tentacle-tv/theme";
 
@@ -124,3 +125,13 @@ export const FocusPlayerButtonStyle = {
  * les carrousels, où les 32 points de réserve d'origine ne suffisaient pas.
  */
 export const CARD_FOCUS_BLEED = 40;
+
+/**
+ * L'indicateur de défilement vertical, seulement là où il sert à quelque chose.
+ *
+ * Sur tvOS il porte l'index de défilement rapide — la colonne de points qui
+ * apparaît quand on maintient une direction dans une longue liste : on le garde.
+ * Sur Android TV, ce n'est qu'un trait gris au bord de l'écran, que rien ne
+ * permet de saisir à la télécommande.
+ */
+export const SHOWS_VERTICAL_SCROLL_INDICATOR = Platform.OS === "ios";

@@ -7,7 +7,7 @@ import { TVPosterFrame, TVPosterMeta } from "../cards/TVPosterCard";
 import { Focusable } from "../focus/Focusable";
 import { RAIL_COLLAPSED } from "../nav/TVSideRail";
 import { Colors, Spacing, CardConfig } from "../../theme/colors";
-import { CARD_FOCUS_BLEED } from "../../theme/focus";
+import { CARD_FOCUS_BLEED, SHOWS_VERTICAL_SCROLL_INDICATOR } from "../../theme/focus";
 
 /** Largeur minimale d'une carte et écart — la formule de colonnes de la LG
  *  (`columnsTv.ts` : `max(2, ⌊(largeur + 16) / 196⌋)`). */
@@ -146,6 +146,7 @@ export function TVLibraryGrid({
       overrideItemLayout={(layout) => { layout.size = estimatedItemSize; }}
       ListFooterComponent={isFetchingNextPage ? <FooterLoader /> : null}
       overScrollMode="never"
+      showsVerticalScrollIndicator={SHOWS_VERTICAL_SCROLL_INDICATOR}
     />
   );
 }

@@ -5,6 +5,7 @@ import type { SearchFacetHit } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { TVSearchChip } from "./TVSearchChip";
 import { Colors, Spacing, Typography } from "../../theme/colors";
+import { SHOWS_VERTICAL_SCROLL_INDICATOR } from "../../theme/focus";
 
 interface TVSearchIdleProps {
   /** `idle` : rien de tapé. `empty` : la saisie ne trouve rien. */
@@ -27,7 +28,11 @@ export const TVSearchIdle = memo(function TVSearchIdle({
 }: TVSearchIdleProps) {
   const { t } = useTranslation("search");
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.rowGutter, paddingTop: 24 }}>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ padding: Spacing.rowGutter, paddingTop: 24 }}
+      showsVerticalScrollIndicator={SHOWS_VERTICAL_SCROLL_INDICATOR}
+    >
       <Text style={{ color: Colors.textPrimary, ...Typography.detailTitle, marginBottom: 10 }}>
         {mode === "idle" ? t("emptyTitle") : t("noResults", { query })}
       </Text>
