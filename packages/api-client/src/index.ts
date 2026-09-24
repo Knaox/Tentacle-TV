@@ -108,6 +108,12 @@ export {
 } from "./socket/sessionChannel";
 export type { ChannelStatus, SessionCommand, SessionGeneral, SessionMessage } from "./socket/sessionChannel";
 
+// La télécommande appliquée au lecteur (commande Jellyfin → geste), la même
+// traduction pour le web, le bureau et le mobile.
+export {
+  useSessionRemoteTarget, REMOTE_REWIND_SECONDS, REMOTE_FAST_FORWARD_SECONDS, type SessionRemoteTarget,
+} from "./hooks/useSessionRemote";
+
 // Le retour d'une commande du tableau de bord des sessions, de l'appui à
 // l'effet constaté — le même pour le web et le mobile.
 export { useCommandFeedback, type CommandFeedbackApi } from "./hooks/useCommandFeedback";
