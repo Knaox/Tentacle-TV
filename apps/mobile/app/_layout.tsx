@@ -16,6 +16,7 @@ import { useServerCompat } from "@/hooks/useServerCompat";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
 import { OfflineShell } from "@/offline/OfflineShell";
+import { SessionMessageHost } from "@/session/SessionMessageHost";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
 
@@ -213,6 +214,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       </Stack>
       <OfflineShell />
       <ServerNoticeOverlay />
+      {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
+      <SessionMessageHost />
       {showLoading && (
         <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>
           <BrandSpinner size="large" />
