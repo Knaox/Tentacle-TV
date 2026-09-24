@@ -10,6 +10,7 @@ import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { usePlayerBackground } from "../hooks/usePlayerBackground";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { usePlayerAirPlay } from "../hooks/usePlayerAirPlay";
+import { usePlaybackStarted } from "../hooks/usePlaybackStarted";
 import { usePlayerLoadingWatchdog } from "../hooks/usePlayerLoadingWatchdog";
 import { usePlayerTracks } from "../hooks/usePlayerTracks";
 import { usePlayerRemote } from "../session/usePlayerRemote";
@@ -19,7 +20,7 @@ import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import type { PlayerEngineHandle } from "../player/engine/types";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { AutoCapBadge } from "../components/player/AutoCapBadge";
-import { PlayerLoadingView } from "../components/player/PlayerLoadingView";
+import { PlayerLoadingScreen } from "../components/player/loading/PlayerLoadingScreen";
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
 import { PlayerErrorView } from "../components/player/PlayerErrorView";
 
@@ -38,9 +39,11 @@ export function PlayerScreen({ itemId }: Props) {
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
-  const [isBuffering, setIsBuffering] = useState(true);
+  // Tampon tenu à jour, plus lu ici : l'écran de chargement couvre l'ouverture.
+  const [, setIsBuffering] = useState(true);
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
+  const started = usePlaybackStarted(videoReady, currentTime);
   const resumeApplied = useRef(false);
   const retryCount = useRef(0);
   const retryingRef = useRef(false);
@@ -206,11 +209,11 @@ export function PlayerScreen({ itemId }: Props) {
     );
   }
 
-  // Loading: no stream URL yet
+  // Pas encore de flux : l'écran de chargement, Retour compris.
   if (!pb.streamUrl) {
     return (
       <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
-        <PlayerLoadingView onCancel={leavePlayer} />
+        <PlayerLoadingScreen item={pb.item ?? routedItem} onCancel={leavePlayer} />
       </View>
     );
   }
@@ -236,7 +239,7 @@ export function PlayerScreen({ itemId }: Props) {
       currentTime={currentTime}
       subtitleVttUrl={pb.subtitleVttUrl}
       isAirPlaying={isAirPlaying}
-      showLoading={isBuffering && !hasEverPlayed.current}
+      showLoading={false}
       overlayVisible={overlayVisible}
       reloadToken={String(pb.retryNonce)}
       subtitleScale={engineSettings.subtitleScale}
@@ -287,6 +290,10 @@ export function PlayerScreen({ itemId }: Props) {
 
       {/* Badge éphémère « Qualité réduite » — le message temporaire du cap. */}
       <AutoCapBadge active={pb.autoCapActive} />
+
+      {/* Jusqu'à ce que la lecture AVANCE : l'écran de chargement, au-dessus
+          des contrôles, puis un fondu. */}
+      {!started && <PlayerLoadingScreen item={pb.item ?? routedItem} onCancel={leavePlayer} />}
     </PlayerVideoSurface>
   );
 }
