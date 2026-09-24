@@ -1,5 +1,5 @@
 import { getPrisma } from "../db";
-import { getItemsByIds } from "../jellyfin";
+import { getItemsByIds } from "../jellyfinLibrary";
 
 /**
  * Filtrage collaboratif ITEM-ITEM : avec quelques dizaines d'utilisateurs par

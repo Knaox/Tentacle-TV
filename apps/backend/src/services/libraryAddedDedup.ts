@@ -1,4 +1,4 @@
-import type { LibItem } from "./jellyfin";
+import type { LibItem } from "./jellyfinLibrary";
 
 // Anti-doublon des notifs d'ajout bibliothèque : quand un plugin (ex. Seer) a
 // « revendiqué » un contenu (table content_claims), on n'envoie PAS la notif

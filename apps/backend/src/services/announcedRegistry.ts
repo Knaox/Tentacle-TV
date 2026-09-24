@@ -1,5 +1,5 @@
 import { getPrisma, hasPrisma } from "./db";
-import type { LibItem } from "./jellyfin";
+import type { LibItem } from "./jellyfinLibrary";
 import { normalizeTitle } from "./libraryAddedDedup";
 
 // Registre PERSISTANT des annonces push par (clé de contenu, utilisateur) —

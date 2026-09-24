@@ -1,4 +1,4 @@
-import type { LibItem } from "./jellyfin";
+import type { LibItem } from "./jellyfinLibrary";
 import { getPrisma, hasPrisma } from "./db";
 import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
 import { broadcastToUser } from "./wsManager";
