@@ -51,7 +51,8 @@
       "expo-constants": "patches/expo-constants.patch",
       "expo-file-system": "patches/expo-file-system.patch",
       "react-native-video@6.19.3": "patches/react-native-video@6.19.3.patch",
-      "react-native-screens@4.16.0": "patches/react-native-screens@4.16.0.patch"
+      "react-native-screens@4.16.0": "patches/react-native-screens@4.16.0.patch",
+      "react-native-svg@15.15.3": "patches/react-native-svg@15.15.3.patch"
     }
   },
   "devDependencies": {
