@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { Image } from "react-native";
+import { useIsFocused } from "@react-navigation/native";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TV_AMBILIGHT, TV_BANNER_CARD } from "@tentacle-tv/theme";
@@ -59,14 +60,18 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
     });
   }, [items, client]);
 
-  // Rotation automatique (continue).
+  // Rotation automatique — seulement quand l'écran est affiché. Un écran
+  // couvert (fiche, lecteur) gardait sa minuterie : toutes les huit secondes,
+  // un fond de 1920 px et son halo se remontaient pour personne, jusque sous
+  // la lecture.
+  const screenFocused = useIsFocused();
   useEffect(() => {
-    if (items.length <= 1) return;
+    if (items.length <= 1 || !screenFocused) return;
     const timer = setInterval(() => {
       setIndex((i) => (i + 1) % items.length);
     }, HeroConfig.rotateInterval);
     return () => clearInterval(timer);
-  }, [items.length]);
+  }, [items.length, screenFocused]);
 
   // Notifie le parent (ambient backdrop) sur l'item affiché.
   useEffect(() => {
