@@ -39,13 +39,16 @@ export default {
   updateNewVersion: "New version",
   updateErrorTitle: "The update did not complete",
   // Deletion
+  delete: "Delete",
+  swipeHint: "Swipe left to delete",
   deleteAll: "Delete all",
   confirmDeleteAll: "Are you sure? This cannot be undone.",
   deleteSelected: "Delete selected",
   select: "Select",
   cancel: "Cancel",
   confirm: "Confirm",
-  selected: "{{count}} selected",
+  selected_one: "{{count}} selected",
+  selected_other: "{{count}} selected",
   // Push (settings screen)
   pushSectionTitle: "Push notifications",
   libraryAddedTitle: "Library additions",

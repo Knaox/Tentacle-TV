@@ -24,6 +24,7 @@ import { toNotifPluginMeta, useActivePlugins } from "@/hooks/useActivePlugins";
 import { openNotificationRoute } from "@/utils/openNotificationRoute";
 import { BottomSheet } from "./ui";
 import { SwipeableNotifRow } from "./notifications/SwipeableNotifRow";
+import { NotifSheetHeader } from "./notifications/NotifSheetHeader";
 import { spacing, typography, useTheme } from "@/theme";
 
 let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
@@ -112,8 +113,8 @@ export function NotificationBell() {
 
   return (
     <>
-      <Pressable onPress={openSheet} hitSlop={8} style={{ position: "relative" }} accessibilityRole="button" accessibilityLabel={count > 0 ? `${t("title")}, ${count}` : t("title")}>
-        <Feather name="bell" size={20} color={colors.text.primary} />
+      <Pressable onPress={openSheet} hitSlop={12} style={{ position: "relative" }} accessibilityRole="button" accessibilityLabel={count > 0 ? `${t("title")}, ${count}` : t("title")}>
+        <Feather name="bell" size={21} color={colors.text.primary} />
         {count > 0 && (
           <View style={{ position: "absolute", top: -4, right: -6, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.brand.violet, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 }}>
             <Text style={{ color: colors.cta.brandFg, fontSize: 10, fontWeight: "800" }}>{count > 9 ? "9+" : count}</Text>
@@ -122,37 +123,17 @@ export function NotificationBell() {
       </Pressable>
 
       <BottomSheet visible={visible} onClose={() => { setVisible(false); exitSelection(); }} snapPoints={[0.5, 1.0]}>
-        {/* Header */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.screenPadding, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.subtle }}>
-          <Text style={{ ...typography.subtitle, color: colors.text.primary }}>
-            {selectionMode ? t("selected", { count: selected.size }) : t("title")}
-          </Text>
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            {selectionMode ? (
-              <>
-                <Pressable onPress={handleDeleteSelected} disabled={selected.size === 0} hitSlop={8}>
-                  <Text style={{ ...typography.small, color: selected.size > 0 ? colors.status.error : colors.text.quaternary }}>{t("deleteSelected")}</Text>
-                </Pressable>
-                <Pressable onPress={exitSelection} hitSlop={8}>
-                  <Text style={{ ...typography.small, color: colors.text.secondary }}>{t("cancel")}</Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                {count > 0 && (
-                  <Pressable onPress={() => markAll.mutate()} hitSlop={8}>
-                    <Text style={{ ...typography.small, color: colors.brand.violet }}>{t("markAllRead")}</Text>
-                  </Pressable>
-                )}
-                {notifications && notifications.length > 0 && (
-                  <Pressable onPress={handleDeleteAll} hitSlop={8}>
-                    <Text style={{ ...typography.small, color: colors.status.error }}>{t("deleteAll")}</Text>
-                  </Pressable>
-                )}
-              </>
-            )}
-          </View>
-        </View>
+        <NotifSheetHeader
+          selectionMode={selectionMode}
+          selectedCount={selected.size}
+          unread={count}
+          total={notifications?.length ?? 0}
+          onMarkAll={() => markAll.mutate()}
+          onSelect={() => setSelectionMode(true)}
+          onDeleteAll={handleDeleteAll}
+          onDeleteSelected={handleDeleteSelected}
+          onCancel={exitSelection}
+        />
 
         <FlatList
           data={notifications ?? []}
