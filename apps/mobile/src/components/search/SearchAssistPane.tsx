@@ -2,6 +2,7 @@ import { memo, useCallback } from "react";
 import { Keyboard, StyleSheet } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ExternalSearchItem, SearchProvider } from "@tentacle-tv/shared";
 import { spacing } from "@/theme";
 import { SearchSuggestPanel } from "./SearchSuggestPanel";
@@ -23,6 +24,7 @@ export const SearchAssistPane = memo(function SearchAssistPane({ assist, inline 
   inline?: boolean;
 }) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const nav = useSearchNavigation({ modal: false });
 
   const openItem = useCallback((id: string) => {
@@ -39,7 +41,12 @@ export const SearchAssistPane = memo(function SearchAssistPane({ assist, inline 
   }, [router, assist.value]);
 
   return (
-    <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(110)} style={inline ? st.inline : st.pane}>
+    <Animated.View
+      entering={FadeIn.duration(160)}
+      exiting={FadeOut.duration(110)}
+      // Seul en bas d'écran : le pied du panneau reste au-dessus de la zone du geste d'accueil.
+      style={inline ? st.inline : [st.pane, { paddingBottom: insets.bottom + spacing.sm }]}
+    >
       <SearchSuggestPanel
         query={assist.settled}
         suggestions={assist.suggestions}
