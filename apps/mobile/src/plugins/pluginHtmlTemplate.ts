@@ -1,5 +1,6 @@
 import type { AppTheme } from "../theme/palette.types";
 import { buildPluginBootstrapScript } from "./pluginBootstrapScript";
+import { buildHostBridgeScript } from "./pluginHostBridgeScript";
 import { buildScrollChromeScript } from "./pluginScrollChromeScript";
 import {
   buildPluginThemeVars,
@@ -197,6 +198,10 @@ export function buildPluginHtml({
   <!-- Le défilement de la page pilote le chrome natif — avant les deps :
        actif même si le bundle de l'extension plante. -->
   <script>${buildScrollChromeScript()}<\/script>
+
+  <!-- Le pont hôte (surfaces modales, liens externes) : posé AVANT le bundle,
+       qui le cherche dès son montage. -->
+  <script>${buildHostBridgeScript()}<\/script>
 
   <!-- Shared deps inlinées (WKWebView bloque les requêtes HTTP depuis origin null) -->
   <script>${safeDepsCode}<\/script>
