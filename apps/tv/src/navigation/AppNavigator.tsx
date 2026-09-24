@@ -16,6 +16,7 @@ import { PlayerSettingsScreen } from "../screens/player/PlayerSettingsScreen";
 const MediaDetailScreen = React.lazy(() => import("../screens/MediaDetailScreen").then(m => ({ default: m.MediaDetailScreen })));
 const PlayerScreen = React.lazy(() => import("../screens/PlayerScreen").then(m => ({ default: m.PlayerScreen })));
 const SearchScreen = React.lazy(() => import("../screens/SearchScreen").then(m => ({ default: m.SearchScreen })));
+const SearchBrowseScreen = React.lazy(() => import("../screens/SearchBrowseScreen").then(m => ({ default: m.SearchBrowseScreen })));
 const SettingsScreen = React.lazy(() => import("../screens/SettingsScreen").then(m => ({ default: m.SettingsScreen })));
 const LibraryScreen = React.lazy(() => import("../screens/LibraryScreen").then(m => ({ default: m.LibraryScreen })));
 const TrailerScreen = React.lazy(() => import("../screens/TrailerScreen").then(m => ({ default: m.TrailerScreen })));
@@ -37,6 +38,7 @@ export function preloadCoreScreens() {
   void import("../screens/MediaDetailScreen");
   void import("../screens/PlayerScreen");
   void import("../screens/SearchScreen");
+  void import("../screens/SearchBrowseScreen");
   void import("../screens/SettingsScreen");
   void import("../screens/WatchlistScreen");
   void import("../screens/FavoritesScreen");
@@ -106,6 +108,7 @@ export function AppNavigator() {
       />
       <Stack.Screen name="Trailer" component={TrailerScreen} />
       <Stack.Screen name="Search" component={SearchScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="SearchBrowse" component={SearchBrowseScreen} />
       <Stack.Screen name="Watchlist" component={WatchlistScreen} options={{ animation: "none" }} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ animation: "none" }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: "none" }} />
