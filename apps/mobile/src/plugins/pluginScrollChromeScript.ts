@@ -9,7 +9,10 @@ import { SCROLL_CHROME_TUNING } from "@/components/navigation/scrollChrome";
  *
  * Écoute en capture : les pages d'extension défilent souvent dans un bloc
  * `overflow: auto` interne, invisible pour le document. Un offset par
- * défileur (WeakMap) : changer de zone ne fabrique pas de faux delta. Un
+ * défileur (WeakMap) : changer de zone ne fabrique pas de faux delta. Seuls
+ * les défileurs VERTICAUX comptent : une rangée d'affiches qu'on fait glisser
+ * garde `scrollTop` à 0, sous le seuil du haut — elle redéployait le chrome à
+ * chaque geste latéral. Un
  * calcul par image (requestAnimationFrame). `reset()` réaligne la page sur un
  * chrome que le natif vient de redéployer (arrivée sur l'onglet).
  *
@@ -30,6 +33,7 @@ export function buildScrollChromeScript(): string {
         return t === document ? (window.scrollY || document.documentElement.scrollTop || 0) : t.scrollTop;
       }
       function evaluate(t) {
+        if (t !== document && t.scrollHeight <= t.clientHeight + 1) return;
         var y = offsetOf(t), prev = last.get(t);
         last.set(t, y);
         if (prev === undefined) return;
