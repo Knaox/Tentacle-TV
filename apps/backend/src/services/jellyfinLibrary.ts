@@ -15,6 +15,7 @@ export interface LibItem {
   DateCreated?: string;
   ParentIndexNumber?: number; // n° de saison (pour un épisode)
   IndexNumber?: number; // n° d'épisode (Episode) ou n° de saison (Season)
+  ProductionYear?: number; // distingue deux films homonymes quand TMDB manque
   tmdbId?: number; // depuis ProviderIds.Tmdb — pour l'anti-doublon (claims plugins)
   seriesTmdbId?: number; // tmdbId TMDB de la SÉRIE parente (résolu à part, cf. libraryAddedSeries)
 }
@@ -32,6 +33,7 @@ function mapLibItems(data: unknown): LibItem[] {
     DateCreated: i.DateCreated,
     ParentIndexNumber: i.ParentIndexNumber,
     IndexNumber: i.IndexNumber,
+    ProductionYear: i.ProductionYear,
     tmdbId: i.ProviderIds?.Tmdb ? Number(i.ProviderIds.Tmdb) || undefined : undefined,
   }));
 }
@@ -143,4 +145,43 @@ export async function getAllLibraryItemIds(): Promise<string[]> {
     return []; // timeout / réseau → all-or-nothing
   }
   return ids;
+}
+
+/**
+ * Toute la bibliothèque (Movie/Series/Episode) avec de quoi reconnaître chaque
+ * contenu : TMDB, série parente, numéros, année — paginé. Sert une fois, à
+ * reconnaître les items connus d'avant la reconnaissance des contenus
+ * (libraryPresence). All-or-nothing comme getAllLibraryItemIds : null au
+ * moindre échec de page, plutôt qu'une reconnaissance partielle.
+ */
+export async function getAllLibraryItemsForIdentity(): Promise<LibItem[] | null> {
+  const jellyfinUrl = getJellyfinUrl();
+  const apiKey = getJellyfinApiKey();
+  const userId = await getAdminUserId();
+  if (!jellyfinUrl || !apiKey || !userId) return null;
+
+  const PAGE = 1000;
+  const out: LibItem[] = [];
+  try {
+    for (let start = 0; ; ) {
+      const res = await fetch(
+        `${jellyfinUrl}/Items?userId=${userId}&Recursive=true&IncludeItemTypes=Movie,Series,Episode` +
+          `&Fields=ProviderIds,SeriesName&EnableImages=false&EnableUserData=false&EnableTotalRecordCount=true` +
+          `&StartIndex=${start}&Limit=${PAGE}`,
+        { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(30_000) },
+      );
+      if (!res.ok) {
+        console.warn(`[LibNotif] getAllLibraryItemsForIdentity HTTP ${res.status}`);
+        return null;
+      }
+      const data = (await res.json()) as { Items?: unknown[]; TotalRecordCount?: number };
+      const page = mapLibItems(data);
+      out.push(...page);
+      start += page.length;
+      if (page.length < PAGE || page.length === 0 || start >= (data.TotalRecordCount ?? 0)) break;
+    }
+  } catch {
+    return null;
+  }
+  return out;
 }

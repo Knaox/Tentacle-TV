@@ -18,9 +18,19 @@ import { normalizeTitle } from "./libraryAddedDedup";
 //
 // Format des clés :
 //   m:t:<tmdbId>              film (tmdb)         m:n:<titreNorm>   film (titre)
+//   e:t:<tmdbSérie>:<s>:<e>   épisode (tmdb)      e:n:<sérieNorm>:<s>:<e>
 //   s:t:<tmdbSérie>:<saison>  saison (tmdb)       s:n:<sérieNorm>:<saison>
 //   s:t:<tmdbSérie>:all       série entière       s:n:<sérieNorm>:all
+//   i:<itemId>                item sans identité (épisode sans numéros)
 //   p:<type>:<hash>           unicité exacte d'un push (anti-flapping Seer)
+//
+// Côté bibliothèque, un épisode s'annonce PAR ÉPISODE (e:) — une série en
+// cours de diffusion est annoncée à chaque épisode — et couvre sa saison (s:)
+// et sa série (…:all) : c'est ce que lit le planificateur Seer pour ne pas
+// annoncer une seconde fois « Saison 2 est sortie ». La couverture de saison
+// est datée à chaque envoi (refreshAnnounced) : un épisode de la même saison
+// arrivé peu après la dernière annonce est absorbé en silence (pack de saison
+// rangé en plusieurs fois), un épisode de la semaine suivante est annoncé.
 
 const PURGE_AFTER_MS = 30 * 24 * 60 * 60_000; // 30 jours
 const PURGE_INTERVAL_MS = 6 * 60 * 60_000;
@@ -28,21 +38,41 @@ const PURGE_INTERVAL_MS = 6 * 60 * 60_000;
 const KEY_MAX = 191; // largeur de la colonne contentKey (index MariaDB utf8mb4)
 const clamp = (k: string): string => (k.length > KEY_MAX ? k.slice(0, KEY_MAX) : k);
 
-/** Clés multi-alias d'un item bibliothèque (tmdb + titre, posées ensemble). */
-export function libraryContentKeys(it: LibItem): string[] {
+/** Clés d'IDENTITÉ d'un item bibliothèque (tmdb + titre, posées ensemble). */
+export function libraryIdentityKeys(it: LibItem): string[] {
   const keys: string[] = [];
   if (it.Type === "Movie") {
     if (it.tmdbId != null) keys.push(`m:t:${it.tmdbId}`);
     const name = normalizeTitle(it.Name ?? "");
     if (name) keys.push(`m:n:${name}`);
-    return keys.map(clamp);
+  } else if (it.ParentIndexNumber != null && it.IndexNumber != null) {
+    const at = `${it.ParentIndexNumber}:${it.IndexNumber}`;
+    if (it.seriesTmdbId != null) keys.push(`e:t:${it.seriesTmdbId}:${at}`);
+    const series = normalizeTitle(it.SeriesName ?? "");
+    if (series) keys.push(`e:n:${series}:${at}`);
   }
-  const season = it.Type === "Episode"
-    ? (it.ParentIndexNumber ?? "?")
-    : it.Type === "Season" ? (it.IndexNumber ?? "?") : "all";
-  if (it.seriesTmdbId != null) keys.push(`s:t:${it.seriesTmdbId}:${season}`);
-  const name = normalizeTitle(it.SeriesName ?? it.Name ?? "");
-  if (name) keys.push(`s:n:${name}:${season}`);
+  if (keys.length === 0) keys.push(`i:${it.Id}`);
+  return keys.map(clamp);
+}
+
+/** Clés de la SAISON d'un épisode (vide pour un film ou un épisode sans saison). */
+export function librarySeasonKeys(it: LibItem): string[] {
+  if (it.Type !== "Episode" || it.ParentIndexNumber == null) return [];
+  return seriesKeys(it, String(it.ParentIndexNumber));
+}
+
+/** Clés de la SÉRIE ENTIÈRE d'un épisode — ce que lit le planificateur Seer
+ *  quand une demande de série ne détaille pas ses saisons. */
+export function librarySeriesKeys(it: LibItem): string[] {
+  if (it.Type !== "Episode") return [];
+  return seriesKeys(it, "all");
+}
+
+function seriesKeys(it: LibItem, scope: string): string[] {
+  const keys: string[] = [];
+  if (it.seriesTmdbId != null) keys.push(`s:t:${it.seriesTmdbId}:${scope}`);
+  const series = normalizeTitle(it.SeriesName ?? "");
+  if (series) keys.push(`s:n:${series}:${scope}`);
   return keys.map(clamp);
 }
 
@@ -146,6 +176,21 @@ export async function filterAnnounced(
   return keySets.map((keys) => keys.some((k) => known.has(k)));
 }
 
+/** Les clés annoncées à cet utilisateur DEPUIS `since` (ms epoch). */
+export async function recentlyAnnounced(
+  jellyfinUserId: string,
+  keys: string[],
+  since: number,
+): Promise<Set<string>> {
+  const unique = [...new Set(keys)];
+  if (unique.length === 0) return new Set();
+  const rows = await getPrisma().announcedContent.findMany({
+    where: { jellyfinUserId, contentKey: { in: unique }, notifiedAt: { gte: new Date(since) } },
+    select: { contentKey: true },
+  });
+  return new Set(rows.map((r) => r.contentKey));
+}
+
 /** Enregistre les clés d'un envoi effectif (createMany skipDuplicates). */
 export async function recordAnnounced(jellyfinUserId: string, keys: string[]): Promise<void> {
   const unique = [...new Set(keys)];
@@ -154,6 +199,17 @@ export async function recordAnnounced(jellyfinUserId: string, keys: string[]): P
   await prisma.announcedContent.createMany({
     data: unique.map((contentKey) => ({ contentKey, jellyfinUserId })),
     skipDuplicates: true,
+  });
+}
+
+/** Enregistre ET redate : pour les clés dont la date compte (couverture de saison). */
+export async function refreshAnnounced(jellyfinUserId: string, keys: string[], now = Date.now()): Promise<void> {
+  const unique = [...new Set(keys)];
+  if (unique.length === 0) return;
+  await recordAnnounced(jellyfinUserId, unique);
+  await getPrisma().announcedContent.updateMany({
+    where: { jellyfinUserId, contentKey: { in: unique } },
+    data: { notifiedAt: new Date(now) },
   });
 }
 

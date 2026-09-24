@@ -1,9 +1,10 @@
 import type { LibItem } from "./jellyfinLibrary";
 
-// Anti-doublon des notifs d'ajout bibliothèque : quand un plugin (ex. Seer) a
-// « revendiqué » un contenu (table content_claims), on n'envoie PAS la notif
-// biblio de ce contenu à l'utilisateur concerné — le plugin le notifie déjà.
-// Générique : le core ne connaît pas le plugin, juste (tmdbId | titre, user).
+// Qui attend quoi : un plugin de demandes (ex. Vigie) « revendique » un
+// contenu pour un utilisateur tant que sa demande attend (table
+// content_claims). À l'arrivée du contenu dans Jellyfin, le notifier d'ajouts
+// l'annonce à ce demandeur, sous sa forme personnelle. Générique : le core ne
+// connaît pas le plugin, juste (tmdbId | titre, user).
 
 export interface Claim {
   tmdbId: number;
