@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import Animated from "react-native-reanimated";
 import { spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { useHeaderHeight } from "@/components/PersistentHeader";
 import { TabIndicator } from "./TabIndicator";
 import { useSlidingIndicator } from "./useSlidingIndicator";
 import { useTabPressFeedback } from "./useTabPressFeedback";
@@ -30,9 +31,13 @@ export function TabRail({ state, descriptors, navigation, onOpenMenu }: TabRailP
   const st = useThemedStyles(makeStyles);
   const activeKey = state.routes[state.index]?.key;
   const indicator = useSlidingIndicator(activeKey, { width: ITEM_W, height: ITEM_H, align: "center" });
+  // Le rail est posé à côté de la scène, SOUS l'en-tête flottant (absolu,
+  // pleine largeur) : sans ce décalage, son bouton de menu était caché — et
+  // intouchable — derrière le verre de l'en-tête.
+  const headerH = useHeaderHeight();
 
   return (
-    <View style={st.rail}>
+    <View style={[st.rail, { paddingTop: headerH + spacing.md }]}>
       <Pressable
         onPress={onOpenMenu}
         accessibilityRole="button"
@@ -109,7 +114,6 @@ const makeStyles = (t: AppTheme) =>
       backgroundColor: "transparent",
       borderRightColor: t.colors.border.subtle,
       borderRightWidth: StyleSheet.hairlineWidth,
-      paddingTop: spacing.md,
       alignItems: "center" as const,
     },
     toggle: {
