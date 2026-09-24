@@ -17,6 +17,7 @@ import { TVDetailHeader } from "../components/detail/TVDetailHeader";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTvTrailers } from "../hooks/useTvTrailers";
 import { Colors, Spacing, CardConfig } from "../theme/colors";
+import { SHOWS_VERTICAL_SCROLL_INDICATOR } from "../theme/focus";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
 
@@ -89,6 +90,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
       ref={scrollRef}
       style={{ flex: 1, backgroundColor: Colors.bgDeep }}
       contentContainerStyle={{ paddingBottom: 96 }}
+      showsVerticalScrollIndicator={SHOWS_VERTICAL_SCROLL_INDICATOR}
     >
       <TVDetailHeader
         item={item}
