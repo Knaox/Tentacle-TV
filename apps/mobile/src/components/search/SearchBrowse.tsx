@@ -1,14 +1,21 @@
-import { memo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { memo, useMemo } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useSearchBrowse, type SearchBrowseTarget } from "@tentacle-tv/api-client";
-import type { SearchPersonHit } from "@tentacle-tv/shared";
+import { useMediaItem, useSearchBrowse, type SearchBrowseTarget } from "@tentacle-tv/api-client";
+import {
+  withoutLibraryTwins,
+  type ExternalSearchItem,
+  type SearchPersonHit,
+  type SearchProvider,
+} from "@tentacle-tv/shared";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { BrandSpinner } from "@/components/ui";
 import { FONT_FAMILY, RADIUS, spacing, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { ExternalSections } from "./SearchExternal";
 import { PersonAvatar } from "./SearchPeople";
 import { asMediaItem } from "./SearchSection";
+import { useMobileExternalFilmography } from "./useMobileExternalSearch";
 
 /** Ce que l'on parcourt : une personne (sa filmographie), un genre, un studio. */
 export type BrowseTarget =
@@ -24,11 +31,17 @@ function query(target: BrowseTarget): SearchBrowseTarget {
  * Parcourir depuis la recherche — une personne, un genre, un studio — sans
  * quitter la recherche : l'en-tête dit ce qu'on parcourt et combien de titres
  * la bibliothèque en a, « Retour » ramène aux résultats, la requête intacte.
+ *
+ * La filmographie d'une personne continue, comme au bureau, par ce que les
+ * extensions connaissent et que le serveur n'a pas (« Pas encore sur le
+ * serveur · via Vigie ») — sans rien répéter de la bibliothèque.
  */
-export const SearchBrowse = memo(function SearchBrowse({ target, onBack, onOpen }: {
+export const SearchBrowse = memo(function SearchBrowse({ target, onBack, onOpen, onOpenExternal, onSeeAllExternal }: {
   target: BrowseTarget;
   onBack: () => void;
   onOpen: (id: string) => void;
+  onOpenExternal: (provider: SearchProvider, item: ExternalSearchItem) => void;
+  onSeeAllExternal: (provider: SearchProvider, href: string) => void;
 }) {
   const { t } = useTranslation("search");
   const { t: tc } = useTranslation("common");
@@ -38,6 +51,20 @@ export const SearchBrowse = memo(function SearchBrowse({ target, onBack, onOpen 
   const { data, isPending } = useSearchBrowse(query(target));
   const title = target.kind === "person" ? target.person.name : target.name;
   const kicker = target.kind === "person" ? t("filmographyTitle") : t(target.kind);
+
+  // L'identifiant TMDB, quand Jellyfin le connaît : il vaut mieux qu'un nom,
+  // que deux acteurs peuvent porter.
+  const personItem = useMediaItem(target.kind === "person" ? target.id : undefined);
+  const tmdbId = personItem.data?.ProviderIds?.Tmdb ?? null;
+  const external = useMobileExternalFilmography(
+    target.kind === "person" && !personItem.isPending ? { name: title, tmdbId } : null,
+  );
+  const outside = useMemo(() => {
+    const owned = (data?.items ?? []).map((hit) => ({ name: hit.item.Name, year: hit.item.ProductionYear ?? null }));
+    return external.results
+      .map((result) => ({ ...result, items: withoutLibraryTwins(result.items, owned) }))
+      .filter((result) => result.items.length > 0);
+  }, [external.results, data]);
 
   return (
     <View>
@@ -65,6 +92,16 @@ export const SearchBrowse = memo(function SearchBrowse({ target, onBack, onOpen 
             ))}
           </View>
         </>
+      )}
+
+      {target.kind === "person" && outside.length > 0 && (
+        <ExternalSections results={outside} onOpen={onOpenExternal} onSeeAll={onSeeAllExternal} layout="grid" />
+      )}
+      {target.kind === "person" && outside.length === 0 && external.pending && (
+        <View style={st.searching}>
+          <ActivityIndicator size="small" color={theme.colors.text.tertiary} />
+          <Text style={st.searchingTxt}>{t("externalSearching")}</Text>
+        </View>
       )}
     </View>
   );
@@ -98,4 +135,6 @@ const makeStyles = (t: AppTheme) =>
     loading: { paddingVertical: spacing.xxl, alignItems: "center" as const },
     sort: { fontSize: 12, fontFamily: FONT_FAMILY.medium, color: t.colors.text.quaternary, marginBottom: spacing.sm },
     grid: { flexDirection: "row" as const, flexWrap: "wrap" as const, paddingBottom: spacing.xl },
+    searching: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm, paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.xl },
+    searchingTxt: { fontSize: 13, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
   });

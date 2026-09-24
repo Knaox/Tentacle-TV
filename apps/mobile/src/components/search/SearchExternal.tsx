@@ -4,13 +4,15 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import type { ExternalSearchItem, ExternalSearchResult, ExternalTone, SearchProvider } from "@tentacle-tv/shared";
-import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, spacing, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { useRailCardWidth } from "./SearchSection";
 
 interface Props {
   results: ExternalSearchResult[];
   onOpen: (provider: SearchProvider, item: ExternalSearchItem) => void;
   onSeeAll: (provider: SearchProvider, href: string) => void;
+  /** `rail` dans les résultats ; `grid` sous une filmographie, dans la suite de la grille de la bibliothèque. */
+  layout?: "rail" | "grid";
 }
 
 /**
@@ -19,11 +21,12 @@ interface Props {
  * « via Vigie » : on sait d'où vient chaque titre, et qu'il n'est pas encore
  * là. Chaque carte ouvre la page du plugin qui le montre.
  */
-export const ExternalSections = memo(function ExternalSections({ results, onOpen, onSeeAll }: Props) {
+export const ExternalSections = memo(function ExternalSections({ results, onOpen, onSeeAll, layout = "rail" }: Props) {
   const { t } = useTranslation("search");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const width = useRailCardWidth();
+  const railWidth = useRailCardWidth();
+  const grid = useGrid({ phoneColumns: 3, gutter: 12 });
 
   return (
     <>
@@ -41,38 +44,55 @@ export const ExternalSections = memo(function ExternalSections({ results, onOpen
               </Pressable>
             )}
           </View>
-          <FlatList
-            horizontal
-            data={result.items}
-            keyExtractor={(item) => item.id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={st.rail}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => onOpen(result.provider, item)}
-                accessibilityRole="button"
-                accessibilityLabel={[item.title, item.year, item.badge?.label].filter(Boolean).join(", ")}
-                style={({ pressed }) => [{ width }, pressed && st.pressed]}
-              >
-                <View style={[st.poster, { width, height: width * 1.5 }]}>
-                  {item.imageUrl ? (
-                    <Image source={{ uri: item.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} accessible={false} />
-                  ) : (
-                    <Feather name={item.kind === "series" ? "tv" : "film"} size={26} color={theme.colors.text.quaternary} />
-                  )}
-                  {item.badge && <Badge label={item.badge.label} tone={item.badge.tone} />}
-                </View>
-                <Text style={st.itemTitle} numberOfLines={2}>{item.title}</Text>
-                {item.year !== null && <Text style={st.itemYear}>{item.year}</Text>}
-              </Pressable>
-            )}
-          />
+          {layout === "grid" ? (
+            <View style={[st.grid, { paddingHorizontal: grid.padding, gap: grid.gutter }]}>
+              {result.items.map((item) => (
+                <ExternalCard key={item.id} item={item} width={grid.itemWidth} onPress={() => onOpen(result.provider, item)} />
+              ))}
+            </View>
+          ) : (
+            <FlatList
+              horizontal
+              data={result.items}
+              keyExtractor={(item) => item.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={st.rail}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <ExternalCard item={item} width={railWidth} onPress={() => onOpen(result.provider, item)} />
+              )}
+            />
+          )}
         </View>
       ))}
     </>
   );
 });
+
+/** Une affiche hors bibliothèque : contour pointillé, pastille d'état du plugin, titre et année. */
+function ExternalCard({ item, width, onPress }: { item: ExternalSearchItem; width: number; onPress: () => void }) {
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={[item.title, item.year, item.badge?.label].filter(Boolean).join(", ")}
+      style={({ pressed }) => [{ width }, pressed && st.pressed]}
+    >
+      <View style={[st.poster, { width, height: width * 1.5 }]}>
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} accessible={false} />
+        ) : (
+          <Feather name={item.kind === "series" ? "tv" : "film"} size={26} color={theme.colors.text.quaternary} />
+        )}
+        {item.badge && <Badge label={item.badge.label} tone={item.badge.tone} />}
+      </View>
+      <Text style={st.itemTitle} numberOfLines={2}>{item.title}</Text>
+      {item.year !== null && <Text style={st.itemYear}>{item.year}</Text>}
+    </Pressable>
+  );
+}
 
 /** La pastille d'état que le plugin pose sur un titre (« Demandé », « Bientôt »…). */
 function Badge({ label, tone }: { label: string; tone: ExternalTone }) {
@@ -103,6 +123,7 @@ const makeStyles = (t: AppTheme) =>
     more: { flexDirection: "row" as const, alignItems: "center" as const, gap: 2, minHeight: 32, maxWidth: 170 },
     moreTxt: { fontSize: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
     rail: { paddingHorizontal: spacing.screenPadding, gap: 12 },
+    grid: { flexDirection: "row" as const, flexWrap: "wrap" as const, rowGap: spacing.md },
     pressed: { opacity: 0.7 },
     poster: {
       borderRadius: RADIUS.md,
