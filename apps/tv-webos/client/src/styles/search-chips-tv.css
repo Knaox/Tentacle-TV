@@ -1,0 +1,58 @@
+/* Les pastilles de la recherche — récentes, genres, studios — et l'état vide
+ * qui les porte quand il n'y a rien à montrer. Suite de `search-tv.css`. */
+
+/* ── Pastilles : récentes, genres, studios ─────────────────────────── */
+
+.tv-search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 8px var(--tv-search-gutter) 0 var(--tv-search-gutter);
+  list-style: none;
+}
+
+.tv-search-chips > li {
+  margin: 0 16px 16px 0;
+}
+
+.tv-search-chip {
+  display: flex;
+  align-items: baseline;
+  padding: 14px 28px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--cta-ghost-bg);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 24px;
+}
+
+.tv-search-chip-detail {
+  margin-left: 12px;
+  font-size: 22px;
+  color: var(--text-tertiary);
+}
+
+/* ── État vide ─────────────────────────────────────────────────────── */
+
+.tv-search-idle {
+  padding-top: 8px;
+}
+
+.tv-search-idle-title {
+  margin: 0 0 12px 0;
+  padding: 0 var(--tv-search-gutter);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.tv-search-idle-hint {
+  max-width: 900px;
+  margin: 0 0 40px 0;
+  padding: 0 var(--tv-search-gutter);
+  font-size: 26px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
