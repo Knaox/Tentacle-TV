@@ -56,6 +56,9 @@ export const MpvPlayerView = forwardRef<MpvPlayerViewHandle, MpvPlayerNativeProp
         stop: async () => {
           await nativeRef.current?.stop();
         },
+        release: async () => {
+          await nativeRef.current?.release();
+        },
       }),
       [],
     );

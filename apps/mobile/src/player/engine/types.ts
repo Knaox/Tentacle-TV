@@ -46,6 +46,12 @@ export interface PlayerEngineHandle {
   seek(seconds: number): void;
   /** Lecteur avancé : l'instantané technique (décodeur, images perdues, journal) pour « Détails » et le crochet de dev. */
   getTechnicalInfo?(): Promise<Record<string, unknown>>;
+  /**
+   * On quitte le lecteur : tout ce qui vit hors de l'écran s'éteint MAINTENANT
+   * (moteur, image dans l'image, écran verrouillé, session audio), avant que
+   * la fermeture de l'écran ne démonte la vue.
+   */
+  release(): void;
 }
 
 /**

@@ -70,6 +70,7 @@ class MpvPlayerModule : Module() {
             AsyncFunction("isPictureInPictureSupported") { view: MpvPlayerView -> view.isPictureInPictureSupported() }
             AsyncFunction("isPictureInPictureActive") { view: MpvPlayerView -> view.isPictureInPictureActive() }
             AsyncFunction("stop") { view: MpvPlayerView -> view.stop() }
+            AsyncFunction("release") { view: MpvPlayerView -> view.release() }
 
             // Le démontage se fait ici, à la destruction par React Native — pas
             // à `onDetachedFromWindow`, qu'un rattachement sans destruction
