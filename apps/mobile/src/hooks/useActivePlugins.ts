@@ -31,6 +31,12 @@ export interface ActivePlugin {
   navItems: PluginNavItem[];
   configEnabled?: boolean;
   tab?: PluginTabMeta;
+  /**
+   * Recherche hors bibliothèque (champ `search` du manifeste), relayée par le
+   * serveur seulement si l'intégration est allumée — lue par la recherche
+   * (`pluginSearch`, @tentacle-tv/shared), qui en valide chaque champ.
+   */
+  search?: { path: string; person?: string; types?: string[]; labels?: Record<string, string> };
 }
 
 /**
