@@ -117,6 +117,10 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
             la rampe corrigée vit dans GradientOverlay. En SOMBRE le bas rejoint
             la page (surface.s0, défaut) ; en CLAIR il plafonne à 0,70 de noir
             PUR (le plafond est dans la rampe, jamais dans la couleur). */}
+        {/* L'affiche porte souvent son titre imprimé : un voile UNI, léger, la
+            recule d'un cran pour que le texte de la carte passe devant. Uni,
+            donc sans rampe — aucune bande ne peut s'y dessiner. */}
+        {portrait && <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, st.posterDim]} />}
         <GradientOverlay direction="top" height={110} intensity="soft" color="rgba(0, 0, 0, 0.65)" />
         {/* En portrait l'affiche porte souvent son propre titre, imprimé en
             bas : le voile monte plus haut pour que le texte de la carte reste
@@ -191,4 +195,5 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   dot: { height: 3, borderRadius: 2 },
   dotOn: { width: 22, shadowColor: t.colors.brand.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8 },
   dotOff: { width: 6, backgroundColor: t.colors.text.quaternary },
+  posterDim: { backgroundColor: "rgba(0, 0, 0, 0.22)" },
 });
