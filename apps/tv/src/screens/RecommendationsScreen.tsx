@@ -21,6 +21,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVNavActions } from "../context/TVNavContext";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
+import { Spacing } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Recommendations">;
 
@@ -76,7 +77,7 @@ function RecommendationsInner({ navigation }: Props) {
   const onShelfLayout = useCallback((key: string, y: number) => shelfY.current.set(key, y), []);
   const onShelfFocus = useCallback((key: string) => {
     const y = shelfY.current.get(key);
-    if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, shelvesTop.current + y - 80), animated: true });
+    if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, shelvesTop.current + y - Spacing.rowScrollTop), animated: true });
   }, []);
 
   const [ctxTarget, setCtxTarget] = useState<HomeContextTarget | null>(null);

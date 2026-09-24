@@ -118,6 +118,8 @@ export function brandAlpha(alpha: number): string {
   return withAlpha(BRAND.violet, alpha, `rgba(139, 92, 246, ${alpha})`);
 }
 
+const ROW_GAP = 40;
+
 export const Spacing = {
   /** Padding from screen edges (TV overscan-safe). */
   screenPadding: 32,
@@ -125,7 +127,12 @@ export const Spacing = {
   rowGutter: TV_BANNER_CARD.gutter,
   /** Espace SOUS chaque rangée (web `mb-10`) et sous la carte bannière
    *  (hero web `pb-10`) — les rangées ne portent pas de marge haute. */
-  rowGap: 40,
+  rowGap: ROW_GAP,
+  /** Où se cale le haut d'une rangée qui prend le focus, sous le bord de la
+   *  zone qui défile : exactement l'écart qui la sépare de la précédente, qui
+   *  sort alors ENTIÈRE du cadre. Calée à 80, la rangée précédente laissait
+   *  dépasser sa dernière ligne de légendes, coupée en haut de l'écran. */
+  rowScrollTop: ROW_GAP,
   /** Gap between content sections/rows. */
   sectionGap: 28,
   /** Gap between cards in a carousel. */
