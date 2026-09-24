@@ -6,6 +6,7 @@ import { backOrHome } from "@/utils/backOrHome";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "../hooks/useActivePlugins";
+import { shortPluginName } from "../hooks/useExtensionSections";
 import { usePluginBundle, useSharedDeps } from "../plugins/usePluginBundle";
 import { buildPluginHtml } from "../plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "../plugins/pluginBridge";
@@ -34,6 +35,7 @@ export function PluginWebViewScreen() {
   const router = useRouter();
   const { storage } = useTentacleConfig();
   const { i18n, t } = useTranslation("errors");
+  const { t: tc } = useTranslation("common");
   const { data: plugins } = useActivePlugins();
 
   const plugin = plugins?.find((p) => p.pluginId === pluginId);
@@ -66,8 +68,11 @@ export function PluginWebViewScreen() {
       pluginPath,
       pluginQuery,
       appTheme: theme,
+      // Pas de barre d'onglets ici : la page n'a que l'indicateur d'accueil à
+      // écarter (sinon le pied de ses feuilles se posait dessus).
+      chromeBottom: insets.bottom,
     });
-  }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath, pluginQuery, theme]);
+  }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath, pluginQuery, theme, insets.bottom]);
 
   const handleMessage = useCallback(
     createBridgeHandler(router),
@@ -114,9 +119,10 @@ export function PluginWebViewScreen() {
         gap: 12,
         backgroundColor: colors.surface.s0,
       }}>
-        <IconButton icon="←" onPress={() => backOrHome(router)} />
-        <Text style={{ ...typography.subtitle, color: colors.text.primary, flex: 1 }}>
-          {plugin.name}
+        <IconButton icon="←" onPress={() => backOrHome(router)} accessibilityLabel={tc("back")} />
+        {/* Le nom court (« Vigie »), comme l'onglet — pas « Vigie — Jellyseerr (unofficial) ». */}
+        <Text style={{ ...typography.subtitle, color: colors.text.primary, flex: 1 }} numberOfLines={1} accessibilityRole="header">
+          {shortPluginName(plugin.name)}
         </Text>
       </View>
       <WebViewComponent
