@@ -1,4 +1,5 @@
-import { View, Text, FlatList } from "react-native";
+import { View, Text, FlatList, Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
@@ -18,8 +19,14 @@ const CREW_TYPES = ["Director", "Writer", "Producer", "Composer"] as const;
 const MAX_ACTORS = 20;
 const AVATAR = 60;
 
+/**
+ * L'équipe et la distribution d'une fiche. Toucher un acteur ouvre sa
+ * filmographie — la bibliothèque, puis ce que Vigie connaît d'autre.
+ */
 export function CastRow({ people }: CastRowProps) {
   const { t } = useTranslation("common");
+  const { t: ts } = useTranslation("search");
+  const router = useRouter();
   const { colors } = useTheme();
   const client = useJellyfinClient();
   const actors = people.filter((p) => p.Type === "Actor").slice(0, MAX_ACTORS);
@@ -62,7 +69,16 @@ export function CastRow({ people }: CastRowProps) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, gap: spacing.md }}
             renderItem={({ item: person }) => (
-              <View style={{ width: 76, alignItems: "center" }}>
+              <Pressable
+                onPress={() => router.push({
+                  pathname: "/search",
+                  params: { person: person.Id, name: person.Name, tag: person.PrimaryImageTag ?? "" },
+                })}
+                accessibilityRole="button"
+                accessibilityLabel={`${person.Name}${person.Role ? `, ${person.Role}` : ""}`}
+                accessibilityHint={ts("filmography")}
+                style={({ pressed }) => ({ width: 76, alignItems: "center", opacity: pressed ? 0.7 : 1 })}
+              >
                 {person.PrimaryImageTag ? (
                   <Image
                     source={{ uri: client.getImageUrl(person.Id, "Primary", { height: 120, quality: 80 }) }}
@@ -89,7 +105,7 @@ export function CastRow({ people }: CastRowProps) {
                     {person.Role}
                   </Text>
                 )}
-              </View>
+              </Pressable>
             )}
           />
         </View>

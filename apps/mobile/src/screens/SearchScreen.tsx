@@ -40,12 +40,15 @@ export function SearchScreen() {
   const st = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ q?: string }>();
+  const params = useLocalSearchParams<{ q?: string; person?: string; name?: string; tag?: string }>();
   const inputRef = useRef<TextInput>(null);
   const [query, setQuery] = useState(typeof params.q === "string" ? params.q : "");
   const [debounced, setDebounced] = useState(query.trim());
   const [filter, setFilter] = useState<SearchFilter>("all");
-  const [browse, setBrowse] = useState<BrowseTarget | null>(null);
+  // `?person=` ouvre directement une filmographie (un acteur touché sur une fiche).
+  const [browse, setBrowse] = useState<BrowseTarget | null>(() => personFromParams(params));
+  // Ouverte sur une filmographie : « Retour » ramène à la fiche, pas à une recherche vide.
+  const openedOnPerson = useRef(browse !== null);
   const [focused, setFocused] = useState(false);
   const recents = useRecentSearches();
   const nav = useSearchNavigation();
@@ -55,6 +58,8 @@ export function SearchScreen() {
     return () => clearTimeout(timer);
   }, [query]);
   useEffect(() => {
+    // Une filmographie ouverte d'une fiche se lit : pas de clavier par-dessus.
+    if (openedOnPerson.current) return;
     const timer = setTimeout(() => inputRef.current?.focus(), 120);
     return () => clearTimeout(timer);
   }, []);
@@ -121,7 +126,7 @@ export function SearchScreen() {
               value={query}
               completion={completion}
               textStyle={st.inputText}
-              onChangeText={(value) => { setQuery(value); setBrowse(null); }}
+              onChangeText={(value) => { openedOnPerson.current = false; setQuery(value); setBrowse(null); }}
               onSubmitEditing={() => pushRecent(query)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
@@ -153,7 +158,13 @@ export function SearchScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
       >
         {browse !== null ? (
-          <SearchBrowse target={browse} onBack={() => setBrowse(null)} onOpen={actions.openItem} />
+          <SearchBrowse
+            target={browse}
+            onBack={() => (openedOnPerson.current ? backOrHome(router) : setBrowse(null))}
+            onOpen={actions.openItem}
+            onOpenExternal={actions.openExternalItem}
+            onSeeAllExternal={actions.openExternal}
+          />
         ) : debounced.length === 0 ? (
           <SearchHome
             recent={recents.recent}
@@ -187,6 +198,13 @@ export function SearchScreen() {
       </ScrollView>
     </SubtleBackground>
   );
+}
+
+function personFromParams(params: { person?: string; name?: string; tag?: string }): BrowseTarget | null {
+  if (typeof params.person !== "string" || params.person === "") return null;
+  const name = typeof params.name === "string" ? params.name : "";
+  const imageTag = typeof params.tag === "string" && params.tag !== "" ? params.tag : null;
+  return { kind: "person", id: params.person, person: { id: params.person, name, imageTag, roles: [], count: 0, score: 0 } };
 }
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
