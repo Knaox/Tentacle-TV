@@ -12,7 +12,7 @@ import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ExternalBadge, ExternalPoster } from "./ExternalVisuals";
-import type { ExternalSearchResult } from "./pluginSearch";
+import type { ExternalSearchResult } from "@tentacle-tv/shared";
 
 const GRID = { gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" } as const;
 

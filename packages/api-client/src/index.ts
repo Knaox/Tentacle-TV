@@ -5,7 +5,8 @@ export { useLibraries, useLibraryItems, useEpisodes, useSeriesEpisodes, useMedia
 export { useSeasons, prefetchSeasons, useSeasonEpisodesLite, prefetchSeasonEpisodesLite, getSeasonEpisodesLiteKey } from "./hooks/useSeasons";
 export { useRandomLibraryBackdrop, getLibraryBackdropKey, prefetchLibraryBackdrop } from "./hooks/useLibraryBackdrop";
 export { useSearchItems } from "./hooks/useSearchItems";
-// Le moteur de recherche du serveur Tentacle (web et bureau).
+// Le moteur de recherche du serveur Tentacle (web, bureau et mobile), et ce
+// que les plugins trouvent hors de la bibliothèque.
 export {
   useTentacleSearch,
   useSearchEpisodes,
@@ -14,6 +15,12 @@ export {
   type SearchBrowseTarget,
   type TentacleSearchOptions,
 } from "./hooks/useTentacleSearch";
+export {
+  useExternalSearch,
+  combineExternal,
+  type ExternalSearchOptions,
+  type ExternalSearchState,
+} from "./hooks/useExternalSearch";
 export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog } from "./hooks/useLibraryCatalog";
 export type { CatalogFilters } from "./hooks/useLibraryCatalog";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";

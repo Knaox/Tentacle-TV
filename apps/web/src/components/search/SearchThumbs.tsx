@@ -7,9 +7,8 @@
 
 import { memo } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { SearchMediaItem, SearchPersonHit } from "@tentacle-tv/shared";
+import { initials, type SearchMediaItem, type SearchPersonHit } from "@tentacle-tv/shared";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
-import { initials } from "./searchLabels";
 
 const FALLBACK = "linear-gradient(160deg, rgba(var(--brand-rgb), 0.45) 0%, var(--fill-strong) 100%)";
 

@@ -9,11 +9,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useResumeItems, useSearchDiscover, useSearchEpisodes, useTentacleSearch,
 } from "@tentacle-tv/api-client";
-import { parseSearchQuery } from "@tentacle-tv/shared";
+import { parseSearchQuery, withoutLibraryTwins } from "@tentacle-tv/shared";
 import { clearRecentSearches, readRecentSearches, removeRecentSearch } from "../recentSearches";
 import { resultOptions, zeroOptions } from "../omniboxModel";
 import { useExternalSearch } from "../external/useExternalSearch";
-import { withoutLibraryTwins } from "../external/pluginSearch";
 
 /** Le temps de laisser finir un mot tapé d'un trait. */
 const DEBOUNCE_MS = 90;

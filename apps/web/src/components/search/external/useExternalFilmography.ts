@@ -17,7 +17,7 @@ import { tentacleApiFetch } from "@tentacle-tv/api-client";
 import {
   personProviderUrl, readExternalResponse, searchProviders,
   type ExternalSearchResult, type SearchProvider,
-} from "./pluginSearch";
+} from "@tentacle-tv/shared";
 import { combineExternal, type ExternalSearchState } from "./useExternalSearch";
 
 export interface FilmographyPerson {

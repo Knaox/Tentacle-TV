@@ -6,11 +6,16 @@
 
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { formatEpisodeCode, type SearchFacetHit, type SearchMediaItem, type SearchPersonHit } from "@tentacle-tv/shared";
+import {
+  formatEpisodeCode,
+  personMeta,
+  type SearchFacetHit,
+  type SearchMediaItem,
+  type SearchPersonHit,
+} from "@tentacle-tv/shared";
 import { SearchResultCard } from "../SearchResultCard";
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar, PosterThumb } from "../SearchThumbs";
-import { personMeta } from "../searchLabels";
 import { displayFacet } from "../omnibox/OmniboxChips";
 
 export function Section({ title, count, onSeeAll, children }: {

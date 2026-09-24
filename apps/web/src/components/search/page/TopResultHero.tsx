@@ -10,10 +10,9 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { SearchTopHit } from "@tentacle-tv/shared";
+import { itemMeta, matchReason, personMeta, type SearchTopHit } from "@tentacle-tv/shared";
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar, PosterThumb } from "../SearchThumbs";
-import { itemMeta, matchReason, personMeta } from "../searchLabels";
 
 interface TopResultHeroProps {
   top: SearchTopHit;

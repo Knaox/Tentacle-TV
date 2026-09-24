@@ -10,10 +10,15 @@
 
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import type { SearchItemHit, SearchPersonHit } from "@tentacle-tv/shared";
+import {
+  itemMeta,
+  matchReason,
+  personMeta,
+  type SearchItemHit,
+  type SearchPersonHit,
+} from "@tentacle-tv/shared";
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar, PosterThumb } from "../SearchThumbs";
-import { itemMeta, matchReason, personMeta } from "../searchLabels";
 import { optionId, type RowProps } from "./OmniboxRows";
 
 function Shell({ index, active, onHover, onActivate, children }: RowProps & { children: React.ReactNode }) {
