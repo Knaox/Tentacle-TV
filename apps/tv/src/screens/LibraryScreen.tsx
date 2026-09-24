@@ -26,8 +26,6 @@ import { useLibraryFilters } from "../hooks/useLibraryFilters";
 import { hasPlatformFilter } from "../hooks/libraryCatalogParams";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 import { possessiveLibraryName } from "../utils/libraryLabel";
-import { Spacing } from "../theme/colors";
-import { CARD_FOCUS_BLEED } from "../theme/focus";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 
@@ -154,32 +152,30 @@ function LibraryScreenInner({ route, navigation }: Props) {
           tourne quand la cellule focalisée se démonte — un filtre qui ne rend
           plus rien, par exemple. Sans lui, la télécommande devenait muette. */}
       <TVFocusGuideView autoFocus style={{ flex: 1 }}>
-        {isLoading && items.length === 0 ? (
-          <LibraryLoading header={header} />
-        ) : (
-          /* La grille est rendue MÊME vide : son état vide vit dedans, ce qui
-             garde la barre de filtres montée quand le dernier résultat
-             disparaît — sans quoi la puce qu'on vient d'actionner est démontée
-             sous le doigt et le focus s'en va dans le rail. */
-          <TVLibraryGrid
-            listKey={libraryId}
-            items={items}
-            header={header}
-            onPressItem={navigateToDetail}
-            onItemFocus={setFocusedItem}
-            onEndReached={handleEndReached}
-            isFetchingNextPage={isFetchingNextPage}
-            entryRef={contentEntry}
-            emptyComponent={
-              <TVLibraryEmpty
-                filtered={lf.hasActiveFilters}
-                onReset={lf.resetFilters}
-                onBrowse={() => navigation.navigate("Home")}
-                entryRef={contentEntry}
-              />
-            }
-          />
-        )}
+        {/* La grille est rendue MÊME vide, et même pendant le chargement : son
+            état vide vit dedans, ce qui garde la barre de filtres montée quand
+            le dernier résultat disparaît (sans quoi la puce qu'on vient
+            d'actionner est démontée sous le doigt et le focus s'en va dans le
+            rail) — et l'en-tête n'est plus REMONTÉ à l'arrivée des données :
+            le fond de 1920 px et le halo flouté se payaient deux fois. */}
+        <TVLibraryGrid
+          listKey={libraryId}
+          items={items}
+          header={header}
+          onPressItem={navigateToDetail}
+          onItemFocus={setFocusedItem}
+          onEndReached={handleEndReached}
+          isFetchingNextPage={isFetchingNextPage}
+          entryRef={contentEntry}
+          emptyComponent={isLoading ? <LibraryLoadingCells /> : (
+            <TVLibraryEmpty
+              filtered={lf.hasActiveFilters}
+              onReset={lf.resetFilters}
+              onBrowse={() => navigation.navigate("Home")}
+              entryRef={contentEntry}
+            />
+          )}
+        />
       </TVFocusGuideView>
 
       {openMenu?.kind === "sort" && (
@@ -201,18 +197,15 @@ function LibraryScreenInner({ route, navigation }: Props) {
   );
 }
 
-/** Le squelette de chargement, à la géométrie de la vraie grille. */
-function LibraryLoading({ header }: { header: React.ReactElement }) {
+/** Le squelette de chargement, à la géométrie de la vraie grille — rendu
+ *  SOUS l'en-tête de la grille, à la place de ses cellules. */
+function LibraryLoadingCells() {
   const { cardW, cardH } = useTVGridLayout();
   return (
-    <View style={{ paddingHorizontal: Spacing.rowGutter }}>
-      {header}
-      <View style={{ height: CARD_FOCUS_BLEED }} />
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
-        {Array.from({ length: 12 }).map((_, i) => (
-          <Skeleton key={i} width={cardW} height={cardH} />
-        ))}
-      </View>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+      {Array.from({ length: 12 }).map((_, i) => (
+        <Skeleton key={i} width={cardW} height={cardH} />
+      ))}
     </View>
   );
 }
