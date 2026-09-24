@@ -1,0 +1,67 @@
+diff --git a/android/src/main/java/com/horcrux/svg/FeGaussianBlurView.java b/android/src/main/java/com/horcrux/svg/FeGaussianBlurView.java
+index 0705ed807046e474bcb4a84238e69e6e045b1499..cc58220b030d128c078ada3707c489a81454ac83 100644
+--- a/android/src/main/java/com/horcrux/svg/FeGaussianBlurView.java
++++ b/android/src/main/java/com/horcrux/svg/FeGaussianBlurView.java
+@@ -47,6 +47,22 @@ class FeGaussianBlurView extends FilterPrimitiveView {
+     return blur(getContext(), source);
+   }
+ 
++  // Tentacle patch : UN contexte RenderScript et UN script de flou pour toute
++  // l'application, créés au premier flou puis réutilisés. En créer puis en
++  // détruire un à CHAQUE passe coûtait des dizaines de millisecondes sur le fil
++  // UI, à chaque dessin du filtre — le halo d'une bannière qui tourne toutes
++  // les huit secondes, celui d'une bibliothèque à son ouverture.
++  private static RenderScript sRenderScript;
++  private static ScriptIntrinsicBlur sBlurScript;
++
++  private static synchronized ScriptIntrinsicBlur sharedBlur(Context context) {
++    if (sBlurScript == null) {
++      sRenderScript = RenderScript.create(context.getApplicationContext());
++      sBlurScript = ScriptIntrinsicBlur.create(sRenderScript, Element.U8_4(sRenderScript));
++    }
++    return sBlurScript;
++  }
++
+   private Bitmap blur(Context context, Bitmap bitmap) {
+     // Android blur radius is much weaker than SVG's, so we need to scale it up.
+     float stdDeviation = Math.max(mStdDeviationX, mStdDeviationY) * 2;
+@@ -56,24 +72,24 @@ class FeGaussianBlurView extends FilterPrimitiveView {
+ 
+     Bitmap outputBitmap = Bitmap.createBitmap(bitmap);
+ 
+-    // Create a RenderScript with blur
+-    RenderScript rs = RenderScript.create(context);
+-    ScriptIntrinsicBlur blurScript = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
++    synchronized (FeGaussianBlurView.class) {
++      ScriptIntrinsicBlur blurScript = sharedBlur(context);
++      RenderScript rs = sRenderScript;
+ 
+-    // Allocate memory for Renderscript to work with
+-    Allocation tmpIn = Allocation.createFromBitmap(rs, bitmap);
+-    Allocation tmpOut = Allocation.createFromBitmap(rs, outputBitmap);
++      // Allocate memory for Renderscript to work with
++      Allocation tmpIn = Allocation.createFromBitmap(rs, bitmap);
++      Allocation tmpOut = Allocation.createFromBitmap(rs, outputBitmap);
+ 
+-    // Set the radius of the blur, allocation input, and output
+-    blurScript.setRadius(radius);
+-    blurScript.setInput(tmpIn);
+-    blurScript.forEach(tmpOut);
++      // Set the radius of the blur, allocation input, and output
++      blurScript.setRadius(radius);
++      blurScript.setInput(tmpIn);
++      blurScript.forEach(tmpOut);
+ 
+-    // Copy the allocation output to the output bitmap and release memory
+-    tmpOut.copyTo(outputBitmap);
+-    tmpIn.destroy();
+-    tmpOut.destroy();
+-    rs.destroy();
++      // Copy the allocation output to the output bitmap and release memory
++      tmpOut.copyTo(outputBitmap);
++      tmpIn.destroy();
++      tmpOut.destroy();
++    }
+ 
+     return Bitmap.createScaledBitmap(outputBitmap, bitmap.getWidth(), bitmap.getHeight(), false);
+   }

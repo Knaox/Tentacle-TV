@@ -17,6 +17,9 @@ patchedDependencies:
   react-native-screens@4.16.0:
     hash: 7a039dfa3e333594e401dc677ed12c05cd35f403a323d6212c61ae7a5606089b
     path: patches/react-native-screens@4.16.0.patch
+  react-native-svg@15.15.3:
+    hash: 9653c744b5a9d4d9e9ce5c6cc59c7571965840936e68149181ae7fe6fcf5fdb5
+    path: patches/react-native-svg@15.15.3.patch
   react-native-tvos@0.80.1-0:
     hash: 6376af2238dcd1b1661aafdae6f6f22dc1a722759b46f8f1054d090069dba8d3
     path: patches/react-native-tvos@0.80.1-0.patch
@@ -333,7 +336,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^3.2.0
-        version: 3.2.4(@types/debug@4.1.13)(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@25.3.0)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   apps/tv:
     dependencies:
@@ -372,7 +375,7 @@ importers:
         version: 25.8.13(typescript@5.9.3)
       nativewind:
         specifier: ^4.1.0
-        version: 4.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(patch_hash=9653c744b5a9d4d9e9ce5c6cc59c7571965840936e68149181ae7fe6fcf5fdb5)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -384,7 +387,7 @@ importers:
         version: react-native-tvos@0.80.1-0(patch_hash=6376af2238dcd1b1661aafdae6f6f22dc1a722759b46f8f1054d090069dba8d3)(@babel/core@7.29.0)(@react-native-community/cli@19.1.2(typescript@5.9.3))(@types/react@19.2.14)(react-native-tvos@0.80.1-0)(react@19.1.0)
       react-native-css-interop:
         specifier: ^0.2.2
-        version: 0.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 0.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(patch_hash=9653c744b5a9d4d9e9ce5c6cc59c7571965840936e68149181ae7fe6fcf5fdb5)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       react-native-linear-gradient:
         specifier: ^2.8.3
         version: 2.8.3(react-native-tvos@0.80.1-0)(react@19.1.0)
@@ -399,7 +402,7 @@ importers:
         version: 4.16.0(patch_hash=7a039dfa3e333594e401dc677ed12c05cd35f403a323d6212c61ae7a5606089b)(react-native-tvos@0.80.1-0)(react@19.1.0)
       react-native-svg:
         specifier: ^15.15.3
-        version: 15.15.3(react-native-tvos@0.80.1-0)(react@19.1.0)
+        version: 15.15.3(patch_hash=9653c744b5a9d4d9e9ce5c6cc59c7571965840936e68149181ae7fe6fcf5fdb5)(react-native-tvos@0.80.1-0)(react@19.1.0)
       react-native-video:
         specifier: ^6.9.0
         version: 6.19.0(patch_hash=f2ef4e555cef6d57f94173322d4e0aa1c437ed5ccaf88c44a3c573a25c96e293)(react-native-tvos@0.80.1-0)(react@19.1.0)
@@ -683,7 +686,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^3.2.0
-        version: 3.2.4(@types/debug@4.1.13)(@types/node@25.3.0)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/tv-core:
     dependencies:
@@ -15229,11 +15232,11 @@ snapshots:
 
   nanoid@3.3.11: {}
 
-  nativewind@4.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2)):
+  nativewind@4.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(patch_hash=9653c744b5a9d4d9e9ce5c6cc59c7571965840936e68149181ae7fe6fcf5fdb5)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       comment-json: 4.5.1
       debug: 4.4.3
-      react-native-css-interop: 0.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+      react-native-css-interop: 0.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(patch_hash=9653c744b5a9d4d9e9ce5c6cc59c7571965840936e68149181ae7fe6fcf5fdb5)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
     transitivePeerDependencies:
       - react
@@ -15915,7 +15918,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  react-native-css-interop@0.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2)):
+  react-native-css-interop@0.2.2(react-native-reanimated@3.19.5(@babel/core@7.29.0)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-svg@15.15.3(patch_hash=9653c744b5a9d4d9e9ce5c6cc59c7571965840936e68149181ae7fe6fcf5fdb5)(react-native-tvos@0.80.1-0)(react@19.1.0))(react-native-tvos@0.80.1-0)(react@19.1.0)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       '@babel/helper-module-imports': 7.28.6
       '@babel/traverse': 7.29.0
@@ -15929,7 +15932,7 @@ snapshots:
       tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
     optionalDependencies:
       react-native-safe-area-context: 5.6.2(react-native-tvos@0.80.1-0)(react@19.1.0)
-      react-native-svg: 15.15.3(react-native-tvos@0.80.1-0)(react@19.1.0)
+      react-native-svg: 15.15.3(patch_hash=9653c744b5a9d4d9e9ce5c6cc59c7571965840936e68149181ae7fe6fcf5fdb5)(react-native-tvos@0.80.1-0)(react@19.1.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -16050,7 +16053,7 @@ snapshots:
       react-native: 0.81.5(@babel/core@7.29.0)(@react-native-community/cli@20.2.0(typescript@5.9.3))(@react-native/metro-config@0.81.6(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.1.0)
       warn-once: 0.1.1
 
-  react-native-svg@15.15.3(react-native-tvos@0.80.1-0)(react@19.1.0):
+  react-native-svg@15.15.3(patch_hash=9653c744b5a9d4d9e9ce5c6cc59c7571965840936e68149181ae7fe6fcf5fdb5)(react-native-tvos@0.80.1-0)(react@19.1.0):
     dependencies:
       css-select: 5.2.2
       css-tree: 1.1.3
