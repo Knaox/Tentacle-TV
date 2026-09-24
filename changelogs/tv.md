@@ -7,17 +7,19 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [1.3.0]
 ### FR
-- **L'accueil suit votre compte** : rangées, favoris et filtre de plateformes du web s'appliquent, recommandations comprises
-- **Ma liste** ne retire un titre qu'une fois vraiment vu jusqu'au bout
-- **Apple TV** : langue et sous-titres changent sans recharger, pause sans limite, retour loin en arrière, Atmos et Dolby Vision profil 7 lus
-- **L'image remplit l'écran**, les rangées ne passent plus sous le menu, les réglages se parcourent
-- **Android TV** : l'écran prend la cadence du film ; lecture tunnel en option
+- **Recherche repensée** : fautes corrigées, suite du titre suggérée, acteurs, genres et studios
+- **Pour vous** : des recommandations tirées de votre bibliothèque
+- **Pilotable à distance** depuis Jellyfin et Tentacle : pause, arrêt, messages
+- **Plus fluide** : bibliothèques plus rapides, défilement rapide en maintenant une touche
+- **L'accueil suit votre compte** : rangées, favoris, filtre de plateformes
+- **Apple TV** : pistes sans rechargement, Atmos, Dolby Vision profil 7 ; **Android TV** : cadence du film
 ### EN
-- **The home follows your account**: rows, favorites and the platform filter set on the web apply; recommendations arrive
-- **My List** only drops a title once actually watched to the end
-- **Apple TV**: language and subtitles switch without reloading, unlimited pause, far backward seeks, Atmos and Dolby Vision profile 7 play
-- **The picture fills the screen**, rows no longer slide under the menu, settings navigate
-- **Android TV**: the screen takes the film's frame rate; tunneled playback as an option
+- **Search rethought**: typos fixed, title completion, actors, genres and studios
+- **For You**: recommendations drawn from your library
+- **Remote control** from Jellyfin and Tentacle: pause, stop, messages
+- **Smoother**: faster libraries, fast scrolling by holding a direction
+- **The home follows your account**: rows, favorites, platform filter
+- **Apple TV**: tracks switch without reloading, Atmos, Dolby Vision profile 7; **Android TV**: film frame rate
 
 ## [1.2.2]
 ### FR
