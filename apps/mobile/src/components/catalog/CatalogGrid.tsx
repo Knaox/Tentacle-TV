@@ -1,6 +1,7 @@
-import { memo, useCallback, useMemo, type ReactElement, type Ref } from "react";
-import { View, Text, StyleSheet, type FlatList } from "react-native";
-import Animated from "react-native-reanimated";
+import { memo, useCallback, useMemo, useRef, useState, type ReactElement, type Ref } from "react";
+import { View, Text, StyleSheet, useWindowDimensions, type FlatList } from "react-native";
+import Animated, { runOnJS, useAnimatedScrollHandler, useComposedEventHandler, useSharedValue } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
@@ -8,10 +9,13 @@ import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { BrandSpinner, PressableCard, ProgressBar, FadeIn } from "@/components/ui";
+import { ScrollTopFab } from "@/components/ui/ScrollTopFab";
 import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
-import { spacing, typography, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { motion, spacing, typography, useGrid, useResponsive, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
+/** En hauteurs d'écran : au-delà, le bouton « revenir en haut » se montre. */
+const SCROLL_TOP_SCREENS = 1.5;
 
 interface Props {
   catalog: UseInfiniteQueryResult<{ pages: Array<{ Items: MediaItem[]; TotalRecordCount: number }> }>;
@@ -38,6 +42,38 @@ export const CatalogGrid = memo(function CatalogGrid({
   const styles = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
+
+  /* « Revenir en haut » : après un écran et demi de défilement, un bouton rond
+   * au-dessus de la barre d'onglets. Le seuil se franchit sur le fil UI ; React
+   * n'apprend que le franchissement (accessibilité, toucher). Le gestionnaire
+   * se compose avec celui du repli du chrome, sans le remplacer. */
+  const innerRef = useRef<FlatList<MediaItem> | null>(null);
+  const setRefs = useCallback((node: FlatList<MediaItem> | null) => {
+    innerRef.current = node;
+    if (typeof listRef === "function") listRef(node);
+    else if (listRef) (listRef as { current: FlatList<MediaItem> | null }).current = node;
+  }, [listRef]);
+  const { height: windowH } = useWindowDimensions();
+  const threshold = windowH * SCROLL_TOP_SCREENS;
+  const shown = useSharedValue(0);
+  const [topActive, setTopActive] = useState(false);
+  const topHandler = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      const next = e.contentOffset.y > threshold ? 1 : 0;
+      if (next !== shown.value) {
+        shown.value = next;
+        runOnJS(setTopActive)(next === 1);
+      }
+    },
+  }, [threshold]);
+  const composedScroll = useComposedEventHandler([onScroll ?? null, topHandler]);
+  const scrollTop = useCallback(() => {
+    innerRef.current?.scrollToOffset({ offset: 0, animated: !motion.isReducedMotion() });
+  }, []);
+  // Au-dessus de la barre flottante — sauf en rail (tablette paysage), où elle n'est pas en bas.
+  const insets = useSafeAreaInsets();
+  const { isTablet, isLandscape } = useResponsive();
+  const fabBottom = (isTablet && isLandscape ? insets.bottom : Math.max(bottomInset, insets.bottom)) + 16;
 
   const items = useMemo(
     () => overrideItems ?? catalog.data?.pages.flatMap((p) => p.Items) ?? [],
@@ -81,7 +117,7 @@ export const CatalogGrid = memo(function CatalogGrid({
   return (
     <FadeIn delay={100} style={{ flex: 1 }}>
       <Animated.FlatList
-        ref={listRef as never}
+        ref={setRefs as never}
         key={`catalog-${numColumns}`}
         data={items}
         numColumns={numColumns}
@@ -97,8 +133,8 @@ export const CatalogGrid = memo(function CatalogGrid({
         ]}
         columnWrapperStyle={numColumns > 1 ? { gap: gutter, paddingHorizontal: padding } : undefined}
         ListHeaderComponent={header}
-        onScroll={onScroll}
-        scrollEventThrottle={onScroll ? 16 : undefined}
+        onScroll={composedScroll}
+        scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
         // Un champ dans l'en-tête (l'onglet Bibliothèque) : le clavier ne doit
         // jamais cacher le bas de ce qu'il fait apparaître (« Tous les résultats »).
@@ -111,6 +147,7 @@ export const CatalogGrid = memo(function CatalogGrid({
         refreshing={catalog.isRefetching && !catalog.isFetchingNextPage}
         showsVerticalScrollIndicator={false}
       />
+      <ScrollTopFab shown={shown} active={topActive} bottom={fabBottom} onPress={scrollTop} />
     </FadeIn>
   );
 });
