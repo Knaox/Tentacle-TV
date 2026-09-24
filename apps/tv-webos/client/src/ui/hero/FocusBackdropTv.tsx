@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { useFocusedItem } from "../cards/focusedItem";
 import { useBackdropLayers } from "./backgroundLayers";
+import { useSearchOpen } from "../search/searchState";
 
 /**
  * Le fond d'écran de la carte focalisée.
@@ -49,8 +50,11 @@ export function FocusBackdropTv() {
   const { pathname } = useLocation();
   const item = useFocusedItem();
   const client = useJellyfinClient();
+  // La recherche est opaque et couvre tout l'écran : le décor d'une carte
+  // visée DEDANS ne serait vu par personne — ni téléchargé, ni composé.
+  const searching = useSearchOpen();
 
-  const visible = item !== null && onBrowseScreen(pathname);
+  const visible = item !== null && onBrowseScreen(pathname) && !searching;
   const idImage = item && item.Type === "Episode" && item.SeriesId ? item.SeriesId : item?.Id;
   const url =
     visible && idImage ? client.getImageUrl(idImage, "Backdrop", { width: 1920, quality: 70 }) : null;

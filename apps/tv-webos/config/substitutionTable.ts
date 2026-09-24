@@ -159,6 +159,12 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // résolution où elle est affichée, et tout le rendu paraît mou.
   [resolve(API, "net/pixelDensity.ts")]: resolve(CLIENT, "shims/pixelDensity.ts"),
 
+  // L'omnibox du web (⌘K, « / ») : sur un téléviseur, ces raccourcis d'un
+  // clavier branché ouvrent la recherche du téléviseur, qui s'en tient à la
+  // bibliothèque. L'omnibox et ses recherches hors bibliothèque (extensions)
+  // quittent le bundle.
+  [resolve(WEB, "components/search/OmniboxHost.tsx")]: resolve(CLIENT, "ui/search/OmniboxHostTv.tsx"),
+
   // Le champ de recherche d'une bibliothèque. Le téléviseur a sa propre
   // recherche, en surcouche plein écran ; un `<input>` posé sous la bannière
   // faisait double emploi et ouvrait le clavier système à la première descente.

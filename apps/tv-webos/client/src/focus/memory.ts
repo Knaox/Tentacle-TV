@@ -31,6 +31,11 @@ import { FOCUSABLE_SELECTOR, reachableTarget } from "./candidates";
  * en s'exposant à diverger d'elle.
  */
 
+/** Ce que porte une surcouche qui tient sa propre mémoire (cf. `remember`). */
+export const OVERLAY_ATTRIBUTE = "data-tv-overlay";
+/** Sa valeur le temps qu'elle rend elle-même sa dernière cible : le moteur attend. */
+export const OVERLAY_RESTORING = "restoring";
+
 /** Longueur au-delà de laquelle un libellé ne discrimine plus rien d'utile. */
 const MAX_LABEL = 48;
 
@@ -93,6 +98,11 @@ function currentRoute(): string {
  */
 export function remember(element: HTMLElement): void {
   if (element.closest(".rail-tv")) return;
+  // Une SURCOUCHE — la recherche — n'est pas l'écran qu'elle recouvre : elle
+  // tient sa propre mémoire. Y noter la carte visée sous la route de l'accueil
+  // ferait chercher, une fois la surcouche refermée, une carte qui n'existe
+  // plus — et l'écran attendrait trois secondes, sans anneau, avant d'y renoncer.
+  if (element.closest(`[${OVERLAY_ATTRIBUTE}]`)) return;
 
   const key = elementKey(element);
   if (!key) return;
@@ -112,17 +122,20 @@ export function remember(element: HTMLElement): void {
 /** L'élément à qui rendre le focus sur l'écran courant, s'il est retrouvé. */
 export function recover(root: ParentNode = document): HTMLElement | null {
   const key = byRoute.get(currentRoute());
-  if (!key) return null;
+  return key ? findByKey(key, root) : null;
+}
 
+/**
+ * Le premier élément atteignable qui porte cette clé. Retrouvé mais
+ * inatteignable — masqué, désactivé, dans une enveloppe transparente —, ce
+ * serait un trou noir : on continue de chercher, puis on rend `null`.
+ */
+export function findByKey(key: string, root: ParentNode = document): HTMLElement | null {
   for (const node of root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
     if (elementKey(node) !== key) continue;
-    // Retrouvé mais inatteignable — masqué, désactivé, dans une enveloppe
-    // transparente : ce serait un trou noir. On laisse la main au focus par
-    // défaut.
     if (!reachableTarget(node)) continue;
     return node;
   }
-
   return null;
 }
 
@@ -141,6 +154,12 @@ export function recover(root: ParentNode = document): HTMLElement | null {
  * reparaît pas.
  */
 export function hasMemory(): boolean {
+  // Une surcouche ouverte recouvre l'écran : la trace de la route vise ce
+  // qu'elle cache. Attendre qu'elle reparaisse laisserait la surcouche trois
+  // secondes sans anneau quand l'élément focalisé y disparaît — sauf si la
+  // surcouche déclare rendre ELLE-MÊME sa dernière cible (`restoring`).
+  const overlay = document.querySelector(`[${OVERLAY_ATTRIBUTE}]`);
+  if (overlay) return overlay.getAttribute(OVERLAY_ATTRIBUTE) === OVERLAY_RESTORING;
   return byRoute.has(currentRoute());
 }
 

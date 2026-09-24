@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { PosterImageMode } from "@tentacle-tv/shared";
@@ -18,6 +18,9 @@ interface RowProps {
   animDelay?: number;
   href?: string;
   posterImageMode?: PosterImageMode;
+  /** Après le titre, toujours visible : un compte de résultats, la puce du
+   *  filtre de plateformes d'une rangée de recommandations. */
+  headerTrailing?: ReactNode;
 }
 
 /**
@@ -53,6 +56,7 @@ export function MediaRow({
   animDelay = 0,
   href,
   posterImageMode,
+  headerTrailing,
 }: RowProps) {
   const { t } = useTranslation("common");
   const rowRef = useRef<HTMLElement>(null);
@@ -130,7 +134,7 @@ export function MediaRow({
         transition: `opacity 0.35s ease ${animDelay}ms`,
       }}
     >
-      <RowHeader title={title} href={href} />
+      <RowHeader title={title} href={href} trailing={headerTrailing} />
 
       {/* La piste est montée d'emblée et c'est `filled` qui retient son
           contenu. Le scroller porte `scrollRef`, et `useRowCardWidth`,

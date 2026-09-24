@@ -1,4 +1,4 @@
-import type { Box } from "@tentacle-tv/tv-core";
+import { best, type Box } from "@tentacle-tv/tv-core";
 import { isHorizontal, type Direction } from "./keys";
 import { collect } from "./candidates";
 
@@ -71,4 +71,37 @@ export function redirectTrackEntry(
   const target = leftmostVisible(collect(track), { left: rect.left, right: rect.right });
   if (!target || target === arrival) return null;
   return target;
+}
+
+/**
+ * Sortir d'une piste par son BORD, sous un piège — la surcouche de recherche.
+ *
+ * L'horizontale reste confinée à sa piste (`movement.ts`), et c'est juste :
+ * sans cela le bout d'une rangée partirait en diagonale dans la suivante. Hors
+ * piège, la gauche garde une porte, le rail. Sous un piège, il n'y en avait
+ * aucune : depuis la première carte d'une rangée de résultats, « gauche » ne
+ * menait plus à la colonne de saisie — une impasse.
+ *
+ * La porte s'ouvre donc au bord réel (plus rien à faire défiler), et seulement
+ * vers ce qui est HORS de la zone de la piste : jamais une autre rangée de la
+ * même zone, la règle qui interdit la diagonale tient toujours.
+ */
+export function trackExit(
+  start: HTMLElement,
+  direction: Direction,
+  trap: ParentNode | null,
+  since: Box,
+): HTMLElement | null {
+  if (!trap || !isHorizontal(direction)) return null;
+  const track = start.closest<HTMLElement>("[data-tv-piste]");
+  const zone = track?.parentElement?.closest<HTMLElement>("[data-tv-zone]");
+  if (!track || !zone || !atEdge(track, direction)) return null;
+  const outside = collect(trap).filter((candidate) => !zone.contains(candidate.element));
+  return best(since, outside, direction)?.element ?? null;
+}
+
+/** La piste a-t-elle encore du chemin dans cette direction ? Au pixel près. */
+function atEdge(track: HTMLElement, direction: Direction): boolean {
+  if (direction === "gauche") return track.scrollLeft <= 1;
+  return track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
 }

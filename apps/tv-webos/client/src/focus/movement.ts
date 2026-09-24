@@ -2,17 +2,12 @@ import { isHorizontal, type Direction } from "./keys";
 import { collect, trappingContainer } from "./candidates";
 import { defaultFocus } from "./default";
 import { giveFocus, activeElement } from "./active";
-import {
-  best,
-  restrictToFirstRow,
-  onSameColumn,
-  onSameRow,
-} from "@tentacle-tv/tv-core";
+import { best, restrictToFirstRow, onSameColumn, onSameRow } from "@tentacle-tv/tv-core";
 import { navBox } from "./measure";
 import { scrollByStep } from "./scroll";
 import { reviewAfterMount } from "./wait";
 import { closeExpandedMenu } from "./expandedMenu";
-import { redirectTrackEntry } from "./trackEntry";
+import { redirectTrackEntry, trackExit } from "./trackEntry";
 import {
   RAIL_SELECTOR,
   inRail,
@@ -222,6 +217,14 @@ export function aim(direction: Direction): boolean {
 
   const chosen = best(since, candidates, direction);
   if (!chosen) {
+    // Au bord d'une piste d'une zone, sous un piège, l'horizontale sort vers la
+    // zone voisine — sans elle, la recherche n'avait pas de porte (`trackExit`).
+    const exit = trackExit(start, direction, trap, since);
+    if (exit) {
+      giveFocus(redirectZoneEntry(start, exit) ?? exit);
+      return true;
+    }
+
     // « Gauche » sans voisin, c'est la demande du rail — depuis la première
     // colonne d'une grille, le début d'une piste rembobinée, le chrome. La
     // destination est l'écran COURANT, pas l'entrée la plus proche. Un
@@ -235,12 +238,9 @@ export function aim(direction: Direction): boolean {
     }
 
     // « Haut » depuis le début d'un menu déployé le referme, et rend le focus
-    // à la pastille qui l'a ouvert. Sans cela, remonter au-delà de la première
-    // ligne ne faisait rien — la seule issue était Retour, qu'il fallait avoir
-    // deviné. Le geste est celui qu'on a déjà fait pour entrer, à l'envers.
-    //
-    // Un dialogue n'a pas de déclencheur `aria-expanded` : `closeExpandedMenu`
-    // rend faux, et une modale reste ce qu'elle est — une surface dont on sort
+    // à la pastille qui l'a ouvert : le geste d'entrée, à l'envers. Sans cela
+    // la seule issue était Retour, qu'il fallait avoir deviné. Un dialogue n'a
+    // pas de déclencheur `aria-expanded` : il reste une surface dont on sort
     // par Retour.
     if (direction === "haut" && trap) return closeExpandedMenu(trap);
 
