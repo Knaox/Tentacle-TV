@@ -2,10 +2,10 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import crypto from "crypto";
 import { getPrisma } from "../services/db";
-import { requireAuth, requireAdmin } from "../middleware/auth";
+import { requireAuth, requireAdmin, getTokenFromRequest } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { signDeviceToken, hashToken } from "../services/jwt";
-import { findValidSiblingToken } from "../services/deviceTokenHealth";
+import { confirmerJellyfinToken } from "../services/deviceTokenHealth";
 import { revokeDeviceByTokenHash } from "../services/wsManager";
 
 const PAIR_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -77,16 +77,10 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId,
       });
 
-      // Capture the web user's Jellyfin token for direct streaming on the paired device
-      const authHeader = request.headers.authorization as string | undefined;
-      const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7)
-        : (request as any).cookies?.tentacle_token || null;
-      // Jellyfin tokens are opaque hex strings; JWTs have 3 dot-separated parts
-      const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
-      // Confirmateur en JWT (cookie web/desktop) : rien à copier → on grave le
-      // dernier token Jellyfin VALIDE d'un autre appareil du même compte, sinon
-      // le direct streaming du nouvel appareil serait mort-né (token null).
-      const jellyfinAccessToken = isJellyfinToken ? bearerToken : await findValidSiblingToken(user.userId);
+      // Le jeton Jellyfin du confirmateur, pour le direct du futur appareil —
+      // lu à la source de son authentification et de SON compte, sinon celui
+      // d'un appareil frère (cf. `confirmerJellyfinToken`).
+      const jellyfinAccessToken = await confirmerJellyfinToken(getTokenFromRequest(request), user.userId);
 
       const expiresAt = new Date(Date.now() + CODE_TTL_MS);
       await prisma.pairingCode.create({
@@ -300,13 +294,8 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId: record.deviceId ?? crypto.randomUUID(),
       });
 
-      // Jeton Jellyfin du confirmateur pour le streaming direct (comme /generate) ;
-      // confirmateur en JWT → dernier token valide d'un appareil frère du compte.
-      const authHeader = request.headers.authorization as string | undefined;
-      const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7)
-        : (request as any).cookies?.tentacle_token || null;
-      const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
-      const jellyfinAccessToken = isJellyfinToken ? bearerToken : await findValidSiblingToken(user.userId);
+      // Jeton Jellyfin du confirmateur pour le streaming direct (comme /generate).
+      const jellyfinAccessToken = await confirmerJellyfinToken(getTokenFromRequest(request), user.userId);
 
       await prisma.pairedDevice.create({
         data: {
@@ -350,13 +339,8 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId,
       });
 
-      // Capture Jellyfin token for direct streaming ; confirmateur en JWT →
-      // dernier token valide d'un appareil frère du compte.
-      const authHeader = request.headers.authorization as string | undefined;
-      const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7)
-        : (request as any).cookies?.tentacle_token || null;
-      const isJellyfinToken = bearerToken && !(bearerToken.includes(".") && bearerToken.split(".").length === 3);
-      const jellyfinAccessToken = isJellyfinToken ? bearerToken : await findValidSiblingToken(user.userId);
+      // Jeton Jellyfin du confirmateur pour le streaming direct (comme /generate).
+      const jellyfinAccessToken = await confirmerJellyfinToken(getTokenFromRequest(request), user.userId);
 
       const prisma = getPrisma();
       await prisma.pairedDevice.create({
