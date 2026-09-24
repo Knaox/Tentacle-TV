@@ -230,8 +230,8 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         // qu'AVPlayer reproche à un flux qu'on fabrique soi-même.
         //
         // La boucle est bornée en aval : `onMasterRejected` n'essaie la forme
-        // muxée qu'UNE fois par génération, puis force le transcode ; une
-        // erreur en transcode est surfacée comme avant.
+        // muxée qu'UNE fois par lecture, puis force le transcode ; une erreur
+        // en transcode est surfacée comme avant.
         if (isLoopback) {
           onError?.("PRISM_MASTER_REJECTED");
           return;
