@@ -40,10 +40,24 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
 
   /** GET /api/config/streaming — Client-specific streaming config (IP-aware). */
   app.get("/config/streaming", { preHandler: [requireAuth] }, async (request) => {
+    // Extract bearer token and determine type
+    const authHeader = request.headers.authorization;
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const isPairedDevice = bearerToken?.includes(".") && bearerToken.split(".").length === 3;
+    const payload = isPairedDevice && bearerToken ? await verifyDeviceToken(bearerToken) : null;
+
+    // L'identifiant Jellyfin qu'un appareil jumelé doit adopter : celui que le
+    // canal de session présente pour lui (`deviceSessions/deviceAuth.ts`).
+    // Adopté, ses propres requêtes et le canal touchent la MÊME session — c'est
+    // elle que le tableau de bord pilote. Donné même direct coupé : par le
+    // proxy aussi, la TV présente sa propre identité.
+    const deviceId = payload && bearerToken ? await pairedJellyfinDeviceId(bearerToken).catch(() => null) : null;
+    const disabled = {
+      directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null, ...(deviceId && { deviceId }) },
+    };
+
     const cfg = getDirectStreamingConfig();
-    if (!cfg.enabled || !cfg.publicUrl || !cfg.privateUrl) {
-      return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
-    }
+    if (!cfg.enabled || !cfg.publicUrl || !cfg.privateUrl) return disabled;
 
     const clientIp = getRealClientIp(request);
     const mediaBaseUrl = isPrivateIp(clientIp) ? cfg.privateUrl : cfg.publicUrl;
@@ -59,38 +73,26 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
         });
         if (!hc.ok) {
           request.log.warn({ jellyfinHealthUrl, status: hc.status }, "Direct streaming health check failed");
-          return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
+          return disabled;
         }
       } catch (err) {
         request.log.warn({ jellyfinHealthUrl, err }, "Direct streaming health check unreachable");
-        return { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null } };
+        return disabled;
       }
     }
 
-    // Extract bearer token and determine type
-    const authHeader = request.headers.authorization;
-    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-    const isPairedDevice = bearerToken?.includes(".") && bearerToken.split(".").length === 3;
-
     let jellyfinToken: string | null = null;
     let tokenExpired = false;
-    // L'identifiant Jellyfin qu'un appareil jumelé doit adopter : celui que le
-    // canal de session présente pour lui (`deviceSessions/deviceAuth.ts`).
-    // Adopté, ses propres requêtes et le canal touchent la MÊME session —
-    // c'est elle que le tableau de bord pilote.
-    let deviceId: string | null = null;
 
     if (isPairedDevice && bearerToken) {
       // Appareil jumelé : son jeton Jellyfin est en base — rendu seulement s'il
       // appartient à SON compte (cf. `resolvePairedDeviceToken`), sinon un
       // appareil frère du même compte prend le relais. `purged` sans
       // remplaçant : la TV doit oublier le jeton qu'elle tenait.
-      const payload = await verifyDeviceToken(bearerToken);
       if (payload) {
         const resolved = await resolvePairedDeviceToken(bearerToken, payload.userId);
         jellyfinToken = resolved.token;
         tokenExpired = resolved.purged;
-        deviceId = await pairedJellyfinDeviceId(bearerToken).catch(() => null);
         if (resolved.purged) {
           request.log.warn("Paired device jellyfinAccessToken invalide ou d'un autre compte — retiré, aucun appareil frère");
         }
