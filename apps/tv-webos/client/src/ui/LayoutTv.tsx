@@ -1,7 +1,9 @@
+import { useLayoutEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { RailTv } from "./nav/RailTv";
 import { FocusBackdropTv } from "./hero/FocusBackdropTv";
 import { SearchScreenTv } from "./search/SearchScreenTv";
+import { takeCoveredScroll, useSearchOpen } from "./search/searchState";
 
 /**
  * Disposition du client téléviseur.
@@ -23,6 +25,20 @@ import { SearchScreenTv } from "./search/SearchScreenTv";
  * il coûte une passe de composition à l'ouverture et rien ensuite.
  */
 export function AppLayout() {
+  // La recherche est opaque et couvre tout l'écran : l'écran d'en dessous est
+  // retiré du RENDU le temps qu'elle est ouverte — pas démonté, son état reste.
+  // Sans cela il continuait de vivre pour personne : la bannière d'accueil
+  // tournait toutes les huit secondes, chargeait un fond de 1920 px et
+  // recalculait son halo flouté derrière la recherche. Retiré du rendu, il
+  // sort aussi des observateurs de visibilité : bannière suspendue, rangées
+  // vidées. Son défilement, que ce retrait ramène en haut, lui est rendu.
+  const searching = useSearchOpen();
+  useLayoutEffect(() => {
+    if (searching) return;
+    const scroll = takeCoveredScroll();
+    if (scroll !== null && scroll !== window.pageYOffset) window.scrollTo(0, scroll);
+  }, [searching]);
+
   return (
     <div className="min-h-screen bg-surface-0">
       <div className="brand-ambient" aria-hidden />
@@ -32,7 +48,7 @@ export function AppLayout() {
       <RailTv />
       {/* La marge gauche vaut la largeur du rail replié : le contenu commence
           après les icônes, et ne bouge plus quand elles se déploient. */}
-      <div className="pl-[var(--rail-largeur-repli)]">
+      <div className="pl-[var(--rail-largeur-repli)]" style={searching ? { display: "none" } : undefined}>
         <Outlet />
       </div>
 

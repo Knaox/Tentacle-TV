@@ -1,259 +1,250 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useSearchItems } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { useSearchDiscover, useSearchEpisodes, useTentacleSearch } from "@tentacle-tv/api-client";
+import {
+  completionFor, foldForSearch, inlineCompletion, suggestionsFrom,
+  type SearchPersonHit, type SearchTopHit,
+} from "@tentacle-tv/shared";
+import { tvSearchNotice, tvSearchSections, type TvSearchFacet } from "@tentacle-tv/tv-core";
 import { pushRecentSearch, readRecentSearches } from "@/components/search/recentSearches";
 import { registerBack } from "../../focus/back";
-import { closeSearch, useSearchOpen } from "./searchState";
-import { ResultCardTv } from "./ResultCardTv";
+import { giveFocus } from "../../focus/active";
+import { DEFAULT_ATTRIBUTE } from "../../focus/default";
+import { elementKey, findByKey, OVERLAY_ATTRIBUTE, OVERLAY_RESTORING } from "../../focus/memory";
+import { SearchBarTv, DictationHint, type SearchBarHandle } from "./SearchBarTv";
+import { SearchSuggestionsTv, type SearchSuggestion } from "./SearchSuggestionsTv";
+import { SearchResultsTv, type SearchResultsActions } from "./SearchResultsTv";
+import { SearchIdleTv } from "./SearchIdleTv";
+import { SearchBrowseTv } from "./SearchBrowseTv";
+import { useZoneMemory } from "./zoneMemory";
+import {
+  closeBrowse, closeSearch, isFreshOpen, lastSearchTarget, openBrowse, rememberSearchTarget,
+  setSearchQuery, settleOpen, useSearchOpen, useSearchState,
+} from "./searchState";
 
 /**
- * L'écran de recherche du téléviseur.
- *
- * **Rien n'est codé pour le clavier.** webOS ouvre le sien dès qu'un `<input>`
- * reçoit le focus, et le referme à la validation ; c'est aussi ce clavier qui
- * porte le bouton micro de la Magic Remote. Écrire une grille de lettres
- * reviendrait à réimplémenter en moins bien ce que la plateforme fournit — et
- * à perdre la dictée au passage.
- *
- * Sur le micro, précisément : `com.webos.service.tts` est de la SYNTHÈSE
- * vocale, pas de la reconnaissance, et webOS n'expose aucune API de
- * reconnaissance aux applications tierces. Le clavier système est donc le seul
- * chemin de dictée — le même verdict que sur tvOS. L'indice ne s'affiche que
- * sur une vraie dalle : au navigateur, il désignerait un bouton qui n'existe
- * pas.
- *
- * Une surcouche et non une route : `App.tsx` n'est pas modifié, et le client
- * web ne fait pas autrement. La fermeture passe par la pile de la touche
- * Retour, avant `history.back()` — sans quoi Retour quitterait l'écran
- * d'arrière-plan au lieu de refermer ce qui est devant.
+ * Pose le focus sur une cible dès qu'elle est montée ET atteignable, puis
+ * appelle `done`. Une boucle de minuteries et non une attente de mutations : la
+ * rangée qui la porte entre en fondu d'opacité, et ce fondu ne produit aucune
+ * mutation qui relancerait la recherche. Bornée : au-delà, `done` décide.
  */
-
-const TYPING_DELAY_MS = 350;
-const MIN_LENGTH = 2;
-const MAX_RESULTS = 24;
-
-/**
- * Délai de grâce avant de rendre la main à la barre quand le clavier se retire.
- *
- * La dictée fait passer `visibility` par faux AVANT de revenir à vrai — le
- * clavier s'efface pendant que l'interface vocale s'affiche. Rendre le focus
- * sur-le-champ casserait la saisie vocale, la seule que cette plateforme offre.
- */
-const BAR_RETURN_DELAY_MS = 450;
-
-function onTv(): boolean {
-  return typeof (window as unknown as { PalmSystem?: unknown }).PalmSystem !== "undefined";
-}
-
-export function SearchScreenTv() {
-  const opened = useSearchOpen();
-  const { t } = useTranslation("common");
-  const navigate = useNavigate();
-  // Deux éléments là où il n'y en avait qu'un, et c'est tout le correctif.
-  //
-  // Sur webOS, focaliser un `<input>` fait monter le clavier système — le guide
-  // l'affirme, et l'application n'a aucun moyen de s'y opposer. Tant que la
-  // barre de recherche ÉTAIT ce champ, la simple navigation au D-pad ouvrait un
-  // clavier plein écran que personne n'avait demandé, et le moteur de focus se
-  // suspendait dans la foulée.
-  //
-  // La barre est donc un bouton — focalisable, jamais éditable — et le champ
-  // véritable est retiré du parcours (`tabIndex={-1}`) et posé par-dessus, à
-  // l'identique mais transparent. Le clavier ne monte plus qu'au geste explicite
-  // qui le demande : OK sur la barre.
-  const bar = useRef<HTMLButtonElement>(null);
-  const field = useRef<HTMLInputElement>(null);
-
-  const [input, setInput] = useState("");
-  const [query, setQuery] = useState("");
-  const [recents, setRecents] = useState<string[]>([]);
-
-  useEffect(() => {
-    const identifier = setTimeout(() => setQuery(input.trim()), TYPING_DELAY_MS);
-    return () => clearTimeout(identifier);
-  }, [input]);
-
-  // L'entrée se pose sur la BARRE, jamais sur le champ.
-  //
-  // Ouvrir la recherche ne doit pas ouvrir le clavier : on arrive souvent ici
-  // pour reprendre une recherche récente, ou simplement pour lire ce qu'on avait
-  // tapé. Un clavier plein écran qu'il faut refermer avant de voir l'écran est
-  // un péage, pas un service. Le report d'un tour de boucle laisse le temps au
-  // portail d'être peint — un `focus()` sur un élément pas encore composé est
-  // ignoré par WebKit comme par Blink.
-  useEffect(() => {
-    if (!opened) {
-      setInput("");
-      setQuery("");
+const RESTORE_BUDGET_MS = 3000;
+function focusWhenReady(find: () => HTMLElement | null, done: () => void): () => void {
+  const started = Date.now();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const attempt = () => {
+    const target = find();
+    if (target) giveFocus(target);
+    if (target || Date.now() - started >= RESTORE_BUDGET_MS) {
+      done();
       return;
     }
-    setRecents(readRecentSearches());
-    const identifier = setTimeout(() => bar.current?.focus(), 60);
-    return () => clearTimeout(identifier);
-  }, [opened]);
+    timer = setTimeout(attempt, 100);
+  };
+  timer = setTimeout(attempt, 0);
+  return () => clearTimeout(timer);
+}
 
-  /**
-   * Fermer, et faire redescendre le clavier avec.
-   *
-   * Le champ est démonté par le rendu suivant, et l'on aurait pu croire que
-   * cela suffisait : un élément qui disparaît perd le focus, et le clavier
-   * n'aurait plus de raison d'être. Mesuré sur le Simulator webOS 26, non — le
-   * clavier reste à l'écran par-dessus l'accueil, sans champ où écrire, et rien
-   * ne l'en fait partir.
-   *
-   * Le `blur()` est donc explicite, et il vient AVANT la fermeture : après, la
-   * référence est déjà vide.
-   */
-  const close = useCallback(() => {
-    field.current?.blur();
-    return closeSearch();
-  }, []);
+/** Le moteur répond en quelques millisecondes : on n'attend que la frappe. */
+const DEBOUNCE_MS = 250;
+const RESULTS_LIMIT = 12;
+const MAX_SUGGESTIONS = 5;
 
-  // La touche Retour ferme la recherche avant de reculer d'un écran.
-  useEffect(() => registerBack(() => close()), [close]);
+/**
+ * La recherche du téléviseur, sur le moteur de Tentacle (`/api/search`).
+ *
+ * À gauche la saisie — barre (complétion grisée du meilleur résultat), indice
+ * de dictée, suggestions qu'un appui reprend ; à droite les résultats en
+ * rangées, dans l'ordre commun aux trois téléviseurs (`tvSearchSections`,
+ * tv-core). La bibliothèque seule : rien d'extérieur n'est interrogé ici.
+ *
+ * Une surcouche et non une route (cf. `searchState.ts`) : `App.tsx` n'est pas
+ * modifié. La fermeture passe par la pile de la touche Retour, qui referme
+ * d'abord la recherche approfondie, puis la recherche.
+ */
+export function SearchScreenTv() {
+  return useSearchOpen() ? <SearchOverlayTv /> : null;
+}
 
-  /**
-   * OK sur la barre : c'est LE geste qui ouvre le clavier, et le seul.
-   *
-   * Donner le focus au champ suffit — c'est précisément ce que webOS interprète
-   * comme une demande de saisie. La barre n'étant pas éditable, aucun autre
-   * chemin n'y mène : ni la navigation au D-pad, ni l'entrée dans l'écran, ni
-   * une restitution de focus automatique.
-   *
-   * Idempotent par construction : si le champ a déjà le focus, le clavier est
-   * déjà là et il n'y a rien à faire. C'est le cas que l'ancienne version ne
-   * savait pas traiter — un `focus()` sur l'élément déjà actif ne produit aucune
-   * transition, donc ne rouvre rien.
-   */
-  const openKeyboard = useCallback(() => {
-    field.current?.focus();
-  }, []);
+function SearchOverlayTv() {
+  const { t } = useTranslation(["search", "nav"]);
+  const navigate = useNavigate();
+  const { query, browse } = useSearchState();
+  const root = useRef<HTMLDivElement>(null);
+  const bar = useRef<SearchBarHandle>(null);
 
-  /**
-   * Le clavier se retire : la barre reprend le focus.
-   *
-   * Sans cela, le focus resterait sur un champ invisible et hors du parcours du
-   * D-pad — l'anneau disparaîtrait et plus aucune flèche n'aurait de point de
-   * départ. On rend donc la main à la barre, qui est la représentation visible
-   * de ce champ.
-   *
-   * Le délai n'est pas un confort : la dictée fait passer `visibility` par faux
-   * avant de revenir à vrai, et rendre le focus sur-le-champ interromprait la
-   * saisie vocale. Un retour à vrai dans l'intervalle annule le retour.
-   */
+  const [debounced, setDebounced] = useState(() => query.trim());
   useEffect(() => {
-    if (!opened) return;
-    let back: ReturnType<typeof setTimeout> | undefined;
-    const onKeyboard = (event: Event) => {
-      const detail = (event as CustomEvent<{ visibility?: boolean }>).detail;
-      if (detail?.visibility === true) {
-        clearTimeout(back);
-        return;
-      }
-      back = setTimeout(() => {
-        if (document.activeElement === field.current) bar.current?.focus();
-      }, BAR_RETURN_DELAY_MS);
-    };
-    document.addEventListener("keyboardStateChange", onKeyboard);
-    return () => {
-      document.removeEventListener("keyboardStateChange", onKeyboard);
-      clearTimeout(back);
-    };
-  }, [opened]);
+    const identifier = setTimeout(() => setDebounced(query.trim()), DEBOUNCE_MS);
+    return () => clearTimeout(identifier);
+  }, [query]);
 
-  const { data: results, isLoading } = useSearchItems(query);
-  const visible2 = results?.slice(0, MAX_RESULTS) ?? [];
+  const search = useTentacleSearch(debounced, { limit: RESULTS_LIMIT });
+  const episodes = useSearchEpisodes(debounced, { limit: RESULTS_LIMIT });
+  const discover = useSearchDiscover(true);
+  const data = search.data;
+  // La réponse affichée peut être celle d'une frappe précédente (gardée
+  // pendant la requête suivante) : elle reste lisible, atténuée.
+  const current = data !== undefined && foldForSearch(data.query) === foldForSearch(debounced);
+  const sections = useMemo(() => tvSearchSections(data, episodes.data?.episodes ?? []), [data, episodes.data]);
+  const notice = useMemo(() => tvSearchNotice(data), [data]);
 
-  const open2 = useCallback(
-    (item: MediaItem) => {
-      // Mémorisée à la SÉLECTION, pas à la frappe : une requête abandonnée en
-      // route n'a rien donné, la ressortir en suggestion serait un mauvais
-      // conseil.
-      pushRecentSearch(query);
-      close();
-      navigate(`/media/${item.Id}`);
+  // La complétion suit la saisie brute ; les suggestions, la réponse du moteur.
+  const model = useMemo(() => suggestionsFrom(query, data, { correction: false }), [query, data]);
+  const completion = query.trim() ? completionFor(query, model) : null;
+  const suggestions = useMemo<SearchSuggestion[]>(() => {
+    if (!query.trim()) return [];
+    const list: SearchSuggestion[] = [];
+    if (completion) {
+      const names = model.lead !== null
+        ? [model.lead]
+        : [...model.best.map((hit) => hit.item.Name), ...model.people.map((person) => person.name)];
+      const full = names.find((name) => inlineCompletion(query, name) !== null);
+      if (full) list.push({ query: full, kind: "complete" });
+    }
+    for (const proposed of model.queries) list.push({ query: proposed, kind: "query" });
+    return list.slice(0, MAX_SUGGESTIONS);
+  }, [query, completion, model]);
+
+  const [recents, setRecents] = useState(readRecentSearches);
+  // Mémorisée à la SÉLECTION, pas à la frappe : une requête abandonnée en
+  // route n'a rien donné, la ressortir serait un mauvais conseil.
+  const remember = useCallback(() => {
+    if (debounced.length >= 2) setRecents(pushRecentSearch(debounced));
+  }, [debounced]);
+
+  // Choisir une requête (suggestion, recherche récente) rend la main à la
+  // BARRE, qui la montre : la liste qu'on vient d'employer se reconstruit, et
+  // l'élément choisi n'y survit pas toujours.
+  const pickQuery = useCallback((next: string) => {
+    setSearchQuery(next);
+    bar.current?.focusBar();
+  }, []);
+
+  // L'entrée : la barre à une ouverture neuve ; au retour d'une fiche, la
+  // dernière cible visée — la surcouche est remontée avec son état. Le temps de
+  // la retrouver, elle se déclare « en restitution » : le moteur, qui repose le
+  // focus à chaque changement d'écran, attend au lieu de viser la bannière.
+  useLayoutEffect(() => {
+    if (isFreshOpen()) {
+      const identifier = setTimeout(() => {
+        settleOpen();
+        bar.current?.focusBar();
+      }, 60);
+      return () => clearTimeout(identifier);
+    }
+    const key = lastSearchTarget();
+    const element = root.current;
+    if (!key || !element) {
+      bar.current?.focusBar();
+      return;
+    }
+    element.setAttribute(OVERLAY_ATTRIBUTE, OVERLAY_RESTORING);
+    return focusWhenReady(() => findByKey(key, element), () => {
+      element.setAttribute(OVERLAY_ATTRIBUTE, "");
+      if (!element.contains(document.activeElement)) bar.current?.focusBar();
+    });
+  }, []);
+
+  // Retour : la recherche approfondie d'abord — le focus revient à ce qui
+  // l'avait ouverte —, puis la recherche elle-même, clavier compris.
+  useEffect(() => registerBack(() => {
+    const { closed, openerKey } = closeBrowse();
+    if (closed) {
+      setTimeout(() => {
+        const opener = openerKey && root.current ? findByKey(openerKey, root.current) : null;
+        if (opener) giveFocus(opener);
+        else bar.current?.focusBar();
+      }, 0);
+      return true;
+    }
+    bar.current?.blurField();
+    return closeSearch();
+  }), []);
+
+  // La dernière cible, pour le remontage — et la cible par défaut de la
+  // surcouche : si l'élément focalisé disparaît, le moteur y revient.
+  const marked = useRef<HTMLElement | null>(null);
+  const onFocus = useCallback((event: FocusEvent<HTMLDivElement>) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || target === marked.current) return;
+    marked.current?.removeAttribute(DEFAULT_ATTRIBUTE);
+    target.setAttribute(DEFAULT_ATTRIBUTE, "");
+    marked.current = target;
+    rememberSearchTarget(elementKey(target));
+  }, []);
+  const sideMemory = useZoneMemory();
+  const mainMemory = useZoneMemory();
+
+  const actions = useMemo<SearchResultsActions>(() => ({
+    onOpenItem: (itemId: string) => {
+      remember();
+      navigate(`/media/${itemId}`);
     },
-    [navigate, query, close],
-  );
+    onOpenPerson: (person: SearchPersonHit, opener: HTMLElement) => {
+      remember();
+      openBrowse({ kind: "person", id: person.id, name: person.name }, elementKey(opener));
+    },
+    onOpenTopPerson: (top: SearchTopHit, opener: HTMLElement) => {
+      if (top.kind !== "person") return;
+      remember();
+      openBrowse({ kind: "person", id: top.hit.id, name: top.hit.name }, elementKey(opener));
+    },
+    onOpenFacet: (facet: TvSearchFacet, opener: HTMLElement) => {
+      remember();
+      openBrowse({ kind: facet.kind, name: facet.name }, elementKey(opener));
+    },
+  }), [navigate, remember]);
 
-  if (!opened) return null;
+  const openGenre = useCallback((name: string, opener: HTMLElement) => {
+    openBrowse({ kind: "genre", name }, elementKey(opener));
+  }, []);
 
-  const wait = query.length < MIN_LENGTH;
+  const idle = debounced.length === 0;
+  const loading = !idle && data === undefined && search.isFetching;
+  const empty = !idle && current && !search.isFetching && sections.length === 0;
+  const overlayProps = { [OVERLAY_ATTRIBUTE]: "" };
 
   return (
-    <div className="recherche-tv" role="dialog" aria-label={t("common:searchPlaceholder")}>
-      <div className="recherche-tv-entete">
-        <div className="recherche-tv-barre">
-          {/* La cible du D-pad. Un bouton, donc rien que webOS puisse prendre
-              pour une demande de saisie — c'est ce qui garde le clavier fermé
-              tant qu'on ne l'a pas demandé. Le moteur de focus active une cible
-              par un `click()` : c'est ici qu'arrive l'appui sur OK. */}
-          <button
-            ref={bar}
-            type="button"
-            className="recherche-tv-champ"
-            onClick={openKeyboard}
-            aria-label={t("common:searchMediaLong")}
-          >
-            {input || (
-              <span className="recherche-tv-invite">{t("common:searchMediaLong")}</span>
-            )}
-          </button>
-          {/* Le champ véritable, posé par-dessus la barre et transparent. Il
-              porte la saisie et reçoit la dictée ; `tabIndex={-1}` le retire du
-              recensement du moteur, donc aucune flèche ne peut l'atteindre. */}
-          <input
-            ref={field}
-            tabIndex={-1}
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            className="recherche-tv-saisie"
-            aria-hidden="true"
-          />
-        </div>
-        {onTv() && <p className="recherche-tv-indice">{t("common:rechercheTvDictee")}</p>}
+    <div
+      ref={root}
+      className="tv-search"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("search:dialog")}
+      onFocus={onFocus}
+      {...overlayProps}
+    >
+      <div className="tv-search-content" data-covered={browse !== null}>
+        <aside className="tv-search-side" data-tv-zone="search-input" onFocus={sideMemory}>
+          <h1 className="tv-search-title">{t("nav:search")}</h1>
+          <SearchBarTv ref={bar} query={query} completion={completion} onChange={setSearchQuery} />
+          <DictationHint />
+          <SearchSuggestionsTv suggestions={suggestions} onPick={pickQuery} />
+        </aside>
+        {/* Toute ouverture d'un titre depuis les résultats passe par un clic :
+            c'est là qu'on mémorise la recherche, quel que soit le composant. */}
+        <main className="tv-search-main" data-tv-zone="search-results" onFocus={mainMemory} onClickCapture={remember}>
+          {idle || empty ? (
+            <SearchIdleTv
+              mode={idle ? "idle" : "empty"}
+              query={debounced}
+              recents={recents}
+              genres={discover.data?.genres ?? []}
+              onPickQuery={pickQuery}
+              onOpenGenre={openGenre}
+            />
+          ) : loading ? (
+            <p className="tv-search-message">{t("search:searching")}</p>
+          ) : (
+            <div className="tv-search-results" data-stale={!current}>
+              <SearchResultsTv sections={sections} notice={notice} actions={actions} />
+            </div>
+          )}
+        </main>
       </div>
-
-      <div className="recherche-tv-corps">
-        {wait && recents.length > 0 && (
-          <ul className="recherche-tv-recentes">
-            {recents.map((recent) => (
-              <li key={recent}>
-                <button
-                  type="button"
-                  className="recherche-tv-recente"
-                  onClick={() => {
-                    setInput(recent);
-                    setQuery(recent);
-                  }}
-                >
-                  {recent}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {wait && recents.length === 0 && (
-          <p className="recherche-tv-message">{t("common:rechercheTvVide")}</p>
-        )}
-
-        {!wait && isLoading && <p className="recherche-tv-message">{t("common:loading")}</p>}
-
-        {!wait && !isLoading && visible2.length === 0 && (
-          <p className="recherche-tv-message">{t("common:noResults")}</p>
-        )}
-
-        {!wait && visible2.length > 0 && (
-          <ul className="recherche-tv-grille">
-            {visible2.map((item) => (
-              <ResultCardTv key={item.Id} item={item} onOpen={open2} />
-            ))}
-          </ul>
-        )}
-      </div>
+      {browse && <SearchBrowseTv target={browse} />}
     </div>
   );
 }

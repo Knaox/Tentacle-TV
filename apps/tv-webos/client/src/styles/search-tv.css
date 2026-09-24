@@ -1,241 +1,576 @@
-/* L'écran de recherche du téléviseur.
+/* La recherche du téléviseur — `ui/search/`.
  *
- * Écrit pour Chrome 53 au premier jet : pas de `gap` en flexbox, pas de
- * `clamp()`, pas de `backdrop-filter` — la passe verre le retirerait de toute
- * façon, et un flou d'arrière-plan sur une dalle coûte une passe de composition
- * par image. Le fond est donc OPAQUE, ce qui est aussi plus lisible à trois
- * mètres qu'un voile sur une grille de cartes.
+ * Écrite pour Chrome 53 : pas de `gap` en flexbox, pas de `clamp()`, pas
+ * d'`inset`, pas de `backdrop-filter`. Le fond est OPAQUE — plus lisible à
+ * trois mètres qu'un voile, et rien à composer derrière.
  *
- * La grille est une flexbox à largeurs fixes, jamais une grille CSS : le client
- * web pose la sienne en style en ligne, que les passes ne voient pas et que le
- * moteur ignore. Ici la valeur est écrite dans la feuille, donc vérifiée par la
- * garde de compatibilité.
- */
+ * Deux colonnes, comme sur l'Apple TV et Android TV : la saisie à gauche
+ * (barre, indice de dictée, suggestions), les résultats à droite, qui défilent.
+ * Les rangées de titres sont celles de l'accueil (`RowTv`) : leur gouttière
+ * (`--row-gutter-desktop`) sert de repère à tout le reste de la colonne.
+ *
+ * Tailles lues sur la dalle, canevas 1920 : 24 px au moins pour tout texte
+ * qu'on doit lire (la convention des interfaces de salon), 30 et plus pour ce
+ * qu'on doit repérer d'un coup d'œil. */
 
 :root {
-  --recherche-carte: 200px;
-  --recherche-ecart: 24px;
-  /* Épaisseur de l'anneau plus son écart, arrondis au pair supérieur : c'est
-     ce qu'il faut laisser hors de la boîte pour qu'il ne soit pas rogné. */
-  --recherche-anneau: 8px;
+  --tv-search-side: 560px;
+  --tv-search-gutter: var(--row-gutter-desktop);
 }
 
-.recherche-tv {
+.tv-search {
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
+  left: 0;
   z-index: 100;
-  display: flex;
-  flex-direction: column;
   background: var(--surface-0);
-  padding: var(--tv-overscan-y) var(--tv-overscan-x);
+}
+
+.tv-search-content {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  padding: var(--tv-overscan-y) var(--tv-overscan-x) 0 var(--tv-overscan-x);
   box-sizing: border-box;
 }
 
-.recherche-tv-entete {
-  flex-shrink: 0;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border-subtle);
+/* Recouverte par une recherche approfondie : invisible et hors d'atteinte du
+   moteur (qui écarte ce qui est `hidden`), mais MONTÉE — sa saisie, ses
+   résultats et leur défilement l'attendent au retour. */
+.tv-search-content[data-covered="true"] {
+  visibility: hidden;
+}
+
+/* ── Colonne de saisie ─────────────────────────────────────────────── */
+
+.tv-search-side {
+  flex: 0 0 var(--tv-search-side);
+  padding-right: 40px;
+  box-sizing: border-box;
+}
+
+.tv-search-title {
+  margin: 0 0 24px 0;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text-primary);
+}
+
+.tv-search-kicker {
+  display: block;
+  margin: 0 0 10px 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
 }
 
 /* La barre et son champ occupent la même case : l'un se voit, l'autre saisit. */
-.recherche-tv-barre {
+.tv-search-bar {
   position: relative;
 }
 
-.recherche-tv-champ {
-  display: block;
+.tv-search-bar-button {
+  display: flex;
+  align-items: center;
   width: 100%;
+  height: 76px;
+  padding: 0 22px;
   box-sizing: border-box;
-  padding: 14px 20px;
   border: 2px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background: var(--surface-1);
   color: var(--text-primary);
+  font-family: inherit;
   font-size: 30px;
-  font-weight: 300;
-  /* La barre est un bouton : sans cela le texte se centrerait et la police
-     serait celle du système, pas celle de l'interface. */
+  font-weight: 400;
   text-align: left;
-  font-family: inherit;
-  line-height: 1.2;
-  /* Une ligne, toujours : une requête longue défile sous le curseur système
-     plutôt que de faire grandir la barre sous les résultats. */
-  white-space: nowrap;
-  overflow: hidden;
 }
 
-/* Le libellé d'invite, qui remplace le `placeholder` perdu avec l'`<input>`. */
-.recherche-tv-invite {
-  color: var(--text-secondary);
-  opacity: 0.7;
+.tv-search-bar-button[data-typed="true"] {
+  border-color: rgba(var(--brand-rgb), 0.55);
 }
 
-/* Le champ véritable, exactement sur la barre et invisible.
- *
- * Posé là et non hors écran : c'est lui qui reçoit le curseur de saisie et la
- * dictée, et webOS ancre son clavier sur la position du champ focalisé. Un
- * champ relégué à moins neuf mille pixels ferait travailler la plateforme à
- * l'aveugle.
- *
- * Les quatre côtés sont écrits séparément : `inset` est une propriété que le
- * socle Chrome 53 ne connaît pas. */
-.recherche-tv-saisie {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 14px 20px;
-  border: 2px solid transparent;
-  border-radius: var(--radius-lg);
-  background: transparent;
-  color: transparent;
-  font-size: 30px;
-  font-weight: 300;
-  font-family: inherit;
-  opacity: 0;
-}
-
-.recherche-tv-indice {
-  margin: 12px 0 0 0;
-  font-size: 16px;
-  color: var(--text-secondary);
-  opacity: 0.7;
-}
-
-.recherche-tv-corps {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  /* La marge négative de la grille dépasse de la largeur d'un écart : sans
-     cela, une barre de défilement horizontale apparaît pour vingt-quatre pixels
-     de vide. */
-  overflow-x: hidden;
-  padding-top: 28px;
-  /* De la place pour l'anneau, RETIRÉE ensuite par une marge négative.
-   *
-   * Un `outline` se dessine hors de la boîte de son élément — c'est ce qui le
-   * rend insensible à la mise en page, et c'est aussi ce qui le rend rognable.
-   * Le commentaire ci-dessus affirmait que le rognage tombait au-delà de la
-   * dernière carte : c'est vrai à droite, et faux à gauche, où le bord du
-   * conteneur épouse celui de la première colonne. La carte visée y perdait donc
-   * tout son anneau — sept pixels d'épaisseur et d'écart.
-   *
-   * Le padding donne la place, la marge négative la reprend : rien ne bouge à
-   * l'écran, et l'anneau a de quoi se dessiner des deux côtés. */
-  padding-left: var(--recherche-anneau);
-  padding-right: var(--recherche-anneau);
-  margin-left: calc(-1 * var(--recherche-anneau));
-  margin-right: calc(-1 * var(--recherche-anneau));
-}
-
-.recherche-tv-message {
-  margin: 48px 0 0 0;
-  text-align: center;
-  font-size: 20px;
-  color: var(--text-secondary);
-}
-
-/* ── Recherches récentes ─────────────────────────────────────────────── */
-
-.recherche-tv-recentes {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.recherche-tv-recentes > li {
+.tv-search-bar-icon {
+  flex-shrink: 0;
   margin-right: 16px;
-  margin-bottom: 16px;
+  color: var(--text-tertiary);
 }
 
-.recherche-tv-recente {
-  padding: 12px 24px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 999px;
-  background: var(--surface-1);
+.tv-search-bar-button[data-typed="true"] .tv-search-bar-icon {
   color: var(--text-primary);
-  font-size: 19px;
 }
 
-/* ── Grille de résultats ─────────────────────────────────────────────── */
-
-.recherche-tv-grille {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 0 calc(-1 * var(--recherche-ecart)) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.recherche-tv-cellule {
-  width: var(--recherche-carte);
-  flex: 0 0 auto;
-  margin-right: var(--recherche-ecart);
-  margin-bottom: var(--recherche-ecart);
-}
-
-.recherche-tv-carte {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: 0;
-  padding: 0;
-  /* L'agrandissement au focus reprend celui des cartes : même geste, même
-     langage. `transform` seul — rien à repeindre. */
-  transition: transform var(--carte-focus-duree, 180ms) ease-out;
-  transform-origin: center bottom;
-}
-
-.recherche-tv-carte:focus {
-  transform: scale(var(--carte-focus-echelle));
-}
-
-.recherche-tv-visuel {
-  position: relative;
-  width: 100%;
-  /* Le rapport 2:3 en boîte de padding : `aspect-ratio` n'arrive qu'en
-     Chrome 88, et la passe qui le convertit ne lit que la feuille produite. */
-  height: 0;
-  padding-top: 150%;
-  overflow: hidden;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-}
-
-.recherche-tv-visuel > img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.recherche-tv-titre {
-  margin: 10px 0 0 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
+.tv-search-bar-text {
+  flex: 1 1 auto;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.recherche-tv-carte:focus .recherche-tv-titre {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
+.tv-search-bar-caret {
+  margin: 0 1px;
+  font-weight: 300;
+  color: var(--brand-light);
 }
 
-.recherche-tv-type {
-  margin: 2px 0 0 0;
-  font-size: 15px;
+.tv-search-bar-completion,
+.tv-search-bar-placeholder {
+  color: var(--text-tertiary);
+}
+
+.tv-search-bar-mic {
+  flex-shrink: 0;
+  margin-left: 12px;
+  color: var(--brand-light);
+}
+
+/* Le champ véritable, exactement sur la barre et invisible : webOS ancre son
+   clavier sur la position du champ focalisé. `color: transparent` efface aussi
+   le curseur système — celui de la barre le remplace. */
+.tv-search-bar-field {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 22px;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  font-family: inherit;
+  font-size: 30px;
+  opacity: 0;
+}
+
+.tv-search-hint {
+  margin: 14px 0 0 0;
+  font-size: 24px;
+  line-height: 1.4;
   color: var(--text-secondary);
+}
+
+.tv-search-suggestions {
+  margin-top: 36px;
+}
+
+.tv-search-suggestion-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tv-search-suggestion-list > li {
+  margin-bottom: 8px;
+}
+
+.tv-search-suggestion {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 60px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 26px;
+  text-align: left;
+}
+
+.tv-search-suggestion[data-kind="complete"] {
+  background: var(--fill-soft);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.tv-search-suggestion-icon {
+  flex-shrink: 0;
+  margin-right: 14px;
+  color: var(--text-tertiary);
+}
+
+.tv-search-suggestion[data-kind="complete"] .tv-search-suggestion-icon {
+  color: var(--brand-light);
+}
+
+.tv-search-suggestion-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Colonne des résultats ─────────────────────────────────────────── */
+
+.tv-search-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: 120px;
+  box-sizing: border-box;
+}
+
+.tv-search-main::-webkit-scrollbar,
+.tv-search-people::-webkit-scrollbar,
+.tv-search-browse::-webkit-scrollbar {
+  display: none;
+}
+
+/* Une réponse d'une frappe précédente, gardée le temps de la suivante. */
+.tv-search-results[data-stale="true"] {
+  opacity: 0.55;
+}
+
+.tv-search-notice,
+.tv-search-message {
+  margin: 0 0 16px 0;
+  padding: 0 var(--tv-search-gutter);
+  font-size: 24px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.tv-search-message {
+  margin-top: 40px;
+  font-size: 26px;
+}
+
+.tv-search-notice[data-kind="correction"] {
+  color: var(--brand-light);
+}
+
+.tv-search-section {
+  margin-bottom: 40px;
+}
+
+.tv-search-section-title {
+  margin: 0 0 12px 0;
+  padding: 0 var(--tv-search-gutter);
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tv-search-count {
+  margin-left: 14px;
+  font-size: 24px;
+  color: var(--text-tertiary);
+}
+
+/* ── Le meilleur résultat ──────────────────────────────────────────── */
+
+/* Le haut réserve la place de l'agrandissement au focus : la bannière est la
+   première cible de la colonne, son anneau ne doit pas être rogné. */
+.tv-search-top-slot {
+  padding: 28px var(--tv-search-gutter) 28px var(--tv-search-gutter);
+}
+
+.tv-search-top {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 300px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  color: var(--on-media-primary);
+  font-family: inherit;
+  text-align: left;
+  transition: transform 180ms ease-out;
+}
+
+.tv-search-top:focus {
+  transform: scale(1.02);
+}
+
+.tv-search-top-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tv-search-top-scrim {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.55) 45%, rgba(0, 0, 0, 0) 85%);
+}
+
+.tv-search-top-text {
+  position: absolute;
+  left: 40px;
+  bottom: 32px;
+  max-width: 60%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.tv-search-top-person {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 40px;
+  box-sizing: border-box;
+}
+
+.tv-search-top-person .tv-search-portrait {
+  margin-right: 36px;
+}
+
+.tv-search-top[data-kind="person"] {
+  color: var(--text-primary);
+}
+
+.tv-search-top[data-kind="person"] .tv-search-top-text {
+  position: static;
+  max-width: none;
+}
+
+.tv-search-top-title {
+  display: -webkit-box;
+  margin-bottom: 8px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tv-search-top-logo {
+  max-width: 420px;
+  height: 110px;
+  margin-bottom: 12px;
+  object-fit: contain;
+  object-position: left bottom;
+}
+
+.tv-search-top-meta {
+  font-size: 24px;
+  color: var(--on-media-secondary);
+}
+
+.tv-search-top[data-kind="person"] .tv-search-top-meta {
+  color: var(--text-secondary);
+}
+
+.tv-search-top-reason {
+  margin-top: 6px;
+  font-size: 24px;
+  color: var(--brand-accent-light);
+}
+
+/* ── Personnes ─────────────────────────────────────────────────────── */
+
+.tv-search-portrait {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+  background: var(--surface-2);
+}
+
+.tv-search-portrait > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tv-search-portrait-initials {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* Une piste : `pt`/`pb` réservent l'agrandissement et l'anneau, comme les
+   rangées d'affiches. */
+.tv-search-people {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 16px var(--tv-search-gutter) 24px var(--tv-search-gutter);
+}
+
+.tv-search-person {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  width: 190px;
+  margin-right: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  transform-origin: center top;
+  transition: transform 180ms ease-out;
+}
+
+/* L'anneau entoure le PORTRAIT, pas le nom qui le suit — comme l'affiche d'une
+   carte (`focus.css`). */
+.tv-search-person:focus {
+  box-shadow: none !important;
+  transform: scale(1.06);
+}
+
+.tv-search-person:focus .tv-search-portrait {
+  box-shadow: var(--tv-anneau-releve);
+}
+
+.tv-search-person-name,
+.tv-search-person-meta {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.tv-search-person-name {
+  margin-top: 14px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tv-search-person-meta {
+  margin-top: 4px;
+  font-size: 22px;
+  color: var(--text-tertiary);
+}
+
+/* ── Pastilles : récentes, genres, studios ─────────────────────────── */
+
+.tv-search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 8px var(--tv-search-gutter) 0 var(--tv-search-gutter);
+  list-style: none;
+}
+
+.tv-search-chips > li {
+  margin: 0 16px 16px 0;
+}
+
+.tv-search-chip {
+  display: flex;
+  align-items: baseline;
+  padding: 14px 28px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--cta-ghost-bg);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 24px;
+}
+
+.tv-search-chip-detail {
+  margin-left: 12px;
+  font-size: 22px;
+  color: var(--text-tertiary);
+}
+
+/* ── État vide ─────────────────────────────────────────────────────── */
+
+.tv-search-idle {
+  padding-top: 8px;
+}
+
+.tv-search-idle-title {
+  margin: 0 0 12px 0;
+  padding: 0 var(--tv-search-gutter);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.tv-search-idle-hint {
+  max-width: 900px;
+  margin: 0 0 40px 0;
+  padding: 0 var(--tv-search-gutter);
+  font-size: 26px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* ── Recherche approfondie ─────────────────────────────────────────── */
+
+.tv-search-browse {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--tv-overscan-y) var(--tv-overscan-x) 120px var(--tv-overscan-x);
+  box-sizing: border-box;
+  background: var(--surface-0);
+}
+
+.tv-search-browse-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 0 28px 0;
+}
+
+.tv-search-browse-header .tv-search-portrait {
+  margin-right: 36px;
+}
+
+.tv-search-browse-title {
+  margin: 0;
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.tv-search-browse-meta {
+  margin: 10px 0 0 0;
+  font-size: 26px;
+  white-space: pre;
+  color: var(--text-secondary);
+}
+
+.tv-search-browse > .tv-search-message {
+  padding: 0;
+}
+
+/* Une grille à largeurs fixes, jamais une grille CSS : `data-tv-grille` dit au
+   moteur que descendre suit la colonne. */
+.tv-search-browse-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 24px;
+}
+
+.tv-search-browse-grid > .carte-tv {
+  margin: 0 24px 36px 0;
 }
