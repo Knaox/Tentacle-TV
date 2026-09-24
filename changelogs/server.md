@@ -5,6 +5,25 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.19.1]
+### FR
+- **Une arrivée s'annonce dès que Jellyfin l'a** : qui a demandé un film ou une série reçoit « Votre demande est disponible » à l'arrivée réelle du contenu dans la bibliothèque — il n'attend plus que Jellyseerr la voie (son scan périodique, puis la synchronisation de Vigie). Les abonnés à « Ajouts en bibliothèque » la reçoivent aussi, demandes des autres comprises : elles leur étaient cachées
+- **« Contenu demandé disponible » est activé par défaut** : qui fait une demande veut savoir quand elle arrive. Les réglages déjà enregistrés sont conservés
+- **Des annonces justes** : une saison rangée en plusieurs vagues part en une seule annonce ; un fichier remplacé (mise à niveau Radarr ou Sonarr, déplacement) ou une seconde version n'est plus annoncé comme une nouveauté ; les épisodes d'une série en cours de diffusion s'annoncent chaque semaine (seul le premier de la saison l'était) ; deux séries homonymes ne se confondent plus ; plus de « The Bear est sortie » quand un seul épisode est là ; le texte suit la langue de l'utilisateur. Au premier démarrage, le serveur passe une fois la bibliothèque en revue pour reconnaître ce qu'elle contient déjà
+- **Taper l'annonce ouvre la fiche** du film ou de la série (application mobile, à partir de sa prochaine version)
+- **Une demande ne pousse plus que sa disponibilité** : « en cours », refus et échecs restent dans la cloche
+- **La cloche se purge** : une notification de plus de 30 jours est supprimée de la base, lue ou non
+- **Serveur de développement** : il n'envoie plus aucun push — il lit souvent le même Jellyfin que la production, et chaque ajout partait vers de vrais téléphones. Le bouton « notification de test » passe toujours ; `TENTACLE_DEV_PUSH=1` rouvre l'envoi
+
+### EN
+- **An arrival is announced as soon as Jellyfin has it**: whoever requested a movie or a show gets "Your request is now on Tentacle TV" when the content actually lands in the library — no more waiting for Jellyseerr to notice (its periodic scan, then Vigie's sync). Subscribers to "Library additions" get it too, other people's requests included: they used to be hidden from them
+- **"Requested content available" is now on by default**: whoever makes a request wants to know when it arrives. Settings already saved are kept
+- **Accurate announcements**: a season stored in several waves goes out as one announcement; a replaced file (Radarr or Sonarr upgrade, move) or a second version is no longer announced as new; episodes of an airing show are announced every week (only the first of the season used to be); two shows with the same name are no longer mixed up; no more "The Bear is out" when only one episode is there; the text follows the user's language. On first start, the server goes through the library once to recognize what it already holds
+- **Tapping the announcement opens the movie or show page** (mobile app, from its next version)
+- **A request now only pushes its availability**: in progress, declined and failed stay in the bell
+- **The bell cleans itself up**: a notification older than 30 days is deleted from the database, read or not
+- **Development server**: it no longer sends any push — it often reads the same Jellyfin as production, and every addition went out to real phones. The "test notification" button still works; `TENTACLE_DEV_PUSH=1` turns sending back on
+
 ## [1.19.0]
 ### FR
 - **La recherche Tentacle** : un moteur tenu par le serveur pour le web et le bureau (`/api/search`). Le catalogue est indexé en mémoire, tenu à jour à chaque ajout ou suppression dans Jellyfin, et chaque réponse respecte les bibliothèques de l'utilisateur. Il répond en quelques millisecondes, corrige les fautes de frappe (une lettre en trop, en moins ou inversée), comprend les titres sans accents ni ponctuation, et trouve aussi les personnes, les genres et les studios — les épisodes, eux, sont cherchés chez Jellyfin
