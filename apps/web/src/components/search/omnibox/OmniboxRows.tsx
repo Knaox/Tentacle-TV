@@ -9,12 +9,20 @@
 
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { formatEpisodeCode, type MediaItem, type SearchItemHit, type SearchMediaItem, type SearchPersonHit } from "@tentacle-tv/shared";
+import {
+  formatEpisodeCode,
+  itemMeta,
+  matchReason,
+  personMeta,
+  type ExternalSearchItem,
+  type MediaItem,
+  type SearchItemHit,
+  type SearchMediaItem,
+  type SearchPersonHit,
+} from "@tentacle-tv/shared";
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar, PosterThumb } from "../SearchThumbs";
-import { itemMeta, matchReason, personMeta } from "../searchLabels";
 import { ExternalBadge, ExternalPoster } from "../external/ExternalVisuals";
-import type { ExternalSearchItem } from "../external/pluginSearch";
 
 export interface RowProps {
   index: number;

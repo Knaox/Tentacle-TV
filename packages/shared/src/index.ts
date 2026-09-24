@@ -17,6 +17,11 @@ export * from "./utils/textSearch";
 export * from "./search/searchText";
 export * from "./search/searchHighlight";
 export * from "./search/searchTypes";
+// Ce que disent les résultats (« Série · 2008–2013 », « Avec Tom Hanks ») et
+// la recherche hors bibliothèque des plugins, validée champ par champ — une
+// seule lecture pour le web et le mobile.
+export * from "./search/searchLabels";
+export * from "./search/pluginSearch";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
