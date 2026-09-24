@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useLibraries } from "@tentacle-tv/api-client";
-import { navigationRef } from "../../navigation/navigationRef";
+import { railNavigate } from "../../navigation/railNavigate";
 import { TVSideRail } from "./TVSideRail";
 import { useContentFocusNode, useRailFocusSignal } from "../../context/TVNavContext";
 import { useContentFocusCapture } from "../../hooks/useContentFocusCapture";
@@ -58,16 +58,17 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
   const handleNavigate = useCallback((key: string) => {
     if (key === railKeyRef.current) return;
     armContentFocus(); // le focus ira au contenu dès que l'écran l'aura publié
-    if (key === "Home") navigationRef.navigate("Home");
-    else if (key === "Search") navigationRef.navigate("Search");
-    else if (key === "Recommendations") navigationRef.navigate("Recommendations");
-    else if (key === "Watchlist") navigationRef.navigate("Watchlist");
-    else if (key === "Favorites") navigationRef.navigate("Favorites");
-    else if (key === "Settings") navigationRef.navigate("Settings");
+    // À la manière d'onglets : la pile ne grossit plus à chaque passage (cf. `railNavigate`).
+    if (key === "Home") railNavigate("Home");
+    else if (key === "Search") railNavigate("Search");
+    else if (key === "Recommendations") railNavigate("Recommendations");
+    else if (key === "Watchlist") railNavigate("Watchlist");
+    else if (key === "Favorites") railNavigate("Favorites");
+    else if (key === "Settings") railNavigate("Settings");
     else if (key.startsWith("Library_")) {
       const libId = key.replace("Library_", "");
       const lib = libraries?.find((l) => l.Id === libId);
-      navigationRef.navigate("Library", { libraryId: libId, libraryName: lib?.Name ?? "" });
+      railNavigate("Library", { libraryId: libId, libraryName: lib?.Name ?? "" });
     }
   }, [libraries, armContentFocus]);
 
