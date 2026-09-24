@@ -118,14 +118,17 @@ export function suggestionsFrom(
 
 /**
  * La suite du meilleur résultat après ce qui est tapé À L'INSTANT (« Harry » →
- * « Potter… ») — le meilleur résultat du moteur d'abord, comme au bureau, puis
- * les suivants. Calculée sur la saisie brute, pas sur la requête temporisée :
- * la complétion suit chaque lettre sans attendre le moteur.
+ * « Potter… ») — celle du meilleur résultat du moteur SEUL, comme au bureau :
+ * « tom holland » ne se complète pas en « Tom Hollander » quand Tom Holland est
+ * en tête. Sans meilleur résultat (une barre locale l'a écarté), le premier
+ * titre qui convient. Rien quand la saisie est déjà un nom entier. Calculée
+ * sur la saisie brute : la complétion suit chaque lettre sans attendre le moteur.
  */
 export function completionFor(typed: string, s: Pick<SuggestionModel, "lead" | "best" | "people">): string | null {
-  const names = [s.lead, ...s.best.map((h) => h.item.Name), ...s.people.map((p) => p.name)];
+  const names = s.lead !== null ? [s.lead] : [...s.best.map((h) => h.item.Name), ...s.people.map((p) => p.name)];
+  const folded = foldForSearch(typed.trim());
+  if (names.some((name) => foldForSearch(name) === folded)) return null;
   for (const name of names) {
-    if (name === null) continue;
     const completion = inlineCompletion(typed, name);
     if (completion !== null) return completion;
   }
