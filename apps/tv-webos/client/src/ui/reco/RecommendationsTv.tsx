@@ -36,7 +36,12 @@ export function RecommendationsTv() {
   const hero = useMemo(() => tvRecoHero(page), [page]);
   const shelves = useMemo(() => tvRecoShelves(page, { hero }), [page, hero]);
   const notice = tvRecoNotice(page, shelves);
-  const { data: heroItem } = useMediaItem(hero?.jellyfinItemId ?? undefined);
+  const { data: heroItem, isError: heroFailed } = useMediaItem(hero?.jellyfinItemId ?? undefined);
+  // Les étagères attendent la tête : arriver sur la page doit viser « Lecture »
+  // (`cta-primary`), comme sur l'accueil. Montées avant elle, elles offraient
+  // au moteur une première carte qu'il gardait — la tête, arrivée cent
+  // millisecondes plus tard, n'avait plus le focus d'entrée.
+  const shelvesReady = !hero || heroItem !== undefined || heroFailed;
 
   const noticeText = notice === "disabled" ? t("tvDisabledHint")
     : notice === "cold" ? t("tvColdHint")
@@ -56,7 +61,7 @@ export function RecommendationsTv() {
           (loading || hero) && <HeroPlaceholder />
         )}
         {noticeText && <p className="reco-tv-notice">{noticeText}</p>}
-        {shelves.map((shelf, index) => (
+        {shelvesReady && shelves.map((shelf, index) => (
           <Shelf key={shelf.key} shelf={shelf} animDelay={Math.min(index * 60, 240)} />
         ))}
       </div>
