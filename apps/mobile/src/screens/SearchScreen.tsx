@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, BackHandler, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, BackHandler, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,6 +8,8 @@ import { useSearchEpisodes, useTentacleSearch } from "@tentacle-tv/api-client";
 import type { SearchPersonHit } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import { SubtleBackground, GlassSurface } from "@/components/ui";
+import { AcceptCompletion, AssistedInput } from "@/components/search/GhostCompletion";
+import { QuerySuggestions } from "@/components/search/QuerySuggestions";
 import { SearchBrowse, type BrowseTarget } from "@/components/search/SearchBrowse";
 import { SearchFilters, availableFilters, type SearchFilter } from "@/components/search/SearchFilters";
 import { SearchHome } from "@/components/search/SearchHome";
@@ -15,6 +17,7 @@ import { SearchResults, type SearchActions } from "@/components/search/SearchRes
 import { useMobileExternalSearch } from "@/components/search/useMobileExternalSearch";
 import { useRecentSearches } from "@/components/search/useRecentSearches";
 import { useSearchNavigation } from "@/components/search/useSearchNavigation";
+import { completionFor, suggestionsFrom } from "@/components/search/searchSuggestionModel";
 import { IS_TABLET_DEVICE, spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /** Le serveur répond en quelques millisecondes : on attend juste la fin d'une rafale de frappe. */
@@ -43,6 +46,7 @@ export function SearchScreen() {
   const [debounced, setDebounced] = useState(query.trim());
   const [filter, setFilter] = useState<SearchFilter>("all");
   const [browse, setBrowse] = useState<BrowseTarget | null>(null);
+  const [focused, setFocused] = useState(false);
   const recents = useRecentSearches();
   const nav = useSearchNavigation();
 
@@ -61,6 +65,13 @@ export function SearchScreen() {
   const external = useMobileExternalSearch(debounced, { limit: 10, enabled: searching });
   const episodeList = useMemo(() => episodes.data?.episodes ?? [], [episodes.data]);
   const filters = useMemo(() => availableFilters(search.data, episodeList.length), [search.data, episodeList.length]);
+  // Les requêtes complètes et la suite grise du meilleur titre — la
+  // correction, elle, se dit déjà en tête des résultats.
+  const suggestions = useMemo(
+    () => suggestionsFrom(debounced, search.data, { correction: false }),
+    [debounced, search.data],
+  );
+  const completion = searching && focused ? completionFor(query, suggestions) : null;
 
   // Un filtre qui n'a plus rien à montrer (nouvelle requête) retombe sur « Tout ».
   useEffect(() => {
@@ -105,19 +116,23 @@ export function SearchScreen() {
         <View style={st.headerRow}>
           <View style={st.searchWrap}>
             <Feather name="search" size={16} color={colors.text.tertiary} />
-            <TextInput
+            <AssistedInput
               ref={inputRef}
               value={query}
+              completion={completion}
+              textStyle={st.inputText}
               onChangeText={(value) => { setQuery(value); setBrowse(null); }}
               onSubmitEditing={() => pushRecent(query)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
               placeholder={t("placeholder")}
               placeholderTextColor={colors.text.quaternary}
               autoCapitalize="none"
               autoCorrect={false}
               accessibilityLabel={t("dialog")}
-              style={st.input}
               returnKeyType="search"
             />
+            {completion !== null && <AcceptCompletion onAccept={() => setQuery(query + completion)} />}
             {search.isFetching && searching && <ActivityIndicator size="small" color={colors.text.tertiary} />}
             {query.length > 0 && (
               <Pressable onPress={() => pick("")} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("clear")} style={st.clearBtn}>
@@ -149,16 +164,25 @@ export function SearchScreen() {
             onOpen={nav.openItem}
           />
         ) : (
-          <SearchResults
-            query={debounced}
-            response={search.data}
-            episodes={episodeList}
-            external={external}
-            filter={filter}
-            onFilter={setFilter}
-            onRetry={pick}
-            actions={actions}
-          />
+          <>
+            {filter === "all" && (
+              <QuerySuggestions
+                queries={suggestions.queries}
+                onPick={(value) => { pick(value); Keyboard.dismiss(); }}
+                layout="rail"
+              />
+            )}
+            <SearchResults
+              query={debounced}
+              response={search.data}
+              episodes={episodeList}
+              external={external}
+              filter={filter}
+              onFilter={setFilter}
+              onRetry={pick}
+              actions={actions}
+            />
+          </>
         )}
       </ScrollView>
     </SubtleBackground>
@@ -173,10 +197,7 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
     backgroundColor: t.colors.fill.soft, borderWidth: 1, borderColor: t.colors.border.subtle,
     borderRadius: RADIUS.lg, paddingHorizontal: spacing.md, height: 46,
   },
-  input: {
-    flex: 1, ...typography.body, fontFamily: FONT_FAMILY.regular,
-    color: t.colors.text.primary, paddingVertical: 0, letterSpacing: -0.1,
-  },
+  inputText: { ...typography.body, fontFamily: FONT_FAMILY.regular, color: t.colors.text.primary, letterSpacing: -0.1 },
   clearBtn: {
     width: 22, height: 22, borderRadius: 11,
     backgroundColor: t.colors.fill.medium,

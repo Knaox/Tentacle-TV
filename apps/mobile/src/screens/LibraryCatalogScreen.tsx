@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useLibraryCatalog } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { useLibraries, useLibraryCatalog } from "@tentacle-tv/api-client";
+import type { ExternalKind, MediaItem } from "@tentacle-tv/shared";
 import { SubtleBackground } from "@/components/ui";
 import {
   GenreFilter, SortSelector, StatusFilter, CatalogGrid,
@@ -15,7 +15,10 @@ import {
 import { usePlatformFilter } from "@/hooks/usePlatformFilter";
 import type { AdvancedFilters } from "@/components/catalog";
 import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
-import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { ScopedSearchField } from "@/components/search/ScopedSearchField";
+import { SearchAssistPane } from "@/components/search/SearchAssistPane";
+import { useSearchAssist } from "@/components/search/useSearchAssist";
+import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 interface Props { libraryId: string; libraryName?: string }
 
@@ -101,6 +104,16 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
   );
   const searching = debouncedSearch.length >= 2;
 
+  // Une bibliothèque de films ne suggère que des films (le moteur est global).
+  const collectionType = useLibraries().data?.find((lib) => lib.Id === libraryId)?.CollectionType;
+  const kind: ExternalKind | null = collectionType === "movies" ? "movie" : collectionType === "tvshows" ? "series" : null;
+  const assist = useSearchAssist(searchQuery, setSearchQuery, { kind });
+  // Replier la barre, c'est aussi lever le filtre — jamais une grille filtrée en douce.
+  const toggleSearch = () => {
+    if (searchVisible) setSearchQuery("");
+    setSearchVisible(!searchVisible);
+  };
+
   return (
     <SubtleBackground ambient>
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 24) }]}>
@@ -111,7 +124,7 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1}>{libraryName ?? ""}</Text>
           <View style={styles.headerActions}>
-            <Pressable onPress={() => setSearchVisible((v) => !v)} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("search")}>
+            <Pressable onPress={toggleSearch} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("search")}>
               <Feather name="search" size={20} color={searchVisible ? colors.brand.violet : colors.text.secondary} />
             </Pressable>
             <Pressable onPress={() => setAdvancedVisible(true)} hitSlop={12} style={{ marginLeft: spacing.md }} accessibilityRole="button" accessibilityLabel={t("filters")}>
@@ -127,60 +140,50 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
           </View>
         </View>
 
-        {/* Search input */}
         {searchVisible && (
           <View style={styles.searchContainer}>
-            <View style={styles.searchInputWrap}>
-              <Feather name="search" size={16} color={colors.text.tertiary} />
-              <TextInput
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder={t("searchInLibrary", { name: libraryName ?? "" })}
-                placeholderTextColor={colors.text.quaternary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoFocus
-                style={styles.searchInput}
-              />
-              {/* Le nombre de titres trouvés, au bout du champ (bureau 1.22.0). */}
-              {searching && !catalog.isLoading && (
-                <Text style={styles.fieldCount}>{totalCount}</Text>
-              )}
-              {searchQuery.length > 0 && (
-                <Pressable onPress={() => setSearchQuery("")} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("clearSearch")}>
-                  <Feather name="x" size={16} color={colors.text.tertiary} />
-                </Pressable>
-              )}
-            </View>
+            <ScopedSearchField
+              assist={assist}
+              placeholder={t("searchInLibrary", { name: libraryName ?? "" })}
+              count={searching && !catalog.isLoading ? totalCount : null}
+              autoFocus
+            />
           </View>
         )}
 
-        {/* Genre chips */}
-        <GenreFilter libraryId={libraryId} selectedGenres={selectedGenres} onGenresChange={setSelectedGenres} />
-
-        {/* Filter bar */}
-        <View style={styles.filterBar}>
-          <FilterChip label={t(SORT_OPTIONS[sortIndex].labelKey)} onPress={() => setSortSheetVisible(true)} />
-          <FilterChip label={selectedYear ?? t("allYears")} onPress={() => setYearSheetVisible(true)} active={selectedYear !== null} />
-          <StatusFilter value={statusFilter} onChange={setStatusFilter} />
-        </View>
-
-        {!catalog.isLoading && (
-          <Text style={styles.resultCount}>{t("resultCount", { count: totalCount })}</Text>
-        )}
-
-        {/* Rien trouvé : la bonne orthographe, toute la recherche, et ce que
-            les extensions trouvent ailleurs — jamais une grille vide. */}
-        {searching && !catalog.isLoading && totalCount === 0 ? (
-          <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-            <ScopedSearchEmpty query={debouncedSearch} onApply={setSearchQuery} />
-          </ScrollView>
+        {/* Pendant la frappe, les suggestions prennent la place de la page. */}
+        {assist.open ? (
+          <SearchAssistPane assist={assist} />
         ) : (
-          <CatalogGrid
-            catalog={catalog as any}
-            onItemPress={handleItemPress}
-            overrideItems={selectedPlatformIds.length > 0 ? platformFiltered : undefined}
-          />
+          <>
+            {/* Genre chips */}
+            <GenreFilter libraryId={libraryId} selectedGenres={selectedGenres} onGenresChange={setSelectedGenres} />
+
+            {/* Filter bar */}
+            <View style={styles.filterBar}>
+              <FilterChip label={t(SORT_OPTIONS[sortIndex].labelKey)} onPress={() => setSortSheetVisible(true)} />
+              <FilterChip label={selectedYear ?? t("allYears")} onPress={() => setYearSheetVisible(true)} active={selectedYear !== null} />
+              <StatusFilter value={statusFilter} onChange={setStatusFilter} />
+            </View>
+
+            {!catalog.isLoading && (
+              <Text style={styles.resultCount}>{t("resultCount", { count: totalCount })}</Text>
+            )}
+
+            {/* Rien trouvé : la bonne orthographe, toute la recherche, et ce que
+                les extensions trouvent ailleurs — jamais une grille vide. */}
+            {searching && !catalog.isLoading && totalCount === 0 ? (
+              <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                <ScopedSearchEmpty query={debouncedSearch} onApply={setSearchQuery} />
+              </ScrollView>
+            ) : (
+              <CatalogGrid
+                catalog={catalog as any}
+                onItemPress={handleItemPress}
+                overrideItems={selectedPlatformIds.length > 0 ? platformFiltered : undefined}
+              />
+            )}
+          </>
         )}
 
         <SortSelector
@@ -248,14 +251,7 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   backBtn: { marginRight: spacing.xs, padding: 4 },
   headerTitle: { ...typography.title, fontFamily: FONT_FAMILY.extrabold, fontSize: 22, letterSpacing: -0.4, color: t.colors.text.primary, flex: 1 },
   headerActions: { flexDirection: "row", alignItems: "center" },
-  searchContainer: { paddingHorizontal: spacing.screenPadding, marginBottom: spacing.sm },
-  searchInputWrap: {
-    flexDirection: "row", alignItems: "center", gap: spacing.sm,
-    backgroundColor: t.colors.fill.subtle, borderWidth: 1, borderColor: t.colors.border.subtle,
-    borderRadius: RADIUS.md, paddingHorizontal: spacing.md, height: 44,
-  },
-  searchInput: { flex: 1, ...typography.body, fontFamily: FONT_FAMILY.regular, color: t.colors.text.primary, padding: 0 },
-  fieldCount: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.tertiary, fontVariant: ["tabular-nums"] },
+  searchContainer: { marginBottom: spacing.sm },
   filterBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.screenPadding, gap: 8, paddingVertical: spacing.xs, flexWrap: "wrap" },
   filterChip: { flexDirection: "row", alignItems: "center", gap: 6, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: t.colors.fill.subtle, borderWidth: 1, borderColor: t.colors.border.subtle },
   filterChipActive: { backgroundColor: t.colors.brand.soft, borderColor: withAlpha(t.colors.brand.violet, 0.45, t.colors.brand.glow) },
