@@ -25,11 +25,13 @@ interface Props {
   onScroll?: ReturnType<typeof import("@/components/navigation/scrollChrome").useScrollChromeHandler>;
   /** La hauteur de l'en-tête flottant, en marge du contenu. */
   topInset?: number;
+  /** Ce que la barre d'onglets flottante couvre en bas : la fin de la liste doit la dépasser. */
+  bottomInset?: number;
   listRef?: Ref<FlatList<MediaItem>>;
 }
 
 export const CatalogGrid = memo(function CatalogGrid({
-  catalog, onItemPress, overrideItems, header, empty, onScroll, topInset = 0, listRef,
+  catalog, onItemPress, overrideItems, header, empty, onScroll, topInset = 0, bottomInset = 0, listRef,
 }: Props) {
   const { t } = useTranslation("common");
   const { colors } = useTheme();
@@ -88,12 +90,19 @@ export const CatalogGrid = memo(function CatalogGrid({
         // La marge latérale va aux RANGÉES, pas au contenu : l'en-tête (l'ambiance
         // de l'onglet Bibliothèque) court d'un bord à l'autre. Une seule colonne
         // n'accepte pas `columnWrapperStyle` : la marge y reste au contenu.
-        contentContainerStyle={[styles.gridContent, { paddingTop: topInset }, numColumns > 1 ? null : { paddingHorizontal: padding }]}
+        contentContainerStyle={[
+          styles.gridContent,
+          { paddingTop: topInset, paddingBottom: spacing.xxl + bottomInset },
+          numColumns > 1 ? null : { paddingHorizontal: padding },
+        ]}
         columnWrapperStyle={numColumns > 1 ? { gap: gutter, paddingHorizontal: padding } : undefined}
         ListHeaderComponent={header}
         onScroll={onScroll}
         scrollEventThrottle={onScroll ? 16 : undefined}
         keyboardShouldPersistTaps="handled"
+        // Un champ dans l'en-tête (l'onglet Bibliothèque) : le clavier ne doit
+        // jamais cacher le bas de ce qu'il fait apparaître (« Tous les résultats »).
+        automaticallyAdjustKeyboardInsets
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         ListFooterComponent={footer}

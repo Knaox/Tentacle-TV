@@ -13,6 +13,7 @@ export interface CapsuleItem {
 }
 
 const PAD = 4;
+const BORDER = 1;
 const HEIGHT = 48;
 /** Au-delà, la capsule défile : des segments de largeur fixe. */
 const MAX_EVEN = 4;
@@ -38,7 +39,8 @@ export const LibraryCapsule = memo(function LibraryCapsule({ items, selected, on
   const gradient = ctlGradient(theme.colors.brand);
   const [width, setWidth] = useState(0);
   const scrolls = items.length > MAX_EVEN;
-  const segment = scrolls ? SCROLL_SEGMENT : width > 0 ? (width - PAD * 2) / items.length : 0;
+  // `onLayout` mesure la capsule entière : liseré et marge intérieure n'appartiennent à aucun segment.
+  const segment = scrolls ? SCROLL_SEGMENT : width > 0 ? (width - (PAD + BORDER) * 2) / items.length : 0;
   const index = Math.max(0, items.findIndex((item) => item.id === selected));
 
   const x = useSharedValue(0);
@@ -105,10 +107,13 @@ const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     capsule: {
       height: HEIGHT,
+      // Sur tablette, une capsule étirée d'un bord à l'autre perd sa forme :
+      // elle garde la largeur d'un geste, alignée sur le titre.
+      maxWidth: 560,
       marginHorizontal: spacing.screenPadding,
       padding: PAD,
       borderRadius: RADIUS.pill,
-      borderWidth: 1,
+      borderWidth: BORDER,
       borderColor: t.colors.border.strong,
       backgroundColor: t.colors.surface.s1,
       overflow: "hidden" as const,

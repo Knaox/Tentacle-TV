@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, type FlatList } from "react-native";
+import { View, Text, Pressable, StyleSheet, useWindowDimensions, type FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
@@ -10,6 +10,7 @@ import { CatalogGrid } from "@/components/catalog";
 import { LibraryCapsule } from "@/components/library/LibraryCapsule";
 import { LIBRARY_HERO_HEIGHT, LibraryHero, collectionIcon } from "@/components/library/LibraryHero";
 import { useHeaderHeight } from "@/components/PersistentHeader";
+import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
 import { ScopedSearchField } from "@/components/search/ScopedSearchField";
@@ -70,6 +71,8 @@ function LibraryTab({ libraries, current, onSelect }: {
   const st = useThemedStyles(makeStyles);
   const router = useRouter();
   const headerH = useHeaderHeight();
+  const tabBarH = useGlassTabBarHeight();
+  const { height: windowH } = useWindowDimensions();
   const onScrollChrome = useScrollChromeHandler();
   const listRef = useRef<FlatList<MediaItem>>(null);
   const state = useLibraryCatalogState(current.Id);
@@ -112,7 +115,12 @@ function LibraryTab({ libraries, current, onSelect }: {
       </View>
       {/* Pendant la frappe, les suggestions prennent la place des filtres et de la grille. */}
       {assist.open ? (
-        <SearchAssistPane assist={assist} inline />
+        <>
+          <SearchAssistPane assist={assist} inline />
+          {/* La grille s'efface pendant la frappe : sans cette réserve, la liste
+              raccourcie redescendrait et le panneau passerait sous la barre. */}
+          <View style={{ height: windowH }} />
+        </>
       ) : (
         <>
           {/* Le total est déjà sous le titre : le compte ne revient qu'avec un filtre. */}
@@ -135,6 +143,7 @@ function LibraryTab({ libraries, current, onSelect }: {
         header={header}
         onScroll={onScrollChrome}
         topInset={headerH}
+        bottomInset={tabBarH}
       />
       <LibrarySheets state={state} />
     </SubtleBackground>
