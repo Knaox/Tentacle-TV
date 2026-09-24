@@ -22,10 +22,14 @@ export function offlineHeroSlides(entries: readonly OfflineEntry[], handlers: Of
   return entries.map((entry) => {
     const episode = entry.kind === "episode";
     const backdropUri = resolveLocalArt(entry.itemId, episode ? BANNER_ART : ITEM_BANNER_ART);
+    const posterUri = resolveLocalArt(entry.itemId, episode ? SERIES_ART : MOVIE_ART);
     return {
       id: entry.itemId,
       backdropUri,
-      haloUri: resolveLocalArt(entry.itemId, episode ? SERIES_ART : MOVIE_ART) ?? backdropUri,
+      haloUri: posterUri ?? backdropUri,
+      // L'affiche gardée sur l'appareil sert aussi la carte portrait.
+      posterUri,
+      haloPosterUri: posterUri,
       render: (active) => (
         <OfflineHeroContent entry={entry} active={active} onPlay={handlers.onPlay} onInfo={handlers.onInfo} />
       ),

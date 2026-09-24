@@ -11,7 +11,7 @@ import { useDeferredMount } from "@/hooks/useDeferredMount";
 import { HeroAmbilight } from "./HeroAmbilight";
 import { useHeroMetrics } from "./heroMetrics";
 import { HERO_ROTATE_MS, HeroBackdropStack } from "./hero/HeroBackdropStack";
-import type { HeroSlide } from "./hero/heroSlides";
+import { slideHalo, type HeroSlide } from "./hero/heroSlides";
 
 interface HeroBannerProps {
   /** Les diapositives — voir `hero/heroSlides` ; mémoïsées par l'appelant. */
@@ -27,7 +27,7 @@ interface HeroBannerProps {
 export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const { bannerH, slideW, margin, radius } = useHeroMetrics();
+  const { bannerH, slideW, margin, radius, portrait } = useHeroMetrics();
   // Le flou SVG du halo est cher à rastériser : monté une fois l'écran
   // interactif, son fondu de 1,4 s absorbe le décalage.
   const haloReady = useDeferredMount();
@@ -86,7 +86,8 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
 
   if (!slides.length) return <View style={{ height: bannerH }} />;
 
-  const haloUri = slides[safeIndex]?.haloUri ?? null;
+  const activeSlide = slides[safeIndex];
+  const haloUri = activeSlide ? slideHalo(activeSlide, portrait) : null;
 
   return (
     <View style={{ paddingHorizontal: margin }}>
@@ -110,16 +111,19 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
           backgroundColor: theme.colors.surface.s0,
         }}
       >
-        <HeroBackdropStack slides={slides} activeIndex={safeIndex} />
+        <HeroBackdropStack slides={slides} activeIndex={safeIndex} portrait={portrait} />
         {/* Les voiles du bureau (scrims.css) : la « bande noire » venait de la
             FORME de la rampe (pente qui retombait à 70 %), pas de sa couleur —
             la rampe corrigée vit dans GradientOverlay. En SOMBRE le bas rejoint
             la page (surface.s0, défaut) ; en CLAIR il plafonne à 0,70 de noir
             PUR (le plafond est dans la rampe, jamais dans la couleur). */}
         <GradientOverlay direction="top" height={110} intensity="soft" color="rgba(0, 0, 0, 0.65)" />
+        {/* En portrait l'affiche porte souvent son propre titre, imprimé en
+            bas : le voile monte plus haut pour que le texte de la carte reste
+            lisible par-dessus. Même rampe, seule sa hauteur change. */}
         <GradientOverlay
           direction="bottom"
-          height={bannerH * 0.62}
+          height={bannerH * (portrait ? 0.74 : 0.62)}
           intensity="strong"
           color={theme.isDark ? undefined : `rgb(${theme.colors.onMedia.scrimRgb})`}
         />

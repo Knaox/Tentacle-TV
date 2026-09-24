@@ -11,7 +11,15 @@ export interface HeroMetrics {
   /** Rayon du cadre — la valeur du desktop (--hero-frame-radius). */
   radius: number;
   isTablet: boolean;
+  /** Carte nettement plus haute que large (téléphone en portrait) : elle
+   *  montre l'affiche plutôt qu'un 16/9 rogné aux deux tiers. */
+  portrait: boolean;
 }
+
+/** Sous ce rapport largeur/hauteur, un visuel 16/9 ne garde qu'un tiers de sa
+ *  largeur : l'affiche (2/3) cadre mieux. L'iPad portrait (~0,98) garde le
+ *  visuel large, le téléphone (~0,57) prend l'affiche. */
+const PORTRAIT_CARD_RATIO = 0.8;
 
 /**
  * LA géométrie de la bannière d'accueil — partagée entre `HeroBanner` et son
@@ -23,12 +31,15 @@ export function useHeroMetrics(): HeroMetrics {
   const railWidth = useRailWidth();
   const isTablet = Math.min(screenW, screenH) >= TABLET_MIN_WIDTH;
   const margin = spacing.screenPadding;
+  // 0.74 : laisse la tête de « Reprendre » visible au-dessus de la tab bar.
+  const bannerH = Math.min(isTablet ? 820 : 660, Math.round(screenH * 0.74));
+  const slideW = screenW - railWidth - margin * 2;
   return {
-    // 0.74 : laisse la tête de « Reprendre » visible au-dessus de la tab bar.
-    bannerH: Math.min(isTablet ? 820 : 660, Math.round(screenH * 0.74)),
-    slideW: screenW - railWidth - margin * 2,
+    bannerH,
+    slideW,
     margin,
     radius: 20,
     isTablet,
+    portrait: slideW / bannerH < PORTRAIT_CARD_RATIO,
   };
 }
