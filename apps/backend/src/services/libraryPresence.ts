@@ -6,17 +6,17 @@ import { normalizeTitle } from "./libraryAddedDedup";
 // un fichier remplacé — mise à niveau Radarr/Sonarr, renommage, déplacement :
 // pour le diff d'IDs, c'est un ajout comme un autre, et tous les abonnés
 // recevaient « Dune est sorti » pour un film là depuis des mois. Ici, chaque
-// item connu porte la clé de son contenu (film par TMDB, épisode par série +
-// numéros), et un départ garde sa ligne (removedAt) au lieu de
+// item connu porte la clé de son contenu (film par TMDB, épisode par TMDB de
+// sa série + numéros), et un départ garde sa ligne (removedAt) au lieu de
 // l'effacer. Une arrivée dont le contenu est déjà là (autre version) ou vient
 // de partir (moins de 24 h : un remplacement) n'est pas une nouveauté. Un
 // contenu parti depuis plus longtemps qui revient — une demande refaite après
 // suppression — en redevient une.
 //
-// Un épisode se reconnaît au NOM de sa série et à ses numéros, pas au TMDB de
-// la série : ce dernier se résout à part, en décalé, et une série fraîchement
-// réindexée ne l'a pas toujours au moment de l'arrivée — la clé changerait
-// entre l'ancien fichier et le nouveau.
+// Jamais le NOM d'une série : deux séries homonymes (l'animé « One Piece » et
+// la série live, « The Office » US et UK) se confondraient, et le nouvel
+// épisode de l'une passerait pour une version de l'autre. À défaut de TMDB,
+// l'ID Jellyfin de la série, stable quand un fichier d'épisode est remplacé.
 
 export const REPLACEMENT_GRACE_MS = 24 * 60 * 60_000;
 const DEPARTED_RETENTION_MS = 30 * 24 * 60 * 60_000;
@@ -25,22 +25,29 @@ const BACKFILL_CHUNK = 500;
 const KEY_MAX = 191;
 
 /**
- * La clé du contenu que porte un item. Film : son TMDB, à défaut son nom
- * normalisé plus l'année (deux films homonymes restent deux contenus).
- * Épisode : nom de la série + saison + épisode. '' pour ce qui n'est pas un
- * contenu annoncé (série, saison) ou pas identifiable.
+ * Les clés possibles du contenu que porte un item, de la plus forte à la plus
+ * faible. Film : son TMDB, puis son nom normalisé plus l'année (deux films
+ * homonymes restent deux contenus). Épisode : TMDB de la série + saison +
+ * épisode, puis ID Jellyfin de la série + saison + épisode. [] pour ce qui
+ * n'est pas un contenu annoncé (série, saison) ou pas identifiable.
  */
-export function presenceKey(it: LibItem): string {
-  let key = "";
+export function presenceKeys(it: LibItem): string[] {
+  const keys: string[] = [];
   if (it.Type === "Movie") {
     const name = normalizeTitle(it.Name ?? "");
-    if (it.tmdbId != null) key = `m:t:${it.tmdbId}`;
-    else if (name) key = `m:n:${name}:${it.ProductionYear ?? ""}`;
+    if (it.tmdbId != null) keys.push(`m:t:${it.tmdbId}`);
+    if (name) keys.push(`m:n:${name}:${it.ProductionYear ?? ""}`);
   } else if (it.Type === "Episode" && it.ParentIndexNumber != null && it.IndexNumber != null) {
-    const series = normalizeTitle(it.SeriesName ?? "");
-    if (series) key = `e:n:${series}:${it.ParentIndexNumber}:${it.IndexNumber}`;
+    const at = `${it.ParentIndexNumber}:${it.IndexNumber}`;
+    if (it.seriesTmdbId != null) keys.push(`e:t:${it.seriesTmdbId}:${at}`);
+    if (it.SeriesId) keys.push(`e:i:${it.SeriesId}:${at}`);
   }
-  return key.length > KEY_MAX ? key.slice(0, KEY_MAX) : key;
+  return keys.map((k) => (k.length > KEY_MAX ? k.slice(0, KEY_MAX) : k));
+}
+
+/** La clé qu'on enregistre : la plus forte connue ('' = aucune). */
+export function presenceKey(it: LibItem): string {
+  return presenceKeys(it)[0] ?? "";
 }
 
 export interface ArrivalVerdict {
@@ -51,11 +58,14 @@ export interface ArrivalVerdict {
 }
 
 /**
- * Trie des arrivées PAS ENCORE enregistrées. Un item sans clé est une
- * nouveauté : faute de pouvoir le reconnaître, on ne l'étouffe pas.
+ * Trie des arrivées PAS ENCORE enregistrées. Une arrivée est reconnue si
+ * l'une de ses clés possibles est celle d'un item présent ou parti il y a
+ * moins de 24 h — l'ancien fichier a pu être enregistré sous une clé plus
+ * faible. Un item sans clé est une nouveauté : faute de pouvoir le
+ * reconnaître, on ne l'étouffe pas.
  */
 export async function classifyArrivals(items: LibItem[], now = Date.now()): Promise<ArrivalVerdict> {
-  const keys = [...new Set(items.map(presenceKey).filter(Boolean))];
+  const keys = [...new Set(items.flatMap(presenceKeys))];
   if (keys.length === 0) return { news: items, known: [] };
   const rows = await getPrisma().libraryKnownId.findMany({
     where: { contentKey: { in: keys } },
@@ -68,8 +78,7 @@ export async function classifyArrivals(items: LibItem[], now = Date.now()): Prom
   }
   const verdict: ArrivalVerdict = { news: [], known: [] };
   for (const it of items) {
-    const key = presenceKey(it);
-    (key && covered.has(key) ? verdict.known : verdict.news).push(it);
+    (presenceKeys(it).some((k) => covered.has(k)) ? verdict.known : verdict.news).push(it);
   }
   return verdict;
 }
@@ -121,7 +130,8 @@ export async function purgeDepartures(now = Date.now()): Promise<number> {
 
 /**
  * Reconnaît, une fois, les items présents enregistrés avant la reconnaissance
- * des contenus (clé NULL) : un balayage paginé de la bibliothèque. Un item
+ * des contenus (clé NULL) : un balayage paginé de la bibliothèque, séries
+ * comprises (le TMDB de chaque épisode vient de la sienne). Un item
  * absent du balayage garde sa clé NULL (il est parti ; le diff le datera).
  * Échec = retenté au prochain démarrage. Rend le nombre de lignes reconnues.
  */
@@ -135,6 +145,10 @@ export async function backfillPresenceKeys(): Promise<number> {
   const all = await getAllLibraryItemsForIdentity();
   if (!all) return 0;
 
+  // Le TMDB de la série de chaque épisode, pris aux séries du même balayage.
+  const seriesTmdb = new Map<string, number>();
+  for (const it of all) if (it.Type === "Series" && it.tmdbId != null) seriesTmdb.set(it.Id, it.tmdbId);
+  for (const it of all) if (it.Type === "Episode" && it.SeriesId) it.seriesTmdbId = seriesTmdb.get(it.SeriesId);
   const keyById = new Map(all.map((it) => [it.Id, presenceKey(it)] as const));
 
   const pairs = pending

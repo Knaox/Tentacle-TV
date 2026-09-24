@@ -2,7 +2,7 @@ import { getPrisma } from "./db";
 import type { LibItem } from "./jellyfinLibrary";
 import { indexClaims, isClaimed } from "./libraryAddedDedup";
 import { isPushPrefEnabled } from "./pushPreferences";
-import { libraryIdentityKeys, librarySeasonKeys, recentlyAnnounced } from "./announcedRegistry";
+import { libraryIdentityKeys, librarySeasonKeys, recentlyAnnounced, strongestKeys } from "./announcedRegistry";
 import { loadPushLangs, type PushLang } from "./pushLang";
 
 // À qui annoncer une arrivée, et quoi. Seule compte la vérité Jellyfin : le
@@ -86,12 +86,14 @@ async function dropAlreadyAnnounced(
   now: number,
 ): Promise<RecipientPlan | null> {
   const all = [...requested, ...others];
-  const recentIdentity = await recentlyAnnounced(userId, all.flatMap(libraryIdentityKeys), now - IDENTITY_WINDOW_MS);
-  const recentSeasons = await recentlyAnnounced(userId, all.flatMap(librarySeasonKeys), now - SEASON_WINDOW_MS);
+  const identityOf = (it: LibItem) => strongestKeys(libraryIdentityKeys(it));
+  const seasonOf = (it: LibItem) => strongestKeys(librarySeasonKeys(it));
+  const recentIdentity = await recentlyAnnounced(userId, all.flatMap(identityOf), now - IDENTITY_WINDOW_MS);
+  const recentSeasons = await recentlyAnnounced(userId, all.flatMap(seasonOf), now - SEASON_WINDOW_MS);
   const absorbed: LibItem[] = [];
   const keep = (it: LibItem): boolean => {
-    if (libraryIdentityKeys(it).some((k) => recentIdentity.has(k))) return false;
-    if (librarySeasonKeys(it).some((k) => recentSeasons.has(k))) {
+    if (identityOf(it).some((k) => recentIdentity.has(k))) return false;
+    if (seasonOf(it).some((k) => recentSeasons.has(k))) {
       absorbed.push(it);
       return false;
     }

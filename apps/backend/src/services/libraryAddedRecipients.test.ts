@@ -185,6 +185,18 @@ describe("ce qui vient d'être annoncé", () => {
     expect(ids(plan.absorbed)).toEqual(["bear-2-4"]);
   });
 
+  it("une série homonyme annoncée il y a peu n'absorbe pas les épisodes d'une autre", async () => {
+    // L'animé « One Piece » vient d'être annoncé ; la série live, homonyme, arrive.
+    store.prefs = [pref("bob", true)];
+    store.announced = [
+      { jellyfinUserId: "bob", contentKey: "s:t:37854:1", notifiedAt: new Date(NOW - HOUR) },
+      { jellyfinUserId: "bob", contentKey: "s:n:one piece:1", notifiedAt: new Date(NOW - HOUR) },
+    ];
+    const live: LibItem = { ...bear(1, 1), Id: "op-live-1-1", SeriesName: "One Piece", SeriesId: "op-live", seriesTmdbId: 111110 };
+    const plan = byUser(await planRecipients([live], NOW)).get("bob")!;
+    expect(ids(plan.others)).toEqual(["op-live-1-1"]);
+  });
+
   it("l'épisode de la semaine suivante part (diffusion hebdomadaire)", async () => {
     store.prefs = [pref("bob", true)];
     store.announced = [
