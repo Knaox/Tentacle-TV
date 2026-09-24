@@ -1,0 +1,58 @@
+/* La recherche approfondie — filmographie, genre, studio — posée par-dessus
+ * les résultats (`SearchBrowseTv`). Suite de `search-tv.css`. */
+
+/* ── Recherche approfondie ─────────────────────────────────────────── */
+
+.tv-search-browse {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--tv-overscan-y) var(--tv-overscan-x) 120px var(--tv-overscan-x);
+  box-sizing: border-box;
+  background: var(--surface-0);
+}
+
+.tv-search-browse-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 0 28px 0;
+}
+
+.tv-search-browse-header .tv-search-portrait {
+  margin-right: 36px;
+}
+
+.tv-search-browse-title {
+  margin: 0;
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.tv-search-browse-meta {
+  margin: 10px 0 0 0;
+  font-size: 26px;
+  white-space: pre;
+  color: var(--text-secondary);
+}
+
+.tv-search-browse > .tv-search-message {
+  padding: 0;
+}
+
+/* Une grille à largeurs fixes, jamais une grille CSS : `data-tv-grille` dit au
+   moteur que descendre suit la colonne. */
+.tv-search-browse-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 24px;
+}
+
+.tv-search-browse-grid > .carte-tv {
+  margin: 0 24px 36px 0;
+}
