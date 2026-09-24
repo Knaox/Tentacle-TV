@@ -17,7 +17,11 @@ import { useSearchNavigation } from "./useSearchNavigation";
  * Ouvrir un résultat range d'abord le clavier — l'écran suivant ne doit pas
  * hériter d'un champ actif.
  */
-export const SearchAssistPane = memo(function SearchAssistPane({ assist }: { assist: SearchAssist }) {
+export const SearchAssistPane = memo(function SearchAssistPane({ assist, inline = false }: {
+  assist: SearchAssist;
+  /** Dans l'en-tête d'une liste : pas de `flex`, le panneau prend sa hauteur. */
+  inline?: boolean;
+}) {
   const router = useRouter();
   const nav = useSearchNavigation({ modal: false });
 
@@ -35,7 +39,7 @@ export const SearchAssistPane = memo(function SearchAssistPane({ assist }: { ass
   }, [router, assist.value]);
 
   return (
-    <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(110)} style={st.pane}>
+    <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(110)} style={inline ? st.inline : st.pane}>
       <SearchSuggestPanel
         query={assist.settled}
         suggestions={assist.suggestions}
@@ -50,4 +54,5 @@ export const SearchAssistPane = memo(function SearchAssistPane({ assist }: { ass
 
 const st = StyleSheet.create({
   pane: { flex: 1, paddingTop: spacing.sm },
+  inline: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
 });

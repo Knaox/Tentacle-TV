@@ -1,5 +1,6 @@
-import { memo, useCallback, useMemo } from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { memo, useCallback, useMemo, type ReactElement, type Ref } from "react";
+import { View, Text, StyleSheet, type FlatList } from "react-native";
+import Animated from "react-native-reanimated";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
@@ -16,9 +17,20 @@ interface Props {
   catalog: UseInfiniteQueryResult<{ pages: Array<{ Items: MediaItem[]; TotalRecordCount: number }> }>;
   onItemPress: (item: MediaItem) => void;
   overrideItems?: MediaItem[];
+  /** Ce qui défile AU-DESSUS de la grille, avec elle (l'onglet Bibliothèque). */
+  header?: ReactElement | null;
+  /** Remplace l'état vide — `null` : rien (la place est déjà prise). */
+  empty?: ReactElement | null;
+  /** Le repli du chrome (`useScrollChromeHandler`) : la grille défile SOUS l'en-tête flottant. */
+  onScroll?: ReturnType<typeof import("@/components/navigation/scrollChrome").useScrollChromeHandler>;
+  /** La hauteur de l'en-tête flottant, en marge du contenu. */
+  topInset?: number;
+  listRef?: Ref<FlatList<MediaItem>>;
 }
 
-export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress, overrideItems }: Props) {
+export const CatalogGrid = memo(function CatalogGrid({
+  catalog, onItemPress, overrideItems, header, empty, onScroll, topInset = 0, listRef,
+}: Props) {
   const { t } = useTranslation("common");
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -50,9 +62,10 @@ export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress, ove
       return <View style={styles.loader}><BrandSpinner size="small" /></View>;
     }
     return null;
-  }, [catalog.isFetchingNextPage, colors, styles]);
+  }, [catalog.isFetchingNextPage, styles]);
 
   const emptyComponent = useMemo(() => {
+    if (empty !== undefined) return empty;
     if (catalog.isLoading) return null;
     return (
       <View style={styles.emptyContainer}>
@@ -61,18 +74,26 @@ export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress, ove
         <Text style={styles.emptyHint}>{t("noResultsHint")}</Text>
       </View>
     );
-  }, [catalog.isLoading, t, colors, styles]);
+  }, [empty, catalog.isLoading, t, colors, styles]);
 
   return (
     <FadeIn delay={100} style={{ flex: 1 }}>
-      <FlatList
+      <Animated.FlatList
+        ref={listRef as never}
         key={`catalog-${numColumns}`}
         data={items}
         numColumns={numColumns}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
-        contentContainerStyle={[styles.gridContent, { paddingHorizontal: padding }]}
-        columnWrapperStyle={numColumns > 1 ? { gap: gutter } : undefined}
+        // La marge latérale va aux RANGÉES, pas au contenu : l'en-tête (l'ambiance
+        // de l'onglet Bibliothèque) court d'un bord à l'autre. Une seule colonne
+        // n'accepte pas `columnWrapperStyle` : la marge y reste au contenu.
+        contentContainerStyle={[styles.gridContent, { paddingTop: topInset }, numColumns > 1 ? null : { paddingHorizontal: padding }]}
+        columnWrapperStyle={numColumns > 1 ? { gap: gutter, paddingHorizontal: padding } : undefined}
+        ListHeaderComponent={header}
+        onScroll={onScroll}
+        scrollEventThrottle={onScroll ? 16 : undefined}
+        keyboardShouldPersistTaps="handled"
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         ListFooterComponent={footer}
