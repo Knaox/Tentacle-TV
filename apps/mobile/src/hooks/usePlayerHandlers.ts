@@ -113,6 +113,15 @@ export function usePlayerHandlers({
     pb.reporting.updatePosition(pos, paused);
   }, [paused, pb.reporting, pb.streamOffset, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Pause et reprise sont des BORDS du report. En pause, le moteur se tait —
+  // plus aucune progression —, l'état doit donc partir d'ici : sinon Jellyfin
+  // (et le tableau de bord) montraient « En lecture » un lecteur en pause, et
+  // une pause demandée à distance n'était jamais constatée.
+  useEffect(() => {
+    if (!hasEverPlayed.current) return;
+    pb.reporting.updatePosition(pb.positionRef.current, paused);
+  }, [paused]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // La fin du flux ne quitte plus l'écran : elle est ANNONCÉE à l'arbitre, qui
   // affiche l'écran de fin quand il y a une suite, et demande la sortie
   // (`onEndOfPlayback` → `leavePlayer`) quand il n'y en a pas. Sortir
