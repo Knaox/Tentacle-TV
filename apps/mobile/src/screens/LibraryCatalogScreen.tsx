@@ -52,12 +52,12 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
             <Pressable onPress={toggleSearch} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("search")}>
               <Feather name="search" size={20} color={searchVisible ? colors.brand.violet : colors.text.secondary} />
             </Pressable>
-            <Pressable onPress={() => state.setSheet("advanced")} hitSlop={12} style={{ marginLeft: spacing.md }} accessibilityRole="button" accessibilityLabel={t("filters")}>
+            <Pressable onPress={() => state.setSheet("filters")} hitSlop={12} style={{ marginLeft: spacing.md }} accessibilityRole="button" accessibilityLabel={t("filters")}>
               <View>
-                <Feather name="sliders" size={20} color={state.advancedActiveCount > 0 ? colors.brand.violet : colors.text.secondary} />
-                {state.advancedActiveCount > 0 && (
+                <Feather name="sliders" size={20} color={state.filterCount > 0 ? colors.brand.violet : colors.text.secondary} />
+                {state.filterCount > 0 && (
                   <View style={styles.headerBadge}>
-                    <Text style={styles.headerBadgeText}>{state.advancedActiveCount}</Text>
+                    <Text style={styles.headerBadgeText}>{state.filterCount}</Text>
                   </View>
                 )}
               </View>

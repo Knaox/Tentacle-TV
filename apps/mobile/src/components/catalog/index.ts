@@ -1,9 +1,8 @@
 export { GenreFilter } from "./GenreFilter";
 export { StudioFilter } from "./StudioFilter";
-export { PlatformFilter } from "./PlatformFilter";
-export { SortSelector, SORT_OPTIONS } from "./SortSelector";
-export { StatusFilter } from "./StatusFilter";
+export { PlatformFilter, PLATFORMS } from "./PlatformFilter";
+export { SORT_OPTIONS } from "./catalogSorts";
+export { StatusFilter, STATUS_OPTIONS } from "./StatusFilter";
 export { CatalogGrid } from "./CatalogGrid";
-export { AdvancedFilterSheet } from "./AdvancedFilterSheet";
-export type { AdvancedFilters } from "./AdvancedFilterSheet";
-export { YearSheet } from "./YearSheet";
+export { CatalogFilterSheet } from "./CatalogFilterSheet";
+export type { AdvancedFilters } from "./CatalogFilterSheet";

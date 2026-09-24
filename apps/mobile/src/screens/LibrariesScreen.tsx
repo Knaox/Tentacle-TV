@@ -111,7 +111,7 @@ function LibraryTab({ libraries, current, onSelect }: {
           count={searching && !catalog.isLoading ? totalCount : null}
           inset={false}
         />
-        <FilterButton count={state.advancedActiveCount} onPress={() => state.setSheet("advanced")} />
+        <FilterButton count={state.filterCount} onPress={() => state.setSheet("filters")} />
       </View>
       {/* Pendant la frappe, les suggestions prennent la place des filtres et de la grille. */}
       {assist.open ? (
