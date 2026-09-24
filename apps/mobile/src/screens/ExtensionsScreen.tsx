@@ -9,6 +9,7 @@ import { HEADER_COLLAPSE_SHIFT, useHeaderHeight } from "@/components/PersistentH
 import { useExpandChromeOnFocus, useScrollChromeValue } from "@/components/navigation/scrollChrome";
 import { SectionStrip } from "@/components/extensions/SectionStrip";
 import { ExtensionPane } from "@/components/extensions/ExtensionPane";
+import { noteExtensionSection } from "@/components/extensions/extensionNavState";
 import { BrandSpinner } from "@/components/ui/BrandSpinner";
 import { Button } from "@/components/ui/Button";
 import { spacing, typography, useThemedStyles, type AppTheme } from "@/theme";
@@ -17,9 +18,10 @@ import { spacing, typography, useThemedStyles, type AppTheme } from "@/theme";
 const STRIP_FALLBACK_H = 52;
 
 /**
- * L'onglet unique des extensions : sous l'en-tête, le bandeau des sections
- * (une par page d'extension, seulement s'il y en a plus d'une) ; dessous, un
- * volet par section, conservé une fois visité.
+ * L'onglet des extensions, UN plugin à la fois : sous l'en-tête, le bandeau
+ * de ses pages (seulement s'il en a plus d'une) ; dessous, un volet par page,
+ * conservé une fois visité. On change de plugin par le sous-menu de l'onglet
+ * (`ExtensionPicker`) ; avec un seul plugin, l'onglet porte son nom.
  *
  * Le bandeau suit le repli du chrome : quand la page défile vers le bas, il
  * glisse sous l'en-tête et les volets montent prendre sa place, plus les
@@ -41,31 +43,39 @@ export function ExtensionsScreen() {
   const { t: tc } = useTranslation("common");
   const { t: tn } = useTranslation("nav");
   const { isPending } = useActivePlugins();
-  const { sections, multiPlugin } = useExtensionTab();
+  const { sections, multiPlugin, plugins } = useExtensionTab();
   const { section } = useLocalSearchParams<{ section?: string | string[] }>();
   // Redéployé à l'arrivée ; ensuite, le volet actif pilote le chrome depuis
   // sa page (PluginWebView, message SCROLL_CHROME).
   useExpandChromeOnFocus();
   const fallback = useSharedValue(0);
   const collapsed = useScrollChromeValue() ?? fallback;
-  const hasStrip = sections.length > 1;
-  const [stripH, setStripH] = useState(STRIP_FALLBACK_H);
-  const stripSlot = hasStrip ? stripH : 0;
-  const slide = stripSlot + HEADER_COLLAPSE_SHIFT;
-  const slideStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -collapsed.value * slide }] }), [slide]);
-  const fadeStyle = useAnimatedStyle(() => ({ opacity: 1 - collapsed.value }));
 
   const wanted = typeof section === "string" ? section : undefined;
   const activeId = useMemo(
     () => sections.find((s) => s.id === wanted)?.id ?? sections[0]?.id,
     [sections, wanted],
   );
+  // Un plugin à la fois : le bandeau ne montre que SES pages (on change de
+  // plugin par le sous-menu de l'onglet), nommé seulement s'il y en a d'autres
+  // — seul, c'est l'onglet qui porte son nom.
+  const activePlugin = plugins.find((p) => p.sections.some((s) => s.id === activeId)) ?? plugins[0];
+  const pluginSections = activePlugin?.sections ?? [];
+  const hasStrip = pluginSections.length > 1;
+  const [stripH, setStripH] = useState(STRIP_FALLBACK_H);
+  const stripSlot = hasStrip ? stripH : 0;
+  const slide = stripSlot + HEADER_COLLAPSE_SHIFT;
+  const slideStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -collapsed.value * slide }] }), [slide]);
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: 1 - collapsed.value }));
 
-  // Volets déjà visités : montés une fois, conservés (état et défilement).
+  // Volets déjà visités : montés une fois, conservés (état et défilement) —
+  // d'un plugin à l'autre aussi.
   const [visited, setVisited] = useState<string[]>([]);
   useEffect(() => {
-    if (activeId) setVisited((v) => (v.includes(activeId) ? v : [...v, activeId]));
-  }, [activeId]);
+    if (!activeId) return;
+    setVisited((v) => (v.includes(activeId) ? v : [...v, activeId]));
+    if (activePlugin) noteExtensionSection(activePlugin.pluginId, activeId);
+  }, [activeId, activePlugin]);
 
   const select = useCallback(
     (id: string) => { router.setParams({ section: id }); },
@@ -96,7 +106,12 @@ export function ExtensionsScreen() {
             style={[st.strip, slideStyle, fadeStyle]}
             onLayout={(e) => setStripH(Math.round(e.nativeEvent.layout.height))}
           >
-            <SectionStrip sections={sections} activeId={activeId} multiPlugin={multiPlugin} onSelect={select} />
+            <SectionStrip
+              sections={pluginSections}
+              activeId={activeId}
+              pluginName={multiPlugin ? activePlugin?.name : undefined}
+              onSelect={select}
+            />
           </Animated.View>
         )}
         <Animated.View style={[st.panes, { top: stripSlot, bottom: -slide }, slideStyle]}>
