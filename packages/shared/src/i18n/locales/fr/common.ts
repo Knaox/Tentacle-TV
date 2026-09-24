@@ -155,6 +155,7 @@ export default {
   showResultsCount_one: "Voir {{count}} titre",
   showResultsCount_other: "Voir {{count}} titres",
   removeFilterNamed: "Retirer « {{name}} »",
+  scrollToTop: "Revenir en haut",
   resetFilters: "Réinitialiser",
   yearFrom: "De",
   yearTo: "À",

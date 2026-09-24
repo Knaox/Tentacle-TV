@@ -153,6 +153,7 @@ export default {
   showResultsCount_one: "Show {{count}} title",
   showResultsCount_other: "Show {{count}} titles",
   removeFilterNamed: "Remove “{{name}}”",
+  scrollToTop: "Back to top",
   resetFilters: "Reset",
   yearFrom: "From",
   yearTo: "To",
