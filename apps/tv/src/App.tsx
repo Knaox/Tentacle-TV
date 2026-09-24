@@ -32,6 +32,8 @@ import { useServerReachable } from "./hooks/useServerReachable";
 import { navigationRef } from "./navigation/navigationRef";
 import { runAuthRefreshFlow } from "./auth/sessionFlow";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
+import { TVSessionChannel } from "./components/TVSessionChannel";
+import { TVSessionMessageHost } from "./components/TVSessionMessageHost";
 import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
 import { TVNavChrome, deriveRailKey } from "./components/nav/TVNavChrome";
@@ -224,6 +226,7 @@ function AppContent({ serverUrl: initialServerUrl }: { serverUrl: string | null 
       <ForegroundSessionValidator />
       <ForegroundDataRefresher />
       <DirectStreamingSync storage={storage} />
+      <TVSessionChannel storage={storage} />
       <TVNavProvider>
           <NavigationContainer
             ref={navigationRef}
@@ -236,6 +239,7 @@ function AppContent({ serverUrl: initialServerUrl }: { serverUrl: string | null 
             <TVNavChrome railKey={railKey} />
             <OfflineBanner visible={!isReachable} onRetry={retry} />
             <PairingExpiredBanner />
+            <TVSessionMessageHost />
           </NavigationContainer>
       </TVNavProvider>
     </>

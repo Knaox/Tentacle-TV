@@ -10,6 +10,9 @@ export interface StreamingConfig {
   enabled: boolean;
   mediaBaseUrl: string | null;
   jellyfinToken: string | null;
+  /** Appareil jumelé : l'identifiant Jellyfin à adopter — celui que le canal
+   *  de session présente pour lui (backend `deviceSessions/deviceAuth.ts`). */
+  deviceId?: string;
   tokenExpired?: boolean;
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useJellyfinClient,
@@ -7,6 +7,7 @@ import {
   primeBitrateMeasure,
 } from "@tentacle-tv/api-client";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
+import { useStoredToken } from "../hooks/useStoredToken";
 
 interface Props {
   storage: StorageAdapter;
@@ -24,17 +25,18 @@ export function DirectStreamingSync({ storage }: Props) {
   const qc = useQueryClient();
 
   // Token réactif : après pairing/login le token change, mais ce composant
-  // est déjà monté. Polling du storage pour récupérer les nouveaux tokens.
-  const [token, setToken] = useState<string | null>(storage.getItem("tentacle_token"));
-  useEffect(() => {
-    const id = setInterval(() => {
-      const current = storage.getItem("tentacle_token");
-      setToken((prev) => (current !== prev ? current : prev));
-    }, 2000);
-    return () => clearInterval(id);
-  }, [storage]);
+  // est déjà monté (cf. `useStoredToken`).
+  const token = useStoredToken(storage);
 
   const { data, isError, isFetched } = useStreamingConfig(token);
+
+  // L'identifiant Jellyfin que le serveur a dérivé pour cette TV : adopté, les
+  // requêtes de la TV et le canal de session touchent la MÊME session Jellyfin
+  // — celle que les tableaux de bord pilotent (`TVSessionChannel`).
+  const derivedDeviceId = data?.deviceId;
+  useEffect(() => {
+    if (derivedDeviceId && derivedDeviceId !== client.getDeviceId()) client.adoptJellyfinDeviceId(derivedDeviceId);
+  }, [client, derivedDeviceId]);
 
   // Préchauffe la mesure de débit (cache 10 min, fire-and-forget) dès qu'une
   // session existe : la PREMIÈRE lecture peut ainsi être capée si la connexion

@@ -25,6 +25,7 @@ import { useTVSettingsBridge } from "../hooks/useTVSettingsBridge";
 import { useTVSubtitleSync } from "../hooks/useTVSubtitleSync";
 import { useTVPrismProgress } from "../hooks/useTVPrismProgress";
 import { useTVTrackLists } from "../hooks/useTVTrackLists";
+import { useTVSessionRemote } from "../hooks/useTVSessionRemote";
 import { useEpisodePanelPrefetch } from "../hooks/useSeasonEpisodes";
 import { findCachedMediaItem } from "../utils/findCachedMediaItem";
 import { TVPlayerLoadingScreen } from "../components/player/TVPlayerLoadingScreen";
@@ -150,6 +151,13 @@ export function PlayerScreen({ route, navigation }: Props) {
     // Écran de fin plein écran (eof) = panneau : neutralise pan/scrub/play-pause du
     // lecteur ET son Back JS — le Retour est routé par useTVPlayerBack (preventRemove).
     panelOpen: showSettings || showEpisodes || autoPlay.source === "eof",
+  });
+  // Télécommande : tableau de bord de Jellyfin, « Sessions en direct » de Tentacle.
+  useTVSessionRemote({
+    leave: () => { void lifecycle.leavePlayer(); },
+    setPaused, pausedRef: pausedStateRef, seek: handleSeek, positionRef,
+    next: handleNextEpisode, previous: handlePrevEpisode,
+    audio: p.handleAudioChange, subtitle: p.handleSubtitleChange, showOverlay: controls.showOverlay,
   });
   useEffect(() => { setScrubbing(controls.scrubbing); }, [controls.scrubbing]);
   // En déplacement, l'habillage est masqué — le dire à l'arbitre, sinon un
