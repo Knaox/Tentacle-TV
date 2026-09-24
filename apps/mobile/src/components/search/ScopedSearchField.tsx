@@ -14,6 +14,8 @@ interface Props {
   /** La croix : vider — et, là où la barre se replie, la refermer. */
   onClear?: () => void;
   autoFocus?: boolean;
+  /** Faux : le champ ne prend pas la marge d'écran — il partage une ligne. */
+  inset?: boolean;
 }
 
 /**
@@ -24,7 +26,7 @@ interface Props {
  * trouvés au bout, une croix pour effacer.
  */
 export const ScopedSearchField = memo(function ScopedSearchField({
-  assist, placeholder, count, onClear, autoFocus = false,
+  assist, placeholder, count, onClear, autoFocus = false, inset = true,
 }: Props) {
   const { t } = useTranslation("common");
   const theme = useTheme();
@@ -33,7 +35,7 @@ export const ScopedSearchField = memo(function ScopedSearchField({
   const active = value.trim().length > 0;
 
   return (
-    <View style={st.wrap} accessibilityRole="search">
+    <View style={inset ? st.wrap : st.bare} accessibilityRole="search">
       <View style={[st.field, focused && st.fieldFocused]}>
         <Feather
           name="search"
@@ -78,6 +80,7 @@ export const ScopedSearchField = memo(function ScopedSearchField({
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     wrap: { paddingHorizontal: spacing.screenPadding },
+    bare: { flex: 1 },
     field: {
       flexDirection: "row" as const,
       alignItems: "center" as const,

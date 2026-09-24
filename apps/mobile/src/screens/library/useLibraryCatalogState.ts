@@ -31,6 +31,22 @@ export function useLibraryCatalogState(libraryId: string) {
   const [sheet, setSheet] = useState<CatalogSheet>(null);
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>(DEFAULT_ADVANCED);
 
+  // Une autre bibliothèque (la capsule de l'onglet) repart de zéro — sauf le
+  // tri et le statut, des préférences plus que des filtres. Remis pendant le
+  // rendu, pas dans un effet : aucune requête ne part avec les filtres
+  // d'avant sur la bibliothèque d'après.
+  const [scope, setScope] = useState(libraryId);
+  if (scope !== libraryId) {
+    setScope(libraryId);
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setSelectedGenres([]);
+    setSelectedPlatformIds([]);
+    setSelectedYear(null);
+    setSheet(null);
+    setAdvancedFilters(DEFAULT_ADVANCED);
+  }
+
   const advancedActiveCount = useMemo(() => {
     let c = 0;
     if (advancedFilters.studioIds.length > 0) c++;
@@ -74,6 +90,9 @@ export function useLibraryCatalogState(libraryId: string) {
   const platformActive = selectedPlatformIds.length > 0;
   const totalCount = platformActive ? platformFiltered.length : (catalog.data?.pages[0]?.TotalRecordCount ?? 0);
   const searching = debouncedSearch.length >= 2;
+  // Un filtre posé — là seulement, « N résultats » dit autre chose que le total.
+  const isFiltered = searching || selectedGenres.length > 0 || selectedYear !== null
+    || statusFilter !== null || advancedActiveCount > 0 || platformActive;
 
   // Une bibliothèque de films ne suggère que des films (le moteur est global).
   const collectionType = useLibraries().data?.find((lib) => lib.Id === libraryId)?.CollectionType;
@@ -92,7 +111,7 @@ export function useLibraryCatalogState(libraryId: string) {
     sheet, setSheet,
     advancedFilters, advancedActiveCount,
     catalog,
-    platformActive, platformFiltered, totalCount,
+    platformActive, platformFiltered, totalCount, isFiltered,
     advanced: {
       onToggleGenre: (id: string) => setAdvancedFilters((f) => ({ ...f, genreIds: toggle(f.genreIds, id) })),
       onToggleStudio: (id: string) => setAdvancedFilters((f) => ({ ...f, studioIds: toggle(f.studioIds, id) })),
