@@ -1,8 +1,9 @@
 import { useRef, useCallback } from "react";
-import { View, Text, Pressable, Animated, PanResponder, Dimensions } from "react-native";
+import { View, Text, Pressable, Animated, PanResponder, useWindowDimensions } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import type { AppNotification } from "@tentacle-tv/api-client";
-import { typography, useTheme, withAlpha } from "@/theme";
+import { FONT_FAMILY, typography, useTheme, withAlpha } from "@/theme";
 
 let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
 try { Haptics = require("expo-haptics"); } catch {}
@@ -21,30 +22,38 @@ interface SwipeableNotifRowProps {
   onLongPress: () => void;
 }
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+/** Au-delà de cette part de la largeur, lâcher supprime. */
+const SWIPE_RATIO = 0.3;
 
 export function SwipeableNotifRow({
   notif, formattedTitle, formattedBody, formattedAgo, onPress, onDelete,
   selectionMode, isSelected, onToggleSelect, onLongPress,
 }: SwipeableNotifRowProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation("notifications");
   const translateX = useRef(new Animated.Value(0)).current;
+  // Le geste est créé UNE fois : il lit l'état courant par une référence.
+  // Il figeait la largeur du chargement (fausse après une rotation d'iPad) et
+  // le mode sélection du premier rendu (balayer supprimait en sélection).
+  const { width } = useWindowDimensions();
+  const live = useRef({ width, selectionMode, onDelete });
+  live.current = { width, selectionMode, onDelete };
 
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_evt, gestureState) => {
-        if (selectionMode) return false;
+        if (live.current.selectionMode) return false;
         return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 2 && Math.abs(gestureState.dx) > 10;
       },
       onPanResponderMove: (_evt, gestureState) => {
         if (gestureState.dx < 0) translateX.setValue(gestureState.dx);
       },
       onPanResponderRelease: (_evt, gestureState) => {
-        if (gestureState.dx < -SWIPE_THRESHOLD) {
+        const { width: w, onDelete: remove } = live.current;
+        if (gestureState.dx < -w * SWIPE_RATIO) {
           Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          Animated.timing(translateX, { toValue: -SCREEN_WIDTH, duration: 200, useNativeDriver: true }).start(() => {
-            onDelete();
+          Animated.timing(translateX, { toValue: -w, duration: 200, useNativeDriver: true }).start(() => {
+            remove();
           });
         } else {
           Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
@@ -80,6 +89,11 @@ export function SwipeableNotifRow({
           onPress={handlePress}
           onLongPress={onLongPress}
           delayLongPress={500}
+          accessibilityRole={selectionMode ? "checkbox" : "button"}
+          accessibilityState={selectionMode ? { checked: isSelected } : undefined}
+          // Le balayage n'existe pas pour VoiceOver : la suppression est une action.
+          accessibilityActions={selectionMode ? undefined : [{ name: "delete", label: t("delete") }]}
+          onAccessibilityAction={(e) => { if (e.nativeEvent.actionName === "delete") onDelete(); }}
           style={({ pressed }) => ({
             backgroundColor: colors.surface.s2,
             borderRadius: 12, padding: 16,
@@ -115,20 +129,22 @@ export function SwipeableNotifRow({
           <View style={{ flex: 1, marginLeft: notif.read && !selectionMode ? 18 : 0 }}>
             <Text
               style={{
-                ...typography.small,
-                fontWeight: notif.read ? "400" : "700",
-                color: notif.read ? colors.text.tertiary : colors.text.primary,
+                ...typography.caption,
+                fontSize: 14,
+                // La police (Inter) ne suit pas `fontWeight` : la graisse passe par la famille.
+                fontFamily: notif.read ? FONT_FAMILY.medium : FONT_FAMILY.bold,
+                color: notif.read ? colors.text.secondary : colors.text.primary,
               }}
-              numberOfLines={1}
+              numberOfLines={2}
             >
               {formattedTitle}
             </Text>
             {formattedBody && (
-              <Text style={{ fontSize: 12, color: colors.text.tertiary, marginTop: 4 }} numberOfLines={2}>
+              <Text style={{ fontSize: 13, lineHeight: 18, color: colors.text.tertiary, marginTop: 4 }} numberOfLines={2}>
                 {formattedBody}
               </Text>
             )}
-            <Text style={{ fontSize: 11, color: colors.text.quaternary, marginTop: 6 }}>
+            <Text style={{ fontSize: 12, color: colors.text.quaternary, marginTop: 6 }}>
               {formattedAgo}
             </Text>
           </View>
