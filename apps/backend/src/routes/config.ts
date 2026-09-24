@@ -2,10 +2,9 @@ import type { FastifyPluginAsync } from "fastify";
 import { getDirectStreamingConfig, getJellyfinUrl, getPublicUrl } from "../services/configStore";
 import { getMaxResumePct } from "../services/jellyfinSystemConfig";
 import { requireAuth } from "../middleware/auth";
-import { verifyDeviceToken, hashToken } from "../services/jwt";
-import { findValidSiblingToken } from "../services/deviceTokenHealth";
+import { verifyDeviceToken } from "../services/jwt";
+import { resolvePairedDeviceToken } from "../services/deviceTokenHealth";
 import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
-import { getPrisma } from "../services/db";
 import { BACKEND_VERSION } from "../services/version";
 
 const DEMO_MODE = process.env.DEMO_MODE === "true";
@@ -76,58 +75,17 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
     let tokenExpired = false;
 
     if (isPairedDevice && bearerToken) {
-      // Paired device: look up stored Jellyfin token from PairedDevice record
+      // Appareil jumelé : son jeton Jellyfin est en base — rendu seulement s'il
+      // appartient à SON compte (cf. `resolvePairedDeviceToken`), sinon un
+      // appareil frère du même compte prend le relais. `purged` sans
+      // remplaçant : la TV doit oublier le jeton qu'elle tenait.
       const payload = await verifyDeviceToken(bearerToken);
       if (payload) {
-        const prisma = getPrisma();
-        const device = await prisma.pairedDevice.findUnique({
-          where: { tokenHash: hashToken(bearerToken) },
-          select: { jellyfinAccessToken: true },
-        });
-        jellyfinToken = device?.jellyfinAccessToken ?? null;
-
-        // Validate the stored token against Jellyfin
-        if (jellyfinToken) {
-          const jellyfinUrl = getJellyfinUrl();
-          if (jellyfinUrl) {
-            try {
-              const check = await fetch(`${jellyfinUrl}/Users/Me`, {
-                headers: { "X-Emby-Token": jellyfinToken },
-                signal: AbortSignal.timeout(3000),
-              });
-              // Ne nettoyer le token QUE sur un 401/403 explicite (token réellement
-              // invalide). Un 5xx / 404 / erreur transitoire ne doit PAS effacer un
-              // token valide — sinon le device perd l'attribution de lecture pour de
-              // bon (il n'y a aucun moyen d'en reprovisionner un sans re-jumeler).
-              if (check.status === 401 || check.status === 403) {
-                request.log.warn("Paired device jellyfinAccessToken invalide (401/403) — clearing from DB");
-                tokenExpired = true;
-                jellyfinToken = null;
-                prisma.pairedDevice.update({
-                  where: { tokenHash: hashToken(bearerToken) },
-                  data: { jellyfinAccessToken: null },
-                }).catch(() => {});
-              }
-            } catch {
-              // Jellyfin unreachable — keep the token, don't mark as expired
-            }
-          }
-        }
-
-        if (!jellyfinToken) {
-          // Self-healing : pas de token propre (confirmé depuis une session
-          // JWT, ou purgé sur 401) → re-graver le dernier token Jellyfin
-          // VALIDE d'un autre appareil du même compte. La TV qui « redemande
-          // un token » après un 401 de stream repart ainsi sans re-jumelage.
-          const sibling = await findValidSiblingToken(payload.userId, {
-            excludeTokenHash: hashToken(bearerToken),
-            regraftTokenHash: hashToken(bearerToken),
-          });
-          if (sibling) {
-            jellyfinToken = sibling;
-            tokenExpired = false;
-            request.log.info("Paired device jellyfinAccessToken regreffé depuis un appareil frère");
-          }
+        const resolved = await resolvePairedDeviceToken(bearerToken, payload.userId);
+        jellyfinToken = resolved.token;
+        tokenExpired = resolved.purged;
+        if (resolved.purged) {
+          request.log.warn("Paired device jellyfinAccessToken invalide ou d'un autre compte — retiré, aucun appareil frère");
         }
       }
     } else {

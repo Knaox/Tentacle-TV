@@ -1,6 +1,7 @@
 import { getJellyfinApiKey } from "../../services/configStore";
-import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../../services/jwt";
-import { getPrisma, hasPrisma } from "../../services/db";
+import { verifyDeviceToken, verifyImpersonationToken } from "../../services/jwt";
+import { hasPrisma } from "../../services/db";
+import { resolvePairedDeviceToken } from "../../services/deviceTokenHealth";
 import { buildPlaystateRewrite, type PlaystateRewrite } from "./playstate";
 
 /** Resolve how to forward a request to Jellyfin :
@@ -40,30 +41,14 @@ export async function resolveSessionRouting(
   // progression sur le compte ADMIN, jamais sur l'utilisateur (état de visionnage
   // jamais mis à jour côté client jumelé). Seul le vrai token Jellyfin du device
   // attribue correctement → on le PRÉFÈRE désormais.
-  let deviceToken: string | null = null;
-  try {
-    const device = await getPrisma().pairedDevice.findUnique({
-      where: { tokenHash: hashToken(incomingToken) },
-      select: { jellyfinAccessToken: true },
-    });
-    deviceToken = device?.jellyfinAccessToken ?? null;
-  } catch { /* repli ci-dessous */ }
-
+  //
+  // Le jeton n'est retenu que s'il appartient au compte de l'appareil — un
+  // jeton étranger écrivait la progression sur l'autre compte, en silence
+  // (cf. `resolvePairedDeviceToken`). À défaut, celui d'un appareil frère du
+  // MÊME compte : plusieurs appareils d'un même utilisateur partagent alors ce
+  // token (OK pour l'état de visionnage ; sessions Jellyfin fusionnées).
+  const { token: deviceToken } = await resolvePairedDeviceToken(incomingToken, payload.userId);
   if (deviceToken) return { apiKey: deviceToken, usedDeviceToken: true };
-
-  // Ce device n'a pas (ou plus) de token Jellyfin propre — typiquement re-jumelé depuis une session
-  // web JWT (isJellyfinToken=false au pairing, cf. pair.ts) ou token purgé sur 401. On RÉUTILISE le
-  // dernier token Jellyfin VALIDE du MÊME utilisateur (un autre jumelage du même compte) → la
-  // progression est attribuée au BON compte au lieu de tomber sur la clé admin. Plusieurs appareils
-  // d'un même user partagent alors ce token (OK pour l'état de visionnage ; sessions Jellyfin fusionnées).
-  try {
-    const sibling = await getPrisma().pairedDevice.findFirst({
-      where: { jellyfinUserId: payload.userId, jellyfinAccessToken: { not: null } },
-      orderBy: { lastSeen: "desc" },
-      select: { jellyfinAccessToken: true },
-    });
-    if (sibling?.jellyfinAccessToken) return { apiKey: sibling.jellyfinAccessToken, usedDeviceToken: true };
-  } catch { /* repli ci-dessous */ }
 
   // Aucun token Jellyfin pour cet utilisateur : repli best-effort sur la réécriture user-scopée.
   // N'attribue correctement que sur d'anciens Jellyfin (où l'userId d'URL est honoré) ; sinon la
