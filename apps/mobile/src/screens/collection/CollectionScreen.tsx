@@ -22,6 +22,9 @@ import { ListHeader } from "@/components/watchlist/ListHeader";
 import { SelectableGridCard } from "@/components/watchlist/SelectableGridCard";
 import { useMultiSelect } from "@/hooks/useMultiSelect";
 import { CollectionFilterHeader } from "@/components/collection/CollectionFilterHeader";
+import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
+import { SearchAssistPane } from "@/components/search/SearchAssistPane";
+import { useSearchAssist } from "@/components/search/useSearchAssist";
 import { useCollectionFilters } from "./useCollectionFilters";
 import {
   spacing,
@@ -76,6 +79,7 @@ export function CollectionScreen({
   const client = useJellyfinClient();
   const { data: brut, isLoading, refetch, isRefetching } = query;
   const filters = useCollectionFilters(brut);
+  const assist = useSearchAssist(filters.input, filters.setInput);
   const data = filters.filtered;
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
@@ -169,10 +173,13 @@ export function CollectionScreen({
             prend le relais, et sur une collection vraiment vide, où il n'y
             aurait rien à trier. */}
         {!selection.active && !isLoading && (brut?.length ?? 0) > 0 && (
-          <CollectionFilterHeader filters={filters} />
+          <CollectionFilterHeader filters={filters} assist={assist} />
         )}
 
-        {isLoading ? (
+        {/* Pendant la frappe, les suggestions prennent la place de la grille. */}
+        {assist.open ? (
+          <SearchAssistPane assist={assist} />
+        ) : isLoading ? (
           <View style={styles.skeletonGrid}>{skeletons}</View>
         ) : count === 0 ? (
           <ScrollView
@@ -182,7 +189,11 @@ export function CollectionScreen({
           >
             {/* Une collection VIDE et une collection filtrée à zéro ne se
                 disent pas pareil : la première invite à ajouter, la seconde
-                propose de lever les filtres. */}
+                propose de lever les filtres — et une RECHERCHE sans réponse
+                propose la bonne orthographe et toute la recherche. */}
+            {totalBrut > 0 && filters.state.search.length >= 2 ? (
+              <ScopedSearchEmpty query={filters.state.search} onApply={filters.setInput} external={false} />
+            ) : (
             <View style={styles.emptyContainer}>
               <Feather name={titleIcon} size={48} color={colors.brand.light} style={{ opacity: 0.6 }} />
               <Text style={styles.emptyTitle}>
@@ -192,6 +203,7 @@ export function CollectionScreen({
                 {totalBrut > 0 ? t("noResultsHint") : emptyHint}
               </Text>
             </View>
+            )}
           </ScrollView>
         ) : (
           <FadeIn delay={80} style={{ flex: 1 }}>

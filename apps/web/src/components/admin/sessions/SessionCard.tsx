@@ -2,7 +2,16 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { Lock, MessageSquare, Pause, Play, Radio } from "lucide-react";
-import type { AdminSessionDto } from "@tentacle-tv/shared";
+import {
+  buttonStatus,
+  formatClock,
+  joinParts,
+  livePositionTicks,
+  sessionApp,
+  sessionDeviceName,
+  type AdminSessionDto,
+  type Feedback,
+} from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { easeOut } from "../../../theme/motion";
 import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
@@ -12,9 +21,6 @@ import { ConfirmButton } from "./ConfirmButton";
 import { PlaybackDetails } from "./PlaybackDetails";
 import { Poster } from "./Poster";
 import { SessionAppLabel } from "./SessionAppLabel";
-import { buttonStatus, type Feedback } from "./commandFeedback";
-import { sessionApp, sessionDeviceName } from "./sessionApp";
-import { formatClock, joinParts, livePositionTicks } from "./format";
 
 /**
  * Une lecture en cours : qui, sur quoi, où en est-on, comment le média

@@ -37,6 +37,7 @@ extension MpvEngine {
     do {
       try session.setCategory(.playback, mode: .moviePlayback, policy: .longFormVideo, options: [])
       try session.setActive(true)
+      Self.audioSessionHolders.insert(ObjectIdentifier(self))
     } catch {
       MpvLogger.shared.log("session audio : \(error.localizedDescription)", type: "Warn")
     }
@@ -44,9 +45,28 @@ extension MpvEngine {
 
   /// Rend la session sans changer de catégorie : le lecteur système qui peut
   /// nous succéder pose la sienne, et `.playback` reste le bon défaut d'une
-  /// application vidéo.
-  func tearDownAudioSession() {
-    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+  /// application vidéo. Thread principal.
+  ///
+  /// Seul le DERNIER moteur la rend : au passage d'un épisode au suivant, le
+  /// nouveau lecteur l'a déjà reprise quand l'ancien finit de s'éteindre. Et
+  /// iOS refuse de désactiver une session dont une sortie tourne encore
+  /// (`isBusy`) — quelques relances laissent la file audio se vider.
+  static func releaseAudioSession(holder: ObjectIdentifier, attempt: Int = 0) {
+    audioSessionHolders.remove(holder)
+    guard audioSessionHolders.isEmpty else { return }
+    do {
+      try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+      MpvLogger.shared.log("session audio rendue", type: "Info")
+    } catch {
+      let busy = (error as NSError).code == AVAudioSession.ErrorCode.isBusy.rawValue
+      if busy && attempt < deactivationRetries {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+          releaseAudioSession(holder: holder, attempt: attempt + 1)
+        }
+        return
+      }
+      MpvLogger.shared.log("session audio : désactivation refusée — \(error.localizedDescription)", type: "Warn")
+    }
   }
 
   @objc func handleAudioSessionInterruption(_ notification: Notification) {
@@ -96,6 +116,7 @@ extension MpvEngine {
 
   func setupRemoteCommands() {
     nowPlaying.setupRemoteCommands(
+      for: self,
       playHandler: { [weak self] in self?.play() },
       pauseHandler: { [weak self] in self?.pause() },
       toggleHandler: { [weak self] in

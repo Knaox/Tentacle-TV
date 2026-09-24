@@ -11,8 +11,19 @@
  * section — rien de ce qui n'est pas dans la bibliothèque n'apparaît.
  */
 
-import type { ActivePluginMeta } from "@tentacle-tv/plugins-api";
-import { foldForSearch } from "@tentacle-tv/shared";
+import { foldForSearch } from "./searchText";
+
+/**
+ * Ce que la recherche lit d'un plugin actif (`/api/plugins/active`) — la forme
+ * d'`ActivePluginMeta` (plugins-api), réduite à ses champs utiles : le web et
+ * le mobile y passent chacun leur liste, sans dépendre l'un de l'autre.
+ */
+export interface SearchablePlugin {
+  pluginId: string;
+  name: string;
+  configEnabled?: boolean;
+  search?: { path: string; person?: string; types?: readonly string[]; labels?: Record<string, string> };
+}
 
 export type ExternalKind = "movie" | "series";
 export type ExternalTone = "neutral" | "info" | "success" | "warning";
@@ -66,7 +77,7 @@ export function shortPluginName(name: string): string {
 
 /** Les plugins actifs, configurés, qui savent chercher. */
 export function searchProviders(
-  plugins: readonly ActivePluginMeta[],
+  plugins: readonly SearchablePlugin[],
   lang: string,
   fallbackLabel: string,
 ): SearchProvider[] {

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, CircleAlert, LoaderCircle, Pause, Play } from "lucide-react";
-import type { Feedback } from "./commandFeedback";
+import type { Feedback } from "@tentacle-tv/shared";
 
 /**
  * La ligne d'état d'une lecture — « En lecture », « En pause » — qui suit

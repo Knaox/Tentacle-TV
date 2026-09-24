@@ -1,5 +1,4 @@
-import type { AdminSessionDto } from "@tentacle-tv/shared";
-import { sessionApp, sessionAppText } from "./sessionApp";
+import { sessionApp, sessionAppText, type AdminSessionDto } from "@tentacle-tv/shared";
 
 /**
  * « Tentacle Desktop **1.22.0** · MacBook » — l'application, sa version et

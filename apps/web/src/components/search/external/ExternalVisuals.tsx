@@ -6,8 +6,7 @@
 
 import { memo } from "react";
 import { useBrokenImage } from "../../../hooks/useBrokenImage";
-import { initials } from "../searchLabels";
-import type { ExternalSearchItem, ExternalTone } from "./pluginSearch";
+import { initials, type ExternalSearchItem, type ExternalTone } from "@tentacle-tv/shared";
 
 const FALLBACK = "linear-gradient(160deg, rgba(var(--brand-rgb), 0.45) 0%, var(--fill-strong) 100%)";
 

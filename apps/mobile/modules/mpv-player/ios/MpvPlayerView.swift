@@ -52,6 +52,32 @@ final class MpvPlayerView: ExpoView {
     engine.shutdown()
   }
 
+  /// Hors fenêtre (écran quitté, recouvert, en cours de démontage), l'image
+  /// dans l'image automatique n'a plus de sens : elle s'ouvrait au passage sur
+  /// une notification, à partir d'une vue que personne ne regardait.
+  override func didMoveToWindow() {
+    super.didMoveToWindow()
+    engine.setOnScreen(window != nil)
+  }
+
+  /// Filet de sécurité : React a retiré la vue de l'arbre sans appeler
+  /// `release`. Une seconde de grâce couvre un simple reparentage ; au-delà,
+  /// le moteur s'éteint — sauf en image dans l'image, qui vit hors de la vue.
+  override func didMoveToSuperview() {
+    super.didMoveToSuperview()
+    guard superview == nil else { return }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+      guard let self, self.superview == nil, !self.engine.isPictureInPictureActive else { return }
+      self.engine.shutdown()
+    }
+  }
+
+  /// Quitter le lecteur : tout s'éteint, de façon déterministe — mpv, image
+  /// dans l'image, écran verrouillé, session audio. La vue ne se relance pas.
+  func release() {
+    engine.shutdown()
+  }
+
   // MARK: - Source et transport
 
   func load(_ config: MpvLoadConfig) {

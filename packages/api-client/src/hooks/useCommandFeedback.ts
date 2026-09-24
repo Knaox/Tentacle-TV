@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { accepted, settleAll, type CommandKind, type Feedback, type TargetState } from "./commandFeedback";
+import { accepted, settleAll, type CommandKind, type Feedback, type TargetState } from "@tentacle-tv/shared";
 
 /**
  * Les retours de commande de la page, par cible (session ou salle). Ils

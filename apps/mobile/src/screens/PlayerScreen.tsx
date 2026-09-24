@@ -1,25 +1,26 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, StatusBar } from "react-native";
 import { PLAYER } from "@/theme";
-import { TICKS_PER_SECOND, itemTrackChoiceFromStreams } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { useMediaItem, useUserId } from "@tentacle-tv/api-client";
+import { useMediaItem } from "@tentacle-tv/api-client";
 import { usePlayerPlayback, startTicksOf } from "../hooks/usePlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { usePlayerBackground } from "../hooks/usePlayerBackground";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
-import { useRememberLocalTracks } from "../hooks/offline/useRememberLocalTracks";
+import { usePlayerAirPlay } from "../hooks/usePlayerAirPlay";
+import { usePlaybackStarted } from "../hooks/usePlaybackStarted";
+import { usePlayerLoadingWatchdog } from "../hooks/usePlayerLoadingWatchdog";
+import { usePlayerTracks } from "../hooks/usePlayerTracks";
+import { usePlayerRemote } from "../session/usePlayerRemote";
 import { useEngineSettings } from "../player/engine/engineSettings";
 import { usePlayerEngine } from "../player/engine/usePlayerEngine";
-import { useAirPlayRestoreSeek, useAirPlayRouteWatch } from "../player/engine/useAirPlayRoute";
-import { isAirPlayRouteActive } from "../../modules/mpv-player";
 import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import type { PlayerEngineHandle } from "../player/engine/types";
-import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { AutoCapBadge } from "../components/player/AutoCapBadge";
-import { PlayerLoadingView } from "../components/player/PlayerLoadingView";
+import { PlayerLoadingScreen } from "../components/player/loading/PlayerLoadingScreen";
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
 import { PlayerErrorView } from "../components/player/PlayerErrorView";
 
@@ -38,16 +39,17 @@ export function PlayerScreen({ itemId }: Props) {
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
-  const [isBuffering, setIsBuffering] = useState(true);
+  // Tampon tenu à jour, plus lu ici : l'écran de chargement couvre l'ouverture.
+  const [, setIsBuffering] = useState(true);
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
+  const started = usePlaybackStarted(videoReady, currentTime);
   const resumeApplied = useRef(false);
   const retryCount = useRef(0);
   const retryingRef = useRef(false);
   const hasEverPlayed = useRef(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [playerDetail, setPlayerDetail] = useState<string | null>(null);
-  const [isAirPlaying, setIsAirPlaying] = useState(false);
   /** Le flux est allé au bout — donné à l'arbitre, qui en tire l'écran de fin. */
   const [ended, setEnded] = useState(false);
   /** Un scrub est en cours — l'arbitre suspend décomptes et surcouches. */
@@ -104,23 +106,11 @@ export function PlayerScreen({ itemId }: Props) {
     pb.retry({ engine: "native" });
   }, [eng, pb.retry]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Android loading timeout — if onLoad hasn't fired after 20s, show error
-  useEffect(() => {
-    if (!pb.streamUrl || videoReady) return;
-    const timer = setTimeout(() => {
-      if (!videoReady && !playerError && !retryingRef.current) {
-        console.log("[Tentacle:Player] loading timeout (20s) — URL:", pb.streamUrl?.slice(0, 200));
-        if (retryCount.current < 1) {
-          retryCount.current++;
-          retryingRef.current = true;
-          retryTranscoded();
-        } else {
-          setPlayerError(t("playbackError"));
-        }
-      }
-    }, 20_000);
-    return () => clearTimeout(timer);
-  }, [pb.streamUrl, videoReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Rien de chargé en 20 s : relance transcodée, puis l'écran d'erreur.
+  usePlayerLoadingWatchdog({
+    streamUrl: pb.streamUrl, videoReady, playerError, retryCount, retryingRef, retryTranscoded,
+    fail: () => setPlayerError(t("playbackError")),
+  });
 
   // Auto-apply language preferences
   usePlayerPreferences({
@@ -131,28 +121,9 @@ export function PlayerScreen({ itemId }: Props) {
     onSubtitleResolved: (idx) => pb.changeSubtitle(idx),
   });
 
-  // Un changement EXPLICITE de piste est mémorisé pour ce contenu (miroir
-  // local, puis serveur) — des langues, jamais des index. La résolution
+  // Les choix EXPLICITES de piste, mémorisés pour ce contenu ; la résolution
   // automatique ci-dessus ne compte pas comme un choix.
-  const userId = useUserId();
-  const [trackOverride, setTrackOverride] = useState(false);
-  const handleSelectAudio = useCallback((idx: number) => { setTrackOverride(true); pb.changeAudio(idx); }, [pb.changeAudio]);
-  const handleSelectSubtitle = useCallback((idx: number) => { setTrackOverride(true); pb.changeSubtitle(idx); }, [pb.changeSubtitle]);
-  const trackChoice = useMemo(
-    () => (trackOverride ? itemTrackChoiceFromStreams(pb.streams, pb.audioIndex, pb.subtitleIndex) : null),
-    [trackOverride, pb.streams, pb.audioIndex, pb.subtitleIndex],
-  );
-  useRememberLocalTracks({ userId, itemId, choice: trackChoice });
-
-  // Audio/subtitle track lists for the modal
-  const audioTracks = useMemo(() =>
-    pb.streams.filter((s) => s.Type === "Audio").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
-    [pb.streams],
-  );
-  const subtitleTracks = useMemo(() =>
-    pb.streams.filter((s) => s.Type === "Subtitle").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
-    [pb.streams],
-  );
+  const { handleSelectAudio, handleSelectSubtitle, audioTracks, subtitleTracks } = usePlayerTracks(itemId, pb);
 
   // Une lecture directe a échoué : l'autre moteur, s'il est plausible, avec le
   // profil de CE moteur et la position courante — sans transcodage.
@@ -164,34 +135,10 @@ export function PlayerScreen({ itemId }: Props) {
     return true;
   }, [eng, pb.fetchPlaybackInfo, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // AirPlay, dans les deux sens. Apparu pendant une lecture par le lecteur
-  // avancé (qui ne diffuse pas) : le lecteur système prend le relais à la même
-  // position, avec SON profil — remux ou transcodage serveur acceptés, c'est le
-  // cas nécessaire. Éteint : le lecteur avancé reprend à la même seconde, là où
-  // le système ne le remplaçait que pour AirPlay. Une négociation par bascule.
-  const onAirPlayRoute = useCallback((active: boolean) => {
-    setIsAirPlaying(active);
-    const next = eng.setAirPlayRoute(active);
-    if (next === pb.engine) return;
-    console.log("[Tentacle:Player] AirPlay", active ? "actif" : "éteint", "— bascule vers", next, "à", Math.round(pb.positionRef.current), "s");
-    retryCount.current = 0;
-    pb.fetchPlaybackInfo({ engine: next, startTimeTicks: startTicksOf(pb.positionRef.current) });
-  }, [eng, pb.engine, pb.fetchPlaybackInfo, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Le lecteur système annonce l'état AirPlay de son AVPlayer — qui passe par
-  // `false` puis `true` à chaque remplacement d'item. Le front descendant se
-  // vérifie contre la route audio, seule vérité une fois la vue mpv démontée.
-  const restoreAfterAirPlay = useAirPlayRestoreSeek({
-    engineRef, positionRef: pb.positionRef, streamOffset: pb.streamOffset, videoReady,
+  // AirPlay, dans les deux sens (voir le crochet).
+  const { isAirPlaying, onAirPlayRoute, onExternalPlaybackChange } = usePlayerAirPlay({
+    eng, pb, engineRef, videoReady, retryCount,
   });
-  const onExternalPlaybackChange = useCallback((active: boolean) => {
-    restoreAfterAirPlay(active);
-    onAirPlayRoute(active || isAirPlayRouteActive());
-  }, [restoreAfterAirPlay, onAirPlayRoute]);
-  // Filet : si l'AVPlayer annonce la fin d'AirPlay avant que la route audio
-  // ne bascule, personne ne rappellerait — la route est relue chaque seconde
-  // tant que le lecteur système diffuse.
-  useAirPlayRouteWatch(isAirPlaying && pb.engine === "native", onAirPlayRoute);
 
   // Image dans l'image : l'habillage n'a rien à faire dans la petite fenêtre.
   const onPipChange = useCallback((active: boolean) => {
@@ -224,6 +171,14 @@ export function PlayerScreen({ itemId }: Props) {
   // flux au retour. iOS ne bouge pas — la lecture en fond y est voulue.
   usePlayerBackground(pb);
 
+  // La télécommande de Jellyfin — tableau de bord Tentacle ou Jellyfin.
+  usePlayerRemote({
+    stop: leavePlayer, next: handleNextEpisode, previous: handlePrevEpisode,
+    pause: () => setPaused(true), play: () => setPaused(false), isPaused: () => paused,
+    seekTo: handleSeek, positionSeconds: () => pb.positionRef.current,
+    audio: handleSelectAudio, subtitle: (index) => handleSelectSubtitle(index ?? -1),
+  });
+
   // Développement : le lecteur pilotable depuis l'inspecteur (voir le crochet).
   usePlayerDevHook(useMemo(() => ({
     engine: pb.engine, audioIndex: pb.audioIndex, subtitleIndex: pb.subtitleIndex, isDirectPlay: pb.isDirectPlay,
@@ -231,7 +186,8 @@ export function PlayerScreen({ itemId }: Props) {
     simulateAirPlay: onAirPlayRoute,
     changeQuality: (key) => pb.changeQuality(key as Parameters<typeof pb.changeQuality>[0]),
     technicalInfo: () => engineRef.current?.getTechnicalInfo?.() ?? Promise.resolve({}),
-  }), [pb.engine, pb.audioIndex, pb.subtitleIndex, pb.isDirectPlay, pb.changeQuality, handleSelectAudio, handleSelectSubtitle, handleSeek, onAirPlayRoute]));
+    leave: leavePlayer,
+  }), [pb.engine, pb.audioIndex, pb.subtitleIndex, pb.isDirectPlay, pb.changeQuality, handleSelectAudio, handleSelectSubtitle, handleSeek, onAirPlayRoute, leavePlayer]));
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
 
@@ -253,11 +209,11 @@ export function PlayerScreen({ itemId }: Props) {
     );
   }
 
-  // Loading: no stream URL yet
+  // Pas encore de flux : l'écran de chargement, Retour compris.
   if (!pb.streamUrl) {
     return (
       <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
-        <PlayerLoadingView onCancel={leavePlayer} />
+        <PlayerLoadingScreen item={pb.item ?? routedItem} onCancel={leavePlayer} />
       </View>
     );
   }
@@ -283,7 +239,7 @@ export function PlayerScreen({ itemId }: Props) {
       currentTime={currentTime}
       subtitleVttUrl={pb.subtitleVttUrl}
       isAirPlaying={isAirPlaying}
-      showLoading={isBuffering && !hasEverPlayed.current}
+      showLoading={false}
       overlayVisible={overlayVisible}
       reloadToken={String(pb.retryNonce)}
       subtitleScale={engineSettings.subtitleScale}
@@ -334,6 +290,10 @@ export function PlayerScreen({ itemId }: Props) {
 
       {/* Badge éphémère « Qualité réduite » — le message temporaire du cap. */}
       <AutoCapBadge active={pb.autoCapActive} />
+
+      {/* Jusqu'à ce que la lecture AVANCE : l'écran de chargement, au-dessus
+          des contrôles, puis un fondu. */}
+      {!started && <PlayerLoadingScreen item={pb.item ?? routedItem} onCancel={leavePlayer} />}
     </PlayerVideoSurface>
   );
 }

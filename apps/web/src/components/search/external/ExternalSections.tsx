@@ -8,7 +8,7 @@
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ExternalResultsSection, ExternalResultsSkeleton } from "./ExternalResultsSection";
-import { withoutLibraryTwins, type ExternalKind } from "./pluginSearch";
+import { withoutLibraryTwins, type ExternalKind } from "@tentacle-tv/shared";
 import type { ExternalSearchState } from "./useExternalSearch";
 
 export const ExternalSections = memo(function ExternalSections({ external, library, kind = null, limit, className }: {

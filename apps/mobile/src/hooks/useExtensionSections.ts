@@ -24,14 +24,25 @@ export interface ExtensionSection {
   label: string;
 }
 
+/** Un plugin et ses pages mobiles, tel que le sous-menu des extensions le présente. */
+export interface ExtensionPluginGroup {
+  pluginId: string;
+  /** Nom court (« Vigie »), jamais la devise du manifeste. */
+  name: string;
+  icon: FeatherName;
+  sections: ExtensionSection[];
+}
+
 export interface ExtensionTab {
   /** Faux sans aucune section : l'onglet se masque (`href: null`). */
   visible: boolean;
   label: string;
   icon: FeatherName;
-  /** Plusieurs plugins publient des pages : libellé générique, sections groupées. */
+  /** Plusieurs plugins publient des pages : l'onglet ouvre le sous-menu des plugins. */
   multiPlugin: boolean;
   sections: ExtensionSection[];
+  /** Les plugins, dans l'ordre des manifestes. */
+  plugins: ExtensionPluginGroup[];
 }
 
 // Icônes unicode des anciens manifestes → noms Feather.
@@ -81,13 +92,40 @@ export function buildExtensionSections(plugins: ActivePlugin[] | undefined, lang
 
 type NavT = (key: "extensions") => string;
 
+/** Les sections rangées par plugin, dans l'ordre de leur première apparition. */
+export function groupSectionsByPlugin(
+  plugins: ActivePlugin[] | undefined,
+  sections: ExtensionSection[],
+): ExtensionPluginGroup[] {
+  const groups = new Map<string, ExtensionPluginGroup>();
+  for (const section of sections) {
+    let group = groups.get(section.pluginId);
+    if (!group) {
+      const plugin = plugins?.find((p) => p.pluginId === section.pluginId);
+      group = {
+        pluginId: section.pluginId,
+        name: shortPluginName(section.pluginName),
+        icon: resolveIcon(plugin?.tab?.icon, section.icon),
+        sections: [],
+      };
+      groups.set(section.pluginId, group);
+    }
+    group.sections.push(section);
+  }
+  return [...groups.values()];
+}
+
 /**
- * Identité de l'onglet. Le libellé est FIXE, « Extensions » : un nom de page
- * (« Demandes ») laissait croire que l'onglet ne contenait qu'elle, alors
- * qu'il regroupe toutes les pages des plugins — c'est le bandeau qui nomme le
- * plugin devant ses pages. Le champ `tab.labels` du manifeste reste accepté
- * par le serveur, mais n'est plus consommé ici pour la même raison. Un seul
- * plugin peut encore choisir son icône (`tab.icon`) ; plusieurs → la grille.
+ * Identité de l'onglet.
+ *
+ * - UN plugin : l'onglet porte SON nom et son icône (« Vigie ») et y mène
+ *   directement — il n'y a rien à choisir, un nom générique n'aurait fait
+ *   qu'éloigner l'utilisateur de ce qu'il cherche.
+ * - PLUSIEURS : « Extensions », la grille, et l'appui ouvre le sous-menu des
+ *   plugins (`ExtensionPicker`) ; chaque plugin garde ses pages en bandeau.
+ *
+ * Le nom vient du plugin (sa partie courte), jamais d'une page : un nom de page
+ * (« Demandes ») laissait croire que l'onglet ne contenait qu'elle.
  */
 export function resolveExtensionTab(
   plugins: ActivePlugin[] | undefined,
@@ -95,15 +133,19 @@ export function resolveExtensionTab(
   t: NavT,
 ): ExtensionTab {
   const visible = sections.length > 0;
-  const pluginIds = new Set(sections.map((s) => s.pluginId));
-  const label = t("extensions");
-  if (pluginIds.size > 1) {
-    return { visible, label, icon: DEFAULT_TAB_ICON, multiPlugin: true, sections };
+  const groups = groupSectionsByPlugin(plugins, sections);
+  if (groups.length > 1) {
+    return { visible, label: t("extensions"), icon: DEFAULT_TAB_ICON, multiPlugin: true, sections, plugins: groups };
   }
-  const first = sections[0];
-  const plugin = first ? plugins?.find((p) => p.pluginId === first.pluginId) : undefined;
-  const icon = resolveIcon(plugin?.tab?.icon, DEFAULT_TAB_ICON);
-  return { visible, label, icon, multiPlugin: false, sections };
+  const only = groups[0];
+  return {
+    visible,
+    label: only ? only.name : t("extensions"),
+    icon: only ? only.icon : DEFAULT_TAB_ICON,
+    multiPlugin: false,
+    sections,
+    plugins: groups,
+  };
 }
 
 function useInterfaceLang(): string {

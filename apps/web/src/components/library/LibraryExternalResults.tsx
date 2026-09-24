@@ -9,10 +9,9 @@
  */
 
 import { useMemo } from "react";
-import type { MediaItem } from "@tentacle-tv/shared";
+import type { ExternalKind, MediaItem } from "@tentacle-tv/shared";
 import { ExternalSections } from "../search/external/ExternalSections";
 import { useExternalSearch } from "../search/external/useExternalSearch";
-import type { ExternalKind } from "../search/external/pluginSearch";
 
 function kindOf(collectionType: string | undefined): ExternalKind | null {
   if (collectionType === "movies") return "movie";

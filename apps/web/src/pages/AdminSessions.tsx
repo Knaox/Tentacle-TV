@@ -2,7 +2,13 @@ import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
 import { MonitorPlay } from "lucide-react";
-import type { AdminPlaystateCommand, AdminSessionDto, AdminWatchGroupDto } from "@tentacle-tv/shared";
+import type {
+  AdminPlaystateCommand,
+  AdminSessionDto,
+  AdminWatchGroupDto,
+  CommandKind,
+  TargetState,
+} from "@tentacle-tv/shared";
 import { useToast } from "../contexts/ToastContext";
 import { useAdminSessionActions, useAdminSessions, useNowTick, type MessageInput } from "../hooks/useAdminSessions";
 import { SessionCard, type SessionCardActions } from "../components/admin/sessions/SessionCard";
@@ -11,8 +17,7 @@ import { WatchGroupCard } from "../components/admin/sessions/WatchGroupCard";
 import { MessageComposer } from "../components/admin/sessions/MessageComposer";
 import { SessionsSummary } from "../components/admin/sessions/SessionsSummary";
 import { GroupRecipient, SessionRecipient } from "../components/admin/sessions/ComposerRecipient";
-import { useCommandFeedback } from "../components/admin/sessions/useCommandFeedback";
-import type { CommandKind, TargetState } from "../components/admin/sessions/commandFeedback";
+import { useCommandFeedback } from "@tentacle-tv/api-client";
 import { cls } from "./adminUtils";
 
 /**

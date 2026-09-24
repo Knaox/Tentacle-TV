@@ -12,9 +12,8 @@
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMediaItem, useSearchBrowse, type SearchBrowseTarget } from "@tentacle-tv/api-client";
-import type { SearchMediaItem } from "@tentacle-tv/shared";
+import { personMeta, type SearchMediaItem } from "@tentacle-tv/shared";
 import { PersonAvatar } from "../SearchThumbs";
-import { personMeta } from "../searchLabels";
 import { ExternalSections } from "../external/ExternalSections";
 import { useExternalFilmography } from "../external/useExternalFilmography";
 import { PosterGrid } from "./SearchSections";
