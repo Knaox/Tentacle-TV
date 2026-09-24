@@ -17,6 +17,13 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Le tableau de bord de Jellyfin pilote l'application** : pause, reprise, arrêt, pistes. Les messages de l'administrateur s'affichent même en pleine lecture, avec leur compte à rebours
 - **Administrateurs : « Sessions en direct »** dans le profil : qui regarde quoi et comment le média arrive (lecture directe, remux, transcodage audio ou transcodage, et pourquoi). Pause, arrêt et message, pour une personne ou tout un groupe Watch Together, chaque commande suivie jusqu'à son effet
 - **Quitter la lecture arrête vraiment tout** : toucher ensuite une notification ne fait plus réapparaître le lecteur, et l'app ne se croit plus en lecture en arrière-plan
+- **L'accueil à l'affiche** : sur téléphone, la carte à la une montre l'affiche du titre, cadrée en entier, et le liseré clair de ses bords a disparu
+- **Un en-tête allégé** : Ma liste, Mes favoris et Sur cet appareil se retrouvent sous « Mes contenus », à côté de la recherche et des notifications
+- **Trier et filtrer, en un seul endroit** : dans les bibliothèques, Ma liste et Mes favoris, une seule rangée au-dessus des titres, et tout le reste — tri, visionnage, genres, années — dans un panneau ; les filtres posés se retirent d'un toucher. Le tri et les genres des filtres avancés agissent enfin sur la grille
+- **Revenir en haut** d'une bibliothèque d'un toucher, après un long défilement
+- **Des notifications plus lisibles**, avec « Sélectionner » et « Tout marquer lu » à portée de doigt
+- **iPad** : en paysage, le menu du rail n'est plus caché sous l'en-tête
+- **Profil** : les réglages regroupés, les appareils ensemble
 - Nécessite un serveur 1.19.0 ou plus
 
 ### EN
@@ -28,24 +35,33 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Jellyfin's dashboard controls the app**: pause, resume, stop, tracks. Administrator messages show up even during playback, with their countdown
 - **Administrators: "Live sessions"** in your profile: who is watching what and how the media gets there (direct play, remux, audio transcode or transcoding, and why). Pause, stop and message, for one person or a whole Watch Together group, each command tracked until it takes effect
 - **Leaving playback really stops everything**: tapping a notification afterwards no longer brings the player back, and the app no longer thinks it is still playing in the background
+- **A poster-first home**: on phones, the featured card shows the title's poster, framed in full, and the light line along its edges is gone
+- **A lighter header**: My List, My Favorites and On this device now sit under "My content", next to search and notifications
+- **Sort and filter in one place**: in libraries, My List and My Favorites, a single row above the titles and everything else — sort, watch status, genres, years — in one panel; active filters are removed with one tap. Sorting and genres from the advanced filters finally apply to the grid
+- **Back to top** of a library in one tap, after a long scroll
+- **Clearer notifications**, with "Select" and "Mark all as read" within reach
+- **iPad**: in landscape, the rail menu is no longer hidden under the header
+- **Profile**: settings regrouped, devices together
 - Requires a server on 1.19.0 or newer
 
 ## [1.8.1]
 ### FR
 - **Une recherche qui propose** : le moteur de Tentacle à chaque lettre, fautes corrigées, suggestions et meilleurs résultats dans toutes les barres
-- **Bibliothèque** : Films, Séries, Animés d'un geste
-- **La filmographie d'un acteur** d'un toucher sur la fiche
+- **Bibliothèque** : Films, Séries, Animés d'un geste, tri et filtres réunis
+- **L'accueil à l'affiche**, un en-tête allégé
+- **La filmographie d'un acteur** d'un toucher
 - **Chargement plein écran**, qu'on peut quitter
-- **Les messages de l'administrateur** s'affichent, même en lecture
+- **Messages de l'administrateur**, même en lecture
 - **Administrateurs : « Sessions en direct »**
 - Nécessite un serveur 1.19.0 ou plus
 
 ### EN
 - **Search that suggests**: Tentacle's engine with every letter, typos fixed, suggestions and top results in every bar
-- **Library**: Movies, Shows, Anime in one swipe
-- **An actor's filmography** in one tap from the details page
+- **Library**: Movies, Shows, Anime in one swipe, sorting and filters together
+- **A poster-first home**, a lighter header
+- **An actor's filmography** in one tap
 - **Full-screen loading** you can leave
-- **Administrator messages** show up, even during playback
+- **Administrator messages**, even during playback
 - **Administrators: "Live sessions"**
 - Requires a server on 1.19.0 or newer
 
