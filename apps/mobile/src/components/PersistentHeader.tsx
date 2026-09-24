@@ -1,4 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -8,6 +9,7 @@ import { TentacleLogo } from "./TentacleLogo";
 import { GlassSurface } from "@/components/ui";
 import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
 import { ChromeVeilLayer } from "@/components/navigation/ChromeVeilLayer";
+import { HeaderContentMenu } from "@/components/header/HeaderContentMenu";
 import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { DataSaverPill } from "@/offline/DataSaverPill";
 import { OnDeviceHeaderButton } from "@/offline/entry/OnDeviceHeaderButton";
@@ -42,7 +44,9 @@ export function useHeaderHeight(): number {
  * SOMBRE, verre tel quel (icônes claires déjà lisibles).
  */
 export function PersistentHeader() {
+  const { t } = useTranslation("nav");
   const insets = useSafeAreaInsets();
+  const headerH = useHeaderHeight();
   const router = useRouter();
   const theme = useTheme();
   const { colors } = theme;
@@ -90,22 +94,19 @@ export function PersistentHeader() {
         </View>
 
         {/* Hors ligne, les actions serveur (listes, recherche, cloche) n'ont
-            rien à ouvrir : elles disparaissent ; seule la gestion locale reste. */}
+            rien à ouvrir : elles disparaissent ; seule la gestion locale reste.
+            En ligne, trois actions espacées : « Mes contenus » (Ma liste, Mes
+            favoris, Sur cet appareil), la recherche et la cloche — cinq icônes
+            serrées sur un iPhone de 375 pt ne laissaient que 36 pt de cible. */}
         {localNav ? (
           <View style={styles.actions}>
             <OnDeviceHeaderButton />
           </View>
         ) : (
           <View style={styles.actions}>
-            <OnDeviceHeaderButton />
-            <Pressable onPress={() => router.push("/watchlist")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Watchlist">
-              <Feather name="bookmark" size={20} color={colors.text.primary} />
-            </Pressable>
-            <Pressable onPress={() => router.push("/favorites")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Favorites">
-              <Feather name="heart" size={20} color={colors.text.primary} />
-            </Pressable>
-            <Pressable onPress={() => router.push("/search")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Search">
-              <Feather name="search" size={20} color={colors.text.primary} />
+            <HeaderContentMenu anchorTop={headerH} />
+            <Pressable onPress={() => router.push("/search")} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("search")}>
+              <Feather name="search" size={21} color={colors.text.primary} />
             </Pressable>
             <NotificationBell />
           </View>
@@ -131,6 +132,6 @@ const styles = StyleSheet.create({
   },
   logoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   title: { fontSize: 22, fontWeight: "800" },
-  actions: { flexDirection: "row", alignItems: "center", gap: 16 },
+  actions: { flexDirection: "row", alignItems: "center", gap: 22 },
   hairline: { height: StyleSheet.hairlineWidth, width: "100%" },
 });
