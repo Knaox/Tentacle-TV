@@ -3,7 +3,8 @@ import { View, Pressable, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { spacing, typography, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
-const STATUS_OPTIONS = [
+/** Les états de visionnage filtrables — partagés avec la feuille des collections. */
+export const STATUS_OPTIONS = [
   { labelKey: "allStatus", value: null },
   { labelKey: "unwatched", value: "IsUnplayed" },
   { labelKey: "inProgress", value: "IsResumable" },
