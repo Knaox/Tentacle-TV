@@ -108,7 +108,14 @@ function visibleAncestors(
   // transparente, et remonter plus haut ne rencontrerait que les calques de
   // transition de la page.
   const bound = element.closest(STRUCTURE_BOUNDS);
-  if (!bound) return true;
+  // Une CARTE est sa propre borne : il n'y a rien entre elle et son bord. Sans
+  // ce cas, `closest` la désignait elle-même, la remontée ne rencontrait jamais
+  // sa borne et filait jusqu'au `<body>` — ce que ce commentaire dit avoir
+  // corrigé. Une rangée qui entre en fondu (`RowTv`, opacité nulle tant que
+  // l'observateur ne l'a pas vue) rendait ses cartes inatteignables : touche
+  // maintenue, le focus SAUTAIT la rangée suivante, pas encore révélée, pour
+  // la rangée d'après.
+  if (!bound || bound === element) return true;
 
   let parent = element.parentElement;
   while (parent) {
