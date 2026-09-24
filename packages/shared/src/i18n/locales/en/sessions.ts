@@ -30,6 +30,10 @@ export default {
   episodeCode: "S{{season}}:E{{episode}}",
   lastActive: "Active {{time}}",
   noRemote: "This device cannot be controlled remotely.",
+  // « Active 3 min ago » — Hermes n'a pas Intl.RelativeTimeFormat.
+  agoNow: "just now",
+  agoMinutes: "{{count}} min ago",
+  agoHours: "{{count}} h ago",
 
   // How the media reaches the device, from the lightest to the heaviest for the server.
   directPlay: "Direct play",
