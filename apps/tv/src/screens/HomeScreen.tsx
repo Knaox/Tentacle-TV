@@ -31,6 +31,7 @@ import { useHomeFocusRestore } from "../hooks/useHomeFocusRestore";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
+import { Spacing } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -109,7 +110,7 @@ function HomeScreenInner({ navigation }: Props) {
   const scrollToRow = useCallback((key: string) => {
     const y = rowYMap.current.get(key);
     if (y != null) {
-      scrollViewRef.current?.scrollTo({ y: Math.max(0, rowsWrapperY.current + y - 80), animated: true });
+      scrollViewRef.current?.scrollTo({ y: Math.max(0, rowsWrapperY.current + y - Spacing.rowScrollTop), animated: true });
     }
   }, []);
 
