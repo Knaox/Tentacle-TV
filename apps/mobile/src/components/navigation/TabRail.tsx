@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import Animated from "react-native-reanimated";
 import { spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { useHeaderHeight } from "@/components/PersistentHeader";
+import { ChromeVeilLayer } from "./ChromeVeilLayer";
 import { TabIndicator } from "./TabIndicator";
 import { useSlidingIndicator } from "./useSlidingIndicator";
 import { useTabPressFeedback } from "./useTabPressFeedback";
@@ -76,6 +77,7 @@ export function TabRail({ state, descriptors, navigation, onOpenMenu }: TabRailP
           );
         })}
       </View>
+      <ChromeVeilLayer />
     </View>
   );
 }

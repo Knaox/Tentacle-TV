@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { useFocusEffect } from "expo-router";
 import {
   useAnimatedScrollHandler, useSharedValue, withTiming, type SharedValue,
@@ -34,10 +34,51 @@ interface ScrollChrome {
 
 const ScrollChromeContext = createContext<ScrollChrome | null>(null);
 
+/**
+ * Le voile du chrome : une page d'extension affiche une surface modale (sa
+ * fiche, une feuille de filtres). La barre d'onglets s'efface et l'en-tête
+ * s'assombrit — la transposition du voile web (`hostChromeVeil`). Un toucher
+ * sur le voile ferme la surface du dessus : c'est `dismiss`, fourni par la
+ * page qui l'a levé.
+ */
+export interface ChromeVeil {
+  /** 0 → 1, lu sur le fil UI par la barre, l'en-tête et le rail. */
+  progress: SharedValue<number>;
+  active: boolean;
+  dismiss: () => void;
+  /** Lève le voile avec son action de fermeture, ou le retire (`null`). */
+  set: (dismiss: (() => void) | null) => void;
+}
+
+const VEIL_MS = 220;
+
+const ChromeVeilContext = createContext<ChromeVeil | null>(null);
+
 export function ScrollChromeProvider({ children }: { children: ReactNode }) {
   const collapsed = useSharedValue(0);
   const value = useMemo(() => ({ collapsed }), [collapsed]);
-  return <ScrollChromeContext.Provider value={value}>{children}</ScrollChromeContext.Provider>;
+
+  const progress = useSharedValue(0);
+  const [active, setActive] = useState(false);
+  const dismissRef = useRef<(() => void) | null>(null);
+  const set = useCallback((dismiss: (() => void) | null) => {
+    dismissRef.current = dismiss;
+    setActive(dismiss !== null);
+    progress.value = withTiming(dismiss !== null ? 1 : 0, { duration: motion.respectReducedMotion(VEIL_MS) });
+  }, [progress]);
+  const dismiss = useCallback(() => { dismissRef.current?.(); }, []);
+  const veil = useMemo(() => ({ progress, active, dismiss, set }), [progress, active, dismiss, set]);
+
+  return (
+    <ScrollChromeContext.Provider value={value}>
+      <ChromeVeilContext.Provider value={veil}>{children}</ChromeVeilContext.Provider>
+    </ScrollChromeContext.Provider>
+  );
+}
+
+/** Le voile du chrome ; `null` hors provider (écran empilé, hors onglets). */
+export function useChromeVeil(): ChromeVeil | null {
+  return useContext(ChromeVeilContext);
 }
 
 /** La valeur 0..1 à consommer par le chrome ; `null` hors provider. */

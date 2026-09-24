@@ -7,6 +7,7 @@ import { NotificationBell } from "./NotificationBell";
 import { TentacleLogo } from "./TentacleLogo";
 import { GlassSurface } from "@/components/ui";
 import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
+import { ChromeVeilLayer } from "@/components/navigation/ChromeVeilLayer";
 import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { DataSaverPill } from "@/offline/DataSaverPill";
 import { OnDeviceHeaderButton } from "@/offline/entry/OnDeviceHeaderButton";
@@ -112,6 +113,9 @@ export function PersistentHeader() {
       </View>
       <View style={[styles.hairline, { backgroundColor: withAlpha(colors.brand.violet, 0.12, colors.brand.soft) }]} />
     </GlassSurface>
+    {/* Une extension affiche un panneau : l'en-tête s'assombrit, et le toucher
+        ferme le panneau au lieu d'ouvrir une autre page par-dessus. */}
+    <ChromeVeilLayer />
     </Animated.View>
   );
 }

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { useAnimatedStyle, useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { GlassSurface } from "@/components/ui";
 import { useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { useScrollChromeValue } from "./scrollChrome";
+import { useChromeVeil, useScrollChromeValue } from "./scrollChrome";
 import { GlassTabItem, LABEL_GAP, LABEL_LINE_HEIGHT, PILL_H, PILL_W } from "./GlassTabItem";
 import { TabIndicator } from "./TabIndicator";
 import { useSlidingIndicator } from "./useSlidingIndicator";
@@ -59,12 +59,17 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   // (`useGlassTabBarHeight`, contrat des WebViews plugins) ne bougent PAS.
   const fallback = useSharedValue(0);
   const collapsed = useScrollChromeValue() ?? fallback;
+  // Voile (panneau d'une extension ouvert) : la pilule descend HORS de l'écran,
+  // ombre comprise — elle ne flotte plus sur le pied du panneau.
+  const veil = useChromeVeil()?.progress ?? fallback;
+  const hideBy = BAR_HEIGHT + Math.max(insets.bottom, MIN_BOTTOM_INSET) + 34;
   const shrinkStyle = useAnimatedStyle(() => ({
+    opacity: 1 - veil.value,
     transform: [
-      { translateY: collapsed.value * 10 },
+      { translateY: collapsed.value * 10 + veil.value * hideBy },
       { scale: 1 - collapsed.value * 0.12 },
     ],
-  }));
+  }), [hideBy]);
   const shiftY = useDerivedValue(() => collapsed.value * ICON_SHIFT);
   const iconShift = useAnimatedStyle(() => ({
     transform: [{ translateY: shiftY.value }],

@@ -1,12 +1,14 @@
 import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
 import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
+import { usePluginOverlay } from "@/plugins/usePluginOverlay";
 import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
 import { typography, FONT_FAMILY, RADIUS, useTheme, useResponsive } from "@/theme";
 import { useHeaderHeight } from "@/components/PersistentHeader";
@@ -55,10 +57,17 @@ export function PluginWebView({
    * en bas. En rail (tablette paysage) la nav occupe sa propre colonne : elle
    * ne recouvre rien. */
   const tabBarH = useGlassTabBarHeight();
+  const insets = useSafeAreaInsets();
   const { isTablet, isLandscape } = useResponsive();
-  const chromeBottom = Math.round((isTablet && isLandscape ? 0 : tabBarH) + chromeBottomExtra);
-  const chromeRef = useRef(chromeBottom);
   const webRef = useRef<{ injectJavaScript: (js: string) => void } | null>(null);
+  // Un panneau de la page est ouvert : la barre s'efface (voile du chrome), il
+  // ne reste à écarter que l'indicateur d'accueil.
+  const overlay = usePluginOverlay(webRef, controlsChrome);
+  const bottomBar = overlay.veiled
+    ? Math.max(insets.bottom, 10)
+    : (isTablet && isLandscape ? 0 : tabBarH);
+  const chromeBottom = Math.round(bottomBar + chromeBottomExtra);
+  const chromeRef = useRef(chromeBottom);
   const { storage } = useTentacleConfig();
   const { i18n, t: tc } = useTranslation("common");
   const { t: te } = useTranslation("errors");
@@ -98,11 +107,13 @@ export function PluginWebView({
 
   // Remise à zéro quand la page adressée change (retry implicite)
   const navKey = `${pluginId}:${path}`;
+  const { resetOverlay } = overlay;
   useEffect(() => {
     setWebViewReady(false);
     setShowOverlay(true);
     setWebViewError(null);
-  }, [navKey]);
+    resetOverlay();
+  }, [navKey, resetOverlay]);
 
   // `theme` en dépendance : au switch clair/sombre la source HTML change et la
   // WebView recharge sa page re-thémée (événement rare, rechargement assumé).
@@ -154,9 +165,10 @@ export function PluginWebView({
     setWebViewError(msg);
   }, []);
 
+  const { onOverlay } = overlay;
   const handleMessage = useMemo(
-    () => createBridgeHandler(router, onReady, onBridgeError, onScrollChrome),
-    [router, onReady, onBridgeError, onScrollChrome],
+    () => createBridgeHandler(router, onReady, onBridgeError, onScrollChrome, onOverlay),
+    [router, onReady, onBridgeError, onScrollChrome, onOverlay],
   );
 
   /* Android peut tuer le processus de rendu des WebViews (mémoire) : sans ce
@@ -170,7 +182,8 @@ export function PluginWebView({
     setWebViewError(null);
     setWebViewReady(false);
     setShowOverlay(true);
-  }, []);
+    resetOverlay();
+  }, [resetOverlay]);
 
   if (webViewError) {
     return (

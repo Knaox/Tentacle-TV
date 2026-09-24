@@ -1,4 +1,5 @@
 import type { Router } from "expo-router";
+import { Linking } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type PerfTimings = {
@@ -17,7 +18,17 @@ type WebToNativeMessage =
   | { type: "TOAST"; message: string; variant: "success" | "error" | "info" }
   | { type: "PERF_TIMINGS"; timings: PerfTimings }
   /** La page dit si son défilement a replié le chrome (cf. pluginScrollChromeScript). */
-  | { type: "SCROLL_CHROME"; collapsed: boolean };
+  | { type: "SCROLL_CHROME"; collapsed: boolean }
+  /** Une surface modale de la page s'ouvre ou se ferme (cf. pluginHostBridgeScript). */
+  | { type: "OVERLAY"; open: boolean }
+  /** Un lien à ouvrir hors de l'application. */
+  | { type: "OPEN_EXTERNAL"; url: string };
+
+/** Seuls les liens web sortent : ni `javascript:`, ni schéma d'application. */
+function openExternalUrl(url: unknown): void {
+  if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return;
+  Linking.openURL(url).catch(() => { /* aucun navigateur : rien à faire */ });
+}
 
 /**
  * Crée un handler pour les messages postMessage envoyés depuis la WebView plugin.
@@ -28,6 +39,7 @@ export function createBridgeHandler(
   onReady?: () => void,
   onError?: (msg: string) => void,
   onScrollChrome?: (collapsed: boolean) => void,
+  onOverlay?: (open: boolean) => void,
 ) {
   return (event: { nativeEvent: { data: string } }) => {
     try {
@@ -83,6 +95,12 @@ export function createBridgeHandler(
           break;
         case "SCROLL_CHROME":
           onScrollChrome?.(msg.collapsed === true);
+          break;
+        case "OVERLAY":
+          onOverlay?.(msg.open === true);
+          break;
+        case "OPEN_EXTERNAL":
+          openExternalUrl(msg.url);
           break;
       }
     } catch {
