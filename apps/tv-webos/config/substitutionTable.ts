@@ -205,6 +205,10 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "components/session/SessionMessageHost.tsx")]:
     resolve(CLIENT, "ui/session/SessionMessageHostTv.tsx"),
 
+  // Les rangées de recommandations de l'accueil deviennent des rangées du
+  // téléviseur (`RowTv`) : une piste pour le moteur, la bibliothèque seule.
+  [resolve(WEB, "components/reco/RecoRow.tsx")]: resolve(CLIENT, "ui/reco/RecoRowTv.tsx"),
+
   // Le préchargement de « Pour vous » : la page du filtre du compte et les
   // affiches de la bibliothèque, jamais les affiches TMDB de titres que le
   // téléviseur écarte (`ui/reco/recoPrefetchTv.ts`).
