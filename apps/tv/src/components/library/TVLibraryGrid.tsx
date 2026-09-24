@@ -136,10 +136,13 @@ export function TVLibraryGrid({
       contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingBottom: 80 }}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
-      // Une rangée d'avance, pas huit cents points : au montage, l'écart
-      // valait deux rangées de plus (≈ 14 cartes et leurs styles animés) sur
-      // le fil JS d'un boîtier Android, avant même le premier appui.
-      drawDistance={estimatedItemSize}
+      // Deux rangées d'avance : c'est la marge dans laquelle un appui maintenu
+      // avance sans attendre le JS — sur Android, le focus natif descend de
+      // rangée en rangée tant qu'elles existent, et un appui qui n'en trouve
+      // plus est perdu. À une seule, une rafale de vingt appuis n'en honorait
+      // qu'une moitié. Le montage ne paie pas cette avance d'un coup : la liste
+      // l'étend image par image après la première mise en page.
+      drawDistance={estimatedItemSize * 2}
       // Une page qui arrive change la dernière carte : sans cela, l'ancienne
       // gardait son `nextFocusRight` sur elle-même et bloquait la droite.
       extraData={items.length}
