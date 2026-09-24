@@ -98,6 +98,13 @@ CREATE TABLE IF NOT EXISTS `library_known_id` (
   PRIMARY KEY (`itemId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 1.19.1 : chaque item connu porte la clé de son CONTENU, et un départ garde sa
+-- ligne 30 jours — un fichier remplacé (mise à niveau, déplacement) n'est plus
+-- annoncé comme une nouveauté. Ajout idempotent (MariaDB).
+ALTER TABLE `library_known_id` ADD COLUMN IF NOT EXISTS `contentKey` varchar(191) NULL;
+ALTER TABLE `library_known_id` ADD COLUMN IF NOT EXISTS `removedAt` datetime(3) NULL;
+CREATE INDEX IF NOT EXISTS `library_known_id_contentKey_idx` ON `library_known_id` (`contentKey`);
+
 -- Registre persistant des annonces push par (clé de contenu, utilisateur) — anti-re-notification. Voir schema.prisma > AnnouncedContent.
 CREATE TABLE IF NOT EXISTS `announced_contents` (
   `contentKey` varchar(191) NOT NULL,

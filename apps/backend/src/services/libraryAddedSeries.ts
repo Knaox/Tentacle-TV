@@ -7,6 +7,7 @@ import { getItemsByIds } from "./jellyfinLibrary";
 // Cache mémoire borné (un même SeriesId revient à chaque nouvel épisode ajouté).
 
 const CACHE_CAP = 1000;
+const ID_CHUNK = 100;
 const cache = new Map<string, number>(); // seriesId (GUID) → tmdbId tv
 
 /** Borne la RAM : purge FIFO (Map = ordre d'insertion) au-delà du plafond. */
@@ -33,11 +34,14 @@ export async function resolveSeriesTmdbIds(seriesIds: string[]): Promise<Map<str
   }
   if (missing.length === 0) return out;
 
-  const items = await getItemsByIds(missing);
-  for (const it of items) {
-    if (it.Type === "Series" && it.tmdbId != null) {
-      remember(it.Id, it.tmdbId);
-      out.set(it.Id, it.tmdbId);
+  // Par lots : les IDs voyagent dans l'URL.
+  for (let i = 0; i < missing.length; i += ID_CHUNK) {
+    const items = await getItemsByIds(missing.slice(i, i + ID_CHUNK));
+    for (const it of items) {
+      if (it.Type === "Series" && it.tmdbId != null) {
+        remember(it.Id, it.tmdbId);
+        out.set(it.Id, it.tmdbId);
+      }
     }
   }
   return out;
