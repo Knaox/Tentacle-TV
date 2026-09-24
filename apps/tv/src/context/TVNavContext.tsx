@@ -54,9 +54,16 @@ interface NavActions {
    * « Trying to update non-existent view ».
    */
   lastContentNodeRef: MutableRefObject<View | null>;
+  /**
+   * Le focus est-il dans le rail — lu au moment d'un geste (Retour), sans
+   * s'abonner : l'accueil n'a pas à se re-rendre chaque fois que le rail
+   * s'ouvre ou se ferme.
+   */
+  railFocusedRef: { readonly current: boolean };
 }
 
 const EMPTY_REF: MutableRefObject<View | null> = { current: null };
+const FALSE_REF = { current: false } as const;
 
 const ActionsContext = createContext<NavActions>({
   requestRailFocus: () => {},
@@ -64,6 +71,7 @@ const ActionsContext = createContext<NavActions>({
   setRailFocused: () => {},
   setContentFocusNode: () => {},
   lastContentNodeRef: EMPTY_REF,
+  railFocusedRef: FALSE_REF,
 });
 
 /** Incrémenté à chaque demande de focus rail — le rail réagit via un effet. */
@@ -97,7 +105,12 @@ const ContentNodeContext = createContext<View | null>(null);
 export function TVNavProvider({ children }: { children: ReactNode }) {
   const [railFocusSignal, setSignal] = useState(0);
   const [railActiveNode, setRailActiveNode] = useState<View | null>(null);
-  const [railFocused, setRailFocused] = useState(false);
+  const [railFocused, setRailFocusedState] = useState(false);
+  const railFocusedRef = useRef(false);
+  const setRailFocused = useCallback((v: boolean) => {
+    railFocusedRef.current = v;
+    setRailFocusedState(v);
+  }, []);
   const [contentFocusNode, setContentFocusNode] = useState<View | null>(null);
   const lastContentNodeRef = useRef<View | null>(null);
 
@@ -113,8 +126,9 @@ export function TVNavProvider({ children }: { children: ReactNode }) {
       setRailFocused,
       setContentFocusNode,
       lastContentNodeRef,
+      railFocusedRef,
     }),
-    [requestRailFocus],
+    [requestRailFocus, setRailFocused],
   );
 
   return (

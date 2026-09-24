@@ -24,7 +24,10 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
   const queryClient = useQueryClient();
   const opacity = useSharedValue(0);
 
-  useTVRemote({ onBack: onRetry });
+  // Monté en permanence (App) : invisible, il avalait CHAQUE Retour d'Android
+  // — son écouteur passe devant celui de l'accueil — pour relancer un test de
+  // connexion. Il ne répond plus que lorsqu'il est affiché.
+  useTVRemote({ onBack: visible ? onRetry : undefined });
 
   useEffect(() => {
     opacity.value = withTiming(visible ? 1 : 0, { duration: 300 });
