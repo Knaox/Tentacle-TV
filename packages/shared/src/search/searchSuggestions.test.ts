@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { SearchItemHit, SearchPersonHit, SearchResponse } from "@tentacle-tv/shared";
-import { completionFor, franchisePrefix, suggestionsFrom } from "./searchSuggestionModel";
+import type { SearchItemHit, SearchPersonHit, SearchResponse } from "./searchTypes";
+import { completionFor, franchisePrefix, suggestionsFrom } from "./searchSuggestions";
 
 function hit(id: string, name: string, score: number, type: "Movie" | "Series" | "BoxSet" = "Movie"): SearchItemHit {
   return { item: { Id: id, Name: name, Type: type } as SearchItemHit["item"], match: {} as SearchItemHit["match"], score };
