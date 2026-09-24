@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import {
 } from "@/components/catalog";
 import { usePlatformFilter } from "@/hooks/usePlatformFilter";
 import type { AdvancedFilters } from "@/components/catalog";
+import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 interface Props { libraryId: string; libraryName?: string }
@@ -98,6 +99,7 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
     (item: MediaItem) => router.push(`/media/${item.Id}`),
     [router],
   );
+  const searching = debouncedSearch.length >= 2;
 
   return (
     <SubtleBackground ambient>
@@ -140,8 +142,12 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
                 autoFocus
                 style={styles.searchInput}
               />
+              {/* Le nombre de titres trouvés, au bout du champ (bureau 1.22.0). */}
+              {searching && !catalog.isLoading && (
+                <Text style={styles.fieldCount}>{totalCount}</Text>
+              )}
               {searchQuery.length > 0 && (
-                <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+                <Pressable onPress={() => setSearchQuery("")} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("clearSearch")}>
                   <Feather name="x" size={16} color={colors.text.tertiary} />
                 </Pressable>
               )}
@@ -163,11 +169,19 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
           <Text style={styles.resultCount}>{t("resultCount", { count: totalCount })}</Text>
         )}
 
-        <CatalogGrid
-          catalog={catalog as any}
-          onItemPress={handleItemPress}
-          overrideItems={selectedPlatformIds.length > 0 ? platformFiltered : undefined}
-        />
+        {/* Rien trouvé : la bonne orthographe, toute la recherche, et ce que
+            les extensions trouvent ailleurs — jamais une grille vide. */}
+        {searching && !catalog.isLoading && totalCount === 0 ? (
+          <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+            <ScopedSearchEmpty query={debouncedSearch} onApply={setSearchQuery} />
+          </ScrollView>
+        ) : (
+          <CatalogGrid
+            catalog={catalog as any}
+            onItemPress={handleItemPress}
+            overrideItems={selectedPlatformIds.length > 0 ? platformFiltered : undefined}
+          />
+        )}
 
         <SortSelector
           sortIndex={sortIndex}
@@ -241,6 +255,7 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
     borderRadius: RADIUS.md, paddingHorizontal: spacing.md, height: 44,
   },
   searchInput: { flex: 1, ...typography.body, fontFamily: FONT_FAMILY.regular, color: t.colors.text.primary, padding: 0 },
+  fieldCount: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.tertiary, fontVariant: ["tabular-nums"] },
   filterBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.screenPadding, gap: 8, paddingVertical: spacing.xs, flexWrap: "wrap" },
   filterChip: { flexDirection: "row", alignItems: "center", gap: 6, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: t.colors.fill.subtle, borderWidth: 1, borderColor: t.colors.border.subtle },
   filterChipActive: { backgroundColor: t.colors.brand.soft, borderColor: withAlpha(t.colors.brand.violet, 0.45, t.colors.brand.glow) },

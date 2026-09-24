@@ -3,18 +3,24 @@ import { useRouter } from "expo-router";
 import type { ExternalSearchItem, SearchProvider } from "@tentacle-tv/shared";
 
 /**
- * Où mène un résultat. La recherche est une MODALE : une fiche s'ouvre sur la
- * pile principale, la modale d'abord refermée — `dismiss` puis `push` au tick
- * suivant, pour que les deux se jouent dans l'ordre (`runAfterInteractions`
- * ne rappelait pas toujours). Le lecteur, lui, se pose par-dessus.
+ * Où mène un résultat. Depuis la recherche, qui est une MODALE, une fiche
+ * s'ouvre sur la pile principale, la modale d'abord refermée — `dismiss` puis
+ * `push` au tick suivant, pour que les deux se jouent dans l'ordre
+ * (`runAfterInteractions` ne rappelait pas toujours). Depuis un écran de la
+ * pile (bibliothèque, Ma liste), on empile simplement : `dismiss` y fermerait
+ * l'écran lui-même.
  */
-export function useSearchNavigation() {
+export function useSearchNavigation({ modal = true }: { modal?: boolean } = {}) {
   const router = useRouter();
 
   const fromModal = useCallback((go: () => void) => {
+    if (!modal) {
+      go();
+      return;
+    }
     if (router.canDismiss()) router.dismiss();
     setTimeout(go, 0);
-  }, [router]);
+  }, [router, modal]);
 
   const openItem = useCallback((id: string) => {
     fromModal(() => router.push(`/media/${id}`));

@@ -47,6 +47,10 @@ export const CollectionFilterHeader = memo(function CollectionFilterHeader({
               style={st.saisie}
               returnKeyType="search"
             />
+            {/* Le nombre de titres trouvés, au bout du champ (bureau 1.22.0). */}
+            {filters.input.trim().length >= 2 && (
+              <Text style={st.fieldCount}>{filters.resultCount}</Text>
+            )}
             <Pressable
               onPress={() => {
                 filters.setInput("");
@@ -162,6 +166,7 @@ const makeStyles = (t: AppTheme) =>
       backgroundColor: t.colors.fill.subtle,
     },
     saisie: { flex: 1, ...typography.caption, fontFamily: FONT_FAMILY.regular, color: t.colors.text.primary },
+    fieldCount: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.tertiary, fontVariant: ["tabular-nums"] },
     pied: {
       flexDirection: "row",
       alignItems: "center",
