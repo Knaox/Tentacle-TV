@@ -245,6 +245,9 @@ export function PluginWebView({
           javaScriptEnabled
           domStorageEnabled
           allowsInlineMediaPlayback
+          // La barre « ‹ › OK » d'iOS au-dessus du clavier : sans objet dans
+          // une page d'application, elle recouvrait la barre d'onglets.
+          hideKeyboardAccessoryView
           originWhitelist={["*"]}
         />
       ) : null}
