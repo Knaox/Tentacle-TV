@@ -1,11 +1,11 @@
 import { getPrisma, hasPrisma } from "./db";
 import { sendToUser } from "./pushService";
-import { exactPushKey, isAnnounced, recordAnnounced } from "./announcedRegistry";
-import { planSeerAvailabilityPush } from "./seerPushPlanner";
+import { recordAnnounced } from "./announcedRegistry";
+import { englishAvailabilityBody, planSeerAvailabilityPush } from "./seerPushPlanner";
 import { isPushPrefEnabled, type PushPrefKey } from "./pushPreferences";
 import { isTicketNotifType } from "./ticketNotifTypes";
 import { ticketPushText } from "./ticketPushText";
-import { loadPushLangs, type PushLang } from "./pushLang";
+import { loadPushLangs } from "./pushLang";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -13,6 +13,13 @@ import { loadPushLangs, type PushLang } from "./pushLang";
 // on ne connaît ici que des chaînes de type déjà déclarées dans le schéma core
 // (le plugin Seer, lui, continue d'écrire ses lignes `request_status` sans
 // aucune modification — on ne fait que les livrer).
+//
+// Demandes (`request_status`) : seule l'annonce de DISPONIBILITÉ part en push.
+// Et d'ordinaire elle est déjà partie : le notifier bibliothèque annonce au
+// demandeur l'arrivée constatée dans Jellyfin, sans attendre que Jellyseerr la
+// voie — la ligne du plugin, plus tardive, reste dans la cloche et ce chemin
+// n'est plus qu'un filet (demande que le notifier n'a pas su rattacher). Les
+// autres états — en cours, refusée, échec — restent dans la cloche.
 //
 // Garde anti-doublon (registre announced_contents) : avant chaque push, on
 // vérifie que ce contenu n'a pas déjà été annoncé à cet utilisateur — par ce
@@ -54,7 +61,8 @@ let timer: ReturnType<typeof setInterval> | null = null;
 let bootTime = 0;
 let running = false;
 
-async function tick(): Promise<void> {
+/** Un passage du worker — exporté pour les tests. */
+export async function deliverPendingNotifications(): Promise<void> {
   if (running || !hasPrisma()) return;
   running = true;
   try {
@@ -75,9 +83,7 @@ async function tick(): Promise<void> {
       where: { jellyfinUserId: { in: userIds } },
     });
     const prefByUser = new Map(prefs.map((p) => [p.jellyfinUserId, p]));
-    const langByUser = notifications.some((n) => isTicketNotifType(n.type))
-      ? await loadPushLangs(userIds)
-      : new Map<string, PushLang>();
+    const langByUser = await loadPushLangs(userIds);
 
     // Claims des utilisateurs du lot — IDENTIFICATION du contenu (titre → tmdb)
     // pour les clés du registre, pas suppression : on n'exclut pas les expirés.
@@ -109,33 +115,34 @@ async function tick(): Promise<void> {
         continue;
       }
       // Annonce de dispo Seer → plan du planificateur (vérité Jellyfin,
-      // découpage par saison, clés tmdb via claim synthétique). Sinon (autres
-      // statuts de demande), chemin générique à clé exacte.
+      // découpage par saison, clés tmdb via claim synthétique). Les autres
+      // états d'une demande n'ont pas de plan : la cloche seule.
       const userClaims = claimsByUser.get(n.jellyfinUserId) ?? [];
       const plan = await planSeerAvailabilityPush(n, userClaims);
-      if (plan?.action === "defer") {
+      if (!plan) continue;
+      if (plan.action === "defer") {
         deferredIds.add(n.id);
         continue;
       }
-      const keys = plan ? plan.keys : [exactPushKey(n)];
-      if (plan?.action === "skip" || (!plan && (await isAnnounced(n.jellyfinUserId, keys)))) {
+      if (plan.action === "skip") {
         // Enrichissement : mêmes contenus, alias éventuellement nouveaux.
-        await recordAnnounced(n.jellyfinUserId, keys);
+        await recordAnnounced(n.jellyfinUserId, plan.keys);
         console.log(`[NotifPush] skip doublon[${n.jellyfinUserId.slice(0, 8)}] « ${n.title} »`);
         continue;
       }
+      const en = langByUser.get(n.jellyfinUserId) === "en";
       const res = await sendToUser(n.jellyfinUserId, {
         title: n.title,
-        body: plan ? plan.body : (n.body ?? ""),
+        body: en ? englishAvailabilityBody(plan.seasons) : plan.body,
         data: { type: n.type, refId: n.refId ?? undefined },
       });
       console.log(
         `[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] « ${n.title} » (sent:${res.sent}, invalid:${res.invalid})`,
       );
-      await recordAnnounced(n.jellyfinUserId, keys);
+      await recordAnnounced(n.jellyfinUserId, plan.keys);
       // Push partiel (saisons manquantes) : la ligne reste différée pour
       // livrer le reste à l'arrivée.
-      if (plan && !plan.complete) deferredIds.add(n.id);
+      if (!plan.complete) deferredIds.add(n.id);
     }
 
     // Marque les notifs balayées comme poussées (opted-out incluses) pour ne
@@ -159,7 +166,7 @@ export function startNotificationPushWorker(): void {
   if (timer) return;
   bootTime = Date.now();
   console.log("[NotifPush] Démarrage worker de livraison push (15s)");
-  timer = setInterval(() => void tick(), POLL_INTERVAL);
+  timer = setInterval(() => void deliverPendingNotifications(), POLL_INTERVAL);
 }
 
 export function stopNotificationPushWorker(): void {

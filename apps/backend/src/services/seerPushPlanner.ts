@@ -33,6 +33,8 @@ export interface PushPlan {
   /** push : true = annonce entièrement honorée → marquer pushedAt ;
    *  false = il reste des saisons manquantes → la ligne reste différée. */
   complete: boolean;
+  /** push : les saisons annoncées par CE push ([] = film ou série entière). */
+  seasons: number[];
 }
 
 /** Corps par saisons, mot pour mot le format du plugin (releasedSuffix féminin). */
@@ -41,6 +43,15 @@ function composeSeasonsBody(seasons: number[]): string {
   const multi = sorted.length > 1;
   const label = multi ? `Saisons ${sorted.join(", ")}` : `Saison ${sorted[0]}`;
   return `${label} ${multi ? "sont sorties" : "est sortie"} sur Tentacle TV`;
+}
+
+/** Le même corps en anglais : le texte du plugin est en français. */
+export function englishAvailabilityBody(seasons: number[]): string {
+  if (seasons.length === 0) return "Now on Tentacle TV";
+  const sorted = [...seasons].sort((a, b) => a - b);
+  return sorted.length > 1
+    ? `Seasons ${sorted.join(", ")} are now on Tentacle TV`
+    : `Season ${sorted[0]} is now on Tentacle TV`;
 }
 
 /**
@@ -62,12 +73,12 @@ export async function planSeerAvailabilityPush(
     const dedupClaims = resolved ? [resolved, ...userClaims] : userClaims;
     const keys = [exact, ...seerContentKeys(n, dedupClaims)];
     if (await isAnnounced(n.jellyfinUserId, keys)) {
-      return { action: "skip", body: original, keys, complete: true };
+      return { action: "skip", body: original, keys, complete: true, seasons: [] };
     }
     if ((await checkJellyfinPresence(resolved)) === "absent") {
-      return { action: "defer", body: original, keys: [], complete: false };
+      return { action: "defer", body: original, keys: [], complete: false, seasons: [] };
     }
-    return { action: "push", body: original, keys, complete: true };
+    return { action: "push", body: original, keys, complete: true, seasons: [] };
   }
 
   // ——— Annonce par saisons : chaque saison vit sa vie ———
@@ -77,7 +88,7 @@ export async function planSeerAvailabilityPush(
   const remaining = avail.seasons.filter((_, i) => !flags[i]);
   const allKeys = [exact, ...avail.seasons.flatMap(keysOf)];
   if (remaining.length === 0) {
-    return { action: "skip", body: original, keys: allKeys, complete: true };
+    return { action: "skip", body: original, keys: allKeys, complete: true, seasons: [] };
   }
 
   const presence = tv ? await checkSeasonsPresence(tv, remaining) : "unknown";
@@ -85,12 +96,12 @@ export async function planSeerAvailabilityPush(
     // Invérifiable (contenu non résolu ou panne Jellyfin) → fail-open sur le
     // restant : annoncer plutôt que risquer d'avaler une notif légitime.
     const body = remaining.length === avail.seasons.length ? original : composeSeasonsBody(remaining);
-    return { action: "push", body, keys: allKeys, complete: true };
+    return { action: "push", body, keys: allKeys, complete: true, seasons: remaining };
   }
   const present = remaining.filter((s) => presence.has(s));
   const missing = remaining.filter((s) => !presence.has(s));
   if (present.length === 0) {
-    return { action: "defer", body: original, keys: [], complete: false };
+    return { action: "defer", body: original, keys: [], complete: false, seasons: [] };
   }
   const complete = missing.length === 0;
   const body = present.length === avail.seasons.length ? original : composeSeasonsBody(present);
@@ -98,5 +109,5 @@ export async function planSeerAvailabilityPush(
   // recréée à l'identique (flapping plugin) doit encore pouvoir livrer les
   // saisons restantes — la dédup par saison, elle, est déjà posée.
   const keys = [...present.flatMap(keysOf), ...(complete ? [exact] : [])];
-  return { action: "push", body, keys, complete };
+  return { action: "push", body, keys, complete, seasons: present };
 }
