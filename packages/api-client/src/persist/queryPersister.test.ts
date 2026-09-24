@@ -8,7 +8,7 @@
  * mode impersonation retrouvait ainsi les reprises de lecture de l'autre.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { attachQueryPersister, hydrateQueryClient, type PersistStorage } from "./queryPersister";
 
 const KEY = "tentacle_query_cache_v1";
@@ -169,5 +169,45 @@ describe("shouldPersist", () => {
     detach();
     const saved = JSON.parse(store.loaded() ?? "{}") as { entries: Record<string, unknown> };
     expect(Object.keys(saved.entries)).toEqual(['["reco-page","all"]']);
+  });
+});
+
+describe("sauvegarde paresseuse", () => {
+  it("ne resérialise rien tant que le cache n'a pas bougé", () => {
+    vi.useFakeTimers();
+    try {
+      const queries = [{ queryKey: ["resume-items"], state: { status: "success", ...entry([{ Id: "a" }]) } }];
+      let listener: ((event: { type: string; action?: { type?: string } }) => void) | null = null;
+      const writes: string[] = [];
+      const store: PersistStorage = {
+        getItem: () => null,
+        setItem: (_k, v) => { writes.push(v); },
+        removeItem: () => {},
+      };
+      const qc = {
+        setQueryData: (): unknown => undefined,
+        getQueryCache: () => ({
+          findAll: () => queries,
+          subscribe: (l: (event: { type: string; action?: { type?: string } }) => void) => {
+            listener = l;
+            return () => { listener = null; };
+          },
+        }),
+      };
+      const detach = attachQueryPersister(qc, store, { whitelist: WHITELIST, owner: ADMIN, saveInterval: 1000 });
+      vi.advanceTimersByTime(1000); // première sauvegarde
+      expect(writes).toHaveLength(1);
+      expect(JSON.parse(writes[0]).entries['["resume-items"]'].data).toEqual([{ Id: "a" }]);
+      listener!({ type: "updated", action: { type: "fetch" } }); // un refetch ne change rien
+      vi.advanceTimersByTime(3000);
+      expect(writes).toHaveLength(1);
+      listener!({ type: "updated", action: { type: "success" } }); // une donnée reçue
+      vi.advanceTimersByTime(1000);
+      expect(writes).toHaveLength(2);
+      detach();
+      expect(listener).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
