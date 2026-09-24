@@ -10,7 +10,9 @@ import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { usePlayerBackground } from "../hooks/usePlayerBackground";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { usePlayerAirPlay } from "../hooks/usePlayerAirPlay";
+import { usePlayerLoadingWatchdog } from "../hooks/usePlayerLoadingWatchdog";
 import { usePlayerTracks } from "../hooks/usePlayerTracks";
+import { usePlayerRemote } from "../session/usePlayerRemote";
 import { useEngineSettings } from "../player/engine/engineSettings";
 import { usePlayerEngine } from "../player/engine/usePlayerEngine";
 import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
@@ -101,23 +103,11 @@ export function PlayerScreen({ itemId }: Props) {
     pb.retry({ engine: "native" });
   }, [eng, pb.retry]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Android loading timeout — if onLoad hasn't fired after 20s, show error
-  useEffect(() => {
-    if (!pb.streamUrl || videoReady) return;
-    const timer = setTimeout(() => {
-      if (!videoReady && !playerError && !retryingRef.current) {
-        console.log("[Tentacle:Player] loading timeout (20s) — URL:", pb.streamUrl?.slice(0, 200));
-        if (retryCount.current < 1) {
-          retryCount.current++;
-          retryingRef.current = true;
-          retryTranscoded();
-        } else {
-          setPlayerError(t("playbackError"));
-        }
-      }
-    }, 20_000);
-    return () => clearTimeout(timer);
-  }, [pb.streamUrl, videoReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Rien de chargé en 20 s : relance transcodée, puis l'écran d'erreur.
+  usePlayerLoadingWatchdog({
+    streamUrl: pb.streamUrl, videoReady, playerError, retryCount, retryingRef, retryTranscoded,
+    fail: () => setPlayerError(t("playbackError")),
+  });
 
   // Auto-apply language preferences
   usePlayerPreferences({
@@ -177,6 +167,14 @@ export function PlayerScreen({ itemId }: Props) {
   // Android : libère l'encodage après un arrière-plan prolongé, et relance le
   // flux au retour. iOS ne bouge pas — la lecture en fond y est voulue.
   usePlayerBackground(pb);
+
+  // La télécommande de Jellyfin — tableau de bord Tentacle ou Jellyfin.
+  usePlayerRemote({
+    stop: leavePlayer, next: handleNextEpisode, previous: handlePrevEpisode,
+    pause: () => setPaused(true), play: () => setPaused(false), isPaused: () => paused,
+    seekTo: handleSeek, positionSeconds: () => pb.positionRef.current,
+    audio: handleSelectAudio, subtitle: (index) => handleSelectSubtitle(index ?? -1),
+  });
 
   // Développement : le lecteur pilotable depuis l'inspecteur (voir le crochet).
   usePlayerDevHook(useMemo(() => ({

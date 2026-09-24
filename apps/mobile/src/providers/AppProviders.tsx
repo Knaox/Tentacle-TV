@@ -43,6 +43,7 @@ import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
 import { ThemeProvider } from "@/theme";
 import { PushRegistrationSync } from "@/hooks/usePushRegistration";
 import { TranscodeCleanupSync } from "@/providers/TranscodeCleanupSync";
+import { SessionChannelSync } from "@/session/SessionChannelSync";
 import { StorageReadyContext } from "./StorageReadyContext";
 
 /** AbortSignal.timeout() polyfill for React Native */
@@ -272,6 +273,7 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
           <StorageReadyContext.Provider value={storageReady}>
           <JellyfinClientContext.Provider value={client}>
             <DirectStreamingSync storage={storage} />
+            <SessionChannelSync token={storageReady && serverUrl ? storage.getItem("tentacle_token") : null} />
             <PushRegistrationSync storage={storage} serverUrl={serverUrl} />
             <TranscodeCleanupSync serverUrl={serverUrl} />
             {children}
