@@ -58,6 +58,11 @@ const SESSION_RESIDUE = [
   "tentacle_jellyfin_url",
   "tentacle_credentials",
   "tentacle_server_url",
+  // L'identité Jellyfin que le serveur avait DÉRIVÉE du jumelage précédent
+  // (`session/SessionChannelTv.tsx`) : un nouveau jeton en appelle une autre,
+  // que `/api/config/streaming` donnera. Gardée, elle désignerait l'ancienne
+  // session jusque-là — et sur un autre serveur, une session qui n'existe pas.
+  "tentacle_device_id_jf",
 ];
 
 /**
