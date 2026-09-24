@@ -13,6 +13,7 @@ import { useRailPinning } from "./railPinning";
 import { catalogParams, rememberedFilters } from "../../hooks/libraryCatalogParams";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { useRailFocused, useTVNavActions } from "../../context/TVNavContext";
+import { claimTvFocus } from "../../hooks/useTvFocusClaim";
 import { Colors, Fonts } from "../../theme/colors";
 import { Easings } from "../../theme/motion";
 
@@ -136,8 +137,12 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     catch { return ""; }
   })();
 
+  // Une réclamation en règle (transition faux → vrai, cf. `claimTvFocus`) :
+  // poser `true` sur l'entrée qui l'avait déjà ne rendait le focus au rail
+  // qu'au premier Retour de la session.
   useEffect(() => {
-    if (grabFocusSignal) activeRef.current?.setNativeProps?.({ hasTVPreferredFocus: true });
+    if (!grabFocusSignal) return;
+    return claimTvFocus(activeRef.current);
   }, [grabFocusSignal]);
 
   // Pont de focus ANDROID entre les deux groupes : depuis la première entrée du
