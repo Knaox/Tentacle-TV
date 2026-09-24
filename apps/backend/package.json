@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "lint": "eslint src/",
     "test": "vitest run",
+    "bench:notifications": "tsx test/notif-e2e/run.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
