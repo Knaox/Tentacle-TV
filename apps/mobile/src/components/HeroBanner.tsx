@@ -97,14 +97,15 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
       {haloReady && (
         <HeroAmbilight uri={haloUri} inset={margin} cardW={slideW} cardH={bannerH} />
       )}
+      {/* La carte : un SEUL masque arrondi, sans bordure. Une `borderWidth`
+          ici décalait d'un point tout enfant absolu (voiles compris) alors que
+          l'image zoomée (Ken Burns) débordait dessous : un liseré CLAIR,
+          l'image nue, courait tout autour du voile sombre. */}
       <View
         style={{
           width: slideW,
           height: bannerH,
           borderRadius: radius,
-          borderWidth: 1,
-          // Le liseré du cadre desktop : rgba(brand, 0.22).
-          borderColor: withAlpha(theme.colors.brand.violet, 0.22, theme.colors.border.strong),
           overflow: "hidden",
           backgroundColor: theme.colors.surface.s0,
         }}
@@ -160,6 +161,20 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
             )}
           </View>
         )}
+        {/* Le liseré du cadre desktop (--hero-frame-ring : rgba(brand, 0.22))
+            peint PAR-DESSUS l'image et les voiles : il teinte le bord de la
+            carte, rien ne passe dessous. */}
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFillObject,
+            {
+              borderRadius: radius,
+              borderWidth: 1,
+              borderColor: withAlpha(theme.colors.brand.violet, 0.22, theme.colors.border.strong),
+            },
+          ]}
+        />
       </View>
     </View>
   );
