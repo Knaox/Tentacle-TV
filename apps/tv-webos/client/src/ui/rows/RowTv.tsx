@@ -66,11 +66,18 @@ export function MediaRow({
   const { scrollRef, onScroll } = useRowScroll();
   const cardWidth = useRowCardWidth(scrollRef, variant);
   const near = useInViewport<HTMLDivElement>("400px");
+  // La rangée qui porte le focus ne se vide JAMAIS, même sortie de l'écran.
+  // Un pas de révélation fait défiler la page pour monter la rangée suivante ;
+  // s'il échoue, il rend le terrain — mais pendant ce temps la rangée focalisée
+  // était hors champ, sa porte se fermait au bout de 600 ms, et la carte
+  // focalisée partait avec son contenu. Mesuré au banc, bas maintenu sur
+  // l'accueil : le focus retombait sur le document, sans anneau.
+  const [holdsFocus, setHoldsFocus] = useState(false);
   const track = useRowWindow({
     scrollRef,
     count: items.length,
     cardWidth: cardWidth,
-    onScreen: near.visible,
+    onScreen: near.visible || holdsFocus,
   });
 
   const handleScroll = useCallback(() => {
@@ -111,7 +118,10 @@ export function MediaRow({
    * `setHoveredIndex` écrit dans une référence : aucun rendu déclenché.
    */
   const onActiveIndexChange = useCallback(
-    (index: number | null) => track.setHoveredIndex(index),
+    (index: number | null) => {
+      track.setHoveredIndex(index);
+      setHoldsFocus(index !== null);
+    },
     [track],
   );
 
