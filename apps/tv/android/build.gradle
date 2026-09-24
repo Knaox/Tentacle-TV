@@ -10,11 +10,12 @@ buildscript {
         targetSdkVersion = 34
         // NDK 29 : libmpv-android 1.0.0 est construit avec (LLVM 20), et son
         // libmpv.so attend le `std::from_chars` flottant d'un libc++ de cette
-        // génération. Le libc++_shared.so de l'app (celui du NDK de l'app) gagne
-        // au paquetage sur celui de l'AAR : construit avec le 27.1, libmpv ne se
+        // génération. Le libc++_shared.so que l'app embarque elle-même gagne au
+        // paquetage sur ceux des AAR : construit avec le 27.1, libmpv ne se
         // chargeait pas (« cannot locate symbol », mesuré à l'émulateur sur le
-        // mobile). Un libc++ plus récent lit les binaires plus anciens, pas
-        // l'inverse. La règle Play « pages de 16 Ko » est acquise depuis le
+        // mobile). La TV ne compilant aucun natif, elle le dépose explicitement
+        // (`copyNdkLibcxx`, app/build.gradle). Un libc++ plus récent lit les
+        // binaires plus anciens, pas l'inverse. La règle Play « pages de 16 Ko » est acquise depuis le
         // NDK 28 (alignement ELF 16 Ko par défaut ; le
         // -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON de reanimated/screens devient
         // redondant). Le workflow tv.yml installe la MÊME version (sdkmanager).
