@@ -13,9 +13,12 @@ const expo = new Expo();
  * partage la base des vrais appareils : sans ce coupe-circuit, son simple
  * démarrage leur poussait « N nouveautés » (diff de bibliothèque au boot).
  * Les appelants ne voient qu'un envoi à zéro appareil ; rien n'est purgé.
+ *
+ * JAMAIS en production : un `.env` de dev recopié tel quel ne doit pas éteindre
+ * les notifications des vrais utilisateurs. Là, la variable est ignorée.
  */
 function pushDisabled(): boolean {
-  return process.env.TENTACLE_PUSH === "off";
+  return process.env.TENTACLE_PUSH === "off" && process.env.NODE_ENV !== "production";
 }
 
 export interface PushPayload {

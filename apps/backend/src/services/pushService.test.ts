@@ -95,6 +95,23 @@ describe("coupure des push hors production", () => {
     expect(sendPushNotificationsAsync).toHaveBeenCalledTimes(1);
   });
 
+  it("TENTACLE_PUSH=off coupe un backend de vérification…", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("TENTACLE_DEV_PUSH", "1");
+    vi.stubEnv("TENTACLE_PUSH", "off");
+    const res = await sendToUser("u1", payload);
+    expect(sendPushNotificationsAsync).not.toHaveBeenCalled();
+    expect(res).toEqual({ sent: 0, invalid: 0 });
+  });
+
+  it("…mais jamais la production : les notifications partent quand même", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("TENTACLE_PUSH", "off");
+    const res = await sendToUser("u1", payload);
+    expect(sendPushNotificationsAsync).toHaveBeenCalledTimes(1);
+    expect(res).toEqual({ sent: 2, invalid: 0 });
+  });
+
   it("un jeton que Expo déclare mort est purgé quand l'envoi part", async () => {
     vi.stubEnv("NODE_ENV", "production");
     sendPushNotificationsAsync.mockImplementation(async () => [
