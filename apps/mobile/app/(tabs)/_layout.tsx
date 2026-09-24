@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { Sparkles } from "lucide-react-native";
 import { usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
-import { useExtensionTab } from "@/hooks/useExtensionSections";
+import { ExtensionPicker } from "@/components/extensions/ExtensionPicker";
+import { useExtensionNav } from "@/components/extensions/useExtensionNav";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { TabRail, RAIL_WIDTH } from "@/components/navigation/TabRail";
 import { GlassTabBar } from "@/components/navigation/GlassTabBar";
@@ -17,9 +18,10 @@ import { useResponsive, useTheme, RailWidthContext } from "@/theme";
 /**
  * La barre basse est FIXE : Accueil · Pour vous · Bibliothèque · extensions ·
  * Profil.
- * Toutes les pages d'extension vivent dans le seul onglet `extensions` (en
- * sections) : une extension de plus n'ajoute jamais d'onglet. Sans aucune
- * page d'extension, cet onglet se masque.
+ * Toutes les pages d'extension vivent dans le seul onglet `extensions` : une
+ * extension de plus n'ajoute jamais d'onglet. Un seul plugin : l'onglet porte
+ * son nom (« Vigie ») et y mène ; plusieurs : il ouvre le sous-menu des
+ * plugins. Sans aucune page d'extension, cet onglet se masque.
  *
  * Hors ligne, il n'en reste que deux : l'Accueil devient « Sur cet appareil »
  * (le catalogue local) et le Profil se réduit ; Pour vous, Bibliothèque et
@@ -29,7 +31,8 @@ export default function TabsLayout() {
   const { t } = useTranslation("nav");
   const { t: to } = useTranslation("offline");
   const theme = useTheme();
-  const ext = useExtensionTab();
+  const extNav = useExtensionNav();
+  const { ext } = extNav;
   const offline = useOfflineMode();
   usePrefetchPluginBundles();
 
@@ -49,10 +52,11 @@ export default function TabsLayout() {
     ...(offline ? [] : [
       { href: "/for-you" as const, icon: "star", iconNode: (color: string) => <Sparkles size={20} color={color} />, label: t("forYou") },
       { href: "/libraries" as const, icon: "film", label: t("library") },
-      ...(ext.visible ? [{ href: "/extensions" as const, icon: ext.icon, label: ext.label }] : []),
+      // Un plugin : une entrée ; plusieurs : une par plugin.
+      ...extNav.railItems,
     ]),
     { href: "/profile", icon: "user", label: t("profile") },
-  ], [t, offline, homeIcon, homeLabel, ext.visible, ext.icon, ext.label]);
+  ], [t, offline, homeIcon, homeLabel, extNav.railItems]);
 
   return (
     <RailWidthContext.Provider value={sideNav ? RAIL_WIDTH : 0}>
@@ -102,15 +106,17 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Extensions — libellé fixe, icône choisie par le plugin actif ;
-          `href: null` masque l'onglet quand aucune page n'est publiée. */}
+      {/* Extensions — un plugin : son nom, et l'appui y mène ; plusieurs :
+          l'appui ouvre le sous-menu (useExtensionNav). `href: null` masque
+          l'onglet quand aucune page n'est publiée. */}
       <Tabs.Screen
         name="extensions"
+        listeners={extNav.listeners}
         options={{
-          title: ext.label,
-          tabBarAccessibilityLabel: ext.label,
+          title: extNav.label,
+          tabBarAccessibilityLabel: extNav.label,
           href: ext.visible && !offline ? undefined : null,
-          tabBarIcon: ({ color, size }) => <Feather name={ext.icon} size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Feather name={extNav.icon} size={size} color={color} />,
         }}
       />
 
@@ -128,6 +134,15 @@ export default function TabsLayout() {
         contenu (qui défile dessous et se réfracte). Écrans compensés via
         useHeaderHeight() en paddingTop. */}
     <PersistentHeader />
+    {extNav.pickerOpen && ext.multiPlugin && !offline && (
+      <ExtensionPicker
+        plugins={ext.plugins}
+        activePluginId={extNav.activePluginId}
+        sideNav={sideNav}
+        onSelect={extNav.openPlugin}
+        onClose={extNav.closePicker}
+      />
+    )}
     {sideNav && <RailMenu open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} />}
     </View>
     </ScrollChromeProvider>

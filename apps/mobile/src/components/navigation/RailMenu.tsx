@@ -23,7 +23,13 @@ export interface RailMenuItem {
   icon: string;
   iconNode?: (color: string) => ReactNode;
   label: string;
+  /** Identité de l'entrée quand plusieurs partagent une route (un plugin chacun). */
+  key?: string;
+  /** Actif selon l'appelant — sinon, la route courante (`pathname`). */
+  active?: boolean;
 }
+
+const itemKey = (item: RailMenuItem): string => item.key ?? String(item.href);
 
 interface RailMenuProps {
   open: boolean;
@@ -54,9 +60,10 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
     });
   }, [open, anim]);
 
-  const activeKey = items.find((item) => pathname === item.href)?.href;
+  const isActive = (item: RailMenuItem) => item.active ?? pathname === item.href;
+  const activeItem = items.find(isActive);
   const indicator = useSlidingIndicator(
-    activeKey === undefined ? undefined : String(activeKey),
+    activeItem === undefined ? undefined : itemKey(activeItem),
     { width: PANEL_W - 2 * PANEL_PAD_H, height: ROW_H, align: "center" },
   );
 
@@ -88,15 +95,15 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
             <View style={st.list} accessibilityRole="tablist">
               <TabIndicator width={PANEL_W - 2 * PANEL_PAD_H} height={ROW_H} style={indicator.style} />
               {items.map((item) => {
-                const active = pathname === item.href;
+                const active = isActive(item);
                 const tint = active ? theme.colors.brand.violet : theme.colors.text.tertiary;
                 return (
                   <RailMenuRow
-                    key={String(item.href)}
+                    key={itemKey(item)}
                     label={item.label}
                     active={active}
                     icon={item.iconNode ? item.iconNode(tint) : <Feather name={item.icon as never} size={20} color={tint} />}
-                    onLayout={indicator.onItemLayout(String(item.href))}
+                    onLayout={indicator.onItemLayout(itemKey(item))}
                     onPress={() => { router.navigate(item.href); onClose(); }}
                   />
                 );
