@@ -11,7 +11,7 @@ celles de Tentacle TV. Rien n'est ré-encodé.
 
 | Composant | Version | Licence | Source |
 |-----------|---------|---------|--------|
-| PrismCore | 3.2.x (épinglée par `Package.resolved`) | **LGPL-2.1-or-later avec Application Store Exception** | https://github.com/Wenzlik/PrismCore |
+| PrismCore | 3.2.2, **copie modifiée** dans `apps/tv/ios/Vendor/PrismCore` | **LGPL-2.1-or-later avec Application Store Exception** | https://github.com/Wenzlik/PrismCore — modifications : `apps/tv/ios/Vendor/PrismCore/README.md` |
 | FFmpeg (libavcodec, libavformat, libavutil, libswresample, libswscale) | celle de MPVKit 1.0.x | **LGPL v2.1+** (sans `--enable-gpl`) | https://ffmpeg.org — binaires et recette : https://github.com/mpvkit/MPVKit |
 | MPVKit (empaquetage, xcframeworks **dynamiques**) | 1.0.x | LGPL v3 (scripts) ; chaque bibliothèque garde sa licence | https://github.com/mpvkit/MPVKit |
 | libdovi (conversion Dolby Vision 7 → 8.1) | via MPVKit | MIT | https://github.com/quietvoid/dovi_tool |
@@ -21,9 +21,11 @@ utilisateur puisse relier l'application avec une version modifiée de la
 bibliothèque, ce qu'un `.ipa` signé ne permet pas ; l'exception de PrismCore
 lève cette exigence pour la distribution en boutique, à deux conditions :
 
-1. **PrismCore est utilisé sans modification.** Modifier la bibliothèque
-   obligerait à publier ces modifications sous LGPL ; l'épingle exacte de
-   `Package.resolved` dit quelle version est embarquée.
+1. **Les modifications de PrismCore sont publiées sous LGPL.** Tentacle TV
+   embarque une copie de la 3.2.2 dont le pont audio est corrigé (l'AAC
+   ponté des pistes DTS / TrueHD portait une disposition que les décodeurs
+   d'Apple refusent) ; cette copie, sa licence et la description du
+   changement vivent dans `apps/tv/ios/Vendor/PrismCore`, dans ce dépôt public.
 2. **La mention est visible** : l'écran « À propos » de l'application dit qu'elle
    embarque PrismCore, sous quelle licence, et où en trouver la source. Le texte
    de la licence (LGPL-2.1 + exception) est le fichier `LICENSE` du dépôt de
