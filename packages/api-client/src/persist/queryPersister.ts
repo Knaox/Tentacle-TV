@@ -28,6 +28,9 @@
  */
 interface QueryCacheLike {
   findAll(): Array<{ queryKey: unknown; state: { status: string; data: unknown; dataUpdatedAt: number } }>;
+  /** v4 comme v5 : un évènement à chaque ajout, retrait ou mise à jour d'une
+   *  requête. Absent (client factice des tests) : on sauve à chaque tic. */
+  subscribe?(listener: (event: { type: string; action?: { type?: string } } | undefined) => void): () => void;
 }
 interface QueryClientLike {
   setQueryData(queryKey: unknown, data: unknown, options?: { updatedAt?: number }): unknown;
@@ -217,7 +220,7 @@ export function attachQueryPersister(
       // (cycle, BigInt…) ne doit pas faire tomber la persistance des autres —
       // même isolation qu'à l'hydratation. La sérialisation individuelle sert
       // aussi à connaître le coût de chaque entrée AVANT d'arbitrer.
-      const candidates: Array<{ keyJson: string; entry: PersistedEntry; cost: number }> = [];
+      const candidates: Array<{ keyJson: string; entry: PersistedEntry; json: string }> = [];
       for (const q of all) {
         const queryKey = q.queryKey;
         if (!Array.isArray(queryKey) || queryKey.length === 0) continue;
@@ -229,13 +232,10 @@ export function attachQueryPersister(
         try {
           const keyJson = JSON.stringify(queryKey);
           const entry: PersistedEntry = { data: state.data, dataUpdatedAt: state.dataUpdatedAt };
-          candidates.push({
-            keyJson,
-            entry,
-            // `keyJson` est re-échappé une fois posé en clé d'objet ; +2 pour
-            // le `:` de la paire et la `,` de séparation.
-            cost: JSON.stringify(keyJson).length + JSON.stringify(entry).length + 2,
-          });
+          // La paire telle qu'elle sera ÉCRITE : `keyJson` re-échappé en clé
+          // d'objet. Sérialisée une seule fois — elle sert au budget puis,
+          // telle quelle, à la charge (plus de seconde sérialisation du tout).
+          candidates.push({ keyJson, entry, json: `${JSON.stringify(keyJson)}:${JSON.stringify(entry)}` });
         } catch {
           // Entrée non sérialisable — ignorée, le reste est conservé
         }
@@ -247,24 +247,41 @@ export function attachQueryPersister(
       // les hubs volumineux (next-up) saturaient les 2 Mo — donc plus aucun
       // cold start instantané, silencieusement.
       candidates.sort((a, b) => b.entry.dataUpdatedAt - a.entry.dataUpdatedAt);
-      const out: Record<string, PersistedEntry> = {};
+      const kept: string[] = [];
       // L'enveloppe compte dans le budget : sur tvOS il vaut le plafond de
       // NSUserDefaults, pas une marge de confort.
-      let total = JSON.stringify({ owner, entries: {} }).length;
+      const head = `{"owner":${JSON.stringify(owner)},"entries":{`;
+      let total = head.length + 2;
       for (const c of candidates) {
-        if (total + c.cost > maxBytes) continue; // trop gros : on tente les suivants, plus petits
-        out[c.keyJson] = c.entry;
-        total += c.cost;
+        const cost = c.json.length + 1; // la `,` de séparation
+        if (total + cost > maxBytes) continue; // trop gros : on tente les suivants, plus petits
+        kept.push(c.json);
+        total += cost;
       }
 
-      const payload: PersistedPayload = { owner, entries: out };
-      await Promise.resolve(storage.setItem(key, JSON.stringify(payload)));
+      // Même JSON que `JSON.stringify({ owner, entries })`, assemblé depuis
+      // les paires déjà sérialisées.
+      await Promise.resolve(storage.setItem(key, `${head}${kept.join(",")}}}`));
     } catch {
       // Sauvegarde best-effort — silencieux en cas d'erreur
     }
   };
 
-  const timer = setInterval(() => { void save(); }, interval);
+  // Une sauvegarde ne part que si le cache a BOUGÉ depuis la précédente. Avant,
+  // chaque tic resérialisait tout le cache persisté — des centaines de ko sur
+  // le fil JS d'un boîtier Android, toutes les dix secondes, défilement ou non.
+  // Seuls comptent une donnée reçue (ou posée) et un retrait : un changement
+  // d'état de fetch ne change rien à ce qu'on écrirait.
+  let dirty = true;
+  const unsubscribe = qc.getQueryCache().subscribe?.((event) => {
+    if (!event) return;
+    if (event.type === "removed" || (event.type === "updated" && event.action?.type === "success")) dirty = true;
+  });
+  const timer = setInterval(() => {
+    if (!dirty) return;
+    dirty = false;
+    void save();
+  }, interval);
 
   // Sauvegarde aussi sur unload (web) ou app background (RN — l'appelant peut écouter AppState et appeler la fonction)
   const onBeforeUnload = () => { void save(); };
@@ -275,6 +292,7 @@ export function attachQueryPersister(
 
   return () => {
     clearInterval(timer);
+    unsubscribe?.();
     if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
       window.removeEventListener("beforeunload", onBeforeUnload);
       window.removeEventListener("pagehide", onBeforeUnload);
