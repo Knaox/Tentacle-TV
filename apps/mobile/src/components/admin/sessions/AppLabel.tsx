@@ -4,7 +4,7 @@ import { sessionApp, sessionAppText, type AdminSessionDto } from "@tentacle-tv/s
 import { FONT_FAMILY, useTheme } from "@/theme";
 
 /**
- * « Tentacle Mobile **1.22.0** · iPhone » — l'application, sa version et
+ * « Tentacle Mobile **1.8.1** · iPhone » — l'application, sa version et
  * l'appareil. La version ressort d'un cran : c'est elle qu'on cherche d'un
  * coup d'œil. `after` prolonge la ligne (« Actif il y a 2 min »).
  */

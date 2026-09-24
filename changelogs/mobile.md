@@ -5,6 +5,50 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [ios-1.8.1]
+<!-- Bloc iOS (App Store Connect, 4000 caractères) : la version complète. Le
+     bloc nu, lu par Google Play, tient dans 500 caractères. -->
+### FR
+- **Une recherche qui propose** : le moteur de Tentacle répond à chaque lettre, corrige les fautes (« Résultats pour … ») et complète le titre en gris. Toutes les barres, celles des bibliothèques, de Ma liste et de Mes favoris comprises, proposent pendant la frappe des suggestions et les meilleurs résultats
+- **La filmographie d'un acteur** s'ouvre d'un toucher sur sa photo, dans la fiche d'un titre
+- **Une nouvelle Bibliothèque** : on arrive directement dans la dernière ouverte, et une capsule passe de Films à Séries à Animés d'un geste
+- **Extensions** : l'onglet ouvre un menu de toutes les extensions et de leurs pages ; une seule extension installée donne son nom à l'onglet, qui y mène directement
+- **Un écran de chargement plein écran** au lancement d'un film, avec son affiche, qu'on peut quitter sans attendre
+- **Le tableau de bord de Jellyfin pilote l'application** : pause, reprise, arrêt, pistes. Les messages de l'administrateur s'affichent même en pleine lecture, avec leur compte à rebours
+- **Administrateurs : « Sessions en direct »** dans le profil : qui regarde quoi et comment le média arrive (lecture directe, remux, transcodage audio ou transcodage, et pourquoi). Pause, arrêt et message, pour une personne ou tout un groupe Watch Together, chaque commande suivie jusqu'à son effet
+- **Quitter la lecture arrête vraiment tout** : toucher ensuite une notification ne fait plus réapparaître le lecteur, et l'app ne se croit plus en lecture en arrière-plan
+- Nécessite un serveur 1.19.0 ou plus
+
+### EN
+- **Search that suggests**: Tentacle's engine answers with every letter, fixes typos ("Results for …") and completes the title in grey. Every bar, including the libraries, My List and My Favorites, suggests while you type: suggestions and top results
+- **An actor's filmography** opens with one tap on their photo from a title's page
+- **A new Library**: you land straight in the last one you opened, and a capsule switches between Movies, Shows and Anime in one swipe
+- **Extensions**: the tab opens a menu with every extension and its pages; with a single extension installed, the tab takes its name and leads straight to it
+- **A full-screen loading screen** when a film starts, with its poster, that you can leave without waiting
+- **Jellyfin's dashboard controls the app**: pause, resume, stop, tracks. Administrator messages show up even during playback, with their countdown
+- **Administrators: "Live sessions"** in your profile: who is watching what and how the media gets there (direct play, remux, audio transcode or transcoding, and why). Pause, stop and message, for one person or a whole Watch Together group, each command tracked until it takes effect
+- **Leaving playback really stops everything**: tapping a notification afterwards no longer brings the player back, and the app no longer thinks it is still playing in the background
+- Requires a server on 1.19.0 or newer
+
+## [1.8.1]
+### FR
+- **Une recherche qui propose** : le moteur de Tentacle à chaque lettre, fautes corrigées, suggestions et meilleurs résultats dans toutes les barres
+- **Bibliothèque** : Films, Séries, Animés d'un geste
+- **La filmographie d'un acteur** d'un toucher sur la fiche
+- **Chargement plein écran**, qu'on peut quitter
+- **Les messages de l'administrateur** s'affichent, même en lecture
+- **Administrateurs : « Sessions en direct »**
+- Nécessite un serveur 1.19.0 ou plus
+
+### EN
+- **Search that suggests**: Tentacle's engine with every letter, typos fixed, suggestions and top results in every bar
+- **Library**: Movies, Shows, Anime in one swipe
+- **An actor's filmography** in one tap from the details page
+- **Full-screen loading** you can leave
+- **Administrator messages** show up, even during playback
+- **Administrators: "Live sessions"**
+- Requires a server on 1.19.0 or newer
+
 ## [1.8.0]
 ### FR
 - **Tout se lit tel quel** : un lecteur avancé prend ce que le lecteur du système refuse — MKV, DTS, TrueHD, HEVC 10 bits, AVI, sous-titres ASS et PGS. Plus de conversion par le serveur
