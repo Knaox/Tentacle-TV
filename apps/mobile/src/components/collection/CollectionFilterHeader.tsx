@@ -2,29 +2,26 @@ import { memo, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
-import { GenreFilter } from "@/components/catalog/GenreFilter";
-import { StatusFilter } from "@/components/catalog/StatusFilter";
+import { STATUS_OPTIONS } from "@/components/catalog/StatusFilter";
 import { ScopedSearchField } from "@/components/search/ScopedSearchField";
 import type { SearchAssist } from "@/components/search/useSearchAssist";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { COLLECTION_SORTS, DEFAULT_COLLECTION_SORT } from "@/screens/collection/collectionSorts";
 import type { CollectionFiltersApi } from "@/screens/collection/useCollectionFilters";
-
-const SORTS = [
-  { key: "sortDateDesc", sortBy: "DateCreated", sortOrder: "Descending" },
-  { key: "sortTitleAsc", sortBy: "SortName", sortOrder: "Ascending" },
-  { key: "sortYearDesc", sortBy: "ProductionYear", sortOrder: "Descending" },
-  { key: "sortRatingDesc", sortBy: "CommunityRating", sortOrder: "Descending" },
-] as const;
+import { CollectionFilterSheet } from "./CollectionFilterSheet";
 
 /**
  * La barre de filtres de Ma liste et de Mes favoris sur téléphone.
  *
- * Elle reprend les composants du catalogue — `GenreFilter`, `StatusFilter` —
- * plutôt que d'en refaire : ce sont les mêmes gestes, ils doivent avoir la même
- * tête. La recherche se révèle d'une icône, comme là-bas, pour ne pas manger
- * une ligne entière sur un écran étroit ; pendant la frappe, les filtres
- * s'effacent devant les suggestions (l'écran les montre à la place de la
- * grille, voir `SearchAssistPane`).
+ * UNE rangée : le type (Tous, Films, Séries), la recherche et « Trier et
+ * filtrer ». L'état de visionnage, le tri et les genres vivent dans la feuille
+ * — ils prenaient trois rangées de pastilles fixes au-dessus de la grille, et
+ * celle-ci ne commençait qu'au milieu de l'écran. Ce qui filtre est rappelé
+ * dessous en pastilles qu'on retire d'un toucher, et seulement quand il y en a.
+ *
+ * La recherche se révèle d'une icône, comme au catalogue ; pendant la frappe,
+ * les filtres s'effacent devant les suggestions (l'écran les montre à la
+ * place de la grille, voir `SearchAssistPane`).
  */
 export const CollectionFilterHeader = memo(function CollectionFilterHeader({
   filters,
@@ -37,6 +34,23 @@ export const CollectionFilterHeader = memo(function CollectionFilterHeader({
   const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const { state, patch } = filters;
+
+  // Ce qui filtre, en pastilles retirables — dans l'ordre de la feuille.
+  const sort = COLLECTION_SORTS.find((s) => s.sortBy === state.sortBy);
+  const status = STATUS_OPTIONS.find((o) => o.value !== null && o.value === state.statusFilter);
+  const active: Array<{ key: string; label: string; remove: () => void }> = [
+    ...(sort && sort.sortBy !== DEFAULT_COLLECTION_SORT.sortBy
+      ? [{ key: "sort", label: t(sort.key), remove: () => patch({ sortBy: DEFAULT_COLLECTION_SORT.sortBy, sortOrder: DEFAULT_COLLECTION_SORT.sortOrder }) }]
+      : []),
+    ...(status ? [{ key: "status", label: t(status.labelKey), remove: () => patch({ statusFilter: null }) }] : []),
+    ...state.genres.map((id) => ({
+      key: `g-${id}`,
+      label: filters.genres.find((g) => g.Id === id)?.Name ?? id,
+      remove: () => patch({ genres: state.genres.filter((g) => g !== id) }),
+    })),
+  ];
 
   return (
     <View style={st.block}>
@@ -44,7 +58,7 @@ export const CollectionFilterHeader = memo(function CollectionFilterHeader({
         <ScopedSearchField
           assist={assist}
           placeholder={t("searchInLibrary", { name: "" }).trim()}
-          count={filters.state.search.length >= 2 ? filters.resultCount : null}
+          count={state.search.length >= 2 ? filters.resultCount : null}
           onClear={() => {
             filters.setInput("");
             setSearchOpen(false);
@@ -53,79 +67,60 @@ export const CollectionFilterHeader = memo(function CollectionFilterHeader({
         />
       ) : (
         <View style={st.row}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.rowTabs} contentContainerStyle={st.tabs}>
+          <View style={st.tabs} accessibilityRole="tablist">
             {filters.tabs.map((tab) => {
-              const active = filters.state.type === tab.key;
+              const selected = state.type === tab.key;
               return (
                 <Pressable
                   key={tab.key}
-                  onPress={() => filters.patch({ type: tab.key })}
-                  style={[st.chip, active && st.chipActive]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
+                  onPress={() => patch({ type: tab.key })}
+                  style={[st.tab, selected && st.tabActive]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected }}
                 >
-                  <Text style={[st.chipText, active && st.chipTextActive]}>{tab.label}</Text>
+                  <Text style={[st.tabText, selected && st.tabTextActive]}>{tab.label}</Text>
                 </Pressable>
               );
             })}
-          </ScrollView>
+          </View>
+          <Pressable onPress={() => setSearchOpen(true)} style={st.roundIcon} accessibilityRole="button" accessibilityLabel={t("search")}>
+            <Feather name="search" size={19} color={colors.text.secondary} />
+          </Pressable>
           <Pressable
-            onPress={() => setSearchOpen(true)}
-            hitSlop={10}
-            style={st.roundIcon}
+            onPress={() => setSheetOpen(true)}
+            style={[st.roundIcon, filters.activeCount > 0 && st.roundIconActive]}
             accessibilityRole="button"
-            accessibilityLabel={t("search")}
+            accessibilityLabel={filters.activeCount > 0 ? `${t("sortAndFilter")} (${filters.activeCount})` : t("sortAndFilter")}
           >
-            <Feather name="search" size={18} color={colors.text.secondary} />
+            <Feather name="sliders" size={18} color={filters.activeCount > 0 ? colors.brand.light : colors.text.secondary} />
+            {filters.activeCount > 0 && (
+              <View style={st.badge}><Text style={st.badgeText}>{filters.activeCount}</Text></View>
+            )}
           </Pressable>
         </View>
       )}
 
-      {!assist.open && (
-        <>
-          <View style={st.inset}>
-            <StatusFilter
-              value={filters.state.statusFilter}
-              onChange={(v) => filters.patch({ statusFilter: v })}
-            />
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.tabs}>
-            {SORTS.map((sort) => {
-              const active = filters.state.sortBy === sort.sortBy;
-              return (
-                <Pressable
-                  key={sort.key}
-                  onPress={() => filters.patch({ sortBy: sort.sortBy, sortOrder: sort.sortOrder })}
-                  style={[st.chip, active && st.chipActive]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                >
-                  <Text style={[st.chipText, active && st.chipTextActive]}>{t(sort.key)}</Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {/* Les genres viennent des titres chargés — aucune requête. */}
-          {filters.genres.length > 0 && (
-            <GenreFilter
-              genres={filters.genres}
-              selectedGenres={filters.state.genres}
-              onGenresChange={(g) => filters.patch({ genres: g })}
-            />
-          )}
-
-          <View style={st.footer}>
-            <Text style={st.count}>{t("resultCount", { count: filters.resultCount })}</Text>
-            {filters.isFiltered && (
-              <Pressable onPress={filters.reset} hitSlop={8} accessibilityRole="button">
-                <Text style={st.reset}>{t("resetFilters")}</Text>
-              </Pressable>
-            )}
-          </View>
-        </>
+      {!assist.open && active.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.activeRow}>
+          {active.map((chip) => (
+            <Pressable
+              key={chip.key}
+              onPress={chip.remove}
+              style={st.activeChip}
+              accessibilityRole="button"
+              accessibilityLabel={t("removeFilterNamed", { name: chip.label })}
+            >
+              <Text style={st.activeChipText}>{chip.label}</Text>
+              <Feather name="x" size={14} color={colors.brand.light} />
+            </Pressable>
+          ))}
+          <Pressable onPress={filters.reset} style={st.clear} accessibilityRole="button">
+            <Text style={st.clearText}>{t("resetFilters")}</Text>
+          </Pressable>
+        </ScrollView>
       )}
+
+      <CollectionFilterSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} filters={filters} />
     </View>
   );
 });
@@ -133,41 +128,66 @@ export const CollectionFilterHeader = memo(function CollectionFilterHeader({
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     block: { gap: spacing.sm, paddingBottom: spacing.sm },
-    // Les onglets défilent jusqu'au bord gauche ; leur marge est celle de leur contenu.
     row: {
       flexDirection: "row",
       alignItems: "center",
       gap: spacing.sm,
-      paddingRight: spacing.screenPadding,
+      paddingHorizontal: spacing.screenPadding,
     },
-    rowTabs: { flex: 1 },
-    inset: { paddingHorizontal: spacing.screenPadding },
-    tabs: { gap: spacing.xs, paddingHorizontal: spacing.screenPadding },
-    chip: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: 6,
+    tabs: {
+      flex: 1,
+      flexDirection: "row",
+      gap: 4,
+      padding: 4,
       borderRadius: 999,
       backgroundColor: t.colors.fill.subtle,
     },
-    chipActive: {
-      backgroundColor: withAlpha(t.colors.brand.violet, 0.2, t.colors.fill.soft),
+    tab: {
+      flex: 1,
+      minHeight: 36,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: spacing.sm,
     },
-    chipText: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
-    chipTextActive: { color: t.colors.brand.light },
+    tabActive: { backgroundColor: withAlpha(t.colors.brand.violet, 0.22, t.colors.fill.soft) },
+    tabText: { ...typography.caption, fontSize: 14, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
+    tabTextActive: { color: t.colors.brand.light, fontFamily: FONT_FAMILY.semibold },
     roundIcon: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: t.colors.fill.subtle,
     },
-    footer: {
+    roundIconActive: { backgroundColor: t.colors.brand.soft },
+    badge: {
+      position: "absolute",
+      top: -2,
+      right: -2,
+      minWidth: 18,
+      height: 18,
+      borderRadius: 9,
+      paddingHorizontal: 4,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: t.colors.brand.violet,
+    },
+    badgeText: { fontSize: 11, fontFamily: FONT_FAMILY.bold, color: "#fff" },
+    activeRow: { gap: spacing.sm, paddingHorizontal: spacing.screenPadding, alignItems: "center" },
+    activeChip: {
+      minHeight: 36,
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: spacing.screenPadding,
+      gap: 6,
+      paddingHorizontal: 12,
+      borderRadius: 999,
+      backgroundColor: t.colors.brand.soft,
+      borderWidth: 1,
+      borderColor: t.colors.brand.glow,
     },
-    count: { ...typography.badge, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
-    reset: { ...typography.badge, fontFamily: FONT_FAMILY.medium, color: t.colors.text.secondary },
+    activeChipText: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
+    clear: { minHeight: 36, justifyContent: "center", paddingHorizontal: 8 },
+    clearText: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.secondary },
   });
