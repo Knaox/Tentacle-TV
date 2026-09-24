@@ -10,7 +10,8 @@
     "./input": "./src/input/index.ts",
     "./focus": "./src/focus/index.ts",
     "./hero": "./src/hero/index.ts",
-    "./player": "./src/player/index.ts"
+    "./player": "./src/player/index.ts",
+    "./search": "./src/search/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
