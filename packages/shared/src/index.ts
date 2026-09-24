@@ -22,6 +22,7 @@ export * from "./search/searchTypes";
 // seule lecture pour le web et le mobile.
 export * from "./search/searchLabels";
 export * from "./search/pluginSearch";
+export * from "./search/searchSuggestions";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
