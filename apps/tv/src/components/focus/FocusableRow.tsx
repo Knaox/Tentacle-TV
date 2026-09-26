@@ -204,20 +204,26 @@ function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCe
    *
    * Sans cela, `lastContentNodeRef` survit à la vue qu'il nomme : la liste
    * recycle ses cellules dès que les données changent — et revenir d'une fiche
-   * invalide justement « Reprendre », « Prochains épisodes » et « Ma liste`
+   * invalide justement « Reprendre », « Prochains épisodes » et « Ma liste »
    * (`HomeScreen`). La restauration de focus tire alors, soixante millisecondes
    * plus tard, un `setNativeProps` sur une vue détruite, et React Native lève
    * « Trying to update non-existent view with tag N ».
    *
-   * Le garde tient à `=== cellRef.current` : une autre cellule a pu publier la
+   * Le garde compare à la vue de CETTE cellule : une autre a pu publier la
    * sienne entre-temps, et ce n'est pas à celle qui part de l'effacer.
+   *
+   * **La vue est relevée au montage, jamais relue au démontage.** Quand React
+   * joue ce nettoyage, il a déjà détaché les références de l'arbre qui s'en
+   * va : `cellRef.current` y vaut `null`, la comparaison échouait à coup sûr
+   * et la mémoire survivait à chaque carte démontée. Retour depuis une carte
+   * de la recherche : l'accueil rendait le focus à la carte morte.
    */
-  useEffect(
-    () => () => {
-      if (lastContentNodeRef.current === cellRef.current) lastContentNodeRef.current = null;
-    },
-    [lastContentNodeRef],
-  );
+  useEffect(() => {
+    const node = cellRef.current;
+    return () => {
+      if (lastContentNodeRef.current === node) lastContentNodeRef.current = null;
+    };
+  }, [lastContentNodeRef]);
   return (
     <View style={{ width: itemWidth, marginRight: gap, overflow: "visible" }}>
       <Focusable
