@@ -30,7 +30,14 @@ interface QueryCacheLike {
   findAll(): Array<{ queryKey: unknown; state: { status: string; data: unknown; dataUpdatedAt: number } }>;
   /** v4 comme v5 : un évènement à chaque ajout, retrait ou mise à jour d'une
    *  requête. Absent (client factice des tests) : on sauve à chaque tic. */
-  subscribe?(listener: (event: { type: string; action?: { type?: string } } | undefined) => void): () => void;
+  subscribe?(listener: (event: QueryCacheEventLike | undefined) => void): () => void;
+}
+/** Ce que la persistance lit d'un évènement du cache — v4 comme v5. */
+interface QueryCacheEventLike {
+  type: string;
+  action?: { type?: string };
+  /** La requête concernée. Absente (client factice des tests) : prise en compte. */
+  query?: { queryKey: unknown };
 }
 interface QueryClientLike {
   setQueryData(queryKey: unknown, data: unknown, options?: { updatedAt?: number }): unknown;
@@ -212,6 +219,15 @@ export function attachQueryPersister(
   // courant est déjà redevenu l'admin alors que le cache est celui de l'autre.
   const owner = opts.owner ?? null;
 
+  // Ce qui entre dans la sauvegarde : un préfixe de la liste, et l'accord du
+  // filtre s'il y en a un. Partagé par la sauvegarde et par le guet du cache.
+  const persisted = (queryKey: unknown): boolean => {
+    if (!Array.isArray(queryKey) || queryKey.length === 0) return false;
+    const prefix = queryKey[0];
+    if (typeof prefix !== "string" || !opts.whitelist.includes(prefix)) return false;
+    return !opts.shouldPersist || opts.shouldPersist(queryKey);
+  };
+
   const save = async (): Promise<void> => {
     try {
       const all = qc.getQueryCache().findAll();
@@ -223,10 +239,7 @@ export function attachQueryPersister(
       const candidates: Array<{ keyJson: string; entry: PersistedEntry; json: string }> = [];
       for (const q of all) {
         const queryKey = q.queryKey;
-        if (!Array.isArray(queryKey) || queryKey.length === 0) continue;
-        const prefix = queryKey[0];
-        if (typeof prefix !== "string" || !opts.whitelist.includes(prefix)) continue;
-        if (opts.shouldPersist && !opts.shouldPersist(queryKey)) continue;
+        if (!persisted(queryKey)) continue;
         const state = q.state;
         if (state.status !== "success" || state.data === undefined) continue;
         try {
@@ -272,10 +285,21 @@ export function attachQueryPersister(
   // le fil JS d'un boîtier Android, toutes les dix secondes, défilement ou non.
   // Seuls comptent une donnée reçue (ou posée) et un retrait : un changement
   // d'état de fetch ne change rien à ce qu'on écrirait.
+  //
+  // Et seulement pour une requête qui ENTRE dans la sauvegarde. Toute requête
+  // réussie marquait le cache à sauver : une page de bibliothèque qui défile en
+  // monte des centaines — état de visionnage de chaque carte, pages suivantes —
+  // dont aucune n'est persistée, et chacune relançait au tic suivant la
+  // sérialisation complète et l'écriture synchrone du stockage. Mesuré sur un
+  // téléviseur : 230 ms de fil principal bloqué en plein défilement, pour
+  // réécrire à l'identique ce qui était déjà sur le disque.
   let dirty = true;
   const unsubscribe = qc.getQueryCache().subscribe?.((event) => {
     if (!event) return;
-    if (event.type === "removed" || (event.type === "updated" && event.action?.type === "success")) dirty = true;
+    const changed = event.type === "removed" || (event.type === "updated" && event.action?.type === "success");
+    if (!changed) return;
+    if (event.query && !persisted(event.query.queryKey)) return;
+    dirty = true;
   });
   const timer = setInterval(() => {
     if (!dirty) return;
