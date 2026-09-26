@@ -108,43 +108,59 @@ export function measureBitrate(client: JellyfinClient, options: BitrateMeasureOp
 }
 
 async function runMeasure(route: MeasureRoute): Promise<number | null> {
+  // Deux passes, la meilleure retenue. La première paie ce qu'aucun segment
+  // de lecture ne paiera : connexion à ouvrir, montée en régime TCP, et à
+  // l'accueil la concurrence de toutes les affiches qui arrivent. Seule, elle
+  // bridait à tort : un réseau large mesuré à travers le proxy passait sous
+  // le débit d'un remux 4K. La seconde part sur une connexion déjà chaude.
+  const first = await timeOnePass(route);
+  if (first == null) return null;
+  const second = await timeOnePass(route);
+  const bps = Math.max(first, second ?? 0);
+  measuredBps = bps;
+  measuredAt = Date.now();
+  measuredRoute = route.key;
+  return bps;
+}
+
+/** Une passe : bits/s bornés, ou null (échec, délai, valeur invraisemblable). */
+async function timeOnePass(route: MeasureRoute): Promise<number | null> {
   try {
-    const startedAt = Date.now();
     // Timeout par Promise.race, PAS d'AbortController : même arbitrage que
     // fetchWithRetry (un signal casse certains fetch React Native). Le fetch
     // abandonné continue en arrière-plan, son résultat est simplement ignoré.
-    const body = await Promise.race([
+    const seconds = await Promise.race([
       download(route.url, route.headers, route.withCookies),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), TIMEOUT_MS)),
     ]);
-    if (body == null) return null;
-    const seconds = (Date.now() - startedAt) / 1000;
-    if (seconds <= 0) return null;
+    if (seconds == null || seconds <= 0) return null;
     // La taille demandée est CONNUE (N octets) : seul le temps compte — pas
     // besoin de faire confiance à la longueur rapportée par le runtime.
     const bps = Math.round((SIZE_BYTES * 8) / seconds);
     if (bps < MIN_BPS || bps > MAX_BPS) return null;
-    measuredBps = bps;
-    measuredAt = Date.now();
-    measuredRoute = route.key;
     return bps;
   } catch {
     return null;
   }
 }
 
+/** Télécharge le témoin ; renvoie la durée du CORPS en secondes, ou null.
+ *  Le chronomètre part à l'arrivée des en-têtes : l'aller-retour de la
+ *  requête — et, derrière le proxy, le trajet jusqu'à Jellyfin — n'est pas
+ *  du débit. Le compter faisait passer une latence pour un réseau étroit. */
 async function download(
   url: string,
   headers: Record<string, string>,
   withCookies: boolean,
-): Promise<true | null> {
+): Promise<number | null> {
   const response = await fetch(url, {
     headers,
     credentials: withCookies ? "include" : undefined,
   });
   if (!response.ok) return null;
+  const startedAt = Date.now();
   // Consommer le corps EN ENTIER — c'est lui qu'on chronomètre. arrayBuffer
   // avec repli text : certains runtimes RN sont capricieux sur l'un des deux.
   await response.arrayBuffer().catch(() => response.text());
-  return true;
+  return (Date.now() - startedAt) / 1000;
 }
