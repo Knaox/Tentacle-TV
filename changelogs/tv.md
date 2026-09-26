@@ -12,14 +12,14 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Pilotable à distance** depuis Jellyfin et Tentacle : pause, arrêt, messages
 - **Plus fluide** : bibliothèques plus rapides, défilement rapide en maintenant une touche
 - **L'accueil suit votre compte** : rangées, favoris, filtre de plateformes
-- **Apple TV** : pistes sans rechargement, Atmos, Dolby Vision profil 7 ; **Android TV** : cadence du film
+- **Apple TV** : pistes sans rechargement, Atmos, Dolby Vision profil 7 ; **Android TV** : cadence du film en option
 ### EN
 - **Search rethought**: typos fixed, title completion, actors, genres and studios
 - **For You**: recommendations drawn from your library
 - **Remote control** from Jellyfin and Tentacle: pause, stop, messages
 - **Smoother**: faster libraries, fast scrolling by holding a direction
 - **The home follows your account**: rows, favorites, platform filter
-- **Apple TV**: tracks switch without reloading, Atmos, Dolby Vision profile 7; **Android TV**: film frame rate
+- **Apple TV**: tracks switch without reloading, Atmos, Dolby Vision profile 7; **Android TV**: film frame rate as an option
 
 ## [1.2.2]
 ### FR
