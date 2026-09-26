@@ -1,217 +1,109 @@
-import { type ReactNode } from "react";
-import { View, Text, Pressable, Linking, StyleSheet } from "react-native";
+import { useMemo, useState } from "react";
+import { View, StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
-import { useRouter } from "expo-router";
-import * as Application from "expo-application";
-import { useTranslation } from "react-i18next";
-import { Feather } from "@expo/vector-icons";
-import { spacing, typography, FONT_FAMILY, useContentPadding, useResponsive, useThemeMode, useTheme, useThemedStyles, type AppTheme, type ThemeMode } from "../theme";
-import { Badge, Divider, FadeIn, SubtleBackground } from "../components/ui";
-import { SettingsSection, SettingsRow } from "../components/settings";
-import { LanguageToggle } from "../components/profile/LanguageToggle";
-import { ProfileAvatar } from "../components/profile/ProfileAvatar";
-import { AdminSessionsRow } from "../components/profile/AdminSessionsRow";
-import { OnDeviceSection } from "../components/profile/OnDeviceSection";
+import { spacing, useContentPadding, useRailWidth, useResponsive, useThemedStyles, type AppTheme } from "../theme";
+import { FadeIn, SubtleBackground } from "../components/ui";
 import { useHeaderHeight } from "../components/PersistentHeader";
 import { useScrollChromeHandler } from "../components/navigation/scrollChrome";
 import { useProfileActions } from "../hooks/useProfileActions";
-import { setManualOffline } from "../offline/connectivityStore";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useOfflineMode } from "../offline/useOfflineMode";
 import { useOfflineVisibility } from "../hooks/offline/useOfflineVisibility";
+import { ProfileAccountSections } from "./profile/ProfileAccountSections";
+import { ProfileDetailPane } from "./profile/ProfileDetailPane";
+import { ProfileHero } from "./profile/ProfileHero";
+import { ProfilePaneContext } from "./profile/ProfilePaneContext";
+import { ProfileSettingsSections } from "./profile/ProfileSettingsSections";
+import { resolvePane, type PaneContext, type ProfilePaneId } from "./profile/profilePanes";
 
-// Version du binaire natif (patchée par les CI par plateforme) ; app.json = repli.
-const appVersion: string = Application.nativeApplicationVersion ?? require("../../app.json").expo?.version ?? "1.0.0";
-const PRIVACY_POLICY_URL = "https://github.com/Knaox/Tentacle-TV/blob/main/PRIVACY.md";
-
-const THEME_MODE_LABEL: Record<ThemeMode, string> = {
-  light: "themeLight",
-  dark: "themeDark",
-  auto: "themeAuto",
-};
+/** Sous cette largeur utile, deux colonnes écraseraient le détail : une seule liste. */
+const SPLIT_MIN_WIDTH = 720;
+const BOTTOM_CLEARANCE = 120;
 
 /**
- * Profil — hub de réglages : identité en tête, puis Personnalisation (accueil
- * et recommandations), Préférences, Langue, TV ; à droite (ou dessous)
- * Administration, Aide, Connexion, Sécurité (mot de passe, appareils, serveur,
- * puis les actions destructives en rouge), confidentialité, version. Les
- * domaines lourds vivent dans des sous-écrans `/settings/*` ; les actions de
- * compte dans `useProfileActions`.
+ * Profil — l'identité en tête, puis les réglages en neuf sections dont
+ * l'ordre et les règles vivent dans `profile/profilePanes.ts`.
  *
- * Hors ligne, il ne reste que ce qui vit sur l'appareil : le héros, Apparence,
- * Lecture, Langue, À propos et la déconnexion — tout ce qui parle au serveur
- * disparaît au lieu d'échouer.
+ * Téléphone : une seule liste ; une ligne à chevron ouvre son écran
+ * `/settings/*`. Tablette (portrait comme paysage) : maître-détail — la
+ * liste à gauche, le volet choisi à droite, sans quitter l'onglet ; les
+ * pages qui ont leur propre écran (Support, À propos, Jumeler TV,
+ * Sessions, Mes titres) s'ouvrent comme sur téléphone.
+ *
+ * Hors ligne, il ne reste que ce qui vit sur l'appareil : tout ce qui parle
+ * au serveur disparaît au lieu d'échouer.
  */
 export function ProfileScreen() {
-  const { t } = useTranslation("profile");
-  const { t: tp } = useTranslation("preferences");
-  const { t: tn } = useTranslation("nav");
-  const { t: to } = useTranslation("offline");
-  const router = useRouter();
   const headerH = useHeaderHeight();
   const onScrollChrome = useScrollChromeHandler();
-  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const { mode } = useThemeMode();
-  const {
-    user, isAdmin, userName, initial, serverUrl, deleting,
-    handleLogout, handleChangeServer, handleClearCache, handleDeleteAccount,
-  } = useProfileActions();
+  const actions = useProfileActions();
+  const { user, isAdmin, userName, initial, serverUrl } = actions;
   const offline = useOfflineMode();
   const { state: connectivity } = useConnectivity();
-  // « Passer hors ligne » n'a de sens qu'avec le droit de garder des titres
-  // ou du contenu déjà sur l'appareil : sinon il n'y aurait rien à voir.
   const { visible: offlineVisible } = useOfflineVisibility();
+  const ctx: PaneContext = useMemo(() => ({ offline, isAdmin, offlineVisible }), [offline, isAdmin, offlineVisible]);
 
   const contentPad = useContentPadding();
-  const { isTablet, isLandscape } = useResponsive();
-  const twoCol = isTablet && isLandscape;
+  const { width, isTablet } = useResponsive();
+  const railWidth = useRailWidth();
+  const split = isTablet && width - railWidth >= SPLIT_MIN_WIDTH;
+  const [chosen, setChosen] = useState<ProfilePaneId | null>(null);
+  const pane = resolvePane(chosen, ctx);
+  const selection = useMemo(() => ({ selected: pane, select: setChosen }), [pane]);
 
-  const leftCol: ReactNode = (
+  const list = (
     <>
       <FadeIn delay={0}>
-        <View style={st.hero}>
-          <ProfileAvatar user={user} initial={initial} />
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={st.heroName} numberOfLines={1}>{userName}</Text>
-            {isAdmin ? <Badge label={t("adminBadge")} variant="brand" /> : <Text style={st.heroSub}>{t("title")}</Text>}
-          </View>
-        </View>
+        <ProfileHero user={user} userName={userName} initial={initial} isAdmin={isAdmin} serverUrl={serverUrl} />
       </FadeIn>
-
-      {/* « Personnalisation » ouvre les Préférences : une section d'une seule
-          ligne, au même nom qu'elle, répétait le titre pour rien. */}
-      <FadeIn delay={80}>
-        <SettingsSection title={t("preferences")}>
-          {!offline && (
-            <SettingsRow
-              icon="sliders"
-              label={tp("sectionPersonalization")}
-              description={t("personalizationHint")}
-              chevron
-              onPress={() => router.push("/settings/personalization")}
-            />
-          )}
-          <SettingsRow icon="sun" label={t("appearance")} value={tp(THEME_MODE_LABEL[mode])} chevron onPress={() => router.push("/settings/appearance")} />
-          {!offline && <SettingsRow icon="bell" label={t("notifications")} chevron onPress={() => router.push("/settings/notifications")} />}
-          <SettingsRow icon="play-circle" label={t("playback")} chevron onPress={() => router.push("/settings/playback")} />
-          {/* L'économie de données est un réglage local : elle vaut aussi hors ligne. */}
-          <SettingsRow icon="bar-chart-2" label={tp("sectionData")} chevron last onPress={() => router.push("/settings/data")} />
-        </SettingsSection>
-      </FadeIn>
-
-      <FadeIn delay={200}>
-        <SettingsSection title={t("language")}>
-          <View style={st.langWrap}>
-            <LanguageToggle hideLabel />
-          </View>
-        </SettingsSection>
-      </FadeIn>
-
-      {/* Les appareils ensemble : jumeler une TV et gérer ceux qui sont
-          appairés (auparavant une section d'une ligne et une ligne de Sécurité). */}
-      {!offline && (
-        <FadeIn delay={260}>
-          <SettingsSection title={t("sectionDevices")}>
-            <SettingsRow icon="cast" label={t("pairTV")} chevron onPress={() => router.push("/pair-tv")} />
-            <SettingsRow icon="smartphone" label={t("pairedDevices")} chevron last onPress={() => router.push("/settings/devices")} />
-          </SettingsSection>
-        </FadeIn>
-      )}
+      <ProfileSettingsSections ctx={ctx} />
+      <ProfileAccountSections ctx={ctx} canGoOffline={connectivity === "online" && offlineVisible} actions={actions} />
     </>
   );
 
-  const rightCol: ReactNode = (
-    <>
-      {isAdmin && !offline ? (
-        <FadeIn delay={300}>
-          <SettingsSection title={t("administration")}>
-            <AdminSessionsRow />
-            <SettingsRow icon="mail" label={t("invitations")} chevron last onPress={() => router.push("/settings/invites")} />
-          </SettingsSection>
-        </FadeIn>
-      ) : null}
-
-      <FadeIn delay={340}>
-        <SettingsSection title={t("help")}>
-          {!offline && <SettingsRow icon="help-circle" label={t("support")} chevron onPress={() => router.push("/support")} />}
-          <SettingsRow icon="info" label={t("about")} chevron last onPress={() => router.push("/about")} />
-        </SettingsSection>
-      </FadeIn>
-
-      <OnDeviceSection />
-
-      {/* « Passer hors ligne » : seulement quand le serveur répond — hors
-          ligne, c'est la pastille de l'en-tête qui ramène en ligne. */}
-      {connectivity === "online" && offlineVisible && (
-        <FadeIn delay={360}>
-          <SettingsSection title={to("sectionConnection")}>
-            <SettingsRow icon="wifi-off" label={tn("goOffline")} description={to("goOfflineHint")} last onPress={() => setManualOffline(true)} />
-          </SettingsSection>
-        </FadeIn>
-      )}
-
-      <FadeIn delay={380}>
-        <SettingsSection title={tp("sectionSecurity")}>
-          {!offline && (
-            <>
-              <SettingsRow icon="lock" label={t("password")} chevron onPress={() => router.push("/settings/password")} />
-              <SettingsRow icon="server" label={t("changeServer")} description={serverUrl || undefined} chevron last onPress={handleChangeServer} />
-              {/* Les actions destructives, séparées et en rouge, ferment la carte. */}
-              <Divider intensity="strong" style={st.dangerDivider} />
-              <SettingsRow icon="trash-2" label={t("clearCache")} destructive onPress={handleClearCache} />
-              <SettingsRow icon="user-x" label={t("deleteAccount")} destructive disabled={deleting} onPress={handleDeleteAccount} />
-            </>
-          )}
-          <SettingsRow icon="log-out" label={t("logout")} destructive last onPress={handleLogout} />
-        </SettingsSection>
-      </FadeIn>
-
-      <Pressable
-        onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
-        accessibilityRole="link"
-        accessibilityLabel={t("privacyPolicy")}
-        style={st.privacy}
-        hitSlop={8}
-      >
-        <Feather name="external-link" size={13} color={theme.colors.text.tertiary} />
-        <Text style={st.privacyTxt}>{t("privacyPolicy")}</Text>
-      </Pressable>
-
-      <View style={st.versionWrap}>
-        <Text style={st.versionTxt}>{t("version", { version: appVersion })}</Text>
-      </View>
-    </>
-  );
+  if (!split) {
+    return (
+      <SubtleBackground ambient>
+        <Animated.ScrollView
+          style={st.fill}
+          contentContainerStyle={{ paddingTop: headerH + spacing.xl, paddingBottom: BOTTOM_CLEARANCE, paddingHorizontal: contentPad }}
+          showsVerticalScrollIndicator={false}
+          onScroll={onScrollChrome}
+          scrollEventThrottle={16}
+        >
+          {list}
+        </Animated.ScrollView>
+      </SubtleBackground>
+    );
+  }
 
   return (
     <SubtleBackground ambient>
-      <Animated.ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: headerH, paddingBottom: 120 }} showsVerticalScrollIndicator={false} onScroll={onScrollChrome} scrollEventThrottle={16}>
-        {twoCol ? (
-          <View style={st.twoCol}>
-            <View style={{ flex: 1 }}>{leftCol}</View>
-            <View style={{ flex: 1 }}>{rightCol}</View>
-          </View>
-        ) : (
-          <View style={{ paddingHorizontal: contentPad, paddingTop: spacing.xl }}>
-            {leftCol}
-            {rightCol}
-          </View>
-        )}
-      </Animated.ScrollView>
+      <ProfilePaneContext.Provider value={selection}>
+        <View style={st.split}>
+          <Animated.ScrollView
+            style={[st.master, { width: Math.round(Math.min(400, Math.max(320, width * 0.34))) }]}
+            contentContainerStyle={{ paddingTop: headerH + spacing.xl, paddingBottom: BOTTOM_CLEARANCE, paddingHorizontal: spacing.lg }}
+            showsVerticalScrollIndicator={false}
+            onScroll={onScrollChrome}
+            scrollEventThrottle={16}
+          >
+            {list}
+          </Animated.ScrollView>
+          <ProfileDetailPane pane={pane} topInset={headerH} bottomInset={BOTTOM_CLEARANCE} />
+        </View>
+      </ProfilePaneContext.Provider>
     </SubtleBackground>
   );
 }
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
-  hero: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.lg, marginBottom: spacing.xl },
-  heroName: { ...typography.title, fontSize: 22, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.primary, letterSpacing: -0.4 },
-  heroSub: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary },
-  langWrap: { padding: spacing.md },
-  dangerDivider: { marginVertical: 0 },
-  twoCol: { flexDirection: "row" as const, gap: spacing.xl, width: "100%", maxWidth: 940, alignSelf: "center" as const, paddingHorizontal: spacing.screenPadding, paddingTop: spacing.xl },
-  privacy: { marginTop: spacing.sm, alignItems: "center" as const, flexDirection: "row" as const, justifyContent: "center" as const, gap: spacing.sm, paddingVertical: 12 },
-  privacyTxt: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, textDecorationLine: "underline" as const },
-  versionWrap: { marginTop: spacing.lg, alignItems: "center" as const },
-  versionTxt: { fontSize: 11, fontFamily: FONT_FAMILY.regular, color: t.colors.text.quaternary },
+  fill: { flex: 1 },
+  split: { flex: 1, flexDirection: "row" as const },
+  master: {
+    flexGrow: 0,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: t.colors.border.subtle,
+  },
 });
