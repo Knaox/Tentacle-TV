@@ -155,8 +155,10 @@ export function PlaybackOverlayTv({
     // Le refus suit le caractère AUTOMATIQUE du passage, et non l'affichage
     // des secondes : un saut qui part tout seul avec le décompte masqué
     // n'offrait aucun bouton pour l'empêcher. Un passage qu'il faut demander,
-    // lui, n'a rien à refuser — le bouton reste seul, à sa place.
-    if (!overlay.auto) return <div ref={skipRef}>{skip}</div>;
+    // lui, n'a rien à refuser — le bouton reste seul, à sa place. Un refus
+    // déjà donné non plus : le passage reste `auto` pour l'arbitre, mais n'est
+    // plus `dismissible` — « Masquer » restait à l'écran après l'appui.
+    if (!overlay.auto || !overlay.dismissible) return <div ref={skipRef}>{skip}</div>;
     return (
       <div ref={skipRef} className="saut-tv-ilot">
         {skip}
