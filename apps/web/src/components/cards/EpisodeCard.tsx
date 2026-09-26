@@ -207,10 +207,11 @@ export const EpisodeCard = memo(function EpisodeCard({
             son numéro, elle porte donc sa note, jamais celle de la série. En
             HAUT à gauche : le bas est déjà pris par le code d'épisode et son
             titre. Elle s'efface quand le panneau d'aperçu prend le relais, qui
-            la répète dans sa ligne méta. */}
+            la répète dans sa ligne méta — et au survol (focus sur téléviseur),
+            où les puces qualité/langues montent au même coin. */}
         <CardRatingBadge
           rating={cardRatingFor(item, "item").rating}
-          shown={!preview.panelActive}
+          shown={!preview.panelActive && !hovered}
           className="left-2 top-2"
         />
 
