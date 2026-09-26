@@ -267,6 +267,10 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(MODULES, "@tanstack/react-virtual/dist/esm/index.js")]:
     resolve(CLIENT, "shims/reactVirtual.ts"),
 
+  // `useTranslation`, partagé par langue et espace de noms au lieu d'être refait
+  // à chaque carte montée (`shims/reactI18next.ts`).
+  [resolve(MODULES, "react-i18next/dist/es/index.js")]: resolve(CLIENT, "shims/reactI18next.ts"),
+
   // Outils de développement montés à la racine par `App.tsx`.
   [resolve(WEB, "dev/soakPlayer.tsx")]: resolve(CLIENT, "shims/devHarness.ts"),
   [resolve(WEB, "dev/autoWatch.tsx")]: resolve(CLIENT, "shims/devHarness.ts"),
