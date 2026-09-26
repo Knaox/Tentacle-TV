@@ -1,5 +1,5 @@
 import { isHorizontal, type Direction } from "./keys";
-import { collect, trappingContainer } from "./candidates";
+import { collect, trappingContainer, collectRoot } from "./candidates";
 import { defaultFocus } from "./default";
 import { giveFocus, activeElement } from "./active";
 import { best, restrictToFirstRow, onSameColumn, onSameRow } from "@tentacle-tv/tv-core";
@@ -128,7 +128,7 @@ export function aim(direction: Direction): boolean {
   // contenu ce qu'on lui avait pris, la gauche est le bord du monde.
   if (!trap && inRail(start)) return aimInRail(start, direction);
 
-  const root = trap ?? document;
+  const root = collectRoot(start, isHorizontal(direction), trap);
   let candidates = collect(root).filter((candidate) => candidate.element !== start);
 
   // Le rail n'est JAMAIS un candidat géométrique. Il couvre toute la hauteur
