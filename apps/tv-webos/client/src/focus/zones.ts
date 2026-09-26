@@ -1,6 +1,8 @@
-import { FOCUSABLE_SELECTOR, reachableTarget, isInputField, collect } from "./candidates";
+import { best, type Box } from "@tentacle-tv/tv-core";
+import { FOCUSABLE_SELECTOR, reachableTarget, isInputField, collect, type Candidate } from "./candidates";
 import { defaultFocus } from "./default";
 import { recover } from "./memory";
+import type { Direction } from "./keys";
 
 /**
  * Les zones : là où la géométrie ne suffit pas, une destination déclarée.
@@ -169,4 +171,44 @@ export function redirectZoneEntry(
   const target = zoneEntryDestination(zone);
   if (!target || target === arrival) return null;
   return target;
+}
+
+/**
+ * Un déplacement VERTICAL reste dans sa zone tant qu'elle offre une suite.
+ *
+ * La première bande (`movement.ts`) se cherchait sur tout l'écran. Or deux
+ * zones côte à côte ont chacune leur rythme vertical : la colonne de saisie
+ * de la recherche empile des suggestions de soixante pixels, celle des
+ * résultats une bannière puis des rangées d'affiches. Mesuré depuis le
+ * meilleur résultat : la troisième suggestion, 33 px sous son bord, battait
+ * la première rangée de titres, à 101 px. Elle devenait la bande, la
+ * redirection d'entrée de zone rendait la suggestion mémorisée — et « bas »
+ * partait à GAUCHE. « Haut » depuis la première rangée faisait de même.
+ *
+ * Le confinement de `data-tv-piste`, transposé à la verticale, à une
+ * différence près : le bout d'une zone n'est pas le bout du monde. Une zone
+ * sans suite dans la direction rend la main à tout l'écran — c'est ainsi
+ * qu'on descend du bloc d'actions d'une fiche vers ses saisons, ou de la
+ * barre de filtres vers la grille.
+ */
+export function keepInZone(
+  start: HTMLElement,
+  since: Box,
+  candidates: Candidate[],
+  direction: Direction,
+): Candidate[] {
+  const zone = start.closest<HTMLElement>("[data-tv-zone]");
+  if (!zone) return candidates;
+  return preferZone(since, candidates, direction, (element) => zone.contains(element));
+}
+
+/** Le cœur pur de `keepInZone` : les candidats de la zone s'ils mènent quelque part, sinon tous. */
+export function preferZone<T>(
+  since: Box,
+  candidates: Array<{ element: T; box: Box }>,
+  direction: Direction,
+  inZone: (element: T) => boolean,
+): Array<{ element: T; box: Box }> {
+  const own = candidates.filter((candidate) => inZone(candidate.element));
+  return best(since, own, direction) ? own : candidates;
 }
