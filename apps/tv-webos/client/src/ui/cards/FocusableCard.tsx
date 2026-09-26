@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState, type FocusEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { captureDetailOrigin } from "@/components/detail/detailTransition";
@@ -115,12 +115,22 @@ export function FocusableCard({
     if (item) aimItem(item);
     onActiveIndex(index);
   }, [index, item, onActiveIndex]);
-  const onBlur = useCallback(() => {
-    setFocused(false);
-    releaseItem();
-    press.onBlur();
-    onActiveIndex(null);
-  }, [press, onActiveIndex]);
+  const onBlur = useCallback(
+    (event: FocusEvent<HTMLDivElement>) => {
+      setFocused(false);
+      releaseItem();
+      press.onBlur();
+      // Le focus passe à une carte de la MÊME piste : sa visée repose l'index
+      // dans la foulée. Signaler « plus de focus » entre les deux rendait la
+      // rangée deux fois par appui et faisait basculer l'atténuation de toutes
+      // ses cartes, pour revenir aussitôt à l'état de départ.
+      const next = event.relatedTarget;
+      const track = root.current?.closest("[data-tv-piste]");
+      if (track && next instanceof Node && track.contains(next)) return;
+      onActiveIndex(null);
+    },
+    [press, onActiveIndex],
+  );
 
   return (
     <div

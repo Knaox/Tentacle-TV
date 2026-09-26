@@ -62,6 +62,12 @@ interface RowWindowOptions {
   cardWidth: number | null;
   /** La rangée est-elle dans (ou près de) l'écran ? */
   onScreen: boolean;
+  /**
+   * Cartes rendues de part et d'autre de la zone visible — `OVERSCAN` par
+   * défaut. Le téléviseur en demande davantage : une touche maintenue avance
+   * d'une carte par répétition, plus vite qu'un clic de flèche ici.
+   */
+  overscan?: number;
 }
 
 /** Plage « tout rendre », quand le fenêtrage ne s'applique pas. */
@@ -72,7 +78,7 @@ const renderAll = (count: number): RowWindowRange => ({
   padEnd: 0,
 });
 
-export function useRowWindow({ scrollRef, count, cardWidth, onScreen }: RowWindowOptions) {
+export function useRowWindow({ scrollRef, count, cardWidth, onScreen, overscan = OVERSCAN }: RowWindowOptions) {
   const [range, setRange] = useState<RowWindowRange>(() => renderAll(count));
   /**
    * Index de la carte survolée. Un REF, jamais un état : il n'est lu que dans le
@@ -100,7 +106,7 @@ export function useRowWindow({ scrollRef, count, cardWidth, onScreen }: RowWindo
       gap: metrics.current.gap,
       cardWidth,
       count,
-      overscan: OVERSCAN,
+      overscan,
       pinned: pinned.current,
       vacant: vacant.current,
     });
@@ -114,7 +120,7 @@ export function useRowWindow({ scrollRef, count, cardWidth, onScreen }: RowWindo
         ? prev
         : next,
     );
-  }, [scrollRef, cardWidth, count]);
+  }, [scrollRef, cardWidth, count, overscan]);
 
   /** Une seule lecture du DOM par image, quoi qu'il arrive. */
   const schedule = useCallback(() => {

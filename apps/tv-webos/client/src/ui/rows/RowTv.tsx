@@ -49,6 +49,31 @@ interface RowProps {
  * rien, et une opacité pilotée par `style` suffit — c'est déjà ce que faisait
  * la rangée du web.
  */
+/**
+ * Avance avec laquelle une rangée se RÉVÈLE — cartes montées, fondu joué : un
+ * écran entier au-dessus et au-dessous. Une rangée qui n'était montée qu'une
+ * fois visible entrait à l'écran vide, se garnissait, puis chargeait ses
+ * images sous les yeux : c'est ce qu'on voyait « réapparaître » en parcourant
+ * l'accueil un peu vite.
+ */
+const REVEAL_MARGIN = "100% 0px";
+
+/**
+ * Distance à laquelle une rangée garde ses cartes : deux écrans. Au-delà, sa
+ * fenêtre se vide (`useRowWindow`) et rend sa mémoire. En deçà, remonter ou
+ * redescendre retrouve des cartes déjà là, images comprises.
+ */
+const KEEP_MARGIN = "200% 0px";
+
+/**
+ * Cartes montées de part et d'autre de la zone visible d'une piste. Le web en
+ * garde trois ; une touche maintenue les rattrapait, et les cartes suivantes
+ * entraient à l'écran pendant qu'elles se montaient.
+ */
+const OVERSCAN = 6;
+
+type Reveal = "hidden" | "animated" | "instant";
+
 export function MediaRow({
   title,
   items,
@@ -60,12 +85,12 @@ export function MediaRow({
 }: RowProps) {
   const { t } = useTranslation("common");
   const rowRef = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [reveal, setReveal] = useState<Reveal>("hidden");
   // Le défilement horizontal suit le focus : c'est `bringIntoView` du moteur de
   // navigation qui écrit `scrollLeft`, pas des commandes au survol.
   const { scrollRef, onScroll } = useRowScroll();
   const cardWidth = useRowCardWidth(scrollRef, variant);
-  const near = useInViewport<HTMLDivElement>("400px");
+  const near = useInViewport<HTMLDivElement>(KEEP_MARGIN);
   // La rangée qui porte le focus ne se vide JAMAIS, même sortie de l'écran.
   // Un pas de révélation fait défiler la page pour monter la rangée suivante ;
   // s'il échoue, il rend le terrain — mais pendant ce temps la rangée focalisée
@@ -78,6 +103,7 @@ export function MediaRow({
     count: items.length,
     cardWidth: cardWidth,
     onScreen: near.visible || holdsFocus,
+    overscan: OVERSCAN,
   });
 
   const handleScroll = useCallback(() => {
@@ -94,12 +120,22 @@ export function MediaRow({
     // l'avait oubliée, et un moteur plus ancien que le socle aurait levé dans
     // un effet — donc perdu l'écran entier.
     if (typeof IntersectionObserver !== "function") {
-      setVisible(true);
+      setReveal("instant");
       return;
     }
     const observer = new IntersectionObserver(
-      ([entry]) => entry.isIntersecting && setVisible(true),
-      { threshold: 0.1 },
+      (entries) => {
+        const entry = entries[entries.length - 1];
+        if (!entry.isIntersecting) return;
+        // Révélée À L'ÉCRAN — l'arrivée sur la page —, elle joue son fondu en
+        // cascade. Révélée en avance, hors champ, personne ne le verrait : elle
+        // apparaît d'emblée, et ne coûte pas une transition pour rien.
+        const box = entry.boundingClientRect;
+        const onScreen = box.bottom > 0 && box.top < window.innerHeight;
+        setReveal(onScreen ? "animated" : "instant");
+        observer.disconnect();
+      },
+      { rootMargin: REVEAL_MARGIN },
     );
     observer.observe(element);
     return () => observer.disconnect();
@@ -140,8 +176,8 @@ export function MediaRow({
       className="render-row group/row relative mb-10"
       aria-label={title}
       style={{
-        opacity: visible ? 1 : 0,
-        transition: `opacity 0.35s ease ${animDelay}ms`,
+        opacity: reveal === "hidden" ? 0 : 1,
+        transition: reveal === "instant" ? undefined : `opacity 0.35s ease ${animDelay}ms`,
       }}
     >
       <RowHeader title={title} href={href} trailing={headerTrailing} />
@@ -160,7 +196,7 @@ export function MediaRow({
           posterImageMode={posterImageMode}
           cardWidth={cardWidth}
           range={track.range}
-          filled={visible}
+          filled={reveal !== "hidden"}
           onActiveIndex={onActiveIndexChange}
           onScroll={handleScroll}
         />
