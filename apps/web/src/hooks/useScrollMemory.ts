@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 const scrollPositions = new Map<string, number>();
@@ -25,23 +25,45 @@ const ALWAYS_TOP = [/^\/$/, /^\/media\//, /^\/shared\//];
 const opensAtTop = (pathname: string): boolean =>
   ALWAYS_TOP.some((pattern) => pattern.test(pathname));
 
+/**
+ * Rend à chaque écran la position où on l'a quitté.
+ *
+ * **La position se relève pendant qu'on est sur l'écran, jamais en le
+ * quittant.** On la lisait dans l'effet qui suit le changement d'adresse, donc
+ * une fois l'écran suivant monté à sa place — et tout ce qui défilait entre les
+ * deux s'écrivait au compte de l'écran quitté. Le document de l'écran suivant,
+ * plus court, rabotait le défilement : mesuré sur la dalle, une bibliothèque
+ * quittée à 3660 px était mémorisée à 108, tout ce que la fiche encore en
+ * chargement laisse défiler. S'y ajoutaient le virtualiseur qui se monte en
+ * écrivant sa propre position, et le moteur de focus du téléviseur qui recadre
+ * l'écran sortant. Au retour, la carte quittée était trop loin de la position
+ * rendue pour être montée : le focus retombait sur la première affiche.
+ *
+ * On note donc la position à chaque défilement, TANT QUE l'adresse du
+ * navigateur désigne l'écran : elle change à l'instant même de la navigation,
+ * avant que quoi que ce soit ne soit démonté, et ce qui défile ensuite
+ * appartient déjà à l'écran suivant.
+ */
 export function useScrollMemory() {
   const { pathname } = useLocation();
-  const prevPath = useRef(pathname);
 
   useEffect(() => {
-    // Save scroll position of previous route
-    if (prevPath.current !== pathname) {
-      scrollPositions.set(prevPath.current, window.scrollY);
-      prevPath.current = pathname;
+    if (opensAtTop(pathname)) {
+      window.scrollTo(0, 0);
+      return;
     }
 
-    // Restore scroll position for current route
-    const saved = opensAtTop(pathname) ? undefined : scrollPositions.get(pathname);
-    if (saved != null) {
-      window.scrollTo(0, saved);
-    } else {
-      window.scrollTo(0, 0);
-    }
+    window.scrollTo(0, scrollPositions.get(pathname) ?? 0);
+
+    // L'adresse complète, préfixe du routeur compris (`/tv` sur le
+    // téléviseur) : c'est elle que la navigation change, et `pathname` ne la
+    // porte pas.
+    const address = window.location.pathname;
+    const record = () => {
+      if (window.location.pathname !== address) return;
+      scrollPositions.set(pathname, window.scrollY);
+    };
+    window.addEventListener("scroll", record, { passive: true });
+    return () => window.removeEventListener("scroll", record);
   }, [pathname]);
 }
