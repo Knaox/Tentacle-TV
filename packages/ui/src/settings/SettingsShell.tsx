@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 /**
  * Coquille maître-détail des écrans de réglages et d'administration.
@@ -23,7 +23,10 @@ export interface SettingsShellSection {
   id: string;
   label: string;
   icon?: ReactNode;
-  /** Regroupe les sections sous un intertitre (ex. « Administration »). */
+  /**
+   * Regroupe les sections CONSÉCUTIVES sous un intertitre (ex. « Comptes »).
+   * Une section sans groupe forme le sien, sans intertitre.
+   */
   group?: string;
 }
 
@@ -35,6 +38,11 @@ export interface SettingsShellProps {
   /** Titre de la section active, affiché en tête du panneau de détail. */
   title?: string;
   description?: string;
+  /**
+   * Nom accessible du rail. Défaut : `title`. À poser quand la page porte son
+   * propre en-tête (l'administration) : sans lui, le rail n'avait plus de nom.
+   */
+  navLabel?: string;
   /** Affordance de retour sous `md`. */
   onBack?: () => void;
   /**
@@ -58,11 +66,13 @@ export function SettingsShell({
   onSelect,
   title,
   description,
+  navLabel,
   onBack,
   backLabel,
   fluid = false,
   children,
 }: SettingsShellProps) {
+  const groupDomId = useId();
   const groups = sections.reduce<Array<{ name?: string; items: SettingsShellSection[] }>>(
     (acc, section) => {
       const last = acc[acc.length - 1];
@@ -76,17 +86,26 @@ export function SettingsShell({
   return (
     <div className={`mx-auto flex w-full gap-6 px-4 md:px-8 ${fluid ? "" : "max-w-6xl"}`}>
       <nav
-        aria-label={title}
-        className={`${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:w-60`}
+        aria-label={navLabel ?? title}
+        /* Collant sur desktop : sur une longue page (la liste des comptes, un
+           formulaire de services), le rail reste à portée au lieu de défiler
+           hors de l'écran. `self-start` : dans une rangée flex, un élément
+           étiré sur toute la hauteur ne colle jamais. */
+        className={`${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:sticky md:top-[calc(var(--topnav-height)+1.5rem)] md:w-60 md:self-start`}
       >
         {groups.map((group, gi) => (
           <div key={group.name ?? gi} className={gi > 0 ? "mt-6" : ""}>
+            {/* L'intertitre NOMME sa liste (« Comptes, liste, 3 éléments »)
+                au lieu d'être un h2 posé avant le h1 de la page. */}
             {group.name ? (
-              <h2 className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+              <p
+                id={`${groupDomId}-${gi}`}
+                className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary"
+              >
                 {group.name}
-              </h2>
+              </p>
             ) : null}
-            <ul className="space-y-0.5">
+            <ul className="space-y-0.5" aria-labelledby={group.name ? `${groupDomId}-${gi}` : undefined}>
               {group.items.map((section) => {
                 const active = section.id === activeId;
                 return (
