@@ -102,9 +102,15 @@ function checkNode() {
   }
 }
 
+/**
+ * `question`, et surtout pas `prompt` : sur une interface readline, `prompt()`
+ * n'affiche que l'invite par défaut (« > ») et rend `undefined`. Le renommage
+ * du 29/08 avait confondu le paramètre et la méthode — l'installateur mourait
+ * sur un `.trim()` dès la première question. `installer.test.mjs` y veille.
+ */
 async function ask(reader, prompt, validate) {
   for (;;) {
-    const response = (await reader.prompt(prompt)).trim();
+    const response = (await reader.question(prompt)).trim();
     const issue = validate(response);
     if (!issue) return response;
     console.log(`  ${issue}`);
