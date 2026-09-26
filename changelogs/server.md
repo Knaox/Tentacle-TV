@@ -21,6 +21,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Le bandeau « Clé Jellyfin hors service » s'affiche de nouveau** : il ne se montrait plus depuis la 1.14.0, même avec une clé révoquée
 - **Administration : la page Utilisateurs refaite** — chaque compte avec sa photo, en grille sur toute la largeur ; un résumé (comptes, actifs sur 7 jours, appareils jumelés) ; recherche, filtre, et tri par nom, activité récente ou rôle ; « actif il y a 3 heures » plutôt qu'une date. Un compte s'ouvre en fiche : dernière activité et dernière connexion, droits de téléchargement, appareils jumelés à révoquer, et « Voir en tant que ». Un Jellyfin non configuré ou injoignable est dit comme tel, avec le chemin vers Services
 - **Les photos des comptes restent en cache** : dans l'administration et l'application mobile, une photo de profil n'est plus redemandée à Jellyfin à chaque affichage, tant qu'elle ne change pas
+- **Administration : la page Métadonnées refaite** — elle ne reste plus blanche au chargement ni quand la lecture échoue, et chaque carte s'enregistre seule :
+  - la clé TMDB se lit d'un coup d'œil (configurée, provenance, quatre derniers caractères), se teste sans être enregistrée, se remplace, et son retrait demande confirmation : il éteint les recommandations de tous les comptes
+  - un refus dit d'où il vient — TMDB qui rejette la clé (souvent le jeton v4 collé à la place de la clé v3, que la saisie repère) ou TMDB injoignable depuis le serveur — au lieu d'accuser la clé dans tous les cas
+  - le calcul des recommandations qu'une nouvelle clé déclenche se suit en direct (« 5 sur 12 comptes »), puis son bilan reste affiché, échecs compris
+  - la région se choisit dans une liste de pays — drapeaux, recherche, nom dans la langue de l'interface — limitée à ceux où TMDB référence des plateformes, avec l'aperçu de leurs plateformes avant d'enregistrer
 
 ### EN
 - **Administration: an overview** — `/admin` no longer opens on an empty panel: Jellyfin and database health, live sessions, open tickets, plugin updates, accounts, active invitations and accounts allowed to download, at a glance; every tile leads to its section, and three shortcuts open everyday actions (invite someone, pair a TV, see the app as a user)
@@ -37,6 +42,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **The "Jellyfin key out of service" banner shows again**: it had stopped appearing since 1.14.0, even with a revoked key
 - **Administration: the Users page redesigned** — every account with its photo, in a full-width grid; a summary (accounts, active in the last 7 days, paired devices); search, a filter, and sorting by name, recent activity or role; "active 3 hours ago" rather than a date. An account opens into a sheet: last activity and last sign-in, download rights, paired devices to revoke, and "View as". Jellyfin not set up or unreachable is said as such, with the way to Services
 - **Account photos stay cached**: in the administration and the mobile app, a profile photo is no longer fetched from Jellyfin again on every display, as long as it does not change
+- **Administration: the Metadata page redesigned** — it no longer stays blank while loading or when reading fails, and each card saves on its own:
+  - the TMDB key reads at a glance (configured, where it comes from, last four characters), can be tested without saving, replaced, and removing it asks for confirmation: it turns recommendations off for every account
+  - a rejection says where it comes from — TMDB refusing the key (often the v4 token pasted instead of the v3 key, which the field now spots) or TMDB unreachable from the server — instead of blaming the key every time
+  - the recommendation run a new key starts can be followed live ("5 of 12 accounts"), then its summary stays on screen, failures included
+  - the region is picked from a list of countries — flags, search, names in the interface language — limited to those where TMDB lists platforms, with a preview of their platforms before saving
 
 ## [1.19.3]
 ### FR

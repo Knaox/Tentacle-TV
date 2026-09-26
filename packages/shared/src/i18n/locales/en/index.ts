@@ -12,6 +12,7 @@ import nav from "./nav";
 import adminPlugins from "./adminPlugins";
 import adminInvites from "./adminInvites";
 import adminServices from "./adminServices";
+import adminMetadata from "./adminMetadata";
 import media from "./media";
 import errors from "./errors";
 import profile from "./profile";
@@ -28,6 +29,6 @@ import search from "./search";
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
-  adminPlugins, adminInvites, adminServices, media, errors, profile, disclaimer,
+  adminPlugins, adminInvites, adminServices, adminMetadata, media, errors, profile, disclaimer,
   watchTogether, downloads, easterEggs, reco, whatsNew, offline, sessions, search,
 };

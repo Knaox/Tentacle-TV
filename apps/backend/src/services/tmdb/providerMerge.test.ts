@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveRegionDirectory, mergeWorldProviders } from "./providerMerge";
+import { deriveRegionDirectory, listProviderRegions, mergeWorldProviders } from "./providerMerge";
 
 const WORLD = mergeWorldProviders([
   { provider_id: 8, provider_name: "Netflix", logo_path: "/n.jpg", display_priorities: { FR: 5, CH: 0 } },
@@ -50,5 +50,20 @@ describe("deriveRegionDirectory", () => {
       "Alpha",
       "Zed",
     ]);
+  });
+});
+
+describe("listProviderRegions", () => {
+  it("compte les plateformes de chaque pays, triés par code", () => {
+    expect(listProviderRegions(WORLD)).toEqual([
+      { code: "CH", providers: 3 },
+      { code: "FR", providers: 4 },
+      { code: "US", providers: 2 },
+    ]);
+  });
+
+  it("écarte ce qui n'est pas un code pays à deux lettres", () => {
+    const odd = mergeWorldProviders([{ provider_id: 1, display_priorities: { FR: 1, "": 2, fr: 3, XYZ: 4 } }]);
+    expect(listProviderRegions(odd)).toEqual([{ code: "FR", providers: 1 }]);
   });
 });

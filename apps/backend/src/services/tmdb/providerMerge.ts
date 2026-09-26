@@ -21,6 +21,12 @@ export interface WorldProvider {
   priorities: Record<string, number>;
 }
 
+/** Un pays où TMDB connaît des plateformes, et combien. */
+export interface ProviderRegion {
+  code: string;
+  providers: number;
+}
+
 export interface WatchProviderDirectory {
   region: string;
   /** Les plateformes de la région, dans l'ordre d'affichage de TMDB. */
@@ -79,4 +85,21 @@ export function deriveRegionDirectory(
     providers: regional.map((p) => ({ id: p.id, name: p.name, logoPath: p.logoPath })),
     logos,
   };
+}
+
+/**
+ * Les pays couverts par la liste mondiale, avec leur nombre de plateformes —
+ * une plateforme est DANS un pays ssi elle y a une priorité. Seuls les codes
+ * ISO 3166-1 à deux lettres passent (ceux qu'accepte le réglage de région) ;
+ * triés par code, le client les nomme dans sa langue.
+ */
+export function listProviderRegions(world: readonly WorldProvider[]): ProviderRegion[] {
+  const counts = new Map<string, number>();
+  for (const p of world) {
+    for (const region of Object.keys(p.priorities)) counts.set(region, (counts.get(region) ?? 0) + 1);
+  }
+  return [...counts]
+    .filter(([code]) => /^[A-Z]{2}$/.test(code))
+    .map(([code, providers]) => ({ code, providers }))
+    .sort((a, b) => a.code.localeCompare(b.code));
 }

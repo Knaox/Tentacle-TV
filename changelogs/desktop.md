@@ -22,6 +22,7 @@ et Linux reçoivent l'ensemble.
 - **Administrateurs : la page Services refaite** — l'état de chaque service d'un regard, une section par service, les modifications non enregistrées visibles et annulables ; Jellyfin se teste sans ressortir la clé d'administration (serveur 1.20.0), et la réinitialisation du serveur demande de taper « réinitialiser »
 - **Le bandeau « Clé Jellyfin hors service » s'affiche de nouveau** : il ne se montrait plus depuis la 1.20.9
 - **Administrateurs : la page Utilisateurs refaite** — la photo de chaque compte, un résumé (comptes, actifs sur 7 jours, appareils jumelés), la recherche, un filtre et un tri ; un compte s'ouvre en fiche avec son activité, ses droits de téléchargement, ses appareils jumelés à révoquer et « Voir en tant que »
+- **Administrateurs : la page Métadonnées refaite** — l'état de la clé TMDB d'un regard, testée sans être enregistrée, remplacée, retirée après confirmation ; un refus dit s'il vient de TMDB ou du réseau du serveur ; le calcul des recommandations se suit en direct ; la région se choisit parmi les pays couverts par TMDB, avec drapeaux, recherche et aperçu de leurs plateformes (serveur 1.20.0)
 
 ### EN
 - **Administration: an overview** — administration opens on Jellyfin and database health, live sessions, open tickets, plugin updates, accounts and active invitations; every tile leads to its section
@@ -31,6 +32,7 @@ et Linux reçoivent l'ensemble.
 - **Administrators: the Services page redesigned** — every service's state at a glance, one section per service, unsaved changes visible and cancellable; Jellyfin can be tested without digging out the admin key again (server 1.20.0), and resetting the server asks you to type "reset"
 - **The "Jellyfin key out of service" banner shows again**: it had stopped appearing since 1.20.9
 - **Administrators: the Users page redesigned** — each account's photo, a summary (accounts, active in the last 7 days, paired devices), search, a filter and sorting; an account opens into a sheet with its activity, download rights, paired devices to revoke and "View as"
+- **Administrators: the Metadata page redesigned** — the TMDB key's state at a glance, tested without saving, replaced, removed after confirmation; a rejection says whether it comes from TMDB or from the server's network; the recommendation run can be followed live; the region is picked among the countries TMDB covers, with flags, search and a preview of their platforms (server 1.20.0)
 
 ## [1.22.0]
 ### FR
