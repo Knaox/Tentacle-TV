@@ -18,6 +18,8 @@ interface Props {
  * L'ordre et l'activation des rangées de l'accueil : flèches ↑/↓ (44 pt) et
  * interrupteur — jamais de glisser-déposer, qui ne vaut ni au doigt ni aux
  * lecteurs d'écran. L'interrupteur masque une rangée sans la supprimer.
+ * Les rangées sont des lignes de la carte qui l'accueille, pas des cartes
+ * dans la carte.
  */
 export function HomeRowsEditor({ rows, labelFor, onChange, disabled }: Props) {
   const { t } = useTranslation("preferences");
@@ -30,7 +32,7 @@ export function HomeRowsEditor({ rows, labelFor, onChange, disabled }: Props) {
         const upDisabled = disabled || index === 0;
         const downDisabled = disabled || index === rows.length - 1;
         return (
-          <View key={row.key} style={st.row}>
+          <View key={row.key} style={[st.row, index < rows.length - 1 && st.rowBordered]}>
             <Text style={[st.label, !row.enabled && st.labelOff]} numberOfLines={1}>{label}</Text>
             <MoveButton
               icon="chevron-up"
@@ -79,14 +81,13 @@ function MoveButton({ icon, label, disabled, onPress }: {
 }
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
-  list: { gap: 6 },
+  list: {},
   row: {
     flexDirection: "row" as const, alignItems: "center" as const, gap: 4,
     paddingLeft: spacing.md, paddingRight: spacing.sm, minHeight: 52,
-    borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth,
-    borderColor: t.colors.border.subtle, backgroundColor: t.colors.fill.faint,
   },
-  label: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.primary, flex: 1, marginRight: spacing.xs },
+  rowBordered: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.colors.border.subtle },
+  label: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: t.colors.text.primary, flex: 1, marginRight: spacing.xs },
   labelOff: { color: t.colors.text.tertiary },
   // 44 × 44 : la cible tactile entière, l'icône au centre.
   move: { width: 44, height: 44, borderRadius: RADIUS.md, alignItems: "center" as const, justifyContent: "center" as const },
