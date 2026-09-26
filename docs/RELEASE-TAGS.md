@@ -21,8 +21,10 @@ Avant le clic, elle affiche deux choses qui décident de tout :
   désactive.
 
 > ⚠️ Son vocabulaire est celui des entrées de workflow (`targets`, `channel`,
-> `version`, `promote`). Changer l'un sans l'autre casse le déclenchement **en
-> silence** : GitHub ignore une entrée inconnue et applique le défaut.
+> `version`, `promote`) ; `webos.yml` et `server.yml` n'ont ni `targets` ni
+> `promote`. Une entrée que le workflow ne déclare pas fait **refuser** le
+> déclenchement (422 « Unexpected inputs provided ») ; une entrée déclarée que
+> la page n'envoie plus prend son défaut **en silence**.
 
 Sans jeton, la page affiche la commande `gh workflow run` équivalente.
 
@@ -48,8 +50,8 @@ veut le paquet à chaque soumission.
 | `desktop.yml` | `macos` `windows` `linux` | Mac App Store · Microsoft Store (MSIX) · Release GitHub + auto-update |
 | `mobile.yml` | `android` `ios` | Play `com.tentacletv.mobile` · App Store `com.tentacle.mobile` |
 | `tv.yml` | `androidtv` `appletv` | Play (MÊME fiche que le mobile, form factor TV) · App Store tvOS |
-| `webos.yml` | `ipk` | Release GitHub — adresse permanente `webos-latest` |
-| `server.yml` | `docker` | `ghcr.io/knaox/tentacle-tv` + Release `server-vX.Y.Z` |
+| `webos.yml` | — (IPK seul, pas d'entrée) | Release GitHub — adresse permanente `webos-latest` |
+| `server.yml` | — (image seule, pas d'entrée) | `ghcr.io/knaox/tentacle-tv` + Release `server-vX.Y.Z` |
 
 Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
 cran `store`. C'est la CI qui les pose quand on demande une version : elle écrit

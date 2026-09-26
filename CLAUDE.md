@@ -63,8 +63,10 @@ cibles, un cran, éventuellement une version, et on clique. Elle affiche avant l
 clic l'état du contrôle qualité et la taille des notes de version par store.
 
 ⚠️ **Son vocabulaire est celui des entrées de workflow** (`targets`, `channel`,
-`version`, `promote`). Changer l'un sans l'autre casse le déclenchement en
-silence — GitHub ignore une entrée inconnue.
+`version`, `promote`) — et `webos.yml` comme `server.yml` n'ont NI `targets` NI
+`promote` (`noTargets` / `noPromote` dans la page). Une entrée qu'un workflow ne
+déclare pas fait REFUSER le déclenchement (422 « Unexpected inputs provided ») ;
+une entrée déclarée que la page n'envoie plus prend son défaut, en silence.
 
 ### Les trois crans
 
@@ -85,8 +87,8 @@ paquet à chaque soumission.
 | `desktop.yml` | `macos` · `windows` · `linux` |
 | `mobile.yml` | `android` · `ios` |
 | `tv.yml` | `androidtv` · `appletv` |
-| `webos.yml` | `ipk` |
-| `server.yml` | `docker` (l'image Docker EST le serveur) |
+| `webos.yml` | aucune entrée `targets` — l'IPK seul |
+| `server.yml` | aucune entrée `targets` — l'image Docker EST le serveur |
 
 Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
 cran `store` ; c'est la CI qui les pose quand on demande une version.
