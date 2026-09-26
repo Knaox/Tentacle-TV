@@ -7,12 +7,16 @@ import { FONT_FAMILY, useTheme } from "@/theme";
 /**
  * Le visage d'un compte — la photo Jellyfin, la même source que le bureau —,
  * et l'initiale sur la teinte de la marque quand il n'y en a pas (ou qu'elle
- * ne se charge pas).
+ * ne se charge pas). Avec son étiquette quand la source la connaît : une photo
+ * changée change d'URL, et le cache disque d'expo-image ne ressert plus
+ * l'ancienne.
  */
-export const UserAvatar = memo(function UserAvatar({ userId, name, hasAvatar, size }: {
+export const UserAvatar = memo(function UserAvatar({ userId, name, hasAvatar, imageTag, size }: {
   userId: string;
   name: string;
   hasAvatar: boolean;
+  /** `PrimaryImageTag` du compte ; les membres Watch Together n'en portent pas. */
+  imageTag?: string | null;
   size: number;
 }) {
   const client = useJellyfinClient();
@@ -23,7 +27,7 @@ export const UserAvatar = memo(function UserAvatar({ userId, name, hasAvatar, si
   if (hasAvatar && !failed) {
     return (
       <Image
-        source={{ uri: `${client.getBaseUrl()}/Users/${encodeURIComponent(userId)}/Images/Primary?maxWidth=${Math.round(size * 3)}&quality=85` }}
+        source={{ uri: `${client.getBaseUrl()}/Users/${encodeURIComponent(userId)}/Images/Primary?maxWidth=${Math.round(size * 3)}&quality=85${imageTag ? `&tag=${encodeURIComponent(imageTag)}` : ""}` }}
         style={[box, { backgroundColor: theme.colors.surface.s3 }]}
         contentFit="cover"
         onError={() => setFailed(true)}
