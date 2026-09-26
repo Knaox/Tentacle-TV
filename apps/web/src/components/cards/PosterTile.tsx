@@ -146,7 +146,10 @@ export function PosterTile({
           qui n'en porte aucune, et sur un épisode isolé, qui porte la sienne.
           Sans fournisseur de notes au-dessus, `useSeriesRatingMap` rend une
           carte vide et le badge se tait, exactement comme avant. */}
-      <CardRatingBadge rating={rating} shown={!actionsVisible} />
+      {/* La note cède la place aux puces qualité/langues quand elles montent
+          (survol, focus sur téléviseur) : les deux se superposaient en bas de
+          l'affiche. Même règle que les cartes tvOS et Android TV. */}
+      <CardRatingBadge rating={rating} shown={!actionsVisible && !(hovered && !grouped)} />
 
       {/* Barre d'actions qui remonte du bas. Le scrim n'apparaît QU'AU survol :
           au repos, l'affiche reste entièrement propre — et n'a même plus la
