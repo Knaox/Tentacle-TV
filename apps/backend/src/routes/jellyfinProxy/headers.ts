@@ -18,6 +18,27 @@ export const SKIP_API_RESPONSE_HEADERS = new Set([
   "content-encoding", "content-length",
 ]);
 
+/**
+ * La fraîcheur que l'amont attribue à une image, retirée quand le proxy pose la
+ * sienne (cf. `imageCacheControl`).
+ *
+ * Un cache placé devant Jellyfin — un reverse proxy qui garde les images —
+ * répond avec `Age` : depuis combien de temps il détient la réponse. Recopié à
+ * côté de NOTRE `max-age`, il s'y soustrait. Mesuré : `age: 494559`, près de six
+ * jours, contre `max-age=86400`. L'image arrivait donc déjà périmée, et le
+ * navigateur la redemandait au réseau pour CHAQUE nouvelle `<img>` qui
+ * l'affichait — retour d'une fiche, rangée remontée —, au lieu de la reprendre
+ * de sa mémoire. Sur la dalle LG : des cartes vides le temps du réseau.
+ */
+const UPSTREAM_FRESHNESS_HEADERS = new Set(["age"]);
+
+/** L'en-tête de réponse de Jellyfin doit-il rester au proxy ? `lower` en minuscules. */
+export function skipResponseHeader(lower: string, kind: { media: boolean; image: boolean }): boolean {
+  if (SKIP_RESPONSE_HEADERS.has(lower)) return true;
+  if (!kind.media && SKIP_API_RESPONSE_HEADERS.has(lower)) return true;
+  return kind.image && UPSTREAM_FRESHNESS_HEADERS.has(lower);
+}
+
 /** Affiches, backdrops, logos, vignettes — `patterns.ts` autorise déjà ce motif. */
 const IMAGE_PATH = /^Items\/[^/]+\/Images\//i;
 
