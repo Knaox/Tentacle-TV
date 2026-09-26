@@ -6,6 +6,7 @@ import { isPushPrefEnabled, type PushPrefKey } from "./pushPreferences";
 import { isTicketNotifType } from "./ticketNotifTypes";
 import { ticketPushText } from "./ticketPushText";
 import { loadPushLangs } from "./pushLang";
+import { departurePushBody, parseSeerDeparture } from "./seerDeparturePush";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -14,7 +15,8 @@ import { loadPushLangs } from "./pushLang";
 // (le plugin Seer, lui, continue d'écrire ses lignes `request_status` sans
 // aucune modification — on ne fait que les livrer).
 //
-// Demandes (`request_status`) : seule l'annonce de DISPONIBILITÉ part en push.
+// Demandes (`request_status`) : l'annonce de DISPONIBILITÉ part en push, et
+// le départ (« est en route », cf. seerDeparturePush.ts).
 // Et d'ordinaire elle est déjà partie : le notifier bibliothèque annonce au
 // demandeur l'arrivée constatée dans Jellyfin, sans attendre que Jellyseerr la
 // voie — la ligne du plugin, plus tardive, reste dans la cloche et ce chemin
@@ -119,7 +121,20 @@ export async function deliverPendingNotifications(): Promise<void> {
       // états d'une demande n'ont pas de plan : la cloche seule.
       const userClaims = claimsByUser.get(n.jellyfinUserId) ?? [];
       const plan = await planSeerAvailabilityPush(n, userClaims);
-      if (!plan) continue;
+      if (!plan) {
+        // Départ d'une demande (« est en route ») : poussé tel quel. Les
+        // autres états (refusée, échec) restent dans la cloche.
+        const departing = parseSeerDeparture(n);
+        if (departing) {
+          const res = await sendToUser(n.jellyfinUserId, {
+            title: n.title,
+            body: departurePushBody(departing, langByUser.get(n.jellyfinUserId) ?? "fr"),
+            data: { type: n.type, refId: n.refId ?? undefined },
+          });
+          console.log(`[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] départ « ${departing} » (sent:${res.sent}, invalid:${res.invalid})`);
+        }
+        continue;
+      }
       if (plan.action === "defer") {
         deferredIds.add(n.id);
         continue;
