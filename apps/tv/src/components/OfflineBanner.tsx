@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { View, Text, TVFocusGuideView, StyleSheet, BackHandler, Platform } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { useNavigation, CommonActions } from "@react-navigation/native";
@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Colors } from "../theme/colors";
 import { CryingTentacle } from "./CryingTentacle";
 import { Focusable } from "./focus/Focusable";
+import { useKeepTvFocus } from "../hooks/useKeepTvFocus";
 import { Button } from "../theme/buttons";
 
 interface OfflineBannerProps {
@@ -23,6 +24,13 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
   const queryClient = useQueryClient();
   const opacity = useSharedValue(0);
 
+  // Le focus reste DANS le bandeau tant qu'il est affiché : ses pièges tiennent
+  // le D-pad, `useKeepTvFocus` reprend ce qu'une réclamation d'en dessous
+  // emporterait — l'état d'erreur de l'accueil, né de la même panne.
+  const retryRef = useRef<View>(null);
+  const logoutRef = useRef<View>(null);
+  const keepFocus = useKeepTvFocus(visible);
+
   // Retour quitte l'application tant que le bandeau est affiché, sur les deux
   // téléviseurs : il couvre tout et ne se referme pas, il n'y a rien derrière
   // vers quoi reculer. « Réessayer » reste à OK, sur le bouton focalisé.
@@ -34,7 +42,8 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
   // simulateur). C'est la règle qu'App Review vérifie ; un
   // `MenuPressInterceptor` qui réessaierait ferait un Menu qui ne quitte plus
   // tant que le serveur ne répond pas. Seule condition : que le focus soit
-  // DANS le bandeau, sans quoi Menu part à l'écran caché dessous.
+  // DANS le bandeau, sans quoi Menu part à l'écran caché dessous — d'où
+  // `useKeepTvFocus` plus haut.
   //
   // Android : Retour y relançait le test de connexion. L'écouteur naît quand
   // le bandeau APPARAÎT, pas au montage : BackHandler sert le dernier inscrit
@@ -98,12 +107,12 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
         <CryingTentacle size={140} />
         <Text style={styles.title}>{t("offlineTitle")}</Text>
         <Text style={styles.message}>{t("offlineMessage")}</Text>
-        <Focusable variant="button" focusRadius={Button.large.borderRadius} onPress={onRetry} hasTVPreferredFocus style={styles.retryFocus}>
+        <Focusable ref={retryRef} {...keepFocus(retryRef)} variant="button" focusRadius={Button.large.borderRadius} onPress={onRetry} hasTVPreferredFocus style={styles.retryFocus}>
           <View style={styles.retryButton}>
             <Text style={styles.retryButtonText}>{t("retryConnection")}</Text>
           </View>
         </Focusable>
-        <Focusable variant="button" focusRadius={Button.large.borderRadius} onPress={handleLogout} style={styles.logoutFocus}>
+        <Focusable ref={logoutRef} {...keepFocus(logoutRef)} variant="button" focusRadius={Button.large.borderRadius} onPress={handleLogout} style={styles.logoutFocus}>
           <View style={styles.logoutButton}>
             <Text style={styles.logoutButtonText}>{t("offlineLogout")}</Text>
           </View>
