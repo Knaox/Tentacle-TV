@@ -85,8 +85,9 @@ export function SettingsRow({
       {trailing ?? (
         <View style={st.trailing}>
           {value ? <Text style={st.value} numberOfLines={1}>{value}</Text> : null}
+          {/* Une place réservée, pas une coche transparente : Android la dessinerait grisée. */}
           {isOption ? (
-            <Feather name="check" size={18} color={checked ? colors.brand.violet : "transparent"} />
+            checked ? <Feather name="check" size={18} color={colors.brand.violet} /> : <View style={st.checkSlot} />
           ) : null}
           {chevron ? <Feather name="chevron-right" size={18} color={colors.text.quaternary} /> : null}
         </View>
@@ -139,6 +140,7 @@ const makeStyles = (t: AppTheme) =>
       lineHeight: 16,
     },
     trailing: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+    checkSlot: { width: 18, height: 18 },
     value: {
       ...typography.body,
       color: t.colors.text.tertiary,
