@@ -214,6 +214,14 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // téléviseur écarte (`ui/reco/recoPrefetchTv.ts`).
   [resolve(WEB, "lib/recoPrefetch.ts")]: resolve(CLIENT, "ui/reco/recoPrefetchTv.ts"),
 
+  // La bannière « Sélectionné pour vous » de l'accueil : la bibliothèque seule,
+  // comme les rangées reco — un titre « à la demande » n'y mène nulle part —,
+  // et sans « Votre note ».
+  [resolve(WEB, "components/reco/hero/RecoBillboardSlot.tsx")]:
+    resolve(CLIENT, "ui/reco/RecoBillboardSlotTv.tsx"),
+  [resolve(WEB, "components/reco/hero/RecoHeroContent.tsx")]:
+    resolve(CLIENT, "ui/reco/RecoHeroContentTv.tsx"),
+
   // Aucune notation par étoiles : dix demi-étoiles à traverser au D-pad, et un
   // anneau qui débordait des glyphes (`shims/noRating.ts`).
   [resolve(WEB, "components/rating/StarRating.tsx")]: resolve(CLIENT, "shims/noRating.ts"),
