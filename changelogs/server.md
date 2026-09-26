@@ -5,6 +5,12 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.19.3]
+### FR
+- **Le site web sur téléphone et sur iPad ressemble enfin à l'application** : mêmes onglets en bas (Accueil, Pour vous, Bibliothèque, extensions, Profil), même en-tête, même accueil avec sa bannière en carte, mêmes fiches, même recherche, même lecteur tactile (−10 s / +30 s, épisodes, pistes). Sur iPad à l'horizontale, la navigation passe dans un rail à gauche et le Profil s'ouvre en deux colonnes. Un appui long sur une affiche ouvre ses actions (favori, Ma liste, vu). Sur ordinateur, rien ne change
+### EN
+- **The website on phones and iPads finally looks like the app**: the same tabs at the bottom (Home, For you, Library, extensions, Profile), the same header, the same home screen with its card-style banner, the same detail pages, the same search, the same touch player (−10 s / +30 s, episodes, tracks). On an iPad held sideways, navigation moves to a rail on the left and Profile opens in two columns. A long press on a poster opens its actions (favourite, My list, watched). Nothing changes on a computer
+
 ## [1.19.2]
 ### FR
 - **Mise à jour pour les téléviseurs LG (webOS)** — le client LG est servi par le serveur, ces corrections arrivent avec lui :

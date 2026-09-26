@@ -54,3 +54,34 @@ Le volet de préversion n'émule pas le tactile d'un iPad. En `vite dev` seuleme
   affiche au lieu du visuel large quand la carte est plus haute que large.
 
 Une mesure changée dans l'app se change ici aussi : c'est tout l'objet du miroir.
+
+## Les trois habillages de la coquille
+
+`shell/MirrorLayout.tsx` choisit, d'après la route, ce qui entoure l'écran
+(`useMirrorChrome()` / `useChromeInsets()` le disent aux éléments fixes) :
+
+- **onglets** (`/`, `/recommendations`, `/libraries`, `/profile`, extensions,
+  administration) : en-tête de verre + barre flottante — ou rail sur l'iPad
+  couché ; le contenu commence sous l'en-tête ;
+- **empilé** (`/library/…`, `/watchlist`, `/favorites`, `/settings/…`,
+  `/about`, `/credits`, `/support`, `/pair-device`, hors ligne) : comme les
+  écrans poussés de l'app, ni en-tête ni barre, l'écran porte son retour ;
+- **plein cadre** (`/search`) : l'écran gère tout, zones sûres comprises.
+
+Hors coquille, comme dans l'app : la fiche (`/media/:id`), le lecteur
+(`/watch/:id`, surcouche `player/` greffée sur `VideoPlayer`), la connexion.
+
+## Ce qui n'existe pas dans un navigateur
+
+Garder hors ligne, notifications push, Liquid Glass, « Passer hors ligne »,
+réglages du moteur vidéo natif : absents du miroir, comme l'app les masque
+quand ils ne s'appliquent pas. L'administration et le catalogue hors ligne
+gardent la présentation du bureau, dans la coquille.
+
+## Vérifier que le bureau n'a pas bougé
+
+Empreinte du DOM (balises + classes) de chaque page, à 1280×800, comparée
+entre `main` et la branche avec les mêmes données : identique sur onze pages
+au 27 sept. 2026 (bibliothèque, réglages, recherche, listes, à propos,
+support, jumelage). Les écrans du miroir sont chargés à la demande
+(`mirror/screens.ts`) : le bureau n'en télécharge aucun.

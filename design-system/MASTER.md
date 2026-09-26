@@ -1,7 +1,7 @@
 # Tentacle TV — Design System MASTER
 
 > **Source unique de vérité** pour le langage visuel sur les 3 plateformes :
-> `apps/mobile` (React Native), `apps/web` desktop (≥ 768px), `apps/web` mobile (< 768px).
+> `apps/mobile` (React Native), `apps/web` desktop, `apps/web` miroir mobile (téléphone et iPad — seuils : docs/WEB-MIROIR-MOBILE.md).
 > Tokens cross-platform centralisés dans `packages/shared/src/theme/*`.
 
 ---
@@ -225,22 +225,24 @@ Pour chaque composant : visuel **identique**, comportement **équivalent**, impl
 
 ## 🗺️ Mapping pages cross-platform
 
-| Page | Mobile | Desktop | Web mobile (mirror) |
+| Page | Mobile | Desktop | Web mobile (mirror) — `apps/web/src/mirror/` |
 |---|---|---|---|
-| Home | `HomeScreen` | `Home.tsx` | _idem desktop_ (à terme : MobileHome mirror) |
-| Detail | `MediaDetailScreen` | `MediaDetail.tsx` | _idem desktop_ |
-| Library list | `LibrariesScreen` | (intégré sidebar) | _idem desktop_ |
-| Library catalog | `LibraryCatalogScreen` | `Library.tsx` | _idem desktop_ |
-| Watchlist | `WatchlistScreen` | `Watchlist.tsx` | _idem desktop_ |
-| Favorites | `FavoritesScreen` | `Favorites.tsx` | _idem desktop_ |
-| Search | `SearchScreen` | `SearchOverlay` | _idem desktop_ |
-| Profile/Settings | `ProfileScreen` | `Preferences.tsx` | `MobileProfile.tsx` ✅ |
-| Admin | _via Profile_ | `Admin.tsx` | _idem desktop_ |
-| Player | `PlayerScreen` | `VideoPlayer/DesktopPlayer` | _idem desktop_ |
-| Auth | 5 screens | 5 pages | _idem desktop_ |
-| Pair TV | `PairTVScreen` | `PairDevice.tsx` | _idem desktop_ |
-| Support/About | 3 screens | 3 pages | _idem desktop_ |
+| Coquille | `(tabs)/_layout` | `AppLayout` (TopNav) | `shell/MirrorLayout` ✅ |
+| Home | `HomeScreen` | `Home.tsx` | `screens/home` ✅ |
+| Pour vous | `ForYouScreen` | `Recommendations.tsx` | `screens/forYou` ✅ |
+| Detail | `MediaDetailScreen` | `MediaDetail.tsx` | `screens/detail` ✅ |
+| Library list | `LibrariesScreen` | (onglets TopNav) | `screens/libraries` (`/libraries`) ✅ |
+| Library catalog | `LibraryCatalogScreen` | `Library.tsx` | `screens/libraries` ✅ |
+| Watchlist / Favorites | `CollectionScreen` | `Watchlist.tsx` / `Favorites.tsx` | `screens/collection` ✅ |
+| Search | `SearchScreen` | `Search.tsx` + omnibox | `screens/search` ✅ |
+| Profile/Settings | `ProfileScreen` + `settings/*` | `settings/*` | `screens/profile` + `screens/settings` ✅ |
+| Admin | _via Profile_ | `admin/*` | _idem desktop_ (dans la coquille) |
+| Player | `PlayerScreen` | `VideoPlayer` / `DesktopPlayer` | `player/` (surcouche de `VideoPlayer`) ✅ |
+| Auth | 5 screens | 5 pages | `screens/auth` (connexion, inscription) ✅ |
+| Pair TV / Support / About / Credits | écrans dédiés | pages | `screens/misc` ✅ |
+| Hors ligne | `OfflineLibraryScreen` | `OfflineCatalog` | _idem desktop_ (pas de hors ligne dans un navigateur) |
 
+Seuils et règles du miroir : `docs/WEB-MIROIR-MOBILE.md`.
 ---
 
 ## 🚦 Phases de mise en cohérence
@@ -249,5 +251,5 @@ Pour chaque composant : visuel **identique**, comportement **équivalent**, impl
 - **Phase B** : Primitives `packages/ui/*` refondues pour matcher mobile (Button, MediaCard, GlassCard, Badge, Input, Shimmer)
 - **Phase C** : Composants signature symétriques (Hero, Action system, Sheet, Skip Intro/Next Episode)
 - **Phase D** : Pages alignées (Home, Detail, Library, Watchlist, Search, Profile, Admin, Player, Auth) — fixes ciblés cohérence
-- **Phase E** : Web mobile mirror (optionnel — clone visuel app mobile native sur web < 768px)
+- **Phase E** : Web mobile mirror ✅ (téléphone et iPad, `apps/web/src/mirror/`, docs/WEB-MIROIR-MOBILE.md)
 - **Phase F** : Validation cross-platform (screenshots comparatifs)
