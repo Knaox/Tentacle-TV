@@ -5,6 +5,12 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.20.0]
+### FR
+- **Administration : les invitations refaites** — « Nouvelle invitation » propose 1, 5 ou 10 personnes et 1 à 30 jours (ou une durée libre), puis donne le lien, prêt à copier ou à partager — la copie marche aussi sur une page ouverte en http:// sur le réseau local, où le bouton ne copiait rien. Le lien est bâti sur l'URL publique du serveur, et un lien qui ne sortirait pas du réseau local est signalé. Chaque invitation dit son statut, ce qu'il en reste, son échéance, qui l'a créée et quels comptes elle a ouverts
+### EN
+- **Administration: invitations redesigned** — "New invitation" offers 1, 5 or 10 people and 1 to 30 days (or a custom duration), then hands you the link, ready to copy or share — copying also works on a page opened over http:// on the local network, where the button copied nothing. The link is built on the server's public URL, and a link that would not leave the local network is flagged. Each invitation shows its status, what is left, when it expires, who created it and which accounts it opened
+
 ## [1.19.3]
 ### FR
 - **Une demande qui part se dit sur le téléphone** : avec Vigie 1.17.0, « « Titre » est en route » arrive en notification dès que Sonarr ou Radarr prend le titre — sous le même réglage que « Contenu demandé disponible », rien à activer

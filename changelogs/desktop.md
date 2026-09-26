@@ -13,6 +13,12 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.23.0]
+### FR
+- **Administrateurs : les invitations refaites** — des préréglages (1, 5 ou 10 personnes, 1 à 30 jours), le lien prêt à copier dès la création, et chaque invitation avec son statut, son échéance et les comptes qu'elle a ouverts. Le lien copié mène enfin au serveur : il pointait vers l'application elle-même et ne s'ouvrait nulle part
+### EN
+- **Administrators: invitations redesigned** — presets (1, 5 or 10 people, 1 to 30 days), the link ready to copy as soon as it is created, and each invitation with its status, expiry and the accounts it opened. The copied link now leads to the server: it pointed to the app itself and opened nowhere
+
 ## [1.22.0]
 ### FR
 - **Une recherche digne de ce nom** : ⌘K ou Ctrl+K où que vous soyez, ou un clic dans la barre — les résultats arrivent à chaque lettre, en quelques millisecondes, calculés par le serveur Tentacle. Les fautes de frappe se corrigent (« Résultats pour … »), la suite du titre se propose en gris (⇥ l'accepte), et l'on trouve aussi par acteur, réalisateur, genre ou studio, chacun avec sa page. Le meilleur résultat se lance d'un clic
