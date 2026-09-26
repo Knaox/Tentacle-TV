@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useInViewport } from "@/hooks/useInViewport";
 import type { ResumeFrame } from "@/hooks/useResumeFrame";
+import { knownImage, rememberImage } from "./seenImages";
 import { cropTrickplayTile, croppedTile } from "./trickplayTile";
 
 interface CardTrickplayImageProps {
@@ -77,7 +78,10 @@ export function CardTrickplayImage({ frame, alt, fallback }: CardTrickplayImageP
             draggable={false}
             className="relative max-w-none flex-none"
             style={boxSize}
-            onLoad={() => setState((e) => (e.key === key ? { ...e, loaded: true } : e))}
+            onLoad={() => {
+              rememberImage(url);
+              setState((e) => (e.key === key ? { ...e, loaded: true } : e));
+            }}
             onError={() => setState((e) => (e.key === key ? { ...e, errored: true } : e))}
           />
         </div>
@@ -88,7 +92,10 @@ export function CardTrickplayImage({ frame, alt, fallback }: CardTrickplayImageP
 }
 
 function initial(key: string) {
-  // Déjà découpée dans la session : affichée d'emblée, sans fondu.
+  // Déjà découpée, et encore retenue (`seenImages`) : affichée d'emblée, sans
+  // fondu. Découpée mais relâchée, elle refait son entrée plutôt que de
+  // surgir une image plus tard.
   const url = croppedTile(key);
-  return { key, url, loaded: url !== null, errored: false, instant: url !== null };
+  const ready = url !== null && knownImage(url);
+  return { key, url, loaded: ready, errored: false, instant: ready };
 }

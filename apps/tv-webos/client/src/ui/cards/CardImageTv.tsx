@@ -31,10 +31,12 @@ interface CardImageProps {
  * nombre de cartes montées est déjà borné par le fenêtrage des rangées : il
  * n'y a rien de plus à retenir.
  *
- * **Une image déjà vue dans la session s'affiche d'emblée.** Une rangée vidée
- * puis remplie remonte ses cartes, et chaque image repartait d'une opacité
- * nulle pour refaire son fondu — un parcours rapide faisait donc clignoter
- * tout ce qu'on venait de voir. Le fondu reste réservé à la PREMIÈRE arrivée.
+ * **Une image vue récemment s'affiche d'emblée.** Une rangée vidée puis
+ * remplie remonte ses cartes, et chaque image repartait d'une opacité nulle
+ * pour refaire son fondu — un parcours rapide faisait donc clignoter tout ce
+ * qu'on venait de voir. Le fondu reste réservé à la PREMIÈRE arrivée, et
+ * `seenImages` retient la ressource pour que l'image soit là dès la première
+ * image de la carte remontée.
  */
 export function CardImage({ src, alt, className, fallback }: CardImageProps) {
   const [state, setState] = useState(() => initial(src));
