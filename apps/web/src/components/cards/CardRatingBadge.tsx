@@ -48,6 +48,9 @@ export function CardRatingBadge({
         shown ? "opacity-100" : "opacity-0"
       }`}
       aria-label={t("communityRatingAria", { score })}
+      // Repère stable de la note posée SUR l'image : la LG, dont le focus ne
+      // passe pas par `hovered`, l'efface par sa feuille (cards-tv.css).
+      data-card-rating={inline ? undefined : ""}
     >
       <span aria-hidden className="text-[var(--brand-accent)]">
         <StarIcon />
