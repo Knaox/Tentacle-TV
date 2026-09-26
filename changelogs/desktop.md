@@ -13,6 +13,12 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.23.0]
+### FR
+- **Administrateurs : la page Utilisateurs refaite** — la photo de chaque compte, un résumé (comptes, actifs sur 7 jours, appareils jumelés), la recherche, un filtre et un tri ; un compte s'ouvre en fiche avec son activité, ses droits de téléchargement, ses appareils jumelés à révoquer et « Voir en tant que »
+### EN
+- **Administrators: the Users page redesigned** — each account's photo, a summary (accounts, active in the last 7 days, paired devices), search, a filter and sorting; an account opens into a sheet with its activity, download rights, paired devices to revoke and "View as"
+
 ## [1.22.0]
 ### FR
 - **Une recherche digne de ce nom** : ⌘K ou Ctrl+K où que vous soyez, ou un clic dans la barre — les résultats arrivent à chaque lettre, en quelques millisecondes, calculés par le serveur Tentacle. Les fautes de frappe se corrigent (« Résultats pour … »), la suite du titre se propose en gris (⇥ l'accepte), et l'on trouve aussi par acteur, réalisateur, genre ou studio, chacun avec sa page. Le meilleur résultat se lance d'un clic

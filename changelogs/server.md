@@ -5,6 +5,14 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.20.0]
+### FR
+- **Administration : la page Utilisateurs refaite** — chaque compte avec sa photo, en grille sur toute la largeur ; un résumé (comptes, actifs sur 7 jours, appareils jumelés) ; recherche, filtre, et tri par nom, activité récente ou rôle ; « actif il y a 3 heures » plutôt qu'une date. Un compte s'ouvre en fiche : dernière activité et dernière connexion, droits de téléchargement, appareils jumelés à révoquer, et « Voir en tant que ». Un Jellyfin non configuré ou injoignable est dit comme tel, avec le chemin vers Services
+- **Les photos des comptes restent en cache** : dans l'administration et l'application mobile, une photo de profil n'est plus redemandée à Jellyfin à chaque affichage, tant qu'elle ne change pas
+### EN
+- **Administration: the Users page redesigned** — every account with its photo, in a full-width grid; a summary (accounts, active in the last 7 days, paired devices); search, a filter, and sorting by name, recent activity or role; "active 3 hours ago" rather than a date. An account opens into a sheet: last activity and last sign-in, download rights, paired devices to revoke, and "View as". Jellyfin not set up or unreachable is said as such, with the way to Services
+- **Account photos stay cached**: in the administration and the mobile app, a profile photo is no longer fetched from Jellyfin again on every display, as long as it does not change
+
 ## [1.19.2]
 ### FR
 - **Mise à jour pour les téléviseurs LG (webOS)** — le client LG est servi par le serveur, ces corrections arrivent avec lui :
