@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { focusableIn } from "./Modal";
 
 export type SheetPlacement = "right" | "bottom";
 
@@ -16,6 +17,25 @@ interface SheetProps {
   lockScroll?: boolean;
   /** Forward className to the panel. */
   className?: string;
+  /** ID du titre du panneau : son nom pour les lecteurs d'écran. */
+  labelledBy?: string;
+  /**
+   * Le focus entre dans le panneau à l'ouverture, y boucle au Tab et revient
+   * à l'élément d'origine à la fermeture — comme `Modal`. Sur demande
+   * seulement : un formulaire en feuille basse dont le premier champ prendrait
+   * le focus ouvrirait le clavier du téléphone sans qu'on l'ait touché.
+   */
+  trapFocus?: boolean;
+}
+
+/**
+ * Le focus est-il dans un AUTRE dialogue, ouvert par-dessus ce panneau (une
+ * confirmation) ? Il faut alors lui laisser Échap et Tab : les deux écouteurs
+ * vivent sur `window`, et celui du panneau, posé le premier, passe avant.
+ */
+function focusInOtherDialog(panel: HTMLElement): boolean {
+  const current = document.activeElement;
+  return current instanceof HTMLElement && !panel.contains(current) && current.closest('[role="dialog"]') !== null;
 }
 
 /**
@@ -31,19 +51,60 @@ export function Sheet({
   size = 360,
   lockScroll = true,
   className,
+  labelledBy,
+  trapFocus = false,
 }: SheetProps) {
-  // Esc to close
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Esc to close ; Tab boucle dans le panneau quand `trapFocus` est demandé.
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
+      const panel = panelRef.current;
+      if (trapFocus && panel && focusInOtherDialog(panel)) return;
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
+        return;
+      }
+      if (!trapFocus || e.key !== "Tab" || !panel) return;
+      const items = focusableIn(panel);
+      if (items.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const current = document.activeElement;
+      const inside = current instanceof HTMLElement && panel.contains(current);
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey) {
+        if (!inside || current === panel || current === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (!inside || current === panel || current === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  }, [open, onClose, trapFocus]);
+
+  // Entrée du focus à l'ouverture, retour à l'élément d'origine à la fermeture.
+  useEffect(() => {
+    if (!open || !trapFocus) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const id = setTimeout(() => {
+      const panel = panelRef.current;
+      if (panel) (focusableIn(panel)[0] ?? panel).focus();
+    }, 50);
+    return () => {
+      clearTimeout(id);
+      previous?.focus?.();
+    };
+  }, [open, trapFocus]);
 
   // Body scroll lock
   useEffect(() => {
@@ -75,8 +136,10 @@ export function Sheet({
           style={{ background: "rgba(0,0,0,0.55)" }}
         >
           <motion.div
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
+            aria-labelledby={labelledBy}
             tabIndex={-1}
             className={`absolute outline-none ${className ?? ""}`}
             style={{
