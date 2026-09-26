@@ -16,6 +16,8 @@ interface SheetProps {
   lockScroll?: boolean;
   /** Forward className to the panel. */
   className?: string;
+  /** L'identifiant du titre qui nomme le volet (`aria-labelledby`). */
+  labelledBy?: string;
 }
 
 /**
@@ -31,6 +33,7 @@ export function Sheet({
   size = 360,
   lockScroll = true,
   className,
+  labelledBy,
 }: SheetProps) {
   // Esc to close
   useEffect(() => {
@@ -77,6 +80,7 @@ export function Sheet({
           <motion.div
             role="dialog"
             aria-modal="true"
+            aria-labelledby={labelledBy}
             tabIndex={-1}
             className={`absolute outline-none ${className ?? ""}`}
             style={{

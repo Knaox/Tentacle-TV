@@ -1,9 +1,10 @@
-import { useEffect, useId, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { AdminPage, StatusPill, TabPanel, Tabs, useUrlTab, type StatusTone } from "../components/admin/kit";
 import { InstalledTab } from "../components/admin-plugins/InstalledTab";
 import { MarketplaceTab } from "../components/admin-plugins/MarketplaceTab";
+import type { CatalogFilter } from "../components/admin-plugins/MarketplaceToolbar";
 import { SourcesTab } from "../components/admin-plugins/SourcesTab";
 import { PluginAdminProvider } from "../components/admin-plugins/PluginAdminContext";
 import { RefreshCatalogButton } from "../components/admin-plugins/RefreshCatalogButton";
@@ -33,6 +34,8 @@ function AdminPluginsPage() {
   const [tab, setTab] = useUrlTab(TABS);
   const queryClient = useQueryClient();
   const { installed, marketplace, sources, updates, unreachable } = usePluginOverview();
+  // La recherche du catalogue survit à un passage par un autre onglet.
+  const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>({ query: "", category: null });
 
   // L'état de lecture d'une source naît de la lecture du catalogue : le
   // catalogue arrivé, la liste des sources se relit pour le montrer.
@@ -76,7 +79,7 @@ function AdminPluginsPage() {
           <InstalledTab onBrowse={() => setTab("marketplace")} />
         </TabPanel>
         <TabPanel idPrefix={idPrefix} id="marketplace" active={tab === "marketplace"}>
-          <MarketplaceTab />
+          <MarketplaceTab filter={catalogFilter} onFilter={setCatalogFilter} onShowSources={() => setTab("sources")} />
         </TabPanel>
         <TabPanel idPrefix={idPrefix} id="sources" active={tab === "sources"}>
           <SourcesTab />

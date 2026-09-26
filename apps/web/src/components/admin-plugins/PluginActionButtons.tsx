@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleArrowUp, Trash2 } from "lucide-react";
+import { CircleArrowUp, PackagePlus, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { ActionPill, type PillStatus } from "../admin/sessions/ActionPill";
 import { ConfirmButton } from "../admin/sessions/ConfirmButton";
@@ -94,5 +94,53 @@ export function UninstallButton({ name, restarts, state, locked, onUninstall }: 
         onConfirm={onUninstall}
       />
     </fieldset>
+  );
+}
+
+interface InstallButtonProps {
+  name: string;
+  /** La source n'est pas l'officielle : son code n'a été relu par personne chez Tentacle. */
+  thirdParty: boolean;
+  sourceName: string;
+  state: PluginActionState | undefined;
+  locked: boolean;
+  onInstall: () => void;
+}
+
+/**
+ * « Installer » — en un clic depuis la source officielle ; confirmé depuis une
+ * source tierce, parce que c'est du code qui s'exécutera sur le serveur.
+ */
+export function InstallButton({ name, thirdParty, sourceName, state, locked, onInstall }: InstallButtonProps) {
+  const { t } = useTranslation(["adminPlugins", "common"]);
+  const [confirming, setConfirming] = useState(false);
+  const status = pillStatus(state, "install");
+  return (
+    <>
+      <ActionPill
+        tone="brand"
+        icon={PackagePlus}
+        label={t("install")}
+        busyLabel={t("installing")}
+        doneLabel={t("installed")}
+        errorLabel={t("updateFailedShort")}
+        status={status}
+        disabled={locked && status !== "busy"}
+        title={locked && status !== "busy" ? t("lockedHint") : undefined}
+        onClick={() => (thirdParty ? setConfirming(true) : onInstall())}
+      />
+      <ConfirmDialog
+        open={confirming}
+        title={t("installConfirmTitle", { name })}
+        message={t("installConfirmBody", { source: sourceName })}
+        confirmLabel={t("install")}
+        cancelLabel={t("common:cancel")}
+        onConfirm={() => {
+          setConfirming(false);
+          onInstall();
+        }}
+        onCancel={() => setConfirming(false)}
+      />
+    </>
   );
 }
