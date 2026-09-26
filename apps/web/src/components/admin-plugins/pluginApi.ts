@@ -41,9 +41,13 @@ async function errorMessage(res: Response): Promise<string> {
  * jamais : un serveur absent (connexion refusée, 502 d'un proxy) est un
  * échantillon « injoignable », c'est exactement ce qu'on attend de lui.
  */
-export async function sampleHealth(signal?: AbortSignal): Promise<HealthSample> {
+export async function sampleHealth(timeoutMs = 4000): Promise<HealthSample> {
+  // Un serveur à moitié levé peut accepter la connexion sans répondre : la
+  // sonde abandonne, et la suivante repartira.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(`${BACKEND}/api/health`, { cache: "no-store", signal });
+    const res = await fetch(`${BACKEND}/api/health`, { cache: "no-store", signal: controller.signal });
     if (!res.ok) return { reachable: false };
     const body = (await res.json()) as {
       bootId?: unknown;
@@ -56,5 +60,7 @@ export async function sampleHealth(signal?: AbortSignal): Promise<HealthSample> 
     };
   } catch {
     return { reachable: false };
+  } finally {
+    clearTimeout(timer);
   }
 }
