@@ -1,7 +1,7 @@
 import type { FocusEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { DEFAULT_ATTRIBUTE } from "../focus/default";
-import { rememberOsdButton } from "./focusOsd";
+import { osdEntryButton, rememberOsdButton } from "./focusOsd";
 import {
   PlayIcon,
   PauseIcon,
@@ -36,10 +36,11 @@ import { MoveIcon } from "./IconsTv";
  * part. Une touche physique se devine d'autant moins que rien à l'écran ne la
  * nomme.
  *
- * Le bouton lecture/pause porte `data-osd-fallback` : c'est le centre de gravité,
- * avec un saut de part et d'autre à une pression. Poser le focus initial sur le
- * premier bouton à gauche imposerait deux pressions pour l'action la plus
- * fréquente.
+ * On entre par le bouton lecture/pause : c'est le centre de gravité, avec un
+ * saut de part et d'autre à une pression. Poser le focus initial sur le premier
+ * bouton à gauche imposerait deux pressions pour l'action la plus fréquente.
+ * Seule exception, le dernier bouton de la rangée qu'on a visé
+ * (`osdEntryButton`).
  */
 
 interface TransportProps {
@@ -81,13 +82,31 @@ export function TransportRowTv({
     rememberOsdButton(target.getAttribute("data-osd-button"));
   };
 
+  // L'entrée est DÉCLARÉE, sur un seul bouton : `DEFAULT_ATTRIBUTE` est ce que
+  // le moteur lit quand il repose l'anneau, et `setOsdFocus` vise la même
+  // marque. Tant que chacun avait sa réponse, le moteur arrivait le premier
+  // avec la sienne — le premier focusable en ordre de lecture, c'est-à-dire le
+  // bouton « quitter » : démarrer un épisode posait l'anneau sur la sortie.
+  const rendered = ["recul", "lecture", "avance", "deplacement"];
+  if (hasPrevious) rendered.push("precedent");
+  if (hasNext) rendered.push("suivant");
+  if (hasEpisodes) rendered.push("episodes");
+  if (hasTracks) rendered.push("pistes");
+  const entry = osdEntryButton(rendered);
+
+  /** La clé d'un bouton, et la marque d'entrée s'il est l'entrée. */
+  const osdButton = (key: string) =>
+    key === entry
+      ? { "data-osd-button": key, [DEFAULT_ATTRIBUTE]: "" }
+      : { "data-osd-button": key };
+
   return (
     <div className="osd-tv-transport" onFocus={remember}>
       {hasPrevious && (
         <button
           type="button"
           className="osd-tv-bouton"
-          data-osd-button="precedent"
+          {...osdButton("precedent")}
           onClick={onPrevious}
           aria-label={t("player:previousEpisode")}
         >
@@ -98,26 +117,17 @@ export function TransportRowTv({
       <button
         type="button"
         className="osd-tv-bouton"
-        data-osd-button="recul"
+        {...osdButton("recul")}
         onClick={() => onSkip(-10)}
         aria-label={t("player:skipBack")}
       >
         <span className="osd-tv-saut">-10</span>
       </button>
 
-      {/* `DEFAULT_ATTRIBUTE` en plus de `data-osd-fallback`, et ce n'est pas un
-          doublon : le second dit à `setOsdFocus` où entrer, le premier le dit
-          au MOTEUR, qui amorce le focus de son côté à chaque changement de
-          route. Les deux couraient, et le moteur arrivait le premier — il
-          prenait alors le premier focusable en ordre de lecture, c'est-à-dire
-          le bouton « quitter » depuis qu'il existe. Démarrer un épisode posait
-          donc l'anneau sur la sortie. */}
       <button
         type="button"
         className="osd-tv-bouton osd-tv-bouton-principal"
-        data-osd-button="lecture"
-        data-osd-fallback
-        {...{ [DEFAULT_ATTRIBUTE]: "" }}
+        {...osdButton("lecture")}
         onClick={onToggle}
         aria-label={playing ? t("player:pause") : t("player:play")}
       >
@@ -127,7 +137,7 @@ export function TransportRowTv({
       <button
         type="button"
         className="osd-tv-bouton"
-        data-osd-button="avance"
+        {...osdButton("avance")}
         onClick={() => onSkip(30)}
         aria-label={t("player:skipForward")}
       >
@@ -140,7 +150,7 @@ export function TransportRowTv({
       <button
         type="button"
         className="osd-tv-bouton"
-        data-osd-button="deplacement"
+        {...osdButton("deplacement")}
         onClick={onMove}
         aria-label={t("player:seekMode")}
       >
@@ -151,7 +161,7 @@ export function TransportRowTv({
         <button
           type="button"
           className="osd-tv-bouton"
-          data-osd-button="suivant"
+          {...osdButton("suivant")}
           onClick={onNext}
           aria-label={t("player:nextEpisode")}
         >
@@ -163,7 +173,7 @@ export function TransportRowTv({
         <button
           type="button"
           className="osd-tv-bouton"
-          data-osd-button="episodes"
+          {...osdButton("episodes")}
           onClick={onEpisodes}
           aria-label={t("player:episodes")}
         >
@@ -175,7 +185,7 @@ export function TransportRowTv({
         <button
           type="button"
           className="osd-tv-bouton"
-          data-osd-button="pistes"
+          {...osdButton("pistes")}
           onClick={onTracks}
           aria-label={t("player:tracks")}
         >

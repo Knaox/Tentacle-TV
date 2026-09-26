@@ -1,5 +1,6 @@
 import { reviewAfterMount } from "../focus/wait";
 import { giveFocus } from "../focus/active";
+import { DEFAULT_ATTRIBUTE } from "../focus/default";
 import { ENTRY_ATTRIBUTE, zoneEntryDestination } from "../focus/zones";
 
 /**
@@ -83,7 +84,7 @@ export function exitPanel(trigger: HTMLElement | null, root: HTMLElement | null)
 }
 
 /**
- * Le dernier bouton de l'habillage qu'on ait visé, pour l'y retrouver.
+ * Le dernier bouton de la rangée qu'on ait visé, pour l'y retrouver.
  *
  * L'habillage s'éteint au bout de cinq secondes et se démonte avec. Le
  * rallumer reposait le focus sur Lecture, quel que soit ce qu'on faisait juste
@@ -91,10 +92,16 @@ export function exitPanel(trigger: HTMLElement | null, root: HTMLElement | null)
  * retraverser la rangée à chaque fois. L'Apple TV rend le dernier bouton
  * utilisé, et c'est ce qui fait qu'une rangée de sept boutons reste praticable.
  *
+ * **La rangée, et elle seule.** Le bouton quitter de la tête n'y entre pas
+ * (cf. `HeaderTv`) : on ne le vise pas pour y revenir, on le vise pour partir.
+ *
  * La mémoire ne survit pas au lecteur : `forgetOsdButton` est appelé à son
  * démontage. Rouvrir un film repart de Lecture, comme une première fois.
  */
 let lastButton: string | null = null;
+
+/** Le centre de gravité de la rangée, où l'on entre quand rien n'a été visé. */
+const PLAY_BUTTON = "lecture";
 
 /** Appelé quand le focus entre dans un bouton de la rangée. */
 export function rememberOsdButton(key: string | null): void {
@@ -106,23 +113,37 @@ export function forgetOsdButton(): void {
 }
 
 /**
- * Poser le focus au centre de gravité de l'habillage.
+ * Le bouton par lequel on entre dans l'habillage : le dernier visé s'il est
+ * rendu, Lecture sinon — « épisode suivant » n'existe pas sur le dernier de la
+ * saison.
  *
- * L'habillage n'est pas un écran : le moteur ne repose pas le focus quand il
- * paraît, puisque la route ne change pas. La rangée dépend en outre de
- * l'épisode suivant, qui arrive après une requête — d'où la révision.
+ * **La rangée le DÉCLARE, elle ne le vise pas**, et c'est ce qui clôt une
+ * course. Deux mécanismes posent le focus quand l'habillage paraît :
+ * `setOsdFocus`, et le moteur, qui repose l'anneau dès que le document le perd
+ * — or l'habillage éteint est démonté, le document le perd à chaque
+ * extinction. Chacun avait sa réponse, le premier arrivé l'emportait, et
+ * c'était presque toujours le moteur. `DEFAULT_ATTRIBUTE`, posé sur ce bouton
+ * et sur lui seul, est lu par les deux : ils ne peuvent plus répondre deux
+ * choses différentes.
+ */
+export function osdEntryButton(rendered: readonly string[]): string {
+  return lastButton !== null && rendered.indexOf(lastButton) >= 0 ? lastButton : PLAY_BUTTON;
+}
+
+/**
+ * Poser le focus sur l'entrée de l'habillage.
+ *
+ * L'habillage n'est pas un écran : la route ne change pas quand il paraît. La
+ * rangée dépend en outre de l'épisode suivant, qui arrive après une requête —
+ * d'où la révision. La cible est celle que la rangée déclare
+ * (`osdEntryButton`), la même que lit le moteur.
  */
 export function setOsdFocus(root: HTMLElement | null): void {
   reviewAfterMount(() => {
     if (!root) return false;
     if (root.contains(document.activeElement)) return true;
 
-    // Le dernier bouton visé d'abord — mais il peut avoir disparu depuis :
-    // « épisode suivant » n'existe pas sur le dernier de la saison.
-    const memory = lastButton
-      ? root.querySelector<HTMLElement>(`[data-osd-button="${lastButton}"]`)
-      : null;
-    const target = memory ?? root.querySelector<HTMLElement>("[data-osd-fallback]");
+    const target = root.querySelector<HTMLElement>(`[${DEFAULT_ATTRIBUTE}]`);
     if (!target) return false;
     giveFocus(target);
     return true;

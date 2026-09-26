@@ -1,7 +1,5 @@
-import type { FocusEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { BackIcon } from "@/components/PlayerIcons";
-import { rememberOsdButton } from "./focusOsd";
 
 /**
  * La tête de l'habillage : de quoi savoir ce qu'on regarde, et comment sortir.
@@ -16,8 +14,10 @@ import { rememberOsdButton } from "./focusOsd";
  * pour ça, et la zone haute était jusqu'ici la seule du lecteur qu'on ne
  * pouvait pas atteindre.
  *
- * Il porte `data-osd-button` comme les autres : le focus y revient si c'est de
- * là qu'on est parti.
+ * **Il n'est jamais l'entrée de l'habillage**, ni retenu comme dernier bouton
+ * visé (`focusOsd.ts`) : on ne le vise pas pour y revenir, on le vise pour
+ * partir. L'anneau qui y reparaissait faisait d'un OK — le geste qu'on fait
+ * pour mettre en pause — une sortie du lecteur.
  *
  * Sorti de `ControlsTv`, qui touchait les trois cents lignes.
  */
@@ -31,19 +31,11 @@ interface HeaderProps {
 export function HeaderTv({ title, subtitle, onExit }: HeaderProps) {
   const { t } = useTranslation("player");
 
-  // Même mémorisation que dans la rangée : `onFocus` remonte en React, et rien
-  // ne subsiste quand l'habillage se démonte.
-  const remember = (event: FocusEvent<HTMLDivElement>): void => {
-    const target = event.target as HTMLElement;
-    rememberOsdButton(target.getAttribute("data-osd-button"));
-  };
-
   return (
-    <div className="osd-tv-haut" onFocus={remember}>
+    <div className="osd-tv-haut">
       <button
         type="button"
         className="osd-tv-bouton osd-tv-quitter"
-        data-osd-button="quitter"
         onClick={onExit}
         aria-label={t("player:back")}
       >
