@@ -65,4 +65,7 @@ export default {
   photoErrorMessage: "Impossible de mettre à jour la photo. Veuillez réessayer.",
   photoPermissionMessage: "Autorisez l'accès à vos photos dans Réglages pour changer votre photo de profil.",
   dangerZone: "Zone de danger",
+  inviteValidity: "Valable",
+  inviteDays: "{{count}} j",
+  inviteNone: "Aucune invitation pour l'instant.",
 } as const;

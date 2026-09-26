@@ -1,7 +1,10 @@
 export { SettingsSection } from "./SettingsSection";
-export { SettingsRow } from "./SettingsRow";
-export { ThemeModeToggle } from "./ThemeModeToggle";
-export { LiquidGlassToggle } from "./LiquidGlassToggle";
+export { SettingsRow, type SettingsIcon } from "./SettingsRow";
+export { SettingsChoiceRow } from "./SettingsChoiceRow";
+export { SettingsOptionList, type SettingsOption } from "./SettingsOptionList";
+export { SettingsPickerRow } from "./SettingsPickerRow";
+export { ThemeChoiceRow, THEME_MODE_LABEL_KEYS } from "./ThemeChoiceRow";
+export { LiquidGlassRow } from "./LiquidGlassRow";
 export { PlaybackSettingsSection } from "./PlaybackSettingsSection";
 export { VideoEngineSection } from "./VideoEngineSection";
 export { SegmentedChoice } from "./SegmentedChoice";

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Text, Pressable, Alert, Linking, Platform, ActivityIndicator, StyleSheet } from "react-native";
+import { Alert, Linking, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   usePushPreferences,
@@ -15,20 +15,26 @@ import { BrandSwitch, SettingsSection, SettingsRow } from "@/components/settings
 import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { ensureNotificationPermission, registerForPushToken } from "@/services/pushNotifications";
-import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /**
  * Sous-écran « Notifications » : les préférences push. Ajouts bibliothèque et
  * Seer sont opt-in ; « Tickets de support » est ACTIVÉE par défaut (même
  * table de défauts que le serveur, PUSH_PREF_DEFAULTS — un serveur ancien qui
  * ne renvoie pas la clé n'éteint pas le réglage). Le toggle Seer n'apparaît
- * que si le plugin `seer` est actif. Un bouton envoie une notif de test pour
- * valider la chaîne bout-en-bout sur l'appareil.
+ * que si le plugin `seer` est actif. En développement, une ligne envoie une
+ * notif de test pour valider la chaîne bout-en-bout sur l'appareil.
  */
 export function NotificationsScreen() {
   const { t } = useTranslation("notifications");
-  const theme = useTheme();
-  const st = useThemedStyles(makeStyles);
+  return (
+    <SettingsScaffold title={t("title")}>
+      <NotificationsPane />
+    </SettingsScaffold>
+  );
+}
+
+export function NotificationsPane() {
+  const { t } = useTranslation("notifications");
 
   const { data: prefs } = usePushPreferences();
   const setPrefs = useSetPushPreferences();
@@ -93,7 +99,7 @@ export function NotificationsScreen() {
   );
 
   return (
-    <SettingsScaffold title={t("title")}>
+    <>
       <SettingsSection title={t("pushSectionTitle")}>
         <SettingsRow
           icon="film"
@@ -118,51 +124,19 @@ export function NotificationsScreen() {
         />
       </SettingsSection>
 
+      {/* Outil de diagnostic : une ligne, pas un bouton de marque plein cadre. */}
       {showTestButton ? (
-        <>
-          <Pressable
-            onPress={onTest}
+        <SettingsSection caption={t("testHint")}>
+          <SettingsRow
+            icon="send"
+            label={t("testButton")}
+            accent
+            last
             disabled={testPush.isPending}
-            style={({ pressed }) => [st.testBtn, pressed && st.testBtnPressed]}
-            accessibilityRole="button"
-            accessibilityLabel={t("testButton")}
-          >
-            {testPush.isPending ? (
-              <ActivityIndicator color={theme.colors.cta.brandFg} />
-            ) : (
-              <Text style={st.testBtnLabel}>{t("testButton")}</Text>
-            )}
-          </Pressable>
-
-          <Text style={st.hint}>{t("testHint")}</Text>
-        </>
+            onPress={onTest}
+          />
+        </SettingsSection>
       ) : null}
-    </SettingsScaffold>
+    </>
   );
 }
-
-const makeStyles = (t: AppTheme) =>
-  StyleSheet.create({
-    testBtn: {
-      marginTop: spacing.lg,
-      minHeight: 50,
-      borderRadius: spacing.cardRadius,
-      backgroundColor: t.colors.brand.violet,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: spacing.lg,
-    },
-    testBtnPressed: { opacity: 0.85 },
-    testBtnLabel: {
-      ...typography.body,
-      fontFamily: FONT_FAMILY.semibold,
-      color: t.colors.cta.brandFg,
-    },
-    hint: {
-      ...typography.small,
-      color: t.colors.text.tertiary,
-      textAlign: "center",
-      marginTop: spacing.md,
-      paddingHorizontal: spacing.md,
-    },
-  });

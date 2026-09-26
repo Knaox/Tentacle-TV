@@ -49,6 +49,7 @@ export function SettingsScaffold({ title, children, maxWidth = 720, trailing }: 
             paddingHorizontal: contentPadding,
             paddingBottom: insets.bottom + spacing.xxl,
           }}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator
           indicatorStyle={Platform.OS === "ios" ? "white" : "default"}
         >

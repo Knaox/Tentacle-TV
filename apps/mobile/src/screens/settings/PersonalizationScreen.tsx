@@ -16,9 +16,20 @@ import { SettingsScaffold } from "./SettingsScaffold";
  * Personnalisation — l'accueil (bandeau, densité, rangées) et les réglages
  * de recommandation, comme sur le web. Relus à chaque focus : ce qu'un autre
  * appareil a changé est là à l'ouverture.
+ *
+ * Le VOLET est le contenu seul : l'écran l'habille de son en-tête sur
+ * téléphone, le profil tablette le pose dans sa colonne de détail.
  */
 export function PersonalizationScreen() {
   const { t } = useTranslation("preferences");
+  return (
+    <SettingsScaffold title={t("sectionPersonalization")}>
+      <PersonalizationPane />
+    </SettingsScaffold>
+  );
+}
+
+export function PersonalizationPane() {
   const qc = useQueryClient();
   const { data: layout } = useHomeLayout();
   const { data: settings } = useRecoSettings();
@@ -32,7 +43,7 @@ export function PersonalizationScreen() {
   );
 
   return (
-    <SettingsScaffold title={t("sectionPersonalization")}>
+    <>
       {layout && libraries ? (
         <PersonalizationHomeSection layout={layout} libraries={libraries} />
       ) : (
@@ -45,6 +56,6 @@ export function PersonalizationScreen() {
       ) : (
         <Skeleton width="100%" height={240} radius={16} />
       )}
-    </SettingsScaffold>
+    </>
   );
 }

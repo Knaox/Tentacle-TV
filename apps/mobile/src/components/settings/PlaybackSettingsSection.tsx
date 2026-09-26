@@ -1,4 +1,3 @@
-import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { setPlaybackSettings, useOwnPlaybackSettings } from "@tentacle-tv/api-client";
 import {
@@ -7,27 +6,32 @@ import {
   SELECTABLE_PRESETS,
   detectPreset,
   presetSettings,
+  type PlaybackPreset,
 } from "@tentacle-tv/shared";
 
-import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
-import { SegmentedChoice } from "./SegmentedChoice";
+import { SettingsOptionList, type SettingsOption } from "./SettingsOptionList";
 import { SettingsSection } from "./SettingsSection";
+import type { SettingsIcon } from "./SettingsRow";
+
+const PRESET_ICONS: Record<PlaybackPreset, SettingsIcon> = {
+  default: "check-circle",
+  manual: "message-square",
+  automatic: "fast-forward",
+  custom: "sliders",
+};
 
 /**
- * Ce que le lecteur a le droit de faire tout seul, sur téléphone : UN choix.
+ * Ce que le lecteur a le droit de faire tout seul, sur téléphone : UN choix,
+ * en lignes à coche — chaque mode a besoin de sa phrase pour être compris,
+ * qu'un segmenté aurait cachée sous le contrôle.
  *
- * Le téléphone montrait les mêmes vingt contrôles que l'ordinateur — dont un
- * délai en millisecondes et deux champs nombre, à saisir au pouce. Le réglage
- * fin n'a pas sa place ici : il se fait sur grand écran, il suit le COMPTE, et
- * il s'applique donc à cet appareil sans qu'on ait à le répéter.
- *
- * Reste le mode, qui est la seule question courante. « Personnalisé »
- * n'est pas proposé : c'est ce qu'on lit quand les réglages viennent de
- * l'ordinateur, et le toucher les remplacerait.
+ * Le réglage fin n'a pas sa place ici : il se fait sur grand écran, il suit
+ * le COMPTE, et s'applique donc à cet appareil sans qu'on ait à le répéter.
+ * « Personnalisé » n'est pas proposé : c'est ce qu'on lit quand les réglages
+ * viennent de l'ordinateur, et le toucher les remplacerait.
  */
 export function PlaybackSettingsSection() {
   const { t } = useTranslation("preferences");
-  const st = useThemedStyles(makeStyles);
   // Les réglages PROPRES : dans un groupe Watch Together, ceux de l'hôte
   // gouvernent la lecture, mais ce sont bien les siens qu'on règle ici.
   const settings = useOwnPlaybackSettings();
@@ -35,43 +39,27 @@ export function PlaybackSettingsSection() {
 
   // La liste vient de SELECTABLE_PRESETS, jamais d'un tableau écrit ici :
   // écrite à la main, elle avait déjà manqué l'ajout de « Par défaut ».
-  const options = [
-    ...SELECTABLE_PRESETS.map((value) => ({ value, label: t(PRESET_LABEL_KEYS[value]) })),
-    ...(preset === "custom" ? [{ value: "custom", label: t(PRESET_LABEL_KEYS.custom) }] : []),
-  ];
+  const shown: PlaybackPreset[] = [...SELECTABLE_PRESETS, ...(preset === "custom" ? ["custom" as const] : [])];
+  const options: SettingsOption<PlaybackPreset>[] = shown.map((value) => ({
+    value,
+    label: t(PRESET_LABEL_KEYS[value]),
+    description: t(PRESET_HINT_KEYS[value]),
+    icon: PRESET_ICONS[value],
+  }));
 
   return (
-    <SettingsSection title={t("playbackModeTitle")} caption={t("playbackSettingsAccount")}>
-      <View style={st.block}>
-        <Text style={st.title}>{t("playbackModeLabel")}</Text>
-        <SegmentedChoice
-          accessibilityLabel={t("playbackModeLabel")}
-          value={preset}
-          options={options}
-          onChange={(value) => {
-            const chosen = SELECTABLE_PRESETS.find((entry) => entry === value);
-            if (chosen) setPlaybackSettings(presetSettings(chosen));
-          }}
-        />
-        <Text style={st.hint}>{t(PRESET_HINT_KEYS[preset])}</Text>
-      </View>
-      <View style={[st.block, st.last]}>
-        <Text style={st.hint}>{t("playbackAdvancedOnDesktop")}</Text>
-      </View>
+    <SettingsSection
+      title={t("playbackModeTitle")}
+      caption={`${t("playbackSettingsAccount")} ${t("playbackAdvancedOnDesktop")}`}
+    >
+      <SettingsOptionList
+        options={options}
+        value={preset}
+        onChange={(value) => {
+          const chosen = SELECTABLE_PRESETS.find((entry) => entry === value);
+          if (chosen) setPlaybackSettings(presetSettings(chosen));
+        }}
+      />
     </SettingsSection>
   );
 }
-
-const makeStyles = (t: AppTheme) =>
-  StyleSheet.create({
-    block: {
-      paddingVertical: spacing.md,
-      paddingHorizontal: spacing.md,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: t.colors.border.subtle,
-      gap: spacing.sm,
-    },
-    last: { borderBottomWidth: 0 },
-    title: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
-    hint: { ...typography.small, color: t.colors.text.tertiary, lineHeight: 17 },
-  });

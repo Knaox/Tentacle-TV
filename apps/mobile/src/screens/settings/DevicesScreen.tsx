@@ -4,14 +4,18 @@ import { PairedDevicesSection } from "@/components/profile";
 import { SettingsScaffold } from "./SettingsScaffold";
 
 /**
- * Sous-écran « Appareils appairés » : liste des TV/appareils appairés et
- * révocation (PairedDevicesSection, déplacée hors du hub profil).
+ * Sous-écran « Appareils appairés » : jumeler une TV, puis la liste des
+ * appareils jumelés et leur révocation.
  */
 export function DevicesScreen() {
   const { t } = useTranslation("profile");
   return (
     <SettingsScaffold title={t("pairedDevices")}>
-      <PairedDevicesSection />
+      <DevicesPane />
     </SettingsScaffold>
   );
+}
+
+export function DevicesPane() {
+  return <PairedDevicesSection />;
 }

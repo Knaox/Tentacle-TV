@@ -9,10 +9,12 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 ### FR
 - **Une photo de profil à jour** : changée, ajoutée ou retirée depuis un autre appareil, elle se met à jour dès l'ouverture de l'app, et quand on y revient
 - **Changer sa photo depuis l'app** n'affiche plus d'erreur alors que la photo était bien envoyée
+- **Un profil refait** : thème et langue se choisissent sur place, chaque page de réglages est plus claire, et la tablette affiche la liste et le réglage côte à côte
 
 ### EN
 - **An up-to-date profile picture**: changed, added or removed from another device, it updates as soon as the app opens, and whenever you come back to it
 - **Changing your picture from the app** no longer shows an error when the picture was actually sent
+- **A redesigned profile**: theme and language are picked in place, every settings page is clearer, and tablets show the list and the setting side by side
 
 ## [ios-1.8.1]
 <!-- Bloc iOS (App Store Connect, 4000 caractères) : la version complète. Le
