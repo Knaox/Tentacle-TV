@@ -21,7 +21,8 @@ export const TVSearchBack = memo(forwardRef<View, {
   /** Rien d'autre à viser : page vide, en erreur ou encore en chargement. */
   preferred?: boolean;
   onFocus?: () => void;
-}>(function TVSearchBack({ onPress, preferred = false, onFocus }, ref) {
+  onBlur?: () => void;
+}>(function TVSearchBack({ onPress, preferred = false, onFocus, onBlur }, ref) {
   const { t } = useTranslation("common");
   const [focused, setFocused] = useState(false);
   const tint = focused ? Colors.textPrimary : Colors.textSecondary;
@@ -36,7 +37,10 @@ export const TVSearchBack = memo(forwardRef<View, {
         setFocused(true);
         onFocus?.();
       }}
-      onBlur={() => setFocused(false)}
+      onBlur={() => {
+        setFocused(false);
+        onBlur?.();
+      }}
       accessibilityLabel={t("back")}
       style={{ alignSelf: "flex-start" }}
     >

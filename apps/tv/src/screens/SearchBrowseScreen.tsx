@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef } from "react";
-import { ActivityIndicator, Text, View, useWindowDimensions } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Text, View, findNodeHandle, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSearchBrowse, type SearchBrowseTarget } from "@tentacle-tv/api-client";
@@ -11,6 +11,7 @@ import { TVPersonCard } from "../components/search/TVPersonCard";
 import { TVSearchBack } from "../components/search/TVSearchBack";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
+import { claimTvFocus } from "../hooks/useTvFocusClaim";
 import { useTVNavActions } from "../context/TVNavContext";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
@@ -52,18 +53,50 @@ export function SearchBrowseScreen({ navigation, route }: Props) {
   const contentEntry = useTVContentEntry();
   const { lastContentNodeRef } = useTVNavActions();
   const backRef = useRef<View | null>(null);
+  // Sa poignée native : la première rangée d'affiches y monte (`nextFocusUp`),
+  // comme la pilule Retour de la fiche.
+  const [backHandle, setBackHandle] = useState<number | undefined>(undefined);
   const setBack = useCallback((node: View | null) => {
     if (!node && lastContentNodeRef.current === backRef.current) lastContentNodeRef.current = null;
     backRef.current = node;
     contentEntry(node);
+    setBackHandle(node ? findNodeHandle(node) ?? undefined : undefined);
   }, [contentEntry, lastContentNodeRef]);
+  // L'arrivée vise la première affiche, parité LG — et tvOS ne s'y prête pas
+  // de lui-même : il pose le focus sur ce qui est en haut à gauche, Retour, en
+  // ignorant la préférence de l'affiche ; et pendant un chargement, Retour
+  // tient le focus quand elles arrivent. La première affiche le reprend donc,
+  // tant qu'aucune n'a eu le focus (`arrived`) et qu'on n'a pas quitté Retour
+  // entre-temps — vers le rail, par exemple.
+  const arrived = useRef(false);
+  const backFocused = useRef(false);
+  const firstPoster = useRef<View | null>(null);
+  const setFirstPoster = useCallback((node: View | null) => {
+    firstPoster.current = node;
+  }, []);
+  const claimFirstPoster = useCallback(() => {
+    arrived.current = true;
+    return claimTvFocus(firstPoster.current);
+  }, []);
   const rememberBack = useCallback(() => {
+    backFocused.current = true;
     lastContentNodeRef.current = backRef.current;
-  }, [lastContentNodeRef]);
+    if (!arrived.current && firstPoster.current) claimFirstPoster();
+  }, [lastContentNodeRef, claimFirstPoster]);
+  const leaveBack = useCallback(() => {
+    backFocused.current = false;
+  }, []);
+  const settle = useCallback(() => {
+    arrived.current = true;
+  }, []);
+  useEffect(() => {
+    if (items.length === 0 || arrived.current || !backFocused.current) return;
+    return claimFirstPoster();
+  }, [items.length, claimFirstPoster]);
 
   const header = (
     <View>
-      <TVSearchBack ref={setBack} onPress={goBack} onFocus={rememberBack} preferred={items.length === 0} />
+      <TVSearchBack ref={setBack} onPress={goBack} onFocus={rememberBack} onBlur={leaveBack} preferred={items.length === 0} />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 32, paddingTop: 16, paddingBottom: 32 }}>
         {kind === "person" && data?.person && <TVPersonCard person={data.person} />}
         <View style={{ flex: 1 }}>
@@ -86,18 +119,22 @@ export function SearchBrowseScreen({ navigation, route }: Props) {
   return (
     <TVScreenFrame>
       <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-        {data ? (
-          <TVPosterGrid items={items} width={gridWidth} gutter={Spacing.rowGutter} onOpen={open} header={header} preferFirst />
-        ) : (
-          <View style={{ flex: 1, paddingHorizontal: Spacing.rowGutter }}>
-            {header}
-            {isError ? (
-              <Text style={{ color: Colors.textTertiary, ...Typography.body }}>{t("noResults", { query: name })}</Text>
-            ) : (
-              <ActivityIndicator color={Colors.textSecondary} size="large" style={{ marginTop: 80 }} />
-            )}
-          </View>
-        )}
+        <TVPosterGrid
+          items={items}
+          width={gridWidth}
+          gutter={Spacing.rowGutter}
+          onOpen={open}
+          header={header}
+          preferFirst
+          entryRef={setFirstPoster}
+          onFocusCell={settle}
+          firstRowUp={backHandle}
+          empty={data ? undefined : isError ? (
+            <Text style={{ color: Colors.textTertiary, ...Typography.body }}>{t("noResults", { query: name })}</Text>
+          ) : (
+            <ActivityIndicator color={Colors.textSecondary} size="large" style={{ marginTop: 80 }} />
+          )}
+        />
       </View>
     </TVScreenFrame>
   );

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, TVFocusGuideView, View, useWindowDimensions } from "react-native";
 import type { View as RNView } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSearchDiscover, useSearchEpisodes, useTentacleSearch } from "@tentacle-tv/api-client";
 import {
@@ -108,18 +107,30 @@ export function SearchScreen({ navigation }: Props) {
   // affichage sur Android TV, où l'on revient donc à la première touche du
   // clavier à l'écran, juste dessous. Le rail y ramène aussi (« Rechercher »).
   const barRef = useRef<RNView | null>(null);
-  const focusSearchBar = useCallback(() => claimTvFocus(barRef.current ?? firstKey.current), []);
+  const focusSearchBar = useCallback(() => {
+    const target = barRef.current ?? firstKey.current;
+    const cancel = claimTvFocus(target);
+    const again = setTimeout(() => claimTvFocus(target), 400);
+    return () => {
+      cancel();
+      clearTimeout(again);
+    };
+  }, []);
   useEffect(() => registerSearchBar(focusSearchBar), [focusSearchBar]);
 
   // Revenir d'une étagère — bouton Retour, touche Retour, Menu de la Siri
   // Remote, « Rechercher » au rail — rend la barre, parité LG. Les résultats
   // gardent leur dernière carte (`autoFocus`) : un appui à droite y ramène.
+  //
+  // À la FIN de la transition, pas au focus de l'écran : sur tvOS, le moteur
+  // restaure lui-même la carte quittée une fois le fondu terminé, et une
+  // réclamation partie avant était aussitôt défaite — mesuré au simulateur.
   const browsing = useRef(false);
-  useFocusEffect(useCallback(() => {
-    if (!browsing.current) return;
+  useEffect(() => navigation.addListener("transitionEnd", (event) => {
+    if (event.data.closing || !browsing.current) return;
     browsing.current = false;
-    return focusSearchBar();
-  }, [focusSearchBar]));
+    focusSearchBar();
+  }), [navigation, focusSearchBar]);
   const openBrowse = useCallback((params: RootStackParamList["SearchBrowse"]) => {
     browsing.current = true;
     navigation.navigate("SearchBrowse", params);

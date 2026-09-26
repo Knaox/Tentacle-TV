@@ -22,6 +22,16 @@ interface TVPosterGridProps {
   header?: React.ReactElement;
   /** La première carte prend le focus à l'arrivée (écran poussé). */
   preferFirst?: boolean;
+  /** Le nœud de la première carte, pour la viser quand elle arrive après coup. */
+  entryRef?: (node: View | null) => void;
+  /** Une carte a pris le focus. */
+  onFocusCell?: (index: number) => void;
+  /** « Haut » depuis la première rangée : la cible (poignée native), que la
+   *  géométrie de tvOS n'atteint que depuis les colonnes qu'elle chevauche. */
+  firstRowUp?: number;
+  /** Sous l'en-tête tant qu'il n'y a pas de carte : chargement, erreur. Dans la
+   *  liste et non à côté, pour que l'en-tête ne soit jamais remonté. */
+  empty?: React.ReactElement;
 }
 
 /**
@@ -29,7 +39,9 @@ interface TVPosterGridProps {
  * Colonnes déduites de la largeur (cible 180 pt) ; la rangée focalisée
  * remonte vers le haut de l'écran, la précédente encore visible.
  */
-export const TVPosterGrid = memo(function TVPosterGrid({ items, width, gutter, onOpen, header, preferFirst }: TVPosterGridProps) {
+export const TVPosterGrid = memo(function TVPosterGrid({
+  items, width, gutter, onOpen, header, preferFirst, entryRef, onFocusCell, empty, firstRowUp,
+}: TVPosterGridProps) {
   const listRef = useRef<FlatList<MediaItem>>(null);
   const columns = Math.max(3, Math.floor((width + GAP) / (180 + GAP)));
   const cardW = Math.floor((width - GAP * (columns - 1)) / columns);
@@ -42,6 +54,10 @@ export const TVPosterGrid = memo(function TVPosterGrid({ items, width, gutter, o
     const offset = headerHeightRef.current + row * rowHeight - 120;
     listRef.current?.scrollToOffset({ offset: Math.max(0, offset), animated: true });
   }, [columns, rowHeight]);
+  const focusIndex = useCallback((index: number) => {
+    scrollToIndex(index);
+    onFocusCell?.(index);
+  }, [scrollToIndex, onFocusCell]);
 
   const renderItem = useCallback(({ item, index }: { item: MediaItem; index: number }) => (
     <GridCell
@@ -49,10 +65,12 @@ export const TVPosterGrid = memo(function TVPosterGrid({ items, width, gutter, o
       index={index}
       cardW={cardW}
       preferred={preferFirst === true && index === 0}
+      onEntry={index === 0 ? entryRef : undefined}
+      nextFocusUp={index < columns ? firstRowUp : undefined}
       onOpen={onOpen}
-      onFocusIndex={scrollToIndex}
+      onFocusIndex={focusIndex}
     />
-  ), [cardW, preferFirst, onOpen, scrollToIndex]);
+  ), [cardW, preferFirst, entryRef, columns, firstRowUp, onOpen, focusIndex]);
 
   return (
     <FlatList
@@ -65,6 +83,7 @@ export const TVPosterGrid = memo(function TVPosterGrid({ items, width, gutter, o
       ListHeaderComponent={header ? (
         <View onLayout={(e) => { headerHeightRef.current = e.nativeEvent.layout.height; }}>{header}</View>
       ) : undefined}
+      ListEmptyComponent={empty}
       columnWrapperStyle={{ gap: GAP, marginBottom: GAP }}
       contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: 16, paddingBottom: 120 }}
       showsVerticalScrollIndicator={false}
@@ -76,11 +95,13 @@ export const TVPosterGrid = memo(function TVPosterGrid({ items, width, gutter, o
   );
 });
 
-const GridCell = memo(function GridCell({ item, index, cardW, preferred, onOpen, onFocusIndex }: {
+const GridCell = memo(function GridCell({ item, index, cardW, preferred, onEntry, nextFocusUp, onOpen, onFocusIndex }: {
   item: MediaItem;
   index: number;
   cardW: number;
   preferred: boolean;
+  onEntry?: (node: View | null) => void;
+  nextFocusUp?: number;
   onOpen: (item: MediaItem) => void;
   onFocusIndex: (index: number) => void;
 }) {
@@ -89,7 +110,7 @@ const GridCell = memo(function GridCell({ item, index, cardW, preferred, onOpen,
   // rail reste visible sur une étagère, et sa sortie doit rendre la carte
   // qu'on avait quittée. Effacée à la mort de la cellule tant qu'elle la
   // désigne — une vue détruite ne se refocalise pas.
-  const cellRef = useRef<View>(null);
+  const cellRef = useRef<View | null>(null);
   const { lastContentNodeRef } = useTVNavActions();
   useEffect(
     () => () => {
@@ -97,11 +118,16 @@ const GridCell = memo(function GridCell({ item, index, cardW, preferred, onOpen,
     },
     [lastContentNodeRef],
   );
+  const setCell = useCallback((node: View | null) => {
+    cellRef.current = node;
+    onEntry?.(node);
+  }, [onEntry]);
   return (
     <Focusable
-      ref={cellRef}
+      ref={setCell}
       variant="card"
       hasTVPreferredFocus={preferred}
+      nextFocusUp={nextFocusUp}
       onPress={() => onOpen(item)}
       onFocus={() => {
         setFocused(true);
