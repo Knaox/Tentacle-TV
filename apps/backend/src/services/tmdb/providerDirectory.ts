@@ -3,10 +3,10 @@ import { tmdbConfigured, tmdbFetch } from "./client";
 import { PLATFORM_FAMILIES } from "./platforms";
 import { watchRegion } from "./providerNormalize";
 import type { ProviderRef } from "./providerNormalize";
-import { deriveRegionDirectory, mergeWorldProviders } from "./providerMerge";
-import type { RawWatchProvider, WatchProviderDirectory, WorldProvider } from "./providerMerge";
+import { deriveRegionDirectory, listProviderRegions, mergeWorldProviders } from "./providerMerge";
+import type { ProviderRegion, RawWatchProvider, WatchProviderDirectory, WorldProvider } from "./providerMerge";
 
-export type { WatchProviderDirectory } from "./providerMerge";
+export type { ProviderRegion, WatchProviderDirectory } from "./providerMerge";
 // La région vit dans providerNormalize (même règle que metaCache) ; ré-exportée
 // pour les importeurs historiques.
 export { watchRegion } from "./providerNormalize";
@@ -101,6 +101,17 @@ export async function getWatchProviderDirectory(
   const snapshot = await loadWorld();
   if (!snapshot) return { region, providers: [], logos: {} };
   return deriveRegionDirectory(snapshot.providers, region, FAMILY_IDS);
+}
+
+/**
+ * Les pays que couvre TMDB et leur nombre de plateformes — le sélecteur de
+ * région d'Admin → Métadonnées. Même source que l'annuaire, donc aucun appel
+ * TMDB tant que la liste mondiale est en mémoire ou en base. Sans clé ni
+ * copie : vide.
+ */
+export async function getProviderRegions(): Promise<ProviderRegion[]> {
+  const snapshot = await loadWorld();
+  return snapshot ? listProviderRegions(snapshot.providers) : [];
 }
 
 /** Nom et logo d'un id, depuis la liste mondiale EN MÉMOIRE — les entrées du

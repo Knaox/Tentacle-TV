@@ -16,14 +16,15 @@ import { refreshTrending } from "../services/reco/trendingRow";
 import { requestCrawlerReseed } from "../services/reco/crawlReseed";
 import { getTmdbApiKey } from "../services/tmdb/client";
 import { checkTmdbKey } from "../services/tmdb/keyCheck";
+import { getProviderRegions, getWatchProviderDirectory } from "../services/tmdb/providerDirectory";
+
+/** ISO 3166-1 alpha-2 — la seule forme que le réglage de région accepte. */
+const REGION_CODE = /^[A-Z]{2}$/;
 
 const putSchema = z.object({
   tmdbApiKey: z.string().max(128).optional(),
   /** Région watch-providers (ISO 3166-1 alpha-2), consommée par metaCache. */
-  watchRegion: z
-    .string()
-    .regex(/^[A-Z]{2}$/)
-    .optional(),
+  watchRegion: z.string().regex(REGION_CODE).optional(),
 });
 
 const testSchema = z.object({
@@ -103,5 +104,25 @@ export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
     const candidate = body.tmdbApiKey?.trim() || getTmdbApiKey();
     if (!candidate) return reply.status(400).send({ error: "tmdb-key-missing" });
     return { result: await checkTmdbKey(candidate) };
+  });
+
+  /**
+   * GET /api/admin/metadata/regions → { regions: [{ code, providers }] }
+   * Les pays où TMDB connaît des plateformes, lus dans l'annuaire mondial déjà
+   * persisté — aucun appel TMDB. Vide sans clé ni copie : le client propose
+   * alors tous les pays.
+   */
+  app.get("/metadata/regions", async () => ({ regions: await getProviderRegions() }));
+
+  /**
+   * GET /api/admin/metadata/regions/:code → { region, providers: [{ id, name, logoPath }] }
+   * L'aperçu d'un pays AVANT de l'enregistrer : ses plateformes, dans l'ordre
+   * d'affichage de TMDB. Même source, même absence d'appel.
+   */
+  app.get("/metadata/regions/:code", async (request, reply) => {
+    const region = String((request.params as { code?: string }).code ?? "").toUpperCase();
+    if (!REGION_CODE.test(region)) return reply.status(400).send({ error: "region-invalid" });
+    const { providers } = await getWatchProviderDirectory(region);
+    return { region, providers };
   });
 };

@@ -1,7 +1,7 @@
 /**
  * La route admin des métadonnées : lecture masquée, écriture validée auprès de
  * TMDB (clé refusée ≠ TMDB injoignable), test d'une clé sans l'enregistrer,
- * et refus d'un non-admin.
+ * pays couverts et aperçu de leurs plateformes, et refus d'un non-admin.
  */
 
 import Fastify from "fastify";
@@ -41,6 +41,17 @@ vi.mock("../services/reco/fanout", () => ({
 }));
 vi.mock("../services/reco/trendingRow", () => ({ refreshTrending: async () => undefined }));
 vi.mock("../services/reco/crawlReseed", () => ({ requestCrawlerReseed: () => undefined }));
+vi.mock("../services/tmdb/providerDirectory", () => ({
+  getProviderRegions: async () => [
+    { code: "BE", providers: 61 },
+    { code: "FR", providers: 102 },
+  ],
+  getWatchProviderDirectory: async (region: string) => ({
+    region,
+    providers: region === "FR" ? [{ id: 8, name: "Netflix", logoPath: "/n.jpg" }] : [],
+    logos: { 8: "/n.jpg" },
+  }),
+}));
 
 import { adminMetadataRoutes } from "./adminMetadata";
 
@@ -169,5 +180,28 @@ describe("POST /api/admin/metadata/tmdb/test", () => {
   it("refuse un compte qui n'est pas administrateur", async () => {
     const response = await call("POST", "/metadata/tmdb/test", "tok-user", { tmdbApiKey: GOOD_KEY });
     expect(response.statusCode).toBe(403);
+  });
+});
+
+describe("GET /api/admin/metadata/regions", () => {
+  it("liste les pays couverts par TMDB et leur nombre de plateformes", async () => {
+    const response = await call("GET", "/metadata/regions", "tok-admin");
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      regions: [
+        { code: "BE", providers: 61 },
+        { code: "FR", providers: 102 },
+      ],
+    });
+  });
+
+  it("donne l'aperçu d'un pays avant de l'enregistrer, casse tolérée", async () => {
+    const response = await call("GET", "/metadata/regions/fr", "tok-admin");
+    expect(response.json()).toEqual({ region: "FR", providers: [{ id: 8, name: "Netflix", logoPath: "/n.jpg" }] });
+  });
+
+  it("refuse ce qui n'est pas un code pays, et les non-administrateurs", async () => {
+    expect((await call("GET", "/metadata/regions/FRA", "tok-admin")).statusCode).toBe(400);
+    expect((await call("GET", "/metadata/regions", "tok-user")).statusCode).toBe(403);
   });
 });
