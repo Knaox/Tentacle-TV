@@ -5,7 +5,7 @@ import { getPrisma } from "../services/db";
 import { requireAuth, requireAdmin, getTokenFromRequest } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { signDeviceToken, hashToken } from "../services/jwt";
-import { confirmerJellyfinToken } from "../services/deviceTokenHealth";
+import { confirmJellyfinToken } from "../services/deviceTokenHealth";
 import { revokeDeviceByTokenHash } from "../services/wsManager";
 
 const PAIR_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -79,8 +79,8 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
 
       // Le jeton Jellyfin du confirmateur, pour le direct du futur appareil —
       // lu à la source de son authentification et de SON compte, sinon celui
-      // d'un appareil frère (cf. `confirmerJellyfinToken`).
-      const jellyfinAccessToken = await confirmerJellyfinToken(getTokenFromRequest(request), user.userId);
+      // d'un appareil frère (cf. `confirmJellyfinToken`).
+      const jellyfinAccessToken = await confirmJellyfinToken(getTokenFromRequest(request), user.userId);
 
       const expiresAt = new Date(Date.now() + CODE_TTL_MS);
       await prisma.pairingCode.create({
@@ -295,7 +295,7 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
       });
 
       // Jeton Jellyfin du confirmateur pour le streaming direct (comme /generate).
-      const jellyfinAccessToken = await confirmerJellyfinToken(getTokenFromRequest(request), user.userId);
+      const jellyfinAccessToken = await confirmJellyfinToken(getTokenFromRequest(request), user.userId);
 
       await prisma.pairedDevice.create({
         data: {
@@ -340,7 +340,7 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
       });
 
       // Jeton Jellyfin du confirmateur pour le streaming direct (comme /generate).
-      const jellyfinAccessToken = await confirmerJellyfinToken(getTokenFromRequest(request), user.userId);
+      const jellyfinAccessToken = await confirmJellyfinToken(getTokenFromRequest(request), user.userId);
 
       const prisma = getPrisma();
       await prisma.pairedDevice.create({

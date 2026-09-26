@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // premier niveau faisait la même chose, mais le typecheck (tests compris) le
 // refuse avec le `module` du backend (TS1378).
 import {
-  resolvePairedDeviceToken, confirmerJellyfinToken, findValidSiblingToken,
+  resolvePairedDeviceToken, confirmJellyfinToken, findValidSiblingToken,
   clearDeviceTokenIfInvalid, resetTokenOwnerCacheForTests,
 } from "./deviceTokenHealth";
 
@@ -115,18 +115,18 @@ describe("resolvePairedDeviceToken", () => {
   });
 });
 
-describe("confirmerJellyfinToken", () => {
+describe("confirmJellyfinToken", () => {
   it("prend le jeton de la requête quand il est du compte du confirmateur", async () => {
-    expect(await confirmerJellyfinToken("jf-test", TEST)).toBe("jf-test");
+    expect(await confirmJellyfinToken("jf-test", TEST)).toBe("jf-test");
   });
 
   it("refuse le jeton d'un autre compte et se replie sur un frère", async () => {
     device("phone", TEST, "jf-test-2");
-    expect(await confirmerJellyfinToken("jf-knaox", TEST)).toBe("jf-test-2");
+    expect(await confirmJellyfinToken("jf-knaox", TEST)).toBe("jf-test-2");
   });
 
   it("un JWT n'est jamais gravé comme jeton Jellyfin", async () => {
-    expect(await confirmerJellyfinToken("a.b.c", TEST)).toBeNull();
+    expect(await confirmJellyfinToken("a.b.c", TEST)).toBeNull();
   });
 });
 
