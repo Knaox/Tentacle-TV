@@ -33,6 +33,8 @@ export * from "./adminSessions/delivery";
 export * from "./adminSessions/commandFeedback";
 export * from "./adminSessions/format";
 export * from "./adminSessions/sessionApp";
+// Les invitations : le contrat de `/api/invites`, ses bornes, le statut et le lien.
+export * from "./adminInvites/invites";
 export * from "./types/watchTogether";
 export * from "./constants";
 // Familles de plateformes de streaming (ids TMDB frères, motifs de nom) :

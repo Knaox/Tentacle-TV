@@ -18,11 +18,13 @@ et Linux reçoivent l'ensemble.
 - **Administration : une vue d'ensemble** — l'administration s'ouvre sur l'état de Jellyfin et de la base de données, les sessions en direct, les tickets ouverts, les mises à jour de plugins, les comptes et les invitations actives ; chaque tuile mène à sa section
 - **Administration : un menu rangé en trois groupes** (Activité, Comptes, Serveur) qui reste à l'écran, et des pages qui prennent toute la largeur de la fenêtre
 - **Des contours, survols et anneaux de focus s'affichent enfin** : épisode ou saison sélectionnés, tickets, champs de connexion et de mot de passe, boutons de l'administration
+- **Administrateurs : les invitations refaites** — des préréglages (1, 5 ou 10 personnes, 1 à 30 jours), le lien prêt à copier dès la création, et chaque invitation avec son statut, son échéance et les comptes qu'elle a ouverts. Le lien copié mène enfin au serveur : il pointait vers l'application elle-même et ne s'ouvrait nulle part
 
 ### EN
 - **Administration: an overview** — administration opens on Jellyfin and database health, live sessions, open tickets, plugin updates, accounts and active invitations; every tile leads to its section
 - **Administration: a menu sorted into three groups** (Activity, Accounts, Server) that stays on screen, and pages that use the full width of the window
 - **Outlines, hover states and focus rings finally show up**: selected episode or season, tickets, sign-in and password fields, administration buttons
+- **Administrators: invitations redesigned** — presets (1, 5 or 10 people, 1 to 30 days), the link ready to copy as soon as it is created, and each invitation with its status, expiry and the accounts it opened. The copied link now leads to the server: it pointed to the app itself and opened nowhere
 
 ## [1.22.0]
 ### FR

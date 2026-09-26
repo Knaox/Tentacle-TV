@@ -11,11 +11,14 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Administration : un menu rangé en trois groupes** — Activité, Comptes, Serveur — qui reste à l'écran quand on fait défiler, et des pages en pleine largeur, toutes sous le même en-tête
 - **Des contours, survols et anneaux de focus s'affichent enfin** dans tout le client web : épisode ou saison sélectionnés, onglets et cartes des tickets, champs de connexion, d'inscription et de mot de passe, boutons et filtres de l'administration, bandeau de clé Jellyfin
 - **Profil sur téléphone** : les raccourcis « Invitations » et « Tickets de support » ouvraient une page vide ; quitter « Voir en tant que » ramène à la liste des comptes
+- **Administration : les invitations refaites** — « Nouvelle invitation » propose 1, 5 ou 10 personnes et 1 à 30 jours (ou une durée libre), puis donne le lien, prêt à copier ou à partager — la copie marche aussi sur une page ouverte en http:// sur le réseau local, où le bouton ne copiait rien. Le lien est bâti sur l'URL publique du serveur, et un lien qui ne sortirait pas du réseau local est signalé. Chaque invitation dit son statut, ce qu'il en reste, son échéance, qui l'a créée et quels comptes elle a ouverts
+
 ### EN
 - **Administration: an overview** — `/admin` no longer opens on an empty panel: Jellyfin and database health, live sessions, open tickets, plugin updates, accounts, active invitations and accounts allowed to download, at a glance; every tile leads to its section, and three shortcuts open everyday actions (invite someone, pair a TV, see the app as a user)
 - **Administration: a menu sorted into three groups** — Activity, Accounts, Server — that stays on screen while scrolling, and full-width pages, all under the same header
 - **Outlines, hover states and focus rings finally show up** across the web client: selected episode or season, ticket tabs and cards, sign-in, sign-up and password fields, administration buttons and filters, the Jellyfin key banner
 - **Profile on phones**: the "Invitations" and "Support tickets" shortcuts opened an empty page; leaving "View as" takes you back to the account list
+- **Administration: invitations redesigned** — "New invitation" offers 1, 5 or 10 people and 1 to 30 days (or a custom duration), then hands you the link, ready to copy or share — copying also works on a page opened over http:// on the local network, where the button copied nothing. The link is built on the server's public URL, and a link that would not leave the local network is flagged. Each invitation shows its status, what is left, when it expires, who created it and which accounts it opened
 
 ## [1.19.3]
 ### FR

@@ -22,17 +22,6 @@ export interface JellyfinUser {
   EnableAutoLogin: boolean;
 }
 
-export interface InviteKey {
-  id: string;
-  key: string;
-  createdAt: Date;
-  usedAt?: Date;
-  usedBy?: string;
-  maxUses: number;
-  currentUses: number;
-  expiresAt?: Date;
-}
-
 export interface RegisterRequest {
   username: string;
   password: string;
