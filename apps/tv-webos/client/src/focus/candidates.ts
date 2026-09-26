@@ -29,6 +29,18 @@ export interface Candidate {
 }
 
 /**
+ * Où recenser. Un pas horizontal en piste n'y vise que ses cartes — le
+ * mouvement l'y confine ensuite : partir de la piste plutôt que du document
+ * donne le même ensemble, pour une fraction des lectures. Sous un piège,
+ * seulement si la piste lui est intérieure.
+ */
+export function collectRoot(start: HTMLElement, horizontal: boolean, trap: ParentNode | null): ParentNode {
+  const track = horizontal ? start.closest<HTMLElement>("[data-tv-piste]") : null;
+  if (track && (!trap || trap.contains(track))) return track;
+  return trap ?? document;
+}
+
+/**
  * Recense les cibles atteignables dans la zone visible.
  *
  * Limité au viewport, et volontairement : une carte à trois écrans de
@@ -171,16 +183,19 @@ function isNativeControl(element: HTMLElement): boolean {
 function withoutWrappers(candidates: Candidate[]): Candidate[] {
   if (candidates.length < 2) return candidates;
 
+  // Chaque paire « enveloppe ⊃ contenu » se retrouve en remontant les ANCÊTRES
+  // de chaque candidat, sans comparer toutes les paires entre elles : sur une
+  // grille de bibliothèque, soixante-dix candidats faisaient près de cinq mille
+  // `contains` par appui. Mêmes paires, même règle, même résultat.
+  const members = new Set<HTMLElement>(candidates.map((candidate) => candidate.element));
   const spread = new Set<HTMLElement>();
-  for (const candidate of candidates) {
-    for (const other of candidates) {
-      if (other === candidate) continue;
-      if (!candidate.element.contains(other.element)) continue;
-
-      if (isNativeControl(candidate.element) && !isNativeControl(other.element)) {
-        spread.add(other.element);
+  for (const { element: inner } of candidates) {
+    for (let outer = inner.parentElement; outer; outer = outer.parentElement) {
+      if (!members.has(outer)) continue;
+      if (isNativeControl(outer) && !isNativeControl(inner)) {
+        spread.add(inner);
       } else {
-        spread.add(candidate.element);
+        spread.add(outer);
       }
     }
   }
