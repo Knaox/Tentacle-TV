@@ -8,6 +8,10 @@ import { VersionBanner } from "./VersionBanner";
 import { AdminKeyBanner } from "./AdminKeyBanner";
 import { TmdbKeyBanner } from "./TmdbKeyBanner";
 import { useLeaderboardOpen, closeLeaderboard } from "./easterEggs/logoEggStore";
+import { useMirror } from "../mirror/useFormFactor";
+
+/** Chargée à la demande : le bureau ne télécharge rien du miroir. */
+const MirrorLayout = lazy(() => import("../mirror/shell/MirrorLayout").then((m) => ({ default: m.MirrorLayout })));
 
 /**
  * Pages où la barre MOBILE ne propose pas la recherche (elle y manque de
@@ -24,7 +28,23 @@ const WatchLeaderboardPanel = lazy(() =>
   import("./easterEggs/WatchLeaderboardPanel").then((m) => ({ default: m.WatchLeaderboardPanel })),
 );
 
+/**
+ * Téléphone et tablette : la coquille de l'app mobile (docs/WEB-MIROIR-MOBILE.md).
+ * Bureau — fenêtre large et application Electron —, la mise en page d'avant.
+ */
 export function AppLayout() {
+  const mirror = useMirror();
+  if (mirror) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-surface-0" />}>
+        <MirrorLayout />
+      </Suspense>
+    );
+  }
+  return <DesktopLayout />;
+}
+
+function DesktopLayout() {
   const isMobile = useIsMobile();
   const { pathname } = useLocation();
   const showSearch = !HIDE_SEARCH_ROUTES.some((r) => pathname.startsWith(r));

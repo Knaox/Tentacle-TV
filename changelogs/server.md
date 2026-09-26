@@ -59,8 +59,10 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ## [1.19.3]
 ### FR
 - **Une demande qui part se dit sur le téléphone** : avec Vigie 1.17.0, « « Titre » est en route » arrive en notification dès que Sonarr ou Radarr prend le titre — sous le même réglage que « Contenu demandé disponible », rien à activer
+- **Le site web sur téléphone et sur iPad ressemble enfin à l'application** : mêmes onglets en bas (Accueil, Pour vous, Bibliothèque, extensions, Profil), même en-tête, même accueil avec sa bannière en carte, mêmes fiches, même recherche, même lecteur tactile (−10 s / +30 s, épisodes, pistes). Sur iPad à l'horizontale, la navigation passe dans un rail à gauche et le Profil s'ouvre en deux colonnes. Un appui long sur une affiche ouvre ses actions (favori, Ma liste, vu). Sur ordinateur, rien ne change
 ### EN
 - **A request on its way now reaches your phone**: with Vigie 1.17.0, "“Title” is on its way" arrives as a notification as soon as Sonarr or Radarr picks the title up — under the same setting as "Requested content available", nothing to turn on
+- **The website on phones and iPads finally looks like the app**: the same tabs at the bottom (Home, For you, Library, extensions, Profile), the same header, the same home screen with its card-style banner, the same detail pages, the same search, the same touch player (−10 s / +30 s, episodes, tracks). On an iPad held sideways, navigation moves to a rail on the left and Profile opens in two columns. A long press on a poster opens its actions (favourite, My list, watched). Nothing changes on a computer
 
 ## [1.19.2]
 ### FR
