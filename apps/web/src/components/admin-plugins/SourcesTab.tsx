@@ -24,7 +24,9 @@ export function SourcesTab() {
   const { restarting } = usePluginAdmin();
   const [adding, setAdding] = useState(false);
   const addButton = useRef<HTMLButtonElement>(null);
-  const now = Date.now();
+  // L'heure de la liste lue, pas celle de chaque rendu : les lignes mémoïsées
+  // ne se redessinent qu'avec elle.
+  const now = sources.dataUpdatedAt || Date.now();
 
   const { toggle, remove } = actions;
   const onToggle = useCallback((source: PluginSource) => void toggle(source), [toggle]);

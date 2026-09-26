@@ -38,11 +38,13 @@ function AdminPluginsPage() {
   const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>({ query: "", category: null });
 
   // L'état de lecture d'une source naît de la lecture du catalogue : le
-  // catalogue arrivé, la liste des sources se relit pour le montrer.
+  // catalogue arrivé, la liste des sources se relit — seulement si l'une
+  // d'elles l'attend encore (après un geste, la racine est déjà relue).
   const catalogReadAt = marketplace.dataUpdatedAt;
+  const awaitingRead = sources.data?.some((source) => source.enabled && !source.registry) ?? false;
   useEffect(() => {
-    if (catalogReadAt) void queryClient.invalidateQueries({ queryKey: pluginKeys.sources });
-  }, [catalogReadAt, queryClient]);
+    if (catalogReadAt && awaitingRead) void queryClient.invalidateQueries({ queryKey: pluginKeys.sources });
+  }, [catalogReadAt, awaitingRead, queryClient]);
 
   const summary = updates.size > 0 || unreachable.length > 0 ? (
     <div className="flex flex-wrap gap-2">

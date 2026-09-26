@@ -96,7 +96,9 @@ export function usePluginActions(
       void queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_ROOT });
       const restart = result as RestartInfo | null;
       if (restart?.restartScheduled) callbacks.current.onRestartScheduled(restart.bootId, label);
-      callbacks.current.onSuccess?.(kind, label);
+      // « Already up to date » : rien n'a été posé, rien ne s'annonce.
+      const unchanged = kind === "update" && typeof (result as { message?: unknown } | null)?.message === "string";
+      if (!unchanged) callbacks.current.onSuccess?.(kind, label);
       return true;
     } catch (error) {
       setState(key, { kind, status: "error", error: describePluginError(error) });
