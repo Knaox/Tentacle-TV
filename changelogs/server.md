@@ -5,13 +5,29 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
-## [Unreleased]
+## [1.19.2]
 ### FR
+- **Mise à jour pour les téléviseurs LG (webOS)** — le client LG est servi par le serveur, ces corrections arrivent avec lui :
+  - l'avance rapide ne rame plus : le curseur avance en continu, va aussi loin qu'on veut et se referme seul
+  - un film ne revient plus trois fois en arrière au démarrage
+  - plus d'écran noir en ouvrant le lecteur, une bibliothèque ou une fiche après une mise à jour du serveur : la page se recharge d'elle-même
+  - « Passer l'intro » garde le focus en sortant de l'avance rapide, et « Masquer » disparaît une fois pressé
+  - la note d'une carte s'efface quand ses informations qualité et langues s'affichent
+  - recherche : Retour depuis un acteur ou un genre ramène à la barre, le rail reste accessible ; le retour d'une fiche retrouve sa place dans la bibliothèque
+- **Web** : la note d'une affiche cède la place aux informations qualité et langues au survol
 - **Les téléviseurs se pilotent depuis les tableaux de bord** de Jellyfin et de Tentacle : une TV jumelée — Apple TV, Android TV, LG — s'y présente sous son nom et son appareil, et obéit à la pause, à la reprise, à l'arrêt et aux messages
 - **TV LG : la recherche de Tentacle et la page « Pour vous »**, avec le client servi par le serveur
 - **Une TV jumelée ne lit plus au nom d'un autre compte** : un jeton Jellyfin égaré d'un autre utilisateur est écarté, la progression s'enregistre sur le bon compte
 - **L'identifiant d'une TV jumelée lui est donné même lecture directe coupée**
 ### EN
+- **Update for LG TVs (webOS)** — the LG client is served by the server, these fixes ship with it:
+  - fast-forward no longer stutters: the cursor moves smoothly, goes as far as you want and closes by itself
+  - a film no longer jumps back three times when it starts
+  - no more black screen opening the player, a library or a detail page after a server update: the page reloads by itself
+  - "Skip intro" keeps focus when leaving fast-forward, and "Hide" goes away once pressed
+  - a card's rating steps aside when its quality and language details show
+  - search: Back from an actor or genre returns to the bar, the rail stays reachable; coming back from a detail page lands where you were in the library
+- **Web**: a poster's rating makes way for its quality and language details on hover
 - **TVs can be controlled from the dashboards** of Jellyfin and Tentacle: a paired TV — Apple TV, Android TV, LG — shows up under its own name and device, and obeys pause, resume, stop and messages
 - **LG TV: Tentacle search and the "For You" page**, with the client served by the server
 - **A paired TV no longer plays on another account's behalf**: a stray Jellyfin token of another user is discarded, progress is saved to the right account
