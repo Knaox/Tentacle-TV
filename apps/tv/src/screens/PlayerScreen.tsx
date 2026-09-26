@@ -264,6 +264,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const { handleCloseSettings } = useTVSettingsBridge({
     audioTracksList, subtitleTracksList, audioIndex: p.audioIndex, subtitleIndex: p.subtitleIndex,
     qualityKey: quality.qualityKey, qualityPresets: quality.qualityPresets, sourceQuality: p.sourceQuality,
+    autoQualityActive: p.autoCapActive,
     handleAudioChange: p.handleAudioChange, handleSubtitleChange: p.handleSubtitleChange, handleQualityChange,
     showOverlay: controls.showOverlay, setShowSettings, showSettingsRef, bumpOsdFocus,
   });

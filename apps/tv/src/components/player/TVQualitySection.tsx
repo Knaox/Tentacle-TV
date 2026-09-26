@@ -15,6 +15,8 @@ export interface TVQualitySectionProps {
   /** Paliers calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets?: readonly QualityPreset[];
   sourceQuality?: SourceQuality;
+  /** Le palier coché vient du cap automatique de débit (parité web : puce « Auto »). */
+  autoQualityActive?: boolean;
   onSelectQuality: (key: QualityKey) => void;
   onInteraction?: () => void;
   makeOnFocus: (scrollIndex: number, height: number) => () => void;
@@ -27,7 +29,7 @@ export interface TVQualitySectionProps {
  * - Presets transcodés : nom + chip Mbps (30 / 10 / 4)
  */
 export function TVQualitySection({
-  qualityKey, qualityPresets = QUALITY_PRESETS, sourceQuality, onSelectQuality, onInteraction,
+  qualityKey, qualityPresets = QUALITY_PRESETS, sourceQuality, autoQualityActive, onSelectQuality, onInteraction,
   makeOnFocus, scrollOffsetStart,
 }: TVQualitySectionProps) {
   const { t } = useTranslation("player");
@@ -75,6 +77,7 @@ export function TVQualitySection({
                   {suffix}
                 </Text>
               )}
+              {active && autoQualityActive && <QualityChip label={t("qualityAutoBadge")} tone="purple" />}
               {isOriginal && sourceQuality?.isDolbyVision && <QualityChip label="DV" tone="purple" />}
               {isOriginal && sourceQuality?.isHDR && <QualityChip label="HDR" tone="amber" />}
               {isOriginal && sourceQuality?.isDolbyAtmos && <QualityChip label="Atmos" tone="amber" />}

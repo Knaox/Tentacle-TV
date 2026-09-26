@@ -218,7 +218,7 @@ export function TVPlayerView({
         </View>
       )}
       {isLoading && hasStarted && <TVBufferingSpinner />}
-      <TVAutoCapBadge active={!!autoCapActive} />
+      <TVAutoCapBadge capped={!!autoCapActive} ready={hasStarted} />
       {videoError && (
         <View style={{
           position: "absolute", top: 60, left: 40, right: 40,

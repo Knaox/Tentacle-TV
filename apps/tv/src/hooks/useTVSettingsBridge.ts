@@ -22,6 +22,7 @@ export function useTVSettingsBridge(args: {
   qualityKey: SettingsPanelProps["qualityKey"];
   qualityPresets: SettingsPanelProps["qualityPresets"];
   sourceQuality: SettingsPanelProps["sourceQuality"];
+  autoQualityActive: SettingsPanelProps["autoQualityActive"];
   handleAudioChange: SettingsPanelProps["onSelectAudio"];
   handleSubtitleChange: SettingsPanelProps["onSelectSubtitle"];
   handleQualityChange: NonNullable<SettingsPanelProps["onSelectQuality"]>;
@@ -32,7 +33,7 @@ export function useTVSettingsBridge(args: {
 }) {
   const {
     audioTracksList, subtitleTracksList, audioIndex, subtitleIndex,
-    qualityKey, qualityPresets, sourceQuality, handleAudioChange, handleSubtitleChange, handleQualityChange,
+    qualityKey, qualityPresets, sourceQuality, autoQualityActive, handleAudioChange, handleSubtitleChange, handleQualityChange,
     showOverlay, setShowSettings, showSettingsRef, bumpOsdFocus,
   } = args;
 
@@ -48,6 +49,7 @@ export function useTVSettingsBridge(args: {
       qualityKey: qualityKey,
       qualityPresets,
       sourceQuality,
+      autoQualityActive,
       onSelectAudio: handleAudioChange,
       onSelectSubtitle: handleSubtitleChange,
       onSelectQuality: handleQualityChange,
@@ -56,7 +58,7 @@ export function useTVSettingsBridge(args: {
     });
     return () => setSettingsPanelProps(null);
   }, [audioTracksList, subtitleTracksList, audioIndex, subtitleIndex, qualityKey, qualityPresets,
-    sourceQuality, handleAudioChange, handleSubtitleChange, handleQualityChange, showOverlay]);
+    sourceQuality, autoQualityActive, handleAudioChange, handleSubtitleChange, handleQualityChange, showOverlay]);
 
   // Fermeture de la modale (ESC natif OU bouton Fermer → démontage de la route)
   // → resynchronise l'état panneau du Player + redonne le focus à l'OSD.

@@ -32,6 +32,8 @@ export interface TVTrackSelectorProps {
   /** Paliers calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets?: readonly QualityPreset[];
   sourceQuality?: SourceQuality;
+  /** Le palier coché a été choisi par le cap automatique de débit : puce « Auto ». */
+  autoQualityActive?: boolean;
   onSelectAudio: (index: number) => void;
   onSelectSubtitle: (index: number) => void;
   onSelectQuality?: (key: QualityKey) => void;
@@ -47,7 +49,7 @@ const TRACK_ITEM_HEIGHT = 52; // paddingVertical 14*2 + text ~24
 
 export function TVTrackSelector({
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle,
-  qualityKey, qualityPresets, sourceQuality,
+  qualityKey, qualityPresets, sourceQuality, autoQualityActive,
   onSelectAudio, onSelectSubtitle, onSelectQuality, onClose, onInteraction,
   disableBackHandler = false,
 }: TVTrackSelectorProps) {
@@ -168,6 +170,7 @@ export function TVTrackSelector({
               qualityKey={qualityKey}
               qualityPresets={qualityPresets}
               sourceQuality={sourceQuality}
+              autoQualityActive={autoQualityActive}
               onSelectQuality={onSelectQuality}
               onInteraction={onInteraction}
               makeOnFocus={makeOnFocus}
