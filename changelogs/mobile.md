@@ -5,6 +5,15 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.8.2]
+### FR
+- **Une photo de profil à jour** : changée, ajoutée ou retirée depuis un autre appareil, elle se met à jour dès l'ouverture de l'app, et quand on y revient
+- **Changer sa photo depuis l'app** n'affiche plus d'erreur alors que la photo était bien envoyée
+
+### EN
+- **An up-to-date profile picture**: changed, added or removed from another device, it updates as soon as the app opens, and whenever you come back to it
+- **Changing your picture from the app** no longer shows an error when the picture was actually sent
+
 ## [ios-1.8.1]
 <!-- Bloc iOS (App Store Connect, 4000 caractères) : la version complète. Le
      bloc nu, lu par Google Play, tient dans 500 caractères. -->
