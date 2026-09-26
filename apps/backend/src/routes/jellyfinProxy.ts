@@ -8,11 +8,10 @@ import { getJellyfinDispatcher } from "../services/jellyfinHttpAgent";
 import { clearDeviceTokenIfInvalid } from "../services/deviceTokenHealth";
 import { isAllowedProxyPath } from "./jellyfinProxy/patterns";
 import {
-  SKIP_RESPONSE_HEADERS,
-  SKIP_API_RESPONSE_HEADERS,
   buildForwardHeaders,
   apiCacheControl,
   imageCacheControl,
+  skipResponseHeader,
 } from "./jellyfinProxy/headers";
 import { emitProxyEvents } from "./jellyfinProxy/events";
 import { carriesPlaybackUrl, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
@@ -170,19 +169,19 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // Media streams: forward content-length/encoding so the browser can
       // support Range requests, progress bars, and correct buffering.
       const isMediaResponse = isProgressiveStream || /\/(hls1|Audio)\//.test(wildcardPath);
-      for (const [key, value] of response.headers) {
-        const lower = key.toLowerCase();
-        if (SKIP_RESPONSE_HEADERS.has(lower)) continue;
-        if (!isMediaResponse && SKIP_API_RESPONSE_HEADERS.has(lower)) continue;
-        reply.header(key, value);
-      }
-
-      // Images : cache navigateur explicite (cf. imageCacheControl). Après la
-      // boucle pour écraser Jellyfin, et jamais sur une 404 d'affiche.
+      // Images : cache navigateur explicite (cf. imageCacheControl), jamais sur
+      // une 404 d'affiche. Posé après la boucle pour écraser Jellyfin, dont la
+      // boucle écarte aussi l'`Age` de l'amont (cf. skipResponseHeader).
       // Tout le reste : `no-store` — ces réponses portent l'état d'un compte,
       // et Jellyfin n'émet aucune directive, ce qui laissait le cache du
       // système en resservir de périmées (cf. apiCacheControl).
       const imageCache = response.status < 400 ? imageCacheControl(wildcardPath) : null;
+      const kind = { media: isMediaResponse, image: imageCache !== null };
+      for (const [key, value] of response.headers) {
+        if (skipResponseHeader(key.toLowerCase(), kind)) continue;
+        reply.header(key, value);
+      }
+
       const cacheControl = imageCache ?? (isMediaResponse ? null : apiCacheControl(wildcardPath));
       if (cacheControl) reply.header("cache-control", cacheControl);
 
