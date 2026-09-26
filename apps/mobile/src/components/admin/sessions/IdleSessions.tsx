@@ -35,7 +35,7 @@ export const IdleSessions = memo(function IdleSessions({ sessions, now, feedback
     <View style={st.list}>
       {sessions.map((session, index) => (
         <View key={session.id} style={[st.row, index > 0 && st.divider]}>
-          <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} size={34} />
+          <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} imageTag={session.userImageTag} size={34} />
           <View style={st.text}>
             <View style={st.nameRow}>
               <Text style={st.name} numberOfLines={1}>{session.userName}</Text>

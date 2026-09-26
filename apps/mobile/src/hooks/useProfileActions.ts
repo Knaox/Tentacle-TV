@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
 import { clearCredentials } from "@/auth/credentialManager";
+import { useStoredUser } from "@/auth/useStoredUser";
 import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { forgetAvatar } from "@/offline/avatarCache";
 import { removeOfflineEntry } from "@/offline/engineApi";
@@ -33,10 +34,8 @@ export function useProfileActions() {
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState(false);
 
-  const user = (() => {
-    try { const raw = storage.getItem("tentacle_user"); return raw ? JSON.parse(raw) : null; }
-    catch { return null; }
-  })();
+  // Réactif : une relecture du profil (photo, nom, droits) re-rend l'écran.
+  const user = useStoredUser();
   const isAdmin = user?.Policy?.IsAdministrator === true;
   const userName: string = user?.Name ?? t("profile:defaultUsername");
   const initial = userName.charAt(0).toUpperCase();
