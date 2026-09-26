@@ -47,11 +47,17 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
 
   // Précharge backdrops ET logos → l'image suivante est en cache avant le fondu
   // (le fondu démarre onLoad ; en cache il est immédiat) et le logo ne reflashe pas.
+  // La source du halo aussi (quelques Ko) : sur Android, une image en cache
+  // disque se décode en quelques millisecondes et `react-native-svg` émet
+  // alors son `onLoad` — le halo neuf entre aussitôt, au lieu d'attendre le
+  // réseau ou le repli de `TVHeroAmbilight`.
   useEffect(() => {
     items.forEach((it) => {
       const id = it.Type === "Episode" && it.SeriesId ? it.SeriesId : it.Id;
       const bd = client.getImageUrl(id, "Backdrop", { width: 1920, quality: 85 });
       if (bd) Image.prefetch(bd);
+      const halo = backdropUriOf(client, it, TV_AMBILIGHT.sourceWidth, 70);
+      if (halo) Image.prefetch(halo);
       const hasLogo = it.ImageTags?.Logo != null || (it.Type === "Episode" && it.SeriesId != null);
       if (hasLogo) {
         const logo = client.getImageUrl(id, "Logo", { width: 460, quality: 90 });
