@@ -69,6 +69,7 @@ export default {
   playbackError: "Video playback error",
   playbackGiveUp: "This video can't be played on this TV",
   qualityReduced: "Quality lowered to match your network speed",
+  qualityReducedDetail: "Quality lowered: network measured at {{measured}} Mb/s, the file needs {{source}}",
   qualityAutoBadge: "Auto",
   directSessionExpired: "Jellyfin session expired — confirm pairing again from a signed-in device",
   // Le motif technique d'une erreur de lecture, replié.

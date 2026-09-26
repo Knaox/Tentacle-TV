@@ -16,7 +16,11 @@ const BADGE_MS = 5000;
  * avant que le film ne paraisse. Une seule apparition par plafonnement : un
  * rechargement de piste (audio, sous-titres) ne le rejoue pas.
  */
-export function TVAutoCapBadge({ capped, ready }: { capped: boolean; ready: boolean }) {
+export function TVAutoCapBadge({ capped, ready, reason }: {
+  capped: boolean;
+  ready: boolean;
+  reason?: { measuredBps?: number; sourceBps?: number };
+}) {
   const { t } = useTranslation("player");
   const [visible, setVisible] = useState(false);
   const shownRef = useRef(false);
@@ -42,9 +46,17 @@ export function TVAutoCapBadge({ capped, ready }: { capped: boolean; ready: bool
         borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
       }}>
         <Text style={{ color: Colors.textPrimary, fontSize: 20, fontWeight: "600" }}>
-          {t("qualityReduced")}
+          {reason?.measuredBps && reason.sourceBps
+            ? t("qualityReducedDetail", { measured: mbps(reason.measuredBps), source: mbps(reason.sourceBps) })
+            : t("qualityReduced")}
         </Text>
       </View>
     </View>
   );
+}
+
+/** Mégabits par seconde, arrondis pour la lecture. */
+function mbps(bps: number): string {
+  const value = bps / 1e6;
+  return value >= 10 ? String(Math.round(value)) : value.toFixed(1);
 }

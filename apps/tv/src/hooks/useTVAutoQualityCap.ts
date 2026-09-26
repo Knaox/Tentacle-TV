@@ -33,6 +33,9 @@ export function useTVAutoQualityCap(args: {
   maxBitrate?: number;
   maxHeight?: number;
   maxWidth?: number;
+  /** Ce qui a motivé le cap (bits/s) — dit à l'utilisateur pourquoi. */
+  measuredBps?: number;
+  sourceBps?: number;
   /** Choix MANUEL dans le menu (y compris re-choisir « Originale ») : le cap se
    *  désarme pour cet item — l'utilisateur a repris la main, on ne la reprend plus. */
   disarm: () => void;
@@ -42,8 +45,11 @@ export function useTVAutoQualityCap(args: {
 
   // Filet : si l'accueil n'a pas déjà préchauffé la mesure, l'amorcer ici —
   // trop tard pour CETTE lecture (la décision de flux part immédiatement),
-  // à temps pour les suivantes (et pour le premier reload).
-  useEffect(() => { primeBitrateMeasure(client); }, [client]);
+  // à temps pour les suivantes (et pour le premier reload). MÊME voie que
+  // DirectStreamingSync (`preferDirect`) : sans elle, ce filet remesurait le
+  // proxy et ÉCRASAIT la mesure directe — la lecture suivante, servie en
+  // direct par Jellyfin, était plafonnée sur le débit du proxy.
+  useEffect(() => { primeBitrateMeasure(client, { preferDirect: true }); }, [client]);
 
   // Photographie par (item, session) : re-prise quand startTicks bouge — un
   // reload reconstruit le flux de toute façon, c'est le seul moment où changer
@@ -51,10 +57,14 @@ export function useTVAutoQualityCap(args: {
   const sessionKey = `${itemId}|${startTicks}`;
   const evaluatedRef = useRef<string | undefined>(undefined);
   const capRef = useRef<QualityPreset | null>(null);
+  const measuredRef = useRef<number | null>(null);
   if (sessionKey !== evaluatedRef.current && mediaSource) {
     evaluatedRef.current = sessionKey;
-    capRef.current = capForBitrate(mediaSource, cachedBitrate());
+    measuredRef.current = cachedBitrate();
+    capRef.current = capForBitrate(mediaSource, measuredRef.current);
     if (capRef.current) {
+      // Hors __DEV__ aussi : une réduction doit pouvoir s'expliquer au logcat.
+      console.log(`[TVCAP] mesure ${((measuredRef.current ?? 0) / 1e6).toFixed(1)} Mb/s, source ${((mediaSource.Bitrate ?? 0) / 1e6).toFixed(1)} Mb/s → ${capRef.current.key}`);
       plog("cap", `debit mesure ${(cachedBitrate() ?? 0) / 1e6 | 0} Mb/s < source → palier ${capRef.current.key} (${(capRef.current.bitrate ?? 0) / 1e6} Mb/s)`);
     }
   }
@@ -71,6 +81,8 @@ export function useTVAutoQualityCap(args: {
     maxBitrate: cap.bitrate ?? undefined,
     maxHeight: cap.height ?? undefined,
     maxWidth: cap.width ?? undefined,
+    measuredBps: measuredRef.current ?? undefined,
+    sourceBps: mediaSource?.Bitrate ?? undefined,
     disarm,
   };
 }

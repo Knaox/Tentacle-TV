@@ -73,6 +73,7 @@ export default {
   playbackError: "Erreur de lecture vidéo",
   playbackGiveUp: "Impossible de lire cette vidéo sur ce téléviseur",
   qualityReduced: "Qualité réduite pour s'adapter au débit du réseau",
+  qualityReducedDetail: "Qualité réduite : réseau mesuré à {{measured}} Mb/s, le fichier en demande {{source}}",
   qualityAutoBadge: "Auto",
   directSessionExpired: "Session Jellyfin expirée — reconfirmez le jumelage depuis un appareil connecté",
   // Le motif technique d'une erreur de lecture, replié.

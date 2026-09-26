@@ -242,7 +242,9 @@ export function usePlayerStreamPipeline(args: {
   });
 
   return {
-    quality, autoCapActive: cap.active, sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration, frameRate,
+    quality, autoCapActive: cap.active,
+    autoCapReason: cap.active ? { measuredBps: cap.measuredBps, sourceBps: cap.sourceBps } : undefined,
+    sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration, frameRate,
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
     startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
     useExoPlayer, playerRef, isDirectStream,
