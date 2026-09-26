@@ -49,6 +49,8 @@ export interface TVPlayerViewProps {
   videoError: string | null;
   /** Cap automatique de qualité actif (débit mesuré insuffisant) → badge 5 s. */
   autoCapActive?: boolean;
+  /** Débits (bits/s) qui ont motivé le cap : affichés dans le message. */
+  autoCapReason?: { measuredBps?: number; sourceBps?: number };
   displayTime: number;
   bufferedTime: number;
   displayDuration: number;
@@ -126,7 +128,7 @@ export interface TVPlayerViewProps {
 }
 
 export function TVPlayerView({
-  item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, autoCapActive, displayTime, bufferedTime,
+  item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, autoCapActive, autoCapReason, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
   useExoPlayer, isDirectPlay, prismTextTrackIndex, frameRate, exoRef, mpvRef, backgroundRef, playerStyle,
   subtitleIndex,
@@ -218,7 +220,7 @@ export function TVPlayerView({
         </View>
       )}
       {isLoading && hasStarted && <TVBufferingSpinner />}
-      <TVAutoCapBadge capped={!!autoCapActive} ready={hasStarted} />
+      <TVAutoCapBadge capped={!!autoCapActive} ready={hasStarted} reason={autoCapReason} />
       {videoError && (
         <View style={{
           position: "absolute", top: 60, left: 40, right: 40,

@@ -301,7 +301,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       backgroundRef={backgroundRef} playerStyle={playerStyle}
       audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
       audioIndex={p.audioIndex} subtitleIndex={p.subtitleIndex}
-      qualityKey={quality.qualityKey} sourceQuality={p.sourceQuality} autoCapActive={p.autoCapActive}
+      qualityKey={quality.qualityKey} sourceQuality={p.sourceQuality} autoCapActive={p.autoCapActive} autoCapReason={p.autoCapReason}
       overlay={playback.overlay} onSkipSegment={playback.skipNow}
       onDismissSegment={playback.dismissOverlay}
       onPlayNextNow={playback.playNow}
