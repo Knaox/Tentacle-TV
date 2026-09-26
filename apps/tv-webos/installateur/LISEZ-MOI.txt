@@ -1,8 +1,9 @@
 Tentacle TV — installation sur un téléviseur LG
 ===============================================
 
-Il faut Node.js sur l'ordinateur (https://nodejs.org, version « LTS »). C'est
-le seul prérequis : le reste s'installe tout seul.
+Rien à installer au préalable : si Node.js manque sur l'ordinateur, le script
+en installe une copie portable (dans votre dossier personnel, sans droits
+administrateur), puis tout le reste s'installe tout seul.
 
 
 1. UN COMPTE DÉVELOPPEUR LG
@@ -84,14 +85,12 @@ POURQUOI MACOS REFUSE LE DOUBLE-CLIC
 TOUT FAIRE EN UNE SEULE COMMANDE
 --------------------------------
 
-  Une seule ligne à coller : elle télécharge la dernière version, ouvre ce
-  mode d'emploi et lance l'installation.
+  Une seule ligne à coller : elle télécharge la dernière version et lance
+  l'installation. Le guide illustré : https://tentacletv.app/webos/
 
-  macOS et Linux — dans Terminal. La même ligne vaut pour les deux : macOS
-  ouvre le mode d'emploi avec « open », Linux avec « xdg-open », et si
-  aucun des deux n'aboutit l'installation démarre quand même.
+  macOS et Linux — dans Terminal, la même ligne pour les deux.
 
-  cd "$(mktemp -d)" && curl -fsSL -O https://github.com/Knaox/Tentacle-TV/releases/download/webos-latest/installateur-tentacle-tv.zip && unzip -q installateur-tentacle-tv.zip && cd "Tentacle TV - LG webOS" && { open LISEZ-MOI.txt || xdg-open LISEZ-MOI.txt; } 2>/dev/null; node installer.mjs
+  cd "$(mktemp -d)" && curl -fsSL -O https://github.com/Knaox/Tentacle-TV/releases/download/webos-latest/installateur-tentacle-tv.zip && unzip -q installateur-tentacle-tv.zip && cd "Tentacle TV - LG webOS" && bash installer.sh
 
   Sur une installation Linux minimale, « curl » et « unzip » peuvent manquer :
   sudo apt install curl unzip   (Debian, Ubuntu)
@@ -99,7 +98,7 @@ TOUT FAIRE EN UNE SEULE COMMANDE
 
   Windows — dans PowerShell (menu Démarrer › taper « powershell ») :
 
-  [Net.ServicePointManager]::SecurityProtocol='Tls12'; $ProgressPreference='SilentlyContinue'; $d="$env:TEMP\tentacle-tv"; Remove-Item $d -Recurse -Force -EA 0; mkdir $d | Out-Null; iwr https://github.com/Knaox/Tentacle-TV/releases/download/webos-latest/installateur-tentacle-tv.zip -OutFile "$d\i.zip"; Expand-Archive "$d\i.zip" $d -Force; cd "$d\Tentacle TV - LG webOS"; ii LISEZ-MOI.txt; node installer.mjs
+  [Net.ServicePointManager]::SecurityProtocol='Tls12'; $ProgressPreference='SilentlyContinue'; $d="$env:TEMP\tentacle-tv"; Remove-Item $d -Recurse -Force -EA 0; mkdir $d | Out-Null; iwr https://github.com/Knaox/Tentacle-TV/releases/download/webos-latest/installateur-tentacle-tv.zip -OutFile "$d\i.zip"; Expand-Archive "$d\i.zip" $d -Force; cd "$d\Tentacle TV - LG webOS"; .\Installer-Tentacle-TV.cmd
 
 
 ENSUITE
