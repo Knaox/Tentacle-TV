@@ -49,7 +49,8 @@ curl -s -X POST localhost:8766/run -d '["down","wait:0.5","select","wait:1","sho
 long sur OK), `holddown:8` (flèche maintenue), `wait:0.5`, `shot` /
 `shot:640` (largeur de la capture), `focus` (l'élément focalisé et son cadre),
 `tree` (l'arbre d'accessibilité), `activate` (ramène l'application au premier
-plan), `quit`.
+plan), `type:dune` (saisie au clavier système ouvert ; `\n` y vaut sa touche de
+validation, « Rechercher » sur la barre de recherche), `quit`.
 
 ## Pièges déjà payés
 
@@ -58,6 +59,13 @@ plan), `quit`.
   (`waitForQuiescence…`), sinon chaque appui coûte des dizaines de secondes.
 - Liaison en TCP brut (Network.framework) : App Transport Security ne s'y
   applique pas, contrairement à `URLSession` vers une IP en HTTP.
+- **L'attente d'une commande ne bloque pas le fil principal.** Dès que
+  l'application passe devant, le lanceur de tests est en arrière-plan, et
+  FrontBoard le tue s'il ne répond pas aux mises à jour de scène en 10 s
+  (`0x8BADF00D`, « scene-update watchdog ») — mesuré sur le simulateur
+  tvOS 26.2 : l'agent mourait quelques secondes après chaque `activate`, et
+  l'application repassait en arrière-plan. La lecture fait tourner la boucle
+  d'exécution pendant qu'elle attend.
 - Après une installation par `devicectl`, l'application peut rester en
   arrière-plan : `activate` la ramène.
 - Le rechargement à chaud de Metro laisse parfois des hooks désaccordés

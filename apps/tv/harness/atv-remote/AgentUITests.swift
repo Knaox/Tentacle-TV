@@ -52,6 +52,7 @@ final class AgentUITests: XCTestCase {
             case "holddown": remote.press(.down, forDuration: seconds ?? 1.0)
             case "holdup": remote.press(.up, forDuration: seconds ?? 1.0)
             case "activate": app.activate()
+            case "type": app.typeText(obj["t"] as? String ?? "")
             case "wait": Thread.sleep(forTimeInterval: seconds ?? 0.5)
             case "shot":
                 let shot = XCUIScreen.main.screenshot()
@@ -155,7 +156,12 @@ final class Link {
                 finished = isComplete || error != nil
                 sem.signal()
             }
-            sem.wait()
+            // Le fil principal ne doit jamais bloquer : en arrière-plan, le chien
+            // de garde de FrontBoard tue le lanceur au bout de 10 s sans réponse
+            // aux mises à jour de scène (simulateur tvOS 26, 0x8BADF00D).
+            while sem.wait(timeout: .now()) == .timedOut {
+                RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05))
+            }
             if let chunk, !chunk.isEmpty { buffer.append(chunk) } else if finished { return nil }
         }
     }

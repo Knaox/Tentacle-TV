@@ -1,6 +1,6 @@
 // Côté Mac de l'agent : TCP 8765 pour l'agent XCUITest (sur l'Apple TV),
 // HTTP 8766 (localhost) pour moi : POST /run avec un tableau de commandes.
-//   "down", "wait:0.4", "shot", "shot:1280", "hold:1.5", "tree", "focus"
+//   "down", "wait:0.4", "shot", "shot:1280", "hold:1.5", "tree", "focus", "type:dune\n"
 import net from "node:net";
 import http from "node:http";
 import fs from "node:fs";
@@ -69,7 +69,9 @@ function send(cmd) {
 
 function parse(c) {
   if (typeof c !== "string") return c;
-  const [a, arg] = c.split(":");
+  const [a, ...rest] = c.split(":");
+  const arg = rest.join(":");
+  if (a === "type") return { a, t: arg };
   if (a === "wait" || a.startsWith("hold")) return { a, s: arg ? Number(arg) : undefined };
   if (a === "shot") return { a, w: arg ? Number(arg) : undefined };
   return { a };
