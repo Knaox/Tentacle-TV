@@ -18,6 +18,7 @@ import { MessageComposer } from "../components/admin/sessions/MessageComposer";
 import { SessionsSummary } from "../components/admin/sessions/SessionsSummary";
 import { GroupRecipient, SessionRecipient } from "../components/admin/sessions/ComposerRecipient";
 import { useCommandFeedback } from "@tentacle-tv/api-client";
+import { AdminNotice, AdminPage, StatusPill } from "../components/admin/kit";
 import { cls } from "./adminUtils";
 
 /**
@@ -162,19 +163,12 @@ export function AdminSessions() {
   };
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold text-content-primary">{t("title")}</h1>
-          <span className={`${cls.chip} bg-status-success-bg text-status-success-fg`}>
-            <span aria-hidden className="h-2 w-2 rounded-full bg-status-success" />
-            {t("live")}
-          </span>
-        </div>
-        <p className="text-sm text-content-tertiary">{t("description")}</p>
-        {data && <SessionsSummary sessions={playing} />}
-      </header>
-
+    <AdminPage
+      title={t("title")}
+      badges={<StatusPill tone="success">{t("live")}</StatusPill>}
+      description={t("description")}
+      summary={data ? <SessionsSummary sessions={playing} /> : undefined}
+    >
       {query.isLoading && (
         <div className="grid gap-4 xl:grid-cols-2" aria-busy="true">
           <div className="h-48 rounded-xl border border-line-subtle bg-fill-faint" />
@@ -183,14 +177,17 @@ export function AdminSessions() {
       )}
 
       {query.isError && !data && (
-        <div role="alert" className={cls.card}>
-          <p className="mb-4 text-sm text-content-secondary">{t("loadError")}</p>
-          <button type="button" className={cls.bs} onClick={() => void query.refetch()}>{t("retry")}</button>
-        </div>
+        <AdminNotice
+          tone="error"
+          role="alert"
+          action={<button type="button" className={cls.bs} onClick={() => void query.refetch()}>{t("retry")}</button>}
+        >
+          {t("loadError")}
+        </AdminNotice>
       )}
 
       {data && playing.length === 0 && data.groups.length === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-line-subtle bg-fill-faint px-6 py-12 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-line-subtle bg-fill-faint px-6 py-12 text-center">
           <MonitorPlay size={32} aria-hidden className="text-content-quaternary" />
           <p className="font-medium text-content-primary">{t("empty")}</p>
           <p className="text-sm text-content-tertiary">{t("emptyHint")}</p>
@@ -257,6 +254,6 @@ export function AdminSessions() {
           onClose={() => setComposer(null)}
         />
       )}
-    </div>
+    </AdminPage>
   );
 }

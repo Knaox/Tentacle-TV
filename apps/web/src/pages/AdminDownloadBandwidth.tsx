@@ -14,6 +14,7 @@ import { Plus } from "lucide-react";
 import { BACKEND, cls, creds, hdrs } from "./adminUtils";
 import { useToast } from "../contexts/ToastContext";
 import { ToggleSwitch } from "../components/settings/ToggleSwitch";
+import { AdminNotice, AdminSection } from "../components/admin/kit";
 import { AdminBandwidthIps } from "./AdminBandwidthIps";
 import { MAX_MIB_PER_S, MIN_MIB_PER_S, toBps, toDraft, type CapDraft } from "./adminBandwidthUnits";
 
@@ -72,18 +73,19 @@ export function AdminDownloadBandwidth() {
   });
 
   return (
-    <section className="mt-6 rounded-xl border border-line-subtle bg-fill-faint p-4">
-      <h2 className="text-base font-semibold text-content-primary">{t("bandwidthTitle")}</h2>
-      <p className="mt-1 text-sm text-content-tertiary">{t("bandwidthIntro")}</p>
-      <p className="mt-2 text-xs text-content-quaternary">{t("bandwidthPoolsHelp")}</p>
-      {isError && (
-        <p className="mt-4 rounded-lg border border-danger-border bg-danger-surface px-3 py-2 text-sm text-status-error-fg">
-          {t("bandwidthLoadError")}
-        </p>
-      )}
+    <AdminSection
+      title={t("bandwidthTitle")}
+      description={
+        <>
+          {t("bandwidthIntro")}
+          <span className="mt-2 block text-xs text-content-quaternary">{t("bandwidthPoolsHelp")}</span>
+        </>
+      }
+    >
+      {isError && <AdminNotice tone="error">{t("bandwidthLoadError")}</AdminNotice>}
       {/* La clé remonte le brouillon sur ce que le serveur vient de confirmer. */}
       {data && <BandwidthForm key={`${data.external}:${data.internal}:${data.internalIps.join(",")}`} initial={data} />}
-    </section>
+    </AdminSection>
   );
 }
 
@@ -121,7 +123,7 @@ function BandwidthForm({ initial }: { initial: BandwidthCaps }) {
   };
 
   return (
-    <div className="mt-4 space-y-2">
+    <div className="space-y-2">
       <CapRow
         label={t("bandwidthExternal")}
         draft={drafts.external}

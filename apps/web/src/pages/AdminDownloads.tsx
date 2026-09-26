@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BACKEND, hdrs, creds } from "./adminUtils";
 import { useToast } from "../contexts/ToastContext";
 import { ToggleSwitch } from "../components/settings/ToggleSwitch";
+import { AdminNotice, AdminPage, AdminSection, StatusPill } from "../components/admin/kit";
 import { AdminDownloadBandwidth } from "./AdminDownloadBandwidth";
 
 interface AdminUserRights {
@@ -84,63 +85,62 @@ export function AdminDownloads() {
   };
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-content-primary">{t("downloadsTitle")}</h1>
-      {/* Le réglage du serveur d'abord, puis les droits par compte que l'intro
-          annonce : une carte entre les deux les aurait séparés. */}
+    <AdminPage title={t("downloadsTitle")} description={t("downloadsDescription")}>
+      {/* Le réglage du serveur d'abord, puis les droits par compte : deux
+          cartes, chacune avec son explication. */}
       <AdminDownloadBandwidth />
-      <p className="mt-6 text-sm text-content-tertiary">{t("downloadsIntro")}</p>
-
-      {isLoading && (
-        <div className="mt-6 space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-14 animate-pulse rounded-xl bg-fill-faint" />
-          ))}
-        </div>
-      )}
-      {isError && (
-        <p className="mt-6 rounded-lg border border-danger-border bg-danger-surface px-3 py-2 text-sm text-status-error-fg">
-          {t("downloadsLoadError")}
-        </p>
-      )}
-
-      <div className="mt-6 space-y-2">
-        {users?.map((user) => (
-          <div
-            key={user.id}
-            className="flex flex-wrap items-center gap-3 rounded-xl bg-fill-faint p-3 transition-colors hover:bg-fill-subtle"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-content-primary">
-                {user.name}
-                {user.isAdministrator && (
-                  <span className="ml-2 rounded-full bg-fill-soft px-2 py-0.5 text-[10px] font-semibold text-content-tertiary">
-                    {t("adminBadge")}
-                  </span>
-                )}
-              </p>
-              <p className="mt-0.5 text-xs text-content-quaternary">
-                {user.enableAllFolders
-                  ? t("downloadsAllLibraries")
-                  : t("downloadsSomeLibraries", { count: user.enabledFoldersCount })}
-              </p>
-            </div>
-            <RightSwitch
-              label={t("rightDownload")}
-              checked={user.enableContentDownloading}
-              busy={pendingKey === `${user.id}:enableContentDownloading`}
-              onChange={(value) => toggle(user, "enableContentDownloading", value)}
-            />
-            <RightSwitch
-              label={t("rightLight")}
-              checked={user.enableMediaConversion}
-              busy={pendingKey === `${user.id}:enableMediaConversion`}
-              onChange={(value) => toggle(user, "enableMediaConversion", value)}
-            />
+      <AdminSection title={t("downloadsRightsTitle")} description={t("downloadsIntro")}>
+        {/* Squelettes au balayage borné (`skeleton-shimmer`) : `animate-pulse`
+            battait sans fin tant que Jellyfin ne répondait pas. */}
+        {isLoading && (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="skeleton-shimmer h-14 rounded-xl" />
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
+        )}
+        {isError && <AdminNotice tone="error">{t("downloadsLoadError")}</AdminNotice>}
+
+        {users && users.length > 0 && (
+          <div className="space-y-2">
+            {users.map((user) => (
+              <div
+                key={user.id}
+                className="flex flex-wrap items-center gap-3 rounded-xl bg-fill-subtle p-3 transition-colors hover:bg-fill-soft"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="flex min-w-0 items-center gap-2 text-sm font-semibold text-content-primary">
+                    <span className="truncate">{user.name}</span>
+                    {user.isAdministrator && (
+                      <StatusPill tone="neutral" size="sm" dot={false}>
+                        {t("adminBadge")}
+                      </StatusPill>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-xs text-content-quaternary">
+                    {user.enableAllFolders
+                      ? t("downloadsAllLibraries")
+                      : t("downloadsSomeLibraries", { count: user.enabledFoldersCount })}
+                  </p>
+                </div>
+                <RightSwitch
+                  label={t("rightDownload")}
+                  checked={user.enableContentDownloading}
+                  busy={pendingKey === `${user.id}:enableContentDownloading`}
+                  onChange={(value) => toggle(user, "enableContentDownloading", value)}
+                />
+                <RightSwitch
+                  label={t("rightLight")}
+                  checked={user.enableMediaConversion}
+                  busy={pendingKey === `${user.id}:enableMediaConversion`}
+                  onChange={(value) => toggle(user, "enableMediaConversion", value)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </AdminSection>
+    </AdminPage>
   );
 }
 

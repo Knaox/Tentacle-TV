@@ -19,6 +19,10 @@ export default {
   groupActivity: "Activité",
   groupAccounts: "Comptes",
   groupServer: "Serveur",
+  ticketsDescription: "Les demandes des utilisateurs, de l'ouverture à la résolution.",
+  downloadsDescription:
+    "Le débit que le serveur consacre aux téléchargements hors ligne, et qui a le droit de télécharger.",
+  downloadsRightsTitle: "Droits par compte",
   homeHealthTitle: "État du serveur",
   homeHealthManage: "Services",
   homeJellyfin: "Jellyfin",
