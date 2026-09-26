@@ -97,7 +97,7 @@ export function AdminKeyBanner() {
             paraît anodine puisque tout continue de s'afficher à l'écran. */}
         <p className="mt-0.5 text-[var(--status-error-fg)]/80">{t("adminKeyImpact")}</p>
         <Link
-          to="/admin/services"
+          to="/admin/services#jellyfin"
           className="mt-1.5 inline-block font-semibold text-[var(--status-error-fg)] underline underline-offset-4 hover:opacity-80"
         >
           {t("adminKeyAction")}
