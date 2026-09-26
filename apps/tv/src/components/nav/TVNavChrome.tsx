@@ -1,5 +1,6 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import { useLibraries } from "@tentacle-tv/api-client";
+import { navigationRef } from "../../navigation/navigationRef";
 import { railNavigate } from "../../navigation/railNavigate";
 import { returnToSearchBar } from "../search/searchBarReturn";
 import { TVSideRail } from "./TVSideRail";
@@ -31,6 +32,10 @@ export function deriveRailKey(state: NavStateLike): string | null {
     default: return null; // Player, MediaDetail, Trailer, PairCode, Disclaimer…
   }
 }
+
+/** La pile peut-elle reculer — relu à chaque changement d'état de la navigation. */
+const subscribeToNavigation = (onChange: () => void) => navigationRef.addListener("state", onChange);
+const readCanGoBack = () => navigationRef.isReady() && navigationRef.canGoBack();
 
 /**
  * Chrome de navigation persistant : le rail latéral est monté UNE SEULE FOIS
@@ -79,6 +84,16 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
     }
   }, [libraries, armContentFocus]);
 
+  // Menu avec le focus dans le rail fait ce qu'il fait depuis le contenu :
+  // reculer d'un écran, sauf si l'écran l'empêche (`usePreventRemove` voit ce
+  // `goBack` comme le dépilage natif). C'est aussi ce que font Android
+  // (BackHandler) et la LG (`focus/back.ts`). À la racine, le rail laisse
+  // l'appui à UIKit : quitter l'application reste la règle tvOS.
+  const canGoBack = useSyncExternalStore(subscribeToNavigation, readCanGoBack);
+  const goBack = useCallback(() => {
+    if (navigationRef.isReady() && navigationRef.canGoBack()) navigationRef.goBack();
+  }, []);
+
   // Écran plein écran (lecture, fiche, jumelage) → pas de rail.
   if (!railKey) return null;
 
@@ -87,6 +102,8 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
       currentRoute={railKey}
       onNavigate={handleNavigate}
       grabFocusSignal={railFocusSignal}
+      canGoBack={canGoBack}
+      onBack={goBack}
     />
   );
 }
