@@ -131,6 +131,14 @@
   background-color: rgba(10, 10, 15, 0.92);
 }
 
+/* La note posée sur l'image cède la place aux métadonnées pendant le focus —
+ * sur une vignette d'épisode elles occupent le même coin, et une information à
+ * la fois se lit mieux à trois mètres. Même règle que tvOS et Android TV. Le
+ * composant web ne le sait pas : son `hovered` reste faux sur une dalle. */
+.carte-tv:focus [data-card-rating] {
+  opacity: 0;
+}
+
 /* Pas d'ombre portée sur les cartes AU REPOS.
  *
  * `theme/cards.css` pose deux calques d'élévation en pseudo-éléments, dont
