@@ -38,9 +38,17 @@ export function candidateBeyond(start: HTMLElement, towardsEnd: boolean, vertica
   const startBox = start.getBoundingClientRect();
   const startEdge = edgeOf(startBox, towardsEnd, vertical, true);
 
+  // Les filtres sont indépendants : leur ordre ne change pas la réponse, seul
+  // leur coût compte. La géométrie d'abord — une fois la mise en page à jour,
+  // un rectangle ne coûte presque rien et écarte la plupart des éléments —,
+  // puis le calque fixe, qui relit des styles d'ancêtres, mémorisés le temps
+  // de l'appel : toutes les cartes d'une page partagent les mêmes. Touche
+  // maintenue au bas de l'accueil, la fonction tourne à chaque répétition, et
+  // relisait les styles de tous les ancêtres de chaque élément du document.
+  const fixedAncestors = new Map<Element, boolean>();
+
   for (const node of document.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
     if (node === start || start.contains(node) || node.contains(start)) continue;
-    if (inFixedLayer(node)) continue;
 
     const box = node.getBoundingClientRect();
     if (box.width === 0 || box.height === 0) continue;
@@ -48,6 +56,8 @@ export function candidateBeyond(start: HTMLElement, towardsEnd: boolean, vertica
     const edge = edgeOf(box, towardsEnd, vertical, false);
     const beyond = towardsEnd ? edge > startEdge + TOLERANCE : edge < startEdge - TOLERANCE;
     if (!beyond) continue;
+
+    if (inFixedLayer(node, fixedAncestors)) continue;
 
     // L'atteignabilité en dernier : c'est le test le plus coûteux — il lit des
     // styles calculés — et la géométrie vient de trancher pour presque tous.
@@ -78,9 +88,23 @@ function edgeOf(box: DOMRect, towardsEnd: boolean, vertical: boolean, start: boo
  * dans le rail, sans jamais converger. Et la question du bord les écarte, pour
  * ne pas prendre le rail pour un bout de page.
  */
-export function inFixedLayer(element: HTMLElement): boolean {
+export function inFixedLayer(element: HTMLElement, memo?: Map<Element, boolean>): boolean {
+  const visited: Element[] = [];
+  let answer = false;
   for (let current: HTMLElement | null = element; current; current = current.parentElement) {
-    if (window.getComputedStyle(current).position === "fixed") return true;
+    const known = memo?.get(current);
+    if (known !== undefined) {
+      answer = known;
+      break;
+    }
+    visited.push(current);
+    if (window.getComputedStyle(current).position === "fixed") {
+      answer = true;
+      break;
+    }
   }
-  return false;
+  // Tout le chemin parcouru partage la réponse : un ancêtre fixe rend fixe tout
+  // ce qu'il contient, et aucun ancêtre fixe jusqu'au sommet vaut pour chacun.
+  if (memo) for (const node of visited) memo.set(node, answer);
+  return answer;
 }
