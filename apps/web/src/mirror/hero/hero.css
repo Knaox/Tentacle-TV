@@ -1,0 +1,66 @@
+/*
+ * Les mouvements de la bannière et des rangées du miroir — transform et
+ * opacité seulement (règle GPU), tous FINIS : aucune animation infinie ici.
+ */
+
+/* `CascadeGroup` de l'app : chaque groupe monte de 8 en fondu, 220 ms. */
+@keyframes mirrorHeroCascade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.mirror-hero-cascade {
+  animation: mirrorHeroCascade 220ms ease-out both;
+}
+
+/* Ken Burns de `HeroBackdropStack` : 1 → 1,06, linéaire, sur une diapositive. */
+@keyframes mirrorHeroZoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+.mirror-hero-zoom {
+  animation: mirrorHeroZoom 8000ms linear forwards;
+}
+
+/* `FadeIn` de l'app : fondu + montée de 14, 320 ms. */
+@keyframes mirrorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.mirror-fade-in {
+  animation: mirrorFadeIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Le défilement paginé du bandeau : une diapositive par geste. */
+.mirror-hero-pager {
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.mirror-hero-pager > * {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mirror-hero-cascade,
+  .mirror-hero-zoom,
+  .mirror-fade-in {
+    animation: none;
+  }
+}

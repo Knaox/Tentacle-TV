@@ -29,6 +29,8 @@ import {
   MirrorAbout,
   MirrorCredits,
   MirrorFavorites,
+  MirrorForYou,
+  MirrorHome,
   MirrorLogin,
   MirrorPairDevice,
   MirrorProfile,
@@ -141,13 +143,13 @@ export function App() {
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
           <Route element={guard(<AppLayout />)}>
             {/* Hors ligne : l'accueil devient le catalogue local. */}
-            <Route index element={offlineMode ? <OfflineCatalog /> : <Home />} />
+            <Route index element={offlineMode ? <OfflineCatalog /> : <ByFormFactor desktop={<Home />} mirror={<MirrorHome />} />} />
             <Route path="library/:libraryId" element={onlineOnly(<ByFormFactor desktop={<Library />} mirror={<MirrorLibraryCatalog />} />)} />
             {/* L'onglet Bibliothèque de l'app : le miroir seulement, le bureau a ses onglets. */}
             <Route path="libraries" element={onlineOnly(<ByFormFactor desktop={<Navigate to="/" replace />} mirror={<MirrorLibraries />} />)} />
             <Route path="watchlist" element={onlineOnly(<ByFormFactor desktop={<Watchlist />} mirror={<MirrorWatchlist />} />)} />
             <Route path="favorites" element={onlineOnly(<ByFormFactor desktop={<Favorites />} mirror={<MirrorFavorites />} />)} />
-            <Route path="recommendations" element={onlineOnly(<Recommendations />)} />
+            <Route path="recommendations" element={onlineOnly(<ByFormFactor desktop={<Recommendations />} mirror={<MirrorForYou />} />)} />
             {/* La recherche pleine page — l'omnibox (⌘K) y mène pour « tous les résultats ». */}
             <Route path="search" element={onlineOnly(<ByFormFactor desktop={<Search />} mirror={<MirrorSearch />} />)} />
             {/* Desktop uniquement — la page se redirige elle-même hors droit

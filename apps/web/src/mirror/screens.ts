@@ -19,3 +19,5 @@ export const MirrorSupport = lazy(() => import("./screens/misc").then((m) => ({ 
 export const MirrorPairDevice = lazy(() => import("./screens/misc").then((m) => ({ default: m.MirrorPairDevice })));
 export const MirrorLogin = lazy(() => import("./screens/auth").then((m) => ({ default: m.MirrorLogin })));
 export const MirrorRegister = lazy(() => import("./screens/auth").then((m) => ({ default: m.MirrorRegister })));
+export const MirrorHome = lazy(() => import("./screens/home").then((m) => ({ default: m.MirrorHome })));
+export const MirrorForYou = lazy(() => import("./screens/forYou").then((m) => ({ default: m.MirrorForYou })));

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, CheckCircle, Heart, Plus, type LucideIcon } from "lucide-react";
 import { useFavorite, useJellyfinClient, useMediaItem, useToggleWatchlist, useWatchedToggle } from "@tentacle-tv/api-client";
@@ -10,7 +11,12 @@ import { ActionSheet } from "../ui/ActionSheet";
  * d'un épisode ; « Vu » vise le titre appuyé. « Garder hors ligne » n'existe
  * pas dans un navigateur : la cellule manque, comme dans l'app hors bibliothèque.
  */
-export function MediaActionSheet({ itemId, onClose }: { itemId: string | null; onClose: () => void }) {
+export function MediaActionSheet({ itemId, onClose, extra }: {
+  itemId: string | null;
+  onClose: () => void;
+  /** Sous le bandeau : les raisons d'une recommandation (`reasons` de l'app). */
+  extra?: ReactNode;
+}) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const open = itemId !== null;
@@ -59,6 +65,7 @@ export function MediaActionSheet({ itemId, onClose }: { itemId: string | null; o
           </div>
         </div>
       )}
+      {extra && <div className="mx-4 mb-4">{extra}</div>}
       <div className="flex gap-2.5 px-4 pb-3">
         <ActionCell
           Icon={Heart}
