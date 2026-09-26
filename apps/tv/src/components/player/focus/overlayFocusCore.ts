@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type Component } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Component } from "react";
 import { findNodeHandle } from "react-native";
-import { osdPlayPauseNodeRef } from "./osdFocusBus";
+import { osdPlayPauseNodeRef, setOsdFocusReturn, skipClaimedSince, useSkipNode } from "./osdFocusBus";
+
+/** Avance tolérée d'une réclamation du bouton de saut sur le signal de
+ *  l'habillage : à la sortie d'une avance rapide, les deux partent du même
+ *  geste, à un rendu d'écart, dans un ordre qui n'est pas garanti. */
+const SKIP_CLAIM_LEAD_MS = 200;
 
 /** Boutons de transport de l'OSD du lecteur, dans l'ordre de la rangée. */
 export type TransportKey =
@@ -136,21 +141,42 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTarg
   // et refuse la préférence qu'on vient de poser — la restauration tombait dans
   // le vide, et le guide de l'habillage reprenait alors son PREMIER enfant,
   // c'est-à-dire « quitter la vidéo ».
+  //
+  // Une restauration IMPLICITE cède au bouton de saut qui vient de réclamer le
+  // focus (cf. `noteSkipFocusClaim`) : il apparaît, il le prend. Celle qui
+  // SUIT son départ ne cède jamais — il n'y a plus personne à qui céder.
+  const restoreTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const scheduleRestore = useCallback((wanted: TransportKey | undefined, yieldToSkip: boolean) => {
+    restoreTimers.current.forEach(clearTimeout);
+    restoringFocusRef.current = true;
+    const askedAt = Date.now();
+    restoreTimers.current = [
+      setTimeout(() => {
+        if (yieldToSkip && skipClaimedSince(askedAt - SKIP_CLAIM_LEAD_MS)) return;
+        const target = (wanted ? btnRefs.current[wanted] : undefined)
+          ?? btnRefs.current[lastFocusedRef.current]
+          ?? btnRefs.current.playpause
+          ?? null;
+        if (wanted) lastFocusedRef.current = wanted;
+        restore(target);
+      }, 220),
+      setTimeout(() => { restoringFocusRef.current = false; }, 520),
+    ];
+  }, [restore]);
+  useEffect(() => {
+    const timers = restoreTimers;
+    return () => timers.current.forEach(clearTimeout);
+  }, []);
+
   useEffect(() => {
     if (!focusSignal) return;
-    restoringFocusRef.current = true;
-    const t1 = setTimeout(() => {
-      const wanted = focusTargetRef?.current;
-      const target = (wanted ? btnRefs.current[wanted] : undefined)
-        ?? btnRefs.current[lastFocusedRef.current]
-        ?? btnRefs.current.playpause
-        ?? null;
-      if (wanted) lastFocusedRef.current = wanted;
-      restore(target);
-    }, 220);
-    const t2 = setTimeout(() => { restoringFocusRef.current = false; }, 520);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [focusSignal, restore, focusTargetRef]);
+    const wanted = focusTargetRef?.current;
+    scheduleRestore(wanted, !wanted);
+  }, [focusSignal, scheduleRestore, focusTargetRef]);
+
+  // Le bouton de saut qui tenait le focus s'en va : retour au dernier bouton
+  // utilisé (play/pause par défaut), par le même chemin que le signal.
+  useEffect(() => setOsdFocusReturn(() => scheduleRestore(undefined, false)), [scheduleRestore]);
 
   // NB : pendant un scrub, l'OSD est MASQUÉ (boutons non focusables, le fond
   // reprend le focus) — le verrou de navigation ci-dessous n'est qu'un filet si
@@ -168,6 +194,16 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTarg
       right: idx < present.length - 1 ? handlesRef.current[present[idx + 1]] : undefined,
     };
   }, []);
+
+  // Le bouton de saut à l'écran : c'est LUI que ↑ atteint depuis la rangée —
+  // Android suit `nextFocusUp` avant toute géométrie, et il visait « quitter »,
+  // si bien que le bouton, juste au-dessus, restait hors d'atteinte. tvOS
+  // l'ignore : le guide de la barre de progression y mène (TVPlayerOverlay).
+  const skipNode = useSkipNode();
+  const skipHandle = useMemo(
+    () => (skipNode ? findNodeHandle(skipNode as never) ?? undefined : undefined),
+    [skipNode],
+  );
 
   const buttonProps = useCallback((key: TransportKey): OverlayButtonProps => {
     // Mémoire gelée pendant la restauration ET pendant un scrub (un focus
@@ -195,10 +231,10 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTarg
     const { left, right } = neighbors(key);
     return {
       onFocus, hasTVPreferredFocus: preferred,
-      nextFocusUp: backNode, nextFocusLeft: left, nextFocusRight: right,
+      nextFocusUp: skipHandle ?? backNode, nextFocusLeft: left, nextFocusRight: right,
     };
     // handlesVersion : recompute quand les handles/conditionnels changent.
-  }, [scrubbing, initialPreferred, neighbors, handlesVersion]);
+  }, [scrubbing, initialPreferred, neighbors, handlesVersion, skipHandle]);
 
   return { registerButton, buttonProps };
 }

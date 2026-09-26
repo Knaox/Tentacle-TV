@@ -17,7 +17,7 @@ import { TVSubtitleOverlay, type SubtitleCue } from "./TVSubtitleOverlay";
 import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
 import type { ExoTextTrack } from "./ExoPlayer";
 import type { UseTVTrickplayResult } from "../../hooks/useTVTrickplay";
-import { useTVFocusGrab } from "../../hooks/useTVFocusGrab";
+import { useTvFocusClaim } from "../../hooks/useTvFocusClaim";
 
 interface ControlsCtx {
   overlayVisible: boolean;
@@ -161,13 +161,11 @@ export function TVPlayerView({
    *  focus va à SA sortie, et l'habillage se tait. */
   const loadingShown = !hasStarted && !videoError;
 
-  // tvOS : dès que l'OSD se cache (et qu'aucun panneau / skip n'est actif),
-  // ramener le focus sur le fond pour que le D-pad continue d'émettre ses events
-  // et puisse rallumer l'OSD (parité avec useFocusRecovery côté Android).
-  useTVFocusGrab(
-    backgroundRef as unknown as React.RefObject<unknown>,
-    backgroundFocusable && !skipActive,
-  );
+  // Dès que l'OSD se cache OU que le bouton de saut s'en va OSD caché, le fond
+  // reprend le focus pour que le D-pad continue d'émettre et rallume l'OSD. Sur
+  // Android aussi : `hasTVPreferredFocus` ne s'y rejoue qu'à SA transition, et
+  // le bouton qui partait laissait la télécommande sans rien de focalisé.
+  useTvFocusClaim(backgroundRef as unknown as React.RefObject<unknown>, backgroundFocusable && !skipActive);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
