@@ -1,6 +1,7 @@
 import { reviewAfterMount } from "../focus/wait";
 import { giveFocus } from "../focus/active";
 import { DEFAULT_ATTRIBUTE } from "../focus/default";
+import { OVERLAY_ATTRIBUTE } from "./okOverlay";
 import { ENTRY_ATTRIBUTE, zoneEntryDestination } from "../focus/zones";
 
 /**
@@ -141,7 +142,13 @@ export function osdEntryButton(rendered: readonly string[]): string {
 export function setOsdFocus(root: HTMLElement | null): void {
   reviewAfterMount(() => {
     if (!root) return false;
-    if (root.contains(document.activeElement)) return true;
+    const active = document.activeElement;
+    if (root.contains(active)) return true;
+    // Un bouton de surcouche (« Passer l'intro », carte suivante) qui tient le
+    // focus le garde : il l'a pris dans le même rendu, en sortant de l'avance
+    // rapide — l'entrée de l'habillage, trois images plus tard, le lui
+    // reprenait pour le donner à Pause.
+    if (active instanceof HTMLElement && active.closest(`[${OVERLAY_ATTRIBUTE}]`)) return true;
 
     const target = root.querySelector<HTMLElement>(`[${DEFAULT_ATTRIBUTE}]`);
     if (!target) return false;

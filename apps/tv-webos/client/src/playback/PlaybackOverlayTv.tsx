@@ -71,9 +71,14 @@ function useOverlayFocus(
     const element = target(root);
     if (element) giveFocus(element);
     return () => {
-      if (!root.contains(document.activeElement)) return;
+      // Le nettoyage passe APRÈS le retrait du nœud : un bouton démonté avec
+      // le focus l'a laissé au corps du document. C'est « la surcouche avait
+      // le focus » — le rendre à l'habillage tout de suite, au lieu d'attendre
+      // le chien de garde du moteur (jusqu'à 500 ms sans anneau).
       const focal = document.activeElement;
-      if (focal instanceof HTMLElement) focal.blur();
+      const orphaned = !focal || focal === document.body;
+      if (!orphaned && !root.contains(focal)) return;
+      if (!orphaned && focal instanceof HTMLElement) focal.blur();
       setOsdFocus(document.querySelector<HTMLElement>(".osd-tv"));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
