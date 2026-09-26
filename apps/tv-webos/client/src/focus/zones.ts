@@ -1,5 +1,12 @@
 import { best, type Box } from "@tentacle-tv/tv-core";
-import { FOCUSABLE_SELECTOR, reachableTarget, isInputField, collect, type Candidate } from "./candidates";
+import {
+  FOCUSABLE_SELECTOR,
+  reachableTarget,
+  isInputField,
+  collect,
+  trappingContainer,
+  type Candidate,
+} from "./candidates";
 import { defaultFocus } from "./default";
 import { recover } from "./memory";
 import type { Direction } from "./keys";
@@ -30,6 +37,22 @@ export const RAIL_SELECTOR = ".rail-tv";
 
 export function inRail(element: HTMLElement | null): boolean {
   return !!element && !!element.closest(RAIL_SELECTOR);
+}
+
+/**
+ * Ce que pose un piège qui laisse le rail atteignable : la recherche.
+ *
+ * Un dialogue confine le D-pad, et c'est juste pour une modale — le rail passe
+ * sous elle, y envoyer le focus ferait disparaître l'anneau. La recherche n'en
+ * est pas une : c'est un écran sans route, et le rail reste visible par-dessus
+ * elle (`search-tv.css`). Elle le déclare, et le rail s'y comporte comme
+ * partout : « gauche » sans voisin y entre, « droite » en ressort.
+ */
+export const RAIL_REACHABLE_ATTRIBUTE = "data-tv-rail-reachable";
+
+/** Le rail est-il atteignable sous ce piège ? Toujours, hors de tout piège. */
+export function railReachable(trap: ParentNode | null): boolean {
+  return !trap || (trap instanceof Element && trap.hasAttribute(RAIL_REACHABLE_ATTRIBUTE));
 }
 
 /**
@@ -82,17 +105,23 @@ export function invalidateContent(): void {
  * est toujours monté et atteignable, car le fenêtrage a pu le démonter
  * pendant qu'on parcourait le rail —, celui que la clé de route retrouve,
  * sinon le focus par défaut de l'écran, hors rail.
+ *
+ * Sous un piège qui laisse passer le rail, tout se cherche DANS le piège : la
+ * page qu'il recouvre est retirée du rendu, et sa mémoire de route désigne ce
+ * qu'elle cache.
  */
 export function railExit(): HTMLElement | null {
-  if (lastContent && document.contains(lastContent) && reachableTarget(lastContent)) {
+  const trap = trappingContainer();
+  const scope = trap instanceof HTMLElement ? trap : document;
+  if (lastContent && scope.contains(lastContent) && reachableTarget(lastContent)) {
     return lastContent;
   }
 
-  const found = recover();
+  const found = recover(scope);
   if (found && !inRail(found)) return found;
 
-  const outsideRail = collect(document).filter((candidate) => !inRail(candidate.element));
-  return defaultFocus(document, outsideRail);
+  const outsideRail = collect(scope).filter((candidate) => !inRail(candidate.element));
+  return defaultFocus(scope, outsideRail);
 }
 
 /** Ce qu'une enveloppe du portage pose sur la cible d'entrée qu'elle a choisie. */

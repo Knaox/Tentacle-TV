@@ -9,7 +9,15 @@ import { reviewAfterMount } from "./wait";
 import { closeExpandedMenu } from "./expandedMenu";
 import { redirectTrackEntry, trackExit } from "./trackEntry";
 import { holdWhileRevealing } from "./repeatGate";
-import { RAIL_SELECTOR, inRail, railEntry, redirectZoneEntry, railExit, keepInZone } from "./zones";
+import {
+  RAIL_SELECTOR,
+  inRail,
+  railEntry,
+  railReachable,
+  redirectZoneEntry,
+  railExit,
+  keepInZone,
+} from "./zones";
 
 /**
  * Le déplacement du focus : viser un voisin, défiler s'il n'est pas monté,
@@ -117,10 +125,10 @@ export function aim(direction: Direction): boolean {
 
   const trap = trappingContainer();
 
-  // Le rail se navigue à part — sauf sous un dialogue, qui piège comme
-  // partout : ses entrées se parcourent de haut en bas, la droite rend au
-  // contenu ce qu'on lui avait pris, la gauche est le bord du monde.
-  if (!trap && inRail(start)) return aimInRail(start, direction);
+  // Le rail se navigue à part — sauf sous un dialogue qui ne le laisse pas
+  // passer (`railReachable`) : ses entrées se parcourent de haut en bas, la
+  // droite rend au contenu ce qu'on lui avait pris, la gauche est le bord.
+  if (inRail(start) && railReachable(trap)) return aimInRail(start, direction);
 
   const root = collectRoot(start, isHorizontal(direction), trap);
   let candidates = collect(root).filter((candidate) => candidate.element !== start);
@@ -226,8 +234,8 @@ export function aim(direction: Direction): boolean {
     // « Gauche » sans voisin, c'est la demande du rail — depuis la première
     // colonne d'une grille, le début d'une piste rembobinée, le chrome. La
     // destination est l'écran COURANT, pas l'entrée la plus proche. Un
-    // dialogue ouvert garde son piège : on ne s'en évade pas vers le rail.
-    if (direction === "gauche" && !trap) {
+    // dialogue garde son piège, sauf s'il laisse passer le rail — la recherche.
+    if (direction === "gauche" && railReachable(trap)) {
       const entry = railEntry();
       if (entry) {
         giveFocus(entry);
