@@ -24,3 +24,22 @@ export function useExoTunneling(): boolean {
     exoTunnelingStore.readSnapshot,
   );
 }
+
+/** Clé traversée par une chaîne — ne jamais renommer (cf. CLAUDE.md). */
+export const EXO_MATCH_FRAME_RATE_KEY = "tentacle_exo_match_frame_rate";
+
+/**
+ * Adapter la fréquence d'affichage à la cadence du film (24 Hz pour un film à
+ * 23,976 i/s), ÉTEINTE par défaut : la bascule renégocie le HDMI et le
+ * téléviseur montre 1 à 3 s de noir au lancement. Éteinte, la vue ne reçoit
+ * pas de cadence : seuls les ajustements SANS coupure d'ExoPlayer restent.
+ */
+export const exoMatchFrameRateStore = createBooleanStore(tvStorage, EXO_MATCH_FRAME_RATE_KEY, false);
+
+export function useExoMatchFrameRate(): boolean {
+  return useSyncExternalStore(
+    exoMatchFrameRateStore.subscribe,
+    exoMatchFrameRateStore.readSnapshot,
+    exoMatchFrameRateStore.readSnapshot,
+  );
+}

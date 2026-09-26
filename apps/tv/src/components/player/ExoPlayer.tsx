@@ -11,7 +11,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import type { MpvTrack, MPVPlayerHandle, ExoTextTrack } from "./playerTypes";
-import { useExoTunneling } from "../../lib/exoSettings";
+import { useExoMatchFrameRate, useExoTunneling } from "../../lib/exoSettings";
 
 // Re-export types — ExoPlayer uses the same track/handle interface
 export type { MpvTrack as ExoTrack, MPVPlayerHandle as ExoPlayerHandle };
@@ -89,6 +89,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
     // par PlayerScreen, et le lecteur se construit avec — un changement vaut
     // pour la lecture suivante.
     const tunneling = useExoTunneling();
+    const matchFrameRate = useExoMatchFrameRate();
 
     useImperativeHandle(ref, () => ({
       seek: (seconds: number) => dispatchCommand(nativeRef, "seek", [seconds]),
@@ -135,7 +136,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
         paused={paused}
         progressInterval={progressInterval}
         audioPassthrough={audioPassthrough}
-        frameRate={frameRate}
+        frameRate={matchFrameRate ? frameRate : 0}
         tunneling={tunneling}
         textTracks={textTracks}
         onExoEvent={handleEvent}
