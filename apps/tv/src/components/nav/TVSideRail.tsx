@@ -12,6 +12,7 @@ import { useRailEntries } from "./railEntries";
 import { useRailPinning } from "./railPinning";
 import { catalogParams, rememberedFilters } from "../../hooks/libraryCatalogParams";
 import { TentacleLogo } from "../icons/TentacleLogo";
+import { MenuPressInterceptor } from "../focus/MenuPressInterceptor";
 import { useRailFocused, useTVNavActions } from "../../context/TVNavContext";
 import { claimTvFocus } from "../../hooks/useTvFocusClaim";
 import { Colors, Fonts } from "../../theme/colors";
@@ -29,6 +30,10 @@ interface TVSideRailProps {
   onNavigate: (key: string) => void;
   /** Incrémenter pour redonner le focus à l'item actif (ex : Retour sur l'accueil). */
   grabFocusSignal?: number;
+  /** Menu (tvOS) le focus dans le rail : pris et confié à `onBack` si la pile
+   *  peut reculer ; sinon laissé à UIKit, qui quitte l'app à la racine. */
+  canGoBack: boolean;
+  onBack: () => void;
 }
 
 /**
@@ -48,7 +53,7 @@ interface TVSideRailProps {
  * les icônes se lisaient sur une photographie. Ce n'est PAS le mur opaque
  * retiré autrefois, et il ne s'anime jamais (aucun coût par image).
  */
-export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, grabFocusSignal }: TVSideRailProps) {
+export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, grabFocusSignal, canGoBack, onBack }: TVSideRailProps) {
   const { t } = useTranslation("nav");
   const { storage } = useTentacleConfig();
   const { top, bottom } = useRailEntries();
@@ -206,8 +211,12 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     />
   );
 
+  // Le conteneur prend le Menu de la Siri Remote : le rail vit hors des écrans,
+  // et son Menu quittait l'application au lieu de reculer (`MenuPressInterceptor`).
   return (
-    <View
+    <MenuPressInterceptor
+      enabled={canGoBack}
+      onMenuPress={onBack}
       pointerEvents="box-none"
       style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: RAIL_COLLAPSED, zIndex: 100 }}
     >
@@ -278,6 +287,6 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
           </Text>
         </Animated.View>
       </TVFocusGuideView>
-    </View>
+    </MenuPressInterceptor>
   );
 });
