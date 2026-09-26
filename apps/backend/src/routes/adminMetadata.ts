@@ -15,6 +15,7 @@ import { fanoutStatus, kickRecoFanout } from "../services/reco/fanout";
 import { refreshTrending } from "../services/reco/trendingRow";
 import { requestCrawlerReseed } from "../services/reco/crawlReseed";
 import { getTmdbApiKey } from "../services/tmdb/client";
+import { checkTmdbKey } from "../services/tmdb/keyCheck";
 
 const putSchema = z.object({
   tmdbApiKey: z.string().max(128).optional(),
@@ -25,27 +26,18 @@ const putSchema = z.object({
     .optional(),
 });
 
+const testSchema = z.object({
+  /** Absente : c'est la clé EFFECTIVE du serveur (variable d'environnement
+   *  comprise) qui passe le test. */
+  tmdbApiKey: z.string().max(128).optional(),
+});
+
 /** Champ présent + non vide → écrit ; chaîne vide → supprimé ; absent → intact. */
 async function applyField(key: string, value: string | undefined): Promise<void> {
   if (value === undefined) return;
   const trimmed = value.trim();
   if (trimmed) await setConfigValue(key, trimmed);
   else await deleteConfigValue(key);
-}
-
-/** La clé candidate répond-elle chez TMDB ? `/configuration` est l'appel le
- *  moins cher de l'API. Clé en query param — jamais en Bearer (cf. la
- *  doctrine de tmdb/client.ts) et jamais loggée. */
-async function tmdbKeyValid(candidate: string): Promise<boolean> {
-  try {
-    const res = await fetch(
-      `https://api.themoviedb.org/3/configuration?api_key=${encodeURIComponent(candidate)}`,
-      { signal: AbortSignal.timeout(8000) }
-    );
-    return res.ok;
-  } catch {
-    return false;
-  }
 }
 
 export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
@@ -69,11 +61,15 @@ export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
 
   app.put("/metadata", async (request, reply) => {
     const body = putSchema.parse(request.body);
-    // Une clé TMDB se VALIDE avant d'être acceptée — invalide = refusée, pas
-    // stockée (l'admin le sait tout de suite, pas au prochain pool vide).
+    // Une clé TMDB se VALIDE avant d'être acceptée — refusée ou invérifiable,
+    // elle n'est pas stockée (l'admin le sait tout de suite, pas au prochain
+    // pool vide). Les deux refus se distinguent : l'un appelle une autre clé,
+    // l'autre un nouvel essai.
     const candidate = body.tmdbApiKey?.trim();
-    if (candidate && !(await tmdbKeyValid(candidate))) {
-      return reply.status(400).send({ error: "tmdb-key-invalid" });
+    if (candidate) {
+      const verdict = await checkTmdbKey(candidate);
+      if (verdict === "invalid") return reply.status(400).send({ error: "tmdb-key-invalid" });
+      if (verdict === "unreachable") return reply.status(502).send({ error: "tmdb-unreachable" });
     }
     // La clé TMDB EST l'interrupteur des recommandations : sa pose (ou son
     // changement) déclenche les tendances puis le calcul pour tous les
@@ -94,5 +90,18 @@ export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
       requestCrawlerReseed("region");
     }
     return { ok: true };
+  });
+
+  /**
+   * POST /api/admin/metadata/tmdb/test { tmdbApiKey? }
+   *   → { result: "valid" | "invalid" | "unreachable" }
+   * Le bouton « Tester » : une clé saisie, sans l'enregistrer, ou la clé en
+   * place — révoquée depuis, ou serveur privé de réseau ? Rien n'est écrit.
+   */
+  app.post("/metadata/tmdb/test", async (request, reply) => {
+    const body = testSchema.parse(request.body ?? {});
+    const candidate = body.tmdbApiKey?.trim() || getTmdbApiKey();
+    if (!candidate) return reply.status(400).send({ error: "tmdb-key-missing" });
+    return { result: await checkTmdbKey(candidate) };
   });
 };
