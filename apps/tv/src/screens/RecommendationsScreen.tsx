@@ -11,7 +11,6 @@ import { tvRecoHero, tvRecoNotice, tvRecoShelves } from "@tentacle-tv/tv-core";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import type { RootStackParamList } from "../navigation/types";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
-import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
 import { TVHomeContextMenu, type HomeContextTarget } from "../components/home/TVHomeContextMenu";
@@ -102,8 +101,10 @@ function RecommendationsInner({ navigation }: Props) {
       <TVFocusGuideView autoFocus style={{ flex: 1 }}>
         <ScrollView
           ref={scrollRef}
-          style={{ flex: 1, marginLeft: -RAIL_COLLAPSED, marginRight: -TV_OVERSCAN_PT.x }}
-          contentContainerStyle={{ paddingLeft: RAIL_COLLAPSED, paddingRight: TV_OVERSCAN_PT.x, paddingBottom: 96 }}
+          // Clip au bord du rail à gauche (le halo passait dessous), au bord de
+          // l'écran à droite — même montage que l'Accueil.
+          style={{ flex: 1, marginRight: -TV_OVERSCAN_PT.x }}
+          contentContainerStyle={{ paddingRight: TV_OVERSCAN_PT.x, paddingBottom: 96 }}
           overScrollMode="never"
           showsVerticalScrollIndicator={SHOWS_VERTICAL_SCROLL_INDICATOR}
         >

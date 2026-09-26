@@ -15,7 +15,6 @@ import { TV_BANNER_CARD, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
-import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 import { useTVNavActions } from "../context/TVNavContext";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
@@ -188,15 +187,16 @@ function HomeScreenInner({ navigation }: Props) {
           l'écran regagne le focus (retour d'un player figé qui avait perdu le
           focus) — sinon l'Accueil restait sans focus → blocage. */}
       <TVFocusGuideView autoFocus style={{ flex: 1 }}>
-      {/* Les retraits de `TVScreenFrame` sont repris à l'intérieur du défilement :
-          la fenêtre de clip va jusqu'aux bords de l'écran, le contenu ne bouge pas
-          d'un point. Sans cela le halo de la bannière était rogné à la gouttière
-          de 56 pt — il ourlait la carte au lieu de l'entourer. */}
+      {/* Le retrait DROIT de `TVScreenFrame` est repris à l'intérieur du
+          défilement : la fenêtre de clip va jusqu'au bord de l'écran, et le halo
+          de la bannière n'est pas rogné à la gouttière. À GAUCHE, le clip s'arrête
+          au bord du rail : élargi jusqu'à l'écran, le halo glissait sous les
+          icônes du rail en défilant (le rail n'a qu'un voile, pas de fond). Les
+          56 pt de gouttière lui restent — comme aux rangées (FocusableRow). */}
       <ScrollView
         ref={scrollViewRef}
-        style={{ flex: 1, marginLeft: -RAIL_COLLAPSED, marginRight: -TV_OVERSCAN_PT.x }}
+        style={{ flex: 1, marginRight: -TV_OVERSCAN_PT.x }}
         contentContainerStyle={{
-          paddingLeft: RAIL_COLLAPSED,
           paddingRight: TV_OVERSCAN_PT.x,
           paddingBottom: 96,
         }}
