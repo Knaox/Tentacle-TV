@@ -14,7 +14,7 @@ import {
 } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { easeOut } from "../../../theme/motion";
-import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
+import { UserAvatar } from "../../ui/UserAvatar";
 import { ActionPill } from "./ActionPill";
 import { CommandStatus } from "./CommandStatus";
 import { ConfirmButton } from "./ConfirmButton";
@@ -86,7 +86,7 @@ export const SessionCard = memo(function SessionCard({
         </header>
 
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-content-secondary">
-          <LeaderboardAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} size={24} />
+          <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} imageTag={session.userImageTag} size={24} />
           <span className="font-medium text-content-primary">{session.userName}</span>
           <SessionAppLabel session={session} className="truncate text-content-tertiary" />
           {session.viaTentacle && (

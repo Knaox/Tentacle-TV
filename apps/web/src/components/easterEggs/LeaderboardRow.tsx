@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { LeaderboardAvatar } from "./LeaderboardAvatar";
+import { UserAvatar } from "../ui/UserAvatar";
 import { formatDuration, barRatio, rankValue } from "./leaderboardFormat";
 import { useSeriesFavorites } from "./leaderboardApi";
 
@@ -75,7 +75,7 @@ export function LeaderboardRow({ entree, rang, maximum, moi, reducedMotion }: Pr
         {rang}
       </span>
 
-      <LeaderboardAvatar userId={entree.userId} name={entree.name} hasAvatar={entree.hasAvatar} />
+      <UserAvatar userId={entree.userId} name={entree.name} hasAvatar={entree.hasAvatar} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">

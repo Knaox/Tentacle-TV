@@ -2,7 +2,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { MessageSquare, Radio } from "lucide-react";
 import { buttonStatus, type AdminSessionDto, type Feedback } from "@tentacle-tv/shared";
-import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
+import { UserAvatar } from "../../ui/UserAvatar";
 import { ActionPill } from "./ActionPill";
 import { SessionAppLabel } from "./SessionAppLabel";
 
@@ -36,7 +36,7 @@ export const IdleSessions = memo(function IdleSessions({
     <ul className="divide-y divide-line-subtle overflow-hidden rounded-xl border border-line-subtle bg-fill-faint">
       {sessions.map((session) => (
         <li key={session.id} className="flex items-center gap-3 px-4 py-2">
-          <LeaderboardAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} size={32} />
+          <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} imageTag={session.userImageTag} size={32} />
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-2 text-sm font-medium text-content-primary">
               <span className="truncate">{session.userName}</span>
