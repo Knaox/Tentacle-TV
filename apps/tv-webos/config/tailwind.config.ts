@@ -27,4 +27,14 @@ export default {
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],
   theme: configWeb.theme,
+  // Les variables de départ des utilitaires (`--tw-translate-x`, `--tw-ring-*`,
+  // `--tw-shadow`… cinquante et une) ne sont plus posées sur `*, ::before,
+  // ::after` mais sur les seules classes qui les lisent. Sur la dalle, chaque
+  // élément de chaque écran les recevait : mesuré sur la C3, en parcourant une
+  // bibliothèque, le recalcul de style coûtait deux fois plus par élément, et
+  // le quart de tout le travail de style y passait. Rendu identique — aucune
+  // feuille ni style en ligne du dépôt ne lit une `--tw-*` hors des utilitaires.
+  experimental: {
+    optimizeUniversalDefaults: true,
+  },
 } satisfies Config;
