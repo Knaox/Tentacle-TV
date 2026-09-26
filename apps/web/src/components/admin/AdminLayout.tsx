@@ -1,19 +1,10 @@
 import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  Database,
-  HardDriveDownload,
-  MonitorPlay,
-  LifeBuoy,
-  Mail,
-  Puzzle,
-  Server,
-  Users,
-} from "lucide-react";
-import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
+import { SettingsShell } from "@tentacle-tv/ui";
 
 import { getUserInfo } from "../userMenu/menuItems";
+import { activeAdminSection, adminSectionPath, useAdminSections } from "./adminSections";
 
 /**
  * Coquille maître-détail de l'administration.
@@ -26,40 +17,21 @@ import { getUserInfo } from "../userMenu/menuItems";
  * Route PARENTE : les URLs existantes (`/admin/users`, `/admin/plugins/<id>`…)
  * sont inchangées, elles deviennent simplement des enfants. Aucun lien profond
  * ne casse, y compris les routes dynamiques des plugins.
+ *
+ * Le rail range les sections en trois groupes (`adminSections.tsx`). Chaque
+ * page porte son en-tête : la coquille n'en affiche un que sur l'index.
+ *
+ * Pleine largeur sur desktop, toutes sections confondues : le rail à gauche,
+ * le reste de l'écran au contenu. Ce qui doit rester étroit (un formulaire, une
+ * phrase) se borne lui-même.
  */
-
-const ICON_SIZE = 17;
-
 export function AdminLayout() {
   const { t } = useTranslation("admin");
-  const { t: tSessions } = useTranslation("sessions");
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { isAdmin } = getUserInfo();
-
-  const sections = useMemo<SettingsShellSection[]>(
-    () => [
-      { id: "sessions", label: tSessions("title"), icon: <MonitorPlay size={ICON_SIZE} /> },
-      { id: "users", label: t("usersTitle"), icon: <Users size={ICON_SIZE} /> },
-      { id: "downloads", label: t("downloadsTitle"), icon: <HardDriveDownload size={ICON_SIZE} /> },
-      { id: "invites", label: t("invitesTitle"), icon: <Mail size={ICON_SIZE} /> },
-      { id: "tickets", label: t("supportTickets"), icon: <LifeBuoy size={ICON_SIZE} /> },
-      { id: "plugins", label: t("pluginsTitle"), icon: <Puzzle size={ICON_SIZE} /> },
-      { id: "services", label: t("services"), icon: <Server size={ICON_SIZE} /> },
-      { id: "metadata", label: t("metadataTitle"), icon: <Database size={ICON_SIZE} /> },
-    ],
-    [t, tSessions],
-  );
-
-  // `/admin/plugins/<id>` doit garder « plugins » actif dans le rail : on ne
-  // retient que le premier segment après /admin.
-  const activeId = useMemo(() => {
-    const rest = pathname.replace(/^\/admin\/?/, "");
-    if (!rest) return null;
-    return rest.split("/")[0] || null;
-  }, [pathname]);
-
-  const active = sections.find((s) => s.id === activeId);
+  const sections = useAdminSections();
+  const activeId = useMemo(() => activeAdminSection(pathname), [pathname]);
 
   if (!isAdmin) return <Navigate to="/" replace />;
 
@@ -68,19 +40,13 @@ export function AdminLayout() {
       <SettingsShell
         sections={sections}
         activeId={activeId}
-        onSelect={(id) => navigate(`/admin/${id}`)}
-        /* En-tête affiché UNIQUEMENT sur l'index : chaque page admin porte déjà
-           son propre <h1>. Les unifier demanderait de les retoucher une par une
-           — à faire dans une passe dédiée, pas au milieu du changement de
-           structure de navigation. */
-        title={active ? undefined : t("title")}
-        description={active ? undefined : t("overviewDescription")}
+        onSelect={(id) => navigate(adminSectionPath(id))}
+        navLabel={t("title")}
+        title={activeId ? undefined : t("title")}
+        description={activeId ? undefined : t("overviewDescription")}
         onBack={() => navigate("/admin")}
         backLabel={t("title")}
-        /* Le tableau des tickets étale quatre colonnes, les sessions en direct
-           deux colonnes de cartes : ils prennent toute la largeur, les autres
-           sections gardent leur colonne de lecture. */
-        fluid={activeId === "tickets" || activeId === "sessions"}
+        fluid
       >
         <Outlet />
       </SettingsShell>

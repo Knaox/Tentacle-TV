@@ -3,6 +3,20 @@ export default {
   // Libellé court du rail de sections — `existingInvites` est trop long pour y tenir.
   invitesTitle: "Invitations",
   overviewDescription: "Sélectionnez une section pour la configurer.",
+  // ── Coquille (socle de la refonte admin) ────────────────────────────────
+  // Le rail a SES libellés (`nav*`) : les titres de pages appartiennent aux
+  // pages, qui peuvent les reformuler sans le toucher.
+  navSessions: "Sessions en direct",
+  navTickets: "Tickets de support",
+  navUsers: "Utilisateurs",
+  navInvites: "Invitations",
+  navDownloads: "Téléchargements",
+  navServices: "Services",
+  navMetadata: "Métadonnées",
+  navPlugins: "Plugins",
+  groupActivity: "Activité",
+  groupAccounts: "Comptes",
+  groupServer: "Serveur",
   services: "Services",
   statusConnected: "Connecté",
   statusError: "Erreur",

@@ -3,6 +3,18 @@ export default {
   // Short label for the section rail — `existingInvites` is too long to fit.
   invitesTitle: "Invitations",
   overviewDescription: "Select a section to configure it.",
+  // ── Shell (shared base of the admin redesign) ────────────────────────────
+  navSessions: "Live sessions",
+  navTickets: "Support tickets",
+  navUsers: "Users",
+  navInvites: "Invitations",
+  navDownloads: "Downloads",
+  navServices: "Services",
+  navMetadata: "Metadata",
+  navPlugins: "Plugins",
+  groupActivity: "Activity",
+  groupAccounts: "Accounts",
+  groupServer: "Server",
   services: "Services",
   statusConnected: "Connected",
   statusError: "Error",
