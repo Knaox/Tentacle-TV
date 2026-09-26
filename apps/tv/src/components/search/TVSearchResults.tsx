@@ -31,12 +31,16 @@ const episodeKey = (item: SearchMediaItem) => item.Id;
  * Les résultats, en rangées : la bannière du meilleur résultat, puis une
  * rangée par catégorie dans l'ordre de `tvSearchSections` (tv-core, commun
  * avec la LG). La page défile d'elle-même vers la rangée qui prend le focus.
+ *
+ * `entryRef` reçoit le PREMIER résultat — la bannière, sinon la première carte
+ * de la première rangée : c'est là que mène la validation de la saisie.
  */
-export const TVSearchResults = memo(function TVSearchResults({ width, sections, notice, actions }: {
+export const TVSearchResults = memo(function TVSearchResults({ width, sections, notice, actions, entryRef }: {
   width: number;
   sections: TvSearchSection[];
   notice: TvSearchNotice;
   actions: TVSearchResultsActions;
+  entryRef?: (node: View | null) => void;
 }) {
   const { t } = useTranslation("search");
   const scrollRef = useRef<ScrollView>(null);
@@ -74,16 +78,17 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
       showsVerticalScrollIndicator={false}
     >
       <NoticeLine notice={notice} />
-      {sections.map((section) => {
+      {sections.map((section, index) => {
         const onLayout = (e: { nativeEvent: { layout: { y: number } } }) => {
           sectionY.current.set(section.key, e.nativeEvent.layout.y);
         };
         const onRowFocus = () => scrollToSection(section.key);
+        const entry = index === 0 ? entryRef : undefined;
         switch (section.key) {
           case "top":
             return (
               <View key="top" onLayout={onLayout} style={{ paddingHorizontal: Spacing.rowGutter, paddingTop: 16, paddingBottom: 8 }}>
-                <TVSearchTopHit top={section.top} width={inner} onOpen={actions.onOpenTop} onFocus={onRowFocus} />
+                <TVSearchTopHit ref={entry} top={section.top} width={inner} onOpen={actions.onOpenTop} onFocus={onRowFocus} />
               </View>
             );
           case "movies":
@@ -101,6 +106,7 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
                 onItemPress={openHit}
                 onRowFocus={onRowFocus}
                 onLayout={onLayout}
+                onFirstItem={entry}
               />
             );
           case "people":
@@ -115,6 +121,7 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
                 onItemPress={actions.onOpenPerson}
                 onRowFocus={onRowFocus}
                 onLayout={onLayout}
+                onFirstItem={entry}
               />
             );
           case "episodes":
@@ -129,6 +136,7 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
                 onItemPress={openEpisode}
                 onRowFocus={onRowFocus}
                 onLayout={onLayout}
+                onFirstItem={entry}
               />
             );
           case "facets":
@@ -136,9 +144,10 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
               <View key="facets" onLayout={onLayout} style={{ paddingHorizontal: Spacing.rowGutter, paddingTop: 16 }}>
                 <Text style={{ color: Colors.textPrimary, ...Typography.sectionTitle, marginBottom: 16 }}>{t("facets")}</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-                  {section.facets.map((facet) => (
+                  {section.facets.map((facet, facetIndex) => (
                     <Focusable
                       key={`${facet.kind}:${facet.name}`}
+                      ref={facetIndex === 0 ? entry : undefined}
                       variant="button"
                       focusRadius={999}
                       onPress={() => actions.onOpenFacet(facet)}

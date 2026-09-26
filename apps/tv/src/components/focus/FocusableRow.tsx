@@ -40,6 +40,9 @@ interface FocusableRowProps<T> {
    *  géométrique naturelle est hors écran (page défilée) : sans lui, le moteur
    *  ne trouve rien et le focus reste bloqué dans la rangée. */
   cellNextFocusUp?: number;
+  /** La première carte, montée ou démontée — la cible d'une validation de
+   *  recherche quand la rangée ouvre les résultats (`useSearchSubmit`). */
+  onFirstItem?: (node: View | null) => void;
 }
 
 export function FocusableRow<T>({
@@ -58,6 +61,7 @@ export function FocusableRow<T>({
   onLayout,
   onItemLongPress,
   cellNextFocusUp,
+  onFirstItem,
 }: FocusableRowProps<T>) {
   const listRef = useRef<FlatList>(null);
   const focusedIndexRef = useRef(-1);
@@ -76,6 +80,13 @@ export function FocusableRow<T>({
 
   // L'entrée par la première carte visible — cf. `RowEntryGuide`.
   const entry = useRowEntry({ itemWidth, gap, count: data.length });
+  const firstItem = useRef(onFirstItem);
+  firstItem.current = onFirstItem;
+  const publishNode = entry.onNode;
+  const onNode = useCallback((index: number, node: View | null) => {
+    publishNode(index, node);
+    if (index === 0) firstItem.current?.(node);
+  }, [publishNode]);
 
   // When the first item has focus and user presses left, fire onEdgeLeft
   useTVRemote({
@@ -159,7 +170,7 @@ export function FocusableRow<T>({
             onPress={onItemPress ? () => onItemPress(item) : undefined}
             onLongPress={onItemLongPress ? () => onItemLongPress(item) : undefined}
             nextFocusUp={cellNextFocusUp}
-            onNode={entry.onNode}
+            onNode={onNode}
           />
         )}
       />

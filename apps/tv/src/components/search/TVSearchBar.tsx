@@ -18,6 +18,10 @@ interface TVSearchBarProps {
   onSetQuery: (text: string) => void;
   /** Le clavier système s'est refermé : rendre le focus au clavier à l'écran. */
   onSystemKeyboardClosed: () => void;
+  /** « Rechercher » au clavier système : la saisie est validée (`useSearchSubmit`). */
+  onSubmit?: () => void;
+  /** La barre reprend le focus — tvOS le lui rend quand son clavier est parti. */
+  onBarFocus?: () => void;
 }
 
 /**
@@ -32,7 +36,7 @@ interface TVSearchBarProps {
  * touche micro.
  */
 export const TVSearchBar = memo(function TVSearchBar({
-  width, query, completion, onSetQuery, onSystemKeyboardClosed,
+  width, query, completion, onSetQuery, onSystemKeyboardClosed, onSubmit, onBarFocus,
 }: TVSearchBarProps) {
   const { t } = useTranslation(["search", "common"]);
   const inputRef = useRef<TextInput>(null);
@@ -69,6 +73,7 @@ export const TVSearchBar = memo(function TVSearchBar({
         variant="button"
         focusRadius={Button.small.borderRadius}
         onPress={openSystemKeyboard}
+        onFocus={onBarFocus}
         accessibilityLabel={query || t("common:voiceOrType")}
       >
         {content}
@@ -78,6 +83,7 @@ export const TVSearchBar = memo(function TVSearchBar({
         ref={inputRef}
         value={query}
         onChangeText={onSetQuery}
+        onSubmitEditing={onSubmit}
         onEndEditing={onSystemKeyboardClosed}
         returnKeyType="search"
         autoCorrect={false}

@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { forwardRef, memo, useState } from "react";
 import { Image, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { useTranslation } from "react-i18next";
@@ -24,8 +24,14 @@ interface TVSearchTopHitProps {
  * ouvre. Un titre y montre son fond, son logo et POURQUOI il répond (« Avec
  * Tom Hanks ») ; une personne, son portrait et ce qu'elle représente ici —
  * l'appui mène alors à sa filmographie dans la bibliothèque.
+ *
+ * Sa référence est celle du bouton : c'est la cible que la validation de la
+ * saisie réclame (`useSearchSubmit`).
  */
-export const TVSearchTopHit = memo(function TVSearchTopHit({ top, width, onOpen, onFocus }: TVSearchTopHitProps) {
+export const TVSearchTopHit = memo(forwardRef<View, TVSearchTopHitProps>(function TVSearchTopHit(
+  { top, width, onOpen, onFocus },
+  ref,
+) {
   const { t, i18n } = useTranslation("search");
   const client = useJellyfinClient();
   const [focused, setFocused] = useState(false);
@@ -81,6 +87,7 @@ export const TVSearchTopHit = memo(function TVSearchTopHit({ top, width, onOpen,
 
   return (
     <Focusable
+      ref={ref}
       variant="card"
       focusRadius={TV_CARD_RADIUS}
       scaleOverride={1.02}
@@ -97,7 +104,7 @@ export const TVSearchTopHit = memo(function TVSearchTopHit({ top, width, onOpen,
       </View>
     </Focusable>
   );
-});
+}));
 
 function Label({ text }: { text: string }) {
   return (
