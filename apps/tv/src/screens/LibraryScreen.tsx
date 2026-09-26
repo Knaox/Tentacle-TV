@@ -3,7 +3,6 @@ import { View, TVFocusGuideView } from "react-native";
 import { useGenres, useLibraries, useLibraryCatalog } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TV_BANNER_CARD } from "@tentacle-tv/theme";
-import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { usePreventRemove } from "@react-navigation/native";
 import type { RootStackParamList } from "../navigation/types";
@@ -25,7 +24,6 @@ import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { useLibraryFilters } from "../hooks/useLibraryFilters";
 import { hasPlatformFilter } from "../hooks/libraryCatalogParams";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
-import { possessiveLibraryName } from "../utils/libraryLabel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 
@@ -39,8 +37,6 @@ export function LibraryScreen(props: Props) {
 
 function LibraryScreenInner({ route, navigation }: Props) {
   const { libraryId, libraryName } = route.params;
-  const { i18n } = useTranslation("common");
-  const displayName = possessiveLibraryName(libraryName, i18n.language);
   const setFocusedItem = useAmbientSetter();
 
   const lf = useLibraryFilters(libraryId);
@@ -127,7 +123,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
 
   const header = useMemo(() => (
     <View>
-      <TVLibraryHero libraryId={libraryId} libraryName={displayName} collectionType={collectionType} />
+      <TVLibraryHero libraryId={libraryId} libraryName={libraryName} collectionType={collectionType} />
       {/* L'écart carte → filtres de la LG (28). */}
       <View style={{ marginTop: TV_BANNER_CARD.filtersGap }}>
         <TVLibraryFilterBar
@@ -142,7 +138,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
         />
       </View>
     </View>
-  ), [libraryId, displayName, collectionType, lf.filters, lf.hasActiveFilters, lf.setStatusFilter, lf.setIsFavorite, lf.resetFilters, total, openMenuAt, closeMenuIfOpen]);
+  ), [libraryId, libraryName, collectionType, lf.filters, lf.hasActiveFilters, lf.setStatusFilter, lf.setIsFavorite, lf.resetFilters, total, openMenuAt, closeMenuIfOpen]);
 
   return (
     <TVScreenFrame backdrop={<TVAmbientBackdrop />}>
