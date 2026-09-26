@@ -94,6 +94,11 @@ describe("catalogue", () => {
 
     saveInstalled([{ id: "i-1", pluginId: "vigie", sourceId: "mirror", name: "Vigie", version: "1.0.0", enabled: true, config: {}, installedAt: "" }]);
     expect((await call("GET", "/marketplace")).json()).toMatchObject([{ sourceId: "mirror", version: "2.0.0", updateAvailable: true }]);
+
+    // Sa source éteinte, l'officielle le publie encore : pas de « mise à jour »
+    // que la route de mise à jour (qui lit le miroir) ne poserait pas.
+    saveCustomSources([{ id: "mirror", name: "Miroir", url: MIRROR_URL, official: false, enabled: false }]);
+    expect((await call("GET", "/marketplace")).json()).toMatchObject([{ sourceId: "official", installed: true, updateAvailable: false }]);
   });
 });
 

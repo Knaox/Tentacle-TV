@@ -263,7 +263,9 @@ export function enrichPlugins(
       installed: !!inst,
       installedId: inst?.id,
       installedVersion: inst?.version,
-      updateAvailable: !!inst && isNewerVersion(p.version, inst.version),
+      // Seulement depuis la source d'installation : c'est elle que la mise à
+      // jour lit. Une autre source qui publie plus récent ne se pose pas.
+      updateAvailable: !!inst && inst.sourceId === source.id && isNewerVersion(p.version, inst.version),
     };
   });
 }
