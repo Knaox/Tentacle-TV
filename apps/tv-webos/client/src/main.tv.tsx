@@ -28,6 +28,7 @@ import { App } from "@/App";
 import { ThemeProvider } from "@/theme";
 import { installTvSessionGuard } from "./auth/sessionGuardTv";
 import { installPolyfills } from "./bootstrap/polyfills";
+import { installStaleBuildReload } from "@/lib/staleBuildReload";
 import { readTvCapabilities } from "./bootstrap/webosGlobals";
 import { consumePairing, deviceToken } from "./bootstrap/fragmentToken";
 import { startConfigCapture } from "./playback/configsTv";
@@ -61,6 +62,10 @@ import "./styles/tv.css";
 // Avant tout le reste : React observe des tailles dès son premier rendu, et le
 // client d'API construit un contrôleur d'annulation dès sa première requête.
 installPolyfills();
+
+// Un téléviseur resté allumé pendant une mise à jour du serveur ne trouve plus
+// ses modules : il recharge au lieu de rester sur un écran noir.
+installStaleBuildReload();
 
 // Lu tôt, pour que le profil d'appareil soit prêt à la première négociation de
 // lecture — et pour retirer `?tvinfo=` de l'URL avant que le routeur la voie.

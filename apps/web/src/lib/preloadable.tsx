@@ -1,5 +1,6 @@
 import { use } from "react";
 import type { ComponentType, FunctionComponent } from "react";
+import { isModuleLoadFailure, reloadForStaleBuild } from "./staleBuildReload";
 
 export interface PreloadableComponent<P> extends FunctionComponent<P> {
   /** Charge le module (survol du lien, boot) ; idempotent, échec retentable. */
@@ -29,6 +30,9 @@ export function preloadable<P extends object>(
         },
         (err: unknown) => {
           pending = null;
+          // Module disparu : la page date d'avant une mise à jour du client
+          // (cf. staleBuildReload) — la recharger plutôt qu'un écran noir.
+          if (isModuleLoadFailure(err)) reloadForStaleBuild();
           throw err;
         }
       );

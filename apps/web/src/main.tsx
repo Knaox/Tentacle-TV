@@ -44,6 +44,7 @@ import { installReducedMotionShim } from "./dev/reducedMotionShim";
 import { installQueryPersistence } from "./lib/queryPersistence";
 import { cleanupObsoleteStorage } from "./lib/storageCleanup";
 import { bootRoutePreload } from "./lib/bootRoutePreload";
+import { installStaleBuildReload } from "./lib/staleBuildReload";
 import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import { HostTitleBar } from "./desktop/HostTitleBar";
@@ -70,6 +71,8 @@ initI18n({ lng: savedLang });
 // Les clés des réglages disparus partent AVANT tout rendu : un utilisateur qui
 // avait choisi un mode retiré revient au défaut sans rien faire.
 cleanupObsoleteStorage(localStorage);
+// Une page d'avant la mise à jour du client recharge au lieu de rester noire.
+installStaleBuildReload();
 
 // Application de bureau (Tauri sur macOS et Linux, Electron sur Windows) par
 // opposition au déploiement web. La détection vit dans `desktop/detect.ts` et
