@@ -99,6 +99,11 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "components/hero/HeroIndicators.tsx")]:
     resolve(CLIENT, "ui/hero/BannerGaugeTv.tsx"),
 
+  // Le halo des bannières, sans calque propre : composé à part, son flou était
+  // réappliqué par le compositeur à chaque image — 10 ms de GPU par image sur
+  // la dalle, pour un zoom que le téléviseur ne joue pas.
+  [resolve(WEB, "components/hero/AmbilightLayer.tsx")]:
+    resolve(CLIENT, "ui/hero/AmbilightLayerTv.tsx"),
 
   // Deux des cinq sections de réglages ouvraient l'écran « Indisponible » :
   // leurs écrans ne sont pas compilés ici. Une section qui mène à une
