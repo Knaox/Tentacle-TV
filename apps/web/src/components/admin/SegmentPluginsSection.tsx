@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BACKEND, cls, hdrs } from "../../pages/adminUtils";
+import { ToggleSwitch } from "../settings/ToggleSwitch";
 
 /**
  * Où le serveur trouve les passages d'un épisode — et comment lui en donner.
@@ -73,18 +74,15 @@ function AudioAnalysisToggle() {
   const { counters } = status;
   return (
     <div className="mt-4 space-y-2 border-t border-line-subtle pt-4">
+      {/* L'interrupteur canonique (role="switch") : la copie d'avant tenait sa
+          bordure d'une classe `[var(--brand)]/45` qui ne produisait aucun CSS. */}
       <label className="flex cursor-pointer items-center gap-3">
-        <div className="relative">
-          <input
-            type="checkbox"
-            checked={status.enabled}
-            disabled={busy || status.tool === null}
-            onChange={(e) => void toggle(e.target.checked)}
-            className="peer sr-only"
-          />
-          <div className="h-5 w-9 rounded-full bg-fill-soft transition-colors peer-checked:bg-[var(--brand-soft)] peer-checked:border peer-checked:border-[var(--brand)]/45" />
-          <div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-cta-primary-bg transition-transform peer-checked:translate-x-4" />
-        </div>
+        <ToggleSwitch
+          checked={status.enabled}
+          disabled={busy || status.tool === null}
+          onChange={(enabled) => void toggle(enabled)}
+          label={t("segmentPluginsAudioAnalysisEnabled")}
+        />
         <span className="text-sm text-content-primary">{t("segmentPluginsAudioAnalysisEnabled")}</span>
       </label>
       <p className="text-xs text-content-quaternary">{t("segmentPluginsAudioAnalysisNote")}</p>

@@ -57,7 +57,7 @@ export interface PluginSource {
 export const cls = {
   card: "rounded-xl border border-line-subtle bg-fill-faint p-5",
   row: "flex items-center justify-between gap-4 rounded-lg border border-line-subtle bg-fill-faint p-4",
-  bp: "rounded-lg bg-[var(--brand-soft)] border border-[var(--brand)]/45 px-4 py-1.5 text-xs font-semibold text-[var(--brand-light)] hover:bg-[var(--brand)]/25 disabled:opacity-40 transition-colors",
+  bp: "rounded-lg bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] px-4 py-1.5 text-xs font-semibold text-[var(--brand-light)] hover:bg-[rgba(var(--brand-rgb),0.25)] disabled:opacity-40 transition-colors",
   bs: "rounded-lg bg-fill-soft px-4 py-1.5 text-xs font-medium text-content-secondary hover:bg-fill-medium hover:text-content-primary disabled:opacity-40 transition-colors",
   bd: "rounded-lg bg-danger-surface px-4 py-1.5 text-xs font-medium text-status-error-fg hover:bg-danger-surface-hover disabled:opacity-40 transition-colors",
   inp: "w-full rounded-lg bg-fill-subtle px-3 py-2 text-sm text-content-primary outline-none ring-1 ring-line-subtle focus:ring-[var(--brand)] placeholder-content-quaternary",

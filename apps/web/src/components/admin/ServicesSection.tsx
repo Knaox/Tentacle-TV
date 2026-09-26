@@ -171,7 +171,7 @@ export function ServicesSection() {
           <button onClick={saveDb} disabled={!!busy || !dbHost || !dbUser || !dbPass} className={cls.bp}>{busy === "sdb" ? "..." : t("save")}</button>
           <Msg m={dbMsg} />
         </div>
-        <p className="text-xs text-[var(--status-warning-fg)]/80">{t("dbRestartNote")}</p>
+        <p className="text-xs text-status-warning-fg">{t("dbRestartNote")}</p>
 
         {/* Reset server */}
         <div className="mt-4 border-t border-line-subtle pt-4">
@@ -181,7 +181,7 @@ export function ServicesSection() {
               {t("resetServer")}
             </button>
           ) : (
-            <div className="space-y-3 rounded-lg border border-[var(--status-error)]/30 bg-[var(--status-error-bg)] p-4">
+            <div className="space-y-3 rounded-lg border border-danger-border bg-[var(--status-error-bg)] p-4">
               <p className="text-sm font-medium text-[var(--status-error-fg)]">{t("resetConfirmTitle")}</p>
               <p className="text-xs text-content-tertiary">{t("resetConfirmMessage")}</p>
               <div className="flex flex-wrap gap-2">

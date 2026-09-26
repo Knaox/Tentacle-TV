@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BACKEND, hdrs, cls } from "./adminUtils";
+import { ToggleSwitch } from "../components/settings/ToggleSwitch";
 
 interface TestResult { ok: boolean; version?: string; error?: string; corsOk?: boolean }
 interface TestResponse { public: TestResult | null; private: TestResult | null }
@@ -78,13 +79,10 @@ export function DirectStreamingSection() {
       <p className="mb-2 text-sm text-content-quaternary">{t("admin:directStreamingDescription")}</p>
       <p className="mb-4 text-xs text-content-disabled">{t("admin:directStreamingCorsHelp")}</p>
       <div className={cls.sub}>
+        {/* L'interrupteur canonique : la copie qui vivait ici tenait sa bordure
+            d'une classe `[var(--brand)]/45` qui ne produisait aucun CSS. */}
         <label className="flex cursor-pointer items-center gap-3">
-          <div className="relative">
-            <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)}
-              className="peer sr-only" />
-            <div className="h-5 w-9 rounded-full bg-fill-soft transition-colors peer-checked:bg-[var(--brand-soft)] peer-checked:border peer-checked:border-[var(--brand)]/45" />
-            <div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-cta-primary-bg transition-transform peer-checked:translate-x-4" />
-          </div>
+          <ToggleSwitch checked={enabled} onChange={setEnabled} label={t("admin:directStreamingEnabled")} />
           <span className="text-sm text-content-primary">{t("admin:directStreamingEnabled")}</span>
         </label>
 

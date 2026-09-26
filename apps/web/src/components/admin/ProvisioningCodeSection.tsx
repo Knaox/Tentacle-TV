@@ -135,7 +135,7 @@ export function ProvisioningCodeSection() {
       <p className="mb-4 text-sm text-content-quaternary">{t("provisioningDescription")}</p>
 
       {readOnly && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-[var(--status-warning)]/30 bg-[var(--status-warning-bg)] px-3 py-2 text-xs text-[var(--status-warning-fg)]">
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-[var(--status-warning-bg)] px-3 py-2 text-xs text-[var(--status-warning-fg)]">
           <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.4 14.55A1.5 1.5 0 003.19 21h17.62a1.5 1.5 0 001.3-2.59l-8.4-14.55a1.5 1.5 0 00-2.62 0z" />
           </svg>

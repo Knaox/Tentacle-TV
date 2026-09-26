@@ -128,9 +128,9 @@ export function AdminUsers() {
                     type="button"
                     aria-pressed={active}
                     onClick={() => setFilter(f.key)}
-                    className={`inline-flex items-center gap-1.5 h-9 rounded-full border px-3.5 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--brand)]/40 ${
+                    className={`inline-flex items-center gap-1.5 h-9 rounded-full border px-3.5 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.4)] ${
                       active
-                        ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-content-primary"
+                        ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-content-primary"
                         : "border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
                     }`}
                   >
