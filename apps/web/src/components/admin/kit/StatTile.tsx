@@ -50,7 +50,10 @@ export interface StatTileProps {
 export function StatTile({ label, value, hint, icon, tone = "default", loading = false, to, className }: StatTileProps) {
   const body = (
     <>
-      <div className="flex items-center gap-3">
+      {/* Sous 640 px (deux tuiles par rangée sur téléphone), l'icône passe
+          au-dessus de l'étiquette : à côté, « Mises à jour de plugins » se
+          repliait sur trois lignes. */}
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
         {icon ? (
           <span
             aria-hidden="true"
@@ -64,7 +67,7 @@ export function StatTile({ label, value, hint, icon, tone = "default", loading =
           <ChevronRight
             aria-hidden="true"
             size={16}
-            className="flex-shrink-0 text-content-quaternary opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+            className="hidden flex-shrink-0 text-content-quaternary opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 sm:block"
           />
         ) : null}
       </div>
