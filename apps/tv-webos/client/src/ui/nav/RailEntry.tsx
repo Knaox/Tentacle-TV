@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Search, Home, Sparkles, Bookmark, Heart, Library, Settings, Eye } from "lucide-react";
 import { createLongPress } from "../../focus/longPress";
 import { primeFocus } from "../../focus/entry";
-import { openSearch } from "../search/searchState";
+import { closeSearch, openSearch } from "../search/searchState";
 import { useRailPinning } from "./pinningTv";
 import type { RailEntryItem, RailIcon } from "./railEntries";
 
@@ -66,6 +66,11 @@ export function RailEntry({ entry, active, expanded }: RailEntryProps) {
    * n'est pas encore là, le focus reste sur le document et le premier appui sur
    * une flèche l'y amènera de toute façon. Aucune des deux étapes ne dépend de
    * l'autre pour que le rail se referme.
+   *
+   * Le rail reste atteignable par-dessus la recherche. « Rechercher » y ramène
+   * alors à la barre (`openSearch`), et toute autre destination la referme —
+   * sans rendre le focus à son déclencheur, que l'écran d'arrivée lui
+   * disputerait.
    */
   const shortAction = useCallback(() => {
     if (entry.searching) {
@@ -76,6 +81,7 @@ export function RailEntry({ entry, active, expanded }: RailEntryProps) {
       pinning.showAll();
       return;
     }
+    closeSearch(false);
     navigate(entry.path);
     link.current?.blur();
     window.setTimeout(() => primeFocus(), 0);

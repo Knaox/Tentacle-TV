@@ -134,8 +134,13 @@ export function useRailEntries(): RailEntryItem[] {
   }, [t, libraries, pinning]);
 }
 
-/** L'entrée active, au chemin courant. */
-export function activeEntry(entries: RailEntryItem[], path: string): string | null {
+/**
+ * L'entrée active : la recherche tant qu'elle est ouverte — c'est l'écran qu'on
+ * regarde, et le rail reste visible par-dessus elle —, sinon celle du chemin
+ * courant. C'est aussi là qu'on entre dans le rail (`aria-current`).
+ */
+export function activeEntry(entries: RailEntryItem[], path: string, searching = false): string | null {
+  if (searching) return entries.find((entry) => entry.searching)?.key ?? null;
   for (const entry of entries) {
     if (entry.restored || entry.searching) continue;
     if (entry.path === "/") {
