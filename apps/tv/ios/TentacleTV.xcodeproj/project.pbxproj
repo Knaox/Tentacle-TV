@@ -22,6 +22,7 @@
 		AB12CD34EF5601234567CC07 /* PrismSessionConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC08 /* PrismSessionConfig.swift */; };
 		AB12CD34EF5601234567CC09 /* PrismErrorCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC0A /* PrismErrorCode.swift */; };
 		AB12CD34EF5601234567DD03 /* PrismCore in Frameworks */ = {isa = PBXBuildFile; productRef = AB12CD34EF5601234567DD02 /* PrismCore */; };
+		AB12CD34EF5601234567EE01 /* TVMenuPressInterceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567EE02 /* TVMenuPressInterceptor.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +60,7 @@
 		AB12CD34EF5601234567CC08 /* PrismSessionConfig.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PrismSessionConfig.swift; path = TentacleTV/PrismSessionConfig.swift; sourceTree = "<group>"; };
 		AB12CD34EF5601234567CC0A /* PrismErrorCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PrismErrorCode.swift; path = TentacleTV/PrismErrorCode.swift; sourceTree = "<group>"; };
 		AB12CD34EF5601234567CC0C /* TentacleTV-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "TentacleTV-Bridging-Header.h"; path = "TentacleTV/TentacleTV-Bridging-Header.h"; sourceTree = "<group>"; };
+		AB12CD34EF5601234567EE02 /* TVMenuPressInterceptor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TVMenuPressInterceptor.m; path = TentacleTV/TVMenuPressInterceptor.m; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -112,6 +114,7 @@
 				AB12CD34EF5601234567CC08 /* PrismSessionConfig.swift */,
 				AB12CD34EF5601234567CC0A /* PrismErrorCode.swift */,
 				AB12CD34EF5601234567CC0C /* TentacleTV-Bridging-Header.h */,
+				AB12CD34EF5601234567EE02 /* TVMenuPressInterceptor.m */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
@@ -431,6 +434,7 @@
 				AB12CD34EF5601234567CC05 /* PrismSessionRegistry.swift in Sources */,
 				AB12CD34EF5601234567CC07 /* PrismSessionConfig.swift in Sources */,
 				AB12CD34EF5601234567CC09 /* PrismErrorCode.swift in Sources */,
+				AB12CD34EF5601234567EE01 /* TVMenuPressInterceptor.m in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
