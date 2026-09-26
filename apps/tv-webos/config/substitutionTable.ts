@@ -99,6 +99,7 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "components/hero/HeroIndicators.tsx")]:
     resolve(CLIENT, "ui/hero/BannerGaugeTv.tsx"),
 
+
   // Deux des cinq sections de réglages ouvraient l'écran « Indisponible » :
   // leurs écrans ne sont pas compilés ici. Une section qui mène à une
   // explication d'absence n'est pas une section. La liste est ramenée à trois,
@@ -137,6 +138,14 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // toutes les cartes — affiches, vignettes, bibliothèque, collections — une
   // seule substitution les couvre.
   [resolve(WEB, "components/cards/CardFrame.tsx")]: resolve(CLIENT, "ui/cards/CardFrameTv.tsx"),
+
+  // L'image d'une carte : demandée dès le montage — la marge d'un observateur
+  // ne passe pas le bord de la piste —, et sans fondu rejoué pour une image
+  // déjà vue. La vignette de reprise, elle, est découpée dans sa planche
+  // trickplay au lieu d'afficher les cent vignettes (23 Mo décodés chacune).
+  [resolve(WEB, "components/cards/CardImage.tsx")]: resolve(CLIENT, "ui/cards/CardImageTv.tsx"),
+  [resolve(WEB, "components/cards/CardTrickplayImage.tsx")]:
+    resolve(CLIENT, "ui/cards/CardTrickplayImageTv.tsx"),
 
   // La largeur en ligne d'une carte. Le repli du web est un `clamp()`, que
   // Chrome 53 ne reconnaît pas — il jette alors la DÉCLARATION, pas seulement
