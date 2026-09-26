@@ -2,6 +2,7 @@ import { readIntent } from "./keys";
 import { trappingContainer } from "./candidates";
 import { systemKeyboardVisible } from "./systemKeyboard";
 import { closeExpandedMenu } from "./expandedMenu";
+import { onPlayerRoute } from "./route";
 import { markPlayerExit } from "@/components/detail/detailTransition";
 import { yieldToTv } from "../auth/returnToShell";
 
@@ -126,7 +127,7 @@ function goBack(): void {
 
   // Quitter le lecteur par l'historique sans le signaler laisserait la fiche
   // rejouer sa transition d'ouverture au retour, alors qu'on en revient.
-  if (onPlayer()) markPlayerExit();
+  if (onPlayerRoute()) markPlayerExit();
   window.history.back();
 }
 
@@ -172,8 +173,4 @@ function closeTrappingContainer(): boolean {
 
 function onRootScreen(): boolean {
   return ROOT_PATHS.indexOf(window.location.pathname) >= 0;
-}
-
-function onPlayer(): boolean {
-  return window.location.pathname.indexOf("/tv/watch") === 0;
 }

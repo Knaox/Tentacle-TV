@@ -23,6 +23,33 @@
 
 type Setter = History["pushState"];
 
+/** La route du lecteur, sous la base `/tv` du portage. */
+const PLAYER_PATH = "/tv/watch";
+
+/**
+ * Le chemin est-il celui du lecteur ?
+ *
+ * Le préfixe doit s'arrêter à une frontière de segment. `startsWith("/tv/watch")`
+ * répondait vrai sur **`/tv/watchlist`** : le moteur s'y croyait dans le
+ * lecteur, se suspendait faute d'habillage à piloter, et Ma liste devenait
+ * entièrement impilotable — aucune flèche n'y faisait quoi que ce soit. Le
+ * défaut ne se voyait pas au premier essai : on arrive sur cet écran par le
+ * rail, dont les entrées gardent le focus, et tout semble normal jusqu'à ce
+ * qu'on tente d'en descendre.
+ *
+ * Une seule définition pour tout le moteur. La touche Retour tenait sa propre
+ * copie, restée sur l'ancien préfixe : quitter Ma liste y passait pour une
+ * sortie du lecteur.
+ */
+export function isPlayerPath(path: string): boolean {
+  return path === PLAYER_PATH || path.startsWith(`${PLAYER_PATH}/`);
+}
+
+/** Sommes-nous sur la route du lecteur ? */
+export function onPlayerRoute(): boolean {
+  return isPlayerPath(window.location.pathname);
+}
+
 export function watchRoute(onChange: (path: string) => void): () => void {
   let previous = window.location.pathname;
 
