@@ -27,6 +27,7 @@ import { usePlayerVolume } from "../hooks/usePlayerVolume";
 import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
 import { useSanitizedSubtitles } from "../hooks/useSanitizedSubtitles";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
+import { MirrorPlayerOverlay, useMirrorPlayerBridge } from "../mirror/player";
 
 export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
 
@@ -66,7 +67,9 @@ export function VideoPlayer({
   } = useVideoClock();
 
   const [videoDuration, setVideoDuration] = useState(0);
-  const { showControls, scheduleHide, scrubbing } = useControlsAutoHide(playing);
+  const autoHide = useControlsAutoHide(playing);
+  // Miroir de l'app (téléphone, tablette) : habillage tactile ; bureau et Electron : `autoHide` tel quel.
+  const { mirror, showControls, scrubbing, bridge } = useMirrorPlayerBridge(autoHide.showControls, autoHide.scrubbing);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [fullscreen, setFullscreen] = useState(false);
@@ -209,8 +212,24 @@ export function VideoPlayer({
     onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError,
   });
 
+  const controls = {
+    playing, currentTime, duration, buffered, volume, fullscreen,
+    item, itemId, mediaSourceId, title, subtitle,
+    audioTracks, subtitleTracks, qualityPresets,
+    currentAudio, currentSubtitle, currentQuality, sourceQuality, autoQualityActive,
+    hasNextEpisode, hasPreviousEpisode,
+    onTogglePlay: togglePlay, onSeek: handleSeek, onSkip: skipBy,
+    onVolumeChange: handleVolumeChange, onToggleMute: handleToggleMute,
+    onToggleFullscreen: toggleFullscreen,
+    onBack: () => { markPlayerExit(); navigate(-1); },
+    onAudioChange, onSubtitleChange,
+    onQualityChange: useNativeHls && !nativeHlsSupportsQualitySwitch() ? undefined : onQualityChange,
+    onNextEpisode, onPreviousEpisode,
+    applyToSeries, onPlaybackRateChange: applyRate, onPanelsOpenChange: setControlPanelOpen,
+  };
+
   return (
-    <div ref={containerRef} onMouseMove={scheduleHide}
+    <div ref={containerRef} onMouseMove={autoHide.scheduleHide}
       onClick={() => {
         userInteractedRef.current = true;
         togglePlay();
@@ -249,46 +268,33 @@ export function VideoPlayer({
         />
       )}
 
-      <VideoPlayerOverlays
-        loading={loading} hasStarted={hasStarted}
-        showPlayButton={showPlayButton}
-        posterUrl={posterUrl}
-        overlay={playback.overlay} countdownTotals={playback.countdownTotals}
-        onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
-        onPlayNow={playback.playNow} controlsVisible={showControls} panelOpen={controlPanelOpen}
-        nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
-        nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
-        nextEpisodeThumbUrl={nextEpisodeThumbUrl}
-        item={item} onRatingEngage={playback.cancelNextCountdown}
-        videoRef={videoRef} userInteractedRef={userInteractedRef}
-        setShowPlayButton={setShowPlayButton}
-      />
+      {mirror ? (
+        <MirrorPlayerOverlay controls={controls} playback={playback} bridge={bridge}
+          media={{ hasStarted, loading, showPlayButton, setShowPlayButton, videoRef, userInteractedRef }} />
+      ) : (<>
+        <VideoPlayerOverlays
+          loading={loading} hasStarted={hasStarted}
+          showPlayButton={showPlayButton}
+          posterUrl={posterUrl}
+          overlay={playback.overlay} countdownTotals={playback.countdownTotals}
+          onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
+          onPlayNow={playback.playNow} controlsVisible={showControls} panelOpen={controlPanelOpen}
+          nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
+          nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
+          nextEpisodeThumbUrl={nextEpisodeThumbUrl}
+          item={item} onRatingEngage={playback.cancelNextCountdown}
+          videoRef={videoRef} userInteractedRef={userInteractedRef}
+          setShowPlayButton={setShowPlayButton}
+        />
 
-      <SkipBadge flash={skipFlash} />
+        <SkipBadge flash={skipFlash} />
 
-      {/* Bascule lecture/pause, d'où qu'elle vienne — barre d'espace, clic,
-          tap sur mobile. */}
-      <PlaybackBadge flash={playbackFlash} />
+        {/* Bascule lecture/pause, d'où qu'elle vienne — barre d'espace, clic,
+            tap sur mobile. */}
+        <PlaybackBadge flash={playbackFlash} />
 
-      <VideoPlayerControlsLayer
-        hasStarted={hasStarted}
-        visible={showControls}
-        controls={{
-          playing, currentTime, duration, buffered, volume, fullscreen,
-          item, itemId, mediaSourceId, title, subtitle,
-          audioTracks, subtitleTracks, qualityPresets,
-          currentAudio, currentSubtitle, currentQuality, sourceQuality, autoQualityActive,
-          hasNextEpisode, hasPreviousEpisode,
-          onTogglePlay: togglePlay, onSeek: handleSeek, onSkip: skipBy,
-          onVolumeChange: handleVolumeChange, onToggleMute: handleToggleMute,
-          onToggleFullscreen: toggleFullscreen,
-          onBack: () => { markPlayerExit(); navigate(-1); },
-          onAudioChange, onSubtitleChange,
-          onQualityChange: useNativeHls && !nativeHlsSupportsQualitySwitch() ? undefined : onQualityChange,
-          onNextEpisode, onPreviousEpisode,
-          applyToSeries, onPlaybackRateChange: applyRate, onPanelsOpenChange: setControlPanelOpen,
-        }}
-      />
+        <VideoPlayerControlsLayer hasStarted={hasStarted} visible={showControls} controls={controls} />
+      </>)}
     </div>
   );
 }

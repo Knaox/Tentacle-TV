@@ -21,6 +21,8 @@ import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
 import { stripOverviewHtml } from "../lib/overviewHtml";
 import { markPlayerExit } from "../components/detail/detailTransition";
+import { useMirror } from "../mirror/useFormFactor";
+import { MirrorPlayerLoadingScreen } from "../mirror/player";
 
 export function WatchWeb() {
   const { t } = useTranslation("common");
@@ -29,6 +31,8 @@ export function WatchWeb() {
   // La sortie de l'écran de chargement — le MÊME geste que le bouton Retour du
   // lecteur (`VideoPlayer`), qui n'est pas encore monté à ce moment-là.
   const cancelLoading = useCallback(() => { markPlayerExit(); navigate(-1); }, [navigate]);
+  // Miroir de l'app mobile : son écran de chargement, et pas de bandeau « reprendre à ».
+  const mirror = useMirror();
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
@@ -295,7 +299,7 @@ export function WatchWeb() {
     // Toile du lecteur (bg-black) + toast « reprendre à » posé sur la vidéo :
     // volontairement en dur (text-white, rgba noir) dans les deux thèmes.
     <div className="relative h-screen w-screen bg-black">
-      {showResumeIndicator && resumeTimeFormatted && (
+      {showResumeIndicator && resumeTimeFormatted && !mirror && (
         <div
           /* Flou en CLASSE : un style en ligne échappe à la passe de verre du
              téléviseur (cf. `Toast.tsx`). */
@@ -335,6 +339,8 @@ export function WatchWeb() {
           onControlsVisibilityChange={setControlsVisible}
           applyToSeries={applyToSeries}
         />
+      ) : mirror ? (
+        <MirrorPlayerLoadingScreen item={item} onCancel={cancelLoading} />
       ) : (
         <PlayerLoadingScreen
           posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle}
