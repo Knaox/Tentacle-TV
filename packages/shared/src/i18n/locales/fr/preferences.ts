@@ -203,6 +203,11 @@ export default {
   exoTunnelingHint:
     "Le décodeur et l'affichage travaillent directement ensemble, sans passer par l'application : l'image et le son se recalent mieux, et le boîtier chauffe moins. Certains appareils le supportent mal — image noire, ou image figée quand on met en pause pour se déplacer dans le film. Si quelque chose cloche, éteignez-le. Le changement prend effet à la lecture suivante.",
 
+  // Réglage d'appareil Android TV : la bascule de fréquence d'affichage.
+  exoMatchFrameRateLabel: "Adapter la fréquence d'affichage",
+  exoMatchFrameRateHint:
+    "Le téléviseur passe à la cadence du film (24 Hz pour la plupart des films) : les travellings sont parfaitement fluides, sans le léger saccadé d'un film à 24 images par seconde affiché en 60 Hz. En contrepartie, l'écran reste noir une à trois secondes au lancement, le temps que le téléviseur change de mode. Le changement prend effet à la lecture suivante.",
+
   // L'aperçu vivant du panneau avancé : la vraie pilule du lecteur, montée dans
   // un cadre qui imite l'image. Voir `settings/PlaybackPreview.tsx`.
   previewTitle: "Aperçu",

@@ -203,6 +203,11 @@ export default {
   exoTunnelingHint:
     "The decoder and the display work together directly, without going through the app: picture and sound line up better, and the box runs cooler. Some devices handle it badly — a black picture, or a frozen frame when you pause to move around the film. If anything looks wrong, turn it off. The change takes effect on the next playback.",
 
+  // Android TV device setting: display refresh-rate switching.
+  exoMatchFrameRateLabel: "Match display refresh rate",
+  exoMatchFrameRateHint:
+    "The TV switches to the film's frame rate (24 Hz for most films): camera pans are perfectly smooth, without the slight judder of a 24 fps film shown at 60 Hz. In exchange, the screen stays black for one to three seconds at start while the TV changes mode. The change takes effect on the next playback.",
+
   // L'aperçu vivant du panneau avancé : la vraie pilule du lecteur, montée dans
   // un cadre qui imite l'image. Voir `settings/PlaybackPreview.tsx`.
   previewTitle: "Preview",
