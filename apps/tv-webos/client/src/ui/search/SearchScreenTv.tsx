@@ -17,11 +17,11 @@ import { SearchSuggestionsTv, type SearchSuggestion } from "./SearchSuggestionsT
 import { SearchResultsTv, type SearchResultsActions } from "./SearchResultsTv";
 import { SearchIdleTv } from "./SearchIdleTv";
 import { SearchBrowseTv } from "./SearchBrowseTv";
-import { useZoneMemory } from "./zoneMemory";
+import { markZoneEntry, rememberZoneEntry } from "./zoneMemory";
 import { useSubmitToResults } from "./submitToResults";
 import {
-  closeBrowse, closeSearch, isFreshOpen, lastSearchTarget, openBrowse, rememberSearchTarget,
-  setSearchQuery, settleOpen, useSearchOpen, useSearchState,
+  closeSearch, isBrowsing, isFreshOpen, lastSearchTarget, openBrowse, registerBarReturn,
+  rememberSearchTarget, returnToSearchBar, setSearchQuery, settleOpen, useSearchOpen, useSearchState,
 } from "./searchState";
 
 /**
@@ -149,18 +149,19 @@ function SearchOverlayTv() {
     });
   }, []);
 
-  // Retour : la recherche approfondie d'abord — le focus revient à ce qui
-  // l'avait ouverte —, puis la recherche elle-même, clavier compris.
+  // Revenir à la barre — bouton Retour d'une étagère, touche Retour, entrée
+  // « Rechercher » du rail. Ce qui avait ouvert l'étagère redevient l'entrée
+  // de la colonne des résultats : de la barre, un appui à droite y ramène.
+  useEffect(() => registerBarReturn((openerKey) => {
+    const opener = openerKey && root.current ? findByKey(openerKey, root.current) : null;
+    if (opener) markZoneEntry(opener);
+    bar.current?.focusBar();
+  }), []);
+
+  // Retour : la recherche approfondie d'abord — on revient à la barre, comme
+  // le bouton de l'étagère —, puis la recherche elle-même, clavier compris.
   useEffect(() => registerBack(() => {
-    const { closed, openerKey } = closeBrowse();
-    if (closed) {
-      setTimeout(() => {
-        const opener = openerKey && root.current ? findByKey(openerKey, root.current) : null;
-        if (opener) giveFocus(opener);
-        else bar.current?.focusBar();
-      }, 0);
-      return true;
-    }
+    if (isBrowsing()) return returnToSearchBar();
     bar.current?.blurField();
     return closeSearch();
   }), []);
@@ -176,8 +177,6 @@ function SearchOverlayTv() {
     marked.current = target;
     rememberSearchTarget(elementKey(target));
   }, []);
-  const sideMemory = useZoneMemory();
-  const mainMemory = useZoneMemory();
 
   const actions = useMemo<SearchResultsActions>(() => ({
     onOpenItem: (itemId: string) => {
@@ -223,7 +222,7 @@ function SearchOverlayTv() {
       {...overlayProps}
     >
       <div className="tv-search-content" data-covered={browse !== null}>
-        <aside className="tv-search-side" data-tv-zone="search-input" onFocus={sideMemory}>
+        <aside className="tv-search-side" data-tv-zone="search-input" onFocus={rememberZoneEntry}>
           <h1 className="tv-search-title">{t("nav:search")}</h1>
           <SearchBarTv ref={bar} query={query} completion={completion} onChange={setSearchQuery} onSubmit={submit} />
           <DictationHint />
@@ -231,7 +230,7 @@ function SearchOverlayTv() {
         </aside>
         {/* Toute ouverture d'un titre depuis les résultats passe par un clic :
             c'est là qu'on mémorise la recherche, quel que soit le composant. */}
-        <main ref={main} className="tv-search-main" data-tv-zone="search-results" onFocus={mainMemory} onClickCapture={remember}>
+        <main ref={main} className="tv-search-main" data-tv-zone="search-results" onFocus={rememberZoneEntry} onClickCapture={remember}>
           {idle || empty ? (
             <SearchIdleTv
               mode={idle ? "idle" : "empty"}

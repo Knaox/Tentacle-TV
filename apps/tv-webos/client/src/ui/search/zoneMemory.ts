@@ -1,4 +1,4 @@
-import { useCallback, useRef, type FocusEvent } from "react";
+import type { FocusEvent } from "react";
 import { ENTRY_ATTRIBUTE } from "../../focus/zones";
 
 /**
@@ -15,14 +15,24 @@ import { ENTRY_ATTRIBUTE } from "../../focus/zones";
  * focusable de la zone, c'est-à-dire le meilleur résultat. Une cible démontée
  * (nouvelle requête) emporte sa marque avec elle : on retombe sur la cascade.
  */
-export function useZoneMemory(): (event: FocusEvent<HTMLElement>) => void {
-  const marked = useRef<HTMLElement | null>(null);
+export function rememberZoneEntry(event: FocusEvent<HTMLElement>): void {
+  if (event.target instanceof HTMLElement) markZoneEntry(event.target);
+}
 
-  return useCallback((event: FocusEvent<HTMLElement>) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement) || target === marked.current) return;
-    marked.current?.removeAttribute(ENTRY_ATTRIBUTE);
-    target.setAttribute(ENTRY_ATTRIBUTE, "");
-    marked.current = target;
-  }, []);
+/**
+ * Désigne `element` comme LA destination d'entrée de sa zone.
+ *
+ * La marque est retirée de tout le reste de la zone, et non de la seule cible
+ * précédente dont on se souviendrait : elle tient ainsi à un remontage de la
+ * surcouche, et à une désignation qui ne passe pas par le focus — revenir à la
+ * barre désigne ce qui avait ouvert l'étagère, pour qu'un appui à droite y
+ * ramène.
+ */
+export function markZoneEntry(element: HTMLElement): void {
+  const zone = element.closest<HTMLElement>("[data-tv-zone]");
+  if (!zone) return;
+  for (const marked of zone.querySelectorAll<HTMLElement>(`[${ENTRY_ATTRIBUTE}]`)) {
+    if (marked !== element) marked.removeAttribute(ENTRY_ATTRIBUTE);
+  }
+  element.setAttribute(ENTRY_ATTRIBUTE, "");
 }
