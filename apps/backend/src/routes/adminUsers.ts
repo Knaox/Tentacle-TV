@@ -8,7 +8,30 @@ interface JellyfinUserDto {
   Name: string;
   PrimaryImageTag?: string;
   LastActivityDate?: string;
+  LastLoginDate?: string;
   Policy?: { IsAdministrator?: boolean; IsDisabled?: boolean };
+}
+
+/**
+ * Un compte tel que l'écran d'administration le lit.
+ *
+ * Les champs s'AJOUTENT, ils ne se retirent ni ne se renomment : le bureau
+ * embarque le web et peut parler à un serveur plus ancien, comme un serveur à
+ * jour peut servir un client d'avant. `hasAvatar` reste donc à côté de
+ * `imageTag`, qui le précise : l'étiquette change avec la photo, et sert de
+ * clé de cache à l'image (cf. `imageCacheControl`).
+ */
+export function toAdminUser(u: JellyfinUserDto) {
+  return {
+    id: u.Id,
+    name: u.Name,
+    hasAvatar: !!u.PrimaryImageTag,
+    imageTag: u.PrimaryImageTag ?? null,
+    lastActivityDate: u.LastActivityDate ?? null,
+    lastLoginDate: u.LastLoginDate ?? null,
+    isAdministrator: u.Policy?.IsAdministrator === true,
+    isDisabled: u.Policy?.IsDisabled === true,
+  };
 }
 
 /**
@@ -33,14 +56,7 @@ export const adminUsersRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(502).send({ message: `Jellyfin a répondu ${res.status}` });
       }
       const users = (await res.json()) as JellyfinUserDto[];
-      return users.map((u) => ({
-        id: u.Id,
-        name: u.Name,
-        hasAvatar: !!u.PrimaryImageTag,
-        lastActivityDate: u.LastActivityDate ?? null,
-        isAdministrator: u.Policy?.IsAdministrator === true,
-        isDisabled: u.Policy?.IsDisabled === true,
-      }));
+      return users.map(toAdminUser);
     } catch {
       return reply.status(502).send({ message: "Impossible de contacter Jellyfin" });
     }
