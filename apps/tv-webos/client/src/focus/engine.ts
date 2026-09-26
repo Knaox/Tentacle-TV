@@ -1,7 +1,7 @@
 import { readIntent, isHorizontal } from "./keys";
 import { isInputField } from "./candidates";
 import { remember } from "./memory";
-import { watchRoute } from "./route";
+import { onPlayerRoute, watchRoute } from "./route";
 import { primeFocus, notePress, placementInProgress } from "./entry";
 import { activeElement } from "./active";
 import { move } from "./movement";
@@ -40,9 +40,6 @@ import { osdNavigationActive } from "@tentacle-tv/tv-core";
  * dans `movement.ts` : ici se décide QUAND une touche appartient au
  * déplacement, là-bas OÙ le focus va.
  */
-
-/** Route sur laquelle le moteur laisse la main aux raccourcis du lecteur. */
-const PLAYER_PATH = "/watch";
 
 export function installFocusEngine(): () => void {
   const stopCursor = watchCursor();
@@ -177,22 +174,6 @@ export function installFocusEngine(): () => void {
 }
 
 /**
- * Le préfixe doit s'arrêter à une frontière de segment.
- *
- * `startsWith("/tv/watch")` répondait vrai sur **`/tv/watchlist`** : le moteur
- * s'y croyait dans le lecteur, se suspendait faute d'habillage à piloter, et
- * Ma liste devenait entièrement impilotable — aucune flèche n'y faisait quoi que
- * ce soit. Le défaut ne se voyait pas au premier essai : on arrive sur cet écran
- * par le rail, dont les entrées gardent le focus, et tout semble normal jusqu'à
- * ce qu'on tente d'en descendre.
- */
-function onPlayer(): boolean {
-  const path = window.location.pathname;
-  const base = `/tv${PLAYER_PATH}`;
-  return path === base || path.startsWith(`${base}/`);
-}
-
-/**
  * Le moteur ne rend la main que lorsque les commandes du lecteur sont là —
  * et il se retire entièrement tant que le clavier système occupe l'écran.
  *
@@ -203,7 +184,7 @@ function onPlayer(): boolean {
  */
 function engineSuspended(): boolean {
   if (systemKeyboardVisible()) return true;
-  return onPlayer() && !osdNavigationActive();
+  return onPlayerRoute() && !osdNavigationActive();
 }
 
 /**
