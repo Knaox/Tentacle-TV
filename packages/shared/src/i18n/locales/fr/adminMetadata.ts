@@ -56,4 +56,18 @@ export default {
   removeConfirm: "Retirer la clé",
   removeFailed: "La clé n'a pas pu être retirée.",
   keyRemovedToast: "Clé TMDB retirée.",
+  // Calcul des recommandations de tous les comptes (« fan-out »)
+  fanoutTitle: "Calcul des recommandations",
+  fanoutPreparing: "Préparation…",
+  fanoutProgress_one: "{{processed}} sur {{count}} compte",
+  fanoutProgress_other: "{{processed}} sur {{count}} comptes",
+  fanoutProgressLabel: "Avancement du calcul des recommandations",
+  fanoutRunningHint:
+    "Chaque compte demande plusieurs dizaines d'appels à TMDB. Le calcul continue sur le serveur si vous quittez cette page.",
+  fanoutDone_one: "Dernier calcul terminé {{when}} : {{count}} compte à jour.",
+  fanoutDone_other: "Dernier calcul terminé {{when}} : {{count}} comptes à jour.",
+  fanoutFailed_one: "{{count}} en échec — le détail est dans les journaux du serveur.",
+  fanoutFailed_other: "{{count}} en échec — le détail est dans les journaux du serveur.",
+  fanoutInterrupted: "Dernier calcul interrompu {{when}}, à {{processed}} sur {{total}} comptes.",
+  justNow: "à l'instant",
 } as const;

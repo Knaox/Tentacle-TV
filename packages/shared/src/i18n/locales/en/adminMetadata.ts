@@ -56,4 +56,18 @@ export default {
   removeConfirm: "Remove key",
   removeFailed: "Couldn't remove the key.",
   keyRemovedToast: "TMDB key removed.",
+  // Recommendation run for every account ("fan-out")
+  fanoutTitle: "Computing recommendations",
+  fanoutPreparing: "Getting ready…",
+  fanoutProgress_one: "{{processed}} of {{count}} account",
+  fanoutProgress_other: "{{processed}} of {{count}} accounts",
+  fanoutProgressLabel: "Recommendation run progress",
+  fanoutRunningHint:
+    "Each account takes dozens of TMDB calls. The run keeps going on the server if you leave this page.",
+  fanoutDone_one: "Last run finished {{when}}: {{count}} account up to date.",
+  fanoutDone_other: "Last run finished {{when}}: {{count}} accounts up to date.",
+  fanoutFailed_one: "{{count}} failed — details are in the server logs.",
+  fanoutFailed_other: "{{count}} failed — details are in the server logs.",
+  fanoutInterrupted: "Last run stopped {{when}}, at {{processed}} of {{total}} accounts.",
+  justNow: "just now",
 } as const;

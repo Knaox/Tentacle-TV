@@ -7,6 +7,7 @@ import { getUserInfo } from "../components/userMenu/menuItems";
 import { AdminNotice, AdminPage, AdminSection } from "../components/admin/kit";
 import { MetadataSkeleton } from "../components/admin/metadata/MetadataSkeleton";
 import { TmdbKeyCard } from "../components/admin/metadata/TmdbKeyCard";
+import { RecoFanoutStatus } from "../components/admin/metadata/RecoFanoutStatus";
 
 /**
  * Onglet « Métadonnées » : clé TMDB, région des plateformes.
@@ -25,7 +26,12 @@ export function AdminMetadata() {
     <AdminPage title={t("title")} description={t("description")}>
       {status.data ? (
         <div className="grid items-start gap-6 xl:grid-cols-2">
-          <TmdbKeyCard tmdb={status.data.tmdb} />
+          <TmdbKeyCard tmdb={status.data.tmdb}>
+            {/* Sans clé, le bilan d'une passe d'avant le retrait mentirait. */}
+            {(status.data.tmdb.configured || status.data.fanout?.running) && (
+              <RecoFanoutStatus fanout={status.data.fanout} readAt={status.dataUpdatedAt} />
+            )}
+          </TmdbKeyCard>
           <RegionField saved={status.data.watchRegion || "FR"} />
         </div>
       ) : status.isError ? (

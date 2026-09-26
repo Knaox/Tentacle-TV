@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
  * seconde copie de React).
  */
 
-type StatusResult = { data?: unknown; isError: boolean; isFetching: boolean; refetch: () => void };
+type StatusResult = { data?: unknown; isError: boolean; isFetching: boolean; refetch: () => void; dataUpdatedAt?: number };
 const status = vi.hoisted(() => ({ current: null as unknown as StatusResult }));
 
 vi.mock("react-i18next", () => ({
@@ -71,5 +71,26 @@ describe("la page Admin → Métadonnées", () => {
     expect(html).toContain("statusMissing");
     expect(html).toContain("metadataRegionTitle");
     expect(html).not.toContain("animate-pulse");
+    // Pas de clé, pas de bilan de calcul.
+    expect(html).not.toContain("fanout");
+  });
+
+  it("calcul en cours : une barre de progression lisible par les lecteurs d'écran", () => {
+    status.current = {
+      data: {
+        tmdb: { configured: true, source: "db", last4: "a1b2" },
+        watchRegion: "FR",
+        fanout: { running: true, processed: 3, total: 12, failed: 0, finishedAt: null },
+      },
+      isError: false,
+      isFetching: false,
+      refetch: () => undefined,
+      dataUpdatedAt: Date.now(),
+    };
+    const html = render();
+    expect(html).toContain('role="progressbar"');
+    expect(html).toContain('aria-valuenow="3"');
+    expect(html).toContain('aria-valuemax="12"');
+    expect(html).toContain("scaleX(0.25)");
   });
 });
