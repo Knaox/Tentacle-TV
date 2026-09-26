@@ -224,7 +224,12 @@ export {
   recoPosterUrl, recoHaloSourceUrl, recoBackdropUrl, recoAmbilightSourceUrl, type TmdbPosterSize, type TmdbBackdropSize,
 } from "./reco/recoImages";
 export { RECO_ROW_TITLE_KEYS, recoRowTitle, type RecoRowTitle } from "./reco/recoRowTitles";
-export { useAdminMetadataStatus, ADMIN_METADATA_KEY, type AdminMetadataStatus } from "./hooks/useAdminMetadata";
+export {
+  useAdminMetadataStatus, useUpdateAdminMetadata, useTestTmdbKey, useAdminMetadataRegions, useAdminRegionProviders,
+  adminMetadataErrorCode, fanoutRefetchInterval, ADMIN_METADATA_KEY, ADMIN_METADATA_REGIONS_KEY, FANOUT_POLL_MS,
+  type AdminMetadataStatus, type AdminRecoFanout, type AdminMetadataUpdate, type AdminMetadataErrorCode,
+  type AdminProviderRegion, type TmdbKeyTestResult,
+} from "./hooks/useAdminMetadata";
 
 // Personnes aimées — rangées « Avec {acteur} » (cf. hooks/useLikedPeople)
 export {
