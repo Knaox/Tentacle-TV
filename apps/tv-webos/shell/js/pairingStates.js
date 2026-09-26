@@ -129,7 +129,7 @@
 
     return {
       start: function () {
-        var remembered = global.ShellStorage.lire();
+        var remembered = global.ShellStorage.read();
         if (remembered) toVerification(remembered);
         else toGeneration();
       },
