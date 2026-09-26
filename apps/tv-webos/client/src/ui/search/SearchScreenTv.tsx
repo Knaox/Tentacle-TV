@@ -18,6 +18,7 @@ import { SearchResultsTv, type SearchResultsActions } from "./SearchResultsTv";
 import { SearchIdleTv } from "./SearchIdleTv";
 import { SearchBrowseTv } from "./SearchBrowseTv";
 import { useZoneMemory } from "./zoneMemory";
+import { submitAnswer, useSubmitToResults } from "./submitToResults";
 import {
   closeBrowse, closeSearch, isFreshOpen, lastSearchTarget, openBrowse, rememberSearchTarget,
   setSearchQuery, settleOpen, useSearchOpen, useSearchState,
@@ -73,6 +74,7 @@ function SearchOverlayTv() {
   const { query, browse } = useSearchState();
   const root = useRef<HTMLDivElement>(null);
   const bar = useRef<SearchBarHandle>(null);
+  const main = useRef<HTMLElement>(null);
 
   const [debounced, setDebounced] = useState(() => query.trim());
   useEffect(() => {
@@ -204,6 +206,10 @@ function SearchOverlayTv() {
   const idle = debounced.length === 0;
   const loading = !idle && data === undefined && search.isFetching;
   const empty = !idle && current && !search.isFetching && sections.length === 0;
+  const answer = submitAnswer({
+    typed: query, debounced, current, fetching: search.isFetching, failed: search.isError, sections: sections.length,
+  });
+  const submit = useSubmitToResults(answer, main, bar);
   const overlayProps = { [OVERLAY_ATTRIBUTE]: "" };
 
   return (
@@ -219,13 +225,13 @@ function SearchOverlayTv() {
       <div className="tv-search-content" data-covered={browse !== null}>
         <aside className="tv-search-side" data-tv-zone="search-input" onFocus={sideMemory}>
           <h1 className="tv-search-title">{t("nav:search")}</h1>
-          <SearchBarTv ref={bar} query={query} completion={completion} onChange={setSearchQuery} />
+          <SearchBarTv ref={bar} query={query} completion={completion} onChange={setSearchQuery} onSubmit={submit} />
           <DictationHint />
           <SearchSuggestionsTv suggestions={suggestions} onPick={pickQuery} />
         </aside>
         {/* Toute ouverture d'un titre depuis les résultats passe par un clic :
             c'est là qu'on mémorise la recherche, quel que soit le composant. */}
-        <main className="tv-search-main" data-tv-zone="search-results" onFocus={mainMemory} onClickCapture={remember}>
+        <main ref={main} className="tv-search-main" data-tv-zone="search-results" onFocus={mainMemory} onClickCapture={remember}>
           {idle || empty ? (
             <SearchIdleTv
               mode={idle ? "idle" : "empty"}
