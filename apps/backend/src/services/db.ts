@@ -2,25 +2,44 @@ import { PrismaClient } from "@prisma/client";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve } from "path";
 import { DATA_ROOT } from "./dataDir";
+import { resolveDatabaseUrlSource, type DatabaseUrlSource } from "./databaseInfo";
 
 const DATA_DIR = DATA_ROOT;
 const DB_CONFIG_FILE = resolve(DATA_DIR, "database.json");
 const ENV_FILE = resolve(__dirname, "../../.env");
 
 let prisma: PrismaClient | null = null;
+/** L'URL de la connexion ouverte : une modification ne l'atteint qu'au redémarrage. */
+let activeUrl: string | null = null;
+
+function readConfigFileUrl(): string | null {
+  if (!existsSync(DB_CONFIG_FILE)) return null;
+  try {
+    const config = JSON.parse(readFileSync(DB_CONFIG_FILE, "utf-8"));
+    return config.url || null;
+  } catch {
+    return null;
+  }
+}
+
+// L'environnement et le fichier TELS QU'AU DÉMARRAGE : `saveDatabaseUrl`
+// réécrit les deux à chaud (cf. `resolveDatabaseUrlSource`).
+const bootEnvUrl = process.env.DATABASE_URL || null;
+const bootFileUrl = readConfigFileUrl();
 
 /** Read DATABASE_URL from env var or persisted config file. */
 export function getDatabaseUrl(): string | null {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  if (existsSync(DB_CONFIG_FILE)) {
-    try {
-      const config = JSON.parse(readFileSync(DB_CONFIG_FILE, "utf-8"));
-      return config.url || null;
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return process.env.DATABASE_URL || readConfigFileUrl();
+}
+
+/** Qui décide de la connexion au prochain démarrage : l'environnement ou `data/database.json`. */
+export function getDatabaseUrlSource(): DatabaseUrlSource | null {
+  return resolveDatabaseUrlSource(bootEnvUrl, bootFileUrl, getDatabaseUrl());
+}
+
+/** L'URL sur laquelle Prisma est connecté — `null` sans connexion. */
+export function getActiveDatabaseUrl(): string | null {
+  return prisma ? activeUrl : null;
 }
 
 /** Persist a DATABASE_URL so it survives restarts (both .env and fallback file). */
@@ -62,10 +81,12 @@ export async function initPrisma(url?: string): Promise<boolean> {
       datasources: { db: { url: dbUrl } },
     });
     await prisma.$connect();
+    activeUrl = dbUrl;
     return true;
   } catch (err) {
     console.error("[DB] Connection failed:", err);
     prisma = null;
+    activeUrl = null;
     return false;
   }
 }
@@ -97,4 +118,28 @@ export async function reconnectPrisma(): Promise<boolean> {
     prisma = null;
   }
   return initPrisma();
+}
+
+export type DatabaseProbe = { ok: true; version: string } | { ok: false };
+
+/**
+ * La base répond-elle, et laquelle est-ce : `SELECT VERSION()`, borné. Qu'une
+ * URL soit configurée ne disait ni l'un ni l'autre.
+ */
+export async function probeDatabase(timeoutMs = 3000): Promise<DatabaseProbe> {
+  if (!prisma) return { ok: false };
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    const rows = await Promise.race([
+      prisma.$queryRaw<Array<{ version: string }>>`SELECT VERSION() AS version`,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("timeout")), timeoutMs);
+      }),
+    ]);
+    return { ok: true, version: String(rows[0]?.version ?? "") };
+  } catch {
+    return { ok: false };
+  } finally {
+    clearTimeout(timer);
+  }
 }

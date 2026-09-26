@@ -3,13 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { getUserInfo } from "./userMenu/menuItems";
-
-type AdminKeyState = "ok" | "revoquee" | "sansDroits" | "absente" | "injoignable";
-
-interface AdminKeyHealth {
-  state: AdminKeyState;
-  checkedAt: string;
-}
+import { ADMIN_KEY_HEALTH_KEY, readAdminKeyHealth, type AdminKeyHealth, type AdminKeyState } from "../lib/adminKeyHealth";
 
 /**
  * Bandeau d'alerte, pour les seuls administrateurs, quand la clé admin Jellyfin
@@ -46,7 +40,7 @@ export function AdminKeyBanner() {
   }, []);
 
   const { data } = useQuery<AdminKeyHealth>({
-    queryKey: ["admin", "jellyfin-key"],
+    queryKey: ADMIN_KEY_HEALTH_KEY,
     queryFn: async () => {
       // Import PARESSEUX, et ce n'est pas une coquetterie : `adminUtils` lit
       // `backendUrl` de `main.tsx`, qui monte `App` — donc ce composant. Une
@@ -60,7 +54,9 @@ export function AdminKeyBanner() {
         credentials: creds(),
       });
       if (!res.ok) throw new Error(String(res.status));
-      return res.json();
+      // Le lecteur partagé : les champs de cette réponse sont en français
+      // (`etat`), et les lire sous leur nom anglais éteignait le bandeau.
+      return readAdminKeyHealth(await res.json());
     },
     enabled: isAdmin,
     // Le backend garde déjà son verdict cinq minutes ; inutile de le redemander
@@ -101,7 +97,7 @@ export function AdminKeyBanner() {
             paraît anodine puisque tout continue de s'afficher à l'écran. */}
         <p className="mt-0.5 text-status-error-fg opacity-80">{t("adminKeyImpact")}</p>
         <Link
-          to="/admin/services"
+          to="/admin/services#jellyfin"
           className="mt-1.5 inline-block font-semibold text-[var(--status-error-fg)] underline underline-offset-4 hover:opacity-80"
         >
           {t("adminKeyAction")}

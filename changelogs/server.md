@@ -12,6 +12,13 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Des contours, survols et anneaux de focus s'affichent enfin** dans tout le client web : épisode ou saison sélectionnés, onglets et cartes des tickets, champs de connexion, d'inscription et de mot de passe, boutons et filtres de l'administration, bandeau de clé Jellyfin
 - **Profil sur téléphone** : les raccourcis « Invitations » et « Tickets de support » ouvraient une page vide ; quitter « Voir en tant que » ramène à la liste des comptes
 - **Administration : les invitations refaites** — « Nouvelle invitation » propose 1, 5 ou 10 personnes et 1 à 30 jours (ou une durée libre), puis donne le lien, prêt à copier ou à partager — la copie marche aussi sur une page ouverte en http:// sur le réseau local, où le bouton ne copiait rien. Le lien est bâti sur l'URL publique du serveur, et un lien qui ne sortirait pas du réseau local est signalé. Chaque invitation dit son statut, ce qu'il en reste, son échéance, qui l'a créée et quels comptes elle a ouverts
+- **Administration : la page Services refaite** — l'état de chaque service d'un regard en tête de page (Jellyfin, base de données, adresse publique, lecture directe, analyse audio), puis une section par service ; ce qui n'est pas enregistré se voit et s'annule :
+  - Jellyfin se teste et se modifie sans ressortir la clé d'administration, et un échec dit pourquoi : serveur muet, clé refusée, adresse qui n'est pas un Jellyfin
+  - la base de données est vraiment sondée, version de MariaDB comprise ; la connexion affichée est celle en service, et quand c'est le docker-compose qui la fixe, la page le dit au lieu d'offrir un formulaire sans effet
+  - l'essai de la lecture directe se lit d'un coup d'œil (version de Jellyfin, CORS autorisé ou absent), les compteurs de l'analyse audio aussi
+  - la réinitialisation du serveur a sa zone de danger, et demande de taper « réinitialiser »
+  - « Configurer maintenant » (jumelage TV) et « Renseigner une nouvelle clé » mènent droit au bon champ
+- **Le bandeau « Clé Jellyfin hors service » s'affiche de nouveau** : il ne se montrait plus depuis la 1.14.0, même avec une clé révoquée
 
 ### EN
 - **Administration: an overview** — `/admin` no longer opens on an empty panel: Jellyfin and database health, live sessions, open tickets, plugin updates, accounts, active invitations and accounts allowed to download, at a glance; every tile leads to its section, and three shortcuts open everyday actions (invite someone, pair a TV, see the app as a user)
@@ -19,6 +26,13 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Outlines, hover states and focus rings finally show up** across the web client: selected episode or season, ticket tabs and cards, sign-in, sign-up and password fields, administration buttons and filters, the Jellyfin key banner
 - **Profile on phones**: the "Invitations" and "Support tickets" shortcuts opened an empty page; leaving "View as" takes you back to the account list
 - **Administration: invitations redesigned** — "New invitation" offers 1, 5 or 10 people and 1 to 30 days (or a custom duration), then hands you the link, ready to copy or share — copying also works on a page opened over http:// on the local network, where the button copied nothing. The link is built on the server's public URL, and a link that would not leave the local network is flagged. Each invitation shows its status, what is left, when it expires, who created it and which accounts it opened
+- **Administration: the Services page redesigned** — every service's state at a glance at the top (Jellyfin, database, public address, direct play, audio analysis), then one section per service; unsaved changes show and can be cancelled:
+  - Jellyfin can be tested and changed without digging out the admin key again, and a failure says why: server not responding, key rejected, address that is not a Jellyfin server
+  - the database is really probed, MariaDB version included; the connection shown is the one in service, and when docker-compose sets it, the page says so instead of offering a form that would have no effect
+  - the direct play test reads at a glance (Jellyfin version, CORS allowed or missing), and so do the audio analysis counters
+  - resetting the server has its own danger zone and asks you to type "reset"
+  - "Configure now" (TV pairing) and "Enter a new key" lead straight to the right field
+- **The "Jellyfin key out of service" banner shows again**: it had stopped appearing since 1.14.0, even with a revoked key
 
 ## [1.19.3]
 ### FR

@@ -19,12 +19,16 @@ et Linux reçoivent l'ensemble.
 - **Administration : un menu rangé en trois groupes** (Activité, Comptes, Serveur) qui reste à l'écran, et des pages qui prennent toute la largeur de la fenêtre
 - **Des contours, survols et anneaux de focus s'affichent enfin** : épisode ou saison sélectionnés, tickets, champs de connexion et de mot de passe, boutons de l'administration
 - **Administrateurs : les invitations refaites** — des préréglages (1, 5 ou 10 personnes, 1 à 30 jours), le lien prêt à copier dès la création, et chaque invitation avec son statut, son échéance et les comptes qu'elle a ouverts. Le lien copié mène enfin au serveur : il pointait vers l'application elle-même et ne s'ouvrait nulle part
+- **Administrateurs : la page Services refaite** — l'état de chaque service d'un regard, une section par service, les modifications non enregistrées visibles et annulables ; Jellyfin se teste sans ressortir la clé d'administration (serveur 1.20.0), et la réinitialisation du serveur demande de taper « réinitialiser »
+- **Le bandeau « Clé Jellyfin hors service » s'affiche de nouveau** : il ne se montrait plus depuis la 1.20.9
 
 ### EN
 - **Administration: an overview** — administration opens on Jellyfin and database health, live sessions, open tickets, plugin updates, accounts and active invitations; every tile leads to its section
 - **Administration: a menu sorted into three groups** (Activity, Accounts, Server) that stays on screen, and pages that use the full width of the window
 - **Outlines, hover states and focus rings finally show up**: selected episode or season, tickets, sign-in and password fields, administration buttons
 - **Administrators: invitations redesigned** — presets (1, 5 or 10 people, 1 to 30 days), the link ready to copy as soon as it is created, and each invitation with its status, expiry and the accounts it opened. The copied link now leads to the server: it pointed to the app itself and opened nowhere
+- **Administrators: the Services page redesigned** — every service's state at a glance, one section per service, unsaved changes visible and cancellable; Jellyfin can be tested without digging out the admin key again (server 1.20.0), and resetting the server asks you to type "reset"
+- **The "Jellyfin key out of service" banner shows again**: it had stopped appearing since 1.20.9
 
 ## [1.22.0]
 ### FR
