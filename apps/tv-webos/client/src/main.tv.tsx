@@ -207,6 +207,17 @@ attachQueryPersister(queryClient, persistentStorage, {
   canSave: () => Date.now() - lastKeyAt > 3000,
 });
 
+// Le défilement au retour appartient à l'application — `useScrollMemory` pour
+// la page, le moteur de focus pour la carte —, pas au navigateur. Laissée à
+// `auto`, sa restauration native réappliquait l'état que l'entrée d'historique
+// avait gardé, même d'avant un rechargement, et passait après la nôtre dès que
+// la dalle était chargée : une bibliothèque quittée à 0 revenait de la fiche à
+// 527 px, grille collée en haut, bannière masquée. Mesuré sur la C3, page
+// laissée à 357 puis rechargée : retour à 357 en `auto`, à 0 en `manual`. Le
+// mode vaut pour l'entrée courante et se transmet à celles que le routeur
+// empile.
+if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+
 // Navigation à la télécommande. Installée avant le rendu : le moteur écoute
 // le document en capture, il n'a besoin d'aucun composant pour exister. Le
 // focus initial, lui, attend que le premier écran soit monté.
