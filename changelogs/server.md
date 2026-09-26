@@ -5,6 +5,20 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.20.0]
+### FR
+- **Administration : la page Métadonnées refaite** — elle ne reste plus blanche au chargement ni quand la lecture échoue, et chaque carte s'enregistre seule :
+  - la clé TMDB se lit d'un coup d'œil (configurée, provenance, quatre derniers caractères), se teste sans être enregistrée, se remplace, et son retrait demande confirmation : il éteint les recommandations de tous les comptes
+  - un refus dit d'où il vient — TMDB qui rejette la clé (souvent le jeton v4 collé à la place de la clé v3, que la saisie repère) ou TMDB injoignable depuis le serveur — au lieu d'accuser la clé dans tous les cas
+  - le calcul des recommandations qu'une nouvelle clé déclenche se suit en direct (« 5 sur 12 comptes »), puis son bilan reste affiché, échecs compris
+  - la région se choisit dans une liste de pays — drapeaux, recherche, nom dans la langue de l'interface — limitée à ceux où TMDB référence des plateformes, avec l'aperçu de leurs plateformes avant d'enregistrer
+### EN
+- **Administration: the Metadata page redesigned** — it no longer stays blank while loading or when reading fails, and each card saves on its own:
+  - the TMDB key reads at a glance (configured, where it comes from, last four characters), can be tested without saving, replaced, and removing it asks for confirmation: it turns recommendations off for every account
+  - a rejection says where it comes from — TMDB refusing the key (often the v4 token pasted instead of the v3 key, which the field now spots) or TMDB unreachable from the server — instead of blaming the key every time
+  - the recommendation run a new key starts can be followed live ("5 of 12 accounts"), then its summary stays on screen, failures included
+  - the region is picked from a list of countries — flags, search, names in the interface language — limited to those where TMDB lists platforms, with a preview of their platforms before saving
+
 ## [1.19.3]
 ### FR
 - **Une demande qui part se dit sur le téléphone** : avec Vigie 1.17.0, « « Titre » est en route » arrive en notification dès que Sonarr ou Radarr prend le titre — sous le même réglage que « Contenu demandé disponible », rien à activer

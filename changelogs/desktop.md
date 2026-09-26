@@ -13,6 +13,12 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.23.0]
+### FR
+- **Administrateurs : la page Métadonnées refaite** — l'état de la clé TMDB d'un regard, testée sans être enregistrée, remplacée, retirée après confirmation ; un refus dit s'il vient de TMDB ou du réseau du serveur ; le calcul des recommandations se suit en direct ; la région se choisit parmi les pays couverts par TMDB, avec drapeaux, recherche et aperçu de leurs plateformes (serveur 1.20.0)
+### EN
+- **Administrators: the Metadata page redesigned** — the TMDB key's state at a glance, tested without saving, replaced, removed after confirmation; a rejection says whether it comes from TMDB or from the server's network; the recommendation run can be followed live; the region is picked among the countries TMDB covers, with flags, search and a preview of their platforms (server 1.20.0)
+
 ## [1.22.0]
 ### FR
 - **Une recherche digne de ce nom** : ⌘K ou Ctrl+K où que vous soyez, ou un clic dans la barre — les résultats arrivent à chaque lettre, en quelques millisecondes, calculés par le serveur Tentacle. Les fautes de frappe se corrigent (« Résultats pour … »), la suite du titre se propose en gris (⇥ l'accepte), et l'on trouve aussi par acteur, réalisateur, genre ou studio, chacun avec sa page. Le meilleur résultat se lance d'un clic
