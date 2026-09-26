@@ -105,3 +105,7 @@ interface ImportMeta {
 declare module "@tanstack/react-virtual?original" {
   export * from "@tanstack/react-virtual";
 }
+
+declare module "react-i18next?original" {
+  export * from "react-i18next";
+}
