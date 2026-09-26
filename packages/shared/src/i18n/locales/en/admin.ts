@@ -1,7 +1,5 @@
 export default {
   title: "Administration",
-  // Short label for the section rail — `existingInvites` is too long to fit.
-  invitesTitle: "Invitations",
   overviewDescription: "Server health, what is happening, and what needs your attention.",
   // ── Shell and overview (shared base of the admin redesign) ──────────────
   navOverview: "Overview",
@@ -202,5 +200,4 @@ export default {
   bandwidthIpAdd: "Add",
   bandwidthIpInvalid: "Invalid IP address or range.",
   bandwidthIpRemove: "Remove {{ip}}",
-  metadataTitle: "Metadata",
 } as const;

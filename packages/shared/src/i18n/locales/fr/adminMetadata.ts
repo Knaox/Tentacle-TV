@@ -1,6 +1,6 @@
 /**
  * Admin → Métadonnées : la clé TMDB, le calcul des recommandations et la
- * région des plateformes. Le libellé du rail (`admin:metadataTitle`) et le
+ * région des plateformes. Le libellé du rail (`admin:navMetadata`) et le
  * bandeau « clé manquante » (`admin:tmdbKey*`) restent dans `admin`.
  */
 export default {

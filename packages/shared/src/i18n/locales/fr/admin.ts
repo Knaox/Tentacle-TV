@@ -1,7 +1,5 @@
 export default {
   title: "Administration",
-  // Libellé court du rail de sections — `existingInvites` est trop long pour y tenir.
-  invitesTitle: "Invitations",
   overviewDescription: "L'état du serveur, ce qui se passe et ce qui demande votre attention.",
   // ── Coquille et vue d'ensemble (socle de la refonte admin) ──────────────
   // Le rail a SES libellés (`nav*`) : les titres de pages appartiennent aux
@@ -206,5 +204,4 @@ export default {
   bandwidthIpAdd: "Ajouter",
   bandwidthIpInvalid: "Adresse IP ou plage invalide.",
   bandwidthIpRemove: "Retirer {{ip}}",
-  metadataTitle: "Métadonnées",
 } as const;

@@ -1,6 +1,6 @@
 /**
  * Admin → Metadata: the TMDB key, the recommendation run and the streaming
- * region. The rail label (`admin:metadataTitle`) and the "missing key" banner
+ * region. The rail label (`admin:navMetadata`) and the "missing key" banner
  * (`admin:tmdbKey*`) stay in `admin`.
  */
 export default {
