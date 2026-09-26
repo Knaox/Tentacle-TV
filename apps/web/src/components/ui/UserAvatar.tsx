@@ -41,11 +41,15 @@ function requestedWidth(size: number): number {
  */
 export function UserAvatar({ userId, name, hasAvatar, size = 36, imageTag, className }: UserAvatarProps) {
   const client = useJellyfinClient();
-  const [failed, setFailed] = useState(false);
   const initial = (name || "?").charAt(0).toUpperCase();
-
-  const showImage = hasAvatar && !failed;
   const tag = imageTag ? `&tag=${encodeURIComponent(imageTag)}` : "";
+  const src = `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${requestedWidth(size)}&quality=85${tag}`;
+  // L'échec est retenu PAR ADRESSE : une instance réutilisée pour un autre
+  // compte, ou une photo changée (nouvelle étiquette), retente l'image au lieu
+  // de garder l'initiale collée.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+
+  const showImage = hasAvatar && failedSrc !== src;
 
   return (
     <div
@@ -60,10 +64,10 @@ export function UserAvatar({ userId, name, hasAvatar, size = 36, imageTag, class
     >
       {showImage ? (
         <img
-          src={`${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${requestedWidth(size)}&quality=85${tag}`}
+          src={src}
           alt=""
           loading="lazy"
-          onError={() => setFailed(true)}
+          onError={() => setFailedSrc(src)}
           className="h-full w-full object-cover"
         />
       ) : (
