@@ -5,6 +5,14 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// Import statique : Vitest remonte les `vi.mock` ci-dessous AU-DESSUS des
+// imports, le module est donc chargé avec ses bouchons. Un `await import` de
+// premier niveau faisait la même chose, mais le typecheck (tests compris) le
+// refuse avec le `module` du backend (TS1378).
+import {
+  resolvePairedDeviceToken, confirmerJellyfinToken, findValidSiblingToken,
+  clearDeviceTokenIfInvalid, resetTokenOwnerCacheForTests,
+} from "./deviceTokenHealth";
 
 interface Row {
   tokenHash: string;
@@ -39,11 +47,6 @@ vi.mock("./db", () => ({
     },
   }),
 }));
-
-const {
-  resolvePairedDeviceToken, confirmerJellyfinToken, findValidSiblingToken,
-  clearDeviceTokenIfInvalid, resetTokenOwnerCacheForTests,
-} = await import("./deviceTokenHealth");
 
 const KNAOX = "f12b22ea52da40ef8b8bbafcfa1df3dc";
 const TEST = "b52628a704304f06a682f6037183b976";
