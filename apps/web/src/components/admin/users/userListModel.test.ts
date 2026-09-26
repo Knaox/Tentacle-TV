@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   absoluteTime,
+  countActiveSince,
   countByFilter,
   groupByUser,
   relativeTime,
@@ -72,6 +73,14 @@ describe("countByFilter", () => {
   it("compte chaque filtre — un admin désactivé compte des deux côtés", () => {
     expect(countByFilter(USERS)).toEqual({ all: 5, admins: 2, disabled: 2 });
     expect(countByFilter([])).toEqual({ all: 0, admins: 0, disabled: 0 });
+  });
+});
+
+describe("countActiveSince", () => {
+  it("compte les comptes vus depuis l'instant donné — une date illisible ou absente n'en est pas", () => {
+    expect(countActiveSince(USERS, Date.parse("2026-09-19T00:00:00Z"))).toBe(2);
+    expect(countActiveSince(USERS, Date.parse("2026-09-26T00:00:00Z"))).toBe(1);
+    expect(countActiveSince(USERS, 0)).toBe(3);
   });
 });
 

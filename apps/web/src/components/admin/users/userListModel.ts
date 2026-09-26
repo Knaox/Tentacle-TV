@@ -47,6 +47,14 @@ function timeOf(iso: string | null | undefined): number {
   return Number.isNaN(time) ? 0 : time;
 }
 
+/** Les comptes actifs depuis `since` (horodatage) — « jamais » n'en est pas. */
+export function countActiveSince(users: readonly AdminUser[], since: number): number {
+  return users.filter((u) => {
+    const time = timeOf(u.lastActivityDate);
+    return time > 0 && time >= since;
+  }).length;
+}
+
 export interface UserListView {
   query: string;
   filter: UserFilter;
