@@ -23,7 +23,7 @@ interface InviteFormProps {
 const HOUR = 3_600_000;
 const ERROR = "mt-1.5 text-xs text-status-error-fg";
 // Les options d'un `<select>` natif ne suivent pas le fond translucide du champ.
-const SELECT = `${cls.inp} w-auto pr-8 [&>option]:bg-tentacle-surface [&>option]:text-content-primary`;
+const SELECT = `${cls.inp} pr-8 [&>option]:bg-tentacle-surface [&>option]:text-content-primary`;
 
 /**
  * Les réglages d'une nouvelle invitation : combien de personnes, combien de
@@ -55,18 +55,22 @@ export function InviteForm({ draft, onChange, submitted, pending, failed, onSubm
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5 px-6 pb-6 pt-5">
       <ChoiceChips name="invite-uses" legend={t("usesLabel")} choices={usesChoices} value={draft.uses} onChange={(uses) => set({ uses })}>
+        {/* Largeurs portées par un conteneur : `cls.inp` impose `w-full`, qui
+            l'emportait sur un `w-24` posé à côté. */}
         {draft.uses === "custom" && (
-          <input
-            autoFocus
-            inputMode="numeric"
-            value={draft.customUses}
-            onChange={(e) => set({ customUses: e.target.value })}
-            aria-label={t("customUsesLabel")}
-            aria-invalid={usesError !== null}
-            aria-describedby={usesError ? ids.usesError : undefined}
-            placeholder="1 – 100"
-            className={`${cls.inp} mt-2 w-32`}
-          />
+          <div className="mt-2 w-32">
+            <input
+              autoFocus
+              inputMode="numeric"
+              value={draft.customUses}
+              onChange={(e) => set({ customUses: e.target.value })}
+              aria-label={t("customUsesLabel")}
+              aria-invalid={usesError !== null}
+              aria-describedby={usesError ? ids.usesError : undefined}
+              placeholder="1 – 100"
+              className={cls.inp}
+            />
+          </div>
         )}
         {usesError && <p id={ids.usesError} className={ERROR}>{usesError}</p>}
       </ChoiceChips>
@@ -74,25 +78,29 @@ export function InviteForm({ draft, onChange, submitted, pending, failed, onSubm
       <ChoiceChips name="invite-expiry" legend={t("expiryLabel")} choices={expiryChoices} value={draft.expiryHours} onChange={(expiryHours) => set({ expiryHours })}>
         {draft.expiryHours === "custom" && (
           <div className="mt-2 flex gap-2">
-            <input
-              autoFocus
-              inputMode="numeric"
-              value={draft.customExpiry}
-              onChange={(e) => set({ customExpiry: e.target.value })}
-              aria-label={t("customExpiryLabel")}
-              aria-invalid={expiryError !== null}
-              aria-describedby={expiryError ? ids.expiryError : undefined}
-              className={`${cls.inp} w-24`}
-            />
-            <select
-              value={draft.customUnit}
-              onChange={(e) => set({ customUnit: e.target.value as ExpiryUnit })}
-              aria-label={t("unitLabel")}
-              className={SELECT}
-            >
-              <option value="hours">{t("unitHours")}</option>
-              <option value="days">{t("unitDays")}</option>
-            </select>
+            <div className="w-24">
+              <input
+                autoFocus
+                inputMode="numeric"
+                value={draft.customExpiry}
+                onChange={(e) => set({ customExpiry: e.target.value })}
+                aria-label={t("customExpiryLabel")}
+                aria-invalid={expiryError !== null}
+                aria-describedby={expiryError ? ids.expiryError : undefined}
+                className={cls.inp}
+              />
+            </div>
+            <div className="w-32">
+              <select
+                value={draft.customUnit}
+                onChange={(e) => set({ customUnit: e.target.value as ExpiryUnit })}
+                aria-label={t("unitLabel")}
+                className={SELECT}
+              >
+                <option value="hours">{t("unitHours")}</option>
+                <option value="days">{t("unitDays")}</option>
+              </select>
+            </div>
           </div>
         )}
         {expiryError && <p id={ids.expiryError} className={ERROR}>{expiryError}</p>}

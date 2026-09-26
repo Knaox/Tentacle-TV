@@ -29,11 +29,13 @@ export function relativeTime(targetMs: number, nowMs: number, locale: string): s
   return format.format(Math.round(days / 365.25), "year");
 }
 
-/** « mardi 29 septembre à 21:14 » — l'échéance annoncée avant de créer. */
+/**
+ * « dimanche 4 octobre 2026 à 00:01 » — l'échéance annoncée en toutes lettres.
+ * Les styles `full` + `short` et non des champs à la carte : ceux-ci rendaient
+ * « à 0:01 » en français, là où l'heure s'écrit « 00:01 ».
+ */
 export function formatDeadline(ms: number, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit",
-  }).format(ms);
+  return new Intl.DateTimeFormat(locale, { dateStyle: "full", timeStyle: "short" }).format(ms);
 }
 
 /** « 29 sept. 2026, 21:14 » — la date exacte, en infobulle d'un temps relatif. */

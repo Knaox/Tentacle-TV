@@ -16,13 +16,16 @@ interface ChoiceChipsProps<T extends string | number> {
   children?: ReactNode;
 }
 
-// Opacités en `rgba(var(--brand-rgb), …)` : Tailwind 3 ne sait pas en poser une
-// sur `[var(--brand)]/NN`, il supprime la déclaration sans rien dire.
+// L'état coché se lit sur le bouton radio FRÈRE (`peer-checked`), pas par
+// `:has()` : Chromium invalidait mal `:has(:checked)` quand un autre bouton du
+// groupe prenait la main — la pastille restait allumée sur l'ancien choix
+// jusqu'au rendu suivant. Opacités en `rgba(var(--brand-rgb), …)` : Tailwind 3
+// ne sait pas en poser une sur `[var(--brand)]/NN`, il supprime la déclaration.
 const CHIP =
-  "inline-flex h-9 min-w-[2.75rem] cursor-pointer select-none items-center justify-center rounded-full border px-3.5 text-xs font-semibold tabular-nums transition-colors " +
+  "inline-flex h-9 min-w-[2.75rem] select-none items-center justify-center rounded-full border px-3.5 text-xs font-semibold tabular-nums transition-colors " +
   "border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary " +
-  "has-[:checked]:border-[rgba(var(--brand-rgb),0.45)] has-[:checked]:bg-[var(--brand-soft)] has-[:checked]:text-content-primary " +
-  "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[rgba(var(--brand-rgb),0.4)]";
+  "peer-checked:border-[rgba(var(--brand-rgb),0.45)] peer-checked:bg-[var(--brand-soft)] peer-checked:text-content-primary " +
+  "peer-focus-visible:ring-2 peer-focus-visible:ring-[rgba(var(--brand-rgb),0.4)]";
 
 /**
  * Un choix parmi quelques préréglages, en pastilles. De vrais boutons radio
@@ -37,15 +40,15 @@ export function ChoiceChips<T extends string | number>({
       <legend className={cls.lbl}>{legend}</legend>
       <div className="mt-1.5 flex flex-wrap gap-2">
         {choices.map((choice) => (
-          <label key={String(choice.value)} className={CHIP}>
+          <label key={String(choice.value)} className="relative cursor-pointer">
             <input
               type="radio"
               name={name}
-              className="sr-only"
+              className="peer sr-only"
               checked={choice.value === value}
               onChange={() => onChange(choice.value)}
             />
-            {choice.label}
+            <span className={CHIP}>{choice.label}</span>
           </label>
         ))}
       </div>

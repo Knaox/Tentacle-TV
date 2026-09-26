@@ -52,14 +52,16 @@ export function InviteReady({ invite, linkBase, titleId, onDone }: InviteReadyPr
       <div className="space-y-4 px-6 pb-6 pt-5">
         <div>
           <label htmlFor={fieldId} className={cls.lbl}>{t("linkLabel")}</label>
-          <div className="flex flex-col gap-2 xs:flex-row">
-            <input
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {/* Le lien ENTIER, à la ligne s'il le faut — un champ d'une ligne n'en
+                montrait sur téléphone que « http://172.16 », clé comprise dans ce
+                qu'il cachait. Un clic le sélectionne d'un bloc. */}
+            <output
               id={fieldId}
-              readOnly
-              value={url}
-              onFocus={(e) => e.currentTarget.select()}
-              className={`${cls.inp} min-w-0 flex-1 font-mono text-[13px]`}
-            />
+              className="block min-w-0 flex-1 select-all break-all rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2.5 font-mono text-sm leading-snug text-content-primary"
+            >
+              {url}
+            </output>
             <button type="button" autoFocus onClick={copy} className={`${cls.bp} shrink-0`}>
               {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
               <span aria-live="polite">{copied ? t("copied") : t("copyLink")}</span>

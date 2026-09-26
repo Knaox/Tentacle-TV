@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { AdminInviteDto } from "@tentacle-tv/shared";
-import { countByStatus, expiresSoon, relativeTime, sortInvites } from "./inviteFormat";
+import { countByStatus, expiresSoon, formatDeadline, relativeTime, sortInvites } from "./inviteFormat";
 
 const NOW = Date.parse("2026-09-26T12:00:00Z");
 const MIN = 60_000;
@@ -40,6 +40,14 @@ describe("relativeTime", () => {
   it("mois puis années pour les vieilles invitations", () => {
     expect(relativeTime(NOW - 60 * DAY, NOW, "fr")).toBe("il y a 2 mois");
     expect(relativeTime(NOW - 400 * DAY, NOW, "en")).toBe("last year");
+  });
+});
+
+describe("formatDeadline", () => {
+  it("l'heure à deux chiffres en français, à l'anglaise en anglais", () => {
+    const midnight = new Date(2026, 9, 4, 0, 1).getTime();
+    expect(formatDeadline(midnight, "fr")).toBe("dimanche 4 octobre 2026 à 00:01");
+    expect(formatDeadline(midnight, "en")).toBe("Sunday, October 4, 2026 at 12:01 AM");
   });
 });
 

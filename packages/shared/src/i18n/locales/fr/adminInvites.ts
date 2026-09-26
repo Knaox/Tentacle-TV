@@ -73,7 +73,7 @@ export default {
   errorUses: "Entre 1 et 100 personnes.",
   errorExpiry: "Indiquez une durée d'au moins une heure.",
   errorExpiryTooLong: "30 jours au plus.",
-  // `date` : « mardi 29 septembre à 21:14 ».
+  // `date` : « dimanche 4 octobre 2026 à 00:01 ».
   summary: "Valable pour {{people}}, jusqu'au {{date}}.",
   people_one: "{{count}} personne",
   people_other: "{{count}} personnes",
