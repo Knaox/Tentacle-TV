@@ -1,14 +1,17 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Mic, Search } from "lucide-react";
+import { isSelectKey } from "../../focus/keys";
 
 /**
  * La barre de recherche : ce qui est tapé, en blanc ; la suite du meilleur
  * résultat, en gris ; un curseur entre les deux. Elle dit toujours où l'on en
  * est, même quand le focus est trois rangées plus bas.
  *
- * **Rien n'est codé pour le clavier.** webOS ouvre le sien dès qu'un `<input>`
- * reçoit le focus, et le referme à la validation ; c'est aussi ce clavier qui
+ * **Rien n'est dessiné pour le clavier.** webOS ouvre le sien dès qu'un
+ * `<input>` reçoit le focus ; il ne le referme qu'à la PERTE du focus, pas à la
+ * validation : sa touche Entrée n'est qu'un `keydown` 13 sur le champ, que
+ * `onSubmit` traduit (`submitToResults.ts`). C'est aussi ce clavier qui
  * porte le micro de la Magic Remote. `com.webos.service.tts` est de la
  * SYNTHÈSE vocale, et webOS n'expose aucune reconnaissance aux applications
  * tierces : le clavier système est le seul chemin de dictée, le même verdict
@@ -48,10 +51,12 @@ interface SearchBarTvProps {
   /** La suite grisée du meilleur résultat (« Aube » → « des Titans… »). */
   completion: string | null;
   onChange: (query: string) => void;
+  /** Entrée au clavier système : la saisie est validée, le clavier doit partir. */
+  onSubmit: () => void;
 }
 
 export const SearchBarTv = forwardRef<SearchBarHandle, SearchBarTvProps>(function SearchBarTv(
-  { query, completion, onChange },
+  { query, completion, onChange, onSubmit },
   handle,
 ) {
   const { t } = useTranslation(["search", "common"]);
@@ -66,6 +71,14 @@ export const SearchBarTv = forwardRef<SearchBarHandle, SearchBarTvProps>(functio
   // OK sur la barre : LE geste qui ouvre le clavier, et le seul. Idempotent :
   // si le champ a déjà le focus, le clavier est déjà là.
   const openKeyboard = useCallback(() => field.current?.focus(), []);
+
+  // Entrée du clavier système. Une composition en cours (clavier asiatique)
+  // émet `keyCode` 229 : elle ne passe pas pour une validation.
+  const onKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
+    if (!isSelectKey(event)) return;
+    event.preventDefault();
+    onSubmit();
+  }, [onSubmit]);
 
   // Le clavier se retire : la barre reprend le focus. Sans cela il resterait
   // sur un champ invisible, hors du parcours — plus d'anneau, plus de point de
@@ -125,6 +138,7 @@ export const SearchBarTv = forwardRef<SearchBarHandle, SearchBarTvProps>(functio
         tabIndex={-1}
         value={query}
         onChange={(event) => onChange(event.target.value)}
+        onKeyDown={onKeyDown}
         className="tv-search-bar-field"
         autoComplete="off"
         spellCheck={false}
