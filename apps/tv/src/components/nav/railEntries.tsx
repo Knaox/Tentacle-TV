@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
-import { possessiveLibraryName } from "../../utils/libraryLabel";
 import {
   HomeIcon, SearchIcon, LibraryIcon, SettingsIcon,
   TVIcon, MusicIcon, BookIcon, BookmarkIcon,
@@ -50,7 +49,7 @@ function libraryIcon(collectionType?: string) {
  * navigation qu'on parcourt.
  */
 export function useRailEntries(): { top: RailItem[]; bottom: RailItem[] } {
-  const { t, i18n } = useTranslation("nav");
+  const { t } = useTranslation("nav");
   const { data: libraries } = useLibraries();
   const pinning = useRailPinning();
 
@@ -94,7 +93,7 @@ export function useRailEntries(): { top: RailItem[]; bottom: RailItem[] } {
       if (pinning.isHidden(entryKey)) continue;
       top.push({
         key: entryKey,
-        label: possessiveLibraryName(library.Name, i18n.language),
+        label: library.Name,
         icon: libraryIcon(library.CollectionType),
         hideable: true,
       });
@@ -116,5 +115,5 @@ export function useRailEntries(): { top: RailItem[]; bottom: RailItem[] } {
     ];
 
     return { top, bottom };
-  }, [t, i18n.language, libraries, pinning]);
+  }, [t, libraries, pinning]);
 }

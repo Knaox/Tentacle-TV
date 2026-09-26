@@ -10,7 +10,6 @@ import { TVFavoritesRow } from "../rows/TVFavoritesRow";
 import { TVRecoRow } from "../rows/TVRecoRow";
 import { TVRecoFilterChip } from "../reco/TVRecoFilterChip";
 import { Spacing } from "../../theme/colors";
-import { possessiveLibraryName } from "../../utils/libraryLabel";
 
 export interface TVHomeRowData {
   resume?: MediaItem[];
@@ -61,7 +60,7 @@ const renderLandscape = (item: MediaItem, _i: number, focused: boolean) => (
  * page de recommandations du compte. Clé inconnue → rien, jamais une erreur.
  */
 export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
-  const { t, i18n } = useTranslation("common");
+  const { t } = useTranslation("common");
   const { onPlay, onDetail, onLongPress, onItemFocus, onRowLayout, onRowFocus } = handlers;
   const onLayout = (e: { nativeEvent: { layout: { y: number } } }) => onRowLayout(rowKey, e.nativeEvent.layout.y);
   const rowProps = {
@@ -125,7 +124,7 @@ export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
     return (
       <TVLibraryRow
         libraryId={lib.id}
-        libraryName={possessiveLibraryName(lib.name, i18n.language)}
+        libraryName={lib.name}
         collectionType={lib.collectionType}
         renderCard={renderPortrait}
         onItemPress={onDetail}
