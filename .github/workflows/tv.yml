@@ -236,6 +236,10 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Par défaut l'action installe « tools », paquet retiré du SDK : avec
+          # les cmdline-tools 16.0 des runners, sdkmanager échoue avant le build.
+          packages: platform-tools
 
       - name: Install NDK (matches build.gradle ndkVersion)
         run: sdkmanager "ndk;29.0.14206865"
