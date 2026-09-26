@@ -1,0 +1,41 @@
+/*
+ * Les matières des écrans secondaires du miroir (à propos, crédits, support,
+ * jumelage, connexion).
+ *
+ * `FadeIn` de l'app (Reanimated, 320 ms, translateY 14 → 0) : une entrée
+ * BORNÉE, transform + opacité seulement ; rien ne tourne après.
+ */
+@keyframes mirror-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--fade-y, 14px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mirror-fade-in {
+  animation: mirror-fade-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--fade-delay, 0ms);
+}
+
+/* Le halo violet des CTA principaux (`primaryCta` : ombre violette 0/8, 22). */
+.mirror-cta-halo {
+  box-shadow: 0 8px 22px rgba(var(--brand-rgb), 0.55);
+}
+.mirror-cta-halo:disabled {
+  box-shadow: none;
+}
+
+/* `pressed && { opacity: 0.85 }` des Pressable de l'app. */
+.mirror-dim:active:not(:disabled) {
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mirror-fade-in {
+    animation: none;
+  }
+}
