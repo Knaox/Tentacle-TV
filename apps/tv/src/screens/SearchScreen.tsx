@@ -8,7 +8,7 @@ import {
   completionFor, foldForSearch, inlineCompletion, suggestionsFrom,
   type SearchPersonHit, type SearchTopHit,
 } from "@tentacle-tv/shared";
-import { tvSearchNotice, tvSearchSections, type TvSearchFacet } from "@tentacle-tv/tv-core";
+import { searchSubmitAnswer, tvSearchNotice, tvSearchSections, type TvSearchFacet } from "@tentacle-tv/tv-core";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import type { RootStackParamList } from "../navigation/types";
 import { TVSearchKeyboard, KEYBOARD_WIDTH } from "../components/TVSearchKeyboard";
@@ -16,6 +16,7 @@ import { TVSearchBar } from "../components/search/TVSearchBar";
 import { TVSearchSuggestions, type TVSearchSuggestion } from "../components/search/TVSearchSuggestions";
 import { TVSearchResults, type TVSearchResultsActions } from "../components/search/TVSearchResults";
 import { TVSearchIdle } from "../components/search/TVSearchIdle";
+import { useSearchSubmit } from "../components/search/useSearchSubmit";
 import { SkeletonRow } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
@@ -140,6 +141,10 @@ export function SearchScreen({ navigation }: Props) {
   const idle = debounced.length === 0;
   const loading = !idle && data === undefined && search.isFetching;
   const empty = !idle && current && !search.isFetching && sections.length === 0;
+  // « Rechercher » au clavier système (tvOS) : aux résultats, comme sur la LG.
+  const submit = useSearchSubmit(searchSubmitAnswer({
+    typed: query, debounced, current, fetching: search.isFetching, failed: search.isError, sections: sections.length,
+  }), refocusKeyboard);
 
   return (
     <TVScreenFrame>
@@ -155,7 +160,9 @@ export function SearchScreen({ navigation }: Props) {
             query={query}
             completion={completion}
             onSetQuery={setQuery}
-            onSystemKeyboardClosed={refocusKeyboard}
+            onSystemKeyboardClosed={submit.onKeyboardClosed}
+            onSubmit={submit.onSubmit}
+            onBarFocus={submit.onBarFocus}
           />
           <View style={{ height: 16 }} />
           <TVSearchKeyboard
@@ -188,7 +195,13 @@ export function SearchScreen({ navigation }: Props) {
             </View>
           ) : (
             <View style={{ flex: 1, opacity: current ? 1 : 0.55 }}>
-              <TVSearchResults width={resultsWidth} sections={sections} notice={notice} actions={actions} />
+              <TVSearchResults
+                width={resultsWidth}
+                sections={sections}
+                notice={notice}
+                actions={actions}
+                entryRef={submit.setFirstResult}
+              />
             </View>
           )}
         </TVFocusGuideView>
