@@ -214,7 +214,7 @@ function record(root, address) {
   }
   const revision = runAres(root, "ares-setup-device", ["-m", DEVICE, ...info]);
   if (revision.code !== 0) {
-    throw new Error(`enregistrement impossible.\n\n${revision.sortie || added.sortie}`);
+    throw new Error(`enregistrement impossible.\n\n${revision.output || added.output}`);
   }
   console.log(`  ${green("✓")} enregistrement mis à jour (adresse : ${address})`);
 }
@@ -234,7 +234,7 @@ function fetchKey(root, passphrase) {
       "la clé n'a pas pu être récupérée.\n\n" +
         "  Si le message parle de « passphrase » ou de « private key », c'est\n" +
         "  que la phrase secrète saisie ne correspond pas à celle affichée sur\n" +
-        `  le téléviseur — elle change à chaque session.\n\n${issue.sortie}`
+        `  le téléviseur — elle change à chaque session.\n\n${issue.output}`
     );
   }
   console.log(`  ${green("✓")} clé en place`);
@@ -253,7 +253,7 @@ function installer(root, ipkFile) {
   announce("Installation sur le téléviseur");
   const issue = runAres(root, "ares-install", ["-d", DEVICE, ipkFile]);
   if (issue.code !== 0) {
-    throw new Error(`l'installation a échoué.\n\n${issue.sortie}`);
+    throw new Error(`l'installation a échoué.\n\n${issue.output}`);
   }
   console.log(`  ${green("✓")} Tentacle TV est installée`);
 }
