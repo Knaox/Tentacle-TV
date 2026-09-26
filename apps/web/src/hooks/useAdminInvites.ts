@@ -29,6 +29,9 @@ export function useAdminInvites() {
     queryKey: ADMIN_INVITES_KEY,
     queryFn: () => request<AdminInviteDto[]>("/api/invites"),
     staleTime: 30_000,
+    // On envoie un lien, on attend l'inscription dans une autre fenêtre : au
+    // retour sur l'onglet, le nouveau compte doit déjà être dans la liste.
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -64,14 +67,14 @@ export function useDeleteInvite() {
  * du réseau local quand l'administrateur navigue depuis chez lui.
  *
  * `ready` reste faux tant que l'URL publique n'est pas connue : un lien bâti
- * avant partirait sur la mauvaise origine.
+ * avant partirait sur la mauvaise origine. Relue à chaque visite — elle se
+ * règle dans Services, qui ne passe pas par ce cache.
  */
 export function useInviteLinkBase(): { base: string; ready: boolean } {
   const { data, isPending } = useQuery({
     queryKey: PUBLIC_URL_KEY,
     queryFn: () => request<{ effectiveUrl?: string }>("/api/admin/public-url"),
-    staleTime: 5 * 60_000,
-    retry: 1,
+    staleTime: 0,
   });
   const publicUrl = data?.effectiveUrl?.trim().replace(/\/+$/, "") ?? "";
   const base = publicUrl || getBackendBase().replace(/\/+$/, "") || window.location.origin;

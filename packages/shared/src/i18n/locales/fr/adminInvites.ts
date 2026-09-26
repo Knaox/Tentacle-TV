@@ -1,0 +1,91 @@
+// Page d'administration « Invitations ». Espace de noms à part, comme
+// `adminPlugins` : la page a assez de textes pour ne pas grossir `admin`.
+export default {
+  title: "Invitations",
+  description:
+    "Un lien suffit : la personne invitée choisit son identifiant et son mot de passe, et son compte Jellyfin est créé aussitôt.",
+  newInvite: "Nouvelle invitation",
+  loadError: "Impossible de charger les invitations.",
+  retry: "Réessayer",
+  emptyTitle: "Aucune invitation pour l'instant",
+  emptyDescription:
+    "Créez un lien et envoyez-le : la personne invitée rejoint le serveur en choisissant elle-même son identifiant.",
+
+  filtersLabel: "Filtrer les invitations",
+  filter_all: "Toutes",
+  filter_active: "Actives",
+  filter_expired: "Expirées",
+  filter_exhausted: "Épuisées",
+  emptyFilter_active: "Aucune invitation active.",
+  emptyFilter_expired: "Aucune invitation expirée.",
+  emptyFilter_exhausted: "Aucune invitation épuisée.",
+
+  status_active: "Active",
+  status_expired: "Expirée",
+  status_exhausted: "Épuisée",
+
+  usesSingleUnused: "Pas encore utilisée",
+  usesSingleUsed: "Utilisée",
+  usesCount: "{{current}} / {{max}} utilisations",
+  // `when` vient d'Intl.RelativeTimeFormat : « dans 3 jours », « demain », « il y a 2 heures ».
+  expiresIn: "Expire {{when}}",
+  expiresUnderMinute: "Expire dans moins d'une minute",
+  expiredAgo: "Expirée {{when}}",
+  expiredJustNow: "Expirée à l'instant",
+  neverExpires: "N'expire pas",
+  createdAgo: "Créée {{when}}",
+  createdAgoBy: "Créée {{when}} par {{name}}",
+  createdJustNow: "Créée à l'instant",
+  createdJustNowBy: "Créée à l'instant par {{name}}",
+  usedByLabel: "Comptes créés avec cette invitation",
+  usedOn: "{{name}} · inscription le {{date}}",
+  moreUsers: "+{{count}}",
+
+  copyLink: "Copier le lien",
+  copied: "Copié",
+  copyFailed: "Impossible de copier le lien",
+  share: "Partager",
+  shareTitle: "Invitation à Tentacle TV",
+  shareText: "Rejoins-moi sur Tentacle TV : crée ton compte avec ce lien.",
+  deleteLabel: "Supprimer l'invitation {{key}}",
+
+  deleteTitle: "Supprimer cette invitation ?",
+  deleteActive: "Le lien cessera de fonctionner aussitôt.",
+  deleteInactive: "Elle disparaîtra de la liste.",
+  deleteKeepsAccounts:
+    "Les comptes créés avec elle ({{names}}) sont conservés : seul l'historique de l'invitation disparaît.",
+  deleteConfirm: "Supprimer",
+  deleted: "Invitation supprimée",
+  deleteFailed: "La suppression a échoué",
+
+  dialogTitle: "Nouvelle invitation",
+  dialogSubtitle: "Combien de personnes pourront l'utiliser, et jusqu'à quand.",
+  usesLabel: "Nombre de personnes",
+  expiryLabel: "Durée de validité",
+  custom: "Autre",
+  days_one: "{{count}} jour",
+  days_other: "{{count}} jours",
+  customUsesLabel: "Nombre de personnes, de 1 à 100",
+  customExpiryLabel: "Durée de validité personnalisée",
+  unitLabel: "Unité",
+  unitHours: "heures",
+  unitDays: "jours",
+  errorUses: "Entre 1 et 100 personnes.",
+  errorExpiry: "Indiquez une durée d'au moins une heure.",
+  errorExpiryTooLong: "30 jours au plus.",
+  // `date` : « mardi 29 septembre à 21:14 ».
+  summary: "Valable pour {{people}}, jusqu'au {{date}}.",
+  people_one: "{{count}} personne",
+  people_other: "{{count}} personnes",
+  create: "Créer le lien",
+  creating: "Création…",
+  createFailed: "La création a échoué. Réessayez.",
+
+  readyTitle: "Invitation prête",
+  readySubtitle: "Envoyez ce lien à la personne invitée : il la mène droit à l'inscription.",
+  linkLabel: "Lien d'invitation",
+  localLinkWarning:
+    "Ce lien pointe vers une adresse de votre réseau local : il ne s'ouvrira pas ailleurs. Pour inviter hors de chez vous, indiquez l'adresse publique du serveur dans Services.",
+  localLinkAction: "Régler l'URL publique",
+  done: "Terminé",
+} as const;
