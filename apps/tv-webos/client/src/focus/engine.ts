@@ -1,5 +1,5 @@
 import { readIntent, isHorizontal } from "./keys";
-import { isInputField } from "./candidates";
+import { collect, isInputField } from "./candidates";
 import { remember } from "./memory";
 import { onPlayerRoute, watchRoute } from "./route";
 import { primeFocus, notePress, placementInProgress } from "./entry";
@@ -89,6 +89,7 @@ export function installFocusEngine(): () => void {
   const restoreFocus = () => {
     if (placementInProgress()) return;
     if (activeElement()) return;
+    if (nothingToTarget()) return;
     primeFocus();
   };
 
@@ -109,7 +110,8 @@ export function installFocusEngine(): () => void {
    * une lecture de propriété, la dépense la plus faible qu'on puisse imaginer,
    * et elle ne fait quoi que ce soit que lorsque l'écran a réellement perdu son
    * anneau. On préfère cette dépense-là à un écran de salon où la télécommande
-   * ne répond plus.
+   * ne répond plus. Le lecteur habillage éteint fait exception : il n'a pas
+   * perdu son anneau, il n'en a pas (cf. `nothingToTarget`).
    */
   const GUARD_INTERVAL_MS = 500;
   const guard = setInterval(restoreFocus, GUARD_INTERVAL_MS);
@@ -185,6 +187,31 @@ export function installFocusEngine(): () => void {
 function engineSuspended(): boolean {
   if (systemKeyboardVisible()) return true;
   return onPlayerRoute() && !osdNavigationActive();
+}
+
+/**
+ * Le lecteur sans son habillage, quand rien n'y est atteignable.
+ *
+ * Le chien de garde suppose qu'un écran sans anneau l'a PERDU. Le lecteur
+ * habillage éteint n'en a pas, et c'est voulu : les commandes sont démontées,
+ * il n'y a rien à viser — pendant tout un film. Chaque demi-seconde ouvrait
+ * pourtant une pose complète (`primeFocus`) : deux révisions, un observateur
+ * sur tout le document, des images demandées, un recensement.
+ *
+ * Mesuré sur la C3 (lecture directe, habillage éteint, fenêtres de 60 s) :
+ * 243 observateurs créés et 735 images demandées par minute, six ou sept
+ * observateurs vivants en permanence, et le fil principal occupé à 3,8 % au
+ * lieu de 3,3 % — un septième de son temps de tâche, un cinquième de ses
+ * réveils, pour rien.
+ *
+ * On se tait tant qu'il n'y a rien à viser, et là seulement. Une surcouche qui
+ * paraît — « passer l'intro », la carte « à suivre », l'affiche de fin — offre
+ * des cibles : le filet reprend. L'habillage qui revient pose lui-même son
+ * entrée (`setOsdFocus`), et le filet reprend avec lui, en mode `osd`.
+ */
+function nothingToTarget(): boolean {
+  if (!onPlayerRoute() || osdNavigationActive()) return false;
+  return collect(document).length === 0;
 }
 
 /**
