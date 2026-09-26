@@ -111,7 +111,7 @@ function HomeScreenInner({ navigation }: Props) {
   const scrollToRow = useCallback((key: string) => {
     const y = rowYMap.current.get(key);
     if (y != null) {
-      scrollViewRef.current?.scrollTo({ y: Math.max(0, rowsWrapperY.current + y - Spacing.rowScrollTop), animated: true });
+      scrollViewRef.current?.scrollTo({ y: Math.max(0, rowsWrapperY.current + y - Spacing.rowScrollTop - TV_OVERSCAN_PT.y), animated: true });
     }
   }, []);
 
@@ -192,13 +192,17 @@ function HomeScreenInner({ navigation }: Props) {
           de la bannière n'est pas rogné à la gouttière. À GAUCHE, le clip s'arrête
           au bord du rail : élargi jusqu'à l'écran, le halo glissait sous les
           icônes du rail en défilant (le rail n'a qu'un voile, pas de fond). Les
-          56 pt de gouttière lui restent — comme aux rangées (FocusableRow). */}
+          56 pt de gouttière lui restent — comme aux rangées (FocusableRow).
+          En HAUT et en BAS aussi, la fenêtre va jusqu'aux bords : coupé au
+          retrait d'overscan, le défilement dessinait un cadre noir de 54 pt
+          autour de l'app sur un grand écran moderne, qui n'a pas d'overscan. */}
       <ScrollView
         ref={scrollViewRef}
-        style={{ flex: 1, marginRight: -TV_OVERSCAN_PT.x }}
+        style={{ flex: 1, marginRight: -TV_OVERSCAN_PT.x, marginVertical: -TV_OVERSCAN_PT.y }}
         contentContainerStyle={{
           paddingRight: TV_OVERSCAN_PT.x,
-          paddingBottom: 96,
+          paddingTop: TV_OVERSCAN_PT.y,
+          paddingBottom: 96 + TV_OVERSCAN_PT.y,
         }}
         overScrollMode="never"
         showsVerticalScrollIndicator={SHOWS_VERTICAL_SCROLL_INDICATOR}

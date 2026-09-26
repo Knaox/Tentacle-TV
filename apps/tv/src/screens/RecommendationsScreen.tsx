@@ -77,7 +77,7 @@ function RecommendationsInner({ navigation }: Props) {
   const onShelfLayout = useCallback((key: string, y: number) => shelfY.current.set(key, y), []);
   const onShelfFocus = useCallback((key: string) => {
     const y = shelfY.current.get(key);
-    if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, shelvesTop.current + y - Spacing.rowScrollTop), animated: true });
+    if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, shelvesTop.current + y - Spacing.rowScrollTop - TV_OVERSCAN_PT.y), animated: true });
   }, []);
 
   const [ctxTarget, setCtxTarget] = useState<HomeContextTarget | null>(null);
@@ -101,10 +101,14 @@ function RecommendationsInner({ navigation }: Props) {
       <TVFocusGuideView autoFocus style={{ flex: 1 }}>
         <ScrollView
           ref={scrollRef}
-          // Clip au bord du rail à gauche (le halo passait dessous), au bord de
-          // l'écran à droite — même montage que l'Accueil.
-          style={{ flex: 1, marginRight: -TV_OVERSCAN_PT.x }}
-          contentContainerStyle={{ paddingRight: TV_OVERSCAN_PT.x, paddingBottom: 96 }}
+          // Clip au bord du rail à gauche (le halo passait dessous), aux bords
+          // de l'écran à droite, en haut et en bas — même montage que l'Accueil.
+          style={{ flex: 1, marginRight: -TV_OVERSCAN_PT.x, marginVertical: -TV_OVERSCAN_PT.y }}
+          contentContainerStyle={{
+            paddingRight: TV_OVERSCAN_PT.x,
+            paddingTop: TV_OVERSCAN_PT.y,
+            paddingBottom: 96 + TV_OVERSCAN_PT.y,
+          }}
           overScrollMode="never"
           showsVerticalScrollIndicator={SHOWS_VERTICAL_SCROLL_INDICATOR}
         >
