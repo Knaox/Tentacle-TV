@@ -30,7 +30,7 @@ export function AdminQuickActions() {
       key: "invites",
       title: t("generateInvite"),
       description: t("existingInvites"),
-      path: "/admin#invites",
+      path: "/admin/invites",
       icon: <InviteIcon />,
     },
     {
