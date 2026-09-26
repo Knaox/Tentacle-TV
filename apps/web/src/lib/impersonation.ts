@@ -123,5 +123,8 @@ export async function stopImpersonation(): Promise<void> {
   else localStorage.removeItem("tentacle_token");
   clearImpersonationKeys();
   localStorage.removeItem(QUERY_CACHE_KEY);
-  window.location.assign("/admin");
+  // Retour là où l'impersonation a commencé : la liste des comptes. `/admin`
+  // seul menait à un index sans contenu avant la vue d'ensemble — et c'est
+  // depuis les Utilisateurs qu'on enchaîne souvent sur un autre compte.
+  window.location.assign("/admin/users");
 }

@@ -10,8 +10,11 @@ interface ActionDef {
 }
 
 /**
- * 3 cartes raccourcis pour les admins (Invites, Tickets, Plugins) — affichées
- * dans MobileProfile uniquement si l'utilisateur est admin.
+ * 4 cartes raccourcis pour les admins (Utilisateurs, Invitations, Tickets,
+ * Plugins) — affichées dans MobileProfile uniquement si l'utilisateur est
+ * admin. Chacune mène à sa ROUTE : les ancres `/admin#invites` et
+ * `/admin#tickets` dataient de l'ancien accueil en une page, et ouvraient un
+ * panneau vide depuis que l'administration est découpée en sections.
  */
 export function AdminQuickActions() {
   const { t } = useTranslation("admin");
@@ -30,14 +33,14 @@ export function AdminQuickActions() {
       key: "invites",
       title: t("generateInvite"),
       description: t("existingInvites"),
-      path: "/admin#invites",
+      path: "/admin/invites",
       icon: <InviteIcon />,
     },
     {
       key: "tickets",
       title: t("supportTickets"),
       description: t("ticketAll"),
-      path: "/admin#tickets",
+      path: "/admin/tickets",
       icon: <TicketIcon />,
     },
     {
@@ -54,7 +57,9 @@ export function AdminQuickActions() {
       <h2 className="mb-3 px-1 text-xs font-semibold uppercase tracking-wider text-content-quaternary">
         {tNav("admin")}
       </h2>
-      <div className="grid grid-cols-1 gap-2 xs:grid-cols-3">
+      {/* Deux par rangée : quatre cartes sur trois colonnes laissaient la
+          dernière seule sur sa ligne. */}
+      <div className="grid grid-cols-1 gap-2 xs:grid-cols-2">
         {actions.map((a) => (
           <button
             key={a.key}
