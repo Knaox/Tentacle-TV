@@ -13,6 +13,17 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.23.0]
+### FR
+- **Administration : une vue d'ensemble** — l'administration s'ouvre sur l'état de Jellyfin et de la base de données, les sessions en direct, les tickets ouverts, les mises à jour de plugins, les comptes et les invitations actives ; chaque tuile mène à sa section
+- **Administration : un menu rangé en trois groupes** (Activité, Comptes, Serveur) qui reste à l'écran, et des pages qui prennent toute la largeur de la fenêtre
+- **Des contours, survols et anneaux de focus s'affichent enfin** : épisode ou saison sélectionnés, tickets, champs de connexion et de mot de passe, boutons de l'administration
+
+### EN
+- **Administration: an overview** — administration opens on Jellyfin and database health, live sessions, open tickets, plugin updates, accounts and active invitations; every tile leads to its section
+- **Administration: a menu sorted into three groups** (Activity, Accounts, Server) that stays on screen, and pages that use the full width of the window
+- **Outlines, hover states and focus rings finally show up**: selected episode or season, tickets, sign-in and password fields, administration buttons
+
 ## [1.22.0]
 ### FR
 - **Une recherche digne de ce nom** : ⌘K ou Ctrl+K où que vous soyez, ou un clic dans la barre — les résultats arrivent à chaque lettre, en quelques millisecondes, calculés par le serveur Tentacle. Les fautes de frappe se corrigent (« Résultats pour … »), la suite du titre se propose en gris (⇥ l'accepte), et l'on trouve aussi par acteur, réalisateur, genre ou studio, chacun avec sa page. Le meilleur résultat se lance d'un clic

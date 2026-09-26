@@ -5,6 +5,18 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.20.0]
+### FR
+- **Administration : une vue d'ensemble** — `/admin` ne s'ouvre plus sur un panneau vide : l'état de Jellyfin et de la base de données, les sessions en direct, les tickets ouverts, les mises à jour de plugins, les comptes, les invitations actives et les comptes autorisés à télécharger, d'un coup d'œil ; chaque tuile mène à sa section, et trois raccourcis ouvrent les gestes courants (inviter, jumeler un téléviseur, voir l'app comme un utilisateur)
+- **Administration : un menu rangé en trois groupes** — Activité, Comptes, Serveur — qui reste à l'écran quand on fait défiler, et des pages en pleine largeur, toutes sous le même en-tête
+- **Des contours, survols et anneaux de focus s'affichent enfin** dans tout le client web : épisode ou saison sélectionnés, onglets et cartes des tickets, champs de connexion, d'inscription et de mot de passe, boutons et filtres de l'administration, bandeau de clé Jellyfin
+- **Profil sur téléphone** : les raccourcis « Invitations » et « Tickets de support » ouvraient une page vide ; quitter « Voir en tant que » ramène à la liste des comptes
+### EN
+- **Administration: an overview** — `/admin` no longer opens on an empty panel: Jellyfin and database health, live sessions, open tickets, plugin updates, accounts, active invitations and accounts allowed to download, at a glance; every tile leads to its section, and three shortcuts open everyday actions (invite someone, pair a TV, see the app as a user)
+- **Administration: a menu sorted into three groups** — Activity, Accounts, Server — that stays on screen while scrolling, and full-width pages, all under the same header
+- **Outlines, hover states and focus rings finally show up** across the web client: selected episode or season, ticket tabs and cards, sign-in, sign-up and password fields, administration buttons and filters, the Jellyfin key banner
+- **Profile on phones**: the "Invitations" and "Support tickets" shortcuts opened an empty page; leaving "View as" takes you back to the account list
+
 ## [1.19.3]
 ### FR
 - **Une demande qui part se dit sur le téléphone** : avec Vigie 1.17.0, « « Titre » est en route » arrive en notification dès que Sonarr ou Radarr prend le titre — sous le même réglage que « Contenu demandé disponible », rien à activer
