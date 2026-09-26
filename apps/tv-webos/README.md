@@ -753,7 +753,15 @@ soit pas une porte à sens unique.
 La recherche est une **surcouche**, pas une route : `App.tsx` n'est pas
 modifié, et le client web ne fait pas autrement — la sienne est un portail
 ouvert par un raccourci. La touche Retour la referme avant de reculer d'un
-écran, par la pile de consommateurs de `focus/retour.ts`.
+écran, par la pile de consommateurs de `focus/back.ts`.
+
+Mais c'est un **écran, pas une modale** : le rail reste visible au-dessus
+d'elle, sa colonne réservée comme partout, et atteignable — « gauche » sans
+voisin y entre (`data-tv-rail-reachable`, `focus/zones.ts`). « Rechercher » y
+est l'entrée active et ramène à la barre ; toute autre entrée referme la
+recherche. Une page d'acteur, de genre ou de studio porte en haut à gauche un
+bouton « Retour » qui fait ce que fait la touche : refermer la page et ramener à
+la barre, d'où un appui à droite rend la carte qui l'avait ouverte.
 
 Cinq règles gouvernent les déplacements. Un mouvement horizontal reste dans
 sa rangée tant qu'il y a une carte à atteindre, et cède au bout de la piste ;

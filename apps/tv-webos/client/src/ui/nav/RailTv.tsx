@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "@/components/ui/TentacleLogo";
+import { useSearchOpen } from "../search/searchState";
 import { useRailEntries, activeEntry } from "./railEntries";
 import { RailEntry } from "./RailEntry";
 
@@ -27,7 +28,10 @@ export function RailTv() {
   const { pathname } = useLocation();
   const { t } = useTranslation("nav");
   const entries = useRailEntries();
-  const active = activeEntry(entries, pathname);
+  // La recherche ne masque pas le rail : il passe au-dessus d'elle
+  // (`data-searching`, cf. `search-tv.css`) et la désigne comme l'écran courant.
+  const searching = useSearchOpen();
+  const active = activeEntry(entries, pathname, searching);
   const [expanded, setExpanded] = useState(false);
   const collapse = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,6 +56,7 @@ export function RailTv() {
     <nav
       className="rail-tv"
       data-deploye={expanded}
+      data-searching={searching}
       aria-label={t("railLabel")}
       onFocus={onFocus}
       onBlur={onBlur}

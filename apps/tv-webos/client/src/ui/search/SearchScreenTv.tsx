@@ -12,6 +12,7 @@ import { registerBack } from "../../focus/back";
 import { giveFocus } from "../../focus/active";
 import { DEFAULT_ATTRIBUTE } from "../../focus/default";
 import { elementKey, findByKey, OVERLAY_ATTRIBUTE, OVERLAY_RESTORING } from "../../focus/memory";
+import { RAIL_REACHABLE_ATTRIBUTE } from "../../focus/zones";
 import { SearchBarTv, DictationHint, type SearchBarHandle } from "./SearchBarTv";
 import { SearchSuggestionsTv, type SearchSuggestion } from "./SearchSuggestionsTv";
 import { SearchResultsTv, type SearchResultsActions } from "./SearchResultsTv";
@@ -63,6 +64,11 @@ const MAX_SUGGESTIONS = 5;
  * Une surcouche et non une route (cf. `searchState.ts`) : `App.tsx` n'est pas
  * modifié. La fermeture passe par la pile de la touche Retour, qui referme
  * d'abord la recherche approfondie, puis la recherche.
+ *
+ * Mais un écran, pas une modale : le rail reste visible au-dessus d'elle, sa
+ * colonne réservée comme partout, et atteignable — « gauche » sans voisin y
+ * entre (`railReachable`). D'où un dialogue NON modal : il confine le D-pad à
+ * la recherche et au rail, sans prétendre que le rail n'existe pas.
  */
 export function SearchScreenTv() {
   return useSearchOpen() ? <SearchOverlayTv /> : null;
@@ -209,14 +215,13 @@ function SearchOverlayTv() {
     typed: query, debounced, current, fetching: search.isFetching, failed: search.isError, sections: sections.length,
   });
   const submit = useSubmitToResults(answer, main, bar);
-  const overlayProps = { [OVERLAY_ATTRIBUTE]: "" };
+  const overlayProps = { [OVERLAY_ATTRIBUTE]: "", [RAIL_REACHABLE_ATTRIBUTE]: "" };
 
   return (
     <div
       ref={root}
       className="tv-search"
       role="dialog"
-      aria-modal="true"
       aria-label={t("search:dialog")}
       onFocus={onFocus}
       {...overlayProps}
