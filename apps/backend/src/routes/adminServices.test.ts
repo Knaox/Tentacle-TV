@@ -1,15 +1,22 @@
 /**
- * Les routes de la page admin « Services » : l'état sondé de Jellyfin, l'essai
- * et l'enregistrement de Jellyfin sans retaper la clé, et les échecs qui
- * portent un code traduisible.
+ * Les routes de la page admin « Services » : l'état sondé de Jellyfin et de la
+ * base, l'essai et l'enregistrement de Jellyfin sans retaper la clé, et les
+ * échecs qui portent un code traduisible.
  */
 
 import Fastify from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+type Probe = { ok: true; version: string } | { ok: false };
+
 const state = vi.hoisted(() => ({
   config: new Map<string, string>(),
-  db: { configured: null as string | null },
+  db: {
+    configured: null as string | null,
+    active: null as string | null,
+    source: null as "env" | "file" | null,
+    probe: { ok: false } as Probe,
+  },
   restarts: 0,
   invalidations: 0,
 }));
@@ -27,6 +34,9 @@ vi.mock("../services/db", () => ({
     throw new Error("pas de prisma dans ce banc");
   },
   getDatabaseUrl: () => state.db.configured,
+  getActiveDatabaseUrl: () => state.db.active,
+  getDatabaseUrlSource: () => state.db.source,
+  probeDatabase: async () => state.db.probe,
   saveDatabaseUrl: (url: string) => {
     state.db.configured = url;
   },
@@ -44,6 +54,8 @@ vi.mock("../services/jellyfinKeyHealth", () => ({
 
 import { adminServicesRoutes } from "./adminServices";
 
+const ACTIVE_DB = "mysql://tentacle:secret@db:3306/tentacle";
+
 /** Un Jellyfin simulé : « bonne-cle » acceptée ; down.test muet ; html.test n'est pas un Jellyfin. */
 const jellyfin = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = String(input);
@@ -55,7 +67,7 @@ const jellyfin = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 
 beforeEach(() => {
   state.config.clear();
-  state.db = { configured: null };
+  state.db = { configured: ACTIVE_DB, active: ACTIVE_DB, source: "file", probe: { ok: true, version: "11.4.4-MariaDB" } };
   state.restarts = 0;
   state.invalidations = 0;
   jellyfin.mockClear();
@@ -78,7 +90,7 @@ async function call(method: "GET" | "POST" | "PUT", url: string, payload?: objec
 const lastKeySent = () => new Headers(jellyfin.mock.calls.at(-1)?.[1]?.headers).get("x-emby-token");
 
 describe("GET /services", () => {
-  it("sonde Jellyfin : version, nom du serveur, clé présente", async () => {
+  it("sonde Jellyfin et la base : versions, nom du serveur, clé présente, origine de la connexion", async () => {
     state.config.set("jellyfin_url", "http://jf.test");
     state.config.set("jellyfin_api_key", "bonne-cle");
     const { status, body } = await call("GET", "/services");
@@ -86,13 +98,20 @@ describe("GET /services", () => {
     expect(body.jellyfin).toEqual({
       url: "http://jf.test", apiKeyConfigured: true, status: "connected", version: "10.10.7", serverName: "Poulpy",
     });
+    expect(body.database).toEqual({
+      status: "connected", version: "11.4.4-MariaDB", source: "file", fromEnv: false, pendingRestart: false,
+      fields: { host: "db", port: 3306, database: "tentacle", user: "tentacle" },
+    });
   });
 
-  it("dit la clé refusée", async () => {
+  it("dit la clé refusée, et une base qui ne répond plus", async () => {
     state.config.set("jellyfin_url", "http://jf.test");
     state.config.set("jellyfin_api_key", "cle-revoquee");
+    state.db.probe = { ok: false };
     const { body } = await call("GET", "/services");
     expect(body.jellyfin).toMatchObject({ status: "error", error: "jellyfin-rejected", httpStatus: 401 });
+    expect(body.database.status).toBe("error");
+    expect(body.database.version).toBe("");
   });
 
   it("sans clé enregistrée, ne sonde rien et le dit", async () => {
@@ -100,6 +119,14 @@ describe("GET /services", () => {
     const { body } = await call("GET", "/services");
     expect(body.jellyfin).toMatchObject({ status: "disconnected", apiKeyConfigured: false });
     expect(jellyfin).not.toHaveBeenCalled();
+  });
+
+  it("décrit la connexion OUVERTE et signale celle qui attend le redémarrage", async () => {
+    state.db.configured = "mysql://autre:pass@nas:3307/tentacle2";
+    state.db.source = "env";
+    const { body } = await call("GET", "/services");
+    expect(body.database).toMatchObject({ pendingRestart: true, source: "env", fromEnv: true });
+    expect(body.database.fields.host).toBe("db");
   });
 });
 

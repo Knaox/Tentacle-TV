@@ -1,7 +1,15 @@
 import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey, setConfigValue, setAppState } from "../services/configStore";
-import { getPrisma, getDatabaseUrl, saveDatabaseUrl } from "../services/db";
+import {
+  getPrisma,
+  getDatabaseUrl,
+  saveDatabaseUrl,
+  getActiveDatabaseUrl,
+  getDatabaseUrlSource,
+  probeDatabase,
+} from "../services/db";
+import { parseDatabaseUrl } from "../services/databaseInfo";
 import { restartJellyfinWs } from "../services/jellyfinWs";
 import { invalidateAdminKeyHealth } from "../services/jellyfinKeyHealth";
 
@@ -109,31 +117,31 @@ async function jellyfinStatus() {
   };
 }
 
-function parseDbUrl(url: string): { host: string; port: number; database: string; user: string } | null {
-  try {
-    const u = new URL(url);
-    return {
-      host: u.hostname,
-      port: Number(u.port) || 3306,
-      database: u.pathname.replace(/^\//, ""),
-      user: decodeURIComponent(u.username),
-    };
-  } catch { return null; }
-}
-
-function databaseStatus() {
-  const dbUrl = getDatabaseUrl();
+async function databaseStatus() {
+  const configured = getDatabaseUrl();
+  const active = getActiveDatabaseUrl();
+  const source = getDatabaseUrlSource();
+  const probe = await probeDatabase();
+  // La connexion OUVERTE, pas celle qui attend le redémarrage : c'est elle
+  // que la sonde vient de mesurer.
+  const described = active ?? configured;
+  const fields = described ? parseDatabaseUrl(described) : null;
   return {
-    status: dbUrl ? "connected" : "disconnected",
-    fromEnv: !!process.env.DATABASE_URL,
-    ...(dbUrl ? { fields: parseDbUrl(dbUrl) } : {}),
+    status: probe.ok ? "connected" : configured ? "error" : "disconnected",
+    version: probe.ok ? probe.version : "",
+    source,
+    // Gardé pour les clients d'avant `source` ; il dit désormais la même chose.
+    fromEnv: source === "env",
+    pendingRestart: !!active && !!configured && configured !== active,
+    ...(fields ? { fields } : {}),
   };
 }
 
 export const adminServicesRoutes: FastifyPluginAsync = async (app) => {
-  /** GET /api/admin/services — Jellyfin sondé à chaque appel, et la base. */
+  /** GET /api/admin/services — Jellyfin et la base, sondés à chaque appel. */
   app.get("/services", async () => {
-    return { jellyfin: await jellyfinStatus(), database: databaseStatus() };
+    const [jellyfin, database] = await Promise.all([jellyfinStatus(), databaseStatus()]);
+    return { jellyfin, database };
   });
 
   /** PUT /api/admin/jellyfin — Enregistre l'URL (et la clé, si saisie) après un essai réussi. */
