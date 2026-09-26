@@ -13,6 +13,12 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.23.0]
+### FR
+- **Administrateurs : la page Plugins refaite** — des cartes qui disent où en est chaque plugin (actif, mise à jour disponible, module serveur), un geste par carte avec son propre état ; un marketplace avec recherche, catégories et fiche détaillée (notes de version, dépôt) ; des sources qui disent ce que leur registre a donné. Le redémarrage du serveur qu'impose un module serveur est annoncé, puis suivi jusqu'au retour du serveur (serveur 1.20.0)
+### EN
+- **Administrators: the Plugins page redesigned** — cards telling where each plugin stands (enabled, update available, server module), one action per card with its own state; a marketplace with search, categories and a detail sheet (release notes, repository); sources telling what their registry returned. The server restart a server module requires is announced, then followed until the server is back (server 1.20.0)
+
 ## [1.22.0]
 ### FR
 - **Une recherche digne de ce nom** : ⌘K ou Ctrl+K où que vous soyez, ou un clic dans la barre — les résultats arrivent à chaque lettre, en quelques millisecondes, calculés par le serveur Tentacle. Les fautes de frappe se corrigent (« Résultats pour … »), la suite du titre se propose en gris (⇥ l'accepte), et l'on trouve aussi par acteur, réalisateur, genre ou studio, chacun avec sa page. Le meilleur résultat se lance d'un clic
