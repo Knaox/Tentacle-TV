@@ -89,6 +89,14 @@ export interface PersisterOptions {
    * combinaison essayée.
    */
   shouldPersist?: (queryKey: readonly unknown[]) => boolean;
+  /**
+   * Le moment est-il bon ? Consultée à chaque tic où le cache a bougé : faux
+   * reporte la sauvegarde au tic suivant, le cache restant marqué. Une
+   * sauvegarde sérialise et écrit d'un bloc, sur le fil principal : sur un
+   * téléviseur, deux cents millisecondes tombées au milieu d'une touche
+   * maintenue. La sortie de page (`pagehide`) sauve toujours.
+   */
+  canSave?: () => boolean;
 }
 
 interface PersistedEntry {
@@ -303,6 +311,7 @@ export function attachQueryPersister(
   });
   const timer = setInterval(() => {
     if (!dirty) return;
+    if (opts.canSave && !opts.canSave()) return;
     dirty = false;
     void save();
   }, interval);

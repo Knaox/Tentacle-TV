@@ -195,9 +195,16 @@ void hydrateQueryClient(queryClient, persistentStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
   owner: cacheOwner,
 });
+// La sauvegarde du cache sérialise et écrit d'un bloc, sur le fil principal :
+// ~250 ms mesurés sur la dalle. Elle attend donc que la télécommande se taise —
+// trois secondes sans appui — plutôt que de tomber au milieu d'une touche
+// maintenue. La sortie de l'application, elle, sauve toujours.
+let lastKeyAt = 0;
+window.addEventListener("keydown", () => { lastKeyAt = Date.now(); }, true);
 attachQueryPersister(queryClient, persistentStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
   owner: cacheOwner,
+  canSave: () => Date.now() - lastKeyAt > 3000,
 });
 
 // Navigation à la télécommande. Installée avant le rendu : le moteur écoute

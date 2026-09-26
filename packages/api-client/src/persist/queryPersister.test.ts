@@ -211,6 +211,28 @@ describe("sauvegarde paresseuse", () => {
     }
   });
 
+  it("reporte la sauvegarde tant que le moment n'est pas bon, sans l'oublier", () => {
+    vi.useFakeTimers();
+    try {
+      const queries = [{ queryKey: ["resume-items"], state: { status: "success", ...entry([{ Id: "a" }]) } }];
+      const writes: string[] = [];
+      const store: PersistStorage = { getItem: () => null, setItem: (_k, v) => { writes.push(v); }, removeItem: () => {} };
+      const qc = { setQueryData: (): unknown => undefined, getQueryCache: () => ({ findAll: () => queries }) };
+      let busy = true;
+      const detach = attachQueryPersister(qc, store, {
+        whitelist: WHITELIST, owner: ADMIN, saveInterval: 1000, canSave: () => !busy,
+      });
+      vi.advanceTimersByTime(3000);
+      expect(writes).toHaveLength(0);
+      busy = false;
+      vi.advanceTimersByTime(1000);
+      expect(writes).toHaveLength(1);
+      detach();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("une requête hors de la liste ne relance pas la sauvegarde", () => {
     vi.useFakeTimers();
     try {
