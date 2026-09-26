@@ -77,12 +77,15 @@ export function useTVPlayerEventHandlers(args: {
   // pendant la préparation) — la lecture n'est « active » qu'après le load
   // (STATE_READY) ET un progress validé.
   const loadedRef = useRef(false);
+  // Dernière position reçue : le filet « ça joue » exige qu'elle AVANCE.
+  const lastProgressPosRef = useRef<number | null>(null);
 
   // Rechargement de source en cours de lecture (changement de piste/qualité) :
   // les progress de l'ANCIEN flux ne doivent plus valider la lecture, sinon
   // l'écran de chargement disparaît avant que le nouveau flux soit prêt.
   const resetLoaded = useCallback(() => {
     loadedRef.current = false;
+    lastProgressPosRef.current = null;
   }, []);
 
   const handleLoad = useCallback((_duration: number) => {
@@ -114,13 +117,20 @@ export function useTVPlayerEventHandlers(args: {
       } else {
         bufferedTimeRef.current = bufferedAbs;
         lastProgressTime.current = Date.now();
+        lastProgressPosRef.current = t;
         return;
       }
     }
-    // Lecture active : flux prêt (load) — ou position réelle non nulle, filet
-    // si un re-render réarme loadedRef sans rechargement natif (le load ne
-    // reviendra jamais, mais des progress > 0.5s prouvent que ça joue).
-    if (loadedRef.current || t > 0.5) onPlaybackActiveRef.current?.();
+    // Lecture active : flux prêt (load) — ou, filet si un re-render réarme
+    // loadedRef sans rechargement natif (le load ne reviendra jamais), une
+    // position qui AVANCE. Une position seulement non nulle ne prouvait rien :
+    // en reprise, ExoPlayer rapporte la position de départ chaque seconde
+    // pendant qu'il remplit son tampon — passé la fenêtre de convergence,
+    // l'écran de chargement se démontait sur une surface encore noire.
+    const previous = lastProgressPosRef.current;
+    lastProgressPosRef.current = t;
+    const moving = previous != null && t > 0.5 && t - previous > 0.2;
+    if (loadedRef.current || moving) onPlaybackActiveRef.current?.();
 
     positionRef.current = t;
     controlsCurrentTimeRef.current = t;
