@@ -210,4 +210,39 @@ describe("sauvegarde paresseuse", () => {
       vi.useRealTimers();
     }
   });
+
+  it("une requête hors de la liste ne relance pas la sauvegarde", () => {
+    vi.useFakeTimers();
+    try {
+      const queries = [{ queryKey: ["resume-items"], state: { status: "success", ...entry([{ Id: "a" }]) } }];
+      let listener: ((event: { type: string; action?: { type?: string }; query?: { queryKey: unknown } }) => void) | null = null;
+      const writes: string[] = [];
+      const store: PersistStorage = { getItem: () => null, setItem: (_k, v) => { writes.push(v); }, removeItem: () => {} };
+      const qc = {
+        setQueryData: (): unknown => undefined,
+        getQueryCache: () => ({
+          findAll: () => queries,
+          subscribe: (l: (event: { type: string; action?: { type?: string }; query?: { queryKey: unknown } }) => void) => {
+            listener = l;
+            return () => { listener = null; };
+          },
+        }),
+      };
+      const detach = attachQueryPersister(qc, store, { whitelist: WHITELIST, owner: ADMIN, saveInterval: 1000 });
+      vi.advanceTimersByTime(1000);
+      expect(writes).toHaveLength(1);
+      // L'état de visionnage d'une carte : réussi, mais jamais persisté.
+      listener!({ type: "updated", action: { type: "success" }, query: { queryKey: ["series-watch-state", "x"] } });
+      listener!({ type: "removed", query: { queryKey: ["library-items", "films"] } });
+      vi.advanceTimersByTime(3000);
+      expect(writes).toHaveLength(1);
+      // Une requête de la liste, elle, relance la sauvegarde.
+      listener!({ type: "updated", action: { type: "success" }, query: { queryKey: ["resume-items"] } });
+      vi.advanceTimersByTime(1000);
+      expect(writes).toHaveLength(2);
+      detach();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
