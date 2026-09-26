@@ -23,6 +23,7 @@ et Linux reçoivent l'ensemble.
 - **Le bandeau « Clé Jellyfin hors service » s'affiche de nouveau** : il ne se montrait plus depuis la 1.20.9
 - **Administrateurs : la page Utilisateurs refaite** — la photo de chaque compte, un résumé (comptes, actifs sur 7 jours, appareils jumelés), la recherche, un filtre et un tri ; un compte s'ouvre en fiche avec son activité, ses droits de téléchargement, ses appareils jumelés à révoquer et « Voir en tant que »
 - **Administrateurs : la page Métadonnées refaite** — l'état de la clé TMDB d'un regard, testée sans être enregistrée, remplacée, retirée après confirmation ; un refus dit s'il vient de TMDB ou du réseau du serveur ; le calcul des recommandations se suit en direct ; la région se choisit parmi les pays couverts par TMDB, avec drapeaux, recherche et aperçu de leurs plateformes (serveur 1.20.0)
+- **Administrateurs : la page Plugins refaite** — des cartes qui disent où en est chaque plugin (actif, mise à jour disponible, module serveur), un geste par carte avec son propre état ; un marketplace avec recherche, catégories et fiche détaillée (notes de version, dépôt) ; des sources qui disent ce que leur registre a donné. Le redémarrage du serveur qu'impose un module serveur est annoncé, puis suivi jusqu'au retour du serveur (serveur 1.20.0)
 
 ### EN
 - **Administration: an overview** — administration opens on Jellyfin and database health, live sessions, open tickets, plugin updates, accounts and active invitations; every tile leads to its section
@@ -33,6 +34,7 @@ et Linux reçoivent l'ensemble.
 - **The "Jellyfin key out of service" banner shows again**: it had stopped appearing since 1.20.9
 - **Administrators: the Users page redesigned** — each account's photo, a summary (accounts, active in the last 7 days, paired devices), search, a filter and sorting; an account opens into a sheet with its activity, download rights, paired devices to revoke and "View as"
 - **Administrators: the Metadata page redesigned** — the TMDB key's state at a glance, tested without saving, replaced, removed after confirmation; a rejection says whether it comes from TMDB or from the server's network; the recommendation run can be followed live; the region is picked among the countries TMDB covers, with flags, search and a preview of their platforms (server 1.20.0)
+- **Administrators: the Plugins page redesigned** — cards telling where each plugin stands (enabled, update available, server module), one action per card with its own state; a marketplace with search, categories and a detail sheet (release notes, repository); sources telling what their registry returned. The server restart a server module requires is announced, then followed until the server is back (server 1.20.0)
 
 ## [1.22.0]
 ### FR
