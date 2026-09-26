@@ -181,7 +181,7 @@ export async function resolvePairedDeviceToken(
  * (`getTokenFromRequest`) — s'il est un jeton Jellyfin de son propre compte ;
  * sinon le dernier jeton valide d'un autre appareil du compte.
  */
-export async function confirmerJellyfinToken(
+export async function confirmJellyfinToken(
   requestToken: string | null,
   jellyfinUserId: string,
 ): Promise<string | null> {
