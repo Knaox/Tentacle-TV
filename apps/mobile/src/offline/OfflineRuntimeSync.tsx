@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { refreshStoredUser } from "@/auth/storedUser";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import {
   offlineCreds,
@@ -27,6 +28,8 @@ import { useStorageReady } from "@/providers/StorageReadyContext";
 
 /** Le jeton rafraîchi par AppProviders arrive un peu après le retour au premier plan. */
 const CREDS_RECHECK_MS = 3_000;
+/** Au premier plan, le profil (photo, nom, droits) se relit au plus une fois par minute. */
+const PROFILE_FOREGROUND_MIN_INTERVAL_MS = 60_000;
 
 /**
  * Branche le moteur hors ligne sur la vie de l'application. Ne rend rien.
@@ -42,6 +45,9 @@ const CREDS_RECHECK_MS = 3_000;
  *   re-normaliser.
  * - Le retour au premier plan relance les pauses système et fait un tour de
  *   purge (iOS gèle les minuteurs en arrière-plan).
+ * - Le profil (photo, nom, droits) se relit à chaque passage en ligne et, au
+ *   plus une fois par minute, au retour au premier plan ; la copie locale de
+ *   la photo suit son étiquette.
  * - « Wi-Fi seulement » : les données mobiles mettent tout en pause système
  *   (sauf « continuer en données mobiles »), le Wi-Fi relance.
  */
@@ -79,7 +85,10 @@ export function OfflineRuntimeSync() {
     if (!online || !serverUrl || !token || !userId) return;
     startOfflineRuntime({ serverUrl, token });
     photographSession(userId, storage, null);
-    syncAvatarCache(userId, serverUrl, token, storage);
+    // Le profil se relit à chaque passage en ligne, ouverture comprise : une
+    // photo changée, ajoutée ou retirée ailleurs n'attend plus la prochaine
+    // connexion. La copie locale suit, sur l'étiquette relue.
+    void refreshStoredUser(storage, client).finally(() => syncAvatarCache(userId, serverUrl, token, storage));
     // Le moteur d'abord, puis les caches de langues et le seuil « vu » — la
     // lecture locale n'interroge jamais le serveur, même en ligne.
     const returning = wasOfflineRef.current;
@@ -143,10 +152,16 @@ export function OfflineRuntimeSync() {
       if (state === "online" && serverUrl && token && userId && !isLocalPlaybackActive()) {
         void syncPlaybackState(serverUrl, token, userId, "all");
         void maybeRefreshOfflineCaches(serverUrl, token, userId, storage);
+        // Une photo changée ailleurs pendant l'absence : l'app revenue au
+        // premier plan la montre, et la copie locale ne se refait que si
+        // l'étiquette a bougé.
+        void refreshStoredUser(storage, client, { minIntervalMs: PROFILE_FOREGROUND_MIN_INTERVAL_MS }).then((photoChanged) => {
+          if (photoChanged) syncAvatarCache(userId, serverUrl, token, storage);
+        });
       }
     });
     return () => subscription.remove();
-  }, [storage, state, token, serverUrl, userId]);
+  }, [storage, state, token, serverUrl, userId, client]);
 
   // Wi-Fi seulement : pause système en données mobiles — sauf accusé
   // « continuer en données mobiles », qui tombe au retour du Wi-Fi —, reprise

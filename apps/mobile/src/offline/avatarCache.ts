@@ -12,6 +12,7 @@
 
 import { Directory, File, Paths } from "expo-file-system";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
+import { parseStoredUser, profilePhotoUrl, STORED_USER_KEY } from "@/auth/storedUser";
 
 const DIR_NAME = "offline-avatars";
 /** Au-delà, ce n'est pas la photo qu'on croit (l'envoi redimensionne à 512 px). */
@@ -75,20 +76,19 @@ export function forgetAvatar(userId: string): void {
 /**
  * Aligne la copie locale sur le profil stocké (`tentacle_user`) : une photo
  * présente est recopiée sous son étiquette du moment, une photo retirée est
- * oubliée. Appelé à chaque passage en ligne, best-effort.
+ * oubliée. Appelé à chaque passage en ligne APRÈS la relecture du profil, et
+ * dès qu'une relecture change l'étiquette ; best-effort. Un profil illisible
+ * ou d'un autre compte ne prouve aucun retrait : la copie reste.
  */
 export function syncAvatarCache(userId: string, serverUrl: string, token: string, storage: StorageAdapter): void {
-  let tag: string | null;
-  try {
-    const user = JSON.parse(storage.getItem("tentacle_user") ?? "null") as { PrimaryImageTag?: string | null } | null;
-    tag = user?.PrimaryImageTag ?? null;
-  } catch {
-    return;
-  }
+  const user = parseStoredUser(storage.getItem(STORED_USER_KEY));
+  if (user === null || user.Id !== userId) return;
+  const tag = user.PrimaryImageTag ?? null;
   if (tag === null) {
     forgetAvatar(userId);
     return;
   }
-  const url = `${serverUrl}/api/jellyfin/Users/${encodeURIComponent(userId)}/Images/Primary?tag=${encodeURIComponent(tag)}&quality=90&maxWidth=200`;
-  void cacheAvatarFrom(userId, url, token);
+  // La même URL que l'écran : l'image affichée et la copie ne divergent pas.
+  const url = profilePhotoUrl(serverUrl, userId, tag);
+  if (url !== null) void cacheAvatarFrom(userId, url, token);
 }
