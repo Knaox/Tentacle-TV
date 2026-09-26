@@ -35,13 +35,14 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
   - resetting the server has its own danger zone and asks you to type "reset"
   - "Configure now" (TV pairing) and "Enter a new key" lead straight to the right field
 - **The "Jellyfin key out of service" banner shows again**: it had stopped appearing since 1.14.0, even with a revoked key
+- **Administration: the Users page redesigned** — every account with its photo, in a full-width grid; a summary (accounts, active in the last 7 days, paired devices); search, a filter, and sorting by name, recent activity or role; "active 3 hours ago" rather than a date. An account opens into a sheet: last activity and last sign-in, download rights, paired devices to revoke, and "View as". Jellyfin not set up or unreachable is said as such, with the way to Services
+- **Account photos stay cached**: in the administration and the mobile app, a profile photo is no longer fetched from Jellyfin again on every display, as long as it does not change
+
 ## [1.19.3]
 ### FR
 - **Une demande qui part se dit sur le téléphone** : avec Vigie 1.17.0, « « Titre » est en route » arrive en notification dès que Sonarr ou Radarr prend le titre — sous le même réglage que « Contenu demandé disponible », rien à activer
 ### EN
 - **A request on its way now reaches your phone**: with Vigie 1.17.0, "“Title” is on its way" arrives as a notification as soon as Sonarr or Radarr picks the title up — under the same setting as "Requested content available", nothing to turn on
-- **Administration: the Users page redesigned** — every account with its photo, in a full-width grid; a summary (accounts, active in the last 7 days, paired devices); search, a filter, and sorting by name, recent activity or role; "active 3 hours ago" rather than a date. An account opens into a sheet: last activity and last sign-in, download rights, paired devices to revoke, and "View as". Jellyfin not set up or unreachable is said as such, with the way to Services
-- **Account photos stay cached**: in the administration and the mobile app, a profile photo is no longer fetched from Jellyfin again on every display, as long as it does not change
 
 ## [1.19.2]
 ### FR
