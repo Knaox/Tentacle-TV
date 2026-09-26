@@ -1,33 +1,33 @@
 import { useState, useCallback } from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 
-import { SubtleBackground, GlassCard, IconButton, Button } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { SettingsSection } from "@/components/settings";
 import { PasswordField } from "@/components/settings/PasswordField";
-import {
-  spacing,
-  typography,
-  FONT_FAMILY,
-  useContentPadding,
-  useTheme,
-  useThemedStyles,
-  type AppTheme,
-} from "@/theme";
+import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles } from "@/theme";
+import { SettingsScaffold } from "./SettingsScaffold";
 
 /**
  * Sous-écran « Mot de passe » (parité web ChangePasswordSection) : change le
  * mot de passe Jellyfin du compte connecté via POST /api/auth/change-password.
  * Le backend valide le mot de passe actuel via Jellyfin (jamais la clé admin).
+ * Le bouton reste celui d'un formulaire — il envoie, il ne choisit rien —
+ * mais à la largeur de son libellé, sous les champs.
  */
 export function PasswordScreen() {
   const { t } = useTranslation("preferences");
+  return (
+    <SettingsScaffold title={t("changePasswordTitle")} maxWidth={560}>
+      <PasswordPane />
+    </SettingsScaffold>
+  );
+}
+
+export function PasswordPane() {
+  const { t } = useTranslation("preferences");
   const { t: tc } = useTranslation("common");
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const contentPadding = useContentPadding(560);
   const { storage } = useTentacleConfig();
   const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -76,67 +76,38 @@ export function PasswordScreen() {
   const canSubmit = !!current && !!next && !!confirm && !pending;
 
   return (
-    <SubtleBackground>
-      <View style={{ flex: 1, paddingTop: Math.max(insets.top, 24) + 8 }}>
-        <View style={[st.header, { paddingHorizontal: spacing.screenPadding }]}>
-          <IconButton icon="←" onPress={() => router.back()} accessibilityLabel={tc("back")} />
-          <Text style={st.headerTitle}>{t("changePasswordTitle")}</Text>
-        </View>
+    <SettingsSection caption={t("changePasswordDescription")}>
+      <View style={st.form}>
+        <PasswordField
+          label={t("currentPassword")}
+          value={current}
+          onChangeText={setCurrent}
+          show={show}
+          onToggleShow={() => setShow((v) => !v)}
+          toggleLabel={show ? t("hidePassword") : t("showPassword")}
+          autoComplete="current-password"
+        />
+        <PasswordField label={t("newPassword")} value={next} onChangeText={setNext} show={show} autoComplete="new-password" />
+        <PasswordField label={t("confirmNewPassword")} value={confirm} onChangeText={setConfirm} show={show} autoComplete="new-password" />
 
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: contentPadding, paddingBottom: insets.bottom + spacing.xl }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <GlassCard style={st.card}>
-            <Text style={st.description}>{t("changePasswordDescription")}</Text>
+        {error ? <Text style={[st.feedback, { color: colors.status.error }]} accessibilityRole="alert">{error}</Text> : null}
+        {success ? <Text style={[st.feedback, { color: colors.status.success }]}>{t("passwordChanged")}</Text> : null}
 
-            <PasswordField
-              label={t("currentPassword")}
-              value={current}
-              onChangeText={setCurrent}
-              show={show}
-              onToggleShow={() => setShow((v) => !v)}
-              toggleLabel={show ? t("hidePassword") : t("showPassword")}
-              autoComplete="current-password"
-            />
-            <PasswordField label={t("newPassword")} value={next} onChangeText={setNext} show={show} autoComplete="new-password" />
-            <PasswordField label={t("confirmNewPassword")} value={confirm} onChangeText={setConfirm} show={show} autoComplete="new-password" />
-
-            {error ? <Text style={[st.feedback, { color: colors.status.error }]} accessibilityRole="alert">{error}</Text> : null}
-            {success ? <Text style={[st.feedback, { color: colors.status.success }]}>{t("passwordChanged")}</Text> : null}
-
-            <Button
-              title={pending ? t("passwordChanging") : tc("save")}
-              onPress={handleSubmit}
-              disabled={!canSubmit}
-              loading={pending}
-              fullWidth
-              style={st.submit}
-            />
-          </GlassCard>
-        </ScrollView>
+        <Button
+          title={pending ? t("passwordChanging") : tc("save")}
+          onPress={handleSubmit}
+          disabled={!canSubmit}
+          loading={pending}
+          style={st.submit}
+        />
       </View>
-    </SubtleBackground>
+    </SettingsSection>
   );
 }
 
-const makeStyles = (t: AppTheme) =>
+const makeStyles = () =>
   StyleSheet.create({
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing.md,
-      marginBottom: spacing.lg,
-    },
-    headerTitle: { ...typography.title, color: t.colors.text.primary, flex: 1 },
-    card: { gap: spacing.md },
-    description: {
-      ...typography.small,
-      fontFamily: FONT_FAMILY.regular,
-      color: t.colors.text.secondary,
-      lineHeight: 18,
-    },
+    form: { padding: spacing.md, gap: spacing.md },
     feedback: { ...typography.small, fontFamily: FONT_FAMILY.medium },
-    submit: { marginTop: spacing.xs },
+    submit: { alignSelf: "flex-end" },
   });
