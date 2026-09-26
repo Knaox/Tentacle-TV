@@ -73,7 +73,7 @@ function AdminPluginsPage() {
           className="mb-4"
         />
         <TabPanel idPrefix={idPrefix} id="installed" active={tab === "installed"}>
-          <InstalledTab />
+          <InstalledTab onBrowse={() => setTab("marketplace")} />
         </TabPanel>
         <TabPanel idPrefix={idPrefix} id="marketplace" active={tab === "marketplace"}>
           <MarketplaceTab />

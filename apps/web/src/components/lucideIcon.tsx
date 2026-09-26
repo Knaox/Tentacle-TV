@@ -43,6 +43,11 @@ const iconMap: Record<string, LucideIcon> = {
   play: Play,
 };
 
+/** Le composant d'une icône de plugin, ou `null` si ce nom n'est pas dans la table. */
+export function lucideIconFor(name: string | null | undefined): LucideIcon | null {
+  return (name && iconMap[name]) || null;
+}
+
 /** Resolve a lucide icon name string to a JSX element (h-5 w-5). Falls back to text. */
 export function getLucideIcon(name: string): React.ReactNode {
   const Icon = iconMap[name];

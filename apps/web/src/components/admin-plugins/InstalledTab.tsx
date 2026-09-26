@@ -1,114 +1,93 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
-import { cls } from "./types";
-import { useInstalledPlugins, useTogglePlugin, useUninstallPlugin, useUpdatePlugin } from "./hooks";
+import { Puzzle, Store } from "lucide-react";
+import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { EmptyState } from "../ui/EmptyState";
+import { AdminNotice } from "../admin/kit";
+import { ActionPill } from "../admin/sessions/ActionPill";
+import { InstalledPluginCard } from "./InstalledPluginCard";
+import { usePluginAdmin } from "./PluginAdminContext";
+import { configRoute } from "./pluginCatalog";
+import { usePluginOverview } from "./usePluginOverview";
+import type { InstalledPlugin } from "./types";
 
-export function InstalledTab() {
-  const { t } = useTranslation("adminPlugins");
-  const navigate = useNavigate();
-  const { data: plugins, isLoading } = useInstalledPlugins();
-  const pluginConfigRoutes = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const p of plugins || []) {
-      const adminNav = (p.navItems || []).find(
-        (nav) => nav.admin && nav.platforms?.includes("web")
-      );
-      if (adminNav) {
-        map[p.pluginId] = adminNav.path;
-      } else if (p.hasBundle) {
-        map[p.pluginId] = `/admin/plugins/${p.pluginId}`;
-      }
-    }
-    return map;
-  }, [plugins]);
-  const toggleMut = useTogglePlugin();
-  const uninstallMut = useUninstallPlugin();
-  const updateMut = useUpdatePlugin();
+/**
+ * Les plugins installés, en cartes. La mise à jour disponible vient du
+ * catalogue (rapproché par identifiant) : la liste s'affiche sans l'attendre,
+ * les badges arrivent avec lui.
+ *
+ * La grille suit la largeur RÉELLE du contenu (`auto-fill`, 28rem au moins par
+ * carte : de quoi tenir ses trois gestes sur une ligne), pas celle de la
+ * fenêtre — la colonne varie avec le rail de l'administration.
+ */
+export function InstalledTab({ onBrowse }: { onBrowse: () => void }) {
+  const { t } = useTranslation(["adminPlugins", "common"]);
+  const { installed, sources, catalog, updates } = usePluginOverview();
+  const { actions, locked } = usePluginAdmin();
+  const activeMeta = useActivePluginsMeta();
 
-  if (isLoading) {
+  const sourcesById = useMemo(() => new Map((sources.data ?? []).map((s) => [s.id, s])), [sources.data]);
+  // La page d'un plugin n'existe (route enregistrée) que s'il est actif et porte un bundle.
+  const routable = useMemo(
+    () => new Set(activeMeta.filter((meta) => meta.hasBundle).map((meta) => meta.pluginId)),
+    [activeMeta],
+  );
+  const list = useMemo(
+    () => [...(installed.data ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+    [installed.data],
+  );
+
+  const { toggle, update, uninstall } = actions;
+  const onToggle = useCallback((plugin: InstalledPlugin) => void toggle(plugin), [toggle]);
+  const onUpdate = useCallback((plugin: InstalledPlugin) => void update(plugin), [update]);
+  const onUninstall = useCallback((plugin: InstalledPlugin) => void uninstall(plugin), [uninstall]);
+
+  if (installed.isLoading) {
     return (
-      <div className={cls.spinner}>
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
+      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,28rem),1fr))]" aria-busy="true">
+        {[0, 1].map((i) => <div key={i} className="skeleton-shimmer h-52 rounded-2xl" />)}
       </div>
     );
   }
 
-  if (!plugins || plugins.length === 0) {
-    return <p className={cls.empty}>{t("adminPlugins:noPlugins")}</p>;
+  if (installed.isError && !installed.data) {
+    return (
+      <AdminNotice
+        tone="error"
+        role="alert"
+        title={t("loadInstalledError")}
+        action={<ActionPill size="sm" label={t("common:retry")} onClick={() => void installed.refetch()} />}
+      />
+    );
+  }
+
+  if (list.length === 0) {
+    return (
+      <EmptyState
+        icon={<Puzzle size={28} aria-hidden />}
+        title={t("noPlugins")}
+        description={t("noPluginsHint")}
+        action={<ActionPill tone="brand" icon={Store} label={t("browseCatalog")} onClick={onBrowse} />}
+      />
+    );
   }
 
   return (
-    <div className="space-y-3">
-      {plugins.map((p) => (
-        <div key={p.id} className={cls.row}>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              {/* Health indicator */}
-              <span
-                className={`h-2 w-2 rounded-full ${p.enabled ? "bg-status-success" : "bg-fill-strong"}`}
-                title={p.enabled ? t("adminPlugins:enable") : t("adminPlugins:disable")}
-              />
-              <span className="text-sm font-medium text-content-primary">{p.name}</span>
-              <span className="rounded bg-fill-subtle px-2 py-0.5 text-xs text-content-quaternary">
-                v{p.version}
-              </span>
-            </div>
-            <p className="mt-0.5 text-xs text-content-quaternary">
-              {new Date(p.installedAt).toLocaleDateString()}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Toggle */}
-            <button
-              onClick={() => toggleMut.mutate(p.id)}
-              disabled={toggleMut.isPending}
-              className={`relative h-6 w-11 rounded-full transition-colors ${
-                p.enabled ? "bg-tentacle-accent border border-transparent" : "bg-fill-medium border border-transparent"
-              }`}
-              title={p.enabled ? t("adminPlugins:disable") : t("adminPlugins:enable")}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-cta-primary-bg shadow-sm ring-1 ring-black/15 transition-transform ${
-                  p.enabled ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-
-            {/* Configure */}
-            {pluginConfigRoutes[p.pluginId] && (
-              <button
-                onClick={() => navigate(pluginConfigRoutes[p.pluginId])}
-                className={cls.bs}
-              >
-                {t("adminPlugins:configure")}
-              </button>
-            )}
-
-            {/* Update */}
-            <button
-              onClick={() => updateMut.mutate(p.id)}
-              disabled={updateMut.isPending}
-              className={cls.bs}
-            >
-              {updateMut.isPending ? "..." : t("adminPlugins:update")}
-            </button>
-
-            {/* Uninstall */}
-            <button
-              onClick={() => {
-                if (confirm(t("adminPlugins:confirmUninstall", { name: p.name }))) {
-                  uninstallMut.mutate({ id: p.id, pluginId: p.pluginId });
-                }
-              }}
-              disabled={uninstallMut.isPending}
-              className={cls.bd}
-            >
-              {t("adminPlugins:uninstall")}
-            </button>
-          </div>
-        </div>
+    <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,28rem),1fr))]">
+      {list.map((plugin) => (
+        <InstalledPluginCard
+          key={plugin.id}
+          plugin={plugin}
+          entry={catalog.get(plugin.pluginId)}
+          source={sourcesById.get(plugin.sourceId)}
+          update={updates.get(plugin.pluginId) ?? null}
+          configureTo={plugin.enabled && routable.has(plugin.pluginId) ? configRoute(plugin) : null}
+          state={actions.states.get(plugin.pluginId)}
+          locked={locked}
+          onToggle={onToggle}
+          onUpdate={onUpdate}
+          onUninstall={onUninstall}
+        />
       ))}
     </div>
   );
