@@ -1,16 +1,21 @@
 import { useTranslation } from "react-i18next";
-import { Feather } from "@expo/vector-icons";
-import { SettingsSection, SettingsRow } from "@/components/settings";
+import { SettingsSection, SettingsOptionList, type SettingsOption } from "@/components/settings";
 import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { useDataSaverActive, useDataSaverSetting } from "@/offline/useDataSaver";
 import type { DataSaverSetting } from "@/offline/dataSaverStore";
-import { useTheme } from "@/theme";
 
-const MODES: ReadonlyArray<{ id: DataSaverSetting; icon: keyof typeof Feather.glyphMap; label: string; hint: string }> = [
+const MODES: ReadonlyArray<{ id: DataSaverSetting; icon: SettingsOption["icon"]; label: string; hint: string }> = [
   { id: "auto", icon: "activity", label: "saverModeAuto", hint: "saverModeAutoHint" },
   { id: "on", icon: "wifi-off", label: "saverModeOn", hint: "saverModeOnHint" },
   { id: "off", icon: "wifi", label: "saverModeOff", hint: "saverModeOffHint" },
 ];
+
+/** Les libellés courts du mode, pour la valeur affichée sur la ligne du profil. */
+export const DATA_SAVER_LABEL_KEYS: Record<DataSaverSetting, string> = {
+  auto: "saverModeAuto",
+  on: "saverModeOn",
+  off: "saverModeOff",
+};
 
 /**
  * Données — le mode économie. Réglage PAR APPAREIL, comme le thème : la
@@ -20,29 +25,27 @@ const MODES: ReadonlyArray<{ id: DataSaverSetting; icon: keyof typeof Feather.gl
  * pas savoir (lien rapide mais facturé au volume, ou lent mais illimité).
  */
 export function DataSettingsScreen() {
+  const { t } = useTranslation("offline");
+  return (
+    <SettingsScaffold title={t("dataTitle")}>
+      <DataPane />
+    </SettingsScaffold>
+  );
+}
+
+export function DataPane() {
   const { t } = useTranslation("downloads");
-  const { t: to } = useTranslation("offline");
-  const theme = useTheme();
   const { setting, setSetting } = useDataSaverSetting();
   const active = useDataSaverActive();
 
   const caption = active ? `${t("saverSettingsCaption")} — ${t("saverActiveNow")}` : t("saverSettingsCaption");
+  const options: SettingsOption<DataSaverSetting>[] = MODES.map((mode) => ({
+    value: mode.id, icon: mode.icon, label: t(mode.label), description: t(mode.hint),
+  }));
 
   return (
-    <SettingsScaffold title={to("dataTitle")}>
-      <SettingsSection title={t("saverSettingsTitle")} caption={caption}>
-        {MODES.map((mode, index) => (
-          <SettingsRow
-            key={mode.id}
-            icon={mode.icon}
-            label={t(mode.label)}
-            description={t(mode.hint)}
-            last={index === MODES.length - 1}
-            onPress={() => setSetting(mode.id)}
-            trailing={setting === mode.id ? <Feather name="check" size={18} color={theme.colors.brand.violet} /> : undefined}
-          />
-        ))}
-      </SettingsSection>
-    </SettingsScaffold>
+    <SettingsSection title={t("saverSettingsTitle")} caption={caption}>
+      <SettingsOptionList options={options} value={setting} onChange={setSetting} />
+    </SettingsSection>
   );
 }

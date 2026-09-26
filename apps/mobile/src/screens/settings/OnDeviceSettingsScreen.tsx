@@ -21,6 +21,15 @@ import { spacing } from "@/theme";
  */
 export function OnDeviceSettingsScreen() {
   const { t } = useTranslation("offline");
+  return (
+    <SettingsScaffold title={t("settingsTitle")}>
+      <OnDeviceSettingsPane />
+    </SettingsScaffold>
+  );
+}
+
+export function OnDeviceSettingsPane() {
+  const { t } = useTranslation("offline");
   const { t: tc } = useTranslation("common");
   const router = useRouter();
   const userId = useUserId();
@@ -62,7 +71,7 @@ export function OnDeviceSettingsScreen() {
   }, [userId, count, entries, t, tc]);
 
   return (
-    <SettingsScaffold title={t("settingsTitle")}>
+    <>
       <SettingsSection title={t("sectionSpace")} caption={t("storageHint")}>
         <View style={styles.space}><OfflineSpaceBar /></View>
       </SettingsSection>
@@ -94,7 +103,7 @@ export function OnDeviceSettingsScreen() {
         <SettingsRow icon="smartphone" label={t("manageTitles")} chevron onPress={() => router.push("/on-device")} />
         <SettingsRow icon="trash-2" label={t("removeAll")} destructive last disabled={removing || count === 0} onPress={removeAll} />
       </SettingsSection>
-    </SettingsScaffold>
+    </>
   );
 }
 
