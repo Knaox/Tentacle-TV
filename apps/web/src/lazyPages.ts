@@ -39,6 +39,7 @@ export const AdminTicketsPage = lazy(() => import("./pages/AdminTicketsPage").th
 export const AdminServicesPage = lazy(() => import("./pages/AdminServicesPage").then((m) => ({ default: m.AdminServicesPage })));
 export const AdminMetadata = lazy(() => import("./pages/AdminMetadata").then((m) => ({ default: m.AdminMetadata })));
 export const AdminSessions = lazy(() => import("./pages/AdminSessions").then((m) => ({ default: m.AdminSessions })));
+export const AdminHome = lazy(() => import("./pages/AdminHome").then((m) => ({ default: m.AdminHome })));
 export const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
 // Préchargeable : le chunk se charge au boot et au survol du lien, et la page
 // se rend alors sans suspendre — jamais de spinner à l'arrivée.

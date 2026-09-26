@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { SettingsShell } from "@tentacle-tv/ui";
 
 import { getUserInfo } from "../userMenu/menuItems";
-import { activeAdminSection, adminSectionPath, useAdminSections } from "./adminSections";
+import { OVERVIEW_ID, activeAdminSection, adminSectionPath, useAdminSections } from "./adminSections";
 
 /**
  * Coquille maître-détail de l'administration.
@@ -18,12 +18,18 @@ import { activeAdminSection, adminSectionPath, useAdminSections } from "./adminS
  * sont inchangées, elles deviennent simplement des enfants. Aucun lien profond
  * ne casse, y compris les routes dynamiques des plugins.
  *
- * Le rail range les sections en trois groupes (`adminSections.tsx`). Chaque
- * page porte son en-tête : la coquille n'en affiche un que sur l'index.
+ * Le rail range les sections en trois groupes (`adminSections.tsx`) et s'ouvre
+ * sur la vue d'ensemble — l'index `/admin`, qui était un panneau VIDE sur
+ * desktop. Chaque page porte son en-tête (`AdminPage`, components/admin/kit) :
+ * la coquille n'en affiche aucun, elle ne fait que nommer le rail.
  *
  * Pleine largeur sur desktop, toutes sections confondues : le rail à gauche,
  * le reste de l'écran au contenu. Ce qui doit rester étroit (un formulaire, une
  * phrase) se borne lui-même.
+ *
+ * Sous `md`, la vue d'ensemble EST l'écran d'atterrissage (tuiles + liste des
+ * sections) : le rail n'y est pas montré, et le retour n'existe qu'à
+ * l'intérieur d'une section — il ramène à la vue d'ensemble, sans boucle.
  */
 export function AdminLayout() {
   const { t } = useTranslation("admin");
@@ -42,10 +48,8 @@ export function AdminLayout() {
         activeId={activeId}
         onSelect={(id) => navigate(adminSectionPath(id))}
         navLabel={t("title")}
-        title={activeId ? undefined : t("title")}
-        description={activeId ? undefined : t("overviewDescription")}
-        onBack={() => navigate("/admin")}
-        backLabel={t("title")}
+        onBack={activeId === OVERVIEW_ID ? undefined : () => navigate("/admin")}
+        backLabel={t("navOverview")}
         fluid
       >
         <Outlet />
