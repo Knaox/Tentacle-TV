@@ -11,10 +11,11 @@ import { SearchPortraitTv } from "./SearchPersonTv";
 import { isBrowseFresh, returnToSearchBar, settleBrowse, type SearchBrowseTarget } from "./searchState";
 
 /**
- * Largeur d'une affiche : huit colonnes, marges comprises (8 × 204 = 1 632),
- * dans les 1 638 px utiles d'une dalle à droite du rail, qui reste visible.
+ * Largeur d'une affiche : sept colonnes, marges comprises (7 × 224 = 1 568),
+ * dans les 1 582 px utiles d'une dalle à droite du rail — qui reste visible —
+ * et de la gouttière des rangées.
  */
-const CARD_WIDTH = 180;
+const CARD_WIDTH = 200;
 /** Une filmographie plus longue ne se parcourt plus à la télécommande. */
 const LIMIT = 120;
 

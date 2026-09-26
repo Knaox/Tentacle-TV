@@ -16,12 +16,13 @@
  * Le RAIL reste au-dessus, et sa colonne est réservée à gauche comme sur tout
  * écran de la disposition (`--tv-search-left`) : la recherche est un écran
  * sans route, pas une modale, et la navigation ne disparaît pas quand on y
- * entre. */
+ * entre. La gouttière des rangées s'y ajoute : le contenu commence où il
+ * commence ailleurs, au lieu de coller à l'entrée active du rail. */
 
 :root {
   --tv-search-side: 560px;
   --tv-search-gutter: var(--row-gutter-desktop);
-  --tv-search-left: calc(var(--tv-overscan-x) + var(--rail-largeur-repli));
+  --tv-search-left: calc(var(--tv-overscan-x) + var(--rail-largeur-repli) + var(--tv-search-gutter));
 }
 
 .tv-search {
