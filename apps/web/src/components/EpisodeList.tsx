@@ -136,7 +136,7 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
               onClick={() => setSelectedSeasonId(s.Id)}
               className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 selectedSeasonId === s.Id
-                  ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]"
+                  ? "bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] text-[var(--brand-light)]"
                   : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
               }`}
             >

@@ -62,7 +62,7 @@ export function LiveSessionsScene({ active, reduced }: SceneProps) {
         <div className="flex items-center gap-3 rounded-xl border border-line-subtle bg-surface-1 px-3 py-2">
           <span className="text-[12px] font-semibold text-content-primary">{t("sessions:sectionGroups")}</span>
           <span className="text-[11px] text-content-tertiary">{t("sessions:groupOf", { count: 2 })}</span>
-          <span className="ml-auto inline-flex rounded-md border border-[var(--status-error)]/30 bg-[var(--status-error-bg)] px-2.5 py-1 text-[11px] font-semibold text-[var(--status-error-fg)]">
+          <span className="ml-auto inline-flex rounded-md border border-danger-border bg-[var(--status-error-bg)] px-2.5 py-1 text-[11px] font-semibold text-[var(--status-error-fg)]">
             {t("sessions:stopAll")}
           </span>
         </div>

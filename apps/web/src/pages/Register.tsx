@@ -10,7 +10,7 @@ const BACKEND_URL = backendUrl;
 const CTA_PRIMARY =
   "inline-flex h-11 w-full items-center justify-center rounded-lg bg-cta-primary-bg text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
 const INPUT_BASE =
-  "h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30";
+  "h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]";
 
 export function Register() {
   const [searchParams] = useSearchParams();
@@ -106,7 +106,7 @@ export function Register() {
               <input
                 id="reg-confirm" type="password" value={confirmPassword} required
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`${INPUT_BASE} ${passwordsMismatch ? "border-[var(--status-error-fg)]/60 focus:border-[var(--status-error-fg)] focus:ring-[var(--status-error-fg)]/30" : ""}`}
+                className={`${INPUT_BASE} ${passwordsMismatch ? "!border-status-error focus:!border-status-error-fg focus:!ring-danger-border" : ""}`}
                 autoComplete="new-password"
                 aria-invalid={passwordsMismatch}
               />

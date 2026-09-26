@@ -106,7 +106,7 @@ export function AppConnect({ onConnected }: AppConnectProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder={t("serverUrlPlaceholder")}
-              className="h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30"
+              className="h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]"
               onKeyDown={(e) => e.key === "Enter" && url && handleConnect()}
               autoFocus
             />

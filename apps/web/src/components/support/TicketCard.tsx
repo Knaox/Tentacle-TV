@@ -52,15 +52,15 @@ export const TicketCard = memo(function TicketCard({
       draggable={(draggable && !selectable) || undefined}
       onDragStart={draggable && !selectable ? onDragStart : undefined}
       onDragEnd={draggable ? () => setDragging(false) : undefined}
-      className={`relative rounded-lg border bg-fill-subtle p-3 outline-none transition-colors hover:bg-fill-soft focus-visible:ring-2 focus-visible:ring-[var(--brand)]/50 ${
-        selected ? "border-[var(--brand)]/45" : "border-line-subtle"
+      className={`relative rounded-lg border bg-fill-subtle p-3 outline-none transition-colors hover:bg-fill-soft focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.5)] ${
+        selected ? "border-[rgba(var(--brand-rgb),0.45)]" : "border-line-subtle"
       } ${draggable && !selectable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${dragging ? "opacity-50" : ""}`}
     >
       {selectable && (
         <span
           aria-hidden
           className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border ${
-            selected ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-[var(--brand-light)]" : "border-line-strong"
+            selected ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]" : "border-line-strong"
           }`}
         >
           {selected && (

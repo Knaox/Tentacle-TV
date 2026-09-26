@@ -4,7 +4,7 @@ import { BACKEND, hdrs, creds } from "../../pages/adminUtils";
 import { getImpersonationState } from "../../lib/impersonation";
 
 const INPUT =
-  "h-11 w-full rounded-lg border border-line-subtle bg-tentacle-surface px-3 pr-11 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30";
+  "h-11 w-full rounded-lg border border-line-subtle bg-tentacle-surface px-3 pr-11 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]";
 
 /**
  * Section "Mot de passe" du profil (web + desktop) — change le mot de passe

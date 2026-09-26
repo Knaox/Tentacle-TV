@@ -28,7 +28,7 @@ export function TicketStatusTabs({ active, counts, onChange }: TicketStatusTabsP
             onClick={() => onChange(status)}
             className={`flex flex-shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               selected
-                ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]"
+                ? "bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] text-[var(--brand-light)]"
                 : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft"
             }`}
           >

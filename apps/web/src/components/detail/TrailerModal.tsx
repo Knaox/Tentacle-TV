@@ -89,7 +89,7 @@ export function TrailerModal({ open, onClose, trailers, initialIndex = 0 }: Trai
                 onClick={() => setIndex(i)}
                 className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
                   i === index
-                    ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-[var(--brand-light)]"
+                    ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]"
                     : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
                 }`}
               >

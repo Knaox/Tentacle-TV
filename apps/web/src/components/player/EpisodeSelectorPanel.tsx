@@ -103,7 +103,7 @@ export function EpisodeSelectorPanel({
               onClick={() => setSeasonId(s.Id)}
               className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium leading-5 transition-colors ${
                 s.Id === effectiveSeasonId
-                  ? "border-[var(--brand-accent)]/45 bg-[var(--brand-accent-soft)] text-[var(--brand-accent-light)]"
+                  ? "border-[rgba(var(--brand-accent-rgb),0.45)] bg-[var(--brand-accent-soft)] text-[var(--brand-accent-light)]"
                   : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
               }`}
             >

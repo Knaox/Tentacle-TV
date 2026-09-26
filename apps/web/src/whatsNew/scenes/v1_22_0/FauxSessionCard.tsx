@@ -67,7 +67,7 @@ export function FauxSessionCard({
                   key={action.label}
                   className={`relative overflow-hidden rounded-md border px-2 py-0.5 text-[10px] font-semibold ${
                     action.danger
-                      ? "border-[var(--status-error)]/30 bg-[var(--status-error-bg)] text-[var(--status-error-fg)]"
+                      ? "border-danger-border bg-[var(--status-error-bg)] text-[var(--status-error-fg)]"
                       : "border-line-subtle bg-fill-soft text-content-primary"
                   }`}
                 >

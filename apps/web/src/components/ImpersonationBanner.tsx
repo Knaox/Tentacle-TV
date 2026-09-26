@@ -33,7 +33,7 @@ export function ImpersonationBanner() {
     >
       <div
         // Fond de la pastille : littéral hors table (implémentation ad hoc) — non migré.
-        className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full border border-[var(--brand)]/40 bg-black/75 py-2 pl-4 pr-2 backdrop-blur-xl"
+        className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full border border-[rgba(var(--brand-rgb),0.4)] bg-black/75 py-2 pl-4 pr-2 backdrop-blur-xl"
         style={{ boxShadow: "0 8px 32px rgba(var(--brand-rgb), 0.35)" }}
       >
         <span aria-hidden className="relative flex h-2 w-2 flex-shrink-0">

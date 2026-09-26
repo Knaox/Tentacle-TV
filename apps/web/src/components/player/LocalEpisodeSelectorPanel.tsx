@@ -96,7 +96,7 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
               onClick={() => setSelected(num)}
               className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium leading-5 transition-colors ${
                 num === effectiveSeason
-                  ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-[var(--brand-light)]"
+                  ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]"
                   : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
               }`}
             >

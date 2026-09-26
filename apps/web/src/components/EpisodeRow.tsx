@@ -83,7 +83,7 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
       {isSelecting ? (
         <div className="flex w-24 flex-shrink-0 xs:w-28 items-center justify-center sm:w-44">
           <div className={`h-5 w-5 rounded border-2 transition-colors ${
-            isSelected ? "border-[var(--brand)]/45 bg-[var(--brand-soft)]" : "border-line-strong"
+            isSelected ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)]" : "border-line-strong"
           }`}>
             {isSelected && (
               <svg className="h-full w-full text-[var(--brand-light)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">

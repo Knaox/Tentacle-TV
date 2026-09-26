@@ -111,7 +111,7 @@ function StepHeader({ step }: { step: SetupStep }) {
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-2">
             <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              i < idx ? "bg-status-success-bg border border-status-success text-status-success-fg" : i === idx ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]" : "bg-fill-soft text-content-quaternary"
+              i < idx ? "bg-status-success-bg border border-status-success text-status-success-fg" : i === idx ? "bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] text-[var(--brand-light)]" : "bg-fill-soft text-content-quaternary"
             }`}>{i < idx ? "✓" : i + 1}</div>
             <span className={`text-xs ${i === idx ? "text-content-primary" : "text-content-quaternary"}`}>{s.label}</span>
             {i < steps.length - 1 && <div className="h-px w-6 bg-fill-medium" />}
@@ -292,7 +292,7 @@ function Inp({ label, value, set, placeholder, type = "text" }: {
     <div>
       <label className="mb-1 block text-xs font-medium text-content-tertiary">{label}</label>
       <input type={type} value={value} onChange={(e) => set(e.target.value)} placeholder={placeholder}
-        className="h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30" />
+        className="h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]" />
     </div>
   );
 }

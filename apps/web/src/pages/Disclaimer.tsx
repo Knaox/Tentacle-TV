@@ -95,7 +95,7 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
             onClick={() => setChecked((v) => !v)}
             className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
               checked
-                ? "border-[var(--brand)]/45 bg-[var(--brand-soft)]"
+                ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)]"
                 : "border-line-strong bg-transparent"
             }`}
           >

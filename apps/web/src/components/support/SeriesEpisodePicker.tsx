@@ -30,7 +30,7 @@ export function SeriesEpisodePicker({ series, seasons, episodes, selectedSeasonI
         <div className="flex gap-1 overflow-x-auto border-b border-line-subtle px-3 py-2">
           {seasons.map((s) => (
             <button key={s.Id} type="button" onClick={() => onSeasonChange(s.Id)}
-              className={`flex-shrink-0 rounded px-2.5 py-1 text-xs font-medium transition-colors ${selectedSeasonId === s.Id ? "bg-[var(--brand-soft)] border border-[var(--brand)]/45 text-[var(--brand-light)]" : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft"}`}>
+              className={`flex-shrink-0 rounded px-2.5 py-1 text-xs font-medium transition-colors ${selectedSeasonId === s.Id ? "bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] text-[var(--brand-light)]" : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft"}`}>
               {s.Name}
             </button>
           ))}

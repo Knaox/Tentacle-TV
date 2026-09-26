@@ -82,7 +82,7 @@ export function AdminKeyBanner() {
   return (
     <div
       role="alert"
-      className="relative z-30 flex items-start gap-3 border-y border-[var(--status-error)]/40 bg-[var(--status-error-bg)] px-4 py-3 text-sm md:px-8"
+      className="relative z-30 flex items-start gap-3 border-y border-danger-border bg-[var(--status-error-bg)] px-4 py-3 text-sm md:px-8"
     >
       <svg
         className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--status-error-fg)]"
@@ -96,10 +96,10 @@ export function AdminKeyBanner() {
       </svg>
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-[var(--status-error-fg)]">{t("adminKeyTitle")}</p>
-        <p className="mt-0.5 text-[var(--status-error-fg)]/80">{cause}</p>
+        <p className="mt-0.5 text-status-error-fg opacity-80">{cause}</p>
         {/* Ce qui est hors service, nommément : sans cette liste, l'alerte
             paraît anodine puisque tout continue de s'afficher à l'écran. */}
-        <p className="mt-0.5 text-[var(--status-error-fg)]/80">{t("adminKeyImpact")}</p>
+        <p className="mt-0.5 text-status-error-fg opacity-80">{t("adminKeyImpact")}</p>
         <Link
           to="/admin/services"
           className="mt-1.5 inline-block font-semibold text-[var(--status-error-fg)] underline underline-offset-4 hover:opacity-80"
@@ -111,7 +111,7 @@ export function AdminKeyBanner() {
         type="button"
         onClick={() => setMasque(true)}
         aria-label={t("adminKeyDismiss")}
-        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[var(--status-error-fg)]/70 transition-colors hover:bg-[var(--status-error)]/20 hover:text-[var(--status-error-fg)]"
+        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-status-error-fg opacity-70 transition hover:bg-danger-surface-hover hover:opacity-100"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
