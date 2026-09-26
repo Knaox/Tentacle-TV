@@ -889,19 +889,27 @@ la boîte de l'affiche — pas besoin de `:has()`, qui n'existe pas ici.
 
 ## Le fond au focus
 
-Deux calques, jamais trois, et l'ancien tient l'écran jusqu'à ce que le nouveau
-soit chargé (`ui/heros/calquesFond.ts`, pur et testé). Trois défauts se
-ressemblaient à l'écran et n'avaient qu'une cause : un déplacement du focus est
-un `blur` suivi d'un `focus`, et l'effacement partait sur le premier. Le fond
-était donc démonté puis remonté entre CHAQUE carte — écran noir le temps de
-télécharger l'image, clignotement entre deux épisodes d'une même série qui
-partagent pourtant le même Backdrop, et apparition sèche au retour sur une
-carte déjà visitée. L'effacement est désormais différé de 120 ms et la visée
-suivante l'annule.
+Deux EMPLACEMENTS d'image, fixes, et l'ancienne tient l'écran jusqu'à ce que la
+nouvelle soit chargée et décodée (`ui/hero/backdropSlots.ts`, pur et testé).
+Trois défauts se ressemblaient à l'écran et n'avaient qu'une cause : un
+déplacement du focus est un `blur` suivi d'un `focus`, et l'effacement partait
+sur le premier. Le fond était donc démonté puis remonté entre CHAQUE carte —
+écran noir le temps de télécharger l'image, clignotement entre deux épisodes
+d'une même série qui partagent pourtant le même Backdrop, et apparition sèche au
+retour sur une carte déjà visitée. L'effacement est désormais différé de 120 ms
+et la visée suivante l'annule.
+
+**Les emplacements ne se démontent jamais**, et c'est une affaire de coût, pas
+de rendu. La version précédente montait un `<img>` par image et démontait
+l'ancien : chaque carte visée créait un calque de compositeur plein écran et en
+détruisait un autre, et la dalle rastérisait de nouveau tout ce qui les entoure.
+Ici l'entrante prend l'emplacement libre : dessus, elle monte en opacité ;
+dessous, elle est posée pleine et c'est la sortante qui s'efface par-dessus avec
+la même courbe — le mélange est le même dans les deux cas.
 
 L'opacité vit sur la COUCHE, pas sur les images : deux calques à 0,55
 superposés composent à 0,80, et le croisement se verrait comme un éclat à
-mi-course. Et le fondu est une ANIMATION, pas une transition — elle joue au
-montage de l'élément qui la porte, y compris quand l'image est déjà en cache,
+mi-course. Et le fondu est une ANIMATION, pas une transition — elle joue quand
+la phase de l'emplacement change, y compris quand l'image est déjà en cache,
 cas qu'une transition ne peut pas traiter puisque son état de départ et son
 état d'arrivée sont posés dans le même rendu.
