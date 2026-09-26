@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "fs";
 import { resolve, sep } from "path";
 import { DATA_ROOT } from "./dataDir";
+import { isNewerVersion } from "./semver";
 
 // ── Types ──
 
@@ -18,6 +19,9 @@ export interface RegistryPlugin {
   repo?: string;
   platforms?: string[];
   minAppVersion?: string;
+  /** Notes de la dernière version, telles que le registre les publie (Markdown, blocs `### FR` / `### EN`). */
+  changelog?: string;
+  releaseDate?: string;
 }
 
 export interface PluginSource {
@@ -51,12 +55,24 @@ export interface EnrichedEntry extends RegistryPlugin {
 
 interface RegistryCache {
   data: RegistryPlugin[];
+  /** Dernière lecture RÉUSSIE (0 : jamais). */
   fetchedAt: number;
+  /** Dernière tentative, réussie ou non. */
+  checkedAt: number;
+  error?: string;
+}
+
+/** Ce qu'on sait de la lecture d'un registre — rendu avec chaque source. */
+export interface RegistryStatus {
+  checkedAt: string;
+  fetchedAt?: string;
+  pluginCount: number;
   error?: string;
 }
 
 interface RawRegistryVersion {
   version: string; downloadUrl?: string; checksum?: string; minTentacleVersion?: string;
+  changelog?: string; releaseDate?: string;
 }
 interface RawRegistryEntry {
   id?: string; pluginId?: string; name: string; description?: string; author?: string;
@@ -83,6 +99,12 @@ export function assertPathUnderDataDir(resolvedPath: string): void {
 }
 
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+/**
+ * Une lecture en échec se retente bien plus tôt : un registre injoignable au
+ * démarrage (réseau pas encore prêt, GitHub qui hoquette) vidait le catalogue
+ * de cette source pendant six heures.
+ */
+const FAILURE_TTL = 5 * 60 * 1000;
 export const DATA_DIR = resolve(DATA_ROOT, "plugins");
 const SOURCES_FILE = "sources.json";
 const INSTALLED_FILE = "installed.json";
@@ -153,7 +175,11 @@ export function clearCache(sourceId?: string): void {
 function normalizePlugins(raw: RawRegistryEntry[]): RegistryPlugin[] {
   return raw.map((entry) => {
     const hasVersions = entry.versions && entry.versions.length > 0;
-    const latest = hasVersions ? entry.versions![0] : undefined;
+    // La version annoncée (`latestVersion`) porte SON archive et SON empreinte :
+    // prendre la première de la liste les désaccordait dès que l'ordre différait.
+    const latest = hasVersions
+      ? entry.versions!.find((v) => v.version === entry.latestVersion) ?? entry.versions![0]
+      : undefined;
     return {
       pluginId: entry.pluginId || entry.id || entry.name,
       name: entry.name,
@@ -166,6 +192,8 @@ function normalizePlugins(raw: RawRegistryEntry[]): RegistryPlugin[] {
       tags: entry.tags, category: entry.category, repo: entry.repo,
       platforms: entry.platforms,
       minAppVersion: latest?.minTentacleVersion,
+      changelog: typeof latest?.changelog === "string" ? latest.changelog : undefined,
+      releaseDate: typeof latest?.releaseDate === "string" ? latest.releaseDate : undefined,
     };
   });
 }
@@ -176,31 +204,46 @@ export async function fetchRegistryCached(
   forceRefresh = false,
 ): Promise<RegistryPlugin[]> {
   const cached = registryCache.get(sourceId);
-  if (!forceRefresh && cached && Date.now() - cached.fetchedAt < CACHE_TTL) {
+  const ttl = cached?.error ? FAILURE_TTL : CACHE_TTL;
+  if (!forceRefresh && cached && Date.now() - cached.checkedAt < ttl) {
     return cached.data;
   }
 
+  // Un échec garde la dernière lecture réussie : une source qui hoquette ne
+  // retire pas ses plugins du catalogue.
+  const fail = (error: string): RegistryPlugin[] => {
+    const data = cached?.data ?? [];
+    registryCache.set(sourceId, { data, fetchedAt: cached?.fetchedAt ?? 0, checkedAt: Date.now(), error });
+    return data;
+  };
+
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-    if (!res.ok) {
-      const errMsg = `Registry returned ${res.status}`;
-      if (cached) { registryCache.set(sourceId, { ...cached, error: errMsg }); return cached.data; }
-      registryCache.set(sourceId, { data: [], fetchedAt: Date.now(), error: errMsg });
-      return [];
-    }
+    if (!res.ok) return fail(`Registry returned ${res.status}`);
 
     const body = await res.json() as { plugins?: RawRegistryEntry[] } | RawRegistryEntry[];
     const rawPlugins = Array.isArray(body) ? body : (body.plugins ?? []);
+    if (!Array.isArray(rawPlugins)) return fail("Registry format not recognized");
     const plugins = normalizePlugins(rawPlugins as RawRegistryEntry[]);
 
-    registryCache.set(sourceId, { data: plugins, fetchedAt: Date.now() });
+    const now = Date.now();
+    registryCache.set(sourceId, { data: plugins, fetchedAt: now, checkedAt: now });
     return plugins;
   } catch (err) {
-    const errMsg = err instanceof Error ? err.message : "Fetch failed";
-    if (cached) { registryCache.set(sourceId, { ...cached, error: errMsg }); return cached.data; }
-    registryCache.set(sourceId, { data: [], fetchedAt: Date.now(), error: errMsg });
-    return [];
+    return fail(err instanceof Error ? err.message : "Fetch failed");
   }
+}
+
+/** L'état de lecture du registre d'une source ; `undefined` s'il n'a pas encore été lu. */
+export function registryStatus(sourceId: string): RegistryStatus | undefined {
+  const cached = registryCache.get(sourceId);
+  if (!cached) return undefined;
+  return {
+    checkedAt: new Date(cached.checkedAt).toISOString(),
+    ...(cached.fetchedAt ? { fetchedAt: new Date(cached.fetchedAt).toISOString() } : {}),
+    pluginCount: cached.data.length,
+    ...(cached.error ? { error: cached.error } : {}),
+  };
 }
 
 // ── Enrichment ──
@@ -220,7 +263,7 @@ export function enrichPlugins(
       installed: !!inst,
       installedId: inst?.id,
       installedVersion: inst?.version,
-      updateAvailable: !!inst && inst.version !== p.version,
+      updateAvailable: !!inst && isNewerVersion(p.version, inst.version),
     };
   });
 }

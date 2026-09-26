@@ -9,21 +9,26 @@ import {
   fetchRegistryCached,
   clearCache,
   enrichPlugins,
+  registryStatus,
   type PluginSource,
   type EnrichedEntry,
 } from "../services/pluginManager";
 import { isValidRouteId } from "./pluginRouteGuards";
 
 const addSourceSchema = z.object({
-  url: z.string().url(),
-  name: z.string().min(1).optional(),
+  // HTTP(S) seulement : `z.string().url()` laissait passer `data:` ou `ftp:`.
+  url: z.string().url().refine((url) => /^https?:\/\//i.test(url), "Only HTTP(S) registry URLs are allowed"),
+  name: z.string().trim().min(1).max(80).optional(),
 });
+
+/** Une source, et ce qu'on sait de la lecture de son registre. */
+const withRegistry = (source: PluginSource) => ({ ...source, registry: registryStatus(source.id) });
 
 /** Sources de plugins et catalogue qu'elles publient (marketplace) — routes admin. */
 export function registerPluginSourceRoutes(admin: FastifyInstance): void {
   // ── Sources ──
 
-  admin.get("/sources", async () => getSources());
+  admin.get("/sources", async () => getSources().map(withRegistry));
 
   admin.post("/sources", async (request, reply) => {
     const body = addSourceSchema.parse(request.body);
@@ -38,7 +43,10 @@ export function registerPluginSourceRoutes(admin: FastifyInstance): void {
     const custom = getCustomSources();
     custom.push(source);
     saveCustomSources(custom);
-    return source;
+    // Lu tout de suite : l'administrateur voit en l'ajoutant si l'adresse
+    // répond et ce qu'elle publie, au lieu de découvrir un catalogue vide.
+    await fetchRegistryCached(source.id, source.url, true);
+    return withRegistry(source);
   });
 
   admin.delete("/sources/:id", async (request, reply) => {
@@ -75,13 +83,17 @@ export function registerPluginSourceRoutes(admin: FastifyInstance): void {
   });
 
   admin.post("/sources/refresh", async () => {
-    clearCache();
+    // Pas de `clearCache()` : une source injoignable garde sa dernière lecture
+    // réussie au lieu de sortir du catalogue.
     const sources = getSources().filter((s) => s.enabled);
-    const results = await Promise.allSettled(
-      sources.map((s) => fetchRegistryCached(s.id, s.url, true)),
-    );
-    const total = results.reduce((n, r) => n + (r.status === "fulfilled" ? r.value.length : 0), 0);
-    return { refreshed: sources.length, plugins: total };
+    const lists = await Promise.all(sources.map((s) => fetchRegistryCached(s.id, s.url, true)));
+    const total = lists.reduce((n, list) => n + list.length, 0);
+    return {
+      refreshed: sources.length,
+      plugins: total,
+      failed: sources.filter((s) => registryStatus(s.id)?.error).length,
+      sources: sources.map(withRegistry),
+    };
   });
 
   admin.post("/sources/:id/validate", async (request, reply) => {
@@ -103,14 +115,20 @@ export function registerPluginSourceRoutes(admin: FastifyInstance): void {
   admin.get("/marketplace", async () => {
     const sources = getSources().filter((s) => s.enabled);
     const installed = getInstalled();
-    const all: EnrichedEntry[] = [];
-    const seen = new Set<string>();
-    for (const source of sources) {
-      const plugins = await fetchRegistryCached(source.id, source.url);
-      for (const entry of enrichPlugins(plugins, source, installed)) {
-        if (!seen.has(entry.pluginId)) { seen.add(entry.pluginId); all.push(entry); }
+    // Les registres se lisent ensemble : une source lente (dix secondes avant
+    // abandon) ne retarde plus toutes les suivantes.
+    const lists = await Promise.all(sources.map(async (source) =>
+      enrichPlugins(await fetchRegistryCached(source.id, source.url), source, installed)));
+    const byId = new Map<string, EnrichedEntry>();
+    for (const entry of lists.flat()) {
+      const kept = byId.get(entry.pluginId);
+      // Publié par deux sources : la première l'emporte, sauf si le plugin
+      // installé vient de l'autre — c'est elle que sa mise à jour lira.
+      const installedFrom = installed.find((p) => p.pluginId === entry.pluginId)?.sourceId;
+      if (!kept || (entry.sourceId === installedFrom && kept.sourceId !== installedFrom)) {
+        byId.set(entry.pluginId, entry);
       }
     }
-    return all;
+    return [...byId.values()];
   });
 }
