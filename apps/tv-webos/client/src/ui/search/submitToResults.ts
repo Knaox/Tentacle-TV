@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { SEARCH_SUBMIT_WAIT_MS, type SearchSubmitAnswer } from "@tentacle-tv/tv-core";
 import { giveFocus } from "../../focus/active";
 import { collect } from "../../focus/candidates";
 import type { SearchBarHandle } from "./SearchBarTv";
@@ -14,46 +15,14 @@ import type { SearchBarHandle } from "./SearchBarTv";
  * descendre : c'est le seul moyen que la plateforme laisse, elle n'expose
  * aucune commande pour le masquer.
  *
- * Où va le focus : au PREMIER résultat — la recherche du système Android TV
- * fait de même (leanback, `SearchSupportFragment.focusOnResults`) — si la
- * réponse à ce qui est tapé est à l'écran. Sinon à la barre, qui montre la saisie et d'où
- * « droite » mène aux résultats. Valider juste après la dernière lettre est
- * le cas courant, et la réponse suit de peu (250 ms de frappe, puis la
- * requête) : si elle arrive pendant qu'on est encore sur la barre, elle y
- * emmène le focus. Pas si l'on a bougé entre-temps, ni trois secondes plus
- * tard — un focus qui saute sans geste est pire qu'un appui de plus.
+ * Où va le focus : la décision est commune aux trois téléviseurs
+ * (`searchSubmitAnswer`, tv-core). Ici, au premier résultat de la colonne ;
+ * sinon à la barre, qui montre la saisie et d'où « droite » mène aux
+ * résultats. Une réponse encore en route y emmène le focus à son arrivée si
+ * l'on est resté sur la barre.
  */
-
-/** Ce que la surcouche sait de la réponse à la saisie courante. */
-export type SubmitAnswer = "results" | "none" | "pending";
-
-export interface AnswerState {
-  /** La saisie, telle qu'affichée dans la barre. */
-  typed: string;
-  /** Celle que porte la requête, une fois le délai de frappe écoulé. */
-  debounced: string;
-  /** La réponse affichée est celle de `debounced`, pas d'une frappe précédente. */
-  current: boolean;
-  fetching: boolean;
-  failed: boolean;
-  /** Rangées de résultats à l'écran. */
-  sections: number;
-}
-
-/** Pur : la réponse à ce qui est tapé À L'INSTANT — pas à la frappe d'avant. */
-export function submitAnswer(state: AnswerState): SubmitAnswer {
-  const typed = state.typed.trim();
-  if (!typed || state.failed) return "none";
-  if (state.debounced !== typed || !state.current) return "pending";
-  if (state.sections > 0) return "results";
-  return state.fetching ? "pending" : "none";
-}
-
-/** Au-delà, une réponse n'emmène plus le focus. */
-const LATE_ANSWER_MS = 3000;
-
 export function useSubmitToResults(
-  answer: SubmitAnswer,
+  answer: SearchSubmitAnswer,
   results: RefObject<HTMLElement | null>,
   bar: RefObject<SearchBarHandle | null>,
 ): () => void {
@@ -72,7 +41,7 @@ export function useSubmitToResults(
     const pending = waiting.current;
     if (!pending || answer === "pending") return;
     waiting.current = null;
-    if (answer !== "results" || Date.now() - pending.since > LATE_ANSWER_MS) return;
+    if (answer !== "results" || Date.now() - pending.since > SEARCH_SUBMIT_WAIT_MS) return;
     if (document.activeElement === pending.anchor) land();
   }, [answer, land]);
 
