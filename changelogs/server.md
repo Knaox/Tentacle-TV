@@ -5,6 +5,12 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.19.3]
+### FR
+- **Une demande qui part se dit sur le téléphone** : avec Vigie 1.17.0, « « Titre » est en route » arrive en notification dès que Sonarr ou Radarr prend le titre — sous le même réglage que « Contenu demandé disponible », rien à activer
+### EN
+- **A request on its way now reaches your phone**: with Vigie 1.17.0, "“Title” is on its way" arrives as a notification as soon as Sonarr or Radarr picks the title up — under the same setting as "Requested content available", nothing to turn on
+
 ## [1.19.2]
 ### FR
 - **Mise à jour pour les téléviseurs LG (webOS)** — le client LG est servi par le serveur, ces corrections arrivent avec lui :

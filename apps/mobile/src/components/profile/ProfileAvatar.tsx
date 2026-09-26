@@ -7,17 +7,13 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { FONT_FAMILY, SHADOW_RN, useTheme, useThemedStyles, type AppTheme } from "../../theme";
+import { profilePhotoUrl, refreshStoredUser, type StoredUser } from "@/auth/storedUser";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { cachedAvatarUri, syncAvatarCache } from "@/offline/avatarCache";
 
-interface JellyfinUser {
-  Id: string;
-  Name?: string;
-  PrimaryImageTag?: string | null;
-}
-
 interface Props {
-  user: JellyfinUser | null;
+  /** Le profil stocké, réactif (`useStoredUser`). */
+  user: StoredUser | null;
   initial: string;
 }
 
@@ -25,8 +21,10 @@ interface Props {
  * Avatar du profil — affiche la photo de profil Jellyfin (PrimaryImageTag)
  * et permet de la changer depuis l'appareil : photothèque → recadrage carré →
  * upload base64 vers `POST /Users/{id}/Images/Primary` (API Jellyfin), puis
- * re-lecture du user pour rafraîchir le tag (cache bust). Repli : initiale
- * sur dégradé violet (comportement historique).
+ * relecture du profil, dont la nouvelle étiquette change l'URL (cache bust).
+ * L'étiquette n'est plus figée au montage : toute relecture du profil
+ * remplace la photo sous les yeux. Repli : initiale sur dégradé violet
+ * (comportement historique).
  */
 export function ProfileAvatar({ user, initial }: Props) {
   const { t } = useTranslation("profile");
@@ -34,21 +32,29 @@ export function ProfileAvatar({ user, initial }: Props) {
   const st = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
-  const [tag, setTag] = useState<string | null>(user?.PrimaryImageTag ?? null);
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  // L'URL en échec plutôt qu'un drapeau : une nouvelle étiquette donne une
+  // nouvelle URL, qui retente d'elle-même.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  // Envoi réussi mais relecture sans nouvelle étiquette (réseau coupé entre
+  // les deux) : une valeur locale force la nouvelle image tant que
+  // l'étiquette stockée reste l'ancienne.
+  const [pendingPhoto, setPendingPhoto] = useState<{ staleTag: string | null; nonce: string } | null>(null);
   const offline = useOfflineMode();
 
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const jfBase = serverUrl ? `${serverUrl}/api/jellyfin` : "";
-  const photoUrl = user && tag && jfBase
-    ? `${jfBase}/Users/${user.Id}/Images/Primary?tag=${encodeURIComponent(tag)}&quality=90&maxWidth=200`
-    : null;
+  const userId = user?.Id ?? null;
+  const storedTag = user?.PrimaryImageTag ?? null;
+  const tag = pendingPhoto !== null && pendingPhoto.staleTag === storedTag ? pendingPhoto.nonce : storedTag;
+  const photoUrl = userId ? profilePhotoUrl(serverUrl, userId, tag) : null;
   // Hors ligne — ou dès que Jellyfin ne répond pas — la copie locale prend le
-  // relais : perdre son visage au premier tunnel donne l'impression d'être déconnecté.
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `tag` : re-résolution après un envoi
-  const cachedUri = useMemo(() => (user ? cachedAvatarUri(user.Id) : null), [user, tag]);
-  const shownUri = offline || failed ? cachedUri : (photoUrl ?? cachedUri);
+  // relais : perdre son visage au premier tunnel donne l'impression d'être
+  // déconnecté. En ligne sans étiquette, c'est l'initiale : la photo a été
+  // retirée, et la copie locale le sera à la prochaine synchronisation.
+  const fallback = offline || (photoUrl !== null && failedUrl === photoUrl);
+  const cachedUri = useMemo(() => (userId && fallback ? cachedAvatarUri(userId) : null), [userId, fallback]);
+  const shownUri = fallback ? cachedUri : photoUrl;
 
   const pickAndUpload = async () => {
     if (!user || !jfBase || busy || offline) return;
@@ -80,12 +86,11 @@ export function ProfileAvatar({ user, initial }: Props) {
       });
       if (!upload.ok) throw new Error(`${upload.status}`);
 
-      // Récupère le nouveau PrimaryImageTag (sert d'URL de cache bust) et
-      // garde le user du storage à jour pour les prochains écrans.
-      const fresh = await client.fetch<JellyfinUser>(`/Users/${user.Id}`);
-      storage.setItem("tentacle_user", JSON.stringify(fresh));
-      setTag(fresh.PrimaryImageTag ?? `${Date.now()}`);
-      setFailed(false);
+      // Le nouveau PrimaryImageTag (sert d'URL de cache bust), écrit dans le
+      // profil stocké : cet écran et les suivants le reçoivent. Une relecture
+      // en échec ne fait pas de l'envoi réussi une erreur.
+      const photoChanged = await refreshStoredUser(storage, client);
+      if (!photoChanged) setPendingPhoto({ staleTag: storedTag, nonce: `${Date.now()}` });
       const token = storage.getItem("tentacle_token");
       if (token) syncAvatarCache(user.Id, serverUrl, token, storage);
     } catch {
@@ -104,7 +109,18 @@ export function ProfileAvatar({ user, initial }: Props) {
       style={({ pressed }) => [pressed && { opacity: 0.85 }]}
     >
       {shownUri ? (
-        <Image source={{ uri: shownUri }} style={st.photo} contentFit="cover" transition={200} onError={() => setFailed(true)} />
+        <Image
+          source={{ uri: shownUri }}
+          style={st.photo}
+          contentFit="cover"
+          transition={200}
+          // La copie locale se remplace sous le même nom : expo-image ne doit
+          // pas en garder une version (cf. OfflineLocalImage).
+          cachePolicy={fallback ? "none" : "disk"}
+          onError={() => {
+            if (!fallback) setFailedUrl(photoUrl);
+          }}
+        />
       ) : (
         <LinearGradient
           colors={[theme.colors.brand.dark, theme.colors.brand.violet, theme.colors.brand.light]}

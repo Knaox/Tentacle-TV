@@ -16,7 +16,7 @@ export function SessionRecipient({ session }: { session: AdminSessionDto }) {
   const st = useThemedStyles(makeStyles);
   return (
     <View style={st.row}>
-      <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} size={36} />
+      <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} imageTag={session.userImageTag} size={36} />
       <View style={st.text}>
         <Text style={st.name} numberOfLines={1}>{session.userName}</Text>
         <AppLabel session={session} style={st.detail} />
