@@ -57,10 +57,21 @@ export function PlayerControls(props: PlayerControlsProps) {
   const position = useRef(currentTime);
   const total = useRef(duration);
   const playingRef = useRef(playing);
+  const seekRef = useRef(onSeek);
+  const togglePlayRef = useRef(onTogglePlay);
   position.current = currentTime;
   total.current = duration;
   playingRef.current = playing;
+  seekRef.current = onSeek;
+  togglePlayRef.current = onTogglePlay;
 
+  // Les rappels du lecteur passent eux aussi par des refs. En dépendances du
+  // `useMemo`, ils changeaient d'identité à chaque rendu — donc chaque seconde,
+  // au pas de l'horloge de lecture : la machine était détruite et recréée, et
+  // la nouvelle repartait de la position RÉELLE. Le curseur n'avançait qu'une
+  // fois par seconde, reculait en plein maintien, ne pouvait pas aller loin,
+  // et l'écran de déplacement ne s'annulait plus seul (sa veille mourait avec
+  // l'ancienne machine) — mesuré sur la C3.
   const scrub = useMemo<ScrubMachine>(
     () =>
       createScrubMachine({
@@ -72,12 +83,12 @@ export function PlayerControls(props: PlayerControlsProps) {
           // La bascule du lecteur est la seule qu'on connaisse : on ne s'en
           // sert que si l'état courant ne correspond pas à ce qu'on veut.
           if (pause === !playingRef.current) return;
-          onTogglePlay();
+          togglePlayRef.current();
         },
-        onSeek: (seconds) => onSeek(seconds),
+        onSeek: (seconds) => seekRef.current(seconds),
         onExit: () => exitScrub(),
       }),
-    [onSeek, onTogglePlay],
+    [],
   );
 
   useEffect(() => () => scrub.destroy(), [scrub]);
