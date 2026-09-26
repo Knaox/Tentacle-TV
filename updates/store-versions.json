@@ -27,9 +27,13 @@
   },
   "playTv": {
     "$comment": "Version Android TV en ligne. MÊME fiche Play que le mobile (com.tentacletv.mobile, form factor TV), mais piste distincte et versionCode préfixé 2e9 — donc un numéro de version propre. MAINTENU AUTOMATIQUEMENT par tv.yml (--only=play-tv --changelog=changelogs/tv.md), comme playMobile.",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "packageName": "com.tentacletv.mobile",
-    "track": "tv:Alpha"
+    "track": "tv:Alpha",
+    "notes": {
+      "fr": "• Recherche repensée : fautes corrigées, suite du titre suggérée, acteurs, genres et studios\n• Pour vous : des recommandations tirées de votre bibliothèque\n• Pilotable à distance depuis Jellyfin et Tentacle : pause, arrêt, messages\n• Plus fluide : bibliothèques plus rapides, défilement rapide en maintenant une touche\n• L'accueil suit votre compte : rangées, favoris, filtre de plateformes\n• Apple TV : pistes sans rechargement, Atmos, Dolby Vision profil 7 ; Android TV : cadence du film en option",
+      "en": "• Search rethought: typos fixed, title completion, actors, genres and studios\n• For You: recommendations drawn from your library\n• Remote control from Jellyfin and Tentacle: pause, stop, messages\n• Smoother: faster libraries, fast scrolling by holding a direction\n• The home follows your account: rows, favorites, platform filter\n• Apple TV: tracks switch without reloading, Atmos, Dolby Vision profile 7; Android TV: film frame rate as an option"
+    }
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/desktop.yml (job « manifest ») à chaque release desktop-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
