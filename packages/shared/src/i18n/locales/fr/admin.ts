@@ -77,7 +77,6 @@ export default {
   revokeConfirm: "Révoquer cet appareil ?",
   supportTickets: "Tickets de support",
   ticketAll: "Tous",
-  pluginsTitle: "Plugins",
   pluginsDescription: "Gérez vos plugins, explorez le marketplace et ajoutez des sources.",
   managePlugins: "Gérer les plugins",
   saveFailed: "Échec de la sauvegarde",

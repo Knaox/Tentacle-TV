@@ -73,7 +73,6 @@ export default {
   revokeConfirm: "Revoke this device?",
   supportTickets: "Support tickets",
   ticketAll: "All",
-  pluginsTitle: "Plugins",
   pluginsDescription: "Manage your plugins, explore the marketplace and add sources.",
   managePlugins: "Manage plugins",
   saveFailed: "Save failed",
