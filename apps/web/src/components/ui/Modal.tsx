@@ -49,7 +49,7 @@ const FOCUSABLE_SELECTOR =
   "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
 /** Les focusables réellement affichés du panneau (un `display: none` n'a aucun rectangle). */
-function focusableIn(panel: HTMLElement): HTMLElement[] {
+export function focusableIn(panel: HTMLElement): HTMLElement[] {
   return Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
     (el) => el.getClientRects().length > 0,
   );

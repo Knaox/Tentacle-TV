@@ -42,6 +42,9 @@ export function skipResponseHeader(lower: string, kind: { media: boolean; image:
 /** Affiches, backdrops, logos, vignettes — `patterns.ts` autorise déjà ce motif. */
 const IMAGE_PATH = /^Items\/[^/]+\/Images\//i;
 
+/** La photo d'un compte — `patterns.ts` n'en laisse passer que la `Primary`. */
+const USER_IMAGE_PATH = /^Users\/[^/]+\/Images\//i;
+
 /**
  * `Cache-Control` pour les images du proxy.
  *
@@ -59,9 +62,20 @@ const IMAGE_PATH = /^Items\/[^/]+\/Images\//i;
  * - `stale-while-revalidate` : une semaine d'affichage immédiat pendant que la
  *   revalidation se fait en arrière-plan — exactement le comportement voulu au
  *   lancement sur un lien lent.
+ *
+ * La photo d'un COMPTE suit une autre règle : elle ne se garde que demandée
+ * avec son étiquette (`tag`, le `PrimaryImageTag` de Jellyfin — l'écran admin
+ * « Utilisateurs » la passe). L'étiquette change avec la photo : l'adresse est
+ * alors adressée par contenu, et une nouvelle photo est une nouvelle adresse —
+ * un an, `immutable`. Sans étiquette, rien ne change : `no-store`. La photo de
+ * son propre compte est redemandée à adresse fixe après un envoi
+ * (`useAvatarUpload`) ; mise en cache, elle resservirait l'ancienne sur les
+ * autres appareils de l'utilisateur.
  */
-export function imageCacheControl(path: string): string | null {
-  return IMAGE_PATH.test(path) ? "private, max-age=86400, stale-while-revalidate=604800" : null;
+export function imageCacheControl(path: string, tag?: string): string | null {
+  if (IMAGE_PATH.test(path)) return "private, max-age=86400, stale-while-revalidate=604800";
+  if (tag && USER_IMAGE_PATH.test(path)) return "private, max-age=31536000, immutable";
+  return null;
 }
 
 /**
