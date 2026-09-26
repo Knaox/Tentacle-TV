@@ -51,7 +51,9 @@ export const TVPosterGrid = memo(function TVPosterGrid({
 
   const scrollToIndex = useCallback((index: number) => {
     const row = Math.floor(index / columns);
-    const offset = headerHeightRef.current + row * rowHeight - 120;
+    // La première rangée garde l'en-tête entier : il porte le bouton Retour,
+    // qu'un défilement partiel coupait en deux en haut de l'écran.
+    const offset = row === 0 ? 0 : headerHeightRef.current + row * rowHeight - 120;
     listRef.current?.scrollToOffset({ offset: Math.max(0, offset), animated: true });
   }, [columns, rowHeight]);
   const focusIndex = useCallback((index: number) => {
