@@ -23,10 +23,26 @@
 }
 
 /* L'enveloppe focusable ne dessine rien : elle porte le mouvement, pour que la
-   carte du web garde son propre rendu intact. */
+   carte du web garde son propre rendu intact.
+
+   **Chaque carte a son calque, en permanence.** Sans cela, animer `transform`
+   ou `opacity` ne coûtait rien en soi, mais PROMOUVAIT la carte le temps de la
+   transition puis la rendait à la page à la fin : Chromium ne connaît pas les
+   bornes d'une transformation animée, il suppose donc qu'elle chevauche tout
+   ce qui est peint après elle, et promeut aussi les cartes suivantes. À chaque
+   appui, les calques naissaient puis fondaient, et tout ce qu'ils couvraient
+   était rastérisé deux fois — la même chose pour l'atténuation de la rangée,
+   qui fait passer TOUTES ses cartes à 0,92 d'un coup. Mesuré sur la C3 : des
+   centaines de tuiles par appui, le processeur graphique saturé.
+
+   Avec un calque stable, l'agrandissement et l'atténuation sont un travail de
+   compositeur pur. La netteté ne change pas : une fois l'agrandissement
+   terminé, Chromium rastérise la carte visée à 1,08 — mesuré, échelle idéale
+   et échelle de rastérisation à 1,08. */
 .carte-tv {
   transition: transform var(--carte-focus-duree) ease-out;
   transform-origin: center bottom;
+  will-change: transform;
 }
 
 .carte-tv:focus {
@@ -228,6 +244,14 @@
   height: 100%;
   object-fit: cover;
   opacity: 0;
+  /* Son calque dès le montage, et jusqu'au démontage. Au repos, le fond tenait
+     en UN calque — images et voile fondus ensemble. Le fondu d'entrée
+     détachait l'image dans son propre calque, le voile avec elle, puis tout se
+     refondait à la fin : le plein écran était rastérisé trois fois pour un
+     seul changement de carte (120 tuiles mesurées sur la C3, sur les 393 d'un
+     appui). Épinglés, l'image se rastérise une fois, à son arrivée, et le
+     fondu ne coûte plus que la composition. */
+  will-change: opacity;
 }
 
 .fond-focus-image[data-charge="true"] {
@@ -272,6 +296,10 @@
   left: 0;
   right: 0;
   bottom: 0;
+  /* Épinglé pour la même raison que les images : posé au-dessus d'elles, il
+     changeait de calque avec elles, et chaque changement le rastérisait en
+     entier. */
+  will-change: opacity;
   /* Aucun palier opaque : le voile ne doit poser AUCUNE ligne. Il s'assombrit
      doucement du haut vers le bas et ne se referme sur le fond de page que
      tout en bas, où les titres de rangée ont besoin de calme. Un arrêt franc
