@@ -81,8 +81,10 @@ export function ProfileAvatar({ user, initial }: Props) {
       if (!upload.ok) throw new Error(`${upload.status}`);
 
       // Récupère le nouveau PrimaryImageTag (sert d'URL de cache bust) et
-      // garde le user du storage à jour pour les prochains écrans.
-      const fresh = await client.fetch<JellyfinUser>(`/Users/${user.Id}`);
+      // garde le user du storage à jour pour les prochains écrans. `Users/Me`,
+      // pas `Users/{id}` : le proxy refuse le second (403), et l'envoi, pourtant
+      // réussi, finissait sur le message d'erreur sans changer la photo.
+      const fresh = await client.fetch<JellyfinUser>("/Users/Me");
       storage.setItem("tentacle_user", JSON.stringify(fresh));
       setTag(fresh.PrimaryImageTag ?? `${Date.now()}`);
       setFailed(false);
