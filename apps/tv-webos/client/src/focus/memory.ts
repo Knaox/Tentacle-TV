@@ -1,4 +1,5 @@
 import { FOCUSABLE_SELECTOR, reachableTarget } from "./candidates";
+import { onPlayerRoute } from "./route";
 
 /**
  * Ce que le focus a quitté, pour le lui rendre en revenant.
@@ -103,6 +104,15 @@ export function remember(element: HTMLElement): void {
   // ferait chercher, une fois la surcouche refermée, une carte qui n'existe
   // plus — et l'écran attendrait trois secondes, sans anneau, avant d'y renoncer.
   if (element.closest(`[${OVERLAY_ATTRIBUTE}]`)) return;
+  // Le LECTEUR non plus — tout le lecteur, écran d'attente compris. Il tient sa
+  // propre mémoire (`playback/focusOsd.ts`), oubliée à son démontage, et
+  // déclare son entrée au moteur ; une trace par route passerait avant elle.
+  // C'est arrivé : l'écran d'attente du web pose son bouton « Retour » en
+  // `autoFocus`, et ce bouton a la même clé que la sortie de l'habillage —
+  // même balise, même `aria-label`. L'habillage paru, la trace retrouvait la
+  // sortie : démarrer une lecture posait l'anneau sur « Retour », où OK
+  // quittait. Et qui sortait par ce bouton l'y retrouvait en rouvrant le film.
+  if (onPlayerRoute()) return;
 
   const key = elementKey(element);
   if (!key) return;
