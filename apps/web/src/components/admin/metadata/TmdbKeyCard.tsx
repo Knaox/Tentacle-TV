@@ -1,6 +1,5 @@
-import { useId, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Clapperboard } from "lucide-react";
 import {
   adminMetadataErrorCode,
   useTestTmdbKey,
@@ -9,10 +8,10 @@ import {
 } from "@tentacle-tv/api-client";
 import { ConfirmDialog } from "../../ui/ConfirmDialog";
 import { useToast } from "../../../contexts/ToastContext";
-import { InlineNotice, MetadataCard, StatusPill } from "./MetadataUi";
+import { AdminNotice, AdminSection, StatusPill, type StatusTone } from "../kit";
 import { TmdbKeyForm } from "./TmdbKeyForm";
 import { TmdbSavedKey } from "./TmdbSavedKey";
-import { testNotice, type Notice, type NoticeTone } from "./tmdbKey";
+import { noticeRole, testNotice, type Notice } from "./tmdbKey";
 
 interface TmdbKeyCardProps {
   tmdb: AdminMetadataStatus["tmdb"];
@@ -29,7 +28,6 @@ interface TmdbKeyCardProps {
 export function TmdbKeyCard({ tmdb, children }: TmdbKeyCardProps) {
   const { t } = useTranslation("adminMetadata");
   const toast = useToast();
-  const titleId = useId();
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const savedTest = useTestTmdbKey();
@@ -42,7 +40,7 @@ export function TmdbKeyCard({ tmdb, children }: TmdbKeyCardProps) {
 
   // La pastille dit ce qu'on sait de plus récent : un test raté l'emporte
   // sur « configurée ».
-  const pill: { tone: NoticeTone; key: string } = !tmdb.configured
+  const pill: { tone: StatusTone; key: string } = !tmdb.configured
     ? { tone: "warning", key: "statusMissing" }
     : savedTest.data === "invalid"
       ? { tone: "error", key: "statusRejected" }
@@ -71,14 +69,11 @@ export function TmdbKeyCard({ tmdb, children }: TmdbKeyCardProps) {
     );
 
   return (
-    <MetadataCard
-      id={titleId}
-      icon={<Clapperboard size={20} />}
+    <AdminSection
       title={t("tmdbTitle")}
-      subtitle={t("tmdbSubtitle")}
-      status={<StatusPill tone={pill.tone}>{t(pill.key)}</StatusPill>}
+      description={t("tmdbDescription")}
+      badges={<StatusPill tone={pill.tone}>{t(pill.key)}</StatusPill>}
     >
-      <p className="mb-4 text-sm leading-relaxed text-content-tertiary">{t("tmdbDescription")}</p>
       <div className="space-y-4">
         {tmdb.configured && !editing && (
           <TmdbSavedKey
@@ -91,10 +86,12 @@ export function TmdbKeyCard({ tmdb, children }: TmdbKeyCardProps) {
             onRemove={() => setConfirming(true)}
           />
         )}
-        <div aria-live="polite">
-          {savedNotice && <InlineNotice tone={savedNotice.tone}>{t(savedNotice.key)}</InlineNotice>}
-        </div>
-        {fromEnv && <InlineNotice tone="neutral">{t("keyEnvNote")}</InlineNotice>}
+        {savedNotice && (
+          <AdminNotice tone={savedNotice.tone} role={noticeRole(savedNotice)}>
+            {t(savedNotice.key)}
+          </AdminNotice>
+        )}
+        {fromEnv && <AdminNotice tone="info">{t("keyEnvNote")}</AdminNotice>}
         {!fromEnv && (!tmdb.configured || editing) && (
           <TmdbKeyForm
             replacing={tmdb.configured}
@@ -115,6 +112,6 @@ export function TmdbKeyCard({ tmdb, children }: TmdbKeyCardProps) {
         onConfirm={remove}
         onCancel={() => setConfirming(false)}
       />
-    </MetadataCard>
+    </AdminSection>
   );
 }

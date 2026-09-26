@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RotateCw } from "lucide-react";
 import { useAdminMetadataStatus, useUpdateAdminMetadata } from "@tentacle-tv/api-client";
 import { cls } from "./adminUtils";
-import { PageTransition } from "../components/PageTransition";
 import { getUserInfo } from "../components/userMenu/menuItems";
+import { AdminNotice, AdminPage, AdminSection } from "../components/admin/kit";
 import { MetadataSkeleton } from "../components/admin/metadata/MetadataSkeleton";
-import { MetadataLoadError } from "../components/admin/metadata/MetadataLoadError";
 import { TmdbKeyCard } from "../components/admin/metadata/TmdbKeyCard";
 
 /**
@@ -13,8 +13,8 @@ import { TmdbKeyCard } from "../components/admin/metadata/TmdbKeyCard";
  * Lecture PARTAGÉE avec le bandeau « clé TMDB manquante » (même requête,
  * `live` ici) : squelette pendant la première lecture, erreur avec
  * « Réessayer » si elle échoue — plus de page blanche.
- * Pleine largeur : le rail de l'administration borne déjà la page à gauche ;
- * les deux cartes se rangent côte à côte dès que la place le permet.
+ * Pleine largeur, comme toute page du kit : les deux cartes se rangent côte à
+ * côte dès que la place le permet.
  */
 export function AdminMetadata() {
   const { t } = useTranslation("adminMetadata");
@@ -22,22 +22,30 @@ export function AdminMetadata() {
   const status = useAdminMetadataStatus({ enabled: isAdmin, live: true });
 
   return (
-    <PageTransition>
-      <div className="px-4 pt-6 pb-16 md:px-12">
-        <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-content-primary">{t("title")}</h1>
-        <p className="mb-6 max-w-3xl text-sm text-content-tertiary">{t("description")}</p>
-        {status.data ? (
-          <div className="grid items-start gap-6 xl:grid-cols-2">
-            <TmdbKeyCard tmdb={status.data.tmdb} />
-            <RegionField saved={status.data.watchRegion || "FR"} />
-          </div>
-        ) : status.isError ? (
-          <MetadataLoadError onRetry={() => void status.refetch()} retrying={status.isFetching} />
-        ) : (
-          <MetadataSkeleton />
-        )}
-      </div>
-    </PageTransition>
+    <AdminPage title={t("title")} description={t("description")}>
+      {status.data ? (
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+          <TmdbKeyCard tmdb={status.data.tmdb} />
+          <RegionField saved={status.data.watchRegion || "FR"} />
+        </div>
+      ) : status.isError ? (
+        <AdminNotice
+          tone="error"
+          role="alert"
+          title={t("loadError")}
+          action={
+            <button type="button" onClick={() => void status.refetch()} disabled={status.isFetching} className={cls.bs}>
+              <RotateCw aria-hidden size={16} className={status.isFetching ? "animate-spin" : undefined} />
+              {t("retry")}
+            </button>
+          }
+        >
+          {t("loadErrorHint")}
+        </AdminNotice>
+      ) : (
+        <MetadataSkeleton />
+      )}
+    </AdminPage>
   );
 }
 
@@ -49,9 +57,7 @@ function RegionField({ saved }: { saved: string }) {
   const draft = region.trim().toUpperCase();
 
   return (
-    <div className="rounded-xl border border-line-subtle bg-fill-faint p-5 sm:p-6">
-      <h2 className="mb-1 text-lg font-semibold text-content-primary">{t("metadataRegionTitle")}</h2>
-      <p className="mb-4 text-sm text-content-quaternary">{t("metadataRegionDescription")}</p>
+    <AdminSection title={t("metadataRegionTitle")} description={t("metadataRegionDescription")}>
       <label className={cls.lbl} htmlFor="watch-region">{t("metadataRegionLabel")}</label>
       <div className="flex items-center gap-3">
         <input
@@ -76,6 +82,6 @@ function RegionField({ saved }: { saved: string }) {
         {update.isSuccess && <span className="text-xs text-status-success-fg">{t("saved")}</span>}
         {update.isError && <span className="text-xs text-status-error-fg">{t("saveFailed")}</span>}
       </div>
-    </div>
+    </AdminSection>
   );
 }

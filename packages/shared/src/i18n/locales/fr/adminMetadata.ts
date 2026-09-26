@@ -12,9 +12,8 @@ export default {
   retry: "Réessayer",
   // Carte TMDB
   tmdbTitle: "TMDB",
-  tmdbSubtitle: "The Movie Database",
   tmdbDescription:
-    "Alimente les recommandations riches — titres similaires, acteurs, mots-clés, affiches hors bibliothèque — et la synchronisation anonyme des notes. Sans clé, le moteur retombe sur les genres de la bibliothèque, pour tous les comptes.",
+    "The Movie Database alimente les recommandations riches — titres similaires, acteurs, mots-clés, affiches hors bibliothèque — et la synchronisation anonyme des notes. Sans clé, le moteur retombe sur les genres de la bibliothèque, pour tous les comptes.",
   tmdbGetKey: "Créer une clé gratuite sur themoviedb.org",
   statusConfigured: "Configurée",
   statusMissing: "Non configurée",

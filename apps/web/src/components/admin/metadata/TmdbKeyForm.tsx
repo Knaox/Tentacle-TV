@@ -4,8 +4,8 @@ import { ExternalLink, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { adminMetadataErrorCode, useTestTmdbKey, useUpdateAdminMetadata } from "@tentacle-tv/api-client";
 import { cls } from "../../../pages/adminUtils";
 import { useToast } from "../../../contexts/ToastContext";
-import { InlineNotice } from "./MetadataUi";
-import { saveNotice, testNotice, tmdbKeyHint, type Notice } from "./tmdbKey";
+import { AdminNotice } from "../kit";
+import { noticeRole, saveNotice, testNotice, tmdbKeyHint, type Notice } from "./tmdbKey";
 
 const TMDB_API_SETTINGS = "https://www.themoviedb.org/settings/api";
 
@@ -116,7 +116,11 @@ export function TmdbKeyForm({ replacing, onSaved, onCancel }: TmdbKeyFormProps) 
           {t(hint === "v4-token" ? "keyHintV4" : "keyHintFormat")}
         </p>
       )}
-      <div aria-live="polite">{notice && <InlineNotice tone={notice.tone}>{t(notice.key)}</InlineNotice>}</div>
+      {notice && (
+        <AdminNotice tone={notice.tone} role={noticeRole(notice)}>
+          {t(notice.key)}
+        </AdminNotice>
+      )}
       <a
         href={TMDB_API_SETTINGS}
         target="_blank"

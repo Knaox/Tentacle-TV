@@ -1,7 +1,5 @@
 import type { AdminMetadataErrorCode, TmdbKeyTestResult } from "@tentacle-tv/api-client";
-
-/** Le ton d'un message en ligne — même grammaire que les pastilles de statut. */
-export type NoticeTone = "success" | "warning" | "error" | "neutral";
+import type { NoticeTone } from "../kit";
 
 /** Un message de la carte TMDB : son ton, sa clé dans l'espace `adminMetadata`. */
 export interface Notice {
@@ -40,7 +38,7 @@ export function testNotice(outcome: TmdbKeyTestResult | AdminMetadataErrorCode, 
     case "tmdb-unreachable":
       return { tone: "warning", key: "testUnreachable" };
     case "unsupported":
-      return { tone: "neutral", key: "testUnsupported" };
+      return { tone: "info", key: "testUnsupported" };
     default:
       return { tone: "error", key: "testFailed" };
   }
@@ -51,4 +49,12 @@ export function saveNotice(code: AdminMetadataErrorCode): Notice {
   if (code === "tmdb-key-invalid") return { tone: "error", key: "saveInvalid" };
   if (code === "tmdb-unreachable") return { tone: "warning", key: "saveUnreachable" };
   return { tone: "error", key: "saveFailed" };
+}
+
+/**
+ * Le rôle ARIA d'un verdict qui APPARAÎT après un geste (convention du kit) :
+ * un refus ou une panne s'annonce tout de suite, un succès poliment.
+ */
+export function noticeRole(notice: Notice): "alert" | "status" {
+  return notice.tone === "error" || notice.tone === "warning" ? "alert" : "status";
 }

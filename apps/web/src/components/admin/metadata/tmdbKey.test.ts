@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import { i18n, initI18n } from "@tentacle-tv/shared";
-import { saveNotice, testNotice, tmdbKeyHint } from "./tmdbKey";
+import { noticeRole, saveNotice, testNotice, tmdbKeyHint } from "./tmdbKey";
 
 function bundle(lng: "fr" | "en"): Record<string, unknown> {
   initI18n();
@@ -41,6 +41,13 @@ describe("messages de la carte TMDB", () => {
     expect(saveNotice("tmdb-key-invalid")).toEqual({ tone: "error", key: "saveInvalid" });
     expect(saveNotice("tmdb-unreachable")).toEqual({ tone: "warning", key: "saveUnreachable" });
     expect(saveNotice("failed")).toEqual({ tone: "error", key: "saveFailed" });
+  });
+
+  it("un refus s'annonce tout de suite, un succès poliment", () => {
+    expect(noticeRole(testNotice("invalid", false))).toBe("alert");
+    expect(noticeRole(testNotice("unreachable", false))).toBe("alert");
+    expect(noticeRole(testNotice("valid", true))).toBe("status");
+    expect(noticeRole(testNotice("unsupported", true))).toBe("status");
   });
 
   it("chaque message existe en français et en anglais", () => {
