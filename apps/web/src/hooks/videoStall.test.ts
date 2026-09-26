@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { STALL_MIN_PLAYED_S, videoStalled } from "./videoStall";
 
-const live = { playedS: 2, decodedFrames: 0, paused: false, seeking: false, readyState: 4, visible: true, hasVideo: true };
+const live = { playedS: 2, decodedFrames: 0, paused: false, seeking: false, readyState: 4, visible: true, hasVideo: true, framesCounted: true };
 
 describe("videoStalled — l'image figée que rien n'annonce", () => {
   it("deux secondes lues sans une image décodée : gel", () => {
@@ -9,6 +9,11 @@ describe("videoStalled — l'image figée que rien n'annonce", () => {
   });
   it("des images décodées : pas de gel", () => {
     expect(videoStalled({ ...live, decodedFrames: 12 })).toBe(false);
+  });
+  it("compteur d'images jamais alimenté (plan vidéo matériel de webOS) : on ne juge pas", () => {
+    // Sans cela, la veille « relançait » toutes les 4 s une lecture saine, et
+    // chaque recherche ramenait l'image au début du segment.
+    expect(videoStalled({ ...live, framesCounted: false })).toBe(false);
   });
   it("trop peu de lecture pour conclure", () => {
     expect(videoStalled({ ...live, playedS: STALL_MIN_PLAYED_S - 0.1 })).toBe(false);
