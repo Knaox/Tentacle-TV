@@ -20,7 +20,9 @@ interface Props {
  */
 export function ProfileDetailPane({ pane, topInset, bottomInset }: Props) {
   const entry = PROFILE_PANE_REGISTRY[pane];
-  const { t } = useTranslation(entry.title.ns);
+  // L'espace passe à l'appel : un `useTranslation(ns)` dont l'espace change
+  // d'un volet à l'autre, sans remontage, rendait la clé brute.
+  const { t } = useTranslation();
   const st = useThemedStyles(makeStyles);
   const { Component } = entry;
   return (
@@ -32,7 +34,7 @@ export function ProfileDetailPane({ pane, topInset, bottomInset }: Props) {
       indicatorStyle={Platform.OS === "ios" ? "white" : "default"}
     >
       <View style={st.column}>
-        <Text style={st.title} accessibilityRole="header">{t(entry.title.key)}</Text>
+        <Text style={st.title} accessibilityRole="header">{t(entry.title.key, { ns: entry.title.ns })}</Text>
         <Component />
       </View>
     </ScrollView>
