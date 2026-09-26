@@ -198,6 +198,32 @@ describe("POST /:id/update", () => {
     expect(getInstalled()[0].version).toBe("1.2.0");
   });
 
+  it("une seconde mise à jour du même plugin est refusée, même pendant la lecture du registre", async () => {
+    const vigie = seed("vigie", { server: true });
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const fetchMock = vi.fn(async () => {
+      await gate;
+      return Response.json(REGISTRY);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const app = Fastify();
+    registerPluginInstalledRoutes(app);
+
+    const first = app.inject({ method: "POST", url: `/${vigie.id}/update` });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    // La première attend encore le registre : la seconde doit répondre sans l'attendre.
+    const second = await Promise.race([
+      app.inject({ method: "POST", url: `/${vigie.id}/update` }),
+      new Promise<"pending">((resolve) => setTimeout(() => resolve("pending"), 300)),
+    ]);
+    expect(second === "pending" ? second : second.statusCode).toBe(409);
+
+    release();
+    expect((await first).json()).toMatchObject({ version: "1.2.0" });
+    await app.close();
+  });
+
   it("un plugin désactivé se met à jour sans redémarrer le serveur", async () => {
     const vigie = seed("vigie", { server: true, enabled: false });
     const response = await call("POST", `/${vigie.id}/update`);

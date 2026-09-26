@@ -160,18 +160,19 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
     const current = getInstalled().find((p) => p.id === id);
     if (!current) return reply.status(404).send({ message: "Plugin not found" });
     if (busyPlugins.has(current.pluginId)) return refuseWhileBusy(reply);
-    const source = getSources().find((s) => s.id === current.sourceId);
-    if (!source) return reply.status(404).send({ message: "Source not found" });
-    const entries = await fetchRegistryCached(source.id, source.url);
-    const latest = entries.find((e) => e.pluginId === current.pluginId);
-    if (!latest) return reply.status(404).send({ message: "Plugin not found in source" });
-    if (!isNewerVersion(latest.version, current.version)) {
-      return { message: "Already up to date", plugin: current, ...restartInfo(false) };
-    }
-
+    // Pris AVANT la lecture du registre : entre les deux, une seconde mise à
+    // jour du même plugin passerait la garde.
     busyPlugins.add(current.pluginId);
     const end = beginPluginOperation();
     try {
+      const source = getSources().find((s) => s.id === current.sourceId);
+      if (!source) return reply.status(404).send({ message: "Source not found" });
+      const entries = await fetchRegistryCached(source.id, source.url);
+      const latest = entries.find((e) => e.pluginId === current.pluginId);
+      if (!latest) return reply.status(404).send({ message: "Plugin not found in source" });
+      if (!isNewerVersion(latest.version, current.version)) {
+        return { message: "Already up to date", plugin: current, ...restartInfo(false) };
+      }
       if (latest.downloadUrl) {
         const archive = await downloadPlugin(current.pluginId, latest.downloadUrl, latest.checksum);
         await extractPlugin(archive, current.pluginId);
