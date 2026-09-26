@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import type { AdminInviteUsageDto } from "@tentacle-tv/shared";
-import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
+import { UserAvatar } from "../kit";
 import { formatDateTime } from "./inviteFormat";
 
 /** Au-delà, un « +N » qui nomme les autres en infobulle : la carte ne s'allonge pas sans fin. */
@@ -29,7 +29,7 @@ export const InviteUsers = memo(function InviteUsers({ usages }: { usages: Admin
           })}
           className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full bg-fill-subtle py-0.5 pl-0.5 pr-2.5 text-xs text-content-secondary"
         >
-          <LeaderboardAvatar
+          <UserAvatar
             userId={usage.jellyfinUserId ?? ""}
             name={usage.username}
             hasAvatar={Boolean(usage.jellyfinUserId)}

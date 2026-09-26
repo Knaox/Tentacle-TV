@@ -1,11 +1,12 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Check, Copy, Share2, TriangleAlert } from "lucide-react";
+import { Check, Copy, Share2 } from "lucide-react";
 import { buildInviteUrl, type CreatedInviteDto } from "@tentacle-tv/shared";
 import { cls } from "../../../pages/adminUtils";
 import { useToast } from "../../../contexts/ToastContext";
 import { ModalHeader } from "../../ui/ModalHeader";
+import { AdminNotice } from "../kit";
 import { canShareNatively, copyText, isLocalOnlyUrl } from "./inviteLink";
 import { formatDeadline } from "./inviteFormat";
 
@@ -76,19 +77,20 @@ export function InviteReady({ invite, linkBase, titleId, onDone }: InviteReadyPr
         )}
 
         {localOnly && (
-          <div role="note" className="flex gap-3 rounded-lg bg-status-warning-bg p-3 text-sm text-content-secondary">
-            <TriangleAlert size={16} aria-hidden className="mt-0.5 shrink-0 text-status-warning-fg" />
-            <div className="min-w-0">
-              <p>{t("localLinkWarning")}</p>
+          <AdminNotice
+            tone="warning"
+            action={
               <Link
                 to="/admin/services#publicurl"
                 onClick={onDone}
-                className="mt-1.5 inline-block font-semibold text-status-warning-fg underline-offset-2 hover:underline"
+                className="font-semibold text-status-warning-fg underline-offset-2 hover:underline"
               >
                 {t("localLinkAction")}
               </Link>
-            </div>
-          </div>
+            }
+          >
+            {t("localLinkWarning")}
+          </AdminNotice>
         )}
 
         <div className="flex flex-col-reverse gap-2 xs:flex-row xs:justify-end">

@@ -5,8 +5,8 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MailPlus, Plus } from "lucide-react";
 import { buildInviteUrl, inviteStatus, type AdminInviteDto } from "@tentacle-tv/shared";
 import { cls } from "./adminUtils";
-import { PageTransition } from "../components/PageTransition";
 import { EmptyState } from "../components/ui/EmptyState";
+import { AdminNotice, AdminPage } from "../components/admin/kit";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../contexts/ToastContext";
 import { useAdminInvites, useClock, useDeleteInvite, useInviteLinkBase } from "../hooks/useAdminInvites";
@@ -104,7 +104,7 @@ export function AdminInvites() {
   };
 
   const newInviteButton = (
-    <button type="button" onClick={openDialog} disabled={!link.ready} className={`${cls.bp} shrink-0 self-start`}>
+    <button type="button" onClick={openDialog} disabled={!link.ready} className={`${cls.bp} shrink-0`}>
       <Plus size={16} aria-hidden />
       {t("newInvite")}
     </button>
@@ -113,10 +113,13 @@ export function AdminInvites() {
   let body: ReactNode;
   if (query.isError) {
     body = (
-      <div role="alert" className="flex flex-col items-start gap-3 rounded-xl border border-line-subtle bg-fill-faint p-4 xs:flex-row xs:items-center xs:justify-between">
-        <p className="text-sm text-content-tertiary">{t("loadError")}</p>
-        <button type="button" onClick={() => query.refetch()} className={cls.bs}>{t("retry")}</button>
-      </div>
+      <AdminNotice
+        tone="error"
+        role="alert"
+        action={<button type="button" onClick={() => query.refetch()} className={cls.bs}>{t("retry")}</button>}
+      >
+        {t("loadError")}
+      </AdminNotice>
     );
   } else if (!invites || !link.ready) {
     body = (
@@ -135,7 +138,7 @@ export function AdminInvites() {
     );
   } else {
     body = (
-      <>
+      <div>
         <InviteFilters value={filter} counts={counts} onChange={setFilter} />
         {visible.length === 0 ? (
           <p className="mt-4 rounded-xl border border-dashed border-line-subtle p-8 text-center text-sm text-content-quaternary">
@@ -168,21 +171,17 @@ export function AdminInvites() {
             </AnimatePresence>
           </ul>
         )}
-      </>
+      </div>
     );
   }
 
   return (
-    <PageTransition>
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-heading-1 text-content-primary">{t("title")}</h1>
-          <p className="mt-1 text-sm text-content-tertiary">{t("description")}</p>
-        </div>
-        {/* Liste vide : le bouton est celui de l'état vide, pas deux fois le même. */}
-        {invites?.length !== 0 && newInviteButton}
-      </header>
-
+    <AdminPage
+      title={t("title")}
+      description={t("description")}
+      // Liste vide : le bouton est celui de l'état vide, pas deux fois le même.
+      actions={invites?.length !== 0 ? newInviteButton : undefined}
+    >
       {body}
 
       <NewInviteDialog
@@ -203,6 +202,6 @@ export function AdminInvites() {
         onConfirm={confirmDelete}
         onCancel={() => { if (!remove.isPending) setConfirm((current) => ({ ...current, open: false })); }}
       />
-    </PageTransition>
+    </AdminPage>
   );
 }

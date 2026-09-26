@@ -4,6 +4,7 @@ import type { TFunction } from "i18next";
 import { Check, Copy, Share2, Trash2 } from "lucide-react";
 import { inviteStatus, type AdminInviteDto, type InviteStatus } from "@tentacle-tv/shared";
 import { cls } from "../../../pages/adminUtils";
+import { StatusPill, type StatusTone } from "../kit";
 import { InviteUsers } from "./InviteUsers";
 import { expiresSoon, formatDateTime, relativeTime } from "./inviteFormat";
 
@@ -23,10 +24,11 @@ interface InviteCardProps extends InviteCardActions {
   highlighted: boolean;
 }
 
-const STATUS_PILL: Record<InviteStatus, string> = {
-  active: "bg-status-success-bg text-status-success-fg",
-  expired: "bg-fill-soft text-content-tertiary",
-  exhausted: "bg-[var(--brand-soft)] text-[var(--brand-light)]",
+/** Épuisée n'est pas un échec : elle a servi jusqu'au bout — teinte de marque, pas grise. */
+const STATUS_TONE: Record<InviteStatus, StatusTone> = {
+  active: "success",
+  expired: "neutral",
+  exhausted: "brand",
 };
 
 const ICON_BUTTON =
@@ -99,9 +101,7 @@ export const InviteCard = memo(function InviteCard({
         <code className={`truncate font-mono text-[13px] ${active ? "text-content-primary" : "text-content-tertiary"}`}>
           {invite.key}
         </code>
-        <span className={`inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-[11px] font-semibold ${STATUS_PILL[status]}`}>
-          {t(`status_${status}`)}
-        </span>
+        <StatusPill tone={STATUS_TONE[status]} size="sm">{t(`status_${status}`)}</StatusPill>
       </div>
 
       <UsesMeter invite={invite} active={active} />
