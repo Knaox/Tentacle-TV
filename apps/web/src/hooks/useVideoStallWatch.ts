@@ -40,6 +40,7 @@ export function useVideoStallWatch(videoRef: MutableRefObject<HTMLVideoElement |
       const stalled = videoStalled({
         playedS: time - prevTime, decodedFrames: decoded, paused: v.paused, seeking: v.seeking,
         readyState: v.readyState, visible: document.visibilityState === "visible", hasVideo: v.videoWidth > 0,
+        framesCounted: frames > 0,
       });
       streak = stalled ? streak + 1 : 0;
       if (streak < STALLED_SAMPLES || nudges >= MAX_NUDGES) return;

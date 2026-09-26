@@ -24,12 +24,17 @@ export interface StallSample {
   visible: boolean;
   /** Le média a une piste vidéo (largeur connue). */
   hasVideo: boolean;
+  /** Le compteur `totalVideoFrames` a déjà avancé sur cet élément. Sur webOS,
+   *  la vidéo passe par un plan matériel que le navigateur ne compte pas : le
+   *  compteur reste à 0 toute la lecture (mesuré le 26 septembre 2026, 4K sur
+   *  la C3). Un compteur muet ne prouve aucun gel — on ne juge pas. */
+  framesCounted: boolean;
 }
 
 /** Au-dessous, on ne conclut pas : quelques images en retard ne sont pas un gel. */
 export const STALL_MIN_PLAYED_S = 1.5;
 
 export function videoStalled(s: StallSample): boolean {
-  if (s.paused || s.seeking || !s.visible || !s.hasVideo || s.readyState < 3) return false;
+  if (s.paused || s.seeking || !s.visible || !s.hasVideo || !s.framesCounted || s.readyState < 3) return false;
   return s.playedS >= STALL_MIN_PLAYED_S && s.decodedFrames === 0;
 }
