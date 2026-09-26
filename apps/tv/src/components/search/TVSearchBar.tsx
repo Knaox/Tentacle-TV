@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback, useRef, type Ref } from "react";
 import { Platform, Text, TextInput, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
@@ -22,6 +22,8 @@ interface TVSearchBarProps {
   onSubmit?: () => void;
   /** La barre reprend le focus — tvOS le lui rend quand son clavier est parti. */
   onBarFocus?: () => void;
+  /** Le bouton de la barre (tvOS), pour y ramener le focus en revenant d'une étagère. */
+  barRef?: Ref<View>;
 }
 
 /**
@@ -36,7 +38,7 @@ interface TVSearchBarProps {
  * touche micro.
  */
 export const TVSearchBar = memo(function TVSearchBar({
-  width, query, completion, onSetQuery, onSystemKeyboardClosed, onSubmit, onBarFocus,
+  width, query, completion, onSetQuery, onSystemKeyboardClosed, onSubmit, onBarFocus, barRef,
 }: TVSearchBarProps) {
   const { t } = useTranslation(["search", "common"]);
   const inputRef = useRef<TextInput>(null);
@@ -70,6 +72,7 @@ export const TVSearchBar = memo(function TVSearchBar({
   return (
     <>
       <Focusable
+        ref={barRef}
         variant="button"
         focusRadius={Button.small.borderRadius}
         onPress={openSystemKeyboard}

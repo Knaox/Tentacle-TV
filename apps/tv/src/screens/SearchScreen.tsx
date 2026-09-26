@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, TVFocusGuideView, View, useWindowDimensions } from "react-native";
 import type { View as RNView } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSearchDiscover, useSearchEpisodes, useTentacleSearch } from "@tentacle-tv/api-client";
 import {
@@ -20,6 +21,8 @@ import { useSearchSubmit } from "../components/search/useSearchSubmit";
 import { SkeletonRow } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
+import { claimTvFocus } from "../hooks/useTvFocusClaim";
+import { registerSearchBar } from "../components/search/searchBarReturn";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 import { pushRecentSearch, readRecentSearches } from "../storage/recentSearches";
@@ -101,6 +104,27 @@ export function SearchScreen({ navigation }: Props) {
     setTimeout(() => node?.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
   }, []);
 
+  // La barre : un bouton sur tvOS, qui ouvre le clavier système ; un simple
+  // affichage sur Android TV, où l'on revient donc à la première touche du
+  // clavier à l'écran, juste dessous. Le rail y ramène aussi (« Rechercher »).
+  const barRef = useRef<RNView | null>(null);
+  const focusSearchBar = useCallback(() => claimTvFocus(barRef.current ?? firstKey.current), []);
+  useEffect(() => registerSearchBar(focusSearchBar), [focusSearchBar]);
+
+  // Revenir d'une étagère — bouton Retour, touche Retour, Menu de la Siri
+  // Remote, « Rechercher » au rail — rend la barre, parité LG. Les résultats
+  // gardent leur dernière carte (`autoFocus`) : un appui à droite y ramène.
+  const browsing = useRef(false);
+  useFocusEffect(useCallback(() => {
+    if (!browsing.current) return;
+    browsing.current = false;
+    return focusSearchBar();
+  }, [focusSearchBar]));
+  const openBrowse = useCallback((params: RootStackParamList["SearchBrowse"]) => {
+    browsing.current = true;
+    navigation.navigate("SearchBrowse", params);
+  }, [navigation]);
+
   const onKeyPress = useCallback((key: string) => setQuery((q) => q + key), []);
   const onDelete = useCallback(() => setQuery((q) => q.slice(0, -1)), []);
   const onClear = useCallback(() => setQuery(""), []);
@@ -119,24 +143,22 @@ export function SearchScreen({ navigation }: Props) {
     onOpenTop: (top: SearchTopHit) => {
       remember();
       if (top.kind === "person") {
-        navigation.navigate("SearchBrowse", { kind: "person", id: top.hit.id, name: top.hit.name });
+        openBrowse({ kind: "person", id: top.hit.id, name: top.hit.name });
       } else {
         navigation.navigate("MediaDetail", { itemId: top.hit.item.Id });
       }
     },
     onOpenPerson: (person: SearchPersonHit) => {
       remember();
-      navigation.navigate("SearchBrowse", { kind: "person", id: person.id, name: person.name });
+      openBrowse({ kind: "person", id: person.id, name: person.name });
     },
     onOpenFacet: (facet: TvSearchFacet) => {
       remember();
-      navigation.navigate("SearchBrowse", { kind: facet.kind, name: facet.name });
+      openBrowse({ kind: facet.kind, name: facet.name });
     },
-  }), [navigation, remember]);
+  }), [navigation, remember, openBrowse]);
 
-  const openGenre = useCallback((name: string) => {
-    navigation.navigate("SearchBrowse", { kind: "genre", name });
-  }, [navigation]);
+  const openGenre = useCallback((name: string) => openBrowse({ kind: "genre", name }), [openBrowse]);
 
   const idle = debounced.length === 0;
   const loading = !idle && data === undefined && search.isFetching;
@@ -156,6 +178,7 @@ export function SearchScreen({ navigation }: Props) {
             {t("nav:search")}
           </Text>
           <TVSearchBar
+            barRef={barRef}
             width={KEYBOARD_WIDTH}
             query={query}
             completion={completion}
