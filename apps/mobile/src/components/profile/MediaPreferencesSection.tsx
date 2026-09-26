@@ -7,11 +7,14 @@ import { queuePendingPref, readLibrariesList, readLibraryPrefs, type CachedLibra
 import { maybeRefreshOfflineCaches, prefsStore } from "@/offline/prefsCache";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useServerUrl } from "@/providers/ServerUrlContext";
+import { SettingsRow, SettingsSection } from "@/components/settings";
 import { spacing, typography, RADIUS, useTheme, useThemedStyles, type AppTheme } from "../../theme";
-import { LibraryPrefCard, type LibraryPrefValues } from "./LibraryPrefCard";
+import { LibraryPrefSheet } from "./LibraryPrefSheet";
+import { summarizeLibraryPref, type LibraryPrefValues } from "./libraryPrefOptions";
 
 /**
- * La page des langues : une carte par bibliothèque. En ligne, tout vient du
+ * Les langues par bibliothèque : une LIGNE par bibliothèque, qui résume son
+ * choix ; la feuille l'édite, chaque pastille enregistrée aussitôt. En ligne, tout vient du
  * serveur ; hors ligne, les bibliothèques et préférences MÉMORISÉES au dernier
  * passage en ligne s'affichent, et une modification part dans la file locale,
  * poussée au serveur au retour (bandeau « enregistré localement »).
@@ -29,6 +32,7 @@ export function MediaPreferencesSection() {
   const { storage } = useTentacleConfig();
   // `nonce` relit la base locale après une écriture en attente.
   const [nonce, setNonce] = useState(0);
+  const [openId, setOpenId] = useState<string | null>(null);
   const local = useMemo(() => {
     if (!offline || !userId) return null;
     return { libraries: readLibrariesList(prefsStore, userId), prefs: readLibraryPrefs(prefsStore, userId) };
@@ -59,34 +63,43 @@ export function MediaPreferencesSection() {
 
   if (!local && rows.length === 0) return null;
 
+  const open = rows.find((row) => row.id === openId) ?? null;
+
   return (
-    <View>
-      <Text style={st.title}>{t("title")}</Text>
-      <Text style={st.subtitle}>{t("subtitle")}</Text>
+    <>
       {local && (
         <View style={st.banner} accessibilityRole="text">
           <Feather name="wifi-off" size={14} color={theme.colors.statusPairs.warning.fg} />
           <Text style={st.bannerText}>{t("offlineSavedLocally")}</Text>
         </View>
       )}
-      {local && rows.length === 0 && <Text style={st.hint}>{t("offlineNoCacheHint")}</Text>}
-      {rows.map((lib) => (
-        <LibraryPrefCard
-          key={lib.id}
-          libraryName={lib.name}
-          pref={prefsMap.get(lib.id) ?? null}
-          onSave={(values) => save(lib.id, values)}
-          saving={!local && setMut.isPending}
-        />
-      ))}
-    </View>
+      <SettingsSection title={t("title")} caption={t("subtitle")}>
+        {rows.length === 0 && <SettingsRow icon="info" label={t("offlineNoCacheHint")} last />}
+        {rows.map((lib, index) => (
+          <SettingsRow
+            key={lib.id}
+            icon="folder"
+            label={lib.name}
+            description={summarizeLibraryPref(prefsMap.get(lib.id) ?? null, t) ?? t("default")}
+            chevron
+            last={index === rows.length - 1}
+            onPress={() => setOpenId(lib.id)}
+          />
+        ))}
+      </SettingsSection>
+      <LibraryPrefSheet
+        visible={open !== null}
+        onClose={() => setOpenId(null)}
+        libraryName={open?.name ?? ""}
+        pref={open ? prefsMap.get(open.id) ?? null : null}
+        onSave={(values) => { if (open) save(open.id, values); }}
+      />
+    </>
   );
 }
 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
-    title: { ...typography.subtitle, color: t.colors.text.primary, marginBottom: 4 },
-    subtitle: { ...typography.caption, color: t.colors.text.tertiary, marginBottom: spacing.lg },
     banner: {
       flexDirection: "row",
       alignItems: "center",
@@ -97,5 +110,4 @@ const makeStyles = (t: AppTheme) =>
       marginBottom: spacing.md,
     },
     bannerText: { ...typography.caption, color: t.colors.statusPairs.warning.fg, flex: 1, lineHeight: 18 },
-    hint: { ...typography.caption, color: t.colors.text.tertiary, lineHeight: 18 },
   });
