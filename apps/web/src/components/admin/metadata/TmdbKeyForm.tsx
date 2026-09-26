@@ -65,8 +65,10 @@ export function TmdbKeyForm({ replacing, onSaved, onCancel }: TmdbKeyFormProps) 
       <label htmlFor={inputId} className={cls.lbl}>
         {t(replacing ? "keyNewLabel" : "keyLabel")}
       </label>
-      <div className="flex flex-col gap-2 md:flex-row">
-        <div className="relative min-w-0 flex-1">
+      {/* Les boutons passent sous le champ quand la carte est étroite (colonne
+          de droite, mobile) : c'est la place réelle qui décide, pas l'écran. */}
+      <div className="flex flex-wrap gap-2">
+        <div className="relative min-w-[16rem] flex-1">
           <input
             id={inputId}
             type={reveal ? "text" : "password"}
@@ -83,7 +85,8 @@ export function TmdbKeyForm({ replacing, onSaved, onCancel }: TmdbKeyFormProps) 
             data-1p-ignore
             data-lpignore="true"
             autoFocus={replacing}
-            className={`${cls.inp} pr-12 font-mono`}
+            // La clé en chasse fixe (0/O, 1/l), pas le texte indicatif.
+            className={`${cls.inp} pr-12 ${value ? "font-mono" : ""}`}
           />
           <button
             type="button"
