@@ -19,11 +19,9 @@ export default {
   unsaved: "Unsaved",
   loadError: "This section could not be loaded.",
   retry: "Retry",
-  optional: "optional",
 
   // The summary at the top of the page.
   summaryLabel: "Service status",
-  goToSection: "{{name}}: {{state}}. Go to the section.",
   summaryUnknown: "Unavailable",
   jellyfinConnected: "Connected",
   jellyfinUnreachable: "Unreachable",
@@ -43,6 +41,7 @@ export default {
   audioOn: "On",
   audioOff: "Off",
   audioNoTool: "Unavailable",
+  summaryAudio: "Audio analysis",
 
   // Jellyfin.
   jellyfinTitle: "Jellyfin",
@@ -104,7 +103,6 @@ export default {
   publicUrlInEffect: "In service: {{url}}",
   publicUrlFromEnv: "environment variable",
   publicUrlNone: "No public address: TVs cannot be paired.",
-  publicUrlClear: "Clear",
   publicUrlSaved: "Public address saved.",
   publicUrlCleared: "Address cleared.",
 
@@ -138,7 +136,7 @@ export default {
   segmentsDescription:
     "Jellyfin plugins remain the primary source for skip segments: they see the video and audio, whereas Tentacle's built-in analysis only reads thumbnails. Installing one enriches every device at once.",
   segmentsPlugins: "Jellyfin plugins",
-  segmentsOpenPlugin: "{{name}} (opens in a new tab)",
+  opensNewTab: "(opens in a new tab)",
   plugin_introSkipper: "Audio fingerprint detection — intro and credits.",
   plugin_chapterSegments: "Turns named chapters into segments, no analysis.",
   plugin_introDb: "Community timestamp database, no local analysis.",
@@ -172,7 +170,8 @@ export default {
     "Erases the whole server configuration — Jellyfin connection, keys, public address, settings — and restarts the setup wizard. Paired devices, TVs and phones alike, will lose access and must be paired again.",
   resetAction: "Reset…",
   resetConfirmTitle: "Reset the server?",
-  resetConfirmBody: "The whole configuration will be erased and the setup wizard restarted. There is no way back.",
+  resetConfirmBody:
+    "The Jellyfin connection, keys, public address and every setting will be erased, and the setup wizard restarted. Paired devices will have to be paired again. There is no way back.",
   resetConfirmPrompt: "To confirm, type \"{{word}}\":",
   resetConfirmWord: "reset",
   resetConfirm: "Reset for good",

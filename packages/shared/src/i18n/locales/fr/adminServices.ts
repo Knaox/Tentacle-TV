@@ -20,11 +20,9 @@ export default {
   unsaved: "Non enregistré",
   loadError: "Impossible de lire cette section.",
   retry: "Réessayer",
-  optional: "facultatif",
 
   // Le résumé en tête de page.
   summaryLabel: "État des services",
-  goToSection: "{{name}} : {{state}}. Aller à la section.",
   summaryUnknown: "Indisponible",
   jellyfinConnected: "Connecté",
   jellyfinUnreachable: "Injoignable",
@@ -44,6 +42,7 @@ export default {
   audioOn: "Active",
   audioOff: "Désactivée",
   audioNoTool: "Indisponible",
+  summaryAudio: "Analyse audio",
 
   // Jellyfin.
   jellyfinTitle: "Jellyfin",
@@ -105,7 +104,6 @@ export default {
   publicUrlInEffect: "En service : {{url}}",
   publicUrlFromEnv: "variable d'environnement",
   publicUrlNone: "Aucune adresse publique : les téléviseurs ne peuvent pas être jumelés.",
-  publicUrlClear: "Effacer",
   publicUrlSaved: "Adresse publique enregistrée.",
   publicUrlCleared: "Adresse effacée.",
 
@@ -139,7 +137,7 @@ export default {
   segmentsDescription:
     "Les greffons Jellyfin restent la source première des passages : ils voient la vidéo et l'audio, là où l'analyse embarquée de Tentacle ne lit que les vignettes. En installer un enrichit tous les appareils d'un coup.",
   segmentsPlugins: "Greffons Jellyfin",
-  segmentsOpenPlugin: "{{name}} (s'ouvre dans un nouvel onglet)",
+  opensNewTab: "(s'ouvre dans un nouvel onglet)",
   plugin_introSkipper: "Détection par empreinte audio — générique de début et de fin.",
   plugin_chapterSegments: "Convertit les chapitres nommés en passages, sans analyse.",
   plugin_introDb: "Base communautaire de repères, sans analyse locale.",
@@ -174,7 +172,7 @@ export default {
   resetAction: "Réinitialiser…",
   resetConfirmTitle: "Réinitialiser le serveur ?",
   resetConfirmBody:
-    "Toute la configuration sera effacée et l'assistant d'installation relancé. Rien ne permettra de revenir en arrière.",
+    "La connexion à Jellyfin, les clés, l'adresse publique et tous les réglages seront effacés, et l'assistant d'installation relancé. Les appareils jumelés devront l'être à nouveau. Rien ne permettra de revenir en arrière.",
   resetConfirmPrompt: "Pour confirmer, tapez « {{word}} » :",
   resetConfirmWord: "réinitialiser",
   resetConfirm: "Réinitialiser définitivement",
