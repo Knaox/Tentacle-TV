@@ -16,6 +16,8 @@ interface PluginAdminValue {
    * lancée entre-temps serait coupée net, fichiers à moitié posés.
    */
   locked: boolean;
+  /** Le serveur redémarre : rien ne l'atteint, même une bascule. */
+  restarting: boolean;
 }
 
 const PluginAdminContext = createContext<PluginAdminValue | null>(null);
@@ -47,8 +49,9 @@ export function PluginAdminProvider({ children }: { children: ReactNode }) {
   }, [show, t]);
   const actions = usePluginActions(restart.begin, onSuccess);
 
-  const locked = actions.heavyBusy || restart.phase.kind === "waiting";
-  const value = useMemo(() => ({ restart, actions, locked }), [restart, actions, locked]);
+  const restarting = restart.phase.kind === "waiting";
+  const locked = actions.heavyBusy || restarting;
+  const value = useMemo(() => ({ restart, actions, locked, restarting }), [restart, actions, locked, restarting]);
   return <PluginAdminContext.Provider value={value}>{children}</PluginAdminContext.Provider>;
 }
 

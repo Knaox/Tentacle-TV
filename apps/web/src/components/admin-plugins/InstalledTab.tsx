@@ -23,7 +23,7 @@ import type { InstalledPlugin } from "./types";
 export function InstalledTab({ onBrowse }: { onBrowse: () => void }) {
   const { t } = useTranslation(["adminPlugins", "common"]);
   const { installed, sources, catalog, updates } = usePluginOverview();
-  const { actions, locked } = usePluginAdmin();
+  const { actions, locked, restarting } = usePluginAdmin();
   const activeMeta = useActivePluginsMeta();
 
   const sourcesById = useMemo(() => new Map((sources.data ?? []).map((s) => [s.id, s])), [sources.data]);
@@ -84,6 +84,7 @@ export function InstalledTab({ onBrowse }: { onBrowse: () => void }) {
           configureTo={plugin.enabled && routable.has(plugin.pluginId) ? configRoute(plugin) : null}
           state={actions.states.get(plugin.pluginId)}
           locked={locked}
+          restarting={restarting}
           onToggle={onToggle}
           onUpdate={onUpdate}
           onUninstall={onUninstall}

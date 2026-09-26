@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { useToast } from "../../contexts/ToastContext";
+import { usePluginAdmin } from "./PluginAdminContext";
 import { AdminNotice, AdminSection } from "../admin/kit";
 import { ActionPill } from "../admin/sessions/ActionPill";
 import { AddSourceSheet } from "./AddSourceSheet";
@@ -20,6 +21,7 @@ export function SourcesTab() {
   const { show } = useToast();
   const { sources } = usePluginOverview();
   const actions = useSourceActions();
+  const { restarting } = usePluginAdmin();
   const [adding, setAdding] = useState(false);
   const addButton = useRef<HTMLButtonElement>(null);
   const now = Date.now();
@@ -77,6 +79,7 @@ export function SourcesTab() {
                 source={source}
                 state={actions.states.get(source.id)}
                 now={now}
+                restarting={restarting}
                 onToggle={onToggle}
                 onRemove={onRemove}
               />

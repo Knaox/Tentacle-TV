@@ -23,6 +23,8 @@ export interface InstalledPluginCardProps {
   configureTo: string | null;
   state: PluginActionState | undefined;
   locked: boolean;
+  /** Le serveur redémarre : l'interrupteur attend son retour. */
+  restarting: boolean;
   onToggle: (plugin: InstalledPlugin) => void;
   onUpdate: (plugin: InstalledPlugin) => void;
   onUninstall: (plugin: InstalledPlugin) => void;
@@ -38,7 +40,7 @@ export interface InstalledPluginCardProps {
  * n'en dépend.
  */
 export const InstalledPluginCard = memo(function InstalledPluginCard({
-  plugin, entry, source, update, configureTo, state, locked, onToggle, onUpdate, onUninstall,
+  plugin, entry, source, update, configureTo, state, locked, restarting, onToggle, onUpdate, onUninstall,
 }: InstalledPluginCardProps) {
   const { t, i18n } = useTranslation("adminPlugins");
   const titleId = useId();
@@ -78,7 +80,7 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
               checked={enabled}
               onChange={() => onToggle(plugin)}
               label={t("toggleLabel", { name: plugin.name })}
-              disabled={toggling}
+              disabled={toggling || restarting}
             />
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-1.5">

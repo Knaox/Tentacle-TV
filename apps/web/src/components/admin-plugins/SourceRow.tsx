@@ -13,6 +13,7 @@ interface SourceRowProps {
   source: PluginSource;
   state: SourceActionState | undefined;
   now: number;
+  restarting: boolean;
   onToggle: (source: PluginSource) => void;
   onRemove: (source: PluginSource) => void;
 }
@@ -23,7 +24,7 @@ interface SourceRowProps {
  * répond pas. L'officielle ne se retire pas (le serveur le refuse) ; elle se
  * désactive, comme les autres.
  */
-export const SourceRow = memo(function SourceRow({ source, state, now, onToggle, onRemove }: SourceRowProps) {
+export const SourceRow = memo(function SourceRow({ source, state, now, restarting, onToggle, onRemove }: SourceRowProps) {
   const { t } = useTranslation(["adminPlugins", "common"]);
   const toggling = state?.kind === "toggleSource" && state.status === "busy";
   const enabled = toggling ? !source.enabled : source.enabled;
@@ -66,7 +67,7 @@ export const SourceRow = memo(function SourceRow({ source, state, now, onToggle,
           checked={enabled}
           onChange={() => onToggle(source)}
           label={t("toggleSourceLabel", { name: source.name })}
-          disabled={toggling}
+          disabled={toggling || restarting}
         />
       </div>
     </li>
@@ -85,12 +86,14 @@ function SourceStatus({ source, now }: { source: PluginSource; now: number }) {
   const registry = source.registry;
   const ago = (iso: string) => relativeTime(iso, now, i18n.language) ?? "";
 
+  // Pas d'état de lecture : un serveur d'avant 1.20 n'en rend jamais, un plus
+  // récent le rend dès la lecture du catalogue que la page lance à l'ouverture.
+  if (source.enabled && !registry) return null;
+
   let tone: keyof typeof TONE = "neutral";
   let text: string;
-  if (!source.enabled) {
+  if (!source.enabled || !registry) {
     text = t("sourceDisabled");
-  } else if (!registry) {
-    text = t("sourceNotRead");
   } else if (registry.error) {
     tone = "error";
     text = t("sourceUnreachable", { error: registry.error });

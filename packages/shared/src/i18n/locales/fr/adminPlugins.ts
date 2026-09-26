@@ -105,7 +105,6 @@ export default {
   sourcesDescription: "Les registres où Tentacle cherche des plugins. La source officielle est tenue par Tentacle ; une source tierce publie du code que personne n'a vérifié.",
   loadSourcesError: "Impossible de charger les sources.",
   sourceDisabled: "Désactivée — ses plugins ne sont pas proposés au catalogue.",
-  sourceNotRead: "Pas encore lue — elle le sera à la prochaine ouverture du catalogue.",
   sourceUnreachable: "Ne répond pas : {{error}}",
   sourceLastGood: "dernière lecture réussie {{ago}}",
   sourcePublishes_one: "{{count}} plugin publié",
