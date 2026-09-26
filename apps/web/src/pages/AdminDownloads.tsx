@@ -9,78 +9,30 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BACKEND, hdrs, creds } from "./adminUtils";
 import { useToast } from "../contexts/ToastContext";
 import { ToggleSwitch } from "../components/settings/ToggleSwitch";
+import {
+  useAdminDownloadRights,
+  useUpdateAdminDownloadRights,
+  type AdminUserRights,
+  type RightsPatch,
+} from "../hooks/useAdminDownloadRights";
 import { AdminDownloadBandwidth } from "./AdminDownloadBandwidth";
-
-interface AdminUserRights {
-  id: string;
-  name: string;
-  isAdministrator: boolean;
-  enableContentDownloading: boolean;
-  enableMediaConversion: boolean;
-  enableAllFolders: boolean;
-  enabledFoldersCount: number;
-}
-
-interface RightsPatch {
-  enableContentDownloading?: boolean;
-  enableMediaConversion?: boolean;
-}
-
-async function fetchRights(): Promise<AdminUserRights[]> {
-  const res = await fetch(`${BACKEND}/api/admin/downloads/users`, {
-    headers: hdrs(),
-    credentials: creds(),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-async function putRights(userId: string, patch: RightsPatch): Promise<AdminUserRights> {
-  const res = await fetch(`${BACKEND}/api/admin/downloads/users/${userId}`, {
-    method: "PUT",
-    headers: { ...hdrs(), "Content-Type": "application/json" },
-    credentials: creds(),
-    body: JSON.stringify(patch),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
 
 export function AdminDownloads() {
   const { t } = useTranslation("admin");
   const { show } = useToast();
-  const queryClient = useQueryClient();
   const [pendingKey, setPendingKey] = useState<string | null>(null);
-
-  const { data: users, isLoading, isError } = useQuery({
-    queryKey: ["admin-download-rights"],
-    queryFn: fetchRights,
-    staleTime: 30_000,
-  });
-
-  const mutation = useMutation({
-    mutationFn: ({ userId, patch }: { userId: string; patch: RightsPatch }) =>
-      putRights(userId, patch),
-    onSuccess: (applied) => {
-      queryClient.setQueryData<AdminUserRights[]>(["admin-download-rights"], (previous) =>
-        previous?.map((user) => (user.id === applied.id ? applied : user)),
-      );
-      show("success", t("downloadsSaved"));
-    },
-    onError: () => {
-      show("error", t("downloadsSaveError"));
-      queryClient.invalidateQueries({ queryKey: ["admin-download-rights"] });
-    },
-    onSettled: () => setPendingKey(null),
-  });
+  const { data: users, isLoading, isError } = useAdminDownloadRights();
+  const update = useUpdateAdminDownloadRights();
 
   const toggle = (user: AdminUserRights, field: keyof RightsPatch, value: boolean) => {
-    setPendingKey(`${user.id}:${field}`);
-    mutation.mutate({ userId: user.id, patch: { [field]: value } });
+    const key = `${user.id}:${field}`;
+    setPendingKey(key);
+    update.mutateAsync({ userId: user.id, patch: { [field]: value } }).then(
+      () => show("success", t("downloadsSaved")),
+      () => show("error", t("downloadsSaveError")),
+    ).finally(() => setPendingKey((current) => (current === key ? null : current)));
   };
 
   return (
