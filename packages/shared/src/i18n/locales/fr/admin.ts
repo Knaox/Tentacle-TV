@@ -172,17 +172,4 @@ export default {
   bandwidthIpInvalid: "Adresse IP ou plage invalide.",
   bandwidthIpRemove: "Retirer {{ip}}",
   metadataTitle: "Métadonnées",
-  metadataDescription:
-    "Clés des services de métadonnées. TMDB alimente les recommandations riches (similaires, acteurs, mots-clés, affiches hors bibliothèque) et la synchronisation anonyme des notes ; sans clé, le moteur retombe sur les genres de la bibliothèque.",
-  tmdbDescription: "Une clé API (v3) gratuite, créée sur themoviedb.org — validée avant d'être enregistrée.",
-  tmdbKeyLabel: "Clé API TMDB",
-  metadataRegionTitle: "Plateformes de streaming",
-  metadataRegionDescription:
-    "Région des disponibilités (chips Netflix, Crunchyroll…) — code pays à deux lettres, résolu à la lecture : en changer ne redemande rien à TMDB.",
-  metadataRegionLabel: "Région (ISO 3166-1)",
-  metadataConfiguredHint: "Une valeur est déjà enregistrée ({{last4}}) — laissez vide pour la conserver.",
-  metadataNotConfigured: "Non configuré.",
-  metadataEnvSource: "Définie par variable d'environnement — prioritaire sur la valeur saisie ici.",
-  metadataRemove: "Retirer",
-  tmdbKeyInvalid: "Clé TMDB invalide — rien n'a été enregistré.",
 } as const;

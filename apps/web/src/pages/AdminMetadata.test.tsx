@@ -22,12 +22,18 @@ vi.mock("@tentacle-tv/api-client", () => ({
   useUpdateAdminMetadata: () => ({ mutate: () => undefined, reset: () => undefined, isPending: false }),
   useTestTmdbKey: () => ({ mutate: () => undefined, reset: () => undefined, isPending: false }),
   useJellyfinClient: () => ({}),
+  useAdminMetadataRegions: () => ({ data: [{ code: "FR", providers: 102 }, { code: "BE", providers: 61 }] }),
+  useAdminRegionProviders: () => ({ data: undefined, isPlaceholderData: false }),
   adminMetadataErrorCode: () => "failed",
 }));
 vi.mock("../components/PageTransition", () => ({
   PageTransition: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 vi.mock("../components/ui/ConfirmDialog", () => ({ ConfirmDialog: () => null }));
+vi.mock("framer-motion", () => ({
+  motion: { div: ({ children }: { children: ReactNode }) => <div>{children}</div> },
+  useReducedMotion: () => false,
+}));
 vi.mock("../components/userMenu/menuItems", () => ({ getUserInfo: () => ({ isAdmin: true }) }));
 // Le vrai module importe `main.tsx` (l'URL du backend), qui démarre l'app.
 vi.mock("./adminUtils", () => ({
@@ -69,7 +75,11 @@ describe("la page Admin → Métadonnées", () => {
     const html = render();
     expect(html).toContain("tmdbTitle");
     expect(html).toContain("statusMissing");
-    expect(html).toContain("metadataRegionTitle");
+    expect(html).toContain("regionTitle");
+    // Le sélecteur de pays, fermé, sur la région enregistrée.
+    expect(html).toContain('aria-haspopup="listbox"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain(">FR<");
     expect(html).not.toContain("animate-pulse");
     // Pas de clé, pas de bilan de calcul.
     expect(html).not.toContain("fanout");

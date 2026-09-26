@@ -1,13 +1,13 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RotateCw } from "lucide-react";
-import { useAdminMetadataStatus, useUpdateAdminMetadata } from "@tentacle-tv/api-client";
+import { useAdminMetadataStatus } from "@tentacle-tv/api-client";
 import { cls } from "./adminUtils";
 import { getUserInfo } from "../components/userMenu/menuItems";
-import { AdminNotice, AdminPage, AdminSection } from "../components/admin/kit";
+import { AdminNotice, AdminPage } from "../components/admin/kit";
 import { MetadataSkeleton } from "../components/admin/metadata/MetadataSkeleton";
 import { TmdbKeyCard } from "../components/admin/metadata/TmdbKeyCard";
 import { RecoFanoutStatus } from "../components/admin/metadata/RecoFanoutStatus";
+import { RegionCard } from "../components/admin/metadata/RegionCard";
 
 /**
  * Onglet « Métadonnées » : clé TMDB, région des plateformes.
@@ -32,7 +32,12 @@ export function AdminMetadata() {
               <RecoFanoutStatus fanout={status.data.fanout} readAt={status.dataUpdatedAt} />
             )}
           </TmdbKeyCard>
-          <RegionField saved={status.data.watchRegion || "FR"} />
+          {/* Remontée quand la région enregistrée change : le brouillon repart d'elle. */}
+          <RegionCard
+            key={status.data.watchRegion || "FR"}
+            saved={status.data.watchRegion || "FR"}
+            tmdbConfigured={status.data.tmdb.configured}
+          />
         </div>
       ) : status.isError ? (
         <AdminNotice
@@ -52,42 +57,5 @@ export function AdminMetadata() {
         <MetadataSkeleton />
       )}
     </AdminPage>
-  );
-}
-
-/** Région des plateformes : code pays à deux lettres, enregistré seul. */
-function RegionField({ saved }: { saved: string }) {
-  const { t } = useTranslation("admin");
-  const update = useUpdateAdminMetadata();
-  const [region, setRegion] = useState(saved);
-  const draft = region.trim().toUpperCase();
-
-  return (
-    <AdminSection title={t("metadataRegionTitle")} description={t("metadataRegionDescription")}>
-      <label className={cls.lbl} htmlFor="watch-region">{t("metadataRegionLabel")}</label>
-      <div className="flex items-center gap-3">
-        <input
-          id="watch-region"
-          type="text"
-          maxLength={2}
-          value={region}
-          onChange={(e) => {
-            setRegion(e.target.value.toUpperCase());
-            update.reset();
-          }}
-          className={`${cls.inp} w-24`}
-        />
-        <button
-          type="button"
-          onClick={() => update.mutate({ watchRegion: draft })}
-          disabled={update.isPending || !/^[A-Z]{2}$/.test(draft) || draft === saved}
-          className={cls.bp}
-        >
-          {t("save")}
-        </button>
-        {update.isSuccess && <span className="text-xs text-status-success-fg">{t("saved")}</span>}
-        {update.isError && <span className="text-xs text-status-error-fg">{t("saveFailed")}</span>}
-      </div>
-    </AdminSection>
   );
 }

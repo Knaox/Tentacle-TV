@@ -70,4 +70,23 @@ export default {
   fanoutFailed_other: "{{count}} en échec — le détail est dans les journaux du serveur.",
   fanoutInterrupted: "Dernier calcul interrompu {{when}}, à {{processed}} sur {{total}} comptes.",
   justNow: "à l'instant",
+  // Région des plateformes
+  regionTitle: "Plateformes de streaming",
+  regionDescription:
+    "Le pays dont les offres s'affichent : pastilles Netflix, Crunchyroll… sur les fiches, et filtres par plateforme des recommandations. En changer ne redemande rien à TMDB : les plateformes se mettent à jour en arrière-plan.",
+  regionLabel: "Pays",
+  regionSearch: "Rechercher un pays",
+  regionNoMatch: "Aucun pays ne correspond.",
+  regionCoveredOnly: "Seuls les pays où TMDB référence des plateformes sont proposés.",
+  regionProviders_one: "{{count}} plateforme référencée dans ce pays",
+  regionProviders_other: "{{count}} plateformes référencées dans ce pays",
+  regionOptionProviders_one: "{{count}} plateforme",
+  regionOptionProviders_other: "{{count}} plateformes",
+  regionNotCovered: "TMDB ne référence aucune plateforme dans ce pays : les pastilles et les filtres resteront vides.",
+  regionCoverageUnknown: "Ajoutez une clé TMDB pour voir les pays couverts et leurs plateformes.",
+  regionPreview: "Aperçu",
+  regionPreviewMore_one: "et {{count}} autre",
+  regionPreviewMore_other: "et {{count}} autres",
+  regionRevert: "Rétablir",
+  regionSavedToast: "Région enregistrée : {{country}}. Les plateformes se mettent à jour en arrière-plan.",
 } as const;

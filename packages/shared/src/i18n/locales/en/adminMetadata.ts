@@ -70,4 +70,23 @@ export default {
   fanoutFailed_other: "{{count}} failed — details are in the server logs.",
   fanoutInterrupted: "Last run stopped {{when}}, at {{processed}} of {{total}} accounts.",
   justNow: "just now",
+  // Streaming region
+  regionTitle: "Streaming platforms",
+  regionDescription:
+    "The country whose offers are shown: Netflix, Crunchyroll… chips on detail pages, and platform filters in recommendations. Changing it asks TMDB for nothing: platforms update in the background.",
+  regionLabel: "Country",
+  regionSearch: "Search for a country",
+  regionNoMatch: "No country matches.",
+  regionCoveredOnly: "Only countries where TMDB lists platforms are offered.",
+  regionProviders_one: "{{count}} platform listed in this country",
+  regionProviders_other: "{{count}} platforms listed in this country",
+  regionOptionProviders_one: "{{count}} platform",
+  regionOptionProviders_other: "{{count}} platforms",
+  regionNotCovered: "TMDB lists no platform in this country: chips and filters will stay empty.",
+  regionCoverageUnknown: "Add a TMDB key to see covered countries and their platforms.",
+  regionPreview: "Preview",
+  regionPreviewMore_one: "and {{count}} more",
+  regionPreviewMore_other: "and {{count}} more",
+  regionRevert: "Revert",
+  regionSavedToast: "Region saved: {{country}}. Platforms update in the background.",
 } as const;
