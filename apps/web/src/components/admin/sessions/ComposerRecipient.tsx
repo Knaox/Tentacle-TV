@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { joinParts, type AdminSessionDto, type AdminWatchGroupDto } from "@tentacle-tv/shared";
-import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
+import { UserAvatar } from "../../ui/UserAvatar";
 import { SessionAppLabel } from "./SessionAppLabel";
 
 /**
@@ -14,7 +14,7 @@ const STACK = 4;
 export function SessionRecipient({ session }: { session: AdminSessionDto }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <LeaderboardAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} size={22} />
+      <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} imageTag={session.userImageTag} size={22} />
       <SessionAppLabel session={session} className="truncate" />
     </span>
   );
@@ -28,7 +28,7 @@ export function GroupRecipient({ group }: { group: AdminWatchGroupDto }) {
       <span className="flex shrink-0 -space-x-1.5">
         {shown.map((member) => (
           <span key={member.userId} className="rounded-full ring-2 ring-[color:var(--surface-modal)]">
-            <LeaderboardAvatar userId={member.userId} name={member.userName} hasAvatar={member.hasAvatar} size={22} />
+            <UserAvatar userId={member.userId} name={member.userName} hasAvatar={member.hasAvatar} size={22} />
           </span>
         ))}
       </span>

@@ -14,7 +14,7 @@ import {
 } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { easeOut } from "../../../theme/motion";
-import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
+import { UserAvatar } from "../../ui/UserAvatar";
 import { ActionPill } from "./ActionPill";
 import { CommandStatus } from "./CommandStatus";
 import { ConfirmButton } from "./ConfirmButton";
@@ -98,7 +98,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
                 : t("inSync");
           return (
             <li key={member.userId} className="flex items-center gap-3">
-              <LeaderboardAvatar userId={member.userId} name={member.userName} hasAvatar={member.hasAvatar} size={28} />
+              <UserAvatar userId={member.userId} name={member.userName} hasAvatar={member.hasAvatar} size={28} />
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 text-sm font-medium text-content-primary">
                   <span className="truncate">{member.userName}</span>
