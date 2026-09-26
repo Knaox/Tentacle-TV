@@ -6,7 +6,7 @@ import {
   completionFor, foldForSearch, inlineCompletion, suggestionsFrom,
   type SearchPersonHit, type SearchTopHit,
 } from "@tentacle-tv/shared";
-import { tvSearchNotice, tvSearchSections, type TvSearchFacet } from "@tentacle-tv/tv-core";
+import { searchSubmitAnswer, tvSearchNotice, tvSearchSections, type TvSearchFacet } from "@tentacle-tv/tv-core";
 import { pushRecentSearch, readRecentSearches } from "@/components/search/recentSearches";
 import { registerBack } from "../../focus/back";
 import { giveFocus } from "../../focus/active";
@@ -18,7 +18,7 @@ import { SearchResultsTv, type SearchResultsActions } from "./SearchResultsTv";
 import { SearchIdleTv } from "./SearchIdleTv";
 import { SearchBrowseTv } from "./SearchBrowseTv";
 import { useZoneMemory } from "./zoneMemory";
-import { submitAnswer, useSubmitToResults } from "./submitToResults";
+import { useSubmitToResults } from "./submitToResults";
 import {
   closeBrowse, closeSearch, isFreshOpen, lastSearchTarget, openBrowse, rememberSearchTarget,
   setSearchQuery, settleOpen, useSearchOpen, useSearchState,
@@ -206,7 +206,7 @@ function SearchOverlayTv() {
   const idle = debounced.length === 0;
   const loading = !idle && data === undefined && search.isFetching;
   const empty = !idle && current && !search.isFetching && sections.length === 0;
-  const answer = submitAnswer({
+  const answer = searchSubmitAnswer({
     typed: query, debounced, current, fetching: search.isFetching, failed: search.isError, sections: sections.length,
   });
   const submit = useSubmitToResults(answer, main, bar);
