@@ -50,13 +50,15 @@ interface RowProps {
  * la rangée du web.
  */
 /**
- * Avance avec laquelle une rangée se RÉVÈLE — cartes montées, fondu joué : un
- * écran entier au-dessus et au-dessous. Une rangée qui n'était montée qu'une
- * fois visible entrait à l'écran vide, se garnissait, puis chargeait ses
- * images sous les yeux : c'est ce qu'on voyait « réapparaître » en parcourant
- * l'accueil un peu vite.
+ * Avance avec laquelle une rangée se RÉVÈLE — cartes montées, images
+ * demandées : deux écrans au-dessus et au-dessous. Une rangée qui n'était
+ * montée qu'une fois visible entrait à l'écran vide, se garnissait, puis
+ * chargeait ses images sous les yeux : c'est ce qu'on voyait « réapparaître »
+ * en parcourant l'accueil un peu vite. Un seul écran d'avance ne suffisait pas
+ * encore, touche maintenue : ~0,5 s pour qu'une affiche jamais vue arrive du
+ * serveur, et il en manquait jusqu'à treize à l'écran.
  */
-const REVEAL_MARGIN = "100% 0px";
+const REVEAL_MARGIN = "200% 0px";
 
 /**
  * Distance à laquelle une rangée garde ses cartes : deux écrans. Au-delà, sa
