@@ -1,8 +1,9 @@
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, View } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { TVPosterCard } from "../cards/TVPosterCard";
+import { useTVNavActions } from "../../context/TVNavContext";
 import { CardConfig } from "../../theme/colors";
 
 const GAP = 24;
@@ -84,12 +85,29 @@ const GridCell = memo(function GridCell({ item, index, cardW, preferred, onOpen,
   onFocusIndex: (index: number) => void;
 }) {
   const [focused, setFocused] = useState(false);
+  // Mémoire de focus du rail, comme les cartes de rangée (`FocusableRow`) : le
+  // rail reste visible sur une étagère, et sa sortie doit rendre la carte
+  // qu'on avait quittée. Effacée à la mort de la cellule tant qu'elle la
+  // désigne — une vue détruite ne se refocalise pas.
+  const cellRef = useRef<View>(null);
+  const { lastContentNodeRef } = useTVNavActions();
+  useEffect(
+    () => () => {
+      if (lastContentNodeRef.current === cellRef.current) lastContentNodeRef.current = null;
+    },
+    [lastContentNodeRef],
+  );
   return (
     <Focusable
+      ref={cellRef}
       variant="card"
       hasTVPreferredFocus={preferred}
       onPress={() => onOpen(item)}
-      onFocus={() => { setFocused(true); onFocusIndex(index); }}
+      onFocus={() => {
+        setFocused(true);
+        lastContentNodeRef.current = cellRef.current;
+        onFocusIndex(index);
+      }}
       onBlur={() => setFocused(false)}
       accessibilityLabel={item.Name}
     >
