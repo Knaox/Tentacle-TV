@@ -64,7 +64,7 @@ Une mesure changée dans l'app se change ici aussi : c'est tout l'objet du miroi
   administration) : en-tête de verre + barre flottante — ou rail sur l'iPad
   couché ; le contenu commence sous l'en-tête ;
 - **empilé** (`/library/…`, `/watchlist`, `/favorites`, `/settings/…`,
-  `/about`, `/credits`, `/support`, `/pair-device`, hors ligne) : comme les
+  `/about`, `/credits`, `/support`, `/pair-device`) : comme les
   écrans poussés de l'app, ni en-tête ni barre, l'écran porte son retour ;
 - **plein cadre** (`/search`) : l'écran gère tout, zones sûres comprises.
 
@@ -76,7 +76,8 @@ Hors coquille, comme dans l'app : la fiche (`/media/:id`), le lecteur
 Garder hors ligne, notifications push, Liquid Glass, « Passer hors ligne »,
 réglages du moteur vidéo natif : absents du miroir, comme l'app les masque
 quand ils ne s'appliquent pas. L'administration et le catalogue hors ligne
-gardent la présentation du bureau, dans la coquille.
+gardent la présentation du bureau, dans la coquille à onglets (ces pages
+n'ont pas de bouton retour à elles).
 
 ## Vérifier que le bureau n'a pas bougé
 
