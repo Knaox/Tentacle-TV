@@ -52,24 +52,25 @@
   /* L'anneau est déjà posé par `focus.css` ; il suit l'agrandissement. */
 }
 
-/* Le titre et les métadonnées sous l'affiche : tronqués au repos, entiers au
-   focus. C'est le seul endroit où l'on gagne à en dire plus, et il ne coûte
-   rien tant que le focus n'y est pas.
+/* Le titre sous l'affiche : tronqué au repos ET au focus, qui ne change que
+   sa couleur.
 
-   Les cartes de Ma liste et des favoris ont leur propre règle, plus bas : le
-   web y emploie un `p` tronqué par `line-clamp`, une autre technique que le
-   `text-overflow` du `h3`, qui ne se déplie pas de la même façon. */
+   Il se dépliait au focus pour s'afficher en entier. Mais un titre déplié
+   occupe une ligne de plus : la carte grandissait, et avec elle sa rangée,
+   qui poussait tout ce qui est dessous — mesuré, 398 ↔ 436 px sur
+   l'accueil. Passer d'un titre court à un titre long faisait donc sauter
+   l'écran à chaque appui de côté. Une ligne, comme les applications
+   natives ; le titre entier se lit sur la fiche.
+
+   Les grilles — bibliothèques, Ma liste, favoris, collections — suivent la
+   même règle dans `collections-tv.css` : le web y tronque un `p` par
+   `line-clamp` au lieu d'un `h3` par `text-overflow`. */
 .carte-tv .row-dim-card h3 {
   transition: color var(--carte-focus-duree) ease-out;
 }
 
 .carte-tv:focus .row-dim-card h3 {
   color: var(--text-primary);
-  /* `white-space` et `overflow` reviennent à leur valeur initiale : le titre
-     complet s'affiche sur deux lignes au lieu d'être coupé. */
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
 }
 
 /* Les voisines s'effacent À PEINE.

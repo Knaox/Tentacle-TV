@@ -11,21 +11,21 @@
  * suit traite ce que ce conteneur ne règle pas.
  */
 
-/* Le titre d'une carte de collection est un `p` tronqué par `line-clamp`, là
-   où les rangées et les bibliothèques emploient un `h3` tronqué par
-   `text-overflow`. La règle de `cards-tv.css` ne visait que la seconde : sous
-   le focus, ces titres-ci restaient gris et coupés.
+/* Le titre d'une carte de grille — bibliothèque, collection, Ma liste,
+   favoris — est un `p` tronqué par `line-clamp`, là où les rangées emploient
+   un `h3` tronqué par `text-overflow`. La règle de `cards-tv.css` ne visait
+   que le second : sous le focus, ces titres-ci restaient gris.
 
-   Le dépliage se fait donc dans la technique du `line-clamp` — porter le
-   nombre de lignes à deux — et non par `overflow: visible`, qui ferait
-   déborder le titre entier sur la rangée du dessous. */
+   Même règle que là-bas : le focus éclaire le titre sans le déplier. Porté à
+   deux lignes, il grandissait la carte, et la grille poussait ses rangées du
+   dessous à chaque appui de côté — mesuré dans une bibliothèque, 379 ↔ 417 px
+   (cf. `cards-tv.css`). */
 .carte-tv p.line-clamp-1 {
   transition: color var(--carte-focus-duree) ease-out;
 }
 
 .carte-tv:focus p.line-clamp-1 {
   color: var(--text-primary);
-  -webkit-line-clamp: 2;
 }
 
 /* L'écart entre les onglets de filtre et la première rangée.
