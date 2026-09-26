@@ -66,6 +66,7 @@ import { startNotificationPurge } from "./services/notificationPurge";
 import { startFingerprintPurge, sweepStaleTempDirs } from "./services/audioFingerprint";
 import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
+import { setRestartShutdown } from "./services/pluginRestart";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 import { registerBodyParsers } from "./services/bodyParsers";
 import { rateLimitKey, rateLimitMax } from "./services/rateLimitPolicy";
@@ -357,6 +358,9 @@ async function main() {
       void app.close().then(() => process.exit(0));
     });
   }
+  // Le redémarrage qu'impose un module serveur de plugin passe par le même
+  // arrêt propre, borné (cf. pluginRestart.ts).
+  setRestartShutdown(() => app.close());
 
   await app.listen({ port: PORT, host: HOST });
   console.log(`Tentacle running on http://localhost:${PORT} (state: ${state})`);
