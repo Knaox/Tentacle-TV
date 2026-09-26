@@ -30,7 +30,10 @@ export interface AdminPageHeaderProps {
 export function AdminPageHeader({ title, description, badges, actions, children }: AdminPageHeaderProps) {
   return (
     <header className="mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
-      <div className="min-w-0">
+      {/* `grow basis-80` : sans base, le bloc mesurait sa largeur maximale —
+          768 px avec une description longue — et les actions passaient dessous
+          dès 1024 px de large. Elles ne descendent plus que sur téléphone. */}
+      <div className="min-w-0 grow basis-80">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="text-heading-1 tracking-tight text-content-primary">{title}</h1>
           {badges}

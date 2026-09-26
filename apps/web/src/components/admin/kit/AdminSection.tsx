@@ -61,7 +61,8 @@ export function AdminSection({
         // Une rangée qui se replie : une action courte reste à droite du titre
         // même sur téléphone, une longue passe dessous.
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-5 pt-5">
-          <div className="min-w-0">
+          {/* Base de 12 rem : une action courte tient à droite même à 390 px. */}
+          <div className="min-w-0 grow basis-48">
             {title || badges ? (
               <div className="flex flex-wrap items-center gap-2">
                 {title ? (
