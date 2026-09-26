@@ -28,6 +28,11 @@ export interface FanoutStatus {
   running: boolean;
   processed: number;
   total: number;
+  /** Comptes en échec dans la passe en cours, ou la dernière. */
+  failed: number;
+  /** Fin de la dernière passe (ISO) — null pendant une passe et avant la
+   *  première : l'admin lit « terminé il y a 5 min », pas un compteur muet. */
+  finishedAt: string | null;
 }
 
 const PROFILE_FRESH_MS = 24 * 3600_000;
@@ -42,9 +47,11 @@ let cancelled = false;
 let rerunAfter: FanoutOptions | null = null;
 let processed = 0;
 let total = 0;
+let failed = 0;
+let finishedAt: string | null = null;
 
 export function fanoutStatus(): FanoutStatus {
-  return { running, processed, total };
+  return { running, processed, total, failed, finishedAt };
 }
 
 export function cancelRecoFanout(): void {
@@ -62,10 +69,13 @@ export function kickRecoFanout(opts: FanoutOptions): void {
   cancelled = false;
   processed = 0;
   total = 0;
+  failed = 0;
+  finishedAt = null;
   void runFanout(opts)
     .catch((err) => console.error("[Reco] Fan-out en échec :", err))
     .finally(() => {
       running = false;
+      finishedAt = new Date().toISOString();
       const rerun = rerunAfter;
       rerunAfter = null;
       if (rerun && !cancelled) kickRecoFanout(rerun);
@@ -106,7 +116,6 @@ async function runFanout(opts: FanoutOptions): Promise<void> {
   total = targets.length;
   let done = 0;
   let skipped = 0;
-  let failed = 0;
   for (const user of targets) {
     if (cancelled) break;
     let worked = false;
