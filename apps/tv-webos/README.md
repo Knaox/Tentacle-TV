@@ -704,11 +704,21 @@ applicatif sait ouvrir.
 Rien n'est dessiné pour le clavier virtuel, et rien ne doit l'être : webOS
 l'affiche de lui-même dès qu'un `<input>` reçoit le focus. Mais il ne le
 retire qu'à la **perte du focus**, pas à la validation : sa touche Entrée
-n'arrive à l'application que comme un `keydown` 13 sur le champ, et aucune API
-ne congédie le clavier. Un champ qui ne déplace pas le focus à la validation
-garde donc le clavier à l'écran. La recherche le fait (`submitToResults.ts`) :
-Entrée mène au premier résultat, ou à la barre tant que la réponse à ce qui est
-tapé n'est pas arrivée — et elle y emmène le focus si elle suit de peu.
+n'arrive à l'application que comme un `keydown` 13 sur le champ, et LG ne
+documente aucun moyen de congédier le clavier (`PalmSystem.keyboardHide`
+existe, sans documentation ni garantie — on ne s'y fie pas). Un champ qui ne
+déplace pas le focus à la validation garde donc le clavier à l'écran. La
+recherche le fait (`submitToResults.ts`) : Entrée mène au premier résultat, ou
+à la barre tant que la réponse à ce qui est tapé n'est pas arrivée — et elle y
+emmène le focus si elle suit de peu.
+
+**Ce que le banc ne montre pas.** Sur la C3 (webOS 25), un focus posé par
+DevTools — `Input.dispatchKeyEvent`, `focus()` — ne fait PAS monter le
+clavier : `PalmSystem.isKeyboardVisible` reste faux, aucun
+`keyboardStateChange` ne part, et `PalmSystem.keyboardShow()` n'y change rien.
+Le chemin de la validation s'éprouve donc par CDP — Entrée injectée, focus
+suivi —, mais la fermeture du clavier elle-même ne se constate qu'à la
+télécommande.
 
 Le moteur de focus laisse gauche et droite au curseur de saisie tant qu'un
 champ est actif, et garde haut et bas — c'est par eux qu'on en sort. Sans

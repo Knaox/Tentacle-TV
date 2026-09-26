@@ -12,8 +12,8 @@ import type { SearchBarHandle } from "./SearchBarTv";
  * champ a le focus, et la touche Entrée n'arrive à l'application que comme un
  * `keydown` 13 sur ce champ. Rien ne l'écoutait — on tapait, on validait, et
  * le clavier restait posé sur l'écran. Déplacer le focus suffit à le faire
- * descendre : c'est le seul moyen que la plateforme laisse, elle n'expose
- * aucune commande pour le masquer.
+ * descendre : c'est le seul moyen que LG documente — `PalmSystem.keyboardHide`
+ * existe, sans documentation ni garantie.
  *
  * Où va le focus : la décision est commune aux trois téléviseurs
  * (`searchSubmitAnswer`, tv-core). Ici, au premier résultat de la colonne ;
