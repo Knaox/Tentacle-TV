@@ -750,7 +750,13 @@ redirection de zone s'applique au gagnant : la géométrie brute sur tout
 l'écran faisait gagner ce qui s'ALIGNE au départ plutôt que ce qui le SUIT, et
 sur une fiche « bas » depuis Retour filait à la tuile d'extras par-dessus la
 rangée d'actions, quand une ligne d'épisode pleine largeur — jamais désalignée
-de nulle part — enjambait extras et saisons. Un voisin qui **chevauche** reste
+de nulle part — enjambait extras et saisons. Cette bande se cherche d'abord
+dans la **zone** de départ, tant qu'elle offre une suite dans la direction
+(`keepInZone`, `focus/zones.ts`) : deux colonnes côte à côte n'ont pas le même
+rythme, et dans la recherche la troisième suggestion, 33 px sous le meilleur
+résultat, battait la rangée de titres à 101 px — « bas » partait à gauche. Au
+bout de la zone, tout l'écran redevient candidat : c'est ainsi qu'on descend
+des actions d'une fiche vers ses saisons. Un voisin qui **chevauche** reste
 un voisin (`geometrie.ts`) : la passe d'écarts PostCSS pose des marges
 négatives sur toute ligne `flex gap-*`, et exiger un franchissement de bord
 strict rendait les options d'un menu inatteignables une sur deux. Le rail

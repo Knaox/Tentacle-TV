@@ -9,13 +9,7 @@ import { reviewAfterMount } from "./wait";
 import { closeExpandedMenu } from "./expandedMenu";
 import { redirectTrackEntry, trackExit } from "./trackEntry";
 import { holdWhileRevealing } from "./repeatGate";
-import {
-  RAIL_SELECTOR,
-  inRail,
-  railEntry,
-  redirectZoneEntry,
-  railExit,
-} from "./zones";
+import { RAIL_SELECTOR, inRail, railEntry, redirectZoneEntry, railExit, keepInZone } from "./zones";
 
 /**
  * Le déplacement du focus : viser un voisin, défiler s'il n'est pas monté,
@@ -210,9 +204,11 @@ export function aim(direction: Direction): boolean {
     // rangée des actions, et « bas » depuis une pastille ronde enjambait
     // extras et saisons jusqu'à la ligne d'épisode, pleine largeur donc
     // jamais désalignée. S'arrêter à la première bande rend au « bas » de
-    // salon son sens : le bloc SUIVANT, jamais deux plus loin.
+    // salon son sens : le bloc SUIVANT, jamais deux plus loin. Et la bande se
+    // cherche d'abord dans la ZONE de départ, tant qu'elle a une suite : une
+    // colonne voisine n'a pas le même rythme (`keepInZone`).
     if (!confine) {
-      const band = restrictToFirstRow(since, candidates, direction);
+      const band = restrictToFirstRow(since, keepInZone(start, since, candidates, direction), direction);
       if (band.length > 0) candidates = band;
     }
   }
