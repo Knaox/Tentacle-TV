@@ -13,6 +13,14 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.23.0]
+### FR
+- **Administrateurs : la page Services refaite** — l'état de chaque service d'un regard, une section par service, les modifications non enregistrées visibles et annulables ; Jellyfin se teste sans ressortir la clé d'administration (serveur 1.20.0), et la réinitialisation du serveur demande de taper « réinitialiser »
+- **Le bandeau « Clé Jellyfin hors service » s'affiche de nouveau** : il ne se montrait plus depuis la 1.20.9
+### EN
+- **Administrators: the Services page redesigned** — every service's state at a glance, one section per service, unsaved changes visible and cancellable; Jellyfin can be tested without digging out the admin key again (server 1.20.0), and resetting the server asks you to type "reset"
+- **The "Jellyfin key out of service" banner shows again**: it had stopped appearing since 1.20.9
+
 ## [1.22.0]
 ### FR
 - **Une recherche digne de ce nom** : ⌘K ou Ctrl+K où que vous soyez, ou un clic dans la barre — les résultats arrivent à chaque lettre, en quelques millisecondes, calculés par le serveur Tentacle. Les fautes de frappe se corrigent (« Résultats pour … »), la suite du titre se propose en gris (⇥ l'accepte), et l'on trouve aussi par acteur, réalisateur, genre ou studio, chacun avec sa page. Le meilleur résultat se lance d'un clic

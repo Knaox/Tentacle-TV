@@ -5,6 +5,24 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.20.0]
+### FR
+- **Administration : la page Services refaite** — l'état de chaque service d'un regard en tête de page (Jellyfin, base de données, adresse publique, lecture directe, analyse audio), puis une section par service ; ce qui n'est pas enregistré se voit et s'annule :
+  - Jellyfin se teste et se modifie sans ressortir la clé d'administration, et un échec dit pourquoi : serveur muet, clé refusée, adresse qui n'est pas un Jellyfin
+  - la base de données est vraiment sondée, version de MariaDB comprise ; la connexion affichée est celle en service, et quand c'est le docker-compose qui la fixe, la page le dit au lieu d'offrir un formulaire sans effet
+  - l'essai de la lecture directe se lit d'un coup d'œil (version de Jellyfin, CORS autorisé ou absent), les compteurs de l'analyse audio aussi
+  - la réinitialisation du serveur a sa zone de danger, et demande de taper « réinitialiser »
+  - « Configurer maintenant » (jumelage TV) et « Renseigner une nouvelle clé » mènent droit au bon champ
+- **Le bandeau « Clé Jellyfin hors service » s'affiche de nouveau** : il ne se montrait plus depuis la 1.14.0, même avec une clé révoquée
+### EN
+- **Administration: the Services page redesigned** — every service's state at a glance at the top (Jellyfin, database, public address, direct play, audio analysis), then one section per service; unsaved changes show and can be cancelled:
+  - Jellyfin can be tested and changed without digging out the admin key again, and a failure says why: server not responding, key rejected, address that is not a Jellyfin server
+  - the database is really probed, MariaDB version included; the connection shown is the one in service, and when docker-compose sets it, the page says so instead of offering a form that would have no effect
+  - the direct play test reads at a glance (Jellyfin version, CORS allowed or missing), and so do the audio analysis counters
+  - resetting the server has its own danger zone and asks you to type "reset"
+  - "Configure now" (TV pairing) and "Enter a new key" lead straight to the right field
+- **The "Jellyfin key out of service" banner shows again**: it had stopped appearing since 1.14.0, even with a revoked key
+
 ## [1.19.3]
 ### FR
 - **Une demande qui part se dit sur le téléphone** : avec Vigie 1.17.0, « « Titre » est en route » arrive en notification dès que Sonarr ou Radarr prend le titre — sous le même réglage que « Contenu demandé disponible », rien à activer
