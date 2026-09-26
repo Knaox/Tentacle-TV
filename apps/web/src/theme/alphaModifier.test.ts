@@ -76,6 +76,20 @@ function sourceFiles(root: string): string[] {
   return out;
 }
 
+/** Les occurrences d'un motif dans le code (commentaires exclus) des racines scannées. */
+function offendersOf(pattern: RegExp): string[] {
+  const offenders: string[] = [];
+  for (const root of ROOTS) {
+    for (const file of sourceFiles(root)) {
+      if (file.endsWith("alphaModifier.test.ts")) continue;
+      for (const m of stripComments(readFileSync(file, "utf8")).matchAll(pattern)) {
+        offenders.push(`${file.split("/src/")[1] ?? file} → ${m[0]}`);
+      }
+    }
+  }
+  return offenders;
+}
+
 describe("les jetons de couleur et le modificateur d'opacité de Tailwind", () => {
   const colors = flattenColors(
     (tentacleTailwindPreset.theme?.extend?.colors ?? {}) as ColorTree,
@@ -91,15 +105,24 @@ describe("les jetons de couleur et le modificateur d'opacité de Tailwind", () =
       `\\b(?:${COLOR_PREFIXES.join("|")})-(${fragile.join("|")})\\/\\d{1,3}\\b`,
       "g",
     );
-    const offenders: string[] = [];
-    for (const root of ROOTS) {
-      for (const file of sourceFiles(root)) {
-        if (file.endsWith("alphaModifier.test.ts")) continue;
-        for (const m of stripComments(readFileSync(file, "utf8")).matchAll(pattern)) {
-          offenders.push(`${file.split("/src/")[1] ?? file} → ${m[0]}`);
-        }
-      }
-    }
-    expect(offenders).toEqual([]);
+    expect(offendersOf(pattern)).toEqual([]);
+  });
+
+  /**
+   * Le même piège, écrit en valeur arbitraire : `border-[var(--brand)]/45`,
+   * `bg-[var(--brand)]/[0.08]`. Tailwind ne sait pas plus lire une couleur
+   * dans `var()` entre crochets que dans un jeton du préset — la déclaration
+   * disparaît, sans un mot. Dix-huit classes de l'administration et trente
+   * autres ailleurs ne produisaient ainsi RIEN (anneaux de focus, bordures de
+   * sélection, survols rouges). Le remède reste celui du bandeau :
+   * `border-[rgba(var(--brand-rgb),0.45)]`, ou un jeton pré-alphé
+   * (`border-danger-border`).
+   */
+  it("aucune valeur arbitraire `[var(--…)]` ne porte de modificateur d'opacité", () => {
+    const pattern = new RegExp(
+      `\\b(?:${COLOR_PREFIXES.join("|")})-\\[(?:[a-z-]+:)?var\\([^\\]]*\\)\\]\\/(?:\\d{1,3}\\b|\\[[^\\]]+\\])`,
+      "g",
+    );
+    expect(offendersOf(pattern)).toEqual([]);
   });
 });
