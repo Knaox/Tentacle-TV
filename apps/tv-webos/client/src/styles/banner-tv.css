@@ -101,6 +101,26 @@ section.bg-surface-0 {
   border-radius: var(--hero-frame-radius);
 }
 
+/* ── Le grain des bannières, en image et non en SVG filtré ────────────────
+ *
+ * `index.css` dessine le grain par un SVG `feTurbulence` posé en fond. Sur la
+ * dalle, ce fond était le poste le plus cher de toute l'interface, et pas
+ * pour lui-même : tant qu'il est à l'écran, Chromium tient la bannière — et
+ * avec elle le fond au focus, le voile et le décor de marque — pour modifiée
+ * à CHAQUE repeint, où qu'il ait lieu. Mesuré sur la C3 : changer la couleur
+ * d'un libellé du rail faisait rastériser 220 tuiles plein écran ; sans le
+ * SVG, cinq. Chaque déplacement du focus payait donc l'écran entier, et le
+ * bruit fractal de quatre octaves se recalculait tuile par tuile.
+ *
+ * `images/grain-hero.png` est CE SVG, rendu par le Chromium du téléviseur à
+ * la taille de son `viewBox` : mêmes pixels. `contain` reproduit le
+ * dimensionnement d'un SVG sans taille propre, et l'écart mesuré à la capture
+ * est de 4/255 au pire, sur un calque affiché à 6 % d'opacité. */
+.noise-texture {
+  background-image: url("./images/grain-hero.png");
+  background-size: contain;
+}
+
 @keyframes banniere-tv-fondu {
   from {
     opacity: 0;
