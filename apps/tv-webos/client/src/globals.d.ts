@@ -101,3 +101,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare module "@tanstack/react-virtual?original" {
+  export * from "@tanstack/react-virtual";
+}

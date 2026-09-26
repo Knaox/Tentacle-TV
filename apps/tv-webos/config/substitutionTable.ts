@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { API, CLIENT, UI, WEB } from "./substitutionPaths";
+import { API, CLIENT, MODULES, UI, WEB } from "./substitutionPaths";
 import { PLAYBACK_FILES } from "./substitutionTablePlayback";
 
 /**
@@ -260,6 +260,12 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // Jellyfin, mais son import tirait tout l'arbre des téléchargements dans le
   // graphe de la fiche média.
   [resolve(WEB, "downloads/DetailDownloadAction.tsx")]: resolve(CLIENT, "shims/inert.ts"),
+
+  // Les virtualiseurs de grille (bibliothèque, Ma liste, Favoris) rendus sans
+  // `flushSync` au défilement : un pas du moteur de focus rendait toute la
+  // grille de façon synchrone, filtres compris (`shims/reactVirtual.ts`).
+  [resolve(MODULES, "@tanstack/react-virtual/dist/esm/index.js")]:
+    resolve(CLIENT, "shims/reactVirtual.ts"),
 
   // Outils de développement montés à la racine par `App.tsx`.
   [resolve(WEB, "dev/soakPlayer.tsx")]: resolve(CLIENT, "shims/devHarness.ts"),
