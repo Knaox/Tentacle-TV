@@ -179,6 +179,15 @@ Pour chaque composant : visuel **identique**, comportement **équivalent**, impl
 
 ---
 
+### Kit admin (web)
+Toute page d'administration se compose avec `apps/web/src/components/admin/kit` — une seule entrée :
+- **AdminPage** : en-tête commun (h1 `text-heading-1`, description bornée à `max-w-3xl`, pastilles, actions à droite qui ne passent dessous que sur téléphone, résumé) + contenu espacé de 24. La page ne pose ni marges, ni largeur, ni `PageTransition` : la coquille (`AdminLayout` sur `SettingsShell`) est pleine largeur sur desktop et padde elle-même.
+- **AdminSection** : carte de section (radius 16, `border-line-subtle`, `bg-fill-faint`, h2 `text-base`), `flush` pour des lignes à filets bord à bord (`SettingsRow`), `tone="danger"` pour une zone destructive, `id` pour une ancre.
+- **StatusPill** (point + mot, jetons `status-*-bg/-fg`), **StatTile** (tuile de chiffre, lien entier vers sa section), **AdminNotice** (encadré teinté sans bordure).
+- **Tabs / TabPanel + useUrlTab** : onglets WAI-ARIA en pilules (grammaire R6), onglet actif dans `?tab=`.
+- Boutons et champs : jetons `cls` de `pages/adminUtils` ; interrupteur : `ToggleSwitch` ; confirmation : `ConfirmDialog`, jamais `window.confirm()`.
+- **Opacité sur `var()`** : `border-[var(--brand)]/45` ne produit AUCUN CSS (Tailwind 3 ne compose pas d'alpha sur une variable). Écrire `border-[rgba(var(--brand-rgb),0.45)]` ou un jeton pré-alphé (`danger-border`, `danger-surface-hover`, `status-*-bg`) — `alphaModifier.test.ts` refuse l'écriture fautive.
+
 ## 🎭 Patterns d'interaction
 
 ### Long-press card (mobile) / Right-click (desktop)
@@ -235,7 +244,7 @@ Pour chaque composant : visuel **identique**, comportement **équivalent**, impl
 | Favorites | `FavoritesScreen` | `Favorites.tsx` | _idem desktop_ |
 | Search | `SearchScreen` | `SearchOverlay` | _idem desktop_ |
 | Profile/Settings | `ProfileScreen` | `Preferences.tsx` | `MobileProfile.tsx` ✅ |
-| Admin | _via Profile_ | `Admin.tsx` | _idem desktop_ |
+| Admin | _via Profile_ | `AdminLayout` + `pages/Admin*.tsx` (kit `components/admin/kit`) | vue d'ensemble `/admin` en atterrissage, rail caché |
 | Player | `PlayerScreen` | `VideoPlayer/DesktopPlayer` | _idem desktop_ |
 | Auth | 5 screens | 5 pages | _idem desktop_ |
 | Pair TV | `PairTVScreen` | `PairDevice.tsx` | _idem desktop_ |
