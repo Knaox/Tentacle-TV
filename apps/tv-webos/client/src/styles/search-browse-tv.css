@@ -16,6 +16,41 @@
   background: var(--surface-0);
 }
 
+/* Le bouton Retour : la pastille du retour de la fiche — chevron et libellé —
+   à l'échelle d'une dalle, sur la surface des pastilles de la recherche. Sa
+   hauteur est celle d'une entrée du rail. `inline-flex` pour qu'il épouse son
+   libellé au lieu de couvrir la largeur de la page. */
+.tv-search-back {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+  height: 64px;
+  margin: 0 0 12px 0;
+  padding: 0 32px 0 20px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--cta-ghost-bg);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Au focus, le libellé s'éclaire et la pastille se remplit, comme une entrée
+   du rail — l'anneau fait le reste. Sans transition : `color` et `background`
+   repeignent, et la réponse à un appui doit être immédiate. */
+.tv-search-back:focus {
+  color: var(--text-primary);
+  background: var(--fill-strong);
+}
+
+.tv-search-back-icon {
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+
 .tv-search-browse-header {
   display: flex;
   align-items: center;
