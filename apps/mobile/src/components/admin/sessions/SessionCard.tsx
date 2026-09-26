@@ -81,7 +81,7 @@ export const SessionCard = memo(function SessionCard({ session, now, clockOffset
           <Text style={st.title} numberOfLines={1}>{title}</Text>
           {subtitle !== "" && <Text style={st.subtitle} numberOfLines={1}>{subtitle}</Text>}
           <View style={st.who}>
-            <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} size={22} />
+            <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} imageTag={session.userImageTag} size={22} />
             <Text style={st.user} numberOfLines={1}>{session.userName}</Text>
             {session.viaTentacle && (
               <View style={st.tentacle} accessible accessibilityLabel={t("viaTentacle")} accessibilityHint={t("viaTentacleHint")}>
