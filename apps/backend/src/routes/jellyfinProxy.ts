@@ -175,7 +175,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // Tout le reste : `no-store` — ces réponses portent l'état d'un compte,
       // et Jellyfin n'émet aucune directive, ce qui laissait le cache du
       // système en resservir de périmées (cf. apiCacheControl).
-      const imageCache = response.status < 400 ? imageCacheControl(wildcardPath) : null;
+      const imageCache = response.status < 400 ? imageCacheControl(wildcardPath, q?.tag) : null;
       const kind = { media: isMediaResponse, image: imageCache !== null };
       for (const [key, value] of response.headers) {
         if (skipResponseHeader(key.toLowerCase(), kind)) continue;

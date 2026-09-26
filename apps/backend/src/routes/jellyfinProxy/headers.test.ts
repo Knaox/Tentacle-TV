@@ -39,5 +39,15 @@ describe("imageCacheControl", () => {
   it("met en cache les images, et elles seules", () => {
     expect(imageCacheControl("Items/abc/Images/Primary")).toMatch(/max-age=86400/);
     expect(imageCacheControl("Users/abc/Items")).toBeNull();
+    expect(imageCacheControl("Users/abc/Items", "tag")).toBeNull();
+  });
+
+  it("garde un an la photo d'un compte demandée avec son étiquette : l'adresse change avec la photo", () => {
+    expect(imageCacheControl("Users/abc/Images/Primary", "5f0e")).toBe("private, max-age=31536000, immutable");
+  });
+
+  it("ne garde pas la photo d'un compte sans étiquette — une adresse fixe resservirait l'ancienne", () => {
+    expect(imageCacheControl("Users/abc/Images/Primary")).toBeNull();
+    expect(imageCacheControl("Users/abc/Images/Primary", "")).toBeNull();
   });
 });
