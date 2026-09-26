@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type Component } from "react";
+import { useCallback, useEffect, useRef, type Component } from "react";
 import { View, Text, TVFocusGuideView } from "react-native";
 import Animated, {
   useSharedValue,
@@ -8,8 +8,8 @@ import Animated, {
 import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
-import { useTvFocusClaim } from "../hooks/useTvFocusClaim";
 import { osdPlayPauseNodeRef, setSkipNode } from "./player/focus/osdFocusBus";
+import { useSkipPillFocus } from "./player/focus/useSkipPillFocus";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
 import { TV_OVERSCAN_PT, TV_PLAYER_SKIP } from "@tentacle-tv/theme";
 
@@ -48,8 +48,10 @@ interface TVPlaybackOverlayProps {
  * Et la prise de focus ne dépend plus de l'habillage. Elle en dépendait par
  * prudence — un bouton sans sortie géométrique piège la télécommande — mais la
  * sortie existe : le guide vers play/pause, monté justement quand l'habillage
- * est là. `useTVFocusGrab` n'agit qu'au front MONTANT, donc le bouton prend le
- * focus quand IL apparaît, et l'habillage qui s'ouvre ensuite garde le sien.
+ * est là. `useTvFocusClaim` n'agit qu'au front MONTANT, donc le bouton prend le
+ * focus quand IL apparaît, et l'habillage qui s'ouvre ensuite garde le sien —
+ * sauf s'il s'ouvre au MÊME instant (sortie d'une avance rapide) : le bouton
+ * qui reparaît l'emporte alors (`noteSkipFocusClaim`).
  *
  * # Ce qui revient par l'habillage ne vole rien
  *
@@ -90,7 +92,9 @@ interface TVPlaybackOverlayProps {
  * 4. le pont MONTANT, lui, appartient à l'habillage (`osdFocusBus`) : le
  *    bouton y publie son node, la barre de progression le vise ;
  * 5. la montée en `transform`, jamais en `bottom` — une position animée relance
- *    la mise en page à chaque image au-dessus d'un décodeur.
+ *    la mise en page à chaque image au-dessus d'un décodeur ;
+ * 6. le RELAIS quand le bouton qui tenait le focus disparaît (`useSkipPillFocus`) :
+ *    vers l'habillage s'il est là, sinon vers la pilule ou le fond.
  */
 export function TVPlaybackOverlay({
   overlay, onSkip, onDismiss, onPlayNow,
@@ -121,26 +125,11 @@ export function TVPlaybackOverlay({
   // s'impose pas.
   const grabs = visible && pill?.dismissible === true && !showSettings;
 
-  // Le SECOND moment où le focus doit revenir ici : l'habillage s'éteint. Ses
-  // boutons cessent alors d'être focusables et le focus se perd — le bouton
-  // restait à l'écran sans que le D-pad puisse l'atteindre. Rien n'apparaît,
-  // donc rien ne monte : c'est le nonce qui réclame de nouveau.
-  const [claim, setClaim] = useState(0);
-  const wasOverlayVisible = useRef(overlayVisible);
-  useEffect(() => {
-    const closing = wasOverlayVisible.current && !overlayVisible;
-    wasOverlayVisible.current = overlayVisible;
-    if (closing && grabs) setClaim((n) => n + 1);
-  }, [overlayVisible, grabs]);
-
-  useTvFocusClaim(refusable ? dismissRef : skipRef, grabs, claim);
-
-  // Lequel des deux boutons tient le focus ? Deux états plutôt qu'un seul :
-  // passer de l'un à l'autre émet un blur et un focus dont l'ordre n'est pas
-  // garanti, et un drapeau unique clignoterait au passage.
-  const [skipFocused, setSkipFocused] = useState(false);
-  const [dismissFocused, setDismissFocused] = useState(false);
-  const islandFocused = skipFocused || dismissFocused;
+  // Réclamation, horodatage et relais du focus (1. et 6.) — cf. le hook.
+  const { islandFocused, handlers } = useSkipPillFocus({
+    skipRef, dismissRef, shown: pill !== null, grabs, refusable, overlayVisible,
+    focusOwnedElsewhere: overlay.kind === "nextCard" || showSettings || showEpisodes,
+  });
 
   /** Le nœud que le guide MONTANT de l'habillage vise — publié tant qu'il vit. */
   const publishSkipNode = useCallback((node: unknown) => {
@@ -195,8 +184,7 @@ export function TVPlaybackOverlay({
           onPress={skip !== null ? onSkip : onPlayNow}
           focusRadius={TV_PLAYER_SKIP.radius}
           hasTVPreferredFocus={grabs && !refusable}
-          onFocus={() => setSkipFocused(true)}
-          onBlur={() => setSkipFocused(false)}
+          {...handlers.skip}
           // L'anneau est blanc, la pilule aussi : seul le halo de marque dit
           // où l'on est. Même parti que la feuille du téléviseur LG.
           glowOverride={TV_PLAYER_SKIP.focusGlow}
@@ -232,8 +220,7 @@ export function TVPlaybackOverlay({
             onPress={onDismiss}
             focusRadius={TV_PLAYER_SKIP.radius}
             hasTVPreferredFocus={grabs}
-            onFocus={() => setDismissFocused(true)}
-            onBlur={() => setDismissFocused(false)}
+            {...handlers.dismiss}
             glowOverride={TV_PLAYER_SKIP.focusGlow}
           >
             <View style={{
