@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { railNavigate } from "../../navigation/railNavigate";
+import { returnToSearchBar } from "../search/searchBarReturn";
 import { TVSideRail } from "./TVSideRail";
 import { useContentFocusNode, useRailFocusSignal } from "../../context/TVNavContext";
 import { useContentFocusCapture } from "../../hooks/useContentFocusCapture";
@@ -18,7 +19,10 @@ export function deriveRailKey(state: NavStateLike): string | null {
   switch (route.name) {
     case "Home": return "Home";
     case "Recommendations": return "Recommendations";
-    case "Search": return "Search";
+    // L'étagère d'un acteur ou d'un genre est un morceau de la recherche : le
+    // rail y reste, « Rechercher » actif — parité LG.
+    case "Search":
+    case "SearchBrowse": return "Search";
     case "Watchlist": return "Watchlist";
     case "Favorites": return "Favorites";
     case "Settings": return "Settings";
@@ -56,6 +60,9 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
   const armContentFocus = useContentFocusCapture(contentFocusNode);
 
   const handleNavigate = useCallback((key: string) => {
+    // « Rechercher », la recherche ou son étagère à l'écran : revenir à la
+    // barre plutôt qu'un geste mort (`searchBarReturn.ts`).
+    if (key === "Search" && returnToSearchBar()) return;
     if (key === railKeyRef.current) return;
     armContentFocus(); // le focus ira au contenu dès que l'écran l'aura publié
     // À la manière d'onglets : la pile ne grossit plus à chaque passage (cf. `railNavigate`).
