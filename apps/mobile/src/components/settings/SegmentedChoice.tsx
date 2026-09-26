@@ -27,9 +27,15 @@ interface Props {
   accessibilityLabel: string;
   /** Quatre options sur un téléphone : deux par rangée, sinon un mot se coupe. */
   wrap?: boolean;
+  /**
+   * Variante EN LIGNE : largeur du contenu, posée à droite d'une ligne de
+   * réglage. Deux ou trois mots courts ne méritent pas un pavé pleine largeur.
+   */
+  compact?: boolean;
 }
 
 const SWAP_MS = 150;
+const COMPACT_HIT_SLOP = { top: 6, bottom: 6 } as const;
 
 /**
  * Un choix parmi deux à quatre valeurs, dans UN cadre : le sélecteur segmenté
@@ -41,16 +47,17 @@ const SWAP_MS = 150;
  * Un `Switch` ne sait dire que oui ou non, et une liste modale pour trois
  * valeurs coûte deux gestes là où il en faut un.
  */
-export function SegmentedChoice({ options, value, onChange, accessibilityLabel, wrap }: Props) {
+export function SegmentedChoice({ options, value, onChange, accessibilityLabel, wrap, compact }: Props) {
   const st = useThemedStyles(makeStyles);
   return (
-    <View style={[st.group, wrap && st.groupWrap]} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
+    <View style={[st.group, wrap && st.groupWrap, compact && st.groupCompact]} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
       {options.map((option) => (
         <SegmentOption
           key={option.value}
           label={option.label}
           active={option.value === value}
           wrap={wrap}
+          compact={compact}
           onPress={() => { onChange(option.value); }}
         />
       ))}
@@ -58,7 +65,13 @@ export function SegmentedChoice({ options, value, onChange, accessibilityLabel, 
   );
 }
 
-function SegmentOption({ label, active, wrap, onPress }: { label: string; active: boolean; wrap?: boolean; onPress: () => void }) {
+function SegmentOption({ label, active, wrap, compact, onPress }: {
+  label: string;
+  active: boolean;
+  wrap?: boolean;
+  compact?: boolean;
+  onPress: () => void;
+}) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const gradient = ctlGradient(theme.colors.brand);
@@ -73,7 +86,9 @@ function SegmentOption({ label, active, wrap, onPress }: { label: string; active
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected: active, checked: active }}
-      style={({ pressed }) => [st.option, wrap && st.optionWrap, pressed && st.pressed]}
+      // La variante compacte dessine 32 pt : la zone tactile, elle, en garde 44.
+      hitSlop={compact ? COMPACT_HIT_SLOP : undefined}
+      style={({ pressed }) => [st.option, wrap && st.optionWrap, compact && st.optionCompact, pressed && st.pressed]}
     >
       <Animated.View style={[st.lit, litStyle]} collapsable={false}>
         <LinearGradient
@@ -85,7 +100,7 @@ function SegmentOption({ label, active, wrap, onPress }: { label: string; active
         />
       </Animated.View>
       {/* Deux lignes, pas une : un libellé de choix doit se lire en entier. */}
-      <Text style={[st.label, active && st.labelActive]} numberOfLines={2}>
+      <Text style={[st.label, active && st.labelActive]} numberOfLines={compact ? 1 : 2}>
         {label}
       </Text>
     </Pressable>
@@ -104,6 +119,7 @@ const makeStyles = (t: AppTheme) =>
       backgroundColor: t.colors.surface.s1,
     },
     groupWrap: { flexWrap: "wrap" },
+    groupCompact: { alignSelf: "flex-start", flexShrink: 0 },
     option: {
       flex: 1,
       minHeight: 44,
@@ -115,6 +131,7 @@ const makeStyles = (t: AppTheme) =>
       overflow: "hidden",
     },
     optionWrap: { flex: 0, flexGrow: 1, flexBasis: "48%" },
+    optionCompact: { flex: 0, minHeight: 32, minWidth: 52, paddingVertical: 0, paddingHorizontal: spacing.md - 2 },
     pressed: { transform: [{ scale: 0.97 }] },
     // Lueur discrète `--ctl-glow-segment`, sans liseré : un état, pas un bouton.
     lit: {

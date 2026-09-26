@@ -1,5 +1,8 @@
 export { SettingsSection } from "./SettingsSection";
-export { SettingsRow } from "./SettingsRow";
+export { SettingsRow, type SettingsIcon } from "./SettingsRow";
+export { SettingsChoiceRow } from "./SettingsChoiceRow";
+export { SettingsOptionList, type SettingsOption } from "./SettingsOptionList";
+export { SettingsPickerRow } from "./SettingsPickerRow";
 export { ThemeModeToggle } from "./ThemeModeToggle";
 export { LiquidGlassToggle } from "./LiquidGlassToggle";
 export { PlaybackSettingsSection } from "./PlaybackSettingsSection";
