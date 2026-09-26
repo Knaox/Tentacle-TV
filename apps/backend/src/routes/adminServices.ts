@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey, setConfigValue, setAppState } from "../services/configStore";
 import { getPrisma, getDatabaseUrl, saveDatabaseUrl } from "../services/db";
@@ -11,11 +11,17 @@ import { invalidateAdminKeyHealth } from "../services/jellyfinKeyHealth";
  *
  * Enregistré depuis `adminRoutes`, donc derrière `requireAdmin`. À part
  * d'`admin.ts`, qui frôlait les trois cents lignes.
+ *
+ * Les échecs portent un CODE (`error`) que la page traduit, et gardent le
+ * `message` français d'avant : une application de bureau pas encore à jour
+ * l'affiche tel quel.
  */
 
 const jellyfinConfigSchema = z.object({
   url: z.string().url(),
-  apiKey: z.string().min(1),
+  // Absente ou vide : la clé déjà enregistrée. Elle ne redescend jamais au
+  // navigateur — changer l'URL ou retester ne demande plus de la retaper.
+  apiKey: z.string().optional(),
 });
 
 const dbConfigSchema = z.object({
@@ -25,6 +31,83 @@ const dbConfigSchema = z.object({
   user: z.string().min(1),
   password: z.string().min(1),
 });
+
+type ServiceError =
+  | "invalid-body"
+  | "jellyfin-key-missing"
+  | "jellyfin-unreachable"
+  | "jellyfin-invalid"
+  | "jellyfin-rejected";
+
+type JellyfinProbe =
+  | { ok: true; version: string; serverName: string }
+  | { ok: false; error: "jellyfin-unreachable" | "jellyfin-invalid" }
+  | { ok: false; error: "jellyfin-rejected"; httpStatus: number };
+
+function legacyMessage(error: ServiceError, httpStatus?: number): string {
+  switch (error) {
+    case "invalid-body": return "Requête invalide";
+    case "jellyfin-key-missing": return "Clé API requise";
+    case "jellyfin-unreachable": return "Impossible de contacter Jellyfin";
+    case "jellyfin-invalid": return "Ce serveur ne répond pas comme Jellyfin";
+    case "jellyfin-rejected": return `Jellyfin a répondu ${httpStatus ?? "une erreur"}`;
+  }
+}
+
+function fail(reply: FastifyReply, error: ServiceError, httpStatus?: number) {
+  return reply.status(400).send({
+    error,
+    message: legacyMessage(error, httpStatus),
+    ...(httpStatus !== undefined ? { httpStatus } : {}),
+  });
+}
+
+/**
+ * `/System/Info` avec la clé : distingue un Jellyfin qui répond, une clé qu'il
+ * refuse, un hôte muet, et une adresse qui n'est pas un Jellyfin.
+ */
+async function probeJellyfin(url: string, apiKey: string, timeoutMs: number): Promise<JellyfinProbe> {
+  let res: Response;
+  try {
+    res = await fetch(`${url}/System/Info`, {
+      headers: { "X-Emby-Token": apiKey },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch {
+    return { ok: false, error: "jellyfin-unreachable" };
+  }
+  if (!res.ok) return { ok: false, error: "jellyfin-rejected", httpStatus: res.status };
+  const info = (await res.json().catch(() => null)) as { Version?: unknown; ServerName?: unknown } | null;
+  if (typeof info?.Version !== "string") return { ok: false, error: "jellyfin-invalid" };
+  return { ok: true, version: info.Version, serverName: typeof info.ServerName === "string" ? info.ServerName : "" };
+}
+
+/** L'URL saisie, sans barre finale, et la clé à essayer : la saisie, sinon celle enregistrée. */
+function readJellyfinBody(body: unknown): { url: string; typedKey: string | null; apiKey: string | null } | null {
+  const parsed = jellyfinConfigSchema.safeParse(body);
+  if (!parsed.success) return null;
+  const typedKey = parsed.data.apiKey?.trim() || null;
+  return {
+    url: parsed.data.url.replace(/\/$/, ""),
+    typedKey,
+    apiKey: typedKey ?? getJellyfinApiKey() ?? null,
+  };
+}
+
+async function jellyfinStatus() {
+  const url = getJellyfinUrl() ?? "";
+  const apiKey = getJellyfinApiKey();
+  const base = { url, apiKeyConfigured: !!apiKey, version: "", serverName: "" };
+  if (!url || !apiKey) return { ...base, status: "disconnected" };
+  const probe = await probeJellyfin(url, apiKey, 3000);
+  if (probe.ok) return { ...base, status: "connected", version: probe.version, serverName: probe.serverName };
+  return {
+    ...base,
+    status: "error",
+    error: probe.error,
+    ...(probe.error === "jellyfin-rejected" ? { httpStatus: probe.httpStatus } : {}),
+  };
+}
 
 function parseDbUrl(url: string): { host: string; port: number; database: string; user: string } | null {
   try {
@@ -38,94 +121,56 @@ function parseDbUrl(url: string): { host: string; port: number; database: string
   } catch { return null; }
 }
 
+function databaseStatus() {
+  const dbUrl = getDatabaseUrl();
+  return {
+    status: dbUrl ? "connected" : "disconnected",
+    fromEnv: !!process.env.DATABASE_URL,
+    ...(dbUrl ? { fields: parseDbUrl(dbUrl) } : {}),
+  };
+}
+
 export const adminServicesRoutes: FastifyPluginAsync = async (app) => {
-  /** GET /api/admin/services — Status of all configured services. */
+  /** GET /api/admin/services — Jellyfin sondé à chaque appel, et la base. */
   app.get("/services", async () => {
-    const jellyfinUrl = getJellyfinUrl();
-    const dbUrl = getDatabaseUrl();
-
-    let jellyfinStatus = "disconnected";
-    let jellyfinVersion = "";
-    if (jellyfinUrl && getJellyfinApiKey()) {
-      try {
-        const res = await fetch(`${jellyfinUrl}/System/Info`, {
-          headers: { "X-Emby-Token": getJellyfinApiKey()! },
-          signal: AbortSignal.timeout(3000),
-        });
-        if (res.ok) {
-          const info = await res.json();
-          jellyfinStatus = "connected";
-          jellyfinVersion = info.Version || "";
-        } else {
-          jellyfinStatus = "error";
-        }
-      } catch {
-        jellyfinStatus = "error";
-      }
-    }
-
-    return {
-      jellyfin: {
-        status: jellyfinStatus,
-        url: jellyfinUrl || "",
-        version: jellyfinVersion,
-      },
-      database: {
-        status: dbUrl ? "connected" : "disconnected",
-        fromEnv: !!process.env.DATABASE_URL,
-        ...(dbUrl ? { fields: parseDbUrl(dbUrl) } : {}),
-      },
-    };
+    return { jellyfin: await jellyfinStatus(), database: databaseStatus() };
   });
 
-  /** PUT /api/admin/jellyfin — Update Jellyfin config. */
+  /** PUT /api/admin/jellyfin — Enregistre l'URL (et la clé, si saisie) après un essai réussi. */
   app.put("/jellyfin", async (request, reply) => {
-    const body = jellyfinConfigSchema.parse(request.body);
-    const url = body.url.replace(/\/$/, "");
+    const body = readJellyfinBody(request.body);
+    if (!body) return fail(reply, "invalid-body");
+    if (!body.apiKey) return fail(reply, "jellyfin-key-missing");
 
-    // Test connection first
-    try {
-      const res = await fetch(`${url}/System/Info`, {
-        headers: { "X-Emby-Token": body.apiKey },
-        signal: AbortSignal.timeout(5000),
-      });
-      if (!res.ok) {
-        return reply.status(400).send({ message: `Jellyfin a répondu ${res.status}` });
-      }
-    } catch {
-      return reply.status(400).send({ message: "Impossible de contacter Jellyfin" });
-    }
+    const probe = await probeJellyfin(body.url, body.apiKey, 5000);
+    if (!probe.ok) return fail(reply, probe.error, probe.error === "jellyfin-rejected" ? probe.httpStatus : undefined);
 
-    await setConfigValue("jellyfin_url", url);
-    await setConfigValue("jellyfin_api_key", body.apiKey);
+    await setConfigValue("jellyfin_url", body.url);
+    if (body.typedKey) await setConfigValue("jellyfin_api_key", body.typedKey);
     restartJellyfinWs();
     // Le verdict précédent portait sur l'ancienne clé : le garder ferait
     // survivre l'alerte à sa propre correction pendant cinq minutes.
     invalidateAdminKeyHealth();
-    return { success: true };
+    return { success: true, version: probe.version, serverName: probe.serverName };
   });
 
-  /** POST /api/admin/test-jellyfin — Test Jellyfin connection. */
+  /** POST /api/admin/test-jellyfin — Essaie une URL et une clé, sans rien enregistrer. */
   app.post("/test-jellyfin", async (request, reply) => {
-    const body = jellyfinConfigSchema.parse(request.body);
-    const url = body.url.replace(/\/$/, "");
-    try {
-      const res = await fetch(`${url}/System/Info`, {
-        headers: { "X-Emby-Token": body.apiKey },
-        signal: AbortSignal.timeout(5000),
-      });
-      if (!res.ok) return reply.status(400).send({ message: "Connexion échouée" });
-      const info = await res.json();
-      return { success: true, version: info.Version, serverName: info.ServerName };
-    } catch {
-      return reply.status(400).send({ message: "Serveur injoignable" });
-    }
+    const body = readJellyfinBody(request.body);
+    if (!body) return fail(reply, "invalid-body");
+    if (!body.apiKey) return fail(reply, "jellyfin-key-missing");
+
+    const probe = await probeJellyfin(body.url, body.apiKey, 5000);
+    if (!probe.ok) return fail(reply, probe.error, probe.error === "jellyfin-rejected" ? probe.httpStatus : undefined);
+    return { success: true, version: probe.version, serverName: probe.serverName };
   });
 
   /** PUT /api/admin/database — Update database connection (requires restart). */
-  app.put("/database", async (request, _reply) => {
-    const body = dbConfigSchema.parse(request.body);
-    const url = `mysql://${body.user}:${encodeURIComponent(body.password)}@${body.host}:${body.port}/${body.database}`;
+  app.put("/database", async (request, reply) => {
+    const parsed = dbConfigSchema.safeParse(request.body);
+    if (!parsed.success) return fail(reply, "invalid-body");
+    const body = parsed.data;
+    const url = `mysql://${encodeURIComponent(body.user)}:${encodeURIComponent(body.password)}@${body.host}:${body.port}/${body.database}`;
     saveDatabaseUrl(url);
     return { success: true, message: "Configuration sauvegardée. Redémarrez le serveur pour appliquer." };
   });
