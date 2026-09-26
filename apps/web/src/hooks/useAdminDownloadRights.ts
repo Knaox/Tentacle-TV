@@ -7,7 +7,9 @@ import { BACKEND, creds, hdrs } from "../pages/adminUtils";
  *
  * Deux écrans les affichent : Admin > Téléchargements (tous les comptes) et la
  * fiche d'un compte dans Admin > Utilisateurs. Ils partagent CETTE clé : un
- * interrupteur basculé dans l'un se voit dans l'autre sans relecture.
+ * interrupteur basculé dans l'un se voit dans l'autre sans relecture. La page
+ * Téléchargements lit encore par ses propres fonctions, sous la même clé et
+ * pour la même réponse — elle pourra passer par ce hook.
  */
 
 export interface AdminUserRights {
