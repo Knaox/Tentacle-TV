@@ -108,49 +108,58 @@ export function TVLibraryGrid({
     />
   ), [columns, cellW, cardW, onPressItem, onItemFocus, scrollToRow, isLastItem, entryRef]);
 
+  // La liste défile jusqu'aux bords HAUT et BAS de l'écran : coupée au retrait
+  // d'overscan du cadre, elle dessinait un cadre noir de 54 pt sur un grand
+  // écran. Au repos, le contenu reste à sa place (même retrait, intérieur).
   return (
-    <FlashList
-      // Remonter la liste à CHAQUE changement de bibliothèque : sans `key`,
-      // FlashList est réutilisée et conserve son contentOffset interne (offset
-      // résiduel = page « légèrement défilée »). Un conteneur neuf repart à 0.
-      // Le tri/les filtres ne changent PAS la key → pas de remontage → pas de
-      // vol de focus sur les commandes.
-      key={`${listKey}-${columns}`}
-      ref={flashListRef}
-      data={items}
-      numColumns={columns}
-      estimatedItemSize={estimatedItemSize}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.Id}
-      // La place de l'agrandissement au focus, au-dessus de la première
-      // rangée : la liste rogne ses bords, et la carte focalisée grandit par
-      // le bas — son anneau était coupé (Ma liste, Favoris) ou recouvrait la
-      // barre de filtres (bibliothèque).
-      ListHeaderComponent={
-        <View>
-          {header}
-          <View style={{ height: CARD_FOCUS_BLEED }} />
-        </View>
-      }
-      ListEmptyComponent={emptyComponent}
-      contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingBottom: 80 }}
-      onEndReached={onEndReached}
-      onEndReachedThreshold={0.5}
-      // Deux rangées d'avance : c'est la marge dans laquelle un appui maintenu
-      // avance sans attendre le JS — sur Android, le focus natif descend de
-      // rangée en rangée tant qu'elles existent, et un appui qui n'en trouve
-      // plus est perdu. À une seule, une rafale de vingt appuis n'en honorait
-      // qu'une moitié. Le montage ne paie pas cette avance d'un coup : la liste
-      // l'étend image par image après la première mise en page.
-      drawDistance={estimatedItemSize * 2}
-      // Une page qui arrive change la dernière carte : sans cela, l'ancienne
-      // gardait son `nextFocusRight` sur elle-même et bloquait la droite.
-      extraData={items.length}
-      overrideItemLayout={(layout) => { layout.size = estimatedItemSize; }}
-      ListFooterComponent={isFetchingNextPage ? <FooterLoader /> : null}
-      overScrollMode="never"
-      showsVerticalScrollIndicator={SHOWS_VERTICAL_SCROLL_INDICATOR}
-    />
+    <View style={{ flex: 1, marginVertical: -TV_OVERSCAN_PT.y }}>
+      <FlashList
+        // Remonter la liste à CHAQUE changement de bibliothèque : sans `key`,
+        // FlashList est réutilisée et conserve son contentOffset interne (offset
+        // résiduel = page « légèrement défilée »). Un conteneur neuf repart à 0.
+        // Le tri/les filtres ne changent PAS la key → pas de remontage → pas de
+        // vol de focus sur les commandes.
+        key={`${listKey}-${columns}`}
+        ref={flashListRef}
+        data={items}
+        numColumns={columns}
+        estimatedItemSize={estimatedItemSize}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.Id}
+        // La place de l'agrandissement au focus, au-dessus de la première
+        // rangée : la liste rogne ses bords, et la carte focalisée grandit par
+        // le bas — son anneau était coupé (Ma liste, Favoris) ou recouvrait la
+        // barre de filtres (bibliothèque).
+        ListHeaderComponent={
+          <View>
+            {header}
+            <View style={{ height: CARD_FOCUS_BLEED }} />
+          </View>
+        }
+        ListEmptyComponent={emptyComponent}
+        contentContainerStyle={{
+          paddingHorizontal: Spacing.rowGutter,
+          paddingTop: TV_OVERSCAN_PT.y,
+          paddingBottom: 80 + TV_OVERSCAN_PT.y,
+        }}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.5}
+        // Deux rangées d'avance : c'est la marge dans laquelle un appui maintenu
+        // avance sans attendre le JS — sur Android, le focus natif descend de
+        // rangée en rangée tant qu'elles existent, et un appui qui n'en trouve
+        // plus est perdu. À une seule, une rafale de vingt appuis n'en honorait
+        // qu'une moitié. Le montage ne paie pas cette avance d'un coup : la liste
+        // l'étend image par image après la première mise en page.
+        drawDistance={estimatedItemSize * 2}
+        // Une page qui arrive change la dernière carte : sans cela, l'ancienne
+        // gardait son `nextFocusRight` sur elle-même et bloquait la droite.
+        extraData={items.length}
+        overrideItemLayout={(layout) => { layout.size = estimatedItemSize; }}
+        ListFooterComponent={isFetchingNextPage ? <FooterLoader /> : null}
+        overScrollMode="never"
+        showsVerticalScrollIndicator={SHOWS_VERTICAL_SCROLL_INDICATOR}
+      />
+    </View>
   );
 }
 
