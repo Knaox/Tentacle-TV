@@ -8,6 +8,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 class FakeElement {}
 const body = new FakeElement();
+
+/** Ce qui a ouvert la recherche : l'entrée du rail, qu'on sait refocaliser. */
+class FakeTrigger extends FakeElement {
+  tagName = "A";
+  textContent = "Rechercher";
+  isConnected = true;
+  focus = vi.fn();
+  getAttribute(): null {
+    return null;
+  }
+}
 beforeEach(() => {
   vi.resetModules();
   vi.useFakeTimers();
@@ -62,6 +73,50 @@ describe("magasin de la recherche", () => {
     s.openSearch();
     expect(s.takeCoveredScroll()).toBe(420);
     expect(s.takeCoveredScroll()).toBeNull();
+  });
+
+  it("déjà ouverte, revient à la barre au lieu de repartir de zéro", async () => {
+    const s = await store();
+    const barReturn = vi.fn();
+    s.registerBarReturn(barReturn);
+    s.openSearch();
+    s.settleOpen();
+    s.rememberSearchTarget("m|carte");
+    s.openBrowse({ kind: "genre", name: "Drame" }, "m|pastille");
+    s.openSearch();
+    expect(s.isBrowsing()).toBe(false);
+    expect(s.isFreshOpen()).toBe(false);
+    expect(s.lastSearchTarget()).toBe("m|carte");
+    vi.runAllTimers();
+    expect(barReturn).toHaveBeenCalledWith("m|pastille");
+  });
+
+  it("revient à la barre depuis une étagère, et plus du tout une fois fermée", async () => {
+    const s = await store();
+    const barReturn = vi.fn();
+    const unregister = s.registerBarReturn(barReturn);
+    s.openSearch();
+    s.openBrowse({ kind: "person", id: "p1", name: "Camille" }, "m|carte");
+    expect(s.returnToSearchBar()).toBe(true);
+    vi.runAllTimers();
+    expect(barReturn).toHaveBeenLastCalledWith("m|carte");
+    unregister();
+    s.closeSearch();
+    expect(s.returnToSearchBar()).toBe(false);
+  });
+
+  it("quittée pour un autre écran, ne rend pas le focus à son déclencheur", async () => {
+    const trigger = new FakeTrigger();
+    (document as unknown as { activeElement: unknown }).activeElement = trigger;
+    const s = await store();
+    s.openSearch();
+    s.closeSearch(false);
+    vi.runAllTimers();
+    expect(trigger.focus).not.toHaveBeenCalled();
+    s.openSearch();
+    s.closeSearch();
+    vi.runAllTimers();
+    expect(trigger.focus).toHaveBeenCalledTimes(1);
   });
 
   it("retient la dernière cible, et l'oublie à la fermeture", async () => {

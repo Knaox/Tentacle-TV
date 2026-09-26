@@ -97,8 +97,16 @@ function readSnapshot(): SearchSnapshot {
   return snapshot;
 }
 
+/**
+ * Ouvre la recherche — ou, déjà ouverte, revient à sa barre : l'entrée
+ * « Rechercher » du rail reste atteignable par-dessus la surcouche, et un
+ * raccourci clavier aussi. Ni l'une ni l'autre ne doit rien faire en silence.
+ */
 export function openSearch(): void {
-  if (snapshot.opened) return;
+  if (snapshot.opened) {
+    returnToSearchBar();
+    return;
+  }
   const active = document.activeElement;
   trigger = active instanceof HTMLElement && active !== document.body ? active : null;
   triggerKey = trigger ? elementKey(trigger) : null;
@@ -110,8 +118,13 @@ export function openSearch(): void {
   publish({ opened: true, query: "", browse: null });
 }
 
-/** Rend vrai si la recherche était ouverte — c'est ce qu'attend la pile Retour. */
-export function closeSearch(): boolean {
+/**
+ * Rend vrai si la recherche était ouverte — c'est ce qu'attend la pile Retour.
+ *
+ * `restoreFocus` à faux quand on la quitte pour un autre écran, par le rail :
+ * rendre le focus à son déclencheur le disputerait à l'écran d'arrivée.
+ */
+export function closeSearch(restoreFocus = true): boolean {
   if (!snapshot.opened) return false;
   publish(CLOSED);
   fresh = false;
@@ -125,6 +138,7 @@ export function closeSearch(): boolean {
   const key = triggerKey;
   trigger = null;
   triggerKey = null;
+  if (!restoreFocus) return true;
   setTimeout(() => {
     const element = target && target.isConnected ? target : key ? findByKey(key) : null;
     if (element && element.isConnected) element.focus();
@@ -151,6 +165,42 @@ export function closeBrowse(): { closed: boolean; openerKey: string | null } {
   browseOpenerKey = null;
   publish({ ...snapshot, browse: null });
   return { closed: true, openerKey };
+}
+
+/** Une recherche approfondie est-elle ouverte ? Lu hors de React, par la pile Retour. */
+export function isBrowsing(): boolean {
+  return snapshot.browse !== null;
+}
+
+/**
+ * Ce que la surcouche montée sait faire de sa barre : y revenir, en désignant
+ * ce qui avait ouvert la recherche approfondie comme l'entrée de la colonne des
+ * résultats. Inscrit par elle — ni le rail ni le bouton Retour n'en tiennent
+ * une référence.
+ */
+type BarReturn = (openerKey: string | null) => void;
+let barReturn: BarReturn | null = null;
+
+export function registerBarReturn(handler: BarReturn): () => void {
+  barReturn = handler;
+  return () => {
+    if (barReturn === handler) barReturn = null;
+  };
+}
+
+/**
+ * Revenir à la barre de recherche : le geste du bouton Retour d'une page
+ * d'acteur ou de genre, de la touche Retour sur cette page, et de l'entrée
+ * « Rechercher » du rail. L'étagère se referme ; la saisie, les résultats et
+ * leur défilement restent. Rend vrai si la recherche est ouverte.
+ */
+export function returnToSearchBar(): boolean {
+  if (!snapshot.opened) return false;
+  const { openerKey } = closeBrowse();
+  // Après le rendu qui démonte l'étagère : tant qu'elle est là, la barre est
+  // masquée (`data-covered`) et ne peut pas recevoir le focus.
+  setTimeout(() => barReturn?.(openerKey), 0);
+  return true;
 }
 
 /**
