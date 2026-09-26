@@ -58,7 +58,9 @@ export function AdminSection({
       } ${className ?? ""}`}
     >
       {hasHeader ? (
-        <div className="flex flex-col gap-3 px-5 pt-5 sm:flex-row sm:items-start sm:justify-between">
+        // Une rangée qui se replie : une action courte reste à droite du titre
+        // même sur téléphone, une longue passe dessous.
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-5 pt-5">
           <div className="min-w-0">
             {title || badges ? (
               <div className="flex flex-wrap items-center gap-2">
