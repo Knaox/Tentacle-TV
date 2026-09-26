@@ -10,18 +10,28 @@ const BADGE_MS = 5000;
  * débit remplace « Originale » (useTVAutoQualityCap), s'efface seul après 5 s.
  * Même arbitrage que TVSkipBadge : rendu conditionnel SANS opacité animée
  * (Reanimated n'applique pas un style animé à une View montée après coup).
+ *
+ * Les 5 s ne partent que quand l'image est là (`ready`) : le cap s'arme dès la
+ * décision de flux, donc sous l'écran de chargement — le badge s'y éteignait
+ * avant que le film ne paraisse. Une seule apparition par plafonnement : un
+ * rechargement de piste (audio, sous-titres) ne le rejoue pas.
  */
-export function TVAutoCapBadge({ active }: { active: boolean }) {
+export function TVAutoCapBadge({ capped, ready }: { capped: boolean; ready: boolean }) {
   const { t } = useTranslation("player");
   const [visible, setVisible] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shownRef = useRef(false);
 
   useEffect(() => {
-    if (!active) { setVisible(false); return; }
+    if (!capped) { shownRef.current = false; setVisible(false); }
+  }, [capped]);
+
+  useEffect(() => {
+    if (!capped || !ready || shownRef.current) return;
+    shownRef.current = true;
     setVisible(true);
-    timerRef.current = setTimeout(() => setVisible(false), BADGE_MS);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [active]);
+    const timer = setTimeout(() => setVisible(false), BADGE_MS);
+    return () => { clearTimeout(timer); setVisible(false); };
+  }, [capped, ready]);
 
   if (!visible) return null;
   return (
