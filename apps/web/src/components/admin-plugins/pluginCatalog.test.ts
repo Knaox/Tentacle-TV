@@ -14,6 +14,7 @@ import {
   iconImageUrl,
   monogram,
   navIconName,
+  relativeTime,
   repoLink,
   safeHttpUrl,
   searchCatalog,
@@ -144,5 +145,22 @@ describe("navigation du plugin", () => {
     expect(configRoute({ pluginId: "vigie", navItems, hasBundle: true })).toBe("/admin/plugins/vigie");
     expect(configRoute({ pluginId: "stats", navItems: [navItems[1]], hasBundle: true })).toBe("/admin/plugins/stats");
     expect(configRoute({ pluginId: "stats", navItems: [], hasBundle: false })).toBeNull();
+  });
+});
+
+describe("relativeTime", () => {
+  const NOW = Date.parse("2026-09-27T12:00:00.000Z");
+  const ago = (ms: number) => new Date(NOW - ms).toISOString();
+
+  it("dit l'âge d'une lecture, de la seconde au jour", () => {
+    expect(relativeTime(ago(20_000), NOW, "fr")).toBe("maintenant");
+    expect(relativeTime(ago(5 * 60_000), NOW, "fr")).toBe("il y a 5 minutes");
+    expect(relativeTime(ago(3 * 3_600_000), NOW, "en")).toBe("3 hours ago");
+    expect(relativeTime(ago(26 * 3_600_000), NOW, "fr")).toBe("hier");
+  });
+
+  it("une date future vaut « maintenant », une date illisible rien", () => {
+    expect(relativeTime(new Date(NOW + 120_000).toISOString(), NOW, "en")).toBe("now");
+    expect(relativeTime("pas une date", NOW, "fr")).toBeNull();
   });
 });

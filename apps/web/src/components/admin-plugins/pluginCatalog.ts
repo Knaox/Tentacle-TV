@@ -136,3 +136,21 @@ export function configRoute(plugin: Pick<InstalledPlugin, "pluginId" | "navItems
   if (adminNav) return adminNav.path;
   return plugin.hasBundle ? `/admin/plugins/${plugin.pluginId}` : null;
 }
+
+/**
+ * « il y a 5 minutes », « hier » : l'âge d'une lecture de registre, en clair
+ * (`Intl.RelativeTimeFormat`, de la seconde au jour). `null` pour une date
+ * illisible ; une date future (horloges décalées) vaut « maintenant ».
+ */
+export function relativeTime(iso: string, now: number, locale: string): string | null {
+  const at = Date.parse(iso);
+  if (Number.isNaN(at)) return null;
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const seconds = Math.min(0, Math.round((at - now) / 1000));
+  if (seconds > -60) return format.format(0, "second");
+  const minutes = Math.round(seconds / 60);
+  if (minutes > -60) return format.format(minutes, "minute");
+  const hours = Math.round(minutes / 60);
+  if (hours > -24) return format.format(hours, "hour");
+  return format.format(Math.round(hours / 24), "day");
+}

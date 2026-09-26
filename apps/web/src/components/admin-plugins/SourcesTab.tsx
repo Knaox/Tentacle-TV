@@ -1,158 +1,90 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { cls } from "./types";
-import {
-  usePluginSources, useAddSource, useRemoveSource, useToggleSource, useRefreshSources,
-} from "./hooks";
+import { Plus } from "lucide-react";
+import { useToast } from "../../contexts/ToastContext";
+import { AdminNotice, AdminSection } from "../admin/kit";
+import { ActionPill } from "../admin/sessions/ActionPill";
+import { AddSourceSheet } from "./AddSourceSheet";
+import { SourceRow } from "./SourceRow";
+import { usePluginOverview } from "./usePluginOverview";
+import { useSourceActions } from "./useSourceActions";
+import type { PluginSource } from "./types";
 
+/**
+ * Les sources des plugins : l'officielle, et les registres tiers ajoutés à la
+ * main. Chacune dit ce que son registre a donné à la dernière lecture ;
+ * « Actualiser le catalogue », en tête de page, les relit toutes.
+ */
 export function SourcesTab() {
-  const { t } = useTranslation("adminPlugins");
-  const { data: sources, isLoading } = usePluginSources();
-  const addMut = useAddSource();
-  const removeMut = useRemoveSource();
-  const toggleMut = useToggleSource();
-  const refreshMut = useRefreshSources();
+  const { t } = useTranslation(["adminPlugins", "common"]);
+  const { show } = useToast();
+  const { sources } = usePluginOverview();
+  const actions = useSourceActions();
+  const [adding, setAdding] = useState(false);
+  const addButton = useRef<HTMLButtonElement>(null);
+  const now = Date.now();
 
-  const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState("");
-  const [url, setUrl] = useState("");
+  const { toggle, remove } = actions;
+  const onToggle = useCallback((source: PluginSource) => void toggle(source), [toggle]);
+  const onRemove = useCallback((source: PluginSource) => {
+    void remove(source).then((done) => {
+      if (done) show("success", t("sourceRemoved", { name: source.name }));
+    });
+  }, [remove, show, t]);
 
-  const handleAdd = () => {
-    if (!name.trim() || !url.trim()) return;
-    addMut.mutate(
-      { name: name.trim(), url: url.trim() },
-      {
-        onSuccess: () => {
-          setName("");
-          setUrl("");
-          setShowForm(false);
-        },
-      }
-    );
-  };
+  const closeSheet = useCallback(() => {
+    setAdding(false);
+    addButton.current?.focus({ preventScroll: true });
+  }, []);
 
-  if (isLoading) {
+  const onAdded = useCallback((source: PluginSource) => {
+    closeSheet();
+    const registry = source.registry;
+    if (registry?.error) show("info", t("sourceAddedUnreachable", { name: source.name, error: registry.error }));
+    else show("success", t("sourceAdded", { name: source.name, count: registry?.pluginCount ?? 0 }));
+  }, [closeSheet, show, t]);
+
+  if (sources.isLoading) {
+    return <div className="skeleton-shimmer h-48 rounded-2xl" aria-busy="true" />;
+  }
+  if (sources.isError && !sources.data) {
     return (
-      <div className={cls.spinner}>
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
-      </div>
+      <AdminNotice
+        tone="error"
+        role="alert"
+        title={t("loadSourcesError")}
+        action={<ActionPill size="sm" label={t("common:retry")} onClick={() => void sources.refetch()} />}
+      />
     );
   }
 
+  const list = sources.data ?? [];
   return (
-    <div className="space-y-4">
-      {/* Refresh button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => refreshMut.mutate()}
-          disabled={refreshMut.isPending}
-          className={cls.bs}
-        >
-          {refreshMut.isPending ? "..." : t("adminPlugins:refreshAll")}
-        </button>
-      </div>
-
-      {/* Source list */}
-      {(!sources || sources.length === 0) && !showForm && (
-        <p className={cls.empty}>{t("adminPlugins:noSources")}</p>
-      )}
-
-      {sources && sources.length > 0 && (
-        <div className="space-y-3">
-          {sources.map((s) => (
-            <div key={s.id} className={cls.row}>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-content-primary">{s.name}</span>
-                  {s.official && (
-                    <span className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-0.5 text-xs text-[var(--brand-light)]">
-                      {t("adminPlugins:official")}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-content-quaternary truncate">{s.url}</p>
-              </div>
-
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Toggle */}
-                <button
-                  onClick={() => toggleMut.mutate(s.id)}
-                  disabled={toggleMut.isPending}
-                  className={`relative h-6 w-11 rounded-full transition-colors ${
-                    s.enabled ? "bg-tentacle-accent border border-transparent" : "bg-fill-medium border border-transparent"
-                  }`}
-                  title={s.enabled ? t("adminPlugins:disable") : t("adminPlugins:enable")}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-cta-primary-bg shadow-sm ring-1 ring-black/15 transition-transform ${
-                      s.enabled ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-
-                {/* Remove — only for non-official sources */}
-                {!s.official && (
-                  <button
-                    onClick={() => {
-                      if (confirm(t("adminPlugins:confirmRemoveSource", { name: s.name }))) {
-                        removeMut.mutate(s.id);
-                      }
-                    }}
-                    disabled={removeMut.isPending}
-                    className={cls.bd}
-                  >
-                    {t("adminPlugins:remove")}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Add source form */}
-      {showForm ? (
-        <div className={cls.card}>
-          <h3 className="mb-3 text-sm font-semibold text-content-primary">{t("adminPlugins:addSource")}</h3>
-          <p className="mb-3 text-xs text-yellow-400/80">{t("adminPlugins:sourceWarning")}</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className={cls.lbl}>{t("adminPlugins:sourceName")}</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("adminPlugins:sourceNamePlaceholder")}
-                className={cls.inp}
+    <>
+      <AdminSection
+        title={t("sourcesTitle")}
+        description={t("sourcesDescription")}
+        actions={<ActionPill ref={addButton} tone="brand" icon={Plus} label={t("addSource")} onClick={() => setAdding(true)} />}
+        flush
+      >
+        {list.length === 0 ? (
+          <p className="px-5 py-8 text-center text-sm text-content-tertiary">{t("noSources")}</p>
+        ) : (
+          <ul className="divide-y divide-line-subtle">
+            {list.map((source) => (
+              <SourceRow
+                key={source.id}
+                source={source}
+                state={actions.states.get(source.id)}
+                now={now}
+                onToggle={onToggle}
+                onRemove={onRemove}
               />
-            </div>
-            <div>
-              <label className={cls.lbl}>{t("adminPlugins:sourceUrl")}</label>
-              <input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://registry.example.com/plugins.json"
-                className={cls.inp}
-              />
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={handleAdd}
-              disabled={addMut.isPending || !name.trim() || !url.trim()}
-              className={cls.bp}
-            >
-              {addMut.isPending ? "..." : t("adminPlugins:add")}
-            </button>
-            <button onClick={() => setShowForm(false)} className={cls.bs}>
-              {t("common:cancel")}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button onClick={() => setShowForm(true)} className={cls.bp}>
-          {t("adminPlugins:addSource")}
-        </button>
-      )}
-    </div>
+            ))}
+          </ul>
+        )}
+      </AdminSection>
+      <AddSourceSheet open={adding} onClose={closeSheet} onSubmit={actions.add} onAdded={onAdded} />
+    </>
   );
 }
