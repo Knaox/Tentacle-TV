@@ -24,6 +24,23 @@ import {
   Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Search, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads
 } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
+import { ByFormFactor } from "./mirror/ByFormFactor";
+import {
+  MirrorAbout,
+  MirrorCredits,
+  MirrorFavorites,
+  MirrorLogin,
+  MirrorPairDevice,
+  MirrorProfile,
+  MirrorRegister,
+  MirrorSettingsPane,
+  MirrorSupport,
+  MirrorLibraries,
+  MirrorLibraryCatalog,
+  MirrorMediaDetail,
+  MirrorSearch,
+  MirrorWatchlist,
+} from "./mirror/screens";
 
 function PageSpinner() {
   return (
@@ -112,25 +129,27 @@ export function App() {
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<ByFormFactor desktop={<Login />} mirror={<MirrorLogin />} />} />
+          <Route path="/register" element={<ByFormFactor desktop={<Register />} mirror={<MirrorRegister />} />} />
           <Route path="/share/:token" element={<SharedListView />} />
           <Route path="/share/:token/:itemId" element={<SharedItemDetail />} />
 
           {/* Protected — immersive (no sidebar/tabbar) */}
           <Route path="/watch/:itemId" element={guard(<Watch />)} />
-          <Route path="/media/:itemId" element={guard(onlineOnly(<MediaDetail />))} />
+          <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
 
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
           <Route element={guard(<AppLayout />)}>
             {/* Hors ligne : l'accueil devient le catalogue local. */}
             <Route index element={offlineMode ? <OfflineCatalog /> : <Home />} />
-            <Route path="library/:libraryId" element={onlineOnly(<Library />)} />
-            <Route path="watchlist" element={onlineOnly(<Watchlist />)} />
-            <Route path="favorites" element={onlineOnly(<Favorites />)} />
+            <Route path="library/:libraryId" element={onlineOnly(<ByFormFactor desktop={<Library />} mirror={<MirrorLibraryCatalog />} />)} />
+            {/* L'onglet Bibliothèque de l'app : le miroir seulement, le bureau a ses onglets. */}
+            <Route path="libraries" element={onlineOnly(<ByFormFactor desktop={<Navigate to="/" replace />} mirror={<MirrorLibraries />} />)} />
+            <Route path="watchlist" element={onlineOnly(<ByFormFactor desktop={<Watchlist />} mirror={<MirrorWatchlist />} />)} />
+            <Route path="favorites" element={onlineOnly(<ByFormFactor desktop={<Favorites />} mirror={<MirrorFavorites />} />)} />
             <Route path="recommendations" element={onlineOnly(<Recommendations />)} />
             {/* La recherche pleine page — l'omnibox (⌘K) y mène pour « tous les résultats ». */}
-            <Route path="search" element={onlineOnly(<Search />)} />
+            <Route path="search" element={onlineOnly(<ByFormFactor desktop={<Search />} mirror={<MirrorSearch />} />)} />
             {/* Desktop uniquement — la page se redirige elle-même hors droit
                 et hors contenu local (invisibilité stricte). */}
             <Route path="downloads" element={<DownloadsPage />} />
@@ -144,11 +163,11 @@ export function App() {
                 choix de la saison se fait dans la page. */}
             <Route path="offline/series/:seriesKey" element={<OfflineSeriesView />} />
 
-            <Route path="support" element={onlineOnly(<Support />)} />
+            <Route path="support" element={onlineOnly(<ByFormFactor desktop={<Support />} mirror={<MirrorSupport />} />)} />
             {/* Reglages en maitre-detail, meme coquille que l'admin.
                 `/settings` reste l'URL d'entree ; les sections deviennent des
                 enfants, et Securite regroupe ce qui etait disperse. */}
-            <Route path="settings" element={<SettingsLayout />}>
+            <Route path="settings" element={<ByFormFactor desktop={<SettingsLayout />} mirror={<MirrorSettingsPane />} />}>
               <Route index element={<SettingsIndex />} />
               <Route path="appearance" element={<SettingsAppearance />} />
               {/* Personnalisation (accueil + recommandations) : réglages serveur,
@@ -165,9 +184,13 @@ export function App() {
               <Route path="playback" element={<Preferences />} />
               <Route path="downloads" element={<SettingsDownloads />} />
             <Route path="data" element={<SettingsData />} />
+              {/* Volets propres au miroir (Profil de l'app) : au bureau, leur page. */}
+              <Route path="password" element={<Navigate to="/settings/security" replace />} />
+              <Route path="devices" element={<Navigate to="/settings/security" replace />} />
+              <Route path="invites" element={<Navigate to="/admin/invites" replace />} />
             </Route>
-            <Route path="profile" element={onlineOnly(<MobileProfile />)} />
-            <Route path="pair-device" element={onlineOnly(<PairDevice />)} />
+            <Route path="profile" element={onlineOnly(<ByFormFactor desktop={<MobileProfile />} mirror={<MirrorProfile />} />)} />
+            <Route path="pair-device" element={onlineOnly(<ByFormFactor desktop={<PairDevice />} mirror={<MirrorPairDevice />} />)} />
             {/* Admin en maitre-detail : route PARENTE avec rail de sections.
                 Les URLs restent identiques a l'avant (`/admin/users`,
                 `/admin/services`, `/admin/plugins/<id>`), elles deviennent
@@ -201,8 +224,8 @@ export function App() {
                 ))
               }
             </Route>
-            <Route path="about" element={<About />} />
-            <Route path="credits" element={<Credits />} />
+            <Route path="about" element={<ByFormFactor desktop={<About />} mirror={<MirrorAbout />} />} />
+            <Route path="credits" element={<ByFormFactor desktop={<Credits />} mirror={<MirrorCredits />} />} />
 
             {/* Dynamic plugin routes (sandboxed iframes) */}
             {activePluginsMeta
