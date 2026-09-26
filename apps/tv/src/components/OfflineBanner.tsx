@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import { View, Text, TVFocusGuideView, StyleSheet } from "react-native";
+import { View, Text, TVFocusGuideView, StyleSheet, BackHandler, Platform } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,7 +8,6 @@ import { useTranslation } from "react-i18next";
 import { Colors } from "../theme/colors";
 import { CryingTentacle } from "./CryingTentacle";
 import { Focusable } from "./focus/Focusable";
-import { useTVRemote } from "./focus/useTVRemote";
 import { Button } from "../theme/buttons";
 
 interface OfflineBannerProps {
@@ -24,10 +23,31 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
   const queryClient = useQueryClient();
   const opacity = useSharedValue(0);
 
-  // Monté en permanence (App) : invisible, il avalait CHAQUE Retour d'Android
-  // — son écouteur passe devant celui de l'accueil — pour relancer un test de
-  // connexion. Il ne répond plus que lorsqu'il est affiché.
-  useTVRemote({ onBack: visible ? onRetry : undefined });
+  // Retour quitte l'application tant que le bandeau est affiché, sur les deux
+  // téléviseurs : il couvre tout et ne se referme pas, il n'y a rien derrière
+  // vers quoi reculer. « Réessayer » reste à OK, sur le bouton focalisé.
+  //
+  // Apple TV : rien à écrire. Menu n'atteint jamais le JS ; UIKit le livre à
+  // l'élément focalisé, et le bandeau, monté hors des écrans, n'est sur le
+  // chemin d'aucun : l'appui remonte jusqu'à `UIApplication`, qui renvoie à
+  // l'accueil de tvOS — même avec des écrans empilés dessous (mesuré au
+  // simulateur). C'est la règle qu'App Review vérifie ; un
+  // `MenuPressInterceptor` qui réessaierait ferait un Menu qui ne quitte plus
+  // tant que le serveur ne répond pas. Seule condition : que le focus soit
+  // DANS le bandeau, sans quoi Menu part à l'écran caché dessous.
+  //
+  // Android : Retour y relançait le test de connexion. L'écouteur naît quand
+  // le bandeau APPARAÎT, pas au montage : BackHandler sert le dernier inscrit
+  // en premier, et celui du NavigationContainer, inscrit après le nôtre au
+  // montage, dépilait en silence les écrans cachés sous le voile.
+  useEffect(() => {
+    if (!visible || Platform.OS !== "android") return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      BackHandler.exitApp();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [visible]);
 
   useEffect(() => {
     opacity.value = withTiming(visible ? 1 : 0, { duration: 300 });
