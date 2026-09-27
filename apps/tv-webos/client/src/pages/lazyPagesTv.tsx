@@ -107,6 +107,7 @@ export const Preferences = PlaybackScreenTv;
 
 // Administration : gestion de serveur, à faire depuis un ordinateur.
 export const AdminLayout = Unavailable;
+export const AdminHome = Unavailable;
 export const AdminMetadata = Unavailable;
 export const AdminInvites = Unavailable;
 export const AdminPlugins = Unavailable;
