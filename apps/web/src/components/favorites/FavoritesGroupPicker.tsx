@@ -44,7 +44,7 @@ export const FavoritesGroupPicker = memo(function FavoritesGroupPicker({
         role="radiogroup"
         aria-labelledby="favorites-group-label"
         onKeyDown={onKeyDown}
-        className="scrollbar-hide flex min-w-0 gap-1 overflow-x-auto rounded-full border border-line-subtle bg-fill-subtle p-1"
+        className="scrollbar-hide flex min-w-0 gap-1 overflow-x-auto rounded-full border border-line-subtle bg-[var(--glass-tint)] p-1"
       >
         {FAVORITES_GROUP_MODES.map((m, i) => {
           const selected = m === mode;

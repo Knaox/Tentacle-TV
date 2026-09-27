@@ -15,17 +15,23 @@ interface FavoritesToolbarProps {
 }
 
 /**
- * La barre de Mes favoris : recherche, regroupement et actions sur une ligne,
+ * La barre de Mes favoris : recherche, regroupement et actions (sur une ou deux
+ * lignes selon la largeur),
  * puis la barre de filtres de la BIBLIOTHÈQUE telle quelle (genres,
  * plateformes, années, note, tri). Les onglets Tous/Films/Séries de
  * `CollectionToolbar` n'y sont plus : les tuiles du bilan les portent, avec
- * leurs comptes. Sur mobile, chaque bloc prend sa ligne.
+ * leurs comptes.
  */
 export function FavoritesToolbar({ filters, name, groupMode, onGroupModeChange, actions }: FavoritesToolbarProps) {
   return (
     <div className="mb-6 flex flex-col gap-3">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="w-full lg:w-96">
+      {/* Recherche et actions sur la première ligne, « Regrouper » sur la
+          sienne ; les trois tiennent sur une seule à partir de 1280 px. Sous
+          ce palier, la fenêtre minimale d'Electron (900 px) les faisait
+          déborder de quelques pixels, et les actions partaient seules à la
+          ligne. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-3">
+        <div className="min-w-[16rem] flex-1 xl:max-w-md">
           <LibrarySearchField
             inline
             value={filters.input}
@@ -35,10 +41,10 @@ export function FavoritesToolbar({ filters, name, groupMode, onGroupModeChange, 
             resultCount={filters.search.trim() !== "" ? filters.resultCount : null}
           />
         </div>
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 lg:ml-auto lg:flex-nowrap lg:justify-end">
+        <div className="order-last flex basis-full xl:order-none xl:ml-auto xl:basis-auto">
           <FavoritesGroupPicker mode={groupMode} onChange={onGroupModeChange} />
-          {actions}
         </div>
+        {actions}
       </div>
 
       <LibraryFilterBar

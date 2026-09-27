@@ -13,7 +13,7 @@ export function FavoritesSkeleton() {
         </div>
       </div>
       <div className="relative -mt-10 px-4 pt-6 md:-mt-14 md:px-8">
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="skeleton-shimmer h-16 rounded-2xl" />
           ))}

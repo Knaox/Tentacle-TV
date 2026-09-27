@@ -101,7 +101,7 @@ export const FavoritesOverview = memo(function FavoritesOverview({
   const toggleStatus = (next: string) => onStatusChange(status === next ? null : next);
 
   return (
-    <div role="group" aria-label={t("quickFilters")} className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+    <div role="group" aria-label={t("quickFilters")} className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
       <Tile icon={<Clapperboard size={18} />} label={t("statMovies")} count={counts.movies} active={type === "Movie"} onToggle={() => toggleType("Movie")} />
       <Tile icon={<Tv size={18} />} label={t("statSeries")} count={counts.series} active={type === "Series"} onToggle={() => toggleType("Series")} />
       <Tile icon={<History size={18} />} label={t("statResume")} count={counts.resume} active={status === "IsResumable"} onToggle={() => toggleStatus("IsResumable")} />
