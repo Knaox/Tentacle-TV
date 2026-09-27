@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { EyeOff, History, Layers } from "lucide-react";
 import { FAVORITES_GROUP_MODES, favoriteWatchState, type FavoritesGroupMode } from "@tentacle-tv/api-client";
@@ -29,6 +29,22 @@ export const FavoritesQuickRow = memo(function FavoritesQuickRow({
   onGroupModeChange: (mode: FavoritesGroupMode) => void;
 }) {
   const { t } = useTranslation("favorites");
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // Le regroupement est RETENU (adresse, navigateur) : « Décennie » peut être
+  // choisi au montage alors que sa pastille est hors champ, à droite. On la
+  // ramène dans la rangée — horizontalement seulement, sans toucher au
+  // défilement de la page.
+  useEffect(() => {
+    const row = rowRef.current;
+    const chip = row?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (!row || !chip) return;
+    const left = chip.getBoundingClientRect().left - row.getBoundingClientRect().left + row.scrollLeft;
+    if (left < row.scrollLeft || left + chip.offsetWidth > row.scrollLeft + row.clientWidth) {
+      row.scrollLeft = Math.max(0, left - 16);
+    }
+  }, [groupMode]);
+
   const counts = useMemo(() => {
     let resume = 0;
     let notPlayed = 0;
@@ -80,7 +96,7 @@ export const FavoritesQuickRow = memo(function FavoritesQuickRow({
         })}
       </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto px-4 scrollbar-hide" role="radiogroup" aria-label={t("groupBy")}>
+      <div ref={rowRef} className="flex items-center gap-2 overflow-x-auto px-4 scrollbar-hide" role="radiogroup" aria-label={t("groupBy")}>
         <Layers size={16} className="shrink-0 text-content-tertiary" aria-hidden />
         {FAVORITES_GROUP_MODES.map((mode) => {
           const selected = mode === groupMode;
