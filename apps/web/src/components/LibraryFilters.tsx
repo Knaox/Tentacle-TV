@@ -67,6 +67,11 @@ interface LibraryFilterBarProps {
    * ne filtrerait rien : toute la liste l'est déjà.
    */
   showFavorite?: boolean;
+  /**
+   * Proposer les pastilles de statut (Tous / Non vus / En cours). Faux sur Ma
+   * liste, dont les étapes de visionnage disent déjà la même chose.
+   */
+  showStatus?: boolean;
   filters: LibraryFilterState;
   activeCount: number;
   hasActiveFilters: boolean;
@@ -102,7 +107,7 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        {STATUS_QUICK.map((opt) => (
+        {(props.showStatus ?? true) && STATUS_QUICK.map((opt) => (
           <button
             key={opt.key}
             onClick={() => { props.onStatusChange(opt.value); props.onFavoriteChange(false); }}
