@@ -184,3 +184,42 @@ describe("les logos de fin", () => {
     expect(reading?.scenes).toHaveLength(1);
   });
 });
+
+describe("le marqueur du fournisseur posé dans le film", () => {
+  /** Un film : marqueur à 5400 s dans la dernière scène (une minute de dialogue), défilement à 5600 s. */
+  const film = (after: Strip, providerEnd = 6000): Media => ({
+    runtimeS: 6000,
+    picture: [["E", 2600], ["T", 400]],
+    audio: { fromS: 5000, parts: [["S", 600], ...after] },
+    providers: [[5400, providerEnd]],
+  });
+
+  it("le générique commence bien après lui : le verdict le démentira (« Baby Driver »)", () => {
+    const reading = readTail(input(film([["M", 400]])));
+    expect(reading?.creditsStartMs).toBe(5_600_000);
+    expect(reading?.overrides).toBe(true);
+  });
+
+  it("s'il promet derrière lui une réplique suivie, on le garde (« La Nonne 2 » : le générique sonorisé, puis les Warren)", () => {
+    const music = readTail(input({ ...film([["M", 400]], 5510), audio: { fromS: 5000, parts: [["S", 500], ["M", 500]] } }));
+    expect(music?.overrides).toBe(true);
+    const promised = readTail(input(film([["M", 400]], 5560)));
+    expect(promised?.overrides).toBeUndefined();
+  });
+});
+
+describe("One Piece sans ending : l'histoire, « To be continued », l'aperçu", () => {
+  it("un marqueur né dans l'histoire et fini au carton : le générique commence au carton, l'aperçu n'est pas une scène", () => {
+    const reading = readTail(input({
+      runtimeS: 1400,
+      picture: [["E", 700]],
+      audio: { fromS: 1000, parts: [["S", 400]] },
+      providers: [[1082, 1357]],
+      episode: true,
+    }));
+    expect(reading?.creditsStartMs).toBe(1_357_000);
+    expect(reading?.scenes).toEqual([]);
+    expect(reading?.preview).toEqual([1_357_000, 1_400_000]);
+    expect(reading?.overrides).toBe(true);
+  });
+});

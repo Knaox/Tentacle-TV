@@ -165,9 +165,7 @@ export function findCreditsStart(t: Timeline, skeleton: Skeleton): CreditsStart 
   const before = candidates.filter((p) => crawl === null || p <= crawl[0]);
   if (before.length > 0) {
     const p = before[before.length - 1];
-    const cells = t.cellsBetween(p, p + FILM_CHECK_MS);
-    const film = t.share(p, p + FILM_CHECK_MS, "S") >= FILM_SPEECH_MIN && count(cells, "TLCU") === 0;
-    if (!film) start = { ms: p, fromProvider: true };
+    if (!isFilm(t, p)) start = { ms: p, fromProvider: true };
   }
   if (crawl !== null && (start === null || start.ms >= crawl[0] - 30_000)) {
     if (start === null) start = { ms: crawl[0], fromProvider: false };
@@ -185,6 +183,23 @@ export function findCreditsStart(t: Timeline, skeleton: Skeleton): CreditsStart 
   }
   if (start === null && candidates.length > 0) start = { ms: candidates[candidates.length - 1], fromProvider: true };
   return start;
+}
+
+/** Quarante secondes de parole sans le moindre texte à l'écran après `p` : c'est du film. */
+function isFilm(t: Timeline, p: number): boolean {
+  const cells = t.cellsBetween(p, p + FILM_CHECK_MS);
+  return t.share(p, p + FILM_CHECK_MS, "S") >= FILM_SPEECH_MIN && count(cells, "TLCU") === 0;
+}
+
+/**
+ * Le premier marqueur de fournisseur d'avant le défilement qui tombe dans le film : le
+ * verdict devra le démentir, même sans scène (« Baby Driver » : un générique posé en pleine
+ * fin de film ; « Les Indestructibles » : un marqueur dans la dernière scène, un second au
+ * vrai début du générique).
+ */
+export function filmMarker(t: Timeline, skeleton: Skeleton): number | null {
+  const { crawl, candidates } = skeleton;
+  return candidates.find((p) => (crawl === null || p <= crawl[0]) && isFilm(t, p)) ?? null;
 }
 
 /** La première vignette de crédits en remontant depuis le défilement (voir l'en-tête). */

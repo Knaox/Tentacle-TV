@@ -20,10 +20,12 @@
  * # Quand il a le dernier mot — et quand il se tait
  *
  * Le verdict a vu ce que les fournisseurs ne voient pas : il REMPLACE leurs
- * génériques dès qu'il a trouvé une scène, et quand aucun fournisseur n'en
- * signalait. C'est ce qui corrige les métadonnées fausses : un générique
- * Jellyfin qui avale la scène mi-générique (« Fast & Furious 9 »), un marqueur
- * posé dans le baiser final (« Deadpool », 99:53).
+ * génériques dès qu'il a trouvé une scène, quand aucun fournisseur n'en
+ * signalait, et quand le marqueur du fournisseur tombait en plein film (« Les
+ * Indestructibles », « Baby Driver » : un générique posé dans la dernière
+ * scène). C'est ce qui corrige les métadonnées fausses : un générique Jellyfin
+ * qui avale la scène mi-générique (« Fast & Furious 9 »), un marqueur posé dans
+ * le baiser final (« Deadpool », 99:53).
  *
  * Sans scène trouvée, il ne touche aux génériques des fournisseurs que pour
  * retirer une scène qui n'existe pas : un générique qui s'arrête EN PLEIN
@@ -59,6 +61,11 @@ export interface TailVerdict {
    * scène. Absent des verdicts rangés avant lui.
    */
   preview?: [number, number];
+  /**
+   * Le marqueur du fournisseur tombait en plein film (quarante secondes de dialogue
+   * sans un texte) : le verdict remplace ses génériques même sans scène trouvée.
+   */
+  overrides?: boolean;
 }
 
 /** Un générique plus court ne mérite pas de bouton. */
@@ -93,7 +100,7 @@ export function applyTailVerdict(bounds: BoundsByType, verdict: TailVerdict | nu
   const outros = tailOutros(verdict, runtimeMs);
   if (outros.length === 0) return;
   const existing = bounds.get("Outro") ?? [];
-  if (verdict.scenes.length > 0 || existing.length === 0) {
+  if (verdict.scenes.length > 0 || existing.length === 0 || verdict.overrides === true) {
     bounds.set("Outro", outros);
     return;
   }

@@ -117,6 +117,15 @@ describe("applyTailVerdict — quand le verdict a le dernier mot", () => {
     expect(found[0]).toMatchObject({ endMs: min(23, 37), hasContentAfter: true, source: "jellyfin" });
   });
 
+  it("un marqueur tombé en plein film est démenti, même sans scène (« Les Indestructibles »)", () => {
+    const runtime = min(115, 27);
+    const found = outros(runtime, {
+      mediaSegments: { Items: [outro(min(105, 40), min(107, 33)), outro(min(107, 33), runtime)] },
+      tail: verdict({ creditsStartMs: min(107, 33), overrides: true }),
+    });
+    expect(found.map((o) => [o.startMs, o.endMs, o.hasContentAfter])).toEqual([[min(107, 33), runtime, false]]);
+  });
+
   it("un verdict absent ne touche à rien", () => {
     const bounds: BoundsByType = new Map([["Outro", [{ startMs: 1, endMs: 2, source: "jellyfin" }]]]);
     applyTailVerdict(bounds, null, min(10));
