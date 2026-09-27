@@ -1,10 +1,9 @@
 import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
-import { CardRatingBadge } from "../../components/cards/CardRatingBadge";
+import { CardMarkerLayer } from "../../components/cards/CardMarkerLayer";
 import { useSeriesRatingMap } from "../../components/cards/SeriesRatingContext";
 import { ProgressBar } from "../ui/ProgressBar";
 import { Pressable } from "../ui/Pressable";
@@ -22,8 +21,9 @@ interface Props {
 
 /**
  * L'affiche 2:3 de l'app (`MobileMediaCard`) : rayon 12, ombre elev2, lettre
- * de repli, progression en bas à 6 du bord, coche blanche des vus en haut à
- * droite, note en bas à gauche, badge « +N » dégradé d'un lot d'épisodes.
+ * de repli, progression en bas à 6 du bord, pastille d'états (ma liste,
+ * favori, vu) en haut à droite, note en bas à gauche, badge « +N » dégradé
+ * d'un lot d'épisodes.
  * Titre 13 semi-gras à 8 dessous, année 10 en tertiaire.
  */
 export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, width, small = false }: Props) {
@@ -44,7 +44,6 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
       : null;
   const progress = item.UserData?.PlayedPercentage ?? 0;
   const hasProgress = progress > 0 && progress < 100;
-  const watched = item.UserData?.Played === true;
   const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
 
   return (
@@ -76,15 +75,16 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
           )}
         </div>
         {hasProgress && <ProgressBar progress={progress / 100} className="absolute inset-x-1.5 bottom-1.5" />}
-        {watched && !hasProgress && (
-          <span
-            className="absolute right-[7px] top-[7px] flex h-[22px] w-[22px] items-center justify-center rounded-full bg-cta-primary-bg text-cta-primary-fg"
-            style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.35)" }}
-          >
-            <Check size={12} strokeWidth={3} aria-hidden />
-          </span>
-        )}
-        <CardRatingBadge rating={rating} className="bottom-1.5 left-1.5" />
+        {/* Marqueurs du repos — même modèle que toutes les cartes (note en
+            bas à gauche, états en haut à droite, coche « vu » comprise). La
+            note remonte au-dessus de la barre de progression quand il y en a
+            une : les deux se chevauchaient au même bord. */}
+        <CardMarkerLayer
+          item={item}
+          communityRating={rating}
+          ratingClassName={hasProgress ? "bottom-4 left-1.5" : "bottom-1.5 left-1.5"}
+          statusClassName="right-[7px] top-[7px]"
+        />
         {grouped && (
           <span
             className="absolute left-[7px] top-[7px] rounded-md px-1.5 py-[3px] text-[11px] font-bold leading-3 text-cta-brand-fg"

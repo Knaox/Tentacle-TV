@@ -143,6 +143,17 @@
     rgba(var(--scrim-media-rgb), 0.88) 100%
   );
 
+  /* Voile du survol d'une affiche (`PosterHoverLayer`) : l'image reste
+   * lisible en haut, où montent les puces qualité/langues, et le bas
+   * s'assombrit assez (0,9) pour porter étoiles et plateau sans flou.
+   * Noir dans les deux schémas (posé sur média). */
+  --card-hover-veil: linear-gradient(
+    180deg,
+    rgba(var(--scrim-media-rgb), 0.1) 0%,
+    rgba(var(--scrim-media-rgb), 0.3) 38%,
+    rgba(var(--scrim-media-rgb), 0.9) 100%
+  );
+
   /* ── Rangées ─────────────────────────────────────────────────────────
    * Dégradés des flèches de défilement. Ils partaient d'un `rgba(0,0,0,.65)`
    * EN DUR : en thème clair, une bavure noire sur un fond nacré. Ils suivent

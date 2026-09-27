@@ -1,22 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useSeriesWatchState } from "@tentacle-tv/api-client";
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { CardFrame } from "./CardFrame";
 import { CardImage } from "./CardImage";
+import { CardMarkerLayer } from "./CardMarkerLayer";
 import { CardProgressBar } from "./CardProgressBar";
-import { CardRatingBadge } from "./CardRatingBadge";
+import { PosterHoverLayer } from "./PosterHoverLayer";
 import { useSeriesRatingMap } from "./SeriesRatingContext";
-import { CardQuickActions } from "./CardQuickActions";
-import { CardWatchedBadge } from "./CardWatchedBadge";
 import { playTargetPath } from "./playTarget";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
-import { CardDownloadAction } from "../../downloads/CardDownloadAction";
-import { PlayIcon } from "../icons/HeroIcons";
-import { HoverRatingStars } from "../rating/HoverRatingStars";
-import { PressableScale } from "../ui/PressableScale";
 import { useMountWhile } from "../../hooks/useMountWhile";
-import { ratingIdentityForItem } from "../../lib/ratingIdentity";
 
 interface PosterTileProps {
   item: MediaItem;
@@ -26,21 +19,25 @@ interface PosterTileProps {
   /** Compteur d'épisodes ajoutés d'un coup — tuile série groupée. */
   addedCount?: number;
   /**
-   * Actions en surimpression sur l'affiche. Le parent les coupe quand le
-   * panneau d'aperçu prend le relais : les avoir aux deux endroits donnait
-   * deux jeux de boutons superposés au survol.
+   * Calque d'actions au survol. Le parent le coupe quand un autre mode prend
+   * la main (sélection multiple d'une collection).
    */
   showActions?: boolean;
 }
 
 /**
- * Affiche 2:3 partagée par les rangées d'accueil et la grille de bibliothèque.
- * Ces deux surfaces avaient divergé (rayons, ombres, actions, couleurs en dur) ;
- * elles n'ont plus qu'une seule définition.
+ * Affiche 2:3 partagée par les rangées d'accueil, la grille de bibliothèque et
+ * les collections — une seule définition, deux états :
  *
- * Tout ce qui est POSÉ SUR l'affiche — scrims, badges, contrôles — reste
- * blanc/noir constant dans les deux schémas : c'est la luminosité du poster qui
- * commande le contraste, pas le thème choisi.
+ *   • AU REPOS, l'affiche porte ses marqueurs (`CardMarkerLayer`) : la note en
+ *     bas à gauche, la pastille d'états (Ma liste, favori, vu) en haut à
+ *     droite, la progression au bord inférieur. Rien d'autre.
+ *   • AU SURVOL, les marqueurs s'effacent et le calque `PosterHoverLayer`
+ *     prend l'affiche : voile, lecture au centre, étoiles et plateau en bas.
+ *     Les puces qualité/langues montent en haut à gauche.
+ *
+ * Tout ce qui est POSÉ SUR l'affiche reste blanc/noir constant dans les deux
+ * schémas : c'est la luminosité du poster qui commande le contraste.
  */
 export function PosterTile({
   item,
@@ -50,45 +47,39 @@ export function PosterTile({
   showActions = true,
 }: PosterTileProps) {
   const navigate = useNavigate();
-  const { t } = useTranslation("common");
 
   const watched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage;
   const grouped = addedCount > 1;
   const actionsVisible = showActions && hovered;
   /**
-   * Les contrôles sont MONTÉS au survol, plus jamais laissés à `opacity: 0`.
-   *
-   * Ce n'est pas qu'une affaire de pixels : `CardQuickActions` s'abonne à deux
-   * requêtes partagées (`watchlist-series-ids`, `favorite-series-ids`), et il
-   * était monté sur CHAQUE affiche au repos — seule l'opacité variait. Sur
-   * l'accueil, la moindre invalidation de l'une de ces deux clés re-rendait donc
-   * quatre-vingts cartes pour des boutons que personne ne regarde. La barre du
-   * bas y ajoutait son scrim et son bouton de lecture.
-   * 200 ms couvre le plus lent des deux fondus de sortie (150 et 200 ms).
+   * Le calque est MONTÉ au survol, jamais laissé à `opacity: 0` : son plateau
+   * s'abonne aux Sets `watchlist-series-ids` / `favorite-series-ids` et ses
+   * étoiles à la liste des notes. Monté sur chaque affiche au repos, la
+   * moindre invalidation re-rendait quatre-vingts cartes pour des boutons que
+   * personne ne regarde. 200 ms = la durée de ses fondus de sortie.
    */
-  const controlsMounted = useMountWhile(actionsVisible, 200);
+  const layerMounted = useMountWhile(actionsVisible, 200);
 
-  // Épisode à lancer pour une SÉRIE — résolu au survol seulement.
-  // La requête coûte un appel par série : la déclencher au montage
-  // rendrait une grille de bibliothèque insoutenable. Au survol, il n'y en a
-  // qu'une à la fois, et `staleTime: 60s` couvre les allers-retours.
+  // Épisode à lancer pour une SÉRIE — résolu au survol seulement : la requête
+  // coûte un appel par série, et `staleTime: 60s` couvre les allers-retours.
   const isSeries = item.Type === "Series";
   const { data: watchState } = useSeriesWatchState(hovered && isSeries ? item.Id : undefined);
-  // Notable seulement avec un tmdbId (ProviderIds) — fonction pure, sans coût.
-  const ratingIdentity = ratingIdentityForItem(item);
-  // La note à poser. `cardRatingFor` est pure elle aussi ; la carte des notes
-  // vient du fournisseur de la rangée, vide partout ailleurs.
+  // La note à poser : cette affiche montre le visage d'une SÉRIE, donc sa note
+  // — y compris sur une tuile de lot « +N ». Sans fournisseur de notes
+  // au-dessus, `useSeriesRatingMap` rend une carte vide.
   const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
+  const resume = isSeries
+    ? watchState?.type === "continue"
+    : progress != null && progress > 0 && !watched;
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     if (isSeries) {
-      // `useSeriesWatchState` couvre les deux cas d'un seul coup : `continue`
-      // rend l'épisode entamé, `next` le premier non vu — donc « reprendre »
-      // ET « commencer ». Série terminée (ou état pas encore chargé) : on
-      // ouvre la fiche plutôt que de lancer un épisode au hasard.
+      // `continue` rend l'épisode entamé, `next` le premier non vu. Série
+      // terminée (ou état pas encore chargé) : la fiche plutôt qu'un épisode
+      // au hasard.
       const epId = watchState?.type !== "completed" ? watchState?.episode?.Id : undefined;
       navigate(epId ? `/watch/${epId}` : `/media/${item.Id}`);
       return;
@@ -103,96 +94,41 @@ export function PosterTile({
       {/* Compteur d'épisodes récemment ajoutés : posé sur un aplat de MARQUE
           (dégradé brand) et non sur l'affiche — d'où le token dédié. */}
       {grouped && (
-        <div className="absolute left-2 top-2 z-10 rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[11px] font-bold leading-none text-cta-brand-fg shadow-[0_2px_8px_rgba(var(--brand-rgb),0.45)]">
+        <div className="absolute left-2 top-2 z-30 rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[11px] font-bold leading-none text-cta-brand-fg shadow-[0_2px_8px_rgba(var(--brand-rgb),0.45)]">
           +{addedCount}
         </div>
       )}
 
-      {/* Méta discrète révélée au survol. Masquée sur un lot d'épisodes : la
-          qualité d'un seul épisode ne dit rien du groupe.
-          Montée au survol seulement — cf. CardMetaOverlay. */}
-      {!grouped && hovered && <CardMetaOverlay item={item} density="compact" reveal="mount" />}
+      {/* Marqueurs du repos. La note cède la place aux puces qualité/langues
+          dès le survol (et au focus sur téléviseur) : une information à la
+          fois sur l'affiche visée. Les états cèdent la leur au plateau, qui
+          les reprend à l'identique. */}
+      <CardMarkerLayer
+        item={item}
+        communityRating={rating}
+        hideRating={hovered && (actionsVisible || !grouped)}
+        hideStatus={actionsVisible}
+      />
 
-      {/* Actions rapides — colonne d'angle, montées au survol uniquement.
-          `.hover-reveal` rend les DEUX fondus (cf. theme/reveal.css) : l'entrée
-          par `@starting-style`, la sortie par le sursis de `useMountWhile`. */}
-      {showActions && controlsMounted && (
-        <div
-          className="hover-reveal absolute right-2 top-2 z-20"
-          data-shown={actionsVisible}
-          style={{
-            pointerEvents: actionsVisible ? "auto" : "none",
-            "--reveal-ms": "150ms",
-          } as React.CSSProperties}
-        >
-          <div className="flex flex-col gap-1.5">
-            <CardQuickActions item={item} variant="compact" />
-            {/* Téléchargement — bureau ET droit, sinon PAS rendu (ni grisé, ni
-                cadenas). Dans le même cluster : même gabarit, même rythme, et
-                il hérite du montage au survol au lieu d'en réclamer un autre.
-                Sur une tuile de série groupée (« +N »), il propose TOUTE la
-                série — c'est son identifiant que la tuile porte. */}
-            <CardDownloadAction item={item} variant="compact" />
-          </div>
+      {showActions && layerMounted && (
+        <PosterHoverLayer item={item} visible={actionsVisible} resume={resume} onPlay={handlePlay} />
+      )}
+
+      {/* Méta révélée au survol, AU-DESSUS du voile. Masquée sur un lot
+          d'épisodes : la qualité d'un seul épisode ne dit rien du groupe. */}
+      {!grouped && hovered && (
+        <div className="pointer-events-none absolute inset-0 z-30">
+          <CardMetaOverlay item={item} density="compact" reveal="mount" />
         </div>
       )}
 
-      {/* Coche « vu » — cède la place aux actions rapides pendant le survol. */}
-      {watched && !actionsVisible && <CardWatchedBadge label={t("common:watched")} />}
-
-      {/* Note globale, au repos — la barre de lecture reprend l'angle au survol.
-          Elle passe par la règle partagée : cette affiche montre le visage
-          d'une SÉRIE, donc sa note — y compris sur une tuile de lot « +N »,
-          qui n'en porte aucune, et sur un épisode isolé, qui porte la sienne.
-          Sans fournisseur de notes au-dessus, `useSeriesRatingMap` rend une
-          carte vide et le badge se tait, exactement comme avant. */}
-      {/* La note cède la place aux puces qualité/langues quand elles montent
-          (survol, focus sur téléviseur) : une information à la fois sur
-          l'affiche focalisée. Même règle que les cartes tvOS et Android TV. */}
-      <CardRatingBadge rating={rating} shown={!actionsVisible && !(hovered && !grouped)} />
-
-      {/* Barre d'actions qui remonte du bas. Le scrim n'apparaît QU'AU survol :
-          au repos, l'affiche reste entièrement propre — et n'a même plus la
-          boîte pour le porter. */}
-      {showActions && controlsMounted && (
-        <div
-          className="hover-reveal absolute inset-x-0 bottom-0 z-20"
-          data-shown={actionsVisible}
-          style={{
-            pointerEvents: actionsVisible ? "auto" : "none",
-            "--reveal-ms": "200ms",
-          } as React.CSSProperties}
-        >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-24"
-            style={{ background: "var(--card-reveal-scrim)" }}
-          />
-          {/* Lecture seule : le clic sur la carte ouvre déjà la fiche, le
-              bouton « Plus d'infos » qui l'accompagnait faisait doublon. Les
-              étoiles vivent à droite — montées au survol seulement, comme
-              toute la barre (cf. HoverRatingStars sur l'abonnement). */}
-          <div className="relative flex items-center justify-between gap-2 px-2 pb-2.5">
-            <PressableScale
-              onClick={handlePlay}
-              aria-label={t("common:play")}
-              title={t("common:play")}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cta-primary-border bg-cta-primary-bg text-cta-primary-fg"
-              style={{ boxShadow: "var(--elev-2)" }}
-            >
-              <PlayIcon />
-            </PressableScale>
-            {ratingIdentity && (
-              <HoverRatingStars
-                identity={ratingIdentity}
-                jellyfinItemId={item.Id}
-              />
-            )}
-          </div>
+      {/* La progression reste visible sous le plateau : c'est au survol qu'on
+          décide de reprendre. */}
+      {!watched && (
+        <div className="absolute inset-x-0 bottom-0 z-30">
+          <CardProgressBar percent={progress} />
         </div>
       )}
-
-      {!watched && <CardProgressBar percent={progress} />}
     </CardFrame>
   );
 }
