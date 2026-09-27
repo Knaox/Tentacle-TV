@@ -5,6 +5,15 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [Unreleased]
+### FR
+- **Téléviseur LG : fini l'écran noir en ouvrant une fiche ou une bibliothèque** — quand un écran ne peut pas s'afficher (serveur qui redémarre pendant une mise à jour, connexion qui hoquette, fiche que Jellyfin ne rend pas), le téléviseur le dit, avec « Réessayer » et « Retour », au lieu de s'éteindre jusqu'au redémarrage de l'application. Après une mise à jour du serveur, il se recharge de lui-même dès que le serveur répond — et plus jamais en pleine navigation parce qu'un préchargement a échoué
+- **Une fiche qui ne se charge pas le dit** : sur le web aussi, une fiche dont Jellyfin ne rend pas les informations propose de réessayer, au lieu d'un chargement sans fin
+
+### EN
+- **LG TV: no more black screen when opening a title or a library** — when a screen cannot be shown (server restarting during an update, flaky connection, a title Jellyfin fails to return), the TV now says so, with "Retry" and "Back", instead of going dark until the app is restarted. After a server update it reloads by itself as soon as the server responds — and never again in the middle of browsing because a preload failed
+- **A title page that fails to load says so**: on the web too, a title page whose details Jellyfin does not return offers to retry instead of loading forever
+
 ## [1.19.3]
 ### FR
 - **Administration : une vue d'ensemble** — `/admin` ne s'ouvre plus sur un panneau vide : l'état de Jellyfin et de la base de données, les sessions en direct, les tickets ouverts, les mises à jour de plugins, les comptes, les invitations actives et les comptes autorisés à télécharger, d'un coup d'œil ; chaque tuile mène à sa section, et trois raccourcis ouvrent les gestes courants (inviter, jumeler un téléviseur, voir l'app comme un utilisateur)
