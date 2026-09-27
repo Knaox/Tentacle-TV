@@ -90,7 +90,7 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
                 type="button"
                 onClick={() => { props.onFavoriteChange(!filters.isFavorite); if (!filters.isFavorite) props.onStatusChange(null); }}
                 aria-selected={filters.isFavorite}
-                className={`${chipCls(filters.isFavorite, "rose")} inline-flex min-h-[32px] items-center gap-1.5`}
+                className={`${chipCls(filters.isFavorite, "rose")} inline-flex items-center gap-1.5`}
               >
                 <HeartIcon filled={filters.isFavorite} />
                 {t("common:favorites")}
