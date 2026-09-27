@@ -7,6 +7,8 @@
 #             groupe externe avec demande d'examen bêta.
 #   • store — production Play à 100 %, et App Store tvOS soumis à l'examen avec
 #             mise en vente automatique à l'approbation. Aucun clic ensuite.
+#             La piste fermée « tv:Alpha » reçoit le même binaire, comme
+#             TestFlight garde le build soumis à Apple.
 #
 # `promote` (par défaut vrai, au cran store seulement) REPREND LE BINAIRE DÉJÀ
 # TESTÉ au lieu d'en reconstruire un autre.
@@ -337,12 +339,18 @@ jobs:
           else
             SOURCE="--aab aab/app-release.aab"
           fi
+          # Au cran store, la piste fermée reçoit aussi le binaire de production
+          # (sans effet à la promotion : elle le sert déjà).
+          ALSO=""
+          if [ "${{ needs.prepare.outputs.channel }}" = "store" ]; then
+            ALSO="--also-track ${{ env.PLAY_TV_TRACK }}"
+          fi
           # shellcheck disable=SC2086
           node .github/scripts/play-publish.mjs \
             --package "${{ env.PLAY_PACKAGE }}" \
             --track "${{ needs.prepare.outputs.play_track }}" \
             --version "${{ needs.prepare.outputs.version }}" \
-            --changelog changelogs/tv.md $SOURCE
+            --changelog changelogs/tv.md $SOURCE $ALSO
 
       # Le manifeste est repris de `main` et non du sha figé : d'autres jobs
       # écrivent le même fichier, repartir d'une copie périmée effacerait leur

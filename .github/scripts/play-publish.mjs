@@ -5,6 +5,8 @@
 //   Promotion : --package <id> --promote-from alpha --track production
 //               --changelog changelogs/mobile.md --version 1.8.1
 //   Ajouter --dry-run pour tout jouer SAUF le commit (l'édition est jetée).
+//   Ajouter --also-track <piste> pour poser la MÊME release sur une seconde
+//   piste, dans la même édition (cran store : la production ET la piste fermée).
 //
 // POURQUOI PAS r0adkll/upload-google-play. Cette action publiait en
 // « status: draft » sur une piste fermée : il restait deux promotions à la
@@ -12,8 +14,8 @@
 // ne sait pas non plus promouvoir un versionCode déjà en ligne — or passer au
 // store DOIT envoyer le binaire déjà testé, pas un rebuild.
 //
-// CE QU'ON NE TOUCHE PAS. Une seule piste est écrite, celle qui est demandée.
-// La fiche, les prix, les captures et les AUTRES pistes ne sont jamais lus en
+// CE QU'ON NE TOUCHE PAS. Seules les pistes demandées sont écrites : `--track`,
+// et `--also-track` quand il est donné. La fiche, les prix, les captures et les AUTRES pistes ne sont jamais lus en
 // écriture. Les notes ne partent que dans les langues réellement présentes
 // dans le changelog.
 //
@@ -37,11 +39,13 @@ const promoteFrom = flag('promote-from');
 const changelog = flag('changelog');
 const version = flag('version');
 const status = flag('status') ?? 'completed';
+const alsoTrack = flag('also-track');
 const dryRun = has('dry-run');
 
 if (!pkg || !track || !version || (!aab && !promoteFrom)) {
   console.error('usage : play-publish.mjs --package <id> --track <piste> --version <X.Y.Z>');
-  console.error('        (--aab <fichier> | --promote-from <piste>) [--changelog <f>] [--status completed|draft] [--dry-run]');
+  console.error('        (--aab <fichier> | --promote-from <piste>) [--changelog <f>] [--status completed|draft]');
+  console.error('        [--also-track <piste>] [--dry-run]');
   process.exit(1);
 }
 if (!process.env.PLAY_SERVICE_ACCOUNT_JSON) {
@@ -105,12 +109,17 @@ async function publish(play) {
     // préfixe exact ne se devine pas : on le vérifie, et on liste ce qui existe
     // vraiment si la cible n'y est pas.
     const known = ((await play.call(`${base}/edits/${editId}/tracks`)).tracks ?? []).map((t) => t.track);
-    if (!known.includes(track)) {
-      console.error(`::error::la piste « ${track} » n'existe pas sur ${pkg}.`);
+    // La seconde piste n'a de sens que si elle ne sert pas DÉJÀ ce binaire : à
+    // la promotion depuis la piste fermée, elle le sert par définition.
+    const extraTrack = alsoTrack && alsoTrack !== track && alsoTrack !== promoteFrom ? alsoTrack : null;
+    for (const wanted of [track, extraTrack].filter(Boolean)) {
+      if (known.includes(wanted)) continue;
+      console.error(`::error::la piste « ${wanted} » n'existe pas sur ${pkg}.`);
       console.error(`Pistes réelles : ${known.join(', ')}`);
       console.error('Le workflow « Play — lister les pistes » (play-tracks.yml) les affiche avec leurs releases.');
       process.exit(1);
     }
+    if (alsoTrack && !extraTrack) console.log(`[play] « ${alsoTrack} » sert déjà ce binaire : rien à y poser.`);
 
     const notes = releaseNotes();
     const release = {
@@ -121,12 +130,17 @@ async function publish(play) {
     };
     if (notes.length === 0) console.log('[play] aucune note (pas de --changelog) — la piste garde les siennes.');
 
-    // PUT sur LA piste demandée, et elle seule.
-    await play.call(`${base}/edits/${editId}/tracks/${encodeURIComponent(track)}`, {
-      method: 'PUT',
-      body: { track, releases: [release] },
-    });
-    console.log(`[play] piste « ${track} » ← ${version} (${versionCodes.join(', ')}), statut « ${status} », notes : ${notes.map((n) => n.language).join(' + ') || 'aucune'}.`);
+    // PUT sur les pistes demandées, et elles seules. La seconde reçoit la même
+    // release, publiée (`completed`) : les testeurs de la piste fermée ont la
+    // version de production, comme TestFlight garde le build soumis à Apple.
+    const writes = [[track, release], ...(extraTrack ? [[extraTrack, { ...release, status: 'completed' }]] : [])];
+    for (const [name, rel] of writes) {
+      await play.call(`${base}/edits/${editId}/tracks/${encodeURIComponent(name)}`, {
+        method: 'PUT',
+        body: { track: name, releases: [rel] },
+      });
+      console.log(`[play] piste « ${name} » ← ${version} (${versionCodes.join(', ')}), statut « ${rel.status} », notes : ${notes.map((n) => n.language).join(' + ') || 'aucune'}.`);
+    }
 
     if (dryRun) {
       await play.call(`${base}/edits/${editId}`, { method: 'DELETE' });

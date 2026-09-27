@@ -7,6 +7,9 @@
 #             externe avec demande d'examen bêta.
 #   • store — production Play à 100 %, et App Store soumis à l'examen avec
 #             mise en vente automatique à l'approbation. Aucun clic ensuite.
+#             La piste fermée « alpha » reçoit le même binaire : ses testeurs
+#             ont la version de production, comme TestFlight garde le build
+#             soumis à Apple.
 #
 # `promote` (par défaut vrai, au cran store seulement) REPREND LE BINAIRE DÉJÀ
 # TESTÉ au lieu d'en reconstruire un autre : le versionCode servi par la piste
@@ -357,12 +360,18 @@ jobs:
           else
             SOURCE="--aab aab/app-release.aab"
           fi
+          # Au cran store, la piste fermée reçoit aussi le binaire de production
+          # (sans effet à la promotion : elle le sert déjà).
+          ALSO=""
+          if [ "${{ needs.prepare.outputs.channel }}" = "store" ]; then
+            ALSO="--also-track ${{ env.PLAY_MOBILE_TRACK }}"
+          fi
           # shellcheck disable=SC2086
           node .github/scripts/play-publish.mjs \
             --package "${{ env.PLAY_PACKAGE }}" \
             --track "${{ needs.prepare.outputs.play_track }}" \
             --version "${{ needs.prepare.outputs.version }}" \
-            --changelog changelogs/mobile.md $SOURCE
+            --changelog changelogs/mobile.md $SOURCE $ALSO
 
       # Le manifeste que lit le site : « publié » est enfin déductible d'un run,
       # puisque la release est posée en « completed » et non plus en draft.
