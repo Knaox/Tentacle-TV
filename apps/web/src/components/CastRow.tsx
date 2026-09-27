@@ -1,43 +1,38 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  useJellyfinClient,
   useLikedPeople,
   useLikePerson,
   useUnlikePerson,
 } from "@tentacle-tv/api-client";
-import { FadeImage } from "./FadeImage";
+import { castCredits, type CastCredit, type CastPerson } from "@tentacle-tv/shared";
+import { HorizontalScrollRow } from "./HorizontalScrollRow";
+import { RowHeader } from "./rows/RowHeader";
 import { ActorLikeButton } from "./reco/ActorLikeButton";
-
-interface Person {
-  Name: string;
-  Id: string;
-  Role?: string;
-  Type: string;
-  PrimaryImageTag?: string;
-}
-
-interface Studio {
-  Name: string;
-  Id: string;
-}
+import { PersonCreditCard } from "./person/PersonCreditCard";
 
 interface CastRowProps {
-  people: Person[];
-  studios?: Studio[];
+  people: CastPerson[];
+  /** Studios à nommer sous la rangée — la page partagée, qui n'a pas de bloc « Informations ». */
+  studios?: Array<{ Name: string; Id: string }>;
+  /**
+   * Page publique (liste partagée) : ni lien vers la filmographie ni « j'aime »
+   * — le visiteur n'a pas de session, les deux mèneraient à la connexion.
+   */
+  readOnly?: boolean;
 }
 
-const CREW_TYPES = ["Director", "Writer", "Producer", "Composer"] as const;
-const CREW_KEYS: Record<string, string> = {
-  Director: "media:crewDirector",
-  Writer: "media:crewWriter",
-  Producer: "media:crewProducer",
-  Composer: "media:crewComposer",
-};
-
-export function CastRow({ people, studios }: CastRowProps) {
+/**
+ * « Casting et équipe » de la fiche : une rangée de portraits, l'équipe
+ * d'abord (réalisation, création, scénario…), un filet, puis la distribution.
+ * Chaque carte ouvre la filmographie de la personne (`/person/:id`).
+ *
+ * Les studios ne sont plus ici : ils vivent dans le bloc « Informations » de
+ * la fiche, avec le reste de ce qui n'est pas une personne.
+ */
+export function CastRow({ people, studios, readOnly = false }: CastRowProps) {
   const { t } = useTranslation("media");
-  const client = useJellyfinClient();
-  const actors = people.filter((p) => p.Type === "Actor").slice(0, 20);
+  const { crew, actors } = useMemo(() => castCredits(people), [people]);
 
   // Personnes aimées (rangées « Avec {acteur} ») : le casting Jellyfin ne
   // connaît que le NOM — la correspondance se fait dessus, et le serveur
@@ -48,81 +43,53 @@ export function CastRow({ people, studios }: CastRowProps) {
   const likedByName = new Map(
     (likedData?.people ?? []).map((p) => [p.name.toLowerCase(), p.personId])
   );
-  const toggleLike = (person: Person) => {
-    const likedId = likedByName.get(person.Name.toLowerCase());
+  const toggleLike = (person: CastCredit) => {
+    const likedId = likedByName.get(person.name.toLowerCase());
     if (likedId != null) unlikePerson.mutate(likedId);
-    else likePerson.mutate({ name: person.Name });
+    else likePerson.mutate({ name: person.name });
   };
 
-  const crewGroups = CREW_TYPES.map((type) => ({
-    type,
-    label: t(CREW_KEYS[type]),
-    members: people.filter((p) => p.Type === type),
-  })).filter((g) => g.members.length > 0);
-
-  const hasCrew = crewGroups.length > 0 || (studios && studios.length > 0);
-  if (!actors.length && !hasCrew) return null;
+  if (!actors.length && !crew.length) return null;
 
   return (
-    <section className="space-y-6 px-4 py-4 md:px-12">
-      {/* Crew & Studios */}
-      {hasCrew && (
-        <div>
-          <h3 className="mb-3 text-lg font-semibold text-content-primary">{t("media:crewSection")}</h3>
-          <div className="flex flex-wrap gap-x-8 gap-y-3">
-            {crewGroups.map((group) => (
-              <div key={group.type}>
-                <p className="text-xs font-medium text-content-quaternary">{group.label}</p>
-                <p className="mt-0.5 text-sm text-content-secondary">
-                  {group.members.map((m) => m.Name).join(", ")}
-                </p>
-              </div>
-            ))}
-            {studios && studios.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-content-quaternary">{t("media:studioLabel")}</p>
-                <p className="mt-0.5 text-sm text-content-secondary">
-                  {studios.map((s) => s.Name).join(", ")}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Actors */}
-      {actors.length > 0 && (
-        <div>
-          <h3 className="mb-3 text-lg font-semibold text-content-primary">{t("media:castSection")}</h3>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {actors.map((person) => (
-              <div key={person.Id} className="relative w-20 flex-shrink-0 text-center sm:w-24 group/actor">
-                <ActorLikeButton
-                  name={person.Name}
-                  liked={likedByName.has(person.Name.toLowerCase())}
-                  pending={likePerson.isPending || unlikePerson.isPending}
-                  onToggle={() => toggleLike(person)}
-                />
-                <div className="mx-auto h-20 w-20 overflow-hidden rounded-full bg-tentacle-surface transition-all duration-300 group-hover/actor:scale-105 group-hover/actor:ring-2 group-hover/actor:ring-[rgba(var(--brand-rgb),0.5)] sm:h-24 sm:w-24">
-                  {person.PrimaryImageTag ? (
-                    <FadeImage
-                      src={client.getImageUrl(person.Id, "Primary", { width: 200, quality: 85 })}
-                      alt={person.Name}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-2xl text-content-disabled">
-                      {person.Name.charAt(0)}
-                    </div>
-                  )}
+    <section className="group/row" aria-label={t("media:castAndCrew")}>
+      <RowHeader title={t("media:castAndCrew")} />
+      <HorizontalScrollRow
+        ariaLabel={t("media:castAndCrew")}
+        wrapperClassName="mt-3"
+        className="row-gutter gap-4 pb-2 pt-2"
+      >
+        <ul className="flex gap-4">
+          {crew.map((credit) => <PersonCreditCard key={`crew-${credit.id}`} credit={credit} readOnly={readOnly} />)}
+        </ul>
+        {crew.length > 0 && actors.length > 0 && (
+          <span aria-hidden className="my-2 w-px shrink-0 self-stretch bg-line-subtle" />
+        )}
+        <ul className="flex gap-4">
+          {actors.map((credit) => (
+            <PersonCreditCard
+              key={credit.id}
+              credit={credit}
+              readOnly={readOnly}
+              overlay={readOnly ? undefined : (
+                <div className="absolute right-1.5 top-1.5 h-7 w-7">
+                  <ActorLikeButton
+                    name={credit.name}
+                    liked={likedByName.has(credit.name.toLowerCase())}
+                    pending={likePerson.isPending || unlikePerson.isPending}
+                    onToggle={() => toggleLike(credit)}
+                  />
                 </div>
-                <p className="mt-2 text-xs font-medium text-content-primary line-clamp-1">{person.Name}</p>
-                {person.Role && <p className="text-xs text-content-quaternary line-clamp-1">{person.Role}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
+              )}
+            />
+          ))}
+        </ul>
+      </HorizontalScrollRow>
+      {studios && studios.length > 0 && (
+        <p className="row-gutter mt-3 text-sm text-content-tertiary">
+          <span className="text-content-quaternary">{t("media:studioLabel")} · </span>
+          {studios.map((s) => s.Name).join(", ")}
+        </p>
       )}
     </section>
   );

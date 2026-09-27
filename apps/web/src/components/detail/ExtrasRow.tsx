@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useSpecialFeatures, useJellyfinClient } from "@tentacle-tv/api-client";
 import { PlayIcon } from "../media/MediaDetailIcons";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
+import { RowHeader } from "../rows/RowHeader";
 import { TrailerModal } from "./TrailerModal";
 import { parseYouTubeId, shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
@@ -35,12 +36,13 @@ export function ExtrasRow({ itemId, remoteTrailers, title }: ExtrasRowProps) {
   if (local.length === 0 && remote.length === 0) return null;
 
   return (
-    <section className="row-gutter mb-8">
-      <h2 className="mb-3 text-base font-semibold text-content-primary md:text-lg">
-        {title ? `${t("common:extras")} — ${title}` : t("common:extras")}
-      </h2>
+    // Même en-tête à rail de marque que les autres sections de la fiche ; le
+    // retrait passe de la section à la rangée pour que le rail s'aligne.
+    <section className="group/row">
+      <RowHeader title={title ? `${t("common:extras")} — ${title}` : t("common:extras")} />
       <HorizontalScrollRow
-        className="gap-3 overflow-y-visible pb-2"
+        wrapperClassName="mt-3"
+        className="row-gutter gap-3 overflow-y-visible pb-2"
         ariaLabel={t("common:extras")}
       >
         {local.map((ex) => (

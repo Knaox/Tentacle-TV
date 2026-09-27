@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, useSeriesWatchState, useTmdbSeasonEpisodes } from "@tentacle-tv/api-client";
-import { CastRow } from "../components/CastRow";
-import { EpisodeList } from "../components/EpisodeList";
-import { MediaRow } from "../components/rows/MediaRow";
-import { LicenseAttribution } from "../components/media/LicenseAttribution";
 import { TechInfo } from "../components/TechInfo";
 import { PageTransition } from "../components/PageTransition";
 import { DetailHero } from "../components/detail/DetailHero";
@@ -17,11 +12,11 @@ import { DetailPoster } from "../components/detail/DetailPoster";
 import { DetailOpenOverlay, type TargetRect } from "../components/detail/DetailOpenOverlay";
 import { DetailPlaceholder } from "../components/detail/DetailPlaceholder";
 import { consumeDetailOrigin, skipsEntrance, type DetailOrigin } from "../components/detail/detailTransition";
-import { ExtrasSection } from "../components/detail/ExtrasSection";
+import { DetailTitle } from "../components/detail/DetailTitle";
+import { DetailSections } from "../components/detail/DetailSections";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { tmdbIdForItem } from "../lib/ratingIdentity";
-import { ChevronRightIcon } from "../components/media/MediaDetailIcons";
-import { fadeIn, fadeUp, textCascadeDelayed } from "../theme/motion";
+import { fadeUp, textCascadeDelayed } from "../theme/motion";
 
 // `fadeUp` / `fadeIn` viennent de `theme/motion` — la fiche avait ses propres
 // copies, restées à 24 px de course quand la référence est passée à 10. La
@@ -30,8 +25,6 @@ import { fadeIn, fadeUp, textCascadeDelayed } from "../theme/motion";
 
 export function MediaDetail() {
   const { itemId } = useParams<{ itemId: string }>();
-  const navigate = useNavigate();
-  const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const { data: item, isLoading, isError, isFetching, refetch } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
@@ -179,32 +172,7 @@ export function MediaDetail() {
             />
 
             <div className="flex-1 pt-4">
-              <motion.h1
-                variants={fadeUp}
-                className="text-display-3 font-bold text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words max-w-3xl md:text-display-2"
-              >
-                {item.Name}
-              </motion.h1>
-              {item.OriginalTitle && item.OriginalTitle !== item.Name && (
-                <motion.p variants={fadeUp} className="mt-0.5 text-sm text-on-media-secondary">
-                  {item.OriginalTitle}
-                </motion.p>
-              )}
-              {isEpisode && item.SeriesName && item.SeriesId && (
-                <motion.button
-                  variants={fadeUp}
-                  type="button"
-                  onClick={() => navigate(`/media/${item.SeriesId}`)}
-                  aria-label={t("common:goToSeries")}
-                  title={t("common:goToSeries")}
-                  className="group/series mt-1 inline-flex items-center gap-1.5 py-1 text-lg text-on-media-secondary transition-colors hover:text-on-media-primary"
-                >
-                  <span className="underline-offset-4 group-hover/series:underline">
-                    {item.SeriesName} — S{item.ParentIndexNumber}E{item.IndexNumber}
-                  </span>
-                  <ChevronRightIcon />
-                </motion.button>
-              )}
+              <DetailTitle item={item} collectionCount={collectionItems?.length} />
 
               <DetailMetadata item={item} streams={streams} communityRating={episodeCommunityRating} />
               <DetailOverview item={item} />
@@ -219,76 +187,15 @@ export function MediaDetail() {
           </div>
         </motion.div>
 
-        {/* Collection (BoxSet) : contenu navigable — un BoxSet n'a ni lecture
-            ni saisons, sa fiche restait vide. */}
-        {item.Type === "BoxSet" && collectionItems && collectionItems.length > 0 && (
-          <motion.div
-            className="mt-10"
-            variants={fadeIn}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-          >
-            <MediaRow
-              title={t("common:collectionContent", { defaultValue: "Contenu de la collection" })}
-              items={collectionItems}
-            />
-          </motion.div>
-        )}
-
-        {/* Extras AU-DESSUS de Saisons & Épisodes. Sur une fiche épisode, on
-            passe la série parente pour afficher ses extras en repli. */}
-        <div className="mt-10">
-          <ExtrasSection item={item} seriesItem={isEpisode ? parentSeries : undefined} />
-        </div>
-
-        {episodeListSeriesId && (
-          <motion.section
-            className="mt-10"
-            variants={fadeIn}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-          >
-            <h2 className="row-gutter text-xl font-semibold text-content-primary">{t("common:seasonsEpisodes")}</h2>
-            <EpisodeList
-              seriesId={episodeListSeriesId}
-              currentEpisodeId={highlightEpisodeId}
-              initialSeasonId={highlightSeasonId}
-              seriesItem={isSeries ? item : parentSeries}
-            />
-          </motion.section>
-        )}
-
-        {(item.People?.length || item.Studios?.length) && (
-          <motion.section
-            className="mt-8"
-            variants={fadeIn}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-          >
-            <CastRow people={item.People ?? []} studios={item.Studios} />
-          </motion.section>
-        )}
-
-        <LicenseAttribution item={item} />
-
-        {similar && similar.length > 0 && (
-          <motion.div
-            className="mt-8 pb-16"
-            variants={fadeIn}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5 }}
-          >
-            <MediaRow title={t("common:similarTitles")} items={similar} />
-          </motion.div>
-        )}
+        <DetailSections
+          item={item}
+          parentSeries={parentSeries}
+          collectionItems={collectionItems}
+          similar={similar}
+          episodeListSeriesId={episodeListSeriesId}
+          highlightEpisodeId={highlightEpisodeId}
+          highlightSeasonId={highlightSeasonId}
+        />
       </div>
     </PageTransition>
     {openOverlay}
