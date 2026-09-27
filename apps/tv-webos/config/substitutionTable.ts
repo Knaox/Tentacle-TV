@@ -47,6 +47,12 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // ce qui retire réellement leur code du bundle, sans toucher au routeur.
   [resolve(WEB, "lazyPages.ts")]: resolve(CLIENT, "pages/lazyPagesTv.tsx"),
 
+  // Les écrans et le lecteur du miroir téléphone / iPad : l'aiguillage `ByFormFactor` est
+  // dynamique, mais un téléviseur ne l'emprunte jamais (toujours « desktop »).
+  // Sans cette ligne, leur CSS moderne arrêtait le build (Chrome 53).
+  [resolve(WEB, "mirror/screens.ts")]: resolve(CLIENT, "shims/mirrorScreens.ts"),
+  [resolve(WEB, "mirror/player/index.ts")]: resolve(CLIENT, "shims/mirrorPlayer.ts"),
+
   // Les cartes du client web sont des `<div onClick>` sans `tabIndex` : elles
   // sont invisibles au moteur de navigation, et c'était le défaut numéro un —
   // sur vingt-sept éléments atteignables de l'accueil, aucun n'était une
