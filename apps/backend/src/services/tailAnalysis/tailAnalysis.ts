@@ -21,6 +21,7 @@
  */
 
 import { resolvePlaybackSegments } from "../../playback/resolveSegments";
+import { isCreditsChapterName } from "../../playback/segmentChapters";
 import type { TailVerdict } from "../../playback/tailVerdict";
 import { countAudioDeferral, countAudioJob, countAudioOutcome, countAudioWindow, otherViewerTranscoding, withAudioSlot } from "../audioJobs";
 import { isAudioAnalysisEnabled } from "../configStore";
@@ -31,20 +32,22 @@ import { classifyCell, type ThumbnailMeasure } from "./tailCells";
 import { readTail } from "./tailReading";
 import { audioWindowStart, findSkeleton } from "./tailSkeleton";
 import { storeTailVerdict } from "./tailStore";
-import { Timeline, type TailInput } from "./tailTimeline";
+import { Timeline, type ProviderSpan, type TailInput } from "./tailTimeline";
 
 export const NOTHING_FOUND_COOLDOWN_MS = 24 * 3600_000;
 export const FAILURE_COOLDOWN_MS = 3600_000;
 export const BUSY_DEFER_MS = 120_000;
 export const BUSY_MAX_DEFERRALS = 5;
 const MAX_COOLDOWNS = 1_000;
+/** Un segment qui commence à deux secondes d'un chapitre nommé « générique » en vient. */
+const NAMED_MATCH_MS = 2_000;
 
 export interface TailAnalysisRequest {
   itemId: string;
   runtimeMs: number;
   mediaSourceId: string | null;
   trickplay: TrickplayManifest | null;
-  providerSpans: Array<{ startMs: number; endMs: number }>;
+  providerSpans: ProviderSpan[];
   jellyfinUrl: string;
   apiKey: string;
 }
@@ -73,23 +76,38 @@ const audioAvailable = (): boolean => isAudioAnalysisEnabled() && !decoderKnownM
 /**
  * Les génériques annoncés par les fournisseurs : les marqueurs Jellyfin bruts
  * (même ceux que le résolveur écarte — un début reste un indice) et les Outro
- * résolus sans l'analyse (chapitres, greffons).
+ * résolus sans l'analyse (chapitres, greffons). Un chapitre NOMMÉ générique
+ * (« End Credits », « Générique de fin ») est marqué : c'est le seul marqueur
+ * qui dit où commence le générique illustré, là où les détecteurs de noir ne
+ * voient que le défilement.
  */
-export function providerSpans(itemId: string, bundle: SegmentSourceBundle): Array<{ startMs: number; endMs: number }> {
+export function providerSpans(itemId: string, bundle: SegmentSourceBundle): ProviderSpan[] {
   const base = resolvePlaybackSegments(itemId, bundle.runtimeMs, { ...bundle.sources }, "");
   const native = (bundle.sources.mediaSegments?.Items ?? [])
     .filter((item) => item.Type === "Outro" && typeof item.StartTicks === "number" && typeof item.EndTicks === "number")
     .map((item) => ({ startMs: Math.round((item.StartTicks as number) / 10_000), endMs: Math.round((item.EndTicks as number) / 10_000) }));
   const resolved = base.segments
     .filter((s) => s.type === "Outro")
-    .map((s) => ({ startMs: Math.round(s.startMs), endMs: Math.round(s.endMs) }));
-  const seen = new Set<string>();
-  return [...native, ...resolved].filter((span) => {
+    .map((s) => ({ startMs: Math.round(s.startMs), endMs: Math.round(s.endMs), ...(s.source === "chapters" ? { named: true } : {}) }));
+  // Jellyfin convertit parfois lui-même ce chapitre en segment natif, qui masque alors
+  // les chapitres au résolveur : on le reconnaît à son début (« L'Incroyable Hulk »).
+  const chapters = bundle.sources.chapters ?? [];
+  const named: ProviderSpan[] = chapters
+    .map((c, i) => ({ c, next: chapters[i + 1] }))
+    .filter(({ c }) => isCreditsChapterName(c.Name))
+    .map(({ c, next }) => ({
+      startMs: Math.round(c.StartPositionTicks / 10_000),
+      endMs: next ? Math.round(next.StartPositionTicks / 10_000) : Math.round(bundle.runtimeMs),
+      named: true,
+    }));
+  const byKey = new Map<string, ProviderSpan>();
+  for (const span of [...native, ...resolved].map((s) => (named.some((n) => Math.abs(n.startMs - s.startMs) <= NAMED_MATCH_MS) ? { ...s, named: true } : s))) {
     const key = `${String(span.startMs)}-${String(span.endMs)}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+    const known = byKey.get(key);
+    if (known === undefined) byKey.set(key, span);
+    else if ("named" in span) byKey.set(key, { ...known, named: true });
+  }
+  return [...byKey.values()];
 }
 
 /** Faut-il (re)lancer l'analyse ? Un verdict des seules vignettes se refait quand l'audio redevient possible. */

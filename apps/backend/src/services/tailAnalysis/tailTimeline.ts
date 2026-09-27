@@ -19,7 +19,14 @@ export interface TailInput {
   /** La frise audio (`speechModel.ts`) — `null` quand on n'a rien pu écouter. */
   audio: { fromMs: number; classes: string } | null;
   /** Les génériques annoncés par les fournisseurs (Jellyfin, chapitres, greffons). */
-  providerSpans: ReadonlyArray<{ startMs: number; endMs: number }>;
+  providerSpans: ReadonlyArray<ProviderSpan>;
+}
+
+export interface ProviderSpan {
+  startMs: number;
+  endMs: number;
+  /** Tiré d'un chapitre NOMMÉ générique : il dit où le générique commence, illustré compris. */
+  named?: boolean;
 }
 
 export class Timeline {
@@ -129,3 +136,8 @@ export const count = (text: string, letters: string): number => {
   for (const c of text) if (letters.includes(c)) n++;
   return n;
 };
+
+/** Une vignette de texte : défilement, texte clair, carton. */
+export const isText = (c: string): boolean => c === "T" || c === "L" || c === "C";
+/** Une vignette de générique : du texte, ou un aplat. */
+export const isCredits = (c: string): boolean => isText(c) || c === "U";

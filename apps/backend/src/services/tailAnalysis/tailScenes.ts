@@ -52,7 +52,12 @@ const CREDITS_BEFORE_SCENE_MS = 60_000;
 /** … ou 30 s quand aucun défilement n'a été vu. */
 const CREDITS_BEFORE_SCENE_NO_CRAWL_MS = 30_000;
 const PROVIDER_TOO_EARLY_MS = 20_000;
+/** La parole d'une scène révélée par le générique illustré tombe à une vignette près de son début. */
+const REVEALED_SCENE_SLACK_MS = 30_000;
 const EDGE_EXTEND_MS = 30_000;
+/** Le recul franchit au plus une vignette de musique (voir `earliestStart`). */
+const EDGE_MUSIC_MIN = 0.6;
+const EDGE_MUSIC_CELLS = 1;
 const LOGO_MAX_MS = 55_000;
 const LOGO_NEAR_END_MS = 20_000;
 const LONG_MUSIC_MS = 150_000;
@@ -130,7 +135,9 @@ function speechScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart): Tai
       }
       const creditsSeen = count(t.cellsBetween(start.ms, a), "TLCU");
       const need = crawl !== null ? CREDITS_BEFORE_SCENE_MS : CREDITS_BEFORE_SCENE_NO_CRAWL_MS;
-      if (a - start.ms < need && creditsSeen < 2) continue;
+      // La scène que le générique illustré a révélée n'a pas à le prouver une seconde fois.
+      const revealed = start.sceneMs !== undefined && Math.abs(a - start.sceneMs) <= REVEALED_SCENE_SLACK_MS;
+      if (!revealed && a - start.ms < need && creditsSeen < 2) continue;
     }
     if (t.runtimeMs - a < 10_000) continue;
     if (t.runtimeMs - b <= 10_000 && b - a < 25_000 && count(t.cellsBetween(a, b), "E") < 2) continue;
@@ -139,13 +146,21 @@ function speechScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart): Tai
   return scenes;
 }
 
-/** Le début d'une scène, reculé jusqu'à la dernière vignette de générique et recalé sur la grille. */
+/**
+ * Le début d'une scène, reculé jusqu'à la dernière vignette de générique et recalé sur la
+ * grille — à travers une vignette de musique au plus : une scène peut s'ouvrir sur quelques
+ * secondes de musique avant la première réplique (« Twilight 4 »), mais au-delà c'est la
+ * chanson du générique illustré (« Fast X » : le bouton menait 42 s avant la scène).
+ */
 function earliestStart(t: Timeline, a: number, creditsStartMs: number): number {
   const floor = Math.max(creditsStartMs + 20_000, a - EDGE_EXTEND_MS);
+  const musical = (ms: number): boolean => t.share(ms, ms + t.step, "M") >= EDGE_MUSIC_MIN;
+  let music = 0;
+  const picture = (ms: number): boolean => "ED".includes(t.cell(ms)) && (!musical(ms) || music++ < EDGE_MUSIC_CELLS);
   let s = a;
-  while (s - t.step >= floor && "ED".includes(t.cell(s - t.step))) s -= t.step;
+  while (s - t.step >= floor && picture(s - t.step)) s -= t.step;
   const cellStart = t.firstCellMs + Math.floor((s - t.firstCellMs) / t.step) * t.step;
-  return cellStart >= floor && "ED".includes(t.cell(cellStart)) ? cellStart : s;
+  return cellStart >= floor && "ED".includes(t.cell(cellStart)) && (cellStart === s || !musical(cellStart) || music < EDGE_MUSIC_CELLS) ? cellStart : s;
 }
 
 function latestEnd(t: Timeline, b: number): number {
