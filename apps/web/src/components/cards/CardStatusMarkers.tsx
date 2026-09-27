@@ -41,7 +41,8 @@ export const CardStatusMarkers = memo(function CardStatusMarkers({
     <div
       role="img"
       aria-label={label}
-      title={label}
+      // Pas de `title` : la capsule ne reçoit pas le pointeur (elle ne doit pas
+      // voler le clic de la carte), une infobulle n'y paraîtrait jamais.
       // Repère stable pour la feuille de la LG (agrandie à trois mètres).
       data-card-status=""
       className={`pointer-events-none absolute ${className ?? "right-2 top-2"} z-20 flex h-6 items-center gap-1 rounded-full border border-white/15 bg-black/70 px-1.5 text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] transition-opacity duration-150 ${
