@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { BookmarkMinus, Check, Loader2, Play } from "lucide-react";
 import { useJellyfinClient, useToggleWatchlistForItem, watchStage } from "@tentacle-tv/api-client";
 import { formatDuration, type MediaItem } from "@tentacle-tv/shared";
+import { MediaContextMenu } from "../MediaContextMenu";
+import { useCardContextMenu } from "../cards/useCardContextMenu";
 import { WatchProgressLine } from "./WatchProgressLine";
 
 interface WatchlistRowProps {
@@ -35,6 +37,9 @@ export const WatchlistRow = memo(function WatchlistRow({
   const { t: tc } = useTranslation("common");
   const client = useJellyfinClient();
   const { remove } = useToggleWatchlistForItem(item);
+  // Le clic droit des cartes de la grille, repris tel quel : la vue liste ne
+  // doit rien retirer de ce que la grille offre.
+  const ctx = useCardContextMenu();
   const poster = client.getImageUrl(item.Id, "Primary", { height: 240, quality: 85 });
   const stage = watchStage(item);
 
@@ -59,6 +64,7 @@ export const WatchlistRow = memo(function WatchlistRow({
       className={`group/row relative flex items-center gap-3 rounded-2xl border p-2.5 sm:gap-4 sm:p-3 ${
         selected ? "border-[rgba(var(--brand-rgb),0.55)] bg-[rgba(var(--brand-rgb),0.08)]" : "border-line-subtle bg-surface-1"
       }`}
+      {...(selecting ? {} : ctx.contextHandlers)}
     >
       <span
         aria-hidden
@@ -66,7 +72,10 @@ export const WatchlistRow = memo(function WatchlistRow({
       />
       <button
         type="button"
-        onClick={() => (selecting ? onToggleSelect(item.Id) : onOpen(item))}
+        onClick={() => {
+          if (selecting) onToggleSelect(item.Id);
+          else if (!ctx.ctxMenu) onOpen(item);
+        }}
         aria-label={selecting ? item.Name : `${item.Name} — ${t("openDetail")}`}
         aria-pressed={selecting ? selected : undefined}
         className="absolute inset-0 z-[1] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
@@ -118,6 +127,17 @@ export const WatchlistRow = memo(function WatchlistRow({
             <BookmarkMinus size={17} aria-hidden />
           </button>
         </div>
+      )}
+
+      {!selecting && ctx.ctxMenu && (
+        <MediaContextMenu
+          item={item}
+          x={ctx.ctxMenu.x}
+          y={ctx.ctxMenu.y}
+          onClose={ctx.closeCtxMenu}
+          onToggleFavorite={() => {}}
+          onToggleWatchlist={() => {}}
+        />
       )}
     </div>
   );
