@@ -42,8 +42,8 @@ export interface SegmentSourceBundle {
    * Les vignettes disponibles pour ce média, telles que Jellyfin les publie.
    *
    * Elles ne sont PAS une source de segments : c'est de la matière brute, que
-   * seule l'analyse de secours va lire (`frameAnalysis.ts`), et seulement quand
-   * les fournisseurs n'ont rien de crédible à dire.
+   * seule l'analyse de fin de média va lire (`tailAnalysis/`), une fois par
+   * média, pour trouver le générique et les scènes qui le suivent.
    */
   trickplay: TrickplayManifest | null;
   /**

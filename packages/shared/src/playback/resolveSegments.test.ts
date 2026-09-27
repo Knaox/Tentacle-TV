@@ -577,17 +577,13 @@ describe("resolvePlaybackSegments — le verdict audio des voisins de saison", (
     });
   });
 
-  it("la fin d'un générique audio courant jusqu'au bout reste affinable par les vignettes", () => {
+  it("la fin d'un générique audio courant jusqu'au bout reste redessinable par l'analyse de fin", () => {
     const { segments } = resolve({
       audio: audio({ intro: null, outro: { startMs: 1_300_000, endMs: RUNTIME_MS, source: "audio" } }),
-      frames: {
-        outro: { startMs: 1_300_000, endMs: 1_400_000, source: "frames" },
-        sceneAfter: true,
-        finalCredits: null,
-      },
+      tail: { creditsStartMs: 1_300_000, scenes: [{ startMs: 1_400_000, endMs: RUNTIME_MS }], crawl: null, audio: true },
     });
     expect(findSegment(segments, "Outro")).toMatchObject({
-      startMs: 1_300_000, endMs: 1_400_000, hasContentAfter: true,
+      startMs: 1_300_000, endMs: 1_399_000, hasContentAfter: true,
     });
   });
 });

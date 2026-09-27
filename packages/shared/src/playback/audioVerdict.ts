@@ -22,9 +22,9 @@
  * Il passe AVANT les gardes de vraisemblance (`claimGuards.ts`) : un opening
  * rejoué sous le générique de fin donne une « intro » à 80 % du fichier, et
  * elle doit tomber sous la même garde que celle d'un greffon — Intro Skipper a
- * produit exactement ce faux positif (Re:Zero S4E4). Et AVANT le verdict des
- * vignettes, qui garde le dernier mot sur la fin d'un générique courant
- * jusqu'au bout du fichier (`applyFrameVerdict`, cas 2).
+ * produit exactement ce faux positif (Re:Zero S4E4). Et AVANT l'analyse de fin
+ * de média, qui garde le dernier mot sur les génériques dès qu'elle a trouvé
+ * une scène après eux (`tailVerdict.ts`).
  *
  * Sans durée connue, aucun Outro n'est posé : la même prudence que les
  * chapitres — trop d'heuristique empilée pour oser un bouton.

@@ -25,6 +25,19 @@ vi.mock("../services/audioAnalysis", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../services/audioAnalysis")>()),
   ...audioMocks,
 }));
+const tailMocks = vi.hoisted(() => ({
+  readTailVerdict: vi.fn(),
+  needsTailAnalysis: vi.fn(),
+  startTailAnalysis: vi.fn(),
+  tailAnalysisPending: vi.fn(),
+}));
+vi.mock("../services/tailAnalysis/tailAnalysis", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../services/tailAnalysis/tailAnalysis")>()),
+  needsTailAnalysis: tailMocks.needsTailAnalysis,
+  startTailAnalysis: tailMocks.startTailAnalysis,
+  tailAnalysisPending: tailMocks.tailAnalysisPending,
+}));
+vi.mock("../services/tailAnalysis/tailStore", () => ({ readTailVerdict: tailMocks.readTailVerdict }));
 vi.mock("../services/jwt", () => ({
   verifyImpersonationToken: async () => null,
   verifyDeviceToken: async () => null,
@@ -52,6 +65,10 @@ beforeEach(() => {
   audioMocks.needsAudioAnalysis.mockReset().mockReturnValue(false);
   audioMocks.enqueueAudioAnalysis.mockReset();
   audioMocks.audioAnalysisPending.mockReset().mockReturnValue(false);
+  tailMocks.readTailVerdict.mockReset().mockResolvedValue(undefined);
+  tailMocks.needsTailAnalysis.mockReset().mockReturnValue(false);
+  tailMocks.startTailAnalysis.mockReset();
+  tailMocks.tailAnalysisPending.mockReset().mockReturnValue(false);
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
@@ -257,5 +274,48 @@ describe("l'analyse audio des voisins de saison", () => {
     expect(body.analysisPending).toBeUndefined();
     expect(response.headers["cache-control"]).toBe("private, max-age=60");
     expect(audioMocks.enqueueAudioAnalysis).not.toHaveBeenCalled();
+  });
+});
+
+describe("l'analyse de fin de média", () => {
+  const film = () => ({
+    ...item(),
+    Type: "Movie",
+    MediaSources: [{ Id: "src-film" }],
+    Trickplay: { "src-film": { "320": { Width: 320, Height: 180, TileWidth: 10, TileHeight: 10, ThumbnailCount: 144, Interval: 10_000 } } },
+  });
+
+  it("part pour un film qui a des vignettes, avec les débuts annoncés par les fournisseurs", async () => {
+    scenario = [[/\/Items\//, { json: film() }], [/\/MediaSegments\//, { json: nativeOutro(RUNTIME_TICKS) }]];
+    tailMocks.needsTailAnalysis.mockReturnValue(true);
+    tailMocks.tailAnalysisPending.mockReturnValue(true);
+    const response = await request("film-fin");
+    expect(tailMocks.needsTailAnalysis).toHaveBeenCalledWith("film-fin", 1_440_000, true, undefined);
+    expect(tailMocks.startTailAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({
+        itemId: "film-fin",
+        runtimeMs: 1_440_000,
+        mediaSourceId: "src-film",
+        providerSpans: [{ startMs: 1_300_000, endMs: 1_440_000 }],
+        jellyfinUrl: "http://jf.test",
+      }),
+    );
+    expect(response.json().analysisPending).toBe(true);
+    expect(response.headers["cache-control"]).toBe("no-store");
+  });
+
+  it("un verdict rangé redessine le générique autour de la scène qu'il a trouvée", async () => {
+    scenario = [[/\/Items\//, { json: film() }], [/\/MediaSegments\//, { json: nativeOutro(RUNTIME_TICKS) }]];
+    tailMocks.readTailVerdict.mockResolvedValue({
+      creditsStartMs: 1_300_000,
+      scenes: [{ startMs: 1_400_000, endMs: 1_440_000 }],
+      crawl: [1_310_000, 1_390_000],
+      audio: true,
+    });
+    const body = (await request("film-scene")).json();
+    expect(body.segments).toEqual([
+      expect.objectContaining({ type: "Outro", source: "audio", startMs: 1_300_000, endMs: 1_399_000, hasContentAfter: true }),
+    ]);
+    expect(tailMocks.startTailAnalysis).not.toHaveBeenCalled();
   });
 });

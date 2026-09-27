@@ -1,9 +1,10 @@
 /**
  * Les vignettes de la barre de progression, lues et MESURÉES.
  *
- * Ce service ne décide rien : il rapporte, pour chaque vignette du dernier tiers
- * du média, la part de noir et la saturation. C'est `creditsFromFrames.ts` (la
- * paire miroir) qui en tire un générique et une scène.
+ * Ce service ne décide rien : il rapporte, pour chaque vignette de la seconde
+ * moitié du média, ce que mesure `tailAnalysis/tailCells.ts` (noir, saturation,
+ * rangées de texte, fond uni). C'est l'analyse de fin de média qui en tire le
+ * générique et ses scènes.
  *
  * # Pourquoi les vignettes, et pas la vidéo
  *
@@ -13,12 +14,13 @@
  * Mesuré sur « Spider-Man : No Way Home » (148 min) : trois planches, 2,45 Mo,
  * 31 ms de réseau et 430 ms de décodage — une fois par média.
  *
- * # Le dernier tiers, et pourquoi 60 %
+ * # La seconde moitié, et pourquoi 50 %
  *
- * Un générique de fin ne commence jamais avant la moitié d'un média ; 60 %
- * laisse de la marge sans multiplier les planches. Ce qui précède n'est pas lu :
- * l'intro et le résumé sont déjà bien vus par les greffons, et les chercher ici
- * coûterait tout le film.
+ * Un générique de fin ne commence jamais avant la moitié d'un média — c'est la
+ * même borne que les marqueurs de fournisseur. Les crédits illustrés et les
+ * scènes mi-génériques qui précèdent le défilement se lisent jusqu'à six minutes
+ * avant lui : 60 % ne les couvrait pas toujours sur un épisode. Ce qui précède
+ * n'est pas lu : l'intro et le résumé sont déjà bien vus par les greffons.
  *
  * ⚠️ Le backend NE DÉPEND PAS de `@tentacle-tv/shared` (tsc CommonJS, image
  * Docker sans packages/) : les quelques lignes de calcul tuile ↔ temps sont
@@ -26,7 +28,7 @@
  */
 
 import { decode } from "jpeg-js";
-import type { FrameSample } from "../playback/creditsFromFrames";
+import { measureCell, type ThumbnailMeasure } from "./tailAnalysis/tailCells";
 
 /** Ce que Jellyfin publie par (source, largeur) dans le champ `Trickplay`. */
 export interface TrickplayInfo {
@@ -43,13 +45,9 @@ export interface TrickplayInfo {
 export type TrickplayManifest = Record<string, Record<string, TrickplayInfo> | undefined>;
 
 /** La part du média à partir de laquelle on regarde. */
-const FROM_RATIO = 0.6;
+const FROM_RATIO = 0.5;
 /** Au-delà, on s'arrête et on le DIT — jamais une troncature silencieuse. */
 const MAX_TILES = 12;
-/** Un pixel plus sombre que ça compte pour noir. */
-const DARK_LEVEL = 24;
-/** Un pixel sur quatre suffit : la mesure est globale, pas fine. */
-const PIXEL_STEP = 2;
 const FETCH_TIMEOUT_MS = 20_000;
 
 /** La largeur la plus proche de 320, sur la source demandée à défaut la première. */
@@ -104,7 +102,7 @@ export function tileRange(
   return { first, last, truncated: last < wanted };
 }
 
-/** Mesure les cellules d'une planche décodée. */
+/** Mesure les cellules d'une planche décodée (voir `tailAnalysis/tailCells.ts`). */
 export function sampleTile(
   pixels: Uint8Array | Uint8ClampedArray,
   imageWidth: number,
@@ -112,10 +110,9 @@ export function sampleTile(
   info: TrickplayInfo,
   tileIndex: number,
   lastFrame: number,
-): FrameSample[] {
+): ThumbnailMeasure[] {
   const perTile = info.TileWidth * info.TileHeight;
-  const out: FrameSample[] = [];
-
+  const out: ThumbnailMeasure[] = [];
   for (let cell = 0; cell < perTile; cell++) {
     const frame = tileIndex * perTile + cell;
     if (frame > lastFrame) break;
@@ -123,28 +120,7 @@ export function sampleTile(
     const originY = Math.floor(cell / info.TileWidth) * info.Height;
     // Une planche incomplète (dernière du média) : la cellule n'existe pas.
     if (originX + info.Width > imageWidth || originY + info.Height > imageHeight) break;
-
-    let dark = 0;
-    let saturation = 0;
-    let counted = 0;
-    for (let y = originY; y < originY + info.Height; y += PIXEL_STEP) {
-      for (let x = originX; x < originX + info.Width; x += PIXEL_STEP) {
-        const i = (y * imageWidth + x) * 4;
-        const r = pixels[i];
-        const g = pixels[i + 1];
-        const b = pixels[i + 2];
-        // Luminance perçue — la même pondération que partout ailleurs.
-        if (0.2126 * r + 0.7152 * g + 0.0722 * b < DARK_LEVEL) dark += 1;
-        saturation += Math.max(r, g, b) - Math.min(r, g, b);
-        counted += 1;
-      }
-    }
-    if (counted === 0) continue;
-    out.push({
-      ms: frame * info.Interval,
-      dark: dark / counted,
-      saturation: saturation / counted,
-    });
+    out.push(measureCell(pixels, imageWidth, originX, originY, info.Width, info.Height, frame * info.Interval));
   }
   return out;
 }
@@ -172,20 +148,20 @@ export interface FrameCollectRequest {
 }
 
 export interface FrameCollectResult {
-  samples: FrameSample[];
+  samples: ThumbnailMeasure[];
   /** Le pas de la grille des vignettes (ms) ; 0 quand rien n'a pu être lu. */
   intervalMs: number;
 }
 
 /**
- * Les mesures du dernier tiers, ou une liste VIDE quand on n'a rien pu lire.
+ * Les mesures de la seconde moitié, ou une liste VIDE quand on n'a rien pu lire.
  *
  * Vide et non `null` : l'appelant n'a pas à distinguer « pas de trickplay » de
- * « planche illisible » — dans les deux cas il n'y a rien à conclure, et le
- * résolveur s'en tient à ce que disent les greffons.
+ * « planche illisible » — dans les deux cas l'image ne dit rien, et l'analyse
+ * s'en tient à l'audio et aux fournisseurs.
  *
- * L'intervalle du manifeste voyage avec les mesures : c'est lui qui permet au
- * verdict de reculer la borne de saut d'exactement une vignette.
+ * L'intervalle du manifeste voyage avec les mesures : c'est la grille sur
+ * laquelle l'analyse recale les bords des scènes.
  */
 export async function collectFrameSamples(request: FrameCollectRequest): Promise<FrameCollectResult> {
   const picked = pickTrickplay(request.manifest, request.mediaSourceId);
@@ -204,7 +180,7 @@ export async function collectFrameSamples(request: FrameCollectRequest): Promise
     Math.floor((request.runtimeMs - 1) / picked.info.Interval),
   );
   const base = `${request.jellyfinUrl}/Videos/${request.itemId}/Trickplay/${String(picked.width)}`;
-  const samples: FrameSample[] = [];
+  const samples: ThumbnailMeasure[] = [];
 
   for (let tile = range.first; tile <= range.last; tile++) {
     // En série, à dessein : trois planches lues d'un coup n'iraient pas plus
@@ -223,7 +199,7 @@ export async function collectFrameSamples(request: FrameCollectRequest): Promise
       console.warn(`[segments] ${request.itemId} : planche ${String(tile)} indécodable`);
     }
     // Une planche de 3200 × 1800 pixels décodée pèse ~23 Mo. Elle est relâchée
-    // à chaque tour : `samples` ne retient que deux nombres par vignette.
+    // à chaque tour : `samples` ne retient que quatre nombres par vignette.
   }
   return { samples, intervalMs: picked.info.Interval };
 }

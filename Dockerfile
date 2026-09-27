@@ -103,7 +103,10 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # chromaprint : fournit `fpcalc`, l'empreinte audio de l'analyse inter-épisodes
 # (services/audioFingerprintTool.ts). Binaire LGPL invoqué, jamais lié — comme
 # yt-dlp. Tire les bibliothèques ffmpeg d'Alpine (≈ 60-80 Mo, amd64 et arm64).
-RUN apk add --no-cache yt-dlp chromaprint
+# ffmpeg : décode l'extrait audio de l'analyse de fin de média
+# (services/tailAnalysis/tailAudio.ts). yt-dlp le tirait déjà ; nommé ici pour
+# qu'il ne disparaisse pas le jour où yt-dlp cesserait d'en dépendre.
+RUN apk add --no-cache yt-dlp chromaprint ffmpeg
 
 WORKDIR /app
 

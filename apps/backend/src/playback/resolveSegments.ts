@@ -14,13 +14,13 @@
  *      seulement) — et rien d'autre : aucun repli statistique ;
  *   5. les chapitres AFFINENT la fin d'un Outro, pour ne pas manger la scène
  *      post-générique (`segmentChapters.ts`) ;
- *   6. à défaut de chapitres, les VIGNETTES de la barre de progression rendent
- *      le même service — et fournissent le générique quand personne ne l'a vu
- *      (`creditsFromFrames.ts`) ;
- *   7. l'AUDIO des voisins de saison comble ce qui manque ENCORE — opening,
- *      ending (`audioVerdict.ts`). Il s'applique AVANT les gardes et avant les
- *      vignettes : une intro entendue passé la moitié du média tombe sous la
- *      même garde que celle d'un greffon.
+ *   6. l'AUDIO des voisins de saison comble ce qui manque ENCORE — opening,
+ *      ending (`audioVerdict.ts`). Il s'applique AVANT les gardes : une intro
+ *      entendue passé la moitié du média tombe sous la même garde que celle
+ *      d'un greffon ;
+ *   7. EN DERNIER, l'analyse de FIN DE MÉDIA (`tailVerdict.ts`) — vignettes et
+ *      audio de la fin du fichier — redessine les génériques autour des scènes
+ *      mi- et post-génériques qu'elle a trouvées, fournisseurs compris.
  *
  * L'API native rend une UNION : plusieurs greffons écrivent leurs segments
  * côte à côte, et le même passage y figure deux fois à une seconde près
@@ -52,7 +52,7 @@ import {
   type RawBounds,
 } from "./segmentChapters";
 import { applyClaimGuards } from "./claimGuards";
-import { applyFrameVerdict, type FrameVerdict } from "./creditsFromFrames";
+import { applyTailVerdict, type TailVerdict } from "./tailVerdict";
 import { applyAudioVerdict, type AudioVerdict } from "./audioVerdict";
 import {
   collectDict,
@@ -86,12 +86,11 @@ export interface SegmentSources {
   pluginTimestamps?: IntroSkipperTimestampsPayload | null;
   chapters?: readonly ChapterMarker[] | null;
   /**
-   * Ce que les vignettes ont vu du générique de fin, quand on a eu à regarder.
-   *
-   * Elle arrive DÉJÀ analysée : la lecture des planches et le calcul des mesures
-   * vivent côté serveur (`services/trickplayFrames.ts`), la décision vit ici.
+   * Ce que l'analyse de fin de média a lu : début du générique, scènes qui le
+   * suivent. Déjà jugé côté serveur (`services/tailAnalysis/`) ; ici, on ne
+   * fait que dessiner les génériques autour.
    */
-  frames?: FrameVerdict | null;
+  tail?: TailVerdict | null;
   /**
    * Ce que l'audio des voisins de saison a reconnu — opening, ending — quand
    * l'analyse a eu lieu. Déjà jugé côté serveur (`services/audioAnalysis.ts`).
@@ -170,8 +169,8 @@ function pickBounds(
   // exactement ce qui est contesté — mesuré sur Re:Zero S4E2 : fins à 42 s
   // d'écart, et le révélateur promettait une scène post-générique alors que
   // l'épisode continue SOUS les crédits. Le plus long l'emporte alors ; s'il
-  // court jusqu'au bout du fichier, l'analyse des vignettes garde sa chance de
-  // re-révéler une VRAIE scène (elle, ne fabrique rien sur les faux cas).
+  // court jusqu'au bout du fichier, l'analyse de fin de média garde sa chance
+  // de re-révéler une VRAIE scène (elle, ne fabrique rien sur les faux cas).
   const ends = credible.map((bound) => bound.endMs);
   if (Math.max(...ends) - Math.min(...ends) > END_AGREEMENT_MS) return longest(credible);
 
@@ -273,10 +272,11 @@ export function resolvePlaybackSegments(
   // Les gardes de vraisemblance écartent les réclamations absurdes (intro en
   // fin de fichier, et l'outro qui la chevauche) quelle que soit leur source.
   applyClaimGuards(bounds, runtime);
-  // EN DERNIER, et c'est ce qui fait que l'analyse ne gêne personne : tout ce
-  // qui précède a eu sa chance, et elle ne parle que sur ce qui reste — un
-  // générique absent, ou un générique qui court jusqu'au bout du fichier.
-  applyFrameVerdict(bounds, sources.frames ?? null, runtime);
+  // EN DERNIER : l'analyse de fin de média a vu la vidéo et entendu la bande
+  // son, là où les fournisseurs n'ont vu qu'un début de générique. Elle
+  // redessine les génériques autour des scènes qu'elle a trouvées — et se tait
+  // quand elle n'en a trouvé aucune (voir `tailVerdict.ts`).
+  applyTailVerdict(bounds, sources.tail ?? null, runtime);
 
   const segments = [...bounds.entries()]
     .flatMap(([type, list]) => list.map((bound) => finalize(type, bound, runtime)))

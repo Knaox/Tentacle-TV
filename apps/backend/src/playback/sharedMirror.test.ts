@@ -34,10 +34,8 @@ const PLAYBACK_FILES = [
   "playbackSettings.ts",
   "segmentChapters.ts",
   "segmentPlugins.ts",
-  "frameBlocks.ts",
-  "creditsFromFrames.ts",
   "claimGuards.ts",
-  "sceneChecks.ts",
+  "tailVerdict.ts",
   "audioVerdict.ts",
 ];
 

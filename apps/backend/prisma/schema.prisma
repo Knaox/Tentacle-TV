@@ -412,20 +412,22 @@ model PlaybackSettings {
   @@map("playback_settings")
 }
 
-/// Ce que les VIGNETTES d'un média ont dit de son générique de fin.
+/// Ce que l'analyse de FIN DE MÉDIA a trouvé : début du générique, scènes qui
+/// le suivent (services/tailAnalysis/). La table garde le nom de l'analyse des
+/// vignettes dont elle prend la suite ; `version` périme les lignes d'avant.
 ///
-/// Une ligne par média, écrite une seule fois : l'analyse coûte une demi-seconde
-/// de processeur et deux mégaoctets lus chez Jellyfin, et son résultat ne change
-/// pas tant que le fichier ne change pas. `runtimeMs` sert justement de témoin —
-/// une durée différente veut dire un autre fichier, et la ligne est refaite.
+/// Une ligne par média, et SEULEMENT quand l'analyse a trouvé quelque chose :
+/// le « rien » ne pèse pas sur le serveur (refroidissement en mémoire). Les
+/// lignes sans verdict et les versions périmées sont purgées au démarrage.
+/// `runtimeMs` est le témoin du fichier : une durée différente, un autre fichier.
 model MediaFrameAnalysis {
   itemId    String   @id @db.VarChar(64)
-  /// Version de l'algorithme (`FRAME_ANALYSIS_VERSION`) : la faire monter
+  /// Version de l'algorithme (`TAIL_ANALYSIS_VERSION`) : la faire monter
   /// périme toutes les lignes sans avoir à les effacer.
   version   Int
   runtimeMs Int
-  /// Le verdict sérialisé, ou `null` quand l'analyse n'a rien conclu — et il
-  /// FAUT garder ce « rien », sinon on réanalyse le même média à chaque lecture.
+  /// Le verdict sérialisé (`TailVerdict`). Nullable pour les lignes d'avant ;
+  /// on n'en écrit plus de nulles.
   verdict   String?  @db.Text
   createdAt DateTime @default(now())
 
@@ -433,10 +435,10 @@ model MediaFrameAnalysis {
 }
 
 /// Ce que l'AUDIO des voisins de saison a dit d'un épisode — opening, ending
-/// (services/audioAnalysis.ts). Même forme que les vignettes, une ligne par
-/// épisode — et seulement quand un opening ou un ending a été trouvé : le
-/// « rien » refroidit en mémoire, les lignes vides d'avant sont purgées au
-/// démarrage.
+/// (services/audioAnalysis.ts). Même forme et même règle que la fin de média :
+/// une ligne par épisode, et seulement quand un opening ou un ending a été
+/// trouvé — le « rien » refroidit en mémoire, les lignes vides d'avant sont
+/// purgées au démarrage.
 model MediaAudioAnalysis {
   itemId    String   @id @db.VarChar(64)
   /// Version des règles du verdict (`AUDIO_ANALYSIS_VERSION`).

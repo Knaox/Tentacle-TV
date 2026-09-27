@@ -51,7 +51,7 @@ describe("le choix de la planche", () => {
 });
 
 describe("les planches à lire", () => {
-  it("part de 60 % du média et s'arrête à la dernière vignette qui existe", () => {
+  it("part de la moitié du média et s'arrête à la dernière vignette qui existe", () => {
     // 80 s de média, une vignette toutes les 10 s, 4 par planche.
     expect(tileRange(INFO, 80_000)).toEqual({ first: 1, last: 1, truncated: false });
   });
@@ -81,17 +81,18 @@ describe("la mesure d'une planche", () => {
     expect(samples.map((s) => s.ms)).toEqual([40_000, 50_000, 60_000, 70_000]);
   });
 
-  it("compte le noir et la couleur", () => {
+  it("compte le noir, la couleur, le texte et le fond uni", () => {
     const samples = sampleTile(
       tile([[0, 0, 0], [255, 255, 255], [255, 0, 0], [10, 10, 10]]),
       8, 4, INFO, 0, 7,
     );
+    // Des aplats : aucune rangée de texte, un fond parfaitement uni.
     // Noir pur et gris très sombre : tout est « noir », sans couleur.
-    expect(samples[0]).toEqual({ ms: 0, dark: 1, saturation: 0 });
-    expect(samples[3]).toEqual({ ms: 30_000, dark: 1, saturation: 0 });
+    expect(samples[0]).toEqual({ ms: 0, dark: 1, saturation: 0, rows: 0, modal: 1 });
+    expect(samples[3]).toEqual({ ms: 30_000, dark: 1, saturation: 0, rows: 0, modal: 1 });
     // Blanc : rien de noir, rien de coloré. Rouge : rien de noir, saturé.
-    expect(samples[1]).toEqual({ ms: 10_000, dark: 0, saturation: 0 });
-    expect(samples[2]).toEqual({ ms: 20_000, dark: 0, saturation: 255 });
+    expect(samples[1]).toEqual({ ms: 10_000, dark: 0, saturation: 0, rows: 0, modal: 1 });
+    expect(samples[2]).toEqual({ ms: 20_000, dark: 0, saturation: 255, rows: 0, modal: 1 });
   });
 
   it("s'arrête à la dernière vignette réelle, sans lire le remplissage", () => {

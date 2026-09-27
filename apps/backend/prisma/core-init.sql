@@ -250,9 +250,10 @@ ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `outroFilmDelayMs` int(
 -- indépendante de la fiche « à suivre ». Additif, idempotent.
 ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `nextFinalCard` tinyint(1) NOT NULL DEFAULT 1;
 
--- Le verdict des vignettes sur le générique de fin (services/frameAnalysis.ts).
--- Un cache, jamais une source : la table peut être vidée sans rien perdre
--- d'autre qu'une demi-seconde de calcul au prochain lancement du média.
+-- Ce que l'analyse de fin de média a trouvé (services/tailAnalysis/) — le nom
+-- vient de l'analyse des vignettes dont elle prend la suite. Seules les
+-- trouvailles y sont écrites ; vider la table ne coûte qu'une analyse au
+-- prochain lancement de chaque média.
 CREATE TABLE IF NOT EXISTS `media_frame_analysis` (
   `itemId` varchar(64) NOT NULL,
   `version` int(11) NOT NULL,

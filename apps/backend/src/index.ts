@@ -65,6 +65,7 @@ import { startAnnouncedPurge } from "./services/announcedRegistry";
 import { startNotificationPurge } from "./services/notificationPurge";
 import { sweepStaleTempDirs } from "./services/audioFingerprint";
 import { purgeEmptyAudioVerdicts } from "./services/audioAnalysis";
+import { purgeObsoleteTailRows } from "./services/tailAnalysis/tailStore";
 import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { setRestartShutdown } from "./services/pluginRestart";
@@ -334,9 +335,11 @@ async function main() {
     startLibraryAddedNotifier();
     startAnnouncedPurge();
     startNotificationPurge();
-    // Analyse audio : les temporaires d'une analyse interrompue, et les verdicts
-    // vides rangés autrefois (on ne range plus que les trouvailles).
+    // Analyses audio et de fin de média : les temporaires d'une analyse
+    // interrompue, et ce qui a été rangé sans rien avoir trouvé (on ne range
+    // plus que les trouvailles).
     void sweepStaleTempDirs();
+    void purgeObsoleteTailRows();
     void purgeEmptyAudioVerdicts();
     startWatchTime();
     startRecoJobs();
