@@ -57,7 +57,7 @@ export const PersonHeader = memo(function PersonHeader({ id, name, imageTag, lif
           )}
         </View>
         <View style={st.titleCol}>
-          <Text style={st.kicker} numberOfLines={1}>
+          <Text style={st.kicker} numberOfLines={2}>
             {t("personKicker")}
             {roles.length > 0 && <Text style={st.kickerRoles}> · {roles.slice(0, 2).map((r) => t(creditRoleKey(r))).join(" · ")}</Text>}
           </Text>

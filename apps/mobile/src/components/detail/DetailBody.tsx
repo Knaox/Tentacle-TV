@@ -13,6 +13,7 @@ import { SeasonKeepOfflinePill } from "@/offline/entry/SeasonKeepOfflinePill";
 import { CastRow } from "../CastRow";
 import { LicenseAttribution } from "../LicenseAttribution";
 import { MobileExtrasSection } from "./MobileExtrasSection";
+import { DetailFacts } from "./DetailFacts";
 import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
 
 interface Props {
@@ -26,9 +27,10 @@ interface Props {
 }
 
 /**
- * Corps de la fiche détail (genres → synopsis → casting → extras → saisons/épisodes
- * → licence → similaires). Extrait de MediaDetailScreen (règle 300 lignes) ; partagé
- * entre le layout portrait (sous le hero) et paysage (colonne droite défilante).
+ * Corps de la fiche détail (genres → synopsis → casting et équipe → extras →
+ * saisons/épisodes → informations → licence → similaires). Extrait de
+ * MediaDetailScreen (règle 300 lignes) ; partagé entre le layout portrait
+ * (sous le hero) et paysage (colonne droite défilante).
  */
 export function DetailBody({ item, isEpisode, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId }: Props) {
   const router = useRouter();
@@ -88,6 +90,8 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
           />
         </>
       )}
+
+      <DetailFacts item={item} />
 
       <LicenseAttribution item={item} />
       {similar && similar.length > 0 && (
