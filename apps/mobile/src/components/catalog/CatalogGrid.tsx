@@ -10,7 +10,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { BrandSpinner, PressableCard, ProgressBar, FadeIn } from "@/components/ui";
 import { ScrollTopFab } from "@/components/ui/ScrollTopFab";
-import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
+import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 import { motion, spacing, typography, useGrid, useResponsive, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
@@ -183,12 +183,8 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
             <ProgressBar progress={progress / 100} height={3} />
           </View>
         )}
-        {isWatched && (
-          <View style={styles.watchedBadge}>
-            <Feather name="check" size={12} color={colors.cta.primaryFg} />
-          </View>
-        )}
-        <CardRatingBadge rating={rating} />
+        {/* Marqueurs du repos (note, ma liste, favori, vu) — modèle partagé. */}
+        <CardMarkerLayer item={item} communityRating={rating} />
       </View>
       <Text numberOfLines={1} style={styles.itemTitle}>
         {isEpisode && item.SeriesName ? item.SeriesName : item.Name}
@@ -207,19 +203,6 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   emptyTitle: { ...typography.subtitle, color: t.colors.text.tertiary, marginTop: spacing.md },
   emptyHint: { ...typography.caption, color: t.colors.text.quaternary, marginTop: spacing.xs },
   progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
-  // R11 — Watched check unifié (web/mobile) : pastille contrastée + check + shadow.
-  // Match desktop apps/web/src/components/cards/PosterCard.tsx:90.
-  watchedBadge: {
-    position: "absolute", top: 7, right: 7,
-    width: 22, height: 22, borderRadius: 11,
-    backgroundColor: t.colors.cta.primaryBg,
-    alignItems: "center", justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 4,
-  },
   itemTitle: { ...typography.small, color: t.colors.text.primary, fontWeight: "600", marginTop: spacing.xs + 2 },
   itemYear: { ...typography.badge, color: t.colors.text.tertiary, marginTop: 2 },
 });

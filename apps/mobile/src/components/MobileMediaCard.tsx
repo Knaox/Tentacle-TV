@@ -2,7 +2,6 @@ import { memo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import Animated from "react-native-reanimated";
-import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
@@ -13,7 +12,7 @@ import { PressableCard, ProgressBar } from "@/components/ui";
 import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { useCardWidth } from "@/contexts/CardDensityContext";
 import { useSeriesRatingMap } from "@/contexts/SeriesRatingContext";
-import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
+import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
@@ -25,8 +24,9 @@ interface Props {
 
 /**
  * Card poster 2:3 Netflix-style — radius 12, fallback letter cinematic,
- * progress bar violet en bas, watched check rond glass top-right, scale spring
- * sur press (via PressableCard). Title Inter semibold, sous-titre tertiary.
+ * progress bar violet en bas, marqueurs d'état façon Crunchyroll
+ * (`CardMarkerLayer`), scale spring sur press (via PressableCard). Title Inter
+ * semibold, sous-titre tertiary.
  */
 export const MobileMediaCard = memo(function MobileMediaCard({
   item, onPress, onLongPress, width,
@@ -58,7 +58,6 @@ export const MobileMediaCard = memo(function MobileMediaCard({
     : null;
   const image = useResilientImage(poster);
   const progress = item.UserData?.PlayedPercentage ?? 0;
-  const isWatched = item.UserData?.Played === true;
   // Cette affiche montre le visage d'une SÉRIE (même chaîne de repli d'image
   // que le web) : elle en porte donc la note, lot « +N » comme épisode isolé.
   const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
@@ -104,14 +103,12 @@ export const MobileMediaCard = memo(function MobileMediaCard({
             <ProgressBar progress={progress / 100} height={3} />
           </View>
         )}
-        {isWatched && !hasProgress && (
-          <View style={st.watchedBadge}>
-            <Feather name="check" size={12} color={theme.colors.cta.primaryFg} />
-          </View>
-        )}
-        {/* En BAS à gauche, comme le web. La barre de progression occupe le
-            bord inférieur sur toute la largeur, pas ce coin. */}
-        <CardRatingBadge rating={rating} />
+        {/* Marqueurs du repos — modèle partagé par toutes les plateformes :
+            note (globale + la vôtre) en bas à gauche, pastille d'états (ma
+            liste, favori, vu) en haut à droite. La note remonte au-dessus de
+            la barre de progression quand il y en a une : les deux se
+            chevauchaient au même bord. */}
+        <CardMarkerLayer item={item} communityRating={rating} liftRating={hasProgress} />
         {isGroupedSeries && (
           // Badge "+N" violet→rose top-left — match desktop PosterCard.tsx:81
           // (from-[var(--brand)] to-[var(--brand-accent)]) : le rose est
@@ -170,24 +167,6 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
     right: 0,
     paddingHorizontal: 6,
     paddingBottom: 6,
-  },
-  watchedBadge: {
-    // R11 — Watched check unifié sur les 3 plateformes : pill blanc + check noir + shadow.
-    // Match desktop apps/web/src/components/cards/PosterCard.tsx:90 (bg-white text-black rounded-full shadow).
-    position: "absolute",
-    top: 7,
-    right: 7,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: t.colors.cta.primaryBg,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 4,
   },
   countBadge: {
     position: "absolute",

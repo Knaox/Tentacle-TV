@@ -126,6 +126,7 @@ export function CollectionScreen({
         progressPercent={item.UserData?.PlayedPercentage ?? null}
         watched={item.UserData?.Played === true}
         rating={cardRatingFor(item, "series").rating}
+        item={item}
         width={cardWidth}
         selectable={selection.active}
         selected={selection.selected.has(item.Id)}

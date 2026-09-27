@@ -4,7 +4,9 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { PressableCard, ProgressBar } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
+import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 
 const POSTER_ASPECT = 2 / 3;
 
@@ -27,6 +29,12 @@ export interface SelectableGridCardProps {
   onPress?: () => void;
   onLongPress?: () => void;
   accessibilityLabel?: string;
+  /**
+   * L'item, quand l'appelant l'a : la carte pose alors les marqueurs complets
+   * (note + la vôtre, ma liste, favori, vu) au lieu de la seule note et de la
+   * coche. `rating` reste la note globale à afficher.
+   */
+  item?: MediaItem;
 }
 
 /**
@@ -49,6 +57,7 @@ export const SelectableGridCard = memo(function SelectableGridCard({
   onPress,
   onLongPress,
   accessibilityLabel,
+  item,
 }: SelectableGridCardProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -64,13 +73,17 @@ export const SelectableGridCard = memo(function SelectableGridCard({
     >
       <View style={styles.poster}>
         <Image source={{ uri: posterUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
-        <CardRatingBadge rating={rating} />
+        {item ? (
+          <CardMarkerLayer item={item} communityRating={rating} />
+        ) : (
+          <CardRatingBadge rating={rating} />
+        )}
         {showProgress && (
           <View style={styles.progressContainer}>
             <ProgressBar progress={(progressPercent ?? 0) / 100} height={3} />
           </View>
         )}
-        {watched && (
+        {watched && !item && (
           <View style={styles.watchedBadge} accessibilityLabel="vu">
             <Feather name="check" size={12} color={colors.cta.primaryFg} />
           </View>
