@@ -8,7 +8,7 @@ import { Colors, Typography } from "../../theme/colors";
 import { TVCardImage } from "./TVCardImage";
 import { TVCardTrickplayImage } from "./TVCardTrickplayImage";
 import { TVCardProgressBar } from "./TVCardProgressBar";
-import { TVCardRatingBadge } from "./TVCardRatingBadge";
+import { TVCardMarkerLayer } from "./TVCardMarkerLayer";
 import { TVMetaChips } from "../TVMetaChips";
 import { TV_EPISODE_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
 
@@ -106,13 +106,16 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
 
         {/* La note de CET épisode — la vignette porte son nom et son numéro.
             En haut-gauche, et seulement hors focus : les chips y prennent la
-            place, et le bas est tenu par le titre. */}
-        {!focused && (
-          <TVCardRatingBadge
-            rating={cardRatingFor(item, "item").rating}
-            style={{ left: 8, top: 8, bottom: undefined }}
-          />
-        )}
+            place, et le bas est tenu par le titre. La pastille d'états tient le
+            haut-droit, sous le temps restant quand il y en a un. */}
+        <TVCardMarkerLayer
+          item={item}
+          communityRating={cardRatingFor(item, "item").rating}
+          scope="item"
+          hideRating={focused}
+          ratingStyle={RATING_TOP_LEFT}
+          statusStyle={remainingMin != null && remainingMin > 0 ? STATUS_BELOW_TIME : undefined}
+        />
 
         {/* Chips qualité/langues AU FOCUS (haut-gauche — le temps restant
             occupe le haut-droit), comme le hover desktop. */}
@@ -201,3 +204,7 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
     </View>
   );
 });
+
+const RATING_TOP_LEFT = { left: 8, top: 8, bottom: undefined } as const;
+/** Sous la pastille « N min » (haut-droit) : 8 + ~22 de haut + 10 d’air. */
+const STATUS_BELOW_TIME = { top: 40 } as const;
