@@ -47,10 +47,13 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
           }}
         />
 
-        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+        {/* `justify-between` et non `ml-auto` : sur le téléviseur, la passe qui
+            émule `gap` pose une marge sur chaque enfant et écrase `ml-auto` —
+            le groupe de droite finissait au milieu de la barre. */}
+        <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
           {props.leading && <div className="w-full min-w-0 md:w-auto md:max-w-xl md:flex-1">{props.leading}</div>}
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <ResultCount loading={props.resultsLoading} total={props.totalResults} narrowed={narrowed} />
             <SortMenu
               toolbar
@@ -74,42 +77,44 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
 
         <div aria-hidden className="my-2.5 border-t border-line-subtle md:my-3" />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <WatchStatusSegment
-            statusFilter={filters.statusFilter}
-            isFavorite={filters.isFavorite}
-            onStatusChange={props.onStatusChange}
-            onFavoriteChange={props.onFavoriteChange}
-          />
-          {(props.showFavorite ?? true) && (
-            <button
-              type="button"
-              onClick={() => { props.onFavoriteChange(!filters.isFavorite); if (!filters.isFavorite) props.onStatusChange(null); }}
-              aria-selected={filters.isFavorite}
-              className={`${chipCls(filters.isFavorite, "rose")} inline-flex min-h-[32px] items-center gap-1.5`}
-            >
-              <HeartIcon filled={filters.isFavorite} />
-              {t("common:favorites")}
-            </button>
-          )}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <WatchStatusSegment
+              statusFilter={filters.statusFilter}
+              isFavorite={filters.isFavorite}
+              onStatusChange={props.onStatusChange}
+              onFavoriteChange={props.onFavoriteChange}
+            />
+            {(props.showFavorite ?? true) && (
+              <button
+                type="button"
+                onClick={() => { props.onFavoriteChange(!filters.isFavorite); if (!filters.isFavorite) props.onStatusChange(null); }}
+                aria-selected={filters.isFavorite}
+                className={`${chipCls(filters.isFavorite, "rose")} inline-flex min-h-[32px] items-center gap-1.5`}
+              >
+                <HeartIcon filled={filters.isFavorite} />
+                {t("common:favorites")}
+              </button>
+            )}
 
-          <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-fill-soft sm:block" />
+            <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-fill-soft sm:block" />
 
-          <GenreMenu genres={props.genres} filters={filters} onToggleGenre={props.onToggleGenre} onClear={clearGenres} />
-          <YearMenu
-            filters={filters}
-            onYearFromChange={props.onYearFromChange}
-            onYearToChange={props.onYearToChange}
-            onClear={props.onClearYears}
-          />
-          <RatingMenu filters={filters} onRatingMinChange={props.onRatingMinChange} onClear={props.onClearRating} />
-          <PlatformMenu filters={filters} onTogglePlatform={props.onTogglePlatform} onClear={clearPlatforms} />
+            <GenreMenu genres={props.genres} filters={filters} onToggleGenre={props.onToggleGenre} onClear={clearGenres} />
+            <YearMenu
+              filters={filters}
+              onYearFromChange={props.onYearFromChange}
+              onYearToChange={props.onYearToChange}
+              onClear={props.onClearYears}
+            />
+            <RatingMenu filters={filters} onRatingMinChange={props.onRatingMinChange} onClear={props.onClearRating} />
+            <PlatformMenu filters={filters} onTogglePlatform={props.onTogglePlatform} onClear={clearPlatforms} />
+          </div>
 
           {narrowed && (
             <button
               type="button"
               onClick={props.onReset}
-              className="ml-auto inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3 text-xs font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
+              className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3 text-xs font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
             >
               <RotateCcw aria-hidden className="h-3.5 w-3.5" strokeWidth={2.2} />
               {t("common:resetFilters")}
