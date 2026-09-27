@@ -33,8 +33,9 @@ interface Props {
  * Action sheet moderne pour long-press sur un media — pattern Apple TV /
  * Disney+ : poster overlay en haut, grille 2×2 d'actions rondes (Like /
  * Ma liste / Vu / Garder hors ligne) avec ring tinted brand violet sur état
- * actif, puis la note du titre (cinq étoiles). BlurView backdrop +
- * drag-to-dismiss.
+ * actif, puis la note du titre (cinq étoiles). Mêmes formes que la pastille
+ * d'états des cartes : signet pour Ma liste, cœur au rose de marque pour les
+ * favoris. BlurView backdrop + drag-to-dismiss.
  */
 export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
   const { t } = useTranslation("common");
@@ -189,16 +190,16 @@ export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
                 iconActive="heart"
                 label={isFav ? t("inFavorites") : t("addToFavorites")}
                 active={isFav}
-                activeColor={theme.colors.status.error}
+                activeColor={theme.colors.brand.accent}
                 fillOnActive
                 onPress={handleAction(() => (isFav ? favorite.remove.mutate() : favorite.add.mutate()))}
               />
               <ActionCell
-                icon="plus"
-                iconActive="check"
+                icon="bookmark"
                 label={isInList ? t("inMyList") : t("addToMyList")}
                 active={isInList}
                 activeColor={theme.colors.brand.violet}
+                fillOnActive
                 onPress={handleAction(() => (isInList ? watchlist.remove.mutate() : watchlist.add.mutate()))}
               />
               <ActionCell
