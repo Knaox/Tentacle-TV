@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBatchRemoveWatchlist, useJellyfinClient, useWatchlistAll } from "@tentacle-tv/api-client";
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
-import { FadeIn, SkeletonCard, SubtleBackground } from "@/components/ui";
+import { FadeIn, Skeleton, SkeletonCard, SubtleBackground } from "@/components/ui";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { SelectionBar } from "@/components/SelectionBar";
 import { ListHeader } from "@/components/watchlist/ListHeader";
@@ -104,11 +104,15 @@ export function WatchlistScreen() {
     />
   ), [isList, styles.rowWrap, selection.active, selection.selected, pendingId, handlePress, handleLongPress, play, client, itemWidth]);
 
-  const skeletons = useMemo(() => Array.from({ length: numColumns * 3 }).map((_, i) => (
-    <View key={i} style={{ width: itemWidth, marginBottom: spacing.sm }}>
-      <SkeletonCard width={itemWidth} height={itemWidth * 1.5} />
-    </View>
-  )), [numColumns, itemWidth]);
+  // Le squelette prend la forme de l'affichage choisi : l'écran ne saute pas
+  // quand les titres arrivent.
+  const skeletons = useMemo(() => isList
+    ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} width="100%" height={100} radius={16} />)
+    : Array.from({ length: numColumns * 3 }).map((_, i) => (
+      <View key={i} style={{ width: itemWidth, marginBottom: spacing.sm }}>
+        <SkeletonCard width={itemWidth} height={itemWidth * 1.5} />
+      </View>
+    )), [isList, numColumns, itemWidth]);
 
   const totalRaw = raw?.length ?? 0;
   const hasContent = !isLoading && totalRaw > 0;
@@ -153,9 +157,19 @@ export function WatchlistScreen() {
         {assist.open ? (
           <SearchAssistPane assist={assist} />
         ) : isLoading ? (
-          <View style={[styles.skeletonGrid, { paddingHorizontal: padding, gap: gutter }]}>{skeletons}</View>
+          <View style={isList ? styles.skeletonList : [styles.skeletonGrid, { paddingHorizontal: padding, gap: gutter }]}>
+            {skeletons}
+          </View>
         ) : totalRaw === 0 ? (
-          <WatchlistEmptyState />
+          // Dans un défilement, pour garder le « tirer pour actualiser » de
+          // l'ancien écran : une liste vide se recharge comme une pleine.
+          <ScrollView
+            contentContainerStyle={styles.emptyScroll}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.brand.violet} />}
+            showsVerticalScrollIndicator={false}
+          >
+            <WatchlistEmptyState />
+          </ScrollView>
         ) : (
           <FadeIn delay={80} style={styles.container}>
             <FlatList
@@ -196,6 +210,8 @@ const makeStyles = (t: AppTheme) =>
     container: { flex: 1 },
     shareRow: { flexDirection: "row", paddingHorizontal: spacing.screenPadding, paddingBottom: spacing.sm },
     skeletonGrid: { flexDirection: "row", flexWrap: "wrap" },
+    skeletonList: { paddingHorizontal: spacing.screenPadding, gap: spacing.sm },
+    emptyScroll: { paddingBottom: spacing.xxxl + 60 },
     content: { paddingBottom: spacing.xxxl + 60 },
     rowWrap: { paddingHorizontal: spacing.screenPadding },
     message: { alignItems: "center", paddingTop: 64, paddingHorizontal: spacing.xl, gap: spacing.sm },
