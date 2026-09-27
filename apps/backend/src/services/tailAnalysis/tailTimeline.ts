@@ -22,6 +22,16 @@ export interface TailInput {
   providerSpans: ReadonlyArray<ProviderSpan>;
   /** Un épisode : son générique peut se clore sur l'aperçu du suivant (`tailPreview.ts`). */
   episode?: boolean;
+  /** Les mesures brutes de chaque case, alignées sur `cells` (`null` où la planche manquait). */
+  measures?: ReadonlyArray<CellMeasure | null>;
+}
+
+/** Ce qu'on garde des mesures d'une vignette (`tailCells.ts`) pour les lectures fines. */
+export interface CellMeasure {
+  /** Part de pixels quasi noirs. */
+  dark: number;
+  /** Part des pixels à ±10 de la luminance médiane : un fond uni. */
+  modal: number;
 }
 
 export interface ProviderSpan {
@@ -73,6 +83,12 @@ export class Timeline {
   cell(ms: number): CellKind | "?" {
     const i = Math.floor((ms - this.input.cellsFromMs) / this.input.intervalMs);
     return i >= 0 && i < this.kinds.length ? (this.kinds[i] as CellKind) : "?";
+  }
+
+  /** Les mesures de la case qui couvre `ms`, ou `null`. */
+  measure(ms: number): CellMeasure | null {
+    const i = Math.floor((ms - this.input.cellsFromMs) / this.input.intervalMs);
+    return this.input.measures?.[i] ?? null;
   }
 
   /** La seconde de son qui couvre `ms`, ou `?`. */

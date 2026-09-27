@@ -32,7 +32,7 @@ import { classifyCell, type ThumbnailMeasure } from "./tailCells";
 import { readTail } from "./tailReading";
 import { audioWindowStart, findSkeleton } from "./tailSkeleton";
 import { storeTailVerdict } from "./tailStore";
-import { Timeline, type ProviderSpan, type TailInput } from "./tailTimeline";
+import { Timeline, type CellMeasure, type ProviderSpan, type TailInput } from "./tailTimeline";
 
 export const NOTHING_FOUND_COOLDOWN_MS = 24 * 3600_000;
 export const FAILURE_COOLDOWN_MS = 3600_000;
@@ -137,13 +137,18 @@ export function startTailAnalysis(request: TailAnalysisRequest): void {
   void run(request, 0);
 }
 
-/** La frise d'image, une lettre par vignette ; `?` là où une planche manquait. */
-function cellString(samples: readonly ThumbnailMeasure[], intervalMs: number): string {
-  if (samples.length === 0) return "";
-  const kinds = new Map(samples.map((s) => [s.ms, classifyCell(s)]));
-  let out = "";
-  for (let ms = samples[0].ms; ms <= samples[samples.length - 1].ms; ms += intervalMs) out += kinds.get(ms) ?? "?";
-  return out;
+/** La frise d'image, une lettre par vignette ; `?` là où une planche manquait — et ses mesures. */
+function cellStrip(samples: readonly ThumbnailMeasure[], intervalMs: number): { cells: string; measures: Array<CellMeasure | null> } {
+  const byMs = new Map(samples.map((s) => [s.ms, s]));
+  let cells = "";
+  const measures: Array<CellMeasure | null> = [];
+  if (samples.length === 0) return { cells, measures };
+  for (let ms = samples[0].ms; ms <= samples[samples.length - 1].ms; ms += intervalMs) {
+    const m = byMs.get(ms);
+    cells += m ? classifyCell(m) : "?";
+    measures.push(m ? { dark: m.dark, modal: m.modal } : null);
+  }
+  return { cells, measures };
 }
 
 const mmss = (ms: number): string =>
@@ -169,7 +174,7 @@ async function run(request: TailAnalysisRequest, deferrals: number): Promise<voi
       runtimeMs,
       intervalMs,
       cellsFromMs: samples[0].ms,
-      cells: cellString(samples, intervalMs),
+      ...cellStrip(samples, intervalMs),
       audio: null,
       providerSpans: request.providerSpans,
       episode: request.isEpisode,

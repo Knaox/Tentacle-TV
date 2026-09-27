@@ -36,6 +36,7 @@
  * Mario Bros », deux secondes après la dernière ligne du défilement).
  */
 
+import { isEndLogo } from "./tailLogos";
 import type { CreditsStart, Skeleton } from "./tailSkeleton";
 import { Timeline, count } from "./tailTimeline";
 
@@ -95,7 +96,8 @@ export function findScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart)
       merged.push({ ...s });
     }
   }
-  return merged.filter((s) => s.startMs >= start.ms);
+  // Un logo de fin n'est pas une scène, quoi que la parole ou l'image en aient dit (`tailLogos.ts`).
+  return merged.filter((s) => s.startMs >= start.ms && !isEndLogo(t, s.startMs, s.endMs));
 }
 
 /** Le générique court d'un fournisseur qui court jusqu'au bout — l'ending d'un épisode. */

@@ -20,7 +20,15 @@ interface Media {
   audio?: { fromS: number; parts: Strip };
   providers?: Array<[number, number, boolean?]>;
   episode?: boolean;
+  /** Les mesures des cases, lettre par lettre : `f` fond clair uni, `k` noir, `n` image ordinaire. */
+  looks?: Strip;
 }
+
+const LOOKS: Record<string, { dark: number; modal: number }> = {
+  f: { dark: 0.01, modal: 0.8 },
+  k: { dark: 1, modal: 1 },
+  n: { dark: 0.2, modal: 0.2 },
+};
 
 const input = (media: Media): TailInput => ({
   runtimeMs: media.runtimeS * 1000,
@@ -30,6 +38,7 @@ const input = (media: Media): TailInput => ({
   audio: media.audio ? { fromMs: media.audio.fromS * 1000, classes: strip(media.audio.parts, 1) } : null,
   providerSpans: (media.providers ?? []).map(([a, b, named]) => ({ startMs: a * 1000, endMs: b * 1000, ...(named ? { named } : {}) })),
   ...(media.episode ? { episode: true } : {}),
+  ...(media.looks ? { measures: [...strip(media.looks, 10)].map((l) => LOOKS[l]) } : {}),
 });
 
 const scenes = (...pairs: Array<[number, number]>) => pairs.map(([a, b]) => ({ startMs: a * 1000, endMs: b * 1000 }));
@@ -121,5 +130,57 @@ describe("la dernière image connue", () => {
     const t = new Timeline(input({ runtimeS: 3240, picture: [["E", 1500], ["K", 20]] }));
     expect(t.knownEndMs).toBe(3_140_000);
     expect(new Timeline(input({ runtimeS: 3240, picture: [["E", 1620]] })).knownEndMs).toBe(3_240_000);
+  });
+});
+
+/** Un film qui finit sur son défilement (5600-6000 s), puis `tail` jusqu'au bout — cases alignées sur la seconde 3000. */
+const ending = (tail: { picture: Strip; audio: Strip; looks: Strip }): TailInput => {
+  const tailS = tail.picture.reduce((n, [, sec]) => n + sec, 0);
+  return {
+    runtimeMs: (6000 + tailS) * 1000,
+    intervalMs: 10_000,
+    cellsFromMs: 3_000_000,
+    cells: strip([["E", 2600], ["T", 400], ...tail.picture], 10),
+    audio: { fromMs: 5_000_000, classes: strip([["S", 600], ["M", 400], ...tail.audio], 1) },
+    providerSpans: [],
+    measures: [...strip([["n", 3000], ...tail.looks], 10)].map((l) => LOOKS[l]),
+  };
+};
+
+describe("les logos de fin", () => {
+  it("le château Disney puis la lampe Pixar sur son fond clair, en bruitages : pas une scène (« Toy Story »)", () => {
+    const reading = readTail(ending({
+      picture: [["E", 20], ["K", 10]],
+      audio: [["Q", 10], ["S", 7], ["Q", 13]],
+      looks: [["n", 10], ["f", 10], ["k", 10]],
+    }));
+    expect(reading?.scenes).toEqual([]);
+  });
+
+  it("quarante secondes de gag sur le logo, puis un fondu au noir : toujours un logo (« WALL·E »)", () => {
+    const reading = readTail(ending({
+      picture: [["E", 40], ["K", 10]],
+      audio: [["Q", 8], ["S", 40], ["Q", 2]],
+      looks: [["n", 10], ["f", 30], ["k", 10]],
+    }));
+    expect(reading?.scenes).toEqual([]);
+  });
+
+  it("un gag dialogué suivi du carton clair de la chaîne reste une scène (« Rick et Morty » S2E6)", () => {
+    const reading = readTail(ending({
+      picture: [["E", 20], ["U", 10]],
+      audio: [["Q", 8], ["S", 19], ["Q", 3]],
+      looks: [["n", 20], ["f", 10]],
+    }));
+    expect(reading?.scenes).toHaveLength(1);
+  });
+
+  it("une longue scène parlée qui finit sur un fond clair reste une scène (« Brave New World »)", () => {
+    const reading = readTail(ending({
+      picture: [["E", 50], ["K", 10]],
+      audio: [["S", 45], ["Q", 15]],
+      looks: [["n", 40], ["f", 10], ["k", 10]],
+    }));
+    expect(reading?.scenes).toHaveLength(1);
   });
 });
