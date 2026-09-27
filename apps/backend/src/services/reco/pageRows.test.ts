@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PageSnapshot, SnapshotRow } from "./pageSnapshot";
 import type { RecoRowItem } from "./rowItem";
-import { applyServeExclusions, dropThinRows, filterRowItems, snapshotStaleReason, utcDayKey } from "./pageRows";
+import { applyServeExclusions, dropThinRows, filterRowItems, rankByPool, snapshotStaleReason, utcDayKey } from "./pageRows";
 
 const item = (key: string): RecoRowItem => ({
   key,
@@ -79,5 +79,14 @@ describe("snapshotStaleReason", () => {
   it("la clé de jour est UTC", () => {
     expect(utcDayKey("2026-09-04T23:59:59.000Z")).toBe("2026-09-04");
     expect(utcDayKey("2026-09-05T00:00:00.000Z")).toBe("2026-09-05");
+  });
+});
+
+describe("rangée globale ordonnée par le goût du compte", () => {
+  it("les titres connus du pool d'abord, du mieux classé au moins bien ; les autres gardent leur ordre", () => {
+    const items = ["movie:1", "movie:2", "movie:3", "movie:4"].map(item);
+    const scores = new Map([["movie:3", 0.9], ["movie:1", 0.2]]);
+    expect(rankByPool(items, scores).map((i) => i.key)).toEqual(["movie:3", "movie:1", "movie:2", "movie:4"]);
+    expect(rankByPool(items, null).map((i) => i.key)).toEqual(["movie:1", "movie:2", "movie:3", "movie:4"]);
   });
 });

@@ -36,6 +36,23 @@ export function applyServeExclusions(rows: readonly SnapshotRow[], exclude: Read
   return filterRowItems(rows, (item) => !exclude.has(item.key));
 }
 
+/**
+ * Ordonne une rangée GLOBALE (tendances, pouls du serveur) selon le goût du
+ * compte : les titres que son pool connaît passent devant, du mieux classé
+ * au moins bien classé ; les autres suivent dans leur ordre d'origine. Les
+ * mêmes titres pour tous, mais plus dans le même ordre.
+ */
+export function rankByPool<T extends { key: string }>(
+  items: readonly T[],
+  scoreOf: ReadonlyMap<string, number> | null
+): T[] {
+  if (!scoreOf || scoreOf.size === 0) return [...items];
+  const known = items.filter((i) => scoreOf.has(i.key));
+  const rest = items.filter((i) => !scoreOf.has(i.key));
+  known.sort((a, b) => scoreOf.get(b.key)! - scoreOf.get(a.key)!);
+  return [...known, ...rest];
+}
+
 /** Sous un filtre, une rangée trop mince n'est pas une rangée. */
 export function dropThinRows(rows: readonly SnapshotRow[], minItems: number): SnapshotRow[] {
   return rows.filter((row) => row.items.length >= minItems);
