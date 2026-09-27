@@ -85,6 +85,12 @@ export class Timeline {
     return i >= 0 && i < this.kinds.length ? (this.kinds[i] as CellKind) : "?";
   }
 
+  /** La case telle que les vignettes l'ont classée, avant que le son ne tranche le texte clair. */
+  rawCell(ms: number): CellKind | "?" {
+    const i = Math.floor((ms - this.input.cellsFromMs) / this.input.intervalMs);
+    return i >= 0 && i < this.input.cells.length ? (this.input.cells[i] as CellKind) : "?";
+  }
+
   /** Les mesures de la case qui couvre `ms`, ou `null`. */
   measure(ms: number): CellMeasure | null {
     const i = Math.floor((ms - this.input.cellsFromMs) / this.input.intervalMs);

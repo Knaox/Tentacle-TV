@@ -64,8 +64,14 @@ export function illustratedCredits(t: Timeline, crawlStart: number): Illustrated
     if (!(isCredits(c) || c === "K") || t.share(sceneEnd - step, sceneEnd, "S") >= SCENE_SPEECH_MIN) break;
     sceneEnd -= step;
   }
+  // La scène est de l'IMAGE aux yeux des vignettes : un carton clair sous une voix (des extraits
+  // du film encadrés à côté des noms, « Frère des ours ») n'en est pas une.
   let sceneStart = sceneEnd;
-  while (sceneStart - step >= limit && "EDK".includes(t.cell(sceneStart - step)) && t.share(sceneStart - step, sceneStart, "S") >= SCENE_SPEECH_MIN) {
+  while (
+    sceneStart - step >= limit &&
+    "EDK".includes(t.rawCell(sceneStart - step)) &&
+    t.share(sceneStart - step, sceneStart, "S") >= SCENE_SPEECH_MIN
+  ) {
     sceneStart -= step;
   }
   const scene = sceneEnd - sceneStart;

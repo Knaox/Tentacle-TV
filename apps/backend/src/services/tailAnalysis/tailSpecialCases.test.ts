@@ -92,6 +92,12 @@ describe("le générique illustré avant une scène mi-générique", () => {
     expect(reading?.creditsStartMs).toBe(7_390_000);
   });
 
+  it("des cartons clairs sous une voix (extraits encadrés à côté des noms) ne révèlent rien (« Frère des ours »)", () => {
+    const reading = readTail(input({ ...illustrated(), picture: [["E", 3500], ["L", 50], ["T", 400], ["K", 50]] }));
+    expect(reading?.creditsStartMs).toBe(7_550_000);
+    expect(reading?.scenes).toEqual([]);
+  });
+
   it("le nom de chapitre « End Titles » est un générique de fin, « Opening Credits » non", () => {
     expect(isCreditsChapterName("End Titles")).toBe(true);
     expect(isCreditsChapterName("End Credits")).toBe(true);
