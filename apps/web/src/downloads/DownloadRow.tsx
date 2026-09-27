@@ -134,10 +134,15 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection }: Down
               ratio={(finalizing ? 100 : pct ?? (entry.status === "downloading" ? 8 : 0)) / 100}
               status={entry.status}
             />
-            <span className="w-28 flex-shrink-0 text-right text-[10px] tabular-nums text-content-quaternary">
-              {formatBytes(bytesDone)}
-              {expected ? ` / ${formatBytes(expected)}` : ""}
-              {pct !== null && !finalizing ? ` · ${Math.round(pct)} %` : ""}
+            {/* En fenêtre étroite, les tailles cèdent la place au titre : le
+                pourcentage suffit à dire où en est la ligne. */}
+            <span className="flex-shrink-0 text-right text-[10px] tabular-nums text-content-quaternary sm:w-28">
+              <span className="hidden sm:inline">
+                {formatBytes(bytesDone)}
+                {expected ? ` / ${formatBytes(expected)}` : ""}
+                {pct !== null && !finalizing ? " · " : ""}
+              </span>
+              {pct !== null && !finalizing ? `${Math.round(pct)} %` : ""}
             </span>
           </div>
         )}
