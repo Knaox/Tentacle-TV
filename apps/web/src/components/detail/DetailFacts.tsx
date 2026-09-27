@@ -2,7 +2,7 @@ import { memo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  formatCalendarDate, formatDuration, readJellyfinDate, streamLanguages, ticksToSeconds, type MediaItem,
+  formatDuration, playbackEndsAt, releaseLabel, streamLanguages, type MediaItem,
 } from "@tentacle-tv/shared";
 import { RowHeader } from "../rows/RowHeader";
 
@@ -28,7 +28,7 @@ export const DetailFacts = memo(function DetailFacts({ item }: { item: MediaItem
 
   const runtime = item.Type !== "Series" ? formatDuration(item.RunTimeTicks) : null;
   if (runtime) {
-    const end = endsAt(item);
+    const end = playbackEndsAt(item, Date.now());
     const time = end?.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
     facts.push({
       key: "runtime",
@@ -85,26 +85,4 @@ function Links({ kind, names }: { kind: "genre" | "studio"; names: string[] }) {
       ))}
     </span>
   );
-}
-
-/** Film : la date de sortie. Série : ses années de diffusion (« 2008 – 2013 »). */
-function releaseLabel(item: MediaItem, locale: string): string | null {
-  if (item.Type === "Series") {
-    const start = item.ProductionYear;
-    const end = readJellyfinDate(item.EndDate)?.year;
-    if (!start) return null;
-    if (item.Status === "Ended" && end && end !== start) return `${start} – ${end}`;
-    return item.Status === "Continuing" ? `${start} –` : String(start);
-  }
-  const date = readJellyfinDate(item.PremiereDate);
-  if (date) return formatCalendarDate(date, locale);
-  return item.ProductionYear ? String(item.ProductionYear) : null;
-}
-
-/** L'heure de fin si l'on lançait maintenant — depuis la reprise s'il y en a une. */
-function endsAt(item: MediaItem): Date | null {
-  if (!item.RunTimeTicks) return null;
-  const remaining = ticksToSeconds(item.RunTimeTicks) - ticksToSeconds(item.UserData?.PlaybackPositionTicks ?? 0);
-  if (!(remaining > 60)) return null;
-  return new Date(Date.now() + remaining * 1000);
 }
