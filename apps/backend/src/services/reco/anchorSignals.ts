@@ -23,6 +23,25 @@ export const ANCHOR_ABANDON = -0.6;
 export const ANCHOR_DISMISSED = -0.35;
 export const ANCHOR_NOT_INTERESTED = -0.6;
 
+// ── Onglet « Affiner » (swipe) ──────────────────────────────────────────────
+/** Like d'une carte : un goût déclaré, du poids d'un « J'aime » de fiche. */
+export const ANCHOR_SWIPE_LIKE = 0.7;
+/** Super like : au-dessus d'un favori (0,8) — c'est un coup de cœur appuyé,
+ *  et il fait aussitôt une graine forte. */
+export const ANCHOR_SWIPE_SUPERLIKE = 1.2;
+/** Dislike : le poids d'un « Pas intéressé ». Le titre sort des rangées ; ses
+ *  voisins (genres, mots-clés, univers) ne sont touchés QUE par la composante
+ *  « ressemblance aux refus » du classement, bornée (cf. tasteStrategy). */
+export const ANCHOR_SWIPE_DISLIKE = -0.6;
+
+/** Poids de base d'un verdict de swipe ; 0 pour « passé » (ou inconnu). */
+export function swipeAnchorWeight(verdict: string): number {
+  if (verdict === "superlike") return ANCHOR_SWIPE_SUPERLIKE;
+  if (verdict === "like") return ANCHOR_SWIPE_LIKE;
+  if (verdict === "dislike") return ANCHOR_SWIPE_DISLIKE;
+  return 0;
+}
+
 /** Bornes du poids cumulé d'un titre (note 10 + favori + vu + revu…). */
 export const ANCHOR_MAX = 2.5;
 export const ANCHOR_MIN = -1.5;

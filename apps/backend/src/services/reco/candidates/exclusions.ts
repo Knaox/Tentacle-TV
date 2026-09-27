@@ -29,7 +29,7 @@ export function libraryExclusionKeys(
 /**
  * Exclusions systématiques du moteur. Un titre noté — même mal — ne se
  * re-propose pas (sa note a déjà façonné le profil) ; un « ne plus me
- * proposer » est définitif ; un titre vu en entier n'a rien à faire dans une
+ * proposer » est définitif, un verdict de swipe aussi ; un titre vu en entier n'a rien à faire dans une
  * rangée de découverte ; un FAVORI ou un like hors bibliothèque n'est jamais
  * une découverte, un titre de Ma liste non plus (on l'a déjà choisi) ; une
  * série entamée est déjà engagée, elle vit dans « Reprendre ».
@@ -52,7 +52,7 @@ export async function buildExclusions(
  */
 export async function accountExclusionKeys(userId: string): Promise<string[]> {
   const prisma = getPrisma();
-  const [ratings, feedback, likes] = await Promise.all([
+  const [ratings, feedback, likes, swipes] = await Promise.all([
     prisma.userRating.findMany({
       where: { jellyfinUserId: userId, deletedAt: null },
       select: { mediaType: true, tmdbId: true },
@@ -65,10 +65,16 @@ export async function accountExclusionKeys(userId: string): Promise<string[]> {
       where: { jellyfinUserId: userId },
       select: { mediaType: true, tmdbId: true },
     }),
+    // Un titre jugé dans « Affiner » a déjà façonné le goût ; « passé » non.
+    prisma.userSwipe.findMany({
+      where: { jellyfinUserId: userId, verdict: { not: "skip" } },
+      select: { mediaType: true, tmdbId: true },
+    }),
   ]);
   return [
     ...ratings.map((r) => canonicalKey(r.mediaType, r.tmdbId)),
     ...feedback.map((f) => f.itemKey),
     ...likes.map((l) => canonicalKey(l.mediaType, l.tmdbId)),
+    ...swipes.map((sw) => canonicalKey(sw.mediaType, sw.tmdbId)),
   ];
 }

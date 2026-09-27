@@ -673,6 +673,25 @@ model UserLikedPerson {
   @@map("user_liked_people")
 }
 
+// Jugements de l'onglet « Affiner » (swipe) — UN par titre et par compte, le
+// dernier geste gagne. Ils entrent dans les ancres du goût
+// (services/reco/anchors.ts) : un super like pèse plus qu'un like, un dislike
+// pénalise le titre et, par similarité, ses voisins. « skip » ne juge rien :
+// le titre revient dans la pile après un délai (services/swipe/swipeStore.ts).
+model UserSwipe {
+  id             String   @id @default(cuid())
+  jellyfinUserId String   @db.VarChar(255)
+  mediaType      String   @db.VarChar(10) // "movie" | "tv"
+  tmdbId         Int
+  verdict        String   @db.VarChar(12) // "like" | "superlike" | "dislike" | "skip"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([jellyfinUserId, mediaType, tmdbId])
+  @@index([jellyfinUserId, updatedAt])
+  @@map("user_swipes")
+}
+
 // NB : les tables du plugin Seer (seer_requests, seer_cleanup_queue,
 // seer_user_settings) ne sont volontairement PAS déclarées ici. Elles sont
 // créées et migrées par le plugin lui-même (raw SQL, colonnes snake_case).

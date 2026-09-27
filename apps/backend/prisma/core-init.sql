@@ -485,6 +485,22 @@ CREATE TABLE IF NOT EXISTS `user_liked_people` (
   UNIQUE KEY `user_liked_people_jellyfinUserId_personId_key` (`jellyfinUserId`, `personId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Jugements de l'onglet « Affiner » (swipe) : like, super like, dislike, passé.
+-- Voir schema.prisma > UserSwipe. Table neuve, sans ALTER : le même CREATE
+-- vaut pour MariaDB (prod) et MySQL 9 (poste local).
+CREATE TABLE IF NOT EXISTS `user_swipes` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `mediaType` varchar(10) NOT NULL,
+  `tmdbId` int(11) NOT NULL,
+  `verdict` varchar(12) NOT NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_swipes_jellyfinUserId_mediaType_tmdbId_key` (`jellyfinUserId`, `mediaType`, `tmdbId`),
+  KEY `user_swipes_jellyfinUserId_updatedAt_idx` (`jellyfinUserId`, `updatedAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Purge de `server_config` : clés abandonnées par une évolution.
 -- La table n'est pas créée ici — c'est le `prisma db push` du setup qui la
