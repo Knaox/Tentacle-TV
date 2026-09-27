@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
-import { pokeProfile } from "../services/reco/jobs";
+import { SWIPE_POOL_REGEN_MIN_AGE_MS, pokeProfile } from "../services/reco/jobs";
 import { buildDeck } from "../services/swipe/deckService";
 import { cardDetails } from "../services/swipe/cardDetails";
 import { deleteSwipe, saveSwipe } from "../services/swipe/swipeStore";
@@ -59,7 +59,7 @@ export const swipeRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const body = judgeBody.parse(request.body);
     await saveSwipe(user.userId, body.mediaType, body.tmdbId, body.verdict);
-    if (body.verdict !== "skip") pokeProfile(user.userId);
+    if (body.verdict !== "skip") pokeProfile(user.userId, { poolMinAgeMs: SWIPE_POOL_REGEN_MIN_AGE_MS });
     return { ok: true };
   });
 
@@ -68,7 +68,7 @@ export const swipeRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const params = titleParams.parse(request.params);
     const removed = await deleteSwipe(user.userId, params.mediaType, params.tmdbId);
-    if (removed) pokeProfile(user.userId);
+    if (removed) pokeProfile(user.userId, { poolMinAgeMs: SWIPE_POOL_REGEN_MIN_AGE_MS });
     return { ok: true, removed };
   });
 

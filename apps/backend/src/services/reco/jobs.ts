@@ -34,6 +34,12 @@ const FANOUT_BOOT_DELAY_MS = 5 * 60_000;
  *  profil animé) — borne à ~2 générations
  *  par heure et par compte actif. Un favori ajouté devient graine sous 30 min. */
 const POOL_REGEN_MIN_AGE_MS = 30 * 60_000;
+/** La même garde après une séance de l'onglet « Affiner » : juger vingt
+ *  cartes doit se voir dans « Pour vous » en quelques minutes. Le poke étant
+ *  débouncé, une séance coûte UNE génération, jamais une par carte. */
+export const SWIPE_POOL_REGEN_MIN_AGE_MS = 3 * 60_000;
+/** Garde d'âge demandée par le poke en attente (la plus courte gagne). */
+const poolAgeOverride = new Map<string, number>();
 
 let idfTimer: NodeJS.Timeout | null = null;
 let idfBootTimer: NodeJS.Timeout | null = null;
@@ -181,6 +187,7 @@ export function stopRecoJobs(): void {
   cancelRecoFanout();
   for (const t of profileTimers.values()) clearTimeout(t);
   profileTimers.clear();
+  poolAgeOverride.clear();
 }
 
 /**
@@ -188,16 +195,21 @@ export function stopRecoJobs(): void {
  * une salve de notes ou d'événements UserData ne coûte qu'un rebuild. Appelée
  * par les routes de notation/likes et par le WS Jellyfin (UserDataChanged).
  */
-export function pokeProfile(userId: string | undefined | null): void {
+export function pokeProfile(userId: string | undefined | null, opts: { poolMinAgeMs?: number } = {}): void {
   if (!userId) return;
+  if (opts.poolMinAgeMs != null) {
+    poolAgeOverride.set(userId, Math.min(opts.poolMinAgeMs, poolAgeOverride.get(userId) ?? Infinity));
+  }
   const existing = profileTimers.get(userId);
   if (existing) clearTimeout(existing);
   profileTimers.set(
     userId,
     setTimeout(() => {
       profileTimers.delete(userId);
+      const minAge = poolAgeOverride.get(userId) ?? POOL_REGEN_MIN_AGE_MS;
+      poolAgeOverride.delete(userId);
       rebuildProfile(userId)
-        .then(() => regeneratePoolIfAged(userId))
+        .then(() => regeneratePoolIfAged(userId, minAge))
         .catch((err) =>
           console.error(`[Reco] Rebuild du profil ${userId.slice(0, 8)}… en échec :`, err)
         );
@@ -210,11 +222,11 @@ export function pokeProfile(userId: string | undefined | null): void {
  * REMPLACEMENT, jamais d'invalidation — aucun trou de service. Pool absent :
  * rien à faire, la prochaine visite le générera de toute façon.
  */
-async function regeneratePoolIfAged(userId: string): Promise<void> {
+async function regeneratePoolIfAged(userId: string, minAgeMs = POOL_REGEN_MIN_AGE_MS): Promise<void> {
   const pool = await readPool(userId);
   if (!pool) return;
   const age = Date.now() - Date.parse(pool.generatedAt);
-  if (Number.isFinite(age) && age < POOL_REGEN_MIN_AGE_MS) return;
+  if (Number.isFinite(age) && age < minAgeMs) return;
   await generatePool(userId);
 }
 
