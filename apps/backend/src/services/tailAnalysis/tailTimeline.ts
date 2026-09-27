@@ -19,7 +19,26 @@ export interface TailInput {
   /** La frise audio (`speechModel.ts`) — `null` quand on n'a rien pu écouter. */
   audio: { fromMs: number; classes: string } | null;
   /** Les génériques annoncés par les fournisseurs (Jellyfin, chapitres, greffons). */
-  providerSpans: ReadonlyArray<{ startMs: number; endMs: number }>;
+  providerSpans: ReadonlyArray<ProviderSpan>;
+  /** Un épisode : son générique peut se clore sur l'aperçu du suivant (`tailPreview.ts`). */
+  episode?: boolean;
+  /** Les mesures brutes de chaque case, alignées sur `cells` (`null` où la planche manquait). */
+  measures?: ReadonlyArray<CellMeasure | null>;
+}
+
+/** Ce qu'on garde des mesures d'une vignette (`tailCells.ts`) pour les lectures fines. */
+export interface CellMeasure {
+  /** Part de pixels quasi noirs. */
+  dark: number;
+  /** Part des pixels à ±10 de la luminance médiane : un fond uni. */
+  modal: number;
+}
+
+export interface ProviderSpan {
+  startMs: number;
+  endMs: number;
+  /** Tiré d'un chapitre NOMMÉ générique : il dit où le générique commence, illustré compris. */
+  named?: boolean;
 }
 
 export class Timeline {
@@ -46,10 +65,36 @@ export class Timeline {
     return this.input.audio !== null;
   }
 
+  /**
+   * La fin de la dernière image connue. Elle précède parfois de une à deux minutes la
+   * durée annoncée : des pistes de sous-titres plus longues que la vidéo allongent le
+   * fichier (« Marvel's Daredevil » S1E1, « Stranger Things » S4E9) — au-delà, ni
+   * vignette ni son, et ce qui la précède est bien la fin.
+   */
+  get knownEndMs(): number {
+    const cells = this.input.cells;
+    let last = cells.length - 1;
+    while (last >= 0 && cells[last] === "?") last--;
+    if (last < 0) return this.input.runtimeMs;
+    return Math.min(this.input.runtimeMs, this.input.cellsFromMs + (last + 1) * this.input.intervalMs);
+  }
+
   /** La case d'image qui couvre `ms`, ou `?` hors de la frise. */
   cell(ms: number): CellKind | "?" {
     const i = Math.floor((ms - this.input.cellsFromMs) / this.input.intervalMs);
     return i >= 0 && i < this.kinds.length ? (this.kinds[i] as CellKind) : "?";
+  }
+
+  /** La case telle que les vignettes l'ont classée, avant que le son ne tranche le texte clair. */
+  rawCell(ms: number): CellKind | "?" {
+    const i = Math.floor((ms - this.input.cellsFromMs) / this.input.intervalMs);
+    return i >= 0 && i < this.input.cells.length ? (this.input.cells[i] as CellKind) : "?";
+  }
+
+  /** Les mesures de la case qui couvre `ms`, ou `null`. */
+  measure(ms: number): CellMeasure | null {
+    const i = Math.floor((ms - this.input.cellsFromMs) / this.input.intervalMs);
+    return this.input.measures?.[i] ?? null;
   }
 
   /** La seconde de son qui couvre `ms`, ou `?`. */
@@ -129,3 +174,8 @@ export const count = (text: string, letters: string): number => {
   for (const c of text) if (letters.includes(c)) n++;
   return n;
 };
+
+/** Une vignette de texte : défilement, texte clair, carton. */
+export const isText = (c: string): boolean => c === "T" || c === "L" || c === "C";
+/** Une vignette de générique : du texte, ou un aplat. */
+export const isCredits = (c: string): boolean => isText(c) || c === "U";

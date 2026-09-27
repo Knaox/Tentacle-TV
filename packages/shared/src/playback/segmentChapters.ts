@@ -63,7 +63,12 @@ export type BoundsByType = Map<SegmentType, RawBounds[]>;
 const CHAPTER_INTRO_PATTERN =
   /(\bintro\b|\bintroduction\b|\bopening\b|g[ée]n[ée]rique\s+de\s+d[ée]but)/i;
 const CHAPTER_OUTRO_PATTERN =
-  /(end\s*credits|\bcredits?\b|\boutro\b|\bending\b|g[ée]n[ée]rique(?!\s+de\s+d[ée]but))/i;
+  /(end\s*credits|end\s*titles|\bcredits?\b|\boutro\b|\bending\b|g[ée]n[ée]rique(?!\s+de\s+d[ée]but))/i;
+
+/** Ce chapitre est-il nommé comme un générique de FIN (« End Credits », « Générique de fin ») ? */
+export function isCreditsChapterName(name: string): boolean {
+  return !CHAPTER_INTRO_PATTERN.test(name) && CHAPTER_OUTRO_PATTERN.test(name);
+}
 
 /**
  * Un chapitre qui commence si près du début du générique n'est pas une scène :

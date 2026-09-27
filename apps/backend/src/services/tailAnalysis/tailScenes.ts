@@ -36,6 +36,7 @@
  * Mario Bros », deux secondes après la dernière ligne du défilement).
  */
 
+import { isEndLogo } from "./tailLogos";
 import type { CreditsStart, Skeleton } from "./tailSkeleton";
 import { Timeline, count } from "./tailTimeline";
 
@@ -52,7 +53,12 @@ const CREDITS_BEFORE_SCENE_MS = 60_000;
 /** … ou 30 s quand aucun défilement n'a été vu. */
 const CREDITS_BEFORE_SCENE_NO_CRAWL_MS = 30_000;
 const PROVIDER_TOO_EARLY_MS = 20_000;
+/** La parole d'une scène révélée par le générique illustré tombe à une vignette près de son début. */
+const REVEALED_SCENE_SLACK_MS = 30_000;
 const EDGE_EXTEND_MS = 30_000;
+/** Le recul franchit au plus une vignette de musique (voir `earliestStart`). */
+const EDGE_MUSIC_MIN = 0.6;
+const EDGE_MUSIC_CELLS = 1;
 const LOGO_MAX_MS = 55_000;
 const LOGO_NEAR_END_MS = 20_000;
 const LONG_MUSIC_MS = 150_000;
@@ -90,7 +96,8 @@ export function findScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart)
       merged.push({ ...s });
     }
   }
-  return merged.filter((s) => s.startMs >= start.ms);
+  // Un logo de fin n'est pas une scène, quoi que la parole ou l'image en aient dit (`tailLogos.ts`).
+  return merged.filter((s) => s.startMs >= start.ms && !isEndLogo(t, s.startMs, s.endMs));
 }
 
 /** Le générique court d'un fournisseur qui court jusqu'au bout — l'ending d'un épisode. */
@@ -102,6 +109,12 @@ function shortProviderCredits(t: Timeline): [number, number] | null {
     if (found === null || span.startMs > found[0]) found = [span.startMs, span.endMs];
   }
   return found;
+}
+
+/** Le générique court d'un fournisseur (l'ending d'un épisode) qui contient `ms`. */
+function endingAround(t: Timeline, ms: number): [number, number] | null {
+  const span = t.input.providerSpans.find((s) => s.startMs <= ms && ms < s.endMs && s.endMs - s.startMs <= SHORT_CREDITS_MAX_MS);
+  return span ? [span.startMs, span.endMs] : null;
 }
 
 function speechScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart): TailScene[] {
@@ -118,6 +131,10 @@ function speechScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart): Tai
     if (inner.length > 0 && count(inner, "TLC") / inner.length > TEXT_UNDER_SCENE_MAX) continue;
     // Dans l'ending d'un épisode, la parole ne compte qu'après des cartons sur noir.
     if (shortCredits !== null && a >= shortCredits[0] && count(t.cellsBetween(shortCredits[0], a), "TC") < 2) continue;
+    // Même dans un ending qui ne court pas jusqu'au bout — l'aperçu le suit : la voix chantée de
+    // sa seconde moitié n'est pas une scène (One Piece S23E10, époque Elbaf).
+    const ending = t.input.episode === true ? endingAround(t, a) : null;
+    if (ending !== null && count(t.cellsBetween(ending[0], a), "TC") < 2) continue;
     if (cells.length > 0 && count(cells, "ED") / cells.length < PICTURE_UNDER_SCENE_MIN) continue;
     // Dans le défilement, l'image doit l'emporter : une chanson sur des cartons (« Joker ») parle aussi.
     if (inCrawl && count(cells, "ED") <= count(cells, "TLC")) continue;
@@ -130,7 +147,9 @@ function speechScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart): Tai
       }
       const creditsSeen = count(t.cellsBetween(start.ms, a), "TLCU");
       const need = crawl !== null ? CREDITS_BEFORE_SCENE_MS : CREDITS_BEFORE_SCENE_NO_CRAWL_MS;
-      if (a - start.ms < need && creditsSeen < 2) continue;
+      // La scène que le générique illustré a révélée n'a pas à le prouver une seconde fois.
+      const revealed = start.sceneMs !== undefined && Math.abs(a - start.sceneMs) <= REVEALED_SCENE_SLACK_MS;
+      if (!revealed && a - start.ms < need && creditsSeen < 2) continue;
     }
     if (t.runtimeMs - a < 10_000) continue;
     if (t.runtimeMs - b <= 10_000 && b - a < 25_000 && count(t.cellsBetween(a, b), "E") < 2) continue;
@@ -139,13 +158,21 @@ function speechScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart): Tai
   return scenes;
 }
 
-/** Le début d'une scène, reculé jusqu'à la dernière vignette de générique et recalé sur la grille. */
+/**
+ * Le début d'une scène, reculé jusqu'à la dernière vignette de générique et recalé sur la
+ * grille — à travers une vignette de musique au plus : une scène peut s'ouvrir sur quelques
+ * secondes de musique avant la première réplique (« Twilight 4 »), mais au-delà c'est la
+ * chanson du générique illustré (« Fast X » : le bouton menait 42 s avant la scène).
+ */
 function earliestStart(t: Timeline, a: number, creditsStartMs: number): number {
   const floor = Math.max(creditsStartMs + 20_000, a - EDGE_EXTEND_MS);
+  const musical = (ms: number): boolean => t.share(ms, ms + t.step, "M") >= EDGE_MUSIC_MIN;
+  let music = 0;
+  const picture = (ms: number): boolean => "ED".includes(t.cell(ms)) && (!musical(ms) || music++ < EDGE_MUSIC_CELLS);
   let s = a;
-  while (s - t.step >= floor && "ED".includes(t.cell(s - t.step))) s -= t.step;
+  while (s - t.step >= floor && picture(s - t.step)) s -= t.step;
   const cellStart = t.firstCellMs + Math.floor((s - t.firstCellMs) / t.step) * t.step;
-  return cellStart >= floor && "ED".includes(t.cell(cellStart)) ? cellStart : s;
+  return cellStart >= floor && "ED".includes(t.cell(cellStart)) && (cellStart === s || !musical(cellStart) || music < EDGE_MUSIC_CELLS) ? cellStart : s;
 }
 
 function latestEnd(t: Timeline, b: number): number {

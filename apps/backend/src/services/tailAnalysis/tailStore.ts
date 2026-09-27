@@ -20,9 +20,11 @@ import { getPrisma, hasPrisma } from "../db";
 /**
  * Monter ce numéro périme toutes les lignes. Il prend la suite de
  * `FRAME_ANALYSIS_VERSION` (1 à 4, l'analyse des vignettes seules) :
- * v5 : analyse de fin de média, vignettes classées et audio.
+ * v5 : analyse de fin de média, vignettes classées et audio ;
+ * v6 : générique illustré, aperçu du prochain épisode, logos de fin, marqueurs
+ *      démentis — le verdict porte `preview` et `overrides`.
  */
-export const TAIL_ANALYSIS_VERSION = 5;
+export const TAIL_ANALYSIS_VERSION = 6;
 
 /** La durée est le témoin du FICHIER : une durée différente, un autre fichier. */
 const RUNTIME_TOLERANCE_MS = 1_000;
@@ -36,6 +38,8 @@ function parse(raw: string): TailVerdict | null {
       scenes: v.scenes.filter((s) => typeof s?.startMs === "number" && typeof s?.endMs === "number"),
       crawl: Array.isArray(v.crawl) && v.crawl.length === 2 ? [v.crawl[0], v.crawl[1]] : null,
       audio: v.audio === true,
+      ...(Array.isArray(v.preview) && v.preview.length === 2 ? { preview: [v.preview[0], v.preview[1]] as [number, number] } : {}),
+      ...(v.overrides === true ? { overrides: true } : {}),
     };
   } catch {
     return null;

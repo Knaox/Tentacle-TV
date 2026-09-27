@@ -38,7 +38,8 @@
  * défilement). Six minutes au plus.
  */
 
-import { Timeline, count } from "./tailTimeline";
+import { illustratedCredits } from "./tailIllustrated";
+import { Timeline, count, isCredits, isText } from "./tailTimeline";
 
 const TEXT_BLOCK_MIN_MS = 20_000;
 const TEXT_BLOCK_MIN_CELLS = 2;
@@ -61,14 +62,12 @@ const SANDWICH_SCENE_MAX_MS = 300_000;
 const SMALL_BLOCK_MS = 60_000;
 /** Un marqueur à moins de ça du début d'un bloc du défilement tombe « au début » de ce bloc. */
 const PROVIDER_AT_BLOCK_MS = 20_000;
+/** Un chapitre nommé « générique » à plus de ça après le générique illustré le dément. */
+const NAMED_CHAPTER_SLACK_MS = 30_000;
 /** On écoute depuis un peu avant le premier indice de générique. */
 const AUDIO_LEAD_MS = 60_000;
 const AUDIO_START_RATIO = 0.55;
 
-/** Une vignette de texte : défilement, texte clair, carton. */
-export const isText = (c: string): boolean => c === "T" || c === "L" || c === "C";
-/** Une vignette de générique : du texte, ou un aplat. */
-export const isCredits = (c: string): boolean => isText(c) || c === "U";
 
 export interface Skeleton {
   /** Le défilement [début, fin), `null` quand aucun texte ne défile. */
@@ -154,6 +153,8 @@ export interface CreditsStart {
   ms: number;
   /** Le début vient d'un marqueur de fournisseur (et peut encore reculer d'une scène). */
   fromProvider: boolean;
+  /** La scène mi-générique que le générique illustré a révélée (`tailIllustrated.ts`). */
+  sceneMs?: number;
 }
 
 export function findCreditsStart(t: Timeline, skeleton: Skeleton): CreditsStart | null {
@@ -164,17 +165,41 @@ export function findCreditsStart(t: Timeline, skeleton: Skeleton): CreditsStart 
   const before = candidates.filter((p) => crawl === null || p <= crawl[0]);
   if (before.length > 0) {
     const p = before[before.length - 1];
-    const cells = t.cellsBetween(p, p + FILM_CHECK_MS);
-    const film = t.share(p, p + FILM_CHECK_MS, "S") >= FILM_SPEECH_MIN && count(cells, "TLCU") === 0;
-    if (!film) start = { ms: p, fromProvider: true };
+    if (!isFilm(t, p)) start = { ms: p, fromProvider: true };
   }
   if (crawl !== null && (start === null || start.ms >= crawl[0] - 30_000)) {
     if (start === null) start = { ms: crawl[0], fromProvider: false };
     const found = walkBackCredits(t, crawl[0]);
     if (found !== null && found < start.ms) start = { ms: found, fromProvider: false };
+    const illustrated = illustratedCredits(t, crawl[0]);
+    // Un chapitre nommé « générique » posé plus tard dément le générique illustré : la
+    // musique était la fin du film (« L'Incroyable Hulk », Bruce qui médite, puis Stark au bar).
+    const named = t.input.providerSpans.some(
+      (s) => s.named === true && illustrated !== null && s.startMs > illustrated.startMs + NAMED_CHAPTER_SLACK_MS,
+    );
+    if (illustrated !== null && !named && illustrated.startMs < start.ms) {
+      start = { ms: illustrated.startMs, fromProvider: false, sceneMs: illustrated.sceneMs };
+    }
   }
   if (start === null && candidates.length > 0) start = { ms: candidates[candidates.length - 1], fromProvider: true };
   return start;
+}
+
+/** Quarante secondes de parole sans le moindre texte à l'écran après `p` : c'est du film. */
+function isFilm(t: Timeline, p: number): boolean {
+  const cells = t.cellsBetween(p, p + FILM_CHECK_MS);
+  return t.share(p, p + FILM_CHECK_MS, "S") >= FILM_SPEECH_MIN && count(cells, "TLCU") === 0;
+}
+
+/**
+ * Le premier marqueur de fournisseur d'avant le défilement qui tombe dans le film : le
+ * verdict devra le démentir, même sans scène (« Baby Driver » : un générique posé en pleine
+ * fin de film ; « Les Indestructibles » : un marqueur dans la dernière scène, un second au
+ * vrai début du générique).
+ */
+export function filmMarker(t: Timeline, skeleton: Skeleton): number | null {
+  const { crawl, candidates } = skeleton;
+  return candidates.find((p) => (crawl === null || p <= crawl[0]) && isFilm(t, p)) ?? null;
 }
 
 /** La première vignette de crédits en remontant depuis le défilement (voir l'en-tête). */

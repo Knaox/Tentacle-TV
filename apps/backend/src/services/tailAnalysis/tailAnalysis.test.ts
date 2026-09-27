@@ -66,6 +66,7 @@ const request = (over: Partial<TailAnalysisRequest> = {}): TailAnalysisRequest =
   mediaSourceId: "src",
   trickplay: null,
   providerSpans: [],
+  isEpisode: false,
   jellyfinUrl: "http://jf.test",
   apiKey: "k",
   ...over,
