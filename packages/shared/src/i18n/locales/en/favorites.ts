@@ -28,7 +28,7 @@ export default {
   sectionDecade: "{{decade}}s",
   sectionNoYear: "Unknown year",
   emptyTitle: "No favorites yet",
-  emptyBody: "The heart on a title page or poster keeps it here, ready to rewatch, group or share.",
+  emptyBody: "The heart on a title page or poster keeps it here, ready to rewatch or group.",
   emptyStepLike: "Like a movie or a series",
   emptyStepGroup: "Find them by genre, decade or status",
   emptyStepShare: "Share the list with a link",

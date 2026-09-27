@@ -28,7 +28,7 @@ export default {
   sectionDecade: "Années {{decade}}",
   sectionNoYear: "Année inconnue",
   emptyTitle: "Aucun coup de cœur pour l'instant",
-  emptyBody: "Le cœur d'une fiche ou d'une affiche range le titre ici, prêt à être revu, regroupé ou partagé.",
+  emptyBody: "Le cœur d'une fiche ou d'une affiche range le titre ici, prêt à être revu ou regroupé.",
   emptyStepLike: "Aimez un film ou une série",
   emptyStepGroup: "Retrouvez-les par genre, décennie ou état",
   emptyStepShare: "Partagez la liste d'un lien",
