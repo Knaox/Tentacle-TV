@@ -124,6 +124,12 @@ describe("l'aperçu du prochain épisode", () => {
     expect(reading?.scenes).toEqual([]);
   });
 
+  it("la voix chantée de la seconde moitié de l'ending, soudée à l'aperçu, n'est pas une scène (One Piece S23E10)", () => {
+    const reading = readTail(input(anime([["M", 45], ["S", 45]])));
+    expect(reading?.scenes).toEqual([]);
+    expect(reading?.preview).toEqual([1_410_000, 1_440_000]);
+  });
+
   it("sur un film, la même fin est une scène : il n'y a pas d'aperçu", () => {
     expect(readTail(input({ ...anime([["M", 90]]), episode: false }))?.preview).toBeUndefined();
   });

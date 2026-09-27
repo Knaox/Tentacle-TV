@@ -111,6 +111,12 @@ function shortProviderCredits(t: Timeline): [number, number] | null {
   return found;
 }
 
+/** Le générique court d'un fournisseur (l'ending d'un épisode) qui contient `ms`. */
+function endingAround(t: Timeline, ms: number): [number, number] | null {
+  const span = t.input.providerSpans.find((s) => s.startMs <= ms && ms < s.endMs && s.endMs - s.startMs <= SHORT_CREDITS_MAX_MS);
+  return span ? [span.startMs, span.endMs] : null;
+}
+
 function speechScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart): TailScene[] {
   const { crawl } = skeleton;
   const shortCredits = shortProviderCredits(t);
@@ -125,6 +131,10 @@ function speechScenes(t: Timeline, skeleton: Skeleton, start: CreditsStart): Tai
     if (inner.length > 0 && count(inner, "TLC") / inner.length > TEXT_UNDER_SCENE_MAX) continue;
     // Dans l'ending d'un épisode, la parole ne compte qu'après des cartons sur noir.
     if (shortCredits !== null && a >= shortCredits[0] && count(t.cellsBetween(shortCredits[0], a), "TC") < 2) continue;
+    // Même dans un ending qui ne court pas jusqu'au bout — l'aperçu le suit : la voix chantée de
+    // sa seconde moitié n'est pas une scène (One Piece S23E10, époque Elbaf).
+    const ending = t.input.episode === true ? endingAround(t, a) : null;
+    if (ending !== null && count(t.cellsBetween(ending[0], a), "TC") < 2) continue;
     if (cells.length > 0 && count(cells, "ED") / cells.length < PICTURE_UNDER_SCENE_MIN) continue;
     // Dans le défilement, l'image doit l'emporter : une chanson sur des cartons (« Joker ») parle aussi.
     if (inCrawl && count(cells, "ED") <= count(cells, "TLC")) continue;
