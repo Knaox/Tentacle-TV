@@ -32,6 +32,7 @@ export default {
   emptyStepLike: "Like a movie or a series",
   emptyStepGroup: "Find them by genre, decade or status",
   emptyStepShare: "Share the list with a link",
+  emptyStepResume: "Pick up where you left off",
   emptyBrowse: "Browse the catalog",
   emptyForYou: "See recommendations",
 };

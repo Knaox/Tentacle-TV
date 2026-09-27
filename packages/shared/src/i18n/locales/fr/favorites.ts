@@ -32,6 +32,7 @@ export default {
   emptyStepLike: "Aimez un film ou une série",
   emptyStepGroup: "Retrouvez-les par genre, décennie ou état",
   emptyStepShare: "Partagez la liste d'un lien",
+  emptyStepResume: "Reprenez là où vous en étiez",
   emptyBrowse: "Parcourir le catalogue",
   emptyForYou: "Voir les recommandations",
 };
