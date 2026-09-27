@@ -72,7 +72,7 @@ export const LibraryQuickBar = memo(function LibraryQuickBar({ state }: { state:
 });
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.screenPadding, paddingVertical: spacing.xs },
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.screenPadding, paddingTop: spacing.xs, paddingBottom: spacing.md },
   chip: {
     height: 36,
     flexDirection: "row",
