@@ -8,6 +8,7 @@ import { sceneTween } from "..";
  * permet de viser l'une d'elles au curseur (cf. `chipCenter`).
  */
 
+/** L'écart entre pastilles, en px — celui de la classe `gap-1.5`. */
 export const CHIP_GAP = 6;
 
 /** Le centre de la pastille `index`, en px depuis le bord gauche de la rangée. */
@@ -26,7 +27,9 @@ export function FauxChoiceRow({ legend, labels, selected, chipW }: FauxChoiceRow
   return (
     <div>
       <p className="mb-1.5 text-[10.5px] font-medium text-content-tertiary">{legend}</p>
-      <div className="flex" style={{ gap: CHIP_GAP }}>
+      {/* `gap-1.5` = CHIP_GAP en classe, pas en style en ligne : le client webOS
+          compile aussi ce fichier, et sa passe ne traduit `gap` que dans le CSS. */}
+      <div className="flex gap-1.5">
         {labels.map((label, index) => {
           const on = index === selected;
           return (
