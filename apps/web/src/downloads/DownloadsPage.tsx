@@ -2,9 +2,9 @@
  * Écran « Téléchargements » (/downloads, desktop uniquement).
  * En-tête de synthèse (compteurs, espace, avancement global, gestes sur la
  * file, mode hors ligne), puis les sections repliables : transferts en cours,
- * films, séries (groupées). Suppression confirmée (refcount côté moteur), états vides. Invisible sans
- * droit ET sans contenu (redirection racine) — décision « droit retiré →
- * l'existant reste lisible ».
+ * films, séries (groupées). Suppression confirmée (refcount côté moteur),
+ * états vides. Invisible sans droit ET sans contenu (redirection racine) —
+ * décision « droit retiré → l'existant reste lisible ».
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -20,6 +20,7 @@ import { DownloadsEmptyState } from "./DownloadsEmptyState";
 import { DownloadsOverview } from "./DownloadsOverview";
 import { DownloadsSection } from "./DownloadsSection";
 import {
+  byEpisodeNumber,
   pruneSelection as prune,
   readyBytesOf,
   selectionState,
@@ -69,6 +70,8 @@ export function DownloadsPage() {
       if (bucket) bucket.push(episode);
       else seriesMap.set(key, [episode]);
     }
+    // Dans sa section, une série se lit dans l'ordre de diffusion, pas d'ajout.
+    for (const bucket of seriesMap.values()) bucket.sort(byEpisodeNumber);
     return { active, movies, series: [...seriesMap.entries()].sort((a, b) => a[0].localeCompare(b[0])) };
   }, [entries]);
 
@@ -197,6 +200,7 @@ export function DownloadsPage() {
                   key={entry.id}
                   entry={entry}
                   userId={userId ?? ""}
+                  hideSeries
                   onDelete={setToDelete}
                   {...(selectionActive
                     ? { selection: { selected: selection.has(entry.id), onToggle: toggle } }

@@ -21,7 +21,7 @@ import {
 } from "./api";
 import { Film } from "lucide-react";
 import { AutoDeleteControl } from "./AutoDeleteControl";
-import { RetryAction, RowProgress, SmallAction, StatusBadge } from "./DownloadRowParts";
+import { episodeCode, RetryAction, RowProgress, SmallAction, StatusBadge } from "./DownloadRowParts";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { formatBytes } from "./presets";
 import { formatRate, formatTimeLeft, useRetryCountdown } from "./transferText";
@@ -36,9 +36,11 @@ interface DownloadRowProps {
   onPlay?: (entry: DownloadEntry) => void;
   /** Mode sélection actif : la ligne porte une case et devient cliquable. */
   selection?: { selected: boolean; onToggle: (id: number) => void };
+  /** Dans la section d'une série, répéter son nom devant chaque épisode est du bruit. */
+  hideSeries?: boolean;
 }
 
-export function DownloadRow({ entry, userId, onDelete, onPlay, selection }: DownloadRowProps) {
+export function DownloadRow({ entry, userId, onDelete, onPlay, selection, hideSeries = false }: DownloadRowProps) {
   const { t } = useTranslation("downloads");
   const [posterFailed, setPosterFailed] = useState(false);
   useDownloadsRootReady(); // re-rend quand la racine locale est résolue
@@ -64,11 +66,14 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection }: Down
         );
 
   const displayTitle = useMemo(() => {
-    if (entry.kind === "episode" && entry.seriesName) {
+    if (entry.kind === "episode" && entry.seriesName && !hideSeries) {
       return `${entry.seriesName} — ${entry.title ?? entry.itemId}`;
     }
-    return entry.title ?? entry.itemId;
-  }, [entry]);
+    // Sous le nom de la série, l'épisode prend son code : « Épisode 1 » seul ne
+    // disait pas de quelle saison.
+    const code = hideSeries ? episodeCode(entry) : null;
+    return code === null ? (entry.title ?? entry.itemId) : `${code} · ${entry.title ?? entry.itemId}`;
+  }, [entry, hideSeries]);
 
   const meta = [
     entry.variant === "original" ? t("variantOriginal") : `${t("variantLight")} ${entry.preset?.replace(/^p/, "") ?? ""}p`,

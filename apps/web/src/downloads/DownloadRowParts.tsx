@@ -129,3 +129,10 @@ export function RowProgress({ ratio, status }: { ratio: number; status: Download
     </div>
   );
 }
+
+/** « S01E05 », ou `null` si ce n'est pas un épisode numéroté — même code que le téléphone. */
+export function episodeCode(entry: Pick<DownloadEntry, "kind" | "indexNumber" | "parentIndexNumber">): string | null {
+  if (entry.kind !== "episode" || entry.indexNumber == null) return null;
+  const season = String(entry.parentIndexNumber ?? 1).padStart(2, "0");
+  return `S${season}E${String(entry.indexNumber).padStart(2, "0")}`;
+}
