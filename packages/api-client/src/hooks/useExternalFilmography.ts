@@ -25,6 +25,8 @@ export interface FilmographyPerson {
   name: string;
   /** L'identifiant TMDB de la personne, tel que Jellyfin le connaît — sinon le plugin cherche par nom. */
   tmdbId: string | null;
+  /** Le rôle par lequel on l'a atteinte (type Jellyfin du crédit) — un indice pour le plugin. */
+  role?: string | null;
 }
 
 export interface ExternalFilmographyOptions {
@@ -42,6 +44,7 @@ export function useExternalFilmography(
 ): ExternalSearchState {
   const name = person?.name.trim() ?? "";
   const tmdbId = person?.tmdbId ?? null;
+  const role = person?.role ?? null;
   const enabled = name !== "";
 
   const providers = useMemo(
@@ -57,9 +60,9 @@ export function useExternalFilmography(
 
   return useQueries({
     queries: providers.map((provider) => ({
-      queryKey: ["search", "external-person", provider.pluginId, provider.personPath, name, tmdbId ?? "", limit, lang],
+      queryKey: ["search", "external-person", provider.pluginId, provider.personPath, name, tmdbId ?? "", role ?? "", limit, lang],
       queryFn: async ({ signal }: { signal: AbortSignal }) => readExternalResponse(
-        await tentacleApiFetch<unknown>(personProviderUrl(provider, { name, tmdbId }, { lang, limit }), { signal }),
+        await tentacleApiFetch<unknown>(personProviderUrl(provider, { name, tmdbId, role }, { lang, limit }), { signal }),
         provider,
       ),
       enabled,
