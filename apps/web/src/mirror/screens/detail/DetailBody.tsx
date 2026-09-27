@@ -1,6 +1,7 @@
 import { memo, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useCollectionItems } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaCard } from "../../cards/MediaCard";
 import { MediaRow } from "../../rows/MediaRow";
@@ -21,15 +22,17 @@ interface Props {
 }
 
 /**
- * `DetailBody` de l'app : genres → synopsis → casting et équipe → extras →
- * saisons et épisodes → informations → licence → titres similaires. Le même
- * sous le visuel (portrait) que dans la colonne droite qui défile (iPad paysage).
+ * `DetailBody` de l'app : genres → synopsis → contenu de la collection →
+ * casting et équipe → extras → saisons et épisodes → informations → licence →
+ * titres similaires. Le même sous le visuel (portrait) que dans la colonne
+ * droite qui défile (iPad paysage).
  */
 export const DetailBody = memo(function DetailBody({ item, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId }: Props) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   const isEpisode = item.Type === "Episode";
   const onPlay = useCallback((ep: MediaItem) => navigate(`/watch/${ep.Id}`), [navigate]);
+  const { data: collectionItems } = useCollectionItems(item.Type === "BoxSet" ? item.Id : undefined);
 
   return (
     <div>
@@ -44,6 +47,16 @@ export const DetailBody = memo(function DetailBody({ item, parentSeries, similar
       )}
 
       {item.Overview && <Overview text={item.Overview} />}
+
+      {/* Collection (BoxSet) : son contenu, navigable (cf. l'app). */}
+      {collectionItems && collectionItems.length > 0 && (
+        <MediaRow
+          title={t("collectionContent")}
+          data={collectionItems}
+          keyOf={(c) => c.Id}
+          renderItem={(c) => <MediaCard item={c} onPress={() => navigate(`/media/${c.Id}`)} />}
+        />
+      )}
 
       {item.People && item.People.length > 0 && <CastRow people={item.People} />}
 
