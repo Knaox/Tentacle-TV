@@ -237,6 +237,14 @@ export {
   type LikedPerson, type PersonSearchResult,
 } from "./hooks/useLikedPeople";
 
+// Onglet « Affiner » : pile de swipe (cf. swipe/)
+export { useSwipeDeck, useSwipeCardDetails, prefetchSwipeCardDetails, type SwipeDeck } from "./swipe/useSwipeDeck";
+export { swipeDeckReducer, deckExcludeKeys, INITIAL_SWIPE_DECK, type SwipeDeckState, type SwipeDeckAction } from "./swipe/swipeDeckState";
+export {
+  swipeLangOf, type SwipeCard, type SwipeCardDetails, type SwipeCounts, type SwipeDeckResponse, type SwipeDeckSource,
+  type SwipeLang, type SwipeVerdict,
+} from "./swipe/swipeTypes";
+
 // Accueil configurable + réglages de recommandation (cf. hooks/useHomeLayout)
 export {
   useHomeLayout, useSaveHomeLayout, useRecoSettings, useSaveRecoSettings, useResetTasteProfile,
