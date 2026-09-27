@@ -1,13 +1,14 @@
 /**
  * Écran « Téléchargements » (/downloads, desktop uniquement).
- * Sections : transferts en cours, films, séries (groupées). Jauge d'espace,
- * suppression confirmée (refcount côté moteur), états vides. Invisible sans
+ * En-tête de synthèse (compteurs, espace, avancement global, gestes sur la
+ * file, mode hors ligne), puis les sections repliables : transferts en cours,
+ * films, séries (groupées). Suppression confirmée (refcount côté moteur), états vides. Invisible sans
  * droit ET sans contenu (redirection racine) — décision « droit retiré →
  * l'existant reste lisible ».
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useUserId } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,14 +16,17 @@ import { supportsDownloads } from "../desktop/bridge";
 import { deleteDownload, setAutoDeleteAfterWatch, type DownloadEntry } from "./api";
 import { DownloadRow } from "./DownloadRow";
 import { DownloadsBulkBar } from "./DownloadsBulkBar";
-import { DownloadsPauseAll } from "./DownloadsPauseAll";
+import { DownloadsEmptyState } from "./DownloadsEmptyState";
+import { DownloadsOverview } from "./DownloadsOverview";
+import { DownloadsSection } from "./DownloadsSection";
 import {
   pruneSelection as prune,
+  readyBytesOf,
   selectionState,
   toggleAllSelection as toggleAll,
   toggleSelection as toggleOne,
 } from "@tentacle-tv/offline-core";
-import { DownloadsSpaceBar } from "./DownloadsSpaceBar";
+import { formatBytes } from "./presets";
 import { DeleteDownloadModal } from "./DeleteDownloadModal";
 import { useDownloadsList, useDownloadsVisibility, DOWNLOADS_LIST_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DISK_INFO_QUERY_KEY } from "./useDownloadState";
 import { clearProgress } from "@tentacle-tv/offline-core/react";
@@ -132,25 +136,12 @@ export function DownloadsPage() {
     <div className="mx-auto min-h-screen w-full max-w-4xl px-4 pb-16 pt-24 md:px-8">
       <h1 className="text-2xl font-bold text-content-primary">{t("nav:downloads")}</h1>
 
-      <div className="mt-4 space-y-3">
-        <DownloadsSpaceBar />
-        <DownloadsPauseAll entries={entries} />
+      <div className="mt-4">
+        <DownloadsOverview entries={entries} />
       </div>
 
       {entries.length === 0 ? (
-        <div className="mt-16 flex flex-col items-center text-center">
-          <p className="text-lg font-semibold text-content-secondary">{t("downloads:emptyTitle")}</p>
-          <p className="mt-2 max-w-sm text-sm leading-relaxed text-content-quaternary">
-            {t("downloads:emptyMessage")}
-          </p>
-          {/* Un état vide qui ne propose rien laisse l'utilisateur sur place. */}
-          <Link
-            to="/"
-            className="mt-5 rounded-md bg-cta-primary-bg px-4 py-2 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
-          >
-            {t("downloads:emptyAction")}
-          </Link>
-        </div>
+        <DownloadsEmptyState />
       ) : (
         <div className="mt-6 space-y-4">
           <DownloadsBulkBar
@@ -167,7 +158,7 @@ export function DownloadsPage() {
 
           <div className="space-y-8">
           {groups.active.length > 0 && (
-            <Section title={t("downloads:sectionActive")}>
+            <DownloadsSection title={t("downloads:sectionActive")} summary={String(groups.active.length)}>
               {groups.active.map((entry) => (
                 <DownloadRow
                   key={entry.id}
@@ -179,11 +170,11 @@ export function DownloadsPage() {
                     : {})}
                 />
               ))}
-            </Section>
+            </DownloadsSection>
           )}
 
           {groups.movies.length > 0 && (
-            <Section title={t("downloads:sectionMovies")}>
+            <DownloadsSection title={t("downloads:sectionMovies")} summary={sizeSummary(t("downloads:deviceTitles", { count: groups.movies.length }), groups.movies)}>
               {groups.movies.map((entry) => (
                 <DownloadRow
                   key={entry.id}
@@ -196,11 +187,11 @@ export function DownloadsPage() {
                   onPlay={handlePlay}
                 />
               ))}
-            </Section>
+            </DownloadsSection>
           )}
 
           {groups.series.map(([seriesName, seriesEntries]) => (
-            <Section key={seriesName} title={seriesName}>
+            <DownloadsSection key={seriesName} title={seriesName} summary={sizeSummary(t("downloads:episodesCount", { count: seriesEntries.length }), seriesEntries)}>
               {seriesEntries.map((entry) => (
                 <DownloadRow
                   key={entry.id}
@@ -213,7 +204,7 @@ export function DownloadsPage() {
                   onPlay={handlePlay}
                 />
               ))}
-            </Section>
+            </DownloadsSection>
           ))}
           </div>
         </div>
@@ -245,13 +236,7 @@ export function DownloadsPage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-content-quaternary">
-        {title}
-      </h2>
-      <div className="space-y-2">{children}</div>
-    </section>
-  );
+/** « 12 épisodes · 18,4 Gio » : le compte et l'espace d'une section. */
+function sizeSummary(count: string, entries: readonly DownloadEntry[]): string {
+  return `${count} · ${formatBytes(readyBytesOf(entries))}`;
 }
