@@ -20,9 +20,11 @@ import { getPrisma, hasPrisma } from "../db";
 /**
  * Monter ce numéro périme toutes les lignes. Il prend la suite de
  * `FRAME_ANALYSIS_VERSION` (1 à 4, l'analyse des vignettes seules) :
- * v5 : analyse de fin de média, vignettes classées et audio.
+ * v5 : analyse de fin de média, vignettes classées et audio ;
+ * v6 : générique illustré, aperçu du prochain épisode, logos de fin, marqueurs
+ *      démentis — le verdict porte `preview` et `overrides`.
  */
-export const TAIL_ANALYSIS_VERSION = 5;
+export const TAIL_ANALYSIS_VERSION = 6;
 
 /** La durée est le témoin du FICHIER : une durée différente, un autre fichier. */
 const RUNTIME_TOLERANCE_MS = 1_000;

@@ -54,6 +54,14 @@ describe("readTailVerdict", () => {
     expect(await readTailVerdict("film", RUNTIME_MS)).toBeUndefined();
   });
 
+  it("l'aperçu et le démenti sont relus ; mal formés, ignorés", async () => {
+    const full = { ...verdict, preview: [1_400_000, 1_440_000], overrides: true };
+    mocks.findUnique.mockResolvedValue(row({ verdict: JSON.stringify(full) }));
+    expect(await readTailVerdict("film", RUNTIME_MS)).toEqual(full);
+    mocks.findUnique.mockResolvedValue(row({ verdict: JSON.stringify({ ...verdict, preview: [1], overrides: "oui" }) }));
+    expect(await readTailVerdict("film", RUNTIME_MS)).toEqual(verdict);
+  });
+
   it("un verdict partiel est réparé : scènes mal formées écartées, audio faux par défaut", async () => {
     mocks.findUnique.mockResolvedValue(row({ verdict: JSON.stringify({ creditsStartMs: 1, scenes: [{ startMs: 2 }, { startMs: 3, endMs: 4 }] }) }));
     expect(await readTailVerdict("film", RUNTIME_MS)).toEqual({ creditsStartMs: 1, scenes: [{ startMs: 3, endMs: 4 }], crawl: null, audio: false });
