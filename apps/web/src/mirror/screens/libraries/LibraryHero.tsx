@@ -45,7 +45,11 @@ const VEIL =
  * L'image tourne lentement tant que le héros est à l'écran, la fenêtre
  * devant et le mouvement permis ; elle passe en fondu d'opacité.
  */
-export const LibraryHero = memo(function LibraryHero({ library }: { library: LibraryView }) {
+export const LibraryHero = memo(function LibraryHero({ library, topInset = HEADER_TOTAL }: {
+  library: LibraryView;
+  /** Ce que l'ambiance remonte sous le haut de l'écran : l'en-tête de verre, ou la zone sûre d'un écran empilé. */
+  topInset?: string;
+}) {
   const { t } = useTranslation("common");
   const { t: tn } = useTranslation("nav");
   const client = useJellyfinClient();
@@ -71,7 +75,7 @@ export const LibraryHero = memo(function LibraryHero({ library }: { library: Lib
     <div ref={ref} className="relative flex flex-col justify-end pb-4" style={{ height: LIBRARY_HERO_HEIGHT }}>
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden"
-        style={{ top: `calc(-1 * ${HEADER_TOTAL})` }}
+        style={{ top: `calc(-1 * ${topInset})` }}
         aria-hidden
       >
         <CrossfadeImage url={url} />

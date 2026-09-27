@@ -1,21 +1,13 @@
 import { useCallback, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Folder } from "lucide-react";
 import { useLibraries } from "@tentacle-tv/api-client";
-import type { LibraryView, MediaItem } from "@tentacle-tv/shared";
-import {
-  CatalogFilterSheet,
-  CatalogGrid,
-  FilterButton,
-  GridSkeleton,
-  LibraryFilterBar,
-  ScopedSearchEmpty,
-  ScopedSearchField,
-  useLibraryCatalogState,
-} from "../../catalog";
+import type { LibraryView } from "@tentacle-tv/shared";
+import { GridSkeleton } from "../../catalog";
 import { LibraryCapsule } from "./LibraryCapsule";
-import { LIBRARY_HERO_HEIGHT, LibraryHero, collectionIcon } from "./LibraryHero";
+import { LibraryCatalogView } from "./LibraryCatalogView";
+import { LIBRARY_HERO_HEIGHT, collectionIcon } from "./LibraryHero";
 import "../../mirror.css";
 
 /** La bibliothèque choisie survit au changement d'onglet (le temps de la session). */
@@ -67,46 +59,15 @@ function LibraryTab({ libraries, current, onSelect }: {
   onSelect: (id: string) => void;
 }) {
   const { t } = useTranslation("common");
-  const navigate = useNavigate();
-  const state = useLibraryCatalogState(current.Id);
-  const { catalog, searching, totalCount, setSheetOpen } = state;
-  const emptySearch = searching && !catalog.isLoading && totalCount === 0;
-
   const capsuleItems = useMemo(
     () => libraries.map((lib) => ({ id: lib.Id, label: lib.Name, icon: collectionIcon(lib.CollectionType) })),
     [libraries],
   );
-  const openItem = useCallback((item: MediaItem) => navigate(`/media/${item.Id}`), [navigate]);
-  const openSheet = useCallback(() => setSheetOpen(true), [setSheetOpen]);
-
   return (
-    <div>
-      <LibraryHero library={current} />
-      <LibraryCapsule items={capsuleItems} selected={current.Id} onSelect={onSelect} label={t("librariesTitle")} />
-      <div className="mb-2 mt-3 flex items-center gap-2 px-4">
-        <ScopedSearchField
-          value={state.searchQuery}
-          onChange={state.setSearchQuery}
-          placeholder={t("searchInLibrary", { name: current.Name })}
-          count={searching && !catalog.isLoading ? totalCount : null}
-          inset={false}
-        />
-        <FilterButton count={state.filterCount} onPress={openSheet} />
-      </div>
-      {/* Le total est déjà sous le titre : le compte ne revient qu'avec un filtre. */}
-      <LibraryFilterBar state={state} showCount={state.isFiltered} />
-      {emptySearch && <ScopedSearchEmpty query={state.debouncedSearch} onApply={state.setSearchQuery} />}
-      <CatalogGrid
-        items={emptySearch ? [] : state.items}
-        isLoading={catalog.isLoading}
-        hasNextPage={catalog.hasNextPage}
-        isFetchingNextPage={catalog.isFetchingNextPage}
-        fetchNextPage={catalog.fetchNextPage}
-        onItemPress={openItem}
-        empty={emptySearch ? null : undefined}
-      />
-      <CatalogFilterSheet state={state} />
-    </div>
+    <LibraryCatalogView
+      library={current}
+      capsule={<LibraryCapsule items={capsuleItems} selected={current.Id} onSelect={onSelect} label={t("librariesTitle")} />}
+    />
   );
 }
 
@@ -116,7 +77,7 @@ function LibrariesSkeleton() {
     <div aria-hidden style={{ paddingTop: LIBRARY_HERO_HEIGHT - 80 }}>
       <div className="mx-4 mb-4 h-10 w-[180px] rounded-lg bg-fill-subtle" />
       <div className="mx-4 mb-4 h-12 max-w-[560px] rounded-full bg-fill-subtle" />
-      <GridSkeleton />
+      <GridSkeleton rows={3} captions />
     </div>
   );
 }

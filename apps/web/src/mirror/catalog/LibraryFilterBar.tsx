@@ -4,6 +4,7 @@ import { useGenres } from "@tentacle-tv/api-client";
 import { PLATFORMS } from "@tentacle-tv/shared";
 import { SORT_OPTIONS, STATUS_OPTIONS, yearChipLabel } from "./catalogOptions";
 import { ActiveFilterChips, type ActiveChip } from "./FilterChip";
+import { LibraryQuickBar } from "./LibraryQuickBar";
 import type { LibraryCatalogState } from "./useLibraryCatalogState";
 
 /**
@@ -12,9 +13,11 @@ import type { LibraryCatalogState } from "./useLibraryCatalogState";
  * SEULEMENT quand il y en a —, puis « N résultats » (13 medium tertiaire,
  * marges 16, 4 au-dessus, 8 dessous). Les réglages vivent dans la feuille.
  */
-export const LibraryFilterBar = memo(function LibraryFilterBar({ state, showCount = true }: {
+export const LibraryFilterBar = memo(function LibraryFilterBar({ state, showCount = true, quick = false }: {
   state: LibraryCatalogState;
   showCount?: boolean;
+  /** La barre rapide au-dessus : statut, favoris et tri n'y reviennent pas en pastille. */
+  quick?: boolean;
 }) {
   const { t } = useTranslation("common");
   const { data: genres } = useGenres(state.libraryId);
@@ -23,8 +26,8 @@ export const LibraryFilterBar = memo(function LibraryFilterBar({ state, showCoun
   const chips = useMemo<ActiveChip[]>(() => {
     const status = STATUS_OPTIONS.find((o) => o.value !== null && o.value === statusFilter);
     return [
-      ...(sortIndex !== 0 ? [{ key: "sort", label: t(SORT_OPTIONS[sortIndex].labelKey), remove: () => setSortIndex(0) }] : []),
-      ...(status ? [{ key: "status", label: t(status.labelKey), remove: () => setStatusFilter(null) }] : []),
+      ...(!quick && sortIndex !== 0 ? [{ key: "sort", label: t(SORT_OPTIONS[sortIndex].labelKey), remove: () => setSortIndex(0) }] : []),
+      ...(!quick && status ? [{ key: "status", label: t(status.labelKey), remove: () => setStatusFilter(null) }] : []),
       ...selectedGenres.map((id) => ({
         key: `g-${id}`, label: genres?.find((g) => g.Id === id)?.Name ?? id, remove: () => advanced.onToggleGenre(id),
       })),
@@ -42,16 +45,17 @@ export const LibraryFilterBar = memo(function LibraryFilterBar({ state, showCoun
           }]
         : []),
       ...(f.ratingMin != null ? [{ key: "rating", label: `≥ ${f.ratingMin}/10`, remove: () => advanced.onRatingMinChange(null) }] : []),
-      ...(f.isFavorite ? [{ key: "fav", label: `♥ ${t("favorites")}`, remove: () => advanced.onFavoriteChange(false) }] : []),
+      ...(!quick && f.isFavorite ? [{ key: "fav", label: `♥ ${t("favorites")}`, remove: () => advanced.onFavoriteChange(false) }] : []),
     ];
-  }, [t, sortIndex, statusFilter, selectedGenres, genres, f, advanced, setSortIndex, setStatusFilter]);
+  }, [t, quick, sortIndex, statusFilter, selectedGenres, genres, f, advanced, setSortIndex, setStatusFilter]);
 
   return (
     <div>
+      {quick && <LibraryQuickBar state={state} />}
       <ActiveFilterChips chips={chips} onReset={advanced.onReset} className="py-1" />
       {showCount && !state.catalog.isLoading && (
         <p className="px-4 pb-2 pt-1 text-[13px] font-medium tracking-[-0.075px] text-content-tertiary">
-          {t("resultCount", { count: state.totalCount })}
+          {state.isFiltered ? t("resultCount", { count: state.totalCount }) : t("library:titles", { count: state.totalCount })}
         </p>
       )}
     </div>
