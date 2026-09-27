@@ -18,6 +18,8 @@ export { useLocalTrailers, useSpecialFeatures } from "./hooks/useTrailers";
 export { useFavorite, useFavoriteForItem } from "./hooks/useFavorite";
 export { useWatchlist, useToggleWatchlist, useToggleWatchlistForItem, useFavorites, useWatchlistAll, useFavoritesAll } from "./hooks/useWatchlist";
 export { useWatchlistSeriesIds, useFavoriteSeriesIds, seriesStateId } from "./hooks/useSeriesListMembership";
+// Marqueurs des cartes média — note, ma liste, favori, vu (cf. hooks/useCardMarkers)
+export { useCardMarkers, type CardMarkersOptions } from "./hooks/useCardMarkers";
 export { useSeriesRatings, SERIES_RATINGS_KEY } from "./hooks/useSeriesRatings";
 export { filterCollection, collectionGenres, type CollectionFilterInput, type CollectionTypeTab } from "./utils/collectionFilter";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";

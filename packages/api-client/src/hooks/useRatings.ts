@@ -55,7 +55,7 @@ function identityQuery(identity: RatingIdentity): string {
 // Même garde que les préférences : pas de session, pas de requête. Sur les
 // plateformes natives (localStorage absent), le jeton vient de
 // setPreferencesToken et la garde s'efface.
-function hasSession(): boolean {
+export function hasRatingsSession(): boolean {
   if (typeof localStorage === "undefined") return true;
   return !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
 }
@@ -72,7 +72,7 @@ export function useMyRatings(options?: { enabled?: boolean }) {
     staleTime: 60_000,
     // `enabled: false` = un écran qui n'affiche aucune étoile (lecture locale) :
     // pas une requête de plus pour rien.
-    enabled: hasSession() && (options?.enabled ?? true),
+    enabled: hasRatingsSession() && (options?.enabled ?? true),
   });
 }
 

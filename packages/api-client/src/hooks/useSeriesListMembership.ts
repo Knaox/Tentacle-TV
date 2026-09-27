@@ -11,7 +11,7 @@ import { WATCHLIST_SERIES_IDS_KEY, FAVORITE_SERIES_IDS_KEY } from "./watchlistEf
  * qui couvre TOUTES les séries likées/favorites — y compris au-delà du top 20
  * affiché dans les rangées. Un ÉPISODE est « ajouté » si sa série l'est.
  */
-function fetchSeriesIds(
+export function fetchSeriesIds(
   client: ReturnType<typeof useJellyfinClient>,
   userId: string,
   filter: "Likes" | "IsFavorite",
