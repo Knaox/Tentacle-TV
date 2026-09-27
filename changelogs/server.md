@@ -5,17 +5,8 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
-## [Unreleased]
+## [1.20.0]
 ### FR
-- **La fin des films et des épisodes, lue à l'image et au son** — à la première lecture de chaque film et de chaque épisode, le serveur lit sa fin : les vignettes montrent où défile le générique, l'audio distingue la musique des dialogues. Il en tire le début du générique et les scènes qui le suivent, mi-génériques comme post-génériques : chaque générique suivi d'une scène a son bouton pour y aller, et un film à deux scènes (« Avengers ») en a deux
-- **Des génériques corrigés, même quand Jellyfin en donnait un** : un générique qui avalait la scène mi-générique s'arrête désormais avant elle (« Avengers : L'Ère d'Ultron », « Fast & Furious 9 », « Spider-Man : New Generation », « Rick et Morty »), un repère posé dans la dernière scène du film ne coupe plus sa fin (« Deadpool »), et une scène de nuit presque noire n'est plus prise pour un générique — « Les Gardiens de la Galaxie Vol. 3 » perdait cinquante secondes de film quand le passage automatique des génériques était actif
-- **Plus de fausses scènes post-génériques** : les logos de fin (Disney, Pixar), les cartons muets et les photos glissées dans le générique ne font plus apparaître de bouton vers une scène qui n'existe pas
-- **Les épisodes sans repères** gagnent leur générique et leur scène d'après (« Rick et Morty ») ; la chanson d'un ending n'est pas prise pour une scène
-- **Rien n'est enregistré quand l'analyse ne trouve rien** — ni pour la fin des médias, ni pour l'audio des épisodes voisins : ce « rien » reste en mémoire un jour. Les empreintes audio des épisodes ne sont plus gardées en base : leur table est supprimée au démarrage, avec les anciennes lignes « rien trouvé »
-- L'image Docker nomme ffmpeg explicitement (il y était déjà, tiré par yt-dlp)
-- **Téléviseur LG : fini l'écran noir en ouvrant une fiche ou une bibliothèque** — quand un écran ne peut pas s'afficher (serveur qui redémarre pendant une mise à jour, connexion qui hoquette, fiche que Jellyfin ne rend pas), le téléviseur le dit, avec « Réessayer » et « Retour », au lieu de s'éteindre jusqu'au redémarrage de l'application. Après une mise à jour du serveur, il se recharge de lui-même dès que le serveur répond — et plus jamais en pleine navigation parce qu'un préchargement a échoué
-- **Téléviseurs LG de 2020 à 2022 (webOS 5, 6 et 22) : les bibliothèques s'ouvrent de nouveau** — elles tombaient sur un écran noir à chaque ouverture
-- **Une fiche qui ne se charge pas le dit** : sur le web aussi, une fiche dont Jellyfin ne rend pas les informations propose de réessayer, au lieu d'un chargement sans fin
 - **Des recommandations vraiment personnelles** — le moteur proposait à peu près la même chose à tout le monde : les sorties récentes et bien notées, 34 titres communs sur 50 entre deux comptes. Il compare désormais chaque titre à chacun de ceux que vous avez aimés, un par un, et suit ce que les spectateurs de ces titres ont aimé ensuite. Entre deux comptes, les 50 premiers n'ont plus que 4 titres en commun, et un titre aimé qu'on lui cache est retrouvé trois fois plus souvent
 - **Chaque recommandation dit pourquoi** : « Parce que vous avez aimé Dark »
 - **Les séries pèsent le temps que vous leur donnez** : un compte qui passe les trois quarts de son temps sur des séries était vu comme un amateur de films, et 128 épisodes de deux minutes pesaient autant que Game of Thrones
@@ -25,17 +16,18 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Les animés gardent leur juste part** dans les rangées mixtes
 - **« Sortir de votre zone de confort » propose du nouveau qui vous ressemble**, au lieu de ce qui vous ressemble le moins
 - **Tendances et « Ce que les utilisateurs de Tentacle regardent » s'ordonnent selon vos goûts**
+- **Ce qui est déjà dans Ma liste ou dans vos titres likés n'est plus proposé** : un ajout à Ma liste sort des recommandations en quelques secondes
+- **La fin des films et des épisodes, lue à l'image et au son** — à la première lecture de chaque film et de chaque épisode, le serveur lit sa fin : les vignettes montrent où défile le générique, l'audio distingue la musique des dialogues. Il en tire le début du générique et les scènes qui le suivent, mi-génériques comme post-génériques : chaque générique suivi d'une scène a son bouton pour y aller, et un film à deux scènes (« Avengers ») en a deux
+- **Des génériques corrigés, même quand Jellyfin en donnait un** : un générique qui avalait la scène mi-générique s'arrête désormais avant elle (« Avengers : L'Ère d'Ultron », « Fast & Furious 9 », « Spider-Man : New Generation », « Rick et Morty »), un repère posé dans la dernière scène du film ne coupe plus sa fin (« Deadpool »), et une scène de nuit presque noire n'est plus prise pour un générique — « Les Gardiens de la Galaxie Vol. 3 » perdait cinquante secondes de film quand le passage automatique des génériques était actif
+- **Plus de fausses scènes post-génériques** : les logos de fin (Disney, Pixar), les cartons muets et les photos glissées dans le générique ne font plus apparaître de bouton vers une scène qui n'existe pas
+- **Les épisodes sans repères** gagnent leur générique et leur scène d'après (« Rick et Morty ») ; la chanson d'un ending n'est pas prise pour une scène
+- **Rien n'est enregistré quand l'analyse ne trouve rien** — ni pour la fin des médias, ni pour l'audio des épisodes voisins : ce « rien » reste en mémoire un jour. Les empreintes audio des épisodes ne sont plus gardées en base : leur table est supprimée au démarrage, avec les anciennes lignes « rien trouvé »
+- **Téléviseur LG : fini l'écran noir en ouvrant une fiche ou une bibliothèque** — quand un écran ne peut pas s'afficher (serveur qui redémarre pendant une mise à jour, connexion qui hoquette, fiche que Jellyfin ne rend pas), le téléviseur le dit, avec « Réessayer » et « Retour », au lieu de s'éteindre jusqu'au redémarrage de l'application. Après une mise à jour du serveur, il se recharge de lui-même dès que le serveur répond — et plus jamais en pleine navigation parce qu'un préchargement a échoué
+- **Téléviseurs LG de 2020 à 2022 (webOS 5, 6 et 22) : les bibliothèques s'ouvrent de nouveau** — elles tombaient sur un écran noir à chaque ouverture
+- **Une fiche qui ne se charge pas le dit** : sur le web aussi, une fiche dont Jellyfin ne rend pas les informations propose de réessayer, au lieu d'un chargement sans fin
+- L'image Docker nomme ffmpeg explicitement (il y était déjà, tiré par yt-dlp)
 
 ### EN
-- **The end of movies and episodes, read from picture and sound** — on the first play of every movie and episode, the server reads its ending: thumbnails show where the credits roll, the audio tells music from dialogue. From them it finds where the credits start and every scene that follows, mid-credits and post-credits alike: each credits segment followed by a scene gets its button to jump to it, and a movie with two scenes ("The Avengers") gets two
-- **Credits corrected, even when Jellyfin had some**: credits that swallowed a mid-credits scene now stop before it ("Avengers: Age of Ultron", "F9", "Spider-Man: Into the Spider-Verse", "Rick and Morty"), a marker placed in the film's last scene no longer cuts its ending ("Deadpool"), and an almost black night scene is no longer taken for credits — "Guardians of the Galaxy Vol. 3" lost fifty seconds of film when automatic credits skipping was on
-- **No more fake post-credits scenes**: end logos (Disney, Pixar), silent cards and photos slipped into the credits no longer show a button to a scene that does not exist
-- **Episodes without markers** get their credits and their after-credits scene ("Rick and Morty"); an ending's song is not taken for a scene
-- **Nothing is saved when the analysis finds nothing** — neither for media endings nor for season-neighbour audio: that "nothing" stays in memory for a day. Episode audio fingerprints are no longer kept in the database: their table is dropped at startup, along with old "nothing found" rows
-- The Docker image names ffmpeg explicitly (it was already there, pulled in by yt-dlp)
-- **LG TV: no more black screen when opening a title or a library** — when a screen cannot be shown (server restarting during an update, flaky connection, a title Jellyfin fails to return), the TV now says so, with "Retry" and "Back", instead of going dark until the app is restarted. After a server update it reloads by itself as soon as the server responds — and never again in the middle of browsing because a preload failed
-- **LG TVs from 2020 to 2022 (webOS 5, 6 and 22): libraries open again** — they went to a black screen every time they were opened
-- **A title page that fails to load says so**: on the web too, a title page whose details Jellyfin does not return offers to retry instead of loading forever
 - **Truly personal recommendations** — the engine suggested roughly the same thing to everyone: recent, well-rated releases, with 34 titles out of 50 in common between two accounts. It now compares each title with every one you liked, one by one, and follows what the viewers of those titles went on to like. Between two accounts, the top 50 now share only 4 titles, and a liked title hidden from it is found three times as often
 - **Every recommendation says why**: "Because you liked Dark"
 - **Series weigh the time you give them**: an account spending three quarters of its time on series was seen as a movie fan, and 128 two-minute episodes weighed as much as Game of Thrones
@@ -45,6 +37,16 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Anime keeps its fair share** of mixed rows
 - **"Step outside your comfort zone" suggests something new that suits you**, instead of what suits you least
 - **Trending and "What Tentacle users are watching" are ordered by your taste**
+- **What is already in My List or liked is no longer suggested**: adding a title to My List takes it out of your recommendations within seconds
+- **The end of movies and episodes, read from picture and sound** — on the first play of every movie and episode, the server reads its ending: thumbnails show where the credits roll, the audio tells music from dialogue. From them it finds where the credits start and every scene that follows, mid-credits and post-credits alike: each credits segment followed by a scene gets its button to jump to it, and a movie with two scenes ("The Avengers") gets two
+- **Credits corrected, even when Jellyfin had some**: credits that swallowed a mid-credits scene now stop before it ("Avengers: Age of Ultron", "F9", "Spider-Man: Into the Spider-Verse", "Rick and Morty"), a marker placed in the film's last scene no longer cuts its ending ("Deadpool"), and an almost black night scene is no longer taken for credits — "Guardians of the Galaxy Vol. 3" lost fifty seconds of film when automatic credits skipping was on
+- **No more fake post-credits scenes**: end logos (Disney, Pixar), silent cards and photos slipped into the credits no longer show a button to a scene that does not exist
+- **Episodes without markers** get their credits and their after-credits scene ("Rick and Morty"); an ending's song is not taken for a scene
+- **Nothing is saved when the analysis finds nothing** — neither for media endings nor for season-neighbour audio: that "nothing" stays in memory for a day. Episode audio fingerprints are no longer kept in the database: their table is dropped at startup, along with old "nothing found" rows
+- **LG TV: no more black screen when opening a title or a library** — when a screen cannot be shown (server restarting during an update, flaky connection, a title Jellyfin fails to return), the TV now says so, with "Retry" and "Back", instead of going dark until the app is restarted. After a server update it reloads by itself as soon as the server responds — and never again in the middle of browsing because a preload failed
+- **LG TVs from 2020 to 2022 (webOS 5, 6 and 22): libraries open again** — they went to a black screen every time they were opened
+- **A title page that fails to load says so**: on the web too, a title page whose details Jellyfin does not return offers to retry instead of loading forever
+- The Docker image names ffmpeg explicitly (it was already there, pulled in by yt-dlp)
 
 ## [1.19.3]
 ### FR
