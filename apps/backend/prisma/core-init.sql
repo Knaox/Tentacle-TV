@@ -262,28 +262,14 @@ CREATE TABLE IF NOT EXISTS `media_frame_analysis` (
   PRIMARY KEY (`itemId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Les empreintes audio d'un épisode, tête et queue (services/audioFingerprint.ts).
--- Un cache, jamais une source : vider la table ne coûte qu'un transcodage par
--- épisode au prochain lancement. Purgée après 90 jours. Toutes les colonnes dès
--- ce bloc : le schéma de production n'arrive que par ce fichier.
-CREATE TABLE IF NOT EXISTS `media_audio_fingerprint` (
-  `itemId` varchar(64) NOT NULL,
-  `version` int(11) NOT NULL,
-  `runtimeMs` int(11) NOT NULL,
-  `mediaSourceId` varchar(64) DEFAULT NULL,
-  `headStartMs` int(11) DEFAULT NULL,
-  `headWindowMs` int(11) DEFAULT NULL,
-  `head` mediumblob DEFAULT NULL,
-  `tailStartMs` int(11) DEFAULT NULL,
-  `tailWindowMs` int(11) DEFAULT NULL,
-  `tail` mediumblob DEFAULT NULL,
-  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
-  PRIMARY KEY (`itemId`),
-  KEY `media_audio_fingerprint_createdAt_idx` (`createdAt`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Les empreintes audio des épisodes ne sont plus rangées en base : ce n'étaient
+-- que des intermédiaires de calcul, gardés désormais en mémoire
+-- (services/audioFingerprint.ts). Table du COEUR abandonnée : elle se supprime
+-- ici, comme le veut la doctrine du haut du fichier. Idempotent.
+DROP TABLE IF EXISTS `media_audio_fingerprint`;
 
 -- Le verdict de l'audio des voisins de saison (services/audioAnalysis.ts).
--- Même règle que les vignettes : un cache, et le « rien » se garde.
+-- Seuls les openings et endings trouvés y sont écrits ; le « rien » reste en mémoire.
 CREATE TABLE IF NOT EXISTS `media_audio_analysis` (
   `itemId` varchar(64) NOT NULL,
   `version` int(11) NOT NULL,

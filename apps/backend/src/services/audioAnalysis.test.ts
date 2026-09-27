@@ -1,7 +1,8 @@
 /**
  * L'orchestration : quand l'analyse se déclenche, la file à un slot, la
- * politesse envers Jellyfin, la classification des échecs, et le verdict
- * rangé. Tout ce qui parle à Jellyfin, à la base ou aux binaires est bouchonné.
+ * politesse envers Jellyfin, la classification des échecs, et le verdict —
+ * rangé quand il a trouvé quelque chose, retenu en mémoire sinon. Tout ce qui
+ * parle à Jellyfin, à la base ou aux binaires est bouchonné.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   readSessions: vi.fn(),
   findUnique: vi.fn(),
   upsert: vi.fn(),
+  deleteMany: vi.fn(),
   hasPrisma: vi.fn(),
 }));
 
@@ -35,7 +37,9 @@ vi.mock("./episodeNeighbours", async (importOriginal) => ({
 vi.mock("./watchTime/sessions", () => ({ readSessions: () => mocks.readSessions() }));
 vi.mock("./db", () => ({
   hasPrisma: () => mocks.hasPrisma(),
-  getPrisma: () => ({ mediaAudioAnalysis: { findUnique: mocks.findUnique, upsert: mocks.upsert } }),
+  getPrisma: () => ({
+    mediaAudioAnalysis: { findUnique: mocks.findUnique, upsert: mocks.upsert, deleteMany: mocks.deleteMany },
+  }),
 }));
 
 import type { PlaybackSegmentsResponse } from "../playback/segmentTypes";
@@ -49,6 +53,7 @@ import {
   audioAnalysisPending,
   enqueueAudioAnalysis,
   needsAudioAnalysis,
+  purgeEmptyAudioVerdicts,
   readStoredAudioVerdict,
   resetAudioAnalysisForTests,
   type AudioAnalysisRequest,
@@ -133,6 +138,7 @@ beforeEach(() => {
   mocks.readSessions.mockResolvedValue([]);
   mocks.findUnique.mockResolvedValue(null);
   mocks.upsert.mockResolvedValue(undefined);
+  mocks.deleteMany.mockResolvedValue({ count: 0 });
   mocks.hasPrisma.mockReturnValue(true);
   mocks.fetchNeighbours.mockResolvedValue([neighbour("ep-2", 2), neighbour("ep-4", 4)]);
   fingerprintsFromStore();
@@ -179,7 +185,7 @@ describe("needsAudioAnalysis", () => {
     expect(needsAudioAnalysis(other, bundle({ sources: { pluginDict: {} } }, old), undefined, NOW)).toBe(true);
   });
 
-  it("un verdict plein est définitif ; un verdict vide l'est un jour, puis fait revérifier", () => {
+  it("un verdict plein est définitif ; une ligne vide d'avant la purge l'est un jour, puis fait revérifier", () => {
     const full = { verdict: { intro: { startMs: 0, endMs: 90_000, source: "audio" as const }, outro: null, confirmedBy: 1, neighbourKey: "ep-2" }, createdAt: new Date(NOW - 10 * 24 * 3600_000) };
     expect(needsAudioAnalysis(response(["Intro"]), bundle(), full, NOW)).toBe(false);
     const empty = (ageMs: number) => ({ verdict: { intro: null, outro: null, confirmedBy: 0, neighbourKey: "ep-2" }, createdAt: new Date(NOW - ageMs) });
@@ -229,14 +235,14 @@ describe("le job", () => {
     expect(stored.outro).not.toBeNull();
   });
 
-  it("rien de partagé : un verdict vide est rangé, avec ses raisons", async () => {
+  it("rien de partagé : rien n'est rangé — l'épisode se tait un jour, puis revérifie", async () => {
     mocks.compareWindows.mockResolvedValue([]);
     enqueueAudioAnalysis(request());
     await drain();
-    const stored = JSON.parse(mocks.upsert.mock.calls[0][0].update.verdict);
-    expect(stored).toMatchObject({ intro: null, outro: null, neighbourKey: "ep-2,ep-4" });
-    expect(stored.reason).toContain("rien de partagé");
+    expect(mocks.upsert).not.toHaveBeenCalled();
     expect(audioAnalysisCounters().silent).toBe(1);
+    expect(needsAudioAnalysis(response(), bundle(), undefined, NOW + 3600_000)).toBe(false);
+    expect(needsAudioAnalysis(response(), bundle(), undefined, NOW + 25 * 3600_000)).toBe(true);
   });
 
   it("le même épisode demandé trois fois ne tourne qu'une fois ; la file ignore au-delà de sa taille", async () => {
@@ -335,12 +341,25 @@ describe("le job", () => {
     expect(needsAudioAnalysis(response(), bundle(), undefined, Date.now())).toBe(false);
   });
 
-  it("revérification : des voisins inchangés ne coûtent aucune fenêtre, le verdict vide est daté à neuf", async () => {
-    enqueueAudioAnalysis(request({ previousNeighbourKey: "ep-2,ep-4" }));
+  it("revérification : des voisins inchangés ne coûtent aucune fenêtre, et le silence repart pour un jour", async () => {
+    mocks.compareWindows.mockResolvedValue([]);
+    enqueueAudioAnalysis(request());
+    await drain();
+    mocks.ensureFingerprint.mockClear();
+    vi.setSystemTime(NOW + 25 * 3600_000);
+    enqueueAudioAnalysis(request());
     await drain();
     expect(mocks.ensureFingerprint).not.toHaveBeenCalled();
-    const stored = JSON.parse(mocks.upsert.mock.calls[0][0].update.verdict);
-    expect(stored).toMatchObject({ intro: null, outro: null, neighbourKey: "ep-2,ep-4", reason: "voisins inchangés" });
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(needsAudioAnalysis(response(), bundle(), undefined, Date.now() + 3600_000)).toBe(false);
+    expect(needsAudioAnalysis(response(), bundle(), undefined, Date.now() + 25 * 3600_000)).toBe(true);
+  });
+
+  it("une saison qui s'allonge : un nouveau voisin fait refaire les comparaisons", async () => {
+    mocks.compareWindows.mockResolvedValue([]);
+    enqueueAudioAnalysis(request({ previousNeighbourKey: "ep-2" }));
+    await drain();
+    expect(mocks.ensureFingerprint.mock.calls.map((c) => c[0].itemId)).toEqual(["ep-3", "ep-2", "ep-4"]);
   });
 
   it("un voisin qui échoue est ignoré, l'autre témoigne seul", async () => {
@@ -354,5 +373,17 @@ describe("le job", () => {
     const stored = JSON.parse(mocks.upsert.mock.calls[0][0].update.verdict);
     expect(stored.confirmedBy).toBe(1);
     expect(audioAnalysisCounters()).toMatchObject({ windows: 2, bytes: 5_800_000 });
+  });
+});
+
+describe("purgeEmptyAudioVerdicts", () => {
+  it("efface au démarrage les verdicts vides rangés autrefois", async () => {
+    mocks.deleteMany.mockResolvedValue({ count: 7 });
+    expect(await purgeEmptyAudioVerdicts()).toBe(7);
+    expect(mocks.deleteMany).toHaveBeenCalledWith({
+      where: { OR: [{ verdict: null }, { verdict: { contains: '"intro":null,"outro":null' } }] },
+    });
+    mocks.hasPrisma.mockReturnValue(false);
+    expect(await purgeEmptyAudioVerdicts()).toBe(0);
   });
 });

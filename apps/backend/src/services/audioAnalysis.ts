@@ -1,9 +1,9 @@
 /**
  * L'analyse audio inter-épisodes : quand la lancer, dans quel ordre, et où
- * ranger sa réponse. Jumelle de `frameAnalysis.ts`, avec les mêmes trois
- * règles — à la demande au lancement, une fois par média, le lecteur n'attend
- * JAMAIS (`analysisPending`) — et quatre de plus, parce qu'ici on fait
- * travailler Jellyfin :
+ * ranger sa réponse. Jumelle de l'analyse de fin de média (`tailAnalysis/`),
+ * avec les mêmes trois règles — à la demande au lancement, une fois par
+ * média, le lecteur n'attend JAMAIS (`analysisPending`) — et quatre de plus,
+ * parce qu'ici on fait travailler Jellyfin :
  *
  *  1. **UN slot pour tout le serveur.** Une analyse à la fois, une file courte ;
  *     au-delà on ignore, la prochaine lecture redemandera ;
@@ -13,40 +13,47 @@
  *     faire » : on se tait vingt-quatre heures. Un serveur trop lent met la
  *     fonction au repos une heure. Une erreur transitoire refroidit l'épisode
  *     une heure — et le serveur entier après trois de suite ;
- *  4. **le « rien » se garde, mais pas n'importe lequel.** Un verdict vide est
- *     rangé seulement après une VRAIE comparaison ; « pas de voisin » ou
- *     « Jellyfin muet » ne sont que des refroidissements en mémoire. Et un
- *     verdict vide de plus d'un jour fait revérifier les voisins : une série en
- *     cours de diffusion n'avait qu'un voisin le jour de sa sortie.
+ *  4. **le « rien » ne pèse pas sur le serveur.** Seul un verdict qui a trouvé
+ *     quelque chose est rangé en base ; un verdict vide n'est qu'un
+ *     refroidissement EN MÉMOIRE d'un jour, avec la clé des voisins comparés.
+ *     Passé ce jour, les voisins sont revérifiés : une série en cours de
+ *     diffusion n'avait qu'un voisin le jour de sa sortie.
  *
- * L'ordre du travail : la tête de l'épisode, les têtes des voisins, puis les
- * queues — ce qui sert le plus tôt d'abord. Un seul verdict, en fin de job.
+ * Le créneau, la politesse et les compteurs sont partagés avec l'analyse de fin
+ * de média (`audioJobs.ts`) : jamais deux transcodages audio à la fois.
+ *
+ * Le job lui-même — voisins, empreintes, comparaisons — vit dans
+ * `audioNeighbourJob.ts` ; ce module garde la file, les refroidissements et la
+ * base.
  */
 
 import type { AudioVerdict } from "../playback/audioVerdict";
 import type { PlaybackSegmentsResponse } from "../playback/segmentTypes";
-import { detectFingerprintTool, fingerprintToolKnownMissing } from "./audioFingerprintTool";
-import { ensureEpisodeFingerprint, type EpisodeFingerprint, type FingerprintFailure, type FingerprintNeed } from "./audioFingerprint";
-import { compareWindows } from "./audioMatch";
-import { combineComparisons, pickIntro, pickOutro, type NeighbourComparison } from "./audioVerdictRules";
+import { fingerprintToolKnownMissing } from "./audioFingerprintTool";
+import type { FingerprintFailure, FingerprintNeed } from "./audioFingerprint";
+import { resetAudioCountersForTests, withAudioSlot } from "./audioJobs";
+import { ITEM_COOLDOWN_MS, runNeighbourJob, type AudioAnalysisRequest, type JobContext, type QueuedJob } from "./audioNeighbourJob";
 import { isAudioAnalysisEnabled } from "./configStore";
 import { getPrisma, hasPrisma } from "./db";
-import { fetchEpisodeNeighbours, neighbourKey, type NeighbourEpisode } from "./episodeNeighbours";
-import type { EpisodeContext, SegmentSourceBundle } from "./jellyfinSegments";
-import { readSessions } from "./watchTime/sessions";
+import type { SegmentSourceBundle } from "./jellyfinSegments";
+
+export { audioAnalysisCounters, type AudioAnalysisCounters } from "./audioJobs";
+export {
+  BUSY_DEFER_MS,
+  BUSY_MAX_DEFERRALS,
+  ITEM_COOLDOWN_MS,
+  NO_NEIGHBOUR_COOLDOWN_MS,
+  type AudioAnalysisRequest,
+} from "./audioNeighbourJob";
 
 /** Règles du verdict : monter ce numéro périme toutes les lignes en base. */
 export const AUDIO_ANALYSIS_VERSION = 1;
 
 export const AUDIO_QUEUE_MAX = 4;
-export const ITEM_COOLDOWN_MS = 3600_000;
-export const NO_NEIGHBOUR_COOLDOWN_MS = 3600_000;
 export const HEAVY_SOURCE_COOLDOWN_MS = 24 * 3600_000;
 export const SERVER_DISABLED_MS = 24 * 3600_000;
 export const GLOBAL_COOLDOWN_MS = 3600_000;
 export const GLOBAL_FAILURES_BEFORE_COOLDOWN = 3;
-export const BUSY_DEFER_MS = 120_000;
-export const BUSY_MAX_DEFERRALS = 5;
 /** Au-delà, les entrées/sorties valent des gigaoctets par fenêtre (remux 4K). */
 export const MAX_SOURCE_BITRATE_BPS = 25_000_000;
 /** Un greffon installé passe la nuit : on lui laisse un jour sur un item frais. */
@@ -56,36 +63,9 @@ export const EMPTY_VERDICT_RECHECK_MS = 24 * 3600_000;
 export const NEIGHBOUR_GAP_MS = 2_000;
 const MAX_COOLDOWN_ENTRIES = 500;
 
-export interface AudioAnalysisRequest {
-  itemId: string;
-  runtimeMs: number;
-  mediaSourceId: string | null;
-  episode: EpisodeContext;
-  need: FingerprintNeed;
-  pluginInstalled: boolean;
-  /** La clé des voisins du verdict précédent, quand on revérifie. */
-  previousNeighbourKey: string | null;
-  jellyfinUrl: string;
-  apiKey: string;
-}
-
 export interface StoredAudioVerdict {
   verdict: AudioVerdict;
   createdAt: Date;
-}
-
-export interface AudioAnalysisCounters {
-  jobs: number;
-  windows: number;
-  bytes: number;
-  seconds: number;
-  verdicts: number;
-  silent: number;
-  deferred: number;
-}
-
-interface QueuedJob extends AudioAnalysisRequest {
-  deferrals: number;
 }
 
 const queue: QueuedJob[] = [];
@@ -96,11 +76,8 @@ let serverDisabledUntil = 0;
 let globalCooldownUntil = 0;
 let consecutiveFailures = 0;
 let gapMs = NEIGHBOUR_GAP_MS;
-const counters: AudioAnalysisCounters = { jobs: 0, windows: 0, bytes: 0, seconds: 0, verdicts: 0, silent: 0, deferred: 0 };
-
-export function audioAnalysisCounters(): AudioAnalysisCounters {
-  return { ...counters };
-}
+/** Les verdicts vides, en mémoire seulement : quand, et avec quels voisins. */
+const emptyVerdicts = new Map<string, { at: number; neighbourKey: string }>();
 
 /** Pour les tests : file, refroidissements, compteurs — et le souffle entre voisins. */
 export function resetAudioAnalysisForTests(options: { gapMs?: number } = {}): void {
@@ -112,7 +89,18 @@ export function resetAudioAnalysisForTests(options: { gapMs?: number } = {}): vo
   globalCooldownUntil = 0;
   consecutiveFailures = 0;
   gapMs = options.gapMs ?? NEIGHBOUR_GAP_MS;
-  for (const key of Object.keys(counters) as Array<keyof AudioAnalysisCounters>) counters[key] = 0;
+  emptyVerdicts.clear();
+  resetAudioCountersForTests();
+}
+
+/** Retient un verdict vide sans l'écrire : un jour de silence, puis revérification. */
+function rememberEmpty(itemId: string, key: string, now = Date.now()): void {
+  if (emptyVerdicts.size >= MAX_COOLDOWN_ENTRIES) {
+    const oldest = emptyVerdicts.keys().next().value;
+    if (oldest !== undefined) emptyVerdicts.delete(oldest);
+  }
+  emptyVerdicts.delete(itemId);
+  emptyVerdicts.set(itemId, { at: now, neighbourKey: key });
 }
 
 function coolDown(itemId: string, ms: number, now = Date.now()): void {
@@ -152,6 +140,8 @@ export function needsAudioAnalysis(
   if (!need.head && !need.tail) return false;
   if (!isAudioAnalysisEnabled() || fingerprintToolKnownMissing()) return false;
   if (serverDisabledUntil > now || globalCooldownUntil > now || coolingDown(resolved.itemId, now)) return false;
+  const empty = emptyVerdicts.get(resolved.itemId);
+  if (empty !== undefined && now - empty.at < EMPTY_VERDICT_RECHECK_MS) return false;
   if (stored !== undefined) {
     // Un verdict plein, ou vide et récent, est définitif.
     if (!isEmpty(stored.verdict) || now - stored.createdAt.getTime() < EMPTY_VERDICT_RECHECK_MS) return false;
@@ -200,6 +190,21 @@ async function store(itemId: string, runtimeMs: number, verdict: AudioVerdict): 
   }
 }
 
+/** Les verdicts vides rangés avant qu'on cesse de les écrire — au démarrage. */
+export async function purgeEmptyAudioVerdicts(): Promise<number> {
+  if (!hasPrisma()) return 0;
+  try {
+    const { count } = await getPrisma().mediaAudioAnalysis.deleteMany({
+      where: { OR: [{ verdict: null }, { verdict: { contains: '"intro":null,"outro":null' } }] },
+    });
+    if (count > 0) console.info(`[audio] purge : ${String(count)} verdicts vides`);
+    return count;
+  } catch (error) {
+    console.warn(`[audio] purge échouée (${String(error)})`);
+    return 0;
+  }
+}
+
 /** Une analyse est-elle en file ou en cours pour ce média ? (pour `analysisPending`) */
 export function audioAnalysisPending(itemId: string): boolean {
   return queued.has(itemId);
@@ -213,7 +218,8 @@ export function enqueueAudioAnalysis(request: AudioAnalysisRequest): void {
     return;
   }
   queued.add(request.itemId);
-  queue.push({ ...request, deferrals: 0 });
+  const previousNeighbourKey = request.previousNeighbourKey ?? emptyVerdicts.get(request.itemId)?.neighbourKey ?? null;
+  queue.push({ ...request, previousNeighbourKey, deferrals: 0 });
   void pump();
 }
 
@@ -224,7 +230,7 @@ async function pump(): Promise<void> {
     for (let job = queue.shift(); job !== undefined; job = queue.shift()) {
       let deferred = false;
       try {
-        deferred = await run(job);
+        deferred = await withAudioSlot(() => runNeighbourJob(job, jobContext));
       } catch (error) {
         console.warn(`[audio] ${job.itemId} : analyse abandonnée (${String(error)})`);
       } finally {
@@ -234,21 +240,6 @@ async function pump(): Promise<void> {
   } finally {
     running = false;
   }
-}
-
-const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** Un autre spectateur transcode-t-il une vidéo en ce moment ? */
-async function serverBusy(itemId: string): Promise<boolean> {
-  const sessions = await readSessions();
-  if (sessions === null) return false;
-  return sessions.some(
-    (s) =>
-      s.NowPlayingItem?.Id !== undefined &&
-      s.NowPlayingItem.Id !== itemId &&
-      s.PlayState?.IsPaused !== true &&
-      s.TranscodingInfo?.IsVideoDirect === false,
-  );
 }
 
 function noteFailure(itemId: string, failure: FingerprintFailure, now = Date.now()): void {
@@ -271,129 +262,20 @@ function noteFailure(itemId: string, failure: FingerprintFailure, now = Date.now
   }
 }
 
-const mmss = (ms: number): string =>
-  `${String(Math.floor(ms / 60_000))}:${String(Math.floor((ms / 1000) % 60)).padStart(2, "0")}`;
-
-function describe(verdict: AudioVerdict, runtimeMs: number): string {
-  const parts: string[] = [];
-  if (verdict.intro) parts.push(`intro ${mmss(verdict.intro.startMs)}→${mmss(verdict.intro.endMs)}`);
-  if (verdict.outro) {
-    const end = verdict.outro.endMs >= runtimeMs ? "fin" : mmss(verdict.outro.endMs);
-    parts.push(`ending ${mmss(verdict.outro.startMs)}→${end}`);
-  }
-  if (parts.length === 0) return `aucun verdict (${verdict.reason ?? "?"})`;
-  return `${parts.join(", ")} (confirmé par ${String(verdict.confirmedBy)})${verdict.reason ? ` ; ${verdict.reason}` : ""}`;
-}
-
-/** Le job. Rend `true` quand il s'est différé lui-même (il reste en file). */
-async function run(job: QueuedJob): Promise<boolean> {
-  const tool = await detectFingerprintTool();
-  if (tool === null) return false;
-
-  if (await serverBusy(job.itemId)) {
-    job.deferrals += 1;
-    counters.deferred += 1;
-    if (job.deferrals > BUSY_MAX_DEFERRALS) {
-      console.info(`[audio] ${job.itemId} : serveur occupé cinq fois de suite — analyse remise à plus tard`);
-      coolDown(job.itemId, ITEM_COOLDOWN_MS);
-      return false;
-    }
-    setTimeout(() => {
-      queue.push(job);
-      void pump();
-    }, BUSY_DEFER_MS);
-    return true;
-  }
-
-  const startedAt = Date.now();
-  const neighbours = await fetchEpisodeNeighbours(job.jellyfinUrl, job.apiKey, job.episode, job.itemId);
-  if (neighbours === null) {
-    noteFailure(job.itemId, "transient");
-    return false;
-  }
-  if (neighbours.length === 0) {
-    coolDown(job.itemId, NO_NEIGHBOUR_COOLDOWN_MS);
-    return false;
-  }
-  const key = neighbourKey(neighbours);
-  if (job.previousNeighbourKey !== null && job.previousNeighbourKey === key) {
-    // Rien de neuf dans la saison : le verdict vide reste vrai un jour de plus.
-    await store(job.itemId, job.runtimeMs, { intro: null, outro: null, confirmedBy: 0, neighbourKey: key, reason: "voisins inchangés" });
-    return false;
-  }
-
-  counters.jobs += 1;
-  const cost = { transcoded: 0, reused: 0, bytes: 0, elapsedMs: 0 };
-  const fingerprint = async (itemId: string, runtimeMs: number, mediaSourceId: string | null) => {
-    const outcome = await ensureEpisodeFingerprint({
-      itemId, runtimeMs, mediaSourceId, need: job.need, jellyfinUrl: job.jellyfinUrl, apiKey: job.apiKey, tool,
-    });
-    const present = (outcome.fingerprint.head ? 1 : 0) + (outcome.fingerprint.tail ? 1 : 0);
-    cost.transcoded += outcome.fetched;
-    cost.reused += Math.max(0, present - outcome.fetched);
-    cost.bytes += outcome.bytes;
-    cost.elapsedMs += outcome.elapsedMs;
-    counters.windows += outcome.fetched;
-    counters.bytes += outcome.bytes;
-    counters.seconds += outcome.elapsedMs / 1000;
-    return outcome;
-  };
-
-  const current = await fingerprint(job.itemId, job.runtimeMs, job.mediaSourceId);
-  if (current.failure !== null) {
-    noteFailure(job.itemId, current.failure);
-    return false;
-  }
-  const witnesses: Array<{ neighbour: NeighbourEpisode; fingerprint: EpisodeFingerprint }> = [];
-  for (const neighbour of neighbours) {
-    await sleep(gapMs);
-    const outcome = await fingerprint(neighbour.id, neighbour.runtimeMs, neighbour.mediaSourceId);
-    if (outcome.failure === "not-supported" || outcome.failure === "too-slow") {
-      noteFailure(job.itemId, outcome.failure);
-      return false;
-    }
-    if (outcome.failure === null) witnesses.push({ neighbour, fingerprint: outcome.fingerprint });
-  }
-  if (witnesses.length === 0) {
-    noteFailure(job.itemId, "transient");
-    return false;
-  }
-
-  const comparisons: NeighbourComparison[] = [];
-  for (const { neighbour, fingerprint: witness } of witnesses) {
-    const comparison: NeighbourComparison = {
-      neighbourId: neighbour.id, introCompared: false, outroCompared: false, intro: null, outro: null, duplicate: false,
-    };
-    const head = current.fingerprint.head;
-    const tail = current.fingerprint.tail;
-    if (job.need.head && head !== null && witness.head !== null) {
-      comparison.introCompared = true;
-      const picked = pickIntro(await compareWindows(head, witness.head), head.lengthMs);
-      comparison.intro = picked.candidate;
-      comparison.duplicate = comparison.duplicate || picked.duplicate;
-    }
-    if (job.need.tail && tail !== null && witness.tail !== null) {
-      comparison.outroCompared = true;
-      const picked = pickOutro(await compareWindows(tail, witness.tail), tail.lengthMs, job.runtimeMs);
-      comparison.outro = picked.candidate;
-      comparison.duplicate = comparison.duplicate || picked.duplicate;
-    }
-    comparisons.push(comparison);
-  }
-  consecutiveFailures = 0;
-
-  const verdict = combineComparisons(comparisons, key);
-  await store(job.itemId, job.runtimeMs, verdict);
-  if (isEmpty(verdict)) counters.silent += 1;
-  else counters.verdicts += 1;
-  const season = job.episode.seasonNumber !== null && job.episode.indexNumber !== null
-    ? ` S${String(job.episode.seasonNumber).padStart(2, "0")}E${String(job.episode.indexNumber).padStart(2, "0")}`
-    : "";
-  console.info(
-    `[audio] ${job.itemId}${season} : ${String(witnesses.length)} voisin(s), ` +
-      `${String(cost.transcoded)} fenêtre(s) transcodée(s) (${(cost.bytes / 1e6).toFixed(1)} Mo, ` +
-      `${(cost.elapsedMs / 1000).toFixed(1)} s), ${String(cost.reused)} réutilisée(s) — ` +
-      `${describe(verdict, job.runtimeMs)}, ${String(Math.round((Date.now() - startedAt) / 1000))} s`,
-  );
-  return false;
-}
+/** Ce que le job peut toucher de l'état de ce module. */
+const jobContext: JobContext = {
+  get gapMs() {
+    return gapMs;
+  },
+  noteFailure: (itemId, failure) => noteFailure(itemId, failure),
+  coolDown: (itemId, ms) => coolDown(itemId, ms),
+  rememberEmpty: (itemId, key) => rememberEmpty(itemId, key),
+  store,
+  resetFailures: () => {
+    consecutiveFailures = 0;
+  },
+  requeue: (job) => {
+    queue.push(job);
+    void pump();
+  },
+};

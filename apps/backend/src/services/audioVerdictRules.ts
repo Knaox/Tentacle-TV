@@ -152,7 +152,7 @@ export function settle(
   return { bounds: toBounds(only), confirmedBy: 1, reason: null };
 }
 
-/** Le verdict de l'épisode, d'après ses voisins. Toujours un objet : le « rien » se garde. */
+/** Le verdict de l'épisode, d'après ses voisins. Toujours un objet : le « rien » a ses raisons — dites dans le journal, jamais rangées. */
 export function combineComparisons(
   comparisons: readonly NeighbourComparison[],
   neighbourKey: string,

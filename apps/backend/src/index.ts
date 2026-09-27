@@ -63,7 +63,8 @@ import { startTicketLifecycleWorker } from "./services/ticketLifecycle";
 import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
 import { startAnnouncedPurge } from "./services/announcedRegistry";
 import { startNotificationPurge } from "./services/notificationPurge";
-import { startFingerprintPurge, sweepStaleTempDirs } from "./services/audioFingerprint";
+import { sweepStaleTempDirs } from "./services/audioFingerprint";
+import { purgeEmptyAudioVerdicts } from "./services/audioAnalysis";
 import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { setRestartShutdown } from "./services/pluginRestart";
@@ -333,9 +334,10 @@ async function main() {
     startLibraryAddedNotifier();
     startAnnouncedPurge();
     startNotificationPurge();
-    // Analyse audio : les temporaires d'une analyse interrompue, les empreintes de plus de 90 jours.
+    // Analyse audio : les temporaires d'une analyse interrompue, et les verdicts
+    // vides rangés autrefois (on ne range plus que les trouvailles).
     void sweepStaleTempDirs();
-    startFingerprintPurge();
+    void purgeEmptyAudioVerdicts();
     startWatchTime();
     startRecoJobs();
     // Le moteur de recherche : son index se construit peu après le démarrage.
