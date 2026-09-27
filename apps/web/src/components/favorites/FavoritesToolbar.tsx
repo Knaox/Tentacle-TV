@@ -24,7 +24,7 @@ interface FavoritesToolbarProps {
  */
 export function FavoritesToolbar({ filters, name, groupMode, onGroupModeChange, actions }: FavoritesToolbarProps) {
   return (
-    <div className="mb-6 flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       {/* Recherche et actions sur la première ligne, « Regrouper » sur la
           sienne ; les trois tiennent sur une seule à partir de 1280 px. Sous
           ce palier, la fenêtre minimale d'Electron (900 px) les faisait

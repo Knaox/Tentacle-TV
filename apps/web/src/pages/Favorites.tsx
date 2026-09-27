@@ -113,22 +113,32 @@ export function Favorites() {
             </div>
 
             <div className="relative z-10 -mt-10 px-4 pt-6 md:-mt-14 md:px-8">
-              <FavoritesOverview
-                items={items}
-                type={filters.type}
-                status={filters.filters.statusFilter}
-                onTypeChange={filters.setType}
-                onStatusChange={filters.setStatusFilter}
-              />
-              <div className="mt-6">
-                <FavoritesToolbar
-                  filters={filters}
-                  name={title}
-                  groupMode={mode}
-                  onGroupModeChange={setMode}
-                  actions={actions}
+              {/* Le « dock » : bilan et barre dans un seul panneau de verre.
+                  Il repose sur le bas de la bannière, qui reste SOMBRE dans
+                  les deux thèmes : sans lui, les libellés du thème clair
+                  (sombres) s'y perdaient. Pas de `backdrop-filter` : le voile
+                  suffit à la lecture, et l'image dessous est immobile. */}
+              <section
+                aria-label={title}
+                className="mb-6 rounded-[28px] border border-line-subtle bg-[var(--glass-tint)] p-3 sm:p-4"
+              >
+                <FavoritesOverview
+                  items={items}
+                  type={filters.type}
+                  status={filters.filters.statusFilter}
+                  onTypeChange={filters.setType}
+                  onStatusChange={filters.setStatusFilter}
                 />
-              </div>
+                <div className="mt-4">
+                  <FavoritesToolbar
+                    filters={filters}
+                    name={title}
+                    groupMode={mode}
+                    onGroupModeChange={setMode}
+                    actions={actions}
+                  />
+                </div>
+              </section>
               {body}
             </div>
           </>
