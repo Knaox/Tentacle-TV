@@ -32,6 +32,8 @@ export interface TitleMeta {
   studios: NamedRef[];
   networks: NamedRef[];
   year: number | null;
+  /** Date de sortie (film) ou de première diffusion (série), « AAAA-MM-JJ ». */
+  releaseDate?: string | null;
   originalLanguage: string | null;
   /** Pays d'origine ISO 3166-1 (films ET séries) — l'indice « animé » quand
    *  la langue ment (coproduction doublée en anglais). */
@@ -127,6 +129,7 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     studios: named(raw.production_companies ?? []),
     networks: named(raw.networks ?? []),
     year,
+    releaseDate: date || null,
     originalLanguage: raw.original_language ?? null,
     originCountry: originCountryOf(raw),
     runtimeMinutes: raw.runtime ?? raw.episode_run_time?.[0] ?? null,

@@ -78,10 +78,17 @@ export function toCandidate(
 
 /** Nombre de graines qui reçoivent AUSSI un appel /similar (les plus fortes). */
 const SIMILAR_SEEDS = 8;
+/** /similar (mêmes genres et mots-clés) dit moins que /recommendations
+ *  (mêmes spectateurs) : son soutien compte moitié. */
+const SIMILAR_FACTOR = 0.5;
+/** Un rang de 0 à 19 : le premier de la liste pèse deux fois le vingtième. */
+const RANK_SPAN = 40;
 
 /**
  * Candidats issus des graines : `/recommendations` pour chacune, `/similar`
- * pour les plus fortes. Un échec de graine est silencieux — le pool vit.
+ * pour les plus fortes. Chaque apparition porte un SOUTIEN (force de la graine
+ * × rang dans la liste) que l'assemblage du pool cumule. Un échec de graine
+ * est silencieux — le pool vit.
  */
 export async function candidatesFromSeeds(seeds: SeedRef[]): Promise<Candidate[]> {
   if (!tmdbConfigured()) return [];
@@ -91,15 +98,17 @@ export async function candidatesFromSeeds(seeds: SeedRef[]): Promise<Candidate[]
     const paths = [`/${seed.mediaType}/${seed.tmdbId}/recommendations`];
     if (index < SIMILAR_SEEDS) paths.push(`/${seed.mediaType}/${seed.tmdbId}/similar`);
     for (const path of paths) {
+      const factor = path.endsWith("/similar") ? SIMILAR_FACTOR : 1;
       try {
         const page = await tmdbFetch<TmdbListPage>(path, { page: "1" }, BACKGROUND);
-        for (const raw of page.results ?? []) {
+        for (const [rank, raw] of (page.results ?? []).entries()) {
           // Sorti au minimum : /recommendations et /similar listent aussi l'annoncé.
           if (!isReleasedResult(raw)) continue;
           const candidate = toCandidate(raw, seed.mediaType, "tmdb_rec");
           // La graine signe son candidat : les rangées « Parce que vous avez
           // aimé [titre] » se découpent là-dessus.
           candidate.seedKey = `${seed.mediaType}:${seed.tmdbId}`;
+          candidate.seedSupport = seed.strength * factor * (1 - rank / RANK_SPAN);
           out.push(candidate);
         }
       } catch {
