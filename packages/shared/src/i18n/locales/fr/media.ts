@@ -44,7 +44,6 @@ export default {
   personFilterEmpty: "Aucun titre pour ce filtre.",
   personLoadError: "Impossible de charger cette personne.",
   personOpen: "Filmographie de {{name}}",
-  personExternalIds: "Ailleurs",
   roleActor: "Interprétation",
   roleDirector: "Réalisation",
   roleWriter: "Scénario",

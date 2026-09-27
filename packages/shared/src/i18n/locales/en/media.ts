@@ -44,7 +44,6 @@ export default {
   personFilterEmpty: "No titles for this filter.",
   personLoadError: "Couldn't load this person.",
   personOpen: "{{name}}'s filmography",
-  personExternalIds: "Elsewhere",
   roleActor: "Acting",
   roleDirector: "Directing",
   roleWriter: "Writing",
