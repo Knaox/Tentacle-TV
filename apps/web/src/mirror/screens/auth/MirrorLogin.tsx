@@ -10,7 +10,7 @@ import {
   AUTH_ERROR, AUTH_INPUT_CLASS, AUTH_INPUT_STYLE, AUTH_LINK, AUTH_LINK_ROW, AUTH_SUBTITLE, AUTH_TITLE,
 } from "./authStyles";
 import { ForgotPasswordContent } from "./ForgotPasswordContent";
-import { loginErrorMessage } from "./loginError";
+import { loginErrorMessage } from "../../../components/auth/loginError";
 
 /**
  * `LoginScreen` de l'app (`/login`), plein écran hors coquille : logo 64 (marge
