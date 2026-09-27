@@ -1,6 +1,5 @@
 import { use } from "react";
 import type { ComponentType, FunctionComponent } from "react";
-import { isModuleLoadFailure, reloadForStaleBuild } from "./staleBuildReload";
 
 export interface PreloadableComponent<P> extends FunctionComponent<P> {
   /** Charge le module (survol du lien, boot) ; idempotent, échec retentable. */
@@ -30,9 +29,11 @@ export function preloadable<P extends object>(
         },
         (err: unknown) => {
           pending = null;
-          // Module disparu : la page date d'avant une mise à jour du client
-          // (cf. staleBuildReload) — la recharger plutôt qu'un écran noir.
-          if (isModuleLoadFailure(err)) reloadForStaleBuild();
+          // Pas de rechargement ici : `preload()` passe par ce chemin, en temps
+          // mort, et recharger l'application parce qu'un PRÉCHARGEMENT a échoué
+          // l'arrachait à l'écran qu'on regardait. Un module disparu est traité
+          // quand on en a réellement besoin — `vite:preloadError` sur le web
+          // (cf. staleBuildReload), l'écran de reprise sur le téléviseur.
           throw err;
         }
       );
