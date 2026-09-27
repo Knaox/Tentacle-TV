@@ -1,12 +1,13 @@
 /**
  * Les cas spéciaux du banc du 28 septembre 2026 (267 titres) : le générique
- * illustré qui précède une scène mi-générique, et le chapitre nommé qui le dément.
+ * illustré qui précède une scène mi-générique, le chapitre nommé qui le dément,
+ * l'aperçu du prochain épisode — et ce qui lui ressemble sans l'être.
  */
 
 import { describe, expect, it } from "vitest";
 import { isCreditsChapterName } from "../../playback/segmentChapters";
 import { readTail } from "./tailReading";
-import type { TailInput } from "./tailTimeline";
+import { Timeline, type TailInput } from "./tailTimeline";
 
 type Strip = Array<[string, number]>;
 
@@ -18,6 +19,7 @@ interface Media {
   picture: Strip;
   audio?: { fromS: number; parts: Strip };
   providers?: Array<[number, number, boolean?]>;
+  episode?: boolean;
 }
 
 const input = (media: Media): TailInput => ({
@@ -27,6 +29,7 @@ const input = (media: Media): TailInput => ({
   cells: strip(media.picture, 10),
   audio: media.audio ? { fromMs: media.audio.fromS * 1000, classes: strip(media.audio.parts, 1) } : null,
   providerSpans: (media.providers ?? []).map(([a, b, named]) => ({ startMs: a * 1000, endMs: b * 1000, ...(named ? { named } : {}) })),
+  ...(media.episode ? { episode: true } : {}),
 });
 
 const scenes = (...pairs: Array<[number, number]>) => pairs.map(([a, b]) => ({ startMs: a * 1000, endMs: b * 1000 }));
@@ -69,5 +72,54 @@ describe("le générique illustré avant une scène mi-générique", () => {
     expect(isCreditsChapterName("Générique de fin")).toBe(true);
     expect(isCreditsChapterName("Opening Credits")).toBe(false);
     expect(isCreditsChapterName("Without Incident")).toBe(false);
+  });
+});
+
+/** Un épisode d'animé : l'histoire, l'ending chanté, puis la voix de l'aperçu jusqu'au bout. */
+const anime = (endingAudio: Strip): Media => ({
+  runtimeS: 1440,
+  picture: [["E", 720]],
+  audio: { fromS: 1100, parts: [["S", 220], ...endingAudio, ["S", 30]] },
+  providers: [[1320, 1410]],
+  episode: true,
+});
+
+describe("l'aperçu du prochain épisode", () => {
+  it("la voix qui suit l'ending n'est pas une scène (One Piece, « Bleach », « Fullmetal Alchemist »)", () => {
+    const reading = readTail(input(anime([["M", 90]])));
+    expect(reading?.creditsStartMs).toBe(1_320_000);
+    expect(reading?.scenes).toEqual([]);
+    expect(reading?.preview).toEqual([1_410_000, 1_440_000]);
+  });
+
+  it("quelques syllabes chantées dans l'ending n'y changent rien (« L'attaque des Titans » S4E20)", () => {
+    const reading = readTail(input(anime([["M", 40], ["S", 5], ["M", 45]])));
+    expect(reading?.preview).toEqual([1_410_000, 1_440_000]);
+    expect(reading?.scenes).toEqual([]);
+  });
+
+  it("sur un film, la même fin est une scène : il n'y a pas d'aperçu", () => {
+    expect(readTail(input({ ...anime([["M", 90]]), episode: false }))?.preview).toBeUndefined();
+  });
+
+  it("des cartons sur noir, un gag coupé par un interlude musical : une scène, pas un aperçu (« Rick et Morty » S1E10)", () => {
+    const reading = readTail(input({
+      runtimeS: 1300,
+      picture: [["E", 560], ["C", 10], ["T", 20], ["E", 20], ["D", 10], ["E", 30]],
+      audio: { fromS: 1000, parts: [["S", 210], ["M", 30], ["S", 20], ["M", 10], ["S", 30]] },
+      episode: true,
+    }));
+    expect(reading?.creditsStartMs).toBe(1_210_000);
+    expect(reading?.preview).toBeUndefined();
+    expect(reading?.scenes).toHaveLength(1);
+    expect(reading?.scenes[0].endMs).toBe(1_300_000);
+  });
+});
+
+describe("la dernière image connue", () => {
+  it("des sous-titres plus longs que la vidéo allongent le fichier : la fin est celle de l'image", () => {
+    const t = new Timeline(input({ runtimeS: 3240, picture: [["E", 1500], ["K", 20]] }));
+    expect(t.knownEndMs).toBe(3_140_000);
+    expect(new Timeline(input({ runtimeS: 3240, picture: [["E", 1620]] })).knownEndMs).toBe(3_240_000);
   });
 });

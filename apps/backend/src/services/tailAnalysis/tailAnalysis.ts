@@ -48,6 +48,8 @@ export interface TailAnalysisRequest {
   mediaSourceId: string | null;
   trickplay: TrickplayManifest | null;
   providerSpans: ProviderSpan[];
+  /** Un épisode : son générique peut se clore sur l'aperçu du suivant. */
+  isEpisode: boolean;
   jellyfinUrl: string;
   apiKey: string;
 }
@@ -170,6 +172,7 @@ async function run(request: TailAnalysisRequest, deferrals: number): Promise<voi
       cells: cellString(samples, intervalMs),
       audio: null,
       providerSpans: request.providerSpans,
+      episode: request.isEpisode,
     };
     const from = audioWindowStart(findSkeleton(new Timeline(input)), runtimeMs);
     let audioNote = "vignettes seules";

@@ -73,6 +73,7 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
           mediaSourceId: bundle.defaultMediaSourceId,
           trickplay: bundle.trickplay,
           providerSpans: providerSpans(itemId, bundle),
+          isEpisode: bundle.episode !== null,
           jellyfinUrl: url.replace(/\/$/, ""),
           apiKey,
         });

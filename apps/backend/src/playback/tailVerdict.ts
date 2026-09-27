@@ -27,8 +27,9 @@
  *
  * Sans scène trouvée, il ne touche aux génériques des fournisseurs que pour
  * retirer une scène qui n'existe pas : un générique qui s'arrête EN PLEIN
- * défilement, alors que le texte défile encore bien au-delà. Sinon il se tait —
- * un fournisseur qui a vu une scène que l'analyse a manquée garde raison.
+ * défilement, alors que le texte défile encore bien au-delà, ou juste avant
+ * l'APERÇU du prochain épisode. Sinon il se tait — un fournisseur qui a vu une
+ * scène que l'analyse a manquée garde raison.
  *
  * MIROIR : reflété octet pour octet dans `apps/backend/src/playback/` (voir
  * l'en-tête de `segmentTypes.ts`) — n'importer que la paire.
@@ -53,6 +54,11 @@ export interface TailVerdict {
   crawl: [number, number] | null;
   /** L'audio a été écouté (sinon, seules les preuves d'image ont compté). */
   audio: boolean;
+  /**
+   * L'aperçu du prochain épisode qui clôt le fichier, [début, fin) — jamais une
+   * scène. Absent des verdicts rangés avant lui.
+   */
+  preview?: [number, number];
 }
 
 /** Un générique plus court ne mérite pas de bouton. */
@@ -63,6 +69,8 @@ const FINAL_OUTRO_MIN_MS = 30_000;
 const LANDING_LEAD_MS = 1_000;
 /** Le défilement doit continuer au moins ça au-delà d'une fin de fournisseur pour la démentir. */
 const CRAWL_OUTLIVES_MS = 10_000;
+/** Une « scène » de fournisseur qui commence à ça de l'aperçu, ou dedans, EST l'aperçu. */
+const PREVIEW_SLACK_MS = 20_000;
 
 /** Les génériques que le verdict dessine autour de ses scènes. */
 export function tailOutros(verdict: TailVerdict, runtimeMs: number): RawBounds[] {
@@ -95,7 +103,9 @@ export function applyTailVerdict(bounds: BoundsByType, verdict: TailVerdict | nu
   // fournisseur posée avant le défilement peut précéder une vraie scène
   // mi-générique que l'analyse n'a pas su voir (« Daredevil : Born Again »).
   const crawl = verdict.crawl;
-  if (claimsScene && crawl !== null && crawl[0] <= last.endMs && crawl[1] > last.endMs + CRAWL_OUTLIVES_MS) {
-    bounds.set("Outro", outros);
-  }
+  const inCrawl = crawl !== null && crawl[0] <= last.endMs && crawl[1] > last.endMs + CRAWL_OUTLIVES_MS;
+  // … ou si elle est l'aperçu du prochain épisode (One Piece : le marqueur s'arrête juste avant lui).
+  const preview = verdict.preview;
+  const intoPreview = preview !== undefined && last.endMs >= preview[0] - PREVIEW_SLACK_MS && last.endMs < preview[1];
+  if (claimsScene && (inCrawl || intoPreview)) bounds.set("Outro", outros);
 }

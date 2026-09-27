@@ -99,6 +99,24 @@ describe("applyTailVerdict — quand le verdict a le dernier mot", () => {
     expect(found[0]).toMatchObject({ endMs: min(22, 43), hasContentAfter: true, source: "jellyfin" });
   });
 
+  it("One Piece : le marqueur qui s'arrête juste avant l'aperçu promettait l'aperçu — le générique court jusqu'au bout", () => {
+    const runtime = min(23, 35);
+    const found = outros(runtime, {
+      mediaSegments: { Items: [outro(min(22, 48), min(23, 5))] },
+      tail: verdict({ creditsStartMs: min(22, 48), preview: [min(23, 5), runtime] }),
+    });
+    expect(found.map((o) => [o.startMs, o.endMs, o.hasContentAfter])).toEqual([[min(22, 48), runtime, false]]);
+  });
+
+  it("une vraie scène avant l'aperçu reste promise : le marqueur qui s'y arrête est gardé", () => {
+    // « Fullmetal Alchemist » S1E30 : la partie C, puis l'aperçu ; seul l'aperçu dément.
+    const found = outros(min(24, 28), {
+      mediaSegments: { Items: [outro(min(22, 7), min(23, 37))] },
+      tail: verdict({ creditsStartMs: min(22, 7), preview: [min(23, 58), min(24, 28)] }),
+    });
+    expect(found[0]).toMatchObject({ endMs: min(23, 37), hasContentAfter: true, source: "jellyfin" });
+  });
+
   it("un verdict absent ne touche à rien", () => {
     const bounds: BoundsByType = new Map([["Outro", [{ startMs: 1, endMs: 2, source: "jellyfin" }]]]);
     applyTailVerdict(bounds, null, min(10));

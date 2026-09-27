@@ -36,6 +36,7 @@ function parse(raw: string): TailVerdict | null {
       scenes: v.scenes.filter((s) => typeof s?.startMs === "number" && typeof s?.endMs === "number"),
       crawl: Array.isArray(v.crawl) && v.crawl.length === 2 ? [v.crawl[0], v.crawl[1]] : null,
       audio: v.audio === true,
+      ...(Array.isArray(v.preview) && v.preview.length === 2 ? { preview: [v.preview[0], v.preview[1]] as [number, number] } : {}),
     };
   } catch {
     return null;
