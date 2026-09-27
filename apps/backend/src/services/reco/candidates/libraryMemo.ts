@@ -60,6 +60,23 @@ export async function getLibraryIndexMemo(userId: string): Promise<LibraryIndex>
   return refreshNow(userId);
 }
 
+/**
+ * L'index du compte S'IL EST DÉJÀ en mémoire, sans jamais attendre un
+ * balayage : le chemin chaud du service de page s'en sert pour exclure ce
+ * que le compte vient de voir, de mettre en favori ou dans Ma liste. Absent :
+ * null, et la construction part en fond pour la requête suivante.
+ */
+export function peekLibraryIndexMemo(userId: string): LibraryIndex | null {
+  const hit = memo.get(userId);
+  if (!hit) {
+    void refreshNow(userId).catch(() => undefined);
+    return null;
+  }
+  hit.lastReadAt = Date.now();
+  if (Date.now() - hit.at >= LIBRARY_MEMO_MS) void refreshNow(userId).catch(() => undefined);
+  return hit.index;
+}
+
 /** Sur UserDataChanged (vu/favori posé) : rafraîchissement EN FOND, débouncé
  *  — l'index courant continue d'être servi jusqu'au remplacement. */
 export function refreshLibraryMemo(userId: string): void {

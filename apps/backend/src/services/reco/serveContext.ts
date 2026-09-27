@@ -1,7 +1,8 @@
 import { getPrisma } from "../db";
 import { getSeerrConfig } from "../seerConfig";
 import { tmdbConfigured } from "../tmdb/client";
-import { canonicalKey } from "./candidates/exclusions";
+import { accountExclusionKeys, libraryExclusionKeys } from "./candidates/exclusions";
+import { peekLibraryIndexMemo } from "./candidates/libraryMemo";
 import { profileRebuildGate, rebuildProfile } from "./profileBuilder";
 import type { TasteVector } from "./scoring/strategy";
 import { effectiveIncludeVigie } from "./vigieSetting";
@@ -61,23 +62,18 @@ export async function serveContext(userId: string): Promise<ServeContext> {
     });
   }
 
-  const [settings, ratings, feedback] = await Promise.all([
+  const [settings, accountKeys] = await Promise.all([
     prisma.recoSettings.findUnique({ where: { jellyfinUserId: userId } }),
-    prisma.userRating.findMany({
-      where: { jellyfinUserId: userId, deletedAt: null },
-      select: { mediaType: true, tmdbId: true },
-    }),
-    prisma.recommendationFeedback.findMany({
-      where: { jellyfinUserId: userId },
-      select: { itemKey: true },
-    }),
+    accountExclusionKeys(userId),
   ]);
 
-  // Exclusions du MOMENT : une note posée il y a dix secondes ou un « ne plus
-  // me proposer » sortent le titre des rangées sans attendre la régénération.
-  const exclude = new Set<string>();
-  for (const r of ratings) exclude.add(canonicalKey(r.mediaType, r.tmdbId));
-  for (const f of feedback) exclude.add(f.itemKey);
+  // Exclusions du MOMENT : une note posée il y a dix secondes, un « ne plus me
+  // proposer », un like, et — depuis l'index de bibliothèque en mémoire, sans
+  // balayage — un titre qu'on vient de voir, de mettre en favori ou dans Ma
+  // liste sortent des rangées sans attendre la régénération du pool.
+  const exclude = new Set<string>(accountKeys);
+  const library = peekLibraryIndexMemo(userId);
+  if (library) for (const key of libraryExclusionKeys(library.entries)) exclude.add(key);
 
   let facets: Record<string, number> = {};
   try {

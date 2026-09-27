@@ -2,6 +2,7 @@ import { getSeerrConfig } from "../seerConfig";
 import { getWatchProviderDirectory, providerRefOf } from "../tmdb/providerDirectory";
 import type { ProviderRef } from "../tmdb/providerNormalize";
 import { attachProviders } from "./attachProviders";
+import { libraryExclusionKeys } from "./candidates/exclusions";
 import type { LibraryIndex } from "./candidates/libraryIndex";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
 import { buildCommunityRow } from "./communityRow";
@@ -54,6 +55,9 @@ export async function prepareBuildBase(userId: string, ctx: ServeContext): Promi
   const row = personalized ? await readPoolRow(userId) : null;
   if (row?.pool.preliminary) requestPoolRelief(userId);
   const library = await getLibraryIndexMemo(userId);
+  // L'index lu ici peut être plus frais que celui du contexte (absent au
+  // premier contact) : vus, favoris et Ma liste sortent aussi de la page.
+  for (const key of libraryExclusionKeys(library.entries)) ctx.exclude.add(key);
 
   // Tendances et pouls du serveur : les mêmes titres pour tous, ordonnés
   // selon le goût du compte (score de son pool) ; « les mieux notés » garde
