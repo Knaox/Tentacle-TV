@@ -8,10 +8,12 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ## [Unreleased]
 ### FR
 - **Téléviseur LG : fini l'écran noir en ouvrant une fiche ou une bibliothèque** — quand un écran ne peut pas s'afficher (serveur qui redémarre pendant une mise à jour, connexion qui hoquette, fiche que Jellyfin ne rend pas), le téléviseur le dit, avec « Réessayer » et « Retour », au lieu de s'éteindre jusqu'au redémarrage de l'application. Après une mise à jour du serveur, il se recharge de lui-même dès que le serveur répond — et plus jamais en pleine navigation parce qu'un préchargement a échoué
+- **Téléviseurs LG de 2020 à 2022 (webOS 5, 6 et 22) : les bibliothèques s'ouvrent de nouveau** — elles tombaient sur un écran noir à chaque ouverture
 - **Une fiche qui ne se charge pas le dit** : sur le web aussi, une fiche dont Jellyfin ne rend pas les informations propose de réessayer, au lieu d'un chargement sans fin
 
 ### EN
 - **LG TV: no more black screen when opening a title or a library** — when a screen cannot be shown (server restarting during an update, flaky connection, a title Jellyfin fails to return), the TV now says so, with "Retry" and "Back", instead of going dark until the app is restarted. After a server update it reloads by itself as soon as the server responds — and never again in the middle of browsing because a preload failed
+- **LG TVs from 2020 to 2022 (webOS 5, 6 and 22): libraries open again** — they went to a black screen every time they were opened
 - **A title page that fails to load says so**: on the web too, a title page whose details Jellyfin does not return offers to retry instead of loading forever
 
 ## [1.19.3]
