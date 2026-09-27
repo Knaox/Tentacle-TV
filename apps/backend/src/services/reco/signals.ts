@@ -60,6 +60,8 @@ export interface UserSignals {
   episodesPlayedBySeries: Map<string, number>;
   /** seriesId -> date ISO du dernier épisode vu : la décroissance du signal. */
   lastPlayedBySeries: Map<string, string>;
+  /** Les épisodes vus eux-mêmes (durée, date) : l'engagement se mesure en heures. */
+  playedEpisodes: SignalItem[];
   /** Fiches Series de la bibliothèque, pour porter les signaux d'épisodes. */
   seriesById: Map<string, SignalItem>;
 }
@@ -105,6 +107,7 @@ export async function fetchUserSignals(userId: string): Promise<UserSignals> {
     resumable,
     episodesPlayedBySeries,
     lastPlayedBySeries,
+    playedEpisodes,
     seriesById,
   };
 }

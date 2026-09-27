@@ -4,66 +4,27 @@ import { emitProfileRebuilt } from "./recoEvents";
 import { getCachedMetaMany, getTitleMeta } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
 import { ANIME_UNIVERSE_KEY, facetsFromJellyfin, facetsFromTmdb } from "./facets";
-import {
-  EPISODES_PER_MOVIE,
-  SIGNAL_ABANDON,
-  SIGNAL_COMPLETED,
-  SIGNAL_FAVORITE,
-  SIGNAL_REWATCH,
-  SIGNAL_WATCHLISTED,
-  ageInDays,
-  buildFacetVector,
-  ratingSignalWeight,
-  ratingStats,
-  seriesEngagementWeight,
-  truncateVector,
-  universeShare,
-} from "./profileMath";
-import type { WeightedSignal } from "./profileMath";
-import { fetchUserSignals, tmdbIdOf } from "./signals";
-import type { SignalItem } from "./signals";
+import type { FacetEntry } from "./facets";
+import { ratingStats, truncateVector } from "./profileMath";
+import { fetchUserSignals } from "./signals";
 import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
+import { buildAnchors } from "./anchors";
+import type { Anchor } from "./anchors";
+import { measuredViewings, serializeAnchors } from "./anchorStore";
+import type { StoredAnchor } from "./anchorStore";
+import { buildCentroid, consumptionShares, universeShareOf } from "./tasteModel";
 
 /** Appels TMDB au plus par reconstruction : le reste passe par le cache ou le
  *  repli Jellyfin — la reconstruction suivante reprendra où celle-ci s'arrête. */
 const TMDB_FETCH_BUDGET = 40;
+/** Ancres positives les plus fortes dont la fiche doit porter ses voisins
+ *  collaboratifs (mise à niveau du cache, sous le même budget). */
+const NEIGHBORS_UPGRADE_TOP = 150;
 const PROFILE_MAX_FACETS = 400;
 /** Version du profil stocké : 2 = animeShare, 3 = notes sur l'échelle absolue
- *  (point neutre 6,5, plus la moyenne personnelle). Le fan-out de boot
- *  reconstruit une fois les profils d'une version antérieure. */
-export const PROFILE_SCHEMA_VERSION = 3;
-
-const ABANDON_MAX_PROGRESS = 0.25;
-const ABANDON_MIN_IDLE_DAYS = 30;
-
-interface TmdbRef {
-  mediaType: "movie" | "tv";
-  tmdbId: number;
-}
-
-/** Un signal en attente d'enrichissement : identité TMDB et/ou repli Jellyfin. */
-interface PendingSignal {
-  weight: number;
-  ageDays: number;
-  tmdb: TmdbRef | null;
-  fallback: SignalItem | null;
-  /** Consommation réelle (vu, suivi, noté) — la part d'univers se calcule dessus. */
-  consumption: boolean;
-  /** Volume en équivalents-film (séries : épisodes vus / 4) — défaut 1. */
-  volume?: number;
-}
-
-function tmdbTypeOf(item: SignalItem): "movie" | "tv" | null {
-  if (item.Type === "Movie") return "movie";
-  if (item.Type === "Series") return "tv";
-  return null;
-}
-
-function refOf(item: SignalItem): TmdbRef | null {
-  const mediaType = tmdbTypeOf(item);
-  const tmdbId = tmdbIdOf(item);
-  return mediaType && tmdbId ? { mediaType, tmdbId } : null;
-}
+ *  (point neutre 6,5), 4 = ancres du goût (facettes et poids refondus). Le
+ *  fan-out de boot reconstruit une fois les profils d'une version antérieure. */
+export const PROFILE_SCHEMA_VERSION = 4;
 
 // Une reconstruction à la fois par compte : les pokes en rafale s'écrasent.
 const inFlight = new Map<string, Promise<ProfileSummary>>();
@@ -80,7 +41,7 @@ export interface ProfileSummary {
   facetCount: number;
   ratingMean: number;
   ratingStdDev: number;
-  /** Part d'animé dans les signaux de consommation (0..1). */
+  /** Part d'animé dans le temps de visionnage (0..1). */
   animeShare: number;
 }
 
@@ -108,175 +69,101 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
   const prisma = getPrisma();
   if (idfLoadedAt() === 0) await loadIdfFromDb();
 
-  const [ratings, signals] = await Promise.all([
+  const [ratings, likes, feedback, signals, measured] = await Promise.all([
     prisma.userRating.findMany({ where: { jellyfinUserId: userId, deletedAt: null } }),
+    prisma.userLike.findMany({ where: { jellyfinUserId: userId } }),
+    prisma.recommendationFeedback.findMany({ where: { jellyfinUserId: userId } }),
     fetchUserSignals(userId),
+    measuredViewings(userId).catch(() => new Map()),
   ]);
 
   const { mean, stdDev } = ratingStats(ratings.map((r) => r.score));
-  const pendings: PendingSignal[] = [];
+  const { anchors, itemByKey } = buildAnchors({
+    now: Date.now(),
+    ratings,
+    likes,
+    feedback,
+    favorites: signals.favorites,
+    watchlist: signals.watchlist,
+    playedMovies: signals.playedMovies,
+    resumable: signals.resumable,
+    playedEpisodes: signals.playedEpisodes,
+    seriesById: signals.seriesById,
+    measured,
+  });
 
-  // Index (mediaType, tmdbId) -> item de bibliothèque : le repli des notes
-  // quand TMDB est muet — un titre noté ET en bibliothèque garde ses facettes.
-  const libraryByRef = new Map<string, SignalItem>();
-  const indexItem = (item: SignalItem) => {
-    const ref = refOf(item);
-    if (ref) libraryByRef.set(`${ref.mediaType}:${ref.tmdbId}`, item);
-  };
-  signals.favorites.forEach(indexItem);
-  signals.watchlist.forEach(indexItem);
-  signals.playedMovies.forEach(indexItem);
-  signals.seriesById.forEach(indexItem);
-
-  // 1) Notes explicites, sur l'échelle absolue des étoiles (point neutre 6,5).
-  for (const r of ratings) {
-    const mediaType = r.mediaType === "movie" ? "movie" : "tv";
-    pendings.push({
-      weight: ratingSignalWeight(r.score, stdDev),
-      ageDays: ageInDays(r.updatedAt),
-      tmdb: { mediaType, tmdbId: r.tmdbId },
-      fallback: libraryByRef.get(`${mediaType}:${r.tmdbId}`) ?? null,
-      consumption: true,
-    });
-  }
-
-  // 2) Favoris (like fort) et Ma liste (intérêt) — pas de date chez Jellyfin.
-  for (const item of signals.favorites) {
-    pendings.push({ weight: SIGNAL_FAVORITE, ageDays: 0, tmdb: refOf(item), fallback: item, consumption: false });
-  }
-  for (const item of signals.watchlist) {
-    pendings.push({ weight: SIGNAL_WATCHLISTED, ageDays: 0, tmdb: refOf(item), fallback: item, consumption: false });
-  }
-
-  // 3) Films vus (terminé +0.5) et revus (PlayCount >= 2, +0.9).
-  for (const item of signals.playedMovies) {
-    const age = item.UserData?.LastPlayedDate ? ageInDays(item.UserData.LastPlayedDate) : 0;
-    pendings.push({ weight: SIGNAL_COMPLETED, ageDays: age, tmdb: refOf(item), fallback: item, consumption: true });
-    if ((item.UserData?.PlayCount ?? 0) >= 2) {
-      pendings.push({ weight: SIGNAL_REWATCH, ageDays: age, tmdb: refOf(item), fallback: item, consumption: true });
-    }
-  }
-
-  // 4) Abandons : < 25 % de progression, non repris depuis 30 jours. Un
-  //    épisode abandonné pénalise sa SÉRIE (c'est elle qu'on recommande).
-  for (const item of signals.resumable) {
-    const pos = item.UserData?.PlaybackPositionTicks ?? 0;
-    const runtime = item.RunTimeTicks ?? 0;
-    const last = item.UserData?.LastPlayedDate;
-    if (runtime <= 0 || !last) continue;
-    const progress = pos / runtime;
-    const idleDays = ageInDays(last);
-    if (progress >= ABANDON_MAX_PROGRESS || idleDays < ABANDON_MIN_IDLE_DAYS) continue;
-    const target = item.Type === "Episode" && item.SeriesId
-      ? signals.seriesById.get(item.SeriesId) ?? null
-      : item;
-    if (!target) continue;
-    pendings.push({
-      weight: SIGNAL_ABANDON,
-      ageDays: idleDays,
-      tmdb: refOf(target),
-      fallback: target,
-      consumption: false,
-    });
-  }
-
-  // 5) Séries suivies (≥ 3 épisodes vus) : le poids suit l'ENGAGEMENT — 86
-  //    épisodes de Fire Force pèsent 1,0, trois épisodes essayés 0,6 — et la
-  //    date du dernier épisode vu fait décroître le signal, comme un film.
-  for (const [seriesId, count] of signals.episodesPlayedBySeries) {
-    const weight = seriesEngagementWeight(count);
-    if (weight <= 0) continue;
-    const series = signals.seriesById.get(seriesId);
-    if (!series) continue;
-    const last = signals.lastPlayedBySeries.get(seriesId);
-    pendings.push({
-      weight,
-      ageDays: last ? ageInDays(last) : 0,
-      tmdb: refOf(series),
-      fallback: series,
-      consumption: true,
-      volume: Math.max(1, count / EPISODES_PER_MOVIE),
-    });
-  }
-
-  // Enrichissement TMDB sous budget : le cache est gratuit, les fetchs vont
-  // d'abord aux titres au signal le plus fort.
-  const metaByRef = await resolveMeta(pendings);
-
-  const weighted: WeightedSignal[] = [];
-  for (const p of pendings) {
-    const meta = p.tmdb ? metaByRef.get(`${p.tmdb.mediaType}:${p.tmdb.tmdbId}`) : undefined;
-    const facets = meta ? facetsFromTmdb(meta) : p.fallback ? facetsFromJellyfin(p.fallback) : [];
+  // Fiches TMDB des ancres : cache gratuit, budget de fetchs pour les plus
+  // fortes (absentes, ou sans voisins collaboratifs).
+  const metaByKey = await resolveAnchorMeta(anchors);
+  const facetsByKey = new Map<string, FacetEntry[]>();
+  const stored: StoredAnchor[] = [];
+  for (const a of anchors) {
+    const meta = metaByKey.get(a.key);
+    const fallback = itemByKey.get(a.key);
+    const facets = meta ? facetsFromTmdb(meta) : fallback ? facetsFromJellyfin(fallback) : [];
     if (facets.length === 0) continue;
-    weighted.push({
-      weight: p.weight,
-      ageDays: p.ageDays,
-      facets,
-      consumption: p.consumption,
-      volume: p.volume,
-    });
+    if (!a.title && meta) a.title = meta.title;
+    facetsByKey.set(a.key, facets);
+    // Les facettes de repli voyagent avec l'ancre : TMDB ne les connaît pas.
+    stored.push(meta ? a : { ...a, facets });
   }
 
-  const vector = truncateVector(buildFacetVector(weighted, idfFor), PROFILE_MAX_FACETS);
+  const facetsOf = (a: Anchor) => facetsByKey.get(a.key) ?? null;
+  const shares = consumptionShares(stored);
+  const vector = truncateVector(buildCentroid(stored, facetsOf, idfFor, shares), PROFILE_MAX_FACETS);
   const facetCount = Object.keys(vector).length;
-  // Part d'animé en TEMPS DE VISIONNAGE sur les signaux de CONSOMMATION
-  // (films vus, séries suivies, notes) — ni favoris ni Ma liste : c'est ce
-  // qu'on REGARDE qui décide. Un compte peut n'avoir aucun favori animé et en
-  // regarder un soir sur trois.
-  const animeShare = universeShare(
-    weighted.filter((s) => s.consumption),
-    ANIME_UNIVERSE_KEY
+  // Part d'animé en TEMPS DE VISIONNAGE sur les ancres de CONSOMMATION : c'est
+  // ce qu'on REGARDE qui décide, pas ce qu'on met en favori.
+  const animeShare = universeShareOf(stored, (a) =>
+    (facetsOf(a) ?? []).some((f) => f.key === ANIME_UNIVERSE_KEY)
   );
+  // Compte de signaux (et non d'ancres) : les seuils froid/tiède du service
+  // gardent leur sens — un titre vu, noté et en favori, c'est trois signaux.
+  const signalCount = stored.reduce((s, a) => s + a.kinds.length, 0);
 
+  const data = {
+    facets: JSON.stringify(vector),
+    anchors: serializeAnchors(stored),
+    signalCount,
+    ratingMean: mean,
+    ratingStdDev: stdDev,
+    animeShare,
+    schemaVersion: PROFILE_SCHEMA_VERSION,
+  };
   await prisma.tasteProfile.upsert({
     where: { jellyfinUserId: userId },
-    create: {
-      jellyfinUserId: userId,
-      facets: JSON.stringify(vector),
-      signalCount: weighted.length,
-      ratingMean: mean,
-      ratingStdDev: stdDev,
-      animeShare,
-      schemaVersion: PROFILE_SCHEMA_VERSION,
-    },
-    update: {
-      facets: JSON.stringify(vector),
-      signalCount: weighted.length,
-      ratingMean: mean,
-      ratingStdDev: stdDev,
-      animeShare,
-      schemaVersion: PROFILE_SCHEMA_VERSION,
-      computedAt: new Date(),
-    },
+    create: { jellyfinUserId: userId, ...data },
+    update: { ...data, computedAt: new Date() },
   });
   emitProfileRebuilt(userId);
 
-  return { signalCount: weighted.length, facetCount, ratingMean: mean, ratingStdDev: stdDev, animeShare };
+  return { signalCount, facetCount, ratingMean: mean, ratingStdDev: stdDev, animeShare };
 }
 
-async function resolveMeta(pendings: PendingSignal[]): Promise<Map<string, TitleMeta>> {
-  // Poids maximal par identité : les fetchs frais vont aux titres marquants.
-  const strength = new Map<string, { ref: TmdbRef; max: number }>();
-  for (const p of pendings) {
-    if (!p.tmdb) continue;
-    const key = `${p.tmdb.mediaType}:${p.tmdb.tmdbId}`;
-    const cur = strength.get(key);
-    const abs = Math.abs(p.weight);
-    if (!cur || abs > cur.max) strength.set(key, { ref: p.tmdb, max: abs });
-  }
-
-  // Une seule lecture groupée du cache — la boucle par titre coûtait une
-  // requête Prisma par identité sur un historique fourni.
-  const out = await getCachedMetaMany([...strength.values()].map((s) => s.ref));
-  const misses: Array<{ key: string; ref: TmdbRef; max: number }> = [];
-  for (const [key, { ref, max }] of strength) {
-    if (!out.has(key)) misses.push({ key, ref, max });
-  }
-
-  misses.sort((a, b) => b.max - a.max);
-  for (const { key, ref } of misses.slice(0, TMDB_FETCH_BUDGET)) {
-    const meta = await getTitleMeta(ref.mediaType, ref.tmdbId, { priority: "background" });
-    if (meta) out.set(key, meta);
+/**
+ * Fiches des ancres : une lecture groupée du cache, puis le budget de fetchs
+ * TMDB — d'abord les ancres sans fiche (les plus fortes en tête), puis la
+ * mise à niveau des fortes dont la fiche ne porte pas encore ses voisins
+ * collaboratifs. La reconstruction suivante reprend où celle-ci s'arrête.
+ */
+async function resolveAnchorMeta(anchors: readonly Anchor[]): Promise<Map<string, TitleMeta>> {
+  const withTmdb = anchors.filter((a) => a.tmdbId > 0);
+  const out = await getCachedMetaMany(withTmdb.map((a) => ({ mediaType: a.mediaType, tmdbId: a.tmdbId })));
+  const byStrength = withTmdb.slice().sort((x, y) => Math.abs(y.weight) - Math.abs(x.weight));
+  const misses = byStrength.filter((a) => !out.has(a.key));
+  const upgrades = byStrength
+    .filter((a) => a.weight > 0)
+    .slice(0, NEIGHBORS_UPGRADE_TOP)
+    .filter((a) => {
+      const meta = out.get(a.key);
+      return !!meta && meta.recommendations == null;
+    });
+  let budget = TMDB_FETCH_BUDGET;
+  for (const a of [...misses, ...upgrades]) {
+    if (budget <= 0) break;
+    budget--;
+    const meta = await getTitleMeta(a.mediaType, a.tmdbId, { priority: "background", upgrade: true });
+    if (meta) out.set(a.key, meta);
   }
   return out;
 }
