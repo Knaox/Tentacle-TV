@@ -12,6 +12,7 @@ import {
   mergeUniverseFacets,
   runtimeBucket,
 } from "./facets";
+import { DEFAULT_FACET_WEIGHTS, NETWORKS_MAX, STUDIOS_MAX } from "./facetWeights";
 import type { TitleMeta } from "../tmdb/metaCache";
 
 const META: TitleMeta = {
@@ -46,15 +47,50 @@ describe("facettes TMDB", () => {
   const entries = facetsFromTmdb(META);
   const byKey = new Map(entries.map((e) => [e.key, e.mult]));
 
-  it("le réalisateur pèse deux fois un acteur", () => {
-    expect(byKey.get("director:9339")).toBe(2);
-    expect(byKey.get("actor:6384")).toBe(1);
+  it("chaque famille porte son poids : l'auteur d'un film pèse plus qu'un acteur", () => {
+    expect(byKey.get("director:9339")).toBe(DEFAULT_FACET_WEIGHTS.director);
+    expect(byKey.get("actor:6384")).toBe(DEFAULT_FACET_WEIGHTS.actor);
+    expect(DEFAULT_FACET_WEIGHTS.director).toBeGreaterThan(DEFAULT_FACET_WEIGHTS.actor);
   });
 
   it("genres, keywords, studio, décennie, langue et durée sont présents", () => {
     for (const key of ["genre:28", "kw:310", "kw:4565", "studio:79", "decade:1990", "lang:en", "runtime:long"]) {
       expect(byKey.has(key), key).toBe(true);
     }
+  });
+
+  it("les mots-clés de production (générique, suite, remake…) ne font pas facette", () => {
+    const keys = facetsFromTmdb({
+      ...META,
+      keywords: [
+        { id: 179431, name: "duringcreditsstinger" },
+        { id: 9663, name: "sequel" },
+        { id: 310, name: "artificial intelligence" },
+      ],
+    }).map((e) => e.key);
+    expect(keys).toContain("kw:310");
+    expect(keys).not.toContain("kw:179431");
+    expect(keys).not.toContain("kw:9663");
+  });
+
+  it("studios et chaînes plafonnés : un comité de production ne relie pas tout", () => {
+    const many = (n: number) => Array.from({ length: n }, (_, i) => ({ id: i + 1, name: `S${i}` }));
+    const keys = facetsFromTmdb({ ...META, mediaType: "tv", studios: many(8), networks: many(6) }).map((e) => e.key);
+    expect(keys.filter((k) => k.startsWith("studio:"))).toHaveLength(STUDIOS_MAX);
+    expect(keys.filter((k) => k.startsWith("network:"))).toHaveLength(NETWORKS_MAX);
+  });
+
+  it("une série n'a pas de facette de durée (la durée d'un épisode ne dit rien)", () => {
+    const keys = facetsFromTmdb({ ...META, mediaType: "tv", runtimeMinutes: 24 }).map((e) => e.key);
+    expect(keys.some((k) => k.startsWith("runtime:"))).toBe(false);
+    // Le créateur d'une série garde la clé director:, à son propre poids.
+    const creator = facetsFromTmdb({ ...META, mediaType: "tv" }).find((e) => e.key === "director:9339");
+    expect(creator?.mult).toBe(DEFAULT_FACET_WEIGHTS.creator);
+  });
+
+  it("une animation : les acteurs sont des voix, elles pèsent moins", () => {
+    const animated = facetsFromTmdb({ ...META, genres: [{ id: 16, name: "Animation" }] });
+    expect(animated.find((e) => e.key === "actor:6384")?.mult).toBe(DEFAULT_FACET_WEIGHTS.voiceActor);
   });
 });
 
@@ -89,6 +125,13 @@ describe("facettes de repli Jellyfin", () => {
     expect(keys).toContain("runtime:long");
     // Jamais l'espace des IDs TMDB.
     expect(keys.every((k) => !k.startsWith("genre:") && !k.startsWith("studio:"))).toBe(true);
+  });
+
+  it("une fiche Series n'a pas de facette de durée", () => {
+    const series = facetsFromJellyfin({ Type: "Series", RunTimeTicks: 24 * 600_000_000, ProductionYear: 2019 });
+    expect(series.some((e) => e.key.startsWith("runtime:"))).toBe(false);
+    const byType = facetsFromJellyfin({ mediaType: "tv", RunTimeTicks: 24 * 600_000_000 });
+    expect(byType.some((e) => e.key.startsWith("runtime:"))).toBe(false);
   });
 });
 

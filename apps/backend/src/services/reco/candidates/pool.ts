@@ -2,15 +2,18 @@ import type { Candidate } from "../scoring/strategy";
 
 /** Plafond d'ASSEMBLAGE — au-delà, les sources suivantes ne sont plus lues.
  *  Le pool classé et stocké reste tronqué à 1000 (generationJob) : ici on ne
- *  paie qu'un classement plus large. À 1000, graines (~640) + bibliothèque
- *  (300) + personnes (240) coupaient Vigie et /discover en silence. */
-export const POOL_MAX = 2000;
+ *  paie qu'un classement plus large. La bibliothèque entière (non vue), les
+ *  graines et les voisins des ancres passent avant Vigie et /discover. */
+export const POOL_MAX = 3000;
 
 /** Rétro-remplit les champs annexes du gagnant depuis le doublon perdant :
  *  un titre à la fois en bibliothèque ET recommandé par une graine garde les
  *  DEUX vérités (jellyfinItemId pour naviguer, seedKey pour la rangée
- *  « Parce que vous avez aimé », visuels TMDB pour l'affichage). */
+ *  « Parce que vous avez aimé », visuels TMDB pour l'affichage). Le soutien
+ *  des graines se CUMULE : six graines qui recommandent un titre en disent
+ *  plus qu'une. */
 function backfill(winner: Candidate, loser: Candidate): void {
+  if (loser.seedSupport) winner.seedSupport = (winner.seedSupport ?? 0) + loser.seedSupport;
   winner.seedKey = winner.seedKey ?? loser.seedKey;
   winner.personKey = winner.personKey ?? loser.personKey;
   winner.posterPath = winner.posterPath ?? loser.posterPath;

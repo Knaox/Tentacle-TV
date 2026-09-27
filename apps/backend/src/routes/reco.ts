@@ -108,6 +108,12 @@ export const recoRoutes: FastifyPluginAsync = async (app) => {
         inLibrary: !!e.candidate.jellyfinItemId,
         total: e.breakdown.total,
         similarity: e.breakdown.similarity,
+        // Classement à ancres : proximité aux titres aimés, soutien des
+        // graines, ressemblance aux refus, et les titres aimés qui portent.
+        relevance: e.breakdown.relevance,
+        seedSupport: e.breakdown.seedSupport,
+        negative: e.breakdown.negative,
+        anchors: e.breakdown.topAnchors?.map((a) => a.title),
         contributors: e.breakdown.topContributors.slice(0, 3),
       })),
     };

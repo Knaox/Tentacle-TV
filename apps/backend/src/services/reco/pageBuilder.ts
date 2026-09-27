@@ -2,13 +2,14 @@ import { getSeerrConfig } from "../seerConfig";
 import { getWatchProviderDirectory, providerRefOf } from "../tmdb/providerDirectory";
 import type { ProviderRef } from "../tmdb/providerNormalize";
 import { attachProviders } from "./attachProviders";
+import { libraryExclusionKeys } from "./candidates/exclusions";
 import type { LibraryIndex } from "./candidates/libraryIndex";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
 import { buildCommunityRow } from "./communityRow";
 import { requestPoolRelief } from "./generationJob";
 import type { PoolEntry, PoolPayload } from "./generationJob";
-import { GLOBAL_ROW_KEYS, buildGlobalRow, fallbackRowList, weaveGlobalRows } from "./globalRows";
-import { dropThinRows } from "./pageRows";
+import { BEST_OF_LIBRARY_ROW_KEY, GLOBAL_ROW_KEYS, buildGlobalRow, fallbackRowList, weaveGlobalRows } from "./globalRows";
+import { dropThinRows, rankByPool } from "./pageRows";
 import { SNAPSHOT_VERSION, readGlobalsStamp } from "./pageSnapshot";
 import type { PageSnapshot, SnapshotRow } from "./pageSnapshot";
 import { readPoolRow } from "./poolStore";
@@ -54,12 +55,20 @@ export async function prepareBuildBase(userId: string, ctx: ServeContext): Promi
   const row = personalized ? await readPoolRow(userId) : null;
   if (row?.pool.preliminary) requestPoolRelief(userId);
   const library = await getLibraryIndexMemo(userId);
+  // L'index lu ici peut être plus frais que celui du contexte (absent au
+  // premier contact) : vus, favoris et Ma liste sortent aussi de la page.
+  for (const key of libraryExclusionKeys(library.entries)) ctx.exclude.add(key);
 
+  // Tendances et pouls du serveur : les mêmes titres pour tous, ordonnés
+  // selon le goût du compte (score de son pool) ; « les mieux notés » garde
+  // l'ordre des notes, c'est son titre.
+  const scoreOf = row ? new Map(row.pool.entries.map((e) => [e.candidate.key, e.breakdown.total])) : null;
   const globalRows = new Map<string, SnapshotRow>();
   for (const key of GLOBAL_ROW_KEYS) {
     const built = await buildGlobalRow(userId, key, ctx);
-    await attachProviders(built.items);
-    globalRows.set(key, { key, items: built.items });
+    const items = key === BEST_OF_LIBRARY_ROW_KEY ? built.items : rankByPool(built.items, scoreOf);
+    await attachProviders(items);
+    globalRows.set(key, { key, items });
     await yieldToLoop();
   }
   if (ctx.community) {

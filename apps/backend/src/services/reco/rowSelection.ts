@@ -45,6 +45,8 @@ export function explorationPicks(
         key: e.candidate.key,
         novelty: noveltyOf(profile, e.candidate.facets.map((f) => f.key)),
         quality: e.breakdown.quality,
+        relevance: e.breakdown.relevance,
+        negative: e.breakdown.negative,
       })),
     count
   );
@@ -92,12 +94,28 @@ export function interleaveEvenly<T>(main: T[], extra: T[]): T[] {
   return out;
 }
 
+/** Plafond d'univers : la part du compte × 1,3, plus une marge de 5 %. */
+const UNIVERSE_CAP_FACTOR = 1.3;
+const UNIVERSE_CAP_MARGIN = 0.05;
+const UNIVERSE_CAP_MAX_SHARE = 0.8;
+
 /**
- * Sélection d'une rangée mixte avec quota d'univers : l'univers d'ABORD (MMR
+ * Emplacements que l'univers peut occuper AU PLUS dans une rangée mixte. Deux
+ * animés se ressemblent toujours plus que deux films en prises de vues
+ * réelles (genre, langue, mot-clé communs) : sans plafond, un compte à 21 %
+ * d'animés en recevait neuf sur vingt en tête.
+ */
+export function universeCap(slots: number, share: number): number {
+  if (slots <= 0) return 0;
+  const ratio = Math.min(UNIVERSE_CAP_MAX_SHARE, share * UNIVERSE_CAP_FACTOR + UNIVERSE_CAP_MARGIN);
+  return Math.min(slots, Math.max(universeQuota(slots, share), Math.round(slots * ratio)));
+}
+
+/**
+ * Sélection d'une rangée mixte, bornée par l'univers : le quota d'ABORD (MMR
  * sur ses entrées, facettes communes ignorées), puis le MMR principal sur le
- * reste pour les emplacements restants — taille exacte, quota garanti, et un
- * animé mieux classé peut en plus entrer par la voie principale. Part sous le
- * seuil : mmrPick tel quel, à l'identique.
+ * reste — où l'univers n'entre plus que jusqu'à son plafond, les mieux
+ * classés d'abord. Taille exacte, quota garanti, plafond tenu.
  */
 export function pickWithUniverseQuota(
   entries: PoolEntry[],
@@ -106,9 +124,19 @@ export function pickWithUniverseQuota(
   share: number
 ): PoolEntry[] {
   const quota = universeQuota(slots, share);
-  if (quota === 0) return mmrPick(entries, slots, lambda);
-  const anime = mmrPick(entries.filter(isAnimeEntry), quota, lambda, ANIME_COMMON_FACETS);
+  const cap = universeCap(slots, share);
+  const universe = entries.filter(isAnimeEntry);
+  const anime = quota > 0 ? mmrPick(universe, quota, lambda, ANIME_COMMON_FACETS) : [];
   const taken = new Set(anime.map((e) => e.candidate.key));
-  const main = mmrPick(entries.filter((e) => !taken.has(e.candidate.key)), slots - anime.length, lambda);
+  const extra = new Set(
+    universe
+      .filter((e) => !taken.has(e.candidate.key))
+      .slice(0, Math.max(0, cap - anime.length))
+      .map((e) => e.candidate.key)
+  );
+  const mainInput = entries.filter(
+    (e) => !taken.has(e.candidate.key) && (!isAnimeEntry(e) || extra.has(e.candidate.key))
+  );
+  const main = mmrPick(mainInput, slots - anime.length, lambda);
   return interleaveEvenly(main, anime);
 }

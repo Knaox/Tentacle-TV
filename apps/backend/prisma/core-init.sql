@@ -340,6 +340,7 @@ CREATE TABLE IF NOT EXISTS `taste_profiles` (
   `ratingMean` double NOT NULL DEFAULT 0,
   `ratingStdDev` double NOT NULL DEFAULT 0,
   `animeShare` double NOT NULL DEFAULT 0,
+  `anchors` mediumtext NULL,
   `schemaVersion` int(11) NOT NULL DEFAULT 1,
   `computedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`id`),
@@ -348,6 +349,9 @@ CREATE TABLE IF NOT EXISTS `taste_profiles` (
 -- Part d'animé, ajoutée après la première livraison du moteur : une base
 -- existante la reçoit ici (idempotent), une base neuve la tient du CREATE.
 ALTER TABLE `taste_profiles` ADD COLUMN IF NOT EXISTS `animeShare` double NOT NULL DEFAULT 0;
+-- Ancres du goût (titres pondérés, cf. services/reco/anchors.ts), venues avec
+-- le classement à ancres : NULL = profil d'avant, reconstruit au démarrage.
+ALTER TABLE `taste_profiles` ADD COLUMN IF NOT EXISTS `anchors` mediumtext NULL;
 
 -- Réglages de recommandation par compte. Voir schema.prisma > RecoSettings.
 CREATE TABLE IF NOT EXISTS `reco_settings` (

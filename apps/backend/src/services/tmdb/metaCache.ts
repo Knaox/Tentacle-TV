@@ -3,6 +3,8 @@ import { tmdbConfigured, tmdbFetch } from "./client";
 import type { TmdbPriority } from "./client";
 import { normalizeProviders, watchRegion } from "./providerNormalize";
 import type { ProviderRef, RawWatchProvidersBlock } from "./providerNormalize";
+import { neighborsOf, slimRecommendations } from "./titleNeighbors";
+import type { RawRecommendations, TitleNeighbor } from "./titleNeighbors";
 
 // Le type des plateformes vit désormais dans providerNormalize ; ré-exporté
 // pour les importeurs historiques (rowBuilder, providerDirectory…).
@@ -30,6 +32,8 @@ export interface TitleMeta {
   studios: NamedRef[];
   networks: NamedRef[];
   year: number | null;
+  /** Date de sortie (film) ou de première diffusion (série), « AAAA-MM-JJ ». */
+  releaseDate?: string | null;
   originalLanguage: string | null;
   /** Pays d'origine ISO 3166-1 (films ET séries) — l'indice « animé » quand
    *  la langue ment (coproduction doublée en anglais). */
@@ -43,6 +47,9 @@ export interface TitleMeta {
   /** Plateformes de la région configurée — null = ligne d'AVANT la clé
    *  watch/providers (« inconnu »), [] = aucune offre incluse. */
   providers: ProviderRef[] | null;
+  /** Voisins collaboratifs TMDB (ordre de la liste) — null ou absent = ligne
+   *  d'avant la clé `recommendations`. */
+  recommendations?: TitleNeighbor[] | null;
 }
 
 // Les métadonnées d'un titre ne changent quasiment jamais : 30 jours, avec un
@@ -77,6 +84,8 @@ interface RawTmdbTitle {
   backdrop_path?: string | null;
   // Clé LITTÉRALE avec slash — c'est la forme de l'API TMDB.
   "watch/providers"?: RawWatchProvidersBlock;
+  /** Réduit aux ids avant stockage (cf. titleNeighbors). */
+  recommendations?: RawRecommendations;
 }
 
 /** `origin_country` (films ET séries), sinon les pays de production. */
@@ -120,6 +129,7 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     studios: named(raw.production_companies ?? []),
     networks: named(raw.networks ?? []),
     year,
+    releaseDate: date || null,
     originalLanguage: raw.original_language ?? null,
     originCountry: originCountryOf(raw),
     runtimeMinutes: raw.runtime ?? raw.episode_run_time?.[0] ?? null,
@@ -131,6 +141,7 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     backdropPath: raw.backdrop_path ?? null,
     // Région résolue à la LECTURE : changer de région ne demande aucun refetch.
     providers: normalizeProviders(raw["watch/providers"], watchRegion()),
+    recommendations: neighborsOf(raw.recommendations, mediaType),
   };
 }
 
@@ -202,29 +213,34 @@ export async function getCachedMetaMany(
 
 /**
  * Métadonnées d'un titre : cache d'abord, sinon UN appel TMDB
- * (`append_to_response=keywords,credits,watch/providers` — détails, mots-clés,
- * casting et plateformes en une seule requête). Rend null si TMDB n'est pas
- * configuré ou en échec : le moteur dégrade sur les facettes Jellyfin.
+ * (`append_to_response=keywords,credits,watch/providers,recommendations` —
+ * détails, mots-clés, casting, plateformes et voisins collaboratifs en une
+ * seule requête). Rend null si TMDB n'est pas configuré ou en échec : le
+ * moteur dégrade sur les facettes Jellyfin.
  *
  * Invalidation DOUCE : une ligne d'avant la clé watch/providers vaut un
  * défaut de cache — refetch sous les budgets existants, le cache de 30 jours
- * se met à niveau progressivement, top titres d'abord.
+ * se met à niveau progressivement, top titres d'abord. Une ligne sans
+ * `recommendations` reste servie telle quelle, sauf `upgrade` : le profil de
+ * goût paie ce refetch pour ses titres forts (sous son budget).
  */
 export async function getTitleMeta(
   mediaType: "movie" | "tv",
   tmdbId: number,
-  opts: { priority?: TmdbPriority } = {}
+  opts: { priority?: TmdbPriority; upgrade?: boolean } = {}
 ): Promise<TitleMeta | null> {
   const cached = await readCachedRaw(mediaType, tmdbId);
-  if (cached && "watch/providers" in cached) return normalize(mediaType, cached);
+  const upToDate = cached && "watch/providers" in cached && (!opts.upgrade || "recommendations" in cached);
+  if (cached && upToDate) return normalize(mediaType, cached);
   if (!tmdbConfigured()) return cached ? normalize(mediaType, cached) : null;
 
   try {
     const raw = await tmdbFetch<RawTmdbTitle>(
       `/${mediaType}/${tmdbId}`,
-      { append_to_response: "keywords,credits,watch/providers" },
+      { append_to_response: "keywords,credits,watch/providers,recommendations" },
       { priority: opts.priority }
     );
+    raw.recommendations = slimRecommendations(raw.recommendations, mediaType);
     const prisma = getPrisma();
     const expiresAt = new Date(Date.now() + TTL_MS + Math.random() * TTL_JITTER_MS);
     await prisma.tmdbMetaCache.upsert({

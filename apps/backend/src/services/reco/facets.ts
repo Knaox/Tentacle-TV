@@ -1,13 +1,12 @@
 import type { TitleMeta } from "../tmdb/metaCache";
+import { DEFAULT_FACET_WEIGHTS, FACET_STOP_KEYWORDS, NETWORKS_MAX, STUDIOS_MAX } from "./facetWeights";
+import type { FacetWeights } from "./facetWeights";
 
 /** Une facette d'un titre, avec son multiplicateur intrinsèque. */
 export interface FacetEntry {
   key: string;
   mult: number;
 }
-
-/** Réalisateur ×2 par rapport aux acteurs — la signature d'auteur pèse. */
-const DIRECTOR_MULT = 2;
 
 /** Bucket de durée : < 90, 90-120, 120-150, > 150 minutes. */
 export function runtimeBucket(minutes: number): "short" | "standard" | "long" | "epic" {
@@ -97,23 +96,36 @@ export function mergeUniverseFacets(prev: readonly FacetEntry[], next: FacetEntr
  * Facettes d'un titre depuis ses métadonnées TMDB. Espaces de clés par
  * préfixe : `genre:`/`kw:`/`director:`/`actor:`/`studio:`/`network:` portent
  * des IDs TMDB ; `decade:`/`lang:`/`runtime:`/`universe:` sont neutres et
- * partagés avec l'extraction Jellyfin.
+ * partagés avec l'extraction Jellyfin. Les mots-clés de production sont
+ * écartés, studios et chaînes plafonnés (cf. facetWeights) ; la durée ne vaut
+ * que pour un film — celle d'une série est la durée d'un épisode, 25 minutes
+ * pour presque toutes, donc un « court » commun à tout le catalogue.
  */
-export function facetsFromTmdb(meta: TitleMeta): FacetEntry[] {
+export function facetsFromTmdb(
+  meta: TitleMeta,
+  weights: Readonly<FacetWeights> = DEFAULT_FACET_WEIGHTS
+): FacetEntry[] {
   const out: FacetEntry[] = [];
-  for (const g of meta.genres) out.push({ key: `genre:${g.id}`, mult: 1 });
+  const animation = meta.genres.some((g) => g.id === TMDB_GENRE_ANIMATION);
+  for (const g of meta.genres) out.push({ key: `genre:${g.id}`, mult: weights.genre });
   // Les keywords sont la facette la plus discriminante du profil.
-  for (const k of meta.keywords) out.push({ key: `kw:${k.id}`, mult: 1 });
-  for (const d of meta.directors) out.push({ key: `director:${d.id}`, mult: DIRECTOR_MULT });
-  for (const a of meta.topCast) out.push({ key: `actor:${a.id}`, mult: 1 });
-  for (const s of meta.studios) out.push({ key: `studio:${s.id}`, mult: 1 });
-  for (const n of meta.networks) out.push({ key: `network:${n.id}`, mult: 1 });
-  if (meta.year != null) out.push({ key: `decade:${decadeOf(meta.year)}`, mult: 1 });
-  if (meta.originalLanguage) out.push({ key: `lang:${meta.originalLanguage}`, mult: 1 });
-  if (meta.runtimeMinutes != null && meta.runtimeMinutes > 0) {
-    out.push({ key: `runtime:${runtimeBucket(meta.runtimeMinutes)}`, mult: 1 });
+  for (const k of meta.keywords) {
+    if (!FACET_STOP_KEYWORDS.has(k.id)) out.push({ key: `kw:${k.id}`, mult: weights.keyword });
   }
-  if (isAnimeTmdb(meta)) out.push({ key: ANIME_UNIVERSE_KEY, mult: 1 });
+  const authorMult = meta.mediaType === "movie" ? weights.director : weights.creator;
+  for (const d of meta.directors) out.push({ key: `director:${d.id}`, mult: authorMult });
+  const actorMult = animation ? weights.voiceActor : weights.actor;
+  for (const a of meta.topCast) out.push({ key: `actor:${a.id}`, mult: actorMult });
+  for (const s of meta.studios.slice(0, STUDIOS_MAX)) out.push({ key: `studio:${s.id}`, mult: weights.studio });
+  for (const n of meta.networks.slice(0, NETWORKS_MAX)) {
+    out.push({ key: `network:${n.id}`, mult: weights.network });
+  }
+  if (meta.year != null) out.push({ key: `decade:${decadeOf(meta.year)}`, mult: weights.decade });
+  if (meta.originalLanguage) out.push({ key: `lang:${meta.originalLanguage}`, mult: weights.lang });
+  if (meta.mediaType === "movie" && meta.runtimeMinutes != null && meta.runtimeMinutes > 0) {
+    out.push({ key: `runtime:${runtimeBucket(meta.runtimeMinutes)}`, mult: weights.runtime });
+  }
+  if (isAnimeTmdb(meta)) out.push({ key: ANIME_UNIVERSE_KEY, mult: weights.universe });
   return out;
 }
 
@@ -127,6 +139,10 @@ export interface JellyfinFacetSource {
   OriginalLanguage?: string;
   /** Ids externes — AniDB/AniList signent un animé. */
   ProviderIds?: Record<string, string>;
+  /** Type Jellyfin (« Series ») ou type canonique (« tv ») : la durée d'une
+   *  fiche Series est celle d'un épisode, elle ne fait pas facette. */
+  Type?: string;
+  mediaType?: "movie" | "tv";
 }
 
 const TICKS_PER_MINUTE = 600_000_000;
@@ -140,20 +156,26 @@ function slug(name: string): string {
  * `studio-name:` distincts des IDs TMDB : les deux mondes ne doivent jamais
  * se mélanger dans le même compteur IDF. Seul `universe:` traverse.
  */
-export function facetsFromJellyfin(item: JellyfinFacetSource): FacetEntry[] {
+export function facetsFromJellyfin(
+  item: JellyfinFacetSource,
+  weights: Readonly<FacetWeights> = DEFAULT_FACET_WEIGHTS
+): FacetEntry[] {
   const out: FacetEntry[] = [];
   for (const g of item.Genres ?? []) {
-    if (g) out.push({ key: `genre-name:${slug(g)}`, mult: 1 });
+    if (g) out.push({ key: `genre-name:${slug(g)}`, mult: weights.genre });
   }
-  for (const s of item.Studios ?? []) {
-    if (s.Name) out.push({ key: `studio-name:${slug(s.Name)}`, mult: 1 });
+  for (const s of (item.Studios ?? []).slice(0, STUDIOS_MAX)) {
+    if (s.Name) out.push({ key: `studio-name:${slug(s.Name)}`, mult: weights.studio });
   }
-  if (item.ProductionYear) out.push({ key: `decade:${decadeOf(item.ProductionYear)}`, mult: 1 });
-  if (item.OriginalLanguage) out.push({ key: `lang:${item.OriginalLanguage}`, mult: 1 });
-  if (item.RunTimeTicks && item.RunTimeTicks > 0) {
+  if (item.ProductionYear) {
+    out.push({ key: `decade:${decadeOf(item.ProductionYear)}`, mult: weights.decade });
+  }
+  if (item.OriginalLanguage) out.push({ key: `lang:${item.OriginalLanguage}`, mult: weights.lang });
+  const series = item.Type === "Series" || item.mediaType === "tv";
+  if (!series && item.RunTimeTicks && item.RunTimeTicks > 0) {
     const minutes = item.RunTimeTicks / TICKS_PER_MINUTE;
-    out.push({ key: `runtime:${runtimeBucket(minutes)}`, mult: 1 });
+    out.push({ key: `runtime:${runtimeBucket(minutes)}`, mult: weights.runtime });
   }
-  if (isAnimeJellyfin(item)) out.push({ key: ANIME_UNIVERSE_KEY, mult: 1 });
+  if (isAnimeJellyfin(item)) out.push({ key: ANIME_UNIVERSE_KEY, mult: weights.universe });
   return out;
 }

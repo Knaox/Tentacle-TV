@@ -5,7 +5,7 @@ import { facetsFromTmdb, mergeUniverseFacets } from "./facets";
 import { providerIdsOf } from "./poolProviders";
 import type { LibraryIndex } from "./candidates/libraryIndex";
 import type { PoolEntry } from "./generationJob";
-import type { ScoringStrategy, TasteVector } from "./scoring/strategy";
+import type { Candidate, ScoringStrategy, TasteVector } from "./scoring/strategy";
 
 /** Le haut du pré-classement enrichi en métadonnées complètes (keywords…). */
 const ENRICH_TOP = 120;
@@ -47,6 +47,29 @@ function harvestLabels(meta: TitleMeta, labels: Record<string, string>): void {
   for (const a of meta.topCast) if (a.name) labels[`actor:${a.id}`] = a.name;
   for (const s of meta.studios) if (s.name) labels[`studio:${s.id}`] = s.name;
   for (const n of meta.networks) if (n.name) labels[`network:${n.id}`] = n.name;
+}
+
+/**
+ * Facettes COMPLÈTES pour tout le panier, depuis le cache seul (zéro réseau) :
+ * sans elles, un titre de bibliothèque n'était comparé au profil que sur sa
+ * décennie et sa langue — genres Jellyfin et ids TMDB ne se rencontrent pas,
+ * et seuls les 120 premiers d'un pré-classement… par récence étaient enrichis.
+ */
+export async function applyCachedMeta(candidates: Candidate[]): Promise<void> {
+  const metas = await getCachedMetaMany(
+    candidates.map((c) => ({ mediaType: c.mediaType, tmdbId: c.tmdbId }))
+  );
+  for (const c of candidates) {
+    const meta = metas.get(metaKey(c.mediaType, c.tmdbId));
+    if (!meta) continue;
+    c.facets = mergeUniverseFacets(c.facets, facetsFromTmdb(meta));
+    c.posterPath = c.posterPath ?? meta.posterPath;
+    c.backdropPath = c.backdropPath ?? meta.backdropPath;
+    c.voteAverage = meta.voteAverage ?? c.voteAverage;
+    c.voteCount = meta.voteCount ?? c.voteCount;
+    c.popularity = meta.popularity ?? c.popularity;
+    c.year = meta.year ?? c.year;
+  }
 }
 
 /**

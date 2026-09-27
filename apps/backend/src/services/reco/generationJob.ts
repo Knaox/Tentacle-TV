@@ -1,20 +1,14 @@
 import { getPrisma } from "../db";
 import { awaitRebuild } from "./profileBuilder";
 import { getTitleMeta } from "../tmdb/metaCache";
-import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
+import { idfLoadedAt, loadIdfFromDb } from "./idfStore";
 import { enrichTopEntries } from "./poolEnrichment";
-import { FacetScoringStrategy } from "./scoring/facetStrategy";
+import { gatherCandidates } from "./poolSources";
+import { preparePoolTaste } from "./poolTaste";
 import type { Candidate, ScoreBreakdown, TasteVector } from "./scoring/strategy";
 import { buildExclusions } from "./candidates/exclusions";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
-import { libraryCandidates } from "./candidates/librarySource";
-import { assemblePool } from "./candidates/pool";
-import { deriveSeeds } from "./candidates/seeds";
-import { candidatesFromPeople } from "./candidates/peopleSource";
-import { candidatesFromDiscover, candidatesFromSeeds } from "./candidates/tmdbSource";
 import type { SeedRef } from "./candidates/tmdbSource";
-import { candidatesFromVigie } from "./candidates/vigieSource";
-import { candidatesFromAnimeDiscover } from "./candidates/animeSource";
 import { isPoolStale, readPoolStamp, writePool } from "./poolStore";
 import type { PoolStamp } from "./poolStore";
 import { AttemptGate } from "./attemptGate";
@@ -134,10 +128,13 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   const includeVigie = effectiveIncludeVigie(settingsRow?.includeVigie, getSeerrConfig() !== null);
   const animeShare = profileRow?.animeShare ?? 0;
 
-  const [exclusions, seeds] = await Promise.all([
+  // Le classement, les graines et les voisins collaboratifs viennent des
+  // ancres du profil ; un profil d'avant les ancres garde l'ancienne mécanique.
+  const [exclusions, taste] = await Promise.all([
     buildExclusions(userId, library),
-    deriveSeeds(userId, library),
+    preparePoolTaste(userId, profileRow, library),
   ]);
+  const { seeds } = taste;
 
   // Une graine hors bibliothèque absente du cache TMDB restait sans titre —
   // et sa rangée « Parce que vous avez aimé » sautait en silence. Les plus
@@ -153,47 +150,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     }
   }
 
-  // Sources — bibliothèque d'abord (elle porte jellyfinItemId), puis les
-  // découvertes. Chaque source dégrade en liste vide, jamais en erreur.
-  // Bibliothèque seule : /discover et Vigie ne produisent QUE du hors
-  // bibliothèque — on économise l'API. Les graines restent interrogées :
-  // leurs candidats se rattachent à la bibliothèque et portent les seedKey
-  // des rangées « Parce que vous avez aimé ». En passe rapide : aucune source
-  // externe du tout, le réseau attendra la relève.
-  // La source « personnes » tourne même en bibliothèque seule : comme les
-  // graines, ses candidats peuvent se rattacher à la bibliothèque — le filtre
-  // de service fait foi.
-  const [fromSeeds, fromAnime, fromPeople, fromDiscover, fromVigie] = quick
-    ? [[], [], [], [], []]
-    : await Promise.all([
-        candidatesFromSeeds(seeds),
-        // Univers animé : gardé par includeVigie comme /discover (il ne produit
-        // que du hors bibliothèque) et, en interne, par la part d'animé.
-        includeVigie ? candidatesFromAnimeDiscover(animeShare) : Promise.resolve([]),
-        candidatesFromPeople(likedPeople),
-        includeVigie ? candidatesFromDiscover(profile) : Promise.resolve([]),
-        includeVigie ? candidatesFromVigie() : Promise.resolve([]),
-      ]);
-
-  // L'animé juste après les graines : le plafond d'assemblage (POOL_MAX) coupe
-  // les sources tardives, et celle-ci n'existe que pour être servie.
-  const pool = assemblePool([
-    libraryCandidates(library),
-    fromSeeds,
-    fromAnime,
-    fromPeople,
-    fromVigie,
-    fromDiscover,
-  ]);
-
-  // Un candidat externe déjà en bibliothèque récupère son jellyfinItemId :
-  // c'est lui qui décide de la navigation (fiche Jellyfin, pas fiche Vigie).
-  for (const candidate of pool) {
-    if (!candidate.jellyfinItemId) {
-      const entry = library.byKey.get(candidate.key);
-      if (entry) candidate.jellyfinItemId = entry.itemId;
-    }
-  }
+  const pool = await gatherCandidates({ quick, includeVigie, animeShare, likedPeople, profile, library, taste });
 
   // Qualité : jamais de carte muette. Sans titre, ou sans image affichable
   // (affiche TMDB ou Primary Jellyfin), un candidat sort avant le classement.
@@ -204,9 +161,10 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   };
   const kept = pool.filter((c) => !exclusions.everywhere.has(c.key) && isDisplayable(c));
 
-  // Pré-classement sur facettes grossières, enrichissement du haut du panier
-  // (cache gratuit + budget de fetchs), re-classement final.
-  const strategy = new FacetScoringStrategy(idfFor);
+  // Classement étalonné sur CE panier, enrichissement du haut (budget de
+  // fetchs pour les fiches absentes), re-classement final.
+  const { strategy } = taste;
+  strategy.calibrate?.(profile, kept);
   let scored: PoolEntry[] = kept.map((candidate) => ({
     candidate,
     breakdown: strategy.score(profile, candidate),

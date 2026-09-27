@@ -1,5 +1,5 @@
 import { getPrisma } from "../../db";
-import type { LibraryIndex } from "./libraryIndex";
+import type { LibraryEntry, LibraryIndex } from "./libraryIndex";
 
 /** mediaType du stockage des notes → vocabulaire canonique movie|tv. */
 export function canonicalKey(mediaType: string, tmdbId: number): string {
@@ -8,26 +8,51 @@ export function canonicalKey(mediaType: string, tmdbId: number): string {
 }
 
 export interface ExclusionSets {
-  /** Exclus de TOUTES les rangées : notés, vus, favoris, séries entamées,
-   *  « ne plus proposer ». */
+  /** Exclus de TOUTES les rangées : notés, vus, favoris, likés, Ma liste,
+   *  séries entamées, « ne plus proposer ». */
   everywhere: Set<string>;
+}
+
+/**
+ * Les titres de bibliothèque qu'un compte connaît déjà : vus, favoris, dans
+ * Ma liste, séries entamées. Aucun n'est une découverte — ils restent des
+ * GRAINES et des ancres du goût (cf. anchors.ts), jamais des propositions.
+ */
+export function libraryExclusionKeys(
+  entries: ReadonlyArray<Pick<LibraryEntry, "key" | "played" | "isFavorite" | "inWatchlist" | "inProgress">>
+): string[] {
+  return entries
+    .filter((e) => e.played || e.isFavorite || e.inWatchlist || e.inProgress)
+    .map((e) => e.key);
 }
 
 /**
  * Exclusions systématiques du moteur. Un titre noté — même mal — ne se
  * re-propose pas (sa note a déjà façonné le profil) ; un « ne plus me
  * proposer » est définitif ; un titre vu en entier n'a rien à faire dans une
- * rangée de découverte ; un FAVORI n'est jamais une découverte (il reste une
- * GRAINE — cf. deriveSeeds) ; une série entamée est déjà engagée, elle vit
- * dans « Reprendre », pas dans les recommandations — suivie, elle fait
- * graine elle aussi (cf. deriveSeeds).
+ * rangée de découverte ; un FAVORI ou un like hors bibliothèque n'est jamais
+ * une découverte, un titre de Ma liste non plus (on l'a déjà choisi) ; une
+ * série entamée est déjà engagée, elle vit dans « Reprendre ».
  */
 export async function buildExclusions(
   userId: string,
   library: LibraryIndex
 ): Promise<ExclusionSets> {
+  const everywhere = new Set<string>([
+    ...(await accountExclusionKeys(userId)),
+    ...libraryExclusionKeys(library.entries),
+  ]);
+  return { everywhere };
+}
+
+/**
+ * Les exclusions portées par la BASE (notes, refus, likes hors
+ * bibliothèque) — une lecture, sans balayage Jellyfin : le chemin chaud du
+ * service de page les relit à chaque requête.
+ */
+export async function accountExclusionKeys(userId: string): Promise<string[]> {
   const prisma = getPrisma();
-  const [ratings, feedback] = await Promise.all([
+  const [ratings, feedback, likes] = await Promise.all([
     prisma.userRating.findMany({
       where: { jellyfinUserId: userId, deletedAt: null },
       select: { mediaType: true, tmdbId: true },
@@ -36,14 +61,14 @@ export async function buildExclusions(
       where: { jellyfinUserId: userId },
       select: { itemKey: true },
     }),
+    prisma.userLike.findMany({
+      where: { jellyfinUserId: userId },
+      select: { mediaType: true, tmdbId: true },
+    }),
   ]);
-
-  const everywhere = new Set<string>();
-  for (const r of ratings) everywhere.add(canonicalKey(r.mediaType, r.tmdbId));
-  for (const f of feedback) everywhere.add(f.itemKey);
-  for (const entry of library.entries) {
-    if (entry.played || entry.isFavorite || entry.inProgress) everywhere.add(entry.key);
-  }
-
-  return { everywhere };
+  return [
+    ...ratings.map((r) => canonicalKey(r.mediaType, r.tmdbId)),
+    ...feedback.map((f) => f.itemKey),
+    ...likes.map((l) => canonicalKey(l.mediaType, l.tmdbId)),
+  ];
 }

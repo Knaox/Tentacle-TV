@@ -1,24 +1,33 @@
 import { getPrisma } from "../db";
+import { parseAnchors } from "./anchorStore";
 import { ANIME_UNIVERSE_KEY } from "./facets";
+
+/** Ancres montrées par le debug : les plus fortes, positives et négatives. */
+const DEBUG_ANCHORS = 40;
 
 /** Le profil stocké, facettes parsées — l'endpoint de debug du moteur, pas une UI. */
 export async function getProfileDebug(userId: string): Promise<{
   exists: boolean;
+  schemaVersion: number;
   signalCount: number;
   ratingMean: number;
   ratingStdDev: number;
-  /** Part d'animé dans les signaux de consommation (0..1). */
+  /** Part d'animé dans le temps de visionnage (0..1). */
   animeShare: number;
   /** Poids de la facette universe:anime dans le vecteur (IDF compris). */
   animeWeight: number;
   computedAt: string | null;
   topFacets: Array<{ key: string; weight: number }>;
+  /** Nombre d'ancres (titres pondérés) — 0 pour un profil d'avant les ancres. */
+  anchorCount: number;
+  topAnchors: Array<{ key: string; title: string; weight: number; kinds: string[]; hours: number }>;
 }> {
   const prisma = getPrisma();
   const row = await prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } });
   if (!row) {
     return {
       exists: false,
+      schemaVersion: 0,
       signalCount: 0,
       ratingMean: 0,
       ratingStdDev: 0,
@@ -26,6 +35,8 @@ export async function getProfileDebug(userId: string): Promise<{
       animeWeight: 0,
       computedAt: null,
       topFacets: [],
+      anchorCount: 0,
+      topAnchors: [],
     };
   }
   let facets: Record<string, number> = {};
@@ -38,8 +49,10 @@ export async function getProfileDebug(userId: string): Promise<{
     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
     .slice(0, 50)
     .map(([key, weight]) => ({ key, weight }));
+  const anchors = parseAnchors(row.anchors) ?? [];
   return {
     exists: true,
+    schemaVersion: row.schemaVersion,
     signalCount: row.signalCount,
     ratingMean: row.ratingMean,
     ratingStdDev: row.ratingStdDev,
@@ -47,5 +60,13 @@ export async function getProfileDebug(userId: string): Promise<{
     animeWeight: facets[ANIME_UNIVERSE_KEY] ?? 0,
     computedAt: row.computedAt.toISOString(),
     topFacets,
+    anchorCount: anchors.length,
+    topAnchors: anchors.slice(0, DEBUG_ANCHORS).map((a) => ({
+      key: a.key,
+      title: a.title,
+      weight: Math.round(a.weight * 1000) / 1000,
+      kinds: a.kinds,
+      hours: a.hours,
+    })),
   };
 }

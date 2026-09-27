@@ -522,6 +522,9 @@ model TasteProfile {
   /// la source /discover animé, le quota des rangées mixtes et la rangée
   /// « Animés pour vous ». Calculée par services/reco/profileBuilder.ts.
   animeShare     Float    @default(0)
+  /// Ancres du goût : JSON des titres pondérés d'où dérive tout le classement
+  /// (services/reco/anchors.ts). NULL = profil d'avant les ancres.
+  anchors        String?  @db.MediumText
   schemaVersion  Int      @default(1)
   computedAt     DateTime @default(now())
 

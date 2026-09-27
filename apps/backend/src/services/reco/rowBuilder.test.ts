@@ -49,6 +49,26 @@ describe("buildRow — plateformes des items", () => {
     expect(byKey.get("movie:3")).toEqual([]);
   });
 
+  it("la première raison est le titre aimé le plus proche ; une rangée « Parce que… » le remplace par sa graine", () => {
+    const withAnchor = (key: string, score: number): PoolEntry => {
+      const e = entry(key, score);
+      e.candidate.seedKey = "movie:99";
+      e.breakdown.topAnchors = [
+        { key: "tv:5", title: "Ma liste seulement", contribution: 2, liked: false },
+        { key: "tv:6", title: "Dark", contribution: 1, liked: true },
+      ];
+      return e;
+    };
+    const entries = Array.from({ length: 6 }, (_, i) => withAnchor(`movie:${i + 1}`, 0.9 - i * 0.01));
+    const opts = { exclude: new Set<string>(), vigieAvailable: true, inLibraryOnly: false, lambda: 0.7, profile: { facets: {}, signalCount: 0 } };
+    const forYou = buildRow(pool(entries), "inLibrary", opts);
+    expect(forYou?.items[0].reasons[0]).toEqual({ kind: "seed", seedTitle: "Dark" });
+    const seeded = { ...pool(entries), seeds: [{ mediaType: "movie" as const, tmdbId: 99, title: "Interstellar", strength: 1 }] };
+    const because = buildRow(seeded, "becauseYouLiked:movie:99", opts);
+    const seedReasons = because?.items[0].reasons.filter((r) => r.kind === "seed") ?? [];
+    expect(seedReasons).toEqual([{ kind: "seed", seedTitle: "Interstellar" }]);
+  });
+
   it("sans annuaire : des références nues, jamais undefined", () => {
     const row = buildRow(pool([entry("movie:1", 0.9, [8])]), "inLibrary", {
       exclude: new Set(),

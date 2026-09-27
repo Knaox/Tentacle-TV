@@ -20,6 +20,10 @@ export interface Candidate {
   backdropPath?: string | null;
   /** Clé de la graine qui a produit ce candidat (rangées « Parce que… »). */
   seedKey?: string | null;
+  /** Soutien CUMULÉ des graines : chaque graine qui le recommande ajoute sa
+   *  force, pondérée par le rang du candidat dans sa liste TMDB. Un titre
+   *  recommandé par six titres aimés n'est pas un titre recommandé par un seul. */
+  seedSupport?: number;
   /** id TMDB de la personne aimée qui a produit ce candidat (« Avec X »). */
   personKey?: number | null;
 }
@@ -50,6 +54,15 @@ export interface ScoreBreakdown {
   topContributors: Array<{ key: string; contribution: number }>;
   /** Posé par le quota d'exploration — l'UI l'affiche comme tel. */
   exploration?: boolean;
+  /** Proximité aux titres aimés, un par un (0..1) — stratégie à ancres. */
+  relevance?: number;
+  /** Soutien des graines TMDB (0..1). */
+  seedSupport?: number;
+  /** Ressemblance aux titres refusés ou abandonnés (0..1, soustraite). */
+  negative?: number;
+  /** Les titres aimés qui portent le plus ce candidat — la raison affichée
+   *  « Parce que vous avez aimé… ». */
+  topAnchors?: Array<{ key: string; title: string; contribution: number; liked?: boolean }>;
 }
 
 /**
@@ -59,5 +72,7 @@ export interface ScoreBreakdown {
  */
 export interface ScoringStrategy {
   readonly id: string;
+  /** Étalonnage sur le panier à classer, avant tout `score` (facultatif). */
+  calibrate?(profile: TasteVector, candidates: readonly Candidate[]): void;
   score(profile: TasteVector, candidate: Candidate): ScoreBreakdown;
 }

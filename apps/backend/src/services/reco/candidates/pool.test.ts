@@ -59,4 +59,13 @@ describe("assemblePool — fusion enrichissante", () => {
     const pool = assemblePool([[a, b]]);
     expect(pool[0].seedKey).toBe("movie:1");
   });
+
+  it("le soutien des graines se cumule, y compris quand la bibliothèque l'emporte", () => {
+    const a = candidate({ key: "movie:12", source: "tmdb_rec", seedKey: "movie:1", seedSupport: 1 });
+    const b = candidate({ key: "movie:12", source: "tmdb_rec", seedKey: "movie:2", seedSupport: 0.5 });
+    const library = candidate({ key: "movie:12", jellyfinItemId: "jf-3" });
+    const pool = assemblePool([[a, b], [library]]);
+    expect(pool[0].jellyfinItemId).toBe("jf-3");
+    expect(pool[0].seedSupport).toBeCloseTo(1.5, 10);
+  });
 });

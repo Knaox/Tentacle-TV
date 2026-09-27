@@ -10,6 +10,8 @@ export interface LibraryEntry extends JellyfinFacetSource {
   tmdbId: number;
   played: boolean;
   isFavorite: boolean;
+  /** Dans « Ma liste » (Likes Jellyfin) : déjà choisi, plus une découverte. */
+  inWatchlist: boolean;
   /** Série entamée (≥ un épisode vu, pas terminée) — jamais vrai pour un film. */
   inProgress: boolean;
   /** Épisodes vus (séries) — l'engagement qui fait d'une série une graine ; 0 pour un film. */
@@ -37,6 +39,7 @@ interface RawItem extends JellyfinFacetSource {
   UserData?: {
     Played?: boolean;
     IsFavorite?: boolean;
+    Likes?: boolean;
     PlayedPercentage?: number;
     UnplayedItemCount?: number;
   };
@@ -102,6 +105,7 @@ export async function buildLibraryIndex(userId: string): Promise<LibraryIndex> {
         tmdbId,
         played,
         isFavorite: item.UserData?.IsFavorite === true,
+        inWatchlist: item.UserData?.Likes === true,
         inProgress,
         playedEpisodes,
         hasPrimaryImage: !!item.ImageTags?.Primary,

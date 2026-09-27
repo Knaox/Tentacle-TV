@@ -16,6 +16,15 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Téléviseur LG : fini l'écran noir en ouvrant une fiche ou une bibliothèque** — quand un écran ne peut pas s'afficher (serveur qui redémarre pendant une mise à jour, connexion qui hoquette, fiche que Jellyfin ne rend pas), le téléviseur le dit, avec « Réessayer » et « Retour », au lieu de s'éteindre jusqu'au redémarrage de l'application. Après une mise à jour du serveur, il se recharge de lui-même dès que le serveur répond — et plus jamais en pleine navigation parce qu'un préchargement a échoué
 - **Téléviseurs LG de 2020 à 2022 (webOS 5, 6 et 22) : les bibliothèques s'ouvrent de nouveau** — elles tombaient sur un écran noir à chaque ouverture
 - **Une fiche qui ne se charge pas le dit** : sur le web aussi, une fiche dont Jellyfin ne rend pas les informations propose de réessayer, au lieu d'un chargement sans fin
+- **Des recommandations vraiment personnelles** — le moteur proposait à peu près la même chose à tout le monde : les sorties récentes et bien notées, 34 titres communs sur 50 entre deux comptes. Il compare désormais chaque titre à chacun de ceux que vous avez aimés, un par un, et suit ce que les spectateurs de ces titres ont aimé ensuite. Entre deux comptes, les 50 premiers n'ont plus que 4 titres en commun, et un titre aimé qu'on lui cache est retrouvé trois fois plus souvent
+- **Chaque recommandation dit pourquoi** : « Parce que vous avez aimé Dark »
+- **Les séries pèsent le temps que vous leur donnez** : un compte qui passe les trois quarts de son temps sur des séries était vu comme un amateur de films, et 128 épisodes de deux minutes pesaient autant que Game of Thrones
+- **Ce que vous écartez compte** : « Ne plus me proposer » et les abandons éloignent aussi les titres qui leur ressemblent
+- **Toute votre bibliothèque est prise en compte**, avec sa description complète (300 titres au plus jusqu'ici, comparés sur leur seule décennie)
+- **Les lectures d'essai ne passent plus pour des revisionnages**, et un historique marqué « vu » en masse n'est plus daté du jour du marquage
+- **Les animés gardent leur juste part** dans les rangées mixtes
+- **« Sortir de votre zone de confort » propose du nouveau qui vous ressemble**, au lieu de ce qui vous ressemble le moins
+- **Tendances et « Ce que les utilisateurs de Tentacle regardent » s'ordonnent selon vos goûts**
 
 ### EN
 - **The end of movies and episodes, read from picture and sound** — on the first play of every movie and episode, the server reads its ending: thumbnails show where the credits roll, the audio tells music from dialogue. From them it finds where the credits start and every scene that follows, mid-credits and post-credits alike: each credits segment followed by a scene gets its button to jump to it, and a movie with two scenes ("The Avengers") gets two
@@ -27,6 +36,15 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **LG TV: no more black screen when opening a title or a library** — when a screen cannot be shown (server restarting during an update, flaky connection, a title Jellyfin fails to return), the TV now says so, with "Retry" and "Back", instead of going dark until the app is restarted. After a server update it reloads by itself as soon as the server responds — and never again in the middle of browsing because a preload failed
 - **LG TVs from 2020 to 2022 (webOS 5, 6 and 22): libraries open again** — they went to a black screen every time they were opened
 - **A title page that fails to load says so**: on the web too, a title page whose details Jellyfin does not return offers to retry instead of loading forever
+- **Truly personal recommendations** — the engine suggested roughly the same thing to everyone: recent, well-rated releases, with 34 titles out of 50 in common between two accounts. It now compares each title with every one you liked, one by one, and follows what the viewers of those titles went on to like. Between two accounts, the top 50 now share only 4 titles, and a liked title hidden from it is found three times as often
+- **Every recommendation says why**: "Because you liked Dark"
+- **Series weigh the time you give them**: an account spending three quarters of its time on series was seen as a movie fan, and 128 two-minute episodes weighed as much as Game of Thrones
+- **What you dismiss counts**: "Not for me" and abandoned titles also push away the titles that look like them
+- **Your whole library is considered**, with its full description (at most 300 titles until now, compared on their decade alone)
+- **Test playbacks no longer pass for rewatches**, and a history marked as watched in bulk is no longer dated to the day it was marked
+- **Anime keeps its fair share** of mixed rows
+- **"Step outside your comfort zone" suggests something new that suits you**, instead of what suits you least
+- **Trending and "What Tentacle users are watching" are ordered by your taste**
 
 ## [1.19.3]
 ### FR

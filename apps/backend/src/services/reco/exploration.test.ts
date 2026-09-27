@@ -32,4 +32,19 @@ describe("sélection d'exploration", () => {
     expect(pickExplorationKeys(items, 2)).toEqual(["a", "d"]);
     expect(pickExplorationKeys(items, 10)).toEqual(["a", "d", "c"]);
   });
+
+  it("avec la proximité aux goûts : une exploration VOISINE, jamais à l'opposé ni près d'un refus", () => {
+    const items = [
+      { key: "loin", novelty: 1, quality: 0.8, relevance: 0.05, negative: 0 }, // sans rapport : exclu
+      { key: "voisin", novelty: 0.8, quality: 0.75, relevance: 0.6, negative: 0 },
+      { key: "connu", novelty: 0.1, quality: 0.8, relevance: 0.9, negative: 0 },
+      { key: "refus", novelty: 0.9, quality: 0.8, relevance: 0.7, negative: 0.5 }, // ressemble à un refus
+      { key: "faible", novelty: 0.9, quality: 0.5, relevance: 0.8, negative: 0 }, // qualité trop basse
+      // Le gros du panier : peu relié aux goûts (fixe la médiane).
+      { key: "x1", novelty: 0.9, quality: 0.8, relevance: 0.1, negative: 0 },
+      { key: "x2", novelty: 0.9, quality: 0.8, relevance: 0.1, negative: 0 },
+      { key: "x3", novelty: 0.9, quality: 0.8, relevance: 0.2, negative: 0 },
+    ];
+    expect(pickExplorationKeys(items, 2)).toEqual(["voisin", "connu"]);
+  });
 });
