@@ -74,10 +74,17 @@ export function FavoritesGroupedBody({ groups, selectionMode, headerKey }: Favor
     [rows, containerWidth, itemsPerRow],
   );
 
+  // Distance au haut du DOCUMENT, pas `offsetTop` : la grille vit dans un
+  // conteneur positionné (sous la bannière), et `offsetTop` ne compterait que
+  // depuis lui — la fenêtre de rendu du virtualiseur glisserait alors de la
+  // hauteur de la bannière, ce que l'overscan ne couvre plus quand les
+  // sections repliées ne laissent que des en-têtes de 64 px. Relue aussi quand
+  // la largeur change : le dock au-dessus change de hauteur en se repliant.
   const [scrollMargin, setScrollMargin] = useState(0);
   useEffect(() => {
-    if (gridRef.current) setScrollMargin(gridRef.current.offsetTop);
-  }, [headerKey]);
+    const el = gridRef.current;
+    if (el) setScrollMargin(Math.round(el.getBoundingClientRect().top + window.scrollY));
+  }, [headerKey, containerWidth]);
 
   const virtualizer = useWindowVirtualizer({
     count: rows.length,
