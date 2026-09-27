@@ -25,7 +25,9 @@ export function OfflineQueueActions({ entries }: Props) {
   const { t } = useTranslation("offline");
   const st = useThemedStyles(makeStyles);
   const running = entries.some((entry) => entry.status === "queued" || entry.status === "downloading");
-  const paused = entries.some((entry) => entry.status === "paused");
+  // Seules les pauses VOULUES appellent « Tout reprendre » : une pause système
+  // (réseau, Wi-Fi) repart d'elle-même, et le bouton n'y ferait rien.
+  const paused = entries.some((entry) => entry.status === "paused" && entry.pausedByUser);
   const failed = entries.filter((entry) => entry.status === "error");
   if (!running && !paused && failed.length === 0) return null;
 
