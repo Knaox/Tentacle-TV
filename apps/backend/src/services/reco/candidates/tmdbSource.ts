@@ -141,6 +141,28 @@ function topDecades(profile: TasteVector, count: number): number[] {
 /** Bruit minimal exigé : sous 200 votes, un titre de /discover est du bruit. */
 const DISCOVER_MIN_VOTES = "200";
 
+// Les genres TMDB des films et des séries n'ont pas les mêmes ids (Action 28
+// ↔ Action & Adventure 10759…) : un profil qui mêle les deux interrogeait
+// /discover/tv avec des genres de film, que TMDB ignore.
+const MOVIE_TO_TV: Readonly<Record<number, number>> = { 28: 10759, 12: 10759, 878: 10765, 14: 10765, 10752: 10768 };
+const TV_TO_MOVIE: Readonly<Record<number, number>> = { 10759: 28, 10765: 878, 10768: 10752 };
+const TV_ONLY_GENRES: ReadonlySet<number> = new Set([10762, 10763, 10764, 10766, 10767]);
+const MOVIE_ONLY_GENRES: ReadonlySet<number> = new Set([27, 10749, 36, 53, 10402, 10770]);
+
+/** Les genres du profil traduits dans la liste du type interrogé, dédoublonnés. */
+export function genresFor(mediaType: "movie" | "tv", ids: readonly number[], count: number): number[] {
+  const out: number[] = [];
+  for (const id of ids) {
+    const mapped =
+      mediaType === "movie"
+        ? TV_TO_MOVIE[id] ?? (TV_ONLY_GENRES.has(id) ? null : id)
+        : MOVIE_TO_TV[id] ?? (MOVIE_ONLY_GENRES.has(id) ? null : id);
+    if (mapped != null && !out.includes(mapped)) out.push(mapped);
+    if (out.length >= count) break;
+  }
+  return out;
+}
+
 /**
  * Candidats `/discover` filtrés sur les facettes dominantes du profil :
  * genres, keywords, personnes (cast + crew), décennies préférées. Deux tris
@@ -149,13 +171,14 @@ const DISCOVER_MIN_VOTES = "200";
 export async function candidatesFromDiscover(profile: TasteVector): Promise<Candidate[]> {
   if (!tmdbConfigured()) return [];
 
-  const genres = topIds(profile, "genre:", 3);
+  const profileGenres = topIds(profile, "genre:", 8);
   const keywords = topIds(profile, "kw:", 4);
   const people = [...topIds(profile, "director:", 2), ...topIds(profile, "actor:", 2)];
   const decades = topDecades(profile, 2);
 
   const out: Candidate[] = [];
   for (const mediaType of ["movie", "tv"] as const) {
+    const genres = genresFor(mediaType, profileGenres, 3);
     const dateField = mediaType === "movie" ? "primary_release_date" : "first_air_date";
     const queries: Array<Record<string, string>> = [];
     if (genres.length) {
