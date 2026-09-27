@@ -196,6 +196,8 @@ export {
   type RatingIdentity, type RatingMediaType, type UserRatingEntry, type RateItemInput,
 } from "./hooks/useRatings";
 export { useEndCardRating, type EndCardRating } from "./hooks/useEndCardRating";
+// Identité de notation d'un item (film, série, épisode) — commune aux plateformes
+export { tmdbIdForItem, ratingIdentityForItem, episodeRatingIdentityFor } from "./utils/ratingIdentity";
 // Notes d'épisodes : identité, notes TMDB par saison, index des notes du compte
 export {
   episodeRatingIdentity, episodeRatingsIndex, useMyEpisodeRatings, useTmdbSeasonEpisodes, TMDB_SEASON_KEY,
