@@ -45,6 +45,8 @@ export default {
   libraryOnlyBody:
     "Aucune clé TMDB n'est configurée sur ce serveur : la pile ne propose que des titres de votre bibliothèque. Un administrateur peut en ajouter une dans Administration › Métadonnées.",
 
+  libraryOnlyShort: "Aucune clé TMDB sur ce serveur : titres de votre bibliothèque uniquement.",
+
   emptyTitle: "Vous avez tout passé en revue",
   emptyBody: "Plus aucun titre à juger pour l'instant. Revenez plus tard : la pile se renouvelle.",
   emptyCta: "Voir mes recommandations",

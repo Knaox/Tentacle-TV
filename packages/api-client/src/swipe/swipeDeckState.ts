@@ -25,8 +25,9 @@ export type SwipeDeckAction =
 
 /** Annulations possibles d'affilée. */
 export const HISTORY_MAX = 30;
-/** Clés jugées retenues pour l'exclusion (au-delà, le serveur les connaît). */
-export const SEEN_MAX = 60;
+/** Clés jugées retenues pour l'exclusion (au-delà, le serveur les connaît).
+ *  File (≤ 26) + jugées (≤ 50) restent sous les 80 clés que lit le serveur. */
+export const SEEN_MAX = 50;
 
 export const EMPTY_COUNTS: SwipeCounts = { like: 0, superlike: 0, dislike: 0, skip: 0 };
 

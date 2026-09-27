@@ -45,6 +45,8 @@ export default {
   libraryOnlyBody:
     "No TMDB key is configured on this server, so the stack only offers titles from your library. An administrator can add one in Administration › Metadata.",
 
+  libraryOnlyShort: "No TMDB key on this server: titles from your library only.",
+
   emptyTitle: "You've been through everything",
   emptyBody: "Nothing left to rate for now. Come back later: the stack refreshes.",
   emptyCta: "See my recommendations",

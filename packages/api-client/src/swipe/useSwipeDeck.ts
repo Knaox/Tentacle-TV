@@ -46,7 +46,14 @@ export function useSwipeDeck(lang: SwipeLang): SwipeDeck {
   const writes = useRef<Promise<unknown>>(Promise.resolve());
   const judgedAny = useRef(false);
 
+  // Garde SYNCHRONE : l'état `fetching` n'est vu qu'au rendu suivant — deux
+  // effets rapprochés (StrictMode, recharge + annulation) partaient chacun,
+  // et le second lot, sans carte neuve, faisait croire la pile épuisée.
+  const inFlight = useRef(false);
+
   const load = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setFetching(true);
     setError(false);
     try {
@@ -59,6 +66,7 @@ export function useSwipeDeck(lang: SwipeLang): SwipeDeck {
     } catch {
       setError(true);
     } finally {
+      inFlight.current = false;
       setFetching(false);
     }
   }, [lang]);
@@ -104,6 +112,9 @@ export function useSwipeDeck(lang: SwipeLang): SwipeDeck {
     enqueue(() => tentacleApiFetch(`/api/swipe/${last.card.mediaType}/${last.card.tmdbId}`, { method: "DELETE" }));
   }, [enqueue]);
 
+  const retry = useCallback(() => setError(false), []);
+  const dismissSaveFailed = useCallback(() => setSaveFailed(false), []);
+
   return {
     cards: queue,
     counts: state.counts,
@@ -115,8 +126,8 @@ export function useSwipeDeck(lang: SwipeLang): SwipeDeck {
     saveFailed,
     judge,
     undo,
-    retry: () => { setError(false); },
-    dismissSaveFailed: () => setSaveFailed(false),
+    retry,
+    dismissSaveFailed,
   };
 }
 

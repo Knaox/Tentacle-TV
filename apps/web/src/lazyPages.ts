@@ -44,6 +44,8 @@ export const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ d
 // Préchargeable : le chunk se charge au boot et au survol du lien, et la page
 // se rend alors sans suspendre — jamais de spinner à l'arrivée.
 export const Recommendations = preloadable(() => import("./pages/Recommendations").then((m) => m.Recommendations));
+// Onglet « Affiner » (pile de swipe) — même page sur le bureau et le miroir.
+export const Swipe = lazy(() => import("./pages/Swipe").then((m) => ({ default: m.Swipe })));
 export const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
 export const DownloadsPage = lazy(() => import("./downloads/DownloadsPage").then((m) => ({ default: m.DownloadsPage })));
 export const OfflineCatalog = lazy(() => import("./downloads/OfflineCatalog").then((m) => ({ default: m.OfflineCatalog })));
