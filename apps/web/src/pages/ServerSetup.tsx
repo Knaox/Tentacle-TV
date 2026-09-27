@@ -1,26 +1,31 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { GlassCard } from "@tentacle-tv/ui";
-import { TentacleLogo } from "../components/ui/TentacleLogo";
-
-// Mêmes CTA que Login/Register (refonte auth, commit 05759c5) — pour que les
-// boutons du setup soient raccord avec le reste de l'app : blanc/bold + halo
-// purple en primary, surface glass légère en secondary.
-const CTA_PRIMARY =
-  "inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
-const CTA_SECONDARY =
-  "inline-flex h-11 items-center justify-center rounded-lg border border-line-subtle bg-fill-subtle px-5 text-sm font-semibold text-content-primary transition-all hover:border-line-strong hover:bg-fill-soft active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40";
-
-type SetupStep = "db" | "jellyfin" | "admin";
+import { Spinner } from "../components/ui/Spinner";
+import { AuthLayout } from "../components/auth/AuthLayout";
+import { SetupStepper, type SetupStep } from "../components/setup/SetupStepper";
+import { DbStep } from "../components/setup/DbStep";
+import { JellyfinStep } from "../components/setup/JellyfinStep";
+import { AdminStep } from "../components/setup/AdminStep";
 
 interface SetupProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- l'utilisateur renvoyé par /api/setup/create-admin, stocké tel quel
   onComplete: (token: string, user: any) => void;
 }
 
+const STEP_COPY: Record<SetupStep, { title: string; subtitle: string }> = {
+  db: { title: "dbTitle", subtitle: "dbSubtitle" },
+  jellyfin: { title: "jellyfinTitle", subtitle: "jellyfinSubtitle" },
+  admin: { title: "adminTitle", subtitle: "adminSubtitle" },
+};
+
+/**
+ * L'assistant d'installation du serveur web (base → Jellyfin → admin), dans le
+ * même cadre que la connexion. Les étapes vivent dans `components/setup/`.
+ */
 export function ServerSetup({ onComplete }: SetupProps) {
   const [step, setStep] = useState<SetupStep>("db");
   const [loading, setLoading] = useState(true);
-  const { i18n } = useTranslation();
+  const { t } = useTranslation("setup");
 
   useEffect(() => {
     fetch("/api/setup/status")
@@ -51,264 +56,18 @@ export function ServerSetup({ onComplete }: SetupProps) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--brand)] border-t-transparent" />
+      <div className="flex min-h-dvh items-center justify-center bg-surface-0">
+        <Spinner size="lg" label={t("configTitle")} />
       </div>
     );
   }
 
-  const switchLang = (lng: string) => {
-    i18n.changeLanguage(lng);
-    localStorage.setItem("tentacle_language", lng);
-  };
-
+  const copy = STEP_COPY[step];
   return (
-    <div className="relative flex min-h-screen items-center justify-center p-4">
-      {/* Language toggle */}
-      <div className="absolute right-4 top-4 flex overflow-hidden rounded-lg border border-line-subtle">
-        {["fr", "en"].map((lng) => (
-          <button
-            key={lng}
-            onClick={() => switchLang(lng)}
-            className={`px-3 py-1.5 text-xs font-medium transition ${
-              i18n.language === lng
-                ? "bg-[rgba(var(--brand-rgb),0.3)] text-[var(--brand-light)]"
-                : "text-content-quaternary hover:text-content-tertiary"
-            }`}
-          >
-            {lng.toUpperCase()}
-          </button>
-        ))}
-      </div>
-      <div className="w-full max-w-lg">
-        <StepHeader step={step} />
-        {step === "db" && <DbStep onNext={() => setStep("jellyfin")} />}
-        {step === "jellyfin" && <JellyfinStep onNext={() => setStep("admin")} />}
-        {step === "admin" && <AdminStep onComplete={onComplete} />}
-      </div>
-    </div>
-  );
-}
-
-function StepHeader({ step }: { step: SetupStep }) {
-  const { t } = useTranslation("setup");
-  const steps: { key: SetupStep; label: string }[] = [
-    { key: "db", label: t("stepDatabase") },
-    { key: "jellyfin", label: "Jellyfin" },
-    { key: "admin", label: t("stepAdmin") },
-  ];
-  const idx = steps.findIndex((s) => s.key === step);
-
-  return (
-    <div className="mb-6 flex flex-col items-center text-center">
-      <TentacleLogo size="lg" variant="glow" />
-      <h1 className="mb-4 text-2xl font-bold">
-        <span className="bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] bg-clip-text text-transparent">
-          {t("configTitle")}
-        </span>
-      </h1>
-      <div className="flex items-center justify-center gap-2">
-        {steps.map((s, i) => (
-          <div key={s.key} className="flex items-center gap-2">
-            <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              i < idx ? "bg-status-success-bg border border-status-success text-status-success-fg" : i === idx ? "bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] text-[var(--brand-light)]" : "bg-fill-soft text-content-quaternary"
-            }`}>{i < idx ? "✓" : i + 1}</div>
-            <span className={`text-xs ${i === idx ? "text-content-primary" : "text-content-quaternary"}`}>{s.label}</span>
-            {i < steps.length - 1 && <div className="h-px w-6 bg-fill-medium" />}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DbStep({ onNext }: { onNext: () => void }) {
-  const { t } = useTranslation("setup");
-  const { t: tCommon } = useTranslation("common");
-  const [host, setHost] = useState("localhost");
-  const [port, setPort] = useState("3306");
-  const [database, setDatabase] = useState("tentacle");
-  const [user, setUser] = useState("tentacle");
-  const [password, setPassword] = useState("");
-  const [testing, setTesting] = useState(false);
-  const [error, setError] = useState("");
-  const [ok, setOk] = useState(false);
-
-  // Pre-fill from DATABASE_URL in .env (dev convenience).
-  useEffect(() => {
-    fetch("/api/setup/db-defaults")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!d?.hasDefaults) return;
-        if (d.host) setHost(d.host);
-        if (d.port) setPort(String(d.port));
-        if (d.database) setDatabase(d.database);
-        if (d.user) setUser(d.user);
-        if (d.password) setPassword(d.password);
-      })
-      .catch(() => { /* ignore — user fills manually */ });
-  }, []);
-
-  const handleTest = async () => {
-    setError(""); setTesting(true); setOk(false);
-    try {
-      const r1 = await fetch("/api/setup/test-db", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ host, port: Number(port), database, user, password }),
-      });
-      if (!r1.ok) { const d = await r1.json(); throw new Error(d.message); }
-      const r2 = await fetch("/api/setup/migrate", { method: "POST" });
-      if (!r2.ok) { const d = await r2.json(); throw new Error(d.message); }
-      setOk(true);
-    } catch (err: any) {
-      setError(err.message || t("dbConnectionFailed"));
-    } finally { setTesting(false); }
-  };
-
-  return (
-    <GlassCard className="p-6">
-      <h2 className="mb-1 text-lg font-semibold">{t("dbTitle")}</h2>
-      <p className="mb-4 text-sm text-content-tertiary">{t("dbSubtitle")}</p>
-      <div className="space-y-3">
-        <div className="grid grid-cols-1 gap-3 xs:grid-cols-3">
-          <div className="xs:col-span-2"><Inp label={t("dbHost")} value={host} set={setHost} /></div>
-          <Inp label={t("dbPort")} value={port} set={setPort} />
-        </div>
-        <Inp label={t("dbName")} value={database} set={setDatabase} />
-        <Inp label={t("dbUser")} value={user} set={setUser} />
-        <Inp label={t("dbPassword")} value={password} set={setPassword} type="password" />
-      </div>
-      {error && <p className="mt-3 text-sm text-status-error-fg">{error}</p>}
-      {ok && <p className="mt-3 text-sm text-status-success-fg">{t("dbConnectionSuccess")}</p>}
-      <div className="mt-4 flex gap-3">
-        <Btn onClick={handleTest} disabled={testing || !password} secondary>
-          {testing ? t("dbTesting") : t("dbTestConnection")}
-        </Btn>
-        <Btn onClick={onNext} disabled={!ok} className="ml-auto">{tCommon("next")}</Btn>
-      </div>
-    </GlassCard>
-  );
-}
-
-function JellyfinStep({ onNext }: { onNext: () => void }) {
-  const { t } = useTranslation("setup");
-  const { t: tCommon } = useTranslation("common");
-  const [url, setUrl] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [testing, setTesting] = useState(false);
-  const [error, setError] = useState("");
-  const [version, setVersion] = useState("");
-  const [saved, setSaved] = useState(false);
-
-  const handleTest = async () => {
-    setError(""); setTesting(true); setVersion("");
-    try {
-      const r = await fetch("/api/setup/test-jellyfin", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.replace(/\/$/, ""), apiKey }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.message);
-      setVersion(d.version);
-    } catch (err: any) { setError(err.message); } finally { setTesting(false); }
-  };
-
-  const handleSave = async () => {
-    try {
-      const r = await fetch("/api/setup/save-jellyfin", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.replace(/\/$/, ""), apiKey }),
-      });
-      if (!r.ok) throw new Error("Echec");
-      setSaved(true);
-    } catch (err: any) { setError(err.message); }
-  };
-
-  return (
-    <GlassCard className="p-6">
-      <h2 className="mb-1 text-lg font-semibold">{t("jellyfinTitle")}</h2>
-      <p className="mb-4 text-sm text-content-tertiary">{t("jellyfinSubtitle")}</p>
-      <div className="space-y-3">
-        <Inp label={t("jellyfinUrl")} value={url} set={setUrl} placeholder={t("jellyfinUrlPlaceholder")} />
-        <Inp label={t("jellyfinApiKey")} value={apiKey} set={setApiKey} />
-      </div>
-      {version && <p className="mt-3 text-sm text-status-success-fg">{t("jellyfinDetected", { version })}</p>}
-      {error && <p className="mt-3 text-sm text-status-error-fg">{error}</p>}
-      <div className="mt-4 flex gap-3">
-        <Btn onClick={handleTest} disabled={testing || !url || !apiKey} secondary>
-          {testing ? t("dbTesting") : t("jellyfinTest")}
-        </Btn>
-        {version && !saved && <Btn onClick={handleSave} secondary>{t("jellyfinSave")}</Btn>}
-        <Btn onClick={onNext} disabled={!saved} className="ml-auto">{tCommon("next")}</Btn>
-      </div>
-    </GlassCard>
-  );
-}
-
-function AdminStep({ onComplete }: { onComplete: (token: string, user: any) => void }) {
-  const { t } = useTranslation("setup");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleCreate = async () => {
-    setError(""); setCreating(true);
-    try {
-      const r = await fetch("/api/setup/create-admin", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.message);
-      onComplete(d.token, d.user);
-    } catch (err: any) { setError(err.message); } finally { setCreating(false); }
-  };
-
-  return (
-    <GlassCard className="p-6">
-      <h2 className="mb-1 text-lg font-semibold">{t("adminTitle")}</h2>
-      <p className="mb-4 text-sm text-content-tertiary">
-        {t("adminSubtitle")}
-      </p>
-      <div className="space-y-3">
-        <Inp label={t("adminUsername")} value={username} set={setUsername} />
-        <Inp label={t("adminPassword")} value={password} set={setPassword} type="password" />
-      </div>
-      {error && <p className="mt-3 text-sm text-status-error-fg">{error}</p>}
-      <div className="mt-4">
-        <Btn onClick={handleCreate} disabled={creating || !username || !password} className="w-full">
-          {creating ? t("adminVerifying") : t("adminVerifyCreate")}
-        </Btn>
-      </div>
-    </GlassCard>
-  );
-}
-
-function Inp({ label, value, set, placeholder, type = "text" }: {
-  label: string; value: string; set: (v: string) => void; placeholder?: string; type?: string;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-content-tertiary">{label}</label>
-      <input type={type} value={value} onChange={(e) => set(e.target.value)} placeholder={placeholder}
-        className="h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]" />
-    </div>
-  );
-}
-
-function Btn({ children, onClick, disabled, secondary, className = "" }: {
-  children: React.ReactNode; onClick: () => void; disabled?: boolean;
-  secondary?: boolean; className?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`${secondary ? CTA_SECONDARY : CTA_PRIMARY} ${className}`}
-     
-    >
-      {children}
-    </button>
+    <AuthLayout width="wide" title={t(copy.title)} subtitle={t(copy.subtitle)} header={<SetupStepper step={step} />}>
+      {step === "db" && <DbStep onNext={() => setStep("jellyfin")} />}
+      {step === "jellyfin" && <JellyfinStep onNext={() => setStep("admin")} />}
+      {step === "admin" && <AdminStep onComplete={onComplete} />}
+    </AuthLayout>
   );
 }

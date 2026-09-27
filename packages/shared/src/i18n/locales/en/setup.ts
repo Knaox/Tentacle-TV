@@ -28,4 +28,5 @@ export default {
   adminPassword: "Jellyfin password",
   adminVerifying: "Verifying...",
   adminVerifyCreate: "Verify and create",
+  stepProgress: "Step {{current}} of {{total}}",
 } as const;
