@@ -48,4 +48,16 @@ export default {
   forgotPasswordSuccess: "Your request has been sent to the administrator.",
   sendRequest: "Send request",
   noAccount: "Don't have an account?",
+  // Pre-sign-in screens redesign (2026-09) — new keys, none renamed.
+  signInTitle: "Welcome back",
+  brandTagline: "All your movies and shows, on every screen.",
+  showPassword: "Show password",
+  hidePassword: "Hide password",
+  language: "Language",
+  backToSignIn: "Back to sign in",
+  inviteKeyHint: "Provided by your server's administrator.",
+  requestFailed: "The request could not be sent. Check your connection and try again.",
+  connectServer: "Continue",
+  serverLabel: "Server",
+  forgotPasswordSentTitle: "Request sent",
 } as const;
