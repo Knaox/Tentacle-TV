@@ -1,115 +1,122 @@
-import { View, Text, FlatList, Pressable } from "react-native";
+import { memo, useMemo } from "react";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { spacing, typography, useTheme } from "../theme";
+import { castCredits, creditRoleKey, initials, type CastCredit, type CastPerson } from "@tentacle-tv/shared";
+import { FONT_FAMILY, RADIUS, spacing, useThemedStyles, type AppTheme } from "../theme";
 
-interface Person {
-  Id: string;
-  Name: string;
-  Role?: string;
-  Type: string;
-  PrimaryImageTag?: string;
-}
+export interface CastRowProps { people: CastPerson[] }
 
-export interface CastRowProps { people: Person[] }
-
-const CREW_TYPES = ["Director", "Writer", "Producer", "Composer"] as const;
-const MAX_ACTORS = 20;
-const AVATAR = 60;
+const CARD_W = 96;
+const CARD_H = 144;
 
 /**
- * L'équipe et la distribution d'une fiche. Toucher un acteur ouvre sa
- * filmographie — la bibliothèque, puis ce que Vigie connaît d'autre.
+ * « Casting et équipe » : une rangée de portraits 2:3, l'équipe d'abord (ses
+ * métiers réunis, en couleur de marque), puis la distribution (ses
+ * personnages). Toucher une carte ouvre l'écran de la personne — sa vie, sa
+ * filmographie dans la bibliothèque, puis ce que les extensions connaissent.
  */
 export function CastRow({ people }: CastRowProps) {
-  const { t } = useTranslation("common");
-  const { t: ts } = useTranslation("search");
-  const router = useRouter();
-  const { colors } = useTheme();
-  const client = useJellyfinClient();
-  const actors = people.filter((p) => p.Type === "Actor").slice(0, MAX_ACTORS);
-  const crewGroups = CREW_TYPES.map((type) => ({
-    type,
-    members: people.filter((p) => p.Type === type),
-  })).filter((g) => g.members.length > 0);
-
-  if (!actors.length && !crewGroups.length) return null;
+  const { t } = useTranslation("media");
+  const st = useThemedStyles(makeStyles);
+  const { crew, actors } = useMemo(() => castCredits(people), [people]);
+  const credits = useMemo(() => [...crew, ...actors], [crew, actors]);
+  if (credits.length === 0) return null;
 
   return (
-    <View style={{ marginTop: spacing.xl }}>
-      {/* Crew */}
-      {crewGroups.length > 0 && (
-        <View style={{ paddingHorizontal: spacing.screenPadding, marginBottom: spacing.lg, maxWidth: 640 }}>
-          {crewGroups.map((g) => (
-            <View key={g.type} style={{ marginBottom: spacing.sm }}>
-              <Text style={{ ...typography.small, color: colors.text.tertiary }}>{t(g.type.toLowerCase())}</Text>
-              <Text style={{ ...typography.caption, color: colors.text.secondary, marginTop: 2 }}>
-                {g.members.map((m) => m.Name).join(", ")}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Actors */}
-      {actors.length > 0 && (
-        <View>
-          <Text style={{
-            ...typography.subtitle, color: colors.text.primary,
-            paddingHorizontal: spacing.screenPadding, marginBottom: spacing.md,
-          }}>
-            {t("cast")}
-          </Text>
-          <FlatList
-            horizontal
-            data={actors}
-            keyExtractor={(p) => p.Id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, gap: spacing.md }}
-            renderItem={({ item: person }) => (
-              <Pressable
-                onPress={() => router.push({
-                  pathname: "/search",
-                  params: { person: person.Id, name: person.Name, tag: person.PrimaryImageTag ?? "" },
-                })}
-                accessibilityRole="button"
-                accessibilityLabel={`${person.Name}${person.Role ? `, ${person.Role}` : ""}`}
-                accessibilityHint={ts("filmography")}
-                style={({ pressed }) => ({ width: 76, alignItems: "center", opacity: pressed ? 0.7 : 1 })}
-              >
-                {person.PrimaryImageTag ? (
-                  <Image
-                    source={{ uri: client.getImageUrl(person.Id, "Primary", { height: 120, quality: 80 }) }}
-                    style={{ width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2, backgroundColor: colors.surface.s2 }}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View style={{
-                    width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2,
-                    backgroundColor: colors.brand.soft, justifyContent: "center", alignItems: "center",
-                  }}>
-                    <Text style={{ ...typography.subtitle, color: colors.brand.violet }}>{person.Name.charAt(0)}</Text>
-                  </View>
-                )}
-                <Text numberOfLines={1} style={{
-                  ...typography.small, color: colors.text.primary, marginTop: spacing.xs, textAlign: "center",
-                }}>
-                  {person.Name}
-                </Text>
-                {person.Role && (
-                  <Text numberOfLines={1} style={{
-                    ...typography.badge, color: colors.text.tertiary, textAlign: "center", marginTop: 1,
-                  }}>
-                    {person.Role}
-                  </Text>
-                )}
-              </Pressable>
-            )}
-          />
-        </View>
-      )}
+    <View style={st.section}>
+      <Text style={st.title} accessibilityRole="header">{t("castAndCrew")}</Text>
+      <FlatList
+        horizontal
+        data={credits}
+        keyExtractor={(c, i) => `${i < crew.length ? "crew" : "cast"}-${c.id}`}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={st.list}
+        initialNumToRender={6}
+        renderItem={({ item, index }) => (
+          // Le filet entre équipe et distribution vit dans la cellule de la
+          // première carte d'acteur : une cellule de FlatList est une colonne.
+          <View style={st.cell}>
+            {index === crew.length && crew.length > 0 && <View style={st.sep} />}
+            <CreditCard credit={item} />
+          </View>
+        )}
+      />
     </View>
   );
 }
+
+const CreditCard = memo(function CreditCard({ credit }: { credit: CastCredit }) {
+  const { t } = useTranslation("media");
+  const router = useRouter();
+  const st = useThemedStyles(makeStyles);
+  const client = useJellyfinClient();
+  const isCrew = credit.crewRoles.length > 0;
+  const subtitle = isCrew ? credit.crewRoles.map((r) => t(creditRoleKey(r))).join(" · ") : credit.character;
+
+  return (
+    <Pressable
+      onPress={() => router.push({
+        pathname: "/person/[personId]",
+        params: { personId: credit.id, ...(credit.linkRole !== "Actor" ? { role: credit.linkRole } : {}) },
+      })}
+      accessibilityRole="button"
+      accessibilityLabel={`${credit.name}${subtitle ? `, ${subtitle}` : ""}`}
+      accessibilityHint={t("personOpen", { name: credit.name })}
+      style={({ pressed }) => [st.card, pressed && st.pressed]}
+    >
+      <View style={st.portrait}>
+        {credit.imageTag ? (
+          <Image
+            source={{ uri: client.getImageUrl(credit.id, "Primary", { height: CARD_H * 2, quality: 80, tag: credit.imageTag }) }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={200}
+            recyclingKey={credit.id}
+          />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, st.fallback]}>
+            <Text style={st.initials}>{initials(credit.name)}</Text>
+          </View>
+        )}
+      </View>
+      <Text style={st.name} numberOfLines={1}>{credit.name}</Text>
+      {subtitle ? <Text style={[st.sub, isCrew && st.subCrew]} numberOfLines={1}>{subtitle}</Text> : null}
+    </Pressable>
+  );
+});
+
+const makeStyles = (t: AppTheme) =>
+  StyleSheet.create({
+    section: { marginTop: spacing.xl },
+    title: {
+      fontSize: 18,
+      lineHeight: 23,
+      letterSpacing: -0.4,
+      fontFamily: FONT_FAMILY.bold,
+      color: t.colors.text.primary,
+      paddingHorizontal: spacing.screenPadding,
+      marginBottom: spacing.md,
+    },
+    list: { paddingHorizontal: spacing.screenPadding, gap: spacing.md },
+    sep: { width: StyleSheet.hairlineWidth, alignSelf: "stretch", marginVertical: spacing.sm, marginRight: spacing.md, backgroundColor: t.colors.border.strong },
+    cell: { flexDirection: "row" },
+    card: { width: CARD_W },
+    pressed: { opacity: 0.75, transform: [{ scale: 0.97 }] },
+    portrait: {
+      width: CARD_W,
+      height: CARD_H,
+      borderRadius: RADIUS.md,
+      overflow: "hidden",
+      backgroundColor: t.colors.surface.s2,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.colors.border.subtle,
+    },
+    fallback: { alignItems: "center", justifyContent: "center", backgroundColor: t.colors.brand.soft },
+    initials: { fontSize: 22, fontFamily: FONT_FAMILY.bold, color: t.colors.brand.light },
+    name: { marginTop: spacing.xs + 2, fontSize: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
+    sub: { marginTop: 1, fontSize: 11.5, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
+    subCrew: { color: t.colors.brand.light },
+  });
