@@ -13,13 +13,13 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
-const GLYPH = 16;
+const GLYPH = 18;
 
 /**
  * La pastille d'états d'une affiche du salon — signet (Ma liste), cœur
  * (favori), coche (vu) — dans une capsule d'angle. Le jumeau du web et du
  * mobile, à la taille près : un téléviseur se lit à trois mètres, les glyphes
- * passent de 12 à 16 et la capsule respire davantage.
+ * passent de 12 à 18 — comme sur la LG — et la capsule respire davantage.
  *
  * Elle reste visible AU FOCUS : les puces qualité/langues montent en bas de
  * l'affiche, le coin haut-droit est libre. Noir et blanc constants, seul le
@@ -50,12 +50,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    height: 30,
+    height: 34,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 9,
-    borderRadius: 15,
+    gap: 7,
+    paddingHorizontal: 10,
+    borderRadius: 17,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.2)",
     backgroundColor: "rgba(0,0,0,0.72)",

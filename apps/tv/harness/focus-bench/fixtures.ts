@@ -67,6 +67,15 @@ export const MOVIES = Array.from({ length: 48 }, (_, i) => ({
   ProductionYear: 1980 + i,
   CommunityRating: 5 + (i % 5),
   ImageTags: { Primary: "bench" },
+  // Des états variés, pour que les marqueurs de carte (ma liste, favori, vu,
+  // progression) aient de quoi se montrer — toutes les combinaisons sortent
+  // dans les douze premières cartes.
+  UserData: {
+    Played: i % 5 === 0,
+    IsFavorite: i % 3 === 0,
+    Likes: i % 4 === 1,
+    PlayedPercentage: i % 7 === 3 ? 40 : undefined,
+  },
 })) as unknown as MediaItem[];
 
 export const GENRES = [
