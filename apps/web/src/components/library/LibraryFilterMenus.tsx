@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ArrowUpDown } from "lucide-react";
 import { matchesSearch } from "@tentacle-tv/shared";
 import { FilterMenu } from "./FilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
@@ -53,18 +54,26 @@ function CheckRow({ label, checked, onClick }: { label: string; checked: boolean
 }
 
 export function SortMenu({
-  filters, onSortByChange, onSortOrderChange,
+  filters, onSortByChange, onSortOrderChange, toolbar = false,
 }: {
   filters: LibraryFilterState;
   onSortByChange: (v: string) => void;
   onSortOrderChange: (v: string) => void;
+  /** En fin de barre d'outils : icône, ton neutre, panneau ancré à droite. */
+  toolbar?: boolean;
 }) {
   const { t } = useTranslation("common");
   const current = SORT_OPTIONS.find((o) => o.value === filters.sortBy);
   const desc = filters.sortOrder === "Descending";
 
   return (
-    <FilterMenu label={t("common:sortBy")} value={current ? t(`common:${current.key}`) : null}>
+    <FilterMenu
+      label={t("common:sortBy")}
+      value={current ? t(`common:${current.key}`) : null}
+      neutral={toolbar}
+      align={toolbar ? "right" : "left"}
+      icon={toolbar ? <ArrowUpDown aria-hidden className="h-3.5 w-3.5" strokeWidth={2.2} /> : undefined}
+    >
       <div className="flex flex-col gap-0.5" role="menu">
         {SORT_OPTIONS.map((opt) => (
           <CheckRow

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useGenres, useLibraryCatalog } from "@tentacle-tv/api-client";
 import { useItemsPerRow } from "../hooks/useItemsPerRow";
@@ -10,6 +9,7 @@ import { LibrarySearchField } from "./library/LibrarySearchField";
 import { LibraryGridCard } from "./LibraryGridCard";
 import { LibraryGridEmpty } from "./library/LibraryGridEmpty";
 import { LibraryExternalResults } from "./library/LibraryExternalResults";
+import { LibraryGridSkeleton, LibraryLoadingMore } from "./library/LibraryGridStates";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 import { useSearchInput } from "../hooks/useSearchInput";
 
@@ -46,7 +46,6 @@ const TEXT_HEIGHT = 52;
 const GAP = 16;
 
 export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryGridProps) {
-  const { t } = useTranslation("common");
   const {
     filters, search, setSearch, queryKey,
     toggleGenre, togglePlatform, setYearFrom, setYearTo,
@@ -155,19 +154,25 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
 
   return (
     <div>
-      <LibrarySearchField
-        value={input}
-        onChange={setInput}
-        libraryName={libraryName}
-        // La saisie pas encore partie, ou la page de résultats en route : l'anneau
-        // tourne ; ensuite, le compte du serveur.
-        busy={pending || (isFetching && !isFetchingNextPage)}
-        resultCount={search.length > 0 && !isLoading ? totalCount : null}
-      />
-
-      {/* Filtres rapides + avancés */}
+      {/* Recherche, compte, tri et filtres : un seul panneau. Le champ y entre
+          en tête — sur webOS, où il est substitué par un composant inerte, la
+          case reste simplement vide. */}
       <div className="mb-6 px-4 md:px-8">
         <LibraryFilterBar
+          variant="panel"
+          leading={
+            <LibrarySearchField
+              inline
+              value={input}
+              onChange={setInput}
+              libraryName={libraryName}
+              // La saisie pas encore partie, ou la page de résultats en route :
+              // l'anneau tourne ; ensuite, le compte du serveur.
+              busy={pending || (isFetching && !isFetchingNextPage)}
+              resultCount={search.length > 0 && !isLoading ? totalCount : null}
+            />
+          }
+          resultsLoading={isLoading}
           genres={genres ?? []}
           filters={filters}
           activeCount={activeCount}
@@ -191,11 +196,7 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
       {/* Grid */}
       <div className="px-4 md:px-8" ref={gridRef}>
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
-            {Array.from({ length: 24 }).map((_, i) => (
-              <div key={i} className="skeleton-shimmer aspect-[2/3] rounded-[var(--radius-lg)]" />
-            ))}
-          </div>
+          <LibraryGridSkeleton columns={itemsPerRow} gap={GAP} />
         ) : items.length === 0 ? (
           <LibraryGridEmpty
             filtered={search.length >= 2 || hasActiveFilters}
@@ -249,10 +250,7 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
                     {isLoaderRow ? (
                       /* Hauteur explicite : la rangée n'en impose plus, donc
                          `h-full` s'y résoudrait à zéro. */
-                      <div className="flex h-40 items-center justify-center">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
-                        <span className="ml-2 text-sm text-content-quaternary">{t("common:loadingMore")}</span>
-                      </div>
+                      <LibraryLoadingMore className="h-40" />
                     ) : (
                       <div
                         className="grid"
@@ -282,12 +280,7 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
               })}
             </div>
 
-            {isFetchingNextPage && (
-              <div className="flex items-center justify-center py-4">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
-                <span className="ml-2 text-sm text-content-quaternary">{t("common:loadingMore")}</span>
-              </div>
-            )}
+            {isFetchingNextPage && <LibraryLoadingMore className="py-4" />}
           </div>
         )}
       </div>
