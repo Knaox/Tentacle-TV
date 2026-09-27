@@ -25,6 +25,7 @@ export {
   WATCH_STAGE_FILTERS, type WatchStage, type WatchStageFilter, type WatchlistSummary, type RemainingInfo,
 } from "./utils/watchlistProgress";
 export { useResolvePlayTarget } from "./hooks/useResolvePlayTarget";
+export { useRestoreWatchlistItem } from "./hooks/useRestoreWatchlistItem";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";
 export { useWatchStopInvalidation } from "./hooks/useWatchStopInvalidation";
 export { useStream, type StreamOptions } from "./hooks/useStream";
