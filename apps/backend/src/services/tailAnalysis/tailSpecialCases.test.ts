@@ -189,6 +189,15 @@ describe("les logos de fin", () => {
     expect(reading?.scenes).toEqual([]);
   });
 
+  it("le château Disney du centenaire (40 s en musique) puis la lampe Pixar : un logo (« Toy Story 5 »)", () => {
+    const reading = readTail(ending({
+      picture: [["E", 40], ["U", 10], ["K", 10]],
+      audio: [["M", 40], ["S", 8], ["Q", 12]],
+      looks: [["n", 40], ["f", 10], ["k", 10]],
+    }));
+    expect(reading?.scenes).toEqual([]);
+  });
+
   it("un gag dialogué suivi du carton clair de la chaîne reste une scène (« Rick et Morty » S2E6)", () => {
     const reading = readTail(ending({
       picture: [["E", 20], ["U", 10]],

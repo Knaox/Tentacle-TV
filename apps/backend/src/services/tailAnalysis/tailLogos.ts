@@ -16,7 +16,8 @@
  * dernière vignette (fond uni ≥ 0,65, noir ≤ 0,1). Sur 62 vraies scènes finales
  * du banc, une seule finit ainsi (« Brave New World », 47 s, très parlée).
  *
- * Un logo, c'est donc une plage d'image d'au plus 35 s (55 s si la moitié de ses
+ * Un logo, c'est donc une plage d'image d'au plus 45 s (le château Disney du centenaire
+ * en dure 40 — « Toy Story 5 », « Jumpers » ; 55 s si la moitié de ses
  * vignettes sont ce fond clair : le gag de WALL·E) qui finit sur ce fond, ou juste
  * avant, sans réplique suivie avant lui, et après laquelle il n'y a plus que du noir,
  * des cartons ou le fond clair.
@@ -26,7 +27,7 @@ import type { Timeline } from "./tailTimeline";
 
 const FLAT_MODAL_MIN = 0.65;
 const FLAT_DARK_MAX = 0.1;
-const LOGO_SHORT_MS = 35_000;
+const LOGO_SHORT_MS = 45_000;
 const LOGO_LONG_MS = 55_000;
 const FLAT_SHARE_LONG = 0.5;
 /** Une réplique suivie de cette durée avant le fond clair : une scène, pas un logo. */
