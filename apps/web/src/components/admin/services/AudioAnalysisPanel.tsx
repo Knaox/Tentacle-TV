@@ -9,10 +9,11 @@ import { formatDuration, formatMegabytes } from "./serviceSummary";
 import { useAudioAnalysis, useExplainFailure } from "./useServicesData";
 
 /**
- * L'analyse audio des épisodes : son interrupteur, écrit au changement — pas
- * de bouton « enregistrer » pour un seul réglage —, l'outil d'empreinte trouvé
- * sur ce serveur, et ce que la fonction a coûté depuis le démarrage. C'est ce
- * qui permet de décider en connaissance de cause de la laisser allumée.
+ * L'analyse audio — la fin de chaque média, et les voisins de saison d'un
+ * épisode : son interrupteur, écrit au changement — pas de bouton
+ * « enregistrer » pour un seul réglage —, l'outil d'empreinte trouvé sur ce
+ * serveur, et ce que la fonction a coûté depuis le démarrage. C'est ce qui
+ * permet de décider en connaissance de cause de la laisser allumée.
  */
 export function AudioAnalysisPanel() {
   const { t } = useTranslation("adminServices");

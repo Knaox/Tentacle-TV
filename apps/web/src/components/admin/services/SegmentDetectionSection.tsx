@@ -7,12 +7,13 @@ import { AudioAnalysisPanel } from "./AudioAnalysisPanel";
  * Où le serveur trouve les passages d'un épisode — et comment lui en donner.
  *
  * Les greffons restent la SOURCE PREMIÈRE : ils voient la vidéo et l'audio.
- * Mais Tentacle n'est plus aveugle sans eux : quand aucune source ne dit rien
- * de crédible sur le générique de fin, l'analyse embarquée lit les vignettes
- * trickplay (`creditsFromFrames.ts`) et fournit générique et scène
- * post-générique ; et pour un épisode que personne n'a décrit, l'analyse AUDIO
- * écoute ses voisins de saison (`services/audioAnalysis.ts`). Cette dernière
- * fait travailler Jellyfin : elle a donc son interrupteur, et son compteur.
+ * Mais Tentacle n'est plus aveugle sans eux : à la première lecture de chaque
+ * film et de chaque épisode, l'analyse de FIN DE MÉDIA lit les vignettes
+ * trickplay et écoute la fin (`services/tailAnalysis/`) — début du générique,
+ * scènes mi- et post-génériques, y compris contre un greffon qui s'est
+ * trompé ; et pour un épisode que personne n'a décrit, l'analyse AUDIO écoute
+ * ses voisins de saison (`services/audioAnalysis.ts`). Les deux font
+ * travailler Jellyfin : elles partagent un interrupteur, et un compteur.
  *
  * Les greffons s'EMPILENT : chacun signale ce qu'il sait, et le résolveur prend
  * le plus précis. En installer deux ne crée pas de conflit.
