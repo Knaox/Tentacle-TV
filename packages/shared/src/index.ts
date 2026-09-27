@@ -8,6 +8,7 @@ export * from "./utils/cardImage";
 export * from "./utils/cardRating";
 export * from "./utils/mediaQuality";
 export * from "./utils/streamLanguages";
+export * from "./utils/mediaFacts";
 export * from "./utils/qualityLadder";
 export * from "./utils/scrubStep";
 export * from "./utils/playbackRates";
