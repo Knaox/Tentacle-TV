@@ -13,6 +13,9 @@ import { RADIUS, spacing, useTheme, useThemedStyles, withAlpha, type AppTheme } 
 
 interface Props { libraryId: string; libraryName?: string }
 
+/** Le rond du retour flottant, en points. */
+const BACK_SIZE = 40;
+
 /**
  * Une bibliothèque, ouverte depuis ailleurs (accueil, lien) : la même vue que
  * l'onglet Bibliothèque — héros, recherche, barre rapide, grille —, sans la
@@ -38,7 +41,12 @@ export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
 
   return (
     <SubtleBackground ambient>
-      <LibraryCatalogView library={library} topInset={top} bottomInset={insets.bottom} />
+      <LibraryCatalogView
+        library={library}
+        topInset={top}
+        bottomInset={insets.bottom}
+        searchDockOffset={BACK_SIZE + spacing.sm}
+      />
       <View style={[st.backWrap, { top: top + spacing.xs }]} pointerEvents="box-none">
         <Pressable
           onPress={() => backOrHome(router)}
@@ -59,8 +67,8 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   // Pas de flou : la grille défile dessous, un flou y serait recalculé à
   // chaque image. Un aplat translucide et un liseré suffisent à le détacher.
   back: {
-    width: 40,
-    height: 40,
+    width: BACK_SIZE,
+    height: BACK_SIZE,
     borderRadius: RADIUS.pill,
     alignItems: "center",
     justifyContent: "center",

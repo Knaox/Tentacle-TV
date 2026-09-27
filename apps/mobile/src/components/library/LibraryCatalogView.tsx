@@ -24,6 +24,11 @@ interface Props {
   bottomInset?: number;
   onScroll?: ReturnType<typeof useScrollChromeHandler>;
   listRef?: RefObject<FlatList<MediaItem> | null>;
+  /**
+   * Ce qui flotte encore sous l'en-tête (le retour de l'écran empilé) : la
+   * rangée de recherche s'amarre dessous à la frappe, pas derrière.
+   */
+  searchDockOffset?: number;
 }
 
 /**
@@ -36,7 +41,9 @@ interface Props {
  * partagent : le second avait sa propre mise en page, plus pauvre (pas
  * d'ambiance, recherche repliée), pour un état et des filtres identiques.
  */
-export function LibraryCatalogView({ library, capsule, topInset, bottomInset = 0, onScroll, listRef }: Props) {
+export function LibraryCatalogView({
+  library, capsule, topInset, bottomInset = 0, onScroll, listRef, searchDockOffset = 0,
+}: Props) {
   const router = useRouter();
   const { height: windowH } = useWindowDimensions();
   const ownRef = useRef<FlatList<MediaItem>>(null);
@@ -58,8 +65,8 @@ export function LibraryCatalogView({ library, capsule, topInset, bottomInset = 0
   const onSearchRowY = useCallback((y: number) => { searchRowY.current = y; }, []);
   useEffect(() => {
     if (!assist.focused) return;
-    ref.current?.scrollToOffset({ offset: Math.max(0, searchRowY.current - spacing.sm), animated: true });
-  }, [assist.focused, ref]);
+    ref.current?.scrollToOffset({ offset: Math.max(0, searchRowY.current - spacing.sm - searchDockOffset), animated: true });
+  }, [assist.focused, ref, searchDockOffset]);
 
   const header = (
     <View>
