@@ -221,6 +221,14 @@ export default {
   tvIndisponibleTexte:
     "Cette section demande un clavier et un écran de près. Ouvrez Tentacle TV sur un ordinateur, un téléphone ou une tablette pour y accéder.",
 
+  // Écran de reprise du téléviseur : un écran qui n'a pas pu s'afficher. Sans
+  // lui, l'application entière s'éteignait — écran noir, « Retour » sans effet.
+  tvScreenErrorTitle: "Cet écran a rencontré un problème",
+  tvScreenErrorText: "Réessayez, ou revenez à l'écran précédent.",
+  tvScreenLoadTitle: "Cet écran n'a pas pu se charger",
+  tvScreenLoadWaiting: "L'application se recharge dès que le serveur répond.",
+  tvScreenLoadText: "Le chargement a échoué de nouveau. Vérifiez la connexion du téléviseur, puis réessayez.",
+
   // Écran de recherche du téléviseur.
   rechercheTvDictee: "Appuyez sur le micro de la télécommande pour dicter",
   rechercheTvVide: "Saisissez un titre pour lancer la recherche.",
