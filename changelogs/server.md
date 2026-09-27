@@ -5,6 +5,23 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [Unreleased]
+### FR
+- **La fin des films et des épisodes, lue à l'image et au son** — à la première lecture de chaque film et de chaque épisode, le serveur lit sa fin : les vignettes montrent où défile le générique, l'audio distingue la musique des dialogues. Il en tire le début du générique et les scènes qui le suivent, mi-génériques comme post-génériques : chaque générique suivi d'une scène a son bouton pour y aller, et un film à deux scènes (« Avengers ») en a deux
+- **Des génériques corrigés, même quand Jellyfin en donnait un** : un générique qui avalait la scène mi-générique s'arrête désormais avant elle (« Avengers : L'Ère d'Ultron », « Fast & Furious 9 », « Spider-Man : New Generation », « Rick et Morty »), un repère posé dans la dernière scène du film ne coupe plus sa fin (« Deadpool »), et une scène de nuit presque noire n'est plus prise pour un générique — « Les Gardiens de la Galaxie Vol. 3 » perdait cinquante secondes de film quand le passage automatique des génériques était actif
+- **Plus de fausses scènes post-génériques** : les logos de fin (Disney, Pixar), les cartons muets et les photos glissées dans le générique ne font plus apparaître de bouton vers une scène qui n'existe pas
+- **Les épisodes sans repères** gagnent leur générique et leur scène d'après (« Rick et Morty ») ; la chanson d'un ending n'est pas prise pour une scène
+- **Rien n'est enregistré quand l'analyse ne trouve rien** — ni pour la fin des médias, ni pour l'audio des épisodes voisins : ce « rien » reste en mémoire un jour. Les empreintes audio des épisodes ne sont plus gardées en base : leur table est supprimée au démarrage, avec les anciennes lignes « rien trouvé »
+- L'image Docker nomme ffmpeg explicitement (il y était déjà, tiré par yt-dlp)
+
+### EN
+- **The end of movies and episodes, read from picture and sound** — on the first play of every movie and episode, the server reads its ending: thumbnails show where the credits roll, the audio tells music from dialogue. From them it finds where the credits start and every scene that follows, mid-credits and post-credits alike: each credits segment followed by a scene gets its button to jump to it, and a movie with two scenes ("The Avengers") gets two
+- **Credits corrected, even when Jellyfin had some**: credits that swallowed a mid-credits scene now stop before it ("Avengers: Age of Ultron", "F9", "Spider-Man: Into the Spider-Verse", "Rick and Morty"), a marker placed in the film's last scene no longer cuts its ending ("Deadpool"), and an almost black night scene is no longer taken for credits — "Guardians of the Galaxy Vol. 3" lost fifty seconds of film when automatic credits skipping was on
+- **No more fake post-credits scenes**: end logos (Disney, Pixar), silent cards and photos slipped into the credits no longer show a button to a scene that does not exist
+- **Episodes without markers** get their credits and their after-credits scene ("Rick and Morty"); an ending's song is not taken for a scene
+- **Nothing is saved when the analysis finds nothing** — neither for media endings nor for season-neighbour audio: that "nothing" stays in memory for a day. Episode audio fingerprints are no longer kept in the database: their table is dropped at startup, along with old "nothing found" rows
+- The Docker image names ffmpeg explicitly (it was already there, pulled in by yt-dlp)
+
 ## [1.19.3]
 ### FR
 - **Administration : une vue d'ensemble** — `/admin` ne s'ouvre plus sur un panneau vide : l'état de Jellyfin et de la base de données, les sessions en direct, les tickets ouverts, les mises à jour de plugins, les comptes, les invitations actives et les comptes autorisés à télécharger, d'un coup d'œil ; chaque tuile mène à sa section, et trois raccourcis ouvrent les gestes courants (inviter, jumeler un téléviseur, voir l'app comme un utilisateur)
