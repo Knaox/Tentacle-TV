@@ -60,7 +60,7 @@ export function Watchlist() {
       <button
         type="button"
         onClick={sel.enterSelectionMode}
-        className="h-9 cursor-pointer rounded-full bg-fill-subtle px-4 text-sm font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-secondary"
+        className="h-9 cursor-pointer rounded-full bg-[color:var(--surface-2)] px-4 text-sm font-medium text-content-secondary shadow-[var(--elev-1)] ring-1 ring-line-strong transition-colors hover:text-content-primary"
       >
         {t("common:select")}
       </button>

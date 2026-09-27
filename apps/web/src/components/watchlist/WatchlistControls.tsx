@@ -23,6 +23,13 @@ function countFor(stage: WatchStageFilter, counts: WatchlistSummary): number {
 const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 /**
+ * Le repos des pastilles de la barre de filtres (`CHIP_IDLE`) : fond OPAQUE et
+ * liseré fort. La barre chevauche le bas de la bannière ; un fond translucide
+ * y laissait passer l'image, et le texte sombre du thème clair s'y perdait.
+ */
+const IDLE_SURFACE = "bg-[color:var(--surface-2)] ring-1 ring-line-strong shadow-[var(--elev-1)]";
+
+/**
  * Les étapes de visionnage, avec leur compte. Une étape vide disparaît — sauf
  * l'active, qu'on doit pouvoir voir et quitter. Sur écran étroit, la rangée
  * défile horizontalement plutôt que de passer à la ligne.
@@ -49,7 +56,7 @@ export const StageChips = memo(function StageChips({
             aria-checked={active}
             onClick={() => onStageChange(s)}
             className={`flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors duration-150 ${FOCUS} ${
-              active ? "text-white" : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
+              active ? "text-white" : `${IDLE_SURFACE} text-content-secondary hover:text-content-primary`
             }`}
             style={active ? { background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" } : undefined}
           >
@@ -77,7 +84,7 @@ export const TypeSegment = memo(function TypeSegment({
   onTypeChange: (type: CollectionTypeTab) => void;
 }) {
   return (
-    <div role="radiogroup" className="flex shrink-0 items-center rounded-full border border-line-subtle bg-fill-faint p-1">
+    <div role="radiogroup" className={`flex shrink-0 items-center rounded-full p-1 ${IDLE_SURFACE}`}>
       {tabs.map((tab) => {
         const active = tab.key === type;
         return (
@@ -88,7 +95,7 @@ export const TypeSegment = memo(function TypeSegment({
             aria-checked={active}
             onClick={() => onTypeChange(tab.key)}
             className={`h-7 cursor-pointer rounded-full px-3 text-[13px] font-medium transition-colors duration-150 ${FOCUS} ${
-              active ? "bg-fill-medium text-content-primary" : "text-content-quaternary hover:text-content-primary"
+              active ? "bg-fill-medium text-content-primary" : "text-content-tertiary hover:text-content-primary"
             }`}
           >
             {tab.label}
@@ -111,7 +118,7 @@ export const ViewToggle = memo(function ViewToggle({
     <div
       role="radiogroup"
       aria-label={t("viewLabel")}
-      className="flex shrink-0 items-center rounded-full border border-line-subtle bg-fill-faint p-1"
+      className={`flex shrink-0 items-center rounded-full p-1 ${IDLE_SURFACE}`}
     >
       {(["grid", "list"] as const).map((v) => {
         const active = v === view;
@@ -127,7 +134,7 @@ export const ViewToggle = memo(function ViewToggle({
             title={label}
             onClick={() => onViewChange(v)}
             className={`flex h-8 w-9 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 ${FOCUS} ${
-              active ? "bg-fill-medium text-content-primary" : "text-content-quaternary hover:text-content-primary"
+              active ? "bg-fill-medium text-content-primary" : "text-content-tertiary hover:text-content-primary"
             }`}
           >
             <Icon size={16} aria-hidden />
