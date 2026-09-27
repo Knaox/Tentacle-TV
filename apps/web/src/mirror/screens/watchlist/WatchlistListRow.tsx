@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { BookmarkMinus, Check, Loader2, Play } from "lucide-react";
+import { Check, Loader2, Play, Trash2 } from "lucide-react";
 import { useJellyfinClient, useToggleWatchlistForItem, watchProgress, watchStage } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useRemainingLabel } from "../../../components/watchlist/WatchProgressLine";
@@ -109,7 +109,7 @@ export const WatchlistListRow = memo(function WatchlistListRow({
             aria-label={t("removeTitle", { title: item.Name })}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-line-subtle bg-fill-subtle text-content-tertiary"
           >
-            <BookmarkMinus size={18} aria-hidden />
+            <Trash2 size={18} aria-hidden />
           </button>
         </div>
       )}
