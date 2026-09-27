@@ -1,23 +1,16 @@
 import { useTranslation } from "react-i18next";
-import { Bookmark, Heart } from "lucide-react";
-import { useBatchRemoveFavorites, useBatchRemoveWatchlist, useFavoritesAll, useWatchlistAll } from "@tentacle-tv/api-client";
+import { Heart } from "lucide-react";
+import { useBatchRemoveFavorites, useFavoritesAll } from "@tentacle-tv/api-client";
 import { CollectionScreen } from "./CollectionScreen";
-import { ShareMyListButton } from "./ShareMyListButton";
+import { MirrorWatchlistScreen } from "../watchlist/WatchlistScreen";
 
-/** Route `/watchlist` — « Ma liste » (`screens/WatchlistScreen` de l'app), avec son partage. */
+/**
+ * Route `/watchlist` — « Ma liste » (`screens/WatchlistScreen` de l'app). Elle
+ * a quitté `CollectionScreen` pour son propre écran (`screens/watchlist`) :
+ * reprise, étapes de visionnage, vue liste. Mes favoris reste ici.
+ */
 export function MirrorWatchlist() {
-  const { t } = useTranslation("common");
-  return (
-    <CollectionScreen
-      query={useWatchlistAll()}
-      batchRemove={useBatchRemoveWatchlist()}
-      title={t("myList")}
-      Icon={Bookmark}
-      emptyTitle={t("emptyWatchlist")}
-      emptyHint={t("emptyWatchlistHint")}
-      action={<ShareMyListButton />}
-    />
-  );
+  return <MirrorWatchlistScreen />;
 }
 
 /** Route `/favorites` — « Mes favoris » (`screens/FavoritesScreen` de l'app) : même écran, autre source. */

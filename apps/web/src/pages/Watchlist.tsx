@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useWatchlistAll, useBatchRemoveWatchlist } from "@tentacle-tv/api-client";
@@ -17,6 +17,7 @@ import { WatchlistResumeShelf } from "../components/watchlist/WatchlistResumeShe
 import { WatchlistListBody } from "../components/watchlist/WatchlistListBody";
 import { WatchlistEmpty, WatchlistSkeleton, WatchlistStageEmpty } from "../components/watchlist/WatchlistStates";
 import { WatchlistUndoToast } from "../components/watchlist/WatchlistUndoToast";
+import { useSummaryLine } from "../components/watchlist/useSummaryLine";
 
 /**
  * Ma liste — bureau et web grand écran.
@@ -31,7 +32,6 @@ import { WatchlistUndoToast } from "../components/watchlist/WatchlistUndoToast";
  */
 export function Watchlist() {
   const { t } = useTranslation("common");
-  const { t: tw } = useTranslation("watchlist");
   const navigate = useNavigate();
   const { data: items, isLoading } = useWatchlistAll();
   const page = useWatchlistPage(items);
@@ -48,14 +48,7 @@ export function Watchlist() {
     batchRemove.mutate([...sel.selected], { onSettled: () => sel.exitSelectionMode() });
   };
 
-  const summaryLine = useMemo(() => {
-    const s = page.summary;
-    return [
-      tw("statTotal", { count: s.total }),
-      s.inProgress > 0 ? tw("statInProgress", { count: s.inProgress }) : null,
-      s.watched > 0 ? tw("statWatched", { count: s.watched }) : null,
-    ].filter(Boolean).join(" · ");
-  }, [page.summary, tw]);
+  const summaryLine = useSummaryLine(page.summary);
 
   const hasItems = (items?.length ?? 0) > 0;
   const showResume = hasItems && stage === "all" && !filters.isFiltered && !sel.isSelecting;

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   filterByWatchStage,
@@ -9,22 +9,9 @@ import {
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useCollectionFilters } from "../collection/useCollectionFilters";
+import { useWatchlistView } from "./useWatchlistView";
 
-export type WatchlistView = "grid" | "list";
-
-/**
- * Clé NOUVELLE, propre à cette page — elle ne se renomme pas (cf. CLAUDE.md,
- * « un nom traversé par une chaîne n'est pas un identifiant »).
- */
-const VIEW_STORAGE_KEY = "tentacle_watchlist_view";
-
-function readStoredView(): WatchlistView {
-  try {
-    return localStorage.getItem(VIEW_STORAGE_KEY) === "list" ? "list" : "grid";
-  } catch {
-    return "grid";
-  }
-}
+export type { WatchlistView } from "./useWatchlistView";
 
 /**
  * Tout l'état de la page Ma liste, dérivé en mémoire de la liste chargée.
@@ -57,15 +44,7 @@ export function useWatchlistPage(items: MediaItem[] | undefined) {
     [setSearchParams],
   );
 
-  const [view, setViewState] = useState<WatchlistView>(readStoredView);
-  const setView = useCallback((next: WatchlistView) => {
-    setViewState(next);
-    try {
-      localStorage.setItem(VIEW_STORAGE_KEY, next);
-    } catch {
-      // Stockage refusé (navigation privée) : le choix vaut pour la visite.
-    }
-  }, []);
+  const { view, setView } = useWatchlistView();
 
   const stageCounts = useMemo(() => summarizeWatchlist(filters.filtered), [filters.filtered]);
   const summary = useMemo(() => summarizeWatchlist(items ?? []), [items]);
