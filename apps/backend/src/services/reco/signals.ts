@@ -4,6 +4,7 @@ import type { JellyfinFacetSource } from "./facets";
 /** Ce qu'un scan de signaux rapporte d'un item — facettes + UserData. */
 export interface SignalItem extends JellyfinFacetSource {
   Id: string;
+  Name?: string;
   Type?: string;
   SeriesId?: string;
   ProviderIds?: Record<string, string>;
