@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Modal, Animated, PanResponder, useWi
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useMediaItem, useFavorite, useToggleWatchlist, useWatchedToggle, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useMediaItem, useFavorite, useToggleWatchlist, useWatchedToggle, useJellyfinClient, ratingIdentityForItem } from "@tentacle-tv/api-client";
 import type { RecoReason } from "@tentacle-tv/api-client";
 import { RecoReasonList } from "@/components/reco/RecoReasonList";
 import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -11,6 +11,7 @@ import { GlassBackdrop } from "@/components/ui";
 import { retainModal } from "@/components/ui/modalGate";
 import { ActionCell } from "@/components/ActionCell";
 import { KeepOfflineActionCell } from "@/offline/entry/KeepOfflineActionCell";
+import { RatingPanelMobile } from "@/components/rating/RatingPanelMobile";
 
 // expo-haptics optional
 let Haptics: { impactAsync: (s: any) => void; ImpactFeedbackStyle: any } | null = null;
@@ -32,7 +33,8 @@ interface Props {
  * Action sheet moderne pour long-press sur un media — pattern Apple TV /
  * Disney+ : poster overlay en haut, grille 2×2 d'actions rondes (Like /
  * Ma liste / Vu / Garder hors ligne) avec ring tinted brand violet sur état
- * actif. BlurView backdrop + drag-to-dismiss.
+ * actif, puis la note du titre (cinq étoiles). BlurView backdrop +
+ * drag-to-dismiss.
  */
 export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
   const { t } = useTranslation("common");
@@ -210,6 +212,10 @@ export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
                   pas sa série) ; absente pour un titre hors bibliothèque. */}
               {item && <KeepOfflineActionCell item={item} onClose={dismiss} />}
             </View>
+
+            {/* Noter depuis la carte : le titre que l'affiche MONTRE — la série
+                pour un épisode, comme Favoris et Ma liste. */}
+            {display && <RatingPanelMobile identity={ratingIdentityForItem(display)} jellyfinItemId={display.Id} variant="sheet" />}
         </>
       </Animated.View>
       </View>

@@ -10,6 +10,12 @@ interface StarRatingMobileProps {
   onClear: () => void;
   /** Côté d'une étoile en points (défaut 32 — cible tactile confortable). */
   size?: number;
+  /**
+   * Contour des étoiles vides. Blanc par défaut (posé sur une image) ; une
+   * surface thémée (fiche, feuille) passe un jeton de texte, sans quoi les
+   * étoiles disparaissent en thème clair.
+   */
+  outlineColor?: string;
 }
 
 const GAP = 6;
@@ -23,7 +29,13 @@ const GAP = 6;
  * Accessibilité RN : le groupe est « adjustable » — un lecteur d'écran monte
  * et descend d'une demi-étoile par geste, les zones de tap lui sont cachées.
  */
-export function StarRatingMobile({ value, onRate, onClear, size = 32 }: StarRatingMobileProps) {
+export function StarRatingMobile({
+  value,
+  onRate,
+  onClear,
+  size = 32,
+  outlineColor = "rgba(255,255,255,0.8)",
+}: StarRatingMobileProps) {
   const { t } = useTranslation("reco");
 
   const pick = (score: number) => {
@@ -55,7 +67,7 @@ export function StarRatingMobile({ value, onRate, onClear, size = 32 }: StarRati
           <View key={star} style={{ width: size, height: size }}>
             <Star
               size={size}
-              color="rgba(255,255,255,0.8)"
+              color={outlineColor}
               strokeWidth={1.5}
               style={{ position: "absolute" }}
             />
