@@ -89,7 +89,14 @@ export function MirrorWatchlistScreen() {
 
   let body: ReactNode;
   if (isLoading) {
-    body = <GridSkeleton rows={3} />;
+    // À la forme de l'affichage choisi : l'écran ne saute pas à l'arrivée.
+    body = view === "list" ? (
+      <div aria-hidden className="flex flex-col gap-2 px-4">
+        {Array.from({ length: 6 }, (_, i) => <div key={i} className="skeleton-shimmer h-[100px] rounded-2xl" />)}
+      </div>
+    ) : (
+      <GridSkeleton rows={3} />
+    );
   } else if (totalRaw === 0) {
     body = <WatchlistEmptyState />;
   } else if (data.length === 0) {
