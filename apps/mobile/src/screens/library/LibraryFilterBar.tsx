@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useGenres } from "@tentacle-tv/api-client";
 import { CatalogFilterSheet, PLATFORMS, SORT_OPTIONS, STATUS_OPTIONS } from "@/components/catalog";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { LibraryQuickBar } from "@/components/library/LibraryQuickBar";
 import type { LibraryCatalogState } from "./useLibraryCatalogState";
 
 /**
@@ -14,7 +15,15 @@ import type { LibraryCatalogState } from "./useLibraryCatalogState";
  * tiers de l'écran. Communs à l'onglet Bibliothèque et à l'écran d'une
  * bibliothèque.
  */
-export function LibraryFilterBar({ state, showCount = true }: { state: LibraryCatalogState; showCount?: boolean }) {
+export function LibraryFilterBar({ state, showCount = true, quick = false }: {
+  state: LibraryCatalogState;
+  showCount?: boolean;
+  /**
+   * La barre rapide au-dessus (statut, favoris, tri) : ce qu'elle montre déjà
+   * ne revient pas en pastille.
+   */
+  quick?: boolean;
+}) {
   const { t } = useTranslation("common");
   const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -23,8 +32,8 @@ export function LibraryFilterBar({ state, showCount = true }: { state: LibraryCa
 
   const status = STATUS_OPTIONS.find((o) => o.value !== null && o.value === state.statusFilter);
   const chips: Array<{ key: string; label: string; remove: () => void }> = [
-    ...(state.sortIndex !== 0 ? [{ key: "sort", label: t(SORT_OPTIONS[state.sortIndex].labelKey), remove: () => state.setSortIndex(0) }] : []),
-    ...(status ? [{ key: "status", label: t(status.labelKey), remove: () => state.setStatusFilter(null) }] : []),
+    ...(!quick && state.sortIndex !== 0 ? [{ key: "sort", label: t(SORT_OPTIONS[state.sortIndex].labelKey), remove: () => state.setSortIndex(0) }] : []),
+    ...(!quick && status ? [{ key: "status", label: t(status.labelKey), remove: () => state.setStatusFilter(null) }] : []),
     ...state.selectedGenres.map((id) => ({
       key: `g-${id}`, label: genres?.find((g) => g.Id === id)?.Name ?? id, remove: () => advanced.onToggleGenre(id),
     })),
@@ -35,11 +44,12 @@ export function LibraryFilterBar({ state, showCount = true }: { state: LibraryCa
       ? [{ key: "years", label: f.yearFrom === f.yearTo ? String(f.yearFrom) : `${f.yearFrom ?? "…"} – ${f.yearTo ?? "…"}`, remove: () => { advanced.onYearFromChange(null); advanced.onYearToChange(null); } }]
       : []),
     ...(f.ratingMin != null ? [{ key: "rating", label: `≥ ${f.ratingMin}/10`, remove: () => advanced.onRatingMinChange(null) }] : []),
-    ...(f.isFavorite ? [{ key: "fav", label: `♥ ${t("favorites")}`, remove: () => advanced.onFavoriteChange(false) }] : []),
+    ...(!quick && f.isFavorite ? [{ key: "fav", label: `♥ ${t("favorites")}`, remove: () => advanced.onFavoriteChange(false) }] : []),
   ];
 
   return (
     <View>
+      {quick && <LibraryQuickBar state={state} />}
       {chips.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.row}>
           {chips.map((chip) => (
@@ -49,6 +59,7 @@ export function LibraryFilterBar({ state, showCount = true }: { state: LibraryCa
               style={st.chip}
               accessibilityRole="button"
               accessibilityLabel={t("removeFilterNamed", { name: chip.label })}
+              hitSlop={{ top: 4, bottom: 4 }}
             >
               <Text style={st.chipText}>{chip.label}</Text>
               <Feather name="x" size={14} color={colors.brand.light} />
@@ -60,7 +71,9 @@ export function LibraryFilterBar({ state, showCount = true }: { state: LibraryCa
         </ScrollView>
       )}
       {showCount && !state.catalog.isLoading && (
-        <Text style={st.resultCount}>{t("resultCount", { count: state.totalCount })}</Text>
+        <Text style={st.resultCount}>
+          {state.isFiltered ? t("resultCount", { count: state.totalCount }) : t("library:titles", { count: state.totalCount })}
+        </Text>
       )}
     </View>
   );
