@@ -7,6 +7,7 @@ import { lazy } from "react";
 
 export const MirrorSearch = lazy(() => import("./screens/search").then((m) => ({ default: m.MirrorSearch })));
 export const MirrorMediaDetail = lazy(() => import("./screens/detail").then((m) => ({ default: m.MirrorMediaDetail })));
+export const MirrorPerson = lazy(() => import("./screens/person").then((m) => ({ default: m.MirrorPerson })));
 export const MirrorLibraries = lazy(() => import("./screens/libraries").then((m) => ({ default: m.MirrorLibraries })));
 export const MirrorLibraryCatalog = lazy(() => import("./screens/libraries").then((m) => ({ default: m.MirrorLibraryCatalog })));
 export const MirrorWatchlist = lazy(() => import("./screens/collection").then((m) => ({ default: m.MirrorWatchlist })));

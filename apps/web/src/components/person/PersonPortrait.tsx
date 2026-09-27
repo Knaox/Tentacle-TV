@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type CSSProperties } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { initials } from "@tentacle-tv/shared";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
@@ -17,6 +17,7 @@ export const PersonPortrait = memo(function PersonPortrait({
   imageTag,
   height,
   className = "",
+  style,
   eager = false,
 }: {
   id: string;
@@ -25,6 +26,8 @@ export const PersonPortrait = memo(function PersonPortrait({
   /** Hauteur DEMANDÉE au serveur (px) — deux fois l'affichage pour les écrans denses. */
   height: number;
   className?: string;
+  /** La largeur quand elle se calcule (miroir) plutôt qu'en classe. */
+  style?: CSSProperties;
   /** L'en-tête de page se charge tout de suite ; les cartes, à l'approche. */
   eager?: boolean;
 }) {
@@ -35,7 +38,7 @@ export const PersonPortrait = memo(function PersonPortrait({
   const { broken, reportFailure } = useBrokenImage(url);
 
   return (
-    <div className={`relative aspect-[2/3] overflow-hidden bg-surface-2 ${className}`}>
+    <div className={`relative aspect-[2/3] overflow-hidden bg-surface-2 ${className}`} style={style}>
       {url !== null && !broken ? (
         <img
           src={url}

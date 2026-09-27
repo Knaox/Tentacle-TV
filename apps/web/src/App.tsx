@@ -40,6 +40,7 @@ import {
   MirrorLibraries,
   MirrorLibraryCatalog,
   MirrorMediaDetail,
+  MirrorPerson,
   MirrorSearch,
   MirrorWatchlist,
 } from "./mirror/screens";
@@ -139,6 +140,8 @@ export function App() {
           {/* Protected — immersive (no sidebar/tabbar) */}
           <Route path="/watch/:itemId" element={guard(<Watch />)} />
           <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
+          {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. Immersive, comme la fiche. */}
+          <Route path="/person/:personId" element={guard(onlineOnly(<ByFormFactor desktop={<Person />} mirror={<MirrorPerson />} />))} />
 
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
           <Route element={guard(<AppLayout />)}>
@@ -152,8 +155,6 @@ export function App() {
             <Route path="recommendations" element={onlineOnly(<ByFormFactor desktop={<Recommendations />} mirror={<MirrorForYou />} />)} />
             {/* La recherche pleine page — l'omnibox (⌘K) y mène pour « tous les résultats ». */}
             <Route path="search" element={onlineOnly(<ByFormFactor desktop={<Search />} mirror={<MirrorSearch />} />)} />
-            {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. */}
-            <Route path="person/:personId" element={onlineOnly(<Person />)} />
             {/* Desktop uniquement — la page se redirige elle-même hors droit
                 et hors contenu local (invisibilité stricte). */}
             <Route path="downloads" element={<DownloadsPage />} />

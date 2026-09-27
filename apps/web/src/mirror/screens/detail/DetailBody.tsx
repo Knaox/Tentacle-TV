@@ -9,6 +9,7 @@ import { CastRow } from "./CastRow";
 import { EpisodeList } from "./EpisodeList";
 import { ExtrasSection } from "./ExtrasSection";
 import { LicenseAttribution } from "./LicenseAttribution";
+import { DetailFacts } from "./DetailFacts";
 
 interface Props {
   item: MediaItem;
@@ -20,9 +21,9 @@ interface Props {
 }
 
 /**
- * `DetailBody` de l'app : genres → synopsis → casting → extras → saisons et
- * épisodes → licence → titres similaires. Le même sous le visuel (portrait)
- * que dans la colonne droite qui défile (iPad paysage).
+ * `DetailBody` de l'app : genres → synopsis → casting et équipe → extras →
+ * saisons et épisodes → informations → licence → titres similaires. Le même
+ * sous le visuel (portrait) que dans la colonne droite qui défile (iPad paysage).
  */
 export const DetailBody = memo(function DetailBody({ item, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId }: Props) {
   const navigate = useNavigate();
@@ -60,6 +61,8 @@ export const DetailBody = memo(function DetailBody({ item, parentSeries, similar
           />
         </>
       )}
+
+      <DetailFacts item={item} />
 
       <LicenseAttribution item={item} />
 
