@@ -34,6 +34,22 @@ export default {
   sceneNowPlaying: "En cours de lecture",
   sceneMessageHeader: "Maintenance ce soir",
   sceneMessageText: "Le serveur redémarre à 23 h. Pensez à mettre votre lecture en pause.",
+  sceneSeason: "Saison {{number}}",
+  sceneVigieDescription: "Demandez films et séries, suivez leur arrivée et voyez les prochaines sorties. Se connecte à votre instance Jellyseerr / Overseerr.",
+
+  // 1.23.0
+  v1_23_0_adminOverview_title: "Une administration rangée",
+  v1_23_0_adminOverview_body: "L'administration s'ouvre sur une vue d'ensemble : l'état de Jellyfin et de la base, les sessions, les tickets et les plugins qui vous attendent. Le menu se range en trois groupes et les pages prennent toute la largeur.",
+  v1_23_0_adminUsers_title: "Les comptes, avec leur photo",
+  v1_23_0_adminUsers_body: "Chaque compte avec sa photo, un résumé, la recherche et le tri. Une fiche par compte : son activité, ses appareils jumelés à révoquer, et « Voir en tant que ».",
+  v1_23_0_adminInvites_title: "Inviter en deux clics",
+  v1_23_0_adminInvites_body: "Des préréglages pour le nombre de personnes et la durée, et le lien prêt à copier dès la création. Il mène enfin à votre serveur : jusqu'ici, il ne s'ouvrait nulle part.",
+  v1_23_0_adminPlugins_title: "Plugins et marketplace refaits",
+  v1_23_0_adminPlugins_body: "Chaque plugin dit où il en est, le marketplace se parcourt par recherche et par catégorie, et le redémarrage qu'impose un module serveur se suit jusqu'au retour du serveur.",
+  v1_23_0_adminMetadata_title: "La clé TMDB d'un regard",
+  v1_23_0_adminMetadata_body: "La clé TMDB se teste sans être ressortie, se remplace ou se retire. Le calcul des recommandations se suit en direct, et la région se choisit parmi les pays que TMDB couvre.",
+  v1_23_0_outlines_title: "Des contours enfin visibles",
+  v1_23_0_outlines_body: "Saison ou épisode choisis, onglets des tickets, champs de connexion et de mot de passe : leurs bordures, leurs survols et leurs anneaux de focus s'affichent enfin.",
 
   // 1.22.0
   v1_22_0_search_title: "Une recherche qui vous comprend",

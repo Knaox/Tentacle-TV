@@ -30,6 +30,22 @@ export default {
   sceneNowPlaying: "Now playing",
   sceneMessageHeader: "Maintenance tonight",
   sceneMessageText: "The server restarts at 11 pm. Remember to pause your playback.",
+  sceneSeason: "Season {{number}}",
+  sceneVigieDescription: "Request films and shows, follow their arrival and see upcoming releases. Connects to your Jellyseerr / Overseerr instance.",
+
+  // 1.23.0
+  v1_23_0_adminOverview_title: "A tidier administration",
+  v1_23_0_adminOverview_body: "Administration opens on an overview: Jellyfin and database health, sessions, and the tickets and plugins waiting for you. The menu is sorted into three groups and pages use the full width.",
+  v1_23_0_adminUsers_title: "Accounts, with their photo",
+  v1_23_0_adminUsers_body: "Every account with its photo, a summary, search and sorting. Each account opens into a sheet: its activity, paired devices to revoke, and \"View as\".",
+  v1_23_0_adminInvites_title: "Invite in two clicks",
+  v1_23_0_adminInvites_body: "Presets for how many people and how long, and the link ready to copy as soon as it is created. It now leads to your server: until now, it opened nowhere.",
+  v1_23_0_adminPlugins_title: "Plugins and marketplace, redesigned",
+  v1_23_0_adminPlugins_body: "Every plugin tells where it stands, the marketplace is browsed by search and category, and the restart a server module requires is followed until the server is back.",
+  v1_23_0_adminMetadata_title: "The TMDB key at a glance",
+  v1_23_0_adminMetadata_body: "The TMDB key is tested without typing it again, replaced or removed. The recommendation run can be followed live, and the region is picked among the countries TMDB covers.",
+  v1_23_0_outlines_title: "Outlines, finally visible",
+  v1_23_0_outlines_body: "Selected season or episode, ticket tabs, sign-in and password fields: their borders, hover states and focus rings finally show up.",
 
   // 1.22.0
   v1_22_0_search_title: "Search that understands you",
