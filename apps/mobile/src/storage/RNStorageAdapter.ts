@@ -35,6 +35,8 @@ const STORAGE_KEYS = [
   // sous-titres. Un téléphone décode ce que l'autre ne décode pas : pas de compte.
   "tentacle_video_engine", "tentacle_prefer_system_atmos", "tentacle_mpv_styled_subs",
   "tentacle_sub_scale", "tentacle_sub_pos",
+  // Ma liste en grille ou en liste — préférence d'appareil, même clé que le web.
+  "tentacle_watchlist_view",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */
