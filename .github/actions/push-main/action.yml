@@ -66,6 +66,19 @@ runs:
           fi
           echo "push refusé (essai ${i}/${ATTEMPTS}) — quelqu'un est passé devant, on rebase."
           git fetch origin main
+          # L'historique est SUPERFICIEL : checkout au sha figé en profondeur 1,
+          # et les jobs de manifeste reprennent le fichier par un `fetch
+          # --depth=1 origin main`, qui coupe aussi main à son sommet d'alors.
+          # Si main a avancé depuis, HEAD et origin/main n'ont plus d'ancêtre
+          # commun connu, et le rebase rejouait tout l'arbre en conflits
+          # « add/add » (desktop 1.23.0 et mobile 1.8.2, trois runs poussant en
+          # même temps). On creuse l'historique de main jusqu'à retrouver le
+          # sha figé, puis, en dernier recours, on le rapatrie en entier.
+          for _ in 1 2 3 4 5; do
+            git merge-base HEAD origin/main >/dev/null 2>&1 && break
+            git fetch --deepen=100 origin main
+          done
+          git merge-base HEAD origin/main >/dev/null 2>&1 || git fetch --unshallow origin main
           # --rebase sans --autostash : l'arbre doit être propre ici. S'il ne
           # l'est pas, mieux vaut échouer que de rebaser sur un état inconnu.
           git rebase origin/main
