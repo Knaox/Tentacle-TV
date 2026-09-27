@@ -21,7 +21,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Search, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads, AdminHome
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Search, Person, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads, AdminHome
 } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 import { ByFormFactor } from "./mirror/ByFormFactor";
@@ -152,6 +152,8 @@ export function App() {
             <Route path="recommendations" element={onlineOnly(<ByFormFactor desktop={<Recommendations />} mirror={<MirrorForYou />} />)} />
             {/* La recherche pleine page — l'omnibox (⌘K) y mène pour « tous les résultats ». */}
             <Route path="search" element={onlineOnly(<ByFormFactor desktop={<Search />} mirror={<MirrorSearch />} />)} />
+            {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. */}
+            <Route path="person/:personId" element={onlineOnly(<Person />)} />
             {/* Desktop uniquement — la page se redirige elle-même hors droit
                 et hors contenu local (invisibilité stricte). */}
             <Route path="downloads" element={<DownloadsPage />} />
