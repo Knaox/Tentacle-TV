@@ -5,6 +5,29 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [Unreleased]
+### FR
+- **Des recommandations vraiment personnelles** — le moteur proposait à peu près la même chose à tout le monde : les sorties récentes et bien notées, 34 titres communs sur 50 entre deux comptes. Il compare désormais chaque titre à chacun de ceux que vous avez aimés, un par un, et suit ce que les spectateurs de ces titres ont aimé ensuite. Entre deux comptes, les 50 premiers n'ont plus que 4 titres en commun, et un titre aimé qu'on lui cache est retrouvé trois fois plus souvent
+- **Chaque recommandation dit pourquoi** : « Parce que vous avez aimé Dark »
+- **Les séries pèsent le temps que vous leur donnez** : un compte qui passe les trois quarts de son temps sur des séries était vu comme un amateur de films, et 128 épisodes de deux minutes pesaient autant que Game of Thrones
+- **Ce que vous écartez compte** : « Ne plus me proposer » et les abandons éloignent aussi les titres qui leur ressemblent
+- **Toute votre bibliothèque est prise en compte**, avec sa description complète (300 titres au plus jusqu'ici, comparés sur leur seule décennie)
+- **Les lectures d'essai ne passent plus pour des revisionnages**, et un historique marqué « vu » en masse n'est plus daté du jour du marquage
+- **Les animés gardent leur juste part** dans les rangées mixtes
+- **« Sortir de votre zone de confort » propose du nouveau qui vous ressemble**, au lieu de ce qui vous ressemble le moins
+- **Tendances et « Ce que les utilisateurs de Tentacle regardent » s'ordonnent selon vos goûts**
+
+### EN
+- **Truly personal recommendations** — the engine suggested roughly the same thing to everyone: recent, well-rated releases, with 34 titles out of 50 in common between two accounts. It now compares each title with every one you liked, one by one, and follows what the viewers of those titles went on to like. Between two accounts, the top 50 now share only 4 titles, and a liked title hidden from it is found three times as often
+- **Every recommendation says why**: "Because you liked Dark"
+- **Series weigh the time you give them**: an account spending three quarters of its time on series was seen as a movie fan, and 128 two-minute episodes weighed as much as Game of Thrones
+- **What you dismiss counts**: "Not for me" and abandoned titles also push away the titles that look like them
+- **Your whole library is considered**, with its full description (at most 300 titles until now, compared on their decade alone)
+- **Test playbacks no longer pass for rewatches**, and a history marked as watched in bulk is no longer dated to the day it was marked
+- **Anime keeps its fair share** of mixed rows
+- **"Step outside your comfort zone" suggests something new that suits you**, instead of what suits you least
+- **Trending and "What Tentacle users are watching" are ordered by your taste**
+
 ## [1.19.3]
 ### FR
 - **Administration : une vue d'ensemble** — `/admin` ne s'ouvre plus sur un panneau vide : l'état de Jellyfin et de la base de données, les sessions en direct, les tickets ouverts, les mises à jour de plugins, les comptes, les invitations actives et les comptes autorisés à télécharger, d'un coup d'œil ; chaque tuile mène à sa section, et trois raccourcis ouvrent les gestes courants (inviter, jumeler un téléviseur, voir l'app comme un utilisateur)
