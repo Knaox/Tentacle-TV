@@ -123,3 +123,24 @@ export function groupFavorites(items: readonly MediaItem[], mode: FavoritesGroup
   const decades = [...map.keys()].filter((k): k is string => k !== null).sort((a, b) => Number(b) - Number(a));
   return toGroups(mode, map, [...decades, null]);
 }
+
+/**
+ * Le libellé d'une section, comme les trois clients le traduisent : une clé de
+ * l'espace i18n `favorites` et ses paramètres — ou le NOM du genre tel quel,
+ * qui vient de Jellyfin déjà dans la langue du serveur.
+ */
+export function favoritesGroupLabel(group: FavoritesGroup): { key: string; params?: Record<string, string> } | { text: string } {
+  const v = group.value;
+  switch (group.mode) {
+    case "type":
+      return { key: v === "Series" ? "sectionSeries" : "sectionMovie" };
+    case "status":
+      return { key: v === "resume" ? "sectionResume" : v === "played" ? "sectionPlayed" : "sectionUnplayed" };
+    case "genre":
+      return v ? { text: v } : { key: "sectionNoGenre" };
+    case "decade":
+      return v ? { key: "sectionDecade", params: { decade: v } } : { key: "sectionNoYear" };
+    default:
+      return { text: "" };
+  }
+}

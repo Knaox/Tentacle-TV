@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { filterCollection, type CollectionFilterInput } from "./collectionFilter";
-import { favoriteWatchState, groupFavorites, summarizeFavorites } from "./favoritesOverview";
+import { favoriteWatchState, favoritesGroupLabel, groupFavorites, summarizeFavorites } from "./favoritesOverview";
 
 function item(p: Partial<MediaItem>): MediaItem {
   return { Id: "id", Name: "Titre", Type: "Movie", ...p } as MediaItem;
@@ -77,5 +77,14 @@ describe("groupFavorites", () => {
 
   it("classe les décennies de la plus récente à la plus ancienne", () => {
     expect(groupFavorites(SAMPLE, "decade").map((g) => g.value)).toEqual(["2020", "2010", "1990", null]);
+  });
+});
+
+describe("favoritesGroupLabel", () => {
+  it("rend une clé, ou le nom du genre tel quel", () => {
+    const [drame, , none] = groupFavorites(SAMPLE, "genre");
+    expect(favoritesGroupLabel(drame)).toEqual({ text: "Drame" });
+    expect(favoritesGroupLabel(none)).toEqual({ key: "sectionNoGenre" });
+    expect(favoritesGroupLabel(groupFavorites(SAMPLE, "decade")[0])).toEqual({ key: "sectionDecade", params: { decade: "2020" } });
   });
 });

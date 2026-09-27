@@ -20,7 +20,7 @@ export { useWatchlist, useToggleWatchlist, useToggleWatchlistForItem, useFavorit
 export { useWatchlistSeriesIds, useFavoriteSeriesIds, seriesStateId } from "./hooks/useSeriesListMembership";
 export { useSeriesRatings, SERIES_RATINGS_KEY } from "./hooks/useSeriesRatings";
 export { filterCollection, collectionGenres, type CollectionFilterInput, type CollectionTypeTab } from "./utils/collectionFilter";
-export { favoriteWatchState, summarizeFavorites, groupFavorites, isFavoritesGroupMode, FAVORITES_GROUP_MODES, type FavoriteWatchState, type FavoritesSummary, type FavoritesGroup, type FavoritesGroupMode } from "./utils/favoritesOverview";
+export { favoriteWatchState, summarizeFavorites, groupFavorites, favoritesGroupLabel, isFavoritesGroupMode, FAVORITES_GROUP_MODES, type FavoriteWatchState, type FavoritesSummary, type FavoritesGroup, type FavoritesGroupMode } from "./utils/favoritesOverview";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";
 export { useWatchStopInvalidation } from "./hooks/useWatchStopInvalidation";
 export { useStream, type StreamOptions } from "./hooks/useStream";
