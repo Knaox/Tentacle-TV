@@ -12,6 +12,20 @@ scène après le générique — mi-générique comme post-générique —, qu'e
 corrige les métadonnées existantes quand elles sont fausses, et qu'elle
 n'enregistre RIEN quand elle ne trouve rien.
 
+## Suite : le banc élargi du 28 septembre (267 titres)
+
+Réglé sur 102 titres, le premier labo ne commettait plus que 4 fautes ; sur 165
+titres nouveaux — Pixar et DreamWorks, horreur, comédies, animés, One Piece sur
+treize saisons, sitcoms, séries —, il en commettait une sur quatre : l'aperçu
+du prochain épisode proposé comme scène, les logos Pixar, le générique illustré
+qui laissait la scène mi-générique sans bouton, des marqueurs Jellyfin posés
+dans le film. Après correction, sur les 267 titres : **42 → 20 titres en faute
+(15,7 % → 7,5 %)**, fausses scènes 36 → 14, scènes avec bouton 72 → 83 sur 120 ;
+validation (55 titres mis de côté avant tout réglage) 9 → 6. Méthode, juge v2,
+tableaux par catégorie, pistes fermées et cas encore ratés :
+`SEGMENTS-LABO-FIN-BANC.md`. Les règles ajoutées : `tailIllustrated.ts`,
+`tailPreview.ts`, `tailLogos.ts`, et le démenti des marqueurs (`overrides`).
+
 ## Corpus et juge
 
 Trois jeux, vérité terrain établie à l'œil sur planches-contact (une vignette
@@ -257,6 +271,13 @@ fournisseur que si sa « scène » tombe en plein défilement.
   116:52) : parlé, sur de l'image, entre des crédits — c'est une scène pour
   l'analyse. Le bouton y mène ; la vérité terrain dit « pas de scène ».
 
+Pistes fermées le 28 septembre (détail dans `SEGMENTS-LABO-FIN-BANC.md`) :
+réapprendre le modèle parole / musique sur le nouveau banc (+3 points à la
+seconde, mais le banc se dégrade : les règles sont calées sur ce modèle) ; la
+pulsation pour reconnaître une chanson de générique ; un détecteur de texte sur
+l'image par vignette (AUC 0,80) ; les images encadrées à côté des noms (aussi
+fréquentes dans le film).
+
 ## Recette du banc
 
 Le banc vit hors dépôt, dans `~/.cache/tentacle-test/tail-lab/` : `lab.ts`
@@ -270,3 +291,7 @@ supprimé en fin de chantier.
 ⚠️ Changer une mesure de `audioFeatures.ts` sans réapprendre, c'est donner au
 modèle des nombres qu'il ne sait pas lire : `trainset.ts` puis `train.py
 --write`, et rejouer les trois jeux.
+
+Depuis le 28 septembre, le banc rejoue cinq jeux (`runall.sh`), juge avec
+`judge.py` (v2) et compare deux versions avec `compare.py` ; la recette complète
+est dans `SEGMENTS-LABO-FIN-BANC.md`.
