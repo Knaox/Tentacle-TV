@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { GlassCard } from "@tentacle-tv/ui";
+import { KeyRound, Lock, User } from "lucide-react";
 import { backendUrl } from "../main";
-import { TentacleLogo } from "../components/ui/TentacleLogo";
+import { AuthLayout } from "../components/auth/AuthLayout";
+import { AuthField, PasswordField } from "../components/auth/AuthField";
+import { AuthButton } from "../components/auth/AuthButton";
+import { AuthAlert } from "../components/auth/AuthAlert";
 
 const BACKEND_URL = backendUrl;
-
-const CTA_PRIMARY =
-  "inline-flex h-11 w-full items-center justify-center rounded-lg bg-cta-primary-bg text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0";
-const INPUT_BASE =
-  "h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]";
 
 export function Register() {
   const [searchParams] = useSearchParams();
@@ -18,6 +16,7 @@ export function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -46,95 +45,87 @@ export function Register() {
   };
 
   const passwordsMismatch = !!confirmPassword && password !== confirmPassword;
+  // L'écart ne s'affiche qu'une fois la confirmation quittée, ou dès qu'elle
+  // est aussi longue que le mot de passe : pas de rouge à chaque frappe.
+  const showMismatch = passwordsMismatch && (confirmTouched || confirmPassword.length >= password.length);
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-80"
-        style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(var(--brand-rgb), 0.18) 0%, rgba(var(--brand-rgb), 0.04) 30%, transparent 70%)" }}
-      />
+    <AuthLayout
+      title={t("joinTentacle")}
+      subtitle={t("invitationOnly")}
+      footer={
+        <p className="text-sm text-content-tertiary">
+          {t("alreadyHaveAccount")}{" "}
+          <Link
+            to="/login"
+            className="rounded font-semibold text-[var(--brand-light)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+          >
+            {t("signIn")}
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <AuthField
+          id="reg-invite"
+          label={t("inviteKey")}
+          icon={KeyRound}
+          hint={t("inviteKeyHint")}
+          value={inviteKey}
+          required
+          onChange={(e) => setInviteKey(e.target.value)}
+          className="font-mono tracking-wide"
+          autoComplete="off"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoFocus={!inviteKey}
+        />
+        <AuthField
+          id="reg-username"
+          label={t("username")}
+          icon={User}
+          value={username}
+          required
+          onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoFocus={!!inviteKey}
+        />
+        <PasswordField
+          id="reg-password"
+          label={t("password")}
+          icon={Lock}
+          value={password}
+          required
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+        />
+        <PasswordField
+          id="reg-confirm"
+          label={t("confirmPassword")}
+          icon={Lock}
+          value={confirmPassword}
+          required
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          onBlur={() => setConfirmTouched(true)}
+          autoComplete="new-password"
+          error={showMismatch ? t("passwordMismatch") : undefined}
+        />
 
-      <div className="relative z-10 w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <TentacleLogo size="lg" variant="glow" />
-          <h1 className="mt-5 mb-2 text-3xl font-extrabold tracking-tight text-content-primary">
-            {t("joinTentacle")}
-          </h1>
-          <p className="text-sm text-content-tertiary">{t("invitationOnly")}</p>
-        </div>
+        {error && <AuthAlert tone="error">{error}</AuthAlert>}
 
-        <GlassCard className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label htmlFor="reg-invite" className="mb-1 block text-xs font-medium text-content-tertiary">
-                {t("inviteKey")}
-              </label>
-              <input
-                id="reg-invite" type="text" value={inviteKey} required
-                onChange={(e) => setInviteKey(e.target.value)}
-                className={`${INPUT_BASE} font-mono tracking-wide`}
-                autoComplete="off"
-              />
-            </div>
-            <div>
-              <label htmlFor="reg-username" className="mb-1 block text-xs font-medium text-content-tertiary">
-                {t("username")}
-              </label>
-              <input
-                id="reg-username" type="text" value={username} required
-                onChange={(e) => setUsername(e.target.value)}
-                className={INPUT_BASE}
-                autoComplete="username"
-              />
-            </div>
-            <div>
-              <label htmlFor="reg-password" className="mb-1 block text-xs font-medium text-content-tertiary">
-                {t("password")}
-              </label>
-              <input
-                id="reg-password" type="password" value={password} required
-                onChange={(e) => setPassword(e.target.value)}
-                className={INPUT_BASE}
-                autoComplete="new-password"
-              />
-            </div>
-            <div>
-              <label htmlFor="reg-confirm" className="mb-1 block text-xs font-medium text-content-tertiary">
-                {t("confirmPassword")}
-              </label>
-              <input
-                id="reg-confirm" type="password" value={confirmPassword} required
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`${INPUT_BASE} ${passwordsMismatch ? "!border-status-error focus:!border-status-error-fg focus:!ring-danger-border" : ""}`}
-                autoComplete="new-password"
-                aria-invalid={passwordsMismatch}
-              />
-              {passwordsMismatch && (
-                <p className="mt-1.5 text-xs text-[var(--status-error-fg)]" role="alert">{t("passwordMismatch")}</p>
-              )}
-            </div>
-
-            {error && <p className="text-sm text-[var(--status-error-fg)]" role="alert">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={isLoading || !confirmPassword || passwordsMismatch}
-              className={CTA_PRIMARY}
-
-            >
-              {isLoading ? t("creatingAccount") : t("createAccount")}
-            </button>
-          </form>
-
-          <p className="mt-5 text-center text-sm text-content-quaternary">
-            {t("alreadyHaveAccount")}{" "}
-            <Link to="/login" className="font-semibold text-[var(--brand-light)] hover:underline">
-              {t("signIn")}
-            </Link>
-          </p>
-        </GlassCard>
-      </div>
-    </div>
+        <AuthButton
+          type="submit"
+          loading={isLoading}
+          loadingLabel={t("creatingAccount")}
+          disabled={!inviteKey || !username || !password || !confirmPassword || passwordsMismatch}
+        >
+          {t("createAccount")}
+        </AuthButton>
+      </form>
+    </AuthLayout>
   );
 }
