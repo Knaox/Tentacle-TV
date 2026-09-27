@@ -57,6 +57,10 @@ export function toItem(
 ): RecoRowItem {
   const { candidate, breakdown } = entry;
   const reasons: RecoReason[] = [];
+  // Le titre aimé le plus proche d'abord : « Parce que vous avez aimé Dark »
+  // dit plus qu'un genre — c'est lui qui a porté le candidat.
+  const anchor = breakdown.topAnchors?.find((a) => a.liked !== false && a.title.trim());
+  if (anchor) reasons.push({ kind: "seed", seedTitle: anchor.title });
   for (const contributor of breakdown.topContributors) {
     if (contributor.contribution <= 0) continue;
     reasons.push({ kind: "facet", key: contributor.key, label: labels[contributor.key] });

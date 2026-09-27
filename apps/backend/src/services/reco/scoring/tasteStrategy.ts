@@ -219,6 +219,7 @@ export class TasteScoringStrategy implements ScoringStrategy {
         key: anchors[t.anchor].key,
         title: anchors[t.anchor].title,
         contribution: t.contribution,
+        liked: anchors[t.anchor].liked !== false,
       })),
     };
   }

@@ -24,6 +24,9 @@ export interface IndexedAnchor {
   /** Poids signé de l'ancre (cf. anchors.ts). */
   weight: number;
   mediaType: "movie" | "tv";
+  /** Vu, noté ou aimé — pas seulement dans Ma liste : seul un titre aimé
+   *  peut signer « Parce que vous avez aimé… ». */
+  liked?: boolean;
 }
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PoolEntry } from "./generationJob";
-import { interleaveEvenly, isAnimeEntry, mmrPick, pickWithUniverseQuota, universeQuota } from "./rowSelection";
+import { interleaveEvenly, isAnimeEntry, mmrPick, pickWithUniverseQuota, universeCap, universeQuota } from "./rowSelection";
 
 const entry = (key: string, score: number, facets: string[]): PoolEntry => ({
   candidate: {
@@ -66,5 +66,17 @@ describe("sélection avec quota d'univers", () => {
     expect(new Set(picked.map((e) => e.candidate.key)).size).toBe(10);
     expect(picked.filter(isAnimeEntry).length).toBeGreaterThanOrEqual(4);
     expect(picked.slice(0, 3).some(isAnimeEntry)).toBe(true);
+  });
+
+  it("plafond : des animés très bien classés ne dépassent pas la part du compte", () => {
+    // Vingt animés en tête du classement, vingt autres titres derrière.
+    const topAnime = Array.from({ length: 20 }, (_, i) => entry(`tv:${300 + i}`, 0.95 - i * 0.001, [...ANIME, `kw:b${i}`]));
+    const picked = pickWithUniverseQuota([...topAnime, ...others], 10, 1, 0.2);
+    expect(picked).toHaveLength(10);
+    expect(picked.filter(isAnimeEntry).length).toBe(universeCap(10, 0.2));
+    expect(universeCap(10, 0.2)).toBe(3);
+    // Un compte sans animé : deux au plus sur trente, jamais une rangée entière.
+    expect(universeCap(30, 0)).toBe(2);
+    expect(universeCap(30, 0.93)).toBe(24);
   });
 });

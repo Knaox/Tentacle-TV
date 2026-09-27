@@ -39,16 +39,53 @@ export interface ExplorationItem {
   key: string;
   novelty: number;
   quality: number;
+  /** Proximité aux titres aimés (classement à ancres) — absente d'un vieux pool. */
+  relevance?: number;
+  /** Ressemblance aux refus et abandons. */
+  negative?: number;
+}
+
+/** Plancher de qualité de l'exploration « voisine » (note bayésienne /10). */
+const ADJACENT_QUALITY_FLOOR = 0.62;
+/** Au-delà, le candidat ressemble trop à ce que le compte a refusé. */
+const ADJACENT_NEGATIVE_MAX = 0.3;
+/** Part de la nouveauté dans le tri — le reste est la proximité aux goûts. */
+const ADJACENT_NOVELTY_SHARE = 0.6;
+
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = values.slice().sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
 }
 
 /**
- * Choisit les entrées d'exploration : qualité au-dessus du plancher, puis les
- * plus nouvelles d'abord (départage par clé — déterministe).
+ * Choisit les entrées d'exploration. Avec le classement à ancres : une
+ * exploration VOISINE — un titre relié aux goûts (proximité au-dessus de la
+ * médiane du panier), de bonne qualité, jamais proche d'un refus, et qui
+ * emmène ailleurs (nouveauté d'abord). L'ancienne règle prenait le plus
+ * éloigné du profil : la rangée montrait, par construction, ce que le compte
+ * aimait le moins. Sans proximité (vieux pool) : l'ancienne règle.
  */
 export function pickExplorationKeys(items: ExplorationItem[], count: number): string[] {
+  const byKey = (a: ExplorationItem, b: ExplorationItem) => (a.key < b.key ? -1 : 1);
+  if (!items.some((i) => i.relevance !== undefined)) {
+    return items
+      .filter((i) => i.quality >= EXPLORATION_QUALITY_FLOOR)
+      .sort((a, b) => b.novelty - a.novelty || byKey(a, b))
+      .slice(0, count)
+      .map((i) => i.key);
+  }
+  const floor = median(items.map((i) => i.relevance ?? 0));
+  const value = (i: ExplorationItem) =>
+    ADJACENT_NOVELTY_SHARE * i.novelty + (1 - ADJACENT_NOVELTY_SHARE) * (i.relevance ?? 0);
   return items
-    .filter((i) => i.quality >= EXPLORATION_QUALITY_FLOOR)
-    .sort((a, b) => b.novelty - a.novelty || (a.key < b.key ? -1 : 1))
+    .filter(
+      (i) =>
+        i.quality >= ADJACENT_QUALITY_FLOOR &&
+        (i.relevance ?? 0) >= floor &&
+        (i.negative ?? 0) < ADJACENT_NEGATIVE_MAX
+    )
+    .sort((a, b) => value(b) - value(a) || byKey(a, b))
     .slice(0, count)
     .map((i) => i.key);
 }

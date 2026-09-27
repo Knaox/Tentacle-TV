@@ -41,6 +41,8 @@ const BECAUSE_MIN_ITEMS = 6;
 const ANIME_ROW_MIN_ITEMS = 6;
 const BECAUSE_ROWS_MAX = 3;
 const ACTOR_ROWS_MAX = 2;
+/** La rangée d'exploration pioche après les 40 premiers du classement. */
+const EXPLORATION_SKIP_TOP = 40;
 
 /** Les rangées disponibles pour CE pool, dans l'ordre d'affichage. */
 export function availableRows(
@@ -180,8 +182,10 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     if (related.length < BECAUSE_MIN_ITEMS) return null;
     const seedReason: RecoReason = { kind: "seed", seedTitle: seed.title };
     const row = done(mmrPick(related, BECAUSE_SIZE, opts.lambda), seed.title);
+    // La graine de la rangée remplace le titre aimé le plus proche : deux
+    // « Parce que vous avez aimé » à la suite se contrediraient.
     for (const item of row.items) {
-      item.reasons = [seedReason, ...item.reasons].slice(0, REASONS_MAX);
+      item.reasons = [seedReason, ...item.reasons.filter((r) => r.kind !== "seed")].slice(0, REASONS_MAX);
     }
     return row;
   }
@@ -201,7 +205,10 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   }
 
   if (rowKey === "exploration") {
-    return done(explorationPicks(eligible, opts.profile, ROW_SIZES.exploration, new Set()), undefined, true);
+    // Hors de la tête du classement : ces titres-là, « Pour vous » et « Dans
+    // votre bibliothèque » les montrent déjà.
+    const head = new Set(eligible.slice(0, EXPLORATION_SKIP_TOP).map((e) => e.candidate.key));
+    return done(explorationPicks(eligible, opts.profile, ROW_SIZES.exploration, head), undefined, true);
   }
 
   return null;

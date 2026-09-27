@@ -62,7 +62,7 @@ export interface ScoreBreakdown {
   negative?: number;
   /** Les titres aimés qui portent le plus ce candidat — la raison affichée
    *  « Parce que vous avez aimé… ». */
-  topAnchors?: Array<{ key: string; title: string; contribution: number }>;
+  topAnchors?: Array<{ key: string; title: string; contribution: number; liked?: boolean }>;
 }
 
 /**
