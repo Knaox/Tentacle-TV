@@ -46,7 +46,10 @@ export function LibrariesScreen() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <Folder size={48} className="text-brand-light opacity-60" aria-hidden />
-        <p className="text-center text-[15px] font-medium text-content-tertiary">{t("noResults")}</p>
+        <div className="flex max-w-[300px] flex-col gap-1 text-center">
+          <p className="text-[15px] font-semibold text-content-primary">{t("library:noLibraries")}</p>
+          <p className="text-[13px] text-content-tertiary">{t("library:noLibrariesHint")}</p>
+        </div>
       </div>
     );
   }

@@ -22,6 +22,8 @@ export default {
   emptyHint: "Aucun titre n'y a encore été ajouté sur le serveur.",
   emptyFilteredTitle: "Aucun titre ne correspond",
   emptyFilteredHint: "Élargissez les filtres ou retirez-en un pour retrouver des titres.",
+  noLibraries: "Aucune bibliothèque",
+  noLibrariesHint: "Ce serveur ne partage encore aucune bibliothèque de films ou de séries avec ce compte.",
   sortShort: "Tri",
   filtersShort: "Filtres",
 } as const;

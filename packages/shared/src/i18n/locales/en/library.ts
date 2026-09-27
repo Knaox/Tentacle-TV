@@ -15,6 +15,8 @@ export default {
   emptyHint: "No titles have been added to it on the server yet.",
   emptyFilteredTitle: "No titles match",
   emptyFilteredHint: "Broaden the filters or remove one to bring titles back.",
+  noLibraries: "No libraries",
+  noLibrariesHint: "This server doesn't share any movie or TV library with this account yet.",
   sortShort: "Sort",
   filtersShort: "Filters",
 } as const;

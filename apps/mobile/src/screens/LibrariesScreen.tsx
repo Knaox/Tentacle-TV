@@ -47,7 +47,8 @@ export function LibrariesScreen() {
       <SubtleBackground ambient>
         <View style={st.empty}>
           <Feather name="folder" size={48} color={colors.brand.light} style={{ opacity: 0.6 }} />
-          <Text style={st.emptyText}>{t("noResults")}</Text>
+          <Text style={st.emptyText} accessibilityRole="header">{t("library:noLibraries")}</Text>
+          <Text style={st.emptyHint}>{t("library:noLibrariesHint")}</Text>
         </View>
       </SubtleBackground>
     );
@@ -112,7 +113,8 @@ function LibrariesSkeleton() {
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
   empty: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16 },
-  emptyText: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, textAlign: "center" },
+  emptyText: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary, textAlign: "center" },
+  emptyHint: { ...typography.caption, color: t.colors.text.tertiary, textAlign: "center", maxWidth: 300, marginTop: -8 },
   skeletonTitle: { width: 180, height: 40, borderRadius: RADIUS.md, backgroundColor: t.colors.fill.subtle, marginBottom: spacing.lg },
   skeletonCapsule: { height: 48, borderRadius: RADIUS.pill, marginHorizontal: spacing.screenPadding, backgroundColor: t.colors.fill.subtle, marginBottom: spacing.lg },
   skeletonGrid: { flexDirection: "row", flexWrap: "wrap" },
