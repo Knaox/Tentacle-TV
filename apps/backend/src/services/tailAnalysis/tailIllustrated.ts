@@ -39,8 +39,11 @@ const SCENE_SPEECH_MIN = 0.5;
 const MUSIC_MIN_MS = 60_000;
 const MUSIC_SHARE_MIN = 0.6;
 const MUSIC_SPEECH_MAX = 0.3;
-/** Une vignette mêlée (un effet, une réplique sur la chanson) ne coupe pas le bloc. */
-const MIXED_SPEECH_MAX = 0.5;
+/** Deux vignettes mêlées (un effet, une réplique sur la chanson) ne coupent pas le bloc… */
+const MIXED_CELLS_MAX = 2;
+const MIXED_SPEECH_MAX = 0.7;
+/** … si la musique domine le bloc entier. */
+const BLOCK_SPEECH_MAX = 0.35;
 
 export interface IllustratedCredits {
   /** Le début du générique illustré. */
@@ -67,28 +70,29 @@ export function illustratedCredits(t: Timeline, crawlStart: number): Illustrated
   }
   const scene = sceneEnd - sceneStart;
   if (scene < SCENE_MIN_MS || scene > SCENE_MAX_MS) return null;
+  // On remonte la musique ; deux vignettes mêlées au plus (un effet, une voix dans la
+  // chanson : « Homecoming », « Captain Marvel »), jamais en tête du bloc, et la musique
+  // doit dominer le bloc entier. Une fois la minute atteinte, la première vignette parlée
+  // l'arrête : la frontière la plus tardive est la plus sûre — la fin d'un film est souvent
+  // musicale aussi (« Super Mario Galaxy »).
   let start = sceneStart;
-  let mixed = 1;
-  while (start - step >= limit) {
-    const from = start - step;
-    const speech = t.share(from, start, "S");
-    const musical = t.share(from, start, "M") >= MUSIC_SHARE_MIN && speech <= MUSIC_SPEECH_MAX;
+  let probe = sceneStart;
+  let mixed = MIXED_CELLS_MAX;
+  while (probe - step >= limit) {
+    const from = probe - step;
+    const speech = t.share(from, probe, "S");
+    const musical = t.share(from, probe, "M") >= MUSIC_SHARE_MIN && speech <= MUSIC_SPEECH_MAX;
     const card = (isCredits(t.cell(from)) || t.cell(from) === "K") && speech <= MUSIC_SPEECH_MAX;
     if (musical || card) {
       start = from;
-      continue;
-    }
-    // Une seule vignette mêlée, et seulement si la musique reprend derrière elle.
-    const before = from - step;
-    const resumes = before >= limit && t.share(before, from, "M") >= MUSIC_SHARE_MIN && t.share(before, from, "S") <= MUSIC_SPEECH_MAX;
-    if (mixed > 0 && speech < MIXED_SPEECH_MAX && resumes) {
+    } else if (mixed > 0 && speech < MIXED_SPEECH_MAX && sceneStart - start < MUSIC_MIN_MS) {
       mixed--;
-      start = from;
-      continue;
+    } else {
+      break;
     }
-    break;
+    probe = from;
   }
-  if (sceneStart - start < MUSIC_MIN_MS) return null;
+  if (sceneStart - start < MUSIC_MIN_MS || t.share(start, sceneStart, "S") > BLOCK_SPEECH_MAX) return null;
   // La dernière réplique du film peut mordre sur la première vignette : on part après elle.
   let first = start;
   for (let s = start; s < start + step; s += 1000) if (t.sound(s) === "S") first = s + 1000;

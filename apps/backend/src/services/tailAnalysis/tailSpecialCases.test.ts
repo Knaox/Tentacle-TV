@@ -75,6 +75,23 @@ describe("le générique illustré avant une scène mi-générique", () => {
     expect(reading?.scenes).toEqual([]);
   });
 
+  it("une voix dans la chanson du générique ne le coupe pas (« Homecoming », « Captain Marvel »)", () => {
+    const reading = readTail(input({
+      ...illustrated(),
+      audio: { fromS: 6400, parts: [["S", 980], ["M", 90], ["S", 6], ["M", 24], ["S", 50], ["M", 400], ["Q", 50]] },
+    }));
+    expect(reading?.creditsStartMs).toBe(7_380_000);
+    expect(reading?.scenes).toHaveLength(1);
+  });
+
+  it("une fois la minute atteinte, la vignette parlée arrête le bloc : la fin musicale reste au film (« Super Mario Galaxy »)", () => {
+    const reading = readTail(input({
+      ...illustrated(),
+      audio: { fromS: 6400, parts: [["S", 900], ["M", 80], ["S", 6], ["M", 114], ["S", 50], ["M", 400], ["Q", 50]] },
+    }));
+    expect(reading?.creditsStartMs).toBe(7_390_000);
+  });
+
   it("le nom de chapitre « End Titles » est un générique de fin, « Opening Credits » non", () => {
     expect(isCreditsChapterName("End Titles")).toBe(true);
     expect(isCreditsChapterName("End Credits")).toBe(true);
