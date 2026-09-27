@@ -156,7 +156,7 @@ describe("liste", () => {
       { id: "us1", inviteKeyId: created.id, jellyfinUserId: "u-bob", username: "bob", usedAt: new Date("2026-09-26T10:00:00Z") },
       { id: "us2", inviteKeyId: created.id, jellyfinUserId: "u-eve", username: "eve", usedAt: new Date("2026-09-26T11:00:00Z") },
     );
-    // Une invitation d'avant 1.20.0 : personne n'avait renseigné son auteur.
+    // Une invitation d'avant 1.19.3 : personne n'avait renseigné son auteur.
     invites.set("legacy", {
       id: "legacy", key: "0123456789abcdef", maxUses: 1, currentUses: 0,
       createdAt: new Date("2026-01-01T00:00:00Z"), expiresAt: null, createdBy: null,

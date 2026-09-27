@@ -7,7 +7,7 @@ export interface AdminRecoFanout {
   running: boolean;
   processed: number;
   total: number;
-  /** Bilan de la dernière passe — absents d'un serveur d'avant 1.20.0. */
+  /** Bilan de la dernière passe — absents d'un serveur d'avant 1.19.3. */
   failed?: number;
   finishedAt?: string | null;
 }

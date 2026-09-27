@@ -20,7 +20,7 @@ export function catalogIndex(entries: readonly MarketplacePlugin[] | undefined):
  * La version à laquelle un plugin installé peut passer, ou `null`.
  *
  * L'entrée doit venir de la source d'installation : c'est elle que la mise à
- * jour lit côté serveur. Un serveur d'avant 1.20 gardait la première source
+ * jour lit côté serveur. Un serveur d'avant 1.19.3 gardait la première source
  * qui publiait l'identifiant — une autre version que celle qui serait posée.
  */
 export function availableUpdate(plugin: InstalledPlugin, entry: MarketplacePlugin | undefined): string | null {

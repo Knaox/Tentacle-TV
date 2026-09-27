@@ -4,7 +4,7 @@
  *
  * Le serveur est « revenu » quand un AUTRE processus répond — son `bootId`
  * diffère de celui qui a annoncé le redémarrage. Un serveur qui ne porte pas
- * d'identifiant (d'avant 1.20) est revenu s'il a répondu après une coupure
+ * d'identifiant (d'avant 1.19.3) est revenu s'il a répondu après une coupure
  * constatée. Passé `STUCK_AFTER_MS`, le suivi continue, mais l'interface dit
  * que le serveur tarde : sans superviseur (Docker…), il ne repart pas seul.
  */

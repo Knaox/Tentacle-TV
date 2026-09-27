@@ -117,7 +117,7 @@ function UserSheetBody({ user, titleId, isSelf, devices, devicesFailed, now, onC
 
 /**
  * Dernière activité et dernière connexion — la seconde n'existe qu'avec un
- * serveur 1.20.0 ou plus : sur un plus ancien, la ligne ne s'affiche pas
+ * serveur 1.19.3 ou plus : sur un plus ancien, la ligne ne s'affiche pas
  * plutôt que de dire « Jamais » à tort.
  */
 function UserActivity({ user, now }: { user: AdminUser; now: number }) {

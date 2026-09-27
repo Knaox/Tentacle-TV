@@ -77,7 +77,7 @@ export const inviteRoutes: FastifyPluginAsync = async (app) => {
       usages: inv.usages.map((u) => ({
         username: u.username,
         usedAt: u.usedAt,
-        // Additif (1.20.0) : l'identifiant du compte créé, pour que la liste
+        // Additif (1.19.3) : l'identifiant du compte créé, pour que la liste
         // montre son avatar plutôt qu'un nom nu.
         jellyfinUserId: u.jellyfinUserId,
       })),

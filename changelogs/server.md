@@ -5,7 +5,7 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
-## [1.20.0]
+## [1.19.3]
 ### FR
 - **Administration : une vue d'ensemble** — `/admin` ne s'ouvre plus sur un panneau vide : l'état de Jellyfin et de la base de données, les sessions en direct, les tickets ouverts, les mises à jour de plugins, les comptes, les invitations actives et les comptes autorisés à télécharger, d'un coup d'œil ; chaque tuile mène à sa section, et trois raccourcis ouvrent les gestes courants (inviter, jumeler un téléviseur, voir l'app comme un utilisateur)
 - **Administration : un menu rangé en trois groupes** — Activité, Comptes, Serveur — qui reste à l'écran quand on fait défiler, et des pages en pleine largeur, toutes sous le même en-tête
@@ -30,6 +30,8 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Un redémarrage du serveur annoncé et suivi** : installer, mettre à jour ou désinstaller un plugin qui porte un module serveur redémarre le serveur — la page le dit avant, suit le serveur jusqu'à son retour, puis signale un module qui n'a pas démarré. Activer ou désactiver un tel plugin ne s'appliquait qu'au redémarrage suivant, sans rien en dire : la page le signale et propose de redémarrer au moment choisi. Une installation en cours n'est plus coupée par le redémarrage qu'en provoque une autre
 - **Des mises à jour de plugins fiables** : une version plus ancienne que celle installée n'est plus proposée comme « mise à jour », un plugin publié par deux sources suit celle d'où il a été installé, et une version que la source ne publie plus n'enregistre plus un plugin sans fichiers
 - **Un registre qui hoquette ne vide plus le catalogue** : sa dernière lecture réussie reste proposée, et un échec se retente au bout de cinq minutes au lieu de six heures. « Actualiser le catalogue » relit toutes les sources sur-le-champ
+- **Une demande qui part se dit sur le téléphone** : avec Vigie 1.17.0, « « Titre » est en route » arrive en notification dès que Sonarr ou Radarr prend le titre — sous le même réglage que « Contenu demandé disponible », rien à activer
+- **Le site web sur téléphone et sur iPad ressemble enfin à l'application** : mêmes onglets en bas (Accueil, Pour vous, Bibliothèque, extensions, Profil), même en-tête, même accueil avec sa bannière en carte, mêmes fiches, même recherche, même lecteur tactile (−10 s / +30 s, épisodes, pistes). Sur iPad à l'horizontale, la navigation passe dans un rail à gauche et le Profil s'ouvre en deux colonnes. Un appui long sur une affiche ouvre ses actions (favori, Ma liste, vu). Sur ordinateur, rien ne change
 
 ### EN
 - **Administration: an overview** — `/admin` no longer opens on an empty panel: Jellyfin and database health, live sessions, open tickets, plugin updates, accounts, active invitations and accounts allowed to download, at a glance; every tile leads to its section, and three shortcuts open everyday actions (invite someone, pair a TV, see the app as a user)
@@ -55,12 +57,6 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **A server restart announced and followed**: installing, updating or uninstalling a plugin that carries a server module restarts the server — the page says so beforehand, follows the server until it is back, then flags a module that failed to start. Enabling or disabling such a plugin only took effect at the next restart, silently: the page now says so and offers to restart when you choose. An installation in progress is no longer cut short by a restart another one triggers
 - **Reliable plugin updates**: a version older than the installed one is no longer offered as an "update", a plugin published by two sources follows the one it was installed from, and a version the source no longer publishes no longer registers a plugin without files
 - **A hiccuping registry no longer empties the catalog**: its last successful read stays on offer, and a failure is retried after five minutes instead of six hours. "Refresh catalog" reads every source right away
-
-## [1.19.3]
-### FR
-- **Une demande qui part se dit sur le téléphone** : avec Vigie 1.17.0, « « Titre » est en route » arrive en notification dès que Sonarr ou Radarr prend le titre — sous le même réglage que « Contenu demandé disponible », rien à activer
-- **Le site web sur téléphone et sur iPad ressemble enfin à l'application** : mêmes onglets en bas (Accueil, Pour vous, Bibliothèque, extensions, Profil), même en-tête, même accueil avec sa bannière en carte, mêmes fiches, même recherche, même lecteur tactile (−10 s / +30 s, épisodes, pistes). Sur iPad à l'horizontale, la navigation passe dans un rail à gauche et le Profil s'ouvre en deux colonnes. Un appui long sur une affiche ouvre ses actions (favori, Ma liste, vu). Sur ordinateur, rien ne change
-### EN
 - **A request on its way now reaches your phone**: with Vigie 1.17.0, "“Title” is on its way" arrives as a notification as soon as Sonarr or Radarr picks the title up — under the same setting as "Requested content available", nothing to turn on
 - **The website on phones and iPads finally looks like the app**: the same tabs at the bottom (Home, For you, Library, extensions, Profile), the same header, the same home screen with its card-style banner, the same detail pages, the same search, the same touch player (−10 s / +30 s, episodes, tracks). On an iPad held sideways, navigation moves to a rail on the left and Profile opens in two columns. A long press on a poster opens its actions (favourite, My list, watched). Nothing changes on a computer
 

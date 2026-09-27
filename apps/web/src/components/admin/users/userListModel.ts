@@ -11,10 +11,10 @@ export interface AdminUser {
   id: string;
   name: string;
   hasAvatar: boolean;
-  /** Étiquette de la photo — serveur 1.20.0 ou plus, absente avant. */
+  /** Étiquette de la photo — serveur 1.19.3 ou plus, absente avant. */
   imageTag?: string | null;
   lastActivityDate: string | null;
-  /** Serveur 1.20.0 ou plus : absente avant, `null` pour « jamais ». */
+  /** Serveur 1.19.3 ou plus : absente avant, `null` pour « jamais ». */
   lastLoginDate?: string | null;
   isAdministrator: boolean;
   isDisabled: boolean;

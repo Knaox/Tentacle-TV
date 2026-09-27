@@ -9,7 +9,7 @@ const SHOWN = 6;
 
 /**
  * Les comptes ouverts avec une invitation : l'avatar et le nom de chacun, la
- * date d'inscription au survol. Un serveur antérieur à 1.20.0 ne donne pas
+ * date d'inscription au survol. Un serveur antérieur à 1.19.3 ne donne pas
  * l'identifiant du compte : l'initiale remplace alors la photo.
  */
 export const InviteUsers = memo(function InviteUsers({ usages }: { usages: AdminInviteUsageDto[] }) {

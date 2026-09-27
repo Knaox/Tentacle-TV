@@ -86,7 +86,7 @@ function SourceStatus({ source, now }: { source: PluginSource; now: number }) {
   const registry = source.registry;
   const ago = (iso: string) => relativeTime(iso, now, i18n.language) ?? "";
 
-  // Pas d'état de lecture : un serveur d'avant 1.20 n'en rend jamais, un plus
+  // Pas d'état de lecture : un serveur d'avant 1.19.3 n'en rend jamais, un plus
   // récent le rend dès la lecture du catalogue que la page lance à l'ouverture.
   if (source.enabled && !registry) return null;
 

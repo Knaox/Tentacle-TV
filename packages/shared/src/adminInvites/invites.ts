@@ -16,7 +16,7 @@ export const INVITE_EXPIRY_HOURS_LIMIT = 720;
 export interface AdminInviteUsageDto {
   username: string;
   usedAt: string;
-  /** Le compte Jellyfin créé avec l'invitation. Absent d'un serveur antérieur à 1.20.0. */
+  /** Le compte Jellyfin créé avec l'invitation. Absent d'un serveur antérieur à 1.19.3. */
   jellyfinUserId?: string;
 }
 
@@ -30,7 +30,7 @@ export interface AdminInviteDto {
   createdAt: string;
   /**
    * L'administrateur qui l'a créée. `null` pour une invitation créée avant le
-   * serveur 1.20.0 (le champ n'était jamais renseigné) ; absent d'un serveur
+   * serveur 1.19.3 (le champ n'était jamais renseigné) ; absent d'un serveur
    * antérieur, qui ne l'expose pas.
    */
   createdBy?: string | null;

@@ -5,7 +5,7 @@ import type { InstalledPlugin } from "./types";
 /**
  * Le module serveur d'un plugin, en une puce : il tourne, il est arrêté, il a
  * échoué — ou il attend un redémarrage pour suivre l'activation. Rien pour un
- * plugin sans module serveur, ni face à un serveur d'avant 1.20 (qui ne le dit
+ * plugin sans module serveur, ni face à un serveur d'avant 1.19.3 (qui ne le dit
  * pas : l'interface ne devine pas).
  */
 export function ServerModulePill({ plugin }: { plugin: InstalledPlugin }) {
