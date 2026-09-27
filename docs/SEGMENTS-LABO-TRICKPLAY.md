@@ -5,6 +5,11 @@ trickplay (320 px, une image toutes les 10 s) d'un corpus réel de dix-neuf
 médias, ce qui en a été retenu dans le code, et surtout les pistes FERMÉES
 avec preuves — pour que personne ne les re-creuse de bonne foi.
 
+> Depuis le 27.09.2026, le code de ce labo (`creditsFromFrames.ts`,
+> `frameAnalysis.ts`) est remplacé par l'analyse de fin de média, vignettes
+> classées ET audio (`SEGMENTS-LABO-FIN.md`). Les relevés et les pistes
+> fermées ci-dessous restent valables.
+
 ## Corpus
 
 Cinq films (Far From Home, Homecoming, Brave New World, No Way Home,
@@ -119,3 +124,7 @@ Fait pour les ÉPISODES le 20.09.2026 : l'audio des voisins de saison
 fichiers. Les récaps y restent fermés (le son ne les voit pas : narration et
 nouveau lit musical sous les images reprises), et le stylisé clair des films
 reste ouvert — un film n'a pas de voisin.
+
+Fait pour les FILMS le 27.09.2026 (`SEGMENTS-LABO-FIN.md`) : un film n'a pas de
+voisin, mais sa fin s'écoute seule — le générique se joue en musique, la scène
+en paroles. Le texte clair y est tranché par le son.
