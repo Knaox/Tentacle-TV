@@ -13,6 +13,9 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Les épisodes sans repères** gagnent leur générique et leur scène d'après (« Rick et Morty ») ; la chanson d'un ending n'est pas prise pour une scène
 - **Rien n'est enregistré quand l'analyse ne trouve rien** — ni pour la fin des médias, ni pour l'audio des épisodes voisins : ce « rien » reste en mémoire un jour. Les empreintes audio des épisodes ne sont plus gardées en base : leur table est supprimée au démarrage, avec les anciennes lignes « rien trouvé »
 - L'image Docker nomme ffmpeg explicitement (il y était déjà, tiré par yt-dlp)
+- **Téléviseur LG : fini l'écran noir en ouvrant une fiche ou une bibliothèque** — quand un écran ne peut pas s'afficher (serveur qui redémarre pendant une mise à jour, connexion qui hoquette, fiche que Jellyfin ne rend pas), le téléviseur le dit, avec « Réessayer » et « Retour », au lieu de s'éteindre jusqu'au redémarrage de l'application. Après une mise à jour du serveur, il se recharge de lui-même dès que le serveur répond — et plus jamais en pleine navigation parce qu'un préchargement a échoué
+- **Téléviseurs LG de 2020 à 2022 (webOS 5, 6 et 22) : les bibliothèques s'ouvrent de nouveau** — elles tombaient sur un écran noir à chaque ouverture
+- **Une fiche qui ne se charge pas le dit** : sur le web aussi, une fiche dont Jellyfin ne rend pas les informations propose de réessayer, au lieu d'un chargement sans fin
 
 ### EN
 - **The end of movies and episodes, read from picture and sound** — on the first play of every movie and episode, the server reads its ending: thumbnails show where the credits roll, the audio tells music from dialogue. From them it finds where the credits start and every scene that follows, mid-credits and post-credits alike: each credits segment followed by a scene gets its button to jump to it, and a movie with two scenes ("The Avengers") gets two
@@ -21,6 +24,9 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Episodes without markers** get their credits and their after-credits scene ("Rick and Morty"); an ending's song is not taken for a scene
 - **Nothing is saved when the analysis finds nothing** — neither for media endings nor for season-neighbour audio: that "nothing" stays in memory for a day. Episode audio fingerprints are no longer kept in the database: their table is dropped at startup, along with old "nothing found" rows
 - The Docker image names ffmpeg explicitly (it was already there, pulled in by yt-dlp)
+- **LG TV: no more black screen when opening a title or a library** — when a screen cannot be shown (server restarting during an update, flaky connection, a title Jellyfin fails to return), the TV now says so, with "Retry" and "Back", instead of going dark until the app is restarted. After a server update it reloads by itself as soon as the server responds — and never again in the middle of browsing because a preload failed
+- **LG TVs from 2020 to 2022 (webOS 5, 6 and 22): libraries open again** — they went to a black screen every time they were opened
+- **A title page that fails to load says so**: on the web too, a title page whose details Jellyfin does not return offers to retry instead of loading forever
 
 ## [1.19.3]
 ### FR

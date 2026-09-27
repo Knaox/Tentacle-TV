@@ -4,6 +4,7 @@ import { RailTv } from "./nav/RailTv";
 import { FocusBackdropTv } from "./hero/FocusBackdropTv";
 import { SearchScreenTv } from "./search/SearchScreenTv";
 import { takeCoveredScroll, useSearchOpen } from "./search/searchState";
+import { ScreenErrorBoundaryTv } from "./screens/ScreenErrorBoundaryTv";
 
 /**
  * Disposition du client téléviseur.
@@ -49,7 +50,11 @@ export function AppLayout() {
       {/* La marge gauche vaut la largeur du rail replié : le contenu commence
           après les icônes, et ne bouge plus quand elles se déploient. */}
       <div className="pl-[var(--rail-largeur-repli)]" style={searching ? { display: "none" } : undefined}>
-        <Outlet />
+        {/* Un écran de catalogue en échec n'emporte pas le rail : on peut
+            encore aller ailleurs, sans passer par « Retour ». */}
+        <ScreenErrorBoundaryTv>
+          <Outlet />
+        </ScreenErrorBoundaryTv>
       </div>
 
       {/* La recherche est une surcouche, pas une route : `App.tsx` n'est pas

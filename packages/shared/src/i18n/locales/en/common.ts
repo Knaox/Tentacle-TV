@@ -216,6 +216,13 @@ export default {
   tvIndisponibleTexte:
     "This section needs a keyboard and a close-up screen. Open Tentacle TV on a computer, phone or tablet to use it.",
 
+  // TV recovery screen: a screen that could not be displayed.
+  tvScreenErrorTitle: "Something went wrong on this screen",
+  tvScreenErrorText: "Try again, or go back to the previous screen.",
+  tvScreenLoadTitle: "This screen couldn't load",
+  tvScreenLoadWaiting: "The app will reload as soon as the server responds.",
+  tvScreenLoadText: "Loading failed again. Check the TV's connection, then try again.",
+
   // TV search screen.
   rechercheTvDictee: "Press the microphone on the remote to dictate",
   rechercheTvVide: "Type a title to start searching.",

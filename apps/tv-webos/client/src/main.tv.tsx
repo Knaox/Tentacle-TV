@@ -28,7 +28,6 @@ import { App } from "@/App";
 import { ThemeProvider } from "@/theme";
 import { installTvSessionGuard } from "./auth/sessionGuardTv";
 import { installPolyfills } from "./bootstrap/polyfills";
-import { installStaleBuildReload } from "@/lib/staleBuildReload";
 import { readTvCapabilities } from "./bootstrap/webosGlobals";
 import { consumePairing, deviceToken } from "./bootstrap/fragmentToken";
 import { startConfigCapture } from "./playback/configsTv";
@@ -39,6 +38,7 @@ import { installBack } from "./focus/back";
 import { installPlayerKeys } from "./playback/playerKeys";
 import { installSessionRemoteOsd } from "./playback/sessionRemoteOsd";
 import { SessionChannelTv } from "./session/SessionChannelTv";
+import { ScreenErrorBoundaryTv } from "./ui/screens/ScreenErrorBoundaryTv";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
 // classes — puis ce que le téléviseur change par-dessus. Importées ici plutôt
 // que chaînées par `@import` : la racine de Vite est `client/`, et un `@import`
@@ -64,8 +64,12 @@ import "./styles/tv.css";
 installPolyfills();
 
 // Un téléviseur resté allumé pendant une mise à jour du serveur ne trouve plus
-// ses modules : il recharge au lieu de rester sur un écran noir.
-installStaleBuildReload();
+// ses modules. Ce n'est PAS `vite:preloadError` qui en décide ici, contrairement
+// au web : il part aussi pour les préchargements en temps mort, et recharger
+// l'application parce qu'un préchargement a échoué l'arrachait à l'écran qu'on
+// regardait. C'est l'écran de reprise (`ScreenErrorBoundaryTv`) qui recharge,
+// quand un écran dont on a BESOIN ne se charge pas — et seulement une fois que
+// le serveur répond.
 
 // Lu tôt, pour que le profil d'appareil soit prêt à la première négociation de
 // lecture — et pour retirer `?tvinfo=` de l'URL avant que le routeur la voie.
@@ -264,7 +268,11 @@ createRoot(document.getElementById("root")!).render(
             {/* Le serveur sert cette variante sous `/tv` ; le `basename` doit
                 rester aligné sur la `base` de la configuration de build. */}
             <BrowserRouter basename="/tv">
-              <App />
+              {/* Sous le routeur : un écran en échec montre l'écran de reprise
+                  au lieu d'éteindre l'application, et « Retour » le referme. */}
+              <ScreenErrorBoundaryTv>
+                <App />
+              </ScreenErrorBoundaryTv>
             </BrowserRouter>
           </JellyfinClientContext.Provider>
         </TentacleConfigContext.Provider>

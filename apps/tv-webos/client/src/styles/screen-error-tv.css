@@ -1,0 +1,78 @@
+/* L'écran de reprise : ce qu'on voit à la place d'un écran qui n'a pas pu
+ * s'afficher (`ui/screens/ScreenErrorTv.tsx`).
+ *
+ * Il reprend la carte du jumelage — même largeur, même retrait, même surface —
+ * parce que c'est le seul autre écran du téléviseur qui vit hors des pages et
+ * s'adresse à l'utilisateur d'un incident. Deux écrans qui disent « quelque
+ * chose ne va pas » ne doivent pas avoir l'air de venir de deux applications.
+ *
+ * Les écarts passent par des MARGES : la passe de compatibilité retire `gap`
+ * de la feuille, et un conteneur à écart imbriqué y perdrait son espacement
+ * extérieur (cf. README, « Un piège de mise en page »). */
+
+.screen-error-tv {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.screen-error-card {
+  width: 720px;
+  padding: 48px;
+  background: var(--surface-1);
+  border: 1px solid var(--line-subtle);
+  border-radius: 12px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.screen-error-card .screen-error-title {
+  margin: 28px 0 12px;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+.screen-error-card .screen-error-text {
+  max-width: 560px;
+  margin: 0 auto 32px;
+  font-size: 22px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.screen-error-actions {
+  display: flex;
+  justify-content: center;
+}
+
+/* Le bouton de la carte de jumelage, agrandi pour être visé à trois mètres. */
+.screen-error-button {
+  margin: 0 10px;
+  padding: 16px 40px;
+  background: var(--surface-3);
+  border: 1px solid var(--line-subtle);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.screen-error-button.screen-error-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+/* Le détail technique : lisible si on s'en approche, discret sinon. C'est la
+ * seule trace qu'on puisse transmettre d'un incident devant la télévision. */
+.screen-error-card .screen-error-detail {
+  margin: 32px 0 0;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+  word-break: break-word;
+}

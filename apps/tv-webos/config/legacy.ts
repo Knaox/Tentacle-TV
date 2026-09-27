@@ -33,5 +33,19 @@ export const OPTIONS_LEGACY = {
   // code applicatif. Les dépendances traversent Babel elles aussi, mais leurs
   // besoins ne sont pas toujours visibles à l'analyse statique.
   polyfills: true,
-  modernPolyfills: false,
+  // **« Moderne » ne veut pas dire récent, sur un téléviseur.** Le bundle
+  // moderne est servi à tout moteur qui sait charger un module — Chrome 64 et
+  // plus —, donc aux dalles webOS 5 (Chrome 68), 6 (79) et 22 (87). core-js
+  // n'accompagnait que le bundle SystemJS : elles recevaient le code d'`apps/web`
+  // tel quel. Mesuré au simulateur webOS 6.0 : `virtualItems.at(-1)` de
+  // `LibraryGrid` (Chrome 92) levait `.at is not a function`, et chaque
+  // bibliothèque s'ouvrait sur un écran noir.
+  //
+  // `true` détecte à l'usage, dans les fragments RENDUS (dépendances
+  // comprises), ce que les cibles modernes de plugin-legacy — Chrome 64 et
+  // plus — ne connaissent pas, et le charge avant l'entrée. Une API récente
+  // écrite demain dans `apps/web` ne pourra plus éteindre un téléviseur. Ce qui
+  // échappe à core-js — `AbortSignal.timeout`, `crypto.randomUUID` — reste à
+  // `client/src/bootstrap/polyfills.ts` et aux gardes de leurs appelants.
+  modernPolyfills: true,
 };

@@ -15,6 +15,7 @@ import { DetailOverview } from "../components/detail/DetailOverview";
 import { DetailActions } from "../components/detail/DetailActions";
 import { DetailPoster } from "../components/detail/DetailPoster";
 import { DetailOpenOverlay, type TargetRect } from "../components/detail/DetailOpenOverlay";
+import { DetailPlaceholder } from "../components/detail/DetailPlaceholder";
 import { consumeDetailOrigin, skipsEntrance, type DetailOrigin } from "../components/detail/detailTransition";
 import { ExtrasSection } from "../components/detail/ExtrasSection";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
@@ -32,7 +33,7 @@ export function MediaDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
-  const { data: item, isLoading } = useMediaItem(itemId);
+  const { data: item, isLoading, isError, isFetching, refetch } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
   const { data: parentSeries } = useMediaItem(isEpisode ? item?.SeriesId : undefined);
   // Note TMDB de l'épisode (fiche épisode) : lue par saison, cache partagé
@@ -125,9 +126,8 @@ export function MediaDetail() {
   if (isLoading || !item) {
     return (
       <>
-        <div className="flex h-screen items-center justify-center bg-surface-0">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-line-strong border-t-content-primary" />
-        </div>
+        {/* L'attente, ou l'échec : une requête en erreur ne tourne plus à vide. */}
+        <DetailPlaceholder failed={isError && !item} retrying={isFetching} onRetry={() => void refetch()} />
         {/* Le calque d'ouverture couvre l'écran pendant le chargement : sans
             lui ici, un aller-retour spinner → fiche crevait l'animation. */}
         {openOverlay}
