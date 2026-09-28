@@ -1,11 +1,12 @@
 import { useCallback, type ReactNode } from "react";
-import { Pressable, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { Feather } from "@expo/vector-icons";
 import { useWatchedToggle, type useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { ProgressBar } from "@/components/ui";
+import { WatchedGlyph } from "@/components/cards/cardGlyphs";
+import { cardProgress } from "@/components/cards/cardProgress";
 import { useTheme, useThemedStyles } from "@/theme";
 import { MetaTokens } from "../detail/MetaTokens";
 import { makeEpisodeRowStyles } from "./episodeRowStyles";
@@ -23,10 +24,17 @@ interface Props {
   isCurrent?: boolean;
   /** À gauche du rond « vu » : le bouton « Garder hors ligne » de l'épisode. */
   leading?: ReactNode;
+  /** L'appui long : la feuille des cartes (variante 16:9) sur la fiche ; rien dans le lecteur. */
+  onLongPress?: (ep: MediaItem) => void;
 }
 
-/** Une ligne d'épisode : vignette, numéro et titre, durée, résumé, et le rond « vu ». */
-export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent, leading }: Props) {
+/**
+ * Une ligne d'épisode : vignette, numéro et titre, durée, résumé, et le rond
+ * « vu ». Toucher lance l'épisode. Le rond dessine la coche de la pastille
+ * d'états des cartes (tracé partagé, pleine quand l'épisode est vu), la barre
+ * suit la règle commune (`cardProgress`).
+ */
+export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent, leading, onLongPress }: Props) {
   const { t } = useTranslation("common");
   const { colors, isDark } = useTheme();
   const st = useThemedStyles(makeEpisodeRowStyles);
@@ -34,7 +42,7 @@ export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurre
   const accentText = isDark ? colors.brand.accentLight : colors.brand.accent;
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const played = ep.UserData?.Played === true;
-  const progress = ep.UserData?.PlayedPercentage;
+  const progress = cardProgress(ep);
   const runtime = ep.RunTimeTicks ? Math.round(ep.RunTimeTicks / 600_000_000) : null;
   const epLabel = ep.IndexNumber != null
     ? `S${String(ep.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(ep.IndexNumber).padStart(2, "0")} · `
@@ -54,17 +62,16 @@ export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurre
 
   return (
     <View style={st.row}>
-      <Pressable onPress={() => onPlay(ep)} style={st.main}>
+      <Pressable
+        onPress={() => onPlay(ep)}
+        onLongPress={onLongPress ? () => onLongPress(ep) : undefined}
+        style={st.main}
+      >
         <View style={st.thumb}>
           <EpisodeThumb ep={ep} seriesId={seriesId} client={client} />
-          {progress != null && progress > 0 && (
-            <View style={st.progressTrack}>
-              <LinearGradient
-                colors={[colors.brand.violet, colors.brand.accent]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ height: "100%", width: `${progress}%` }}
-              />
+          {progress !== null && (
+            <View style={local.progress}>
+              <ProgressBar progress={progress / 100} height={3} />
             </View>
           )}
         </View>
@@ -86,17 +93,26 @@ export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurre
 
       {leading}
 
-      {/* Le rond « vu » */}
+      {/* Le rond « vu » : la coche de la pastille d'états des cartes. */}
       <Pressable
         onPress={handleToggle}
         hitSlop={12}
+        accessibilityRole="button"
         accessibilityLabel={played ? t("markUnwatched") : t("markWatched")}
+        accessibilityState={{ selected: played }}
         style={st.toggle}
       >
-        <Animated.View style={[animStyle, st.ring, played && st.ringPlayed]}>
-          <Feather name="check" size={16} color={played ? accentText : colors.text.disabled} />
+        <Animated.View style={[animStyle, local.watched]}>
+          <WatchedGlyph size={26} color={played ? accentText : colors.text.tertiary} filled={played} />
         </Animated.View>
       </Pressable>
     </View>
   );
 }
+
+// Propre à la ligne en ligne : sa jumelle hors ligne garde, pour l'instant,
+// la piste et l'anneau des styles partagés (`episodeRowStyles`).
+const local = StyleSheet.create({
+  progress: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 4, paddingBottom: 4 },
+  watched: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
+});

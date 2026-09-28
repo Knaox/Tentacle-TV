@@ -21,6 +21,11 @@ interface Props {
   seasonTrailing?: (episodes: MediaItem[]) => ReactNode;
   /** Bouton ajouté à chaque ligne, à gauche du rond « vu ». */
   rowLeading?: (ep: MediaItem) => ReactNode;
+  /**
+   * L'appui long d'une ligne — la feuille des cartes sur la fiche. Absent
+   * dans le lecteur : une feuille n'a rien à faire par-dessus la vidéo.
+   */
+  onLongPressEpisode?: (ep: MediaItem) => void;
 }
 
 /**
@@ -29,7 +34,7 @@ interface Props {
  * dans `episodes/` (règle des 300 lignes), et les deux emplacements optionnels
  * accueillent les boutons du hors ligne.
  */
-export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId, scrollTargetRef, seasonTrailing, rowLeading }: Props) {
+export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId, scrollTargetRef, seasonTrailing, rowLeading, onLongPressEpisode }: Props) {
   const { data: seasons } = useSeasons(seriesId);
   const [selectedSeason, setSelectedSeason] = useState<string | undefined>(undefined);
   const activeSeason = selectedSeason ?? initialSeasonId ?? seasons?.[0]?.Id;
@@ -51,6 +56,7 @@ export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialS
           scrollTargetRef={selectedSeason === undefined ? scrollTargetRef : undefined}
           seasonTrailing={seasonTrailing}
           rowLeading={rowLeading}
+          onLongPressEpisode={onLongPressEpisode}
         />
       )}
     </View>

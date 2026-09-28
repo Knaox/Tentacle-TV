@@ -9,6 +9,8 @@ import { Badge } from "../ui";
 import { MobileMediaCard } from "../MobileMediaCard";
 import { MediaRow } from "../MediaRow";
 import { MobileEpisodeList } from "../MobileEpisodeList";
+import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
+import { landscapeSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
 import { EpisodeKeepOfflineButton } from "@/offline/entry/EpisodeKeepOfflineButton";
 import { SeasonKeepOfflinePill } from "@/offline/entry/SeasonKeepOfflinePill";
 import { CastRow } from "../CastRow";
@@ -42,6 +44,9 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
   const [expanded, setExpanded] = useState(false);
   const [overviewTruncated, setOverviewTruncated] = useState(false);
   const { data: collectionItems } = useCollectionItems(item.Type === "BoxSet" ? item.Id : undefined);
+  // Les cartes des rangées (collection, similaires) ouvrent la feuille des
+  // cartes d'elles-mêmes ; les lignes d'épisode la reçoivent, en variante 16:9.
+  const openSheet = useCardSheetOpener();
 
   return (
     <View>
@@ -101,6 +106,7 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
             onPlay={(ep) => router.push(`/watch/${ep.Id}`)}
             seasonTrailing={(episodes) => <SeasonKeepOfflinePill episodes={episodes} />}
             rowLeading={(ep) => <EpisodeKeepOfflineButton episode={ep} />}
+            onLongPressEpisode={openSheet ? (ep) => openSheet(landscapeSheetTarget(ep)) : undefined}
           />
         </>
       )}

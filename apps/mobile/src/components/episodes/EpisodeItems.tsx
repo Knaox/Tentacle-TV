@@ -15,10 +15,12 @@ interface Props {
   seasonTrailing?: (episodes: MediaItem[]) => ReactNode;
   /** Bouton ajouté à chaque ligne, à gauche du rond « vu ». */
   rowLeading?: (ep: MediaItem) => ReactNode;
+  /** L'appui long d'une ligne (la feuille des cartes, sur la fiche). */
+  onLongPressEpisode?: (ep: MediaItem) => void;
 }
 
 /** Les épisodes d'UNE saison : la barre de saison, puis une ligne par épisode. */
-export function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId, scrollTargetRef, seasonTrailing, rowLeading }: Props) {
+export function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId, scrollTargetRef, seasonTrailing, rowLeading, onLongPressEpisode }: Props) {
   const client = useJellyfinClient();
   const { data: episodes } = useEpisodes(seriesId, seasonId);
 
@@ -68,6 +70,7 @@ export function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId, scr
                 onPlay={onPlay}
                 isCurrent={isCurrent}
                 leading={rowLeading?.(ep)}
+                onLongPress={onLongPressEpisode}
               />
             </View>
           );
