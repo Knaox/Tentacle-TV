@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { AccessibilityInfo, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
-import { prefetchSwipeCardDetails, swipeLangOf, useSwipeCardDetails, useSwipeDeck } from "@tentacle-tv/api-client";
+import { swipeLangOf, useSwipeCardDetails, useSwipeDeck } from "@tentacle-tv/api-client";
 import type { SwipeVerdict } from "@tentacle-tv/api-client";
 import { Skeleton } from "@/components/ui";
 import { useHeaderHeight } from "@/components/PersistentHeader";
@@ -24,7 +23,7 @@ const HAPTIC: Record<SwipeVerdict, () => Promise<void>> = {
 /**
  * La section « Affiner » de l'onglet Pour vous : une pile de films et de
  * séries — de la bibliothèque et d'ailleurs — à juger d'un glisser (droite,
- * gauche, haut) ou d'un bouton. La logique (file, annulation, écritures) est
+ * gauche, haut, bas) ou d'un bouton. La logique (file, annulation, écritures) est
  * celle du web (useSwipeDeck) ; seuls le geste et le rendu sont natifs.
  */
 export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
@@ -32,7 +31,6 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
   const theme = useTheme();
   const headerH = useHeaderHeight();
   const tabBarH = useGlassTabBarHeight();
-  const qc = useQueryClient();
   const lang = swipeLangOf(i18n.language);
   const deck = useSwipeDeck(lang);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -41,10 +39,9 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
   const reducedMotion = motion.isReducedMotion();
   const top = deck.cards[0];
   const { data: details } = useSwipeCardDetails(top, lang);
-
-  useEffect(() => {
-    prefetchSwipeCardDetails(qc, deck.cards[1], lang);
-  }, [qc, deck.cards, lang]);
+  // Le verso de la suivante se charge pendant qu'on juge celle-ci, et elle le
+  // porte déjà : son texte ne change pas au moment où elle monte en tête.
+  const { data: nextDetails } = useSwipeCardDetails(deck.cards[1], lang);
   const topKey = top?.key;
   useEffect(() => {
     setInfoOpen(false);
@@ -57,16 +54,24 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
     return () => clearTimeout(id);
   }, [saveFailed, dismissSaveFailed]);
 
-  // Le verdict est posé TOUT DE SUITE (la suivante est jouable) ; une copie de
-  // la carte finit son mouvement par-dessus.
-  const commit = useCallback((verdict: SwipeVerdict, from: { x: number; y: number }) => {
+  // Le verdict est posé TOUT DE SUITE (la suivante est jouable) ; la carte
+  // elle-même finit son mouvement par-dessus, avec sa face du moment.
+  const commit = useCallback((verdict: SwipeVerdict) => {
     if (!top) return;
     void HAPTIC[verdict]().catch(() => {});
-    setExiting((list) => [...list, { id: nextId.current++, card: top, verdict, from }]);
+    setExiting((list) => [...list, { id: nextId.current++, card: top, verdict, details, infoOpen }]);
     AccessibilityInfo.announceForAccessibility(`${t(verdict)} — ${top.title}`);
     judge(verdict);
-  }, [top, judge, t]);
-  const onJudge = useCallback((verdict: SwipeVerdict) => commit(verdict, { x: 0, y: 0 }), [commit]);
+  }, [top, details, infoOpen, judge, t]);
+  // Une carte revenue dans la pile (annuler, échec d'enregistrement) n'est
+  // plus en partance : elle a déjà repris sa place, son entrée s'efface.
+  const cards = deck.cards;
+  useEffect(() => {
+    setExiting((list) => {
+      const kept = list.filter((e) => !cards.some((c) => c.key === e.card.key));
+      return kept.length === list.length ? list : kept;
+    });
+  }, [cards]);
   const onUndo = useCallback(() => {
     void Haptics.selectionAsync().catch(() => {});
     AccessibilityInfo.announceForAccessibility(t("undone"));
@@ -93,6 +98,7 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
           exiting={exiting}
           infoOpen={infoOpen}
           details={details}
+          nextDetails={nextDetails}
           reducedMotion={reducedMotion}
           onRelease={commit}
           onExited={onExited}
@@ -101,7 +107,7 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
       )}
       {saveFailed && <SwipeSaveFailedNative />}
       {!deck.error && (!deck.empty || deck.canUndo) && (
-        <SwipeControls disabled={!top} canUndo={deck.canUndo} onJudge={onJudge} onUndo={onUndo} />
+        <SwipeControls disabled={!top} canUndo={deck.canUndo} onJudge={commit} onUndo={onUndo} />
       )}
     </View>
   );
