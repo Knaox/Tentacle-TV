@@ -2,7 +2,11 @@ import { memo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Film, Info, Play } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { itemMeta, matchReason, personMeta, type SearchPersonHit, type SearchTopHit } from "@tentacle-tv/shared";
+import { cardRatingFor, itemMeta, matchReason, personMeta, type SearchPersonHit, type SearchTopHit } from "@tentacle-tv/shared";
+import { CardMarkerLayer } from "../../../components/cards/CardMarkerLayer";
+import { useOpenCardSheet } from "../../cards/cardSheet";
+import { useLongPress } from "../../ui/useLongPress";
+import { asMediaItem } from "./SearchSection";
 import { PersonAvatar } from "./SearchPeople";
 
 interface Props {
@@ -36,11 +40,17 @@ function Card({ children }: { children: ReactNode }) {
  * deux lignes, raison 13 violet clair (« Avec Tom Hanks »), puis « Lire » /
  * « Reprendre » (blanc) et « Détails » en pilules de 40. Une personne : son
  * portrait 92 et « Filmographie ».
+ *
+ * L'affiche porte les marqueurs des cartes (le même titre dit la même chose
+ * ici et dans la grille), et son appui long ouvre la feuille de ses actions.
  */
 export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, onPerson }: Props) {
   const { t, i18n } = useTranslation("search");
   const client = useJellyfinClient();
   const [broken, setBroken] = useState(false);
+  const openSheet = useOpenCardSheet();
+  const media = top.kind === "item" ? asMediaItem(top.hit.item) : null;
+  const press = useLongPress(openSheet && media ? () => openSheet({ kind: "media", variant: "poster", item: media }) : undefined);
 
   if (top.kind === "person") {
     const person = top.hit;
@@ -62,6 +72,7 @@ export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, 
   }
 
   const { item, match } = top.hit;
+  const face = asMediaItem(item);
   const reason = matchReason(t, match);
   const playable = PLAYABLE.has(item.Type);
   const resume = (item.UserData?.PlayedPercentage ?? 0) > 0 && !item.UserData?.Played;
@@ -74,13 +85,18 @@ export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, 
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => onOpen(item.Id)}
+          {...press.handlers}
+          onClick={() => {
+            if (!press.consumeClick()) onOpen(item.Id);
+          }}
           aria-label={item.Name}
-          className="relative h-[138px] w-[92px] shrink-0 overflow-hidden rounded-lg bg-surface-2"
+          className="mirror-pressable relative h-[138px] w-[92px] shrink-0 overflow-hidden rounded-lg bg-surface-2"
+          style={{ WebkitTapHighlightColor: "transparent" }}
         >
           {poster && (
             <img src={poster} alt="" loading="lazy" decoding="async" draggable={false} onError={() => setBroken(true)} className="absolute inset-0 h-full w-full object-cover" />
           )}
+          <CardMarkerLayer item={face} communityRating={cardRatingFor(face, "item").rating} scope="item" />
         </button>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="truncate text-xs font-medium text-content-tertiary">{itemMeta(t, item, i18n.language)}</p>

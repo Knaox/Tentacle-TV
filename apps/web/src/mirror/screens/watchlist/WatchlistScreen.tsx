@@ -75,6 +75,8 @@ export function MirrorWatchlistScreen() {
   const handleLongPress = useCallback((item: MediaItem) => {
     if (!selection.isSelecting) setSheet({ kind: "media", variant: "poster", item });
   }, [selection.isSelecting]);
+  // « Reprendre » se LANCE au toucher : sa feuille est celle d'une vignette 16:9.
+  const handleResumeLongPress = useCallback((item: MediaItem) => setSheet({ kind: "media", variant: "landscape", item }), []);
   const handleDelete = async () => {
     const ids = [...selection.selected];
     if (ids.length === 0) return;
@@ -188,7 +190,7 @@ export function MirrorWatchlistScreen() {
           }
         />
       )}
-      {showResume && <ResumeRail items={resume} onPlay={play} pendingId={pendingId} />}
+      {showResume && <ResumeRail items={resume} onPlay={play} onLongPress={handleResumeLongPress} pendingId={pendingId} />}
       {body}
       {hasContent && data.length > 0 && !selection.isSelecting && <ScrollTopFab />}
       <MediaActionSheet target={sheet} onClose={closeSheet} />
