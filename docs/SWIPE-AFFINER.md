@@ -28,14 +28,48 @@ s'écoute que quand on la voit.
 | j'aime | glisser à droite · → · bouton ♥ | glisser à droite · bouton |
 | coup de cœur | glisser vers le haut · ↑ · bouton ★ | glisser vers le haut · bouton |
 | pas pour moi | glisser à gauche · ← · bouton ✕ | glisser à gauche · bouton |
-| passer | ↓ · bouton | bouton |
+| passer | glisser vers le bas · ↓ · bouton ⏭ | glisser vers le bas · bouton |
 | annuler | Z · Ctrl/⌘+Z · Retour arrière · bouton | bouton |
 | synopsis | clic sur la carte · Espace · I · bouton ⓘ | toucher la carte |
 
-Le bas n'est jamais un verdict au glisser : un défilement raté ne juge rien.
-La lecture du geste (`verdictFromDrag`, seuils 110 px ou 650 px/s) est la même
-sur le web et le mobile (`packages/api-client/src/swipe/swipeGesture.ts`).
+La lecture du geste est la même sur le web et le mobile
+(`packages/api-client/src/swipe/swipeGesture.ts`) : l'axe qui **domine**
+décide — horizontal → j'aime / pas pour moi, vertical → coup de cœur /
+passer — pourvu qu'on aille assez loin (110 px) ou qu'on lance assez vite
+(650 px/s, après 20 px au moins dans cette direction : un appui qui tressaille
+ne juge rien). Le bas vaut « passer », comme le bouton : le verdict sans poids,
+annulable d'un geste. Un tampon par direction (`stampStrength`) : un seul
+s'allume, celui de l'axe qui domine, **plein au seuil** — ce qu'il annonce est
+ce que le lâcher décidera.
 VoiceOver : balayer vers le haut / le bas sur la carte propose les verdicts.
+
+### Le changement de carte
+
+- **La carte jugée garde le dessus** jusqu'au bout de sa sortie :
+  l'empilement suit l'ordre d'arrivée des cartes (`swipeStackZ`), jamais leur
+  place dans la liste rendue. Sur le web, AnimatePresence réinsère la carte qui
+  part AVANT la nouvelle carte du dessus : à z-index égal, elle passait
+  dessous, et la pile « tremblait » (la suivante surgissait à 95 %, puis
+  regrossissait).
+- **C'est la même carte qui part** (mobile : même vue, par clé ; web :
+  AnimatePresence) — une copie remontait son affiche depuis le vide et
+  perdait son tampon. Elle part du point de lâcher, garde l'autre axe
+  (`exitTarget`), son verso et son tampon ; sa sortie se fige au premier
+  calcul (deux verdicts rapprochés ne la font pas changer de cap).
+- **La suivante monte déjà habillée** : son verso (titre localisé, durée) est
+  chargé et posé dès qu'elle attend, la place du bouton ⓘ est réservée sur
+  toutes les cartes — aucun texte ne se recompose sous les yeux.
+- **Annuler en pleine sortie** ramène la carte à sa place (le web la laissait
+  accrochée au bord : `x` manquait à la cible `animate`).
+- Web : l'opacité passe par une MotionValue à nous (fil principal) — en WAAPI,
+  la fin d'animation rendait une image l'ancien style (éclair).
+- **Mouvement réduit** : fondu enchaîné sur place, ni envol ni zoom ; une carte
+  lâchée avant le seuil revient en 150 ms, sans rebond. Mobile : Reanimated
+  lit le réglage système au lancement et saute par défaut toute animation —
+  ces versions réduites sont en `ReduceMotion.Never`.
+- En dev, le mode strict de React 19 rejoue les effets d'un nœud DÉPLACÉ
+  (framer-motion y perd ses animations) : la pile web est rendue dans l'ordre
+  naturel, aucune carte n'est déplacée d'un rendu à l'autre.
 
 ## Ce qui part du serveur
 
