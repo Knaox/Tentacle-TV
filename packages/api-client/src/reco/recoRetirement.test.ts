@@ -9,7 +9,7 @@
  */
 
 import { QueryClient } from "@tanstack/react-query";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaItem, UserItemData } from "@tentacle-tv/shared";
 import type { RecoRowItem } from "../hooks/recoTypes";
 import type { UserRatingEntry } from "../hooks/useRatings";
@@ -17,8 +17,8 @@ import { RECO_PAGE_KEY, selectRecoPage, type RecoPage } from "../hooks/useRecoPa
 import { WATCHLIST_PENDING_KEY } from "../hooks/useWatchlistPending";
 import { FAVORITE_SERIES_IDS_KEY, WATCHLIST_SERIES_IDS_KEY } from "../hooks/watchlistEffects";
 import { dropRecoItemUnlessHeld } from "./recoCacheItems";
-import { isRecoItemJudged, releaseRecoCard } from "./recoRetirement";
-import { holdRecoCard, markRecoDismissed, resetRecoRetirementForTests } from "./recoRetirementState";
+import { RECO_LEAVE_MS, isRecoItemJudged, releaseRecoCard } from "./recoRetirement";
+import { holdRecoCard, isRecoLeaving, markRecoDismissed, resetRecoRetirementForTests } from "./recoRetirementState";
 import { heldRecoView } from "./useRecoHold";
 
 const reco = (key: string, jellyfinItemId: string | null = null): RecoRowItem => ({
@@ -51,7 +51,8 @@ const page = (rows: Array<RecoRowItem[]>): RecoPage => ({
 let qc: QueryClient;
 const keysOf = (filter = "all") =>
   (qc.getQueryData<RecoPage>([RECO_PAGE_KEY, filter])?.rows ?? []).map((row) => row.items.map((i) => i.key));
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+// Le fondu de sortie, puis le retrait (asynchrone : il annule d'abord les requêtes en vol).
+const flush = () => vi.advanceTimersByTimeAsync(RECO_LEAVE_MS + 1);
 const movieFace = (over: Partial<UserItemData>) =>
   ({
     Id: "m603", Name: "Film", Type: "Movie",
@@ -62,7 +63,12 @@ const rating = (mediaType: "movie" | "series", tmdbId: number): UserRatingEntry 
   syncStatus: "synced", updatedAt: "2026-09-29T00:00:00Z",
 } as UserRatingEntry);
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 beforeEach(() => {
+  vi.useFakeTimers();
   resetRecoRetirementForTests();
   qc = new QueryClient();
   qc.setQueryData([RECO_PAGE_KEY, "all"], page([[MOVIE, SERIES, VIGIE], [OTHER, MOVIE]]));
@@ -112,6 +118,27 @@ describe("le lâcher", () => {
     // Une page calculée AVANT le geste, servie après, ne le remontre pas.
     const stale = selectRecoPage(page([[MOVIE, OTHER]]));
     expect(stale.rows.map((r) => r.items.map((i) => i.key))).toEqual([["movie:12"]]);
+  });
+
+  it("s'efface d'abord : le titre reste en cache le temps du fondu", async () => {
+    qc.setQueryData(WATCHLIST_PENDING_KEY, ["movie:11"]);
+    holdRecoCard("movie:11");
+    releaseRecoCard(qc, "movie:11");
+    expect(isRecoLeaving("movie:11")).toBe(true);
+    await vi.advanceTimersByTimeAsync(RECO_LEAVE_MS - 20);
+    expect(keysOf()[0]).toContain("movie:11");
+    await flush();
+    expect(keysOf()[0]).not.toContain("movie:11");
+  });
+
+  it("une carte reprise pendant son fondu reste", async () => {
+    qc.setQueryData(WATCHLIST_PENDING_KEY, ["movie:11"]);
+    holdRecoCard("movie:11");
+    releaseRecoCard(qc, "movie:11");
+    holdRecoCard("movie:11");
+    expect(isRecoLeaving("movie:11")).toBe(false);
+    await flush();
+    expect(keysOf()[0]).toContain("movie:11");
   });
 
   it("garde un titre qui n'est pas (ou plus) jugé", async () => {

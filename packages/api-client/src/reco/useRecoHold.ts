@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { releaseRecoCard } from "./recoRetirement";
-import { holdRecoCard, isRecoDismissed } from "./recoRetirementState";
+import { holdRecoCard, isRecoDismissed, isRecoLeaving, subscribeRecoLeaving } from "./recoRetirementState";
 
 /**
  * Tient des cartes de recommandation tant que `ids` n'est pas null — par clé
@@ -57,4 +57,9 @@ export function useHeldRecoItems<T extends { key: string }>(items: readonly T[],
   const source = held ? (frozen ?? items) : items;
   useRecoHold(held ? source.map((item) => item.key) : null);
   return useMemo(() => heldRecoView(items, frozen, held), [held, frozen, items]);
+}
+
+/** La carte de ce titre s'efface-t-elle, jugée et lâchée, avant son retrait ? */
+export function useIsRecoLeaving(key: string): boolean {
+  return useSyncExternalStore(subscribeRecoLeaving, () => isRecoLeaving(key), () => false);
 }

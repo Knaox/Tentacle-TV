@@ -8,7 +8,7 @@ import { seriesStateId } from "../hooks/useSeriesListMembership";
 import { WATCHLIST_PENDING_KEY } from "../hooks/useWatchlistPending";
 import { FAVORITE_SERIES_IDS_KEY, WATCHLIST_SERIES_IDS_KEY } from "../hooks/watchlistEffects";
 import { recoItemsOf } from "./recoCacheItems";
-import { isRecoItemHeld, markRecoRetired, unholdRecoCard } from "./recoRetirementState";
+import { isRecoItemHeld, markRecoRetired, startRecoLeave, unholdRecoCard } from "./recoRetirementState";
 import { recoMarkerItem } from "./useRecoMarkerItem";
 
 /**
@@ -50,6 +50,9 @@ export function isRecoItemJudged(qc: QueryClient, item: RecoRowItem): boolean {
   return markers.statuses.length > 0 || markers.userScore !== null;
 }
 
+/** Le fondu de sortie d'une carte lâchée (web : `.reco-card-leaving`), avant le retrait. */
+export const RECO_LEAVE_MS = 160;
+
 /** Retire le titre de toutes les pages chargées, et de celles servies ensuite. */
 export function retireRecoItem(qc: QueryClient, key: string): void {
   markRecoRetired(key);
@@ -66,6 +69,6 @@ export function releaseRecoCard(qc: QueryClient, id: string): void {
     // Encore tenue par son autre identité (la rangée par sa clé, la feuille
     // d'une TV par son item) : elle attend ce lâcher-là.
     if (isRecoItemHeld(item)) continue;
-    if (isRecoItemJudged(qc, item)) retireRecoItem(qc, item.key);
+    if (isRecoItemJudged(qc, item)) startRecoLeave(item.key, RECO_LEAVE_MS, () => retireRecoItem(qc, item.key));
   }
 }
