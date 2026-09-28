@@ -3,6 +3,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { Spinner } from "../../components/ui/Spinner";
 import { MediaCard } from "../cards/MediaCard";
 import { MediaActionSheet } from "../cards/MediaActionSheet";
+import type { CardSheetTarget } from "../cards/cardSheet";
 import { useGrid } from "../useMirrorLayout";
 import { ScrollTopFab } from "./ScrollTopFab";
 import { CatalogEmpty } from "./CatalogGridStates";
@@ -35,15 +36,16 @@ interface Props {
  * ailleurs. Au bas, la page suivante se charge (IntersectionObserver) avec un
  * anneau de marque ; au-delà d'un écran et demi, « Revenir en haut ».
  *
- * L'appui long ouvre la feuille d'actions (Favori, Ma liste, Vu).
+ * L'appui long ouvre la feuille d'actions de la carte (`MediaActionSheet`).
  */
 export const CatalogGrid = memo(function CatalogGrid({
   items, isLoading, hasNextPage = false, isFetchingNextPage = false, fetchNextPage, onItemPress, empty,
   filtered = false, onReset, captions = false,
 }: Props) {
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
-  const [sheetId, setSheetId] = useState<string | null>(null);
-  const closeSheet = useCallback(() => setSheetId(null), []);
+  const [sheet, setSheet] = useState<CardSheetTarget | null>(null);
+  const openSheet = useCallback((item: MediaItem) => setSheet({ kind: "media", variant: "poster", item }), []);
+  const closeSheet = useCallback(() => setSheet(null), []);
 
   // Le rappel du bas de page lit toujours l'état courant, sans réabonner l'observateur.
   const more = useRef({ hasNextPage, isFetchingNextPage, fetchNextPage });
@@ -83,7 +85,7 @@ export const CatalogGrid = memo(function CatalogGrid({
         }}
       >
         {items.map((item) => (
-          <GridCell key={item.Id} item={item} width={itemWidth} onPress={onItemPress} onLongPress={setSheetId} />
+          <GridCell key={item.Id} item={item} width={itemWidth} onPress={onItemPress} onLongPress={openSheet} />
         ))}
       </div>
       <div ref={sentinel} aria-hidden className="h-px" />
@@ -93,7 +95,7 @@ export const CatalogGrid = memo(function CatalogGrid({
         </div>
       )}
       <ScrollTopFab />
-      <MediaActionSheet itemId={sheetId} onClose={closeSheet} />
+      <MediaActionSheet target={sheet} onClose={closeSheet} />
     </>
   );
 });
@@ -103,7 +105,7 @@ const GridCell = memo(function GridCell({ item, width, onPress, onLongPress }: {
   item: MediaItem;
   width: number;
   onPress?: (item: MediaItem) => void;
-  onLongPress: (id: string) => void;
+  onLongPress: (item: MediaItem) => void;
 }) {
   return (
     <MediaCard
@@ -111,7 +113,7 @@ const GridCell = memo(function GridCell({ item, width, onPress, onLongPress }: {
       width={width}
       small
       onPress={onPress ? () => onPress(item) : undefined}
-      onLongPress={() => onLongPress(item.Id)}
+      onLongPress={() => onLongPress(item)}
     />
   );
 });

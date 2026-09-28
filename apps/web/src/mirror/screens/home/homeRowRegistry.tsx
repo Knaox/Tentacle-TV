@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { RecoReason, RecoRowItem } from "@tentacle-tv/api-client";
+import type { RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaRow } from "../../rows/MediaRow";
 import { FadeIn, homeRowFadeDelay } from "../../hero/FadeIn";
@@ -22,7 +22,7 @@ export type SeeAllRoute = "/watchlist" | "/favorites" | "/recommendations";
 export interface HomeRowActions {
   renderCard: (item: MediaItem) => ReactNode;
   onItemPress: (jellyfinId: string) => void;
-  onItemLongPress: (jellyfinId: string, reasons?: RecoReason[]) => void;
+  onItemLongPress: (item: MediaItem) => void;
   onSeeAll: (route: SeeAllRoute) => void;
   canOpenReco: (item: RecoRowItem) => boolean;
   onRecoPress: (item: RecoRowItem) => void;

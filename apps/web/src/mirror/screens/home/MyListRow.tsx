@@ -9,6 +9,7 @@ import { Pressable } from "../../ui/Pressable";
 import { useCardWidth } from "../../useMirrorLayout";
 
 interface ListEntry {
+  item: MediaItem;
   id: string;
   name: string;
   year?: number;
@@ -26,7 +27,7 @@ export const MyListRow = memo(function MyListRow({ items, onSeeAll, onItemPress,
   items: MediaItem[];
   onSeeAll: () => void;
   onItemPress: (id: string) => void;
-  onItemLongPress: (id: string) => void;
+  onItemLongPress: (item: MediaItem) => void;
 }) {
   const { t } = useTranslation("common");
   const entries = useMemo(() => {
@@ -36,6 +37,7 @@ export const MyListRow = memo(function MyListRow({ items, onSeeAll, onItemPress,
       if (seen.has(item.Id)) continue;
       seen.add(item.Id);
       out.push({
+        item,
         id: item.Id,
         name: item.Name,
         year: item.ProductionYear ?? undefined,
@@ -60,7 +62,7 @@ export const MyListRow = memo(function MyListRow({ items, onSeeAll, onItemPress,
 function ListCard({ entry, onPress, onLongPress }: {
   entry: ListEntry;
   onPress: (id: string) => void;
-  onLongPress: (id: string) => void;
+  onLongPress: (item: MediaItem) => void;
 }) {
   const client = useJellyfinClient();
   const width = useCardWidth();
@@ -70,7 +72,7 @@ function ListCard({ entry, onPress, onLongPress }: {
     <Pressable
       scale={1}
       onPress={() => onPress(entry.id)}
-      onLongPress={() => onLongPress(entry.id)}
+      onLongPress={() => onLongPress(entry.item)}
       style={{ width }}
       aria-label={entry.name}
     >

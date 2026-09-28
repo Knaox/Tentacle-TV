@@ -76,7 +76,7 @@ export function MirrorHome() {
   });
 
   const renderCard = useCallback(
-    (item: MediaItem) => <MediaCard item={item} onLongPress={() => openMedia(item.Id)} />,
+    (item: MediaItem) => <MediaCard item={item} onLongPress={() => openMedia(item)} />,
     [openMedia],
   );
   const librariesById = useMemo(() => {

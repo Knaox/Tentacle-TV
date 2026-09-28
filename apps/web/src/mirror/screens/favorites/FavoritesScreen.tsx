@@ -7,6 +7,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useMultiSelect } from "../../../hooks/useMultiSelect";
 import { useFavoritesGroupMode } from "../../../components/favorites/useFavoritesGroupMode";
 import { MediaActionSheet } from "../../cards/MediaActionSheet";
+import type { CardSheetTarget } from "../../cards/cardSheet";
 import { GridSkeleton, ScopedSearchEmpty, ScrollTopFab, useBackOrHome } from "../../catalog";
 import { CatalogEmpty } from "../../catalog/CatalogGridStates";
 import { CollectionControls, QuickChip } from "../collection/CollectionControls";
@@ -43,15 +44,15 @@ export function MirrorFavorites() {
   const groups = useMemo(() => groupFavorites(data, mode), [data, mode]);
   const summary = useMemo(() => summarizeFavorites(raw ?? []), [raw]);
   const selection = useMultiSelect();
-  const [sheetId, setSheetId] = useState<string | null>(null);
-  const closeSheet = useCallback(() => setSheetId(null), []);
+  const [sheet, setSheet] = useState<CardSheetTarget | null>(null);
+  const closeSheet = useCallback(() => setSheet(null), []);
 
   const handlePress = useCallback((item: MediaItem) => {
     if (selection.isSelecting) selection.toggle(item.Id);
     else navigate(`/media/${item.Id}`);
   }, [navigate, selection]);
   const handleLongPress = useCallback((item: MediaItem) => {
-    if (!selection.isSelecting) setSheetId(item.Id);
+    if (!selection.isSelecting) setSheet({ kind: "media", variant: "poster", item });
   }, [selection.isSelecting]);
   const handleDelete = async () => {
     const ids = [...selection.selected];
@@ -135,7 +136,7 @@ export function MirrorFavorites() {
         />
       )}
       {body}
-      <MediaActionSheet itemId={sheetId} onClose={closeSheet} />
+      <MediaActionSheet target={sheet} onClose={closeSheet} />
       {selection.isSelecting && (
         <SelectionBar
           count={selection.count}

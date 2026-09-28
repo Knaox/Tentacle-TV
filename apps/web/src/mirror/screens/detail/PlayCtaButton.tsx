@@ -13,22 +13,34 @@ const RING_C = 2 * Math.PI * RING_R;
  * (420 au plus), 56 de haut, au dégradé de marque — la seule action en
  * couleur, comme le bouton de lecture des cartes. L'avancement se lit dans
  * l'anneau de l'icône, le temps restant sous le verbe.
+ *
+ * La feuille d'appui long des cartes le reprend tel quel, avec son propre
+ * geste (`onPress`) : elle sait se rabattre sur la fiche quand une série n'a
+ * rien à lancer.
  */
-export const PlayCtaButton = memo(function PlayCtaButton({ cta, title, maxWidth }: { cta: PlayCta; title: string; maxWidth: number }) {
+export const PlayCtaButton = memo(function PlayCtaButton({ cta, title, maxWidth, onPress }: {
+  cta: PlayCta;
+  title: string;
+  maxWidth: number;
+  /** Remplace la lecture de `cta.targetId`. */
+  onPress?: () => void;
+}) {
   const navigate = useNavigate();
   const { t } = useTranslation("media");
-  if (!cta.targetId) return null;
+  if (!cta.targetId && !onPress) return null;
   const remaining = cta.remainingMinutes != null ? remainingLabel(cta.remainingMinutes, t) : null;
 
   return (
     <button
       type="button"
-      onClick={() => navigate(`/watch/${cta.targetId}`)}
+      onClick={onPress ?? (() => navigate(`/watch/${cta.targetId}`))}
       aria-label={`${cta.label} ${title}`}
-      className="mirror-detail-fade-press relative flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-full px-6 text-cta-brand-fg"
+      // L'estompe sous le doigt en classes, pas par `mirror-detail-fade-press` :
+      // la feuille des cartes le monte hors de la fiche, sans `detail.css`.
+      className="relative flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-full px-6 text-cta-brand-fg transition-opacity duration-[120ms] ease-out active:opacity-[0.85]"
       style={{
         maxWidth,
-        ["--press-opacity" as string]: 0.85,
+        WebkitTapHighlightColor: "transparent",
         background: "linear-gradient(120deg, var(--brand) 0%, var(--brand-accent) 100%)",
         boxShadow: "0 10px 26px rgba(var(--brand-rgb), 0.4)",
       }}

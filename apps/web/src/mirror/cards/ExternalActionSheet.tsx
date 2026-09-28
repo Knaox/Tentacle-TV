@@ -4,10 +4,12 @@ import { Bookmark, BookmarkCheck, EyeOff, Film, Loader2, Plus, Tv } from "lucide
 import { useDeleteRating, useItemRating, useRateItem } from "@tentacle-tv/api-client";
 import { externalCardActionEntries, resolveExternalCardOverlay, type ExternalCardVariant } from "@tentacle-tv/shared";
 import { ActionSheet } from "../ui/ActionSheet";
-import { ActionCell } from "./MediaActionSheet";
+import { ActionCell, type ActionCellTone } from "./sheet/ActionCell";
 import { StarRating } from "../../components/rating/StarRating";
 import { useExternalTitleActions } from "../../components/cards/external/useExternalTitleActions";
 import type { ExternalTitle } from "../../components/cards/external/useTitleProvider";
+
+const BRAND: ActionCellTone = { color: "var(--brand)", rgb: "var(--brand-rgb)" };
 
 /** Ce que la feuille montre d'un titre hors bibliothèque. */
 export interface ExternalSheetTarget {
@@ -112,24 +114,27 @@ function SheetBody({ target, variant, onClose, extra, onDismiss }: {
             return (
               <ActionCell
                 key="watchlist"
-                Icon={entry.active ? BookmarkCheck : Bookmark}
                 label={t(entry.active ? "watchlistOnArrival" : "addToWatchlistOnArrival")}
                 active={entry.active === true}
-                color="var(--brand)"
+                tone={BRAND}
                 onPress={actions.toggleWatchlist}
-              />
+              >
+                {entry.active ? <BookmarkCheck size={26} aria-hidden /> : <Bookmark size={26} aria-hidden />}
+              </ActionCell>
             );
           }
           if (entry.kind === "dismiss" && onDismiss) {
             return (
               <ActionCell
                 key="dismiss"
-                Icon={EyeOff}
                 label={t("dismiss")}
                 active={false}
-                color="var(--text-primary)"
+                toggle={false}
+                tone={BRAND}
                 onPress={() => { onDismiss(); onClose(); }}
-              />
+              >
+                <EyeOff size={26} aria-hidden />
+              </ActionCell>
             );
           }
           return null;

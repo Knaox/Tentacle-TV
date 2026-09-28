@@ -17,6 +17,7 @@ import { usePlayFromWatchlist, useRemovalUndo } from "../../../components/watchl
 import { useWatchlistView } from "../../../components/watchlist/useWatchlistView";
 import { useSummaryLine } from "../../../components/watchlist/useSummaryLine";
 import { MediaActionSheet } from "../../cards/MediaActionSheet";
+import type { CardSheetTarget } from "../../cards/cardSheet";
 import { GridSkeleton, ScopedSearchEmpty, ScrollTopFab, useBackOrHome } from "../../catalog";
 import { CatalogEmpty } from "../../catalog/CatalogGridStates";
 import { useGrid } from "../../useMirrorLayout";
@@ -58,8 +59,8 @@ export function MirrorWatchlistScreen() {
   const [stage, setStage] = useState<WatchStageFilter>("all");
   const { view, setView } = useWatchlistView();
   const selection = useMultiSelect();
-  const [sheetId, setSheetId] = useState<string | null>(null);
-  const closeSheet = useCallback(() => setSheetId(null), []);
+  const [sheet, setSheet] = useState<CardSheetTarget | null>(null);
+  const closeSheet = useCallback(() => setSheet(null), []);
   const { play, pendingId } = usePlayFromWatchlist();
   const undo = useRemovalUndo();
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
@@ -74,7 +75,7 @@ export function MirrorWatchlistScreen() {
     else navigate(`/media/${item.Id}`);
   }, [navigate, selection]);
   const handleLongPress = useCallback((item: MediaItem) => {
-    if (!selection.isSelecting) setSheetId(item.Id);
+    if (!selection.isSelecting) setSheet({ kind: "media", variant: "poster", item });
   }, [selection.isSelecting]);
   const handleDelete = async () => {
     const ids = [...selection.selected];
@@ -197,7 +198,7 @@ export function MirrorWatchlistScreen() {
       {showResume && <ResumeRail items={resume} onPlay={play} pendingId={pendingId} />}
       {body}
       {hasContent && data.length > 0 && !selection.isSelecting && <ScrollTopFab />}
-      <MediaActionSheet itemId={sheetId} onClose={closeSheet} />
+      <MediaActionSheet target={sheet} onClose={closeSheet} />
       {selection.isSelecting && (
         <SelectionBar
           count={selection.count}
