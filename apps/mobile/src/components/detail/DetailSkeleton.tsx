@@ -9,9 +9,9 @@ import { spacing, RADIUS, DETAIL_MAX_WIDTH, useTheme } from "@/theme";
 export function DetailSkeleton({ top }: { top: number }) {
   const { colors } = useTheme();
   const { width: sw, height: sh } = useWindowDimensions();
-  // Bornés comme l'écran réel (cap 520/200) + colonne 920 centrée → pas de saut
+  // Bornés comme la scène réelle (70 %, cap 680) + colonne 920 centrée → pas de saut
   // de contenu à l'arrivée des données sur iPad.
-  const backdropH = Math.min(520, Math.round(sh * 0.52));
+  const backdropH = Math.min(680, Math.round(sh * 0.7));
   const posterW = Math.min(200, Math.round(sw * 0.32));
   const posterH = Math.round(posterW * 1.5);
   return (

@@ -9,7 +9,12 @@ import { FONT_FAMILY, useThemedStyles, withAlpha, type AppTheme } from "@/theme"
  * volontairement omis (trop technique). Alimenté par la logique partagée
  * `extractMediaQuality` (qualité + audioLabels VF/VFQ/VOSTFR/EN…).
  */
-export function MetaTokens({ item, compact = false }: { item?: MediaItem; compact?: boolean }) {
+export function MetaTokens({ item, compact = false, onMedia = false }: {
+  item?: MediaItem;
+  compact?: boolean;
+  /** Posés sur la scène : blanc sur voile sombre (le décor est dessous dans les deux thèmes). */
+  onMedia?: boolean;
+}) {
   const styles = useThemedStyles(makeStyles);
   const q = extractMediaQuality(item);
 
@@ -27,13 +32,13 @@ export function MetaTokens({ item, compact = false }: { item?: MediaItem; compac
   return (
     <View style={[styles.row, compact && styles.rowCompact]}>
       {tokens.map((tk) => (
-        <View key={tk.label} style={[styles.chip, tk.accent && styles.chipAccent]}>
-          <Text style={[styles.txt, tk.accent && styles.txtAccent]}>{tk.label}</Text>
+        <View key={tk.label} style={[styles.chip, onMedia && styles.chipMedia, tk.accent && styles.chipAccent]}>
+          <Text style={[styles.txt, onMedia && styles.txtMedia, tk.accent && styles.txtAccent]}>{tk.label}</Text>
         </View>
       ))}
       {langs.length > 0 && (
-        <View style={styles.chip}>
-          <Text style={styles.txt}>{langs.join(" · ")}</Text>
+        <View style={[styles.chip, onMedia && styles.chipMedia]}>
+          <Text style={[styles.txt, onMedia && styles.txtMedia]}>{langs.join(" · ")}</Text>
         </View>
       )}
     </View>
@@ -64,4 +69,6 @@ const makeStyles = (t: AppTheme) =>
       color: t.colors.text.secondary,
     },
     txtAccent: { color: t.colors.brand.light },
+    chipMedia: { backgroundColor: "rgba(0, 0, 0, 0.4)", borderColor: t.colors.onMedia.muted },
+    txtMedia: { color: t.colors.onMedia.secondary },
   });
