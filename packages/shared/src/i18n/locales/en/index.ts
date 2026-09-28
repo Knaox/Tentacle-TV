@@ -30,6 +30,7 @@ import library from "./library";
 import watchlist from "./watchlist";
 import favorites from "./favorites";
 import swipe from "./swipe";
+import share from "./share";
 
 export default {
   common, auth, setup, player, admin,
@@ -37,4 +38,5 @@ export default {
   adminPlugins, adminInvites, adminServices, adminMetadata, media, errors, profile, disclaimer,
   watchTogether, downloads, easterEggs, reco, whatsNew, offline, sessions, search,
   cards, library, watchlist, favorites, swipe,
+  share,
 };
