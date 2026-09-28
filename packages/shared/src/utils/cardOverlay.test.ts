@@ -60,10 +60,21 @@ describe("resolveCardOverlay", () => {
     expect(overlay.extras).toEqual([]);
   });
 
-  it("ajoute « Ne plus me proposer » au bout du plateau d'une recommandation", () => {
+  it("ajoute « Ne plus me proposer » au bout du plateau d'une recommandation, sans hors ligne", () => {
+    // Lire + trois bascules + refus : cinq boutons, le plafond d'une affiche
+    // de 137 px qui tient l'espacement de WCAG 2.5.8.
     const overlay = resolveCardOverlay({ variant: "reco", ...LIBRARY, offline: true });
-    expect(overlay.extras).toEqual(["offline", "dismiss"]);
+    expect(overlay.extras).toEqual(["dismiss"]);
     expect(overlay.toggles).toEqual(["watchlist", "favorite", "watched"]);
+    expect(overlay.playInTray).toBe(true);
+  });
+
+  it("ne dépasse jamais cinq boutons au plateau d'une affiche", () => {
+    for (const variant of ["poster", "reco"] as const) {
+      const overlay = resolveCardOverlay({ variant, ...LIBRARY, offline: true });
+      const count = (overlay.playInTray ? 1 : 0) + overlay.toggles.length + overlay.extras.length;
+      expect(count).toBeLessThanOrEqual(5);
+    }
   });
 
   it("hors bibliothèque, ne garde que la note et le refus", () => {

@@ -229,8 +229,10 @@ MÊME modèle, dans `packages/shared/src/utils/` :
   reco ; jamais la vignette 16:9, qui EST la lecture), « Demander » (ton
   `brand`) sur une carte Vigie. Une feuille (appui long, télécommande)
   remplace la carte : elle garde « Lire » en tête dans tous les cas. Le
-  plateau se resserre sur une affiche étroite (`TRAY_SIZE`, jusqu'à 24 px),
-  il ne déborde jamais.
+  plateau se resserre sur une affiche étroite (`TRAY_SIZE`) sans jamais
+  déborder, et garde des centres à 24 px au moins (espacement WCAG 2.5.8) :
+  cinq boutons au plus sur une affiche — une reco n'offre donc pas « garder
+  hors ligne ».
 
 Seule l'ENTRÉE change : la souris sur le web et le bureau (`CardHoverOverlay`,
 monté au survol), l'appui long sur le mobile et le miroir (`CardSheetScope` /

@@ -47,7 +47,11 @@ export const CARD_TOGGLE_ORDER: readonly CardToggleKind[] = CARD_STATUS_ORDER;
 
 /**
  * Ce qui suit les bascules, au bout du plateau, dans cet ordre :
- *   • `offline` — garder hors ligne, là où la plateforme le permet ;
+ *   • `offline` — garder hors ligne, là où la plateforme le permet — PAS sur
+ *     une recommandation : c'est une surface de découverte, et son plateau,
+ *     qui porte déjà « Ne plus me proposer », passerait à six boutons. Sur
+ *     l'affiche la plus étroite du bureau (137 px), six cibles ne peuvent pas
+ *     tenir l'espacement de WCAG 2.5.8 ; le titre se garde depuis sa fiche ;
  *   • `details` — la fiche, sur une carte dont le clic lance la lecture ;
  *   • `dismiss` — « Ne plus me proposer », sur une recommandation.
  */
@@ -116,7 +120,7 @@ export function resolveCardOverlay(input: CardOverlayInput): CardOverlay {
   const open = variant === "landscape" && playable ? "play" : "details";
 
   const extras: CardTrayExtra[] = [];
-  if (inLibrary && !local && input.offline === true) extras.push("offline");
+  if (inLibrary && !local && input.offline === true && variant !== "reco") extras.push("offline");
   if (open === "play") extras.push("details");
   if (variant === "reco") extras.push("dismiss");
 

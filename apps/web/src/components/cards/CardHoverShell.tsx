@@ -52,10 +52,13 @@ export function CardHoverShell({ variant, visible, children }: CardHoverShellPro
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "var(--card-hover-veil)" }} />
 
       {/* `max-w-full` : sur une affiche étroite, le plateau se resserre au
-          lieu de déborder de la carte (cf. `CardTrayCapsule`). */}
+          lieu de déborder de la carte (cf. `CardTrayCapsule`). 4 px de marge
+          seulement sur une affiche : à 137 px de large (la plus étroite du
+          bureau, fenêtre de 996 px), c'est ce qui laisse à ses cinq boutons
+          l'espacement de WCAG 2.5.8 — des centres à 24 px au moins. */}
       <div
         className={`card-hover-rise absolute bottom-0 flex max-w-full flex-col gap-1.5 ${
-          corner ? "right-0 items-end px-2.5 pb-2" : "inset-x-0 items-stretch px-2 pb-2.5"
+          corner ? "right-0 items-end px-2.5 pb-2" : "inset-x-0 items-stretch px-1 pb-2.5"
         }`}
         data-shown={visible}
         style={reveal}
