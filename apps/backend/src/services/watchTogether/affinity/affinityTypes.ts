@@ -53,6 +53,9 @@ export interface AffinitySession {
   startedAt: number;
   /** La pile commune, dans l'ordre que tous voient. */
   deck: AffinityCard[];
+  /** Les membres de la salle au lancement : la pile est l'intersection de
+   *  LEURS bibliothèques. Un autre membre ne voit que ce qu'il peut lire. */
+  audience: ReadonlySet<string>;
   /** Clé → position dans la pile. */
   index: Map<string, number>;
   participants: Map<string, AffinityParticipant>;

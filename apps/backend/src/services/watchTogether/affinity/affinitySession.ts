@@ -29,6 +29,8 @@ export function createSession(input: {
   startedBy: string;
   deck: AffinityCard[];
   now: number;
+  /** Les membres dont la pile croise les bibliothèques. */
+  audience?: Iterable<string>;
   /** Les matchs de la séance d'avant (changement de type) : ils restent. */
   keepMatches?: ReadonlyMap<string, AffinityMatch>;
 }): AffinitySession {
@@ -38,6 +40,7 @@ export function createSession(input: {
     startedBy: input.startedBy,
     startedAt: input.now,
     deck: input.deck,
+    audience: new Set(input.audience ?? []),
     index: new Map(input.deck.map((card, i) => [card.key, i])),
     participants: new Map(),
     matches: new Map(input.keepMatches ?? []),

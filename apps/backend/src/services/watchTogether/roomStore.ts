@@ -80,8 +80,31 @@ export function addMember(room: Room, user: UserBasic): RoomMember | null {
   return member;
 }
 
+// ── Départs ──
+
+type MemberRemovedListener = (result: RemovalResult) => void;
+const memberRemovedListeners = new Set<MemberRemovedListener>();
+
+/**
+ * Prévenir d'un départ, quelle qu'en soit la voie (quitter, expulsion, grâce
+ * expirée, invitation acceptée ailleurs) : l'affinité s'y branche, les votes
+ * du partant partent avec lui. Rend de quoi se débrancher.
+ */
+export function onMemberRemoved(listener: MemberRemovedListener): () => void {
+  memberRemovedListeners.add(listener);
+  return () => {
+    memberRemovedListeners.delete(listener);
+  };
+}
+
 /** Retire un membre ; transfert d'hôte au plus ancien ; GC si vide. */
 export function removeMember(userId: string): RemovalResult | null {
+  const result = detachMember(userId);
+  if (result) for (const listener of memberRemovedListeners) listener(result);
+  return result;
+}
+
+function detachMember(userId: string): RemovalResult | null {
   const room = getRoomOf(userId);
   if (!room) return null;
   const removed = room.members.get(userId)!;

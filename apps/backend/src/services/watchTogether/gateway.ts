@@ -1,7 +1,8 @@
 import type { WebSocket } from "@fastify/websocket";
 import type { JellyfinUser } from "../../middleware/auth";
 import { isUserOnline, onPresenceChange, sendToUser } from "../wsManager";
-import { armGrace, cancelGrace } from "./roomStore";
+import { armGrace, cancelGrace, onMemberRemoved } from "./roomStore";
+import { handleAffinityMemberRemoved } from "./affinity/affinityService";
 import { allRooms, getRoomOf } from "./roomRegistry";
 import { invitesFor } from "./roomInvites";
 import type { Room } from "./roomTypes";
@@ -209,6 +210,10 @@ let registered = false;
 export function registerWatchTogetherGateway(): void {
   if (registered) return;
   registered = true;
+
+  // Un membre qui s'en va emporte ses votes d'affinité ; sous deux membres,
+  // la séance s'arrête.
+  onMemberRemoved(handleAffinityMemberRemoved);
 
   // Barrière expirée : les retardataires sont lâchés, la salle repart.
   onBarrierExpired((room) => {

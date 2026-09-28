@@ -43,6 +43,7 @@ import { wsRoutes } from "./routes/ws";
 import { watchTogetherRoutes } from "./routes/watchTogether";
 import { watchTogetherInviteRoutes } from "./routes/watchTogetherInvites";
 import { watchTogetherUsersRoutes } from "./routes/watchTogetherUsers";
+import { watchTogetherAffinityRoutes } from "./routes/watchTogetherAffinity";
 import { leaderboardRoutes } from "./routes/leaderboard";
 import { ratingRoutes } from "./routes/ratings";
 import { likeRoutes } from "./routes/likes";
@@ -258,6 +259,7 @@ async function main() {
   await app.register(watchTogetherRoutes, { prefix: "/api/watch-together" });
   await app.register(watchTogetherInviteRoutes, { prefix: "/api/watch-together" });
   await app.register(watchTogetherUsersRoutes, { prefix: "/api/watch-together" });
+  await app.register(watchTogetherAffinityRoutes, { prefix: "/api/watch-together" });
   await app.register(leaderboardRoutes, { prefix: "/api/leaderboard" });
   await app.register(ratingRoutes, { prefix: "/api/ratings" });
   await app.register(likeRoutes, { prefix: "/api/likes" });
