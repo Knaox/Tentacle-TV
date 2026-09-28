@@ -18,6 +18,14 @@ export const DOWNLOAD_STATE_QUERY_KEY = "download-state";
 export const DISK_INFO_QUERY_KEY = "downloads-disk";
 
 export function useDownloadsList(): DownloadEntry[] {
+  return useDownloadsListState().entries;
+}
+
+/**
+ * La liste, et si elle est arrivée : une fiche locale ne conclut à l'absence
+ * d'un titre qu'une fois la base lue — une liste vide peut n'être qu'en route.
+ */
+export function useDownloadsListState(): { entries: DownloadEntry[]; ready: boolean } {
   const userId = useUserId();
   const query = useQuery({
     queryKey: [DOWNLOADS_LIST_QUERY_KEY, userId],
@@ -26,8 +34,10 @@ export function useDownloadsList(): DownloadEntry[] {
     staleTime: 5_000,
     ...LOCAL_QUERY,
   });
-  return query.data ?? [];
+  return { entries: query.data ?? EMPTY_LIST, ready: query.isFetched };
 }
+
+const EMPTY_LIST: DownloadEntry[] = [];
 
 export function useItemDownloadState(itemId: string | undefined): DownloadEntry | null {
   const userId = useUserId();

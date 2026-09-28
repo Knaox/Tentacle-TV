@@ -202,4 +202,22 @@ export default {
   emptyStep3: "Watch it here, even without a connection",
   sectionExpand: "Expand {{title}}",
   sectionCollapse: "Collapse {{title}}",
+
+  // The kept title's page, in the online page's stage (2026-09)
+  detailVersion: "Version",
+  detailVersionMixed: "Several versions",
+  detailSize: "Size on disk",
+  detailAddedOn: "Added on",
+  detailSubtitlesKept: "Subtitles kept",
+  detailSubtitlesKeptValue: "{{done}} of {{total}}",
+  detailEpisodes: "Episodes",
+  detailLastAdded: "Last added",
+  detailEpisodesOnDevice: "Episodes on this computer",
+  detailAlsoOnDevice: "Also on this computer",
+  detailRemove: "Delete from this computer",
+  detailRemoveSeries: "Delete the series from this computer",
+  detailRemoveSeriesTitle_one: "Delete {{count}} episode from this computer?",
+  detailRemoveSeriesTitle_other: "Delete {{count}} episodes from this computer?",
+  detailAutoDeleteHint: "Applies to this title, for this account.",
+  detailNotFound: "This title is no longer on this computer.",
 } as const;

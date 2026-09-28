@@ -5,8 +5,8 @@ import { AutoDeleteSelect } from "./AutoDeleteSelect";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
-/** « Se supprime dans X » (relatif < 24 h) ou « Se supprime le <date> ». */
-function scheduleText(scheduledAtSec: number, t: Translate, locale: string): string {
+/** « Se supprime dans X » (relatif < 24 h) ou « Se supprime le <date> » — partagé avec la fiche locale. */
+export function scheduleText(scheduledAtSec: number, t: Translate, locale: string): string {
   const deltaMin = Math.max(0, Math.round((scheduledAtSec * 1000 - Date.now()) / 60_000));
   if (deltaMin < 60) {
     return t("autoDeleteScheduledIn", { time: `${Math.max(1, deltaMin)} min` });

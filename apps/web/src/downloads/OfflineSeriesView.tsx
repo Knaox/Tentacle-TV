@@ -12,12 +12,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import type { DownloadEntry } from "./api";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { useDownloadsList } from "./useDownloadState";
 import { groupOfflineEntries, groupSeasonsBySeries, seasonLabel } from "@tentacle-tv/offline-core";
 import { OfflineEpisodeCard } from "./OfflineEpisodeCard";
-import { OfflineItemSheet } from "./OfflineItemSheet";
 import { SeasonPicker } from "./SeasonPicker";
 import { useLocalSnapshot } from "./useLocalSnapshot";
 import { RevealCell, RevealScope } from "../components/grid/RevealCell";
@@ -31,7 +29,6 @@ export function OfflineSeriesView() {
   const { seriesKey } = useParams<{ seriesKey: string }>();
   const entries = useDownloadsList();
   const rootReady = useDownloadsRootReady();
-  const [selected, setSelected] = useState<DownloadEntry | null>(null);
   const [seasonKey, setSeasonKey] = useState<string | null>(null);
   const [backdropFailed, setBackdropFailed] = useState(false);
 
@@ -132,7 +129,7 @@ export function OfflineSeriesView() {
               <RevealCell key={episode.id} minHeight={EPISODE_CELL_HEIGHT} aspect={16 / 9} textHeight={72} eager={i < 9}>
                 <OfflineEpisodeCard
                   entry={episode}
-                  onSelect={setSelected}
+                  onSelect={(e) => navigate(`/offline/item/${e.itemId}`)}
                   onPlay={(e) => navigate(`/watch/${e.itemId}`)}
                 />
               </RevealCell>
@@ -141,7 +138,6 @@ export function OfflineSeriesView() {
         </RevealScope>
       </div>
 
-      {selected && <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }

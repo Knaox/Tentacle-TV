@@ -205,4 +205,22 @@ export default {
   emptyStep3: "Regardez-le ici, même sans réseau",
   sectionExpand: "Déplier {{title}}",
   sectionCollapse: "Replier {{title}}",
+
+  // La fiche d'un titre gardé, dans la scène de la fiche en ligne (2026-09)
+  detailVersion: "Version",
+  detailVersionMixed: "Plusieurs versions",
+  detailSize: "Taille sur le disque",
+  detailAddedOn: "Ajouté le",
+  detailSubtitlesKept: "Sous-titres gardés",
+  detailSubtitlesKeptValue: "{{done}} sur {{total}}",
+  detailEpisodes: "Épisodes",
+  detailLastAdded: "Dernier ajout",
+  detailEpisodesOnDevice: "Épisodes sur cette machine",
+  detailAlsoOnDevice: "Aussi sur cette machine",
+  detailRemove: "Supprimer de cette machine",
+  detailRemoveSeries: "Supprimer la série de cette machine",
+  detailRemoveSeriesTitle_one: "Supprimer {{count}} épisode de cette machine ?",
+  detailRemoveSeriesTitle_other: "Supprimer {{count}} épisodes de cette machine ?",
+  detailAutoDeleteHint: "S'applique à ce titre, pour ce compte.",
+  detailNotFound: "Ce titre n'est plus sur cette machine.",
 } as const;

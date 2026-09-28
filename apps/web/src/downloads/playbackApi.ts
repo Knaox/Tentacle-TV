@@ -53,6 +53,17 @@ export async function restartLocalPlayback(userId: string, itemId: string): Prom
   }
 }
 
+/**
+ * La coche « vu » d'une fiche locale — même contrat que le téléphone
+ * (`setLocalWatched`). Vu = une lecture complète, mise en file pour le serveur
+ * et qui arme l'auto-suppression ; non vu = repartir de zéro, en local
+ * seulement : Jellyfin ne reçoit jamais un « non vu » par la resynchronisation.
+ */
+export async function setLocalWatched(userId: string, itemId: string, played: boolean): Promise<void> {
+  if (played) await saveLocalPlaybackState(userId, itemId, 0, true, true);
+  else await restartLocalPlayback(userId, itemId);
+}
+
 /** File de resynchronisation, dédupliquée (dernier état par item). */
 export async function pendingReports(userId: string): Promise<PendingReport[]> {
   if (!supportsDownloads()) return [];

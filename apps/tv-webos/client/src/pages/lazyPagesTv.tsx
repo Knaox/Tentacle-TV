@@ -124,6 +124,7 @@ export const AdminSessions = Unavailable;
 export const DownloadsPage = Unavailable;
 export const OfflineCatalog = Unavailable;
 export const OfflineSeriesView = Unavailable;
+export const OfflineMediaDetail = Unavailable;
 export const SettingsDownloads = Unavailable;
 
 // Partage et assistance : demandent une saisie de texte suivie.

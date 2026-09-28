@@ -20,12 +20,16 @@ export interface LocalSnapshot {
   CommunityRating?: number;
 }
 
-export function useLocalSnapshot(
+/**
+ * `T` : le DTO complet (`MediaItem`) pour la fiche locale, qui réutilise les
+ * composants de la fiche en ligne ; les champs lus ci-dessus par défaut.
+ */
+export function useLocalSnapshot<T = LocalSnapshot>(
   itemId: string | undefined,
   fileName: string,
   rootReady: boolean,
-): LocalSnapshot | null {
-  const [data, setData] = useState<LocalSnapshot | null>(null);
+): T | null {
+  const [data, setData] = useState<T | null>(null);
 
   useEffect(() => {
     setData(null);
@@ -35,7 +39,7 @@ export function useLocalSnapshot(
     let cancelled = false;
     void fetch(url)
       .then((res) => (res.ok ? res.json() : null))
-      .then((json: LocalSnapshot | null) => {
+      .then((json: T | null) => {
         if (!cancelled) setData(json);
       })
       .catch(() => {

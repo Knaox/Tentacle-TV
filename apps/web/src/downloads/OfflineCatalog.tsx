@@ -23,7 +23,6 @@ import { useTranslation } from "react-i18next";
 import { matchesSearch } from "@tentacle-tv/shared";
 import type { DownloadEntry } from "./api";
 import { useDownloadsList } from "./useDownloadState";
-import { OfflineItemSheet } from "./OfflineItemSheet";
 import { OfflinePosterCard } from "./OfflinePosterCard";
 import { useLocalSnapshot } from "./useLocalSnapshot";
 import { useDownloadsRootReady } from "./localFiles";
@@ -64,7 +63,6 @@ export function OfflineCatalog() {
   const offline = useOfflineMode();
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<DownloadEntry | null>(null);
 
   const complete = useMemo(() => entries.filter((e) => e.status === "complete"), [entries]);
   // Les bibliothèques réellement présentes, dans l'ordre d'apparition — pas de
@@ -161,7 +159,7 @@ export function OfflineCatalog() {
               <Section title={t("downloads:sectionMovies")}>
                 {shownMovies.map((movie, i) => (
                   <RevealCell key={movie.id} minHeight={POSTER_CELL_HEIGHT} aspect={2 / 3} textHeight={POSTER_TEXT_HEIGHT} eager={i < EAGER_CELLS}>
-                    <MovieCard entry={movie} onOpen={() => setSelected(movie)} />
+                    <MovieCard entry={movie} onOpen={() => navigate(`/offline/item/${movie.itemId}`)} />
                   </RevealCell>
                 ))}
               </Section>
@@ -182,7 +180,6 @@ export function OfflineCatalog() {
         </RevealScope>
       )}
 
-      {selected && <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }

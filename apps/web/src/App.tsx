@@ -21,7 +21,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Search, Person, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads, AdminHome
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Search, Person, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, OfflineMediaDetail, AdminDownloads, AdminHome
 } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 import { ByFormFactor } from "./mirror/ByFormFactor";
@@ -143,6 +143,11 @@ export function App() {
           <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
           {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. Immersive, comme la fiche. */}
           <Route path="/person/:personId" element={guard(onlineOnly(<ByFormFactor desktop={<Person />} mirror={<MirrorPerson />} />))} />
+          {/* La fiche d'un titre gardé sur la machine, et celle d'une série :
+              la scène de la fiche en ligne, lue sur le disque — en ligne comme
+              hors ligne. Immersives, comme la fiche. */}
+          <Route path="/offline/item/:itemId" element={guard(<OfflineMediaDetail />)} />
+          <Route path="/offline/series/:seriesKey" element={guard(<OfflineSeriesView />)} />
 
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
           <Route element={guard(<AppLayout />)}>
@@ -167,10 +172,6 @@ export function App() {
                 n'y menait — il fallait attendre une coupure pour revoir ce
                 qu'on avait gardé. La page se vide d'elle-même sans contenu. */}
             <Route path="on-device" element={<OfflineCatalog />} />
-            {/* Série téléchargée : contenu 100 % local, donc accessible aussi
-                en ligne (le retour navigateur fonctionne normalement). Le
-                choix de la saison se fait dans la page. */}
-            <Route path="offline/series/:seriesKey" element={<OfflineSeriesView />} />
 
             <Route path="support" element={onlineOnly(<ByFormFactor desktop={<Support />} mirror={<MirrorSupport />} />)} />
             {/* Reglages en maitre-detail, meme coquille que l'admin.
