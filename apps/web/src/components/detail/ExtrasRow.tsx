@@ -11,8 +11,12 @@ import { openExternal } from "../../lib/openExternal";
 import { sortTrailersByLang, type RichTrailer } from "./trailerLang";
 
 interface ExtrasRowProps {
-  /** Item dont on liste les special features (film ou saison). */
-  itemId: string;
+  /**
+   * Item dont on liste les special features (film ou saison). Absent : les
+   * bandes-annonces distantes seules — la page partagée, où un visiteur sans
+   * session ne peut rien lire du serveur.
+   */
+  itemId?: string;
   /** Trailers distants attachés à cet item/saison (déjà fusionnés ou bruts). */
   remoteTrailers: RichTrailer[];
   /** Libellé de groupe optionnel (nom de saison). */
