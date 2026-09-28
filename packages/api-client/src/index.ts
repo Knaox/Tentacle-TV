@@ -257,7 +257,9 @@ export {
 // Onglet « Affiner » : pile de swipe (cf. swipe/)
 export { useSwipeDeck, useSwipeCardDetails, prefetchSwipeCardDetails, type SwipeDeck } from "./swipe/useSwipeDeck";
 export { swipeDeckReducer, deckExcludeKeys, INITIAL_SWIPE_DECK, type SwipeDeckState, type SwipeDeckAction } from "./swipe/swipeDeckState";
-export { verdictFromDrag, exitTarget, DISTANCE_THRESHOLD, VELOCITY_THRESHOLD } from "./swipe/swipeGesture";
+export {
+  verdictFromDrag, stampStrength, exitTarget, DISTANCE_THRESHOLD, VELOCITY_THRESHOLD, FLICK_MIN_DISTANCE, STAMP_START,
+} from "./swipe/swipeGesture";
 export {
   swipeLangOf, type SwipeCard, type SwipeCardDetails, type SwipeCounts, type SwipeDeckResponse, type SwipeDeckSource,
   type SwipeLang, type SwipeVerdict,
