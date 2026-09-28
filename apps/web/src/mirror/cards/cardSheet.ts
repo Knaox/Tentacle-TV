@@ -1,3 +1,4 @@
+import { createContext, useContext } from "react";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
@@ -32,4 +33,17 @@ export function cardSheetTitle(target: CardSheetTarget): string {
 /** Une clé par carte : la feuille se remonte à neuf quand la cible change. */
 export function cardSheetKey(target: CardSheetTarget): string {
   return target.kind === "reco" ? `reco:${target.reco.key}` : `${target.variant}:${target.item.Id}`;
+}
+
+/** Ouvre la feuille de l'écran (`CardSheetProvider`). */
+export type OpenCardSheet = (target: CardSheetTarget) => void;
+
+export const CardSheetContext = createContext<OpenCardSheet | null>(null);
+
+/**
+ * La feuille de l'écran courant — `null` hors d'un `CardSheetProvider` : la
+ * carte n'a alors pas d'appui long, plutôt qu'un appui qui n'ouvre rien.
+ */
+export function useOpenCardSheet(): OpenCardSheet | null {
+  return useContext(CardSheetContext);
 }

@@ -1,6 +1,7 @@
 import "../../mirror.css";
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { CardSheetProvider } from "../../cards/CardSheetProvider";
 import { useIsTablet } from "../../useMirrorLayout";
 import { QuerySuggestions } from "./QuerySuggestions";
 import { SearchBrowse } from "./SearchBrowse";
@@ -30,9 +31,18 @@ const AMBIENT = "linear-gradient(to bottom, rgba(var(--brand-rgb), 0.18) 0%, rgb
  * un défilement : l'accueil de la recherche, les résultats, ou le parcours
  * d'une personne, d'un genre, d'un studio. Le champ prend le focus à
  * l'ouverture, sauf ouvert sur une filmographie ; le clavier se range dès
- * qu'on fait défiler du doigt.
+ * qu'on fait défiler du doigt. L'appui long d'une affiche ouvre la feuille
+ * de ses actions (`CardSheetProvider`).
  */
 export function MirrorSearch() {
+  return (
+    <CardSheetProvider>
+      <SearchScreen />
+    </CardSheetProvider>
+  );
+}
+
+function SearchScreen() {
   const { t } = useTranslation("search");
   const isTablet = useIsTablet();
   const s = useMirrorSearch();

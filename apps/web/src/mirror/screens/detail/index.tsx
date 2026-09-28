@@ -12,6 +12,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { DetailImageViewer } from "../../../components/detail/DetailImageViewer";
+import { CardSheetProvider } from "../../cards/CardSheetProvider";
 import { useViewport } from "../../useFormFactor";
 import { DETAIL_MAX_WIDTH } from "../../responsive";
 import { BackButton } from "./BackButton";
@@ -39,7 +40,13 @@ const BOTTOM_PAD = "calc(72px + env(safe-area-inset-bottom))";
 export function MirrorMediaDetail() {
   const { itemId } = useParams<{ itemId: string }>();
   if (!itemId) return null;
-  return <DetailScreen key={itemId} itemId={itemId} />;
+  // L'hôte de la feuille d'appui long des affiches (collection, similaires) :
+  // hors de la clé, il survit au passage d'une fiche à une autre.
+  return (
+    <CardSheetProvider>
+      <DetailScreen key={itemId} itemId={itemId} />
+    </CardSheetProvider>
+  );
 }
 
 function DetailScreen({ itemId }: { itemId: string }) {

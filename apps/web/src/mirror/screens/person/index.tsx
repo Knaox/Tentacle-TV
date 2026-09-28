@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { withoutLibraryTwins, type ExternalSearchItem, type SearchProvider } from "@tentacle-tv/shared";
 import { usePersonPage } from "../../../components/person/usePersonPage";
+import { CardSheetProvider } from "../../cards/CardSheetProvider";
 import { useViewport } from "../../useFormFactor";
 import { DETAIL_MAX_WIDTH } from "../../responsive";
 import { DetailTopBar } from "../detail/DetailTopBar";
@@ -26,7 +27,12 @@ const BOTTOM_PAD = "calc(72px + env(safe-area-inset-bottom))";
 export function MirrorPerson() {
   const { personId } = useParams<{ personId: string }>();
   if (!personId) return null;
-  return <PersonScreen key={personId} personId={personId} />;
+  // L'hôte de la feuille d'appui long des affiches de la filmographie.
+  return (
+    <CardSheetProvider>
+      <PersonScreen key={personId} personId={personId} />
+    </CardSheetProvider>
+  );
 }
 
 function PersonScreen({ personId }: { personId: string }) {

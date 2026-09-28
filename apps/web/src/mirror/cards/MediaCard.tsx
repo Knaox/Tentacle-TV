@@ -8,11 +8,13 @@ import { useSeriesRatingMap } from "../../components/cards/SeriesRatingContext";
 import { ProgressBar } from "../ui/ProgressBar";
 import { Pressable } from "../ui/Pressable";
 import { useCardWidth } from "../useMirrorLayout";
+import { useOpenCardSheet } from "./cardSheet";
 import { cardProgress } from "./cardProgress";
 
 interface Props {
   item: MediaItem;
   onPress?: () => void;
+  /** Remplace l'appui long par défaut : la feuille de l'écran (`CardSheetProvider`). */
   onLongPress?: () => void;
   /** Largeur imposée (grilles) ; sinon celle des rangées (130 / 168 × densité). */
   width?: number;
@@ -24,7 +26,8 @@ interface Props {
  * L'affiche 2:3 de l'app (`MobileMediaCard`) : rayon 12, ombre elev2, lettre
  * de repli, progression en bas à 6 du bord (jamais sur un titre vu : la coche
  * le dit), pastille d'états (ma liste, favori, vu) en haut à droite, note en
- * bas à gauche, badge « +N » dégradé d'un lot d'épisodes.
+ * bas à gauche, badge « +N » dégradé d'un lot d'épisodes. L'appui long ouvre
+ * la feuille de l'écran (variante `poster`) quand l'écran en héberge une.
  * Titre 13 semi-gras à 8 dessous, année 10 en tertiaire.
  */
 export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, width, small = false }: Props) {
@@ -34,6 +37,7 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
   const rowWidth = useCardWidth();
   const cardWidth = width ?? rowWidth;
   const [broken, setBroken] = useState(false);
+  const openSheet = useOpenCardSheet();
 
   const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
@@ -50,7 +54,7 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
   return (
     <Pressable
       onPress={onPress ?? (() => navigate(`/media/${item.Id}`))}
-      onLongPress={onLongPress}
+      onLongPress={onLongPress ?? (openSheet ? () => openSheet({ kind: "media", variant: "poster", item }) : undefined)}
       style={{ width: cardWidth }}
       aria-label={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}`}
     >
