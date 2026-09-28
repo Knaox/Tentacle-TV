@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 import { useJellyfinClient, useWatchedToggle } from "@tentacle-tv/api-client";
 import { resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
+import { cardProgress } from "../../cards/cardProgress";
+import { ProgressBar } from "../../ui/ProgressBar";
 import { MetaTokens } from "./MetaTokens";
 import { episodeCode } from "./detailMetrics";
 
@@ -27,7 +29,7 @@ export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, onP
   const { t } = useTranslation("common");
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const played = ep.UserData?.Played === true;
-  const progress = ep.UserData?.PlayedPercentage;
+  const progress = cardProgress(ep.UserData);
   const runtime = ep.RunTimeTicks ? Math.round(ep.RunTimeTicks / 600_000_000) : null;
   const epLabel = ep.IndexNumber != null ? `${episodeCode(ep.ParentIndexNumber, ep.IndexNumber)} · ` : "";
 
@@ -36,14 +38,7 @@ export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, onP
       <button type="button" onClick={() => onPlay(ep)} className="flex min-w-0 flex-1 text-left" style={{ WebkitTapHighlightColor: "transparent" }}>
         <span className="relative shrink-0 self-center overflow-hidden rounded-md bg-surface-2" style={{ width: THUMB_W, height: THUMB_H }}>
           <EpisodeThumb ep={ep} seriesId={seriesId} />
-          {progress != null && progress > 0 && (
-            <span className="absolute inset-x-0 bottom-0 h-[3px] bg-fill-strong">
-              <span
-                className="block h-full"
-                style={{ width: `${progress}%`, background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }}
-              />
-            </span>
-          )}
+          {progress !== null && <ProgressBar progress={progress} className="absolute inset-x-0 bottom-0" />}
         </span>
         <span className="flex min-w-0 flex-1 flex-col justify-center p-2.5">
           <span className="flex items-center gap-1.5">

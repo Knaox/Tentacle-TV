@@ -8,6 +8,7 @@ import { useSeriesRatingMap } from "../../components/cards/SeriesRatingContext";
 import { ProgressBar } from "../ui/ProgressBar";
 import { Pressable } from "../ui/Pressable";
 import { useCardWidth } from "../useMirrorLayout";
+import { cardProgress } from "./cardProgress";
 
 interface Props {
   item: MediaItem;
@@ -21,9 +22,9 @@ interface Props {
 
 /**
  * L'affiche 2:3 de l'app (`MobileMediaCard`) : rayon 12, ombre elev2, lettre
- * de repli, progression en bas à 6 du bord, pastille d'états (ma liste,
- * favori, vu) en haut à droite, note en bas à gauche, badge « +N » dégradé
- * d'un lot d'épisodes.
+ * de repli, progression en bas à 6 du bord (jamais sur un titre vu : la coche
+ * le dit), pastille d'états (ma liste, favori, vu) en haut à droite, note en
+ * bas à gauche, badge « +N » dégradé d'un lot d'épisodes.
  * Titre 13 semi-gras à 8 dessous, année 10 en tertiaire.
  */
 export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, width, small = false }: Props) {
@@ -42,8 +43,8 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
     resolved && !broken
       ? client.getImageUrl(resolved.id, resolved.type, { width: 300, quality: 80, ...(resolved.tag ? { tag: resolved.tag } : {}) })
       : null;
-  const progress = item.UserData?.PlayedPercentage ?? 0;
-  const hasProgress = progress > 0 && progress < 100;
+  const progress = cardProgress(item.UserData);
+  const hasProgress = progress !== null;
   const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
 
   return (
@@ -74,7 +75,7 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
             </span>
           )}
         </div>
-        {hasProgress && <ProgressBar progress={progress / 100} className="absolute inset-x-1.5 bottom-1.5" />}
+        {progress !== null && <ProgressBar progress={progress} className="absolute inset-x-1.5 bottom-1.5" />}
         {/* Marqueurs du repos — même modèle que toutes les cartes (note en
             bas à gauche, états en haut à droite, coche « vu » comprise). La
             note remonte au-dessus de la barre de progression quand il y en a

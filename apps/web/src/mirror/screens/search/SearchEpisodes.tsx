@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatEpisodeCode, type SearchMediaItem } from "@tentacle-tv/shared";
+import { cardProgress } from "../../cards/cardProgress";
+import { ProgressBar } from "../../ui/ProgressBar";
 
 /**
  * `EpisodeList` de l'app : une ligne par épisode (72 de haut au moins, 4
@@ -22,7 +24,7 @@ export const EpisodeList = memo(function EpisodeList({ episodes, onOpen }: {
             ? client.getImageUrl(episode.SeriesId, "Primary", { height: 200, quality: 80 })
             : null;
         const code = formatEpisodeCode(episode.ParentIndexNumber, episode.IndexNumber, { style: "padded" });
-        const progress = episode.UserData?.PlayedPercentage ?? 0;
+        const progress = cardProgress(episode.UserData);
         return (
           <button
             key={episode.Id}
@@ -33,11 +35,7 @@ export const EpisodeList = memo(function EpisodeList({ episodes, onOpen }: {
           >
             <span className="relative h-[63px] w-28 shrink-0 overflow-hidden rounded-lg bg-surface-2">
               {thumb && <img src={thumb} alt="" loading="lazy" decoding="async" draggable={false} className="absolute inset-0 h-full w-full object-cover" />}
-              {progress > 0 && progress < 100 && (
-                <span className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: "rgba(var(--scrim-media-rgb), 0.5)" }}>
-                  <span className="block h-[3px]" style={{ width: `${progress}%`, background: "var(--brand)" }} />
-                </span>
-              )}
+              {progress !== null && <ProgressBar progress={progress} className="absolute inset-x-0 bottom-0" />}
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="truncate text-sm font-semibold text-content-primary">{episode.SeriesName}</span>
