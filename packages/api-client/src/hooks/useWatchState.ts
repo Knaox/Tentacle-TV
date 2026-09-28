@@ -21,6 +21,12 @@ export interface EpisodesFetcher {
  *
  * Une réponse sans `Items` est une ERREUR, pas une série vide : sur une liste
  * vide `getNextEpisode` rend « terminée », et ce verdict-là retire de Ma liste.
+ *
+ * La requête ne demande QUE ce que le verdict et ses lecteurs lisent — numéros,
+ * `SeasonId`, `UserData`, durée, titre, tous servis sans `fields`. Ni résumé ni
+ * images : sur une longue série (1 364 épisodes), elle pesait 2,9 Mo pour en
+ * garder moins d'un tiers, et elle part à chaque ouverture de fiche, à chaque
+ * survol d'affiche de série et à chaque bascule « vu ».
  */
 export async function fetchSeriesWatchState(
   client: EpisodesFetcher,
@@ -29,7 +35,7 @@ export async function fetchSeriesWatchState(
 ): Promise<NextEpisodeResult> {
   const params = new URLSearchParams({
     userId,
-    fields: "Overview,PrimaryImageAspectRatio",
+    enableImages: "false",
     enableUserData: "true",
   });
   const data = (await client.fetch(`/Shows/${seriesId}/Episodes?${params}`)) as { Items?: unknown } | null;

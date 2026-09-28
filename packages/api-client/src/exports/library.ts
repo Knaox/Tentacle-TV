@@ -3,7 +3,11 @@
 export { JellyfinClient, JellyfinError, type DirectStreamingState } from "../jellyfin";
 export { JellyfinClientContext, useJellyfinClient } from "../hooks/useJellyfinClient";
 export { useLibraries, useLibraryItems, useEpisodes, useSeriesEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useGenres, useStudios } from "../hooks/useLibrary";
-export { useSeasons, prefetchSeasons, useSeasonEpisodesLite, prefetchSeasonEpisodesLite, getSeasonEpisodesLiteKey } from "../hooks/useSeasons";
+export { useSeasons, prefetchSeasons, useSeasonEpisodesLite, prefetchSeasonEpisodesLite, getSeasonEpisodesLiteKey, SEASON_FIELDS } from "../hooks/useSeasons";
+export {
+  useSeasonEpisodeList, usePrefetchSeasonEpisodes, useAdjacentSeasonsPrefetch, getSeasonEpisodeSourcesKey, mergeSeasonSources,
+  type SeasonEpisodeList,
+} from "../hooks/useSeasonEpisodeList";
 export { useRandomLibraryBackdrop, getLibraryBackdropKey, prefetchLibraryBackdrop } from "../hooks/useLibraryBackdrop";
 export { useSearchItems } from "../hooks/useSearchItems";
 // Le moteur de recherche du serveur Tentacle (web, bureau et mobile), et ce

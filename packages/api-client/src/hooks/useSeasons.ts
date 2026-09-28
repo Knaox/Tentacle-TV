@@ -25,11 +25,19 @@ interface PrefetchQueryClientLike {
 const SEASONS_STALE_TIME = 5 * 60 * 1000;
 const EPISODES_STALE_TIME = 2 * 60 * 1000;
 
+/**
+ * Les saisons, avec ce que leurs pastilles et leurs extras affichent :
+ * - `RecursiveItemCount` : le nombre d'épisodes, et du même coup le
+ *   pourcentage vu (`UserData.PlayedPercentage`, calculé par Jellyfin) ;
+ * - `SpecialFeatureCount` et `RemoteTrailers` : de quoi savoir quelles
+ *   saisons ont des extras SANS interroger chacune — la fiche d'une série de
+ *   vingt saisons en faisait quarante requêtes à l'ouverture.
+ */
+export const SEASON_FIELDS = "PrimaryImageAspectRatio,RemoteTrailers,RecursiveItemCount,SpecialFeatureCount";
+
 function fetchSeasons(client: ItemsFetchClient, userId: string, seriesId: string) {
   return client
-    .fetch<{ Items: MediaItem[] }>(
-      `/Shows/${seriesId}/Seasons?userId=${userId}&Fields=PrimaryImageAspectRatio,RemoteTrailers`
-    )
+    .fetch<{ Items: MediaItem[] }>(`/Shows/${seriesId}/Seasons?userId=${userId}&Fields=${SEASON_FIELDS}`)
     .then((r) => r.Items);
 }
 

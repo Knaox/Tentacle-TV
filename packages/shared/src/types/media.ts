@@ -51,6 +51,9 @@ export interface MediaItem {
 
   // Bandes-annonces distantes (quasi toujours YouTube). Demandé via Fields=RemoteTrailers.
   RemoteTrailers?: Array<{ Url: string; Name?: string }>;
+  // Nombre d'extras locaux (making-of, scènes coupées…). Demandé via Fields=SpecialFeatureCount :
+  // il évite d'interroger chaque saison pour savoir si elle en a.
+  SpecialFeatureCount?: number;
 
   // External IDs
   ProviderIds?: Record<string, string>;

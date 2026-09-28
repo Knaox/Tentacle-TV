@@ -23,7 +23,7 @@ interface Call {
 
 const STATE_KEY = ["series-watch-state", "s1"];
 const EPISODES_PATH = `/Shows/s1/Episodes?${new URLSearchParams({
-  userId: "u1", fields: "Overview,PrimaryImageAspectRatio", enableUserData: "true",
+  userId: "u1", enableImages: "false", enableUserData: "true",
 })}`;
 const SERIES_PATH = "/Users/u1/Items/s1?EnableUserData=true";
 const RATING_PATH = "/Users/u1/Items/s1/Rating";
