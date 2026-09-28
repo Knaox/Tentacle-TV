@@ -13,6 +13,7 @@ import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useTheme, useThemedStyles, 
 import { useCardWidth } from "@/contexts/CardDensityContext";
 import { useSeriesRatingMap } from "@/contexts/SeriesRatingContext";
 import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
+import { cardProgress } from "@/components/cards/cardProgress";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
@@ -57,11 +58,10 @@ export const MobileMediaCard = memo(function MobileMediaCard({
       })
     : null;
   const image = useResilientImage(poster);
-  const progress = item.UserData?.PlayedPercentage ?? 0;
+  const progress = cardProgress(item);
   // Cette affiche montre le visage d'une SÉRIE (même chaîne de repli d'image
   // que le web) : elle en porte donc la note, lot « +N » comme épisode isolé.
   const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
-  const hasProgress = progress > 0 && progress < 100;
   const posterUri = image.uri;
 
   return (
@@ -70,7 +70,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
       onLongPress={onLongPress}
       style={{ width: cardWidth }}
       accessibilityRole="button"
-      accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${hasProgress ? `, ${Math.round(progress)}%` : ""}${isGroupedSeries ? `, ${t("addedEpisodes", { count: addedCount })}` : ""}`}
+      accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${progress !== null ? `, ${Math.round(progress)}%` : ""}${isGroupedSeries ? `, ${t("addedEpisodes", { count: addedCount })}` : ""}`}
     >
       <View style={st.poster}>
         {/* Inner clip — sépare le clipping de l'image du shadow du poster (sinon l'image déborde légèrement les coins arrondis sur certains renders). */}
@@ -98,7 +98,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
             />
           )}
         </View>
-        {hasProgress && (
+        {progress !== null && (
           <View style={st.progWrap}>
             <ProgressBar progress={progress / 100} height={3} />
           </View>
@@ -108,7 +108,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
             liste, favori, vu) en haut à droite. La note remonte au-dessus de
             la barre de progression quand il y en a une : les deux se
             chevauchaient au même bord. */}
-        <CardMarkerLayer item={item} communityRating={rating} liftRating={hasProgress} />
+        <CardMarkerLayer item={item} communityRating={rating} liftRating={progress !== null} />
         {isGroupedSeries && (
           // Badge "+N" violet→rose top-left — match desktop PosterCard.tsx:81
           // (from-[var(--brand)] to-[var(--brand-accent)]) : le rose est
