@@ -84,7 +84,12 @@ const SagaColumn = memo(function SagaColumn({ entry, width, onOpenMedia, onOpenE
     // la rangée) et l'étiquette se pose au pied, alignée d'une carte à l'autre.
     <View style={{ width, flex: 1 }}>
       {entry.kind === "external" ? (
-        <ExternalResultCard item={entry.item} width={width} onPress={() => onOpenExternal(entry.pluginId, entry.item.href)} />
+        <ExternalResultCard
+          item={entry.item}
+          width={width}
+          onPress={() => onOpenExternal(entry.pluginId, entry.item.href)}
+          onOpenHref={(href) => onOpenExternal(entry.pluginId, href)}
+        />
       ) : (
         // Le film ouvert : inerte (on y est déjà), son affiche cerclée — un
         // liseré DANS l'affiche, qu'aucun conteneur ne peut rogner.
