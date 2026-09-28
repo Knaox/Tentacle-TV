@@ -23,7 +23,8 @@ import { resolveLength } from "./evaluateLength";
  * `compatGuard` tranche ensuite. Un `%`, un `var()`, un `env()` ou un `em`
  * dépendent d'un context que la compilation ne connaît pas, et une valeur
  * plausible mais fausse est le pire des résultats. Le compteur les dénombre
- * pour qu'un refus de build soit lisible.
+ * pour qu'un refus de build soit lisible. Seule exception à `env()` : la zone
+ * sûre, nulle sur une dalle (`canvas.ts`).
  *
  * **Place dans la chaîne** : juste après `modernPseudoPass`, donc avant
  * toute transformation géométrique. Les passes suivantes — grille, écarts,
