@@ -4,9 +4,13 @@ import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
-import { useJellyfinClient, watchProgress } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar } from "@/components/ui";
+import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
+import { cardProgress } from "@/components/cards/cardProgress";
+import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
+import { landscapeSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
 import { spacing, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { useRemainingLabel } from "./useRemainingLabel";
 
@@ -14,8 +18,10 @@ const TILE_WIDTH = 220;
 
 /**
  * « Reprendre » : vignettes 16:9 de 220, rayon 12, en défilement horizontal.
- * Toucher lance la lecture — c'est la seule promesse de la rangée ; la fiche
- * reste à portée dans la collection, dessous.
+ * Toucher lance la lecture — c'est la seule promesse de la rangée. La
+ * vignette porte les marqueurs des cartes à l'échelle du titre montré (sa
+ * note, Ma liste, favori), et son appui long ouvre la feuille des cartes en
+ * variante 16:9 : la fiche y passe par « Plus d'infos ».
  */
 export const ResumeRail = memo(function ResumeRail({
   items, onPlay, pendingId,
@@ -28,6 +34,7 @@ export const ResumeRail = memo(function ResumeRail({
   const client = useJellyfinClient();
   const styles = useThemedStyles(makeStyles);
   const remainingLabel = useRemainingLabel();
+  const openSheet = useCardSheetOpener();
   if (items.length === 0) return null;
 
   return (
@@ -45,11 +52,12 @@ export const ResumeRail = memo(function ResumeRail({
           const hasBackdrop = (item.BackdropImageTags?.length ?? 0) > 0;
           const uri = client.getImageUrl(item.Id, hasBackdrop ? "Backdrop" : "Primary", { width: 480, quality: 75 });
           const remaining = remainingLabel(item);
-          const percent = watchProgress(item);
+          const percent = cardProgress(item);
           const pending = pendingId === item.Id;
           return (
             <PressableCard
               onPress={() => { if (!pending) onPlay(item); }}
+              onLongPress={openSheet ? () => openSheet(landscapeSheetTarget(item)) : undefined}
               accessibilityRole="button"
               accessibilityLabel={`${t("resume")} — ${item.Name}${remaining ? `, ${remaining}` : ""}`}
               style={styles.tile}
@@ -63,11 +71,12 @@ export const ResumeRail = memo(function ResumeRail({
                 <View style={styles.playDot}>
                   {pending ? <ActivityIndicator size="small" color="#000" /> : <Feather name="play" size={16} color="#000" style={styles.playIcon} />}
                 </View>
-                {percent != null && (
+                {percent !== null && (
                   <View style={styles.progress}>
                     <ProgressBar progress={percent / 100} />
                   </View>
                 )}
+                <CardMarkerLayer item={item} communityRating={cardRatingFor(item, "item").rating} scope="item" liftRating={percent !== null} />
               </View>
               <Text style={styles.name} numberOfLines={1}>{item.Name}</Text>
               {remaining && <Text style={styles.remaining} numberOfLines={1}>{remaining}</Text>}
