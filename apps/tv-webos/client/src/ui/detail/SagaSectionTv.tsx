@@ -17,7 +17,7 @@ import { FocusableCard } from "../cards/FocusableCard";
  * onClick>`, invisibles pour le moteur de navigation. Même données
  * (`useDetailSaga`), mais la grammaire de `TrackTv` : une `data-tv-piste`
  * (confinement horizontal, défilement suivi par le focus) et chaque volet
- * dans une `FocusableCard` (appui court = la carte, maintien = la fiche).
+ * dans une `FocusableCard` (appui court = la carte, maintien = ses actions).
  *
  * Sur la dalle, la bibliothèque seule : le shim des plugins n'en déclare
  * aucun, il n'y a pas de volet manquant à montrer.
