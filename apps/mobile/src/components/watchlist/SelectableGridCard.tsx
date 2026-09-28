@@ -1,154 +1,68 @@
 import { memo } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { Image } from "expo-image";
+import { StyleSheet, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { PressableCard, ProgressBar } from "@/components/ui";
-import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
-import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
-
-const POSTER_ASPECT = 2 / 3;
+import { MobileMediaCard } from "@/components/MobileMediaCard";
+import { spacing, RADIUS, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 export interface SelectableGridCardProps {
-  /** URL de l'affiche (Primary 300x). */
-  posterUri: string;
-  /**
-   * Note globale, résolue par l'appelant avec `cardRatingFor` : cette carte a
-   * une API de primitives, elle ne connaît pas les DTO Jellyfin.
-   */
-  rating?: number | null;
-  title: string;
-  year?: number | null;
-  /** Progression 0-100 (côté Jellyfin) — caché si null/0 ou si vu. */
-  progressPercent?: number | null;
-  watched?: boolean;
+  item: MediaItem;
   width: number;
+  /** La sélection multiple est ouverte : la case se montre, le tap coche. */
   selectable?: boolean;
   selected?: boolean;
-  onPress?: () => void;
+  onPress: () => void;
   onLongPress?: () => void;
-  accessibilityLabel?: string;
-  /**
-   * L'item, quand l'appelant l'a : la carte pose alors les marqueurs complets
-   * (note + la vôtre, ma liste, favori, vu) au lieu de la seule note et de la
-   * coche. `rating` reste la note globale à afficher.
-   */
-  item?: MediaItem;
 }
 
 /**
- * Carte grille générique (poster 2:3 + titre + année) avec overlay multi-select
- * et badge "vu". Utilisée par Watchlist, Favoris et SharedWatchlist detail.
- *
- * Style cinematic : surface s2, radius lg, halo violet quand sélectionnée,
- * progress bar bas-screen, badge violet rond pour items vus.
+ * Une carte des grilles de collection (Ma liste, Mes favoris) : l'affiche de
+ * toutes les rangées (`MobileMediaCard` — marqueurs communs, note, repli
+ * d'image, même titre), plus la case de la sélection multiple. Elle avait sa
+ * propre affiche, et une coche « vu » maison qui prenait la place de la
+ * pastille d'états dès que l'écran oubliait de lui passer l'item.
  */
 export const SelectableGridCard = memo(function SelectableGridCard({
-  posterUri,
-  rating = null,
-  title,
-  year,
-  progressPercent,
-  watched,
+  item,
   width,
   selectable,
   selected,
   onPress,
   onLongPress,
-  accessibilityLabel,
-  item,
 }: SelectableGridCardProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const showProgress = progressPercent != null && progressPercent > 0 && !watched;
 
   return (
-    <PressableCard
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={{ width, marginBottom: spacing.md }}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? title}
-    >
-      <View style={styles.poster}>
-        <Image source={{ uri: posterUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
-        {item ? (
-          <CardMarkerLayer item={item} communityRating={rating} />
-        ) : (
-          <CardRatingBadge rating={rating} />
-        )}
-        {showProgress && (
-          <View style={styles.progressContainer}>
-            <ProgressBar progress={(progressPercent ?? 0) / 100} height={3} />
-          </View>
-        )}
-        {watched && !item && (
-          <View style={styles.watchedBadge} accessibilityLabel="vu">
-            <Feather name="check" size={12} color={colors.cta.primaryFg} />
-          </View>
-        )}
-        {selectable && (
-          <View style={[StyleSheet.absoluteFill, styles.selectOverlay, selected && styles.selectOverlayActive]}>
+    <View style={styles.slot}>
+      <MobileMediaCard
+        item={item}
+        width={width}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        selected={selectable ? selected === true : undefined}
+        overlay={selectable ? (
+          <View style={[StyleSheet.absoluteFill, styles.selectOverlay, selected && styles.selectOverlayActive]} pointerEvents="none">
             <View style={[styles.checkbox, selected && styles.checkboxActive]}>
               {selected && <Feather name="check" size={14} color={colors.brand.light} />}
             </View>
           </View>
-        )}
-      </View>
-      <Text numberOfLines={1} style={styles.itemTitle}>{title}</Text>
-      {year != null && <Text style={styles.itemYear}>{year}</Text>}
-    </PressableCard>
+        ) : null}
+      />
+    </View>
   );
 });
 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
-    poster: {
-      aspectRatio: POSTER_ASPECT,
-      borderRadius: RADIUS.lg,
-      overflow: "hidden",
-      backgroundColor: t.colors.surface.s2,
-      borderWidth: 1,
-      borderColor: t.colors.border.subtle,
-    },
-    progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
-    // R11 — Watched check unifié (web/mobile) : pill haut-contraste + check inversé + shadow.
-    // Match desktop apps/web/src/components/cards/PosterCard.tsx:90.
-    watchedBadge: {
-      position: "absolute",
-      top: 7,
-      right: 7,
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: t.colors.cta.primaryBg,
-      alignItems: "center",
-      justifyContent: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.35,
-      shadowRadius: 4,
-      elevation: 4,
-    },
-    itemTitle: {
-      ...typography.small,
-      fontFamily: FONT_FAMILY.semibold,
-      color: t.colors.text.primary,
-      marginTop: spacing.xs + 2,
-      letterSpacing: -0.1,
-    },
-    itemYear: {
-      ...typography.badge,
-      fontFamily: FONT_FAMILY.medium,
-      color: t.colors.text.tertiary,
-      marginTop: 2,
-    },
+    slot: { marginBottom: spacing.md },
+    // La case au coin BAS-droit, comme dans Photos : le haut-droit porte la
+    // pastille d'états, le bas-gauche la note — la case n'en masque aucune.
     selectOverlay: {
       backgroundColor: t.colors.overlay.scrimSoft,
-      justifyContent: "flex-start",
+      justifyContent: "flex-end",
       alignItems: "flex-end",
-      padding: spacing.xs,
+      padding: spacing.xs + 2,
       borderRadius: RADIUS.lg,
     },
     selectOverlayActive: {

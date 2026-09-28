@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import Animated from "react-native-reanimated";
@@ -29,6 +29,10 @@ interface Props {
    */
   onLongPress?: () => void;
   width?: number;
+  /** Un calque posé sur l'affiche (la case de sélection d'une collection). */
+  overlay?: ReactNode;
+  /** L'état de sélection lu par les lecteurs d'écran, en sélection multiple. */
+  selected?: boolean;
 }
 
 /**
@@ -39,7 +43,7 @@ interface Props {
  * (`MediaActionSheet`), variante `poster`.
  */
 export const MobileMediaCard = memo(function MobileMediaCard({
-  item, onPress, onLongPress, width,
+  item, onPress, onLongPress, width, overlay, selected,
 }: Props) {
   const client = useJellyfinClient();
   const theme = useTheme();
@@ -82,6 +86,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
       style={{ width: cardWidth }}
       accessibilityRole="button"
       accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${progress !== null ? `, ${Math.round(progress)}%` : ""}${isGroupedSeries ? `, ${t("addedEpisodes", { count: addedCount })}` : ""}`}
+      accessibilityState={selected === undefined ? undefined : { selected }}
     >
       <View style={st.poster}>
         {/* Inner clip — sépare le clipping de l'image du shadow du poster (sinon l'image déborde légèrement les coins arrondis sur certains renders). */}
@@ -133,6 +138,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
             <Text style={st.countBadgeText}>+{addedCount}</Text>
           </LinearGradient>
         )}
+        {overlay}
       </View>
       <Text numberOfLines={1} style={st.title}>
         {isEpisode && item.IndexNumber != null

@@ -4,8 +4,8 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useBatchRemoveWatchlist, useJellyfinClient, useWatchlistAll } from "@tentacle-tv/api-client";
-import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
+import { useBatchRemoveWatchlist, useWatchlistAll } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import { SkeletonCard, SubtleBackground } from "@/components/ui";
 import { SelectionBar } from "@/components/SelectionBar";
@@ -39,7 +39,7 @@ const NONE: MediaItem[] = [];
  * l'ambiance, le titre et son résumé chiffré, Partager et Sélectionner ; le
  * champ et « Trier et filtrer » ; les étapes de visionnage (à la place du
  * statut) ; la barre rapide (type, tri, grille ou liste) ; « Reprendre » ; puis
- * la collection, en grille (`SelectableGridCard`, inchangée) ou en lignes
+ * la collection, en grille (`SelectableGridCard`) ou en lignes
  * avec Lire et Retirer. Le retour flottant reste à portée du pouce. Retrait
  * annulable, état vide à deux chemins, tirer pour actualiser.
  */
@@ -50,7 +50,6 @@ export function WatchlistScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: windowH } = useWindowDimensions();
-  const client = useJellyfinClient();
   const { data: raw, isLoading, refetch, isRefetching } = useWatchlistAll();
   const batchRemove = useBatchRemoveWatchlist();
   const page = useWatchlistScreen(raw);
@@ -103,19 +102,14 @@ export function WatchlistScreen() {
     </View>
   ) : (
     <SelectableGridCard
-      posterUri={client.getImageUrl(item.Id, "Primary", { width: 300, quality: 80 })}
-      title={item.Name}
-      year={item.ProductionYear ?? null}
-      progressPercent={item.UserData?.PlayedPercentage ?? null}
-      watched={item.UserData?.Played === true}
-      rating={cardRatingFor(item, "series").rating}
+      item={item}
       width={itemWidth}
       selectable={selection.active}
       selected={selection.selected.has(item.Id)}
       onPress={() => handlePress(item)}
       onLongPress={() => handleLongPress(item)}
     />
-  ), [isList, styles.rowWrap, selection.active, selection.selected, pendingId, handlePress, handleLongPress, play, client, itemWidth]);
+  ), [isList, styles.rowWrap, selection.active, selection.selected, pendingId, handlePress, handleLongPress, play, itemWidth]);
 
   // Le squelette prend la forme de l'affichage choisi : l'écran ne saute pas
   // quand les titres arrivent.

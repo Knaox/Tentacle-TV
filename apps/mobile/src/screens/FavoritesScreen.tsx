@@ -4,8 +4,8 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { summarizeFavorites, useBatchRemoveFavorites, useFavoritesAll, useJellyfinClient } from "@tentacle-tv/api-client";
-import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
+import { summarizeFavorites, useBatchRemoveFavorites, useFavoritesAll } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import { SkeletonCard, SubtleBackground } from "@/components/ui";
 import { SelectionBar } from "@/components/SelectionBar";
@@ -52,7 +52,6 @@ export function FavoritesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: windowH } = useWindowDimensions();
-  const client = useJellyfinClient();
   const { data: raw, isLoading, refetch, isRefetching } = useFavoritesAll();
   const batchRemove = useBatchRemoveFavorites();
   const filters = useCollectionFilters(raw);
@@ -98,12 +97,7 @@ export function FavoritesScreen() {
       {row.map((item) => (
         <SelectableGridCard
           key={item.Id}
-          posterUri={client.getImageUrl(item.Id, "Primary", { width: 300, quality: 80 })}
-          title={item.Name}
-          year={item.ProductionYear ?? null}
-          progressPercent={item.UserData?.PlayedPercentage ?? null}
-          watched={item.UserData?.Played === true}
-          rating={cardRatingFor(item, "series").rating}
+          item={item}
           width={cardWidth}
           selectable={selection.active}
           selected={selection.selected.has(item.Id)}
@@ -112,7 +106,7 @@ export function FavoritesScreen() {
         />
       ))}
     </View>
-  ), [st.row, gutter, padding, client, cardWidth, selection.active, selection.selected, handlePress, handleLongPress]);
+  ), [st.row, gutter, padding, cardWidth, selection.active, selection.selected, handlePress, handleLongPress]);
 
   const renderSectionHeader = useCallback(({ section }: { section: FavoriteSection }) => (
     section.headed ? (
