@@ -10,6 +10,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { RootStackParamList } from "../navigation/types";
 import { FocusableRow } from "../components/focus/FocusableRow";
 import { TVPosterCard } from "../components/cards/TVPosterCard";
+import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
 import { TVEpisodeList } from "../components/TVEpisodeList";
 import { TVExtrasRow } from "../components/detail/TVExtrasRow";
 import { TVCastCrew } from "../components/detail/TVCastCrew";
@@ -37,6 +38,9 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   // Collection (BoxSet) : contenu navigable (pas de lecture sur un conteneur)
   const isBoxSet = item?.Type === "BoxSet";
   const { data: collectionItems } = useCollectionItems(isBoxSet ? item?.Id : undefined);
+
+  // Appui long sur une affiche (collection, titres similaires) → la feuille.
+  const cardActions = useTVCardActions();
 
   const scrollRef = useRef<ScrollView>(null);
   const playBtnRef = useRef<View>(null);
@@ -115,6 +119,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           itemWidth={CardConfig.portrait.width}
           style={{ marginTop: Spacing.sectionGap }}
           onItemPress={(s: MediaItem) => navigation.push("MediaDetail", { itemId: s.Id })}
+          onItemLongPress={cardActions.openPoster}
         />
       )}
 
@@ -174,9 +179,13 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           itemWidth={CardConfig.portrait.width}
           style={{ marginTop: Spacing.sectionGap }}
           onItemPress={(s: MediaItem) => navigation.push("MediaDetail", { itemId: s.Id })}
+          onItemLongPress={cardActions.openPoster}
           onRowFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
         />
       )}
+
+      {/* Une `Modal` : son contenu ne prend pas place dans la page. */}
+      {cardActions.sheet}
     </ScrollView>
   );
 }

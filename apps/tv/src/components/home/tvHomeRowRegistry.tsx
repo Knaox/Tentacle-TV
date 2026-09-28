@@ -24,7 +24,10 @@ export interface TVHomeRowData {
 export interface TVHomeRowHandlers {
   onPlay: (item: MediaItem) => void;
   onDetail: (item: MediaItem) => void;
-  onLongPress: (item: MediaItem) => void;
+  /** Appui long → la feuille d'actions, variante du modèle de la carte :
+   *  vignette 16:9 (reprise, prochains, déjà vu) ou affiche (le reste). */
+  onLandscapeLongPress: (item: MediaItem) => void;
+  onPosterLongPress: (item: MediaItem) => void;
   onItemFocus: (item: MediaItem) => void;
   /** Recommandations (titres en bibliothèque seulement sur le téléviseur). */
   onRecoPress: (item: RecoRowItem) => void;
@@ -61,7 +64,7 @@ const renderLandscape = (item: MediaItem, _i: number, focused: boolean) => (
  */
 export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
   const { t } = useTranslation("common");
-  const { onPlay, onDetail, onLongPress, onItemFocus, onRowLayout, onRowFocus } = handlers;
+  const { onPlay, onDetail, onLandscapeLongPress, onPosterLongPress, onItemFocus, onRowLayout, onRowFocus } = handlers;
   const onLayout = (e: { nativeEvent: { layout: { y: number } } }) => onRowLayout(rowKey, e.nativeEvent.layout.y);
   const rowProps = {
     style: { marginBottom: Spacing.rowGap },
@@ -96,7 +99,7 @@ export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
         keyExtractor={(item) => item.Id}
         itemWidth={TV_EPISODE_WIDTH.md}
         onItemPress={onPlay}
-        onItemLongPress={onLongPress}
+        onItemLongPress={onLandscapeLongPress}
         {...rowProps}
       />
     );
@@ -111,12 +114,15 @@ export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
         keyExtractor={(item) => item.Id}
         itemWidth={TV_POSTER_WIDTH.md}
         onItemPress={onDetail}
+        onItemLongPress={onPosterLongPress}
         {...rowProps}
       />
     );
   }
   if (rowKey === "favorites") {
-    return <TVFavoritesRow renderCard={renderPortrait} onItemPress={onDetail} {...rowProps} />;
+    return (
+      <TVFavoritesRow renderCard={renderPortrait} onItemPress={onDetail} onItemLongPress={onPosterLongPress} {...rowProps} />
+    );
   }
   if (rowKey.startsWith("library:")) {
     const lib = data.librariesById.get(rowKey.slice("library:".length));
@@ -128,6 +134,7 @@ export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
         collectionType={lib.collectionType}
         renderCard={renderPortrait}
         onItemPress={onDetail}
+        onItemLongPress={onPosterLongPress}
         {...rowProps}
       />
     );

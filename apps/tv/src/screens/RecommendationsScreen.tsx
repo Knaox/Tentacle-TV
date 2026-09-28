@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { ScrollView, TVFocusGuideView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -13,7 +13,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
-import { TVHomeContextMenu, type HomeContextTarget } from "../components/home/TVHomeContextMenu";
+import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
 import { TVRecoShelvesList, TVRecoNoticeLine } from "../components/reco/TVRecoShelvesList";
 import { recoAmbientTarget } from "../components/reco/recoAmbientTarget";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -80,11 +80,11 @@ function RecommendationsInner({ navigation }: Props) {
     if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, shelvesTop.current + y - Spacing.rowScrollTop - TV_OVERSCAN_PT.y), animated: true });
   }, []);
 
-  const [ctxTarget, setCtxTarget] = useState<HomeContextTarget | null>(null);
+  // Appui long → la feuille d'actions (variante reco du modèle partagé).
+  const cardActions = useTVCardActions();
   const openDetail = useCallback((itemId: string) => navigation.navigate("MediaDetail", { itemId }), [navigation]);
   const openPlayer = useCallback((itemId: string) => navigation.navigate("Player", { itemId }), [navigation]);
   const onPress = useCallback((item: RecoRowItem) => { if (item.jellyfinItemId) openDetail(item.jellyfinItemId); }, [openDetail]);
-  const onLongPress = useCallback((item: RecoRowItem) => setCtxTarget({ kind: "reco", item }), []);
   const onItemFocus = useCallback(
     (item: RecoRowItem) => setFocusedItem(recoAmbientTarget(item, jfClient)),
     [setFocusedItem, jfClient],
@@ -134,7 +134,7 @@ function RecommendationsInner({ navigation }: Props) {
                 <TVRecoShelvesList
                   shelves={shelves}
                   onPress={onPress}
-                  onLongPress={onLongPress}
+                  onLongPress={cardActions.openReco}
                   onItemFocus={onItemFocus}
                   onShelfLayout={onShelfLayout}
                   onShelfFocus={onShelfFocus}
@@ -145,7 +145,7 @@ function RecommendationsInner({ navigation }: Props) {
         </ScrollView>
       </TVFocusGuideView>
 
-      <TVHomeContextMenu target={ctxTarget} onClose={() => setCtxTarget(null)} onDetail={openDetail} onPlay={openPlayer} />
+      {cardActions.sheet}
     </TVScreenFrame>
   );
 }

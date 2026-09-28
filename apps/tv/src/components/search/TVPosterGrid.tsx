@@ -18,6 +18,8 @@ interface TVPosterGridProps {
    *  une liste bordée au ras de ses cartes la rognait sur la colonne de gauche. */
   gutter: number;
   onOpen: (item: MediaItem) => void;
+  /** Appui long sur une affiche → la feuille d'actions (`useTVCardActions`). */
+  onLongPress?: (item: MediaItem) => void;
   /** En-tête défilant avec la grille (portrait, titre, compte). */
   header?: React.ReactElement;
   /** La première carte prend le focus à l'arrivée (écran poussé). */
@@ -40,7 +42,7 @@ interface TVPosterGridProps {
  * remonte vers le haut de l'écran, la précédente encore visible.
  */
 export const TVPosterGrid = memo(function TVPosterGrid({
-  items, width, gutter, onOpen, header, preferFirst, entryRef, onFocusCell, empty, firstRowUp,
+  items, width, gutter, onOpen, onLongPress, header, preferFirst, entryRef, onFocusCell, empty, firstRowUp,
 }: TVPosterGridProps) {
   const listRef = useRef<FlatList<MediaItem>>(null);
   const columns = Math.max(3, Math.floor((width + GAP) / (180 + GAP)));
@@ -70,9 +72,10 @@ export const TVPosterGrid = memo(function TVPosterGrid({
       onEntry={index === 0 ? entryRef : undefined}
       nextFocusUp={index < columns ? firstRowUp : undefined}
       onOpen={onOpen}
+      onLongPress={onLongPress}
       onFocusIndex={focusIndex}
     />
-  ), [cardW, preferFirst, entryRef, columns, firstRowUp, onOpen, focusIndex]);
+  ), [cardW, preferFirst, entryRef, columns, firstRowUp, onOpen, onLongPress, focusIndex]);
 
   return (
     <FlatList
@@ -97,7 +100,7 @@ export const TVPosterGrid = memo(function TVPosterGrid({
   );
 });
 
-const GridCell = memo(function GridCell({ item, index, cardW, preferred, onEntry, nextFocusUp, onOpen, onFocusIndex }: {
+const GridCell = memo(function GridCell({ item, index, cardW, preferred, onEntry, nextFocusUp, onOpen, onLongPress, onFocusIndex }: {
   item: MediaItem;
   index: number;
   cardW: number;
@@ -105,6 +108,7 @@ const GridCell = memo(function GridCell({ item, index, cardW, preferred, onEntry
   onEntry?: (node: View | null) => void;
   nextFocusUp?: number;
   onOpen: (item: MediaItem) => void;
+  onLongPress?: (item: MediaItem) => void;
   onFocusIndex: (index: number) => void;
 }) {
   const [focused, setFocused] = useState(false);
@@ -131,6 +135,7 @@ const GridCell = memo(function GridCell({ item, index, cardW, preferred, onEntry
       hasTVPreferredFocus={preferred}
       nextFocusUp={nextFocusUp}
       onPress={() => onOpen(item)}
+      onLongPress={onLongPress ? () => onLongPress(item) : undefined}
       onFocus={() => {
         setFocused(true);
         lastContentNodeRef.current = cellRef.current;

@@ -37,6 +37,8 @@ interface TVLibraryGridProps {
   items: MediaItem[];
   header?: React.ReactElement | null;
   onPressItem: (item: MediaItem) => void;
+  /** Appui long sur une carte → la feuille d'actions (`useTVCardActions`). */
+  onLongPressItem?: (item: MediaItem) => void;
   /** Publié au focus d'une carte — alimente le fond ambient plein écran. */
   onItemFocus?: (item: MediaItem) => void;
   onEndReached?: () => void;
@@ -63,6 +65,7 @@ export function TVLibraryGrid({
   items,
   header,
   onPressItem,
+  onLongPressItem,
   onItemFocus,
   onEndReached,
   isFetchingNextPage,
@@ -102,11 +105,12 @@ export function TVLibraryGrid({
       cardW={cardW}
       isLastItem={isLastItem(index)}
       onPressItem={onPressItem}
+      onLongPressItem={onLongPressItem}
       onItemFocus={onItemFocus}
       onFocusRow={scrollToRow}
       entryRef={entryRef}
     />
-  ), [columns, cellW, cardW, onPressItem, onItemFocus, scrollToRow, isLastItem, entryRef]);
+  ), [columns, cellW, cardW, onPressItem, onLongPressItem, onItemFocus, scrollToRow, isLastItem, entryRef]);
 
   // La liste défile jusqu'aux bords HAUT et BAS de l'écran : coupée au retrait
   // d'overscan du cadre, elle dessinait un cadre noir de 54 pt sur un grand
@@ -175,9 +179,10 @@ function FooterLoader() {
 
 // Mémoïsé : la grille FlashList re-rend au scroll/focus — seules les props
 // stables (callbacks par référence) évitent un re-render O(n) de la grille.
-const GridItem = memo(function GridItem({ item, index, columns, cellW, cardW, isLastItem, onPressItem, onItemFocus, onFocusRow, entryRef }: {
+const GridItem = memo(function GridItem({ item, index, columns, cellW, cardW, isLastItem, onPressItem, onLongPressItem, onItemFocus, onFocusRow, entryRef }: {
   item: MediaItem; index: number; columns: number; cellW: number; cardW: number; isLastItem: boolean;
-  onPressItem: (item: MediaItem) => void; onItemFocus?: (item: MediaItem) => void; onFocusRow: (rowIndex: number) => void;
+  onPressItem: (item: MediaItem) => void; onLongPressItem?: (item: MediaItem) => void;
+  onItemFocus?: (item: MediaItem) => void; onFocusRow: (rowIndex: number) => void;
   entryRef?: (node: View | null) => void;
 }) {
   const ref = useRef<View | null>(null);
@@ -209,6 +214,7 @@ const GridItem = memo(function GridItem({ item, index, columns, cellW, cardW, is
         ref={attachRefs}
         variant="card"
         onPress={() => onPressItem(item)}
+        onLongPress={onLongPressItem ? () => onLongPressItem(item) : undefined}
         onFocus={() => { setFocused(true); onItemFocus?.(item); onFocusRow(Math.floor(index / columns)); }}
         onBlur={() => setFocused(false)}
         // JAMAIS de hasTVPreferredFocus sur une cellule de FlashList recyclée :

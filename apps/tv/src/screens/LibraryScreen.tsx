@@ -24,6 +24,7 @@ import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { useLibraryFilters } from "../hooks/useLibraryFilters";
 import { hasPlatformFilter } from "../hooks/libraryCatalogParams";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
+import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 
@@ -104,6 +105,9 @@ function LibraryScreenInner({ route, navigation }: Props) {
 
   // Sélection d'une bibliothèque au rail → focus sur la 1ʳᵉ carte.
   const contentEntry = useTVContentEntry();
+  // Appui long sur une carte → la feuille d'actions (une `Modal` : son propre
+  // Retour, sans passer par celui des menus de filtre).
+  const cardActions = useTVCardActions();
 
   const navigateToDetail = useCallback((item: MediaItem) => {
     navigation.navigate("MediaDetail", { itemId: item.Id });
@@ -159,6 +163,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
           items={items}
           header={header}
           onPressItem={navigateToDetail}
+          onLongPressItem={cardActions.openPoster}
           onItemFocus={setFocusedItem}
           onEndReached={handleEndReached}
           isFetchingNextPage={isFetchingNextPage}
@@ -189,6 +194,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
       {openMenu?.kind === "platforms" && (
         <TVPlatformMenu anchor={openMenu.anchor} onClose={dismissMenu} selectedIds={lf.filters.platformIds} onToggle={lf.togglePlatform} />
       )}
+      {cardActions.sheet}
     </TVScreenFrame>
   );
 }

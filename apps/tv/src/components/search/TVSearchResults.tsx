@@ -15,6 +15,10 @@ import { Colors, Spacing, Typography } from "../../theme/colors";
 
 export interface TVSearchResultsActions {
   onOpenItem: (itemId: string) => void;
+  /** Appui long → la feuille d'actions : affiche (films, séries, collections)
+   *  ou vignette 16:9 (épisodes). */
+  onPosterLongPress: (item: MediaItem) => void;
+  onLandscapeLongPress: (item: MediaItem) => void;
   onOpenTop: (top: SearchTopHit) => void;
   onOpenPerson: (person: SearchPersonHit) => void;
   onOpenFacet: (facet: TvSearchFacet) => void;
@@ -69,6 +73,11 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
   );
   const openHit = useCallback((hit: SearchItemHit) => actions.onOpenItem(hit.item.Id), [actions]);
   const openEpisode = useCallback((item: SearchMediaItem) => actions.onOpenItem(item.Id), [actions]);
+  const pressHit = useCallback((hit: SearchItemHit) => actions.onPosterLongPress(asMediaItem(hit.item)), [actions]);
+  const pressEpisode = useCallback(
+    (item: SearchMediaItem) => actions.onLandscapeLongPress(asMediaItem(item)),
+    [actions],
+  );
 
   return (
     <ScrollView
@@ -104,6 +113,7 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
                 itemWidth={TV_POSTER_WIDTH.md}
                 renderItem={renderHit}
                 onItemPress={openHit}
+                onItemLongPress={pressHit}
                 onRowFocus={onRowFocus}
                 onLayout={onLayout}
                 onFirstItem={entry}
@@ -134,6 +144,7 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
                 itemWidth={TV_EPISODE_WIDTH.sm}
                 renderItem={renderEpisode}
                 onItemPress={openEpisode}
+                onItemLongPress={pressEpisode}
                 onRowFocus={onRowFocus}
                 onLayout={onLayout}
                 onFirstItem={entry}

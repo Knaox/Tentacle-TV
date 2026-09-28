@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { ScrollView, TVFocusGuideView, InteractionManager } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,8 +19,7 @@ import { useTVNavActions } from "../context/TVNavContext";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
 import { TVHomeErrorState } from "../components/home/TVHomeErrorState";
-import { TVHomeContextMenu } from "../components/home/TVHomeContextMenu";
-import type { HomeContextTarget } from "../components/home/TVHomeContextMenu";
+import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
 import { TVHomeRows } from "../components/home/TVHomeRows";
 import type { TVHomeRowData, TVHomeRowHandlers } from "../components/home/tvHomeRowRegistry";
 import { useTVHomeRows } from "../components/home/useTVHomeRows";
@@ -65,8 +64,8 @@ function HomeScreenInner({ navigation }: Props) {
   usePreferencesLive({ token });
   const setFocusedItem = useAmbientSetter();
   const { requestRailFocus, lastContentNodeRef, railFocusedRef } = useTVNavActions();
-  // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
-  const [ctxTarget, setCtxTarget] = useState<HomeContextTarget | null>(null);
+  // Appui long sur une carte → la feuille d'actions du modèle partagé.
+  const cardActions = useTVCardActions();
 
   // Invalidate volatile queries when screen regains focus (e.g. after Player).
   // - Skip du premier mount (les queries démarrent déjà → évite le double-fetch).
@@ -142,12 +141,9 @@ function HomeScreenInner({ navigation }: Props) {
   const openPlayer = useCallback((itemId: string) => navigation.navigate("Player", { itemId }), [navigation]);
   const navigateToDetail = useCallback((item: MediaItem) => openDetail(item.Id), [openDetail]);
   const navigateToPlay = useCallback((item: MediaItem) => openPlayer(item.Id), [openPlayer]);
-  const openContextMenu = useCallback((item: MediaItem) => setCtxTarget({ kind: "media", item }), []);
   // Recommandations : la TV ne montre que des titres en bibliothèque — OK
-  // ouvre la fiche, l'appui long le menu (Plus d'infos, Lecture, Ne plus me
-  // proposer).
+  // ouvre la fiche, l'appui long la feuille d'actions (variante reco).
   const openRecoDetail = useCallback((item: RecoRowItem) => { if (item.jellyfinItemId) openDetail(item.jellyfinItemId); }, [openDetail]);
-  const openRecoContextMenu = useCallback((item: RecoRowItem) => setCtxTarget({ kind: "reco", item }), []);
   const onRecoFocus = useCallback(
     (item: RecoRowItem) => setFocusedItem(recoAmbientTarget(item, jfClient)),
     [setFocusedItem, jfClient],
@@ -165,14 +161,18 @@ function HomeScreenInner({ navigation }: Props) {
   const rowHandlers = useMemo<TVHomeRowHandlers>(() => ({
     onPlay: navigateToPlay,
     onDetail: navigateToDetail,
-    onLongPress: openContextMenu,
+    onLandscapeLongPress: cardActions.openLandscape,
+    onPosterLongPress: cardActions.openPoster,
     onItemFocus: setFocusedItem,
     onRecoPress: openRecoDetail,
-    onRecoLongPress: openRecoContextMenu,
+    onRecoLongPress: cardActions.openReco,
     onRecoFocus,
     onRowLayout: (key, y) => rowYMap.current.set(key, y),
     onRowFocus: scrollToRow,
-  }), [navigateToPlay, navigateToDetail, openContextMenu, setFocusedItem, openRecoDetail, openRecoContextMenu, onRecoFocus, scrollToRow]);
+  }), [
+    navigateToPlay, navigateToDetail, cardActions.openLandscape, cardActions.openPoster, setFocusedItem,
+    openRecoDetail, cardActions.openReco, onRecoFocus, scrollToRow,
+  ]);
 
   // Rejumeler depuis l'état d'erreur : doLogout — la purge locale recopiée
   // ici oubliait les credentials et le verrou « lecture en cours ».
@@ -254,13 +254,8 @@ function HomeScreenInner({ navigation }: Props) {
       </ScrollView>
       </TVFocusGuideView>
 
-      {/* Menu contextuel (appui long sur une carte) */}
-      <TVHomeContextMenu
-        target={ctxTarget}
-        onClose={() => setCtxTarget(null)}
-        onDetail={openDetail}
-        onPlay={openPlayer}
-      />
+      {/* La feuille d'actions (appui long sur une carte) */}
+      {cardActions.sheet}
     </TVScreenFrame>
   );
 }

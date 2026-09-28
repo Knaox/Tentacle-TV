@@ -9,6 +9,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { TVPosterGrid } from "../components/search/TVPosterGrid";
 import { TVPersonCard } from "../components/search/TVPersonCard";
 import { TVSearchBack } from "../components/search/TVSearchBack";
+import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { claimTvFocus } from "../hooks/useTvFocusClaim";
@@ -44,6 +45,9 @@ export function SearchBrowseScreen({ navigation, route }: Props) {
   const goBack = useCallback(() => navigation.goBack(), [navigation]);
   useTVRemote({ onBack: goBack });
   const open = useCallback((item: MediaItem) => navigation.navigate("MediaDetail", { itemId: item.Id }), [navigation]);
+  // Appui long sur une affiche → la feuille d'actions (elle charge la fiche
+  // complète : un résultat du moteur n'a ni ProviderIds ni UserData entier).
+  const cardActions = useTVCardActions();
   // Les cartes lisent un `MediaItem` : un résultat du moteur en est un sous-ensemble.
   const items = useMemo(() => (data?.items ?? []).map((hit) => hit.item as unknown as MediaItem), [data]);
 
@@ -124,6 +128,7 @@ export function SearchBrowseScreen({ navigation, route }: Props) {
           width={gridWidth}
           gutter={Spacing.rowGutter}
           onOpen={open}
+          onLongPress={cardActions.openPoster}
           header={header}
           preferFirst
           entryRef={setFirstPoster}
@@ -136,6 +141,7 @@ export function SearchBrowseScreen({ navigation, route }: Props) {
           )}
         />
       </View>
+      {cardActions.sheet}
     </TVScreenFrame>
   );
 }

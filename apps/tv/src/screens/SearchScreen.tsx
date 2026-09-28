@@ -17,6 +17,7 @@ import { TVSearchSuggestions, type TVSearchSuggestion } from "../components/sear
 import { TVSearchResults, type TVSearchResultsActions } from "../components/search/TVSearchResults";
 import { TVSearchIdle } from "../components/search/TVSearchIdle";
 import { useSearchSubmit } from "../components/search/useSearchSubmit";
+import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
 import { SkeletonRow } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
@@ -146,11 +147,15 @@ export function SearchScreen({ navigation }: Props) {
     if (debounced.length >= 2) setRecents(pushRecentSearch(debounced));
   }, [debounced]);
 
+  // Appui long sur un résultat → la feuille d'actions de la carte.
+  const cardActions = useTVCardActions();
   const actions = useMemo<TVSearchResultsActions>(() => ({
     onOpenItem: (itemId: string) => {
       remember();
       navigation.navigate("MediaDetail", { itemId });
     },
+    onPosterLongPress: cardActions.openPoster,
+    onLandscapeLongPress: cardActions.openLandscape,
     onOpenTop: (top: SearchTopHit) => {
       remember();
       if (top.kind === "person") {
@@ -167,7 +172,7 @@ export function SearchScreen({ navigation }: Props) {
       remember();
       openBrowse({ kind: facet.kind, name: facet.name });
     },
-  }), [navigation, remember, openBrowse]);
+  }), [navigation, remember, openBrowse, cardActions.openPoster, cardActions.openLandscape]);
 
   const openGenre = useCallback((name: string) => openBrowse({ kind: "genre", name }), [openBrowse]);
 
@@ -240,6 +245,7 @@ export function SearchScreen({ navigation }: Props) {
           )}
         </TVFocusGuideView>
       </View>
+      {cardActions.sheet}
     </TVScreenFrame>
   );
 }

@@ -9,6 +9,8 @@ import { Spacing } from "../../theme/colors";
 interface TVFavoritesRowProps {
   renderCard: (item: MediaItem, index: number, focused: boolean) => React.ReactNode;
   onItemPress: (item: MediaItem) => void;
+  /** Appui long → la feuille d'actions de la carte. */
+  onItemLongPress?: (item: MediaItem) => void;
   onItemFocus?: (item: MediaItem) => void;
   onLayout?: (event: LayoutChangeEvent) => void;
   onRowFocus?: () => void;
@@ -17,7 +19,7 @@ interface TVFavoritesRowProps {
 /** « Mes favoris » — les vingt derniers favoris (films et séries), en
  *  affiches. S'alimente seule (aucune requête si la rangée est éteinte) ;
  *  rien sans favori. Motif de TVLibraryRow. */
-export function TVFavoritesRow({ renderCard, onItemPress, onItemFocus, onLayout, onRowFocus }: TVFavoritesRowProps) {
+export function TVFavoritesRow({ renderCard, onItemPress, onItemLongPress, onItemFocus, onLayout, onRowFocus }: TVFavoritesRowProps) {
   const { t } = useTranslation("common");
   const { data } = useFavorites();
   if (!data || data.length === 0) return null;
@@ -30,6 +32,7 @@ export function TVFavoritesRow({ renderCard, onItemPress, onItemFocus, onLayout,
       itemWidth={TV_POSTER_WIDTH.md}
       style={{ marginBottom: Spacing.rowGap }}
       onItemPress={onItemPress}
+      onItemLongPress={onItemLongPress}
       onItemFocus={onItemFocus}
       onLayout={onLayout}
       onRowFocus={onRowFocus}

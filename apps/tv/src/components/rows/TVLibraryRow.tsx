@@ -15,6 +15,8 @@ interface TVLibraryRowProps {
   collectionType?: string;
   renderCard: (item: MediaItem, index: number, focused: boolean) => React.ReactNode;
   onItemPress: (item: MediaItem) => void;
+  /** Appui long → la feuille d'actions de la carte. */
+  onItemLongPress?: (item: MediaItem) => void;
   onItemFocus?: (item: MediaItem) => void;
   onLayout?: (event: LayoutChangeEvent) => void;
   onRowFocus?: () => void;
@@ -33,6 +35,7 @@ export function TVLibraryRow({
   collectionType,
   renderCard,
   onItemPress,
+  onItemLongPress,
   onItemFocus,
   onLayout,
   onRowFocus,
@@ -64,6 +67,7 @@ export function TVLibraryRow({
         itemWidth={TV_POSTER_WIDTH.md}
         style={{ marginBottom: Spacing.rowGap }}
         onItemPress={onItemPress}
+        onItemLongPress={onItemLongPress}
         onItemFocus={onItemFocus}
         onLayout={onLayout}
         onRowFocus={onRowFocus}

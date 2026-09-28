@@ -9,6 +9,7 @@ import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { TVLibraryGrid } from "../components/library/TVLibraryGrid";
+import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
 import { TVCollectionEmpty } from "../components/library/TVCollectionEmpty";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
@@ -38,6 +39,8 @@ function WatchlistScreenInner({ navigation }: Props) {
   useTVRemote({ onBack: () => navigation.goBack() });
   // Sélection au rail → focus sur la 1ʳᵉ carte de la grille.
   const contentEntry = useTVContentEntry();
+  // Appui long sur une carte → la feuille d'actions.
+  const cardActions = useTVCardActions();
 
   const openDetail = useCallback((item: MediaItem) => {
     navigation.navigate("MediaDetail", { itemId: item.Id });
@@ -74,9 +77,17 @@ function WatchlistScreenInner({ navigation }: Props) {
             }}
           />
         ) : (
-          <TVLibraryGrid listKey="watchlist" items={items} onPressItem={openDetail} onItemFocus={setFocusedItem} entryRef={contentEntry} />
+          <TVLibraryGrid
+            listKey="watchlist"
+            items={items}
+            onPressItem={openDetail}
+            onLongPressItem={cardActions.openPoster}
+            onItemFocus={setFocusedItem}
+            entryRef={contentEntry}
+          />
         )}
       </View>
+      {cardActions.sheet}
     </TVScreenFrame>
   );
 }
