@@ -108,6 +108,7 @@ export default {
   provisioningDisable: "Disable",
   provisioningCopy: "Copy",
   provisioningCopied: "Code copied",
+  provisioningCopyFailedHint: "Couldn't copy automatically. The code is selected: copy it with {{shortcut}}.",
   usersTitle: "Users",
   usersDescription: "The server's Jellyfin accounts: activity, rights and devices. Open one to manage it or to see the app through its eyes.",
   manageUsers: "Manage users",

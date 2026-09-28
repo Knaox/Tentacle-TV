@@ -97,6 +97,7 @@ export default {
   provisioningDisable: "Désactiver",
   provisioningCopy: "Copier",
   provisioningCopied: "Code copié",
+  provisioningCopyFailedHint: "La copie automatique n'a pas abouti. Le code est sélectionné : copiez-le avec {{shortcut}}.",
   usersTitle: "Utilisateurs",
   usersDescription: "Les comptes Jellyfin du serveur : activité, droits et appareils. Ouvrez-en un pour le gérer ou voir l'app à sa place.",
   manageUsers: "Gérer les utilisateurs",

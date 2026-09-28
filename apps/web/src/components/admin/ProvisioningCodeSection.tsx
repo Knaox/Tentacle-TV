@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BACKEND, hdrs, cls, creds } from "../../pages/adminUtils";
+import { useCopyFeedback } from "../../hooks/useCopyFeedback";
+import { copyShortcutLabel } from "../../lib/shortcutLabel";
 
 interface ProvisioningState {
   code: string;
@@ -33,6 +35,8 @@ export function ProvisioningCodeSection() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const { status: copyStatus, copy } = useCopyFeedback();
+  const codeRef = useRef<HTMLElement>(null);
 
   const load = async () => {
     try {
@@ -109,12 +113,12 @@ export function ProvisioningCodeSection() {
     setBusy(false);
   };
 
-  const copyCode = () => {
-    if (!state?.code) return;
-    navigator.clipboard?.writeText(state.code).then(
-      () => setMsg({ ok: true, t: t("provisioningCopied") }),
-      () => {},
-    );
+  // Le résultat se lit SUR le bouton : un échec n'est plus muet, et le code
+  // reste prêt pour la copie à la main.
+  const copyCode = async () => {
+    if (!state?.code || (await copy(state.code))) return;
+    const selection = window.getSelection();
+    if (codeRef.current && selection) selection.selectAllChildren(codeRef.current);
   };
 
   if (!state) return null;
@@ -147,12 +151,21 @@ export function ProvisioningCodeSection() {
         {/* Code */}
         <label className={cls.lbl}>{t("provisioningCodeLabel")}</label>
         <div className="flex flex-wrap items-center gap-3">
-          <code className="rounded-lg bg-fill-subtle px-3 py-2 text-lg font-bold tracking-[0.3em] text-content-primary">
+          <code ref={codeRef} className="select-all rounded-lg bg-fill-subtle px-3 py-2 text-lg font-bold tracking-[0.3em] text-content-primary">
             {state.code}
           </code>
-          <button onClick={copyCode} className={`${cls.bs} pointer-events-auto`}>{t("provisioningCopy")}</button>
+          <button onClick={copyCode} className={`${cls.bs} pointer-events-auto`}>
+            <span aria-live="polite">
+              {copyStatus === "copied" ? t("provisioningCopied") : copyStatus === "failed" ? t("common:copyFailed") : t("provisioningCopy")}
+            </span>
+          </button>
           <button onClick={regenerate} disabled={busy || readOnly} className={cls.bs}>{t("provisioningRegenerate")}</button>
         </div>
+        {copyStatus === "failed" && (
+          <p role="alert" className="mt-2 text-xs text-status-error-fg">
+            {t("provisioningCopyFailedHint", { shortcut: copyShortcutLabel() })}
+          </p>
+        )}
 
         {/* Compte dédié */}
         <label className={`${cls.lbl} mt-4`}>{t("provisioningAccount")}</label>
