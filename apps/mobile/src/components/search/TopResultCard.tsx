@@ -4,9 +4,15 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { itemMeta, matchReason, personMeta, type SearchPersonHit, type SearchTopHit } from "@tentacle-tv/shared";
+import { cardRatingFor, itemMeta, matchReason, personMeta, type SearchPersonHit, type SearchTopHit } from "@tentacle-tv/shared";
+import { ProgressBar } from "@/components/ui";
+import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
+import { cardProgress } from "@/components/cards/cardProgress";
+import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
+import { posterSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { PersonAvatar } from "./SearchPeople";
+import { asMediaItem } from "./SearchSection";
 
 interface Props {
   top: SearchTopHit;
@@ -22,13 +28,15 @@ const PLAYABLE = new Set(["Movie", "Episode"]);
  * Le meilleur résultat, mis en avant — celui du bureau : l'affiche, ce qu'est
  * le titre (« Film · 2019 · ★ 7,1 »), pourquoi il répond (« Avec Tom
  * Hanks »), et le geste principal : « Lire » (ou « Reprendre ») pour un film,
- * « Détails » sinon. Une personne ouvre sa filmographie.
+ * « Détails » sinon. Une personne ouvre sa filmographie. L'affiche porte les
+ * marqueurs de toutes les cartes, et son appui long la feuille des cartes.
  */
 export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, onPerson }: Props) {
   const { t, i18n } = useTranslation("search");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
+  const openSheet = useCardSheetOpener();
 
   if (top.kind === "person") {
     const person = top.hit;
@@ -51,6 +59,8 @@ export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, 
   }
 
   const { item, match } = top.hit;
+  const media = asMediaItem(item);
+  const progress = cardProgress(media);
   const reason = matchReason(t, match);
   const playable = PLAYABLE.has(item.Type);
   const resume = (item.UserData?.PlayedPercentage ?? 0) > 0 && !item.UserData?.Played;
@@ -62,8 +72,20 @@ export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, 
     <View style={st.card}>
       <Text style={st.kicker}>{t("topResult")}</Text>
       <View style={st.body}>
-        <Pressable onPress={() => onOpen(item.Id)} accessibilityRole="imagebutton" accessibilityLabel={item.Name} style={st.poster}>
+        <Pressable
+          onPress={() => onOpen(item.Id)}
+          onLongPress={openSheet ? () => openSheet(posterSheetTarget(media)) : undefined}
+          accessibilityRole="imagebutton"
+          accessibilityLabel={item.Name}
+          style={st.poster}
+        >
           {poster && <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} accessible={false} />}
+          {progress !== null && (
+            <View style={st.progress}>
+              <ProgressBar progress={progress / 100} height={3} />
+            </View>
+          )}
+          <CardMarkerLayer item={media} communityRating={cardRatingFor(media, "series").rating} liftRating={progress !== null} />
         </Pressable>
         <View style={st.text}>
           <Text style={st.meta} numberOfLines={1}>{itemMeta(t, item, i18n.language)}</Text>
@@ -123,6 +145,7 @@ const makeStyles = (t: AppTheme) =>
       overflow: "hidden" as const,
       backgroundColor: t.colors.surface.s2,
     },
+    progress: { position: "absolute" as const, left: 0, right: 0, bottom: 0, paddingHorizontal: 6, paddingBottom: 6 },
     text: { flex: 1, gap: 4 },
     meta: { fontSize: 12, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
     title: { fontSize: 20, lineHeight: 24, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, letterSpacing: -0.3 },
