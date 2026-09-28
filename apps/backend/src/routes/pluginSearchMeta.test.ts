@@ -34,6 +34,14 @@ describe("readSearchMeta — le champ search d'un manifeste de plugin", () => {
     }
   });
 
+  it("relaie la route des volets d'une saga, et l'ignore seule si elle est mal formée", () => {
+    expect(readSearchMeta({ search: { path: "/s", collection: "/search/collection" } }))
+      .toEqual({ path: "/s", collection: "/search/collection" });
+    for (const collection of ["//evil.example/x", "/../admin", "https://x.y/z", 3, ""]) {
+      expect(readSearchMeta({ search: { path: "/s", collection } }), String(collection)).toEqual({ path: "/s" });
+    }
+  });
+
   it("ne garde que les libellés qui sont des chaînes non vides", () => {
     expect(readSearchMeta({ search: { path: "/s", labels: { fr: " Ailleurs ", en: 3, de: "" } } })).toEqual({
       path: "/s",

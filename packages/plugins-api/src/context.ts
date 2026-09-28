@@ -28,6 +28,8 @@ export interface ActivePluginMeta {
     path: string;
     /** Route de la filmographie hors bibliothèque (champ `search.person`), si le plugin en sert une. */
     person?: string;
+    /** Route des volets d'une saga hors bibliothèque (champ `search.collection`), si le plugin en sert une. */
+    collection?: string;
     types?: Array<"movie" | "series">;
     labels?: Record<string, string>;
   };

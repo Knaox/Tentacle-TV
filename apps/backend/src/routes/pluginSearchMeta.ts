@@ -7,6 +7,7 @@
  *   "search": {
  *     "path": "/search/provider",
  *     "person": "/search/person",
+ *     "collection": "/search/collection",
  *     "types": ["movie", "series"],
  *     "labels": { "fr": "Pas encore sur le serveur", "en": "Not on the server yet" }
  *   }
@@ -21,6 +22,11 @@
  * pour `name`, `tmdb` (quand Jellyfin connaît son identifiant TMDB), `lang` et
  * `limit` — ce qu'elle a fait et que la bibliothèque n'a pas.
  *
+ * `collection` (facultatif) sert les volets d'une SAGA que la bibliothèque n'a
+ * pas : même réponse, pour `tmdb` (l'identifiant TMDB de la saga), `lang` et
+ * `limit`. Un élément qui porte `tmdbId` (celui du film) prend son rang dans
+ * la rangée de la saga, sur la fiche d'un film.
+ *
  * Tentacle n'en sait pas plus : le plugin décide de ce qu'il trouve, le client
  * l'affiche. Comme pour `tab`, ce lecteur est la seule garde — un champ mal
  * formé est ignoré, jamais relayé à moitié.
@@ -31,6 +37,8 @@ export interface PluginSearchMeta {
   path: string;
   /** Route de la filmographie hors bibliothèque, si le plugin en sert une. */
   person?: string;
+  /** Route des volets d'une saga hors bibliothèque, si le plugin en sert une. */
+  collection?: string;
   types?: PluginSearchType[];
   labels?: Record<string, string>;
 }
@@ -47,12 +55,15 @@ export function readSearchMeta(manifest: unknown): PluginSearchMeta | undefined 
   if (!manifest || typeof manifest !== "object") return undefined;
   const search = (manifest as { search?: unknown }).search;
   if (!search || typeof search !== "object" || Array.isArray(search)) return undefined;
-  const { path, person, types, labels } = search as { path?: unknown; person?: unknown; types?: unknown; labels?: unknown };
+  const { path, person, collection, types, labels } = search as {
+    path?: unknown; person?: unknown; collection?: unknown; types?: unknown; labels?: unknown;
+  };
   if (!isSafePath(path)) return undefined;
 
   const out: PluginSearchMeta = { path };
   // Mal formé, il est ignoré seul : la recherche, elle, reste valable.
   if (isSafePath(person)) out.person = person;
+  if (isSafePath(collection)) out.collection = collection;
   if (Array.isArray(types)) {
     const kept = TYPES.filter((type) => types.includes(type));
     if (kept.length > 0) out.types = kept;

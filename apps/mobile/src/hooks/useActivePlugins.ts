@@ -36,7 +36,7 @@ export interface ActivePlugin {
    * serveur seulement si l'intégration est allumée — lue par la recherche
    * (`pluginSearch`, @tentacle-tv/shared), qui en valide chaque champ.
    */
-  search?: { path: string; person?: string; types?: string[]; labels?: Record<string, string> };
+  search?: { path: string; person?: string; collection?: string; types?: string[]; labels?: Record<string, string> };
   /**
    * Ce que le plugin sait dire et faire d'un titre hors bibliothèque (champ
    * `titles` du manifeste) — lu par les cartes hors bibliothèque

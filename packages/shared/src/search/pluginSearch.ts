@@ -22,7 +22,7 @@ export interface SearchablePlugin {
   pluginId: string;
   name: string;
   configEnabled?: boolean;
-  search?: { path: string; person?: string; types?: readonly string[]; labels?: Record<string, string> };
+  search?: { path: string; person?: string; collection?: string; types?: readonly string[]; labels?: Record<string, string> };
 }
 
 export type ExternalKind = "movie" | "series";
@@ -51,6 +51,8 @@ export interface SearchProvider {
   path: string;
   /** Route de la filmographie hors bibliothèque (`search.person`), sinon `null`. */
   personPath: string | null;
+  /** Route des volets d'une saga hors bibliothèque (`search.collection`) ; absente sinon. */
+  collectionPath?: string;
   types: ExternalKind[] | null;
   /** Le nom de la section : celui du manifeste, dans la langue de l'interface. */
   label: string;
@@ -98,6 +100,7 @@ export function searchProviders(
       pluginId: plugin.pluginId,
       path: search.path,
       personPath: isSafePath(search.person) ? search.person : null,
+      ...(isSafePath(search.collection) ? { collectionPath: search.collection } : {}),
       types: types.length > 0 ? types : null,
       label: search.labels?.[lang] ?? search.labels?.en ?? fallbackLabel,
       source: shortPluginName(plugin.name),
@@ -138,6 +141,20 @@ export function personProviderUrl(
   if (person.tmdbId !== null) params.set("tmdb", person.tmdbId);
   if (typeof person.role === "string" && /^[A-Za-z]{1,30}$/.test(person.role)) params.set("role", person.role);
   return `/api/plugins/${encodeURIComponent(provider.pluginId)}${provider.personPath}?${params.toString()}`;
+}
+
+/**
+ * Les volets d'une saga que la bibliothèque n'a pas, chez ce plugin : Tentacle
+ * donne l'identifiant TMDB de la saga (`tmdb`) ; le plugin rend les films qui
+ * manquent, chacun avec son `tmdbId` pour prendre son rang dans la rangée.
+ */
+export function collectionProviderUrl(
+  provider: SearchProvider & { collectionPath: string },
+  collectionId: number,
+  options: { lang: string; limit: number },
+): string {
+  const params = new URLSearchParams({ tmdb: String(collectionId), lang: options.lang, limit: String(options.limit) });
+  return `/api/plugins/${encodeURIComponent(provider.pluginId)}${provider.collectionPath}?${params.toString()}`;
 }
 
 /* Un lien interne, jamais un autre site : le plugin désigne une de ses pages. */

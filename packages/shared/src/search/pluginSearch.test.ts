@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  personProviderUrl, providerAccepts, providerUrl, readExternalResponse, searchProviders, shortPluginName,
-  withoutLibraryTwins, type SearchablePlugin, type SearchProvider,
+  collectionProviderUrl, personProviderUrl, providerAccepts, providerUrl, readExternalResponse, searchProviders,
+  shortPluginName, withoutLibraryTwins, type SearchablePlugin, type SearchProvider,
 } from "./pluginSearch";
 
 type TestPlugin = SearchablePlugin & { id: string; version: string; hasBundle: boolean; navItems: unknown[] };
@@ -29,6 +29,19 @@ describe("searchProviders — qui sait chercher hors bibliothèque", () => {
   it("la route de filmographie est relayée — ignorée seule si elle sort du plugin", () => {
     expect(searchProviders([plugin({ search: { path: "/s", person: "/search/person" } })], "fr", "x")[0].personPath).toBe("/search/person");
     expect(searchProviders([plugin({ search: { path: "/s", person: "//evil.example" } })], "fr", "x")[0].personPath).toBeNull();
+  });
+
+  it("la route des volets d'une saga est relayée — absente si elle manque ou sort du plugin", () => {
+    expect(searchProviders([plugin({ search: { path: "/s", collection: "/search/collection" } })], "fr", "x")[0].collectionPath)
+      .toBe("/search/collection");
+    expect("collectionPath" in searchProviders([plugin({ search: { path: "/s" } })], "fr", "x")[0]).toBe(false);
+    expect("collectionPath" in searchProviders([plugin({ search: { path: "/s", collection: "//evil.example" } })], "fr", "x")[0]).toBe(false);
+  });
+
+  it("les volets d'une saga se demandent par l'identifiant TMDB de la saga", () => {
+    const provider = { ...PROVIDER, collectionPath: "/search/collection" };
+    expect(collectionProviderUrl(provider, 1241, { lang: "fr", limit: 20 }))
+      .toBe("/api/plugins/seer/search/collection?tmdb=1241&lang=fr&limit=20");
   });
 
   it("la filmographie se demande par nom, et par identifiant TMDB s'il est connu", () => {
