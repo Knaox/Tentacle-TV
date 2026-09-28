@@ -1,10 +1,8 @@
-import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardActionTray } from "./CardActionTray";
-import { PlayGlyph } from "./cardGlyphs";
+import { PosterHoverShell } from "./PosterHoverShell";
 import { HoverRatingStars } from "../rating/HoverRatingStars";
-import { PressableScale } from "../ui/PressableScale";
 import { ratingIdentityForItem } from "../../lib/ratingIdentity";
 
 interface PosterHoverLayerProps {
@@ -32,55 +30,24 @@ interface PosterHoverLayerProps {
  *
  * Monté au survol seulement, par l'appelant (`useMountWhile`) : le plateau
  * s'abonne aux Sets de séries et à la liste des notes, et quatre-vingts cartes
- * ne doivent pas les porter au repos. Les trois fondus ne touchent que
- * `opacity` et `transform` (theme/cards.css) ; `.hover-reveal` sur la racine
- * sert aussi de poignée à la feuille de la LG, qui masque tout le survol.
+ * ne doivent pas les porter au repos. Le dessin (voile, lecture, fondus) est
+ * celui de `PosterHoverShell`, partagé avec les cartes de recommandation.
  */
 export function PosterHoverLayer({ item, visible, resume, onPlay }: PosterHoverLayerProps) {
   const { t } = useTranslation("cards");
   const ratingIdentity = ratingIdentityForItem(item);
   const playLabel = resume ? t("resume") : t("play");
-  const reveal = { "--reveal-ms": "200ms" } as CSSProperties;
 
   return (
-    <div
-      className="hover-reveal absolute inset-0 z-20"
-      data-shown={visible}
-      style={{ ...reveal, pointerEvents: visible ? "auto" : "none" }}
-    >
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "var(--card-hover-veil)" }} />
-
-      {/* L'entrée (`card-hover-pop`) sur une enveloppe : le ressort de
-          `PressableScale` écrit son propre `transform` en ligne, qui
-          écraserait celui de la feuille. */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="card-hover-pop pointer-events-auto" data-shown={visible} style={reveal}>
-          <PressableScale
-            onClick={onPlay}
-            hoverScale={1.08}
-            aria-label={`${playLabel} — ${item.Name}`}
-            title={playLabel}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-cta-brand-fg shadow-[0_8px_24px_rgba(var(--brand-rgb),0.45)] ring-1 ring-white/25"
-          >
-            <PlayGlyph className="ml-0.5 h-5 w-5" />
-          </PressableScale>
+    <PosterHoverShell visible={visible} play={{ label: `${playLabel} — ${item.Name}`, onPlay }}>
+      {ratingIdentity && (
+        <div className="flex justify-center">
+          <HoverRatingStars identity={ratingIdentity} jellyfinItemId={item.Id} />
         </div>
-      </div>
-
-      <div
-        className="card-hover-rise absolute inset-x-0 bottom-0 flex flex-col items-stretch gap-1.5 px-2 pb-2.5"
-        data-shown={visible}
-        style={reveal}
-      >
-        {ratingIdentity && (
-          <div className="flex justify-center">
-            <HoverRatingStars identity={ratingIdentity} jellyfinItemId={item.Id} />
-          </div>
-        )}
-        {/* Gabarit `sm` à toute largeur : quatre boutons de 28 px tiennent dans
-            la plus étroite des affiches (120 px) et s'écartent sur les autres. */}
-        <CardActionTray item={item} size="sm" stretch />
-      </div>
-    </div>
+      )}
+      {/* Gabarit `sm` à toute largeur : quatre boutons de 28 px tiennent dans
+          la plus étroite des affiches (120 px) et s'écartent sur les autres. */}
+      <CardActionTray item={item} size="sm" stretch />
+    </PosterHoverShell>
   );
 }

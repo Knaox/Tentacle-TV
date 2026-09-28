@@ -1,14 +1,16 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useSendRecoFeedback } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useRecoCardMarkers, useSendRecoFeedback } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { CardFrame } from "../cards/CardFrame";
 import { CardImage } from "../cards/CardImage";
 import { CardRatingBadge } from "../cards/CardRatingBadge";
+import { CardStatusMarkers } from "../cards/CardStatusMarkers";
 import { POSTER_VW, POSTER_WIDTH } from "../cards/cardSizes";
 import { cardWidthStyle } from "../cards/cardWidthStyle";
 import { captureDetailOrigin } from "../detail/detailTransition";
-import { RecoCardHoverLayer } from "./RecoCardHoverLayer";
+import { RecoPosterHoverLayer } from "./RecoPosterHoverLayer";
+import { RecoReasonText } from "./RecoReasonText";
 import { useRecoNavigation } from "../../lib/recoNavigation";
 import { recoPosterUrl } from "@tentacle-tv/api-client";
 import { useMountWhile } from "../../hooks/useMountWhile";
@@ -24,12 +26,17 @@ interface RecoCardProps {
 }
 
 /**
- * Affiche 2:3 d'une recommandation. Même géométrie que PosterCard (largeur de
- * rangée imposée, cadre partagé), mais un contenu différent : badge « à la
- * demande » pour un titre hors bibliothèque, et un calque de survol (raison de
- * la présence, bouton Lecture d'un titre en bibliothèque, étoiles, « ne plus me
- * proposer » — cf. RecoCardHoverLayer) MONTÉ au survol, jamais laissé à opacité
- * nulle (règle GPU du dépôt).
+ * Affiche 2:3 d'une recommandation — la même carte que celles de la
+ * bibliothèque (cadre, largeur de rangée, marqueurs, survol), avec ce que la
+ * recommandation ajoute :
+ *
+ *   • AU REPOS, les marqueurs communs (`useRecoCardMarkers`) : la note — la
+ *     globale TMDB, et la vôtre dès que vous notez — en bas à gauche, la
+ *     pastille d'états en haut à droite ; en haut à gauche, « À la demande »
+ *     (hors bibliothèque) et « Découverte » ; sous l'affiche, la RAISON.
+ *   • AU SURVOL, `RecoPosterHoverLayer` : voile, Lecture au centre, étoiles et
+ *     plateau — « Ne plus me proposer » au bout de la capsule. MONTÉ au
+ *     survol, jamais laissé à opacité nulle (règle GPU du dépôt).
  */
 export const RecoCard = memo(function RecoCard({
   item,
@@ -76,9 +83,8 @@ export const RecoCard = memo(function RecoCard({
     open(item);
   };
 
-  const handleDismiss = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const markers = useRecoCardMarkers(item);
+  const handleDismiss = () => {
     feedback.mutate({ itemKey: item.key, action: "dismissed" });
     onDismissed?.(item.key);
   };
@@ -125,47 +131,40 @@ export const RecoCard = memo(function RecoCard({
             </div>
           )}
 
-          {/* Badge hors bibliothèque — la distinction visuelle exigée : ce
-              titre s'obtient à la demande via Vigie, il n'est pas sur le
-              serveur. Blanc/noir constant : posé sur média. */}
-          {!item.jellyfinItemId && (
-            <div className="absolute left-2 top-2 z-10 rounded-md border border-white/30 bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-              {t("onDemandBadge")}
+          {/* Coin haut-gauche : « À la demande » (hors bibliothèque — le titre
+              s'obtient via Vigie, il n'est pas sur le serveur) puis
+              « Découverte ». Blanc/noir constant et dégradé de marque : posés
+              sur média. Au survol d'un titre en bibliothèque, les puces
+              qualité/langues montent à cette place : les badges s'effacent
+              (opacité seule). */}
+          {(!item.jellyfinItemId || item.exploration) && (
+            <div
+              className={`pointer-events-none absolute left-2 top-2 z-10 flex flex-col items-start gap-1 transition-opacity duration-150 ${
+                hovered && item.jellyfinItemId ? "opacity-0" : "opacity-100"
+              }`}
+            >
+              {!item.jellyfinItemId && (
+                <span className="rounded-md border border-white/30 bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                  {t("onDemandBadge")}
+                </span>
+              )}
+              {item.exploration && (
+                <span className="rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cta-brand-fg">
+                  {t("explorationBadge")}
+                </span>
+              )}
             </div>
           )}
-          {/* Coin haut-droit : « Découverte » et la note, EMPILÉS — deux
-              ancrages au même coin se recouvriraient, et c'est exactement le
-              travers qu'on vient de corriger en bas.
 
-              La note vivait en bas à gauche de l'affiche, sous le bouton
-              « Ne plus me proposer » que le voile pousse à droite : rien ne les
-              tenait à distance, et à 150-200 px de carte le refus (132 px en
-              français) mordait dessus. Les loger sur une même ligne aurait
-              obligé à tronquer le libellé ; monter la note libère la ligne du
-              bas pour lui seul, et la laisse lisible au repos comme au survol.
+          {/* Marqueurs du repos — les formes de toutes les cartes. Le plateau
+              du survol les reprend : ils cèdent la place. */}
+          <CardRatingBadge rating={markers.communityRating} userScore={markers.userScore} shown={!hovered} />
+          <CardStatusMarkers statuses={markers.statuses} shown={!hovered} />
 
-              « Découverte » s'efface toujours au survol d'un titre en
-              bibliothèque, mais GARDE sa place (opacité seule) : la note ne
-              saute pas d'un cran quand le curseur arrive. */}
-          <div className="absolute right-2 top-2 z-30 flex flex-col items-end gap-1">
-            {item.exploration && (
-              <span
-                className={`rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cta-brand-fg transition-opacity duration-150 ${
-                  hovered && item.jellyfinItemId ? "opacity-0" : "opacity-100"
-                }`}
-              >
-                {t("explorationBadge")}
-              </span>
-            )}
-            <CardRatingBadge rating={item.voteAverage} inline />
-          </div>
-
-          {/* Calque de survol — monté au survol seulement, deux fondus via
-              .hover-reveal (cf. RecoCardHoverLayer). */}
           {overlayMounted && (
-            <RecoCardHoverLayer
+            <RecoPosterHoverLayer
               item={item}
-              shown={hovered}
+              visible={hovered}
               onDismiss={handleDismiss}
               onOpenDetail={handleOpen}
             />
@@ -179,6 +178,10 @@ export const RecoCard = memo(function RecoCard({
             {item.year ?? ""}
             {!openable && ` — ${t("unavailableHint")}`}
           </p>
+          {/* Pourquoi ce titre est là — lisible sans survoler. */}
+          <div className="mt-0.5">
+            <RecoReasonText reasons={item.reasons} />
+          </div>
         </div>
       </div>
     </div>

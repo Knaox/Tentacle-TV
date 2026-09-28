@@ -18,7 +18,7 @@ interface CardRatingBadgeProps {
    * Dans le FLUX plutôt qu'ancrée au coin de l'affiche.
    *
    * Ancrée, elle ne sait rien de ce qu'un calque de survol pose sur la même
-   * bande : c'est au pixel près que ça tient, ou pas (cf. RecoCardHoverLayer,
+   * bande : c'est au pixel près que ça tient, ou pas (cf. l'ancien survol des recommandations,
    * où « Ne plus me proposer » lui mordait dessus). En flux, la rangée qui
    * l'accueille garantit l'espacement à toute largeur de carte.
    */
