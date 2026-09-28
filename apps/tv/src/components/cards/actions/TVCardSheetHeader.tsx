@@ -17,8 +17,8 @@ const STILL = { width: 176, height: 99 };
  * croix, la sortie visible de tous les panneaux (Retour ferme aussi).
  *
  * Les images reprennent EXACTEMENT les paramètres des cartes
- * (`TVPosterFrame`, `TVEpisodeCard`, `TVRecoCard`) : c'est la même URL, déjà
- * en cache, aucune requête de plus.
+ * (`TVPosterFrame`, `TVEpisodeFrame`, `TVRecoFrame`) : c'est la même URL,
+ * déjà en cache, aucune requête de plus.
  */
 export const TVCardSheetHeader = memo(function TVCardSheetHeader({ target, onClose }: {
   target: CardSheetTarget;
@@ -68,7 +68,7 @@ export const TVCardSheetHeader = memo(function TVCardSheetHeader({ target, onClo
 /**
  * Le titre d'une carte Jellyfin : une AFFICHE d'épisode est le visage de sa
  * série (titre = la série) ; une VIGNETTE porte le nom de l'épisode. Mêmes
- * règles que les légendes des cartes (`TVPosterMeta`, `TVEpisodeCard`).
+ * règles que les légendes des cartes (`TVPosterMeta`, `TVEpisodeFrame`).
  */
 function mediaHeading(
   item: MediaItem,

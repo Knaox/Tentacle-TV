@@ -213,20 +213,6 @@ export const TVEpisodeMeta = memo(function TVEpisodeMeta({ item, size = "md" }: 
   );
 });
 
-/**
- * 16:9 landscape card — la vignette et sa légende, d'un bloc. Pure visual :
- * dans une rangée, préférer `TVEpisodeFrame` sous le `Focusable` et
- * `TVEpisodeMeta` dessous, pour que l'anneau n'entoure que la vignette.
- */
-export const TVEpisodeCard = memo(function TVEpisodeCard({ item, size = "md", focused = false }: TVEpisodeCardProps) {
-  return (
-    <View style={{ width: TV_EPISODE_WIDTH[size] }}>
-      <TVEpisodeFrame item={item} size={size} focused={focused} />
-      <TVEpisodeMeta item={item} size={size} />
-    </View>
-  );
-});
-
 const RATING_TOP_LEFT = { left: 8, top: 8, bottom: undefined } as const;
 /** Le retrait droit des puces : la pastille d'états pleine et son air. */
 const CHIPS_RIGHT = 8 + TV_STATUS_PILL_MAX_WIDTH + 8;

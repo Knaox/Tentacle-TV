@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useSagaView } from "@tentacle-tv/api-client";
 import { sagaLabel, sagaSummary, sagaTitle, type MediaItem, type SagaLibraryEntry } from "@tentacle-tv/shared";
 import { FocusableRow } from "../focus/FocusableRow";
-import { TVPosterCard } from "../cards/TVPosterCard";
+import { TVPosterFrame, TVPosterMeta } from "../cards/TVPosterCard";
 import { TV_CARD_RADIUS } from "../cards/cardSizes";
 import { CardConfig, Colors, Fonts, Spacing, Typography } from "../../theme/colors";
 
@@ -15,6 +15,8 @@ interface Props {
   onRowFocus?: () => void;
   /** HAUT depuis un volet → ce focusable : la page ancrée sur la rangée sort les actions de l'écran. */
   cellNextFocusUp?: number;
+  /** L'appui long d'un volet : la feuille d'actions des cartes (`useTVCardActions`). */
+  onLongPress?: (item: MediaItem) => void;
 }
 
 /**
@@ -26,8 +28,12 @@ interface Props {
  *
  * Bibliothèque seule : le téléviseur n'a pas de plugins. React-query v4 ici :
  * `useSagaView` s'en tient aux options communes aux deux versions.
+ *
+ * Comme toutes les rangées : l'anneau n'entoure que l'affiche (`renderItem`),
+ * la légende et l'étiquette du volet vivent dessous (`renderBelow`), et
+ * l'appui long ouvre la feuille d'actions des cartes.
  */
-export const TVSagaRow = memo(function TVSagaRow({ item, onOpen, onLayout, onRowFocus, cellNextFocusUp }: Props) {
+export const TVSagaRow = memo(function TVSagaRow({ item, onOpen, onLayout, onRowFocus, cellNextFocusUp, onLongPress }: Props) {
   const { t, i18n } = useTranslation("media");
   const { view } = useSagaView(item, { lang: (i18n.language || "fr").slice(0, 2) });
   const entries = useMemo(
@@ -35,12 +41,14 @@ export const TVSagaRow = memo(function TVSagaRow({ item, onOpen, onLayout, onRow
     [view],
   );
   const renderItem = useCallback(
-    (entry: SagaLibraryEntry, _index: number, focused: boolean) => <SagaCell entry={entry} focused={focused} />,
+    (entry: SagaLibraryEntry, _index: number, focused: boolean) => <SagaVisual entry={entry} focused={focused} />,
     [],
   );
+  const renderBelow = useCallback((entry: SagaLibraryEntry) => <SagaCaption entry={entry} />, []);
   const onItemPress = useCallback((entry: SagaLibraryEntry) => {
     if (entry.cue !== "current") onOpen(entry.item.Id);
   }, [onOpen]);
+  const onItemLongPress = useCallback((entry: SagaLibraryEntry) => onLongPress?.(entry.item), [onLongPress]);
 
   if (view === null || entries.length < 2) return null;
   return (
@@ -53,10 +61,12 @@ export const TVSagaRow = memo(function TVSagaRow({ item, onOpen, onLayout, onRow
       }
       data={entries}
       renderItem={renderItem}
+      renderBelow={renderBelow}
       keyExtractor={(entry) => entry.key}
       itemWidth={CardConfig.portrait.width}
       style={{ marginTop: Spacing.sectionGap }}
       onItemPress={onItemPress}
+      onItemLongPress={onLongPress ? onItemLongPress : undefined}
       onLayout={onLayout}
       onRowFocus={onRowFocus}
       cellNextFocusUp={cellNextFocusUp}
@@ -64,13 +74,12 @@ export const TVSagaRow = memo(function TVSagaRow({ item, onOpen, onLayout, onRow
   );
 });
 
-const SagaCell = memo(function SagaCell({ entry, focused }: { entry: SagaLibraryEntry; focused: boolean }) {
-  const { t } = useTranslation("media");
-  const { rank, cue } = sagaLabel(t, entry);
+/** L'affiche du volet, sous l'anneau — cerclée quand c'est le film ouvert. */
+const SagaVisual = memo(function SagaVisual({ entry, focused }: { entry: SagaLibraryEntry; focused: boolean }) {
   const width = CardConfig.portrait.width;
   return (
     <View style={{ width }}>
-      <TVPosterCard item={entry.item} focused={focused} width={width} />
+      <TVPosterFrame item={entry.item} focused={focused} width={width} />
       {entry.cue === "current" && (
         <View
           pointerEvents="none"
@@ -80,6 +89,18 @@ const SagaCell = memo(function SagaCell({ entry, focused }: { entry: SagaLibrary
           }}
         />
       )}
+    </View>
+  );
+});
+
+/** Titre et année, puis l'étiquette du volet (« Volet 4 · Cette fiche »). */
+const SagaCaption = memo(function SagaCaption({ entry }: { entry: SagaLibraryEntry }) {
+  const { t } = useTranslation("media");
+  const { rank, cue } = sagaLabel(t, entry);
+  const width = CardConfig.portrait.width;
+  return (
+    <View style={{ width }}>
+      <TVPosterMeta item={entry.item} width={width} />
       <Text numberOfLines={1} style={{ ...Typography.caption, color: Colors.textTertiary, marginTop: 4 }}>
         {rank}
         {rank !== null && cue !== null ? " · " : ""}

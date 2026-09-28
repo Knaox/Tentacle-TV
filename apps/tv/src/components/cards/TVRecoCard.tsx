@@ -16,7 +16,17 @@ interface TVRecoCardProps {
   width?: number;
 }
 
-/** L'affiche SEULE — ce que l'anneau de focus entoure dans une rangée. */
+/**
+ * Une carte de recommandation (2:3), l'affiche SEULE — ce que l'anneau de
+ * focus entoure dans une rangée : l'affiche Jellyfin du titre (sur le
+ * téléviseur, seules les recommandations EN bibliothèque s'affichent), un
+ * badge « Découverte » pour une exploration (gradient de marque, comme le
+ * « +N » de `TVPosterFrame`), et les marqueurs de TOUTES les cartes
+ * (`TVCardMarkerLayer`) : la note — globale et la vôtre — en bas à gauche, la
+ * pastille d'états en haut à droite. Leur visage vient de `useRecoMarkerItem`,
+ * comme sur le web et le mobile : une note posée depuis la feuille d'actions,
+ * un ajout à Ma liste, s'y lisent sans attendre la prochaine page du moteur.
+ */
 export const TVRecoFrame = memo(function TVRecoFrame({ item, width = TV_POSTER_WIDTH.md }: Omit<TVRecoCardProps, "focused">) {
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
@@ -56,29 +66,6 @@ export const TVRecoMeta = memo(function TVRecoMeta({ item, focused = false, widt
       <Text numberOfLines={1} style={{ color: Colors.textTertiary, ...Typography.caption, marginTop: 2 }}>
         {focused && reason ? reason : item.year != null ? String(item.year) : ""}
       </Text>
-    </View>
-  );
-});
-
-/**
- * Une carte de recommandation (2:3) : l'affiche Jellyfin du titre — sur le
- * téléviseur, seules les recommandations EN bibliothèque s'affichent —, un
- * badge « Découverte » pour une exploration (gradient de marque, comme le
- * « +N » de TVPosterFrame), les marqueurs du modèle commun, puis titre et
- * année sous l'affiche (mêmes styles que TVPosterMeta). Au focus, la
- * première raison.
- *
- * Les marqueurs sont ceux de TOUTES les cartes (`TVCardMarkerLayer`) : la
- * note — globale et la vôtre — en bas à gauche, la pastille d'états en haut
- * à droite. Leur visage vient de `useRecoMarkerItem`, comme sur le web et le
- * mobile : une note posée depuis la feuille d'actions, un ajout à Ma liste,
- * s'y lisent sans attendre la prochaine page du moteur.
- */
-export const TVRecoCard = memo(function TVRecoCard({ item, focused = false, width = TV_POSTER_WIDTH.md }: TVRecoCardProps) {
-  return (
-    <View style={{ width }}>
-      <TVRecoFrame item={item} width={width} />
-      <TVRecoMeta item={item} focused={focused} width={width} />
     </View>
   );
 });

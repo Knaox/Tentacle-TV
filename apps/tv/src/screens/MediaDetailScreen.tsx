@@ -173,6 +173,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           onLayout={(e) => { sagaY.current = e.nativeEvent.layout.y; }}
           onRowFocus={() => scrollRef.current?.scrollTo({ y: Math.max(0, sagaY.current - 60), animated: true })}
           cellNextFocusUp={playHandle}
+          onLongPress={cardActions.openPoster}
         />
       )}
 

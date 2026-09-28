@@ -11,21 +11,15 @@ import { TVCardProgressBar } from "./TVCardProgressBar";
 import { TVCardMarkerLayer } from "./TVCardMarkerLayer";
 import { useSeriesRatingMap } from "../../contexts/SeriesRatingContext";
 import { TVMetaChips, hasMetaChips } from "../TVMetaChips";
-import { TV_POSTER_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
+import { TV_CARD_RADIUS } from "./cardSizes";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
-interface TVPosterCardProps {
-  item: MediaItem;
-  size?: TVCardSize;
-  /** Largeur explicite (grilles adaptatives) — prime sur `size`. */
-  width?: number;
-}
-
 /**
- * Affiche 2:3 SEULE (image + badges + progress) — à wrapper par Focusable
- * dans les grilles pour que le ring de focus n'englobe pas les textes
- * (sinon il déborde sur la rangée suivante).
+ * Affiche 2:3 SEULE (image + badges + progress) — ce que l'anneau de focus
+ * entoure, dans les rangées (`FocusableRow`, légende en `renderBelow`) comme
+ * dans les grilles : les textes restent dessous (`TVPosterMeta`), hors de
+ * l'anneau, sans déborder sur la rangée suivante.
  */
 export const TVPosterFrame = memo(function TVPosterFrame({ item, width, focused = false }: { item: MediaItem; width: number; focused?: boolean }) {
   const client = useJellyfinClient();
@@ -130,25 +124,6 @@ export const TVPosterMeta = memo(function TVPosterMeta({ item, width }: { item: 
           {subtitle}
         </Text>
       )}
-    </View>
-  );
-});
-
-/**
- * 2:3 portrait card — pure visual component (affiche + textes).
- * Caller wraps it with `<Focusable variant="card">` to get focus border + glow + scale.
- */
-export const TVPosterCard = memo(function TVPosterCard({
-  item,
-  size = "md",
-  width: widthOverride,
-  focused = false,
-}: TVPosterCardProps & { focused?: boolean }) {
-  const width = widthOverride ?? TV_POSTER_WIDTH[size];
-  return (
-    <View style={{ width }}>
-      <TVPosterFrame item={item} width={width} focused={focused} />
-      <TVPosterMeta item={item} width={width} />
     </View>
   );
 });
