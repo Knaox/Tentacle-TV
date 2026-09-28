@@ -15,6 +15,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
 import { EpisodeScoreChips } from "../rating/EpisodeRatingLine";
 import { tmdbIdForItem } from "../../lib/ratingIdentity";
+import { CardProgressBar } from "../cards/CardProgressBar";
+import { CardStatusMarkers } from "../cards/CardStatusMarkers";
 
 interface EpisodeSelectorPanelProps {
   seriesId: string;
@@ -132,6 +134,8 @@ export function EpisodeSelectorPanel({
   );
 }
 
+const WATCHED_ONLY = ["watched"] as const;
+
 function EpisodeItem({ ep, active, onClick, innerRef, community, mine }: {
   ep: MediaItem; active: boolean; onClick: () => void;
   /** Note globale (TMDB, Jellyfin à défaut) et note du compte — affichage seul. */
@@ -154,20 +158,11 @@ function EpisodeItem({ ep, active, onClick, innerRef, community, mine }: {
         active ? "bg-[var(--brand-accent-soft)]" : "hover:bg-fill-subtle"
       }`}
     >
-      {/* Vignette = image média : badge « vu » et barre de progression restent
-          en dur (posés sur une miniature, comme les cartes média ailleurs). */}
+      {/* Vignette = image média : la pastille « vu » et la barre de TOUTES les
+          cartes (un disque blanc recopié ici avait fini par diverger). */}
       <div className="relative aspect-video w-28 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
         <img src={thumb} alt={ep.Name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-        {watched && (
-          <div className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-black">
-            <svg className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-          </div>
-        )}
-        {!watched && progress != null && progress > 0 && (
-          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/25">
-            <div className="h-full" style={{ width: `${progress}%`, background: "var(--progress-fill)" }} />
-          </div>
-        )}
+        {watched ? <CardStatusMarkers statuses={WATCHED_ONLY} className="right-1 top-1" /> : <CardProgressBar percent={progress} />}
       </div>
       <div className="min-w-0 flex-1">
         <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-accent-light)]" : "text-content-quaternary"}`}>

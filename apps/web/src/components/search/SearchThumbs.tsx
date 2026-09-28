@@ -5,7 +5,7 @@
  * jetons quand l'image manque ou casse : jamais un carré vide.
  */
 
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { initials, type SearchMediaItem, type SearchPersonHit } from "@tentacle-tv/shared";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
@@ -16,11 +16,14 @@ export const PosterThumb = memo(function PosterThumb({
   item,
   height,
   className,
+  children,
 }: {
   item: SearchMediaItem;
   /** Hauteur demandée au serveur, en pixels réels. */
   height: number;
   className: string;
+  /** Posé SUR l'image : les marqueurs des cartes (note, états, progression). */
+  children?: ReactNode;
 }) {
   const client = useJellyfinClient();
   const tag = item.ImageTags?.["Primary"];
@@ -40,6 +43,7 @@ export const PosterThumb = memo(function PosterThumb({
           {initials(item.Name)}
         </div>
       )}
+      {children}
     </div>
   );
 });

@@ -14,6 +14,8 @@ import {
   type SearchPersonHit,
 } from "@tentacle-tv/shared";
 import { SearchResultCard } from "../SearchResultCard";
+import { CardProgressBar } from "../../cards/CardProgressBar";
+import { CardStatusMarkers } from "../../cards/CardStatusMarkers";
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar, PosterThumb } from "../SearchThumbs";
 import { displayFacet } from "../omnibox/OmniboxChips";
@@ -85,6 +87,8 @@ export const PeopleStrip = memo(function PeopleStrip({ people, terms, onOpen }: 
   );
 });
 
+const WATCHED_ONLY = ["watched"] as const;
+
 export const EpisodeList = memo(function EpisodeList({ episodes, terms, onOpen }: {
   episodes: readonly SearchMediaItem[];
   terms: readonly string[];
@@ -99,7 +103,15 @@ export const EpisodeList = memo(function EpisodeList({ episodes, terms, onOpen }
             onClick={() => onOpen(item)}
             className="flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
-            <PosterThumb item={item} height={180} className="aspect-video w-32 rounded-lg" />
+            <PosterThumb item={item} height={180} className="aspect-video w-32 rounded-lg">
+              {/* Les marques de toutes les cartes : la pastille « vu », sinon la
+                  barre de progression commune. */}
+              {item.UserData?.Played ? (
+                <CardStatusMarkers statuses={WATCHED_ONLY} className="right-1 top-1" />
+              ) : (
+                <CardProgressBar percent={item.UserData?.PlayedPercentage} />
+              )}
+            </PosterThumb>
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold text-content-primary">
                 <HighlightedText text={item.Name} terms={terms} />

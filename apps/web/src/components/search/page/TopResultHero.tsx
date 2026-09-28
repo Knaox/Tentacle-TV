@@ -10,7 +10,8 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { itemMeta, matchReason, personMeta, type SearchTopHit } from "@tentacle-tv/shared";
+import { cardRatingFor, itemMeta, matchReason, personMeta, type SearchTopHit } from "@tentacle-tv/shared";
+import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar, PosterThumb } from "../SearchThumbs";
 
@@ -56,7 +57,11 @@ export const TopResultHero = memo(function TopResultHero({ top, terms, onOpen }:
       )}
       <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-black/90 via-black/60 to-black/20" />
       <div className="flex items-end gap-6 p-6 md:p-8">
-        <PosterThumb item={item} height={360} className="hidden h-[180px] w-[120px] rounded-xl shadow-[var(--elev-2)] sm:block" />
+        <PosterThumb item={item} height={360} className="hidden h-[180px] w-[120px] rounded-xl shadow-[var(--elev-2)] sm:block">
+          {/* L'affiche du meilleur résultat porte les marqueurs des cartes : le
+              même titre dit la même chose dans la bannière et dans la grille. */}
+          <CardMarkerLayer item={item} communityRating={cardRatingFor(item, "item").rating} scope="item" />
+        </PosterThumb>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--on-media-secondary)]">{t("topResult")}</p>
           <h2 className="mt-1 text-3xl font-bold tracking-tight text-[var(--on-media-primary)] md:text-4xl">
