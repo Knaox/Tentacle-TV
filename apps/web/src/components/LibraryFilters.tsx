@@ -33,7 +33,7 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        {STATUS_QUICK.map((opt) => (
+        {(props.showStatus ?? true) && STATUS_QUICK.map((opt) => (
           <button
             key={opt.key}
             onClick={() => { props.onStatusChange(opt.value); props.onFavoriteChange(false); }}

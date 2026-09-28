@@ -10,6 +10,11 @@ export interface LibraryFilterBarProps {
    */
   showFavorite?: boolean;
   /**
+   * Proposer les pastilles de statut (Tous / Non vus / En cours). Faux sur Ma
+   * liste, dont les étapes de visionnage disent déjà la même chose.
+   */
+  showStatus?: boolean;
+  /**
    * `panel` : la barre d'outils de la page Bibliothèque — un seul panneau qui
    * réunit recherche, compte, tri et filtres. Par défaut, la rangée de
    * pastilles de Ma liste et de Mes favoris, inchangée.

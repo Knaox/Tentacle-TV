@@ -23,6 +23,12 @@ export { useWatchlistSeriesIds, useFavoriteSeriesIds, seriesStateId } from "./ho
 export { useCardMarkers, type CardMarkersOptions } from "./hooks/useCardMarkers";
 export { useSeriesRatings, SERIES_RATINGS_KEY } from "./hooks/useSeriesRatings";
 export { filterCollection, collectionGenres, type CollectionFilterInput, type CollectionTypeTab } from "./utils/collectionFilter";
+export {
+  watchStage, watchProgress, watchRemaining, summarizeWatchlist, filterByWatchStage, resumeQueue, parseWatchStageFilter,
+  WATCH_STAGE_FILTERS, type WatchStage, type WatchStageFilter, type WatchlistSummary, type RemainingInfo,
+} from "./utils/watchlistProgress";
+export { useResolvePlayTarget } from "./hooks/useResolvePlayTarget";
+export { useRestoreWatchlistItem } from "./hooks/useRestoreWatchlistItem";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";
 export { useWatchStopInvalidation } from "./hooks/useWatchStopInvalidation";
 export { useStream, type StreamOptions } from "./hooks/useStream";
