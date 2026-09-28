@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { recoRowTitle } from "@tentacle-tv/api-client";
@@ -15,6 +16,8 @@ interface Props {
   canOpen: (item: RecoRowItem) => boolean;
   onItemPress: (item: RecoRowItem) => void;
   onItemLongPress: (item: RecoRowItem) => void;
+  /** Glissé après la deuxième rangée (ou la dernière) : l'entrée vers « Affiner ». */
+  teaser?: ReactNode;
 }
 
 /**
@@ -22,7 +25,7 @@ interface Props {
  * stables), avec la première raison sous chaque carte. Squelettes seulement
  * quand le moteur génère et n'a encore rien servi.
  */
-export function RecoPageRows({ page, filtered, stale, canOpen, onItemPress, onItemLongPress }: Props) {
+export function RecoPageRows({ page, filtered, stale, canOpen, onItemPress, onItemLongPress, teaser }: Props) {
   const { t } = useTranslation("reco");
   const st = useThemedStyles(makeStyles);
 
@@ -34,6 +37,7 @@ export function RecoPageRows({ page, filtered, stale, canOpen, onItemPress, onIt
   } else if (filtered && page.rows.length === 0) {
     body = <Text style={st.empty}>{t("filterEmpty")}</Text>;
   } else {
+    const teaserAfter = Math.min(1, page.rows.length - 1);
     body = page.rows.map((row, i) => {
       const { key, params } = recoRowTitle(row);
       return (
@@ -46,6 +50,7 @@ export function RecoPageRows({ page, filtered, stale, canOpen, onItemPress, onIt
             onItemPress={onItemPress}
             onItemLongPress={onItemLongPress}
           />
+          {i === teaserAfter && teaser}
         </FadeIn>
       );
     });

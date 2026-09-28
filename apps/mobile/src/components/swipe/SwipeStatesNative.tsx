@@ -15,7 +15,8 @@ export function SwipeEmptyNative() {
       <Feather name="check-circle" size={40} color={theme.colors.brand.light} />
       <Text style={[typography.subtitle, st.title, { color: theme.colors.text.primary }]}>{t("emptyTitle")}</Text>
       <Text style={[typography.body, st.body, { color: theme.colors.text.secondary }]}>{t("emptyBody")}</Text>
-      <Button title={t("emptyCta")} onPress={() => router.navigate("/for-you")} />
+      {/* Même onglet, autre section : on revient aux propositions. */}
+      <Button title={t("emptyCta")} onPress={() => router.setParams({ section: "forYou" })} />
     </View>
   );
 }
