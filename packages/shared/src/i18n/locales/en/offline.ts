@@ -210,4 +210,14 @@ export default {
   emptyBrowse: "Browse the library",
   sectionExpand: "Expand {{title}}",
   sectionCollapse: "Collapse {{title}}",
+
+  // The kept title's page, in the online page's stage (2026-09)
+  actionRemove: "Remove",
+  actionDetails: "Details",
+  versionMixed: "Several versions",
+  detailAddedOn: "Arrived on",
+  detailLastAdded: "Last arrived",
+  detailEpisodes: "Episodes",
+  detailSubtitlesKept: "Subtitles kept",
+  detailSubtitlesKeptValue: "{{done}} of {{total}}",
 };

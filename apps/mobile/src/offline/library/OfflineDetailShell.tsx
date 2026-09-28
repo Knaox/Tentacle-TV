@@ -1,87 +1,96 @@
 import { type ReactNode } from "react";
 import { ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import Animated from "react-native-reanimated";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { GradientOverlay, IconButton } from "@/components/ui";
 import { DetailTopBar } from "@/components/detail/DetailTopBar";
+import { StageFocus } from "@/components/detail/StageFocus";
 import type { useMediaDetailAnimations } from "@/hooks/useMediaDetailAnimations";
 import { backOrHome } from "@/utils/backOrHome";
 import { spacing, DETAIL_MAX_WIDTH, useResponsive, useTheme, withAlpha } from "@/theme";
-import { OfflineLocalImage } from "./OfflineLocalImage";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 export interface OfflineDetailMetrics {
   backdropH: number;
+  logoMaxW: number;
+  logoMaxH: number;
   posterW: number;
   posterH: number;
-  /** Paysage tablette : rail gauche figé + corps défilant. */
+  /** Paysage tablette : rail gauche + corps défilant. */
   twoCol: boolean;
 }
 
-/** La géométrie de la fiche en ligne (`MediaDetailScreen`), bornée sur grand écran. */
+/** La géométrie de la fiche en ligne (`MediaDetailScreen`), cote pour cote. */
 export function useOfflineDetailMetrics(): OfflineDetailMetrics {
   const { width, height } = useWindowDimensions();
   const { isTablet, isLandscape } = useResponsive();
-  const backdropH = Math.min(isTablet ? 620 : 520, Math.round(height * 0.52));
   const posterW = Math.min(200, Math.round(width * 0.32));
-  return { backdropH, posterW, posterH: Math.round(posterW * 1.5), twoCol: isTablet && isLandscape };
+  return {
+    backdropH: isTablet ? Math.min(860, Math.round(height * 0.64)) : Math.min(680, Math.round(height * 0.7)),
+    logoMaxW: Math.min(isTablet ? 460 : 300, Math.round(width * 0.76)),
+    logoMaxH: isTablet ? 140 : 96,
+    posterW,
+    posterH: Math.round(posterW * 1.5),
+    twoCol: isTablet && isLandscape,
+  };
 }
 
 interface Props {
-  /** L'item dont le snapshot porte la bannière. */
-  backdropItemId: string;
-  backdropCandidates: readonly string[];
+  /** Le décor, lu sur le disque (`file://`) ; `null` : les voiles seuls. */
+  backdropUri: string | null;
+  /** Titre repris par la barre haute quand celui de la scène est parti. */
+  title: string;
   anims: ReturnType<typeof useMediaDetailAnimations>;
   metrics: OfflineDetailMetrics;
+  /** Portrait : le bloc titre, posé DANS le décor. */
+  stage: ReactNode;
+  /** Portrait : sous la scène — Lecture et les actions. */
   header: ReactNode;
+  /** Paysage tablette : la colonne gauche — affiche, bloc titre, Lecture, actions. */
+  rail: ReactNode;
   body: ReactNode;
-  /** Titre repris par la barre haute quand celui de la page est parti. */
-  title: string;
 }
 
 /**
- * L'ossature des fiches locales — les deux mises en page de
- * `MediaDetailScreen`, ligne pour ligne, avec la bannière lue dans le
- * snapshot : portrait = colonne unique et parallaxe, paysage tablette = fond
- * statique voilé, rail gauche figé et corps défilant. Le bouton retour vit sur
- * un wrapper absolu (`IconButton` pose `style` sur son Pressable interne).
+ * L'ossature des fiches locales — celle de `MediaDetailScreen`, ligne pour
+ * ligne, avec le décor lu sur le disque. Portrait : la SCÈNE (décor sur 70 %
+ * de l'écran, bloc titre posé dans son bas, assise radiale statique), puis
+ * Lecture, les actions et le corps. Paysage tablette : fond voilé, rail gauche
+ * figé qui démarre sous le retour, corps défilant.
  */
-export function OfflineDetailShell({ backdropItemId, backdropCandidates, anims, metrics, header, body, title }: Props) {
+export function OfflineDetailShell({ backdropUri, title, anims, metrics, stage, header, rail, body }: Props) {
   const { t } = useTranslation("common");
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isTablet } = useResponsive();
-
-  const backBtn = (
-    <View pointerEvents="box-none" style={{ position: "absolute", top: Math.max(insets.top, 24) + 8, left: spacing.screenPadding, zIndex: 10 }}>
-      <IconButton
-        icon="←"
-        size={isTablet ? 42 : 36}
-        onPress={() => backOrHome(router)}
-        accessibilityLabel={t("back")}
-        bgColor={isTablet ? theme.colors.glass.tintStrong : theme.colors.glass.backdrop}
-        style={isTablet ? { borderWidth: 1, borderColor: theme.colors.border.strong } : undefined}
-      />
-    </View>
-  );
-  const content = <Animated.View style={anims.contentStyle}>{body}</Animated.View>;
+  const topInset = Math.max(insets.top, 24);
 
   if (metrics.twoCol) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }}>
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.surface.s2 }]}>
-          <OfflineLocalImage itemId={backdropItemId} candidates={backdropCandidates} style={StyleSheet.absoluteFill} />
-        </View>
+        {backdropUri && <Image source={{ uri: backdropUri }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="none" transition={400} />}
         <View style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(theme.colors.surface.s0Tint, 0.86, theme.colors.overlay.scrimHeavy) }]} />
-        {backBtn}
-        <View style={{ flex: 1, flexDirection: "row", width: "100%", maxWidth: 1180, alignSelf: "center", paddingTop: Math.max(insets.top, 24) + 8 }}>
-          <View style={{ width: 380 }}>{header}</View>
+        <View pointerEvents="box-none" style={{ position: "absolute", top: topInset + 8, left: spacing.screenPadding, zIndex: 10 }}>
+          <IconButton
+            icon="←"
+            size={isTablet ? 42 : 36}
+            onPress={() => backOrHome(router)}
+            accessibilityLabel={t("back")}
+            bgColor={isTablet ? theme.colors.glass.tintStrong : theme.colors.glass.backdrop}
+            style={isTablet ? { borderWidth: 1, borderColor: theme.colors.border.strong } : undefined}
+          />
+        </View>
+        <View style={{ flex: 1, flexDirection: "row", width: "100%", maxWidth: 1180, alignSelf: "center", paddingTop: topInset + 8 }}>
+          <ScrollView style={{ width: 380, flexGrow: 0 }} contentContainerStyle={{ paddingTop: 52, paddingBottom: spacing.xl }} showsVerticalScrollIndicator={false}>
+            {rail}
+          </ScrollView>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: spacing.xxxl + 40, paddingTop: spacing.sm }} showsVerticalScrollIndicator={false}>
-            {content}
+            <Animated.View style={anims.contentStyle}>{body}</Animated.View>
           </ScrollView>
         </View>
       </View>
@@ -91,27 +100,30 @@ export function OfflineDetailShell({ backdropItemId, backdropCandidates, anims, 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }}>
       <AnimatedScrollView onScroll={anims.scrollHandler} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: spacing.xxxl + 40 }} showsVerticalScrollIndicator={false}>
-        <View style={{ width: "100%", height: metrics.backdropH, overflow: "hidden", backgroundColor: theme.colors.surface.s2 }}>
+        <View style={{ width: "100%", minHeight: metrics.backdropH, justifyContent: "flex-end", overflow: "hidden", backgroundColor: theme.colors.surface.s2 }}>
           <Animated.View style={[StyleSheet.absoluteFillObject, anims.backdropStyle]}>
-            <OfflineLocalImage itemId={backdropItemId} candidates={backdropCandidates} style={StyleSheet.absoluteFill} />
+            {backdropUri && (
+              <Image source={{ uri: backdropUri }} style={{ width: "100%", height: "100%" }} contentFit="cover" contentPosition={{ top: "30%", left: "50%" }} cachePolicy="none" transition={400} />
+            )}
           </Animated.View>
-          <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
-          {/* Voile SOMBRE en clair (noir pur : le plafond 0,70 est dans la rampe). */}
-          <GradientOverlay direction="bottom" height={metrics.backdropH * 0.8} intensity="detail" color={theme.isDark ? undefined : `rgb(${theme.colors.onMedia.scrimRgb})`} />
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
+            {/* Voile SOMBRE en clair (noir pur : le plafond 0,70 est dans la rampe). */}
+            <GradientOverlay direction="bottom" height={metrics.backdropH * 0.8} intensity="detail" color={theme.isDark ? undefined : `rgb(${theme.colors.onMedia.scrimRgb})`} />
+            <StageFocus />
+          </View>
+          <View pointerEvents="box-none" style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center", paddingHorizontal: spacing.screenPadding, paddingTop: topInset + 64, paddingBottom: spacing.sm }}>
+            {stage}
+          </View>
         </View>
         <View style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center" }}>
           {header}
-          {content}
+          <Animated.View style={anims.contentStyle}>{body}</Animated.View>
         </View>
       </AnimatedScrollView>
       {/* Même barre que la fiche serveur : elle protège la zone d'état dès le
-          premier pixel, puis se remplit quand la bannière est passée. */}
-      <DetailTopBar
-        title={title}
-        scrollY={anims.scrollY}
-        revealAt={metrics.backdropH * 0.62}
-        onBack={() => backOrHome(router)}
-      />
+          premier pixel, puis se remplit quand la scène est passée. */}
+      <DetailTopBar title={title} scrollY={anims.scrollY} revealAt={metrics.backdropH * 0.82} onBack={() => backOrHome(router)} />
     </View>
   );
 }

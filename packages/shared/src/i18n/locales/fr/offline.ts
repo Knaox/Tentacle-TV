@@ -230,4 +230,14 @@ export default {
   emptyBrowse: "Parcourir la bibliothèque",
   sectionExpand: "Déplier {{title}}",
   sectionCollapse: "Replier {{title}}",
+
+  // La fiche d'un titre gardé, dans la scène de la fiche en ligne (2026-09)
+  actionRemove: "Retirer",
+  actionDetails: "Fiche",
+  versionMixed: "Plusieurs versions",
+  detailAddedOn: "Arrivé le",
+  detailLastAdded: "Dernier arrivé",
+  detailEpisodes: "Épisodes",
+  detailSubtitlesKept: "Sous-titres gardés",
+  detailSubtitlesKeptValue: "{{done}} sur {{total}}",
 };
