@@ -92,7 +92,7 @@ function TrayEntry({ entry, actions, name, onDismiss }: {
         busy={actions.requesting}
         onPress={actions.request}
       >
-        <Plus className={icon} strokeWidth={2.75} aria-hidden />
+        <Plus className={icon} strokeWidth={2.5} aria-hidden />
       </CardTrayPrimaryButton>
     );
   }

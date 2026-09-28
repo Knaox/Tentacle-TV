@@ -28,7 +28,7 @@ export function externalTitleKey(title: ExternalTitle | null): TitleKey | null {
 
 /**
  * Où en est le titre d'une carte, selon l'extension — lu AU REPOS (la
- * pastille : « Demandé »…) et au survol (l'offre du centre). Les cartes
+ * pastille : « Demandé »…) et au survol (l'offre en tête du plateau). Les cartes
  * montées ensemble partent dans une seule requête (`useTitleState`).
  */
 export function useExternalTitleState(title: ExternalTitle | null): TitleState | null {
