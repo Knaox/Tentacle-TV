@@ -52,6 +52,7 @@ import { watchlistRoutes } from "./routes/watchlist";
 import { recoRoutes } from "./routes/reco";
 import { recoPeopleRoutes } from "./routes/recoPeople";
 import { searchRoutes } from "./routes/search";
+import { sagaRoutes } from "./routes/sagas";
 import { recoPageRoutes } from "./routes/recoPage";
 import { recoRowRoutes } from "./routes/recoRows";
 import { externalAccountRoutes } from "./routes/externalAccounts";
@@ -270,6 +271,7 @@ async function main() {
   await app.register(recoPeopleRoutes, { prefix: "/api/reco" });
   await app.register(recoPageRoutes, { prefix: "/api/reco" });
   await app.register(searchRoutes, { prefix: "/api/search" });
+  await app.register(sagaRoutes, { prefix: "/api/sagas" });
   await app.register(externalAccountRoutes, { prefix: "/api/external" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
