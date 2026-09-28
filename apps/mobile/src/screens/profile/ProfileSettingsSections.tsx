@@ -13,7 +13,8 @@ import type { PaneContext } from "./profilePanes";
 /**
  * Les sections de RÉGLAGES du profil (1 à 5 de l'organisation décrite dans
  * `profilePanes.ts`) : Préférences, Apparence, Sur cet appareil, Appareils,
- * Administration. Les choix courts (thème, langue) se font sur place ; le
+ * Administration — précédées, en ligne, de « Mes statistiques » (un écran
+ * plein, pas un volet : `SettingsRow` à chevron, comme les sessions admin). Les choix courts (thème, langue) se font sur place ; le
  * reste ouvre un volet ou un écran.
  */
 export function ProfileSettingsSections({ ctx }: { ctx: PaneContext }) {
@@ -26,6 +27,14 @@ export function ProfileSettingsSections({ ctx }: { ctx: PaneContext }) {
 
   return (
     <>
+      {!offline && (
+        <FadeIn delay={30}>
+          <SettingsSection>
+            <SettingsRow icon="pie-chart" label={t("stats")} description={t("statsHint")} accent chevron onPress={() => router.push("/stats")} last />
+          </SettingsSection>
+        </FadeIn>
+      )}
+
       <FadeIn delay={60}>
         <SettingsSection title={t("preferences")}>
           {!offline && (

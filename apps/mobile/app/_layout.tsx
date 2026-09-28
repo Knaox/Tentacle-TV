@@ -195,6 +195,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
           <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
           <Stack.Screen name="watchlist" options={{ presentation: "card" }} />
           <Stack.Screen name="favorites" options={{ presentation: "card" }} />
+          <Stack.Screen name="stats" options={{ presentation: "card" }} />
           {/* Recherche : plein écran sur iPad (le page-sheet laisse l'accueil
               visible derrière et son swipe-pour-fermer est capricieux). */}
           <Stack.Screen name="search" options={{ presentation: IS_TABLET_DEVICE ? "fullScreenModal" : "modal" }} />
