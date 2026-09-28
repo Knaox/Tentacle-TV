@@ -31,4 +31,12 @@ export default {
   // Unified hover (`cardOverlay.ts`): tray extras, and action sheets.
   dismiss: "Not for me",
   keepOffline: "Keep offline",
+
+  // Out-of-library cards (`externalCardOverlay.ts`): My list on arrival, and
+  // what to say when the request extension doesn't follow.
+  addToWatchlistOnArrival: "Add to my list when it arrives",
+  removeFromWatchlistOnArrival: "Don't add it when it arrives",
+  watchlistOnArrival: "In my list once it arrives",
+  requestSent: "Request sent.",
+  requestFailed: "The request didn't go through.",
 } as const;

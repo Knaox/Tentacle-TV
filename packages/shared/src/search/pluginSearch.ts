@@ -38,6 +38,8 @@ export interface ExternalSearchItem {
   /** Une route de Tentacle — la page du plugin qui montre ce titre. */
   href: string;
   badge: { label: string; tone: ExternalTone } | null;
+  /** L'identifiant TMDB du titre, quand le plugin le donne (`kind` en dit le type). */
+  tmdbId?: number;
 }
 
 export interface SearchProvider {
@@ -160,6 +162,7 @@ function toItem(raw: unknown): ExternalSearchItem | null {
   if (title === null || href === null || id === null) return null;
   const badge = r.badge && typeof r.badge === "object" ? r.badge as Record<string, unknown> : null;
   const label = badge ? text(badge.label, 40) : null;
+  const tmdbId = typeof r.tmdbId === "number" && Number.isSafeInteger(r.tmdbId) && r.tmdbId > 0 ? r.tmdbId : null;
   return {
     id,
     kind: r.kind === "series" ? "series" : "movie",
@@ -171,6 +174,7 @@ function toItem(raw: unknown): ExternalSearchItem | null {
     badge: label !== null
       ? { label, tone: TONES.includes(badge?.tone as ExternalTone) ? (badge?.tone as ExternalTone) : "neutral" }
       : null,
+    ...(tmdbId !== null ? { tmdbId } : {}),
   };
 }
 

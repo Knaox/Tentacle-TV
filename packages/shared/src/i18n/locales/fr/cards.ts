@@ -34,4 +34,12 @@ export default {
   // Survol unifié (`cardOverlay.ts`) : extras du plateau, et feuilles d'actions.
   dismiss: "Ne plus me proposer",
   keepOffline: "Garder hors ligne",
+
+  // Cartes hors bibliothèque (`externalCardOverlay.ts`) : Ma liste à l'arrivée,
+  // et ce qu'on dit quand l'extension de demandes ne suit pas.
+  addToWatchlistOnArrival: "Ajouter à ma liste dès son arrivée",
+  removeFromWatchlistOnArrival: "Ne plus l'ajouter à son arrivée",
+  watchlistOnArrival: "Dans ma liste dès son arrivée",
+  requestSent: "Demande envoyée.",
+  requestFailed: "La demande n'a pas abouti.",
 } as const;

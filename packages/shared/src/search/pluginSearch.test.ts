@@ -118,6 +118,13 @@ describe("readExternalResponse — la réponse d'un plugin, validée", () => {
     expect(r?.items[1].badge).toEqual({ label: "Hmm", tone: "neutral" });
   });
 
+  it("relaie l'identifiant TMDB quand il est un entier positif, et lui seul", () => {
+    const r = readExternalResponse({
+      items: [{ ...good, tmdbId: 603 }, { ...good, id: "b", tmdbId: "603" }, { ...good, id: "c", tmdbId: -1 }],
+    }, PROVIDER);
+    expect(r?.items.map((i) => i.tmdbId)).toEqual([603, undefined, undefined]);
+  });
+
   it("une réponse illisible fait taire la section", () => {
     expect(readExternalResponse(null, PROVIDER)).toBeNull();
     expect(readExternalResponse({ items: "nope" }, PROVIDER)).toBeNull();
