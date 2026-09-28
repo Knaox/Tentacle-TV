@@ -38,7 +38,11 @@ export interface ExternalSearchItem {
   /** Une route de Tentacle — la page du plugin qui montre ce titre. */
   href: string;
   badge: { label: string; tone: ExternalTone } | null;
-  /** L'identifiant TMDB du titre, quand le plugin le donne (`kind` en dit le type). */
+  /**
+   * L'identifiant TMDB du titre, quand le plugin le donne (`kind` en dit le
+   * type). Il sert aussi à PLACER un titre là où l'ordre compte — un volet
+   * manquant d'une saga, à son rang. Absent, rien ne change.
+   */
   tmdbId?: number;
 }
 
