@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useRef } from "react";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { exitTarget, verdictFromDrag } from "@tentacle-tv/api-client";
 import type { SwipeCard, SwipeCardDetails, SwipeVerdict } from "@tentacle-tv/api-client";
@@ -41,6 +41,10 @@ export const SwipeStackCard = memo(function SwipeStackCard({
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-320, 320], [-14, 14]);
   const top = depth === 0;
+  // Un glisser relâché SUR la carte déclenche aussi le `onTap` de
+  // framer-motion : sans ce drapeau, une carte ramenée à sa place ouvrait
+  // son synopsis. Remis à zéro à chaque appui.
+  const dragged = useRef(false);
 
   return (
     <motion.div
@@ -63,7 +67,19 @@ export const SwipeStackCard = memo(function SwipeStackCard({
       exit="exit"
       drag={top}
       dragMomentum={false}
-      onTap={top ? onToggleInfo : undefined}
+      onPointerDown={() => {
+        dragged.current = false;
+      }}
+      onDragStart={() => {
+        dragged.current = true;
+      }}
+      onTap={
+        top
+          ? () => {
+              if (!dragged.current) onToggleInfo();
+            }
+          : undefined
+      }
       onDragEnd={(_, info) => {
         const verdict = verdictFromDrag(info.offset.x, info.offset.y, info.velocity.x, info.velocity.y);
         if (verdict) {
