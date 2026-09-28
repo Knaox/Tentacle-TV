@@ -22,8 +22,6 @@ export interface HomeRowData {
 
 export interface HomeRowActions {
   renderCard: (item: MediaItem) => React.ReactNode;
-  onItemPress: (jellyfinId: string) => void;
-  onItemLongPress: (jellyfinId: string) => void;
   onSeeAll: (route: "/watchlist" | "/favorites" | "/for-you") => void;
   /** Recommandations : un titre en bibliothèque ouvre sa fiche, un titre
    *  « à la demande » le catalogue Vigie quand le plugin est actif. */
@@ -74,8 +72,7 @@ export const HomeRow = memo(function HomeRow({ rowKey, index, data, actions }: H
         <MyListRow
           personalItems={data.watchlist}
           onSeeAll={() => actions.onSeeAll("/watchlist")}
-          onItemPress={actions.onItemPress}
-          onItemLongPress={actions.onItemLongPress}
+          renderCard={actions.renderCard}
         />
       </FadeIn>
     );

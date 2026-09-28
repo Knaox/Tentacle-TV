@@ -125,8 +125,6 @@ export function HomeScreen() {
   }), [resume.data, nextUp.data, watchlist.data, librariesById, filterChipRowKey]);
   const rowActions = useMemo<HomeRowActions>(() => ({
     renderCard,
-    onItemPress: (jellyfinId) => router.push(`/media/${jellyfinId}`),
-    onItemLongPress: openActions,
     // Un onglet se rejoint (Pour vous) ; une liste s'empile (Ma liste, favoris).
     onSeeAll: (route) => (route === "/for-you" ? router.navigate(route) : router.push(route)),
     canOpenReco: recoNav.canOpen,
