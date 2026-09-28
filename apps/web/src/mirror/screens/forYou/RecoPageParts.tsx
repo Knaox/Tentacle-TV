@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertCircle, SlidersVertical } from "lucide-react";
 import { recoRowTitle, type RecoPage } from "@tentacle-tv/api-client";
@@ -84,10 +85,12 @@ export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart, o
  * servi ; sous filtre, une page vide le dit une fois. Un échange de filtre
  * ATTÉNUE (opacité 0,6), ne blanchit pas.
  */
-export function RecoPageRows({ page, filtered, stale, ...actions }: {
+export function RecoPageRows({ page, filtered, stale, teaser, ...actions }: {
   page: RecoPage;
   filtered: boolean;
   stale: boolean;
+  /** Glissé après la deuxième rangée (ou la dernière) : l'entrée vers « Affiner ». */
+  teaser?: ReactNode;
 } & RecoRowActions) {
   const { t } = useTranslation("reco");
   let body;
@@ -100,11 +103,13 @@ export function RecoPageRows({ page, filtered, stale, ...actions }: {
   } else if (filtered && page.rows.length === 0) {
     body = <p className="mt-5 px-4 text-[15px] text-content-tertiary">{t("filterEmpty")}</p>;
   } else {
+    const teaserAfter = Math.min(1, page.rows.length - 1);
     body = page.rows.map((row, i) => {
       const { key, params } = recoRowTitle(row);
       return (
         <FadeIn key={row.key} delay={Math.min(i, 4) * 60}>
           <RecoRow title={t(key, params)} items={row.items} showReasons {...actions} />
+          {i === teaserAfter && teaser}
         </FadeIn>
       );
     });

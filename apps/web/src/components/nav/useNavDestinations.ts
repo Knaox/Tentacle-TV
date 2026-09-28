@@ -18,7 +18,7 @@
 import { useMemo, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  BookOpen, Bookmark, Clapperboard, Film, FolderOpen, GalleryHorizontalEnd, Heart, House, Layers, Music, Puzzle, Sparkles, Tv,
+  BookOpen, Bookmark, Clapperboard, Film, FolderOpen, Heart, House, Layers, Music, Puzzle, Sparkles, Tv,
   type LucideProps,
 } from "lucide-react";
 import { useLibraries } from "@tentacle-tv/api-client";
@@ -132,7 +132,6 @@ export function useNavDestinations() {
     const defaults: Array<NavEntry & { setPinned: (on: boolean) => void }> = [
       { key: "home", label: t("home"), path: "/", icon: House, kind: "core", pinned: shownByDefault("home"), setPinned: (on) => bar.setHidden("home", !on) },
       { key: "recommendations", label: t("forYou"), path: "/recommendations", icon: Sparkles, kind: "core", pinned: shownByDefault("recommendations"), setPinned: (on) => bar.setHidden("recommendations", !on) },
-      { key: "swipe", label: t("swipe"), path: "/swipe", icon: GalleryHorizontalEnd, kind: "core", pinned: shownByDefault("swipe"), setPinned: (on) => bar.setHidden("swipe", !on) },
       ...lists.map((entry) => ({ ...entry, kind: "list" as const, setPinned: (on: boolean) => { if (on !== entry.pinned) entry.toggle(); } })),
       ...libs.filter((lib) => lib.watchable).map((lib) => ({
         key: lib.key, label: lib.label, path: lib.path, icon: lib.icon, kind: "library" as const, pinned: lib.pinned,
