@@ -50,6 +50,7 @@ export * from "./catalog/offlineGroups";
 export { seasonKey } from "./catalog/seasonKey";
 export * from "./catalog/localEpisodeNav";
 export * from "./catalog/offlineHighlights";
+export * from "./catalog/offlineOverview";
 export {
   prune as pruneSelection,
   state as selectionState,

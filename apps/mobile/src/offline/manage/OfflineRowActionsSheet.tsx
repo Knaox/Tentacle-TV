@@ -97,7 +97,9 @@ export function OfflineRowActionsSheet({ entry: opened, onClose, onPlay, onInfo 
         {entry.status === "complete" && row("play", entry.kind === "episode" ? t("episodePlay") : i18n.t("common:play"), act(() => onPlay(entry)))}
         {entry.status === "complete" && onInfo && row("info", i18n.t("common:moreInfo"), act(() => onInfo(entry)))}
         {(entry.status === "downloading" || entry.status === "queued") && row("pause", t("pause"), act(() => pauseTransfer(entry.id)))}
-        {(entry.status === "paused" || entry.status === "error") && row("play", t("resume"), act(() => resumeTransfer(entry.id)))}
+        {entry.status === "paused" && row("play", t("resume"), act(() => resumeTransfer(entry.id)))}
+        {/* Même mot que la ligne : un échec se RÉESSAIE, il ne se reprend pas. */}
+        {entry.status === "error" && row("rotate-cw", to("retry"), act(() => resumeTransfer(entry.id)))}
         {active && row("x-circle", t("cancelTransfer"), act(() => cancelTransfer(entry.id)))}
         {entry.status === "complete" && (
           <View style={st.autoDelete}>
