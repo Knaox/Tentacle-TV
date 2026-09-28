@@ -24,6 +24,19 @@
    * non dans tokens.css pour ne pas alourdir le contrat surchargeable. */
   --brand-accent-soft: rgba(var(--brand-accent-rgb), 0.15);
 
+  /* Pastille d'un titre hors bibliothèque posée sur son AFFICHE (web :
+   * `ExternalBadge onMedia` ; miroir : `ExternalResultCard`). En sombre, les
+   * paires d'état et le verre clair d'origine — rendu inchangé ; la variante
+   * claire est dans le bloc `[data-theme="light"]`. */
+  --media-badge-neutral-bg: var(--fill-medium);
+  --media-badge-neutral-fg: var(--text-secondary);
+  --media-badge-info-bg: var(--status-info-bg);
+  --media-badge-info-fg: var(--status-info-fg);
+  --media-badge-success-bg: var(--status-success-bg);
+  --media-badge-success-fg: var(--status-success-fg);
+  --media-badge-warning-bg: var(--status-warning-bg);
+  --media-badge-warning-fg: var(--status-warning-fg);
+
   /* ── Bannières ───────────────────────────────────────────────────────
    * 72deg : la direction pointe vers le HAUT-DROITE, donc le coin sombre
    * tombe en BAS-GAUCHE, pile sous la colonne de texte. Inclinaison légère
@@ -215,6 +228,21 @@
    * salissait. */
   --detail-ambilight-opacity: 0.5;
   --hero-frame-ring: inset 0 0 0 1px rgba(var(--brand-rgb), 0.14);
+
+  /* Pastilles sur une affiche : les paires d'état du clair (voile teinté à
+   * 12 %, texte foncé) et le verre neutre (noir à 10 %, gris foncé) sont faites
+   * pour une surface claire — sur une affiche, du foncé sur du foncé. Posées
+   * sur MÉDIA, elles prennent la recette on-media du mobile : voile noir, texte
+   * blanc pour la neutre, et pour les autres les teintes CLAIRES des paires du
+   * thème sombre (celles qui se lisent sur du noir). */
+  --media-badge-neutral-bg: rgba(var(--scrim-media-rgb), 0.72);
+  --media-badge-neutral-fg: var(--on-media-primary);
+  --media-badge-info-bg: rgba(var(--scrim-media-rgb), 0.72);
+  --media-badge-info-fg: #60a5fa;
+  --media-badge-success-bg: rgba(var(--scrim-media-rgb), 0.72);
+  --media-badge-success-fg: #34d399;
+  --media-badge-warning-bg: rgba(var(--scrim-media-rgb), 0.72);
+  --media-badge-warning-fg: #fbbf24;
 }
 
 /* ── Lueur de raccord des bannières à fond perdu ────────────────────────

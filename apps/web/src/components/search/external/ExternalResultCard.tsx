@@ -90,6 +90,7 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
           {badge !== null && (
             <ExternalBadge
               badge={badge}
+              onMedia
               className={`absolute left-2 top-2 z-10 transition-opacity duration-150 ${active && title ? "opacity-0" : "opacity-100"}`}
             />
           )}

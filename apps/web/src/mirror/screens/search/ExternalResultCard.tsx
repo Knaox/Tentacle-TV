@@ -60,12 +60,17 @@ export function ExternalResultCard({ item, width, onPress }: { item: ExternalSea
   );
 }
 
-/** Les paires d'état du thème (`statusPairs` de l'app) ; `neutral` : pastille sombre. */
+/**
+ * Posées sur l'affiche : les jetons « sur média » (theme/surfaces.css) — les
+ * paires d'état en sombre, inchangées ; un voile noir et leurs teintes claires
+ * en clair, où les paires des surfaces se lisaient foncé sur foncé.
+ * `neutral` : pastille sombre, la même dans les deux thèmes.
+ */
 const TONE_CLASS: Record<ExternalTone, string> = {
   neutral: "text-on-media-primary",
-  info: "bg-status-info-bg text-status-info-fg",
-  success: "bg-status-success-bg text-status-success-fg",
-  warning: "bg-status-warning-bg text-status-warning-fg",
+  info: "bg-[var(--media-badge-info-bg)] text-[var(--media-badge-info-fg)]",
+  success: "bg-[var(--media-badge-success-bg)] text-[var(--media-badge-success-fg)]",
+  warning: "bg-[var(--media-badge-warning-bg)] text-[var(--media-badge-warning-fg)]",
 };
 
 /** La pastille d'état que le plugin pose sur un titre (« Demandé », « Bientôt »…). */

@@ -17,6 +17,16 @@ const TONE_CLASS: Record<ExternalTone, string> = {
   warning: "bg-status-warning-bg text-status-warning-fg",
 };
 
+/* Posée sur une AFFICHE, la pastille suit ses propres jetons
+ * (theme/surfaces.css) : les paires des surfaces sont illisibles sur une image
+ * en thème clair. Classes écrites en toutes lettres : Tailwind les lit ici. */
+const MEDIA_TONE_CLASS: Record<ExternalTone, string> = {
+  neutral: "bg-[var(--media-badge-neutral-bg)] text-[var(--media-badge-neutral-fg)]",
+  info: "bg-[var(--media-badge-info-bg)] text-[var(--media-badge-info-fg)]",
+  success: "bg-[var(--media-badge-success-bg)] text-[var(--media-badge-success-fg)]",
+  warning: "bg-[var(--media-badge-warning-bg)] text-[var(--media-badge-warning-fg)]",
+};
+
 export const ExternalPoster = memo(function ExternalPoster({ item, className }: {
   item: ExternalSearchItem;
   className: string;
@@ -43,10 +53,16 @@ export const ExternalPoster = memo(function ExternalPoster({ item, className }: 
   );
 });
 
-export function ExternalBadge({ badge, className = "" }: { badge: ExternalSearchItem["badge"]; className?: string }) {
+export function ExternalBadge({ badge, onMedia = false, className = "" }: {
+  badge: ExternalSearchItem["badge"];
+  /** Posée sur une image (l'affiche d'une carte), et non sur une surface de la page. */
+  onMedia?: boolean;
+  className?: string;
+}) {
   if (badge === null) return null;
+  const tone = onMedia ? MEDIA_TONE_CLASS[badge.tone] : TONE_CLASS[badge.tone];
   return (
-    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${TONE_CLASS[badge.tone]} ${className}`}>
+    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone} ${className}`}>
       {badge.label}
     </span>
   );
