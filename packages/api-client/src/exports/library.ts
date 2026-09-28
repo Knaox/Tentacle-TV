@@ -8,6 +8,7 @@ export {
   useSeasonEpisodeList, usePrefetchSeasonEpisodes, useAdjacentSeasonsPrefetch, getSeasonEpisodeSourcesKey, mergeSeasonSources,
   type SeasonEpisodeList,
 } from "../hooks/useSeasonEpisodeList";
+export { useSeasonBrowser, type SeasonBrowser, type SeasonBrowserOptions } from "../hooks/useSeasonBrowser";
 export { useRandomLibraryBackdrop, getLibraryBackdropKey, prefetchLibraryBackdrop } from "../hooks/useLibraryBackdrop";
 export { useSearchItems } from "../hooks/useSearchItems";
 // Le moteur de recherche du serveur Tentacle (web, bureau et mobile), et ce

@@ -10,13 +10,13 @@ import type { MediaItem } from "../types/media";
 import type { NextEpisodeResult } from "../watchState";
 import { adjacentSeasonIds, resolveSeasonSelection } from "./seasonSelection";
 
-const season = (index: number, played = false): MediaItem =>
+const season = (index: number, played = false, playedPercentage?: number): MediaItem =>
   ({
     Id: `season-${index}`,
     Name: index === 0 ? "Spéciaux" : `Saison ${index}`,
     Type: "Season",
     IndexNumber: index,
-    UserData: { PlaybackPositionTicks: 0, PlayCount: 0, IsFavorite: false, Played: played },
+    UserData: { PlaybackPositionTicks: 0, PlayCount: 0, IsFavorite: false, Played: played, PlayedPercentage: playedPercentage },
   }) as MediaItem;
 
 const episodeOf = (seasonIndex: number): MediaItem =>
@@ -26,11 +26,38 @@ const episodeOf = (seasonIndex: number): MediaItem =>
 const SEASONS = [season(0), season(1, true), season(2), season(3)];
 
 describe("resolveSeasonSelection", () => {
-  it("attend l'état de visionnage au lieu d'ouvrir une saison provisoire", () => {
-    const result = resolveSeasonSelection({ seasons: SEASONS, watchPending: true });
+  it("pendant l'attente de l'état de visionnage, montre la saison pressentie — jamais les spéciaux", () => {
+    // La saison 1 est vue : la suivante.
+    expect(resolveSeasonSelection({ seasons: SEASONS, watchPending: true })).toMatchObject({
+      seasonId: "season-2",
+      provisionalSeasonId: "season-2",
+    });
+  });
+
+  it("sans provisoire (téléviseur), l'attente ne montre rien mais désigne quoi précharger", () => {
+    const result = resolveSeasonSelection({ seasons: SEASONS, watchPending: true, provisional: false });
     expect(result.seasonId).toBeUndefined();
-    // …mais désigne la saison à précharger pendant l'attente : la première vraie saison à voir.
     expect(result.provisionalSeasonId).toBe("season-2");
+  });
+
+  it("l'état de visionnage corrige la saison pressentie en arrivant", () => {
+    const pending = resolveSeasonSelection({ seasons: SEASONS, watchPending: true });
+    const arrived = resolveSeasonSelection({ seasons: SEASONS, watchState: { type: "continue", episode: episodeOf(3), positionTicks: 1 } });
+    expect([pending.seasonId, arrived.seasonId]).toEqual(["season-2", "season-3"]);
+  });
+
+  it("la saison pressentie suit la dernière saison entamée, pas le premier trou", () => {
+    // Saison 2 entamée puis abandonnée (un épisode de remplissage sauté), saison 3 en cours.
+    const skipped = [season(0), season(1, true), season(2, false, 90), season(3, false, 40), season(4)];
+    expect(resolveSeasonSelection({ seasons: skipped, watchPending: true }).provisionalSeasonId).toBe("season-3");
+    // Dernière saison entamée terminée : la suivante.
+    const finished = [season(1, true), season(2, true), season(3)];
+    expect(resolveSeasonSelection({ seasons: finished, watchPending: true }).provisionalSeasonId).toBe("season-3");
+    // Tout est vu : la première, comme l'état « terminée » le décidera.
+    const all = [season(0), season(1, true), season(2, true)];
+    expect(resolveSeasonSelection({ seasons: all, watchPending: true }).provisionalSeasonId).toBe("season-1");
+    // Rien de vu : la première vraie saison.
+    expect(resolveSeasonSelection({ seasons: [season(0), season(1), season(2)], watchPending: true }).provisionalSeasonId).toBe("season-1");
   });
 
   it("ouvre la saison de l'épisode à reprendre et la marque", () => {
