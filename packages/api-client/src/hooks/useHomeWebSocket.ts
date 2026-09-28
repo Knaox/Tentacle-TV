@@ -15,7 +15,8 @@ const CAROUSEL_KEYS: Record<string, string[][]> = {
   recently_added:    [["latest-items"]],
   next_up:           [["next-up"]],
   trending:          [["featured"]],
-  watchlist:         [["watchlist"], ["watchlist-series-ids"]],
+  // Titres mis de côté : l'arrivée qui les fait entrer dans Ma liste les retire de l'attente.
+  watchlist:         [["watchlist"], ["watchlist-series-ids"], ["watchlist-pending"]],
   watched:           [["watched-items"]],
   featured:          [["featured"]],
   notifications:     [["notifications"]],
