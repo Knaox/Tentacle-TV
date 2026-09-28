@@ -22,6 +22,13 @@ interface FocusableRowProps<T> {
   data: T[];
   /** `focused` permet de révéler la méta qualité au focus (hover web). */
   renderItem: (item: T, index: number, focused: boolean) => React.ReactNode;
+  /**
+   * Sous la carte, HORS de l'anneau : le titre et le sous-titre d'une affiche.
+   * L'anneau et l'agrandissement n'entourent alors que le visuel — la
+   * géométrie de la grille de bibliothèque, du web et de la LG. Sans lui,
+   * `renderItem` rend la carte entière, et l'anneau l'entoure toute.
+   */
+  renderBelow?: (item: T, index: number, focused: boolean) => React.ReactNode;
   keyExtractor: (item: T) => string;
   itemWidth: number;
   gap?: number;
@@ -50,6 +57,7 @@ export function FocusableRow<T>({
   titleAccessory,
   data,
   renderItem,
+  renderBelow,
   keyExtractor,
   itemWidth,
   gap = Spacing.cardGap,
@@ -157,6 +165,7 @@ export function FocusableRow<T>({
             itemWidth={itemWidth}
             gap={gap}
             renderItem={renderItem}
+            renderBelow={renderBelow}
             onCellFocus={() => {
               focusedIndexRef.current = index;
               rowHasFocusRef.current = true;
@@ -181,9 +190,10 @@ export function FocusableRow<T>({
 }
 
 /** Cellule à état de focus local — seule la cellule re-render au focus. */
-function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCellBlur, onPress, onLongPress, nextFocusUp, onNode }: {
+function RowCell<T>({ item, index, itemWidth, gap, renderItem, renderBelow, onCellFocus, onCellBlur, onPress, onLongPress, nextFocusUp, onNode }: {
   item: T; index: number; itemWidth: number; gap: number;
   renderItem: (item: T, index: number, focused: boolean) => React.ReactNode;
+  renderBelow?: (item: T, index: number, focused: boolean) => React.ReactNode;
   onCellFocus: () => void; onCellBlur: () => void;
   onPress?: () => void; onLongPress?: () => void;
   nextFocusUp?: number;
@@ -245,6 +255,7 @@ function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCe
       >
         {renderItem(item, index, focused)}
       </Focusable>
+      {renderBelow?.(item, index, focused)}
     </View>
   );
 }

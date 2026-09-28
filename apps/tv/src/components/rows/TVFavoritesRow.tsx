@@ -8,6 +8,8 @@ import { Spacing } from "../../theme/colors";
 
 interface TVFavoritesRowProps {
   renderCard: (item: MediaItem, index: number, focused: boolean) => React.ReactNode;
+  /** La légende sous la carte, hors de l'anneau (`FocusableRow.renderBelow`). */
+  renderMeta?: (item: MediaItem, index: number, focused: boolean) => React.ReactNode;
   onItemPress: (item: MediaItem) => void;
   /** Appui long → la feuille d'actions de la carte. */
   onItemLongPress?: (item: MediaItem) => void;
@@ -19,7 +21,7 @@ interface TVFavoritesRowProps {
 /** « Mes favoris » — les vingt derniers favoris (films et séries), en
  *  affiches. S'alimente seule (aucune requête si la rangée est éteinte) ;
  *  rien sans favori. Motif de TVLibraryRow. */
-export function TVFavoritesRow({ renderCard, onItemPress, onItemLongPress, onItemFocus, onLayout, onRowFocus }: TVFavoritesRowProps) {
+export function TVFavoritesRow({ renderCard, renderMeta, onItemPress, onItemLongPress, onItemFocus, onLayout, onRowFocus }: TVFavoritesRowProps) {
   const { t } = useTranslation("common");
   const { data } = useFavorites();
   if (!data || data.length === 0) return null;
@@ -28,6 +30,7 @@ export function TVFavoritesRow({ renderCard, onItemPress, onItemLongPress, onIte
       title={t("myFavorites")}
       data={data}
       renderItem={renderCard}
+      renderBelow={renderMeta}
       keyExtractor={(item) => item.Id}
       itemWidth={TV_POSTER_WIDTH.md}
       style={{ marginBottom: Spacing.rowGap }}

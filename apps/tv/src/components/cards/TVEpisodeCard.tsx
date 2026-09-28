@@ -21,14 +21,13 @@ interface TVEpisodeCardProps {
 }
 
 /**
- * 16:9 landscape card for "Reprendre" / "Prochains épisodes" rows.
- * Shows the actual scene (backdrop), the SxxExx label, and the watch progress.
- * Pure visual — wrap with `<Focusable variant="card">` at call site.
- *
- * Replaces `<TVMediaCard variant="landscape" />` with brand-violet progress
- * (was orange) and tighter typography on the overlay.
+ * La vignette 16:9 SEULE des rangées « Reprendre » / « Prochains épisodes » :
+ * la scène (ou la vignette exacte de la reprise), SxxExx, le titre de
+ * l'épisode, la progression et les marqueurs. C'est elle que l'anneau de
+ * focus entoure ; le nom de la série vit dessous (`TVEpisodeMeta`), hors de
+ * l'anneau — comme l'affiche (`TVPosterFrame` / `TVPosterMeta`).
  */
-export const TVEpisodeCard = memo(function TVEpisodeCard({
+export const TVEpisodeFrame = memo(function TVEpisodeFrame({
   item,
   size = "md",
   focused = false,
@@ -85,129 +84,145 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
   const chipsShown = focused && hasMetaChips(item, true);
 
   return (
-    <View style={{ width }}>
+    <View
+      style={{
+        width,
+        aspectRatio: 16 / 9,
+        borderRadius: TV_CARD_RADIUS,
+        overflow: "hidden",
+        backgroundColor: Colors.bgCard,
+      }}
+    >
+      {sprite && frameUrl ? (
+        <TVCardTrickplayImage
+          url={frameUrl}
+          info={sprite.selection.info}
+          col={sprite.col}
+          row={sprite.row}
+          cardWidth={width}
+          fallback={<TVCardImage uri={imageUrl} style={{ width: "100%", height: "100%" }} />}
+        />
+      ) : (
+        <TVCardImage uri={imageUrl} style={{ width: "100%", height: "100%" }} />
+      )}
+
+      {/* La note de CET épisode — la vignette porte son nom et son numéro.
+          En haut-gauche, où les chips prennent sa place au focus ; le bas est
+          tenu par le titre. La pastille d'états tient le haut-droit, sous le
+          temps restant quand il y en a un. */}
+      <TVCardMarkerLayer
+        item={item}
+        communityRating={cardRatingFor(item, "item").rating}
+        scope="item"
+        hideRating={chipsShown}
+        ratingStyle={RATING_TOP_LEFT}
+        statusStyle={remainingMin != null && remainingMin > 0 ? STATUS_BELOW_TIME : undefined}
+      />
+
+      {/* Chips qualité/langues AU FOCUS (haut-gauche), comme le hover
+          desktop. Leur bord droit s'arrête avant la PLUS LARGE occupation du
+          coin opposé — la pastille d'états pleine, que le temps restant
+          déplace dessous : même repliées sur deux lignes, elles ne la
+          croisent jamais. */}
+      {chipsShown && (
+        <View style={{ position: "absolute", left: 8, top: 8, right: CHIPS_RIGHT }}>
+          <TVMetaChips item={item} compact />
+        </View>
+      )}
+
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.85)"]}
+        locations={[0.35, 1]}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "65%",
+        }}
+      />
+
+      {/* Episode label + title overlay */}
       <View
         style={{
-          width,
-          aspectRatio: 16 / 9,
-          borderRadius: TV_CARD_RADIUS,
-          overflow: "hidden",
-          backgroundColor: Colors.bgCard,
+          position: "absolute",
+          bottom: 10,
+          left: 12,
+          right: 12,
         }}
       >
-        {sprite && frameUrl ? (
-          <TVCardTrickplayImage
-            url={frameUrl}
-            info={sprite.selection.info}
-            col={sprite.col}
-            row={sprite.row}
-            cardWidth={width}
-            fallback={<TVCardImage uri={imageUrl} style={{ width: "100%", height: "100%" }} />}
-          />
-        ) : (
-          <TVCardImage uri={imageUrl} style={{ width: "100%", height: "100%" }} />
+        {epLabel && (
+          <Text
+            style={{
+              color: Colors.textSecondary,
+              fontSize: 12,
+              fontWeight: "700",
+              letterSpacing: 1.4,
+              textTransform: "uppercase",
+              marginBottom: 2,
+            }}
+          >
+            {epLabel}
+          </Text>
         )}
-
-        {/* La note de CET épisode — la vignette porte son nom et son numéro.
-            En haut-gauche, où les chips prennent sa place au focus ; le bas est
-            tenu par le titre. La pastille d'états tient le haut-droit, sous le
-            temps restant quand il y en a un. */}
-        <TVCardMarkerLayer
-          item={item}
-          communityRating={cardRatingFor(item, "item").rating}
-          scope="item"
-          hideRating={chipsShown}
-          ratingStyle={RATING_TOP_LEFT}
-          statusStyle={remainingMin != null && remainingMin > 0 ? STATUS_BELOW_TIME : undefined}
-        />
-
-        {/* Chips qualité/langues AU FOCUS (haut-gauche), comme le hover
-            desktop. Leur bord droit s'arrête avant la PLUS LARGE occupation du
-            coin opposé — la pastille d'états pleine, que le temps restant
-            déplace dessous : même repliées sur deux lignes, elles ne la
-            croisent jamais. */}
-        {chipsShown && (
-          <View style={{ position: "absolute", left: 8, top: 8, right: CHIPS_RIGHT }}>
-            <TVMetaChips item={item} compact />
-          </View>
-        )}
-
-        <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.85)"]}
-          locations={[0.35, 1]}
+        <Text
+          numberOfLines={1}
           style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "65%",
+            color: Colors.textPrimary,
+            fontSize: 15,
+            fontWeight: "600",
           }}
-        />
+        >
+          {item.Name}
+        </Text>
+      </View>
 
-        {/* Episode label + title overlay */}
+      {remainingMin != null && remainingMin > 0 && (
         <View
           style={{
             position: "absolute",
-            bottom: 10,
-            left: 12,
-            right: 12,
+            top: 8,
+            right: 8,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 4,
           }}
         >
-          {epLabel && (
-            <Text
-              style={{
-                color: Colors.textSecondary,
-                fontSize: 12,
-                fontWeight: "700",
-                letterSpacing: 1.4,
-                textTransform: "uppercase",
-                marginBottom: 2,
-              }}
-            >
-              {epLabel}
-            </Text>
-          )}
-          <Text
-            numberOfLines={1}
-            style={{
-              color: Colors.textPrimary,
-              fontSize: 15,
-              fontWeight: "600",
-            }}
-          >
-            {item.Name}
+          <Text style={{ color: Colors.textSecondary, fontSize: 12, fontWeight: "600" }}>
+            {remainingMin} min
           </Text>
         </View>
-
-        {remainingMin != null && remainingMin > 0 && (
-          <View
-            style={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              backgroundColor: "rgba(0,0,0,0.6)",
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              borderRadius: 4,
-            }}
-          >
-            <Text style={{ color: Colors.textSecondary, fontSize: 12, fontWeight: "600" }}>
-              {remainingMin} min
-            </Text>
-          </View>
-        )}
-
-        {!watched && <TVCardProgressBar percent={progress} />}
-      </View>
-
-      {item.SeriesName && (
-        <Text
-          numberOfLines={1}
-          style={{ color: Colors.textTertiary, ...Typography.caption, marginTop: 8 }}
-        >
-          {item.SeriesName}
-        </Text>
       )}
+
+      {!watched && <TVCardProgressBar percent={progress} />}
+    </View>
+  );
+});
+
+/** Le nom de la série, sous la vignette — hors de l'anneau de focus. */
+export const TVEpisodeMeta = memo(function TVEpisodeMeta({ item, size = "md" }: { item: MediaItem; size?: TVCardSize }) {
+  if (!item.SeriesName) return null;
+  return (
+    <Text
+      numberOfLines={1}
+      style={{ width: TV_EPISODE_WIDTH[size], color: Colors.textTertiary, ...Typography.caption, marginTop: 8 }}
+    >
+      {item.SeriesName}
+    </Text>
+  );
+});
+
+/**
+ * 16:9 landscape card — la vignette et sa légende, d'un bloc. Pure visual :
+ * dans une rangée, préférer `TVEpisodeFrame` sous le `Focusable` et
+ * `TVEpisodeMeta` dessous, pour que l'anneau n'entoure que la vignette.
+ */
+export const TVEpisodeCard = memo(function TVEpisodeCard({ item, size = "md", focused = false }: TVEpisodeCardProps) {
+  return (
+    <View style={{ width: TV_EPISODE_WIDTH[size] }}>
+      <TVEpisodeFrame item={item} size={size} focused={focused} />
+      <TVEpisodeMeta item={item} size={size} />
     </View>
   );
 });

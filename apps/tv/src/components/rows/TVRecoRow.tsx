@@ -4,7 +4,7 @@ import type { LayoutChangeEvent } from "react-native";
 import { recoRowTitle, useRecoPage, useRecoSettings } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { FocusableRow } from "../focus/FocusableRow";
-import { TVRecoCard } from "../cards/TVRecoCard";
+import { TVRecoFrame, TVRecoMeta } from "../cards/TVRecoCard";
 import { TV_POSTER_WIDTH } from "../cards/cardSizes";
 import { Spacing } from "../../theme/colors";
 
@@ -21,7 +21,8 @@ interface TVRecoRowProps {
   onRowFocus?: () => void;
 }
 
-const renderCard = (item: RecoRowItem, _i: number, focused: boolean) => <TVRecoCard item={item} focused={focused} />;
+const renderCard = (item: RecoRowItem) => <TVRecoFrame item={item} />;
+const renderMeta = (item: RecoRowItem, _i: number, focused: boolean) => <TVRecoMeta item={item} focused={focused} />;
 
 /**
  * Une rangée `reco:<row>` de l'accueil : lue dans LA page du filtre du compte
@@ -49,6 +50,7 @@ export function TVRecoRow({ rowKey, titleAccessory, onItemPress, onItemLongPress
       titleAccessory={titleAccessory}
       data={items}
       renderItem={renderCard}
+      renderBelow={renderMeta}
       keyExtractor={(item) => item.key}
       itemWidth={TV_POSTER_WIDTH.md}
       style={{ marginBottom: Spacing.rowGap }}

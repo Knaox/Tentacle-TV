@@ -5,12 +5,13 @@ import type { LayoutChangeEvent } from "react-native";
 import { recoRowTitle, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { TvRecoShelf } from "@tentacle-tv/tv-core";
 import { FocusableRow } from "../focus/FocusableRow";
-import { TVRecoCard } from "../cards/TVRecoCard";
+import { TVRecoFrame, TVRecoMeta } from "../cards/TVRecoCard";
 import { TV_POSTER_WIDTH } from "../cards/cardSizes";
 import { TVRecoFilterChip } from "./TVRecoFilterChip";
 import { Colors, Spacing, Typography } from "../../theme/colors";
 
-const renderCard = (item: RecoRowItem, _i: number, focused: boolean) => <TVRecoCard item={item} focused={focused} />;
+const renderCard = (item: RecoRowItem) => <TVRecoFrame item={item} />;
+const renderMeta = (item: RecoRowItem, _i: number, focused: boolean) => <TVRecoMeta item={item} focused={focused} />;
 const keyOf = (item: RecoRowItem) => item.key;
 
 interface TVRecoShelvesListProps {
@@ -42,6 +43,7 @@ export const TVRecoShelvesList = memo(function TVRecoShelvesList({
             titleAccessory={index === 0 ? <TVRecoFilterChip /> : undefined}
             data={shelf.items}
             renderItem={renderCard}
+            renderBelow={renderMeta}
             keyExtractor={keyOf}
             itemWidth={TV_POSTER_WIDTH.md}
             style={{ marginBottom: Spacing.rowGap }}

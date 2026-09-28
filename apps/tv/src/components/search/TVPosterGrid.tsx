@@ -2,12 +2,12 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, View } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
-import { TVPosterCard } from "../cards/TVPosterCard";
+import { TVPosterFrame, TVPosterMeta } from "../cards/TVPosterCard";
 import { useTVNavActions } from "../../context/TVNavContext";
 import { CardConfig } from "../../theme/colors";
 
 const GAP = 24;
-/** Titre et méta sous l'affiche (`TVPosterCard`). */
+/** Titre et méta sous l'affiche (`TVPosterMeta`). */
 const META_HEIGHT = 56;
 
 interface TVPosterGridProps {
@@ -128,23 +128,29 @@ const GridCell = memo(function GridCell({ item, index, cardW, preferred, onEntry
     cellRef.current = node;
     onEntry?.(node);
   }, [onEntry]);
+  // L'anneau n'entoure que l'AFFICHE, la légende reste dessous — la géométrie
+  // de la bibliothèque (`TVLibraryGrid`) et des rangées.
   return (
-    <Focusable
-      ref={setCell}
-      variant="card"
-      hasTVPreferredFocus={preferred}
-      nextFocusUp={nextFocusUp}
-      onPress={() => onOpen(item)}
-      onLongPress={onLongPress ? () => onLongPress(item) : undefined}
-      onFocus={() => {
-        setFocused(true);
-        lastContentNodeRef.current = cellRef.current;
-        onFocusIndex(index);
-      }}
-      onBlur={() => setFocused(false)}
-      accessibilityLabel={item.Name}
-    >
-      <TVPosterCard item={item} width={cardW} focused={focused} />
-    </Focusable>
+    <View style={{ width: cardW }}>
+      <Focusable
+        ref={setCell}
+        variant="card"
+        hasTVPreferredFocus={preferred}
+        nextFocusUp={nextFocusUp}
+        style={{ alignSelf: "flex-start" }}
+        onPress={() => onOpen(item)}
+        onLongPress={onLongPress ? () => onLongPress(item) : undefined}
+        onFocus={() => {
+          setFocused(true);
+          lastContentNodeRef.current = cellRef.current;
+          onFocusIndex(index);
+        }}
+        onBlur={() => setFocused(false)}
+        accessibilityLabel={item.Name}
+      >
+        <TVPosterFrame item={item} width={cardW} focused={focused} />
+      </Focusable>
+      <TVPosterMeta item={item} width={cardW} />
+    </View>
   );
 });

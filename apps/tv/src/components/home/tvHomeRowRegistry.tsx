@@ -2,8 +2,8 @@ import { useTranslation } from "react-i18next";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FocusableRow } from "../focus/FocusableRow";
-import { TVPosterCard } from "../cards/TVPosterCard";
-import { TVEpisodeCard } from "../cards/TVEpisodeCard";
+import { TVPosterFrame, TVPosterMeta } from "../cards/TVPosterCard";
+import { TVEpisodeFrame, TVEpisodeMeta } from "../cards/TVEpisodeCard";
 import { TV_POSTER_WIDTH, TV_EPISODE_WIDTH } from "../cards/cardSizes";
 import { TVLibraryRow } from "../rows/TVLibraryRow";
 import { TVFavoritesRow } from "../rows/TVFavoritesRow";
@@ -46,13 +46,15 @@ interface TVHomeRowProps {
 }
 
 // Rendus de carte stables (aucune fermeture) : la rangée ne se re-rend pas
-// pour une fonction neuve.
+// pour une fonction neuve. Le visuel sous l'anneau, la légende dessous.
 const renderPortrait = (item: MediaItem, _i: number, focused: boolean) => (
-  <TVPosterCard item={item} focused={focused} />
+  <TVPosterFrame item={item} width={TV_POSTER_WIDTH.md} focused={focused} />
 );
+const renderPortraitMeta = (item: MediaItem) => <TVPosterMeta item={item} width={TV_POSTER_WIDTH.md} />;
 const renderLandscape = (item: MediaItem, _i: number, focused: boolean) => (
-  <TVEpisodeCard item={item} focused={focused} />
+  <TVEpisodeFrame item={item} focused={focused} />
 );
+const renderLandscapeMeta = (item: MediaItem) => <TVEpisodeMeta item={item} />;
 
 /**
  * LE registre de l'accueil configurable du téléviseur : une clé de rangée →
@@ -96,6 +98,7 @@ export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
         title={title}
         data={items}
         renderItem={renderLandscape}
+        renderBelow={renderLandscapeMeta}
         keyExtractor={(item) => item.Id}
         itemWidth={TV_EPISODE_WIDTH.md}
         onItemPress={onPlay}
@@ -111,6 +114,7 @@ export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
         title={t("myList")}
         data={data.watchlist}
         renderItem={renderPortrait}
+        renderBelow={renderPortraitMeta}
         keyExtractor={(item) => item.Id}
         itemWidth={TV_POSTER_WIDTH.md}
         onItemPress={onDetail}
@@ -121,7 +125,7 @@ export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
   }
   if (rowKey === "favorites") {
     return (
-      <TVFavoritesRow renderCard={renderPortrait} onItemPress={onDetail} onItemLongPress={onPosterLongPress} {...rowProps} />
+      <TVFavoritesRow renderCard={renderPortrait} renderMeta={renderPortraitMeta} onItemPress={onDetail} onItemLongPress={onPosterLongPress} {...rowProps} />
     );
   }
   if (rowKey.startsWith("library:")) {
@@ -133,6 +137,7 @@ export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
         libraryName={lib.name}
         collectionType={lib.collectionType}
         renderCard={renderPortrait}
+        renderMeta={renderPortraitMeta}
         onItemPress={onDetail}
         onItemLongPress={onPosterLongPress}
         {...rowProps}

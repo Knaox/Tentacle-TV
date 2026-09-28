@@ -9,7 +9,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import type { RootStackParamList } from "../navigation/types";
 import { FocusableRow } from "../components/focus/FocusableRow";
-import { TVPosterCard } from "../components/cards/TVPosterCard";
+import { TVPosterFrame, TVPosterMeta } from "../components/cards/TVPosterCard";
 import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
 import { TVEpisodeList } from "../components/TVEpisodeList";
 import { TVExtrasRow } from "../components/detail/TVExtrasRow";
@@ -22,6 +22,12 @@ import { Colors, Spacing, CardConfig } from "../theme/colors";
 import { SHOWS_VERTICAL_SCROLL_INDICATOR } from "../theme/focus";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
+
+// Collection et titres similaires : l'affiche sous l'anneau, la légende dessous.
+const renderPoster = (s: MediaItem, _i: number, focused: boolean) => (
+  <TVPosterFrame item={s} width={CardConfig.portrait.width} focused={focused} />
+);
+const renderPosterMeta = (s: MediaItem) => <TVPosterMeta item={s} width={CardConfig.portrait.width} />;
 
 export function MediaDetailScreen({ route, navigation }: Props) {
   const { t } = useTranslation("common");
@@ -114,7 +120,8 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         <FocusableRow
           title={t("collectionContent")}
           data={collectionItems}
-          renderItem={(s: MediaItem, _i: number, focused: boolean) => <TVPosterCard item={s} focused={focused} />}
+          renderItem={renderPoster}
+          renderBelow={renderPosterMeta}
           keyExtractor={(s) => s.Id}
           itemWidth={CardConfig.portrait.width}
           style={{ marginTop: Spacing.sectionGap }}
@@ -174,7 +181,8 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         <FocusableRow
           title={t("similarTitles")}
           data={similar}
-          renderItem={(s: MediaItem, _i: number, focused: boolean) => <TVPosterCard item={s} focused={focused} />}
+          renderItem={renderPoster}
+          renderBelow={renderPosterMeta}
           keyExtractor={(s) => s.Id}
           itemWidth={CardConfig.portrait.width}
           style={{ marginTop: Spacing.sectionGap }}

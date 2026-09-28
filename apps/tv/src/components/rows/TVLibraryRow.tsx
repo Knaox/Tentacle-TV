@@ -14,6 +14,8 @@ interface TVLibraryRowProps {
   /** Type Jellyfin de la bibliothèque — "tvshows" active le groupage d'épisodes (+N), comme le web. */
   collectionType?: string;
   renderCard: (item: MediaItem, index: number, focused: boolean) => React.ReactNode;
+  /** La légende sous la carte, hors de l'anneau (`FocusableRow.renderBelow`). */
+  renderMeta?: (item: MediaItem, index: number, focused: boolean) => React.ReactNode;
   onItemPress: (item: MediaItem) => void;
   /** Appui long → la feuille d'actions de la carte. */
   onItemLongPress?: (item: MediaItem) => void;
@@ -34,6 +36,7 @@ export function TVLibraryRow({
   libraryName,
   collectionType,
   renderCard,
+  renderMeta,
   onItemPress,
   onItemLongPress,
   onItemFocus,
@@ -63,6 +66,7 @@ export function TVLibraryRow({
         title={t("latestAdditions", { name: libraryName })}
         data={items}
         renderItem={renderCard}
+        renderBelow={renderMeta}
         keyExtractor={(item) => item.Id}
         itemWidth={TV_POSTER_WIDTH.md}
         style={{ marginBottom: Spacing.rowGap }}

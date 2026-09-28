@@ -5,8 +5,8 @@ import type { MediaItem, SearchItemHit, SearchMediaItem, SearchPersonHit, Search
 import type { TvSearchFacet, TvSearchNotice, TvSearchSection } from "@tentacle-tv/tv-core";
 import { FocusableRow } from "../focus/FocusableRow";
 import { Focusable } from "../focus/Focusable";
-import { TVPosterCard } from "../cards/TVPosterCard";
-import { TVEpisodeCard } from "../cards/TVEpisodeCard";
+import { TVPosterFrame, TVPosterMeta } from "../cards/TVPosterCard";
+import { TVEpisodeFrame, TVEpisodeMeta } from "../cards/TVEpisodeCard";
 import { TV_EPISODE_WIDTH, TV_POSTER_WIDTH } from "../cards/cardSizes";
 import { TVPersonCard, PERSON_CARD_WIDTH } from "./TVPersonCard";
 import { TVSearchChip } from "./TVSearchChip";
@@ -60,8 +60,12 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
 
   const renderHit = useCallback(
     (hit: SearchItemHit, _i: number, focused: boolean) => (
-      <TVPosterCard item={asMediaItem(hit.item)} width={TV_POSTER_WIDTH.md} focused={focused} />
+      <TVPosterFrame item={asMediaItem(hit.item)} width={TV_POSTER_WIDTH.md} focused={focused} />
     ),
+    [],
+  );
+  const renderHitMeta = useCallback(
+    (hit: SearchItemHit) => <TVPosterMeta item={asMediaItem(hit.item)} width={TV_POSTER_WIDTH.md} />,
     [],
   );
   const renderPerson = useCallback(
@@ -70,10 +74,11 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
   );
   const renderEpisode = useCallback(
     (item: SearchMediaItem, _i: number, focused: boolean) => (
-      <TVEpisodeCard item={asMediaItem(item)} size="sm" focused={focused} />
+      <TVEpisodeFrame item={asMediaItem(item)} size="sm" focused={focused} />
     ),
     [],
   );
+  const renderEpisodeMeta = useCallback((item: SearchMediaItem) => <TVEpisodeMeta item={asMediaItem(item)} size="sm" />, []);
   const openHit = useCallback((hit: SearchItemHit) => actions.onOpenItem(hit.item.Id), [actions]);
   const playEpisode = useCallback((item: SearchMediaItem) => actions.onPlayItem(item.Id), [actions]);
   const pressHit = useCallback((hit: SearchItemHit) => actions.onPosterLongPress(asMediaItem(hit.item)), [actions]);
@@ -115,6 +120,7 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
                 keyExtractor={hitKey}
                 itemWidth={TV_POSTER_WIDTH.md}
                 renderItem={renderHit}
+                renderBelow={renderHitMeta}
                 onItemPress={openHit}
                 onItemLongPress={pressHit}
                 onRowFocus={onRowFocus}
@@ -146,6 +152,7 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
                 keyExtractor={episodeKey}
                 itemWidth={TV_EPISODE_WIDTH.sm}
                 renderItem={renderEpisode}
+                renderBelow={renderEpisodeMeta}
                 onItemPress={playEpisode}
                 onItemLongPress={pressEpisode}
                 onRowFocus={onRowFocus}
