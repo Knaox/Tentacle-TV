@@ -3,7 +3,8 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useUserId } from "@tentacle-tv/api-client";
-import { i18n } from "@tentacle-tv/shared";
+import { cardActionEntries, i18n, resolveCardOverlay } from "@tentacle-tv/shared";
+import { isInProgress } from "@tentacle-tv/offline-core";
 import { BottomSheet } from "@/components/ui";
 import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -18,6 +19,7 @@ import {
 import { AutoDeleteChips, type AutoDeleteValue } from "../keep/AutoDeleteChips";
 import { scheduleText } from "./autoDeleteText";
 import { entryTitle } from "../entryTitle";
+import { useLocalWatchedToggle } from "../library/useOfflineActions";
 
 interface Props {
   /** L'entrée à l'ouverture ; son état frais est relu à chaque changement. */
@@ -29,10 +31,15 @@ interface Props {
 }
 
 /**
- * La feuille « ⋯ » d'une ligne — et la feuille d'appui long du catalogue :
- * Lire, Plus d'infos, Pause / Reprendre / Annuler le transfert, Supprimer
- * après visionnage (avec l'échéance), et « Retirer de l'appareil » en rouge,
- * avec la confirmation multi-comptes.
+ * La feuille « ⋯ » d'une ligne — et la feuille d'appui long du catalogue.
+ *
+ * Pour un titre prêt, ses premières lignes sont celles du survol unifié des
+ * cartes, en mode LOCAL (`resolveCardOverlay` → `cardActionEntries`) : Lire ou
+ * Reprendre, puis la coche « vu », la seule bascule qui vive sur l'appareil —
+ * la même liste que le survol du bureau et le menu de la télécommande. Suivent
+ * Plus d'infos, Pause / Reprendre / Annuler le transfert, Supprimer après
+ * visionnage (avec l'échéance), et « Retirer de l'appareil » en rouge, avec la
+ * confirmation multi-comptes.
  */
 export function OfflineRowActionsSheet({ entry: opened, onClose, onPlay, onInfo }: Props) {
   const { t } = useTranslation("downloads");
@@ -40,6 +47,7 @@ export function OfflineRowActionsSheet({ entry: opened, onClose, onPlay, onInfo 
   const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
   const userId = useUserId();
+  const toggleWatched = useLocalWatchedToggle();
   const [busy, setBusy] = useState(false);
   // L'appelant passe l'entrée telle qu'elle était à l'ouverture. Elle ne
   // change plus : c'est un objet figé, et la feuille montrait donc toujours
@@ -82,6 +90,12 @@ export function OfflineRowActionsSheet({ entry: opened, onClose, onPlay, onInfo 
     entry.status === "paused" ||
     entry.status === "error";
   const autoDelete: AutoDeleteValue = entry.autoDeleteAfterWatch ? entry.autoDeleteDelayMinutes : null;
+  const overlay = resolveCardOverlay({
+    variant: "poster", inLibrary: true, playable: true, resume: isInProgress(entry), rateable: false, local: true,
+  });
+  const cardActions = entry.status === "complete"
+    ? cardActionEntries(overlay, { watchlist: false, favorite: false, watched: entry.played })
+    : [];
 
   const row = (icon: keyof typeof Feather.glyphMap, label: string, onPress: () => void, danger = false) => (
     <Pressable onPress={onPress} disabled={busy} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [st.row, pressed && st.pressed]}>
@@ -94,7 +108,11 @@ export function OfflineRowActionsSheet({ entry: opened, onClose, onPlay, onInfo 
     <BottomSheet visible onClose={onClose} snapPoints={[0.55, 0.9]}>
       <View style={st.body}>
         <Text style={st.title} numberOfLines={2}>{entryTitle(entry)}</Text>
-        {entry.status === "complete" && row("play", entry.kind === "episode" ? t("episodePlay") : i18n.t("common:play"), act(() => onPlay(entry)))}
+        {cardActions.map((action) => action.kind === "play"
+          ? <View key="play">{row("play", i18n.t(`cards:${action.labelKey}`), act(() => onPlay(entry)))}</View>
+          : action.kind === "watched"
+            ? <View key="watched">{row("check-circle", i18n.t(`cards:${action.labelKey}`), act(() => toggleWatched([entry.itemId], !entry.played)))}</View>
+            : null)}
         {entry.status === "complete" && onInfo && row("info", i18n.t("common:moreInfo"), act(() => onInfo(entry)))}
         {(entry.status === "downloading" || entry.status === "queued") && row("pause", t("pause"), act(() => pauseTransfer(entry.id)))}
         {entry.status === "paused" && row("play", t("resume"), act(() => resumeTransfer(entry.id)))}

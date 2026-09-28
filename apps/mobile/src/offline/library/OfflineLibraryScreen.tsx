@@ -20,6 +20,7 @@ import { OfflineCatalogToolbar } from "./OfflineCatalogToolbar";
 import { OfflineEmptyState } from "./OfflineEmptyState";
 import { OfflineHomeHero } from "./OfflineHomeHero";
 import { OfflineLibrarySkeleton } from "./OfflineLibrarySkeleton";
+import { OfflineMediaRow } from "./OfflineMediaRow";
 import { OfflineStateStrip } from "./OfflineStateStrip";
 import { ALL_LIBRARIES, useOfflineCatalog, type OfflineCatalogFilter } from "./useOfflineCatalog";
 
@@ -32,11 +33,13 @@ interface Props {
 }
 
 /**
- * L'accueil du mode hors ligne : le bandeau cinématique des titres de
- * l'appareil, le résumé (titres, espace, transferts), la rangée « Reprendre »
- * à l'image exacte, la recherche et le filtre, puis les grilles Films et
- * Séries. Une recherche active ne garde que les grilles. Tout vient de la
- * base et des snapshots locaux — cet écran ne touche jamais le réseau.
+ * L'accueil du mode hors ligne, dans la grammaire de l'accueil en ligne : le
+ * bandeau cinématique des titres de l'appareil, la carte « Sur cet appareil »
+ * (titres, place et sa jauge, transferts), les rangées « Reprendre la
+ * lecture » et « À suivre » tirées de la progression locale, puis la
+ * recherche, le filtre et les grilles Films et Séries. Une recherche active ne
+ * garde que les grilles. Tout vient de la base et des snapshots locaux — cet
+ * écran ne touche jamais le réseau.
  */
 export function OfflineLibraryScreen({ standalone = false }: Props) {
   const { t } = useTranslation(["offline", "common"]);
@@ -49,7 +52,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<OfflineCatalogFilter>(ALL_LIBRARIES);
   const [more, setMore] = useState<OfflineEntry | null>(null);
-  const { movies, series, hero, libraries, hasContent, ready } = useOfflineCatalog(search, filter);
+  const { movies, series, hero, resume, nextUp, libraries, hasContent, ready } = useOfflineCatalog(search, filter);
   // Une bibliothèque filtrée dont le dernier titre vient d'être retiré : retour à « Tout ».
   useEffect(() => {
     if (filter !== ALL_LIBRARIES && !libraries.some((library) => library.id === filter)) setFilter(ALL_LIBRARIES);
@@ -99,7 +102,17 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
               <OfflineBackOnlineCard />
             </FadeIn>
           )}
-          <FadeIn delay={homeRowFadeDelay(2)}>
+          {!searching && resume.length > 0 && (
+            <FadeIn delay={homeRowFadeDelay(1)}>
+              <OfflineMediaRow title={t("common:resumeWatching")} entries={resume} onOpen={info} onLongPress={setMore} />
+            </FadeIn>
+          )}
+          {!searching && nextUp.length > 0 && (
+            <FadeIn delay={homeRowFadeDelay(2)}>
+              <OfflineMediaRow title={t("common:nextEpisode")} entries={nextUp} onOpen={info} onLongPress={setMore} />
+            </FadeIn>
+          )}
+          <FadeIn delay={homeRowFadeDelay(3)}>
             <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} libraries={libraries} />
           </FadeIn>
           {noResult && <Text style={st.noResult}>{t("offline:noResults")}</Text>}
@@ -107,7 +120,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
             movies={movies}
             series={series}
             layout={layout}
-            fadeIndex={3}
+            fadeIndex={4}
             onMovie={info}
             onMovieLongPress={setMore}
             onSeries={openSeries}

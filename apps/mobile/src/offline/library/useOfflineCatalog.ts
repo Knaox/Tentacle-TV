@@ -6,6 +6,8 @@ import {
   groupOfflineEntries,
   groupSeasonsBySeries,
   pickHeroEntries,
+  pickNextUpEntries,
+  pickResumeEntries,
   readLibrariesList,
   seriesGroupMatches,
   type OfflineSeriesGroup,
@@ -38,6 +40,10 @@ export interface OfflineCatalog {
   series: OfflineSeriesGroup[];
   /** Les diapositives du bandeau : reprises, puis nouveautés, une par série (hors recherche). */
   hero: OfflineEntry[];
+  /** « Reprendre la lecture » : les titres entamés, dernier repris d'abord. */
+  resume: OfflineEntry[];
+  /** « À suivre » : l'épisode gardé qui suit le dernier vu, par série entamée. */
+  nextUp: OfflineEntry[];
   /** Les bibliothèques d'origine des titres de l'appareil — les puces du filtre (hors recherche). */
   libraries: OfflineCatalogLibrary[];
   /** Les comptes de l'appareil, avant recherche et filtre. */
@@ -113,10 +119,12 @@ export function useOfflineCatalog(search: string, filter: OfflineCatalogFilter):
   );
 
   const hero = useMemo(() => pickHeroEntries(complete), [complete]);
+  const resume = useMemo(() => pickResumeEntries(complete, 12), [complete]);
+  const nextUp = useMemo(() => pickNextUpEntries(complete, 12), [complete]);
   const counts = useMemo<OfflineCatalogCounts>(
     () => ({ titles: complete.length, movies: groups.movies.length, series: series.length }),
     [complete.length, groups.movies.length, series.length],
   );
 
-  return { movies, series: shownSeries, hero, libraries, counts, hasContent: complete.length > 0, ready: isFetched };
+  return { movies, series: shownSeries, hero, resume, nextUp, libraries, counts, hasContent: complete.length > 0, ready: isFetched };
 }
