@@ -11,9 +11,12 @@ interface Props {
   statuses: readonly CardStatusKind[];
   /** Autre ancrage que le coin haut-droit de l'affiche. */
   style?: StyleProp<ViewStyle>;
+  /** `sm` : une vignette de ligne d'épisode, deux fois plus petite qu'une affiche. */
+  size?: "md" | "sm";
 }
 
 const GLYPH = 18;
+const GLYPH_SM = 14;
 const GAP = 7;
 const PADDING_X = 10;
 
@@ -31,20 +34,21 @@ export const TV_STATUS_PILL_MAX_WIDTH = GLYPH * 3 + GAP * 2 + PADDING_X * 2;
  * l'affiche, le coin haut-droit est libre. Noir et blanc constants, seul le
  * cœur prend le rose de marque.
  */
-export const TVCardStatusMarkers = memo(function TVCardStatusMarkers({ statuses, style }: Props) {
+export const TVCardStatusMarkers = memo(function TVCardStatusMarkers({ statuses, style, size = "md" }: Props) {
   const { t } = useTranslation("cards");
   if (statuses.length === 0) return null;
   const label = statuses.map((kind) => t(`status.${kind}`)).join(", ");
+  const glyph = size === "sm" ? GLYPH_SM : GLYPH;
 
   return (
-    <View style={[styles.pill, style]} accessible accessibilityLabel={label}>
+    <View style={[styles.pill, size === "sm" && styles.pillSm, style]} accessible accessibilityLabel={label}>
       {statuses.map((kind) =>
         kind === "watchlist" ? (
-          <TVBookmarkGlyph key={kind} size={GLYPH} color="#FFFFFF" />
+          <TVBookmarkGlyph key={kind} size={glyph} color="#FFFFFF" />
         ) : kind === "favorite" ? (
-          <TVHeartGlyph key={kind} size={GLYPH} color={Colors.accentPink} />
+          <TVHeartGlyph key={kind} size={glyph} color={Colors.accentPink} />
         ) : (
-          <TVWatchedGlyph key={kind} size={GLYPH} color="#FFFFFF" />
+          <TVWatchedGlyph key={kind} size={glyph} color="#FFFFFF" />
         ),
       )}
     </View>
@@ -66,4 +70,5 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.2)",
     backgroundColor: "rgba(0,0,0,0.72)",
   },
+  pillSm: { top: 6, right: 6, height: 26, gap: 5, paddingHorizontal: 7, borderRadius: 13 },
 });

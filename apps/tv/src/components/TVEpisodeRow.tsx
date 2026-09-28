@@ -1,18 +1,24 @@
 import { memo, useCallback, useRef } from "react";
 import { View, Text, Image } from "react-native";
-import type { MediaItem } from "@tentacle-tv/shared";
+import type { CardStatusKind, MediaItem } from "@tentacle-tv/shared";
 import { formatDuration } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
 import { useTvFocusClaim } from "../hooks/useTvFocusClaim";
-import { CheckIcon } from "./icons/TVIcons";
 import { TVMetaChips } from "./TVMetaChips";
-import { Colors, Typography, Fonts, Radius, CardConfig, brandAlpha } from "../theme/colors";
+import { TVCardProgressBar } from "./cards/TVCardProgressBar";
+import { TVCardStatusMarkers } from "./cards/TVCardStatusMarkers";
+import { Colors, Typography, Fonts, Radius, brandAlpha } from "../theme/colors";
 
 /** Retrait vertical d'une ligne : avec la vignette 16:9, il en fait la hauteur. */
 const ROW_PADDING_V = 14;
 
 /** L'écart entre deux lignes. */
 export const EPISODE_ROW_GAP = 8;
+
+/** La pastille d'une ligne ne dit que « vu » : Ma liste et favori sont des
+ *  états de SÉRIE, les mêmes sur chaque ligne — du bruit. */
+const WATCHED: readonly CardStatusKind[] = ["watched"];
+const NONE: readonly CardStatusKind[] = [];
 
 /**
  * La hauteur EXACTE d'une ligne, dérivée de sa vignette.
@@ -118,28 +124,11 @@ export const TVEpisodeRow = memo(function TVEpisodeRow({
             style={{ width: "100%", height: "100%" }}
             resizeMode="cover"
           />
-          {progress > 0 && !isWatched && (
-            <View style={{
-              position: "absolute", bottom: 0, left: 0, right: 0,
-              height: CardConfig.progressBarHeight, backgroundColor: "rgba(0,0,0,0.5)",
-            }}>
-              <View style={{
-                height: CardConfig.progressBarHeight,
-                width: `${Math.min(progress, 100)}%`,
-                backgroundColor: Colors.accentPurple, borderRadius: 2,
-              }} />
-            </View>
-          )}
-          {isWatched && (
-            <View style={{
-              position: "absolute", top: 6, right: 6,
-              width: 22, height: 22, borderRadius: 11,
-              backgroundColor: Colors.success,
-              justifyContent: "center", alignItems: "center",
-            }}>
-              <CheckIcon size={12} color={Colors.textPrimary} />
-            </View>
-          )}
+          {/* Les marqueurs des cartes, à l'identique : la jauge au dégradé de
+              marque, et la pastille « vu » — la coche verte maison et la barre
+              violette plate n'existaient qu'ici. */}
+          {!isWatched && <TVCardProgressBar percent={progress} />}
+          <TVCardStatusMarkers statuses={isWatched ? WATCHED : NONE} size="sm" />
         </View>
 
         {/* Info */}
