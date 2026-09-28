@@ -1,7 +1,7 @@
 import { memo, useCallback, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { useJellyfinClient, type FavoritesGroup } from "@tentacle-tv/api-client";
-import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
+import type { FavoritesGroup } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { useFavoritesGroupTitle } from "../../../components/favorites/FavoritesSectionHeader";
 import { useGrid } from "../../useMirrorLayout";
 import { SelectableGridCard } from "../collection/SelectableGridCard";
@@ -23,7 +23,6 @@ interface FavoritesGridProps {
  * Sans regroupement, une seule section, sans en-tête.
  */
 export const FavoritesGrid = memo(function FavoritesGrid({ groups, isSelecting, selected, onPress, onLongPress }: FavoritesGridProps) {
-  const client = useJellyfinClient();
   const title = useFavoritesGroupTitle();
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
@@ -78,12 +77,7 @@ export const FavoritesGrid = memo(function FavoritesGrid({ groups, isSelecting, 
                 {group.items.map((item) => (
                   <SelectableGridCard
                     key={item.Id}
-                    posterUri={client.getImageUrl(item.Id, "Primary", { width: 300, quality: 80 })}
-                    title={item.Name}
-                    year={item.ProductionYear ?? null}
-                    progressPercent={item.UserData?.PlayedPercentage ?? null}
-                    watched={item.UserData?.Played === true}
-                    rating={cardRatingFor(item, "series").rating}
+                    item={item}
                     width={itemWidth}
                     selectable={isSelecting}
                     selected={selected.has(item.Id)}

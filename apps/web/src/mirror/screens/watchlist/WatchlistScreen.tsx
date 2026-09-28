@@ -7,11 +7,10 @@ import {
   resumeQueue,
   summarizeWatchlist,
   useBatchRemoveWatchlist,
-  useJellyfinClient,
   useWatchlistAll,
   type WatchStageFilter,
 } from "@tentacle-tv/api-client";
-import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { useMultiSelect } from "../../../hooks/useMultiSelect";
 import { usePlayFromWatchlist, useRemovalUndo } from "../../../components/watchlist/useWatchlistActions";
 import { useWatchlistView } from "../../../components/watchlist/useWatchlistView";
@@ -52,7 +51,6 @@ export function MirrorWatchlistScreen() {
   const { t: tw } = useTranslation("watchlist");
   const navigate = useNavigate();
   const back = useBackOrHome();
-  const client = useJellyfinClient();
   const { data: raw, isLoading } = useWatchlistAll();
   const batchRemove = useBatchRemoveWatchlist();
   const filters = useCollectionFilters(raw);
@@ -141,12 +139,7 @@ export function MirrorWatchlistScreen() {
         {data.map((item) => (
           <SelectableGridCard
             key={item.Id}
-            posterUri={client.getImageUrl(item.Id, "Primary", { width: 300, quality: 80 })}
-            title={item.Name}
-            year={item.ProductionYear ?? null}
-            progressPercent={item.UserData?.PlayedPercentage ?? null}
-            watched={item.UserData?.Played === true}
-            rating={cardRatingFor(item, "series").rating}
+            item={item}
             width={itemWidth}
             selectable={selection.isSelecting}
             selected={selection.selected.has(item.Id)}
