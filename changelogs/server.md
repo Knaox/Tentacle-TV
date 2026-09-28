@@ -5,6 +5,29 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.21.0]
+### FR
+- **Affiner vos recommandations** : une pile de titres à juger, de votre bibliothèque et au-delà, dans Recommandations ; j'aime, coup de cœur et pas pour moi pèsent vraiment dans ce que le moteur vous propose, et un « pas pour moi » éloigne aussi ce qui lui ressemble. Il faut une clé TMDB pour proposer des titres hors bibliothèque ; sans elle, la pile s'en tient à la bibliothèque
+- **Une fiche média refaite** sur le web : décor plein écran, logo, note en grand et marqueurs, temps restant, images en plein écran
+- **La page d'une personne** : un clic sur un acteur ou un membre de l'équipe ouvre sa biographie et ses titres présents sur le serveur
+- **Des affiches qui en disent plus** : note du public et la vôtre, Ma liste, favori et déjà vu, sur le web comme sur les téléviseurs LG ; nouveau survol avec la lecture au centre
+- **Bibliothèque, Ma liste et Mes favoris refaits** sur le web, téléphone et tablette compris ; le bouton Partager se voit enfin
+- **Un seul retour** pour sortir d'une suite de titres similaires
+- **Connexion, inscription et mot de passe oublié refaits** ; après une inscription par invitation, on revient sur la liste partagée qu'on regardait
+- **Listes et fiches partagées refaites** : ce qui est partagé, par qui, et comment rejoindre le serveur
+- **Les clients 1.24.0 (bureau), 1.9.0 (mobile) et 1.3.1 (TV) demandent ce serveur**
+
+### EN
+- **Refine your recommendations**: a stack of titles to judge, from your library and beyond, in Recommendations; like, love and not for me truly weigh on what the engine offers you, and a "not for me" also pushes away what looks like it. A TMDB key is needed to suggest titles outside the library; without one, the stack sticks to the library
+- **A redesigned title page** on the web: full-screen backdrop, logo, large rating and markers, time left, full-screen images
+- **A person's page**: clicking an actor or a crew member opens their biography and their titles on the server
+- **Posters that say more**: audience rating and yours, My list, favorite and watched, on the web as well as on LG TVs; a new hover with play in the center
+- **Library, My list and My favorites redesigned** on the web, phones and tablets included; the Share button is finally visible
+- **One back** to leave a chain of similar titles
+- **Sign in, sign up and forgotten password redesigned**; after signing up with an invitation, you come back to the shared list you were looking at
+- **Shared lists and title pages redesigned**: what is shared, by whom, and how to join the server
+- **Desktop 1.24.0, mobile 1.9.0 and TV 1.3.1 require this server**
+
 ## [1.20.0]
 ### FR
 - **Des recommandations vraiment personnelles** — le moteur proposait à peu près la même chose à tout le monde : les sorties récentes et bien notées, 34 titres communs sur 50 entre deux comptes. Il compare désormais chaque titre à chacun de ceux que vous avez aimés, un par un, et suit ce que les spectateurs de ces titres ont aimé ensuite. Entre deux comptes, les 50 premiers n'ont plus que 4 titres en commun, et un titre aimé qu'on lui cache est retrouvé trois fois plus souvent

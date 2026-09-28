@@ -5,6 +5,13 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
+## [1.3.1]
+### FR
+- **Des affiches qui en disent plus** : la note du public et la vôtre, et un repère pour Ma liste, vos favoris et ce que vous avez déjà vu
+
+### EN
+- **Posters that say more**: the audience rating and yours, and a marker for My list, your favorites and what you have already watched
+
 ## [1.3.0]
 ### FR
 - **Recherche repensée** : fautes corrigées, suite du titre suggérée, acteurs, genres et studios

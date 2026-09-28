@@ -13,6 +13,29 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.24.0]
+### FR
+- **Une fiche média refaite** : le décor occupe tout l'écran, avec le logo du titre, la note en grand et vos marqueurs ; « Lecture » ou « Reprendre » indique le temps restant, les actions sont réunies en une capsule, et les images du titre s'ouvrent en plein écran
+- **Un clic sur un acteur ou un membre de l'équipe** ouvre sa page : portrait, biographie et ses titres présents sur le serveur
+- **Des affiches qui en disent plus** : la note du public et la vôtre, Ma liste, favori et déjà vu se lisent sans survoler ; au survol, la lecture au centre, les étoiles et les actions rapides
+- **Affiner vos recommandations** : dans Recommandations, une pile de titres à juger (j'aime, coup de cœur, pas pour moi), au glisser ou au clavier. Chaque verdict pèse vraiment dans ce qui vous est proposé
+- **Bibliothèque, Ma liste et Mes favoris refaits** avec un même panneau d'outils ; Ma liste range vos titres par étape (à découvrir, en cours, terminés), propose « Reprendre », la vue grille ou liste et un retrait annulable ; Mes favoris se regroupent par type, genre ou décennie. Le bouton Partager se voit enfin
+- **Un seul retour** pour sortir d'une suite de titres similaires ouverts les uns après les autres
+- **Connexion, inscription et mot de passe oublié refaits**, plus lisibles et accessibles, avec le choix de la langue
+- **L'écran des téléchargements refait** : un bilan de la file et de l'espace utilisé, la bascule du mode hors ligne, des sections par série et « Réessayer » sur un échec
+- **Les listes et fiches partagées refaites** : on voit ce qui est partagé et comment rejoindre le serveur
+
+### EN
+- **A redesigned title page**: the backdrop fills the screen, with the title's logo, the rating in large and your markers; "Play" or "Resume" shows the time left, actions are gathered in one capsule, and the title's images open full screen
+- **Clicking an actor or a crew member** opens their page: portrait, biography and their titles on the server
+- **Posters that say more**: the audience rating and yours, My list, favorite and watched read at a glance; on hover, play in the center, stars and quick actions
+- **Refine your recommendations**: in Recommendations, a stack of titles to judge (like, love, not for me), by dragging or with the keyboard. Every verdict truly weighs on what you are offered
+- **Library, My list and My favorites redesigned** with one shared toolbar; My list sorts your titles by stage (to discover, in progress, finished), offers "Resume", a grid or list view and an undoable removal; My favorites group by type, genre or decade. The Share button is finally visible
+- **One back** to leave a chain of similar titles opened one after another
+- **Sign in, sign up and forgotten password redesigned**, clearer and more accessible, with a language choice
+- **The downloads screen redesigned**: a summary of the queue and the space used, the offline mode switch, sections per series and "Retry" on a failure
+- **Shared lists and title pages redesigned**: you see what is shared and how to join the server
+
 ## [1.23.0]
 ### FR
 - **Administration : une vue d'ensemble** — l'administration s'ouvre sur l'état de Jellyfin et de la base de données, les sessions en direct, les tickets ouverts, les mises à jour de plugins, les comptes et les invitations actives ; chaque tuile mène à sa section

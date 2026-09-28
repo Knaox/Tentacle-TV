@@ -5,6 +5,29 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.9.0]
+### FR
+- **Une fiche refaite** : l'image en grand, le logo, la note et vos marqueurs, et les images en plein écran
+- **Notez vos titres** depuis la fiche ou d'un appui long
+- **Affiner**, dans Pour vous : jugez des titres d'un glissement pour affiner vos recommandations
+- **Bibliothèque, Ma liste et Mes favoris refaits**
+- **Un seul retour** après une suite de titres similaires
+- **La page d'un acteur**, en touchant son portrait
+- **Connexion et inscription refaites**
+- **Les titres gardés hors ligne** : un bilan clair, la bascule du mode hors ligne et « Réessayer »
+- **Partagez vos titres likés** depuis le téléphone
+
+### EN
+- **A redesigned title page**: a large image, the logo, the rating and your markers, and full-screen images
+- **Rate your titles** from the title page or with a long press
+- **Refine**, in For You: judge titles with a swipe to fine-tune your recommendations
+- **Library, My list and My favorites redesigned**
+- **One back** after a chain of similar titles
+- **An actor's page**, by tapping their portrait
+- **Sign in and sign up redesigned**
+- **Titles kept offline**: a clear summary, the offline mode switch and "Retry"
+- **Share your liked titles** from your phone
+
 ## [1.8.2]
 ### FR
 - **Une photo de profil à jour** : changée, ajoutée ou retirée depuis un autre appareil, elle se met à jour dès l'ouverture de l'app, et quand on y revient
