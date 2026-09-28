@@ -15,6 +15,9 @@ export const makeMediaDetailStyles = (t: AppTheme) => {
     : t.colors.shadow.card;
   return StyleSheet.create({
     watchedRing: { position: "absolute" as const, top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: t.colors.cta.primaryBg, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
+    // Surtitre : ce qu'on regarde (« Série · En cours ») — posé sur le média,
+    // donc jetons onMedia comme le titre qu'il annonce.
+    kicker: { fontSize: 11, fontFamily: FONT_FAMILY.semibold, letterSpacing: 1.2, textTransform: "uppercase" as const, color: t.colors.onMedia.secondary, marginBottom: 4, textShadowColor: t.colors.onMedia.shadow, textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
     seriesLabel: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light, marginBottom: 4, letterSpacing: 0.2 },
     seriesLink: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, marginBottom: 4 },
     // Titre posé sur le bas du backdrop → onMedia (blanc + voile sombre) pour

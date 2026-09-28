@@ -19,6 +19,7 @@ export const Watch = lazy(() => import("./pages/Watch").then((m) => ({ default: 
 export const MediaDetail = lazy(() => import("./pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
 export const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
 export const Search = lazy(() => import("./pages/Search").then((m) => ({ default: m.Search })));
+export const Person = lazy(() => import("./pages/Person").then((m) => ({ default: m.Person })));
 
 export const Support = lazy(() => import("./pages/Support").then((m) => ({ default: m.Support })));
 export const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));

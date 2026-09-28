@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { formatDuration } from "@tentacle-tv/shared";
@@ -70,13 +71,15 @@ export function DetailMetadata({ item, streams: _streams, communityRating }: Det
 
       {item.Genres && item.Genres.length > 0 && (
         <motion.div variants={fadeUp} className="mt-3 flex flex-wrap gap-2">
+          {/* Chaque genre ouvre son parcours dans la recherche (les mieux notés d'abord). */}
           {item.Genres.map((g) => (
-            <span
+            <Link
               key={g}
-              className="rounded-full border border-line-subtle bg-fill-subtle px-3 py-1 text-xs text-content-tertiary"
+              to={`/search?${new URLSearchParams({ genre: g }).toString()}`}
+              className="rounded-full border border-line-subtle bg-fill-subtle px-3 py-1 text-xs text-content-tertiary transition-colors hover:border-line-strong hover:text-content-primary"
             >
               {g}
-            </span>
+            </Link>
           ))}
         </motion.div>
       )}

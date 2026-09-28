@@ -185,6 +185,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
+        <Stack.Screen name="person/[personId]" options={{ presentation: "card" }} />
         <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
         <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
         <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />

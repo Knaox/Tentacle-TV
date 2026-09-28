@@ -12,6 +12,10 @@ import { episodeCode, playCta, PLAY_MAX_WIDTH, RATING_COLOR, runtimeMinutes } fr
 
 type SeriesWatchState = { type: string; episode?: MediaItem } | undefined;
 
+const KIND_KEYS: Partial<Record<MediaItem["Type"], string>> = {
+  Movie: "kindMovie", Series: "kindSeries", Season: "kindSeason", BoxSet: "kindCollection",
+};
+
 interface Props {
   item: MediaItem;
   twoCol: boolean;
@@ -30,6 +34,7 @@ interface Props {
 export const DetailHeader = memo(function DetailHeader({ item, twoCol, seriesWatchState, posterW, posterH, actions }: Props) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
+  const { t: tm } = useTranslation("media");
   const client = useJellyfinClient();
   const { isDark } = useThemeMode();
   const [posterBroken, setPosterBroken] = useState(false);
@@ -64,6 +69,12 @@ export const DetailHeader = memo(function DetailHeader({ item, twoCol, seriesWat
     </div>
   );
 
+  // Surtitre de l'app : le type, et l'état d'une série (hors épisode).
+  const kicker = isEpisode ? "" : [
+    KIND_KEYS[item.Type] ? tm(KIND_KEYS[item.Type] as string) : null,
+    item.Type === "Series" && item.Status ? (item.Status === "Continuing" ? t("ongoing") : t("ended")) : null,
+  ].filter(Boolean).join(" · ");
+
   const metaEl = (
     <div className="mirror-detail-in-title min-w-0">
       {isEpisode && item.SeriesName && (
@@ -80,6 +91,14 @@ export const DetailHeader = memo(function DetailHeader({ item, twoCol, seriesWat
         ) : (
           <p className="mb-1 truncate text-[13px] font-semibold tracking-[0.2px] text-brand-light">{item.SeriesName}</p>
         )
+      )}
+      {kicker !== "" && (
+        <p
+          className="mb-1 truncate text-[11px] font-semibold uppercase tracking-[1.2px] text-on-media-secondary"
+          style={{ textShadow: "0 1px 4px var(--on-media-shadow)" }}
+        >
+          {kicker}
+        </p>
       )}
       <h1
         className="line-clamp-3 break-words text-[26px] font-extrabold leading-[30px] tracking-[-0.6px] text-on-media-primary"

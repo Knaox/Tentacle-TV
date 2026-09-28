@@ -115,14 +115,22 @@ export function providerUrl(
   return `/api/plugins/${encodeURIComponent(provider.pluginId)}${provider.path}?${params.toString()}`;
 }
 
-/** La filmographie d'une personne chez ce plugin : son nom, et son identifiant TMDB s'il est connu. */
+/**
+ * La filmographie d'une personne chez ce plugin : son nom, son identifiant
+ * TMDB s'il est connu et, quand on vient d'un générique, le RÔLE par lequel on
+ * l'a atteinte (`role` : le type Jellyfin du crédit — `Director`, `Composer`…).
+ * Un plugin qui l'ignore rend la même chose qu'avant ; un plugin qui le lit
+ * met d'abord en avant ce métier-là (les films qu'un compositeur a mis en
+ * musique plutôt que ses apparitions).
+ */
 export function personProviderUrl(
   provider: SearchProvider & { personPath: string },
-  person: { name: string; tmdbId: string | null },
+  person: { name: string; tmdbId: string | null; role?: string | null },
   options: { lang: string; limit: number },
 ): string {
   const params = new URLSearchParams({ name: person.name, lang: options.lang, limit: String(options.limit) });
   if (person.tmdbId !== null) params.set("tmdb", person.tmdbId);
+  if (typeof person.role === "string" && /^[A-Za-z]{1,30}$/.test(person.role)) params.set("role", person.role);
   return `/api/plugins/${encodeURIComponent(provider.pluginId)}${provider.personPath}?${params.toString()}`;
 }
 

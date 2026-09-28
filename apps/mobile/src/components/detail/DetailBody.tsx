@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { useCollectionItems } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { spacing, CONTENT_MAX_WIDTH, useThemedStyles } from "../../theme";
 import { Badge } from "../ui";
@@ -14,6 +15,7 @@ import { CastRow } from "../CastRow";
 import { LicenseAttribution } from "../LicenseAttribution";
 import { MobileExtrasSection } from "./MobileExtrasSection";
 import { DetailRating } from "./DetailRating";
+import { DetailFacts } from "./DetailFacts";
 import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
 
 interface Props {
@@ -27,9 +29,10 @@ interface Props {
 }
 
 /**
- * Corps de la fiche détail (genres → synopsis → casting → extras → saisons/épisodes
- * → licence → similaires). Extrait de MediaDetailScreen (règle 300 lignes) ; partagé
- * entre le layout portrait (sous le hero) et paysage (colonne droite défilante).
+ * Corps de la fiche détail (genres → synopsis → contenu de la collection →
+ * casting et équipe → extras → saisons/épisodes → informations → licence →
+ * similaires). Extrait de MediaDetailScreen (règle 300 lignes) ; partagé entre
+ * le layout portrait (sous le hero) et paysage (colonne droite défilante).
  */
 export function DetailBody({ item, isEpisode, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId }: Props) {
   const router = useRouter();
@@ -37,6 +40,7 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
   const st = useThemedStyles(makeMediaDetailStyles);
   const [expanded, setExpanded] = useState(false);
   const [overviewTruncated, setOverviewTruncated] = useState(false);
+  const { data: collectionItems } = useCollectionItems(item.Type === "BoxSet" ? item.Id : undefined);
 
   return (
     <View>
@@ -73,6 +77,13 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
         </View>
       )}
 
+      {/* Collection (BoxSet) : son contenu, navigable — sans lui, la fiche d'une
+          collection n'avait ni lecture ni rien à ouvrir. */}
+      {collectionItems && collectionItems.length > 0 && (
+        <MediaRow title={t("collectionContent")} data={collectionItems}
+          renderItem={(c: MediaItem) => <MobileMediaCard item={c} onPress={() => router.push(`/media/${c.Id}`)} />} />
+      )}
+
       {item.People && item.People.length > 0 && <CastRow people={item.People} />}
 
       {/* Extras (au-dessus de Saisons & Épisodes) — épisode : extras série en repli. */}
@@ -92,6 +103,8 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
           />
         </>
       )}
+
+      <DetailFacts item={item} />
 
       <LicenseAttribution item={item} />
       {similar && similar.length > 0 && (

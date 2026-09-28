@@ -116,7 +116,7 @@ export function SharedItemDetail() {
 
         {item.People && item.People.length > 0 && (
           <div className="mt-8">
-            <CastRow people={item.People} studios={item.Studios} />
+            <CastRow people={item.People} studios={item.Studios} readOnly />
           </div>
         )}
       </div>

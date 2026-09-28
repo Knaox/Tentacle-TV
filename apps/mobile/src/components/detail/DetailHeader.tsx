@@ -18,6 +18,10 @@ import type { useMediaDetailAnimations } from "../../hooks/useMediaDetailAnimati
 
 type SeriesWatchState = { type: string; episode?: MediaItem } | undefined;
 
+const KIND_KEYS: Partial<Record<MediaItem["Type"], string>> = {
+  Movie: "kindMovie", Series: "kindSeries", Season: "kindSeason", BoxSet: "kindCollection",
+};
+
 interface Props {
   item: MediaItem;
   /** Paysage iPad : hero empilé en rail gauche ; sinon rangée poster+méta. */
@@ -39,6 +43,7 @@ interface Props {
 export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, posterW, posterH, actions, anims }: Props) {
   const router = useRouter();
   const { t } = useTranslation("common");
+  const { t: tm } = useTranslation("media");
   const client = useJellyfinClient();
   const theme = useTheme();
   const st = useThemedStyles(makeMediaDetailStyles);
@@ -59,6 +64,13 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
   const playLabel = seriesEp
     ? buildSeriesPlayLabel(seriesEp, t)
     : (hasResume ? t("resumeAt", { time: formatTime(ticksToSeconds(posTicks)) }) : t("play"));
+
+  // Surtitre (hors épisode, que le lien vers sa série annonce déjà) : le type,
+  // et l'état d'une série — que la rangée méta du mobile ne disait nulle part.
+  const kicker = isEpisode ? "" : [
+    KIND_KEYS[item.Type] ? tm(KIND_KEYS[item.Type] as string) : null,
+    isSeries && item.Status ? (item.Status === "Continuing" ? t("ongoing") : t("ended")) : null,
+  ].filter(Boolean).join(" · ");
 
   const posterEl = (
     <Animated.View style={[{ width: posterW, height: posterH }, ENABLE_SHARED_POSTER_TRANSITION ? undefined : anims.posterStyle]}>
@@ -82,6 +94,7 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
           </Pressable>
         ) : <Text numberOfLines={1} style={st.seriesLabel}>{item.SeriesName}</Text>
       )}
+      {kicker !== "" && <Text style={st.kicker} numberOfLines={1}>{kicker}</Text>}
       <Text style={st.title} numberOfLines={3}>
         {isEpisode && item.IndexNumber != null ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} · ` : ""}{item.Name}
       </Text>

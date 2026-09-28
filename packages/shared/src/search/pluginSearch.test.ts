@@ -39,6 +39,16 @@ describe("searchProviders — qui sait chercher hors bibliothèque", () => {
       .toBe("/api/plugins/seer/search/person?name=Keanu+Reeves&lang=fr&limit=20");
   });
 
+  it("le rôle d'arrivée accompagne la demande — jamais une valeur libre", () => {
+    const provider = { ...PROVIDER, personPath: "/search/person" };
+    expect(personProviderUrl(provider, { name: "Hans Zimmer", tmdbId: "947", role: "Composer" }, { lang: "en", limit: 40 }))
+      .toBe("/api/plugins/seer/search/person?name=Hans+Zimmer&lang=en&limit=40&tmdb=947&role=Composer");
+    expect(personProviderUrl(provider, { name: "X", tmdbId: null, role: "a&b=c" }, { lang: "en", limit: 5 }))
+      .toBe("/api/plugins/seer/search/person?name=X&lang=en&limit=5");
+    expect(personProviderUrl(provider, { name: "X", tmdbId: null, role: null }, { lang: "en", limit: 5 }))
+      .toBe("/api/plugins/seer/search/person?name=X&lang=en&limit=5");
+  });
+
   it("aucun plugin, ou intégration éteinte, ou pas de search : aucune source", () => {
     expect(searchProviders([], "fr", "x")).toEqual([]);
     expect(searchProviders([plugin({ configEnabled: false, search: { path: "/s" } })], "fr", "x")).toEqual([]);

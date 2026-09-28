@@ -12,6 +12,7 @@ export {
 } from "./hooks/useTentacleSearch";
 export { useExternalSearch, combineExternal, type ExternalSearchOptions, type ExternalSearchState } from "./hooks/useExternalSearch";
 export { useExternalFilmography, type ExternalFilmographyOptions, type FilmographyPerson } from "./hooks/useExternalFilmography";
+export { usePersonDetails, usePersonFilmography, type PersonFilmography } from "./hooks/usePerson";
 export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog, type CatalogFilters } from "./hooks/useLibraryCatalog";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";
 export { useLocalTrailers, useSpecialFeatures } from "./hooks/useTrailers";
