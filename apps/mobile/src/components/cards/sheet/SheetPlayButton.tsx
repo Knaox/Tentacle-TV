@@ -17,7 +17,8 @@ interface Props {
 }
 
 /**
- * Le bouton central du survol web, en tête de feuille : pleine largeur, 52 de
+ * La lecture, en tête de feuille — la feuille remplace la carte, elle la garde
+ * donc quelle que soit la variante (`cardActionEntries`) : pleine largeur, 52 de
  * haut, au dégradé de marque — la seule action en couleur, comme la lecture de
  * la fiche (`DetailPlayCta`). Aucune animation continue hors attente.
  */

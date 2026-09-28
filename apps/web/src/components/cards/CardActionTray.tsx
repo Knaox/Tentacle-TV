@@ -11,7 +11,8 @@ import {
   type MediaItem,
 } from "@tentacle-tv/shared";
 import { CardDownloadAction } from "../../downloads/CardDownloadAction";
-import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "./cardGlyphs";
+import { BookmarkGlyph, HeartGlyph, PlayGlyph, WatchedGlyph } from "./cardGlyphs";
+import { CardTrayPrimaryButton } from "./CardTrayPrimaryButton";
 import { stopCardClick } from "./cardEvents";
 
 interface CardActionTrayProps {
@@ -31,18 +32,38 @@ interface CardActionTrayProps {
   onDismiss?: () => void;
   /** Bascules d'un titre lu sur le disque : l'état et le geste viennent de l'appelant. */
   localToggles?: CardToggleHandlers;
+  /**
+   * « Lire » en tête du plateau (`overlay.playInTray`) : le libellé complet
+   * (« Reprendre — Dune ») et le geste. Absent : la carte ne lit rien d'ici.
+   */
+  play?: { label: string; onPlay: () => void } | null;
 }
 
-/** Les gabarits des boutons de capsule. */
+/**
+ * Les gabarits des boutons de capsule : une LARGEUR et un carré, jamais une
+ * hauteur fixe. Sur une affiche étroite (≤ 160 px), cinq ou six boutons ne
+ * tiennent pas à 28 px : ils se resserrent ensemble — `flex-shrink`, la
+ * hauteur suit la largeur — au lieu de déborder de la carte. Plancher de
+ * 22 px : avec l'écart de 2 px de la capsule, deux centres restent à 24 px,
+ * ce que l'exception d'espacement de WCAG 2.5.8 admet ; une affiche de
+ * 142 px garde ainsi ses cinq boutons du bureau. Tous les boutons d'une
+ * capsule (bascules, action primaire, hors ligne) prennent ce gabarit, et
+ * PAS `shrink-0`.
+ */
 export const TRAY_SIZE = {
-  sm: { box: "h-7 w-7", icon: "h-3.5 w-3.5" },
-  md: { box: "h-8 w-8", icon: "h-4 w-4" },
+  sm: { box: "w-7 min-w-[22px] aspect-square", icon: "h-3.5 w-3.5" },
+  md: { box: "w-8 min-w-[22px] aspect-square", icon: "h-4 w-4" },
 } as const;
 
 /**
- * Le plateau du survol : Ma liste, favori, vu, puis ce que la carte ajoute —
- * hors ligne, fiche, refus d'une recommandation — dans UNE capsule, dans
- * l'ordre que fixe le modèle partagé (`cardOverlay.ts`).
+ * Le plateau du survol : « Lire » en tête quand le clic de la carte ne lit
+ * pas, puis Ma liste, favori, vu, puis ce que la carte ajoute — hors ligne,
+ * fiche, refus d'une recommandation — dans UNE capsule, dans l'ordre que fixe
+ * le modèle partagé (`cardOverlay.ts`).
+ *
+ * « Lire » y est DISCRET (`CardTrayPrimaryButton`, ton `quiet`) : un bouton
+ * du gabarit de ses voisins, un verre un peu plus dense, sans couleur. Le
+ * gros bouton au dégradé qui trônait au centre de l'image a été retiré.
  *
  * La capsule reprend, dans le même ordre et avec les mêmes glyphes, la
  * pastille d'états du repos : l'état qu'on voyait se retrouve exactement là
@@ -61,6 +82,7 @@ export function CardActionTray({
   onOpenDetails,
   onDismiss,
   localToggles,
+  play,
 }: CardActionTrayProps) {
   const { t } = useTranslation("cards");
   const { box, icon } = TRAY_SIZE[size];
@@ -68,6 +90,11 @@ export function CardActionTray({
 
   return (
     <CardTrayCapsule label={label} stretch={stretch}>
+      {play && (
+        <CardTrayPrimaryButton box={box} icon={icon} tone="quiet" label={play.label} onPress={play.onPlay}>
+          <PlayGlyph className={icon} />
+        </CardTrayPrimaryButton>
+      )}
       {overlay.toggles.length > 0 &&
         (localToggles ? (
           <CardTrayToggleButtons toggles={overlay.toggles} handlers={localToggles} {...sizes} />
@@ -78,9 +105,7 @@ export function CardActionTray({
         if (extra === "offline") {
           // Bureau ET droit, sinon PAS rendu (ni grisé, ni cadenas). Même
           // gabarit rond : il s'aligne dans la capsule comme un bouton de plus.
-          return item ? (
-            <CardDownloadAction key={extra} item={item} variant={size === "sm" ? "compact" : "bar"} tone="tray" />
-          ) : null;
+          return item ? <CardDownloadAction key={extra} item={item} tone="tray" tray={sizes} /> : null;
         }
         const onPress = extra === "details" ? onOpenDetails : onDismiss;
         if (!onPress) return null;
@@ -146,12 +171,14 @@ export function ToggleGlyph({ kind, className, filled }: { kind: CardToggleKind;
  * basculer mais garde le même plateau — une carte Vigie, par exemple.
  */
 export function CardTrayCapsule({ label, stretch = false, children }: { label: string; stretch?: boolean; children: ReactNode }) {
+  // `max-w-full min-w-0` : la capsule ne dépasse jamais la carte, ce sont ses
+  // boutons qui se resserrent (`TRAY_SIZE`).
   return (
     <div
       role="toolbar"
       aria-label={label}
       onClick={stopCardClick}
-      className={`flex items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
+      className={`flex min-w-0 max-w-full items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
         stretch ? "w-full justify-between" : ""
       }`}
     >
@@ -190,7 +217,7 @@ export function CardTrayButton({ box, active = false, accent = false, pressable,
         stopCardClick(e);
         onPress();
       }}
-      className={`${box} flex shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${tone}`}
+      className={`${box} flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${tone}`}
     >
       {children}
     </button>

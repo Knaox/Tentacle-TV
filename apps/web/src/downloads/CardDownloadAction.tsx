@@ -48,9 +48,14 @@ interface CardDownloadActionProps {
    * (`CardActionTray`) — ses voisins n'ont ni fond ni liseré.
    */
   tone?: "chip" | "tray";
+  /**
+   * Le gabarit du plateau (`TRAY_SIZE`), qui remplace celui de la variante :
+   * dans la capsule, le bouton se resserre avec ses voisins.
+   */
+  tray?: { box: string; icon: string };
 }
 
-export function CardDownloadAction({ item, variant = "compact", tone = "chip" }: CardDownloadActionProps) {
+export function CardDownloadAction({ item, variant = "compact", tone = "chip", tray }: CardDownloadActionProps) {
   const { t } = useTranslation("downloads");
   const navigate = useNavigate();
   const { canDownload } = useDownloadsVisibility();
@@ -97,7 +102,8 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip" }:
     requestDownload(item);
   };
 
-  const { box, icon, dot } = VARIANT_STYLE[variant];
+  const { dot } = VARIANT_STYLE[variant];
+  const { box, icon } = tray ?? VARIANT_STYLE[variant];
 
   // Posé sur l'affiche : verre sombre et blancs CONSTANTS dans les deux thèmes,
   // comme le reste du cluster. Pas de `backdrop-filter` — ce serait une passe de
@@ -111,7 +117,7 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip" }:
       title={label}
       className={`${box} relative flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
         tone === "tray"
-          ? `shrink-0 transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${isComplete ? "text-emerald-300" : "text-white/80 hover:text-white"}`
+          ? `transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${isComplete ? "text-emerald-300" : "text-white/80 hover:text-white"}`
           : `border bg-black/55 transition hover:scale-105 hover:bg-black/70 ${
               isComplete ? "border-emerald-400/80 text-emerald-300" : "border-white/40 text-white hover:border-white"
             }`

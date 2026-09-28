@@ -26,10 +26,10 @@ interface WatchlistResumeTileProps {
  * LANCE la lecture — c'est la seule promesse de cette rangée.
  *
  * C'est la carte paysage de toutes les rangées : même cadre, mêmes marqueurs
- * au repos, et au survol la variante `landscape` du survol unique (Lecture
- * au centre, étoiles et plateau au coin bas-droit, la fiche dans le
- * plateau). Elle avait son propre dessin : un bouton blanc permanent dans
- * l'angle et une barre de progression recopiée.
+ * au repos, et au survol la variante `landscape` du survol unique (étoiles et
+ * plateau au coin bas-droit, la fiche dans le plateau, aucun bouton de
+ * lecture : la vignette entière lit). Elle avait son propre dessin : un
+ * bouton blanc permanent dans l'angle et une barre de progression recopiée.
  */
 export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onPlay, pending }: WatchlistResumeTileProps) {
   const { t } = useTranslation("watchlist");

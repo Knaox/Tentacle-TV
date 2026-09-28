@@ -115,7 +115,8 @@
   transform: scale(1.02);
 }
 
-/* L'action primaire — la seule en couleur, comme le bouton central du survol. */
+/* L'action primaire — la seule en couleur : « Lire » ouvre la feuille, comme il
+   ouvre le plateau du survol web. */
 .actions-carte-tv-entree[data-principal="true"] {
   background: linear-gradient(135deg, var(--brand), var(--brand-accent));
   color: #fff;

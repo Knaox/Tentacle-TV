@@ -138,45 +138,31 @@
  * restent posées dans le JSX : elles servent d'ancres de test et de point de
  * reprise si l'effet revient un jour sans panneau flottant. */
 
-/* ── Survol d'une affiche : le lecteur au centre, le plateau qui monte ────
+/* ── Survol d'une carte : le plateau qui monte ─────────────────────────────
  *
- * Les deux mouvements du survol des cartes (`CardHoverShell`). Ils ne
- * touchent que `opacity` et `transform`, déclarés dans UNE transition (cf.
- * l'en-tête de cette feuille), et le calque n'existe que pendant le survol :
- * l'entrée part de `@starting-style`, la sortie est une transition ordinaire
- * que `useMountWhile` laisse se jouer avant de démonter.
+ * Le mouvement du survol des cartes (`CardHoverShell`). Il ne touche que
+ * `opacity` et `transform`, déclarés dans UNE transition (cf. l'en-tête de
+ * cette feuille), et le calque n'existe que pendant le survol : l'entrée part
+ * de `@starting-style`, la sortie est une transition ordinaire que
+ * `useMountWhile` laisse se jouer avant de démonter.
  *
- * Le bouton lecture « éclot » (0,86 → 1) ; le plateau monte de 10 px. Deux
- * directions différentes, c'est voulu : l'action primaire apparaît sur place,
- * les secondaires arrivent du bord qu'elles occupent. */
-.card-hover-pop,
+ * Le groupe du bas — étoiles et plateau — monte de 10 px depuis le bord qu'il
+ * occupe. Un bouton de lecture « éclosait » au centre (`.card-hover-pop`) :
+ * retiré avec lui, rien ne se pose plus sur le milieu de l'image. */
 .card-hover-rise {
   opacity: 0;
+  transform: translateY(10px);
   transition:
     opacity var(--reveal-ms, 200ms) var(--ease-out),
     transform var(--reveal-ms, 200ms) var(--ease-out);
 }
 
-.card-hover-pop {
-  transform: scale(0.86);
-}
-
-.card-hover-rise {
-  transform: translateY(10px);
-}
-
-.card-hover-pop[data-shown="true"],
 .card-hover-rise[data-shown="true"] {
   opacity: 1;
   transform: none;
 }
 
 @starting-style {
-  .card-hover-pop[data-shown="true"] {
-    opacity: 0;
-    transform: scale(0.86);
-  }
-
   .card-hover-rise[data-shown="true"] {
     opacity: 0;
     transform: translateY(10px);
@@ -184,9 +170,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card-hover-pop,
   .card-hover-rise,
-  .card-hover-pop[data-shown="true"],
   .card-hover-rise[data-shown="true"] {
     transform: none;
   }

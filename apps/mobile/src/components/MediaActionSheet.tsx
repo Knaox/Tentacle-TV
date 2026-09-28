@@ -32,7 +32,7 @@ interface Props {
  * (`CardSheetScope` y envoie une recommandation sans item).
  *
  *   1. l'en-tête (et « Pourquoi ce titre » pour une recommandation) ;
- *   2. Lire / Reprendre — le bouton central du survol, quand quelque chose se
+ *   2. Lire / Reprendre — l'action primaire de la carte, quand quelque chose se
  *      lance (une série : son épisode à reprendre ou à suivre) ;
  *   3. les bascules, dans l'ordre de la pastille d'états : Ma liste, favori,
  *      vu — Ma liste et favori au niveau SÉRIE, « vu » sur le titre montré ;

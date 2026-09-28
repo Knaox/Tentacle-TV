@@ -18,6 +18,12 @@ import { CARD_STATUS_ORDER, type CardStatusKind } from "./cardMarkers";
  *   • `reco`      — la carte de recommandation : l'affiche, plus « Ne plus me
  *                    proposer », pour un titre parfois hors bibliothèque.
  *
+ * Aucun GROS bouton de lecture sur l'image, dans aucune variante : le clic de
+ * la carte fait déjà l'action principale. La lecture reste un geste du
+ * plateau, discret et en tête, là seulement où le clic ne la lance pas
+ * (`playInTray`) ; une feuille — l'appui long, la télécommande — la garde en
+ * tête dans tous les cas, puisqu'elle remplace la carte.
+ *
  * Seule l'ENTRÉE change d'une plateforme à l'autre, jamais le fond :
  *   • la souris (web, bureau) : un calque monté au survol ;
  *   • le doigt (mobile, miroir) : la feuille de l'appui long ;
@@ -70,8 +76,15 @@ export interface CardOverlayInput {
 
 export interface CardOverlay {
   variant: CardOverlayVariant;
-  /** Le bouton Lecture du centre, `null` quand rien ne se lance. */
+  /** La lecture — « Lire » ou « Reprendre » —, `null` quand rien ne se lance. */
   play: { labelKey: "play" | "resume" } | null;
+  /**
+   * La lecture a sa place EN TÊTE DU PLATEAU du survol : seulement quand le
+   * clic de la carte ne la lance pas déjà. Une affiche ouvre la fiche au clic,
+   * son plateau offre donc « Lire » ; la vignette 16:9 EST la lecture, son
+   * plateau n'en répète rien. Les feuilles ignorent ce champ.
+   */
+  playInTray: boolean;
   /** Ce que fait le clic (le tap, la validation) sur la carte, hors boutons. */
   open: "details" | "play";
   /** Les étoiles de notation. */
@@ -110,6 +123,7 @@ export function resolveCardOverlay(input: CardOverlayInput): CardOverlay {
   return {
     variant,
     play: playable ? { labelKey: input.resume === true ? "resume" : "play" } : null,
+    playInTray: playable && open !== "play",
     open,
     rate: input.rateable && !local,
     toggles: local ? LOCAL_TOGGLES : inLibrary ? CARD_TOGGLE_ORDER : NO_TOGGLES,
@@ -166,9 +180,10 @@ export interface CardActionEntry {
 
 /**
  * Les actions du survol, à plat, dans l'ordre où une FEUILLE les présente —
- * l'appui long du mobile, le menu de la télécommande : la lecture d'abord,
- * puis les bascules, puis les extras. La note n'y figure pas : elle se rend
- * en étoiles, à part (`overlay.rate`).
+ * l'appui long du mobile, le menu de la télécommande : la lecture d'abord
+ * (quelle que soit la variante : la feuille remplace la carte, son clic
+ * n'est plus là), puis les bascules, puis les extras. La note n'y figure
+ * pas : elle se rend en étoiles, à part (`overlay.rate`).
  */
 export function cardActionEntries(overlay: CardOverlay, states: CardToggleStates): CardActionEntry[] {
   const entries: CardActionEntry[] = [];

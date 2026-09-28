@@ -36,9 +36,9 @@ interface RecoCardProps {
  *     globale TMDB, et la vôtre dès que vous notez — en bas à gauche, la
  *     pastille d'états en haut à droite ; en haut à gauche, « À la demande »
  *     (hors bibliothèque) et « Découverte » ; sous l'affiche, la RAISON.
- *   • AU SURVOL, `RecoPosterHoverLayer` : voile, Lecture au centre, étoiles et
- *     plateau — « Ne plus me proposer » au bout de la capsule. MONTÉ au
- *     survol, jamais laissé à opacité nulle (règle GPU du dépôt).
+ *   • AU SURVOL, `RecoPosterHoverLayer` : voile, étoiles et plateau —
+ *     « Lire » discret en tête, « Ne plus me proposer » au bout de la capsule.
+ *     MONTÉ au survol, jamais laissé à opacité nulle (règle GPU du dépôt).
  */
 export const RecoCard = memo(function RecoCard({
   item,

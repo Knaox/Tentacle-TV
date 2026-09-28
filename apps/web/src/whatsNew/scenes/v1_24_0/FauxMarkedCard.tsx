@@ -4,7 +4,7 @@ import { CardImage } from "../../../components/cards/CardImage";
 import { CardRatingBadge } from "../../../components/cards/CardRatingBadge";
 import { CardStatusMarkers } from "../../../components/cards/CardStatusMarkers";
 import { CardHoverShell } from "../../../components/cards/CardHoverShell";
-import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "../../../components/cards/cardGlyphs";
+import { BookmarkGlyph, HeartGlyph, PlayGlyph, WatchedGlyph } from "../../../components/cards/cardGlyphs";
 import { StarRating } from "../../../components/rating/StarRating";
 import type { ScenePoster } from "../../sceneMedia";
 import { CARD_TONES } from "../FauxCard";
@@ -23,13 +23,13 @@ interface FauxMarkedCardProps extends Placed {
 
 const noop = () => {};
 /** Le gabarit `sm` du plateau (`TRAY_SIZE.sm` de `CardActionTray`). */
-const BOX = { box: "h-7 w-7", icon: "h-3.5 w-3.5" } as const;
+const BOX = { box: "w-7 min-w-[22px] aspect-square", icon: "h-3.5 w-3.5" } as const;
 
 /**
  * Une affiche de bibliothèque, faite des VRAIES pièces : au repos la note
  * (globale + la vôtre) et la pastille d'états ; au survol la coque partagée
- * (`CardHoverShell`, variante `poster`) — voile, Lecture au centre, étoiles,
- * plateau d'actions.
+ * (`CardHoverShell`, variante `poster`) — voile, étoiles, plateau d'actions
+ * avec « Lire » discret en tête, comme l'app.
  * Inerte : c'est la scène qui survole, note et bascule.
  */
 export function FauxMarkedCard({ poster, tone, userScore, statuses, hovered = false, hoverable = false, ...place }: FauxMarkedCardProps) {
@@ -41,7 +41,7 @@ export function FauxMarkedCard({ poster, tone, userScore, statuses, hovered = fa
           <CardRatingBadge rating={poster?.rating ?? null} userScore={userScore} shown={!hovered} />
           <CardStatusMarkers statuses={statuses} shown={!hovered} />
           {hoverable && (
-            <CardHoverShell variant="poster" visible={hovered} play={{ label: poster?.title ?? "", onPlay: noop }}>
+            <CardHoverShell variant="poster" visible={hovered}>
               <div className="flex justify-center">
                 <StarRating value={userScore} onRate={noop} onClear={noop} size="sm" tone="onMedia" />
               </div>
@@ -67,11 +67,15 @@ function FauxTray({ statuses }: { statuses: readonly CardStatusKind[] }) {
   ] as const;
   return (
     <div className="flex w-full items-center justify-between gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)]">
+      {/* « Lire », ton `quiet` de `CardTrayPrimaryButton`. */}
+      <span className={`${BOX.box} flex items-center justify-center rounded-full bg-white/20 text-white ring-1 ring-inset ring-white/30`}>
+        <PlayGlyph className={BOX.icon} />
+      </span>
       {items.map(({ kind, Glyph, accent }) => {
         const active = statuses.includes(kind);
         const tone = active ? (accent ? "bg-white/15 text-[var(--brand-accent)]" : "bg-white/15 text-white") : "text-white/80";
         return (
-          <span key={kind} className={`${BOX.box} flex shrink-0 items-center justify-center rounded-full ${tone}`}>
+          <span key={kind} className={`${BOX.box} flex items-center justify-center rounded-full ${tone}`}>
             <Glyph className={BOX.icon} filled={active} />
           </span>
         );

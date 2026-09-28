@@ -46,8 +46,8 @@ interface EpisodeCardProps {
  *
  * Le clic lance la lecture. Au survol, le survol UNIQUE des cartes, variante
  * paysage (`CardHoverOverlay`) : puces qualité/langues en haut à gauche,
- * Lecture au centre, étoiles et plateau au coin bas-droit — la fiche y a son
- * bouton. Un panneau d'aperçu flottant, agrandi en portail avec un tiroir de
+ * étoiles et plateau au coin bas-droit — la fiche y a son bouton. Aucun
+ * bouton de lecture : la vignette entière EST la lecture. Un panneau d'aperçu flottant, agrandi en portail avec un tiroir de
  * synopsis, a vécu ici : c'était un quatrième survol, différent de tous les
  * autres, retiré pour que toutes les cartes parlent la même langue.
  *
@@ -111,11 +111,7 @@ export const EpisodeCard = memo(function EpisodeCard({
     if (ctx.ctxMenu) return;
     navigate(`/watch/${item.Id}`);
   };
-  const handlePlay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    navigate(`/watch/${item.Id}`);
-  };
+  const handlePlay = () => navigate(`/watch/${item.Id}`);
   // La fiche s'ouvre depuis la VIGNETTE — la racine embarquerait le bloc
   // titre, et le visuel partirait recadré (cf. `captureDetailOrigin`).
   const openDetails = () => {

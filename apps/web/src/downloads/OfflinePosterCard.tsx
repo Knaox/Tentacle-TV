@@ -14,7 +14,7 @@
  * laissé à `opacity: 0`.
  */
 
-import { memo, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { memo, useState, type KeyboardEvent } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardFrame } from "../components/cards/CardFrame";
 import { CardHoverOverlay } from "../components/cards/CardHoverOverlay";
@@ -92,15 +92,7 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
             item={item}
             title={title}
             visible={hovered}
-            play={play && {
-              resume: play.resume,
-              label: play.label,
-              onPlay: (e: MouseEvent) => {
-                e.stopPropagation();
-                e.preventDefault();
-                play.onPlay();
-              },
-            }}
+            play={play}
             meta={item}
             local={{
               states: { watchlist: false, favorite: false, watched },

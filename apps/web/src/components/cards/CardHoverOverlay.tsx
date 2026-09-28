@@ -1,4 +1,3 @@
-import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useCardFace, useCardRatingTarget, type RatingIdentity } from "@tentacle-tv/api-client";
 import {
@@ -25,8 +24,10 @@ interface CardHoverOverlayProps {
   /**
    * La lecture — `null` quand rien ne se lance d'ici. `label` remplace le
    * libellé du modèle quand l'appelant en sait plus (« Reprendre S2 · E5 »).
+   * Sur une vignette 16:9, elle dit seulement que le clic LIT (le modèle en
+   * tire la fiche au plateau) : aucun bouton n'est rendu pour elle.
    */
-  play: { resume: boolean; label?: string; onPlay: (e: MouseEvent) => void } | null;
+  play: { resume: boolean; label?: string; onPlay: () => void } | null;
   /** Ce que notent les étoiles d'un titre hors bibliothèque (son tmdb). */
   ratingIdentity?: RatingIdentity | null;
   /** L'item dont les puces qualité/langues sont montrées (le film, l'épisode résolu). */
@@ -45,10 +46,11 @@ interface CardHoverOverlayProps {
 /**
  * LE survol des cartes du web — un composant, trois variantes (`poster`,
  * `landscape`, `reco`), une seule grammaire : puces qualité/langues en haut à
- * gauche, voile, Lecture au centre, étoiles puis plateau (Ma liste, favori,
- * vu, et les extras). Ce qu'il offre, et dans quel ordre, vient du modèle
- * partagé (`resolveCardOverlay`) : la feuille d'appui long du mobile et le
- * menu de la télécommande en rendent exactement la même liste.
+ * gauche, voile, étoiles puis plateau (« Lire » discret en tête quand le clic
+ * ne lit pas, Ma liste, favori, vu, et les extras). Rien au centre de
+ * l'image. Ce qu'il offre, et dans quel ordre, vient du modèle partagé
+ * (`resolveCardOverlay`) : la feuille d'appui long du mobile et le menu de la
+ * télécommande en rendent exactement la même liste.
  *
  * MONTÉ au survol seulement, par l'appelant (`useMountWhile`) : ses étoiles
  * s'abonnent à la liste des notes, son plateau aux Sets de séries, et la
@@ -94,8 +96,10 @@ export function CardHoverOverlay({
     offline: supportsDownloads(),
     local: local !== undefined,
   });
-  const playLabel = overlay.play && play ? `${play.label ?? t(overlay.play.labelKey)} — ${title}` : null;
-  const hasTray = overlay.toggles.length > 0 || overlay.extras.length > 0;
+  const trayPlay = overlay.playInTray && overlay.play && play
+    ? { label: `${play.label ?? t(overlay.play.labelKey)} — ${title}`, onPlay: play.onPlay }
+    : null;
+  const hasTray = trayPlay !== null || overlay.toggles.length > 0 || overlay.extras.length > 0;
   // Pleine largeur sur une affiche seulement quand le plateau est complet :
   // une capsule d'un ou deux boutons (hors bibliothèque, titre local) épouse
   // son contenu, au centre — étirée, un bouton seul flotterait au bord.
@@ -108,11 +112,7 @@ export function CardHoverOverlay({
           <CardMetaOverlay item={metaItem} density={landscape ? "full" : "compact"} reveal="mount" shown={visible} />
         </div>
       )}
-      <CardHoverShell
-        variant={variant}
-        visible={visible}
-        play={playLabel && play ? { label: playLabel, onPlay: play.onPlay } : null}
-      >
+      <CardHoverShell variant={variant} visible={visible}>
         {overlay.rate && (
           <div className={landscape ? "flex justify-end" : "flex justify-center"}>
             {identity ? (
@@ -135,6 +135,7 @@ export function CardHoverOverlay({
               onOpenDetails={onOpenDetails}
               onDismiss={onDismiss}
               localToggles={local}
+              play={trayPlay}
             />
           </div>
         )}

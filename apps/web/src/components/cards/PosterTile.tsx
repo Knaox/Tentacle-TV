@@ -33,8 +33,8 @@ interface PosterTileProps {
  *     droite, la progression au bord inférieur. Rien d'autre.
  *   • AU SURVOL, les marqueurs s'effacent et le survol unique des cartes
  *     (`CardHoverOverlay`, variante `poster`) prend l'affiche : puces
- *     qualité/langues en haut à gauche, voile, lecture au centre, étoiles et
- *     plateau en bas.
+ *     qualité/langues en haut à gauche, voile, étoiles et plateau en bas —
+ *     « Lire » discret en tête du plateau, rien au centre de l'image.
  *
  * Tout ce qui est POSÉ SUR l'affiche reste blanc/noir constant dans les deux
  * schémas : c'est la luminosité du poster qui commande le contraste.
@@ -73,9 +73,8 @@ export function PosterTile({
     ? watchState?.type === "continue"
     : progress != null && progress > 0 && !watched;
 
-  const handlePlay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
+  // Le bouton du plateau arrête déjà le clic : il n'atteint pas la carte.
+  const handlePlay = () => {
     if (isSeries) {
       // `continue` rend l'épisode entamé, `next` le premier non vu. Série
       // terminée (ou état pas encore chargé) : la fiche plutôt qu'un épisode

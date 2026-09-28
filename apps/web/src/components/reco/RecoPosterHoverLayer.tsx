@@ -1,4 +1,3 @@
-import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRecoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
 import { CardHoverOverlay } from "../cards/CardHoverOverlay";
@@ -56,9 +55,7 @@ function LibraryRecoHoverLayer({ item, visible, onDismiss, onOpenDetail }: RecoP
   // liste) ; pour une série, les Sets partagés répondent.
   const face = useRecoMarkerItem(item);
 
-  const onPlay = (e: MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const onPlay = () => {
     if (!target || target.kind === "detail") onOpenDetail();
     else navigate(target.path);
   };

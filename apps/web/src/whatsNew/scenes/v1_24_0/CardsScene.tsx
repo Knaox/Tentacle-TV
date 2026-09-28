@@ -26,7 +26,7 @@ const REST: ReadonlyArray<{ userScore: number | null; statuses: CardStatusKind[]
 /**
  * Les cartes au repos disent tout : la note du public et la vôtre dans la
  * même pastille, et les états — signet, cœur, coche — dans une capsule
- * d'angle. Au survol : Lecture au centre, les étoiles, le plateau d'actions.
+ * d'angle. Au survol : les étoiles, puis le plateau d'actions, « Lire » en tête.
  * Le curseur note la deuxième, l'ajoute à Ma liste, puis la quitte : ses
  * marqueurs ont changé.
  */

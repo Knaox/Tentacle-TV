@@ -10,7 +10,7 @@
  * d'un film — son affiche 2:3 se rognerait mal.
  */
 
-import { memo, useMemo, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { memo, useMemo, useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDuration, formatEpisodeCode, resolveResumeSprite } from "@tentacle-tv/shared";
 import { localMediaItem, watchStateOf } from "@tentacle-tv/offline-core";
@@ -113,14 +113,7 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
             item={item}
             title={isEpisode ? `${heading} — ${title}` : title}
             visible={hovered}
-            play={{
-              resume: percent !== null && percent > 0,
-              onPlay: (e: MouseEvent) => {
-                e.stopPropagation();
-                e.preventDefault();
-                onPlay(entry);
-              },
-            }}
+            play={{ resume: percent !== null && percent > 0, onPlay: () => onPlay(entry) }}
             meta={item}
             onOpenDetails={() => onOpen(entry)}
             local={{

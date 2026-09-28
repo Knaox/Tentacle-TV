@@ -18,6 +18,7 @@ describe("resolveCardOverlay", () => {
     expect(overlay).toEqual({
       variant: "poster",
       play: { labelKey: "play" },
+      playInTray: true,
       open: "details",
       rate: true,
       toggles: ["watchlist", "favorite", "watched"],
@@ -37,6 +38,19 @@ describe("resolveCardOverlay", () => {
     const overlay = resolveCardOverlay({ variant: "landscape", ...LIBRARY, resume: true });
     expect(overlay.open).toBe("play");
     expect(overlay.extras).toEqual(["details"]);
+  });
+
+  it("ne met la lecture au plateau que là où le clic ne la lance pas", () => {
+    expect(resolveCardOverlay({ variant: "poster", ...LIBRARY }).playInTray).toBe(true);
+    expect(resolveCardOverlay({ variant: "reco", ...LIBRARY, resume: true }).playInTray).toBe(true);
+    // La vignette EST la lecture : son plateau ne la répète pas…
+    const landscape = resolveCardOverlay({ variant: "landscape", ...LIBRARY, resume: true });
+    expect(landscape.playInTray).toBe(false);
+    // … mais la feuille, qui remplace la carte, la garde en tête.
+    expect(cardActionEntries(landscape, NONE)[0]).toEqual({ kind: "play", labelKey: "resume" });
+    // Rien à lire, rien au plateau.
+    expect(resolveCardOverlay({ variant: "poster", ...LIBRARY, playable: false }).playInTray).toBe(false);
+    expect(resolveCardOverlay({ variant: "reco", inLibrary: false, playable: true, rateable: true }).playInTray).toBe(false);
   });
 
   it("ramène à la fiche une vignette qui n'a rien à lire", () => {
@@ -71,6 +85,7 @@ describe("resolveCardOverlay", () => {
     expect(poster.rate).toBe(false);
     expect(poster.extras).toEqual([]);
     expect(poster.play).toEqual({ labelKey: "play" });
+    expect(poster.playInTray).toBe(true);
     expect(poster.open).toBe("details");
     const landscape = resolveCardOverlay({ variant: "landscape", ...LIBRARY, offline: true, local: true });
     expect(landscape.open).toBe("play");

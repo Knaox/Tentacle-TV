@@ -222,6 +222,15 @@ MÊME modèle, dans `packages/shared/src/utils/` :
   `landscape` (16:9, le clic lance la lecture), `reco`. Un titre lu sur le
   disque passe `local: true` ; un titre hors bibliothèque (Vigie) a son
   pendant, `externalCardOverlay.ts`.
+- **rien au centre de l'image**, sur aucune variante ni plateforme : le clic
+  de la carte fait déjà l'action principale. L'action primaire est le PREMIER
+  bouton du plateau (`CardTrayPrimaryButton`) — « Lire » discret (ton
+  `quiet`) là seulement où le clic ne lit pas (`playInTray` : affiche,
+  reco ; jamais la vignette 16:9, qui EST la lecture), « Demander » (ton
+  `brand`) sur une carte Vigie. Une feuille (appui long, télécommande)
+  remplace la carte : elle garde « Lire » en tête dans tous les cas. Le
+  plateau se resserre sur une affiche étroite (`TRAY_SIZE`, jusqu'à 24 px),
+  il ne déborde jamais.
 
 Seule l'ENTRÉE change : la souris sur le web et le bureau (`CardHoverOverlay`,
 monté au survol), l'appui long sur le mobile et le miroir (`CardSheetScope` /

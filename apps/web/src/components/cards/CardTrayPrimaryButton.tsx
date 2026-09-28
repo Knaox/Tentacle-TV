@@ -40,7 +40,8 @@ const TONES: Record<CardTrayPrimaryTone, string> = {
  *
  * Aucune taille propre : elle prend le gabarit de ses voisins (`box`, `icon`),
  * et quand le plateau se resserre sur une affiche étroite, elle se resserre
- * avec lui. Ce qui la distingue, c'est sa place (la première) et son ton.
+ * avec lui — d'où l'absence de `shrink-0` (cf. `TRAY_SIZE`). Ce qui la
+ * distingue, c'est sa place (la première) et son ton.
  *
  * Pas une bascule : pas d'`aria-pressed`. Occupée, elle n'est pas `disabled` —
  * le clic d'un bouton désactivé peut retomber sur la carte, qui ouvrirait la
@@ -59,7 +60,7 @@ export function CardTrayPrimaryButton({ box, icon, tone, label, onPress, busy = 
         stopCardClick(e);
         if (!busy) onPress();
       }}
-      className={`${box} flex shrink-0 items-center justify-center rounded-full transition-transform duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
+      className={`${box} flex items-center justify-center rounded-full transition-transform duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
         busy ? "cursor-wait" : "hover:scale-110 active:scale-95"
       } ${TONES[tone]}`}
     >
