@@ -1,6 +1,8 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { recoPosterUrl, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
+import {
+  recoPosterUrl, useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem, type RecoRowItem,
+} from "@tentacle-tv/api-client";
 import { titleKey } from "@tentacle-tv/shared";
 import { CardMarkerLayer } from "../../../components/cards/CardMarkerLayer";
 import { RecoOnDemandLabel } from "../../../components/reco/RecoOnDemandLabel";
@@ -18,6 +20,8 @@ import { useCardWidth } from "../../useMirrorLayout";
  * nulle part où aller. Au doigt, pas de survol : l'appui long ouvre la feuille
  * — celle des cartes Vigie pour un titre hors bibliothèque (« Demander », la
  * note, Ma liste à l'arrivée), dont la pastille suit l'état (« Demandé »).
+ * Jugée depuis sa feuille (Ma liste, cœur, vu, note), elle s'efface quand la
+ * feuille se referme, avant de quitter la rangée (`.reco-card-leaving`).
  */
 export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongPress, reason }: {
   item: RecoRowItem;
@@ -35,6 +39,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const face = useRecoMarkerItem(item);
   // Hors bibliothèque, Ma liste est une mise de côté jusqu'à l'arrivée : la carte la dit elle-même.
   const pending = useIsWatchlistPending(onDemand ? titleKey(item.mediaType, item.tmdbId) : null);
+  const leaving = useIsRecoLeaving(item.key);
   const subtitle =
     onDemand && !canOpen
       ? [item.year, t("unavailableHint")].filter(Boolean).join(" — ")
@@ -46,7 +51,9 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
     <Pressable
       onPress={canOpen ? onPress : undefined}
       onLongPress={onLongPress}
-      style={{ width, opacity: canOpen ? 1 : 0.7 }}
+      // L'opacité est en ligne (carte atténuée) : le fondu de sortie passe par elle.
+      className={leaving ? "reco-card-leaving" : undefined}
+      style={{ width, opacity: leaving ? 0 : canOpen ? 1 : 0.7 }}
       aria-label={`${item.title}${item.year ? `, ${item.year}` : ""}`}
     >
       <div className="relative aspect-[2/3] rounded-xl bg-surface-2" style={{ boxShadow: "0 4px 6px rgba(0,0,0,0.22)" }}>
