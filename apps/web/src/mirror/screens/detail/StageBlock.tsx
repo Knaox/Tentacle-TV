@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { useCardMarkers, useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatCommunityRating, STAR_PATH, STAR_VIEWBOX, type CardStatusKind, type MediaItem } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "../../../components/cards/cardGlyphs";
+import { useThemeMode } from "../../../theme/useThemeMode";
 import { MetaTokens } from "./MetaTokens";
 import { episodeCode, runtimeMinutes } from "./detailMetrics";
 
@@ -42,7 +43,11 @@ export const StageBlock = memo(function StageBlock({ item, align, logoMaxW, logo
   const isEpisode = item.Type === "Episode";
   const isSeries = item.Type === "Series";
   const centered = align === "center";
-  const logoTag = !isEpisode ? item.ImageTags?.Logo : undefined;
+  const { isDark } = useThemeMode();
+  // Un logo est dessiné pour un fond sombre : dans la colonne de l'iPad
+  // paysage en thème clair (posée sur la page, pas sur le décor), il
+  // disparaîtrait — le titre y reste en texte.
+  const logoTag = !isEpisode && (centered || isDark) ? item.ImageTags?.Logo : undefined;
   const logo = logoTag && !logoBroken
     ? client.getImageUrl(item.Id, "Logo", { height: logoMaxH * 2, quality: 90, tag: logoTag })
     : null;

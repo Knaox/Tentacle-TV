@@ -57,7 +57,9 @@ export const DetailStageBlock = memo(function DetailStageBlock({ item, align, to
   const centered = align === "center";
   const isEpisode = item.Type === "Episode";
   const isSeries = item.Type === "Series";
-  const logoTag = !isEpisode ? item.ImageTags?.Logo : undefined;
+  // Un logo est dessiné pour un fond sombre : posé sur la page claire (colonne
+  // de l'iPad paysage), il disparaîtrait — le titre y reste en texte.
+  const logoTag = !isEpisode && (onMedia || theme.isDark) ? item.ImageTags?.Logo : undefined;
   const logo = logoTag && !logoBroken
     ? client.getImageUrl(item.Id, "Logo", { height: logoMaxH * 2, quality: 90, tag: logoTag })
     : null;
