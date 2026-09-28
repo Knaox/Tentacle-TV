@@ -11,7 +11,7 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ExternalBadge, ExternalPoster } from "./ExternalVisuals";
+import { ExternalResultCard } from "./ExternalResultCard";
 import type { ExternalSearchResult } from "@tentacle-tv/shared";
 
 const GRID = { gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" } as const;
@@ -61,18 +61,7 @@ export const ExternalResultsSection = memo(function ExternalResultsSection({ res
       <ul className="grid gap-x-4 gap-y-6" style={GRID}>
         {items.map((item) => (
           <li key={item.id}>
-            <button
-              type="button"
-              onClick={() => navigate(item.href)}
-              className="group/x block w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-            >
-              <div className="relative">
-                <ExternalPoster item={item} className="aspect-[2/3] w-full rounded-md" />
-                {item.badge !== null && <ExternalBadge badge={item.badge} className="absolute left-2 top-2" />}
-              </div>
-              <p className="mt-2 truncate text-sm font-medium text-content-primary group-hover/x:text-[var(--brand-light)]">{item.title}</p>
-              {item.subtitle !== null && <p className="truncate text-xs text-content-quaternary">{item.subtitle}</p>}
-            </button>
+            <ExternalResultCard item={item} />
           </li>
         ))}
       </ul>
