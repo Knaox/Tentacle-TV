@@ -8,6 +8,7 @@ import { MediaRow } from "../rows/MediaRow";
 import { RowHeader } from "../rows/RowHeader";
 import { LicenseAttribution } from "../media/LicenseAttribution";
 import { ExtrasSection } from "./ExtrasSection";
+import { SagaSection } from "./saga/SagaSection";
 import { DetailFacts } from "./DetailFacts";
 import { TechInfo } from "../TechInfo";
 import { DETAIL_COLLECTION_ANCHOR } from "./detailStageGeometry";
@@ -26,7 +27,8 @@ interface DetailSectionsProps {
 /**
  * Tout ce qui suit le bloc titre de la fiche, dans l'ordre de lecture :
  * contenu de la collection → extras → saisons et épisodes → casting et équipe
- * → informations (et infos techniques) → titres similaires → licence.
+ * → informations (et infos techniques) → saga du film → titres similaires →
+ * licence.
  *
  * Les infos techniques ont quitté la scène : sur le premier écran, elles
  * repoussaient « Lecture » sous un panneau que presque personne n'ouvre.
@@ -81,6 +83,10 @@ export function DetailSections({
           </div>
         )}
       </Reveal>
+
+      {/* La saga d'un film (collection TMDB), comme dans Vigie : juste avant
+          les similaires, la même famille de titres liés. */}
+      {item.Type === "Movie" && <SagaSection item={item} />}
 
       {similar && similar.length > 0 && (
         <Reveal>
