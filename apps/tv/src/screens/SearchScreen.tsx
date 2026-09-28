@@ -154,6 +154,10 @@ export function SearchScreen({ navigation }: Props) {
       remember();
       navigation.navigate("MediaDetail", { itemId });
     },
+    onPlayItem: (itemId: string) => {
+      remember();
+      navigation.navigate("Player", { itemId });
+    },
     onPosterLongPress: cardActions.openPoster,
     onLandscapeLongPress: cardActions.openLandscape,
     onOpenTop: (top: SearchTopHit) => {

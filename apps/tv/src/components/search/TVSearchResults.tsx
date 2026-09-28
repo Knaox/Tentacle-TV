@@ -15,6 +15,9 @@ import { Colors, Spacing, Typography } from "../../theme/colors";
 
 export interface TVSearchResultsActions {
   onOpenItem: (itemId: string) => void;
+  /** Une vignette d'épisode : OK LANCE la lecture, comme les vignettes 16:9 de
+   *  l'accueil (variante `landscape` du modèle) — la fiche passe par la feuille. */
+  onPlayItem: (itemId: string) => void;
   /** Appui long → la feuille d'actions : affiche (films, séries, collections)
    *  ou vignette 16:9 (épisodes). */
   onPosterLongPress: (item: MediaItem) => void;
@@ -72,7 +75,7 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
     [],
   );
   const openHit = useCallback((hit: SearchItemHit) => actions.onOpenItem(hit.item.Id), [actions]);
-  const openEpisode = useCallback((item: SearchMediaItem) => actions.onOpenItem(item.Id), [actions]);
+  const playEpisode = useCallback((item: SearchMediaItem) => actions.onPlayItem(item.Id), [actions]);
   const pressHit = useCallback((hit: SearchItemHit) => actions.onPosterLongPress(asMediaItem(hit.item)), [actions]);
   const pressEpisode = useCallback(
     (item: SearchMediaItem) => actions.onLandscapeLongPress(asMediaItem(item)),
@@ -143,7 +146,7 @@ export const TVSearchResults = memo(function TVSearchResults({ width, sections, 
                 keyExtractor={episodeKey}
                 itemWidth={TV_EPISODE_WIDTH.sm}
                 renderItem={renderEpisode}
-                onItemPress={openEpisode}
+                onItemPress={playEpisode}
                 onItemLongPress={pressEpisode}
                 onRowFocus={onRowFocus}
                 onLayout={onLayout}
