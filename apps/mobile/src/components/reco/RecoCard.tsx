@@ -1,12 +1,14 @@
-import { memo, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Easing, View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
-import { recoPosterUrl, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem } from "@tentacle-tv/api-client";
+import {
+  RECO_LEAVE_MS, recoPosterUrl, useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem,
+} from "@tentacle-tv/api-client";
 import { titleKey } from "@tentacle-tv/shared";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { Badge, PressableCard } from "@/components/ui";
-import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
+import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, motion, useThemedStyles, type AppTheme } from "@/theme";
 import { useCardWidth } from "@/contexts/CardDensityContext";
 import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
@@ -37,7 +39,12 @@ interface Props {
  * survol : en bibliothèque, la feuille des cartes, variante `reco` (lecture,
  * Ma liste, favori, vu, la note, le refus) ; hors bibliothèque, celle des
  * cartes Vigie (« Demander », Ma liste à l'arrivée, la note, le refus).
+ * Jugée depuis la feuille (Ma liste, cœur, vu, note), elle s'efface quand la
+ * feuille se referme, avant de quitter la rangée.
  */
+
+/** Sortie : accélération, comme la classe `.reco-card-leaving` du web. */
+const LEAVE_EASING = Easing.bezier(0.4, 0, 1, 1);
 export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongPress, reason }: Props) {
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
@@ -53,50 +60,71 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const state = useExternalTitleState(onDemand ? { mediaType: item.mediaType, tmdbId: item.tmdbId } : null);
   const pending = useIsWatchlistPending(onDemand ? titleKey(item.mediaType, item.tmdbId) : null);
   const openSheet = useCardSheetOpener();
+  const leaving = useIsRecoLeaving(item.key);
+  // Un Animated.Value par carte, sans rien animer au repos : le pilote natif
+  // ne prend la main que pendant le fondu (opacité + échelle).
+  const presence = useRef(new Animated.Value(1)).current;
+  const scale = useMemo(() => presence.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }), [presence]);
+  useEffect(() => {
+    if (!leaving) {
+      presence.setValue(1);
+      return;
+    }
+    const fade = Animated.timing(presence, {
+      toValue: 0,
+      duration: motion.respectReducedMotion(RECO_LEAVE_MS),
+      easing: LEAVE_EASING,
+      useNativeDriver: true,
+    });
+    fade.start();
+    return () => fade.stop();
+  }, [leaving, presence]);
   const handleLongPress = onLongPress ?? (openSheet ? () => openSheet(recoSheetTarget(item)) : undefined);
   const subtitle = onDemand && !canOpen
     ? [item.year, t("unavailableHint")].filter(Boolean).join(" — ")
     : item.year != null ? String(item.year) : null;
 
   return (
-    <PressableCard
-      onPress={canOpen ? onPress : undefined}
-      onLongPress={handleLongPress}
-      style={{ width, opacity: canOpen ? 1 : 0.7 }}
-      accessibilityRole="button"
-      accessibilityLabel={`${item.title}${item.year ? `, ${item.year}` : ""}`}
-    >
-      <View style={st.poster}>
-        <View style={st.imageClip} pointerEvents="none">
-          {showFallback ? (
-            <View style={st.fallback}>
-              <Text style={st.fallbackLetter}>{item.title.charAt(0).toUpperCase()}</Text>
-            </View>
-          ) : (
-            <Image
-              source={{ uri: poster }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              onError={() => setImgError(true)}
-              transition={250}
-            />
-          )}
-        </View>
-        {/* Posés sur l'affiche : blanc/noir constants (« À la demande »), dégradé
-            de marque (« Découverte ») — les couleurs du web. */}
-        {(onDemand || item.exploration) && (
-          <View style={st.badges} pointerEvents="none">
-            {onDemand && <Badge label={state?.badge?.label ?? t("onDemandBadge")} variant="onMedia" />}
-            {item.exploration && <Badge label={t("explorationBadge")} variant="gradient" />}
+    <Animated.View style={{ opacity: presence, transform: [{ scale }] }} pointerEvents={leaving ? "none" : "auto"}>
+      <PressableCard
+        onPress={canOpen ? onPress : undefined}
+        onLongPress={handleLongPress}
+        style={{ width, opacity: canOpen ? 1 : 0.7 }}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.title}${item.year ? `, ${item.year}` : ""}`}
+      >
+        <View style={st.poster}>
+          <View style={st.imageClip} pointerEvents="none">
+            {showFallback ? (
+              <View style={st.fallback}>
+                <Text style={st.fallbackLetter}>{item.title.charAt(0).toUpperCase()}</Text>
+              </View>
+            ) : (
+              <Image
+                source={{ uri: poster }}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                onError={() => setImgError(true)}
+                transition={250}
+              />
+            )}
           </View>
-        )}
-        {/* Les marqueurs de toutes les cartes, à leurs places communes. */}
-        <CardMarkerLayer item={face} communityRating={item.voteAverage} inWatchlist={onDemand ? pending : undefined} />
-      </View>
-      <Text numberOfLines={1} style={st.title}>{item.title}</Text>
-      {subtitle && <Text numberOfLines={1} style={st.year}>{subtitle}</Text>}
-      {reason && <Text numberOfLines={2} style={st.reason}>{reason}</Text>}
-    </PressableCard>
+          {/* Posés sur l'affiche : blanc/noir constants (« À la demande »), dégradé
+              de marque (« Découverte ») — les couleurs du web. */}
+          {(onDemand || item.exploration) && (
+            <View style={st.badges} pointerEvents="none">
+              {onDemand && <Badge label={state?.badge?.label ?? t("onDemandBadge")} variant="onMedia" />}
+              {item.exploration && <Badge label={t("explorationBadge")} variant="gradient" />}
+            </View>
+          )}
+          {/* Les marqueurs de toutes les cartes, à leurs places communes. */}
+          <CardMarkerLayer item={face} communityRating={item.voteAverage} inWatchlist={onDemand ? pending : undefined} />
+        </View>
+        <Text numberOfLines={1} style={st.title}>{item.title}</Text>
+        {subtitle && <Text numberOfLines={1} style={st.year}>{subtitle}</Text>}
+        {reason && <Text numberOfLines={2} style={st.reason}>{reason}</Text>}
+      </PressableCard>
+    </Animated.View>
   );
 });
 
