@@ -89,7 +89,6 @@ export const TVSearchTopHit = memo(forwardRef<View, TVSearchTopHitProps>(functio
     <Focusable
       ref={ref}
       variant="card"
-      focusRadius={TV_CARD_RADIUS}
       scaleOverride={1.02}
       onPress={() => onOpen(top)}
       onFocus={() => { setFocused(true); onFocus?.(); }}

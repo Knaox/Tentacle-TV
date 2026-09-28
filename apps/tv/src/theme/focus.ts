@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { BRAND } from "@tentacle-tv/shared";
-import { TV_CARD_FOCUS, TV_FOCUS_RING, TV_OSD } from "@tentacle-tv/theme";
+import { TV_CARD_FOCUS, TV_FOCUS_RING, TV_OSD, TV_RADIUS } from "@tentacle-tv/theme";
 
 export type FocusVariant = "card" | "button" | "playerButton" | "row" | "default";
 
@@ -114,6 +114,24 @@ export const FocusButtonStyle = {
 export const FocusPlayerButtonStyle = {
   bgColor: TV_OSD.buttonFocusBg,
 } as const;
+
+/**
+ * L'écart entre une carte et son anneau : `Focusable` borde la carte de quatre
+ * points (marge négative, retrait), et l'anneau passe AUTOUR d'elle, sans en
+ * mordre l'image.
+ */
+export const FOCUS_RING_GAP = 4;
+
+/**
+ * Le rayon de l'anneau d'une carte : celui de la carte PLUS l'écart — deux
+ * arcs concentriques, qui gardent l'air égal jusque dans les coins.
+ *
+ * Il valait 8 dans les rangées et la bibliothèque, 12 dans les grilles de la
+ * recherche, autour de cartes arrondies à 14 (`TV_RADIUS.md`) : l'anneau
+ * dessinait des coins plus carrés que la carte qu'il entoure, et l'écart s'y
+ * creusait. Toutes les cartes du salon partagent ce rayon.
+ */
+export const CARD_FOCUS_RADIUS = TV_RADIUS.md + FOCUS_RING_GAP;
 
 /**
  * La place qu'une affiche focalisée prend AU-DESSUS d'elle : 1,08 d'échelle

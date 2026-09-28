@@ -98,7 +98,6 @@ export const TVEpisodeRow = memo(function TVEpisodeRow({
       variant="card"
       scaleOverride={1}
       glowOverride={0}
-      focusRadius={Radius.card}
       onPress={handlePress}
       onFocus={handleFocus}
       accessibilityLabel={ep.Name}

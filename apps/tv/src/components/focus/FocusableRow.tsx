@@ -242,7 +242,6 @@ function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCe
         onPress={onPress}
         onLongPress={onLongPress}
         nextFocusUp={nextFocusUp}
-        focusRadius={8}
       >
         {renderItem(item, index, focused)}
       </Focusable>

@@ -2,7 +2,7 @@ import { memo, forwardRef, useCallback, useRef, useState } from "react";
 import { Platform, Pressable, View, type ViewStyle, type GestureResponderEvent } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from "react-native-reanimated";
 import type { FocusVariant } from "../../theme/focus";
-import { FocusTiming, FocusScale, FocusGlow } from "../../theme/focus";
+import { CARD_FOCUS_RADIUS, FOCUS_RING_GAP, FocusTiming, FocusScale, FocusGlow } from "../../theme/focus";
 import { Easings } from "../../theme/motion";
 import { ButtonLayer, CardLayer, GlowLayer, RowLayer } from "./FocusOverlays";
 import { TV_CARD_FOCUS } from "@tentacle-tv/theme";
@@ -62,6 +62,8 @@ interface FocusableBaseProps {
  * appariés à chaque forme, pour qu'il n'y ait rien à deviner.
  *
  * Les cartes et les lignes gardent leur défaut : leur forme, elle, est unique.
+ * Celui des cartes épouse la carte, à l'écart de l'anneau près
+ * (`CARD_FOCUS_RADIUS`).
  */
 export type FocusableProps = FocusableBaseProps & (
   | { variant: "button" | "playerButton"; focusRadius: number }
@@ -119,7 +121,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   children,
   testID,
   variant = "default",
-  focusRadius = 12,
+  focusRadius = variant === "card" ? CARD_FOCUS_RADIUS : 12,
   scaleOverride,
   glowOverride,
   nextFocusUp,
@@ -205,8 +207,6 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
     ...(hasShadow && !ANIMATABLE_SHADOW ? { elevation: FocusGlow.elevation } : {}),
   };
 
-  const RING_GAP = 4;
-
   return (
     <Pressable
       ref={ref}
@@ -238,7 +238,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
         { transformOrigin: TV_CARD_FOCUS.origin },
         scaleStyle,
         rang,
-        hasGap && { margin: -RING_GAP, padding: RING_GAP },
+        hasGap && { margin: -FOCUS_RING_GAP, padding: FOCUS_RING_GAP },
         hasShadow && {
           shadowColor: FocusGlow.shadowColor,
           shadowOffset: { width: 0, height: 4 },

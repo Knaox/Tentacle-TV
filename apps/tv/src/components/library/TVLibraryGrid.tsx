@@ -222,7 +222,6 @@ const GridItem = memo(function GridItem({ item, index, columns, cellW, cardW, is
         // rappelait le focus natif — la grille VOLAIT le focus des puces de
         // filtre (react-native-tvos #839/#552/#849). L'entrée de focus passe
         // par `entryRef` (useTVContentEntry) et le guide de l'écran.
-        focusRadius={8}
         nextFocusRight={isLastInRow ? nodeId : undefined}
         style={{ alignSelf: "flex-start" }}
       >
