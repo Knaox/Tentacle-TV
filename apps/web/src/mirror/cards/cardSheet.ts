@@ -1,4 +1,4 @@
-import type { RecoReason } from "@tentacle-tv/api-client";
+import type { RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
 /**
@@ -11,13 +11,25 @@ export interface MediaSheetTarget {
   variant: "poster" | "landscape";
   /** L'item de la carte : rendu tout de suite, puis relu en entier (`useMediaItem`). */
   item: MediaItem;
-  /** Une recommandation déjà en bibliothèque garde ses raisons sous le bandeau. */
-  reasons?: readonly RecoReason[];
 }
 
-export type CardSheetTarget = MediaSheetTarget;
+/**
+ * L'appui long d'une recommandation EN bibliothèque (variante `reco`). Hors
+ * bibliothèque, c'est la feuille des cartes Vigie (`RecoActionSheet`).
+ */
+export interface RecoSheetTarget {
+  kind: "reco";
+  reco: RecoRowItem;
+}
+
+export type CardSheetTarget = MediaSheetTarget | RecoSheetTarget;
 
 /** Le titre de la feuille, pour les lecteurs d'écran. */
 export function cardSheetTitle(target: CardSheetTarget): string {
-  return target.item.Name;
+  return target.kind === "reco" ? target.reco.title : target.item.Name;
+}
+
+/** Une clé par carte : la feuille se remonte à neuf quand la cible change. */
+export function cardSheetKey(target: CardSheetTarget): string {
+  return target.kind === "reco" ? `reco:${target.reco.key}` : `${target.variant}:${target.item.Id}`;
 }

@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCardRatingTarget, useJellyfinClient, useMediaItem, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { resolveCardOverlay } from "@tentacle-tv/shared";
-import { RecoReasonList } from "../../screens/forYou/RecoActionSheet";
 import type { MediaSheetTarget } from "../cardSheet";
 import { SheetActions } from "./SheetActions";
 import { mediaSheetHeader, SheetHeader } from "./SheetHeader";
@@ -60,11 +59,6 @@ export function MediaSheetBody({ target, onClose }: { target: MediaSheetTarget; 
   return (
     <>
       <SheetHeader {...mediaSheetHeader(item, series, showsSeries, (id, type, opts) => client.getImageUrl(id, type, opts), tm)} />
-      {target.reasons && target.reasons.length > 0 && (
-        <div className="mx-4 mb-4">
-          <RecoReasonList reasons={target.reasons} />
-        </div>
-      )}
       {overlay.play && plan && (
         <SheetPlayButton
           plan={plan}

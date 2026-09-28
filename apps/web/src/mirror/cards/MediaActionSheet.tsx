@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ActionSheet } from "../ui/ActionSheet";
-import { cardSheetTitle, type CardSheetTarget } from "./cardSheet";
+import { cardSheetKey, cardSheetTitle, type CardSheetTarget } from "./cardSheet";
 import { MediaSheetBody } from "./sheet/MediaSheetBody";
+import { RecoSheetBody } from "./sheet/RecoSheetBody";
 
 /**
  * La feuille de l'appui long d'une carte (`MediaActionSheet` de l'app) — au
@@ -10,7 +11,12 @@ import { MediaSheetBody } from "./sheet/MediaSheetBody";
  * parce qu'elles viennent du même modèle (`resolveCardOverlay`).
  *
  *   bandeau (visuel, affiche, titre) → Lire / Reprendre → Ma liste, favori,
- *   vu → extras (« Plus d'infos » d'une vignette 16:9) → la note.
+ *   vu → extras (« Plus d'infos » d'une vignette 16:9, « Ne plus me
+ *   proposer » d'une recommandation) → la note.
+ *
+ * UNE feuille pour toutes les cartes de la bibliothèque, recommandations en
+ * bibliothèque comprises : seul le corps change, selon ce que la cible sait
+ * d'elle-même. Un titre hors bibliothèque a la sienne (`ExternalActionSheet`).
  *
  * Le corps n'est MONTÉ que feuille ouverte : ses bascules lisent les Sets de
  * séries entiers, ses étoiles la liste des notes. La dernière cible reste
@@ -22,7 +28,8 @@ export function MediaActionSheet({ target, onClose }: { target: CardSheetTarget 
 
   return (
     <ActionSheet open={target !== null} onClose={onClose} label={held ? cardSheetTitle(held) : undefined}>
-      {held && <MediaSheetBody key={`${held.variant}:${held.item.Id}`} target={held} onClose={onClose} />}
+      {held?.kind === "reco" && <RecoSheetBody key={cardSheetKey(held)} reco={held.reco} onClose={onClose} />}
+      {held?.kind === "media" && <MediaSheetBody key={cardSheetKey(held)} target={held} onClose={onClose} />}
     </ActionSheet>
   );
 }
