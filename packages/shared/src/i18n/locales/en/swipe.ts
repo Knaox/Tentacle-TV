@@ -19,6 +19,7 @@ export default {
   stampLike: "Like",
   stampSuper: "Love it",
   stampNope: "Nope",
+  stampSkip: "Skip",
 
   movie: "Film",
   series: "Series",
@@ -55,7 +56,7 @@ export default {
   saveFailed: "That rating wasn't saved — the card is back on top of the stack.",
   undone: "Last swipe undone",
 
-  hint: "Swipe right to like, left to pass, up to love it.",
+  hint: "Swipe right to like, left to say no, up to love it, down to skip.",
   shortcutsLabel: "Keyboard shortcuts",
   keyLeft: "Not for me",
   keyRight: "Like",

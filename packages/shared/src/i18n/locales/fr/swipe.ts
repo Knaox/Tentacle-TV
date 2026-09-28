@@ -19,6 +19,7 @@ export default {
   stampLike: "J'aime",
   stampSuper: "Coup de cœur",
   stampNope: "Non merci",
+  stampSkip: "Passer",
 
   movie: "Film",
   series: "Série",
@@ -55,7 +56,7 @@ export default {
   saveFailed: "Ce jugement n'a pas été enregistré — la carte est revenue en haut de la pile.",
   undone: "Dernier geste annulé",
 
-  hint: "Glissez à droite pour aimer, à gauche pour refuser, vers le haut pour un coup de cœur.",
+  hint: "Glissez à droite pour aimer, à gauche pour refuser, vers le haut pour un coup de cœur, vers le bas pour passer.",
   shortcutsLabel: "Raccourcis clavier",
   keyLeft: "Pas pour moi",
   keyRight: "J'aime",
