@@ -1,7 +1,8 @@
 /**
  * Ce que dit la rangée « saga » : son titre, sa ligne de résumé (« 8 films ·
- * 6 dans la bibliothèque · 2 vus ») et la petite ligne de chaque carte
- * (« Volet 4 · Cette fiche »). Une seule écriture pour toutes les plateformes.
+ * 6 dans la bibliothèque · 2 vus ») et l'étiquette de chaque volet (« Volet 4
+ * · Cette fiche »), posée à côté de sa carte — qui, elle, garde son titre et
+ * son année. Une seule écriture pour toutes les plateformes.
  */
 
 import type { TFunction } from "i18next";
@@ -22,17 +23,22 @@ export function sagaSummary(t: TFunction, view: SagaView): string {
 
 const CUE_KEYS = { current: "media:sagaCurrent", resume: "media:sagaResume", upNext: "media:sagaUpNext" } as const;
 
-/**
- * La petite ligne d'une carte : son rang dans la saga, puis ce qui la
- * distingue (la fiche ouverte, à reprendre, à suivre), à défaut son année —
- * ou, pour un volet manquant, la ligne que le plugin a écrite.
- */
-export function sagaCaption(t: TFunction, entry: SagaEntry): string | null {
-  const rank = entry.position !== null ? t("media:sagaPart", { position: entry.position }) : null;
-  let detail: string | null;
-  if (entry.cue !== null) detail = t(CUE_KEYS[entry.cue]);
-  else if (entry.kind === "external") detail = entry.item.subtitle ?? (entry.item.year !== null ? String(entry.item.year) : null);
-  else detail = entry.item.ProductionYear != null ? String(entry.item.ProductionYear) : null;
-  const line = [rank, detail].filter((part): part is string => part !== null).join(" · ");
+export interface SagaLabel {
+  /** « Volet 4 » — null sans TMDB. */
+  rank: string | null;
+  /** « Cette fiche », « Reprendre », « À suivre » — ce qui distingue la carte, mis en valeur. */
+  cue: string | null;
+}
+
+export function sagaLabel(t: TFunction, entry: SagaEntry): SagaLabel {
+  return {
+    rank: entry.position !== null ? t("media:sagaPart", { position: entry.position }) : null,
+    cue: entry.cue !== null ? t(CUE_KEYS[entry.cue]) : null,
+  };
+}
+
+/** L'étiquette en une ligne (lecteurs d'écran, téléviseurs) : « Volet 4 · Cette fiche ». */
+export function sagaLabelText(label: SagaLabel): string | null {
+  const line = [label.rank, label.cue].filter((part): part is string => part !== null).join(" · ");
   return line === "" ? null : line;
 }

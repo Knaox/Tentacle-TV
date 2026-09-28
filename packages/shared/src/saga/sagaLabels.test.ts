@@ -3,7 +3,7 @@ import i18next from "i18next";
 import type { MediaItem } from "../types/media";
 import fr from "../i18n/locales/fr/media";
 import en from "../i18n/locales/en/media";
-import { sagaCaption, sagaSummary, sagaTitle } from "./sagaLabels";
+import { sagaLabel, sagaLabelText, sagaSummary, sagaTitle } from "./sagaLabels";
 import type { SagaEntry, SagaView } from "./sagaModel";
 
 /** Les mots de la rangée, dans les deux langues de l'app. */
@@ -31,23 +31,21 @@ describe("sagaTitle / sagaSummary", () => {
   });
 });
 
-describe("sagaCaption", () => {
-  it("le rang, puis ce qui distingue la carte — à défaut l'année", async () => {
+describe("sagaLabel", () => {
+  it("le rang, et ce qui distingue la carte à part — l'année reste sur la carte", async () => {
     await i18n.changeLanguage("fr");
-    expect(sagaCaption(i18n.t, entry({}))).toBe("Volet 2 · 2002");
-    expect(sagaCaption(i18n.t, entry({ cue: "current" }))).toBe("Volet 2 · Cette fiche");
-    expect(sagaCaption(i18n.t, entry({ cue: "resume" }))).toBe("Volet 2 · Reprendre");
-    expect(sagaCaption(i18n.t, entry({ cue: "upNext", position: null }))).toBe("À suivre");
+    expect(sagaLabel(i18n.t, entry({}))).toEqual({ rank: "Volet 2", cue: null });
+    expect(sagaLabel(i18n.t, entry({ cue: "current" }))).toEqual({ rank: "Volet 2", cue: "Cette fiche" });
+    expect(sagaLabel(i18n.t, entry({ cue: "resume" })).cue).toBe("Reprendre");
+    expect(sagaLabel(i18n.t, entry({ cue: "upNext", position: null }))).toEqual({ rank: null, cue: "À suivre" });
     await i18n.changeLanguage("en");
-    expect(sagaCaption(i18n.t, entry({ cue: "current" }))).toBe("Film 2 · This title");
+    expect(sagaLabel(i18n.t, entry({ cue: "current" }))).toEqual({ rank: "Film 2", cue: "This title" });
   });
 
-  it("un volet manquant garde la ligne de son plugin", async () => {
+  it("en une ligne : « Volet 2 · Cette fiche », rien quand il n'y a rien à dire", async () => {
     await i18n.changeLanguage("fr");
-    const external = {
-      kind: "external", key: "tmdb:673", pluginId: "seer", position: 3, cue: null,
-      item: { id: "movie:673", kind: "movie", title: "HP 3", year: 2004, subtitle: "Sortie le 31 mai 2004", imageUrl: null, href: "/d", badge: null },
-    } as SagaEntry;
-    expect(sagaCaption(i18n.t, external)).toBe("Volet 3 · Sortie le 31 mai 2004");
+    expect(sagaLabelText(sagaLabel(i18n.t, entry({ cue: "current" })))).toBe("Volet 2 · Cette fiche");
+    expect(sagaLabelText(sagaLabel(i18n.t, entry({})))).toBe("Volet 2");
+    expect(sagaLabelText({ rank: null, cue: null })).toBeNull();
   });
 });
