@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type FocusEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useRecoCardHold } from "@tentacle-tv/api-client";
 import type { CardOverlayVariant, MediaItem } from "@tentacle-tv/shared";
 import { CardMetaOverlay, cardMetaVisible } from "@/components/media/CardMetaOverlay";
 import { createLongPress } from "../../focus/longPress";
@@ -79,6 +80,8 @@ export function FocusableCard({
   const [sheetOpen, setSheetOpen] = useState(false);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
   useSheetFocusReturn(root, sheetOpen);
+  // Feuille ouverte = carte tenue (par son item) : un titre jugé quitte « Pour vous » à la fermeture.
+  useRecoCardHold(sheetOpen ? (item?.Id ?? null) : null);
 
   /**
    * L'appui court rejoue un vrai clic sur la carte enveloppée.
