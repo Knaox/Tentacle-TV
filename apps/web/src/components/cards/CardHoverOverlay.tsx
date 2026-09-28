@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useCardRatingTarget, type RatingIdentity } from "@tentacle-tv/api-client";
+import { useCardFace, useCardRatingTarget, type RatingIdentity } from "@tentacle-tv/api-client";
 import {
   CARD_TOGGLE_ORDER,
   resolveCardOverlay,
@@ -69,21 +69,28 @@ export function CardHoverOverlay({
 }: CardHoverOverlayProps) {
   const { t } = useTranslation("cards");
   const landscape = variant === "landscape";
+  // Une carte qui n'a qu'un résumé (recherche, similaires) prend sa fiche
+  // complète : tmdb pour les étoiles, état frais pour le plateau. Un titre
+  // local ne demande rien au serveur.
+  const { face: served, pending: facePending } = useCardFace(local ? null : item, { enabled: true });
+  const face = local ? item : served;
   // Une identité fournie (titre hors bibliothèque) court-circuite la
-  // résolution — et sa requête de série. Un titre local n'en fait aucune.
-  const target = useCardRatingTarget(ratingIdentity === undefined && !local ? item : null, {
+  // résolution — et sa requête de série.
+  const target = useCardRatingTarget(ratingIdentity === undefined && !local ? face : null, {
     scope: landscape ? "item" : "series",
     enabled: true,
   });
   const identity = ratingIdentity === undefined ? target.identity : ratingIdentity;
   const jellyfinItemId = ratingIdentity === undefined ? target.jellyfinItemId : (item?.Id ?? null);
+  // Les puces montrent la fiche complète quand c'est le même titre.
+  const metaItem = meta && face && meta.Id === face.Id ? face : meta;
 
   const overlay = resolveCardOverlay({
     variant,
     inLibrary: item !== null,
     playable: play !== null,
     resume: play?.resume,
-    rateable: identity !== null || target.pending,
+    rateable: identity !== null || target.pending || facePending,
     offline: supportsDownloads(),
     local: local !== undefined,
   });
@@ -96,9 +103,9 @@ export function CardHoverOverlay({
 
   return (
     <>
-      {meta && (
+      {metaItem && (
         <div className="pointer-events-none absolute inset-0 z-30">
-          <CardMetaOverlay item={meta} density={landscape ? "full" : "compact"} reveal="mount" shown={visible} />
+          <CardMetaOverlay item={metaItem} density={landscape ? "full" : "compact"} reveal="mount" shown={visible} />
         </div>
       )}
       <CardHoverShell
@@ -120,7 +127,7 @@ export function CardHoverOverlay({
         {hasTray && (
           <div className={landscape ? "flex justify-end" : stretch ? "" : "flex justify-center"}>
             <CardActionTray
-              item={item}
+              item={face}
               overlay={overlay}
               label={title}
               size={landscape ? "md" : "sm"}
