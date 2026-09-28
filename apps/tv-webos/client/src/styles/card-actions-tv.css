@@ -45,6 +45,28 @@
   padding: 28px 28px 24px;
 }
 
+.actions-carte-tv-entete {
+  display: flex;
+  align-items: center;
+}
+
+.actions-carte-tv-affiche {
+  flex-shrink: 0;
+  width: 80px;
+  height: 120px;
+  margin-right: 20px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+/* Le bloc de texte peut rétrécir : sans `min-width: 0`, un titre long pousserait
+   la boîte au lieu de se tronquer. */
+.actions-carte-tv-entete-texte {
+  min-width: 0;
+  flex: 1;
+}
+
 .actions-carte-tv-titre {
   font-size: 30px;
   font-weight: 700;

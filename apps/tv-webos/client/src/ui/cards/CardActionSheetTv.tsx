@@ -3,11 +3,12 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { EyeOff, Info } from "lucide-react";
-import { useCardFace, useCardRatingTarget, useCardToggles, useSeriesWatchState } from "@tentacle-tv/api-client";
+import { useCardFace, useCardRatingTarget, useCardToggles, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import {
   cardActionEntries,
   formatEpisodeCode,
   resolveCardOverlay,
+  resolvePosterImage,
   type CardActionEntry,
   type CardOverlayVariant,
   type CardToggleKind,
@@ -42,6 +43,7 @@ interface CardActionSheetTvProps {
 export function CardActionSheetTv({ item, variant, onClose, onDismiss }: CardActionSheetTvProps) {
   const { t } = useTranslation("cards");
   const navigate = useNavigate();
+  const client = useJellyfinClient();
   // Une carte de reco ou de recherche n'a qu'un résumé : la fiche complète
   // donne l'état juste et le tmdb des étoiles.
   const { face } = useCardFace(item, { enabled: true });
@@ -84,6 +86,13 @@ export function CardActionSheetTv({ item, variant, onClose, onDismiss }: CardAct
 
   const isEpisode = card.Type === "Episode";
   const title = isEpisode ? (card.SeriesName ?? card.Name) : card.Name;
+  // L'affiche du titre en tête, comme la feuille de tvOS et d'Android TV : on
+  // sait sur quoi l'on agit sans relire la carte restée sous le voile. Celle de
+  // la SÉRIE pour un épisode — c'est son visage.
+  const poster = resolvePosterImage(card, "series");
+  const posterUrl = poster
+    ? client.getImageUrl(poster.id, poster.type, { height: 240, quality: 85, ...(poster.tag ? { tag: poster.tag } : {}) })
+    : null;
   const subtitle = isEpisode
     ? [formatEpisodeCode(card.ParentIndexNumber, card.IndexNumber), card.Name].filter(Boolean).join(" · ")
     : card.ProductionYear
@@ -108,8 +117,13 @@ export function CardActionSheetTv({ item, variant, onClose, onDismiss }: CardAct
       onBlur={stop}
     >
       <div className="actions-carte-tv-boite">
-        <p className="actions-carte-tv-titre">{title}</p>
-        {subtitle && <p className="actions-carte-tv-sous-titre">{subtitle}</p>}
+        <div className="actions-carte-tv-entete">
+          {posterUrl && <img className="actions-carte-tv-affiche" src={posterUrl} alt="" />}
+          <div className="actions-carte-tv-entete-texte">
+            <p className="actions-carte-tv-titre">{title}</p>
+            {subtitle && <p className="actions-carte-tv-sous-titre">{subtitle}</p>}
+          </div>
+        </div>
         <ul className="actions-carte-tv-liste">
           {entries.map((entry, index) => (
             <li key={entry.kind}>
