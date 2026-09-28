@@ -60,8 +60,10 @@ export const SwipeControls = memo(function SwipeControls({
               disabled={off}
               aria-label={key === "undo" ? t("undo") : label}
               title={key === "undo" ? t("undo") : label}
+              // À deux verdicts, « annuler » est ENTRE les grands : centré sur
+              // leur hauteur (56 px), son libellé s'aligne sur les leurs.
               className={`flex cursor-pointer items-center justify-center rounded-full border transition-[transform,opacity] duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-line-focus ${
-                lg ? "h-14 w-14" : "h-11 w-11"
+                lg ? "h-14 w-14" : binary ? "my-1.5 h-11 w-11" : "h-11 w-11"
               } ${
                 brand
                   ? "border-transparent bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] shadow-lg"
