@@ -44,6 +44,8 @@ export default {
   // le seul endroit où le dire — d'où deux libellés à part.
   cardDownloadActive: "Téléchargement en cours — voir les téléchargements",
   cardDownloadOnDevice: "Sur cet appareil — voir les téléchargements",
+  // Une série n'est jamais « complète » : des épisodes gardés, et d'autres saisons à prendre.
+  cardDownloadSeriesSome: "Des épisodes sur cet appareil — télécharger d'autres saisons",
   dialogTitle: "Télécharger",
   dialogTitleSeason: "Télécharger la saison ({{count}} épisodes)",
   variantOriginal: "Original",

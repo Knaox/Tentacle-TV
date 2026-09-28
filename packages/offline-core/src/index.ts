@@ -52,6 +52,7 @@ export * from "./catalog/localEpisodeNav";
 export * from "./catalog/offlineHighlights";
 export * from "./catalog/offlineOverview";
 export * from "./catalog/localMediaView";
+export * from "./catalog/deviceIndex";
 export {
   prune as pruneSelection,
   state as selectionState,

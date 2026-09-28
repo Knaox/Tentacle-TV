@@ -11,6 +11,9 @@ export default {
     watchlist: "In my list",
     favorite: "In favorites",
     watched: "Watched",
+    // « Sur cet appareil » (bureau, mobile) : le titre gardé, ou des épisodes d'une série.
+    onDevice: "On this device",
+    onDeviceSome: "Episodes on this device",
   },
 
   play: "Play",

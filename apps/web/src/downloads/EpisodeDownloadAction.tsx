@@ -13,21 +13,22 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { supportsDownloads } from "../desktop/bridge";
 import { DownloadDialog } from "./DownloadDialog";
 import { DownloadGlyph } from "./DownloadGlyph";
-import { useDownloadsList, useDownloadsVisibility } from "./useDownloadState";
-
-const ACTIVE = new Set(["queued", "downloading", "paused", "error"]);
+import { useDownloadsVisibility } from "./useDownloadState";
+import { useDeviceItemState } from "./useDeviceState";
 
 export function EpisodeDownloadAction({ episode }: { episode: MediaItem }) {
   const { t } = useTranslation("downloads");
   const navigate = useNavigate();
   const { canDownload } = useDownloadsVisibility();
-  const entries = useDownloadsList();
+  // La liste partagée, lue par l'index (copie complète d'abord) : une `Map`
+  // par version de la liste, pas un `find()` par ligne.
+  const state = useDeviceItemState(episode.Id);
   const [open, setOpen] = useState(false);
 
   if (!supportsDownloads()) return null;
-  const entry = entries.find((e) => e.itemId === episode.Id) ?? null;
-  const isActive = entry !== null && ACTIVE.has(entry.status);
-  const isComplete = entry?.status === "complete";
+  // L'échec compte comme « en route » : son écran le relance, la ligne non.
+  const isActive = state === "active" || state === "error";
+  const isComplete = state === "complete";
   if (!canDownload && !isActive && !isComplete) return null;
 
   const label = isComplete

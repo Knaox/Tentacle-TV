@@ -2,6 +2,7 @@ import { memo } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { useCardMarkers } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { useCardDeviceState } from "@/hooks/offline/useDeviceState";
 import { CardRatingBadge } from "./CardRatingBadge";
 import { CardStatusMarkers } from "./CardStatusMarkers";
 
@@ -23,9 +24,9 @@ interface Props {
 
 /**
  * Les marqueurs d'une affiche — note (globale + la vôtre) en bas à gauche,
- * pastille d'états (Ma liste, favori, vu) en haut à droite. Le fond vient de
- * `useCardMarkers` (modèle partagé par toutes les plateformes), qui ne réveille
- * que la carte dont un état change.
+ * pastille d'états (Ma liste, favori, vu, sur cet appareil) en haut à droite.
+ * Le fond vient de `useCardMarkers` (modèle partagé par toutes les
+ * plateformes), qui ne réveille que la carte dont un état change.
  */
 export const CardMarkerLayer = memo(function CardMarkerLayer({
   item,
@@ -35,7 +36,8 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
   statusStyle,
   inWatchlist,
 }: Props) {
-  const markers = useCardMarkers(item, { communityRating, scope, inWatchlist });
+  const device = useCardDeviceState(item);
+  const markers = useCardMarkers(item, { communityRating, scope, inWatchlist, device });
   return (
     <>
       <CardRatingBadge
@@ -43,7 +45,7 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
         userScore={markers.userScore}
         style={liftRating ? LIFTED : undefined}
       />
-      <CardStatusMarkers statuses={markers.statuses} style={statusStyle} />
+      <CardStatusMarkers statuses={markers.statuses} device={markers.device} style={statusStyle} />
     </>
   );
 });

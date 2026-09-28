@@ -28,6 +28,16 @@ export const WATCHED_FILLED_PATH =
 /** Coche « vu », au trait : un cercle (cx 12, cy 12, r 9) et ce chemin. */
 export const WATCHED_CHECK_PATH = "M8.25 12.25l2.5 2.5 5-5";
 
+/**
+ * « Sur cet appareil » : le disque plein de « vu », une FLÈCHE vers le bas
+ * évidée (règle `evenodd`) — jamais une coche. Les deux voisinent dans la
+ * même pastille : une seconde coche y dirait « vu » deux fois. Même famille
+ * de forme, un autre signe, et une autre couleur (le vert de « prêt »).
+ * Au repos comme au plateau, sur le bureau comme sur le mobile.
+ */
+export const KEPT_OFFLINE_PATH =
+  "M12 2.25a9.75 9.75 0 1 0 0 19.5 9.75 9.75 0 0 0 0-19.5zM12 16.5l-4.2-4.2 1.06-1.06 2.39 2.39V6.8h1.5v6.83l2.39-2.39 1.06 1.06L12 16.5z";
+
 /** Étoile de la note, pleine, sur une grille 20. */
 export const STAR_VIEWBOX = "0 0 20 20";
 export const STAR_PATH =

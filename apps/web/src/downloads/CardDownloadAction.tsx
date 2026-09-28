@@ -29,9 +29,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { supportsDownloads } from "../desktop/bridge";
 import { DownloadGlyph } from "./DownloadGlyph";
 import { requestDownload } from "./downloadRequest";
-import { useDownloadsList, useDownloadsVisibility } from "./useDownloadState";
-
-const ACTIVE_STATUSES = new Set(["queued", "downloading", "paused", "error"]);
+import { useDownloadsVisibility } from "./useDownloadState";
+import { useDeviceGroupState, useDeviceItemState } from "./useDeviceState";
 
 /** Mêmes boîtes que `CardQuickActions` : les pastilles s'alignent au pixel. */
 const VARIANT_STYLE = {
@@ -59,37 +58,44 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
   const { t } = useTranslation("downloads");
   const navigate = useNavigate();
   const { canDownload } = useDownloadsVisibility();
-  // UNE requête pour toutes les cartes (clé partagée, staleTime 5 s). Surtout
-  // pas `useItemDownloadState`, dont la clé porte l'itemId : sur une grille de
-  // quatre-vingts affiches, ce serait quatre-vingts requêtes.
-  const entries = useDownloadsList();
+  const isSeries = item.Type === "Series";
+  // UNE requête pour toutes les cartes (la liste partagée), lue par un index
+  // construit une fois : surtout pas `useItemDownloadState`, dont la clé porte
+  // l'itemId — quatre-vingts affiches, quatre-vingts requêtes. Un film ou un
+  // épisode se retrouvent par leur `itemId`, la copie COMPLÈTE d'abord (un
+  // transfert annulé du même titre la masquait) ; une SÉRIE n'a pas d'entrée à
+  // elle — ce sont ses épisodes qui portent son `seriesId`.
+  const itemState = useDeviceItemState(isSeries ? "" : item.Id);
+  const group = useDeviceGroupState(isSeries ? item.Id : "");
 
   if (!supportsDownloads()) return null;
-  const isSeries = item.Type === "Series";
   if (item.Type !== "Movie" && item.Type !== "Episode" && !isSeries) return null;
 
-  // Un film ou un épisode se retrouvent par leur `itemId` ; une SÉRIE n'a pas
-  // d'entrée à elle — ce sont ses épisodes qui portent son `seriesId`.
-  const entry = isSeries ? null : entries.find((e) => e.itemId === item.Id) ?? null;
-  const isActive = isSeries
-    ? entries.some((e) => e.seriesId === item.Id && ACTIVE_STATUSES.has(e.status))
-    : entry !== null && ACTIVE_STATUSES.has(entry.status);
+  // L'échec compte comme « en route » : son écran le relance, la carte non.
+  const isActive = isSeries ? group.active > 0 : itemState === "active" || itemState === "error";
   // Une série n'est JAMAIS « complète » : elle reste ouverte aux épisodes à
-  // venir, et le bouton doit continuer d'offrir les saisons qu'on n'a pas.
-  const isComplete = !isSeries && entry?.status === "complete";
+  // venir, et le bouton continue d'offrir les saisons qu'on n'a pas — mais il
+  // dit, par son glyphe, que des épisodes sont déjà là.
+  const isComplete = !isSeries && itemState === "complete";
+  const seriesKept = isSeries && group.kept > 0;
   // Sans droit ET sans téléchargement existant : AUCUN rendu. Ni grisé, ni
   // cadenas — c'est la règle de toute la feature.
-  if (!canDownload && !isActive && !isComplete) return null;
+  if (!canDownload && !isActive && !isComplete && !seriesKept) return null;
 
   const label = isComplete
     ? t("cardDownloadOnDevice")
     : isActive
       ? t("cardDownloadActive")
-      : isSeries
-        ? t("seriesDownload")
-        : item.Type === "Episode"
-          ? t("episodeDownload")
-          : t("download");
+      : seriesKept
+        ? t("cardDownloadSeriesSome")
+        : isSeries
+          ? t("seriesDownload")
+          : item.Type === "Episode"
+            ? t("episodeDownload")
+            : t("download");
+  // « Sur cette machine » se lit comme au repos : le glyphe et le vert CONSTANT
+  // de la pastille (posé sur média, dans les deux thèmes).
+  const kept = isComplete || (seriesKept && !isActive);
 
   const handleClick = (event: React.MouseEvent) => {
     // Sans les deux, la carte navigue sous le bouton.
@@ -115,15 +121,15 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
       onClick={handleClick}
       aria-label={label}
       title={label}
-      className={`${box} relative flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+      className={`${box} relative flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
         tone === "tray"
-          ? `transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${isComplete ? "text-emerald-300" : "text-white/80 hover:text-white"}`
+          ? `transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${kept ? "text-emerald-400" : "text-white/80 hover:text-white"}`
           : `border bg-black/55 transition hover:scale-105 hover:bg-black/70 ${
-              isComplete ? "border-emerald-400/80 text-emerald-300" : "border-white/40 text-white hover:border-white"
+              kept ? "border-emerald-400 text-emerald-400" : "border-white/40 text-white hover:border-white"
             }`
       }`}
     >
-      <DownloadGlyph done={isComplete} className={icon} strokeWidth={1.8} />
+      <DownloadGlyph done={kept} className={icon} strokeWidth={1.8} />
       {isActive && (
         <span className={`${dot} absolute -right-0.5 -top-0.5 rounded-full bg-brand animate-pulse-glow`} />
       )}

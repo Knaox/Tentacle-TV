@@ -93,11 +93,12 @@ export function DetailDownloadAction({ item, variant = "circle" }: { item: Media
         title={label}
         className={variant === "capsule"
           ? `relative flex h-11 w-11 items-center justify-center rounded-full transition-[color,background-color,transform] duration-150 hover:bg-white/10 active:scale-95 ${
-            isComplete ? "text-on-media-primary" : "text-on-media-secondary hover:text-on-media-primary"
+            // « Sur cette machine » : le vert constant de la pastille des cartes (posé sur média).
+            isComplete ? "text-emerald-400" : "text-on-media-secondary hover:text-on-media-primary"
           }`
           : `relative flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-150 hover:scale-105 hover:bg-fill-medium active:scale-95 ${
             isComplete
-              ? "border-content-primary bg-fill-medium text-content-primary"
+              ? "border-status-success-fg bg-fill-medium text-status-success-fg"
               : "border-line-strong text-content-secondary"
           }`}
       >

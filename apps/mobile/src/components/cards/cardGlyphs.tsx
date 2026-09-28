@@ -4,6 +4,7 @@ import {
   CARD_GLYPH_STROKE,
   CARD_GLYPH_VIEWBOX,
   HEART_PATH,
+  KEPT_OFFLINE_PATH,
   STAR_PATH,
   STAR_VIEWBOX,
   WATCHED_CHECK_PATH,
@@ -78,6 +79,18 @@ export function StarGlyph({ size = 10, color }: { size?: number; color: string }
   return (
     <Svg width={size} height={size} viewBox={STAR_VIEWBOX}>
       <Path d={STAR_PATH} fill={color} />
+    </Svg>
+  );
+}
+
+/**
+ * « Sur cet appareil » : disque plein, flèche évidée — jamais une coche, qui
+ * voisine dans la même pastille et dirait « vu ».
+ */
+export function KeptGlyph({ size = 12, color }: { size?: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox={CARD_GLYPH_VIEWBOX}>
+      <Path d={KEPT_OFFLINE_PATH} fill={color} fillRule="evenodd" clipRule="evenodd" />
     </Svg>
   );
 }

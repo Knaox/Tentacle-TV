@@ -18,7 +18,7 @@ function item(userData?: Partial<NonNullable<MediaItem["UserData"]>>, type = "Mo
 describe("resolveCardMarkers", () => {
   it("rend une carte vide quand rien n'est connu", () => {
     const markers = resolveCardMarkers({ item: item(), communityRating: null });
-    expect(markers).toEqual({ communityRating: null, userScore: null, statuses: [] });
+    expect(markers).toEqual({ communityRating: null, userScore: null, statuses: [], device: null });
     expect(isEmptyCardMarkers(markers)).toBe(true);
   });
 
@@ -70,5 +70,24 @@ describe("cardMarkerLabelParts", () => {
       { key: "status.watchlist" },
       { key: "status.watched" },
     ]);
+  });
+});
+
+describe("« sur cet appareil »", () => {
+  it("se pose au bout de la pastille, hors des bascules, et se lit en dernier", () => {
+    const markers = resolveCardMarkers({ item: item({ Played: true }), communityRating: null, device: "all" });
+    expect(markers.statuses).toEqual(["watched"]);
+    expect(markers.device).toBe("all");
+    expect(isEmptyCardMarkers(markers)).toBe(false);
+    expect(cardMarkerLabelParts(markers).map((part) => part.key)).toEqual(["status.watched", "status.onDevice"]);
+  });
+
+  it("dit « des épisodes » pour une série en partie gardée", () => {
+    const markers = resolveCardMarkers({ item: item(undefined, "Series"), communityRating: null, device: "some" });
+    expect(cardMarkerLabelParts(markers)).toEqual([{ key: "status.onDeviceSome" }]);
+  });
+
+  it("se tait sur une plateforme qui ne garde rien", () => {
+    expect(resolveCardMarkers({ item: item(), communityRating: null }).device).toBeNull();
   });
 });

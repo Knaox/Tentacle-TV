@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { resolveCardMarkers, type CardMarkers, type MediaItem } from "@tentacle-tv/shared";
+import { resolveCardMarkers, type CardDeviceState, type CardMarkers, type MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
 import { tentacleApiFetch } from "./usePreferences";
@@ -98,6 +98,12 @@ export interface CardMarkersOptions {
    * connaît. Absent : les Sets et le `UserData` répondent.
    */
   inWatchlist?: boolean;
+  /**
+   * « Sur cet appareil » — lu par la plateforme qui garde hors ligne (bureau,
+   * mobile) dans SA liste locale (`cardDeviceState`, offline-core). Absent :
+   * rien à dire (web, TV, carte déjà lue sur le disque).
+   */
+  device?: CardDeviceState | null;
 }
 
 export function useCardMarkers(item: MediaItem, options: CardMarkersOptions): CardMarkers {
@@ -140,5 +146,6 @@ export function useCardMarkers(item: MediaItem, options: CardMarkersOptions): Ca
     // Pas de série (film) ou Set pas encore chargé : `UserData` répond.
     inWatchlist: options.inWatchlist ?? (seriesId ? inWatchlist : undefined),
     isFavorite: seriesId ? isFavorite : undefined,
+    device: options.device,
   });
 }

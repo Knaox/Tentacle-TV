@@ -3,6 +3,7 @@ import {
   CARD_GLYPH_STROKE,
   CARD_GLYPH_VIEWBOX,
   HEART_PATH,
+  KEPT_OFFLINE_PATH,
   STAR_PATH,
   STAR_VIEWBOX,
   WATCHED_CHECK_PATH,
@@ -60,6 +61,19 @@ export function WatchedGlyph({ className = "h-3.5 w-3.5", filled = false }: Glyp
     <svg className={className} viewBox={CARD_GLYPH_VIEWBOX} aria-hidden fill="none" {...STROKE}>
       <circle cx="12" cy="12" r="9" />
       <path d={WATCHED_CHECK_PATH} />
+    </svg>
+  );
+}
+
+/**
+ * « Sur cet appareil » : disque plein, flèche évidée — jamais une coche, qui
+ * voisine dans la même pastille et dirait « vu ». La couleur (le vert de
+ * « prêt ») vient de l'appelant.
+ */
+export function KeptGlyph({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox={CARD_GLYPH_VIEWBOX} aria-hidden fill="currentColor">
+      <path fillRule="evenodd" clipRule="evenodd" d={KEPT_OFFLINE_PATH} />
     </svg>
   );
 }

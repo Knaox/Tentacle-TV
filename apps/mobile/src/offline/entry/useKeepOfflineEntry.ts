@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { useItemOfflineState } from "@/hooks/offline/useOfflineList";
+import { useDeviceItemState } from "@/hooks/offline/useDeviceState";
 import { useOfflineVisibility } from "@/hooks/offline/useOfflineVisibility";
 import { openKeepOffline } from "../keep/keepOfflineStore";
 import type { KeepOfflineState } from "./KeepOfflineGlyph";
@@ -16,18 +16,20 @@ export interface KeepOfflineEntry {
   onPress: () => void;
 }
 
-/** Ce qu'un point d'entrée (fiche, ligne d'épisode) a besoin de savoir pour un titre. */
+/**
+ * Ce qu'un point d'entrée (fiche, ligne d'épisode, feuille) a besoin de savoir
+ * pour un titre. Lu dans l'index de la liste partagée (`useDeviceItemState`) :
+ * une ligne d'épisode ne lance plus sa propre lecture SQLite — deux cents
+ * lignes, deux cents lectures à chaque évènement du moteur.
+ */
 export function useKeepOfflineEntry(item: MediaItem | undefined): KeepOfflineEntry {
   const { t } = useTranslation("offline");
   const router = useRouter();
   const { canKeep } = useOfflineVisibility();
-  const { data: entry } = useItemOfflineState(item?.Id);
+  const status = useDeviceItemState(item?.Id);
 
-  const status = entry?.status ?? null;
-  const state: KeepOfflineState =
-    status === "complete" ? "complete"
-      : status === "queued" || status === "downloading" || status === "paused" ? "active"
-        : "idle";
+  // Un échec se rattrape par un nouveau « garder » : l'entrée repart au repos.
+  const state: KeepOfflineState = status === "complete" ? "complete" : status === "active" ? "active" : "idle";
   // Au repos, un épisode dit « Garder l'épisode » : la fiche d'un épisode ne
   // garde que lui — « Toute la série » n'existe que sur la fiche de la série.
   const idleLabel = item?.Type === "Episode" ? t("keepEpisodeOffline") : t("keepOffline");

@@ -1,14 +1,17 @@
+import { CARD_GLYPH_VIEWBOX, KEPT_OFFLINE_PATH } from "@tentacle-tv/shared";
+
 /**
- * Le glyphe des boutons de téléchargement — fiche, ligne d'épisode, carte.
+ * Le glyphe des boutons hors ligne — fiche, ligne d'épisode, plateau de carte.
  *
- * ⚠️ « Terminé » ne se dessine PAS par une coche dans un cercle : c'est déjà, au
- * caractère près, le tracé de `CheckCircleIcon`, le marqueur « vu ». Les deux
- * voisinent dans la rangée d'actions d'une fiche ET dans une ligne d'épisode —
- * un titre téléchargé y paraissait donc marqué comme vu.
+ * À prendre : la flèche vers un plateau, au trait. Pris (« sur cette
+ * machine ») : le glyphe PARTAGÉ de la pastille des cartes — disque plein,
+ * flèche évidée —, le même au repos et au survol, sur le bureau et sur le
+ * mobile. La couleur (le vert de « prêt ») vient de l'appelant.
  *
- * On garde la métaphore du téléchargement — le plateau du glyphe « à
- * télécharger », inchangé — et l'on remplace la seule flèche par une coche.
- * L'état se lit sans ambiguïté, et les deux glyphes restent de la même famille.
+ * ⚠️ Jamais de coche pour « pris » : une coche dans un cercle est, au
+ * caractère près, le marqueur « vu », et les deux voisinent — dans la rangée
+ * d'actions d'une fiche, dans une ligne d'épisode, dans la pastille. Une coche
+ * posée sur le plateau (l'ancien « terminé ») s'y lisait encore comme « vu ».
  */
 
 interface DownloadGlyphProps {
@@ -18,18 +21,21 @@ interface DownloadGlyphProps {
 }
 
 export function DownloadGlyph({ done, className = "h-5 w-5", strokeWidth = 2 }: DownloadGlyphProps) {
+  if (done) {
+    return (
+      <svg className={className} viewBox={CARD_GLYPH_VIEWBOX} fill="currentColor" aria-hidden>
+        <path fillRule="evenodd" clipRule="evenodd" d={KEPT_OFFLINE_PATH} />
+      </svg>
+    );
+  }
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth}>
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} aria-hidden>
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5"
       />
-      {done ? (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8 8.75L11 11.75 16.5 5.5" />
-      ) : (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-      )}
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
     </svg>
   );
 }

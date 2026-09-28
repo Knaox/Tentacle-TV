@@ -1,11 +1,13 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import type { CardStatusKind } from "@tentacle-tv/shared";
-import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "./cardGlyphs";
+import { cardDeviceLabelKey, type CardDeviceState, type CardStatusKind } from "@tentacle-tv/shared";
+import { BookmarkGlyph, HeartGlyph, KeptGlyph, WatchedGlyph } from "./cardGlyphs";
 
 interface CardStatusMarkersProps {
   /** États vrais, déjà ordonnés (`resolveCardMarkers`). Vide : rien n'est rendu. */
   statuses: readonly CardStatusKind[];
+  /** « Sur cette machine » (bureau), au bout de la pastille — `null` : rien de gardé. */
+  device?: CardDeviceState | null;
   /** Faux = fondu de sortie (le plateau du survol reprend ces états). */
   shown?: boolean;
   /** Autre ancrage que le coin haut-droit. */
@@ -16,8 +18,8 @@ const GLYPH = "h-3 w-3";
 
 /**
  * La pastille d'états d'une carte, façon Crunchyroll : signet (Ma liste),
- * cœur (favori), coche (vu), réunis dans UNE capsule d'angle au lieu de trois
- * badges épars. L'œil trouve un seul endroit où regarder, et une carte sans
+ * cœur (favori), coche (vu) — puis, sur le bureau, « sur cette machine » —
+ * réunis dans UNE capsule d'angle au lieu de badges épars. L'œil trouve un seul endroit où regarder, et une carte sans
  * état reste parfaitement propre — aucune capsule vide.
  *
  * Trois formes distinctes, pas trois couleurs : le cœur prend l'accent de
@@ -30,12 +32,15 @@ const GLYPH = "h-3 w-3";
  */
 export const CardStatusMarkers = memo(function CardStatusMarkers({
   statuses,
+  device = null,
   shown = true,
   className,
 }: CardStatusMarkersProps) {
   const { t } = useTranslation("cards");
-  if (statuses.length === 0) return null;
-  const label = statuses.map((kind) => t(`status.${kind}`)).join(", ");
+  if (statuses.length === 0 && device === null) return null;
+  const parts = statuses.map((kind) => t(`status.${kind}`));
+  if (device !== null) parts.push(t(cardDeviceLabelKey(device)));
+  const label = parts.join(", ");
 
   return (
     <div
@@ -59,6 +64,15 @@ export const CardStatusMarkers = memo(function CardStatusMarkers({
         ) : (
           <WatchedGlyph key={kind} className={GLYPH} filled />
         ),
+      )}
+      {/* Après les états : l'ordre même du plateau, où l'extra « hors ligne »
+          suit les bascules. Le vert de « prêt », pas une seconde coche — un
+          vert CONSTANT (#34D399) : posé sur média, comme le reste de la
+          pastille ; le jeton de succès du thème clair est un vert sombre. */}
+      {device !== null && (
+        <span className="text-emerald-400">
+          <KeptGlyph className={GLYPH} />
+        </span>
       )}
     </div>
   );

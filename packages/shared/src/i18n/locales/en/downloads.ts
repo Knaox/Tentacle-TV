@@ -41,6 +41,8 @@ export default {
   downloadedBadge: "Downloaded",
   cardDownloadActive: "Downloading — open downloads",
   cardDownloadOnDevice: "On this device — open downloads",
+  // Une série n'est jamais « complète » : des épisodes gardés, et d'autres saisons à prendre.
+  cardDownloadSeriesSome: "Episodes on this device — download more seasons",
   dialogTitle: "Download",
   dialogTitleSeason: "Download season ({{count}} episodes)",
   variantOriginal: "Original",

@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { KeptGlyph } from "@/components/cards/cardGlyphs";
 import { useTheme, withAlpha } from "@/theme";
 import { PulseDot } from "./PulseDot";
 
@@ -16,12 +17,15 @@ interface Props {
 /**
  * L'anneau de l'action « Garder hors ligne », dans ses trois états : la
  * flèche vers un plateau (le glyphe universel des applications de vidéo),
- * la même avec un point lumineux qui pulse, puis l'anneau plein avec un
- * téléphone — jamais une coche, qui dirait « vu ».
+ * la même avec un point lumineux qui pulse, puis — sur l'appareil — le glyphe
+ * de la pastille des cartes (`KeptGlyph` : disque plein, flèche évidée) dans
+ * le vert de « prêt ». Le même signe au repos sur l'affiche et ici : ce qu'on
+ * voyait sur la carte se retrouve là où on le gère. Jamais une coche, qui
+ * dirait « vu ».
  */
 export function KeepOfflineGlyph({ state, size, iconSize }: Props) {
   const { colors } = useTheme();
-  const tint = colors.brand.violet;
+  const green = colors.statusPairs.success.fg;
   const complete = state === "complete";
   return (
     <View
@@ -32,12 +36,16 @@ export function KeepOfflineGlyph({ state, size, iconSize }: Props) {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: complete ? withAlpha(tint, 0.18, colors.brand.soft) : colors.fill.subtle,
-          borderColor: complete ? withAlpha(tint, 0.5, colors.brand.glow) : colors.border.subtle,
+          backgroundColor: complete ? withAlpha(green, 0.16, colors.statusPairs.success.bg) : colors.fill.subtle,
+          borderColor: complete ? withAlpha(green, 0.5, green) : colors.border.subtle,
         },
       ]}
     >
-      <Feather name={complete ? "smartphone" : "download"} size={iconSize} color={complete ? tint : colors.text.primary} />
+      {complete ? (
+        <KeptGlyph size={iconSize} color={green} />
+      ) : (
+        <Feather name="download" size={iconSize} color={colors.text.primary} />
+      )}
       {state === "active" && <PulseDot />}
     </View>
   );

@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useSeriesEpisodes, useUserId } from "@tentacle-tv/api-client";
+import { useSeriesEpisodes } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { ActionCell } from "@/components/ActionCell";
-import { useOfflineList } from "@/hooks/offline/useOfflineList";
+import { useDeviceGroupState } from "@/hooks/offline/useDeviceState";
 import { useOfflineVisibility } from "@/hooks/offline/useOfflineVisibility";
 import { useTheme } from "@/theme";
 import { openKeepOffline } from "../keep/keepOfflineStore";
@@ -24,23 +24,24 @@ interface Props {
 /**
  * L'extra « hors ligne » de la feuille d'appui long : « Garder hors ligne »
  * (film), « Garder l'épisode » (épisode), « Toute la série » (série) ; en
- * préparation ou sur l'appareil → l'écran « Sur cet appareil ».
+ * préparation ou sur l'appareil → l'écran « Sur cet appareil ». Une série
+ * dont des épisodes sont déjà là le dit (le glyphe de la pastille), et garde
+ * son dialogue pour en ajouter : elle n'est jamais « complète ».
  */
 export function KeepOfflineActionCell({ item, onClose, style }: Props) {
-  const { t } = useTranslation("offline");
+  const { t } = useTranslation(["offline", "cards"]);
   const { colors } = useTheme();
   const router = useRouter();
-  const userId = useUserId();
   const isSeries = item.Type === "Series";
   const entry = useKeepOfflineEntry(isSeries ? undefined : item);
   const { canKeep } = useOfflineVisibility();
-  const { data: entries } = useOfflineList(userId);
+  // L'index de la liste partagée : une `Map` par version, pas un parcours.
+  const group = useDeviceGroupState(isSeries ? item.Id : undefined);
   const [wanted, setWanted] = useState(false);
   const { data: episodes, isError } = useSeriesEpisodes(item.Id, { enabled: isSeries && wanted });
 
-  const seriesActive = isSeries && (entries ?? []).some(
-    (e) => e.seriesId === item.Id && (e.status === "queued" || e.status === "downloading" || e.status === "paused"),
-  );
+  const seriesActive = isSeries && group.active > 0;
+  const seriesKept = isSeries && group.kept > 0;
 
   useEffect(() => {
     if (!wanted) return;
@@ -51,13 +52,16 @@ export function KeepOfflineActionCell({ item, onClose, style }: Props) {
     openKeepOffline({ mode: "series", items: episodes, seriesId: item.Id, title: item.Name });
   }, [wanted, episodes, isError, item.Id, item.Name, onClose]);
 
-  if (isSeries ? !canKeep && !seriesActive : !entry.visible) return null;
+  if (isSeries ? !canKeep && !seriesActive && !seriesKept : !entry.visible) return null;
 
-  const state = isSeries ? (seriesActive ? "active" : "idle") : entry.state;
-  const label = isSeries ? (seriesActive ? t("stateInProgress") : t("keepSeriesOffline")) : entry.label;
+  const state = isSeries ? (seriesActive ? "active" : seriesKept ? "complete" : "idle") : entry.state;
+  const label = isSeries
+    ? seriesActive ? t("stateInProgress") : seriesKept ? t("cards:status.onDeviceSome") : t("keepSeriesOffline")
+    : entry.label;
 
   const onPress = (): void => {
-    if (state !== "idle") {
+    // Une série en partie gardée rouvre son dialogue : il reste des saisons.
+    if (state === "active" || (state === "complete" && !isSeries)) {
       onClose();
       router.push("/on-device");
       return;
@@ -75,7 +79,7 @@ export function KeepOfflineActionCell({ item, onClose, style }: Props) {
       icon="download"
       label={label}
       active={state === "complete"}
-      activeColor={colors.brand.violet}
+      activeColor={colors.statusPairs.success.fg}
       onPress={onPress}
       style={style}
       ring={<View style={{ marginBottom: 10 }}><KeepOfflineGlyph state={state} size={60} iconSize={26} /></View>}

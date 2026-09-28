@@ -3,6 +3,7 @@ import { useCardMarkers } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardRatingBadge } from "./CardRatingBadge";
 import { CardStatusMarkers } from "./CardStatusMarkers";
+import { useCardDeviceState } from "../../downloads/useDeviceState";
 
 interface CardMarkerLayerProps {
   item: MediaItem;
@@ -22,7 +23,8 @@ interface CardMarkerLayerProps {
 
 /**
  * Les marqueurs d'une carte au repos — note en bas à gauche, états en haut à
- * droite. Le fond vient de `useCardMarkers` (modèle partagé par toutes les
+ * droite, et, sur le bureau, « sur cette machine » au bout de la pastille.
+ * Le fond vient de `useCardMarkers` (modèle partagé par toutes les
  * plateformes), la forme de `CardRatingBadge` et `CardStatusMarkers`.
  *
  * `memo` : la carte parente se re-rend à chaque survol ; les marqueurs, eux,
@@ -38,7 +40,8 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
   ratingClassName,
   statusClassName,
 }: CardMarkerLayerProps) {
-  const markers = useCardMarkers(item, { communityRating, scope, inWatchlist });
+  const device = useCardDeviceState(item);
+  const markers = useCardMarkers(item, { communityRating, scope, inWatchlist, device });
   return (
     <>
       <CardRatingBadge
@@ -47,7 +50,7 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
         shown={!hideRating}
         className={ratingClassName}
       />
-      <CardStatusMarkers statuses={markers.statuses} shown={!hideStatus} className={statusClassName} />
+      <CardStatusMarkers statuses={markers.statuses} device={markers.device} shown={!hideStatus} className={statusClassName} />
     </>
   );
 });

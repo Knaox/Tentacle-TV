@@ -10,7 +10,8 @@ import type { MediaItem } from "../types/media";
  *   • la NOTE, en bas à gauche — la note globale (/10) et, quand l'utilisateur
  *     a noté le titre, SA note, dans la même pastille ;
  *   • les ÉTATS, en haut à droite — dans ma liste, favori, déjà vu — dans une
- *     seule pastille, jamais trois badges épars.
+ *     seule pastille, jamais trois badges épars ; au bout de la pastille, là
+ *     où l'on garde hors ligne (bureau, mobile), « sur cet appareil ».
  *
  * Ce module ne décide que du FOND : quoi afficher, dans quel ordre, et avec
  * quel libellé accessible. La forme appartient à chaque plateforme. Deux
@@ -29,6 +30,16 @@ export type CardStatusKind = "watchlist" | "favorite" | "watched";
  */
 export const CARD_STATUS_ORDER: readonly CardStatusKind[] = ["watchlist", "favorite", "watched"];
 
+/**
+ * « Sur cet appareil » : le titre entier (`all` — film, épisode gardés), ou
+ * quelques épisodes d'une série ou d'une saison (`some`), qui restent
+ * ouvertes aux épisodes à venir. Ce n'est PAS un `CardStatusKind` : les
+ * bascules du plateau dérivent de ceux-là, et l'appareil ne se bascule pas
+ * comme un favori — il a son extra, `offline`, au bout du plateau. D'où sa
+ * place dans la pastille : APRÈS les états, dans l'ordre même du plateau.
+ */
+export type CardDeviceState = "all" | "some";
+
 export interface CardMarkerInput {
   item: MediaItem;
   /** Note globale /10, telle que la rend `cardRatingFor` (null = aucune). */
@@ -42,6 +53,12 @@ export interface CardMarkerInput {
   inWatchlist?: boolean;
   /** Idem pour les favoris (Set `favorite-series-ids`, sinon `UserData.IsFavorite`). */
   isFavorite?: boolean;
+  /**
+   * Ce que CET appareil garde du titre (`cardDeviceState`, offline-core).
+   * Absent : la plateforme ne garde rien hors ligne (web, TV) — ou la carte
+   * est déjà lue sur le disque, et le dire serait redondant.
+   */
+  device?: CardDeviceState | null;
 }
 
 export interface CardMarkers {
@@ -49,6 +66,8 @@ export interface CardMarkers {
   userScore: number | null;
   /** États vrais, dans l'ordre d'affichage. Vide = pas de pastille. */
   statuses: CardStatusKind[];
+  /** « Sur cet appareil », au bout de la pastille — `null` : rien de gardé ici. */
+  device: CardDeviceState | null;
 }
 
 function positive(value: number | null | undefined): number | null {
@@ -81,12 +100,23 @@ export function resolveCardMarkers(input: CardMarkerInput): CardMarkers {
     communityRating: positive(input.communityRating),
     userScore: validScore(input.userScore),
     statuses: CARD_STATUS_ORDER.filter((kind) => flags[kind]),
+    device: input.device ?? null,
   };
 }
 
 /** Vrai quand la carte n'a rien à afficher — aucun rendu, aucun calque. */
 export function isEmptyCardMarkers(markers: CardMarkers): boolean {
-  return markers.communityRating === null && markers.userScore === null && markers.statuses.length === 0;
+  return (
+    markers.communityRating === null &&
+    markers.userScore === null &&
+    markers.statuses.length === 0 &&
+    markers.device === null
+  );
+}
+
+/** Clé (espace `cards`) du libellé de « sur cet appareil ». */
+export function cardDeviceLabelKey(device: CardDeviceState): string {
+  return device === "all" ? "status.onDevice" : "status.onDeviceSome";
 }
 
 /** « 8.2 » — une décimale, point décimal (le format de toutes les cartes). */
@@ -123,5 +153,6 @@ export function cardMarkerLabelParts(markers: CardMarkers): CardMarkerLabelPart[
     parts.push({ key: "userRating", params: { score: formatUserScore(markers.userScore) } });
   }
   for (const kind of markers.statuses) parts.push({ key: `status.${kind}` });
+  if (markers.device !== null) parts.push({ key: cardDeviceLabelKey(markers.device) });
   return parts;
 }

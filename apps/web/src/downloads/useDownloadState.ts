@@ -13,9 +13,9 @@ import { getDiskFree, getDiskUsage, listDownloads, downloadStateForItem, type Do
 import { useDownloadCapabilities } from "./useDownloadCapabilities";
 import { LOCAL_QUERY } from "@tentacle-tv/offline-core/react";
 
-export const DOWNLOADS_LIST_QUERY_KEY = "downloads-list";
-export const DOWNLOAD_STATE_QUERY_KEY = "download-state";
-export const DISK_INFO_QUERY_KEY = "downloads-disk";
+import { DISK_INFO_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DOWNLOADS_LIST_QUERY_KEY } from "./queryKeys";
+
+export { DISK_INFO_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DOWNLOADS_LIST_QUERY_KEY };
 
 export function useDownloadsList(): DownloadEntry[] {
   return useDownloadsListState().entries;
