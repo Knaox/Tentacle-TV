@@ -17,6 +17,7 @@ import {
   implicitDecay,
   playAgeDays,
   seriesEngagementByHours,
+  swipeAnchorWeight,
 } from "./anchorSignals";
 import { ratingSignalWeight, ratingStats } from "./profileMath";
 import type { SignalItem } from "./signals";
@@ -37,7 +38,10 @@ export type AnchorKind =
   | "rewatch"
   | "series"
   | "abandon"
-  | "dismissed";
+  | "dismissed"
+  | "swipe_like"
+  | "superlike"
+  | "swipe_dislike";
 
 export interface Anchor {
   /** Clé canonique « movie:603 » ; « jf:<itemId> » sans identité TMDB. */
@@ -73,6 +77,8 @@ export interface AnchorInputs {
   ratings: ReadonlyArray<{ mediaType: string; tmdbId: number; score: number; updatedAt: Date | string }>;
   likes: ReadonlyArray<{ mediaType: string; tmdbId: number; createdAt: Date | string }>;
   feedback: ReadonlyArray<{ itemKey: string; action: string; createdAt: Date | string }>;
+  /** Verdicts de l'onglet « Affiner » (absent = aucun). */
+  swipes?: ReadonlyArray<{ mediaType: string; tmdbId: number; verdict: string; updatedAt: Date | string }>;
   favorites: readonly SignalItem[];
   watchlist: readonly SignalItem[];
   playedMovies: readonly SignalItem[];
@@ -177,6 +183,17 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     if (!a) continue;
     a.weight += ANCHOR_WATCHLIST;
     a.kinds.add("watchlist");
+  }
+
+  // 2 bis) Verdicts du swipe : explicites, donc à décroissance lente.
+  for (const sw of input.swipes ?? []) {
+    const base = swipeAnchorWeight(sw.verdict);
+    if (base === 0) continue;
+    const mediaType = canonicalType(sw.mediaType);
+    const a = touch(`${mediaType}:${sw.tmdbId}`, mediaType, sw.tmdbId, "");
+    a.weight += base * explicitDecay(ageOf(sw.updatedAt));
+    a.kinds.add(base < 0 ? "swipe_dislike" : sw.verdict === "superlike" ? "superlike" : "swipe_like");
+    if (base > 0) a.lastAt = laterOf(a.lastAt, new Date(sw.updatedAt).toISOString());
   }
 
   // 3) Films vus, et revus quand c'est vérifié.

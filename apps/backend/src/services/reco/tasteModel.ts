@@ -92,7 +92,8 @@ export function buildTasteIndex(
   for (const a of anchors) {
     const facets = facetsOf(a);
     if (!facets || facets.length === 0) continue;
-    const liked = a.consumption || a.kinds.some((k) => k === "favorite" || k === "like");
+    const liked =
+      a.consumption || a.kinds.some((k) => k === "favorite" || k === "like" || k === "swipe_like" || k === "superlike");
     index.add({ key: a.key, title: a.title, weight: a.weight, mediaType: a.mediaType, liked }, facets);
   }
   return index;

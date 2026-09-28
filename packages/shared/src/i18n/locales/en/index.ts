@@ -29,11 +29,12 @@ import cards from "./cards";
 import library from "./library";
 import watchlist from "./watchlist";
 import favorites from "./favorites";
+import swipe from "./swipe";
 
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
   adminPlugins, adminInvites, adminServices, adminMetadata, media, errors, profile, disclaimer,
   watchTogether, downloads, easterEggs, reco, whatsNew, offline, sessions, search,
-  cards, library, watchlist, favorites,
+  cards, library, watchlist, favorites, swipe,
 };

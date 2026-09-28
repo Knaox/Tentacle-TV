@@ -27,6 +27,7 @@ export default {
   libraries: "Bibliothèques",
   pluginPages: "Pages des plugins",
   forYou: "Pour vous",
+  swipe: "Affiner",
   extensions: "Extensions",
   extensionSections: "Pages de l'extension",
   myList: "Ma liste",

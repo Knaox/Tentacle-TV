@@ -69,10 +69,12 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
   const prisma = getPrisma();
   if (idfLoadedAt() === 0) await loadIdfFromDb();
 
-  const [ratings, likes, feedback, signals, measured] = await Promise.all([
+  const [ratings, likes, feedback, swipes, signals, measured] = await Promise.all([
     prisma.userRating.findMany({ where: { jellyfinUserId: userId, deletedAt: null } }),
     prisma.userLike.findMany({ where: { jellyfinUserId: userId } }),
     prisma.recommendationFeedback.findMany({ where: { jellyfinUserId: userId } }),
+    // « Passé » ne juge rien : il n'entre pas dans le goût.
+    prisma.userSwipe.findMany({ where: { jellyfinUserId: userId, verdict: { not: "skip" } } }),
     fetchUserSignals(userId),
     measuredViewings(userId).catch(() => new Map()),
   ]);
@@ -83,6 +85,7 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
     ratings,
     likes,
     feedback,
+    swipes,
     favorites: signals.favorites,
     watchlist: signals.watchlist,
     playedMovies: signals.playedMovies,
