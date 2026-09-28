@@ -26,6 +26,7 @@ export { useRecoMarkerItem, recoMarkerItem } from "./reco/useRecoMarkerItem";
 // de notation, les mêmes pour le survol web, la feuille mobile et la télécommande.
 export { useCardToggles, type CardToggles } from "./hooks/useCardToggles";
 export { useCardRatingTarget, type CardRatingTarget } from "./hooks/useCardRatingTarget";
+export { useCardFace, cardFaceNeedsDetail } from "./hooks/useCardFace";
 export { useSeriesRatings, SERIES_RATINGS_KEY } from "./hooks/useSeriesRatings";
 export { filterCollection, collectionGenres, type CollectionFilterInput, type CollectionTypeTab } from "./utils/collectionFilter";
 export {

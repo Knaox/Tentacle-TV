@@ -1,5 +1,6 @@
 import type { QueryClient, InfiniteData } from "@tanstack/react-query";
 import type { MediaItem, UserItemData } from "@tentacle-tv/shared";
+import { patchSearchResponse } from "./searchCachePatch";
 
 /**
  * Préfixes de query keys contenant des listes de MediaItem avec UserData.
@@ -191,6 +192,16 @@ export function updateItemUserDataInCache(
 
     // Listes connues uniquement
     if (!LIST_QUERY_PREFIXES.includes(prefix as typeof LIST_QUERY_PREFIXES[number])) {
+      continue;
+    }
+
+    // Réponses du moteur de recherche : titres rangés en sections de touches.
+    if (prefix === "search" && !Array.isArray(data)) {
+      const patched = patchSearchResponse(data, matches, (item) => patchItem(item, updater));
+      if (patched) {
+        snapshot.set(keyStr, data);
+        qc.setQueryData(key, patched);
+      }
       continue;
     }
 
