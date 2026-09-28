@@ -21,6 +21,7 @@ export { useWatchlist, useToggleWatchlist, useToggleWatchlistForItem, useFavorit
 export { useWatchlistSeriesIds, useFavoriteSeriesIds, seriesStateId } from "./hooks/useSeriesListMembership";
 // Marqueurs des cartes média — note, ma liste, favori, vu (cf. hooks/useCardMarkers)
 export { useCardMarkers, type CardMarkersOptions } from "./hooks/useCardMarkers";
+export { useRecoCardMarkers, recoMarkerItem } from "./reco/useRecoCardMarkers";
 export { useSeriesRatings, SERIES_RATINGS_KEY } from "./hooks/useSeriesRatings";
 export { filterCollection, collectionGenres, type CollectionFilterInput, type CollectionTypeTab } from "./utils/collectionFilter";
 export {
