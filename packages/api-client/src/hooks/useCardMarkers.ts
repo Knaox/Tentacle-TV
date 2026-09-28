@@ -92,6 +92,12 @@ export interface CardMarkersOptions {
   scope?: "item" | "series";
   /** `false` : aucune requête (catalogue hors ligne, bancs). Les états de `UserData` restent lus. */
   enabled?: boolean;
+  /**
+   * Ma liste dite par l'appelant — un titre hors bibliothèque mis de côté
+   * jusqu'à son arrivée (`useIsWatchlistPending`), qu'aucun cache Jellyfin ne
+   * connaît. Absent : les Sets et le `UserData` répondent.
+   */
+  inWatchlist?: boolean;
 }
 
 export function useCardMarkers(item: MediaItem, options: CardMarkersOptions): CardMarkers {
@@ -132,7 +138,7 @@ export function useCardMarkers(item: MediaItem, options: CardMarkersOptions): Ca
     communityRating: options.communityRating,
     userScore: userScore ?? null,
     // Pas de série (film) ou Set pas encore chargé : `UserData` répond.
-    inWatchlist: seriesId ? inWatchlist : undefined,
+    inWatchlist: options.inWatchlist ?? (seriesId ? inWatchlist : undefined),
     isFavorite: seriesId ? isFavorite : undefined,
   });
 }

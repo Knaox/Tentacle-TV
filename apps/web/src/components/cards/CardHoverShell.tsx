@@ -7,8 +7,12 @@ interface CardHoverShellProps {
   variant: CardOverlayVariant;
   /** Cible du fondu : vrai pendant le survol, faux pendant le sursis de sortie. */
   visible: boolean;
-  /** Le bouton Lecture du centre — absent quand rien ne se lance. */
-  play?: { label: string; onPlay: (e: MouseEvent) => void } | null;
+  /**
+   * L'action primaire du centre — Lecture, ou « Demander » sur une carte hors
+   * bibliothèque (`glyph`, Lecture par défaut ; `busy` le temps du geste).
+   * Absente quand rien ne se lance.
+   */
+  play?: { label: string; onPlay: (e: MouseEvent) => void; glyph?: ReactNode; busy?: boolean } | null;
   /** Le groupe du bas : étoiles, puis plateau. */
   children: ReactNode;
 }
@@ -60,10 +64,12 @@ export function CardHoverShell({ variant, visible, play, children }: CardHoverSh
               onClick={play.onPlay}
               hoverScale={1.08}
               aria-label={play.label}
+              aria-busy={play.busy || undefined}
+              disabled={play.busy}
               title={play.label}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-cta-brand-fg shadow-[0_8px_24px_rgba(var(--brand-rgb),0.45)] ring-1 ring-white/25"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] text-cta-brand-fg shadow-[0_8px_24px_rgba(var(--brand-rgb),0.45)] ring-1 ring-white/25 disabled:cursor-wait"
             >
-              <PlayGlyph className="ml-0.5 h-5 w-5" />
+              {play.glyph ?? <PlayGlyph className="ml-0.5 h-5 w-5" />}
             </PressableScale>
           </div>
         </div>

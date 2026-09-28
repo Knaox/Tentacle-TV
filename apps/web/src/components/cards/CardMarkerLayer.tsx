@@ -14,6 +14,8 @@ interface CardMarkerLayerProps {
   hideRating?: boolean;
   /** La pastille d'états s'efface (le plateau du survol la reprend). */
   hideStatus?: boolean;
+  /** Ma liste dite par l'appelant : un titre hors bibliothèque mis de côté jusqu'à son arrivée. */
+  inWatchlist?: boolean;
   ratingClassName?: string;
   statusClassName?: string;
 }
@@ -32,10 +34,11 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
   scope = "series",
   hideRating = false,
   hideStatus = false,
+  inWatchlist,
   ratingClassName,
   statusClassName,
 }: CardMarkerLayerProps) {
-  const markers = useCardMarkers(item, { communityRating, scope });
+  const markers = useCardMarkers(item, { communityRating, scope, inWatchlist });
   return (
     <>
       <CardRatingBadge

@@ -42,4 +42,7 @@ export default {
   watchlistOnArrival: "Dans ma liste dès son arrivée",
   requestSent: "Demande envoyée.",
   requestFailed: "La demande n'a pas abouti.",
+  watchlistAdded: "Ajouté à ma liste.",
+  watchlistOnArrivalAdded: "Il entrera dans ma liste dès son arrivée.",
+  watchlistFailed: "Ma liste n'a pas pu être modifiée.",
 } as const;

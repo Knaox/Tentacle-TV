@@ -39,4 +39,7 @@ export default {
   watchlistOnArrival: "In my list once it arrives",
   requestSent: "Request sent.",
   requestFailed: "The request didn't go through.",
+  watchlistAdded: "Added to my list.",
+  watchlistOnArrivalAdded: "It will join my list as soon as it arrives.",
+  watchlistFailed: "My list couldn't be updated.",
 } as const;

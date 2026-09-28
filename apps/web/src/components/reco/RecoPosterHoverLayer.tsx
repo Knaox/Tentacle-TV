@@ -2,6 +2,7 @@ import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRecoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
 import { CardHoverOverlay } from "../cards/CardHoverOverlay";
+import { ExternalHoverOverlay } from "../cards/external/ExternalHoverOverlay";
 import { useRecoPlayTarget } from "./useRecoPlayTarget";
 
 interface RecoPosterHoverLayerProps {
@@ -20,14 +21,33 @@ interface RecoPosterHoverLayerProps {
  * ce qu'une recommandation seule connaît — la cible de lecture (reprise, ou
  * l'épisode à suivre), le visage des marqueurs et l'identité tmdb.
  *
- * Titre hors bibliothèque : ni Lecture ni bascules (il n'y a pas d'item
- * Jellyfin à mettre dans Ma liste) — les étoiles (par tmdb) et le refus
- * restent, dans la même capsule. C'est le modèle partagé qui le décide.
+ * Titre hors bibliothèque : c'est une carte Vigie, et son survol est celui de
+ * toutes les cartes hors bibliothèque (`ExternalHoverOverlay`) — « Demander »
+ * au centre, les étoiles (par tmdb), Ma liste à l'arrivée et le refus dans la
+ * même capsule. Le même que sur la recherche ou dans l'extension.
  *
  * Monté au survol seulement : la cible de lecture (une ou deux requêtes), les
  * Sets du plateau et la liste des notes n'existent que le temps du survol.
  */
-export function RecoPosterHoverLayer({ item, visible, onDismiss, onOpenDetail }: RecoPosterHoverLayerProps) {
+export function RecoPosterHoverLayer(props: RecoPosterHoverLayerProps) {
+  const { item } = props;
+  // Hors bibliothèque, c'est le survol des cartes Vigie : « Demander » au
+  // centre, Ma liste à l'arrivée — le même que sur la recherche.
+  if (item.jellyfinItemId === null) {
+    return (
+      <ExternalHoverOverlay
+        variant="reco"
+        title={{ mediaType: item.mediaType, tmdbId: item.tmdbId }}
+        name={item.title}
+        visible={props.visible}
+        onDismiss={props.onDismiss}
+      />
+    );
+  }
+  return <LibraryRecoHoverLayer {...props} />;
+}
+
+function LibraryRecoHoverLayer({ item, visible, onDismiss, onOpenDetail }: RecoPosterHoverLayerProps) {
   const navigate = useNavigate();
   // Lecture (reprise, sinon l'épisode à suivre) — null hors bibliothèque.
   const target = useRecoPlayTarget(item.jellyfinItemId, item.mediaType);
@@ -35,7 +55,6 @@ export function RecoPosterHoverLayer({ item, visible, onDismiss, onOpenDetail }:
   // la lecture vient de charger (son UserData dit s'il est déjà dans Ma
   // liste) ; pour une série, les Sets partagés répondent.
   const face = useRecoMarkerItem(item);
-  const inLibrary = item.jellyfinItemId !== null;
 
   const onPlay = (e: MouseEvent) => {
     e.stopPropagation();
@@ -47,13 +66,10 @@ export function RecoPosterHoverLayer({ item, visible, onDismiss, onOpenDetail }:
   return (
     <CardHoverOverlay
       variant="reco"
-      item={inLibrary ? face : null}
+      item={face}
       title={item.title}
       visible={visible}
       play={target ? { resume: target.kind === "resume", label: target.label, onPlay } : null}
-      // Hors bibliothèque, la note vit sur le tmdb : le visage `reco:…` n'est
-      // pas un item Jellyfin à qui la rattacher.
-      ratingIdentity={inLibrary ? undefined : { mediaType: item.mediaType === "tv" ? "series" : "movie", tmdbId: item.tmdbId }}
       meta={target?.media ?? null}
       onDismiss={onDismiss}
     />

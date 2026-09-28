@@ -1,7 +1,8 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useRecoMarkerItem, useSendRecoFeedback } from "@tentacle-tv/api-client";
+import { useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem, useSendRecoFeedback } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
+import { titleKey } from "@tentacle-tv/shared";
 import { CardFrame } from "../cards/CardFrame";
 import { CardImage } from "../cards/CardImage";
 import { CardMarkerLayer } from "../cards/CardMarkerLayer";
@@ -9,6 +10,7 @@ import { POSTER_VW, POSTER_WIDTH } from "../cards/cardSizes";
 import { cardWidthStyle } from "../cards/cardWidthStyle";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { RecoPosterHoverLayer } from "./RecoPosterHoverLayer";
+import { RecoOnDemandLabel } from "./RecoOnDemandLabel";
 import { RecoReasonText } from "./RecoReasonText";
 import { useRecoNavigation } from "../../lib/recoNavigation";
 import { recoPosterUrl } from "@tentacle-tv/api-client";
@@ -84,6 +86,9 @@ export const RecoCard = memo(function RecoCard({
   };
 
   const face = useRecoMarkerItem(item);
+  // Hors bibliothèque, « Ma liste » est une mise de côté jusqu'à l'arrivée :
+  // aucun cache Jellyfin ne la connaît, la carte la dit elle-même.
+  const pending = useIsWatchlistPending(item.jellyfinItemId ? null : titleKey(item.mediaType, item.tmdbId));
   const handleDismiss = () => {
     feedback.mutate({ itemKey: item.key, action: "dismissed" });
     onDismissed?.(item.key);
@@ -145,7 +150,7 @@ export const RecoCard = memo(function RecoCard({
             >
               {!item.jellyfinItemId && (
                 <span className="rounded-md border border-white/30 bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                  {t("onDemandBadge")}
+                  <RecoOnDemandLabel item={item} />
                 </span>
               )}
               {item.exploration && (
@@ -158,7 +163,13 @@ export const RecoCard = memo(function RecoCard({
 
           {/* Marqueurs du repos — les formes de toutes les cartes. Le plateau
               du survol les reprend : ils cèdent la place. */}
-          <CardMarkerLayer item={face} communityRating={item.voteAverage} hideRating={hovered} hideStatus={hovered} />
+          <CardMarkerLayer
+            item={face}
+            communityRating={item.voteAverage}
+            hideRating={hovered}
+            hideStatus={hovered}
+            inWatchlist={item.jellyfinItemId ? undefined : pending}
+          />
 
           {overlayMounted && (
             <RecoPosterHoverLayer
