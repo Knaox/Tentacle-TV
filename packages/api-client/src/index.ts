@@ -263,6 +263,16 @@ export {
   type SwipeLang, type SwipeVerdict,
 } from "./swipe/swipeTypes";
 
+// Watch Together — l'affinité, le swipe de groupe (cf. watchTogether/)
+export {
+  fetchAffinity, fetchAffinityKinds, startAffinity, joinAffinity, leaveAffinity, fetchAffinityCards,
+  voteAffinity, undoAffinityVote, launchAffinityMatch, isAffinityGone, type AffinityJoinResponse,
+} from "./watchTogether/affinityApi";
+export { useAffinityDeck, type AffinityDeck, type AffinityDeckEvents } from "./watchTogether/useAffinityDeck";
+export {
+  affinityDeckReducer, affinityExcludeKeys, INITIAL_AFFINITY_DECK, type AffinityDeckState, type AffinityDeckAction,
+} from "./watchTogether/affinityDeckState";
+
 // Accueil configurable + réglages de recommandation (cf. hooks/useHomeLayout)
 export {
   useHomeLayout, useSaveHomeLayout, useRecoSettings, useSaveRecoSettings, useResetTasteProfile,

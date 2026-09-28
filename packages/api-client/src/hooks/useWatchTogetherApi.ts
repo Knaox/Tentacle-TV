@@ -33,7 +33,8 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function wtFetch<T>(path: string, init?: RequestInit): Promise<T> {
+/** Appel REST authentifié sous /api/watch-together (partagé avec l'affinité). */
+export async function wtFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     ...getAuthHeader(),
     ...(init?.headers as Record<string, string>),
