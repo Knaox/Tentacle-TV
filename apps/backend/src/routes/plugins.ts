@@ -10,6 +10,7 @@ import {
 } from "../services/pluginManager";
 import { readTabMeta, type PluginTabMeta } from "./pluginTabMeta";
 import { readSearchMeta, type PluginSearchMeta } from "./pluginSearchMeta";
+import { readTitlesMeta, type PluginTitlesMeta } from "./pluginTitlesMeta";
 // L'administration, découpée par sujet — ce fichier ne garde que ce que
 // chaque client lit (dépendances partagées, plugins actifs, bundles).
 import { registerPluginSourceRoutes } from "./pluginSources";
@@ -62,6 +63,8 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       let tab: PluginTabMeta | undefined;
       // La recherche hors bibliothèque que le plugin sait mener — cf. pluginSearchMeta.
       let search: PluginSearchMeta | undefined;
+      // Ce que le plugin sait dire et faire d'un titre hors bibliothèque — cf. pluginTitlesMeta.
+      let titles: PluginTitlesMeta | undefined;
       const manifestPath = resolve(pluginDir, "plugin.json");
       if (existsSync(manifestPath)) {
         try {
@@ -69,6 +72,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
           if (Array.isArray(manifest.navItems)) navItems = manifest.navItems;
           tab = readTabMeta(manifest);
           search = readSearchMeta(manifest);
+          titles = readTitlesMeta(manifest);
         } catch { /* ignore malformed manifest */ }
       }
       const configEnabled = (p.config as Record<string, unknown>)?.enabled === true;
@@ -83,6 +87,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
         tab,
         // Comme les pages : une intégration éteinte ne cherche rien.
         ...(configEnabled && search ? { search } : {}),
+        ...(configEnabled && titles ? { titles } : {}),
       };
     });
   });

@@ -31,6 +31,16 @@ export interface ActivePluginMeta {
     types?: Array<"movie" | "series">;
     labels?: Record<string, string>;
   };
+  /**
+   * Ce que le plugin sait dire et faire d'un titre hors bibliothèque (champ
+   * `titles` du manifeste) : son état, et le geste pour l'obtenir, par clé
+   * TMDB. Absent si l'intégration est éteinte. Contrat complet :
+   * `apps/backend/src/routes/pluginTitlesMeta.ts`.
+   */
+  titles?: {
+    state: string;
+    request?: string;
+  };
 }
 
 export interface PluginContextValue {
