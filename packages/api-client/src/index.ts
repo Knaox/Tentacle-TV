@@ -260,6 +260,7 @@ export { swipeDeckReducer, deckExcludeKeys, INITIAL_SWIPE_DECK, type SwipeDeckSt
 export {
   verdictFromDrag, stampStrength, exitTarget, DISTANCE_THRESHOLD, VELOCITY_THRESHOLD, FLICK_MIN_DISTANCE, STAMP_START,
 } from "./swipe/swipeGesture";
+export { swipeStackZ } from "./swipe/swipeStackOrder";
 export {
   swipeLangOf, type SwipeCard, type SwipeCardDetails, type SwipeCounts, type SwipeDeckResponse, type SwipeDeckSource,
   type SwipeLang, type SwipeVerdict,

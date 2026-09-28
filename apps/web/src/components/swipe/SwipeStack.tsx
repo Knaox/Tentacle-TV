@@ -1,6 +1,6 @@
 import { AnimatePresence, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { recoPosterUrl, useJellyfinClient } from "@tentacle-tv/api-client";
+import { recoPosterUrl, swipeStackZ, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { SwipeCard, SwipeCardDetails, SwipeVerdict } from "@tentacle-tv/api-client";
 import { SwipeStackCard } from "./SwipeStackCard";
 
@@ -13,27 +13,6 @@ const VISIBLE = 3;
  *  plancher pour les fenêtres très basses. `--swipe-chrome` est la hauteur
  *  de tout ce qui n'est pas la carte — posée par la page, selon la largeur. */
 export const CARD_WIDTH = "max(13rem, min(22rem, 86vw, calc((100dvh - var(--swipe-chrome, 24rem)) * 2 / 3)))";
-
-/**
- * L'empilement suit l'ordre d'ARRIVÉE des cartes, jamais leur place dans le
- * DOM : la plus ancienne est dessus — en tête de pile comme en partance.
- * AnimatePresence réinsère une carte qui part à son ancien rang ; à z-index
- * égal, elle passait sous la suivante. Le rang est gardé hors de React, par
- * objet : les cartes de la file sont stables (celle que rend « annuler » est
- * le même objet), une carte neuve prend le rang suivant. Le conteneur isole
- * ces z-index du reste de la page.
- */
-const arrival = new WeakMap<SwipeCard, number>();
-let nextArrival = 0;
-const TOP_Z = 1_000_000;
-function stackZ(card: SwipeCard): number {
-  let rank = arrival.get(card);
-  if (rank === undefined) {
-    rank = nextArrival++;
-    arrival.set(card, rank);
-  }
-  return TOP_Z - rank;
-}
 
 interface SwipeStackProps {
   cards: SwipeCard[];
@@ -55,9 +34,12 @@ export function SwipeStack({ cards, exitVerdict, infoOpen, details, nextDetails,
   const reduced = useReducedMotion() ?? false;
   const shown = cards.slice(0, VISIBLE);
 
-  // Ordre naturel (le dessus d'abord) : une carte jugée sort en tête de liste
-  // sans qu'aucune autre ne soit DÉPLACÉE — un nœud déplacé rejoue ses effets
-  // en mode strict, ce qui coupait net son animation d'échelle.
+  // Empilement par rang d'arrivée (`swipeStackZ`), jamais par place dans le
+  // DOM : AnimatePresence réinsère une carte qui part à son ancien rang, et à
+  // z-index égal elle passait sous la suivante. Ordre naturel (le dessus
+  // d'abord) : une carte jugée sort en tête de liste sans qu'aucune autre ne
+  // soit DÉPLACÉE — un nœud déplacé rejoue ses effets en mode strict, ce qui
+  // coupait net son animation d'échelle. `isolate` garde ces z-index ici.
   return (
     <div className="relative isolate mx-auto aspect-[2/3]" style={{ width: CARD_WIDTH }}>
       <AnimatePresence initial={false} custom={exitVerdict}>
@@ -66,7 +48,7 @@ export function SwipeStack({ cards, exitVerdict, infoOpen, details, nextDetails,
             key={card.key}
             card={card}
             depth={depth}
-            zIndex={stackZ(card)}
+            zIndex={swipeStackZ(card)}
             posterUrl={recoPosterUrl(
               card,
               (id) => client.getImageUrl(id, "Primary", { height: 900, quality: 85 }),
