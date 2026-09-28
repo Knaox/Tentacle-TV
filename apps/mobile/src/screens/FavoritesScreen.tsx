@@ -70,7 +70,7 @@ export function FavoritesScreen() {
       listRef.current?.getScrollResponder()?.scrollTo({ y: p.offset, animated: p.animated }),
   }), []);
   const scrollerRef = useRef(scroller);
-  const onControlsY = useSearchDock(scrollerRef, assist.focused, top);
+  const onControlsY = useSearchDock(scrollerRef, assist.focused);
 
   const handlePress = useCallback((item: MediaItem) => {
     if (selection.active) selection.toggle(item.Id);

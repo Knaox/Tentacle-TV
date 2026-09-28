@@ -65,7 +65,7 @@ export function WatchlistScreen() {
   const isList = page.view === "list";
   const top = Math.max(insets.top, 24);
   const listRef = useRef<FlatList<MediaItem>>(null);
-  const onControlsY = useSearchDock(listRef, assist.focused, top);
+  const onControlsY = useSearchDock(listRef, assist.focused);
 
   const handlePress = useCallback((item: MediaItem) => {
     if (selection.active) selection.toggle(item.Id);
