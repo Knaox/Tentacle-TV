@@ -1,99 +1,50 @@
-import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import type { SharedListItem } from "@tentacle-tv/api-client";
 import { RevealCell, RevealScope } from "../grid/RevealCell";
+import { SharedPosterCard } from "./SharedPosterCard";
 
 /** Affiche 2:3 plus son bloc titre — hauteur réservée avant premier passage. */
-const CELL_HEIGHT = 260;
+const CELL_HEIGHT = 280;
+const TEXT_HEIGHT = 52;
 
 interface Props {
   items: SharedListItem[];
   authed: boolean;
   selected: Set<string>;
   onToggle: (id: string) => void;
-  /** Token courant — pour ouvrir la fiche détail publique /share/:token/:id. */
-  token?: string;
-}
-
-/** Image d'affiche : proxy public Jellyfin (bibliothèque), TMDB sinon. */
-function posterUrl(item: SharedListItem): string {
-  if (!item.Id && item.PosterUrl) return item.PosterUrl;
-  const tag = item.ImageTags?.Primary;
-  const params = `fillHeight=450&quality=90${tag ? `&tag=${tag}` : ""}`;
-  return `/api/jellyfin/Items/${item.Id}/Images/Primary?${params}`;
+  /** Token courant — pour ouvrir la fiche publique /share/:token/:id. */
+  token: string;
 }
 
 /**
- * Grille d'une liste partagée. Le clic sur la vignette ouvre la fiche détail
- * publique (résumé + bandes-annonces, sans saisons ni lecture). La sélection
- * (pour ajouter à sa liste) se fait via la case à cocher, connecté uniquement.
+ * Grille d'une liste partagée. Toucher une affiche ouvre la fiche publique
+ * (résumé, casting, informations, bandes-annonces — sans lecture) ; la case
+ * de sélection, connecté seulement, prépare l'ajout à sa propre liste.
+ *
+ * Mêmes colonnes et même gouttière (16 px) que la grille de Ma liste.
  */
 export function SharedListGrid({ items, authed, selected, onToggle, token }: Props) {
-  const navigate = useNavigate();
-  const { t } = useTranslation("common");
-  const openDetail = (id: string) => navigate(`/share/${token}/${id}`);
-
   return (
     // Une liste partagée n'est pas bornée : le contenu des cellules hors du
     // champ est démonté, leur place est gardée (cf. `RevealCell`).
     <RevealScope>
-    <div className="grid grid-cols-2 gap-2.5 xs:grid-cols-3 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
-      {items.map((item, index) => {
-        const isSel = selected.has(item.Id);
-        // Titre hors bibliothèque (liste de likés) : pas d'Id Jellyfin, donc
-        // ni fiche détail ni ajout — la vignette est inerte, badge « catalogue ».
-        const inLibrary = item.Id !== "";
-        return (
-          <RevealCell
-            key={item.Id || `tmdb-${item.Name}-${index}`}
-            minHeight={CELL_HEIGHT}
-            aspect={2 / 3}
-            textHeight={48}
-            eager={index < 12}
-            className="group relative overflow-hidden rounded-xl bg-tentacle-surface"
-          >
-            <button
-              type="button"
-              onClick={() => inLibrary && openDetail(item.Id)}
-              disabled={!inLibrary}
-              className={`block w-full text-left ${inLibrary ? "transition-transform hover:scale-[1.02]" : "cursor-default"}`}
-            >
-              <div className="relative aspect-[2/3]">
-                <img src={posterUrl(item)} alt={item.Name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-              </div>
-              <div className="p-2">
-                <p className="line-clamp-1 text-sm font-medium text-content-primary">{item.Name}</p>
-                {item.ProductionYear && <p className="text-xs text-content-quaternary">{item.ProductionYear}</p>}
-              </div>
-            </button>
-
-            {!inLibrary && (
-              <span className="absolute left-1.5 top-1.5 rounded-md border border-white/30 bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                {t("common:sharedOffLibraryBadge")}
-              </span>
-            )}
-
-            {/* Case de sélection (connecté) — badge posé sur l'affiche, reste
-                constant dans les deux thèmes (règle "posé sur une image"). */}
-            {authed && inLibrary && (
-              <button
-                type="button"
-                onClick={() => onToggle(item.Id)}
-                aria-label={t("select")}
-                aria-pressed={isSel}
-                className={`absolute left-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
-                  isSel ? "border-[var(--brand)] bg-[var(--brand)] text-white" : "border-white/60 bg-black/45 text-transparent hover:text-white/50"
-                }`}
-              >
-                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
-            )}
-          </RevealCell>
-        );
-      })}
-    </div>
+      <ul className="grid grid-cols-2 gap-4 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 2xl:grid-cols-8">
+        {items.map((item, index) => {
+          const inLibrary = item.Id !== "";
+          return (
+            <li key={item.Id || `tmdb-${item.Name}-${index}`}>
+              <RevealCell minHeight={CELL_HEIGHT} aspect={2 / 3} textHeight={TEXT_HEIGHT} eager={index < 12}>
+                <SharedPosterCard
+                  item={item}
+                  to={inLibrary ? `/share/${token}/${item.Id}` : null}
+                  selectable={authed && inLibrary}
+                  selected={inLibrary && selected.has(item.Id)}
+                  onToggle={onToggle}
+                />
+              </RevealCell>
+            </li>
+          );
+        })}
+      </ul>
     </RevealScope>
   );
 }
