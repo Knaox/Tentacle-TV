@@ -15,7 +15,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { titleMediaType, type ExternalSearchItem, type ExternalTone } from "@tentacle-tv/shared";
-import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, buildDarkPalette, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { ExternalActionSheet, type ExternalSheetTarget } from "@/components/external/ExternalActionSheet";
 import { useExternalTitleState, type ExternalTitle } from "@/components/external/useExternalTitle";
 
@@ -62,13 +62,21 @@ export function ExternalResultCard({ item, width, onPress, onOpenHref }: {
   );
 }
 
-/** La pastille d'état que le plugin pose sur un titre (« Demandé », « Bientôt »…). */
+/**
+ * La pastille d'état que le plugin pose sur un titre (« Demandé », « Bientôt »…),
+ * sur l'AFFICHE. En sombre, les paires d'état du thème — inchangées. En clair,
+ * ces paires (voile teinté léger, texte foncé) sont faites pour une surface
+ * claire : sur une affiche, du foncé sur du foncé. La pastille garde alors son
+ * voile noir et prend la teinte CLAIRE de la paire du thème sombre. `neutral` :
+ * voile noir et blanc, dans les deux thèmes.
+ */
 function Badge({ label, tone }: { label: string; tone: ExternalTone }) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const pair = tone === "neutral" ? null : theme.colors.statusPairs[tone === "info" ? "info" : tone];
+  const pairs = useMemo(() => (theme.isDark ? theme.colors : buildDarkPalette()).statusPairs, [theme]);
+  const pair = tone === "neutral" ? null : pairs[tone];
   return (
-    <View style={[st.badge, pair && { backgroundColor: pair.bg }]}>
+    <View style={[st.badge, pair && theme.isDark && { backgroundColor: pair.bg }]}>
       <Text style={[st.badgeTxt, pair && { color: pair.fg }]} numberOfLines={1}>{label}</Text>
     </View>
   );
