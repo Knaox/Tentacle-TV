@@ -17,12 +17,12 @@
   },
   "playMobile": {
     "$comment": "Version Android (téléphone/tablette) RÉELLEMENT en ligne sur la fiche Play. MAINTENU AUTOMATIQUEMENT par mobile.yml (.github/scripts/patch-store-manifest.mjs --only=play-mobile --changelog=changelogs/mobile.md), au moment où play-publish.mjs a réellement posé la release. C'était auparavant un geste manuel, parce que la CI publiait en `status: draft` : « publié » n'était alors pas déductible d'un run. Ne PAS le déduire de versions.json → mobile, qui porte l'intention et non la publication.",
-    "version": "1.8.2",
+    "version": "1.9.0",
     "packageName": "com.tentacletv.mobile",
     "track": "alpha",
     "notes": {
-      "fr": "• Une photo de profil à jour : changée, ajoutée ou retirée depuis un autre appareil, elle se met à jour dès l'ouverture de l'app, et quand on y revient\n• Changer sa photo depuis l'app n'affiche plus d'erreur alors que la photo était bien envoyée\n• Un profil refait : thème et langue se choisissent sur place, chaque page de réglages est plus claire, et la tablette affiche la liste et le réglage côte à côte",
-      "en": "• An up-to-date profile picture: changed, added or removed from another device, it updates as soon as the app opens, and whenever you come back to it\n• Changing your picture from the app no longer shows an error when the picture was actually sent\n• A redesigned profile: theme and language are picked in place, every settings page is clearer, and tablets show the list and the setting side by side"
+      "fr": "• Une fiche refaite : l'image en grand, le logo, la note et vos marqueurs, et les images en plein écran\n• Notez vos titres depuis la fiche ou d'un appui long\n• Affiner, dans Pour vous : jugez des titres d'un glissement pour affiner vos recommandations\n• Bibliothèque, Ma liste et Mes favoris refaits\n• Un seul retour après une suite de titres similaires\n• La page d'un acteur, en touchant son portrait\n• Connexion et inscription refaites",
+      "en": "• A redesigned title page: a large image, the logo, the rating and your markers, and full-screen images\n• Rate your titles from the title page or with a long press\n• Refine, in For You: judge titles with a swipe to fine-tune your recommendations\n• Library, My list and My favorites redesigned\n• One back after a chain of similar titles\n• An actor's page, by tapping their portrait\n• Sign in and sign up redesigned\n• Titles kept offline: a clear summary, the offline mode switch and \"Retry\""
     }
   },
   "playTv": {
