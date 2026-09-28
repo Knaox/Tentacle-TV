@@ -3,7 +3,7 @@ import { Tabs } from "expo-router";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
-import { GalleryHorizontalEnd, Sparkles } from "lucide-react-native";
+import { Sparkles } from "lucide-react-native";
 import { usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
 import { ExtensionPicker } from "@/components/extensions/ExtensionPicker";
 import { useExtensionNav } from "@/components/extensions/useExtensionNav";
@@ -16,8 +16,9 @@ import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
 
 /**
- * La barre basse est FIXE : Accueil · Pour vous · Affiner · Bibliothèque ·
- * extensions · Profil.
+ * La barre basse est FIXE : Accueil · Pour vous · Bibliothèque · extensions ·
+ * Profil. « Affiner » (la pile de swipe) est une section de Pour vous, pas un
+ * onglet : cinq au plus, « Bibliothèque » ne se tronque plus sur 375 pt.
  * Toutes les pages d'extension vivent dans le seul onglet `extensions` : une
  * extension de plus n'ajoute jamais d'onglet. Un seul plugin : l'onglet porte
  * son nom (« Vigie ») et y mène ; plusieurs : il ouvre le sous-menu des
@@ -51,7 +52,6 @@ export default function TabsLayout() {
     { href: "/", icon: homeIcon, label: homeLabel },
     ...(offline ? [] : [
       { href: "/for-you" as const, icon: "star", iconNode: (color: string) => <Sparkles size={20} color={color} />, label: t("forYou") },
-      { href: "/swipe" as const, icon: "layers", iconNode: (color: string) => <GalleryHorizontalEnd size={20} color={color} />, label: t("swipe") },
       { href: "/libraries" as const, icon: "film", label: t("library") },
       // Un plugin : une entrée ; plusieurs : une par plugin.
       ...extNav.railItems,
@@ -93,17 +93,6 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: t("forYou"),
           href: offline ? null : undefined,
           tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} />,
-        }}
-      />
-
-      {/* Affiner — la pile de swipe qui nourrit les recommandations */}
-      <Tabs.Screen
-        name="swipe"
-        options={{
-          title: t("swipe"),
-          tabBarAccessibilityLabel: t("swipe"),
-          href: offline ? null : undefined,
-          tabBarIcon: ({ color, size }) => <GalleryHorizontalEnd size={size} color={color} />,
         }}
       />
 

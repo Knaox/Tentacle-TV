@@ -64,4 +64,12 @@ export default {
   keyUndo: "Undo",
   keyInfo: "Synopsis",
   keySpace: "Space",
+
+  // La pile vit DANS la page Recommandations : deux sections, un segment.
+  sectionsLabel: "Recommendation sections",
+  sectionForYou: "For you",
+  sectionRefine: "Refine",
+  teaserTitle: "Refine your recommendations",
+  teaserBody: "A few titles to rate with a swipe: every verdict sharpens what you're offered here.",
+  teaserCta: "Start",
 };

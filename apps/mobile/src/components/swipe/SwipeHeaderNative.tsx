@@ -10,7 +10,11 @@ interface Props {
   libraryOnly: boolean;
 }
 
-/** Titre, mode d'emploi du geste, compteurs — et la ligne « bibliothèque seulement ». */
+/**
+ * Mode d'emploi du geste, compteurs — et la ligne « bibliothèque seulement ».
+ * Le titre n'est plus écrit : le segment « Pour vous · Affiner », juste
+ * au-dessus, dit déjà où l'on est.
+ */
 export const SwipeHeaderNative = memo(function SwipeHeaderNative({ counts, libraryOnly }: Props) {
   const { t } = useTranslation("swipe");
   const theme = useTheme();
@@ -23,7 +27,7 @@ export const SwipeHeaderNative = memo(function SwipeHeaderNative({ counts, libra
   return (
     <View style={st.wrap}>
       <View style={st.row}>
-        <Text style={[typography.hero, { color: c.text.primary }]} accessibilityRole="header">{t("title")}</Text>
+        <Text style={[typography.caption, st.hint, { color: c.text.tertiary }]}>{t("hint")}</Text>
         <View style={st.chips} accessibilityLabel={t("countsLabel")}>
           {chips.map((chip) => (
             <View
@@ -38,7 +42,6 @@ export const SwipeHeaderNative = memo(function SwipeHeaderNative({ counts, libra
           ))}
         </View>
       </View>
-      <Text style={[typography.caption, { color: c.text.tertiary }]}>{t("hint")}</Text>
       {libraryOnly && (
         <View style={[st.notice, { backgroundColor: c.fill.subtle, borderColor: c.border.subtle }]} accessibilityRole="text">
           <Feather name="book" size={14} color={c.brand.light} />
@@ -52,6 +55,7 @@ export const SwipeHeaderNative = memo(function SwipeHeaderNative({ counts, libra
 const st = StyleSheet.create({
   wrap: { gap: 6, paddingHorizontal: 16 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  hint: { flex: 1 },
   chips: { flexDirection: "row", gap: 6 },
   chip: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth },
   chipText: { fontSize: 13, fontFamily: FONT_FAMILY.semibold, fontWeight: "600", fontVariant: ["tabular-nums"] },

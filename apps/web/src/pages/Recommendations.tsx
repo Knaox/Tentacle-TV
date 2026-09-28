@@ -1,16 +1,44 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useJellyfinClient, useRecoPage } from "@tentacle-tv/api-client";
 import { ContentErrorState } from "../components/ContentErrorState";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
 import { heroSelectionFromRows } from "@tentacle-tv/api-client";
 import { RecoPageBody } from "../components/reco/RecoPageBody";
+import { RecoSectionSwitch } from "../components/reco/RecoSectionSwitch";
 import { RecoPageSkeleton } from "../components/reco/RecoPageSkeleton";
 import { useSettledRecoPage } from "../components/reco/useSettledRecoPage";
 import { useRecoFilter } from "../hooks/useRecoFilter";
 import { hasColdStartAck, markColdStartAck } from "../lib/coldStartAck";
+import { recoSectionOf } from "../lib/recoSections";
+import { SwipeSection } from "../lazyPages";
+
+/**
+ * Page Recommandations, en deux sections sous un même segment : « Pour vous »
+ * (les propositions) et « Affiner » (la pile de swipe qui les corrige, sous
+ * `/recommendations/refine`). Une seule transition de page ; la section
+ * choisie est seule MONTÉE — la pile n'écoute le clavier que quand on la voit,
+ * et « Pour vous » ne tient aucune requête pendant qu'on juge.
+ */
+export function Recommendations() {
+  const section = recoSectionOf(useLocation().pathname);
+  return (
+    <PageTransition>
+      <div className="row-gutter pt-5">
+        <RecoSectionSwitch section={section} />
+      </div>
+      {section === "refine" ? (
+        <Suspense fallback={<div className="min-h-[60vh]" />}>
+          <SwipeSection />
+        </Suspense>
+      ) : (
+        <ForYouSection />
+      )}
+    </PageTransition>
+  );
+}
 
 /**
  * Page Recommandations — UNE requête (`GET /api/reco/page`), rendue d'un coup
@@ -21,7 +49,7 @@ import { hasColdStartAck, markColdStartAck } from "../lib/coldStartAck";
  * selon l'état du moteur. Elle n'est jamais vide : les rangées globales
  * tiennent la scène dans tous les états, et un bandeau dit ce qui se passe.
  */
-export function Recommendations() {
+function ForYouSection() {
   const { t } = useTranslation("reco");
   // Le filtre de plateformes : store (miroir local) — la synchro serveur vit
   // au niveau de la session (RecoFilterBinding), l'accueil en dépend aussi.
@@ -58,9 +86,9 @@ export function Recommendations() {
     if (phase === "hold") markColdStartAck();
   }, [phase]);
 
-  // UNE seule PageTransition : squelette → page sans rejouer le fondu.
+  // Squelette → page sans rejouer le fondu (la transition est au-dessus).
   return (
-    <PageTransition>
+    <>
       {!page ? (
         isError ? (
           <div className="min-h-[60vh]">
@@ -95,6 +123,6 @@ export function Recommendations() {
           onOpenColdStart={() => setPhase("hold")}
         />
       )}
-    </PageTransition>
+    </>
   );
 }

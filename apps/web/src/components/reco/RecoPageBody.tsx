@@ -1,10 +1,11 @@
-import { memo } from "react";
+import { Fragment, memo } from "react";
 import { useTranslation } from "react-i18next";
 import type { RecoPage } from "@tentacle-tv/api-client";
 import { RecoBillboardSlot } from "./hero/RecoBillboardSlot";
 import type { RecoHeroSelection } from "@tentacle-tv/api-client";
 import { LikedActorsPanel } from "./LikedActorsPanel";
 import { RecoFiltersMenu } from "./RecoFiltersMenu";
+import { RecoRefineTeaser } from "./RecoRefineTeaser";
 import { RecoRowSkeleton } from "./RecoRowSkeleton";
 import { RecoRowSlot } from "./RecoRowSlot";
 import { RecoStatusBanner } from "./RecoStatusBanner";
@@ -40,6 +41,11 @@ export const RecoPageBody = memo(function RecoPageBody({
   const hasPersonalizedRows = page.rows.some((r) => !GLOBAL_ROW_KEYS.has(r.key));
   const canPersonalize = page.personalized !== false && page.tmdbConfigured !== false;
   const filtered = filterKey !== "all";
+  // L'entrée vers « Affiner » se glisse après la deuxième rangée (ou la
+  // dernière, s'il y en a moins) : assez haut pour être vue, assez bas pour
+  // que les propositions passent d'abord. Pas sous perso coupée : un verdict
+  // n'y changerait rien de visible.
+  const teaserAfter = page.personalized !== false ? Math.min(1, page.rows.length - 1) : -1;
 
   return (
     <div className="min-h-screen pb-20">
@@ -72,7 +78,10 @@ export const RecoPageBody = memo(function RecoPageBody({
           <p className="row-gutter mb-10 text-sm text-content-tertiary">{t("filterEmpty")}</p>
         ) : (
           page.rows.map((row, i) => (
-            <RecoRowSlot key={row.key} row={row} animDelay={Math.min(i, 4) * 60} />
+            <Fragment key={row.key}>
+              <RecoRowSlot row={row} animDelay={Math.min(i, 4) * 60} />
+              {i === teaserAfter && <RecoRefineTeaser />}
+            </Fragment>
           ))
         )}
       </div>

@@ -1,8 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { activeFamilyCount, buildPlatformCatalog, useJellyfinClient, useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
+import { SwipeSection } from "../../../lazyPages";
+import { RecoSectionSwitch } from "../../../components/reco/RecoSectionSwitch";
+import { RecoRefineTeaser } from "../../../components/reco/RecoRefineTeaser";
 import { useRecoNavigation } from "../../../lib/recoNavigation";
+import { recoSectionOf } from "../../../lib/recoSections";
 import { HeroBanner } from "../../hero/HeroBanner";
 import { SkeletonHeroScreen } from "../../hero/Skeletons";
 import { SubtleBackground } from "../../hero/SubtleBackground";
@@ -16,14 +20,36 @@ import { useRecoPageModel } from "./useRecoPageModel";
 import "../../mirror.css";
 
 /**
- * L'onglet Pour vous de l'app (`ForYouScreen`) : la page de recommandations
+ * L'onglet Pour vous : ses deux sections sous un segment — « Pour vous »
+ * (ci-dessous) et « Affiner », la pile de swipe partagée avec le bureau.
+ */
+export function MirrorForYou() {
+  const section = recoSectionOf(useLocation().pathname);
+  return (
+    <SubtleBackground>
+      <div className="px-4 pb-3 pt-3">
+        <RecoSectionSwitch section={section} />
+      </div>
+      {section === "refine" ? (
+        <Suspense fallback={<div className="min-h-[60vh]" />}>
+          <SwipeSection />
+        </Suspense>
+      ) : (
+        <MirrorForYouSection />
+      )}
+    </SubtleBackground>
+  );
+}
+
+/**
+ * La section Pour vous de l'app (`ForYouScreen`) : la page de recommandations
  * rendue d'un coup depuis la page servie — carrousel tiré de « Pour vous »
  * (sinon le titre compact), bouton Filtres et sa feuille, bandeau d'état,
  * rangées avec leur raison, « Vos acteurs ». Sans page : squelettes ou
  * l'erreur ; démarrage à froid : la grille ; vieux serveur désactivé :
  * l'écran historique.
  */
-export function MirrorForYou() {
+function MirrorForYouSection() {
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const model = useRecoPageModel();
@@ -73,6 +99,7 @@ export function MirrorForYou() {
           page={page}
           filtered={model.filtered}
           stale={model.stale}
+          teaser={page.personalized !== false ? <RecoRefineTeaser className="mt-6 px-4" /> : undefined}
           canOpen={recoNav.canOpen}
           onItemPress={recoNav.open}
           onItemLongPress={openReco}
@@ -85,5 +112,5 @@ export function MirrorForYou() {
     );
   }
 
-  return <SubtleBackground>{body}</SubtleBackground>;
+  return body;
 }

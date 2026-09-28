@@ -23,9 +23,9 @@ import { Disclaimer } from "./pages/Disclaimer";
 import {
   Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Search, Person, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads, AdminHome
 } from "./lazyPages";
-import { Swipe } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 import { ByFormFactor } from "./mirror/ByFormFactor";
+import { RECO_REFINE_PATH } from "./lib/recoSections";
 import {
   MirrorAbout,
   MirrorCredits,
@@ -154,7 +154,9 @@ export function App() {
             <Route path="watchlist" element={onlineOnly(<ByFormFactor desktop={<Watchlist />} mirror={<MirrorWatchlist />} />)} />
             <Route path="favorites" element={onlineOnly(<ByFormFactor desktop={<Favorites />} mirror={<MirrorFavorites />} />)} />
             <Route path="recommendations" element={onlineOnly(<ByFormFactor desktop={<Recommendations />} mirror={<MirrorForYou />} />)} />
-            <Route path="swipe" element={onlineOnly(<Swipe />)} />
+            {/* « Affiner » : une section de Recommandations, plus un onglet. */}
+            <Route path="recommendations/refine" element={onlineOnly(<ByFormFactor desktop={<Recommendations />} mirror={<MirrorForYou />} />)} />
+            <Route path="swipe" element={<Navigate to={RECO_REFINE_PATH} replace />} />
             {/* La recherche pleine page — l'omnibox (⌘K) y mène pour « tous les résultats ». */}
             <Route path="search" element={onlineOnly(<ByFormFactor desktop={<Search />} mirror={<MirrorSearch />} />)} />
             {/* Desktop uniquement — la page se redirige elle-même hors droit

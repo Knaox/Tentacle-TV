@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AccessibilityInfo, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
@@ -22,12 +22,12 @@ const HAPTIC: Record<SwipeVerdict, () => Promise<void>> = {
 };
 
 /**
- * L'onglet « Affiner » : une pile de films et de séries — de la bibliothèque
- * et d'ailleurs — à juger d'un glisser (droite, gauche, haut) ou d'un bouton.
- * La logique (file, annulation, écritures) est celle du web (useSwipeDeck) ;
- * seuls le geste et le rendu sont natifs.
+ * La section « Affiner » de l'onglet Pour vous : une pile de films et de
+ * séries — de la bibliothèque et d'ailleurs — à juger d'un glisser (droite,
+ * gauche, haut) ou d'un bouton. La logique (file, annulation, écritures) est
+ * celle du web (useSwipeDeck) ; seuls le geste et le rendu sont natifs.
  */
-export function SwipeScreen() {
+export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
   const { t, i18n } = useTranslation("swipe");
   const theme = useTheme();
   const headerH = useHeaderHeight();
@@ -76,7 +76,8 @@ export function SwipeScreen() {
   const onToggleInfo = useCallback(() => setInfoOpen((v) => !v), []);
 
   return (
-    <View style={[st.screen, { backgroundColor: theme.colors.surface.s0, paddingTop: headerH + 8, paddingBottom: tabBarH + 12 }]}>
+    <View style={[st.screen, { backgroundColor: theme.colors.surface.s0, paddingTop: headerH, paddingBottom: tabBarH + 12 }]}>
+      {sectionSwitch}
       <SwipeHeaderNative counts={deck.counts} libraryOnly={!deck.tmdbConfigured} />
       {deck.loading ? (
         <View style={st.skeleton}>

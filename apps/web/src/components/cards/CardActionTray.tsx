@@ -11,9 +11,13 @@ interface CardActionTrayProps {
   size?: "sm" | "md";
   /** Occupe toute la largeur (affiche) ou épouse son contenu (vignette 16:9). */
   stretch?: boolean;
+  /** Actions propres à l'appelant, rangées au bout de la capsule (cf. `CardTrayButton`). */
+  children?: ReactNode;
 }
 
-const SIZE = {
+/** Les gabarits des boutons de capsule, partagés avec les actions ajoutées. */
+
+export const TRAY_SIZE = {
   sm: { box: "h-7 w-7", icon: "h-3.5 w-3.5" },
   md: { box: "h-8 w-8", icon: "h-4 w-4" },
 } as const;
@@ -31,29 +35,22 @@ const SIZE = {
  * `backdrop-filter`, il n'y aurait rien de visible à flouter. Un blanc à 12 %
  * et un liseré suffisent à dessiner le verre.
  */
-export function CardActionTray({ item, size = "md", stretch = false }: CardActionTrayProps) {
+export function CardActionTray({ item, size = "md", stretch = false, children }: CardActionTrayProps) {
   const { t } = useTranslation("cards");
   const toggles = useCardToggles(item);
-  const { box, icon } = SIZE[size];
+  const { box, icon } = TRAY_SIZE[size];
 
   return (
-    <div
-      role="toolbar"
-      aria-label={item.Name}
-      onClick={stopCardClick}
-      className={`flex items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
-        stretch ? "w-full justify-between" : ""
-      }`}
-    >
-      <TrayButton
+    <CardTrayCapsule label={item.Name} stretch={stretch}>
+      <CardTrayButton
         box={box}
         active={toggles.inList}
         label={toggles.inList ? t("removeFromWatchlist") : t("addToWatchlist")}
         onPress={toggles.toggleList}
       >
         <BookmarkGlyph className={icon} filled={toggles.inList} />
-      </TrayButton>
-      <TrayButton
+      </CardTrayButton>
+      <CardTrayButton
         box={box}
         active={toggles.favorite}
         accent
@@ -61,18 +58,38 @@ export function CardActionTray({ item, size = "md", stretch = false }: CardActio
         onPress={toggles.toggleFavorite}
       >
         <HeartGlyph className={icon} filled={toggles.favorite} />
-      </TrayButton>
-      <TrayButton
+      </CardTrayButton>
+      <CardTrayButton
         box={box}
         active={toggles.watched}
         label={toggles.watched ? t("markUnwatched") : t("markWatched")}
         onPress={toggles.toggleWatched}
       >
         <WatchedGlyph className={icon} filled={toggles.watched} />
-      </TrayButton>
+      </CardTrayButton>
       {/* Bureau ET droit, sinon PAS rendu (ni grisé, ni cadenas). Même gabarit
           rond : il s'aligne dans la capsule comme un quatrième bouton. */}
       <CardDownloadAction item={item} variant={size === "sm" ? "compact" : "bar"} tone="tray" />
+      {children}
+    </CardTrayCapsule>
+  );
+}
+
+/**
+ * La capsule elle-même — seule, pour une carte qui n'a pas d'item Jellyfin à
+ * basculer (une recommandation hors bibliothèque) mais garde le même plateau.
+ */
+export function CardTrayCapsule({ label, stretch = false, children }: { label: string; stretch?: boolean; children: ReactNode }) {
+  return (
+    <div
+      role="toolbar"
+      aria-label={label}
+      onClick={stopCardClick}
+      className={`flex items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
+        stretch ? "w-full justify-between" : ""
+      }`}
+    >
+      {children}
     </div>
   );
 }
@@ -87,7 +104,7 @@ interface TrayButtonProps {
   children: ReactNode;
 }
 
-function TrayButton({ box, active, accent = false, label, onPress, children }: TrayButtonProps) {
+export function CardTrayButton({ box, active, accent = false, label, onPress, children }: TrayButtonProps) {
   const tone = active
     ? accent
       ? "bg-white/15 text-[var(--brand-accent)]"

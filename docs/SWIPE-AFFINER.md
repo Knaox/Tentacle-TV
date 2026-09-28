@@ -1,9 +1,25 @@
-# Onglet « Affiner » — la pile de swipe
+# Section « Affiner » — la pile de swipe
 
 Une pile de films et de séries à juger d'un geste — **j'aime**, **coup de cœur**
 (super like), **pas pour moi** (dislike) — ou à **passer** sans juger, avec
-**annulation** du dernier geste. Web (`/swipe`), bureau (même page), miroir et
-mobile (onglet `swipe`). Chaque verdict nourrit le moteur de recommandations.
+**annulation** du dernier geste. Chaque verdict nourrit le moteur de
+recommandations.
+
+## Où elle vit
+
+Ce n'est plus une destination à part : c'est une **section de la page
+Recommandations**, sous un segment « Pour vous · Affiner » en tête de page, et
+une carte « Affinez vos recommandations » glissée après la deuxième rangée.
+Aucune entrée dans la barre du bureau, les onglets du miroir, la barre basse
+du mobile ni le rail de l'iPad.
+
+| Client | Adresse | Détail |
+|--------|---------|--------|
+| Web, bureau, miroir | `/recommendations/refine` | `RecoSectionSwitch` + `SwipeSection` ; `/swipe` redirige ici |
+| Mobile, tablette | onglet `for-you`, `?section=refine` | `useRecoSection` + `SegmentedChoice` ; `app/swipe.tsx` redirige ici |
+
+Seule la section choisie est montée : le clavier de la pile (← → ↑ ↓ Z) ne
+s'écoute que quand on la voit.
 
 ## Les gestes
 

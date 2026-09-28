@@ -2,13 +2,14 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
-import { Film, GalleryHorizontalEnd, House, Puzzle, Smartphone, Sparkles, User, type LucideIcon } from "lucide-react";
+import { Film, House, Puzzle, Smartphone, Sparkles, User, type LucideIcon } from "lucide-react";
 import { lucideIconFor, resolvePluginLabel } from "../../components/lucideIcon";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 
 /**
  * Les onglets de l'app (`app/(tabs)/_layout.tsx`) : Accueil · Pour vous ·
- * Affiner · Bibliothèque · extensions · Profil — FIXES. Une extension de plus n'ajoute
+ * Bibliothèque · extensions · Profil — FIXES (« Affiner » vit dans Pour vous,
+ * cf. RecoSectionSwitch). Une extension de plus n'ajoute
  * jamais d'onglet : un seul plugin donne son nom à l'onglet et y mène ;
  * plusieurs ouvrent le sous-menu. Sans page d'extension, l'onglet se masque.
  * Hors ligne, il n'en reste que deux : l'accueil devient « Sur cet appareil ».
@@ -26,7 +27,7 @@ export interface ExtensionPlugin {
 }
 
 export interface MirrorTab {
-  key: "home" | "forYou" | "swipe" | "libraries" | "extensions" | "profile";
+  key: "home" | "forYou" | "libraries" | "extensions" | "profile";
   label: string;
   /** L'icône (lucide, l'équivalent des noms Feather de l'app). */
   Icon: LucideIcon;
@@ -85,7 +86,6 @@ export function useMirrorTabs(): { tabs: MirrorTab[]; plugins: ExtensionPlugin[]
     if (!offline) {
       tabs.push(
         { key: "forYou", label: t("forYou"), Icon: Sparkles, path: "/recommendations", active: under("/recommendations") },
-        { key: "swipe", label: t("swipe"), Icon: GalleryHorizontalEnd, path: "/swipe", active: under("/swipe") },
         { key: "libraries", label: t("library"), Icon: Film, path: "/libraries", active: under("/libraries") || under("/library") },
       );
       if (plugins.length > 0) {

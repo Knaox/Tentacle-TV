@@ -17,7 +17,7 @@ export interface RecoPlayTarget extends RecoPlayResolution {
 /**
  * Cible du bouton Lecture d'une carte de recommandation, résolue AU SURVOL.
  *
- * À n'appeler QUE depuis un composant monté au survol (RecoCardHoverLayer) :
+ * À n'appeler QUE depuis un composant monté au survol (RecoPosterHoverLayer) :
  * le montage est la porte, pas un `enabled`. Au niveau carte, quatre-vingts
  * affiches au repos porteraient chacune deux observateurs, notifiés par la
  * moindre invalidation `["item"]`. Deux requêtes chaînées pour une série
