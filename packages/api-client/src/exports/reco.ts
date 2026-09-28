@@ -13,6 +13,11 @@ export {
 } from "../hooks/useRecoPage";
 export { useRecoLive } from "../hooks/useRecoLive";
 
+// Un titre jugé (Ma liste, cœur, vu, note) sort des recommandations quand la
+// carte est LÂCHÉE — fin du survol de sa rangée, feuille refermée (cf.
+// reco/recoRetirement, reco/useRecoHold)
+export { useRecoHold, useRecoCardHold, useHeldRecoItems } from "../reco/useRecoHold";
+
 // Images, titres et état TMDB des recommandations, partagés par les clients
 // (cf. reco/recoImages, reco/recoRowTitles, hooks/useAdminMetadata)
 export {

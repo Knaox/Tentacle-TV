@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tentacleApiFetch } from "./usePreferences";
-import { dropRecoItemEverywhere, invalidateRecoQueries } from "./useRecoPage";
+import { dropRecoItemUnlessHeld } from "../reco/recoCacheItems";
+import { invalidateRecoQueries } from "./useRecoPage";
 
 export type RatingMediaType = "movie" | "series" | "episode";
 
@@ -117,10 +118,11 @@ export function useRateItem() {
         return [optimistic, ...rest];
       });
       // Un titre noté est EXCLU des recommandations : il sort des rangées
-      // chargées tout de suite (même retrait optimiste que « ne plus me
-      // proposer ») au lieu d'y traîner jusqu'au prochain refetch.
+      // chargées tout de suite — sauf si sa carte est TENUE (survol de sa
+      // rangée, feuille ouverte) : il partira au lâcher, jamais sous le
+      // curseur (cf. reco/recoRetirement).
       const rowKey = recoKeyOf(input.mediaType, input.tmdbId);
-      if (rowKey) await dropRecoItemEverywhere(qc, rowKey);
+      if (rowKey) await dropRecoItemUnlessHeld(qc, rowKey);
       return { previous };
     },
     onError: (_err, _input, ctx) => {

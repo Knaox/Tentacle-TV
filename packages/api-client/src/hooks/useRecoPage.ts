@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
+import { hasRetiredReco, isRecoRetired } from "../reco/recoRetirementState";
 import { getSocketStatus } from "../socket/tentacleSocket";
 import type { RecoRowItem, RecoState } from "./recoTypes";
 import { tentacleApiFetch } from "./usePreferences";
@@ -58,15 +59,27 @@ export function buildRecoPageFetcher(ids: readonly number[]): () => Promise<Reco
   return () => tentacleApiFetch<RecoPage>(`/api/reco/page${query}`);
 }
 
+/** Les titres jugés puis lâchés (cf. reco/recoRetirement) : une page servie
+ *  entre-temps, calculée avant le geste, ne les remontre pas. */
+function withoutRetired(rows: RecoPageRow[]): RecoPageRow[] {
+  if (!hasRetiredReco()) return rows;
+  return rows.map((row) =>
+    Array.isArray(row.items) && row.items.some((item) => isRecoRetired(item.key))
+      ? { ...row, items: row.items.filter((item) => !isRecoRetired(item.key)) }
+      : row
+  );
+}
+
 /** Constante de module (référence stable → TanStack mémoïse) : drapeaux en
- *  booléens stricts (un serveur qui les omet), rangées vides écartées. */
+ *  booléens stricts (un serveur qui les omet), titres retirés et rangées
+ *  vides écartés. */
 export const selectRecoPage = (page: RecoPage): RecoPage => ({
   ...page,
   generating: !!page.generating,
   refining: !!page.refining,
   exploring: !!page.exploring,
   filter: page.filter ?? null,
-  rows: (page.rows ?? []).filter((row) => Array.isArray(row.items) && row.items.length > 0),
+  rows: withoutRetired(page.rows ?? []).filter((row) => Array.isArray(row.items) && row.items.length > 0),
 });
 
 /**

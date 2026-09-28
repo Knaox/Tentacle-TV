@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { markRecoDismissed } from "../reco/recoRetirementState";
 import { dropRecoItemEverywhere, invalidateRecoQueries } from "./useRecoPage";
 import { tentacleApiFetch } from "./usePreferences";
 
@@ -17,7 +18,11 @@ export interface ColdStartTitle {
   tmdbId: number;
 }
 
-/** « Ne plus me proposer » — retrait optimiste de toutes les pages chargées. */
+/**
+ * « Ne plus me proposer » — retrait optimiste de toutes les pages chargées,
+ * TOUT DE SUITE : une rangée survolée, figée pour tout le reste, laisse
+ * partir la carte que l'utilisateur écarte (cf. useHeldRecoItems).
+ */
 export function useSendRecoFeedback() {
   const qc = useQueryClient();
   return useMutation({
@@ -26,7 +31,10 @@ export function useSendRecoFeedback() {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    onMutate: ({ itemKey }) => dropRecoItemEverywhere(qc, itemKey),
+    onMutate: ({ itemKey }) => {
+      markRecoDismissed(itemKey);
+      return dropRecoItemEverywhere(qc, itemKey);
+    },
     onSettled: () => invalidateRecoQueries(qc),
   });
 }
