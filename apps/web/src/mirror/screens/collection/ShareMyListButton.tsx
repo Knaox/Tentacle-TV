@@ -1,21 +1,25 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Share2 } from "lucide-react";
-import { useCreateShareLink } from "@tentacle-tv/api-client";
+import { useCreateShareLink, type ShareListKind } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../../../lib/backendBase";
 
 /**
- * « Partager ma liste » (`watchlist/ShareMyListButton` de l'app) : pilule
- * `fill.subtle` au filet fin, icône 15 `brand.light`, 13 semi-gras, 8 × 14.
- * Crée le lien (page publique `/share/:token`) et ouvre la feuille de partage
- * du système ; sans elle, le lien part dans le presse-papiers et le bouton
- * dit « Copié ! » un instant.
+ * « Partager ma liste » ou « Partager mes titres likés »
+ * (`watchlist/ShareMyListButton` de l'app) : pilule de 36 au ton de la
+ * marque — aplat `brand.soft`, liseré `brand.glow`, icône et texte
+ * `brand.light`. Repérable sous le titre sans être l'action principale (pas
+ * de dégradé plein). Crée le lien (page publique `/share/:token`, la même
+ * pour les deux listes) et ouvre la feuille de partage du système ; sans
+ * elle, le lien part dans le presse-papiers et le bouton dit « Copié ! » un
+ * instant.
  */
-export function ShareMyListButton() {
+export function ShareMyListButton({ kind = "watchlist" }: { kind?: ShareListKind }) {
   const { t } = useTranslation("common");
-  const create = useCreateShareLink();
+  const create = useCreateShareLink(kind);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const label = t(kind === "likes" ? "shareMyFavorites" : "shareMyList");
 
   const onPress = async () => {
     if (busy) return;
@@ -50,12 +54,12 @@ export function ShareMyListButton() {
       type="button"
       onClick={onPress}
       disabled={busy}
-      aria-label={t("shareMyList")}
-      className="flex items-center gap-[7px] rounded-full border border-line-subtle bg-fill-subtle px-3.5 py-2 active:opacity-70"
-      style={{ borderWidth: 0.5 }}
+      aria-label={label}
+      className="flex min-h-[36px] items-center gap-[7px] rounded-full border px-3.5 transition-transform duration-100 active:scale-[0.97] active:opacity-80"
+      style={{ background: "var(--brand-soft)", borderColor: "var(--brand-glow)" }}
     >
       {copied ? <Check size={15} className="text-brand-light" aria-hidden /> : <Share2 size={15} className="text-brand-light" aria-hidden />}
-      <span className="text-[13px] font-semibold text-content-primary">{copied ? t("linkCopied") : t("shareMyList")}</span>
+      <span className="whitespace-nowrap text-[13px] font-semibold text-brand-light">{copied ? t("linkCopied") : label}</span>
     </button>
   );
 }

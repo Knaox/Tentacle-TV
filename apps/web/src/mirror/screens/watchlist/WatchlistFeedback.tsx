@@ -7,40 +7,24 @@ import { useRestoreWatchlistItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useMirrorChrome } from "../../useMirrorLayout";
 import { TAB_BAR_TOTAL } from "../../shell/metrics";
+import { CollectionEmptyState } from "../collection/CollectionStates";
 
-/** Liste vide : ce que la page promet, et deux chemins pour la remplir. */
+/**
+ * Liste vide : ce que la page promet, et deux chemins pour la remplir — dans
+ * l'état vide commun des collections (emblème du catalogue).
+ */
 export const WatchlistEmptyState = memo(function WatchlistEmptyState() {
   const { t } = useTranslation("watchlist");
   const { t: tc } = useTranslation("common");
   const navigate = useNavigate();
   return (
-    <div className="flex flex-col items-center px-6 pb-8 pt-16 text-center">
-      <span
-        className="flex h-[72px] w-[72px] items-center justify-center rounded-[22px] text-white"
-        style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))", boxShadow: "0 12px 40px rgba(var(--brand-rgb),0.35)" }}
-      >
-        <Bookmark size={30} aria-hidden />
-      </span>
-      <p className="mt-5 text-xl font-bold tracking-[-0.4px] text-content-primary">{tc("emptyWatchlist")}</p>
-      <p className="mt-2 max-w-[300px] text-sm leading-relaxed text-content-tertiary">{t("emptyBody")}</p>
-      <div className="mt-6 flex w-full max-w-[300px] flex-col gap-2.5">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="flex h-12 items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white"
-          style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
-        >
-          <Compass size={18} aria-hidden /> {t("emptyExplore")}
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate("/search")}
-          className="flex h-12 items-center justify-center gap-2 rounded-full border border-line-subtle bg-fill-subtle text-[15px] font-semibold text-content-secondary"
-        >
-          <Search size={18} aria-hidden /> {t("emptySearch")}
-        </button>
-      </div>
-    </div>
+    <CollectionEmptyState
+      Icon={Bookmark}
+      title={tc("emptyWatchlist")}
+      body={t("emptyBody")}
+      primary={{ label: t("emptyExplore"), Icon: Compass, onPress: () => navigate("/") }}
+      secondary={{ label: t("emptySearch"), Icon: Search, onPress: () => navigate("/search") }}
+    />
   );
 });
 

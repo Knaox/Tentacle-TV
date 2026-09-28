@@ -1,15 +1,17 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Heart } from "lucide-react";
+import { CheckSquare, Heart } from "lucide-react";
 import { groupFavorites, summarizeFavorites, useBatchRemoveFavorites, useFavoritesAll } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useMultiSelect } from "../../../hooks/useMultiSelect";
 import { useFavoritesGroupMode } from "../../../components/favorites/useFavoritesGroupMode";
 import { MediaActionSheet } from "../../cards/MediaActionSheet";
 import { GridSkeleton, ScopedSearchEmpty, ScrollTopFab, useBackOrHome } from "../../catalog";
-import { CollectionFilterHeader } from "../collection/CollectionFilterHeader";
-import { ListHeader } from "../collection/ListHeader";
+import { CatalogEmpty } from "../../catalog/CatalogGridStates";
+import { CollectionControls, QuickChip } from "../collection/CollectionControls";
+import { CollectionHero } from "../collection/CollectionHero";
+import { ShareMyListButton } from "../collection/ShareMyListButton";
 import { SelectionBar } from "../collection/SelectionBar";
 import { useCollectionFilters } from "../collection/useCollectionFilters";
 import { FavoritesEmptyState } from "./FavoritesEmptyState";
@@ -19,8 +21,11 @@ import "../../mirror.css";
 
 /**
  * Route `/favorites` du miroir — Mes favoris (`screens/FavoritesScreen` de
- * l'app) : l'en-tête et la barre de filtres de Ma liste, puis les tuiles
- * d'état et « Regrouper », et la grille, plate ou en sections repliables.
+ * l'app), À LA FORME de la Bibliothèque et de Ma liste : l'ambiance et le
+ * retour flottant, le titre et son bilan, Partager et Sélectionner dessous ;
+ * le champ, « Trier et filtrer » et la barre rapide ; puis ce qui n'appartient
+ * qu'aux favoris — les tuiles d'état et « Regrouper » — et la grille, plate
+ * ou en sections repliables.
  * Toucher ouvre la fiche — ou coche, en sélection ; l'appui long ouvre la
  * feuille d'actions. En sélection, filtres et tuiles s'effacent devant la
  * barre du bas. Le regroupement est celui du bureau (`?group=`, retenu par
@@ -69,7 +74,7 @@ export function MirrorFavorites() {
 
   let body: ReactNode;
   if (isLoading) {
-    body = <GridSkeleton rows={3} />;
+    body = <GridSkeleton rows={3} captions />;
   } else if (totalRaw === 0) {
     body = <FavoritesEmptyState />;
   } else if (count === 0) {
@@ -77,14 +82,7 @@ export function MirrorFavorites() {
     body = filters.state.search.length >= 2 ? (
       <ScopedSearchEmpty query={filters.state.search} onApply={filters.setInput} />
     ) : (
-      <div className="flex flex-col items-center gap-2 px-4 pb-5 pt-16">
-        <Heart size={40} className="text-brand-light opacity-60" aria-hidden />
-        <p className="mt-3 text-lg font-bold tracking-[-0.3px] text-content-primary">{t("noResults")}</p>
-        <p className="max-w-[280px] text-center text-[13px] text-content-tertiary">{t("noResultsHint")}</p>
-        <button type="button" onClick={() => { filters.reset(); filters.patch({ type: "all" }); }} className="mt-3 min-h-[44px] rounded-full px-5 text-sm font-semibold text-brand-light" style={{ background: "var(--brand-soft)" }}>
-          {t("resetFilters")}
-        </button>
-      </div>
+      <CatalogEmpty filtered onReset={() => { filters.reset(); filters.patch({ type: "all" }); }} />
     );
   } else {
     body = (
@@ -105,15 +103,27 @@ export function MirrorFavorites() {
 
   return (
     <div>
-      <ListHeader
+      {/* Toujours là, même vide : il porte le retour. */}
+      <CollectionHero
+        items={raw}
         title={t("myFavorites")}
-        subtitle={subtitle}
+        kicker={t("favorites:kicker")}
         Icon={Heart}
+        subtitle={subtitle}
         onBack={back}
-        onEnterSelection={selection.enterSelectionMode}
-        canSelect={count > 0 && !selection.isSelecting}
+        actions={!isLoading && totalRaw > 0 && !selection.isSelecting ? (
+          <>
+            <ShareMyListButton kind="likes" />
+            {count > 0 && (
+              <QuickChip onClick={selection.enterSelectionMode}>
+                <CheckSquare size={14} aria-hidden className="text-brand-light" />
+                {t("select")}
+              </QuickChip>
+            )}
+          </>
+        ) : undefined}
       />
-      {showControls && <CollectionFilterHeader filters={filters} />}
+      {showControls && <CollectionControls filters={filters} name={t("myFavorites")} />}
       {showControls && (
         <FavoritesQuickRow
           items={raw ?? []}

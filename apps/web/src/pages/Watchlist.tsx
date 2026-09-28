@@ -34,7 +34,7 @@ import { useSummaryLine } from "../components/watchlist/useSummaryLine";
  * gestes Lire / Retirer sans survol.
  */
 export function Watchlist() {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "watchlist"]);
   const navigate = useNavigate();
   const { data: items, isLoading } = useWatchlistAll();
   const page = useWatchlistPage(items);
@@ -107,7 +107,7 @@ export function Watchlist() {
                 alors transparente au-dessus du fond — même montage que
                 l'accueil et la bibliothèque. */}
             <div className="-mt-[56px] md:-mt-[68px]">
-              <CollectionHero title={t("common:myList")} kicker={t("common:myList")} items={items} subtitle={summaryLine} />
+              <CollectionHero title={t("common:myList")} kicker={t("watchlist:kicker")} items={items} subtitle={summaryLine} />
             </div>
 
             <div className="relative z-10 -mt-10 px-4 pt-6 md:-mt-14 md:px-8">

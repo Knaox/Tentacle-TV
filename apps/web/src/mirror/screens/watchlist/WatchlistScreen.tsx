@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Bookmark } from "lucide-react";
+import { Bookmark, CheckSquare, LayoutGrid, List } from "lucide-react";
 import {
   filterByWatchStage,
   resumeQueue,
@@ -18,9 +18,11 @@ import { useWatchlistView } from "../../../components/watchlist/useWatchlistView
 import { useSummaryLine } from "../../../components/watchlist/useSummaryLine";
 import { MediaActionSheet } from "../../cards/MediaActionSheet";
 import { GridSkeleton, ScopedSearchEmpty, ScrollTopFab, useBackOrHome } from "../../catalog";
+import { CatalogEmpty } from "../../catalog/CatalogGridStates";
 import { useGrid } from "../../useMirrorLayout";
-import { CollectionFilterHeader } from "../collection/CollectionFilterHeader";
-import { ListHeader } from "../collection/ListHeader";
+import { CollectionControls, QuickChip } from "../collection/CollectionControls";
+import { CollectionHero } from "../collection/CollectionHero";
+import { CollectionNarrowEmpty, ListSkeleton } from "../collection/CollectionStates";
 import { SelectableGridCard } from "../collection/SelectableGridCard";
 import { SelectionBar } from "../collection/SelectionBar";
 import { ShareMyListButton } from "../collection/ShareMyListButton";
@@ -34,10 +36,13 @@ import "../../mirror.css";
 const STAGE_EMPTY = { new: "stageEmptyNew", inProgress: "stageEmptyInProgress", watched: "stageEmptyWatched" } as const;
 
 /**
- * Ma liste sur petit écran (`screens/watchlist/WatchlistScreen` de l'app) :
- * en-tête chiffré, partage, « Reprendre », étapes de visionnage et bascule
- * grille / liste, filtres de collection, puis la collection. La grille reprend
- * `SelectableGridCard` telle quelle ; la liste montre Lire et Retirer.
+ * Ma liste sur petit écran (`screens/watchlist/WatchlistScreen` de l'app),
+ * À LA FORME de la Bibliothèque : l'ambiance et le retour flottant, le titre
+ * et son résumé chiffré, Partager et Sélectionner dessous ; puis le champ et
+ * « Trier et filtrer », les étapes de visionnage (à la place du statut), la
+ * barre rapide (type, tri, grille ou liste), « Reprendre », et la collection.
+ * La grille reprend `SelectableGridCard` telle quelle ; la liste montre Lire
+ * et Retirer.
  *
  * Mes favoris a son propre écran (`screens/favorites`).
  */
@@ -90,30 +95,16 @@ export function MirrorWatchlistScreen() {
   let body: ReactNode;
   if (isLoading) {
     // À la forme de l'affichage choisi : l'écran ne saute pas à l'arrivée.
-    body = view === "list" ? (
-      <div aria-hidden className="flex flex-col gap-2 px-4">
-        {Array.from({ length: 6 }, (_, i) => <div key={i} className="skeleton-shimmer h-[100px] rounded-2xl" />)}
-      </div>
-    ) : (
-      <GridSkeleton rows={3} />
-    );
+    body = view === "list" ? <ListSkeleton /> : <GridSkeleton rows={3} captions />;
   } else if (totalRaw === 0) {
     body = <WatchlistEmptyState />;
   } else if (data.length === 0) {
     body = stage !== "all" && filters.filtered.length > 0 ? (
-      <div className="flex flex-col items-center gap-3 px-6 pt-16 text-center">
-        <p className="text-sm text-content-tertiary">{tw(STAGE_EMPTY[stage])}</p>
-        <button type="button" onClick={() => setStage("all")} className="h-11 rounded-full bg-fill-subtle px-5 text-sm font-semibold text-content-secondary">
-          {tw("showAll")}
-        </button>
-      </div>
+      <CollectionNarrowEmpty message={tw(STAGE_EMPTY[stage])} actionLabel={tw("showAll")} onAction={() => setStage("all")} />
     ) : filters.state.search.length >= 2 ? (
       <ScopedSearchEmpty query={filters.state.search} onApply={filters.setInput} />
     ) : (
-      <div className="flex flex-col items-center gap-2 px-4 pt-16 text-center">
-        <p className="text-lg font-bold text-content-primary">{t("noResults")}</p>
-        <p className="max-w-[280px] text-[13px] text-content-tertiary">{t("noResultsHint")}</p>
-      </div>
+      <CatalogEmpty filtered onReset={() => { filters.reset(); filters.patch({ type: "all" }); }} />
     );
   } else if (view === "list") {
     body = (
@@ -167,24 +158,43 @@ export function MirrorWatchlistScreen() {
   }
 
   const hasContent = !isLoading && totalRaw > 0;
+  const nextView = view === "grid" ? "list" : "grid";
+  const NextViewIcon = nextView === "grid" ? LayoutGrid : List;
   return (
     <div className="pb-6">
-      <ListHeader
+      {/* Toujours là, même vide : il porte le retour. Sans titre, pas d'image. */}
+      <CollectionHero
+        items={raw}
         title={t("myList")}
-        subtitle={hasContent ? summaryLine : ""}
+        kicker={tw("kicker")}
         Icon={Bookmark}
+        subtitle={hasContent ? summaryLine : ""}
         onBack={back}
-        onEnterSelection={selection.enterSelectionMode}
-        canSelect={data.length > 0 && !selection.isSelecting}
+        actions={hasContent && !selection.isSelecting ? (
+          <>
+            <ShareMyListButton kind="watchlist" />
+            {data.length > 0 && (
+              <QuickChip onClick={selection.enterSelectionMode}>
+                <CheckSquare size={14} aria-hidden className="text-brand-light" />
+                {t("select")}
+              </QuickChip>
+            )}
+          </>
+        ) : undefined}
       />
-      {hasContent && !selection.isSelecting && <div className="flex px-4 pb-3"><ShareMyListButton /></div>}
-      {showResume && <ResumeRail items={resume} onPlay={play} pendingId={pendingId} />}
       {hasContent && !selection.isSelecting && (
-        <>
-          <StageBar stage={stage} onStageChange={setStage} counts={stageCounts} view={view} onViewChange={setView} />
-          <CollectionFilterHeader filters={filters} />
-        </>
+        <CollectionControls
+          filters={filters}
+          name={t("myList")}
+          lead={<StageBar stage={stage} onStageChange={setStage} counts={stageCounts} />}
+          quick={
+            <QuickChip onClick={() => setView(nextView)} label={tw(nextView === "grid" ? "viewGrid" : "viewList")}>
+              <NextViewIcon size={16} aria-hidden />
+            </QuickChip>
+          }
+        />
       )}
+      {showResume && <ResumeRail items={resume} onPlay={play} pendingId={pendingId} />}
       {body}
       {hasContent && data.length > 0 && !selection.isSelecting && <ScrollTopFab />}
       <MediaActionSheet itemId={sheetId} onClose={closeSheet} />
