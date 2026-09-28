@@ -34,6 +34,11 @@ export function AffinityModal() {
       onClose={closeAffinity}
       labelledBy={view === "deck" ? deckTitleId : viewTitleId}
       maxWidth={deckMounted ? 540 : 480}
+      // Un glisser de carte qui se relâche hors du panneau produit un clic
+      // sur le voile (ancêtre commun de l'appui et du relâcher) : la pile se
+      // refermait à chaque swipe appuyé — sur téléphone, presque toujours.
+      // La croix et Échap ferment.
+      dismissOnBackdrop={!deckMounted}
     >
       <div className="flex flex-col" style={{ maxHeight: "94dvh" }}>
         {deckMounted && state && (

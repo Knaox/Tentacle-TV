@@ -195,4 +195,7 @@ export default {
   affinityCurrent: "En cours",
   affinityPreparing: "Préparation de la pile…",
   affinityLaunching: "Lancement…",
+  affinitySuperlikeMine: "Votre coup de cœur",
+  affinityYouLower: "vous",
+  affinityPillShort: "Affinité · {{kind}}",
 } as const;

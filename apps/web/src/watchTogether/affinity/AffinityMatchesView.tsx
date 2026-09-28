@@ -7,7 +7,7 @@ import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
 import { AffinityPoster } from "./AffinityPoster";
 import { closeAffinity, showAffinityView } from "./affinityStore";
-import { formatNames, memberName } from "./affinityText";
+import { formatNames, memberName, superlikeLabel } from "./affinityText";
 import { useAffinityLaunch } from "./useAffinityLaunch";
 
 /**
@@ -97,7 +97,7 @@ function MatchRow({ match }: { match: WtAffinityMatchDto }) {
           {match.superlikedBy.length > 0 && (
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-content-secondary">
               <Star aria-hidden className="h-3 w-3 fill-current text-amber-300" />
-              {t("affinitySuperlikeBy", { names: formatNames(match.superlikedBy.map(nameOf), i18n.language) })}
+              {superlikeLabel({ ids: match.superlikedBy, selfId, nameOf: (id) => memberName(room, id) || "…", t, language: i18n.language })}
             </span>
           )}
         </div>

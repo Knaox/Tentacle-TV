@@ -25,3 +25,19 @@ export function memberName(room: WtRoomStateDto | null, userId: string | null): 
   if (!room || !userId) return "";
   return room.members.find((m) => m.userId === userId)?.username ?? "";
 }
+
+/** « Votre coup de cœur », « Coup de cœur de Bob », « Coup de cœur de Bob et
+ *  vous » — jamais « Coup de cœur de Vous ». */
+export function superlikeLabel(input: {
+  ids: readonly string[];
+  selfId: string | null;
+  nameOf: (userId: string) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
+  language: string;
+}): string {
+  const mine = !!input.selfId && input.ids.includes(input.selfId);
+  const others = input.ids.filter((id) => id !== input.selfId).map(input.nameOf);
+  if (mine && others.length === 0) return input.t("affinitySuperlikeMine");
+  const names = mine ? [...others, input.t("affinityYouLower")] : others;
+  return input.t("affinitySuperlikeBy", { names: formatNames(names, input.language) });
+}

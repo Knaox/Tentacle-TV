@@ -26,8 +26,9 @@ import {
  */
 
 /** Tout ce qui n'est pas la carte dans la modale : en-tête, participants,
- *  boutons, aide, marges du voile (cf. `CARD_WIDTH`). */
-const DECK_CHROME = "23rem";
+ *  boutons, aide, marges du voile (cf. `CARD_WIDTH`). Mesuré à 1440×900 :
+ *  à 23 rem la modale débordait de 12 px ; à 27, tout tient avec de l'air. */
+const DECK_CHROME = "27rem";
 
 export function AffinityDeckView({ state, titleId, paused }: { state: WtAffinityStateDto; titleId: string; paused: boolean }) {
   const { t, i18n } = useTranslation(["watchTogether", "swipe"]);

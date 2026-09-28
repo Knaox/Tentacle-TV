@@ -27,9 +27,11 @@ export function AffinityPill() {
   const participant = !!state && state.participants.some((p) => p.userId === selfId);
   const visible = !!state && !!room && !modal.open && !pathname.startsWith("/watch/")
     && pillDismissed !== state.sessionId && (!participant || mirror);
-  // La pilule « Lecture de groupe en cours » occupe déjà le bas de l'écran.
+  // Sur téléphone, au-dessus de la barre d'onglets ET de la bulle du chat du
+  // groupe (même rangée, à droite : la croix passait dessous). Au bureau, la
+  // pilule « Lecture de groupe en cours » occupe déjà le bas de l'écran.
   const playbackPill = !!room?.itemId && (room.members.some((m) => m.inPlayback) || room.waitingForUserIds.length > 0);
-  const bottom = mirror ? (playbackPill ? "bottom-40" : "bottom-24") : playbackPill ? "bottom-20" : "bottom-5";
+  const bottom = mirror ? "bottom-40" : playbackPill ? "bottom-20" : "bottom-5";
 
   return (
     <AnimatePresence>
@@ -50,9 +52,13 @@ export function AffinityPill() {
           >
             <HeartHandshake aria-hidden className="h-4 w-4 shrink-0 text-purple-300" />
             <span className="min-w-0 truncate text-sm text-white/85">
-              {participant
-                ? t("affinityPillResume", { kind: t(KIND_LABEL_KEY[state.kind]) })
-                : t("affinityPillInvite", { name: memberName(room, state.startedBy), kind: t(KIND_LABEL_KEY[state.kind]) })}
+              {/* Sur téléphone, le plus court : même « Affinité en cours · … » y
+                  était tronqué, le bouton dit le reste. */}
+              {mirror
+                ? t("affinityPillShort", { kind: t(KIND_LABEL_KEY[state.kind]) })
+                : participant
+                  ? t("affinityPillResume", { kind: t(KIND_LABEL_KEY[state.kind]) })
+                  : t("affinityPillInvite", { name: memberName(room, state.startedBy), kind: t(KIND_LABEL_KEY[state.kind]) })}
             </span>
             <button
               type="button"
