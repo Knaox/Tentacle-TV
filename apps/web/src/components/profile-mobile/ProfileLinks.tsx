@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, PairIcon, SettingsIcon } from "../userMenu/icons";
+import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, PairIcon, SettingsIcon, StatsIcon } from "../userMenu/icons";
 
 interface Props {
   isAdmin: boolean;
@@ -14,14 +14,16 @@ interface LinkDef {
 }
 
 /**
- * Liste de liens "réguliers" du Profile mobile (Préférences, Admin, Jumelage,
- * About, Aide, Crédits). Style row avec chevron, séparateurs internes.
+ * Liste de liens "réguliers" du Profile mobile (Mes statistiques, Préférences,
+ * Admin, Jumelage, About, Aide, Crédits). Style row avec chevron, séparateurs
+ * internes. La page n'est atteinte qu'en ligne (`/profile` est `onlineOnly`).
  */
 export function ProfileLinks({ isAdmin }: Props) {
   const { t } = useTranslation("nav");
   const navigate = useNavigate();
 
   const links: LinkDef[] = [
+    { key: "stats", label: t("stats"), icon: <StatsIcon />, path: "/stats" },
     { key: "settings", label: t("preferences"), icon: <SettingsIcon />, path: "/settings" },
     ...(isAdmin
       ? [{ key: "admin", label: t("admin"), icon: <AdminIcon />, path: "/admin" }]

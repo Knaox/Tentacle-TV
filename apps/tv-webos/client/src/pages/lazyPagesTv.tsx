@@ -135,6 +135,10 @@ export const Support = Unavailable;
 // Écrans pensés pour un téléphone.
 export const MobileProfile = Unavailable;
 
+// Statistiques de visionnage : des graphiques qu'on parcourt au pointeur ou
+// au doigt, pas à la télécommande — le téléviseur n'en a pas l'usage.
+export const Stats = Unavailable;
+
 // L'accueil se compose depuis un ordinateur ou un téléphone : le téléviseur
 // LIT la mise en page du compte (rangées, ordre, recommandations), il ne la
 // règle pas.

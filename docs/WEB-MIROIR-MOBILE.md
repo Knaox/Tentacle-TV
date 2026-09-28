@@ -64,8 +64,10 @@ Une mesure changée dans l'app se change ici aussi : c'est tout l'objet du miroi
   administration) : en-tête de verre + barre flottante — ou rail sur l'iPad
   couché ; le contenu commence sous l'en-tête ;
 - **empilé** (`/library/…`, `/watchlist`, `/favorites`, `/settings/…`,
-  `/about`, `/credits`, `/support`, `/pair-device`) : comme les
-  écrans poussés de l'app, ni en-tête ni barre, l'écran porte son retour ;
+  `/about`, `/credits`, `/support`, `/pair-device`, `/stats`) : comme les
+  écrans poussés de l'app, ni en-tête ni barre, l'écran porte son retour.
+  `/stats` est la même page qu'au bureau (`pages/Stats`, réactive) : seule
+  sa bannière change, celle du miroir qui porte le retour ;
 - **plein cadre** (`/search`) : l'écran gère tout, zones sûres comprises.
 
 Hors coquille, comme dans l'app : la fiche (`/media/:id`), le lecteur

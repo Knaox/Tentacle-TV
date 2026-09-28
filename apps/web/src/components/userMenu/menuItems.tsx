@@ -5,7 +5,7 @@
  */
 
 import type { ReactNode } from "react";
-import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, LogoutIcon, OfflineIcon, OnDeviceIcon, PairIcon, SettingsIcon } from "./icons";
+import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, LogoutIcon, OfflineIcon, OnDeviceIcon, PairIcon, SettingsIcon, StatsIcon } from "./icons";
 
 export interface UserInfo {
   name: string;
@@ -43,8 +43,9 @@ interface BuildItemsOptions {
    *
    * Proposer une destination qui renvoie aussitôt à l'accueil est pire que ne
    * rien proposer — l'utilisateur croit à une panne. La liste ci-dessous suit
-   * EXACTEMENT les routes marquées `onlineOnly` dans `App.tsx` : administration,
-   * jumelage et aide. Préférences, à propos et crédits restent atteignables.
+   * EXACTEMENT les routes marquées `onlineOnly` dans `App.tsx` : statistiques,
+   * administration, jumelage et aide. Préférences, à propos et crédits restent
+   * atteignables.
    */
   offline?: boolean;
 }
@@ -64,15 +65,19 @@ export function getUserInfo(): UserInfo {
 }
 
 /**
- * Ordre canonique : Préférences → Admin (si admin) → Jumeler → À propos →
- * Aide → Crédits (mobile uniquement) → Sur cet appareil → Passer hors ligne →
- * séparateur → Déconnexion.
+ * Ordre canonique : Mes statistiques → Préférences → Admin (si admin) →
+ * Jumeler → À propos → Aide → Crédits (mobile uniquement) → Sur cet appareil →
+ * Passer hors ligne → séparateur → Déconnexion. Les statistiques ouvrent la
+ * liste : c'est la seule entrée qui parle de l'utilisateur plutôt que de
+ * l'application.
  */
 export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
   const { t, isAdmin, navigate, handleLogout, extended, goOffline, offline, onDevice } = opts;
-  const items: UserMenuItem[] = [
-    { key: "settings", label: t("preferences"), icon: <SettingsIcon />, action: () => navigate("/settings") },
-  ];
+  const items: UserMenuItem[] = [];
+  if (!offline) {
+    items.push({ key: "stats", label: t("stats"), icon: <StatsIcon />, action: () => navigate("/stats") });
+  }
+  items.push({ key: "settings", label: t("preferences"), icon: <SettingsIcon />, action: () => navigate("/settings") });
   if (isAdmin && !offline) {
     items.push({ key: "admin", label: t("admin"), icon: <AdminIcon />, action: () => navigate("/admin") });
   }

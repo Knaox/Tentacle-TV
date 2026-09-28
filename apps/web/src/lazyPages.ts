@@ -56,3 +56,5 @@ export const SettingsDownloads = lazy(() => import("./pages/settings/SettingsDow
 export const SettingsData = lazy(() => import("./pages/settings/SettingsData").then((m) => ({ default: m.SettingsData })));
 export const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m) => ({ default: m.MobileProfile })));
 export const NotFound = lazy(() => import("./pages/NotFound").then((m) => ({ default: m.NotFound })));
+// Vos statistiques de visionnage — bureau ET miroir (une page réactive, cf. pages/Stats).
+export const Stats = lazy(() => import("./pages/Stats").then((m) => ({ default: m.Stats })));

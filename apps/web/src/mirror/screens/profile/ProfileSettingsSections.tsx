@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Cast, ChartNoAxesColumn, CirclePlay, Mail, SlidersHorizontal, Smartphone } from "lucide-react";
+import { BarChart3, Cast, ChartNoAxesColumn, CirclePlay, Mail, SlidersHorizontal, Smartphone } from "lucide-react";
 import { useDataSaverSetting } from "../../../offline/useDataSaver";
 import { DATA_SAVER_LABEL_KEYS } from "../settings/panes/DataPane";
 import { SettingsRow } from "../settings/ui/SettingsRow";
@@ -11,8 +11,8 @@ import { LanguageChoiceRow, ThemeChoiceRow } from "./AppearanceRows";
 import { ProfilePaneRow } from "./ProfilePaneRow";
 
 /**
- * `ProfileSettingsSections` de l'app : Préférences, Apparence, Appareils,
- * Administration. Les choix courts (thème, langue) se font sur place ; le
+ * `ProfileSettingsSections` de l'app : Mes statistiques (en tête, sans titre
+ * de section), Préférences, Apparence, Appareils, Administration. Les choix courts (thème, langue) se font sur place ; le
  * reste ouvre un volet ou un écran. Absents du web : Notifications (push
  * natif), Liquid Glass (iOS 26), Sur cet appareil (navigateur).
  */
@@ -26,6 +26,12 @@ export function ProfileSettingsSections({ ctx }: { ctx: PaneContext }) {
 
   return (
     <>
+      {!offline && (
+        <SettingsSection>
+          <SettingsRow icon={BarChart3} label={t("stats")} description={t("statsHint")} accent chevron onPress={() => navigate("/stats")} last />
+        </SettingsSection>
+      )}
+
       <SettingsSection title={t("preferences")}>
         {!offline && (
           <ProfilePaneRow pane="personalization" icon={SlidersHorizontal} label={tp("sectionPersonalization")} description={t("personalizationHint")} />
