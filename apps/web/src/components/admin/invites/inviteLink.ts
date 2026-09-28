@@ -1,6 +1,7 @@
 /**
  * Le lien d'invitation une fois construit : savoir s'il sortira du réseau
- * local, le copier, le partager.
+ * local. Le copier et le partager passent par `lib/clipboard` et `lib/share`,
+ * communs à tous les liens de l'application.
  */
 
 const PRIVATE_SUFFIXES = [".localhost", ".local", ".lan", ".home.arpa", ".internal"];
@@ -30,43 +31,4 @@ export function isLocalOnlyUrl(url: string): boolean {
   }
   // Un nom sans point : un hôte du réseau (NAS, conteneur), pas un domaine.
   return !host.includes(".");
-}
-
-/**
- * Copie dans le presse-papiers. L'API asynchrone n'existe qu'en contexte
- * sécurisé : un administrateur qui ouvre son serveur en `http://192.168.…`
- * ne l'a pas — l'ancien bouton levait alors une erreur muette. Repli sur
- * `execCommand`, qui marche partout, en rendant le focus à qui l'avait.
- */
-export async function copyText(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    /* refusée : l'ancienne voie reste possible */
-  }
-  const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  const area = document.createElement("textarea");
-  area.value = text;
-  area.setAttribute("readonly", "");
-  area.style.position = "fixed";
-  area.style.top = "0";
-  area.style.opacity = "0";
-  document.body.appendChild(area);
-  try {
-    area.select();
-    return document.execCommand("copy");
-  } catch {
-    return false;
-  } finally {
-    area.remove();
-    previous?.focus();
-  }
-}
-
-/** Le partage natif (mobile, macOS, Windows) — absent de Linux et de Firefox. */
-export function canShareNatively(): boolean {
-  return typeof navigator !== "undefined" && typeof navigator.share === "function";
 }

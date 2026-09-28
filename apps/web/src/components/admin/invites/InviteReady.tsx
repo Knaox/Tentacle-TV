@@ -7,7 +7,9 @@ import { cls } from "../../../pages/adminUtils";
 import { useToast } from "../../../contexts/ToastContext";
 import { ModalHeader } from "../../ui/ModalHeader";
 import { AdminNotice } from "../kit";
-import { canShareNatively, copyText, isLocalOnlyUrl } from "./inviteLink";
+import { copyText } from "../../../lib/clipboard";
+import { canShareNatively } from "../../../lib/share";
+import { isLocalOnlyUrl } from "./inviteLink";
 import { formatDeadline } from "./inviteFormat";
 
 interface InviteReadyProps {

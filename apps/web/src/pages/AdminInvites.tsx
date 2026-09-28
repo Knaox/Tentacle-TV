@@ -14,7 +14,8 @@ import { InviteCard } from "../components/admin/invites/InviteCard";
 import { InviteFilters } from "../components/admin/invites/InviteFilters";
 import { NewInviteDialog } from "../components/admin/invites/NewInviteDialog";
 import { countByStatus, sortInvites, type InviteFilter } from "../components/admin/invites/inviteFormat";
-import { canShareNatively, copyText } from "../components/admin/invites/inviteLink";
+import { copyText } from "../lib/clipboard";
+import { canShareNatively } from "../lib/share";
 
 /** Autant de colonnes que la largeur en offre : la page occupe tout le panneau. */
 const GRID = "grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-3";
