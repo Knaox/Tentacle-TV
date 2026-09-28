@@ -43,24 +43,42 @@ export async function listSwipes(userId: string): Promise<SwipeRow[]> {
   });
 }
 
-/** Pose (ou remplace) le verdict d'un titre — le dernier geste gagne. */
+function titleWhere(userId: string, mediaType: "movie" | "tv", tmdbId: number) {
+  return { jellyfinUserId_mediaType_tmdbId: { jellyfinUserId: userId, mediaType, tmdbId } };
+}
+
+/**
+ * Pose (ou remplace) le verdict d'un titre — le dernier geste gagne. Rend le
+ * verdict d'avant (null : aucun) : un like qui part défait le cœur qu'il a
+ * posé (cf. swipeFavorites).
+ */
 export async function saveSwipe(
   userId: string,
   mediaType: "movie" | "tv",
   tmdbId: number,
   verdict: SwipeVerdict
-): Promise<void> {
-  await getPrisma().userSwipe.upsert({
-    where: { jellyfinUserId_mediaType_tmdbId: { jellyfinUserId: userId, mediaType, tmdbId } },
+): Promise<string | null> {
+  const prisma = getPrisma();
+  const where = titleWhere(userId, mediaType, tmdbId);
+  const before = await prisma.userSwipe.findUnique({ where, select: { verdict: true } });
+  await prisma.userSwipe.upsert({
+    where,
     create: { jellyfinUserId: userId, mediaType, tmdbId, verdict },
     update: { verdict },
   });
+  return before?.verdict ?? null;
 }
 
-/** Annule le verdict d'un titre (idempotent) : il redevient proposable. */
-export async function deleteSwipe(userId: string, mediaType: "movie" | "tv", tmdbId: number): Promise<boolean> {
-  const res = await getPrisma().userSwipe.deleteMany({
+/**
+ * Annule le verdict d'un titre (idempotent) : il redevient proposable. Rend
+ * le verdict retiré (null : il n'y en avait pas).
+ */
+export async function deleteSwipe(userId: string, mediaType: "movie" | "tv", tmdbId: number): Promise<string | null> {
+  const prisma = getPrisma();
+  const before = await prisma.userSwipe.findUnique({ where: titleWhere(userId, mediaType, tmdbId), select: { verdict: true } });
+  if (!before) return null;
+  const res = await prisma.userSwipe.deleteMany({
     where: { jellyfinUserId: userId, mediaType, tmdbId },
   });
-  return res.count > 0;
+  return res.count > 0 ? before.verdict : null;
 }

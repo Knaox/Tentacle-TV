@@ -5,6 +5,7 @@ import type { JellyfinUser } from "../middleware/auth";
 import { SWIPE_POOL_REGEN_MIN_AGE_MS, pokeProfile } from "../services/reco/jobs";
 import { buildDeck } from "../services/swipe/deckService";
 import { cardDetails } from "../services/swipe/cardDetails";
+import { syncSwipeFavorite } from "../services/swipe/swipeFavorites";
 import { deleteSwipe, saveSwipe } from "../services/swipe/swipeStore";
 import { SWIPE_VERDICTS } from "../services/swipe/swipeTypes";
 
@@ -42,6 +43,8 @@ const detailsQuery = z.object({
  * Onglet « Affiner » : une pile de films et séries à juger (like, super
  * like, dislike, passer). Les verdicts nourrissent le moteur de
  * recommandations — le profil se reconstruit derrière (poke débouncé).
+ * Un like (ou un coup de cœur) EST le cœur de la bibliothèque : posé tout de
+ * suite si le titre est là, à son arrivée sinon (cf. swipeFavorites).
  * TMDB n'est appelé que d'ici : sa clé ne quitte jamais le serveur.
  */
 export const swipeRoutes: FastifyPluginAsync = async (app) => {
@@ -58,7 +61,10 @@ export const swipeRoutes: FastifyPluginAsync = async (app) => {
   app.post("/", async (request) => {
     const user = (request as any).user as JellyfinUser;
     const body = judgeBody.parse(request.body);
-    await saveSwipe(user.userId, body.mediaType, body.tmdbId, body.verdict);
+    const before = await saveSwipe(user.userId, body.mediaType, body.tmdbId, body.verdict);
+    // Attendu avant de répondre : les écritures du client passent en série, une
+    // annulation qui suit trouve le cœur posé (ou mis de côté) et le défait.
+    await syncSwipeFavorite(user.userId, body.mediaType, body.tmdbId, before, body.verdict);
     if (body.verdict !== "skip") pokeProfile(user.userId, { poolMinAgeMs: SWIPE_POOL_REGEN_MIN_AGE_MS });
     return { ok: true };
   });
@@ -68,8 +74,10 @@ export const swipeRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const params = titleParams.parse(request.params);
     const removed = await deleteSwipe(user.userId, params.mediaType, params.tmdbId);
-    if (removed) pokeProfile(user.userId, { poolMinAgeMs: SWIPE_POOL_REGEN_MIN_AGE_MS });
-    return { ok: true, removed };
+    if (removed === null) return { ok: true, removed: false };
+    await syncSwipeFavorite(user.userId, params.mediaType, params.tmdbId, removed, null);
+    pokeProfile(user.userId, { poolMinAgeMs: SWIPE_POOL_REGEN_MIN_AGE_MS });
+    return { ok: true, removed: true };
   });
 
   // ── GET /details/:mediaType/:tmdbId — le verso d'une carte ──

@@ -1,5 +1,5 @@
 import { buildLibraryIndex } from "./libraryIndex";
-import type { LibraryIndex } from "./libraryIndex";
+import type { LibraryEntry, LibraryIndex } from "./libraryIndex";
 
 /**
  * L'index de bibliothèque est un balayage complet de Jellyfin (jusqu'à 40
@@ -90,6 +90,25 @@ export function refreshLibraryMemo(userId: string): void {
       void refreshNow(userId).catch(() => undefined);
     }, REFRESH_DEBOUNCE_MS)
   );
+}
+
+/** Ce qu'un geste du compte change d'une entrée, sans attendre le balayage. */
+export type LibraryEntryPatch = Partial<Pick<LibraryEntry, "isFavorite" | "inWatchlist" | "played">>;
+
+/**
+ * Retouche EN PLACE l'entrée d'un titre dans l'index en mémoire du compte —
+ * par sa clé (« movie:603 ») ou son id Jellyfin — pour qu'un cœur, Ma liste
+ * ou « vu » posé à l'instant sorte des recommandations dès la requête
+ * suivante. Le prochain balayage (débouncé, en fond) remplace l'index de
+ * toute façon. Rend l'entrée retouchée, ou null (pas d'index, titre absent).
+ */
+export function patchLibraryMemo(userId: string, keyOrItemId: string, patch: LibraryEntryPatch): LibraryEntry | null {
+  const hit = memo.get(userId);
+  if (!hit) return null;
+  const entry =
+    hit.index.byKey.get(keyOrItemId) ?? hit.index.entries.find((e) => e.itemId === keyOrItemId) ?? null;
+  if (entry) Object.assign(entry, patch);
+  return entry;
 }
 
 /** Au boot : les index des comptes actifs, l'un après l'autre. */
