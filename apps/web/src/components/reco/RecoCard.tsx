@@ -129,7 +129,8 @@ export const RecoCard = memo(function RecoCard({
             handleOpen();
           }
         }}
-        className={`block w-full text-left ${openable ? "cursor-pointer" : ""}`}
+        // L'anneau de focus est dessiné par l'affiche (`CardFrame`), qui se soulève.
+        className={`group/focus block w-full text-left outline-none ${openable ? "cursor-pointer" : ""}`}
         aria-label={item.title}
       >
         <CardFrame hovered={hovered && openable} aspect="aspect-[2/3]">

@@ -72,7 +72,8 @@ export const SharedPosterCard = memo(function SharedPosterCard({ item, to, selec
         <Link
           to={to}
           aria-label={t("share:openTitle", { name: item.Name })}
-          className="block rounded-[var(--radius-lg)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0"
+          // L'anneau de focus est dessiné par l'affiche (`CardFrame`), qui se soulève.
+          className="group/focus block outline-none"
           onFocus={() => setHovered(true)}
           onBlur={() => setHovered(false)}
         >

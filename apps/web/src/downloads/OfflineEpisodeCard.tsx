@@ -20,6 +20,7 @@ import { useDownloadsRootReady } from "./localFiles";
 import { LocalCardImage } from "./LocalCardImage";
 import { CardFrame } from "../components/cards/CardFrame";
 import { CardHoverOverlay } from "../components/cards/CardHoverOverlay";
+import { CardEpisodeCaption } from "../components/cards/CardEpisodeCaption";
 import { CardProgressBar } from "../components/cards/CardProgressBar";
 import { CardRatingBadge } from "../components/cards/CardRatingBadge";
 import { CardStatusMarkers } from "../components/cards/CardStatusMarkers";
@@ -37,13 +38,15 @@ interface OfflineEpisodeCardProps {
   entry: DownloadEntry;
   /** Sous la vignette : le nom de la série ou du film (rangées de l'accueil), sinon la durée seule. */
   showHeading?: boolean;
+  /** L'épisode de la fiche, ou celui que « Lecture » vise : un liseré cerne sa vignette. */
+  current?: boolean;
   onPlay: (entry: DownloadEntry) => void;
   onOpen: (entry: DownloadEntry) => void;
   onToggleWatched: (entry: DownloadEntry) => void;
 }
 
 export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
-  entry, showHeading = false, onPlay, onOpen, onToggleWatched,
+  entry, showHeading = false, current = false, onPlay, onOpen, onToggleWatched,
 }: OfflineEpisodeCardProps) {
   const { t } = useTranslation("common");
   const rootReady = useDownloadsRootReady();
@@ -85,7 +88,9 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
       role="button"
       tabIndex={0}
       aria-label={`${t("play")} — ${heading}${isEpisode ? ` · ${title}` : ""}`}
-      className="group/card relative cursor-pointer rounded-[var(--radius-lg)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+      // L'anneau de focus est dessiné par la vignette (`CardFrame`), qui se
+      // soulève : sur la racine, il cernait aussi la durée et restait en place.
+      className="group/card group/focus relative cursor-pointer outline-none"
       style={{ zIndex: hovered ? 2 : undefined }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -96,17 +101,15 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
       onClick={() => onPlay(entry)}
       onKeyDown={onKeyDown}
     >
-      <CardFrame hovered={hovered} aspect="aspect-video" lift={{ scale: 1.04, y: -7 }}>
+      <CardFrame hovered={hovered} aspect="aspect-video" lift={{ scale: 1.04, y: -7 }} highlighted={current}>
         {sprite && frameUrl
           ? <CardTrickplayImage frame={{ url: frameUrl, info: sprite.selection.info, col: sprite.col, row: sprite.row }} alt={title} fallback={image} />
           : image}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2" style={{ background: "var(--card-reveal-scrim)" }} />
         <CardRatingBadge rating={snapshot?.CommunityRating ?? null} shown={!hovered} className="left-2 top-2" />
         <CardStatusMarkers statuses={watched ? WATCHED : NONE} shown={!hovered} />
-        <div className={`absolute inset-x-0 bottom-1.5 pl-3 text-on-media-primary ${hovered ? "pr-[7.5rem]" : "pr-4"}`}>
-          {code && <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-on-media-secondary">{code}</p>}
-          <p className="line-clamp-1 text-xs font-semibold">{title}</p>
-        </div>
+        {/* Au-dessus du voile du survol : elle passait dessous, illisible. */}
+        <CardEpisodeCaption code={code} title={title} inset={hovered ? "pr-[7.5rem]" : "pr-4"} />
         {overlayMounted && (
           <CardHoverOverlay
             variant="landscape"
@@ -124,11 +127,16 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
             }}
           />
         )}
-        {!watched && <CardProgressBar percent={percent} border />}
+        {/* La progression reste lisible au-dessus du voile, comme sur toutes les vignettes. */}
+        {!watched && (
+          <div className="absolute inset-x-0 bottom-0 z-30">
+            <CardProgressBar percent={percent} border />
+          </div>
+        )}
       </CardFrame>
       <div className="mt-2.5 px-0.5">
         {showHeading && <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{heading}</h3>}
-        {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
+        {runtime && <p className="mt-0.5 text-xs text-content-secondary">{runtime}</p>}
       </div>
     </div>
   );

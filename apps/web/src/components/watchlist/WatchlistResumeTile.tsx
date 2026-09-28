@@ -72,7 +72,8 @@ export const WatchlistResumeTile = memo(function WatchlistResumeTile({ item, onP
         play();
       }}
       {...hover.handlers}
-      className={`group/card relative block w-[240px] rounded-[var(--radius-lg)] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--border-focus)] sm:w-[300px] ${
+      // L'anneau de focus est dessiné par la vignette (`CardFrame`), qui se soulève.
+      className={`group/card group/focus relative block w-[240px] text-left outline-none sm:w-[300px] ${
         pending ? "cursor-wait" : "cursor-pointer"
       }`}
       style={{ zIndex: hover.hovered ? 2 : undefined }}

@@ -71,7 +71,8 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
       role="link"
       tabIndex={0}
       aria-label={subtitle ? `${title} · ${subtitle}` : title}
-      className="group/card relative cursor-pointer rounded-[var(--radius-lg)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+      // L'anneau de focus est dessiné par l'affiche (`CardFrame`), qui se soulève.
+      className="group/card group/focus relative cursor-pointer outline-none"
       style={{ zIndex: hovered ? 2 : undefined }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -110,7 +111,7 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
       </CardFrame>
       <div className="mt-2.5 px-0.5">
         <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{title}</h3>
-        {subtitle && <p className="mt-0.5 truncate text-xs text-content-quaternary">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 truncate text-xs text-content-secondary">{subtitle}</p>}
       </div>
     </div>
   );

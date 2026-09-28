@@ -61,9 +61,11 @@ export function OfflineEpisodesSection({ title, episodes, currentId, seasons }: 
                     aspect={16 / 9}
                     textHeight={EPISODE_TEXT_HEIGHT}
                     eager={index < 8}
-                    className={current ? "rounded-lg ring-2 ring-[rgba(var(--brand-rgb),0.75)] ring-offset-4 ring-offset-surface-0" : undefined}
                   >
-                    <OfflineEpisodeCard entry={episode} onPlay={play} onOpen={open} onToggleWatched={toggle} />
+                    {/* Le liseré de l'épisode courant est porté par la vignette
+                        (`CardFrame`) : posé sur la cellule, il cernait aussi la
+                        durée et ne suivait pas la carte qui se soulève. */}
+                    <OfflineEpisodeCard entry={episode} current={current} onPlay={play} onOpen={open} onToggleWatched={toggle} />
                   </RevealCell>
                 </li>
               );

@@ -8,6 +8,7 @@ import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import { CardHoverOverlay } from "./CardHoverOverlay";
+import { CardEpisodeCaption } from "./CardEpisodeCaption";
 import { prefetchDetailRoute } from "./prefetchDetail";
 import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
@@ -185,22 +186,9 @@ export const EpisodeCard = memo(function EpisodeCard({
           ratingClassName="left-2 top-2"
         />
 
-        {/* Le coin bas-droit appartient au groupe du survol (étoiles et
-            plateau) : le titre se resserre à sa gauche le temps du survol, au
-            lieu de passer dessous. Au-dessus du voile (z-30) pour rester
-            lisible, et transparent au pointeur pour ne rien voler au plateau. */}
-        <div
-          className={`pointer-events-none absolute inset-x-0 bottom-1.5 z-30 pl-3 text-on-media-primary ${
-            hovered ? "pr-[11.5rem]" : "pr-28"
-          }`}
-        >
-          {epLabel && (
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-on-media-secondary">
-              {epLabel}
-            </p>
-          )}
-          {episodeName && <p className="line-clamp-1 text-xs font-semibold">{episodeName}</p>}
-        </div>
+        {/* Le code et le titre de l'épisode, au-dessus du voile ; ils se
+            resserrent à gauche du plateau le temps du survol. */}
+        <CardEpisodeCaption code={epLabel} title={episodeName} inset={hovered ? "pr-[11.5rem]" : "pr-28"} />
 
         {/* Le survol unique des cartes, variante paysage. Le clic sur la
             vignette lance la lecture : la fiche passe par le plateau. */}

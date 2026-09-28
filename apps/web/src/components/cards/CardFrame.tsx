@@ -6,8 +6,25 @@ interface CardFrameProps {
   aspect: string;
   /** Amplitude du lift — la vignette 16:9 étant plus large, elle monte moins. */
   lift?: { scale: number; y: number };
+  /**
+   * La carte est CELLE que la page désigne — l'épisode de la fiche, ou celui
+   * que « Lecture » vise. Un liseré de marque cerne la vignette, à l'intérieur
+   * de son arrondi : il se soulève avec elle.
+   */
+  highlighted?: boolean;
   children: ReactNode;
 }
+
+/**
+ * L'anneau de focus clavier, sur la VIGNETTE et non sur la racine de la
+ * carte. La racine embarque le titre et la durée, et reste immobile quand la
+ * vignette se soulève : son anneau cernait un rectangle décalé, qui débordait
+ * sous la carte. Le porteur du focus (la racine, un bouton, un lien) prend la
+ * classe `group/focus` ; la vignette dessine l'anneau — sans `:has()`, que la
+ * garde de compatibilité du téléviseur refuse.
+ */
+const FOCUS_RING =
+  "group-focus-visible/focus:ring-2 group-focus-visible/focus:ring-[var(--border-focus)] group-focus-visible/focus:ring-offset-2 group-focus-visible/focus:ring-offset-surface-0";
 
 /**
  * Cadre de survol commun à toutes les cartes média — la signature visuelle du
@@ -37,6 +54,7 @@ export function CardFrame({
   hovered,
   aspect,
   lift = { scale: 1.06, y: -8 },
+  highlighted = false,
   children,
 }: CardFrameProps) {
   return (
@@ -62,7 +80,16 @@ export function CardFrame({
       {/* La boîte image. Elle ne porte plus aucun effet de bord : la classe
           `card-spotlight` a disparu avec le biseau qu'elle portait, et le grain
           de pourtour avec elle. */}
-      <div className={`relative ${aspect} overflow-hidden rounded-[var(--radius-lg)]`}>
+      <div className={`relative ${aspect} overflow-hidden rounded-[var(--radius-lg)] ${FOCUS_RING}`}>
+        {/* Peint AVANT les enfants, au plan de la légende et de la barre de
+            progression (`z-30`) : au-dessus du voile du survol, sous la barre
+            qui borde le bas de la vignette. */}
+        {highlighted && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-30 rounded-[inherit] ring-2 ring-inset ring-[rgba(var(--brand-rgb),0.85)]"
+          />
+        )}
         {children}
       </div>
     </div>

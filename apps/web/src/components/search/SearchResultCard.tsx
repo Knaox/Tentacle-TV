@@ -87,7 +87,9 @@ export function SearchResultCard({
           e.preventDefault();
           open();
         }}
-        className="block w-full cursor-pointer rounded-[var(--radius-lg)] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--border-focus)]"
+        // L'anneau de focus est dessiné par l'affiche (`CardFrame`), qui se
+        // soulève : sur ce bouton, il cernait aussi le titre et restait en place.
+        className="group/focus block w-full cursor-pointer text-left outline-none"
       >
         <PosterTile item={item} imageUrl={imageUrl} hovered={hover.hovered} />
         <p className="mt-2.5 truncate px-0.5 text-sm font-semibold tracking-tight text-content-primary">{item.Name}</p>
