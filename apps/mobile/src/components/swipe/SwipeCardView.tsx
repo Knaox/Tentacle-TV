@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef } from "react";
 import { PanResponder, Pressable, StyleSheet } from "react-native";
 import Animated, {
-  Easing, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming,
+  Easing, ReduceMotion, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming,
 } from "react-native-reanimated";
 import { exitTarget, verdictFromDrag } from "@tentacle-tv/api-client";
 import type { SwipeCard, SwipeCardDetails, SwipeVerdict } from "@tentacle-tv/api-client";
@@ -30,8 +30,15 @@ interface Props {
 }
 
 const SPRING = { damping: 18, stiffness: 220 };
-/** Mouvement réduit : une carte lâchée avant le seuil revient, vite et sans rebond. */
-const RETURN_REDUCED = { duration: 150, easing: Easing.out(Easing.quad) };
+/** Mouvement réduit : une carte lâchée avant le seuil revient, vite et sans
+ *  rebond. `ReduceMotion.Never` : c'est NOTRE version réduite — sans lui,
+ *  Reanimated (réglage système lu au lancement) la sauterait d'un coup. */
+const RETURN_REDUCED = { duration: 150, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.Never };
+/** Le fondu du mouvement réduit : un fondu enchaîné n'est pas un mouvement. */
+const FADE_REDUCED = { duration: 120, reduceMotion: ReduceMotion.Never };
+/** Rendue par « annuler » en pleine course, la carte revient sans dépasser sa
+ *  place : un ressort passait le centre et allumait le tampon opposé. */
+const RETURN_UNDO = { duration: 260, easing: Easing.out(Easing.cubic) };
 
 /** Le retour d'une carte à sa place (lâchée avant le seuil, ou rendue). */
 function toRest(reduced: boolean) {
@@ -104,15 +111,15 @@ export const SwipeCardView = memo(function SwipeCardView({
     if (exitId === undefined || exitVerdict === undefined) {
       if (!leaving.current) return;
       leaving.current = false;
-      tx.value = toRest(reducedMotion);
-      ty.value = toRest(reducedMotion);
-      fade.value = withTiming(1, { duration: 150 });
+      tx.value = withTiming(0, reducedMotion ? RETURN_REDUCED : RETURN_UNDO);
+      ty.value = withTiming(0, reducedMotion ? RETURN_REDUCED : RETURN_UNDO);
+      fade.value = withTiming(1, { ...FADE_REDUCED, duration: 150 });
       return;
     }
     leaving.current = true;
     const done = () => latest.current.onExited(exitId);
     if (reducedMotion) {
-      fade.value = withTiming(0, { duration: 120 }, (ok) => { if (ok) runOnJS(done)(); });
+      fade.value = withTiming(0, FADE_REDUCED, (ok) => { if (ok) runOnJS(done)(); });
       return;
     }
     const target = exitTarget(exitVerdict, screenWidth, { x: tx.value, y: ty.value });
