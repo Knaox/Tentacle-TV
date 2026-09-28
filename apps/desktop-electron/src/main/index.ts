@@ -47,7 +47,7 @@ import { registerLinuxSessionCommands } from "./ipc/linuxSession";
 import { registerVideoCommands, restoreDisplay, stopPlayer } from "./ipc/video";
 import { isRunning } from "./video/mpv";
 import { installCloseSequence } from "./closeSequence";
-import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
+import { claimSingleInstance, installContentSecurityPolicy, restrictPermissions } from "./security";
 import { installMenu } from "./menu";
 import { applySystemIdentity } from "./appIdentity";
 import { createMainWindow, getMainWindow } from "./window";
@@ -184,7 +184,7 @@ function main(): void {
       // date le gel à la milliseconde le jour où il y en a un.
       startHeartbeat();
 
-      denyAllPermissions();
+      restrictPermissions();
       // Empreintes calculées sur le HTML réellement servi : le script inline
       // qui pose le thème avant le premier paint reste autorisé, sans ouvrir
       // `unsafe-inline` à tout le reste.

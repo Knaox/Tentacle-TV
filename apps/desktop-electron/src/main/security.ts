@@ -39,16 +39,44 @@ export async function openExternalSafely(rawUrl: string): Promise<boolean> {
 }
 
 /**
- * Refuse TOUTES les permissions web.
+ * La seule permission web accordée : ÉCRIRE du texte dans le presse-papiers,
+ * pour la page de l'application et elle seule.
+ *
+ * `navigator.clipboard.writeText` la demande (`clipboard-sanitized-write`). Tout
+ * refuser la refusait aussi : mesuré sous Electron 43, l'appel rejetait
+ * (« Write permission denied ») et chaque bouton « Copier » restait sans effet
+ * — le lien de partage de Ma liste et des favoris le premier. Un navigateur
+ * l'accorde d'office à une page au premier plan. L'écriture est « assainie »
+ * (texte, HTML nettoyé, PNG) ; la LECTURE (`clipboard-read`) reste refusée.
+ *
+ * Cadre principal de `tentacle://app` seulement : ni un greffon (son origine
+ * est `tentacle://plugin`), ni un cadre tiers (la bande-annonce YouTube) n'en
+ * profitent.
+ */
+function isGranted(permission: string, requestingUrl: string, isMainFrame: boolean): boolean {
+  return permission === "clipboard-sanitized-write" && isMainFrame && isAppOrigin(requestingUrl);
+}
+
+/**
+ * Refuse toutes les permissions web, sauf l'écriture du presse-papiers
+ * (`isGranted`).
  *
  * La documentation est explicite : « By default, Electron will automatically
  * approve all permission requests ». Un client média n'a besoin ni de caméra,
  * ni de micro, ni de géolocalisation, ni de notifications système.
+ *
+ * Les deux gestionnaires répondent la même chose : la demande
+ * (`writeText`) et le contrôle (`navigator.permissions.query`), qui reçoit
+ * l'origine de la page (`tentacle://app/`) là où la demande reçoit son URL.
  */
-export function denyAllPermissions(): void {
+export function restrictPermissions(): void {
   const s = session.defaultSession;
-  s.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
-  s.setPermissionCheckHandler(() => false);
+  s.setPermissionRequestHandler((_wc, permission, callback, details) =>
+    callback(isGranted(permission, details.requestingUrl, details.isMainFrame)),
+  );
+  s.setPermissionCheckHandler((_wc, permission, requestingOrigin, details) =>
+    isGranted(permission, requestingOrigin, details.isMainFrame),
+  );
   // Aucun périphérique (HID, série, USB) ne doit pouvoir être sélectionné.
   s.setDevicePermissionHandler(() => false);
 }
