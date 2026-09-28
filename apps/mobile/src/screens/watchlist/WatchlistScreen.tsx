@@ -8,8 +8,9 @@ import { useBatchRemoveWatchlist, useJellyfinClient, useWatchlistAll } from "@te
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import { SkeletonCard, SubtleBackground } from "@/components/ui";
-import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { SelectionBar } from "@/components/SelectionBar";
+import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
+import { posterSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
 import { CatalogEmpty } from "@/components/catalog/CatalogGridStates";
 import { CollectionControls } from "@/components/collection/CollectionControls";
 import { CollectionHero } from "@/components/collection/CollectionHero";
@@ -59,7 +60,7 @@ export function WatchlistScreen() {
   const { play, pendingId } = usePlayFromWatchlist();
   const [removed, setRemoved] = useState<MediaItem | null>(null);
   const clearRemoved = useCallback(() => setRemoved(null), []);
-  const [sheetId, setSheetId] = useState<string | null>(null);
+  const openSheet = useCardSheetOpener();
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
   const summaryLine = useSummaryLine(page.summary);
   const isList = page.view === "list";
@@ -71,9 +72,10 @@ export function WatchlistScreen() {
     if (selection.active) selection.toggle(item.Id);
     else router.push(`/media/${item.Id}`);
   }, [router, selection]);
+  // En sélection, l'appui long ne fait rien : il cocherait par mégarde.
   const handleLongPress = useCallback((item: MediaItem) => {
-    if (!selection.active) setSheetId(item.Id);
-  }, [selection.active]);
+    if (!selection.active) openSheet?.(posterSheetTarget(item));
+  }, [selection.active, openSheet]);
   const handleDelete = useCallback(async () => {
     const ids = Array.from(selection.selected);
     if (ids.length === 0) return;
@@ -230,7 +232,6 @@ export function WatchlistScreen() {
         )}
 
         <FloatingBackButton top={top} onPress={() => backOrHome(router)} />
-        {sheetId && <MediaActionSheet visible itemId={sheetId} onClose={() => setSheetId(null)} />}
         {selection.active && (
           <SelectionBar count={selection.count} totalCount={data.length} onSelectAll={handleSelectAll} onDelete={handleDelete} onCancel={selection.clear} />
         )}

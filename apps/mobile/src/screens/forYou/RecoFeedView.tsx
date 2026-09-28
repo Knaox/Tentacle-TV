@@ -4,14 +4,11 @@ import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { activeFamilyCount, buildPlatformCatalog, useJellyfinClient, useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
-import type { RecoReason, RecoRowItem } from "@tentacle-tv/api-client";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
-import { MediaActionSheet } from "@/components/MediaActionSheet";
-import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
 import { recoHeroSlides } from "@/components/reco/hero/recoHeroSlides";
 import { RecoFilterSheet } from "@/components/reco/filters/RecoFilterSheet";
 import { LikedActorsPanel } from "@/components/reco/people/LikedActorsPanel";
@@ -63,20 +60,6 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const openFilters = useCallback(() => setFiltersOpen(true), []);
   const closeFilters = useCallback(() => setFiltersOpen(false), []);
-
-  // Appui long : la feuille habituelle en bibliothèque (favoris, Ma liste,
-  // vu — avec les raisons), celle des recommandations sinon.
-  const [sheet, setSheet] = useState<{ itemId: string; reasons: RecoReason[] } | null>(null);
-  const [sheetVisible, setSheetVisible] = useState(false);
-  const [recoTarget, setRecoTarget] = useState<RecoRowItem | null>(null);
-  const onItemLongPress = useCallback((item: RecoRowItem) => {
-    if (item.jellyfinItemId) {
-      setSheet({ itemId: item.jellyfinItemId, reasons: item.reasons });
-      setSheetVisible(true);
-    } else {
-      setRecoTarget(item);
-    }
-  }, []);
 
   const openSettings = useCallback(() => router.push("/settings/personalization"), [router]);
   const later = useCallback(() => {
@@ -160,7 +143,6 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
           teaser={page.personalized !== false ? <RecoRefineTeaser onPress={onOpenRefine} /> : undefined}
           canOpen={recoNav.canOpen}
           onItemPress={recoNav.open}
-          onItemLongPress={onItemLongPress}
         />
         {/* Ajuster ses acteurs se fait ICI, au contact des rangées — masqué
             quand la personnalisation est indisponible (perso coupée, pas de
@@ -168,15 +150,6 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
         {model.canPersonalize && <LikedActorsPanel />}
       </Animated.ScrollView>
 
-      {sheet && (
-        <MediaActionSheet
-          visible={sheetVisible}
-          itemId={sheet.itemId}
-          reasons={sheet.reasons}
-          onClose={() => { setSheetVisible(false); setSheet(null); }}
-        />
-      )}
-      <RecoActionSheet item={recoTarget} onClose={() => setRecoTarget(null)} />
       <RecoFilterSheet visible={filtersOpen} onClose={closeFilters} catalog={catalog} providerFilter={model.providerFilter} />
     </SubtleBackground>
   );

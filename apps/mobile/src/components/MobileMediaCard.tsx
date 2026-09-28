@@ -14,11 +14,19 @@ import { useCardWidth } from "@/contexts/CardDensityContext";
 import { useSeriesRatingMap } from "@/contexts/SeriesRatingContext";
 import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 import { cardProgress } from "@/components/cards/cardProgress";
+import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
+import { posterSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
   item: MediaItem;
   onPress: () => void;
+  /**
+   * L'appui long. Absent : la feuille d'appui long de la portée (variante
+   * `poster`) — toute affiche de la bibliothèque l'ouvre, sans qu'on ait à
+   * la faire descendre de rangée en rangée. Une collection en sélection
+   * multiple passe le sien.
+   */
   onLongPress?: () => void;
   width?: number;
 }
@@ -27,7 +35,8 @@ interface Props {
  * Card poster 2:3 Netflix-style — radius 12, fallback letter cinematic,
  * progress bar violet en bas, marqueurs d'état façon Crunchyroll
  * (`CardMarkerLayer`), scale spring sur press (via PressableCard). Title Inter
- * semibold, sous-titre tertiary.
+ * semibold, sous-titre tertiary. Son appui long ouvre la feuille des cartes
+ * (`MediaActionSheet`), variante `poster`.
  */
 export const MobileMediaCard = memo(function MobileMediaCard({
   item, onPress, onLongPress, width,
@@ -62,12 +71,14 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   // Cette affiche montre le visage d'une SÉRIE (même chaîne de repli d'image
   // que le web) : elle en porte donc la note, lot « +N » comme épisode isolé.
   const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
+  const openSheet = useCardSheetOpener();
+  const handleLongPress = onLongPress ?? (openSheet ? () => openSheet(posterSheetTarget(item)) : undefined);
   const posterUri = image.uri;
 
   return (
     <PressableCard
       onPress={onPress}
-      onLongPress={onLongPress}
+      onLongPress={handleLongPress}
       style={{ width: cardWidth }}
       accessibilityRole="button"
       accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${progress !== null ? `, ${Math.round(progress)}%` : ""}${isGroupedSeries ? `, ${t("addedEpisodes", { count: addedCount })}` : ""}`}

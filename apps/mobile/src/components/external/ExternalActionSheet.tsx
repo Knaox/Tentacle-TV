@@ -8,6 +8,7 @@ import type { RecoReason } from "@tentacle-tv/api-client";
 import { externalCardActionEntries, resolveExternalCardOverlay, type ExternalCardVariant } from "@tentacle-tv/shared";
 import { BottomSheet } from "@/components/ui";
 import { ActionCell } from "@/components/ActionCell";
+import { BookmarkGlyph } from "@/components/cards/cardGlyphs";
 import { RecoReasonList } from "@/components/reco/RecoReasonList";
 import { RatingPanelMobile } from "@/components/rating/RatingPanelMobile";
 import { FONT_FAMILY, RADIUS, SHADOW_RN, progressGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -119,11 +120,11 @@ function SheetBody({ target, variant, onClose, reasons, onDismiss, openHref }: P
             return (
               <ActionCell
                 key="watchlist"
-                icon="bookmark"
+                // Le signet de la pastille d'états (tracé partagé), plein une fois mis de côté.
+                renderIcon={(color) => <BookmarkGlyph size={26} color={color} filled={entry.active === true} />}
                 label={t(entry.active ? "watchlistOnArrival" : "addToWatchlistOnArrival")}
                 active={entry.active === true}
                 activeColor={theme.colors.brand.violet}
-                fillOnActive
                 onPress={actions.toggleWatchlist}
               />
             );
@@ -134,8 +135,6 @@ function SheetBody({ target, variant, onClose, reasons, onDismiss, openHref }: P
                 key="dismiss"
                 icon="eye-off"
                 label={t("dismiss")}
-                active={false}
-                activeColor={theme.colors.text.primary}
                 onPress={() => { onDismiss(); onClose(); }}
               />
             );

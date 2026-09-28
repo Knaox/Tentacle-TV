@@ -9,6 +9,8 @@ import { Badge, PressableCard } from "@/components/ui";
 import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { useCardWidth } from "@/contexts/CardDensityContext";
 import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
+import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
+import { recoSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
 import { useExternalTitleState } from "@/components/external/useExternalTitle";
 
 interface Props {
@@ -17,7 +19,8 @@ interface Props {
    *  la carte le dit, l'appui ne fait rien. */
   canOpen: boolean;
   onPress: () => void;
-  onLongPress: () => void;
+  /** L'appui long ; absent, la feuille des cartes de la portée (variante `reco`). */
+  onLongPress?: () => void;
   /** La raison verbalisée (« Parce que vous avez aimé… »), sous le titre — la page Pour vous. */
   reason?: string;
 }
@@ -29,9 +32,11 @@ interface Props {
  * items ne sont pas des MediaItem) : la note globale et la vôtre en bas à gauche, la pastille Ma
  * liste / favori / vu en haut à droite. En haut à gauche, empilés : « À la
  * demande » hors bibliothèque (ou l'état que l'extension en donne : « Demandé »),
- * « Découverte » pour une exploration. L'appui long ouvre la feuille : au doigt,
- * pas de survol — celle des cartes Vigie hors bibliothèque (« Demander », Ma
- * liste à l'arrivée, la note), MediaActionSheet sinon.
+ * « Découverte » pour une exploration. L'appui long ouvre, par la portée
+ * (`CardSheetScope`), la feuille qui revient au titre — au doigt, pas de
+ * survol : en bibliothèque, la feuille des cartes, variante `reco` (lecture,
+ * Ma liste, favori, vu, la note, le refus) ; hors bibliothèque, celle des
+ * cartes Vigie (« Demander », Ma liste à l'arrivée, la note, le refus).
  */
 export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongPress, reason }: Props) {
   const { t } = useTranslation("reco");
@@ -47,6 +52,8 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   // (« Demandé »…), et Ma liste est une mise de côté jusqu'à l'arrivée.
   const state = useExternalTitleState(onDemand ? { mediaType: item.mediaType, tmdbId: item.tmdbId } : null);
   const pending = useIsWatchlistPending(onDemand ? titleKey(item.mediaType, item.tmdbId) : null);
+  const openSheet = useCardSheetOpener();
+  const handleLongPress = onLongPress ?? (openSheet ? () => openSheet(recoSheetTarget(item)) : undefined);
   const subtitle = onDemand && !canOpen
     ? [item.year, t("unavailableHint")].filter(Boolean).join(" — ")
     : item.year != null ? String(item.year) : null;
@@ -54,7 +61,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   return (
     <PressableCard
       onPress={canOpen ? onPress : undefined}
-      onLongPress={onLongPress}
+      onLongPress={handleLongPress}
       style={{ width, opacity: canOpen ? 1 : 0.7 }}
       accessibilityRole="button"
       accessibilityLabel={`${item.title}${item.year ? `, ${item.year}` : ""}`}

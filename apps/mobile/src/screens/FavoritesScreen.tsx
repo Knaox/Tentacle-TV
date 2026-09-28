@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { RefreshControl, ScrollView, SectionList, StyleSheet, View, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -8,8 +8,9 @@ import { summarizeFavorites, useBatchRemoveFavorites, useFavoritesAll, useJellyf
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import { SkeletonCard, SubtleBackground } from "@/components/ui";
-import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { SelectionBar } from "@/components/SelectionBar";
+import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
+import { posterSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
 import { CatalogEmpty } from "@/components/catalog/CatalogGridStates";
 import { CollectionControls } from "@/components/collection/CollectionControls";
 import { CollectionHero } from "@/components/collection/CollectionHero";
@@ -61,7 +62,7 @@ export function FavoritesScreen() {
   const { mode, setMode, sections, toggle } = useFavoriteSections(data, numColumns);
   const summary = useMemo(() => summarizeFavorites(raw ?? []), [raw]);
   const selection = useMultiSelect<string>();
-  const [sheetItemId, setSheetItemId] = useState<string | null>(null);
+  const openSheet = useCardSheetOpener();
   const top = Math.max(insets.top, 24);
   const listRef = useRef<SectionList<MediaItem[], FavoriteSection>>(null);
   // Une `SectionList` n'a pas `scrollToOffset` : on passe par sa liste interne.
@@ -76,9 +77,10 @@ export function FavoritesScreen() {
     if (selection.active) selection.toggle(item.Id);
     else router.push(`/media/${item.Id}`);
   }, [router, selection]);
+  // En sélection, l'appui long ne fait rien : il cocherait par mégarde.
   const handleLongPress = useCallback((item: MediaItem) => {
-    if (!selection.active) setSheetItemId(item.Id);
-  }, [selection.active]);
+    if (!selection.active) openSheet?.(posterSheetTarget(item));
+  }, [selection.active, openSheet]);
   const handleDelete = useCallback(async () => {
     const ids = Array.from(selection.selected);
     if (ids.length === 0) return;
@@ -232,9 +234,6 @@ export function FavoritesScreen() {
         )}
 
         <FloatingBackButton top={top} onPress={() => backOrHome(router)} />
-        {sheetItemId && (
-          <MediaActionSheet visible itemId={sheetItemId} onClose={() => setSheetItemId(null)} />
-        )}
         {selection.active && (
           <SelectionBar count={selection.count} totalCount={count} onSelectAll={handleSelectAll} onDelete={handleDelete} onCancel={selection.clear} />
         )}

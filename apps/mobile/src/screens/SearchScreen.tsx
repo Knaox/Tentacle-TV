@@ -8,6 +8,8 @@ import { useSearchEpisodes, useTentacleSearch } from "@tentacle-tv/api-client";
 import type { SearchPersonHit } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import { SubtleBackground, GlassSurface } from "@/components/ui";
+import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
+import type { CardSheetNavigation } from "@/components/cards/sheet/cardSheetContext";
 import { AcceptCompletion, AssistedInput } from "@/components/search/GhostCompletion";
 import { QuerySuggestions } from "@/components/search/QuerySuggestions";
 import { SearchBrowse, type BrowseTarget } from "@/components/search/SearchBrowse";
@@ -102,6 +104,13 @@ export function SearchScreen() {
     openExternal: (provider, href) => { remember(); nav.openExternal(provider, href); },
   }), [remember, nav]);
 
+  // La feuille d'appui long des résultats : Lire et Plus d'infos referment
+  // d'abord la recherche (modale), et retiennent la requête qui y a mené.
+  const sheetNavigation = useMemo<CardSheetNavigation>(
+    () => ({ play: actions.playItem, open: actions.openItem }),
+    [actions],
+  );
+
   const pick = useCallback((value: string) => {
     setQuery(value);
     setDebounced(value.trim());
@@ -115,88 +124,90 @@ export function SearchScreen() {
   const headerTop = sheet ? spacing.lg : Math.max(insets.top, 24) + spacing.md;
 
   return (
-    <SubtleBackground ambient>
-      <View style={[st.headerWrap, { paddingTop: headerTop }]}>
-        <GlassSurface intensity={28} radius={0} bordered={false} style={StyleSheet.absoluteFillObject} />
-        <View style={st.headerRow}>
-          <View style={st.searchWrap}>
-            <Feather name="search" size={16} color={colors.text.tertiary} />
-            <AssistedInput
-              ref={inputRef}
-              value={query}
-              completion={completion}
-              textStyle={st.inputText}
-              onChangeText={(value) => { openedOnPerson.current = false; setQuery(value); setBrowse(null); }}
-              onSubmitEditing={() => pushRecent(query)}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              placeholder={t("placeholder")}
-              placeholderTextColor={colors.text.quaternary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              accessibilityLabel={t("dialog")}
-              returnKeyType="search"
-            />
-            {completion !== null && <AcceptCompletion onAccept={() => setQuery(query + completion)} />}
-            {search.isFetching && searching && <ActivityIndicator size="small" color={colors.text.tertiary} />}
-            {query.length > 0 && (
-              <Pressable onPress={() => pick("")} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("clear")} style={st.clearBtn}>
-                <Feather name="x" size={14} color={colors.text.tertiary} />
-              </Pressable>
-            )}
-          </View>
-          <Pressable onPress={() => backOrHome(router)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("cancel")} style={st.cancelBtn}>
-            <Text style={st.cancelTxt}>{t("cancel")}</Text>
-          </Pressable>
-        </View>
-        {searching && <SearchFilters options={filters} active={filter} onChange={setFilter} />}
-      </View>
-
-      <ScrollView
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
-      >
-        {browse !== null ? (
-          <SearchBrowse
-            target={browse}
-            onBack={() => (openedOnPerson.current ? backOrHome(router) : setBrowse(null))}
-            onOpen={actions.openItem}
-            onOpenExternal={actions.openExternalItem}
-            onSeeAllExternal={actions.openExternal}
-          />
-        ) : debounced.length === 0 ? (
-          <SearchHome
-            recent={recents.recent}
-            onPick={pick}
-            onRemove={recents.remove}
-            onClear={recents.clear}
-            onGenre={(name) => setBrowse({ kind: "genre", name })}
-            onOpen={nav.openItem}
-          />
-        ) : (
-          <>
-            {filter === "all" && (
-              <QuerySuggestions
-                queries={suggestions.queries}
-                onPick={(value) => { pick(value); Keyboard.dismiss(); }}
-                layout="rail"
+    <CardSheetScope navigation={sheetNavigation}>
+      <SubtleBackground ambient>
+        <View style={[st.headerWrap, { paddingTop: headerTop }]}>
+          <GlassSurface intensity={28} radius={0} bordered={false} style={StyleSheet.absoluteFillObject} />
+          <View style={st.headerRow}>
+            <View style={st.searchWrap}>
+              <Feather name="search" size={16} color={colors.text.tertiary} />
+              <AssistedInput
+                ref={inputRef}
+                value={query}
+                completion={completion}
+                textStyle={st.inputText}
+                onChangeText={(value) => { openedOnPerson.current = false; setQuery(value); setBrowse(null); }}
+                onSubmitEditing={() => pushRecent(query)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder={t("placeholder")}
+                placeholderTextColor={colors.text.quaternary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                accessibilityLabel={t("dialog")}
+                returnKeyType="search"
               />
-            )}
-            <SearchResults
-              query={debounced}
-              response={search.data}
-              episodes={episodeList}
-              external={external}
-              filter={filter}
-              onFilter={setFilter}
-              onRetry={pick}
-              actions={actions}
+              {completion !== null && <AcceptCompletion onAccept={() => setQuery(query + completion)} />}
+              {search.isFetching && searching && <ActivityIndicator size="small" color={colors.text.tertiary} />}
+              {query.length > 0 && (
+                <Pressable onPress={() => pick("")} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("clear")} style={st.clearBtn}>
+                  <Feather name="x" size={14} color={colors.text.tertiary} />
+                </Pressable>
+              )}
+            </View>
+            <Pressable onPress={() => backOrHome(router)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("cancel")} style={st.cancelBtn}>
+              <Text style={st.cancelTxt}>{t("cancel")}</Text>
+            </Pressable>
+          </View>
+          {searching && <SearchFilters options={filters} active={filter} onChange={setFilter} />}
+        </View>
+
+        <ScrollView
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
+        >
+          {browse !== null ? (
+            <SearchBrowse
+              target={browse}
+              onBack={() => (openedOnPerson.current ? backOrHome(router) : setBrowse(null))}
+              onOpen={actions.openItem}
+              onOpenExternal={actions.openExternalItem}
+              onSeeAllExternal={actions.openExternal}
             />
-          </>
-        )}
-      </ScrollView>
-    </SubtleBackground>
+          ) : debounced.length === 0 ? (
+            <SearchHome
+              recent={recents.recent}
+              onPick={pick}
+              onRemove={recents.remove}
+              onClear={recents.clear}
+              onGenre={(name) => setBrowse({ kind: "genre", name })}
+              onOpen={nav.openItem}
+            />
+          ) : (
+            <>
+              {filter === "all" && (
+                <QuerySuggestions
+                  queries={suggestions.queries}
+                  onPick={(value) => { pick(value); Keyboard.dismiss(); }}
+                  layout="rail"
+                />
+              )}
+              <SearchResults
+                query={debounced}
+                response={search.data}
+                episodes={episodeList}
+                external={external}
+                filter={filter}
+                onFilter={setFilter}
+                onRetry={pick}
+                actions={actions}
+              />
+            </>
+          )}
+        </ScrollView>
+      </SubtleBackground>
+    </CardSheetScope>
   );
 }
 

@@ -17,6 +17,7 @@ import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
 import { OfflineShell } from "@/offline/OfflineShell";
 import { SessionMessageHost } from "@/session/SessionMessageHost";
+import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
 
@@ -170,49 +171,53 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
   return (
     <>
       <StatusBar style={theme.statusBarStyle} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-          contentStyle: { backgroundColor: theme.colors.surface.s0 },
-          // Défaut app : portrait sur téléphone, libre sur tablette (iPad
-          // ET tablette Android). Déclaratif par écran via
-          // react-native-screens — `watch/[itemId]` force "all" pour que
-          // le téléphone tourne aussi dans le lecteur vidéo.
-          orientation: IS_TABLET_DEVICE ? "all" : "portrait_up",
-        }}
-      >
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
-        <Stack.Screen name="person/[personId]" options={{ presentation: "card" }} />
-        <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
-        <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
-        <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
-        <Stack.Screen name="watchlist" options={{ presentation: "card" }} />
-        <Stack.Screen name="favorites" options={{ presentation: "card" }} />
-        {/* Recherche : plein écran sur iPad (le page-sheet laisse l'accueil
-            visible derrière et son swipe-pour-fermer est capricieux). */}
-        <Stack.Screen name="search" options={{ presentation: IS_TABLET_DEVICE ? "fullScreenModal" : "modal" }} />
-        <Stack.Screen name="pair-tv" options={{ presentation: "card" }} />
-        <Stack.Screen name="support" options={{ presentation: "card" }} />
-        <Stack.Screen name="about" options={{ presentation: "card" }} />
-        <Stack.Screen name="credits" options={{ presentation: "card" }} />
-        <Stack.Screen name="settings/password" options={{ presentation: "card" }} />
-        <Stack.Screen name="settings/playback" options={{ presentation: "card" }} />
-        <Stack.Screen name="settings/notifications" options={{ presentation: "card" }} />
-        <Stack.Screen name="settings/devices" options={{ presentation: "card" }} />
-        <Stack.Screen name="settings/invites" options={{ presentation: "card" }} />
-        <Stack.Screen name="admin/sessions" options={{ presentation: "card" }} />
-        <Stack.Screen name="settings/data" options={{ presentation: "card" }} />
-        <Stack.Screen name="on-device/index" options={{ presentation: "card" }} />
-        <Stack.Screen name="on-device/series/[seriesKey]" options={{ presentation: "card" }} />
-        <Stack.Screen name="on-device/item/[itemId]" options={{ presentation: "card" }} />
-        <Stack.Screen name="on-device/library" options={{ presentation: "card" }} />
-        <Stack.Screen name="settings/on-device" options={{ presentation: "card" }} />
+      {/* La feuille d'appui long des cartes, pour tous les écrans empilés (la
+          recherche, modale, a la sienne). */}
+      <CardSheetScope>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: true,
+            contentStyle: { backgroundColor: theme.colors.surface.s0 },
+            // Défaut app : portrait sur téléphone, libre sur tablette (iPad
+            // ET tablette Android). Déclaratif par écran via
+            // react-native-screens — `watch/[itemId]` force "all" pour que
+            // le téléphone tourne aussi dans le lecteur vidéo.
+            orientation: IS_TABLET_DEVICE ? "all" : "portrait_up",
+          }}
+        >
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
+          <Stack.Screen name="person/[personId]" options={{ presentation: "card" }} />
+          <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
+          <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
+          <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
+          <Stack.Screen name="watchlist" options={{ presentation: "card" }} />
+          <Stack.Screen name="favorites" options={{ presentation: "card" }} />
+          {/* Recherche : plein écran sur iPad (le page-sheet laisse l'accueil
+              visible derrière et son swipe-pour-fermer est capricieux). */}
+          <Stack.Screen name="search" options={{ presentation: IS_TABLET_DEVICE ? "fullScreenModal" : "modal" }} />
+          <Stack.Screen name="pair-tv" options={{ presentation: "card" }} />
+          <Stack.Screen name="support" options={{ presentation: "card" }} />
+          <Stack.Screen name="about" options={{ presentation: "card" }} />
+          <Stack.Screen name="credits" options={{ presentation: "card" }} />
+          <Stack.Screen name="settings/password" options={{ presentation: "card" }} />
+          <Stack.Screen name="settings/playback" options={{ presentation: "card" }} />
+          <Stack.Screen name="settings/notifications" options={{ presentation: "card" }} />
+          <Stack.Screen name="settings/devices" options={{ presentation: "card" }} />
+          <Stack.Screen name="settings/invites" options={{ presentation: "card" }} />
+          <Stack.Screen name="admin/sessions" options={{ presentation: "card" }} />
+          <Stack.Screen name="settings/data" options={{ presentation: "card" }} />
+          <Stack.Screen name="on-device/index" options={{ presentation: "card" }} />
+          <Stack.Screen name="on-device/series/[seriesKey]" options={{ presentation: "card" }} />
+          <Stack.Screen name="on-device/item/[itemId]" options={{ presentation: "card" }} />
+          <Stack.Screen name="on-device/library" options={{ presentation: "card" }} />
+          <Stack.Screen name="settings/on-device" options={{ presentation: "card" }} />
 
-        <Stack.Screen name="settings/personalization" options={{ presentation: "card" }} />
-      </Stack>
+          <Stack.Screen name="settings/personalization" options={{ presentation: "card" }} />
+        </Stack>
+      </CardSheetScope>
       <OfflineShell />
       <ServerNoticeOverlay />
       {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}

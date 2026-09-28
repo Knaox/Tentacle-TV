@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { RefreshControl, View, Text, StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
@@ -10,7 +10,6 @@ import {
   useWatchlist,
   useHomeWebSocket, usePreferencesLive, useRecoLive, useTentacleConfig,
 } from "@tentacle-tv/api-client";
-import type { RecoReason, RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
@@ -25,8 +24,6 @@ import { CardDensityProvider } from "@/contexts/CardDensityContext";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { useRecoNavigation } from "@/hooks/useRecoNavigation";
 import { useRecoFilterChipRow } from "@/components/reco/useRecoFilterChipRow";
-import { MediaActionSheet } from "@/components/MediaActionSheet";
-import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /** Les caches que « tirer pour rafraîchir » renouvelle, au-delà des requêtes
@@ -69,15 +66,7 @@ export function HomeScreen() {
   const recoNav = useRecoNavigation();
   const filterChipRowKey = useRecoFilterChipRow(rows);
 
-  const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
-  // Les raisons d'une recommandation en bibliothèque, pour « Pourquoi ce titre ».
-  const [longPressReasons, setLongPressReasons] = useState<RecoReason[] | undefined>(undefined);
-  const [actionSheetVisible, setActionSheetVisible] = useState(false);
-  // Appui long sur une recommandation hors bibliothèque : sa propre feuille.
-  const [recoTarget, setRecoTarget] = useState<RecoRowItem | null>(null);
-
   const isLoading = featured.isLoading || resume.isLoading;
-
 
   const handleRefresh = useCallback(() => {
     featured.refetch();
@@ -89,12 +78,6 @@ export function HomeScreen() {
 
   const handlePress = useCallback((item: MediaItem) => { router.push(`/media/${item.Id}`); }, [router]);
   const handlePlay = useCallback((item: MediaItem) => { router.push(`/watch/${item.Id}`); }, [router]);
-  const openActions = useCallback((jellyfinId: string, reasons?: RecoReason[]) => {
-    setLongPressItemId(jellyfinId);
-    setLongPressReasons(reasons);
-    setActionSheetVisible(true);
-  }, []);
-  const handleLongPress = useCallback((item: MediaItem) => openActions(item.Id), [openActions]);
   // Le bandeau suit le mode du compte (reprise, aléatoire, titre fixe, reco).
   const { slides: heroSlides, loading: heroLoading } = useHomeHero({
     layout,
@@ -106,9 +89,11 @@ export function HomeScreen() {
     canOpenReco: recoNav.canOpen,
   });
 
+  // L'appui long des cartes (affiches, recommandations) ouvre la feuille des
+  // cartes de l'app (`CardSheetScope`) : rien à brancher ici.
   const renderCard = useCallback((item: MediaItem) => (
-    <MobileMediaCard item={item} onPress={() => handlePress(item)} onLongPress={() => handleLongPress(item)} />
-  ), [handlePress, handleLongPress]);
+    <MobileMediaCard item={item} onPress={() => handlePress(item)} />
+  ), [handlePress]);
 
   const librariesById = useMemo(() => {
     const map: HomeRowData["librariesById"] = new Map();
@@ -129,10 +114,7 @@ export function HomeScreen() {
     onSeeAll: (route) => (route === "/for-you" ? router.navigate(route) : router.push(route)),
     canOpenReco: recoNav.canOpen,
     onRecoPress: recoNav.open,
-    // En bibliothèque : la feuille habituelle (favoris, Ma liste, vu) ;
-    // sinon celle des recommandations (« Ne plus me proposer »).
-    onRecoLongPress: (item) => (item.jellyfinItemId ? openActions(item.jellyfinItemId, item.reasons) : setRecoTarget(item)),
-  }), [renderCard, router, openActions, recoNav]);
+  }), [renderCard, router, recoNav]);
 
   const anyFetching = featured.isFetching || resume.isFetching;
   if (isLoading || (!userId && anyFetching)) {
@@ -186,16 +168,6 @@ export function HomeScreen() {
         ))}
       </Animated.ScrollView>
       </CardDensityProvider>
-
-      {longPressItemId && (
-        <MediaActionSheet
-          visible={actionSheetVisible}
-          itemId={longPressItemId}
-          reasons={longPressReasons}
-          onClose={() => { setActionSheetVisible(false); setLongPressItemId(null); }}
-        />
-      )}
-      <RecoActionSheet item={recoTarget} onClose={() => setRecoTarget(null)} />
     </SubtleBackground>
   );
 }

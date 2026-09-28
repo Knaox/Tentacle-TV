@@ -1,250 +1,137 @@
-import { useCallback, useEffect, useRef } from "react";
-import { View, Text, Pressable, StyleSheet, Modal, Animated, PanResponder, useWindowDimensions } from "react-native";
-import { Image } from "expo-image";
+import { useMemo } from "react";
+import { StyleSheet, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useMediaItem, useFavorite, useToggleWatchlist, useWatchedToggle, useJellyfinClient, ratingIdentityForItem } from "@tentacle-tv/api-client";
-import type { RecoReason } from "@tentacle-tv/api-client";
+import { useCardRatingTarget, useMediaItem, useSendRecoFeedback, type RatingIdentity } from "@tentacle-tv/api-client";
+import { resolveCardOverlay } from "@tentacle-tv/shared";
 import { RecoReasonList } from "@/components/reco/RecoReasonList";
-import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { GlassBackdrop } from "@/components/ui";
-import { retainModal } from "@/components/ui/modalGate";
-import { ActionCell } from "@/components/ActionCell";
-import { KeepOfflineActionCell } from "@/offline/entry/KeepOfflineActionCell";
 import { RatingPanelMobile } from "@/components/rating/RatingPanelMobile";
-
-// expo-haptics optional
-let Haptics: { impactAsync: (s: any) => void; ImpactFeedbackStyle: any } | null = null;
-try { Haptics = require("expo-haptics"); } catch { /* ignore */ }
-
-const DISMISS = 80;
-/** Au-delà, la sortie est tenue pour finie : un ressort interrompu n'appelle jamais son rappel. */
-const EXIT_GUARD_MS = 600;
+import type { CardSheetNavigation } from "@/components/cards/sheet/cardSheetContext";
+import type { CardSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
+import { SheetActionGrid } from "@/components/cards/sheet/SheetActionGrid";
+import { SheetFrame } from "@/components/cards/sheet/SheetFrame";
+import { SheetHeader } from "@/components/cards/sheet/SheetHeader";
+import { SheetPlayButton } from "@/components/cards/sheet/SheetPlayButton";
+import { useSheetPlay } from "@/components/cards/sheet/useSheetPlay";
+import { spacing } from "@/theme";
 
 interface Props {
-  visible: boolean;
-  itemId: string;
+  /** La carte appuyée — `null` : feuille fermée. */
+  target: CardSheetTarget | null;
   onClose: () => void;
-  /** Un titre venu d'une recommandation : ses raisons, sous l'en-tête. */
-  reasons?: RecoReason[];
+  /** Où mènent Lire et Plus d'infos (la recherche, modale) ; empiler sinon. */
+  navigation?: CardSheetNavigation;
 }
 
 /**
- * Action sheet moderne pour long-press sur un media — pattern Apple TV /
- * Disney+ : poster overlay en haut, grille 2×2 d'actions rondes (Like /
- * Ma liste / Vu / Garder hors ligne) avec ring tinted brand violet sur état
- * actif, puis la note du titre (cinq étoiles). Mêmes formes que la pastille
- * d'états des cartes : signet pour Ma liste, cœur au rose de marque pour les
- * favoris. BlurView backdrop + drag-to-dismiss.
+ * LA feuille d'appui long des cartes — l'équivalent tactile du survol web
+ * (`CardHoverOverlay`) : les mêmes actions, tirées du modèle partagé
+ * (`resolveCardOverlay`), dans l'ordre d'une feuille (`cardActionEntries`).
+ * Une seule feuille pour toutes les cartes : affiches, vignettes 16:9, lignes
+ * d'épisode, recommandations en bibliothèque ou non.
+ *
+ *   1. l'en-tête (et « Pourquoi ce titre » pour une recommandation) ;
+ *   2. Lire / Reprendre — le bouton central du survol, quand quelque chose se
+ *      lance (une série : son épisode à reprendre ou à suivre) ;
+ *   3. les bascules, dans l'ordre de la pastille d'états : Ma liste, favori,
+ *      vu — Ma liste et favori au niveau SÉRIE, « vu » sur le titre montré ;
+ *   4. les extras : garder hors ligne, Plus d'infos (carte dont le tap lance
+ *      la lecture), Ne plus me proposer (recommandation) ;
+ *   5. les étoiles — la série pour une affiche d'épisode, l'épisode pour une
+ *      vignette, le tmdb pour un titre hors bibliothèque.
  */
-export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
-  const { t } = useTranslation("common");
-  const theme = useTheme();
-  const st = useThemedStyles(makeStyles);
-  const insets = useSafeAreaInsets();
-  const client = useJellyfinClient();
-  const { height: SCREEN_H } = useWindowDimensions();
-  const { data: item } = useMediaItem(visible ? itemId : undefined);
+export function MediaActionSheet({ target, onClose, navigation }: Props) {
+  if (!target) return null;
+  return <CardSheet target={target} onClose={onClose} navigation={navigation} />;
+}
 
-  const isEpisode = item?.Type === "Episode";
-  const targetId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
-  const { data: parent } = useMediaItem(visible && isEpisode ? item?.SeriesId : undefined);
-  const target = isEpisode ? parent : item;
-  const display = target ?? item;
+function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; onClose: () => void; navigation?: CardSheetNavigation }) {
+  const { t } = useTranslation("cards");
+  const router = useRouter();
+  const feedback = useSendRecoFeedback();
+  // La fiche complète : état frais (UserData), et patchée par les mutations
+  // optimistes — la feuille suit ses bascules. Le visage de la carte tient la
+  // place le temps qu'elle arrive (une recherche ne rend qu'un item réduit).
+  const { data: fetched } = useMediaItem(target.item?.Id);
+  const item = target.item ? (fetched ?? target.item) : null;
+  const play = useSheetPlay(item);
 
-  const poster = display ? client.getImageUrl(display.Id, "Primary", { width: 240, quality: 85 }) : null;
-  const backdrop = display ? client.getImageUrl(display.Id, "Backdrop", { width: 600, quality: 70 }) : null;
+  // Hors bibliothèque, la note vit sur le tmdb : il n'y a pas d'item Jellyfin
+  // à qui la rattacher (cf. `RecoPosterHoverLayer` web).
+  const reco = target.reco;
+  const tmdbIdentity = useMemo<RatingIdentity | null>(
+    () => (reco && !reco.jellyfinItemId ? { mediaType: reco.mediaType === "tv" ? "series" : "movie", tmdbId: reco.tmdbId } : null),
+    [reco],
+  );
+  const ratingTarget = useCardRatingTarget(tmdbIdentity ? null : item, {
+    scope: target.variant === "landscape" ? "item" : "series",
+    enabled: true,
+  });
+  const identity = tmdbIdentity ?? ratingTarget.identity;
 
-  const favorite = useFavorite(targetId);
-  const watchlist = useToggleWatchlist(targetId);
-  // Favoris et Ma liste visent la SÉRIE pour un épisode — la règle du produit.
-  // « Vu » vise le titre APPUYÉ : sur la série, `/PlayedItems/{seriesId}`
-  // marquait tous ses épisodes d'un coup.
-  const watched = useWatchedToggle(itemId, {
-    seriesId: item?.SeriesId,
-    seasonId: item?.SeasonId ?? undefined,
-    itemType: item?.Type,
+  const overlay = resolveCardOverlay({
+    variant: target.variant,
+    inLibrary: item !== null,
+    playable: play !== null,
+    resume: play?.resume,
+    rateable: identity !== null || ratingTarget.pending,
+    // Le mobile garde hors ligne ; la cellule se tait d'elle-même quand le
+    // titre ne s'y prête pas (droits, collection).
+    offline: true,
   });
 
-  const isFav = target?.UserData?.IsFavorite === true;
-  const isInList = target?.UserData?.Likes === true;
-  const isWatched = item?.UserData?.Played === true;
-
-  // Drag-to-dismiss
-  const translateY = useRef(new Animated.Value(SCREEN_H)).current;
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
-  // Ref-bag — le PanResponder (créé une fois) et `dismiss` lisent la hauteur fraîche.
-  const stateRef = useRef({ H: SCREEN_H });
-  stateRef.current.H = SCREEN_H;
-  // La fermeture DOIT aboutir : sans elle la feuille reste montée, et son
-  // voile plein écran — invisible à `opacity: 0` — avale toutes les touches.
-  // Une animation interrompue n'appelle jamais son rappel : garde-fou.
-  const dismiss = useCallback(() => {
-    let done = false;
-    const finish = (): void => {
-      if (done) return;
-      done = true;
-      onClose();
-    };
-    Animated.parallel([
-      Animated.spring(translateY, { toValue: stateRef.current.H, useNativeDriver: true, damping: 22, stiffness: 240 } as Animated.SpringAnimationConfig),
-      Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start(finish);
-    setTimeout(finish, EXIT_GUARD_MS);
-  }, [translateY, overlayOpacity, onClose]);
-
-  useEffect(() => {
-    if (visible) {
-      translateY.setValue(SCREEN_H);
-      overlayOpacity.setValue(0);
-      Animated.parallel([
-        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 22, stiffness: 240 } as Animated.SpringAnimationConfig),
-        Animated.timing(overlayOpacity, { toValue: 1, duration: 240, useNativeDriver: true }),
-      ]).start();
-    }
-  }, [visible, translateY, overlayOpacity]);
-
-  // Déclarée au portier tant qu'elle est à l'écran : le dialogue « Garder hors
-  // ligne » attendra sa fermeture au lieu de se présenter par-dessus.
-  useEffect(() => {
-    if (!visible) return;
-    return retainModal();
-  }, [visible]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      // Ne pas capturer au tap (boutons cliquables) ; capturer sur glissement
-      // vers le bas → on peut tirer le sheet par tout son corps (iPad).
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, g) => g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx),
-      onPanResponderMove: (_, g) => { if (g.dy > 0) translateY.setValue(g.dy); },
-      onPanResponderRelease: (_, g) => {
-        if (g.dy > DISMISS) dismiss();
-        else Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 22, stiffness: 240 } as Animated.SpringAnimationConfig).start();
-      },
-    }),
-  ).current;
-
-  const handleAction = (fn: () => void) => () => {
-    Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    fn();
+  const go: CardSheetNavigation = navigation ?? {
+    play: (id) => router.push(`/watch/${id}`),
+    open: (id) => router.push(`/media/${id}`),
   };
 
-  if (!visible) return null;
-
   return (
-    <Modal visible transparent animationType="none" onRequestClose={dismiss} statusBarTranslucent>
-      <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: overlayOpacity }]}>
-        <GlassBackdrop intensity={28} />
-        <Pressable style={StyleSheet.absoluteFillObject} onPress={dismiss} accessibilityLabel={t("close")} />
-      </Animated.View>
-
-      <View style={st.sheetWrap} pointerEvents="box-none">
-      <Animated.View
-        {...panResponder.panHandlers}
-        style={[
-          st.sheet, SHADOW_RN.sheet,
-          { paddingBottom: insets.bottom + spacing.lg, transform: [{ translateY }] },
-        ]}
-      >
-        {/* Drag handle — le glissement fonctionne sur tout le haut du sheet */}
-        <View style={st.handleArea}>
-          <View style={st.handle} />
-        </View>
-
+    <SheetFrame onClose={onClose}>
+      {({ dismiss, leave }) => (
         <>
-            {/* Hero header — backdrop blur + poster overlay + titre */}
-            {display && (
-              <View style={st.hero}>
-                {backdrop && (
-                  <Image source={{ uri: backdrop }} style={StyleSheet.absoluteFillObject} contentFit="cover" />
-                )}
-                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.colors.glass.tintStrong }]} />
-                <View style={st.heroContent}>
-                  {poster && (
-                    <View style={st.posterWrap}>
-                      <Image source={{ uri: poster }} style={StyleSheet.absoluteFillObject} contentFit="cover" />
-                    </View>
-                  )}
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={st.title} numberOfLines={2}>{display.Name}</Text>
-                    <Text style={st.meta} numberOfLines={1}>
-                      {display.ProductionYear ?? ""}{display.ProductionYear && display.Type ? " · " : ""}
-                      {display.Type === "Series" ? t("series") : display.Type === "Movie" ? t("movie") : display.Type}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {reasons && reasons.length > 0 && (
-              <View style={st.reasons}>
-                <RecoReasonList reasons={reasons} />
-              </View>
-            )}
-
-            {/* Grille 2×2 d'actions */}
-            <View style={st.grid}>
-              <ActionCell
-                icon="heart"
-                iconActive="heart"
-                label={isFav ? t("inFavorites") : t("addToFavorites")}
-                active={isFav}
-                activeColor={theme.colors.brand.accent}
-                fillOnActive
-                onPress={handleAction(() => (isFav ? favorite.remove.mutate() : favorite.add.mutate()))}
-              />
-              <ActionCell
-                icon="bookmark"
-                label={isInList ? t("inMyList") : t("addToMyList")}
-                active={isInList}
-                activeColor={theme.colors.brand.violet}
-                fillOnActive
-                onPress={handleAction(() => (isInList ? watchlist.remove.mutate() : watchlist.add.mutate()))}
-              />
-              <ActionCell
-                icon="check-circle"
-                label={isWatched ? t("markUnwatched") : t("markWatched")}
-                active={isWatched}
-                activeColor={theme.colors.brand.violet}
-                onPress={handleAction(() => (isWatched ? watched.markUnwatched.mutate() : watched.markWatched.mutate()))}
-              />
-              {/* Quatrième cellule : le hors ligne vise le titre APPUYÉ (l'épisode,
-                  pas sa série) ; absente pour un titre hors bibliothèque. */}
-              {item && <KeepOfflineActionCell item={item} onClose={dismiss} />}
+          <SheetHeader target={target} item={item} />
+          {reco && reco.reasons.length > 0 && (
+            <View style={st.reasons}>
+              <RecoReasonList reasons={reco.reasons} />
             </View>
-
-            {/* Noter depuis la carte : le titre que l'affiche MONTRE — la série
-                pour un épisode, comme Favoris et Ma liste. */}
-            {display && <RatingPanelMobile identity={ratingIdentityForItem(display)} jellyfinItemId={display.Id} variant="sheet" />}
+          )}
+          {overlay.play && play && item && (
+            <SheetPlayButton
+              label={t(overlay.play.labelKey)}
+              episodeCode={play.episodeCode}
+              title={target.title}
+              pending={play.pending}
+              onPress={() => leave(() => (play.targetId ? go.play(play.targetId) : go.open(item.Id)))}
+            />
+          )}
+          <SheetActionGrid
+            item={item}
+            overlay={overlay}
+            onClose={dismiss}
+            onOpenDetails={() => { if (item) leave(() => go.open(item.Id)); }}
+            onDismiss={() => {
+              if (reco) feedback.mutate({ itemKey: reco.key, action: "dismissed" });
+              dismiss();
+            }}
+          />
+          {overlay.rate && (identity ? (
+            <RatingPanelMobile
+              identity={identity}
+              jellyfinItemId={tmdbIdentity ? null : ratingTarget.jellyfinItemId}
+              variant="sheet"
+            />
+          ) : (
+            // La série se charge : la place des étoiles est gardée, la feuille
+            // ne saute pas quand elles arrivent.
+            <View style={st.ratingSlot} />
+          ))}
         </>
-      </Animated.View>
-      </View>
-    </Modal>
+      )}
+    </SheetFrame>
   );
 }
 
-const makeStyles = (t: AppTheme) =>
-  StyleSheet.create({
-    sheetWrap: {
-      position: "absolute" as const, left: 0, right: 0, bottom: 0,
-      alignItems: "center" as const,
-    },
-    sheet: {
-      width: "100%" as const, maxWidth: SHEET_MAX_WIDTH,
-      backgroundColor: t.colors.glass.panel,
-      borderTopLeftRadius: RADIUS["2xl"], borderTopRightRadius: RADIUS["2xl"],
-      borderTopWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.subtle,
-    },
-    handleArea: { alignItems: "center" as const, paddingTop: 12, paddingBottom: 6 },
-    handle: { width: 38, height: 4, borderRadius: 2, backgroundColor: t.colors.fill.strong },
-    hero: { marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.lg, height: 96, borderRadius: RADIUS.lg, overflow: "hidden" as const, borderWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.subtle },
-    heroContent: { flex: 1, flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.md, padding: spacing.md },
-    posterWrap: { width: 52, height: 76, borderRadius: RADIUS.sm, overflow: "hidden" as const, backgroundColor: t.colors.surface.s2, ...SHADOW_RN.elev2 },
-    title: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, letterSpacing: -0.2, marginBottom: 3 },
-    meta: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.brand.light, letterSpacing: 0.2 },
-    reasons: { marginHorizontal: spacing.lg, marginBottom: spacing.lg },
-    grid: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 10, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
-    backLink: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, marginBottom: spacing.md, paddingVertical: 4 },
-    backLinkTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
-  });
+const st = StyleSheet.create({
+  reasons: { marginHorizontal: spacing.lg, marginBottom: spacing.md },
+  ratingSlot: { height: 96 },
+});

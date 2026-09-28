@@ -19,14 +19,14 @@ interface Props {
   onSeeAll?: () => void;
   canOpen: (item: RecoRowItem) => boolean;
   onItemPress: (item: RecoRowItem) => void;
-  onItemLongPress: (item: RecoRowItem) => void;
 }
 
 /**
  * Rangée de recommandations — sœur de `MediaRow` (même en-tête, même piste,
- * même écart de 14 px), pour des items qui ne sont pas des MediaItem.
+ * même écart de 14 px), pour des items qui ne sont pas des MediaItem. L'appui
+ * long de ses cartes ouvre la feuille des cartes de la portée (`RecoCard`).
  */
-export const RecoRow = memo(function RecoRow({ title, items, accessory, showReasons, onSeeAll, canOpen, onItemPress, onItemLongPress }: Props) {
+export const RecoRow = memo(function RecoRow({ title, items, accessory, showReasons, onSeeAll, canOpen, onItemPress }: Props) {
   const st = useThemedStyles(makeStyles);
   const { t } = useTranslation("reco");
   const renderItem = useCallback(
@@ -35,11 +35,10 @@ export const RecoRow = memo(function RecoRow({ title, items, accessory, showReas
         item={item}
         canOpen={canOpen(item)}
         onPress={() => onItemPress(item)}
-        onLongPress={() => onItemLongPress(item)}
         reason={showReasons ? firstReasonText(item.reasons, t) : undefined}
       />
     ),
-    [canOpen, onItemPress, onItemLongPress, showReasons, t],
+    [canOpen, onItemPress, showReasons, t],
   );
 
   return (

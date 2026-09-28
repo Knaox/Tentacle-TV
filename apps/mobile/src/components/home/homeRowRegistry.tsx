@@ -27,7 +27,6 @@ export interface HomeRowActions {
    *  « à la demande » le catalogue Vigie quand le plugin est actif. */
   canOpenReco: (item: RecoRowItem) => boolean;
   onRecoPress: (item: RecoRowItem) => void;
-  onRecoLongPress: (item: RecoRowItem) => void;
 }
 
 interface HomeRowProps {
@@ -104,7 +103,6 @@ export const HomeRow = memo(function HomeRow({ rowKey, index, data, actions }: H
         filterChip={rowKey === data.filterChipRowKey}
         canOpen={actions.canOpenReco}
         onItemPress={actions.onRecoPress}
-        onItemLongPress={actions.onRecoLongPress}
         onSeeAll={() => actions.onSeeAll("/for-you")}
       />
     );

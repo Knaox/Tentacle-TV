@@ -17,7 +17,6 @@ interface Props {
   filterChip?: boolean;
   canOpen: (item: RecoRowItem) => boolean;
   onItemPress: (item: RecoRowItem) => void;
-  onItemLongPress: (item: RecoRowItem) => void;
   /** « Tout voir » → l'onglet Pour vous. */
   onSeeAll?: () => void;
 }
@@ -28,7 +27,7 @@ interface Props {
  * rangées reco (même clé TanStack). Rangée absente : rien, jamais de
  * squelette (l'accueil garde son dégradé silencieux).
  */
-export function HomeRecoRow({ rowKey, index, filterChip, canOpen, onItemPress, onItemLongPress, onSeeAll }: Props) {
+export function HomeRecoRow({ rowKey, index, filterChip, canOpen, onItemPress, onSeeAll }: Props) {
   const { t } = useTranslation("reco");
   const settings = useRecoSettings();
   // Attendre le filtre du compte : sans cette garde, le premier rendu
@@ -50,7 +49,6 @@ export function HomeRecoRow({ rowKey, index, filterChip, canOpen, onItemPress, o
         onSeeAll={onSeeAll}
         canOpen={canOpen}
         onItemPress={onItemPress}
-        onItemLongPress={onItemLongPress}
       />
     </FadeIn>
   );

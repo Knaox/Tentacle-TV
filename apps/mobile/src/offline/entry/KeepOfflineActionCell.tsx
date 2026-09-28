@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { View, type StyleProp, type ViewStyle } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSeriesEpisodes, useUserId } from "@tentacle-tv/api-client";
@@ -17,14 +17,16 @@ interface Props {
   item: MediaItem;
   /** Ferme la feuille d'appui long avant d'ouvrir le dialogue (iOS : une modale à la fois). */
   onClose: () => void;
+  /** Le gabarit de la grille de la feuille (largeur de colonne). */
+  style?: StyleProp<ViewStyle>;
 }
 
 /**
- * La quatrième cellule de la feuille d'appui long : « Garder hors ligne »
+ * L'extra « hors ligne » de la feuille d'appui long : « Garder hors ligne »
  * (film), « Garder l'épisode » (épisode), « Toute la série » (série) ; en
  * préparation ou sur l'appareil → l'écran « Sur cet appareil ».
  */
-export function KeepOfflineActionCell({ item, onClose }: Props) {
+export function KeepOfflineActionCell({ item, onClose, style }: Props) {
   const { t } = useTranslation("offline");
   const { colors } = useTheme();
   const router = useRouter();
@@ -75,6 +77,7 @@ export function KeepOfflineActionCell({ item, onClose }: Props) {
       active={state === "complete"}
       activeColor={colors.brand.violet}
       onPress={onPress}
+      style={style}
       ring={<View style={{ marginBottom: 10 }}><KeepOfflineGlyph state={state} size={60} iconSize={26} /></View>}
     />
   );

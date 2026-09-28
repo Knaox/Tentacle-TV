@@ -15,7 +15,6 @@ interface Props {
   stale: boolean;
   canOpen: (item: RecoRowItem) => boolean;
   onItemPress: (item: RecoRowItem) => void;
-  onItemLongPress: (item: RecoRowItem) => void;
   /** Glissé après la deuxième rangée (ou la dernière) : l'entrée vers « Affiner ». */
   teaser?: ReactNode;
 }
@@ -25,7 +24,7 @@ interface Props {
  * stables), avec la première raison sous chaque carte. Squelettes seulement
  * quand le moteur génère et n'a encore rien servi.
  */
-export function RecoPageRows({ page, filtered, stale, canOpen, onItemPress, onItemLongPress, teaser }: Props) {
+export function RecoPageRows({ page, filtered, stale, canOpen, onItemPress, teaser }: Props) {
   const { t } = useTranslation("reco");
   const st = useThemedStyles(makeStyles);
 
@@ -48,7 +47,6 @@ export function RecoPageRows({ page, filtered, stale, canOpen, onItemPress, onIt
             showReasons
             canOpen={canOpen}
             onItemPress={onItemPress}
-            onItemLongPress={onItemLongPress}
           />
           {i === teaserAfter && teaser}
         </FadeIn>
