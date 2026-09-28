@@ -3,6 +3,13 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LanguageToggle } from "../auth/LanguageToggle";
 
+/**
+ * Marge de la zone sûre, en style en ligne et non en classe : Tailwind génère
+ * ses classes pour TOUTES les cibles, téléviseur compris, et `max()` n'existe
+ * pas sous Chrome 53 (la garde de compatibilité webOS refuse la classe).
+ */
+const SAFE_TOP = { paddingTop: "max(env(safe-area-inset-top), 1rem)" } as const;
+
 interface ShareShellProps {
   /** Visiteur connecté : l'app s'ouvre d'ici ; sinon, le choix de langue. */
   authed: boolean;
@@ -28,7 +35,7 @@ export function ShareShell({ authed, children }: ShareShellProps) {
             "radial-gradient(50% 50% at 100% 10%, rgba(var(--brand-accent-rgb), 0.12) 0%, transparent 70%)",
         }}
       />
-      <div className="flex items-center justify-end gap-3 px-4 pt-[max(env(safe-area-inset-top),1rem)] sm:px-6 md:px-12">
+      <div className="flex items-center justify-end gap-3 px-4 sm:px-6 md:px-12" style={SAFE_TOP}>
         {authed ? (
           <Link
             to="/"

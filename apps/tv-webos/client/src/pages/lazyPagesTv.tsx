@@ -63,6 +63,9 @@ export const MediaDetail = lazy(() => import("@/pages/MediaDetail").then((m) => 
 export const Library = lazy(() => import("@/pages/Library").then((m) => ({ default: m.Library })));
 // Chercher en fait partie, mais pas comme une page : voir `SearchRedirect`.
 export const Search = SearchRedirect;
+// La page d'une personne (filmographie) est pensée pour la souris ; sur le
+// téléviseur, une personne s'ouvre comme avant — par la recherche.
+export const Person = SearchRedirect;
 export const Watchlist = lazy(() => import("@/pages/Watchlist").then((m) => ({ default: m.Watchlist })));
 export const Favorites = lazy(() => import("@/pages/Favorites").then((m) => ({ default: m.Favorites })));
 export const PairDevice = lazy(() => import("@/pages/PairDevice").then((m) => ({ default: m.PairDevice })));
@@ -139,5 +142,9 @@ export const SettingsPersonalization = Unavailable;
 // « Pour vous » a sa version de salon : une tête, des étagères de la
 // bibliothèque (`ui/reco/`). `preloadable`, car le préchargement de session
 // appelle `Recommendations.preload()` en temps mort (`recoPrefetchTv.ts`).
+// « Affiner » (pile de swipe) est une section de la page web ; la version de
+// salon de « Pour vous » ne l'a pas.
+export const SwipeSection = Unavailable;
+
 export const Recommendations = preloadable(() =>
   import("../ui/reco/RecommendationsTv").then((m) => m.RecommendationsTv));

@@ -118,6 +118,7 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
                 exit={{ opacity: 0, transition: { duration: 0.14 } }}
                 transition={{ duration: 0.28, ease: easeOut }}
                 className="max-h-full max-w-full rounded-[var(--radius-lg)] object-contain shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
+                /* tv-compat-ok: une <img> chargée garde son ratio naturel ; seule la réservation avant chargement se perd */
                 style={{ aspectRatio: String(current.aspect) }}
               />
             </AnimatePresence>
@@ -143,7 +144,7 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
                         i === index ? "opacity-100 ring-2 ring-[var(--brand-light)] ring-offset-2 ring-offset-[#040308]" : "opacity-50 hover:opacity-90"
                       }`}
                     >
-                      <img src={thumbUrl(client, ref)} alt="" draggable={false} className="h-14 w-auto object-cover" style={{ aspectRatio: String(ref.aspect) }} loading="lazy" />
+                      <img src={thumbUrl(client, ref)} alt="" draggable={false} className="h-14 w-auto object-cover" style={{ aspectRatio: String(ref.aspect) }} loading="lazy" /* tv-compat-ok: ratio naturel une fois chargée */ />
                     </button>
                   </li>
                 ))}

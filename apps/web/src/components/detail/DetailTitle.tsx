@@ -80,7 +80,7 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount }: 
           draggable={false}
           onError={reportFailure}
           style={{ transformOrigin: "left bottom" }}
-          className="block h-auto max-h-28 w-auto max-w-[min(36rem,92%)] object-contain object-left drop-shadow-[0_6px_24px_var(--on-media-shadow)] md:max-h-36 xl:max-h-44"
+          className="block h-auto max-h-28 w-auto max-w-[92%] lg:max-w-[36rem] object-contain object-left drop-shadow-[0_6px_24px_var(--on-media-shadow)] md:max-h-36 xl:max-h-44"
         />
       )}
       {item.OriginalTitle && item.OriginalTitle !== item.Name && (

@@ -1,6 +1,13 @@
 import { useTranslation } from "react-i18next";
 import type { ShareListKind } from "@tentacle-tv/api-client";
 
+/**
+ * Marge de la zone sûre, en style en ligne et non en classe : Tailwind génère
+ * ses classes pour TOUTES les cibles, téléviseur compris, et `max()` n'existe
+ * pas sous Chrome 53 (la garde de compatibilité webOS refuse la classe).
+ */
+const SAFE_BOTTOM = { paddingBottom: "max(env(safe-area-inset-bottom), 1.25rem)" } as const;
+
 interface Props {
   kind: ShareListKind;
   count: number;
@@ -22,7 +29,7 @@ export function SharedListAddBar({ kind, count, isAdding, added, onAdd }: Props)
   const likes = kind === "likes";
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
+    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4" style={SAFE_BOTTOM}>
       <div
         role="status"
         aria-live="polite"

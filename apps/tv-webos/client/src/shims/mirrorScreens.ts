@@ -16,6 +16,7 @@ function Absent(): null {
 
 export const MirrorSearch = Absent;
 export const MirrorMediaDetail = Absent;
+export const MirrorPerson = Absent;
 export const MirrorLibraries = Absent;
 export const MirrorLibraryCatalog = Absent;
 export const MirrorWatchlist = Absent;
