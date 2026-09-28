@@ -1,10 +1,10 @@
 import { memo, useCallback, useState } from "react";
 import { StyleSheet, Text, TVFocusGuideView, View } from "react-native";
+import Svg, { ClipPath, Defs, Path, Rect } from "react-native-svg";
 import { useTranslation } from "react-i18next";
 import { useDeleteRating, useRateItem, type RatingIdentity } from "@tentacle-tv/api-client";
-import { BRAND } from "@tentacle-tv/shared";
+import { BRAND, STAR_PATH, STAR_VIEWBOX } from "@tentacle-tv/shared";
 import { Focusable } from "../../focus/Focusable";
-import { TVStarGlyph } from "../tvCardGlyphs";
 import { useTVUserScore } from "./useTVUserScore";
 import { Colors, Fonts } from "../../../theme/colors";
 
@@ -12,6 +12,8 @@ const STARS = [1, 2, 3, 4, 5] as const;
 /** La case d'une étoile (sa cible de focus) et l'étoile elle-même. */
 const STAR_BOX = 56;
 const STAR = 34;
+/** La grille du tracé partagé de l'étoile (`STAR_VIEWBOX`, 20 × 20). */
+const STAR_GRID = 20;
 /** La hauteur du bloc, gardée pendant qu'une série se charge. */
 export const SHEET_RATING_HEIGHT = 124;
 
@@ -88,7 +90,7 @@ export const TVCardSheetRating = memo(function TVCardSheetRating({ identity, jel
               testID={`card-sheet-star-${star}`}
             >
               <View style={styles.starBox}>
-                <StarCell fraction={starFraction(shown, star)} dim={removing} />
+                <StarCell star={star} fraction={starFraction(shown, star)} dim={removing} />
               </View>
             </Focusable>
           ))}
@@ -106,16 +108,24 @@ function starFraction(score: number, star: number): number {
   return Math.min(Math.max(score - (star - 1) * 2, 0), 2) / 2;
 }
 
-/** Une étoile : le contour, et le plein rogné à sa fraction. */
-function StarCell({ fraction, dim }: { fraction: number; dim: boolean }) {
+/**
+ * Une étoile : le contour, et le plein rogné à sa fraction — rogné DANS le
+ * SVG (`ClipPath`). Une vue `overflow: hidden` autour d'un SVG ne le rogne
+ * pas sur Android : une demi-étoile y sortait pleine (mesuré à l'émulateur).
+ */
+function StarCell({ star, fraction, dim }: { star: number; fraction: number; dim: boolean }) {
+  const clipId = `sheet-star-${star}`;
   return (
     <View style={[styles.star, dim && styles.starDim]}>
-      <TVStarGlyph size={STAR} color="rgba(255, 255, 255, 0.72)" filled={false} />
-      {fraction > 0 && (
-        <View style={[styles.starFill, { width: STAR * fraction }]}>
-          <TVStarGlyph size={STAR} color={BRAND.accent} />
-        </View>
-      )}
+      <Svg width={STAR} height={STAR} viewBox={STAR_VIEWBOX}>
+        <Defs>
+          <ClipPath id={clipId}>
+            <Rect x={0} y={0} width={STAR_GRID * fraction} height={STAR_GRID} />
+          </ClipPath>
+        </Defs>
+        <Path d={STAR_PATH} fill="none" stroke="rgba(255, 255, 255, 0.72)" strokeWidth={1.3} strokeLinejoin="round" />
+        {fraction > 0 && <Path d={STAR_PATH} fill={BRAND.accent} clipPath={`url(#${clipId})`} />}
+      </Svg>
     </View>
   );
 }
@@ -128,7 +138,6 @@ const styles = StyleSheet.create({
   starBox: { width: STAR_BOX, height: STAR_BOX, alignItems: "center", justifyContent: "center" },
   star: { width: STAR, height: STAR },
   starDim: { opacity: 0.4 },
-  starFill: { position: "absolute", left: 0, top: 0, bottom: 0, overflow: "hidden" },
   hint: { flex: 1, color: Colors.textSecondary, fontSize: 17, fontWeight: "500", fontFamily: Fonts.medium },
   hintRemoving: { color: Colors.textPrimary },
 });

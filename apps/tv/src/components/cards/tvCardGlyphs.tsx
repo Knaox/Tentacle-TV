@@ -24,7 +24,7 @@ import {
 interface GlyphProps {
   size: number;
   color: string;
-  /** Faux : au trait (bascule éteinte, étoile vide). Défaut : plein. */
+  /** Faux : au trait (bascule éteinte). Défaut : plein. */
   filled?: boolean;
 }
 
@@ -86,14 +86,10 @@ export function TVToggleGlyph({ kind, ...props }: GlyphProps & { kind: CardToggl
   return <TVWatchedGlyph {...props} />;
 }
 
-export function TVStarGlyph({ size, color, filled = true }: GlyphProps) {
+export function TVStarGlyph({ size, color }: Omit<GlyphProps, "filled">) {
   return (
     <Svg width={size} height={size} viewBox={STAR_VIEWBOX}>
-      {filled ? (
-        <Path d={STAR_PATH} fill={color} />
-      ) : (
-        <Path d={STAR_PATH} fill="none" stroke={color} strokeWidth={1.3} strokeLinejoin="round" />
-      )}
+      <Path d={STAR_PATH} fill={color} />
     </Svg>
   );
 }
