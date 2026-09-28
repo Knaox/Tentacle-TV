@@ -36,45 +36,45 @@ describe("la reprise d'un film", () => {
 describe("la cible de lecture d'un film", () => {
   it("se lance tel quel, même avant que le média soit chargé", () => {
     expect(resolveRecoPlayTarget({ jellyfinItemId: "m1", mediaType: "movie", watchState: undefined, watchFailed: false, media: undefined }))
-      .toEqual({ path: "/watch/m1", kind: "start", labelKey: "common:play", episodeCode: null, pending: false });
+      .toEqual({ path: "/watch/m1", kind: "start", labelKey: "cards:play", episodeCode: null, pending: false });
   });
 
   it("dit « Reprendre » quand une lecture est entamée", () => {
     const target = resolveRecoPlayTarget({ jellyfinItemId: "m1", mediaType: "movie", watchState: undefined, watchFailed: false, media: movie({ PlayedPercentage: 42 }) });
     expect(target.kind).toBe("resume");
-    expect(target.labelKey).toBe("common:resume");
+    expect(target.labelKey).toBe("cards:resume");
     expect(target.path).toBe("/watch/m1");
   });
 
   it("dit « Lecture » sur un film déjà vu — c'est une relecture", () => {
     const target = resolveRecoPlayTarget({ jellyfinItemId: "m1", mediaType: "movie", watchState: undefined, watchFailed: false, media: movie({ Played: true, PlayedPercentage: 100 }) });
     expect(target.kind).toBe("start");
-    expect(target.labelKey).toBe("common:play");
+    expect(target.labelKey).toBe("cards:play");
   });
 });
 
 describe("la cible de lecture d'une série", () => {
   it("ouvre la fiche tant que l'état est en vol", () => {
-    expect(series(undefined)).toEqual({ path: "/media/s1", kind: "detail", labelKey: "common:play", episodeCode: null, pending: true });
+    expect(series(undefined)).toEqual({ path: "/media/s1", kind: "detail", labelKey: "cards:play", episodeCode: null, pending: true });
   });
 
   it("reprend l'épisode entamé", () => {
     expect(series({ type: "continue", episode: episode(2, 5, "e25"), positionTicks: 10 }))
-      .toEqual({ path: "/watch/e25", kind: "resume", labelKey: "common:resume", episodeCode: "S2 · E5", pending: false });
+      .toEqual({ path: "/watch/e25", kind: "resume", labelKey: "cards:resume", episodeCode: "S2 · E5", pending: false });
   });
 
   it("lance l'épisode suivant", () => {
     expect(series({ type: "next", episode: episode(2, 6, "e26") }))
-      .toEqual({ path: "/watch/e26", kind: "next", labelKey: "common:play", episodeCode: "S2 · E6", pending: false });
+      .toEqual({ path: "/watch/e26", kind: "next", labelKey: "cards:play", episodeCode: "S2 · E6", pending: false });
   });
 
   it("commence par le tout premier épisode quand rien n'a été vu", () => {
     expect(series({ type: "start", episode: episode(1, 1, "e11") }))
-      .toEqual({ path: "/watch/e11", kind: "start", labelKey: "common:play", episodeCode: "S1 · E1", pending: false });
+      .toEqual({ path: "/watch/e11", kind: "start", labelKey: "cards:play", episodeCode: "S1 · E1", pending: false });
   });
 
   it("renvoie vers la fiche quand la série est terminée", () => {
-    expect(series({ type: "completed" })).toEqual({ path: "/media/s1", kind: "detail", labelKey: "common:play", episodeCode: null, pending: false });
+    expect(series({ type: "completed" })).toEqual({ path: "/media/s1", kind: "detail", labelKey: "cards:play", episodeCode: null, pending: false });
   });
 
   it("renvoie vers la fiche, sans attente, quand l'état n'a pas pu être chargé", () => {

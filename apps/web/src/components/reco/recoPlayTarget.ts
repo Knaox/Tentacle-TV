@@ -11,7 +11,8 @@ export interface RecoPlayResolution {
    */
   path: string;
   kind: RecoPlayKind;
-  labelKey: "common:resume" | "common:play";
+  /** Les libellés du survol de toutes les cartes (espace `cards`) : « Lire », « Reprendre ». */
+  labelKey: "cards:resume" | "cards:play";
   /** « S2 · E5 », le format des boutons Reprendre — null pour un film. */
   episodeCode: string | null;
   /** Série dont l'état est encore en vol : bouton rendu, un clic ouvre la fiche. */
@@ -66,7 +67,7 @@ export function resolveRecoPlayTarget(input: {
     return {
       path: `/watch/${jellyfinItemId}`,
       kind: resume ? "resume" : "start",
-      labelKey: resume ? "common:resume" : "common:play",
+      labelKey: resume ? "cards:resume" : "cards:play",
       episodeCode: null,
       pending: false,
     };
@@ -75,7 +76,7 @@ export function resolveRecoPlayTarget(input: {
   const detail = (pending: boolean): RecoPlayResolution => ({
     path: `/media/${jellyfinItemId}`,
     kind: "detail",
-    labelKey: "common:play",
+    labelKey: "cards:play",
     episodeCode: null,
     pending,
   });
@@ -86,7 +87,7 @@ export function resolveRecoPlayTarget(input: {
   const episodeCode = formatEpisodeCode(episode.ParentIndexNumber, episode.IndexNumber);
   const path = `/watch/${episode.Id}`;
   if (watchState.type === "continue") {
-    return { path, kind: "resume", labelKey: "common:resume", episodeCode, pending: false };
+    return { path, kind: "resume", labelKey: "cards:resume", episodeCode, pending: false };
   }
-  return { path, kind: watchState.type, labelKey: "common:play", episodeCode, pending: false };
+  return { path, kind: watchState.type, labelKey: "cards:play", episodeCode, pending: false };
 }

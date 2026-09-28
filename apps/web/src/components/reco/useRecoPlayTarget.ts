@@ -5,7 +5,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { playMediaId, resolveRecoPlayTarget, type RecoPlayResolution } from "./recoPlayTarget";
 
 export interface RecoPlayTarget extends RecoPlayResolution {
-  /** Libellé complet, traduit : « Reprendre S2 · E5 », « Lecture S1 · E1 », « Reprendre », « Lecture ». */
+  /** Libellé complet, traduit : « Reprendre S2 · E5 », « Lire S1 · E1 », « Reprendre », « Lire ». */
   label: string;
   /**
    * Porte MediaSources — le film, ou l'épisode qui va être lu — pour les chips
