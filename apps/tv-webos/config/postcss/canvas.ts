@@ -26,3 +26,16 @@ export const CANVAS = { width: 1920, height: 1080 } as const;
  * suivre, et le commentaire est là pour qu'on y pense.
  */
 export const REM_ROOT = 16;
+
+/**
+ * Les marges de zone sûre (`env(safe-area-inset-*)`), en pixels CSS : zéro.
+ *
+ * Chromium les définit sur toutes les plateformes — à zéro quand l'appareil
+ * n'en fournit pas —, et une dalle n'en fournit pas : c'est l'overscan qui en
+ * tient lieu (`TV_OVERSCAN`, `@tentacle-tv/theme`). Un moteur qui comprend
+ * `env()` y lit donc 0, même quand un repli est écrit : le repli ne sert qu'à
+ * une variable inconnue, et celles-ci sont connues. Chrome 53, qui ne comprend
+ * pas `env()`, jetait la déclaration ; résolue ici, elle vaut partout la même
+ * chose.
+ */
+export const SAFE_AREA_INSET = 0;

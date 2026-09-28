@@ -1,4 +1,4 @@
-import { CANVAS, REM_ROOT } from "./canvas";
+import { CANVAS, REM_ROOT, SAFE_AREA_INSET } from "./canvas";
 
 /**
  * Évalue une expression de longueur CSS contre le canvas fixe du téléviseur.
@@ -36,9 +36,19 @@ const UNITS: Record<string, number> = {
  *
  * `%` se rapporte au bloc conteneur, `em` à la police de l'élément, `var()` à
  * une cascade qu'on ne connaît qu'à l'exécution, `env()` au matériel, `ch` et
- * `ex` aux métriques de la fonte chargée. Aucun n'est connu ici.
+ * `ex` aux métriques de la fonte chargée. Aucun n'est connu ici — à une
+ * exception près, la zone sûre, remplacée avant ce test (`SAFE_AREA`).
  */
 const IRREDUCIBLE = /(^|[\s(,])-?[\d.]+(%|em|ch|ex|cap|ic|lh)\b|var\(|env\(|attr\(/;
+
+/**
+ * Les quatre marges de zone sûre, seul matériel connu d'avance : une dalle
+ * n'en a pas (`SAFE_AREA_INSET`). Le repli n'est accepté que s'il est simple ;
+ * un repli qui porte lui-même une fonction laisse l'expression irréductible —
+ * on ne devine pas davantage. Les autres variables d'environnement
+ * (`titlebar-area-*`, `keyboard-inset-*`) restent irréductibles.
+ */
+const SAFE_AREA = /env\(\s*safe-area-inset-(?:top|right|bottom|left)\s*(?:,[^()]*)?\)/gi;
 
 /**
  * Rend la valeur résolue en pixels, ou `null` si elle ne l'est pas.
@@ -47,7 +57,7 @@ const IRREDUCIBLE = /(^|[\s(,])-?[\d.]+(%|em|ch|ex|cap|ic|lh)\b|var\(|env\(|attr
  * `calc(100vh - 64px)`, `min(100vw, 40rem)` — et les imbrications entre elles.
  */
 export function evaluateLength(value: string): number | null {
-  const text = value.trim();
+  const text = value.trim().replace(SAFE_AREA, `${SAFE_AREA_INSET}px`);
   if (text.length === 0 || IRREDUCIBLE.test(text)) return null;
   try {
     const reader = new Reader(text);

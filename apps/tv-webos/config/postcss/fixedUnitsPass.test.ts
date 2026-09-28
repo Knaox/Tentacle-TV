@@ -63,12 +63,26 @@ describe("evaluateLength", () => {
       "calc(100vw - 10%)",
       "2em",
       "min(100%, 40rem)",
-      "max(1rem, env(safe-area-inset-top, 1rem))",
+      "max(1rem, env(titlebar-area-height, 1rem))",
       "calc(100vh - var(--barre))",
       "clamp(1rem, 2ch, 3rem)",
     ]) {
       expect(evaluateLength(value)).toBeNull();
     }
+  });
+
+  it("résout la zone sûre à zéro — une dalle n'en a pas", () => {
+    // Chromium définit les quatre marges partout, à zéro faute de mieux : le
+    // repli écrit n'y est jamais lu. Le premier cas est la barre haute des
+    // écrans de connexion, qui arrêtait le build.
+    expect(evaluateLength("max(env(safe-area-inset-top), 1rem)")).toBe(16);
+    expect(evaluateLength("max(1rem, env(safe-area-inset-top, 1rem))")).toBe(16);
+    expect(evaluateLength("calc(5rem + env(safe-area-inset-bottom, 0px))")).toBe(80);
+    expect(evaluateLength("max(24px, env( safe-area-inset-left ))")).toBe(24);
+  });
+
+  it("ne devine pas un repli de zone sûre qui porte une fonction", () => {
+    expect(evaluateLength("max(1rem, env(safe-area-inset-top, calc(1rem + 2px)))")).toBeNull();
   });
 
   it("refuse une expression bancale plutôt que d'en deviner une", () => {
@@ -117,6 +131,15 @@ describe("fixedUnitsPass", () => {
     const { css, report } = skip(".a{width:min(100%,40rem)}");
     expect(css).toBe(".a{width:min(100%,40rem)}");
     expect(report).toContain("unites-non-resolubles");
+  });
+
+  it("résout la zone sûre dans une comparaison, et ne touche pas à `env()` seul", () => {
+    // Seul, `env()` n'est pas une primitive que la garde refuse : la passe ne
+    // s'en saisit pas, et la feuille reste celle d'avant.
+    const { css } = skip(
+      ".a{padding-top:max(env(safe-area-inset-top),1rem)}.b{padding-bottom:env(safe-area-inset-bottom,0px)}",
+    );
+    expect(css).toBe(".a{padding-top:16px}.b{padding-bottom:env(safe-area-inset-bottom,0px)}");
   });
 
   it("laisse tranquilles les déclarations sans unité de viewport", () => {
