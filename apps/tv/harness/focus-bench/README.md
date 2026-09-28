@@ -49,7 +49,22 @@ xcrun simctl spawn <sim> defaults delete com.tentacle.mobile RCT_jsLocation   # 
 
 On le pilote avec l'agent de `../atv-remote`, compilé pour le simulateur.
 
+**Ouvrir la feuille d'actions sans télécommande** — l'appui long d'une carte,
+par l'arbre React (inspecteur de Metro) :
+
+```bash
+METRO_PORT=8191 node apps/tv/harness/focus-bench/cdp-longpress.mjs "Marée haute" sdk_google_atv
+```
+
 ## Pièges déjà payés
+
+- **L'appui long ne se simule pas par adb.** Le Pressable TV chronomètre son
+  appui long EN JS (550 ms, `LONG_PRESS_THRESHOLD_MS`) entre l'appui et le
+  relâché ; `input keyevent --longpress` relâche au bout de ~400 ms : c'est un
+  simple OK. Sur l'émulateur, `cdp-longpress.mjs` ; sur tvOS, l'agent
+  `../atv-remote` maintient pour de bon (`hold:1.2`).
+- **Menu à la racine du banc (tvOS) quitte l'application** : la scène n'a pas
+  d'écran au-dessus d'elle. Ne l'envoyer que feuille ouverte.
 
 - **Android ne sort pas d'un ScrollView.** `ReactScrollView.focusSearch`
   (drapeau `enableCustomFocusSearchOnClippedElementsAndroid`, actif par défaut)
