@@ -13,7 +13,8 @@ const NOTICE_MS = 4_000;
  * écarter un match —, dit DANS la modale : un toast passerait sous son voile.
  * Posé en surimpression au-dessus de la pile, il ne prend aucune place à la
  * carte et ne capte rien (le glisser passe au travers) ; il s'efface seul.
- * Fond plein à 0,94 : pas de verre, il ne floute rien de visible. L'entrée et
+ * Fond opaque, sans verre : posé sur l'affiche, il ne laisse rien
+ * transparaître (à 0,94, la note de la carte passait au travers). L'entrée et
  * la sortie ne bougent que `transform` et `opacity` ; en mouvement réduit,
  * un fondu. Les lecteurs d'écran l'entendent par une région polie, stable.
  */
@@ -43,7 +44,7 @@ export function AffinityNotice() {
               exit={reduced ? { opacity: 0, transition: { duration: 0.1 } } : { opacity: 0, y: -6, transition: { duration: 0.15, ease: "easeIn" } }}
               className="flex max-w-full items-center gap-2.5 rounded-2xl py-1.5 pl-1.5 pr-4 text-[13px] font-medium leading-snug text-white"
               style={{
-                background: "rgba(15,15,25,0.94)",
+                background: "rgb(15,15,25)",
                 border: "1px solid rgba(139,92,246,0.35)",
                 boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
               }}
