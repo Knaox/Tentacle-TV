@@ -1,4 +1,4 @@
-import { useSeasons, useMediaItem } from "@tentacle-tv/api-client";
+import { useSeasons } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { ExtrasRow } from "./ExtrasRow";
 import { useItemRemoteTrailers } from "../../hooks/useItemRemoteTrailers";
@@ -45,26 +45,25 @@ function SeriesExtras({ item, seriesTrailers }: { item: MediaItem; seriesTrailer
           les saisons au niveau show ; les special features sont vides au niveau
           seriesId — piège Swiftfin). */}
       <ExtrasRow itemId={item.Id} remoteTrailers={seriesTrailers} />
-      {/* Niveau saison : special features locaux + trailers distants par saison. */}
-      {seasons?.map((season) => (
-        <SeasonExtras key={season.Id} seasonId={season.Id} seasonName={season.Name} />
+      {/* Niveau saison : seulement les saisons qui ONT des extras. */}
+      {seasons?.filter(seasonHasExtras).map((season) => (
+        <ExtrasRow key={season.Id} itemId={season.Id} title={season.Name} remoteTrailers={season.RemoteTrailers ?? []} />
       ))}
     </>
   );
 }
 
 /**
- * Rangée d'extras pour une saison. On refetch l'item saison complet via
- * `useMediaItem` (Fields=…,RemoteTrailers) : l'endpoint liste `/Shows/{id}/Seasons`
- * ne peuple pas toujours `RemoteTrailers`, d'où des trailers de saison manquants.
+ * Une saison a-t-elle de quoi remplir une rangée d'extras ?
+ *
+ * La liste des saisons sert déjà leurs compteurs (`SpecialFeatureCount`) et
+ * leurs bandes-annonces (`RemoteTrailers`) — le même `DtoService` côté
+ * Jellyfin que la fiche d'une saison seule. Interroger chaque saison coûtait
+ * deux requêtes par saison à l'ouverture de la fiche (quarante-six sur une
+ * série de vingt-trois saisons), pour des rangées presque toujours vides. Un
+ * serveur qui ne renverrait pas le compteur garde l'ancienne conduite : on
+ * demande.
  */
-function SeasonExtras({ seasonId, seasonName }: { seasonId: string; seasonName: string }) {
-  const { data: season } = useMediaItem(seasonId);
-  return (
-    <ExtrasRow
-      itemId={seasonId}
-      title={seasonName}
-      remoteTrailers={season?.RemoteTrailers ?? []}
-    />
-  );
+function seasonHasExtras(season: MediaItem): boolean {
+  return season.SpecialFeatureCount === undefined || season.SpecialFeatureCount > 0 || (season.RemoteTrailers?.length ?? 0) > 0;
 }
