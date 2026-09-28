@@ -33,6 +33,22 @@ export default {
   sceneSeason: "Season {{number}}",
   sceneVigieDescription: "Request films and shows, follow their arrival and see upcoming releases. Connects to your Jellyseerr / Overseerr instance.",
 
+  scenePersonName: "Camille Laurent",
+
+  // 1.24.0
+  v1_24_0_detailStage_title: "The detail page, full screen",
+  v1_24_0_detailStage_body: "The backdrop fills the screen, the title shows its logo and the rating stands out with your markers. \"Resume\" shows how far you are and what is left, the toggles sit in one capsule, and images open full screen.",
+  v1_24_0_person_title: "From the credits to the filmography",
+  v1_24_0_person_body: "Click an actor or a crew member to open their page: portrait, roles, birth, biography, and every one of their titles in the library.",
+  v1_24_0_cards_title: "Cards that tell you more",
+  v1_24_0_cards_body: "At rest, the public rating and yours, then My List, favorite and watched. On hover: Play in the middle, stars to rate, and a tray to toggle everything.",
+  v1_24_0_refine_title: "Refine your recommendations",
+  v1_24_0_refine_body: "In Recommendations, the \"Refine\" section offers a stack of titles to judge: like, love, not for me or skip, by swiping or with the keyboard. Every verdict weighs on what you are offered.",
+  v1_24_0_watchlist_title: "My List and My Favorites, tidied up",
+  v1_24_0_watchlist_body: "The Library toolbar, everywhere. My List sorts by viewing stage, keeps a \"Resume\" shelf, switches between grid and list and lets you undo a removal. My Favorites can be grouped, and Share is easy to spot.",
+  v1_24_0_detailChain_title: "A single \"Back\"",
+  v1_24_0_detailChain_body: "From one similar title to the next, detail pages no longer pile up: a single \"Back\" takes you where you started, at the same spot.",
+
   // 1.23.0
   v1_23_0_adminOverview_title: "A tidier administration",
   v1_23_0_adminOverview_body: "Administration opens on an overview: Jellyfin and database health, sessions, and the tickets and plugins waiting for you. The menu is sorted into three groups and pages use the full width.",

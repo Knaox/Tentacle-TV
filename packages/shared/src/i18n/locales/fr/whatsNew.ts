@@ -37,6 +37,22 @@ export default {
   sceneSeason: "Saison {{number}}",
   sceneVigieDescription: "Demandez films et séries, suivez leur arrivée et voyez les prochaines sorties. Se connecte à votre instance Jellyseerr / Overseerr.",
 
+  scenePersonName: "Camille Laurent",
+
+  // 1.24.0
+  v1_24_0_detailStage_title: "La fiche, en grand",
+  v1_24_0_detailStage_body: "Le décor occupe tout l'écran, le titre s'affiche avec son logo et la note en grand avec vos marqueurs. « Reprendre » montre où vous en êtes et ce qu'il reste, les bascules tiennent dans une capsule, et les images s'ouvrent en plein écran.",
+  v1_24_0_person_title: "Du générique à la filmographie",
+  v1_24_0_person_body: "Un clic sur un acteur ou un membre de l'équipe ouvre sa page : portrait, métiers, naissance, biographie, et tous ses titres présents dans la bibliothèque.",
+  v1_24_0_cards_title: "Des cartes qui en disent plus",
+  v1_24_0_cards_body: "Au repos, la note du public et la vôtre, puis Ma liste, favori et déjà vu. Au survol : Lecture au centre, les étoiles pour noter, et un plateau pour tout basculer.",
+  v1_24_0_refine_title: "Affinez vos recommandations",
+  v1_24_0_refine_body: "Dans Recommandations, la section « Affiner » propose une pile de titres à juger : j'aime, coup de cœur, pas pour moi ou passer, en glissant ou au clavier. Chaque verdict pèse dans ce qui vous est proposé.",
+  v1_24_0_watchlist_title: "Ma liste et Mes favoris rangés",
+  v1_24_0_watchlist_body: "Le panneau d'outils de la Bibliothèque, partout. Ma liste trie par étape de visionnage, garde une file « Reprendre », passe en grille ou en liste et laisse annuler un retrait. Mes favoris se regroupent, et Partager se trouve du premier coup d'œil.",
+  v1_24_0_detailChain_title: "Un seul « Retour »",
+  v1_24_0_detailChain_body: "D'un titre similaire à l'autre, les fiches ne s'empilent plus : un seul « Retour » vous ramène là d'où vous êtes parti, à la même place.",
+
   // 1.23.0
   v1_23_0_adminOverview_title: "Une administration rangée",
   v1_23_0_adminOverview_body: "L'administration s'ouvre sur une vue d'ensemble : l'état de Jellyfin et de la base, les sessions, les tickets et les plugins qui vous attendent. Le menu se range en trois groupes et les pages prennent toute la largeur.",
