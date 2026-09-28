@@ -1,10 +1,11 @@
 import { useCallback, useRef, useState, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "./MediaContextMenu";
 import { PosterTile } from "./cards/PosterTile";
 import { useCardContextMenu } from "./cards/useCardContextMenu";
+import { prefetchDetailRoute } from "./cards/prefetchDetail";
 import { captureDetailOrigin } from "./detail/detailTransition";
 import { useHoverGuard } from "../hooks/useHoverGuard";
 
@@ -22,10 +23,10 @@ interface Props {
  * propre état local — redondant avec le cache TanStack Query, donc capable de
  * désynchroniser d'avec la même carte affichée dans une rangée.
  *
- * Elle partage désormais `PosterTile` (visuel) et, à travers lui,
- * `CardQuickActions` (état issu du cache) avec `PosterCard` — dont elle a le
- * survol INTERNE, sans panneau flottant. Ne restent ici que les spécificités
- * de grille : largeur fluide et navigation déléguée au parent.
+ * Elle partage désormais `PosterTile` (visuel) et, à travers lui, le survol
+ * unique des cartes (`CardHoverOverlay`) avec `PosterCard`. Ne restent ici
+ * que les spécificités de grille : largeur fluide et navigation déléguée au
+ * parent.
  */
 export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate }: Props) {
   const { t } = useTranslation("common");
@@ -39,7 +40,12 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
   const unhover = useCallback(() => setHovered(false), []);
   useHoverGuard(rootRef, hovered, unhover);
 
-  const poster = client.getImageUrl(item.Id, "Primary", { height: 450, quality: 90 });
+  // Même résolution que les rangées : tag porté (URL adressée par contenu),
+  // et « » quand la donnée prouve qu'il n'y a pas d'affiche (cf. `cardImage.ts`).
+  const image = resolvePosterImage(item, "auto");
+  const poster = image
+    ? client.getImageUrl(image.id, image.type, { height: 450, quality: 90, ...(image.tag ? { tag: image.tag } : {}) })
+    : "";
 
   return (
     <div
@@ -55,9 +61,15 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
         );
         onNavigate(item.Id);
       }}
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={() => {
+        setHovered(true);
+        prefetchDetailRoute();
+      }}
       onMouseLeave={() => setHovered(false)}
       className="group/card row-dim-card relative cursor-pointer"
+      // Au-dessus des voisines pendant le survol, sinon l'ombre d'élévation est
+      // recouverte par la cellule suivante (cf. `PosterCard`).
+      style={{ zIndex: hovered ? 2 : undefined }}
       {...ctx.contextHandlers}
     >
       <PosterTile item={item} imageUrl={poster} hovered={hovered} />

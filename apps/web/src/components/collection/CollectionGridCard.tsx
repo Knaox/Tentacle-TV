@@ -1,7 +1,7 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "../MediaContextMenu";
 import { SelectionCheckbox } from "../SelectionCheckbox";
 import { PosterTile } from "../cards/PosterTile";
@@ -49,7 +49,10 @@ export const CollectionGridCard = memo(function CollectionGridCard({
 
   const isSelecting = selectionMode?.isSelecting ?? false;
   const isSelected = selectionMode?.isSelected(item.Id) ?? false;
-  const poster = client.getImageUrl(item.Id, "Primary", { height: 450, quality: 90 });
+  const image = resolvePosterImage(item, "auto");
+  const poster = image
+    ? client.getImageUrl(image.id, image.type, { height: 450, quality: 90, ...(image.tag ? { tag: image.tag } : {}) })
+    : "";
 
   const handleClick = () => {
     if (isSelecting) {
