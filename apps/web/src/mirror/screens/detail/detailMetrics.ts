@@ -1,4 +1,4 @@
-import { extractMediaQuality, ticksToSeconds, type MediaItem } from "@tentacle-tv/shared";
+import { extractMediaQuality, resumeState, ticksToSeconds, type MediaItem } from "@tentacle-tv/shared";
 
 /**
  * Les mesures et libellés purs de la fiche de l'app (`MediaDetailScreen`,
@@ -20,37 +20,35 @@ export const HEADER_BAR_HEIGHT = 44;
 export const TOP_BAR_FADE_SPAN = 80;
 
 export interface DetailGeometry {
-  /** Hauteur du visuel plein cadre : `min(520 | 620, 0,52 × H)`. */
+  /**
+   * Hauteur de la SCÈNE : le décor sur 70 % de l'écran (plafond 680), 64 % sur
+   * tablette (plafond 860). Le bloc titre se pose dans son bas.
+   */
   backdropH: number;
-  /** Affiche : `min(200, 0,32 × L)`, au 2:3. */
+  /** Affiche (colonne gauche de l'iPad paysage) : `min(200, 0,32 × L)`, au 2:3. */
   posterW: number;
   posterH: number;
-  /** Défilement auquel la barre haute est pleine : 0,62 × visuel. */
+  /** Logo du titre : boîte maximale, centrée dans la scène. */
+  logoMaxW: number;
+  logoMaxH: number;
+  /** Défilement auquel la barre haute est pleine : quand le titre de la scène la passe. */
   revealAt: number;
   /** iPad paysage : deux colonnes. */
   twoCol: boolean;
 }
 
 export function detailGeometry(width: number, height: number, isTablet: boolean, landscape: boolean): DetailGeometry {
-  const backdropH = Math.min(isTablet ? 620 : 520, Math.round(height * 0.52));
+  const backdropH = isTablet ? Math.min(860, Math.round(height * 0.64)) : Math.min(680, Math.round(height * 0.7));
   const posterW = Math.min(200, Math.round(width * 0.32));
   return {
     backdropH,
     posterW,
     posterH: Math.round(posterW * 1.5),
-    revealAt: backdropH * 0.62,
+    logoMaxW: Math.min(isTablet ? 460 : 300, Math.round(width * 0.76)),
+    logoMaxH: isTablet ? 140 : 96,
+    revealAt: Math.round(backdropH * 0.82),
     twoCol: isTablet && landscape,
   };
-}
-
-/** `fmtTime` de l'app : `h:mm:ss`, ou `mm:ss` sous l'heure. */
-export function formatTime(sec: number): string {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = Math.floor(sec % 60);
-  const mm = m.toString().padStart(2, "0");
-  const ss = s.toString().padStart(2, "0");
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
 /** `S01E02` — la saison manquante vaut 1, comme dans l'app. */
@@ -60,46 +58,34 @@ export function episodeCode(season: number | null | undefined, episode: number |
 
 type Translate = (key: string, opts?: Record<string, unknown>) => string;
 
-interface PlayableEp {
-  ParentIndexNumber?: number | null;
-  IndexNumber?: number | null;
-  UserData?: { PlaybackPositionTicks?: number } | null;
-}
-
-/** `buildSeriesPlayLabel` de l'app : S/E + position de reprise. */
-export function buildSeriesPlayLabel(ep: PlayableEp, t: Translate): string {
-  const code = episodeCode(ep.ParentIndexNumber, ep.IndexNumber);
-  const pos = ep.UserData?.PlaybackPositionTicks ?? 0;
-  return pos > 0
-    ? `${t("resumeAt", { time: formatTime(ticksToSeconds(pos)) })} · ${code}`
-    : `${t("play")} · ${code}`;
-}
-
 type SeriesWatchState = { type: string; episode?: MediaItem } | undefined;
 
 export interface PlayCta {
   /** Ce que lance le bouton ; `null` = pas de bouton (série terminée, sans état). */
   targetId: string | null;
   label: string;
-  /** Film / épisode entamé : la barre de progression sous le bouton. */
-  showProgress: boolean;
-  progress: number;
+  /** Avancement 0 → 1 de ce que lance le bouton, `null` s'il n'est pas entamé. */
+  progress: number | null;
+  /** Minutes restantes, `null` sans reprise ou sans durée. */
+  remainingMinutes: number | null;
 }
 
-/** Le bouton Lecture de `DetailHeader` : cible, libellé, progression. */
+/**
+ * Le bouton Lecture de la scène : cible, libellé, avancement.
+ *
+ * Le libellé ne porte plus l'horodatage (« Reprendre à 58:00 ») : ce qu'il
+ * reste se lit en clair sous le verbe (« Reste 1 h 48 min ») et l'avancement
+ * dans l'anneau de l'icône. Série : le verbe et le code de l'épisode visé.
+ */
 export function playCta(item: MediaItem, seriesWatchState: SeriesWatchState, t: Translate): PlayCta {
   const isSeries = item.Type === "Series";
-  const posTicks = item.UserData?.PlaybackPositionTicks ?? 0;
-  const hasResume = posTicks > 0;
-  const progress = item.UserData?.PlayedPercentage ? item.UserData.PlayedPercentage / 100 : 0;
   const seriesEp = isSeries && seriesWatchState?.type !== "completed" ? seriesWatchState?.episode : null;
-  const targetId = seriesEp?.Id ?? (isSeries ? null : item.Id);
-  const label = seriesEp
-    ? buildSeriesPlayLabel(seriesEp, t)
-    : hasResume
-      ? t("resumeAt", { time: formatTime(ticksToSeconds(posTicks)) })
-      : t("play");
-  return { targetId, label, showProgress: !isSeries && hasResume, progress };
+  const target = seriesEp ?? (isSeries || item.Type === "BoxSet" ? null : item);
+  if (!target) return { targetId: null, label: t("play"), progress: null, remainingMinutes: null };
+  const resume = resumeState(target);
+  const verb = resume ? t("resume") : t("play");
+  const label = seriesEp ? `${verb} · ${episodeCode(seriesEp.ParentIndexNumber, seriesEp.IndexNumber)}` : verb;
+  return { targetId: target.Id, label, progress: resume?.progress ?? null, remainingMinutes: resume?.remainingMinutes ?? null };
 }
 
 export interface MetaToken {

@@ -27,7 +27,7 @@ function Skeleton({ width, height, radius = 10, style }: { width: number | strin
  */
 export const DetailSkeleton = memo(function DetailSkeleton() {
   const { width, height } = useViewport();
-  const backdropH = Math.min(520, Math.round(height * 0.52));
+  const backdropH = Math.min(680, Math.round(height * 0.7));
   const posterW = Math.min(200, Math.round(width * 0.32));
   const posterH = Math.round(posterW * 1.5);
   return (

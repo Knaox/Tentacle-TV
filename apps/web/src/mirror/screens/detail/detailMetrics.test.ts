@@ -1,61 +1,55 @@
 import { describe, expect, it } from "vitest";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { buildSeriesPlayLabel, detailGeometry, formatTime, playCta, youtubeId } from "./detailMetrics";
+import { detailGeometry, playCta, youtubeId } from "./detailMetrics";
 import { progressBetween, topBarProgress } from "./useDetailScroll";
 
 const t = (key: string, opts?: Record<string, unknown>) => (opts?.time ? `${key}(${opts.time})` : key);
 const TICKS_PER_SEC = 10_000_000;
 
 describe("géométrie de la fiche", () => {
-  it("iPhone : visuel à 52 % de la hauteur, plafonné à 520 ; affiche à 32 % de la largeur", () => {
+  it("iPhone : scène à 70 % de la hauteur, plafonnée à 680 ; logo à 76 % de la largeur", () => {
     const g = detailGeometry(390, 844, false, false);
-    expect(g.backdropH).toBe(439);
-    expect(g.posterW).toBe(125);
-    expect(g.posterH).toBe(188);
-    expect(g.revealAt).toBeCloseTo(439 * 0.62);
+    expect(g.backdropH).toBe(591);
+    expect(g.logoMaxW).toBe(296);
+    expect(g.logoMaxH).toBe(96);
+    expect(g.revealAt).toBe(Math.round(591 * 0.82));
     expect(g.twoCol).toBe(false);
+    expect(detailGeometry(430, 1100, false, false).backdropH).toBe(680);
   });
-  it("iPad portrait : plafond 620, affiche plafonnée à 200", () => {
+  it("iPad portrait : 64 %, plafond 860, logo plafonné à 460", () => {
     const g = detailGeometry(820, 1180, true, false);
-    expect(g.backdropH).toBe(614);
+    expect(g.backdropH).toBe(755);
+    expect(g.logoMaxW).toBe(460);
+    expect(detailGeometry(1024, 1366, true, false).backdropH).toBe(860);
+  });
+  it("deux colonnes seulement sur tablette en paysage ; affiche plafonnée à 200", () => {
+    const g = detailGeometry(1180, 820, true, true);
+    expect(g.twoCol).toBe(true);
     expect(g.posterW).toBe(200);
     expect(g.posterH).toBe(300);
-    expect(detailGeometry(1024, 1366, true, false).backdropH).toBe(620);
-  });
-  it("deux colonnes seulement sur tablette en paysage", () => {
-    expect(detailGeometry(1180, 820, true, true).twoCol).toBe(true);
     expect(detailGeometry(844, 390, false, true).twoCol).toBe(false);
   });
 });
 
-describe("libellé du bouton Lecture", () => {
-  it("formate comme l'app", () => {
-    expect(formatTime(65)).toBe("01:05");
-    expect(formatTime(3725)).toBe("1:02:05");
-  });
-  it("série : épisode à reprendre, code S/E", () => {
-    const ep = { ParentIndexNumber: 2, IndexNumber: 3, UserData: { PlaybackPositionTicks: 90 * TICKS_PER_SEC } };
-    expect(buildSeriesPlayLabel(ep, t)).toBe("resumeAt(01:30) · S02E03");
-    expect(buildSeriesPlayLabel({ IndexNumber: 1 }, t)).toBe("play · S01E01");
-  });
-  it("série terminée : pas de bouton", () => {
+describe("bouton Lecture", () => {
+  const MIN = 60 * TICKS_PER_SEC;
+  it("série terminée ou collection : pas de bouton", () => {
     const series = { Id: "s", Type: "Series" } as MediaItem;
     expect(playCta(series, { type: "completed" }, t).targetId).toBeNull();
     expect(playCta(series, undefined, t).targetId).toBeNull();
+    expect(playCta({ Id: "b", Type: "BoxSet" } as MediaItem, undefined, t).targetId).toBeNull();
   });
-  it("série en cours : lance l'épisode suivant, sans barre", () => {
+  it("série : l'épisode visé, son code, sa reprise", () => {
     const series = { Id: "s", Type: "Series" } as MediaItem;
-    const episode = { Id: "e", Type: "Episode", ParentIndexNumber: 1, IndexNumber: 4 } as MediaItem;
-    const cta = playCta(series, { type: "next", episode }, t);
-    expect(cta).toMatchObject({ targetId: "e", label: "play · S01E04", showProgress: false });
+    const next = { Id: "e", Type: "Episode", ParentIndexNumber: 1, IndexNumber: 4 } as MediaItem;
+    expect(playCta(series, { type: "next", episode: next }, t)).toEqual({ targetId: "e", label: "play · S01E04", progress: null, remainingMinutes: null });
+    const started = { ...next, RunTimeTicks: 40 * MIN, UserData: { PlaybackPositionTicks: 10 * MIN } } as MediaItem;
+    expect(playCta(series, { type: "continue", episode: started }, t)).toEqual({ targetId: "e", label: "resume · S01E04", progress: 0.25, remainingMinutes: 30 });
   });
-  it("film entamé : reprise et progression", () => {
-    const movie = {
-      Id: "m",
-      Type: "Movie",
-      UserData: { PlaybackPositionTicks: 600 * TICKS_PER_SEC, PlayedPercentage: 25 },
-    } as MediaItem;
-    expect(playCta(movie, undefined, t)).toEqual({ targetId: "m", label: "resumeAt(10:00)", showProgress: true, progress: 0.25 });
+  it("film entamé : avancement et temps restant", () => {
+    const movie = { Id: "m", Type: "Movie", RunTimeTicks: 120 * MIN, UserData: { PlaybackPositionTicks: 30 * MIN } } as MediaItem;
+    expect(playCta(movie, undefined, t)).toEqual({ targetId: "m", label: "resume", progress: 0.25, remainingMinutes: 90 });
+    expect(playCta({ Id: "m", Type: "Movie" } as MediaItem, undefined, t).label).toBe("play");
   });
 });
 

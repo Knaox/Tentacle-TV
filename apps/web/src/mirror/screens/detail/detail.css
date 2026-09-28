@@ -39,10 +39,15 @@
 .mirror-detail-in-title { animation: mirror-detail-rise-18 360ms cubic-bezier(0.33, 1, 0.68, 1) 120ms both; }
 .mirror-detail-in-meta { animation: mirror-detail-rise-14 360ms cubic-bezier(0.33, 1, 0.68, 1) 220ms both; }
 .mirror-detail-in-actions { animation: mirror-detail-rise-14 360ms cubic-bezier(0.33, 1, 0.68, 1) 320ms both; }
+.mirror-detail-in-logo { animation: mirror-detail-logo 520ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
 .mirror-detail-in-content { animation: mirror-detail-fade 400ms cubic-bezier(0.33, 1, 0.68, 1) 440ms both; }
 
 @keyframes mirror-detail-poster {
   from { opacity: 0; transform: translateY(12px) scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes mirror-detail-logo {
+  from { opacity: 0; transform: translateY(8px) scale(0.94); }
   to { opacity: 1; transform: none; }
 }
 @keyframes mirror-detail-rise-18 {
@@ -90,6 +95,7 @@
   .mirror-detail-kenburns,
   .mirror-detail-in-poster,
   .mirror-detail-in-title,
+  .mirror-detail-in-logo,
   .mirror-detail-in-meta,
   .mirror-detail-in-actions,
   .mirror-detail-in-content,
@@ -100,4 +106,15 @@
   .mirror-detail-pop {
     transition: none;
   }
+}
+
+/* Colonne gauche de l'iPad paysage : elle est posée sur la PAGE voilée, pas
+   sur le décor. En clair, les jetons `on-media` du bloc titre (blanc) y
+   deviennent ceux de la page — une seule portée, le bloc ne change pas. */
+:root[data-theme="light"] .mirror-detail-rail {
+  --on-media-primary: var(--text-primary);
+  --on-media-secondary: var(--text-secondary);
+  --on-media-muted: var(--border-strong);
+  --on-media-shadow: transparent;
+  --scrim-media-rgb: var(--scrim-page-rgb);
 }
