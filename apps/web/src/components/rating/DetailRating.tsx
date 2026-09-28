@@ -11,7 +11,11 @@ import { StarRating } from "./StarRating";
  * Un épisode se note avec le tmdb de sa SÉRIE : la fiche série est déjà en
  * cache, la page la charge pour le lien « voir la série ».
  */
-export function DetailRating({ item }: { item: MediaItem }) {
+/**
+ * `media` : posé sur la scène de la fiche — jetons `on-media` et étoiles au
+ * contour blanc, lisibles sur le décor dans les deux thèmes.
+ */
+export function DetailRating({ item, tone = "themed" }: { item: MediaItem; tone?: "themed" | "media" }) {
   const { t } = useTranslation("reco");
   const isEpisode = item.Type === "Episode";
   const { data: series } = useMediaItem(isEpisode ? item.SeriesId : undefined, { enabled: isEpisode });
@@ -26,9 +30,15 @@ export function DetailRating({ item }: { item: MediaItem }) {
   const score = rating?.score ?? null;
 
   return (
-    <span className="flex items-center gap-2.5 rounded-full border border-line-strong bg-fill-subtle px-4 py-2">
-      <span className="text-sm text-content-secondary">{t("yourRating")}</span>
+    <span
+      className={tone === "media"
+        ? "flex h-14 items-center gap-3 rounded-full border border-on-media-muted px-5"
+        : "flex items-center gap-2.5 rounded-full border border-line-strong bg-fill-subtle px-4 py-2"}
+      style={tone === "media" ? { background: "rgba(var(--scrim-media-rgb), 0.38)" } : undefined}
+    >
+      <span className={tone === "media" ? "text-sm text-on-media-secondary" : "text-sm text-content-secondary"}>{t("yourRating")}</span>
       <StarRating
+        tone={tone === "media" ? "onMedia" : "themed"}
         value={score}
         onRate={(s) =>
           rate.mutate({ ...identity, jellyfinItemId: item.Id, score: s })
@@ -36,7 +46,7 @@ export function DetailRating({ item }: { item: MediaItem }) {
         onClear={() => remove.mutate(identity)}
       />
       {score != null && (
-        <span className="text-sm font-semibold tabular-nums text-content-primary">
+        <span className={`text-sm font-semibold tabular-nums ${tone === "media" ? "text-on-media-primary" : "text-content-primary"}`}>
           {t("ratingValue", { score })}
         </span>
       )}

@@ -87,4 +87,6 @@ export default {
   imageKindBackdrop: "Backdrop",
   imageKindPoster: "Poster",
   imageKindStill: "Episode still",
+  detailBrowseCollection_one: "See the title",
+  detailBrowseCollection_other: "See all {{count}} titles",
 } as const;

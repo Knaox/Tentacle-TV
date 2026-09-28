@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, useSeriesWatchState, useTmdbSeasonEpisodes } from "@tentacle-tv/api-client";
-import { TechInfo } from "../components/TechInfo";
+import { detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { PageTransition } from "../components/PageTransition";
-import { DetailHero } from "../components/detail/DetailHero";
+import { DetailStage } from "../components/detail/DetailStage";
+import { DetailScoreline } from "../components/detail/DetailScoreline";
+import { DetailImageViewer } from "../components/detail/DetailImageViewer";
 import { DetailMetadata } from "../components/detail/DetailMetadata";
 import { DetailOverview } from "../components/detail/DetailOverview";
 import { DetailActions } from "../components/detail/DetailActions";
@@ -16,7 +18,7 @@ import { DetailTitle } from "../components/detail/DetailTitle";
 import { DetailSections } from "../components/detail/DetailSections";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { tmdbIdForItem } from "../lib/ratingIdentity";
-import { fadeUp, textCascadeDelayed } from "../theme/motion";
+import { textCascadeDelayed } from "../theme/motion";
 
 // `fadeUp` / `fadeIn` viennent de `theme/motion` — la fiche avait ses propres
 // copies, restées à 24 px de course quand la référence est passée à 10. La
@@ -49,6 +51,12 @@ export function MediaDetail() {
   // Collection (BoxSet) : contenu navigable de la collection
   const { data: collectionItems } = useCollectionItems(item?.Type === "BoxSet" ? item.Id : undefined);
 
+  // Vue « image plein écran » : l'index de l'image montrée, `null` = fermée.
+  // Refermée à chaque changement de fiche (le composant est réutilisé).
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const gallery = useMemo(() => (item ? detailGallery(item) : []), [item]);
+  const closeViewer = useCallback(() => setViewerIndex(null), []);
+
   // Origine de l'ouverture : le rectangle du visuel cliqué, capturé juste avant
   // la navigation.
   const [origin, setOrigin] = useState<DetailOrigin | null>(() => consumeDetailOrigin(itemId));
@@ -72,6 +80,7 @@ export function MediaDetail() {
     const next = consumeDetailOrigin(itemId);
     setOrigin(next);
     setTarget(null);
+    setViewerIndex(null);
     // Le composant étant réutilisé d'une fiche à l'autre, le régime d'entrée
     // doit suivre l'item courant : la fiche suivante peut très bien s'ouvrir
     // sans transition (lien direct) après une qui en avait une.
@@ -139,7 +148,10 @@ export function MediaDetail() {
     : undefined;
   const highlightEpisodeId = isEpisode ? item.Id : seriesResumeEp?.Id;
   const highlightSeasonId = isEpisode ? item.SeasonId : seriesResumeEp?.SeasonId;
-  const streams = item.MediaSources?.[0]?.MediaStreams ?? [];
+  const openImages = gallery.length > 0 ? () => setViewerIndex(0) : undefined;
+  const openPoster = gallery.length > 0
+    ? () => setViewerIndex(galleryIndexOf(gallery, isEpisode ? "still" : "poster"))
+    : undefined;
 
   return (
     <>
@@ -148,44 +160,37 @@ export function MediaDetail() {
         personne ne voit et qui n'a plus qu'à finir au mauvais moment. */}
     <PageTransition skip={skipEntrance.current}>
       <div className="min-h-screen bg-surface-0">
-        <DetailHero backdropUrl={backdropUrl} item={item} instant={skipEntrance.current} />
-
-        <motion.div
-          className="-mt-48 relative z-10 px-4 md:px-12"
-          // `initial={false}` quand la page ne s'ouvre pas : le contenu rend son
-          // état FINAL d'emblée. Sinon la cascade se joue sous le calque,
-          // invisible, et il ne lui reste plus qu'à se terminer au mauvais
-          // moment — c'est le défaut d'ouverture.
-          initial={skipEntrance.current ? false : "hidden"}
-          animate="show"
-          // Constante de module (cf. `theme/motion`), jamais un littéral en
-          // ligne : un objet neuf à chaque rendu fait rejouer toute la cascade
-          // par framer, et cette page se rend plusieurs fois — mesure du visuel,
-          // arrivée des requêtes.
-          variants={textCascadeDelayed}
-        >
-          <div className="flex flex-col gap-4 md:flex-row md:gap-8">
+        <DetailStage backdropUrl={backdropUrl} item={item} instant={skipEntrance.current} onOpenImages={openImages}>
+          <motion.div
+            className="flex items-end gap-8 px-5 pb-10 pt-28 md:px-12 md:pb-14 xl:gap-12 xl:px-16"
+            // `initial={false}` quand la page ne s'ouvre pas : le contenu rend son
+            // état FINAL d'emblée. Sinon la cascade se joue sous le calque,
+            // invisible, et il ne lui reste plus qu'à se terminer au mauvais
+            // moment — c'est le défaut d'ouverture.
+            initial={skipEntrance.current ? false : "hidden"}
+            animate="show"
+            // Constante de module (cf. `theme/motion`), jamais un littéral en
+            // ligne : un objet neuf à chaque rendu fait rejouer toute la cascade
+            // par framer, et cette page se rend plusieurs fois — mesure du visuel,
+            // arrivée des requêtes.
+            variants={textCascadeDelayed}
+          >
             <DetailPoster
               item={item}
               onMeasure={handleMeasure}
               instant={skipEntrance.current}
+              onOpen={openPoster}
             />
 
-            <div className="flex-1 pt-4">
+            <div className="min-w-0 max-w-4xl flex-1">
               <DetailTitle item={item} collectionCount={collectionItems?.length} />
-
-              <DetailMetadata item={item} streams={streams} communityRating={episodeCommunityRating} />
+              <DetailScoreline item={item} communityRating={episodeCommunityRating} />
+              <DetailMetadata item={item} />
               <DetailOverview item={item} />
-              <DetailActions item={item} />
-
-              {streams.length > 0 && (
-                <motion.div variants={fadeUp}>
-                  <TechInfo streams={streams} />
-                </motion.div>
-              )}
+              <DetailActions item={item} collectionCount={collectionItems?.length} />
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </DetailStage>
 
         <DetailSections
           item={item}
@@ -199,6 +204,13 @@ export function MediaDetail() {
       </div>
     </PageTransition>
     {openOverlay}
+    <DetailImageViewer
+      title={item.Name}
+      gallery={gallery}
+      index={viewerIndex}
+      onIndexChange={setViewerIndex}
+      onClose={closeViewer}
+    />
     </>
   );
 }

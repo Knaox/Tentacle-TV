@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { DETAIL_HERO_BOX, DETAIL_SCRIM_BOTTOM } from "./DetailHero";
+import { DETAIL_STAGE_BOX, DETAIL_STAGE_FOCUS, DETAIL_STAGE_LAYERS } from "./detailStageGeometry";
 import type { DetailOrigin } from "./detailTransition";
 
 export interface TargetRect {
@@ -166,14 +166,14 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
             exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
             transition={{ duration: DECOR_S * 0.45, ease: "easeOut" }}
           />
-          {/* Décor monté à l'avance, dans la MÊME boîte que `DetailHero` : à
+          {/* Décor monté à l'avance, dans la MÊME boîte que `DetailStage` : à
               l'effacement du calque, les pixels dessous sont déjà identiques,
               donc pas de ressaut. C'est toute sa raison d'être — et c'est
               exactement ce qui s'était cassé quand la bannière a gagné son
               débord de 260 px sans que ce calque le suive : le décor sautait à
               l'atterrissage de chaque ouverture de fiche. Les dimensions
               viennent désormais des mêmes constantes. */}
-          <div className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
+          <div className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_STAGE_BOX}`}>
             {backdropUrl && (
               // Le zoom et l'opacité d'ensemble vivent sur le CONTENEUR, la
               // mise au point sur deux calques superposés.
@@ -200,6 +200,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
                   alt=""
                   draggable={false}
                   className="absolute inset-0 h-full w-full object-cover"
+                  style={{ objectPosition: DETAIL_STAGE_FOCUS }}
                 />
                 <motion.img
                   src={backdropUrl}
@@ -207,23 +208,20 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, onDone }: Detai
                   draggable={false}
                   aria-hidden
                   className="absolute inset-0 h-full w-full object-cover"
-                  style={{ filter: "blur(12px)" }}
+                  style={{ filter: "blur(12px)", objectPosition: DETAIL_STAGE_FOCUS }}
                   initial={{ opacity: 1 }}
                   animate={{ opacity: 0 }}
                   transition={{ duration: DECOR_S * 1.05, ease: SETTLE }}
                 />
               </motion.div>
             )}
-            {[
-              { style: "var(--detail-scrim-diagonal)", cls: "absolute inset-0" },
-              { style: "var(--detail-scrim-bottom)", cls: `absolute inset-x-0 bottom-0 ${DETAIL_SCRIM_BOTTOM}` },
-              { style: "var(--detail-brand-wash)", cls: "absolute inset-0" },
-              { style: "var(--detail-page-fade)", cls: "absolute inset-x-0 bottom-0 h-[46%]" },
-            ].map((layer) => (
+            {/* Mêmes voiles, même ordre que la scène (`DETAIL_STAGE_LAYERS`) :
+                une liste unique, sinon le décor saute à l'effacement. */}
+            {DETAIL_STAGE_LAYERS.map((layer) => (
               <motion.div
-                key={layer.style}
-                className={layer.cls}
-                style={{ background: layer.style }}
+                key={layer.background}
+                className={layer.className}
+                style={{ background: layer.background }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}

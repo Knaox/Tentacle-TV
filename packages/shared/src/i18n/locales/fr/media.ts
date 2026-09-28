@@ -87,4 +87,6 @@ export default {
   imageKindBackdrop: "Décor",
   imageKindPoster: "Affiche",
   imageKindStill: "Image de l'épisode",
+  detailBrowseCollection_one: "Voir le titre",
+  detailBrowseCollection_other: "Voir les {{count}} titres",
 } as const;

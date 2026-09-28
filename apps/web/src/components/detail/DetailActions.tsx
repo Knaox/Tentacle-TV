@@ -1,217 +1,24 @@
-import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import {
-  useFavoriteForItem,
-  useToggleWatchlistForItem,
-  useWatchedToggle,
-  useSeriesWatchState,
-  useWatchlistSeriesIds,
-  useFavoriteSeriesIds,
-} from "@tentacle-tv/api-client";
-import { formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { PlayIcon, HeartIcon, BookmarkIcon, CheckCircleIcon } from "../media/MediaDetailIcons";
-import { PressableScale } from "../ui/PressableScale";
+import { DetailPlayButton } from "./DetailPlayButton";
+import { DetailActionCapsule } from "./DetailActionCapsule";
 import { TrailerButton } from "./TrailerButton";
-import { DetailDownloadAction } from "../../downloads/DetailDownloadAction";
 import { DetailRating } from "../rating/DetailRating";
-import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
-import { openRoomModal } from "../../watchTogether/roomModalStore";
-import { useToast } from "../../contexts/ToastContext";
-
-interface DetailActionsProps {
-  item: MediaItem;
-}
-
-const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
+import { fadeUp } from "../../theme/motion";
 
 /**
- * Primary CTA cluster on the detail page: Play (white), Favorite, Watchlist,
- * Watched. Encapsulates all mutations + the resume label logic for series.
+ * La rangée d'actions de la scène, par ordre d'importance : Lecture (seule en
+ * couleur), bande-annonce, la capsule des bascules, puis votre note. Même
+ * hauteur de 56 px pour les quatre : une ligne, pas un empilement de tailles.
  */
-export function DetailActions({ item }: DetailActionsProps) {
-  const { t } = useTranslation("common");
-  const { t: tWt } = useTranslation("watchTogether");
-  const navigate = useNavigate();
-  const { show } = useToast();
-  const { isInGroup, isHost, actions: wtActions } = useWatchTogether();
-  const isSeries = item.Type === "Series";
-  const isEpisode = item.Type === "Episode";
-  const { data: watchState } = useSeriesWatchState(isSeries ? item.Id : undefined);
-  const { add: addFav, remove: removeFav } = useFavoriteForItem(item);
-  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlistForItem(item);
-  const { markWatched, markUnwatched } = useWatchedToggle(item.Id, {
-    seriesId: item.SeriesId,
-    seasonId: item.SeasonId,
-    itemType: item.Type,
-  });
-  const watchlistSeries = useWatchlistSeriesIds();
-  const favoriteSeries = useFavoriteSeriesIds();
-
-  // Un épisode reflète l'état de sa série ; Movie/Series lisent UserData.
-  const isFavorite = isEpisode ? favoriteSeries.has(item.SeriesId) : item.UserData?.IsFavorite === true;
-  const isInWatchlist = isEpisode ? watchlistSeries.has(item.SeriesId) : item.UserData?.Likes === true;
-  const isWatched = item.UserData?.Played === true;
-  const progress = item.UserData?.PlayedPercentage;
-  // Seuil à 99 et non à 100 : Jellyfin renvoie couramment 99.4 % sur un média
-  // vu jusqu'au générique. Le bouton affichait alors « Reprendre » juste à côté
-  // d'un « 100 % visionné » — deux affirmations contradictoires sur la même
-  // ligne. Au-delà de 99 %, il ne reste rien à reprendre.
-  const hasResume = progress != null && progress > 0 && progress < 99;
-
-  const handlePlay = () => {
-    if (isSeries) {
-      const epId = watchState?.type !== "completed" ? watchState?.episode?.Id : undefined;
-      if (epId && epId !== item.Id) navigate(`/watch/${epId}`);
-      return;
-    }
-    navigate(`/watch/${item.Id}`);
-  };
-
-  const playLabel = (() => {
-    // BoxSet (collection) : conteneur sans MediaSources — pas de lecture.
-    if (item.Type === "BoxSet") return null;
-    if (isSeries) {
-      if (!watchState || watchState.type === "completed") return null;
-      const ep = watchState.episode;
-      const epLabel = formatEpisodeCode(ep.ParentIndexNumber, ep.IndexNumber);
-      if (watchState.type === "continue") return `${t("common:resume")} ${epLabel}`;
-      if (watchState.type === "next") return `${t("common:play")} ${epLabel}`;
-      return t("common:play");
-    }
-    if (hasResume) return t("common:resume");
-    // Déjà vu : « Lecture » suffit et reste juste — c'est bien une relecture.
-    return t("common:play");
-  })();
-
+export function DetailActions({ item, collectionCount }: { item: MediaItem; collectionCount?: number }) {
   return (
-    <motion.div variants={fadeUp} className="mt-6 flex flex-wrap items-center gap-2.5">
-      {playLabel && (
-        <PressableScale
-          hoverScale={1.04}
-          tapScale={0.97}
-          onClick={handlePlay}
-          className="flex items-center gap-2.5 rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
-          style={{ boxShadow: "var(--elev-2)" }}
-        >
-          <PlayIcon /> {playLabel}
-        </PressableScale>
-      )}
-
+    <motion.div variants={fadeUp} className="mt-7 flex flex-wrap items-center gap-3">
+      <DetailPlayButton item={item} collectionCount={collectionCount} />
       <TrailerButton item={item} />
-
-      <CircleAction
-        active={isFavorite}
-        onClick={() => (isFavorite ? removeFav.mutate() : addFav.mutate())}
-        label={isFavorite ? t("common:removeFromFavorites") : t("common:addToFavorites")}
-        icon={<HeartIcon filled={isFavorite} />}
-      />
-      <CircleAction
-        active={isInWatchlist}
-        onClick={() => (isInWatchlist ? removeWatchlist.mutate() : addWatchlist.mutate())}
-        label={isInWatchlist ? t("common:removeFromMyList") : t("common:addToMyList")}
-        icon={<BookmarkIcon filled={isInWatchlist} />}
-      />
-      <CircleAction
-        active={isWatched}
-        onClick={() => (isWatched ? markUnwatched.mutate() : markWatched.mutate())}
-        label={isWatched ? "Marquer comme non vu" : "Marquer comme vu"}
-        icon={<CheckCircleIcon filled={isWatched} />}
-      />
-
-      {/* Téléchargement (desktop) : rendu UNIQUEMENT avec le droit Jellyfin —
-          le composant s'efface totalement sinon (invisibilité stricte). */}
-      <DetailDownloadAction item={item} />
-
-      {/* Watch Together : crée la salle, ce média au programme, et l'ouvre —
-          on invite ensuite, d'un geste, qui l'on veut. En salle, l'hôte
-          invite d'ici. Lancer la lecture = bouton Lire normal (le moteur de
-          sync propage le média au groupe). */}
-      {item.Type !== "BoxSet" && (!isInGroup || isHost) && (
-        <CircleAction
-          active={isInGroup}
-          onClick={async () => {
-            if (isInGroup) { openRoomModal("invite"); return; }
-            try {
-              await wtActions.create(item.Id);
-              openRoomModal("room", { fresh: true });
-            } catch {
-              show("error", tWt("alreadyInGroup"));
-            }
-          }}
-          label={isInGroup ? tWt("invite") : tWt("watchTogetherAction")}
-          icon={<UsersIcon />}
-        />
-      )}
-
+      <DetailActionCapsule item={item} />
       {/* Note explicite — s'efface d'elle-même sans tmdbId (titre non notable). */}
-      <DetailRating item={item} />
-
-      {/* Progression en barre plutôt qu'en pourcentage nu : sur une rangée de
-          boutons, un chiffre isolé se lit comme une étiquette orpheline. */}
-      {hasResume && !isSeries && (
-        <span className="ml-1 flex items-center gap-2.5">
-          <span className="h-1 w-20 overflow-hidden rounded-full bg-fill-medium">
-            <span
-              className="block h-full rounded-full"
-              style={{
-                width: `${progress}%`,
-                background: "linear-gradient(90deg, var(--brand), var(--brand-accent))",
-              }}
-            />
-          </span>
-          <span className="text-sm text-content-tertiary">
-            {t("common:percentWatched", { percent: Math.round(progress!) })}
-          </span>
-        </span>
-      )}
-
+      <DetailRating item={item} tone="media" />
     </motion.div>
-  );
-}
-
-function UsersIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-      />
-    </svg>
-  );
-}
-
-function CircleAction({
-  active,
-  onClick,
-  label,
-  icon,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  icon: React.ReactNode;
-}) {
-  // Actif = liseré et halo de MARQUE, pas un simple gris renforcé : au repos
-  // les cinq pastilles étaient quasi indiscernables de leur état actif.
-  return (
-    <PressableScale
-      hoverScale={1.06}
-      tapScale={0.94}
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      aria-pressed={active}
-      className={`flex h-11 w-11 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
-        active
-          ? "border-[rgba(var(--brand-rgb),0.6)] bg-[rgba(var(--brand-rgb),0.18)] text-[var(--brand-light)]"
-          : "border-line-strong bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
-      }`}
-      style={active ? { boxShadow: "0 0 18px rgba(var(--brand-rgb), 0.25)" } : undefined}
-    >
-      {icon}
-    </PressableScale>
   );
 }

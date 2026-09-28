@@ -6,7 +6,17 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { ChevronRightIcon } from "../media/MediaDetailIcons";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
-import { fadeUp } from "../../theme/motion";
+import { easeOut, fadeUp } from "../../theme/motion";
+
+/**
+ * Le logo entre un temps après le surtitre, d'un léger zoom arrière : c'est la
+ * signature de la scène, le seul élément qui a droit à plus qu'un fondu.
+ * Opacité et `transform` seulement.
+ */
+const logoReveal = {
+  hidden: { opacity: 0, scale: 0.94, y: 8 },
+  show: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.5, ease: easeOut } },
+};
 
 const KIND_KEYS: Partial<Record<MediaItem["Type"], string>> = {
   Movie: "media:kindMovie",
@@ -33,7 +43,7 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount }: 
   const isEpisode = item.Type === "Episode";
   // Un épisode garde son nom en texte : le logo serait celui de la série.
   const logoUrl = !isEpisode && item.ImageTags?.Logo
-    ? client.getImageUrl(item.Id, "Logo", { height: 240, quality: 90, tag: item.ImageTags.Logo })
+    ? client.getImageUrl(item.Id, "Logo", { height: 320, quality: 90, tag: item.ImageTags.Logo })
     : null;
   const { broken, reportFailure } = useBrokenImage(logoUrl);
   const showLogo = logoUrl !== null && !broken;
@@ -48,7 +58,7 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount }: 
       {kicker && (
         <motion.p
           variants={fadeUp}
-          className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
+          className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
         >
           <span aria-hidden className="mr-2 inline-block h-1.5 w-1.5 -translate-y-px rounded-full align-middle" style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }} />
           {kicker}
@@ -58,22 +68,23 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount }: 
         variants={fadeUp}
         className={showLogo
           ? "sr-only"
-          : "text-display-3 font-bold text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words max-w-3xl md:text-display-2"}
+          : "max-w-3xl break-words text-display-3 font-bold leading-[1.02] tracking-tight text-on-media-primary drop-shadow-[0_3px_16px_var(--on-media-shadow)] line-clamp-3 md:text-display-2 xl:text-[4.25rem]"}
       >
         {item.Name}
       </motion.h1>
       {showLogo && (
         <motion.img
-          variants={fadeUp}
+          variants={logoReveal}
           src={logoUrl}
           alt=""
           draggable={false}
           onError={reportFailure}
-          className="block h-auto max-h-24 w-auto max-w-[min(28rem,85%)] object-contain object-left drop-shadow-[0_4px_18px_var(--on-media-shadow)] md:max-h-28"
+          style={{ transformOrigin: "left bottom" }}
+          className="block h-auto max-h-28 w-auto max-w-[min(36rem,92%)] object-contain object-left drop-shadow-[0_6px_24px_var(--on-media-shadow)] md:max-h-36 xl:max-h-44"
         />
       )}
       {item.OriginalTitle && item.OriginalTitle !== item.Name && (
-        <motion.p variants={fadeUp} className="mt-1.5 text-sm text-on-media-secondary">
+        <motion.p variants={fadeUp} className="mt-2 text-sm text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]">
           {item.OriginalTitle}
         </motion.p>
       )}

@@ -1,21 +1,20 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { RichOverview } from "../../lib/overviewHtml";
-
-interface DetailOverviewProps {
-  item: MediaItem;
-}
-
-const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
+import { fadeUp } from "../../theme/motion";
 
 /**
- * Tagline + overview with progressive disclosure (Show more / less).
- * Replié sur CINQ lignes, au-delà desquelles le texte est coupé par une
- * ellipse ; le bouton déplie le synopsis complet.
+ * L'accroche et le synopsis, posés sur la scène.
+ *
+ * Replié sur TROIS lignes : sur le premier écran, un synopsis de cinq lignes
+ * repoussait « Lecture » vers le bas et mangeait le décor. Le bouton le déplie
+ * sur place — la scène est ancrée par le bas, le texte grandit vers le haut et
+ * « Lecture » ne bouge pas. Pas d'animation de hauteur (règle GPU) : un
+ * simple fondu du texte.
  */
-export function DetailOverview({ item }: DetailOverviewProps) {
+export function DetailOverview({ item }: { item: MediaItem }) {
   const { t } = useTranslation("common");
   const [expanded, setExpanded] = useState(false);
   const overview = item.Overview;
@@ -24,40 +23,37 @@ export function DetailOverview({ item }: DetailOverviewProps) {
   if (!overview && !tagline) return null;
 
   return (
-    <>
+    <motion.div variants={fadeUp} className="mt-5 max-w-2xl">
       {tagline && (
-        <motion.p variants={fadeUp} className="mt-4 text-sm italic text-content-quaternary">
+        <p className="mb-2 text-[0.9375rem] font-medium italic text-on-media-primary drop-shadow-[0_1px_6px_var(--on-media-shadow)]">
           « {tagline} »
-        </motion.p>
+        </p>
       )}
-
       {overview && (
-        <motion.div variants={fadeUp} className="mt-3 max-w-3xl">
-          <motion.div layout transition={{ duration: 0.3, ease: "easeInOut" }}>
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={expanded ? "full" : "clamped"}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className={`text-sm leading-relaxed text-content-secondary ${!expanded ? "line-clamp-5" : ""}`}
-              >
-                <RichOverview text={overview} />
-              </motion.p>
-            </AnimatePresence>
-          </motion.div>
-          {overview.length > 200 && (
+        <>
+          <motion.p
+            key={expanded ? "full" : "clamped"}
+            initial={{ opacity: 0.4 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            id={`overview-${item.Id}`}
+            className={`text-[0.9375rem] leading-relaxed text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)] ${expanded ? "" : "line-clamp-3"}`}
+          >
+            <RichOverview text={overview} />
+          </motion.p>
+          {overview.length > 180 && (
             <button
               type="button"
               onClick={() => setExpanded((p) => !p)}
-              className="mt-1 text-xs font-medium text-content-tertiary transition-colors hover:text-content-primary"
+              aria-expanded={expanded}
+              aria-controls={`overview-${item.Id}`}
+              className="mt-1 py-1 text-xs font-semibold uppercase tracking-wider text-on-media-secondary transition-colors hover:text-on-media-primary"
             >
               {expanded ? t("common:showLess") : t("common:showMore")}
             </button>
           )}
-        </motion.div>
+        </>
       )}
-    </>
+    </motion.div>
   );
 }
