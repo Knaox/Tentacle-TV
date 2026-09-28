@@ -234,24 +234,19 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
     </div>
   );
 
-  // Déroulé du bloc d'informations. `height: 0 → auto` : le tiroir POUSSE sa
-  // hauteur, comme un tiroir qui s'ouvre. Sa taille est désormais stable — le
-  // synopsis est tronqué à UNE ligne (`line-clamp-1`), il ne peut plus la faire
-  // varier de plusieurs lignes.
+  // Bloc d'informations sous la vignette. Sa taille est stable — le synopsis
+  // est tronqué à UNE ligne (`line-clamp-1`).
   const drawer = (
     <motion.div
       key="drawer"
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ height: "auto", opacity: 1 }}
-      // 300 ms, légèrement décalé après le lift. À 440 ms le tiroir donnait le
-      // tempo du survol, et ce tempo était trop lent : on avait fini de lire la
-      // vignette avant qu'il ne soit ouvert. Le décalage subsiste — sans lui les
-      // deux mouvements se télescopent — mais il est resserré d'autant.
-      transition={{
-        height: { duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.03 },
-        opacity: { duration: 0.24, delay: 0.09 },
-      }}
-      className="overflow-hidden"
+      // `opacity` et `transform` seulement. Le tiroir « poussait » autrefois
+      // par sa HAUTEUR (0 → auto) : une mise en page et une peinture par image,
+      // pendant 300 ms, à chaque survol. Le panneau a de toute façon sa hauteur
+      // finale dès l'ouverture (`computePreviewRect`) : le tiroir n'a qu'à
+      // apparaître à sa place, en glissant de quelques pixels sous la vignette.
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1], delay: 0.06 }}
     >
       <HoverPreviewInfo item={item} onOpenDetail={go(`/media/${item.Id}`)} />
     </motion.div>

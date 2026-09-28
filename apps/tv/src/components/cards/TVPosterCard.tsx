@@ -6,10 +6,9 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { BRAND, cardRatingFor, resolvePosterImage } from "@tentacle-tv/shared";
 import { Colors, Typography, Fonts } from "../../theme/colors";
-import { CheckIcon } from "../icons/TVIcons";
 import { TVCardImage } from "./TVCardImage";
 import { TVCardProgressBar } from "./TVCardProgressBar";
-import { TVCardRatingBadge } from "./TVCardRatingBadge";
+import { TVCardMarkerLayer } from "./TVCardMarkerLayer";
 import { useSeriesRatingMap } from "../../contexts/SeriesRatingContext";
 import { TVMetaChips } from "../TVMetaChips";
 import { TV_POSTER_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
@@ -77,30 +76,16 @@ export const TVPosterFrame = memo(function TVPosterFrame({ item, width, focused 
         </LinearGradient>
       )}
 
-      {watched && (
-        <View
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            width: 22,
-            height: 22,
-            borderRadius: 11,
-            backgroundColor: Colors.textPrimary,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <CheckIcon size={12} color={Colors.bgDeep} />
-        </View>
-      )}
-
       {!watched && <TVCardProgressBar percent={progress} />}
 
-      {/* La note cède le bas de l'affiche aux chips pendant le focus : les deux
-          s'y superposeraient. Elle reste donc visible au repos, ce qui est
-          l'essentiel — une rangée du salon se lit sans rien toucher. */}
-      {!(focused && addedCount <= 1) && <TVCardRatingBadge rating={rating} />}
+      {/* Marqueurs — modèle partagé avec le web et le mobile : la note
+          (globale + la vôtre) en bas à gauche, la pastille d'états (ma liste,
+          favori, vu) en haut à droite. La note cède le bas de l'affiche aux
+          chips pendant le focus : les deux s'y superposeraient. Elle reste
+          visible au repos, ce qui est l'essentiel — une rangée du salon se lit
+          sans rien toucher. La pastille, elle, reste au focus : son coin est
+          libre. */}
+      <TVCardMarkerLayer item={item} communityRating={rating} hideRating={focused && addedCount <= 1} />
 
       {/* Méta qualité/langues révélée AU FOCUS (équivalent du hover web
           CardMetaOverlay) — pas sur les tuiles groupées « +N » (comme web). */}

@@ -9,7 +9,7 @@ import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
-import { CardRatingBadge } from "../cards/CardRatingBadge";
+import { CardMarkerLayer } from "../cards/CardMarkerLayer";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { useHoverMount } from "../../hooks/useHoverMount";
@@ -84,8 +84,15 @@ export function SearchResultCard({
           <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
           {/* Portée `item` : un résultat de recherche porte le nom de ce qu'on a
               trouvé — un épisode y garde SA note. Et rien à résoudre, donc
-              aucune requête au fil de la frappe. */}
-          <CardRatingBadge rating={cardRatingFor(item, "item").rating} />
+              aucune requête de note au fil de la frappe : les marqueurs lisent
+              des caches partagés, déjà chargés par l'accueil. La pastille
+              d'états cède son coin au bouton hors ligne pendant le survol. */}
+          <CardMarkerLayer
+            item={item}
+            communityRating={cardRatingFor(item, "item").rating}
+            scope="item"
+            hideStatus={hover.hovered}
+          />
         </div>
         <p className="mt-2 truncate text-sm font-medium text-content-primary">{item.Name}</p>
         <p className="text-xs text-content-quaternary">

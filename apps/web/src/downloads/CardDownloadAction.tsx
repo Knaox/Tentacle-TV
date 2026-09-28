@@ -43,9 +43,14 @@ const VARIANT_STYLE = {
 interface CardDownloadActionProps {
   item: MediaItem;
   variant?: keyof typeof VARIANT_STYLE;
+  /**
+   * `tray` : sans pastille propre, dans la capsule du plateau de survol
+   * (`CardActionTray`) — ses voisins n'ont ni fond ni liseré.
+   */
+  tone?: "chip" | "tray";
 }
 
-export function CardDownloadAction({ item, variant = "compact" }: CardDownloadActionProps) {
+export function CardDownloadAction({ item, variant = "compact", tone = "chip" }: CardDownloadActionProps) {
   const { t } = useTranslation("downloads");
   const navigate = useNavigate();
   const { canDownload } = useDownloadsVisibility();
@@ -104,10 +109,12 @@ export function CardDownloadAction({ item, variant = "compact" }: CardDownloadAc
       onClick={handleClick}
       aria-label={label}
       title={label}
-      className={`${box} relative flex items-center justify-center rounded-full border bg-black/55 transition hover:scale-105 hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
-        isComplete
-          ? "border-emerald-400/80 text-emerald-300"
-          : "border-white/40 text-white hover:border-white"
+      className={`${box} relative flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+        tone === "tray"
+          ? `shrink-0 transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${isComplete ? "text-emerald-300" : "text-white/80 hover:text-white"}`
+          : `border bg-black/55 transition hover:scale-105 hover:bg-black/70 ${
+              isComplete ? "border-emerald-400/80 text-emerald-300" : "border-white/40 text-white hover:border-white"
+            }`
       }`}
     >
       <DownloadGlyph done={isComplete} className={icon} strokeWidth={1.8} />

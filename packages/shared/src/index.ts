@@ -6,6 +6,8 @@ export * from "./utils/trickplay";
 // chaîne de repli, et « la donnée prouve l'absence » → zéro requête.
 export * from "./utils/cardImage";
 export * from "./utils/cardRating";
+export * from "./utils/cardMarkers";
+export * from "./utils/cardMarkerGlyphs";
 export * from "./utils/mediaQuality";
 export * from "./utils/qualityLadder";
 export * from "./utils/scrubStep";

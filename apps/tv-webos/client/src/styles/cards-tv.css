@@ -139,6 +139,43 @@
   opacity: 0;
 }
 
+/* Les marqueurs de la carte — note et pastille d'états (ma liste, favori,
+ * vu) — sont dessinés pour un écran à cinquante centimètres.
+ *
+ * Le chiffre de la note porte `text-[11px]`, que le plancher typographique
+ * (tv.css) relève déjà à 24 px ; restent la boîte, fixée à 20 px de haut pour
+ * le web, et les glyphes, qui ne suivent pas le texte. On rend la hauteur au
+ * contenu et on aligne les glyphes sur le corps : sans cela le chiffre
+ * débordait de sa pastille et l'étoile restait à 12 px à côté d'un « 7.3 » de
+ * 24. Des dimensions statiques — rien qui s'anime, rien qui se repeigne.
+ *
+ * Pas de `gap` ici : sur Chrome 53, `gapPass` ne sait convertir que les
+ * écarts des utilitaires Tailwind (`.flex.gap-1`). Écrit dans cette feuille,
+ * il serait retiré au build sans rien pour le remplacer. */
+.carte-tv [data-card-rating] {
+  height: auto;
+  line-height: 1.1;
+}
+
+.carte-tv [data-card-rating] > span {
+  padding: 3px 8px;
+}
+
+.carte-tv [data-card-rating] svg {
+  width: 18px;
+  height: 18px;
+}
+
+.carte-tv [data-card-status] {
+  height: 34px;
+  padding: 0 9px;
+}
+
+.carte-tv [data-card-status] svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* Pas d'ombre portée sur les cartes AU REPOS.
  *
  * `theme/cards.css` pose deux calques d'élévation en pseudo-éléments, dont

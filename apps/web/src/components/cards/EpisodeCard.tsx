@@ -6,8 +6,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { CardFrame } from "./CardFrame";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
-import { CardRatingBadge } from "./CardRatingBadge";
-import { CardQuickActions } from "./CardQuickActions";
+import { CardMarkerLayer } from "./CardMarkerLayer";
+import { CardActionTray } from "./CardActionTray";
 import { CardMoreInfoButton } from "./CardMoreInfoButton";
 import { CardHoverPreview } from "./CardHoverPreview";
 import { useHoverPreview } from "./useHoverPreview";
@@ -15,7 +15,6 @@ import { prefetchDetailRoute } from "./prefetchDetail";
 import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
-import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 import { resolveBannerImage } from "@tentacle-tv/shared";
 import { CardTrickplayImage } from "./CardTrickplayImage";
 import { EPISODE_VW, EPISODE_WIDTH, type CardSize } from "./cardSizes";
@@ -206,13 +205,19 @@ export const EpisodeCard = memo(function EpisodeCard({
         {/* La note de CET épisode — portée `item` : la vignette porte son nom et
             son numéro, elle porte donc sa note, jamais celle de la série. En
             HAUT à gauche : le bas est déjà pris par le code d'épisode et son
-            titre. Elle s'efface quand le panneau d'aperçu prend le relais, qui
-            la répète dans sa ligne méta — et au survol (focus sur téléviseur),
-            où les puces qualité/langues montent au même coin. */}
-        <CardRatingBadge
-          rating={cardRatingFor(item, "item").rating}
-          shown={!preview.panelActive && !hovered}
-          className="left-2 top-2"
+            titre. La pastille d'états tient le coin opposé.
+            Les deux s'effacent au survol (focus sur téléviseur) : le panneau
+            d'aperçu les répète, ou le plateau de repli, et les puces
+            qualité/langues montent au même coin. Elles restent en revanche
+            AU REPOS même là où le panneau peut s'ouvrir — c'est tout l'objet
+            des marqueurs : se lire sans rien survoler. */}
+        <CardMarkerLayer
+          item={item}
+          communityRating={cardRatingFor(item, "item").rating}
+          scope="item"
+          hideRating={hovered}
+          hideStatus={hovered}
+          ratingClassName="left-2 top-2"
         />
 
         <div className="absolute inset-x-0 bottom-1.5 pl-3 pr-28 text-on-media-primary">
@@ -238,8 +243,7 @@ export const EpisodeCard = memo(function EpisodeCard({
                 "--reveal-ms": "150ms",
               } as React.CSSProperties}
             >
-              <CardQuickActions item={item} variant="bar" />
-              <CardDownloadAction item={item} variant="bar" />
+              <CardActionTray item={item} />
             </div>
             <CardMoreInfoButton detailId={item.Id} visible={fallbackVisible} />
           </>

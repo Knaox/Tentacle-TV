@@ -13,6 +13,7 @@ import { SeasonKeepOfflinePill } from "@/offline/entry/SeasonKeepOfflinePill";
 import { CastRow } from "../CastRow";
 import { LicenseAttribution } from "../LicenseAttribution";
 import { MobileExtrasSection } from "./MobileExtrasSection";
+import { DetailRating } from "./DetailRating";
 import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
 
 interface Props {
@@ -39,6 +40,9 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
 
   return (
     <View>
+      {/* Votre note — sous les actions de l'en-tête, avant les genres. */}
+      <DetailRating item={item} parentSeries={parentSeries} />
+
       {item.Genres && item.Genres.length > 0 && (
         <View style={[st.genreRow, { maxWidth: CONTENT_MAX_WIDTH }]}>
           {item.Genres.slice(0, 6).map((g) => <Badge key={g} label={g} variant="muted" uppercase={false} />)}

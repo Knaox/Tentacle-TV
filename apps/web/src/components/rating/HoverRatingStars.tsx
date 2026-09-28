@@ -5,6 +5,8 @@ import { StarRating } from "./StarRating";
 interface HoverRatingStarsProps {
   identity: RatingIdentity;
   jellyfinItemId?: string | null;
+  /** `xs` sur les affiches étroites du survol. */
+  size?: "xs" | "sm";
 }
 
 /**
@@ -15,7 +17,7 @@ interface HoverRatingStarsProps {
  * et une note re-rendrait toute la grille. Ici, l'abonnement n'existe que le
  * temps du survol. stopPropagation : noter ne doit jamais naviguer.
  */
-export function HoverRatingStars({ identity, jellyfinItemId }: HoverRatingStarsProps) {
+export function HoverRatingStars({ identity, jellyfinItemId, size = "sm" }: HoverRatingStarsProps) {
   const rating = useItemRating(identity);
   const rate = useRateItem();
   const remove = useDeleteRating();
@@ -28,7 +30,7 @@ export function HoverRatingStars({ identity, jellyfinItemId }: HoverRatingStarsP
       }}
     >
       <StarRating
-        size="sm"
+        size={size}
         tone="onMedia"
         value={rating?.score ?? null}
         onRate={(score) =>
