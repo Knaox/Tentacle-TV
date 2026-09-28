@@ -15,15 +15,6 @@ interface CardRatingBadgeProps {
   /** Au-dessus du voile de survol (z-30) : la note reste lisible en survol. */
   raised?: boolean;
   /**
-   * Dans le FLUX plutôt qu'ancrée au coin de l'affiche.
-   *
-   * Ancrée, elle ne sait rien de ce qu'un calque de survol pose sur la même
-   * bande : c'est au pixel près que ça tient, ou pas (cf. l'ancien survol des recommandations,
-   * où « Ne plus me proposer » lui mordait dessus). En flux, la rangée qui
-   * l'accueille garantit l'espacement à toute largeur de carte.
-   */
-  inline?: boolean;
-  /**
    * Autre ancrage que le coin bas-gauche. La vignette 16:9 d'un épisode y a
    * déjà son code et son titre : sa note se pose en haut.
    */
@@ -47,7 +38,6 @@ export function CardRatingBadge({
   userScore = null,
   shown = true,
   raised = false,
-  inline = false,
   className,
 }: CardRatingBadgeProps) {
   const { t } = useTranslation("cards");
@@ -65,16 +55,14 @@ export function CardRatingBadge({
   return (
     <div
       role="img"
-      className={`${
-        inline ? "shrink-0" : `absolute ${className ?? "bottom-2 left-2"} ${raised ? "z-30" : "z-10"}`
-      } flex h-5 items-stretch overflow-hidden rounded-md border border-white/20 bg-black/70 text-[11px] font-semibold leading-none text-white transition-opacity duration-150 ${
+      className={`absolute ${className ?? "bottom-2 left-2"} ${raised ? "z-30" : "z-10"} flex h-5 items-stretch overflow-hidden rounded-md border border-white/20 bg-black/70 text-[11px] font-semibold leading-none text-white transition-opacity duration-150 ${
         shown ? "opacity-100" : "opacity-0"
       }`}
       aria-label={label}
       title={label}
       // Repère stable de la note posée SUR l'image : la LG, dont le focus ne
       // passe pas par `hovered`, l'efface par sa feuille (cards-tv.css).
-      data-card-rating={inline ? undefined : ""}
+      data-card-rating=""
     >
       {community && (
         <span className="flex items-center gap-1 px-1.5 tabular-nums">
