@@ -191,9 +191,10 @@ export const EpisodeCard = memo(function EpisodeCard({
 
         {/* Le coin bas-droit appartient au groupe du survol (étoiles et
             plateau) : le titre se resserre à sa gauche le temps du survol, au
-            lieu de passer dessous. */}
+            lieu de passer dessous. Au-dessus du voile (z-30) pour rester
+            lisible, et transparent au pointeur pour ne rien voler au plateau. */}
         <div
-          className={`absolute inset-x-0 bottom-1.5 pl-3 text-on-media-primary ${
+          className={`pointer-events-none absolute inset-x-0 bottom-1.5 z-30 pl-3 text-on-media-primary ${
             hovered ? "pr-[11.5rem]" : "pr-28"
           }`}
         >
@@ -219,7 +220,13 @@ export const EpisodeCard = memo(function EpisodeCard({
           />
         )}
 
-        {!watched && <CardProgressBar percent={progress} border />}
+        {/* La progression reste lisible au-dessus du voile : c'est au survol
+            qu'on décide de reprendre (même règle que `PosterTile`). */}
+        {!watched && (
+          <div className="absolute inset-x-0 bottom-0 z-30">
+            <CardProgressBar percent={progress} border />
+          </div>
+        )}
       </CardFrame>
 
       <div className="mt-2.5 px-0.5">
