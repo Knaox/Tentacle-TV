@@ -1,6 +1,6 @@
 export { JellyfinClient, JellyfinError, type DirectStreamingState } from "./jellyfin";
 export { JellyfinClientContext, useJellyfinClient } from "./hooks/useJellyfinClient";
-export { useLibraries, useLibraryItems, useEpisodes, useSeriesEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useGenres, useStudios } from "./hooks/useLibrary";
+export { useLibraries, useLibraryItems, useEpisodes, useSeriesEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useGenres, useStudios, useSagaView, useSagaResponse, useSagaItems, readSagaResponse, SAGA_KEY, SAGA_ITEMS_KEY, type SagaViewOptions, type SagaViewState } from "./hooks/useLibrary";
 export { useSeasons, prefetchSeasons, useSeasonEpisodesLite, prefetchSeasonEpisodesLite, getSeasonEpisodesLiteKey } from "./hooks/useSeasons";
 export { useRandomLibraryBackdrop, getLibraryBackdropKey, prefetchLibraryBackdrop } from "./hooks/useLibraryBackdrop";
 export { useSearchItems } from "./hooks/useSearchItems";
@@ -11,7 +11,7 @@ export {
   type SearchBrowseTarget, type TentacleSearchOptions,
 } from "./hooks/useTentacleSearch";
 export { useExternalSearch, combineExternal, type ExternalSearchOptions, type ExternalSearchState } from "./hooks/useExternalSearch";
-export { useExternalFilmography, type ExternalFilmographyOptions, type FilmographyPerson } from "./hooks/useExternalFilmography";
+export { useExternalFilmography, useExternalCollection, type ExternalFilmographyOptions, type ExternalCollectionOptions, type FilmographyPerson } from "./hooks/useExternalFilmography";
 export { usePersonDetails, usePersonFilmography, type PersonFilmography } from "./hooks/usePerson";
 export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog, type CatalogFilters } from "./hooks/useLibraryCatalog";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";

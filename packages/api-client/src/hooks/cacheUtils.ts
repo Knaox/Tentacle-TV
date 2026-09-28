@@ -18,6 +18,8 @@ const LIST_QUERY_PREFIXES = [
   "episodes",
   "search",
   "similar",
+  // Les films d'une saga (rangée de la fiche) — cf. `useSaga.ts`.
+  "saga-items",
   "seasons",
   "series-watch-state",
 ] as const;

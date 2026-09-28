@@ -243,3 +243,11 @@ export function useStudios(libraryId: string | undefined) {
 
 // Le catalogue paginé (CatalogFilters, useLibraryCatalog, prefetch) vit dans
 // useLibraryCatalog.ts — extraction pour la limite de 300 lignes par fichier.
+
+// La saga d'un film (sa rangée sur la fiche) vit dans `useSaga.ts`. Elle sort
+// par ici, à côté des similaires et du contenu d'une collection : l'index du
+// paquet a atteint sa limite de lignes.
+export {
+  useSagaView, useSagaResponse, useSagaItems, readSagaResponse, SAGA_KEY, SAGA_ITEMS_KEY,
+  type SagaViewOptions, type SagaViewState,
+} from "./useSaga";

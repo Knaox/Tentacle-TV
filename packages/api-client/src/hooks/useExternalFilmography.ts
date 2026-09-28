@@ -74,3 +74,7 @@ export function useExternalFilmography(
     combine,
   });
 }
+
+// Même mécanisme pour les volets d'une saga (`search.collection`) — sorti par
+// ici, l'index du paquet ayant atteint sa limite de lignes.
+export { useExternalCollection, type ExternalCollectionOptions } from "./useExternalCollection";
