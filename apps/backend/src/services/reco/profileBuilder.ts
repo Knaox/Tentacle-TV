@@ -10,8 +10,9 @@ import { fetchUserSignals } from "./signals";
 import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
 import { buildAnchors } from "./anchors";
 import type { Anchor } from "./anchors";
-import { measuredViewings, serializeAnchors } from "./anchorStore";
+import { measuredViewings, serializeAnchors, serializePotentials } from "./anchorStore";
 import type { StoredAnchor } from "./anchorStore";
+import { potentialsOf } from "./potentials";
 import { buildCentroid, consumptionShares, universeShareOf } from "./tasteModel";
 
 /** Appels TMDB au plus par reconstruction : le reste passe par le cache ou le
@@ -22,9 +23,11 @@ const TMDB_FETCH_BUDGET = 40;
 const NEIGHBORS_UPGRADE_TOP = 150;
 const PROFILE_MAX_FACETS = 400;
 /** Version du profil stocké : 2 = animeShare, 3 = notes sur l'échelle absolue
- *  (point neutre 6,5), 4 = ancres du goût (facettes et poids refondus). Le
- *  fan-out de boot reconstruit une fois les profils d'une version antérieure. */
-export const PROFILE_SCHEMA_VERSION = 4;
+ *  (point neutre 6,5), 4 = ancres du goût (facettes et poids refondus),
+ *  5 = Ma liste hors du goût (les titres seulement listés sont des
+ *  potentiels) et un seul « j'aime » par titre. Le fan-out de boot
+ *  reconstruit une fois les profils d'une version antérieure. */
+export const PROFILE_SCHEMA_VERSION = 5;
 
 // Une reconstruction à la fois par compte : les pokes en rafale s'écrasent.
 const inFlight = new Map<string, Promise<ProfileSummary>>();
@@ -69,31 +72,38 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
   const prisma = getPrisma();
   if (idfLoadedAt() === 0) await loadIdfFromDb();
 
-  const [ratings, likes, feedback, swipes, signals, measured] = await Promise.all([
+  const [ratings, likes, feedback, swipes, pendingWatchlist, signals, measured] = await Promise.all([
     prisma.userRating.findMany({ where: { jellyfinUserId: userId, deletedAt: null } }),
     prisma.userLike.findMany({ where: { jellyfinUserId: userId } }),
     prisma.recommendationFeedback.findMany({ where: { jellyfinUserId: userId } }),
     // « Passé » ne juge rien : il n'entre pas dans le goût.
     prisma.userSwipe.findMany({ where: { jellyfinUserId: userId, verdict: { not: "skip" } } }),
+    // Ma liste d'un titre absent : un potentiel, comme Ma liste en bibliothèque.
+    prisma.watchlistPending.findMany({
+      where: { jellyfinUserId: userId, flag: "watchlist" },
+      select: { mediaType: true, tmdbId: true },
+    }),
     fetchUserSignals(userId),
     measuredViewings(userId).catch(() => new Map()),
   ]);
 
   const { mean, stdDev } = ratingStats(ratings.map((r) => r.score));
-  const { anchors, itemByKey } = buildAnchors({
+  const anchorSet = buildAnchors({
     now: Date.now(),
     ratings,
     likes,
     feedback,
     swipes,
     favorites: signals.favorites,
-    watchlist: signals.watchlist,
     playedMovies: signals.playedMovies,
     resumable: signals.resumable,
     playedEpisodes: signals.playedEpisodes,
     seriesById: signals.seriesById,
     measured,
   });
+  const { anchors, itemByKey } = anchorSet;
+  // Ma liste n'est pas un goût : ce qui n'y est que listé reste un potentiel.
+  const potentials = potentialsOf(anchorSet, signals.watchlist, pendingWatchlist);
 
   // Fiches TMDB des ancres : cache gratuit, budget de fetchs pour les plus
   // fortes (absentes, ou sans voisins collaboratifs).
@@ -127,6 +137,7 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
   const data = {
     facets: JSON.stringify(vector),
     anchors: serializeAnchors(stored),
+    potentials: serializePotentials(potentials),
     signalCount,
     ratingMean: mean,
     ratingStdDev: stdDev,

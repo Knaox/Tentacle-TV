@@ -10,8 +10,8 @@
 export const ANCHOR_FAVORITE = 0.8;
 /** « J'aime » d'un titre hors bibliothèque — un favori qu'on n'a pas. */
 export const ANCHOR_LIKE = 0.7;
-/** « Ma liste » : une intention, pas un visionnage. */
-export const ANCHOR_WATCHLIST = 0.3;
+// « Ma liste » n'a AUCUN poids : une intention, pas un goût. Un titre
+// seulement listé — ni vu, ni aimé — est un potentiel (cf. potentials.ts).
 export const ANCHOR_COMPLETED = 0.5;
 /** Revisionnage VÉRIFIÉ : au moins deux jours distincts de visionnage mesuré. */
 export const ANCHOR_REWATCH = 0.35;

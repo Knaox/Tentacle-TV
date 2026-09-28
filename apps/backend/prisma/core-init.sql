@@ -393,6 +393,18 @@ ALTER TABLE `taste_profiles` ADD COLUMN IF NOT EXISTS `animeShare` double NOT NU
 -- le classement à ancres : NULL = profil d'avant, reconstruit au démarrage.
 ALTER TABLE `taste_profiles` ADD COLUMN IF NOT EXISTS `anchors` mediumtext NULL;
 
+-- Potentiels du goût (titres seulement dans Ma liste, sans poids). Décidé dans
+-- information_schema, comme watchlist_pending : rejouable sur MariaDB comme
+-- sur MySQL. Voir schema.prisma > TasteProfile.potentials.
+SET @tp_potentials_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'taste_profiles' AND COLUMN_NAME = 'potentials');
+SET @tp_potentials_sql := IF(@tp_potentials_col = 0,
+  'ALTER TABLE `taste_profiles` ADD COLUMN `potentials` mediumtext NULL AFTER `anchors`',
+  'DO 0');
+PREPARE tp_potentials_stmt FROM @tp_potentials_sql;
+EXECUTE tp_potentials_stmt;
+DEALLOCATE PREPARE tp_potentials_stmt;
+
 -- Réglages de recommandation par compte. Voir schema.prisma > RecoSettings.
 CREATE TABLE IF NOT EXISTS `reco_settings` (
   `id` varchar(191) NOT NULL,

@@ -35,6 +35,8 @@ const RANK_SPAN = 40;
 /** Voisins sans fiche en cache ajoutés au panier, au plus. */
 const NEIGHBOR_CANDIDATES_MAX = 600;
 
+/** Profil d'avant la v5 (pas encore reconstruit) : Ma liste y pesait encore.
+ *  Une ancre seulement listée n'y porte ni voisins ni graine. */
 function watchlistOnly(a: Anchor): boolean {
   return a.kinds.length === 1 && a.kinds[0] === "watchlist";
 }

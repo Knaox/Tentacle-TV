@@ -1,6 +1,7 @@
 import { getPrisma } from "../db";
 import type { Anchor, MeasuredViewing } from "./anchors";
 import type { FacetEntry } from "./facets";
+import type { PotentialTitle } from "./potentials";
 
 /**
  * Stockage des ancres (colonne taste_profiles.anchors) et lecture des
@@ -30,6 +31,32 @@ export function parseAnchors(raw: string | null | undefined): StoredAnchor[] | n
       (a): a is StoredAnchor =>
         !!a && typeof a === "object" && typeof (a as StoredAnchor).key === "string" &&
         typeof (a as StoredAnchor).weight === "number"
+    );
+  } catch {
+    return null;
+  }
+}
+
+/** Potentiels gardés (colonne taste_profiles.potentials) : les premiers de Ma liste. */
+export const POTENTIALS_MAX = 300;
+
+export function serializePotentials(potentials: readonly PotentialTitle[]): string {
+  return JSON.stringify(potentials.slice(0, POTENTIALS_MAX));
+}
+
+/**
+ * Les potentiels d'un profil (titres seulement dans Ma liste, cf.
+ * potentials.ts) ; null = profil d'avant les potentiels (ou illisible).
+ */
+export function parsePotentials(raw: string | null | undefined): PotentialTitle[] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter(
+      (p): p is PotentialTitle =>
+        !!p && typeof p === "object" && typeof (p as PotentialTitle).key === "string" &&
+        ((p as PotentialTitle).mediaType === "movie" || (p as PotentialTitle).mediaType === "tv")
     );
   } catch {
     return null;

@@ -42,7 +42,6 @@ function anchorsOf(swipes: Swipe[]): Anchor[] {
     feedback: [],
     swipes,
     favorites: [],
-    watchlist: [],
     playedMovies: [],
     resumable: [],
     playedEpisodes: [],
@@ -115,7 +114,7 @@ describe("verdicts du swipe → ancres", () => {
       buildAnchors({
         now: NOW, ratings: [], likes: [], feedback: [], swipes: [swipe(1, verdict)],
         favorites: [{ Id: "m1", Name: "Film", Type: "Movie", ProviderIds: { Tmdb: "1" } }],
-        watchlist: [], playedMovies: [], resumable: [], playedEpisodes: [], seriesById: new Map(),
+        playedMovies: [], resumable: [], playedEpisodes: [], seriesById: new Map(),
       }).anchors[0];
     const liked = withHeart("like");
     expect(liked.weight).toBeCloseTo(ANCHOR_FAVORITE, 10);

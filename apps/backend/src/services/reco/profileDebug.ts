@@ -1,5 +1,5 @@
 import { getPrisma } from "../db";
-import { parseAnchors } from "./anchorStore";
+import { parseAnchors, parsePotentials } from "./anchorStore";
 import { ANIME_UNIVERSE_KEY } from "./facets";
 
 /** Ancres montrées par le debug : les plus fortes, positives et négatives. */
@@ -21,6 +21,9 @@ export async function getProfileDebug(userId: string): Promise<{
   /** Nombre d'ancres (titres pondérés) — 0 pour un profil d'avant les ancres. */
   anchorCount: number;
   topAnchors: Array<{ key: string; title: string; weight: number; kinds: string[]; hours: number }>;
+  /** Titres seulement dans Ma liste : connus, sans poids (null = profil d'avant la v5). */
+  potentialCount: number | null;
+  potentials: Array<{ key: string; title: string }>;
 }> {
   const prisma = getPrisma();
   const row = await prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } });
@@ -37,6 +40,8 @@ export async function getProfileDebug(userId: string): Promise<{
       topFacets: [],
       anchorCount: 0,
       topAnchors: [],
+      potentialCount: null,
+      potentials: [],
     };
   }
   let facets: Record<string, number> = {};
@@ -50,6 +55,7 @@ export async function getProfileDebug(userId: string): Promise<{
     .slice(0, 50)
     .map(([key, weight]) => ({ key, weight }));
   const anchors = parseAnchors(row.anchors) ?? [];
+  const potentials = parsePotentials(row.potentials);
   return {
     exists: true,
     schemaVersion: row.schemaVersion,
@@ -68,5 +74,7 @@ export async function getProfileDebug(userId: string): Promise<{
       kinds: a.kinds,
       hours: a.hours,
     })),
+    potentialCount: potentials ? potentials.length : null,
+    potentials: (potentials ?? []).slice(0, DEBUG_ANCHORS).map((p) => ({ key: p.key, title: p.title })),
   };
 }

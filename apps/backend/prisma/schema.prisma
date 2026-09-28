@@ -550,6 +550,10 @@ model TasteProfile {
   /// Ancres du goût : JSON des titres pondérés d'où dérive tout le classement
   /// (services/reco/anchors.ts). NULL = profil d'avant les ancres.
   anchors        String?  @db.MediumText
+  /// Potentiels : JSON des titres seulement dans Ma liste — ni vus, ni aimés,
+  /// ni notés — qui ne pèsent pas dans le goût (services/reco/potentials.ts).
+  /// NULL = profil d'avant les potentiels (version < 5).
+  potentials     String?  @db.MediumText
   schemaVersion  Int      @default(1)
   computedAt     DateTime @default(now())
 

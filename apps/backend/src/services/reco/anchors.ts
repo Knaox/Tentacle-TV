@@ -9,7 +9,6 @@ import {
   ANCHOR_NOT_INTERESTED,
   ANCHOR_REWATCH,
   ANCHOR_REWATCH_UNVERIFIED,
-  ANCHOR_WATCHLIST,
   EPISODE_FALLBACK_HOURS,
   SERIES_MIN_EPISODES,
   bulkMinutes,
@@ -42,7 +41,8 @@ function canonicalType(mediaType: string): "movie" | "tv" {
   return mediaType === "movie" ? "movie" : "tv";
 }
 
-function refOf(item: SignalItem): { key: string; mediaType: "movie" | "tv"; tmdbId: number } | null {
+/** La clé canonique d'un item Jellyfin (film ou série) — celle des ancres et des potentiels. */
+export function refOf(item: SignalItem): { key: string; mediaType: "movie" | "tv"; tmdbId: number } | null {
   const mediaType = item.Type === "Movie" ? "movie" : item.Type === "Series" ? "tv" : null;
   if (!mediaType) return null;
   const tmdbId = Number(item.ProviderIds?.Tmdb);
@@ -98,8 +98,9 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     a.lastAt = laterOf(a.lastAt, new Date(r.updatedAt).toISOString());
   }
 
-  // 2) Favoris, likes hors bibliothèque, Ma liste. Un « j'aime » est UN
-  //    goût, quelle que soit sa voie (cf. likeWeights).
+  // 2) Favoris, likes hors bibliothèque. Un « j'aime » est UN goût, quelle
+  //    que soit sa voie (cf. likeWeights). Ma liste n'en est pas un : ce
+  //    qu'on n'a ni vu ni aimé n'est pas encore jugé (cf. potentials.ts).
   for (const item of input.favorites) {
     const a = touchItem(item);
     if (!a) continue;
@@ -111,12 +112,6 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     const a = touch(`${mediaType}:${like.tmdbId}`, mediaType, like.tmdbId, "");
     a.likeWeights.push(ANCHOR_LIKE * explicitDecay(ageOf(like.createdAt)));
     a.kinds.add("like");
-  }
-  for (const item of input.watchlist) {
-    const a = touchItem(item);
-    if (!a) continue;
-    a.weight += ANCHOR_WATCHLIST;
-    a.kinds.add("watchlist");
   }
 
   // 2 bis) Verdicts du swipe : explicites, donc à décroissance lente.
@@ -234,5 +229,5 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     });
   }
   anchors.sort((x, y) => Math.abs(y.weight) - Math.abs(x.weight) || (x.key < y.key ? -1 : 1));
-  return { anchors, itemByKey };
+  return { anchors, itemByKey, judged: new Set(acc.keys()) };
 }

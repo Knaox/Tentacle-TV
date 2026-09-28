@@ -11,6 +11,8 @@ export type AnchorKind =
   | "rating"
   | "favorite"
   | "like"
+  /** HÉRITÉ des profils d'avant la v5 : Ma liste n'est plus un goût, un titre
+   *  seulement listé est un POTENTIEL (cf. potentials.ts). Plus jamais écrit. */
   | "watchlist"
   | "completed"
   | "rewatch"
@@ -58,7 +60,6 @@ export interface AnchorInputs {
   /** Verdicts de l'onglet « Affiner » (absent = aucun). */
   swipes?: ReadonlyArray<{ mediaType: string; tmdbId: number; verdict: string; updatedAt: Date | string }>;
   favorites: readonly SignalItem[];
-  watchlist: readonly SignalItem[];
   playedMovies: readonly SignalItem[];
   resumable: readonly SignalItem[];
   playedEpisodes: readonly PlayedEpisode[];
@@ -70,4 +71,8 @@ export interface AnchorSet {
   anchors: Anchor[];
   /** Fiche Jellyfin de chaque ancre de bibliothèque — repli des facettes. */
   itemByKey: Map<string, SignalItem>;
+  /** Tout titre qui porte au moins un signal de goût — vu, suivi, noté,
+   *  aimé, refusé, abandonné — même trop faible pour faire une ancre (une
+   *  note neutre) : JUGÉ, donc plus un potentiel. */
+  judged: Set<string>;
 }

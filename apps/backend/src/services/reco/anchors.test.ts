@@ -32,7 +32,6 @@ function inputs(over: Partial<AnchorInputs> = {}): AnchorInputs {
     likes: [],
     feedback: [],
     favorites: [],
-    watchlist: [],
     playedMovies: [],
     resumable: [],
     playedEpisodes: [],

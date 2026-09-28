@@ -34,6 +34,7 @@ export function pickSeeds(
 ): SeedRef[] {
   const max = opts.max ?? SEEDS_MAX;
   const scored = anchors
+    // Une ancre seulement listée ne vient que d'un profil d'avant la v5.
     .filter((a) => a.weight > 0 && a.tmdbId > 0 && !(a.kinds.length === 1 && a.kinds[0] === "watchlist"))
     .map((a) => {
       const age = a.lastAt ? (opts.now - Date.parse(a.lastAt)) / 86_400_000 : Infinity;
