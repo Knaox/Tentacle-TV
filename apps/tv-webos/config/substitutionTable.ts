@@ -204,6 +204,12 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "components/detail/ExtrasRow.tsx")]:
     resolve(CLIENT, "ui/detail/ExtrasRowTv.tsx"),
 
+  // La saga d'un film : la rangée du web est un défileur maison, ses cartes
+  // des `<div onClick>` que le moteur ne voit pas. Même données, mais une
+  // `data-tv-piste` de `FocusableCard` — comme `TrackTv`.
+  [resolve(WEB, "components/detail/saga/SagaSection.tsx")]:
+    resolve(CLIENT, "ui/detail/SagaSectionTv.tsx"),
+
   // Le calque d'ouverture de la fiche est une chorégraphie écrite POUR
   // framer-motion : le shim en écarte `initial`, `animate` et `transition`, et
   // ce qui restait n'était pas une version dégradée mais une avarie — visuel en
