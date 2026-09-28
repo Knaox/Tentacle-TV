@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, useWindowDimensions, type FlatList } from "reac
 import Animated, { runOnJS, useAnimatedScrollHandler, useComposedEventHandler, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { Feather } from "@expo/vector-icons";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
