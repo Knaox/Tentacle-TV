@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { RecoRowItem } from "@tentacle-tv/api-client";
+import { useRecoCardHold, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TVCardActionSheet } from "./TVCardActionSheet";
 import type { CardSheetTarget } from "./cardSheetTarget";
@@ -19,6 +19,8 @@ export function useTVCardActions() {
   const openLandscape = useCallback((item: MediaItem) => setTarget({ kind: "media", item, variant: "landscape" }), []);
   const openReco = useCallback((item: RecoRowItem) => setTarget({ kind: "reco", item }), []);
   const close = useCallback(() => setTarget(null), []);
+  // Feuille ouverte = carte tenue : un titre jugé quitte « Pour vous » à la fermeture.
+  useRecoCardHold(target ? (target.kind === "reco" ? target.item.key : target.item.Id) : null);
   const sheet = target ? <TVCardActionSheet target={target} onClose={close} /> : null;
   return { openPoster, openLandscape, openReco, sheet };
 }
