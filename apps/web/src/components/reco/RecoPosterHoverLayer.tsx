@@ -1,12 +1,7 @@
 import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { EyeOff } from "lucide-react";
 import { useRecoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
-import { CardActionTray, CardTrayButton, CardTrayCapsule, TRAY_SIZE } from "../cards/CardActionTray";
-import { PosterHoverShell } from "../cards/PosterHoverShell";
-import { CardMetaOverlay } from "../media/CardMetaOverlay";
-import { HoverRatingStars } from "../rating/HoverRatingStars";
+import { CardHoverOverlay } from "../cards/CardHoverOverlay";
 import { useRecoPlayTarget } from "./useRecoPlayTarget";
 
 interface RecoPosterHoverLayerProps {
@@ -20,32 +15,27 @@ interface RecoPosterHoverLayerProps {
 }
 
 /**
- * Le survol d'une carte de recommandation — le MÊME que celui des affiches de
- * bibliothèque (`PosterHoverShell`) : voile, Lecture au centre, étoiles et
- * plateau en bas. La recommandation n'y ajoute qu'une chose, au bout du
- * plateau : « Ne plus me proposer », un bouton de capsule comme les autres.
+ * Le survol d'une carte de recommandation : le survol UNIQUE des cartes
+ * (`CardHoverOverlay`, variante `reco`), à qui ce module ne fait que donner
+ * ce qu'une recommandation seule connaît — la cible de lecture (reprise, ou
+ * l'épisode à suivre), le visage des marqueurs et l'identité tmdb.
  *
  * Titre hors bibliothèque : ni Lecture ni bascules (il n'y a pas d'item
  * Jellyfin à mettre dans Ma liste) — les étoiles (par tmdb) et le refus
- * restent, dans la même capsule.
+ * restent, dans la même capsule. C'est le modèle partagé qui le décide.
  *
  * Monté au survol seulement : la cible de lecture (une ou deux requêtes), les
  * Sets du plateau et la liste des notes n'existent que le temps du survol.
  */
 export function RecoPosterHoverLayer({ item, visible, onDismiss, onOpenDetail }: RecoPosterHoverLayerProps) {
-  const { t } = useTranslation("reco");
   const navigate = useNavigate();
   // Lecture (reprise, sinon l'épisode à suivre) — null hors bibliothèque.
   const target = useRecoPlayTarget(item.jellyfinItemId, item.mediaType);
-  const ratingIdentity = {
-    mediaType: item.mediaType === "tv" ? ("series" as const) : ("movie" as const),
-    tmdbId: item.tmdbId,
-  };
   // Le plateau bascule le visage des marqueurs : pour un film, la fiche que
   // la lecture vient de charger (son UserData dit s'il est déjà dans Ma
   // liste) ; pour une série, les Sets partagés répondent.
   const face = useRecoMarkerItem(item);
-  const { jellyfinItemId } = item;
+  const inLibrary = item.jellyfinItemId !== null;
 
   const onPlay = (e: MouseEvent) => {
     e.stopPropagation();
@@ -54,35 +44,18 @@ export function RecoPosterHoverLayer({ item, visible, onDismiss, onOpenDetail }:
     else navigate(target.path);
   };
 
-  const dismiss = (
-    <CardTrayButton box={TRAY_SIZE.sm.box} active={false} label={t("dismissAction")} onPress={onDismiss}>
-      <EyeOff className={TRAY_SIZE.sm.icon} aria-hidden />
-    </CardTrayButton>
-  );
-
   return (
-    <>
-      {/* Qualité et langues de ce qui va être lu — le film, ou l'épisode résolu. */}
-      {target?.media && (
-        <div className="pointer-events-none absolute inset-0 z-30">
-          <CardMetaOverlay item={target.media} density="compact" reveal="mount" shown={visible} />
-        </div>
-      )}
-      <PosterHoverShell visible={visible} play={target ? { label: `${target.label} — ${item.title}`, onPlay } : null}>
-        <div className="flex justify-center">
-          <HoverRatingStars identity={ratingIdentity} jellyfinItemId={jellyfinItemId} />
-        </div>
-        {jellyfinItemId ? (
-          <CardActionTray item={face} size="sm" stretch>
-            {dismiss}
-          </CardActionTray>
-        ) : (
-          // Un seul bouton : la capsule épouse son contenu, au centre.
-          <div className="flex justify-center">
-            <CardTrayCapsule label={item.title}>{dismiss}</CardTrayCapsule>
-          </div>
-        )}
-      </PosterHoverShell>
-    </>
+    <CardHoverOverlay
+      variant="reco"
+      item={inLibrary ? face : null}
+      title={item.title}
+      visible={visible}
+      play={target ? { resume: target.kind === "resume", label: target.label, onPlay } : null}
+      // Hors bibliothèque, la note vit sur le tmdb : le visage `reco:…` n'est
+      // pas un item Jellyfin à qui la rattacher.
+      ratingIdentity={inLibrary ? undefined : { mediaType: item.mediaType === "tv" ? "series" : "movie", tmdbId: item.tmdbId }}
+      meta={target?.media ?? null}
+      onDismiss={onDismiss}
+    />
   );
 }

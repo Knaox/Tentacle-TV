@@ -1,43 +1,50 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from "react";
+import type { CardOverlayVariant } from "@tentacle-tv/shared";
 import { PlayGlyph } from "./cardGlyphs";
 import { PressableScale } from "../ui/PressableScale";
 
-interface PosterHoverShellProps {
+interface CardHoverShellProps {
+  variant: CardOverlayVariant;
   /** Cible du fondu : vrai pendant le survol, faux pendant le sursis de sortie. */
   visible: boolean;
-  /** Le bouton Lecture du centre — absent quand rien n'est lisable (hors bibliothèque). */
+  /** Le bouton Lecture du centre — absent quand rien ne se lance. */
   play?: { label: string; onPlay: (e: MouseEvent) => void } | null;
-  /** Le bas de l'affiche : étoiles, plateau. */
+  /** Le groupe du bas : étoiles, puis plateau. */
   children: ReactNode;
 }
 
 /**
- * La coque du survol d'une affiche 2:3 — le dessin UNIQUE que partagent
- * l'affiche de bibliothèque (`PosterHoverLayer`) et la carte de
- * recommandation (`RecoPosterHoverLayer`) :
+ * La coque du survol — le dessin UNIQUE de toutes les cartes du web, quelle
+ * que soit la variante (`cardOverlay.ts`) :
  *
- *   1. un VOILE qui assombrit l'affiche par le bas ;
+ *   1. un VOILE qui assombrit la carte par le bas ;
  *   2. le bouton LECTURE au centre, au dégradé de marque — la seule action
  *      primaire, donc la seule en couleur ;
- *   3. en bas, ce que l'appelant y pose (étoiles, plateau).
+ *   3. le GROUPE du bas, étoiles puis plateau : centré et pleine largeur sur
+ *      une affiche (`poster`, `reco`), rangé dans le coin bas-droit d'une
+ *      vignette 16:9 (`landscape`), dont le coin bas-gauche garde le code et
+ *      le titre de l'épisode. Même groupe, même ordre — seule la place change
+ *      avec le format.
  *
- * Montée au survol seulement, par l'appelant (`useMountWhile`). Les trois
- * fondus ne touchent que `opacity` et `transform` (theme/cards.css) ;
- * `.hover-reveal` sur la racine sert aussi de poignée à la feuille de la LG,
- * qui masque tout le survol.
+ * Montée au survol seulement, par l'appelant (`useMountWhile`) : jamais
+ * laissée à `opacity: 0`. Les fondus ne touchent que `opacity` et `transform`
+ * (theme/cards.css). `.hover-reveal` sert aussi de poignée à la feuille de la
+ * LG, et `data-card-overlay` aux feuilles qui voudraient une variante.
  *
  * Les touches pressées sur un bouton du survol ne remontent pas : la carte
- * entière réagit à Entrée/Espace pour ouvrir la fiche, et un bouton focalisé
- * par le clic déclencherait les deux.
+ * entière réagit à Entrée/Espace, et un bouton focalisé par le clic
+ * déclencherait les deux.
  */
-export function PosterHoverShell({ visible, play, children }: PosterHoverShellProps) {
+export function CardHoverShell({ variant, visible, play, children }: CardHoverShellProps) {
   const reveal = { "--reveal-ms": "200ms" } as CSSProperties;
   const stopKeys = (e: KeyboardEvent) => e.stopPropagation();
+  const corner = variant === "landscape";
 
   return (
     <div
       className="hover-reveal absolute inset-0 z-20"
       data-shown={visible}
+      data-card-overlay={variant}
       onKeyDown={stopKeys}
       style={{ ...reveal, pointerEvents: visible ? "auto" : "none" }}
     >
@@ -63,7 +70,9 @@ export function PosterHoverShell({ visible, play, children }: PosterHoverShellPr
       )}
 
       <div
-        className="card-hover-rise absolute inset-x-0 bottom-0 flex flex-col items-stretch gap-1.5 px-2 pb-2.5"
+        className={`card-hover-rise absolute bottom-0 flex flex-col gap-1.5 ${
+          corner ? "right-0 items-end px-2.5 pb-2" : "inset-x-0 items-stretch px-2 pb-2.5"
+        }`}
         data-shown={visible}
         style={reveal}
       >

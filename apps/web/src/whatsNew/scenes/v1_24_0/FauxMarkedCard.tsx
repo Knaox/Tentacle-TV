@@ -3,7 +3,7 @@ import { CardFrame } from "../../../components/cards/CardFrame";
 import { CardImage } from "../../../components/cards/CardImage";
 import { CardRatingBadge } from "../../../components/cards/CardRatingBadge";
 import { CardStatusMarkers } from "../../../components/cards/CardStatusMarkers";
-import { PosterHoverShell } from "../../../components/cards/PosterHoverShell";
+import { CardHoverShell } from "../../../components/cards/CardHoverShell";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "../../../components/cards/cardGlyphs";
 import { StarRating } from "../../../components/rating/StarRating";
 import type { ScenePoster } from "../../sceneMedia";
@@ -28,7 +28,8 @@ const BOX = { box: "h-7 w-7", icon: "h-3.5 w-3.5" } as const;
 /**
  * Une affiche de bibliothèque, faite des VRAIES pièces : au repos la note
  * (globale + la vôtre) et la pastille d'états ; au survol la coque partagée
- * (`PosterHoverShell`) — voile, Lecture au centre, étoiles, plateau d'actions.
+ * (`CardHoverShell`, variante `poster`) — voile, Lecture au centre, étoiles,
+ * plateau d'actions.
  * Inerte : c'est la scène qui survole, note et bascule.
  */
 export function FauxMarkedCard({ poster, tone, userScore, statuses, hovered = false, hoverable = false, ...place }: FauxMarkedCardProps) {
@@ -40,12 +41,12 @@ export function FauxMarkedCard({ poster, tone, userScore, statuses, hovered = fa
           <CardRatingBadge rating={poster?.rating ?? null} userScore={userScore} shown={!hovered} />
           <CardStatusMarkers statuses={statuses} shown={!hovered} />
           {hoverable && (
-            <PosterHoverShell visible={hovered} play={{ label: poster?.title ?? "", onPlay: noop }}>
+            <CardHoverShell variant="poster" visible={hovered} play={{ label: poster?.title ?? "", onPlay: noop }}>
               <div className="flex justify-center">
                 <StarRating value={userScore} onRate={noop} onClear={noop} size="sm" tone="onMedia" />
               </div>
               <FauxTray statuses={statuses} />
-            </PosterHoverShell>
+            </CardHoverShell>
           )}
         </CardFrame>
       </div>

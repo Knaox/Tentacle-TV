@@ -143,7 +143,7 @@
     rgba(var(--scrim-media-rgb), 0.88) 100%
   );
 
-  /* Voile du survol d'une affiche (`PosterHoverLayer`) : l'image reste
+  /* Voile du survol des cartes (`CardHoverShell`) : l'image reste
    * lisible en haut, où montent les puces qualité/langues, et le bas
    * s'assombrit assez (0,9) pour porter étoiles et plateau sans flou.
    * Noir dans les deux schémas (posé sur média). */

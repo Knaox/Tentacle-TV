@@ -142,7 +142,7 @@
 
 /* ── Survol d'une affiche : le lecteur au centre, le plateau qui monte ────
  *
- * Les deux mouvements du calque de survol (`PosterHoverLayer`). Ils ne
+ * Les deux mouvements du survol des cartes (`CardHoverShell`). Ils ne
  * touchent que `opacity` et `transform`, déclarés dans UNE transition (cf.
  * l'en-tête de cette feuille), et le calque n'existe que pendant le survol :
  * l'entrée part de `@starting-style`, la sortie est une transition ordinaire

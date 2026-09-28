@@ -5,10 +5,9 @@ import { CardFrame } from "./CardFrame";
 import { CardImage } from "./CardImage";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import { CardProgressBar } from "./CardProgressBar";
-import { PosterHoverLayer } from "./PosterHoverLayer";
+import { CardHoverOverlay } from "./CardHoverOverlay";
 import { useSeriesRatingMap } from "./SeriesRatingContext";
 import { playTargetPath } from "./playTarget";
-import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { useMountWhile } from "../../hooks/useMountWhile";
 
 interface PosterTileProps {
@@ -32,9 +31,10 @@ interface PosterTileProps {
  *   • AU REPOS, l'affiche porte ses marqueurs (`CardMarkerLayer`) : la note en
  *     bas à gauche, la pastille d'états (Ma liste, favori, vu) en haut à
  *     droite, la progression au bord inférieur. Rien d'autre.
- *   • AU SURVOL, les marqueurs s'effacent et le calque `PosterHoverLayer`
- *     prend l'affiche : voile, lecture au centre, étoiles et plateau en bas.
- *     Les puces qualité/langues montent en haut à gauche.
+ *   • AU SURVOL, les marqueurs s'effacent et le survol unique des cartes
+ *     (`CardHoverOverlay`, variante `poster`) prend l'affiche : puces
+ *     qualité/langues en haut à gauche, voile, lecture au centre, étoiles et
+ *     plateau en bas.
  *
  * Tout ce qui est POSÉ SUR l'affiche reste blanc/noir constant dans les deux
  * schémas : c'est la luminosité du poster qui commande le contraste.
@@ -110,16 +110,17 @@ export function PosterTile({
         hideStatus={actionsVisible}
       />
 
-      {showActions && layerMounted && (
-        <PosterHoverLayer item={item} visible={actionsVisible} resume={resume} onPlay={handlePlay} />
-      )}
-
-      {/* Méta révélée au survol, AU-DESSUS du voile. Masquée sur un lot
+      {/* Puces qualité/langues AU-DESSUS du voile, sauf sur un lot
           d'épisodes : la qualité d'un seul épisode ne dit rien du groupe. */}
-      {!grouped && hovered && (
-        <div className="pointer-events-none absolute inset-0 z-30">
-          <CardMetaOverlay item={item} density="compact" reveal="mount" />
-        </div>
+      {showActions && layerMounted && (
+        <CardHoverOverlay
+          variant="poster"
+          item={item}
+          title={item.Name}
+          visible={actionsVisible}
+          play={{ resume, onPlay: handlePlay }}
+          meta={grouped ? null : item}
+        />
       )}
 
       {/* La progression reste visible sous le plateau : c'est au survol qu'on

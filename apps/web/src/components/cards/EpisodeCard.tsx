@@ -7,14 +7,12 @@ import { CardFrame } from "./CardFrame";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
 import { CardMarkerLayer } from "./CardMarkerLayer";
-import { CardActionTray } from "./CardActionTray";
-import { CardMoreInfoButton } from "./CardMoreInfoButton";
+import { CardHoverOverlay } from "./CardHoverOverlay";
 import { CardHoverPreview } from "./CardHoverPreview";
 import { useHoverPreview } from "./useHoverPreview";
 import { prefetchDetailRoute } from "./prefetchDetail";
 import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
-import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { resolveBannerImage } from "@tentacle-tv/shared";
 import { CardTrickplayImage } from "./CardTrickplayImage";
 import { EPISODE_VW, EPISODE_WIDTH, type CardSize } from "./cardSizes";
@@ -70,12 +68,10 @@ export const EpisodeCard = memo(function EpisodeCard({
   const unhover = useCallback(() => setHovered(false), []);
   useHoverGuard(preview.anchorRef, hovered, unhover);
   /**
-   * Le repli sans panneau était le DERNIER survol de carte laissé à
-   * `opacity: 0`, contrôles montés en permanence. Il porte désormais trois
-   * abonnements au cache — vu/favori/liste, file de téléchargement, droits —
-   * et chaque vignette de « Reprendre » les gardait au repos.
-   * 200 ms couvre le plus lent des deux fondus (150 pour les actions, 200
-   * pour le chevron « Plus d'infos »).
+   * Le survol est MONTÉ à la demande, jamais laissé à `opacity: 0` : il
+   * porte des abonnements au cache — vu/favori/liste, notes, file hors
+   * ligne, droits — que chaque vignette de « Reprendre » garderait au repos.
+   * 200 ms = la durée de ses fondus de sortie.
    */
   const fallbackVisible = !preview.panelActive && hovered;
   const fallbackMounted = useMountWhile(fallbackVisible, 200);
@@ -110,6 +106,11 @@ export const EpisodeCard = memo(function EpisodeCard({
 
   const handleClick = () => {
     if (ctx.ctxMenu) return;
+    navigate(`/watch/${item.Id}`);
+  };
+  const handlePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     navigate(`/watch/${item.Id}`);
   };
 
@@ -189,11 +190,6 @@ export const EpisodeCard = memo(function EpisodeCard({
           <CardImage src={imageUrl} alt={item.Name} zoom={!preview.panelActive} />
         )}
 
-        {/* Qualité/langues au survol UNIQUEMENT là où il n'y a pas de panneau
-            (toucher, petit écran) : sinon elles s'affichaient sur la vignette
-            en même temps que le panneau les répétait juste à côté. */}
-        {!preview.panelActive && hovered && <CardMetaOverlay item={item} reveal="mount" />}
-
         {/* Scrim + libellé d'épisode posés SUR la vignette : blanc/noir
             constants dans les deux thèmes (règle « posé sur média »). */}
         <div
@@ -220,7 +216,14 @@ export const EpisodeCard = memo(function EpisodeCard({
           ratingClassName="left-2 top-2"
         />
 
-        <div className="absolute inset-x-0 bottom-1.5 pl-3 pr-28 text-on-media-primary">
+        {/* Le coin bas-droit appartient au groupe du survol (étoiles et
+            plateau) : le titre se resserre à sa gauche le temps du survol, au
+            lieu de passer dessous. */}
+        <div
+          className={`absolute inset-x-0 bottom-1.5 pl-3 text-on-media-primary ${
+            fallbackVisible ? "pr-[11.5rem]" : "pr-28"
+          }`}
+        >
           {epLabel && (
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-on-media-secondary">
               {epLabel}
@@ -229,24 +232,20 @@ export const EpisodeCard = memo(function EpisodeCard({
           {episodeName && <p className="line-clamp-1 text-xs font-semibold">{episodeName}</p>}
         </div>
 
-        {/* Repli sur l'ancien survol de carte partout où le panneau ne peut
-            PAS s'ouvrir : appareil tactile, petit écran, mais aussi carte trop
-            basse ou rognée par le bord de la rangée. Sans ce repli, ces cartes
-            n'offraient plus aucune action au survol. */}
+        {/* Le survol unique des cartes, variante paysage, partout où le
+            panneau ne peut PAS s'ouvrir : appareil tactile, petit écran, carte
+            trop basse ou rognée par le bord de la rangée. Le clic sur la
+            vignette lance la lecture : la fiche passe par le plateau. */}
         {!preview.panelActive && fallbackMounted && (
-          <>
-            <div
-              className="hover-reveal absolute right-2 top-2 z-20 flex items-center gap-1.5"
-              data-shown={fallbackVisible}
-              style={{
-                pointerEvents: fallbackVisible ? "auto" : "none",
-                "--reveal-ms": "150ms",
-              } as React.CSSProperties}
-            >
-              <CardActionTray item={item} />
-            </div>
-            <CardMoreInfoButton detailId={item.Id} visible={fallbackVisible} />
-          </>
+          <CardHoverOverlay
+            variant="landscape"
+            item={item}
+            title={isEpisode ? `${seriesName ?? ""} — ${item.Name}` : item.Name}
+            visible={fallbackVisible}
+            play={{ resume: progress != null && progress > 0 && !watched, onPlay: handlePlay }}
+            meta={item}
+            onOpenDetails={() => navigate(`/media/${item.Id}`)}
+          />
         )}
 
         {!watched && <CardProgressBar percent={progress} border />}

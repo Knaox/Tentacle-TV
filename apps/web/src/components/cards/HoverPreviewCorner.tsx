@@ -1,4 +1,4 @@
-import type { MediaItem } from "@tentacle-tv/shared";
+import { CARD_TOGGLE_ORDER, type MediaItem } from "@tentacle-tv/shared";
 import { CardActionTray } from "./CardActionTray";
 
 /**
@@ -11,10 +11,12 @@ import { CardActionTray } from "./CardActionTray";
  * ordre, et c'est lui qui coupe la propagation — la vignette, elle, lance la
  * lecture.
  */
+const PANEL_TRAY = { toggles: CARD_TOGGLE_ORDER, extras: ["offline"] } as const;
+
 export function HoverPreviewCorner({ item }: { item: MediaItem }) {
   return (
     <div className="absolute right-2 top-2 z-10">
-      <CardActionTray item={item} />
+      <CardActionTray item={item} overlay={PANEL_TRAY} label={item.Name} />
     </div>
   );
 }

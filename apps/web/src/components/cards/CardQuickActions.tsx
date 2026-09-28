@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "./cardGlyphs";
-import { stopCardClick, useCardToggles } from "./useCardToggles";
+import { useCardToggles } from "@tentacle-tv/api-client";
+import { stopCardClick } from "./cardEvents";
 
 /**
  * • `compact` — colonne d'angle (la plus discrète).
@@ -36,7 +37,7 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
   const { box, icon, dir } = VARIANT_STYLE[variant];
   const base = `${box} flex items-center justify-center rounded-full border bg-black/55 transition-transform duration-150 hover:scale-105`;
 
-  const listLabel = toggles.inList ? t("removeFromWatchlist") : t("addToWatchlist");
+  const listLabel = toggles.watchlist ? t("removeFromWatchlist") : t("addToWatchlist");
   const favLabel = toggles.favorite ? t("removeFromFavorites") : t("addToFavorites");
   const watchedLabel = toggles.watched ? t("markUnwatched") : t("markWatched");
 
@@ -46,11 +47,11 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
         type="button"
         onClick={(e) => { stopCardClick(e); toggles.toggleList(); }}
         aria-label={listLabel}
-        aria-pressed={toggles.inList}
+        aria-pressed={toggles.watchlist}
         title={listLabel}
-        className={`${base} ${toggles.inList ? "border-white text-white" : "border-white/40 text-white hover:border-white"}`}
+        className={`${base} ${toggles.watchlist ? "border-white text-white" : "border-white/40 text-white hover:border-white"}`}
       >
-        <BookmarkGlyph className={icon} filled={toggles.inList} />
+        <BookmarkGlyph className={icon} filled={toggles.watchlist} />
       </button>
       <button
         type="button"
