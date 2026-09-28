@@ -73,15 +73,20 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount }: 
         {item.Name}
       </motion.h1>
       {showLogo && (
-        <motion.img
-          variants={logoReveal}
-          src={logoUrl}
-          alt=""
-          draggable={false}
-          onError={reportFailure}
-          style={{ transformOrigin: "left bottom" }}
-          className="block h-auto max-h-28 w-auto max-w-[92%] lg:max-w-[36rem] object-contain object-left drop-shadow-[0_6px_24px_var(--on-media-shadow)] md:max-h-36 xl:max-h-44"
-        />
+        // Le logo tient dans min(92 % de la colonne, 36rem) — dit avec une
+        // largeur et un plafond, jamais `min()` : le socle Chrome 53 du
+        // téléviseur ignorerait la déclaration entière (passe compat webOS).
+        <span className="block w-[92%] max-w-[36rem]">
+          <motion.img
+            variants={logoReveal}
+            src={logoUrl}
+            alt=""
+            draggable={false}
+            onError={reportFailure}
+            style={{ transformOrigin: "left bottom" }}
+            className="block h-auto max-h-28 w-auto max-w-full object-contain object-left drop-shadow-[0_6px_24px_var(--on-media-shadow)] md:max-h-36 xl:max-h-44"
+          />
+        </span>
       )}
       {item.OriginalTitle && item.OriginalTitle !== item.Name && (
         <motion.p variants={fadeUp} className="mt-2 text-sm text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]">
