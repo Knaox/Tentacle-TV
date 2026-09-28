@@ -39,6 +39,11 @@ interface SegmentedControlProps<T extends string> {
  * Le repère se déplace par `layoutId`, donc en `transform` ; immédiat quand
  * l'utilisateur réduit les animations. Aucune couleur de fond animée : le
  * segment choisi ne change que la couleur de son texte.
+ *
+ * ⚠️ Pas de `gap` sur les segments : la cible webOS l'émule par des marges
+ * (`gapPass` : marge négative sur le conteneur, positive sur chaque enfant),
+ * qui décaleraient le bouton et rogneraient le repère, posé en `inset-0`. Le
+ * compte prend une marge à gauche à la place.
  */
 export function SegmentedControl<T extends string>({
   options, value, onChange, label, markerId, semantics = "radio",
@@ -80,7 +85,7 @@ export function SegmentedControl<T extends string>({
             title={opt.icon ? opt.label : undefined}
             tabIndex={radio ? (i === tabbable ? 0 : -1) : undefined}
             onClick={() => onChange(opt.value)}
-            className={`relative isolate inline-flex min-h-[28px] cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full text-xs font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)] ${
+            className={`relative isolate inline-flex min-h-[28px] cursor-pointer items-center whitespace-nowrap rounded-full text-xs font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)] ${
               opt.icon ? "w-9 justify-center" : "px-3.5"
             } ${selected ? "text-cta-brand-fg" : "text-content-secondary hover:text-content-primary"}`}
           >
@@ -99,7 +104,7 @@ export function SegmentedControl<T extends string>({
             {opt.icon ?? opt.label}
             {opt.count !== undefined && (
               <span
-                className={`rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
+                className={`ml-1.5 rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
                   selected ? "bg-black/20 text-cta-brand-fg" : "bg-fill-soft text-content-tertiary"
                 }`}
               >
