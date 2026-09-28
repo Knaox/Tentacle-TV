@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, PartyPopper, RotateCcw } from "lucide-react";
 import {
-  fetchAffinity, leaveAffinity, prefetchSwipeCardDetails, swipeLangOf, useAffinityDeck, useSwipeCardDetails,
+  fetchAffinity, leaveAffinity, swipeLangOf, useAffinityDeck, useSwipeCardDetails,
 } from "@tentacle-tv/api-client";
 import type { SwipeVerdict } from "@tentacle-tv/api-client";
 import type { WtAffinityStateDto } from "@tentacle-tv/shared";
@@ -18,8 +17,9 @@ import {
 
 /**
  * La pile de l'affinité : la mécanique d'« Affiner » telle quelle — la pile,
- * le glisser, les boutons, le clavier (← → ↑ ↓ Z, Espace), le verso — nourrie
- * par la pile COMMUNE du groupe. Monter la vue, c'est rejoindre la séance.
+ * le glisser (le bas vaut « Passer »), les boutons, le clavier (← → ↑ ↓ Z,
+ * Espace), le verso — nourrie par la pile COMMUNE du groupe. Monter la vue,
+ * c'est rejoindre la séance.
  *
  * `paused` : un match ou la liste des matchs la recouvre — elle reste montée
  * (sa file, son historique d'annulation) mais n'écoute plus le clavier.
@@ -33,7 +33,6 @@ const DECK_CHROME = "27rem";
 export function AffinityDeckView({ state, titleId, paused }: { state: WtAffinityStateDto; titleId: string; paused: boolean }) {
   const { t, i18n } = useTranslation(["watchTogether", "swipe"]);
   const lang = swipeLangOf(i18n.language);
-  const qc = useQueryClient();
 
   // La séance tenue n'est plus celle du serveur : relire son état.
   const refetchState = useCallback(() => {
@@ -48,10 +47,9 @@ export function AffinityDeckView({ state, titleId, paused }: { state: WtAffinity
   const top = deck.cards[0];
   const next = deck.cards[1];
   const { data: details } = useSwipeCardDetails(top, lang);
-
-  useEffect(() => {
-    prefetchSwipeCardDetails(qc, next, lang);
-  }, [qc, next, lang]);
+  // Comme Affiner : la suivante porte déjà son verso (titre localisé, durée) —
+  // promue en tête, son texte ne se recompose pas sous les yeux.
+  const { data: nextDetails } = useSwipeCardDetails(next, lang);
   const topKey = top?.key;
   useEffect(() => {
     setInfoOpen(false);
@@ -97,6 +95,7 @@ export function AffinityDeckView({ state, titleId, paused }: { state: WtAffinity
             exitVerdict={exitVerdict}
             infoOpen={infoOpen}
             details={details}
+            nextDetails={nextDetails}
             onJudge={onJudge}
             onToggleInfo={onToggleInfo}
           />

@@ -157,7 +157,7 @@ export default {
   affinityMatchesCount_one: "{{count}} match",
   affinityMatchesCount_other: "{{count}} matches",
   affinityOpenMatches: "See matches",
-  affinityHint: "Right if you're up for it, left if not, up to love it.",
+  affinityHint: "Right if you're up for it, left if not, up to love it, down to skip.",
   affinityLeave: "Stop participating",
   affinityEmptyTitle: "You've seen everything",
   affinityEmptyBody: "Nothing left to rate in this pile. A match can still happen when the others catch up.",

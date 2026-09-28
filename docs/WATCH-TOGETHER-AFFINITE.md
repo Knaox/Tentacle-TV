@@ -65,7 +65,9 @@ qu'on demande à revoir les titres passés.
 
 La mécanique d'« Affiner » telle quelle : `SwipeStack`, `SwipeControls`,
 `useSwipeKeyboard` (← → ↑ ↓ Z, Espace), le verso (synopsis) de
-`/api/swipe/details`. Les corrections d'Affiner s'y appliquent d'office.
+`/api/swipe/details` — la suivante le porte déjà (`nextDetails`), son texte ne
+se recompose pas quand elle monte en tête. Glisser vers le bas vaut « Passer ».
+Les corrections d'Affiner s'y appliquent d'office.
 
 « Regarder ensemble » prévient la salle (`POST /affinity/launch`), puis lance
 comme partout ailleurs : arriver sur le lecteur d'un autre média le lance pour

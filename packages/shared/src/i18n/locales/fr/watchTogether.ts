@@ -157,7 +157,7 @@ export default {
   affinityMatchesCount_one: "{{count}} match",
   affinityMatchesCount_other: "{{count}} matchs",
   affinityOpenMatches: "Voir les matchs",
-  affinityHint: "À droite si ça vous dit, à gauche sinon, vers le haut pour un coup de cœur.",
+  affinityHint: "À droite si ça vous dit, à gauche sinon, en haut pour un coup de cœur, en bas pour passer.",
   affinityLeave: "Ne plus participer",
   affinityEmptyTitle: "Vous avez tout vu",
   affinityEmptyBody: "Plus rien à juger dans cette pile. Un match peut encore tomber quand les autres vous rattrapent.",
