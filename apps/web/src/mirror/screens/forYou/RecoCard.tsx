@@ -1,17 +1,20 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { recoPosterUrl, useJellyfinClient, type RecoRowItem } from "@tentacle-tv/api-client";
+import { recoPosterUrl, useJellyfinClient, useRecoCardMarkers, type RecoRowItem } from "@tentacle-tv/api-client";
 import { CardRatingBadge } from "../../../components/cards/CardRatingBadge";
+import { CardStatusMarkers } from "../../../components/cards/CardStatusMarkers";
 import { Pressable } from "../../ui/Pressable";
 import { useCardWidth } from "../../useMirrorLayout";
 
 /**
  * `RecoCard` de l'app : l'affiche 2:3 (rayon 12, ombre elev2) d'une
- * recommandation — badge « À la demande » en haut à gauche hors bibliothèque,
- * « Découverte » au dégradé en haut à droite, la note en bas à DROITE ; titre
- * 13 semi-gras, année 10 (« — indisponible » sans catalogue), et la raison
- * 11,5 sur deux lignes sur la page Pour vous. Carte atténuée (0,7) quand il
- * n'y a nulle part où aller.
+ * recommandation, avec les MARQUEURS de toutes les cartes (`useRecoCardMarkers`)
+ * — la note globale et la vôtre en bas à gauche, la pastille Ma liste /
+ * favori / vu en haut à droite, comme `MediaCard`. En haut à gauche, empilés :
+ * « À la demande » (hors bibliothèque) et « Découverte » au dégradé. Titre 13
+ * semi-gras, année 10 (« — indisponible » sans catalogue), et la raison 11,5
+ * sur deux lignes sur la page Pour vous. Carte atténuée (0,7) quand il n'y a
+ * nulle part où aller. Au doigt, pas de survol : l'appui long ouvre la feuille.
  */
 export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongPress, reason }: {
   item: RecoRowItem;
@@ -26,6 +29,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const [broken, setBroken] = useState(false);
   const poster = recoPosterUrl(item, (id) => client.getImageUrl(id, "Primary", { width: 300, quality: 80 }));
   const onDemand = item.jellyfinItemId === null;
+  const markers = useRecoCardMarkers(item);
   const subtitle =
     onDemand && !canOpen
       ? [item.year, t("unavailableHint")].filter(Boolean).join(" — ")
@@ -58,20 +62,25 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
             </span>
           )}
         </div>
-        {onDemand && (
-          <span className="absolute left-[7px] top-[7px] rounded border-[0.5px] border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.65)] px-2 py-[3.5px] text-[10px] font-bold uppercase leading-3 tracking-[0.3px] text-on-media-primary">
-            {t("onDemandBadge")}
-          </span>
+        {(onDemand || item.exploration) && (
+          <div className="pointer-events-none absolute left-[7px] top-[7px] flex flex-col items-start gap-1">
+            {onDemand && (
+              <span className="rounded border-[0.5px] border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.65)] px-2 py-[3.5px] text-[10px] font-bold uppercase leading-3 tracking-[0.3px] text-on-media-primary">
+                {t("onDemandBadge")}
+              </span>
+            )}
+            {item.exploration && (
+              <span
+                className="rounded px-2 py-[3.5px] text-[10px] font-bold uppercase leading-3 tracking-[0.3px] text-cta-brand-fg"
+                style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
+              >
+                {t("explorationBadge")}
+              </span>
+            )}
+          </div>
         )}
-        {item.exploration && (
-          <span
-            className="absolute right-[7px] top-[7px] rounded px-2 py-[3.5px] text-[10px] font-bold uppercase leading-3 tracking-[0.3px] text-cta-brand-fg"
-            style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
-          >
-            {t("explorationBadge")}
-          </span>
-        )}
-        <CardRatingBadge rating={item.voteAverage} className="bottom-[7px] right-[7px]" />
+        <CardRatingBadge rating={markers.communityRating} userScore={markers.userScore} className="bottom-1.5 left-1.5" />
+        <CardStatusMarkers statuses={markers.statuses} className="right-[7px] top-[7px]" />
       </div>
       <p className="mt-2 truncate text-[13px] font-semibold tracking-[-0.1px] text-content-primary">{item.title}</p>
       {subtitle && <p className="mt-0.5 truncate text-[10px] font-medium text-content-tertiary">{subtitle}</p>}
