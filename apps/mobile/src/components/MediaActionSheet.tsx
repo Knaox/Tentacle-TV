@@ -1,8 +1,7 @@
-import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useCardRatingTarget, useMediaItem, useSendRecoFeedback, type RatingIdentity } from "@tentacle-tv/api-client";
+import { useCardRatingTarget, useMediaItem, useSendRecoFeedback } from "@tentacle-tv/api-client";
 import { resolveCardOverlay } from "@tentacle-tv/shared";
 import { RecoReasonList } from "@/components/reco/RecoReasonList";
 import { RatingPanelMobile } from "@/components/rating/RatingPanelMobile";
@@ -27,8 +26,10 @@ interface Props {
  * LA feuille d'appui long des cartes — l'équivalent tactile du survol web
  * (`CardHoverOverlay`) : les mêmes actions, tirées du modèle partagé
  * (`resolveCardOverlay`), dans l'ordre d'une feuille (`cardActionEntries`).
- * Une seule feuille pour toutes les cartes : affiches, vignettes 16:9, lignes
- * d'épisode, recommandations en bibliothèque ou non.
+ * Une seule feuille pour toutes les cartes de la bibliothèque : affiches,
+ * vignettes 16:9, lignes d'épisode, recommandations, titres gardés sur
+ * l'appareil. Un titre HORS bibliothèque a la sienne, celle des cartes Vigie
+ * (`CardSheetScope` y envoie une recommandation sans item).
  *
  *   1. l'en-tête (et « Pourquoi ce titre » pour une recommandation) ;
  *   2. Lire / Reprendre — le bouton central du survol, quand quelque chose se
@@ -38,7 +39,7 @@ interface Props {
  *   4. les extras : garder hors ligne, Plus d'infos (carte dont le tap lance
  *      la lecture), Ne plus me proposer (recommandation) ;
  *   5. les étoiles — la série pour une affiche d'épisode, l'épisode pour une
- *      vignette, le tmdb pour un titre hors bibliothèque.
+ *      vignette.
  *
  * Un titre lu sur le disque (`local`) n'y garde que la coche « vu », fournie
  * par l'appelant (`toggles`), et ne demande rien au serveur.
@@ -64,18 +65,12 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
   const item = target.item ? (fetched ?? target.item) : null;
   const play = useSheetPlay(item, { local });
 
-  // Hors bibliothèque, la note vit sur le tmdb : il n'y a pas d'item Jellyfin
-  // à qui la rattacher (cf. `RecoPosterHoverLayer` web).
   const reco = target.reco;
-  const tmdbIdentity = useMemo<RatingIdentity | null>(
-    () => (reco && !reco.jellyfinItemId ? { mediaType: reco.mediaType === "tv" ? "series" : "movie", tmdbId: reco.tmdbId } : null),
-    [reco],
-  );
-  const ratingTarget = useCardRatingTarget(tmdbIdentity || local ? null : item, {
+  const ratingTarget = useCardRatingTarget(local ? null : item, {
     scope: target.variant === "landscape" ? "item" : "series",
     enabled: !local,
   });
-  const identity = tmdbIdentity ?? ratingTarget.identity;
+  const identity = ratingTarget.identity;
 
   const overlay = resolveCardOverlay({
     variant: target.variant,
@@ -132,11 +127,7 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
             }}
           />
           {overlay.rate && (identity ? (
-            <RatingPanelMobile
-              identity={identity}
-              jellyfinItemId={tmdbIdentity ? null : ratingTarget.jellyfinItemId}
-              variant="sheet"
-            />
+            <RatingPanelMobile identity={identity} jellyfinItemId={ratingTarget.jellyfinItemId} variant="sheet" />
           ) : (
             // La série se charge : la place des étoiles est gardée, la feuille
             // ne saute pas quand elles arrivent.

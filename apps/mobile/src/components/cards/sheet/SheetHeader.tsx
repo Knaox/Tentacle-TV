@@ -2,17 +2,17 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
-import { recoBackdropUrl, recoPosterUrl, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { formatEpisodeCode, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, SHADOW_RN, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import type { CardSheetTarget } from "./cardSheetTarget";
 
 type Client = ReturnType<typeof useJellyfinClient>;
-const NO_IMAGE = () => "";
+const NONE = { poster: null, backdrop: null } as const;
 
 interface Props {
   target: CardSheetTarget;
-  /** L'item chargé (la fiche), sinon le visage de la carte ; `null` hors bibliothèque. */
+  /** L'item chargé (la fiche), sinon le visage de la carte. */
   item: MediaItem | null;
 }
 
@@ -58,14 +58,7 @@ export const SheetHeader = memo(function SheetHeader({ target, item }: Props) {
  */
 function sheetImages(target: CardSheetTarget, item: MediaItem | null, client: Client) {
   if (target.images) return target.images;
-  if (target.local) return { poster: null, backdrop: null };
-  if (!item) {
-    const reco = target.reco;
-    return {
-      poster: reco ? recoPosterUrl(reco, NO_IMAGE, "w185") : null,
-      backdrop: reco ? recoBackdropUrl(reco, NO_IMAGE, "w780") : null,
-    };
-  }
+  if (target.local || !item) return NONE;
   const resolved = resolvePosterImage(item, "series");
   const backdropId = item.Type === "Episode" ? (item.ParentBackdropItemId ?? item.SeriesId ?? item.Id) : item.Id;
   return {
@@ -87,8 +80,8 @@ function sheetSubtitle(
     if (target.variant === "landscape") return item.SeriesName ? `${item.SeriesName} · ${code}` : code;
     return `${code} · ${item.Name}`;
   }
-  const kind = item ? item.Type : target.reco?.mediaType === "tv" ? "Series" : "Movie";
-  const year = item ? item.ProductionYear : target.reco?.year;
+  const kind = item?.Type;
+  const year = item?.ProductionYear;
   const label = kind === "Series" ? kinds.series : kind === "Movie" ? kinds.movie : null;
   const parts = [year ? String(year) : null, label].filter((part): part is string => part !== null);
   return parts.length > 0 ? parts.join(" · ") : null;

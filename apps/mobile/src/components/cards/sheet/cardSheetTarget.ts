@@ -14,7 +14,10 @@ import type { CardSheetNavigation } from "./cardSheetContext";
  */
 export interface CardSheetTarget {
   variant: CardOverlayVariant;
-  /** Le visage Jellyfin de la carte — `null` : recommandation hors bibliothèque. */
+  /**
+   * Le visage Jellyfin de la carte. `null` : une recommandation hors
+   * bibliothèque — la portée l'envoie à la feuille des cartes Vigie.
+   */
   item: MediaItem | null;
   /** Le libellé de la carte : le titre de la feuille, lu par les lecteurs d'écran. */
   title: string;
@@ -61,8 +64,8 @@ export function landscapeSheetTarget(item: MediaItem): CardSheetTarget {
 /**
  * Une recommandation. En bibliothèque, son visage `MediaItem`
  * (`recoMarkerItem`) suffit à retrouver l'item — la feuille charge la fiche ;
- * hors bibliothèque, il n'y a pas d'item : ni lecture ni bascules, la note
- * (par tmdb) et le refus seulement.
+ * hors bibliothèque, il n'y a pas d'item, et la portée (`CardSheetScope`)
+ * ouvre la feuille des cartes Vigie (« Demander », Ma liste à l'arrivée).
  */
 export function recoSheetTarget(reco: RecoRowItem): CardSheetTarget {
   return {
