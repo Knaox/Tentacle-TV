@@ -22,6 +22,10 @@ export { useWatchlistSeriesIds, useFavoriteSeriesIds, seriesStateId } from "./ho
 // Marqueurs des cartes média — note, ma liste, favori, vu (cf. hooks/useCardMarkers)
 export { useCardMarkers, type CardMarkersOptions } from "./hooks/useCardMarkers";
 export { useRecoMarkerItem, recoMarkerItem } from "./reco/useRecoMarkerItem";
+// Survol unifié des cartes (cf. shared `cardOverlay.ts`) : bascules et cible
+// de notation, les mêmes pour le survol web, la feuille mobile et la télécommande.
+export { useCardToggles, type CardToggles } from "./hooks/useCardToggles";
+export { useCardRatingTarget, type CardRatingTarget } from "./hooks/useCardRatingTarget";
 export { useSeriesRatings, SERIES_RATINGS_KEY } from "./hooks/useSeriesRatings";
 export { filterCollection, collectionGenres, type CollectionFilterInput, type CollectionTypeTab } from "./utils/collectionFilter";
 export {
