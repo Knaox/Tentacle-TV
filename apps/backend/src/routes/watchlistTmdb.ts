@@ -4,7 +4,7 @@ import { getPrisma } from "../services/db";
 import type { JellyfinUser } from "../middleware/auth";
 import { findLibraryItemByTmdb } from "../services/jellyfinTmdbLookup";
 import { likeItemForUser, unlikeItemForUser } from "../services/jellyfinLikes";
-import { pendingKey } from "../services/watchlistPending";
+import { dropPendingFlag, holdPendingFlag, pendingKey } from "../services/watchlistPending";
 import { broadcastToUser } from "../services/wsManager";
 import { pokeProfile } from "../services/reco/jobs";
 
@@ -47,7 +47,8 @@ export const watchlistTmdbRoutes: FastifyPluginAsync = async (app) => {
   app.get("/pending", async (request) => {
     const user = userOf(request);
     const rows = await getPrisma().watchlistPending.findMany({
-      where: { jellyfinUserId: user.userId },
+      // Ma liste seulement : un cœur d'Affiner qui attend son titre n'y est pas.
+      where: { jellyfinUserId: user.userId, flag: "watchlist" },
       orderBy: { createdAt: "desc" },
       select: { mediaType: true, tmdbId: true },
     });
@@ -60,26 +61,19 @@ export const watchlistTmdbRoutes: FastifyPluginAsync = async (app) => {
     const lookup = await findLibraryItemByTmdb(tmdbId, mediaType);
     if (lookup.kind === "found" && (await likeItemForUser(user.userId, lookup.id))) {
       // Une ligne d'avant (mise de côté puis arrivée) n'a plus d'objet.
-      await getPrisma().watchlistPending.deleteMany({ where: { jellyfinUserId: user.userId, mediaType, tmdbId } });
+      await dropPendingFlag(user.userId, mediaType, tmdbId, "watchlist");
       listChanged(user.userId);
       return { state: "listed" as const, itemId: lookup.id };
     }
-    await getPrisma().watchlistPending.upsert({
-      where: { jellyfinUserId_mediaType_tmdbId: { jellyfinUserId: user.userId, mediaType, tmdbId } },
-      create: { jellyfinUserId: user.userId, mediaType, tmdbId },
-      update: {},
-    });
+    await holdPendingFlag(user.userId, mediaType, tmdbId, "watchlist");
     return { state: "pending" as const };
   });
 
   app.delete("/tmdb/:mediaType/:tmdbId", async (request) => {
     const user = userOf(request);
     const { mediaType, tmdbId } = paramsSchema.parse(request.params);
-    const removed = await getPrisma().watchlistPending.deleteMany({
-      where: { jellyfinUserId: user.userId, mediaType, tmdbId },
-    });
     // Mis de côté, il n'était pas encore là : rien à défaire chez Jellyfin.
-    if (removed.count > 0) return { state: "none" as const };
+    if (await dropPendingFlag(user.userId, mediaType, tmdbId, "watchlist")) return { state: "none" as const };
     const lookup = await findLibraryItemByTmdb(tmdbId, mediaType);
     if (lookup.kind === "found") {
       if (!(await unlikeItemForUser(user.userId, lookup.id))) throw new Error("Jellyfin n'a pas retiré le titre de Ma liste");

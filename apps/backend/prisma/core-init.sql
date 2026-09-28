@@ -128,16 +128,40 @@ CREATE TABLE IF NOT EXISTS `watchlist_auto_retired` (
   KEY `watchlist_auto_retired_jellyfinUserId_idx` (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- « Ma liste » posée sur un titre absent de la bibliothèque, à transformer en
--- vrai « Ma liste » dès son arrivée. Voir schema.prisma > WatchlistPending.
+-- Ce qu'un titre absent de la bibliothèque attend pour être posé dès son
+-- arrivée : « Ma liste » (flag 'watchlist') ou « J'aime » (flag 'favorite',
+-- un like d'Affiner). Voir schema.prisma > WatchlistPending.
 CREATE TABLE IF NOT EXISTS `watchlist_pending` (
   `jellyfinUserId` varchar(255) NOT NULL,
   `mediaType` varchar(10) NOT NULL,
   `tmdbId` int NOT NULL,
+  `flag` varchar(12) NOT NULL DEFAULT 'watchlist',
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
-  PRIMARY KEY (`jellyfinUserId`, `mediaType`, `tmdbId`),
+  PRIMARY KEY (`jellyfinUserId`, `mediaType`, `tmdbId`, `flag`),
   KEY `watchlist_pending_mediaType_tmdbId_idx` (`mediaType`, `tmdbId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- La table d'avant le drapeau (Ma liste seule) reçoit `flag`, puis sa clé
+-- primaire s'élargit. Aucun « IF NOT EXISTS » n'existe pour une clé primaire :
+-- les deux changements se décident dans information_schema, ce qui les rend
+-- rejouables sur MariaDB comme sur MySQL (base neuve ou base d'avant).
+SET @wp_flag_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'watchlist_pending' AND COLUMN_NAME = 'flag');
+SET @wp_flag_sql := IF(@wp_flag_col = 0,
+  'ALTER TABLE `watchlist_pending` ADD COLUMN `flag` varchar(12) NOT NULL DEFAULT ''watchlist'' AFTER `tmdbId`',
+  'DO 0');
+PREPARE wp_flag_stmt FROM @wp_flag_sql;
+EXECUTE wp_flag_stmt;
+DEALLOCATE PREPARE wp_flag_stmt;
+SET @wp_flag_pk := (SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'watchlist_pending'
+    AND CONSTRAINT_NAME = 'PRIMARY' AND COLUMN_NAME = 'flag');
+SET @wp_flag_sql := IF(@wp_flag_pk = 0,
+  'ALTER TABLE `watchlist_pending` DROP PRIMARY KEY, ADD PRIMARY KEY (`jellyfinUserId`, `mediaType`, `tmdbId`, `flag`)',
+  'DO 0');
+PREPARE wp_flag_stmt FROM @wp_flag_sql;
+EXECUTE wp_flag_stmt;
+DEALLOCATE PREPARE wp_flag_stmt;
 
 -- Segments de visionnage MESURÉS par Tentacle (remplace le greffon Playback
 -- Reporting). Une ligne = une suite continue de lecture d'un titre sur une

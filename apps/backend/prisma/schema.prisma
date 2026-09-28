@@ -231,19 +231,23 @@ model WatchlistAutoRetired {
   @@map("watchlist_auto_retired")
 }
 
-// « Ma liste » d'un titre qui n'est PAS encore dans la bibliothèque, posé
-// depuis une carte hors bibliothèque (recommandation, recherche, extension de
-// demandes). Le serveur le transforme en vrai « Ma liste » (Likes Jellyfin)
-// dès que le titre arrive, puis efface la ligne — voir
-// services/watchlistPending.ts. Clé TMDB : c'est la seule identité d'un titre
-// absent. mediaType au vocabulaire TMDB (« movie » | « tv »).
+// Ce qu'un titre qui n'est PAS encore dans la bibliothèque attend pour être
+// posé chez Jellyfin, compte par compte, un drapeau par ligne :
+//   • « watchlist » — Ma liste (Likes Jellyfin), posée depuis une carte hors
+//     bibliothèque (recommandation, recherche, extension de demandes) ;
+//   • « favorite »  — J'aime (le cœur, IsFavorite), donné dans « Affiner ».
+// Le serveur pose le drapeau dès que le titre arrive, puis efface la ligne —
+// voir services/watchlistPending.ts. Clé TMDB : c'est la seule identité d'un
+// titre absent. mediaType au vocabulaire TMDB (« movie » | « tv »).
 model WatchlistPending {
   jellyfinUserId String   @db.VarChar(255)
   mediaType      String   @db.VarChar(10)
   tmdbId         Int
+  /// « watchlist » | « favorite » (cf. PendingFlag).
+  flag           String   @default("watchlist") @db.VarChar(12)
   createdAt      DateTime @default(now())
 
-  @@id([jellyfinUserId, mediaType, tmdbId])
+  @@id([jellyfinUserId, mediaType, tmdbId, flag])
   @@index([mediaType, tmdbId])
   @@map("watchlist_pending")
 }

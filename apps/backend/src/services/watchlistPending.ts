@@ -1,17 +1,20 @@
 import type { LibItem } from "./jellyfinLibrary";
 import { getPrisma, hasPrisma } from "./db";
-import { likeItemForUser } from "./jellyfinLikes";
+import { favoriteItemForUser, likeItemForUser } from "./jellyfinLikes";
 import { libraryTmdbIndex, type TmdbMediaType } from "./jellyfinTmdbLookup";
 import { broadcastToUser } from "./wsManager";
 import { pokeProfile } from "./reco/jobs";
+import { refreshLibraryMemo } from "./reco/candidates/libraryMemo";
 
-// « Ma liste » posée sur un titre qui n'est PAS encore dans la bibliothèque
-// (table watchlist_pending, écrite par le client via routes/watchlist.ts) :
-// une carte hors bibliothèque — recommandation, recherche, extension de
-// demandes — met le titre de côté, et il entre dans « Ma liste » dès qu'il
-// arrive. Le like est posé POUR LE COMPTE de l'utilisateur avec la clé admin,
-// puis la ligne s'efface. Deux chemins, comme les séries sorties
-// automatiquement (watchlistAutoRetired) :
+// Ce qu'un titre qui n'est PAS encore dans la bibliothèque attend pour être
+// posé chez Jellyfin (table watchlist_pending), un DRAPEAU par ligne :
+//   • « watchlist » — Ma liste, posée depuis une carte hors bibliothèque
+//     (recommandation, recherche, extension de demandes) : routes/watchlistTmdb.ts ;
+//   • « favorite »  — J'aime, le cœur, donné dans « Affiner » :
+//     services/swipe/swipeFavorites.ts.
+// Le drapeau est posé POUR LE COMPTE de l'utilisateur avec la clé admin dès
+// que le titre arrive, puis la ligne s'efface. Deux chemins, comme les séries
+// sorties automatiquement (watchlistAutoRetired) :
 //   • l'ARRIVÉE, branchée sur le diff d'IDs de libraryAddedNotifier : un film
 //     par son TMDB, une série par le sien — l'item Series lui-même ou le
 //     premier de ses épisodes, qui porte le TMDB de sa série ;
@@ -22,15 +25,31 @@ import { pokeProfile } from "./reco/jobs";
 const DB_CHUNK = 500;
 
 export type PendingKey = `${TmdbMediaType}:${number}`;
+export type PendingFlag = "watchlist" | "favorite";
 
 export function pendingKey(mediaType: TmdbMediaType, tmdbId: number): PendingKey {
   return `${mediaType}:${tmdbId}`;
 }
 
+/** Ce que pose chaque drapeau, et l'évènement qui prévient les écrans du compte. */
+const FLAG_ACTIONS: Record<PendingFlag, {
+  apply: (userId: string, itemId: string) => Promise<boolean>;
+  carousel: string;
+  label: string;
+}> = {
+  watchlist: { apply: (userId, itemId) => likeItemForUser(userId, itemId), carousel: "watchlist", label: "Ma liste" },
+  favorite: { apply: (userId, itemId) => favoriteItemForUser(userId, itemId), carousel: "favorites", label: "J'aime" },
+};
+
+/** Le drapeau d'une ligne ; une ligne d'avant la colonne vaut « Ma liste ». */
+export function pendingFlagOf(value: string | null | undefined): PendingFlag {
+  return value === "favorite" ? "favorite" : "watchlist";
+}
+
 /**
- * Ce que des arrivées permettent de mettre dans « Ma liste » : clé TMDB →
- * item Jellyfin à liker. Un film se like lui-même ; une série se like par
- * son item Series — qu'on le voie arriver, ou qu'un épisode le désigne.
+ * Ce que des arrivées permettent de poser : clé TMDB → item Jellyfin visé.
+ * Un film se vise lui-même ; une série par son item Series — qu'on le voie
+ * arriver, ou qu'un épisode le désigne.
  */
 export function pendingTargetsOf(items: readonly LibItem[]): Map<PendingKey, string> {
   const targets = new Map<PendingKey, string>();
@@ -50,42 +69,78 @@ interface PendingRow {
   jellyfinUserId: string;
   mediaType: string;
   tmdbId: number;
+  flag: string;
+}
+
+const ROW_SELECT = { jellyfinUserId: true, mediaType: true, tmdbId: true, flag: true } as const;
+
+/** Met un drapeau de côté jusqu'à l'arrivée du titre (idempotent). */
+export async function holdPendingFlag(
+  userId: string,
+  mediaType: TmdbMediaType,
+  tmdbId: number,
+  flag: PendingFlag
+): Promise<void> {
+  await getPrisma().watchlistPending.upsert({
+    where: { jellyfinUserId_mediaType_tmdbId_flag: { jellyfinUserId: userId, mediaType, tmdbId, flag } },
+    create: { jellyfinUserId: userId, mediaType, tmdbId, flag },
+    update: {},
+  });
+}
+
+/** Retire un drapeau mis de côté ; vrai s'il y en avait un. */
+export async function dropPendingFlag(
+  userId: string,
+  mediaType: TmdbMediaType,
+  tmdbId: number,
+  flag: PendingFlag
+): Promise<boolean> {
+  const res = await getPrisma().watchlistPending.deleteMany({
+    where: { jellyfinUserId: userId, mediaType, tmdbId, flag },
+  });
+  return res.count > 0;
 }
 
 /**
- * Like chaque ligne dont le titre est là, efface celles que Jellyfin a
- * suivies, et prévient chaque compte une seule fois. Une ligne que Jellyfin
- * refuse reste : elle repassera au prochain balayage.
+ * Pose chaque drapeau dont le titre est là, efface les lignes que Jellyfin a
+ * suivies, et prévient chaque compte une seule fois par drapeau. Une ligne
+ * que Jellyfin refuse reste : elle repassera au prochain balayage.
  */
 async function applyRows(rows: readonly PendingRow[], targets: ReadonlyMap<string, string>): Promise<number> {
   const prisma = getPrisma();
-  const listedFor = new Set<string>();
+  const changed = new Map<string, Set<PendingFlag>>();
   let applied = 0;
   for (const row of rows) {
     const itemId = targets.get(`${row.mediaType}:${row.tmdbId}`);
     if (!itemId) continue;
+    const flag = pendingFlagOf(row.flag);
+    const action = FLAG_ACTIONS[flag];
     const short = row.jellyfinUserId.slice(0, 8);
-    if (!(await likeItemForUser(row.jellyfinUserId, itemId))) {
-      console.warn(`[Watchlist] arrivée[${short}] ${row.mediaType}:${row.tmdbId} : Jellyfin n'a pas suivi`);
+    if (!(await action.apply(row.jellyfinUserId, itemId))) {
+      console.warn(`[Watchlist] arrivée[${short}] ${row.mediaType}:${row.tmdbId} (${action.label}) : Jellyfin n'a pas suivi`);
       continue;
     }
     // deleteMany : un retrait concurrent a pu effacer la ligne entre-temps.
     await prisma.watchlistPending.deleteMany({
-      where: { jellyfinUserId: row.jellyfinUserId, mediaType: row.mediaType, tmdbId: row.tmdbId },
+      where: { jellyfinUserId: row.jellyfinUserId, mediaType: row.mediaType, tmdbId: row.tmdbId, flag: row.flag },
     });
-    listedFor.add(row.jellyfinUserId);
+    const flags = changed.get(row.jellyfinUserId) ?? new Set<PendingFlag>();
+    flags.add(flag);
+    changed.set(row.jellyfinUserId, flags);
     applied++;
-    console.log(`[Watchlist] arrivée[${short}] ${row.mediaType}:${row.tmdbId} → Ma liste`);
+    console.log(`[Watchlist] arrivée[${short}] ${row.mediaType}:${row.tmdbId} → ${action.label}`);
   }
-  for (const userId of listedFor) {
-    broadcastToUser(userId, "watchlist");
-    // Les likes Jellyfin nourrissent la reco, et le WS Jellyfin est muet à la clé d'API.
+  for (const [userId, flags] of changed) {
+    for (const flag of flags) broadcastToUser(userId, FLAG_ACTIONS[flag].carousel);
+    // Posé à la clé d'API, le drapeau n'arrive pas par le WS Jellyfin : l'index
+    // de la reco (exclusions) et le profil de goût se relisent d'ici.
+    refreshLibraryMemo(userId);
     pokeProfile(userId);
   }
   return applied;
 }
 
-/** Les titres mis de côté qui viennent d'arriver entrent dans « Ma liste ». Ne lève jamais. */
+/** Les drapeaux mis de côté dont le titre vient d'arriver sont posés. Ne lève jamais. */
 export async function applyPendingWatchlist(items: readonly LibItem[]): Promise<void> {
   try {
     const targets = pendingTargetsOf(items);
@@ -102,7 +157,7 @@ export async function applyPendingWatchlist(items: readonly LibItem[]): Promise<
           ...(byType.tv.length > 0 ? [{ mediaType: "tv", tmdbId: { in: byType.tv } }] : []),
         ],
       },
-      select: { jellyfinUserId: true, mediaType: true, tmdbId: true },
+      select: ROW_SELECT,
     });
     if (rows.length > 0) await applyRows(rows, targets);
   } catch (err) {
@@ -113,7 +168,7 @@ export async function applyPendingWatchlist(items: readonly LibItem[]): Promise<
 /**
  * Balayage : les lignes dont le titre est DÉJÀ dans la bibliothèque. Rien à
  * faire sans ligne — ni requête Jellyfin, ni liste de la bibliothèque.
- * Rend le nombre de titres mis dans « Ma liste ». Ne lève jamais.
+ * Rend le nombre de drapeaux posés. Ne lève jamais.
  */
 export async function sweepPendingWatchlist(): Promise<number> {
   try {
@@ -122,7 +177,7 @@ export async function sweepPendingWatchlist(): Promise<number> {
     const rows: PendingRow[] = [];
     for (let skip = 0; ; skip += DB_CHUNK) {
       const page = await prisma.watchlistPending.findMany({
-        select: { jellyfinUserId: true, mediaType: true, tmdbId: true },
+        select: ROW_SELECT,
         orderBy: { createdAt: "asc" },
         skip,
         take: DB_CHUNK,

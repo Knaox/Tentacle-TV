@@ -162,8 +162,9 @@ async function release(now: number): Promise<void> {
   if (released.length === 0) return;
 
   const verdict = await classifyArrivals(items, now);
-  // Les titres mis de côté entrent dans Ma liste à leur arrivée, nouveauté ou
-  // non : une seconde version d'un film n'en attendait pas moins. Ne lève jamais.
+  // Les titres mis de côté reçoivent leur drapeau à leur arrivée (Ma liste,
+  // J'aime d'Affiner), nouveauté ou non : une seconde version d'un film n'en
+  // attendait pas moins. Ne lève jamais.
   await applyPendingWatchlist(items);
   // Annoncer d'abord, enregistrer ensuite : un plantage entre les deux fait
   // re-détecter l'arrivée, et le registre par utilisateur écarte le doublon.
@@ -200,7 +201,7 @@ async function poll(reason: string): Promise<void> {
     if (Date.now() - lastPendingSweep >= PENDING_SWEEP_EVERY_MS) {
       lastPendingSweep = Date.now();
       const listed = await sweepPendingWatchlist();
-      if (listed > 0) console.log(`[LibNotif] titres mis de côté déjà là, mis dans Ma liste : ${listed}`);
+      if (listed > 0) console.log(`[LibNotif] titres mis de côté déjà là, drapeaux posés (Ma liste, J'aime) : ${listed}`);
     }
 
     const total = await getItemCount();

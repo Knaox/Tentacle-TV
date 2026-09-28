@@ -13,6 +13,7 @@ interface Row {
   jellyfinUserId: string;
   mediaType: string;
   tmdbId: number;
+  flag: string;
   createdAt: Date;
 }
 const rows: Row[] = [];
@@ -43,10 +44,10 @@ vi.mock("../services/jellyfinLikes", () => ({
   unlikeItemForUser: async (userId: string, itemId: string) => { calls.push(`unlike ${userId} ${itemId}`); return true; },
 }));
 
-type Where = { jellyfinUserId: string; mediaType?: string; tmdbId?: number };
+type Where = { jellyfinUserId: string; mediaType?: string; tmdbId?: number; flag?: string };
 const matches = (r: Row, w: Where) =>
   r.jellyfinUserId === w.jellyfinUserId && (w.mediaType === undefined || r.mediaType === w.mediaType)
-  && (w.tmdbId === undefined || r.tmdbId === w.tmdbId);
+  && (w.tmdbId === undefined || r.tmdbId === w.tmdbId) && (w.flag === undefined || r.flag === w.flag);
 
 vi.mock("../services/db", () => ({
   hasPrisma: () => true,
@@ -54,6 +55,7 @@ vi.mock("../services/db", () => ({
     watchlistPending: {
       findMany: async (args: { where: Where }) => rows.filter((r) => matches(r, args.where)).reverse(),
       upsert: async (args: { create: Omit<Row, "createdAt"> }) => {
+        // Le drapeau fait partie de la clé : Ma liste et J'aime sont deux lignes.
         const w = args.create;
         if (!rows.some((r) => matches(r, w))) rows.push({ ...w, createdAt: new Date() });
         return w;
@@ -143,6 +145,18 @@ describe("/api/watchlist/tmdb", () => {
     expect(res.json()).toEqual({ state: "none" });
     expect(calls).toEqual([]);
     expect(rows).toHaveLength(0);
+    await app.close();
+  });
+
+  it("un cœur d'Affiner qui attend son titre n'est ni lu dans /pending, ni retiré avec Ma liste", async () => {
+    rows.push({ jellyfinUserId: "u1", mediaType: "tv", tmdbId: 1399, flag: "favorite", createdAt: new Date() });
+    const app = await makeApp();
+    await app.inject({ method: "PUT", url: "/api/watchlist/tmdb", headers, payload: { mediaType: "tv", tmdbId: 1399 } });
+    expect(rows.map((r) => r.flag).sort()).toEqual(["favorite", "watchlist"]);
+    expect((await app.inject({ method: "GET", url: "/api/watchlist/pending", headers })).json()).toEqual(["tv:1399"]);
+    await app.inject({ method: "DELETE", url: "/api/watchlist/tmdb/tv/1399", headers });
+    expect(rows.map((r) => r.flag)).toEqual(["favorite"]);
+    expect((await app.inject({ method: "GET", url: "/api/watchlist/pending", headers })).json()).toEqual([]);
     await app.close();
   });
 
