@@ -76,8 +76,6 @@ export const LibraryGridCard = memo(function LibraryGridCard({ item, onNavigate 
           x={ctx.ctxMenu.x}
           y={ctx.ctxMenu.y}
           onClose={ctx.closeCtxMenu}
-          onToggleFavorite={() => {}}
-          onToggleWatchlist={() => {}}
         />
       )}
     </div>

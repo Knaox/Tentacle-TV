@@ -124,8 +124,6 @@ export const CollectionGridCard = memo(function CollectionGridCard({
           x={ctx.ctxMenu.x}
           y={ctx.ctxMenu.y}
           onClose={ctx.closeCtxMenu}
-          onToggleFavorite={() => {}}
-          onToggleWatchlist={() => {}}
         />
       )}
     </div>

@@ -135,8 +135,6 @@ export const WatchlistRow = memo(function WatchlistRow({
           x={ctx.ctxMenu.x}
           y={ctx.ctxMenu.y}
           onClose={ctx.closeCtxMenu}
-          onToggleFavorite={() => {}}
-          onToggleWatchlist={() => {}}
         />
       )}
     </div>

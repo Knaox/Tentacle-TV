@@ -103,8 +103,6 @@ export function SearchResultCard({
           x={ctx.ctxMenu.x}
           y={ctx.ctxMenu.y}
           onClose={ctx.closeCtxMenu}
-          onToggleFavorite={() => {}}
-          onToggleWatchlist={() => {}}
         />
       )}
     </li>

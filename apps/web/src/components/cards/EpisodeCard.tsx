@@ -240,8 +240,6 @@ export const EpisodeCard = memo(function EpisodeCard({
           x={ctx.ctxMenu.x}
           y={ctx.ctxMenu.y}
           onClose={ctx.closeCtxMenu}
-          onToggleFavorite={() => {}}
-          onToggleWatchlist={() => {}}
         />
       )}
     </div>
