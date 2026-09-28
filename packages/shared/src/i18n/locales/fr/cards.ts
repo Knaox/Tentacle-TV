@@ -30,4 +30,8 @@ export default {
   rateHint: "Touchez une étoile — la moitié gauche vaut une demi-étoile.",
   ratedHint: "Touchez de nouveau votre note pour la retirer.",
   ratingUnavailable: "Ce titre ne peut pas être noté : il n'a pas d'identifiant TMDB.",
+
+  // Survol unifié (`cardOverlay.ts`) : extras du plateau, et feuilles d'actions.
+  dismiss: "Ne plus me proposer",
+  keepOffline: "Garder hors ligne",
 } as const;

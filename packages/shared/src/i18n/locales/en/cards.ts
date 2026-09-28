@@ -27,4 +27,8 @@ export default {
   rateHint: "Tap a star — its left half counts as half a star.",
   ratedHint: "Tap your rating again to remove it.",
   ratingUnavailable: "This title can't be rated: it has no TMDB identifier.",
+
+  // Unified hover (`cardOverlay.ts`): tray extras, and action sheets.
+  dismiss: "Not for me",
+  keepOffline: "Keep offline",
 } as const;
