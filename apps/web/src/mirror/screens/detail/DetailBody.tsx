@@ -11,6 +11,7 @@ import { EpisodeList } from "./EpisodeList";
 import { ExtrasSection } from "./ExtrasSection";
 import { LicenseAttribution } from "./LicenseAttribution";
 import { DetailFacts } from "./DetailFacts";
+import { SagaRow } from "./SagaRow";
 
 interface Props {
   item: MediaItem;
@@ -24,8 +25,8 @@ interface Props {
 /**
  * `DetailBody` de l'app : genres → synopsis → contenu de la collection →
  * casting et équipe → extras → saisons et épisodes → informations → licence →
- * titres similaires. Le même sous le visuel (portrait) que dans la colonne
- * droite qui défile (iPad paysage).
+ * saga du film → titres similaires. Le même sous le visuel (portrait) que dans
+ * la colonne droite qui défile (iPad paysage).
  */
 export const DetailBody = memo(function DetailBody({ item, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId }: Props) {
   const navigate = useNavigate();
@@ -78,6 +79,9 @@ export const DetailBody = memo(function DetailBody({ item, parentSeries, similar
       <DetailFacts item={item} />
 
       <LicenseAttribution item={item} />
+
+      {/* La saga d'un film, comme sur le bureau : juste avant les similaires. */}
+      {item.Type === "Movie" && <SagaRow item={item} />}
 
       {similar && similar.length > 0 && (
         <MediaRow
