@@ -67,7 +67,8 @@ export function Swipe() {
   }, [deck.canUndo, undo, t]);
   const onToggleInfo = useCallback(() => setInfoOpen((v) => !v), []);
 
-  useSwipeKeyboard({ enabled: !!top, onJudge, onUndo, onToggleInfo });
+  // Z reste actif sur une pile vidée : la dernière carte peut toujours revenir.
+  useSwipeKeyboard({ enabled: !!top || deck.canUndo, onJudge, onUndo, onToggleInfo });
 
   return (
     <PageTransition>
