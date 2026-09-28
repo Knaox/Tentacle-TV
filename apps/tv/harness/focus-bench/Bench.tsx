@@ -3,13 +3,14 @@ import { Text, View } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer, DarkTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { JellyfinClientContext, TentacleConfigContext } from "@tentacle-tv/api-client";
+import { JellyfinClientContext, TentacleConfigContext, setPreferencesBackendUrl } from "@tentacle-tv/api-client";
 import { initI18n } from "@tentacle-tv/shared";
 import { Focusable } from "../../src/components/focus/Focusable";
 import { TVNavProvider } from "../../src/context/TVNavContext";
 import { Colors } from "../../src/theme/colors";
-import { createBenchClient } from "./fixtures";
+import { createBenchClient } from "./benchClient";
 import { EpisodesScene, FiltersScene, RowsScene } from "./scenes";
+import { CardsScene } from "./cardsScene";
 
 /**
  * Le banc de focus : les composants de l'app, sans compte ni serveur, pour
@@ -19,12 +20,22 @@ import { EpisodesScene, FiltersScene, RowsScene } from "./scenes";
 
 initI18n({ lng: "fr" });
 
-type Scene = "rows" | "episodes" | "filters";
+/**
+ * L'adresse d'où l'application a chargé son code : le relais du banc, qui
+ * sert aussi les images et le petit backend Tentacle (`/api/ratings`…).
+ * `hasRatingsSession()` est vrai en natif : les étoiles interrogent le
+ * backend, qui doit donc répondre.
+ */
+const BENCH_ORIGIN: string = require("react-native/Libraries/Core/Devtools/getDevServer").default().url;
+setPreferencesBackendUrl(BENCH_ORIGIN);
+
+type Scene = "rows" | "episodes" | "filters" | "cards";
 
 const SCENES: Array<{ id: Scene; label: string }> = [
   { id: "rows", label: "Carrousels" },
   { id: "episodes", label: "Panneau des épisodes" },
   { id: "filters", label: "Filtres de bibliothèque" },
+  { id: "cards", label: "Cartes et feuille d'actions" },
 ];
 
 /** Ce que `useUserId` lit : un identifiant factice, aucun jeton. */
@@ -44,6 +55,7 @@ function BenchScreen() {
   if (scene === "rows") return <RowsScene onExit={exit} />;
   if (scene === "episodes") return <EpisodesScene onExit={exit} />;
   if (scene === "filters") return <FiltersScene onExit={exit} />;
+  if (scene === "cards") return <CardsScene onExit={exit} />;
 
   return (
     <View style={{ flex: 1, padding: 80, gap: 20 }}>
@@ -61,7 +73,7 @@ function BenchScreen() {
 
 export function Bench() {
   const queryClient = useMemo(() => new QueryClient(), []);
-  const client = useMemo(() => createBenchClient(), []);
+  const client = useMemo(() => createBenchClient(BENCH_ORIGIN), []);
   return (
     <QueryClientProvider client={queryClient}>
       <TentacleConfigContext.Provider value={{ storage: benchStorage, uuid: benchUuid }}>

@@ -3,14 +3,15 @@
 Les vrais composants de l'app TV, alimentés par des données factices, pour
 éprouver le D-pad là où l'app elle-même ne s'ouvre pas : un émulateur Android
 TV jamais jumelé, un simulateur tvOS. Aucun jeton, aucun identifiant : le
-client Jellyfin est une doublure (`fixtures.ts`) et l'utilisateur un
-identifiant inventé.
+client Jellyfin est une doublure (`benchClient.ts`, sur `fixtures.ts` et
+`cardFixtures.ts`) et l'utilisateur un identifiant inventé.
 
 | Scène | Ce qu'elle éprouve |
 |---|---|
 | Carrousels | l'entrée d'une rangée par sa première carte visible (`RowEntryGuide`), rangées défilées comprises |
 | Panneau des épisodes | `TVPlayerEpisodePanel` réel sur l'épisode 41 d'une saison de 60 : ouverture, ligne à ligne, saisons, croix, Retour |
 | Filtres de bibliothèque | `TVLibraryFilterBar` + `TVLibraryGrid` + les cinq menus, avec la logique de focus de `LibraryScreen` recopiée |
+| Cartes et feuille d'actions | les vraies cartes (`TVPosterCard`, `TVEpisodeCard`, `TVRecoCard`) en rangées, sur des états variés — reprise, vu, favori, Ma liste de série, note perso entière ou en demi-étoile, lot « +N », collection, épisode sans flux —, et la feuille de l'appui long (`TVCardActionSheet`) : bascules, lecture, refus, note |
 
 ## Comment l'app charge le banc
 
@@ -21,7 +22,14 @@ de Metro ; l'Apple TV physique, elle, continue de parler à Metro directement.
 
 ```bash
 node apps/tv/harness/focus-bench/proxy.mjs          # Metro doit tourner sur 8081
+METRO_PORT=8191 BENCH_PORT=8192 node …/proxy.mjs    # ports d'une autre session
 ```
+
+Le relais tient aussi un petit backend Tentacle EN MÉMOIRE — les notes du
+compte (`/api/ratings`), le filtre de plateformes (`/api/preferences/reco`) et
+le refus d'une reco (`/api/reco/feedback`) : en natif, `hasRatingsSession()`
+est vrai, les étoiles interrogent donc le backend. Le banc le vise à l'adresse
+d'où l'app a chargé son code (`getDevServer`), images comprises.
 
 **Android TV (émulateur)** — l'app va chercher `localhost:8081` :
 

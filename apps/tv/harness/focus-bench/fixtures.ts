@@ -1,10 +1,9 @@
-import type { JellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 
 /**
  * Les données factices du banc : une série à trois saisons (12, 60 et 8
- * épisodes), un catalogue de films, des genres — et un client Jellyfin qui
- * les sert sans réseau ni compte.
+ * épisodes), un catalogue de films, des genres. Le client Jellyfin qui les
+ * sert sans réseau ni compte vit dans `benchClient.ts`.
  */
 
 export const SERIES_ID = "bench-series";
@@ -52,10 +51,16 @@ function makeEpisode(season: number, index: number, full: boolean): MediaItem {
   } as unknown as MediaItem;
 }
 
-function seasonEpisodes(seasonId: string, full: boolean): MediaItem[] {
+export function seasonEpisodes(seasonId: string, full: boolean): MediaItem[] {
   const season = Number(seasonId.replace("bench-season-", ""));
   const size = SEASON_SIZES[season - 1] ?? 0;
   return Array.from({ length: size }, (_, i) => makeEpisode(season, i + 1, full));
+}
+
+/** Tous les épisodes de la série, saisons à la suite — l'état de visionnage
+ *  (`useSeriesWatchState`) : on en est à l'épisode 41 de la saison 2. */
+export function allSeriesEpisodes(): MediaItem[] {
+  return SEASONS.flatMap((season) => seasonEpisodes(season.Id, false));
 }
 
 export const CURRENT_EPISODE = makeEpisode(CURRENT_SEASON, CURRENT_INDEX, true);
@@ -82,32 +87,3 @@ export const GENRES = [
   "Action", "Animation", "Aventure", "Comédie", "Crime", "Documentaire",
   "Drame", "Fantastique", "Horreur", "Mystère", "Romance", "Science-fiction",
 ].map((name, i) => ({ Id: `bench-genre-${i + 1}`, Name: name }));
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Le client : les deux requêtes de la liste d'épisodes, la légère plus vite
- * que la complète (comme sur un vrai serveur), et des images servies par le
- * relais du banc à travers le port de Metro.
- */
-export function createBenchClient(): JellyfinClient {
-  const client = {
-    async fetch(url: string) {
-      if (url.startsWith(`/Shows/${SERIES_ID}/Seasons`)) {
-        await wait(120);
-        return { Items: SEASONS };
-      }
-      const match = url.match(/\/Shows\/[^/]+\/Episodes\?SeasonId=([^&]+)/);
-      if (match) {
-        const full = url.includes("MediaSources");
-        await wait(full ? 700 : 150);
-        return { Items: seasonEpisodes(match[1], full) };
-      }
-      throw new Error(`banc : requête non servie ${url}`);
-    },
-    getImageUrl(itemId: string) {
-      return `http://localhost:8081/bench/thumb.png?id=${encodeURIComponent(itemId)}`;
-    },
-  };
-  return client as unknown as JellyfinClient;
-}
