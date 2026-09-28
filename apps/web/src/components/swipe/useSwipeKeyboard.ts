@@ -6,6 +6,9 @@ interface SwipeKeyboardHandlers {
   onJudge: (verdict: SwipeVerdict) => void;
   onUndo: () => void;
   onToggleInfo: () => void;
+  /** Deux verdicts (cf. SwipeStack) : ← et → jugent, Z annule — ni ↑, ni ↓,
+   *  ni verso. */
+  binary?: boolean;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -19,7 +22,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
  * Jamais pendant une saisie, jamais sur une touche répétée (un appui long ne
  * juge pas dix cartes), et les combinaisons de l'application (Ctrl+K…) passent.
  */
-export function useSwipeKeyboard({ enabled, onJudge, onUndo, onToggleInfo }: SwipeKeyboardHandlers): void {
+export function useSwipeKeyboard({ enabled, onJudge, onUndo, onToggleInfo, binary = false }: SwipeKeyboardHandlers): void {
   const handlers = useRef({ onJudge, onUndo, onToggleInfo });
   useEffect(() => {
     handlers.current = { onJudge, onUndo, onToggleInfo };
@@ -41,14 +44,18 @@ export function useSwipeKeyboard({ enabled, onJudge, onUndo, onToggleInfo }: Swi
       const act: Record<string, () => void> = {
         ArrowLeft: () => h.onJudge("dislike"),
         ArrowRight: () => h.onJudge("like"),
-        ArrowUp: () => h.onJudge("superlike"),
-        ArrowDown: () => h.onJudge("skip"),
         Backspace: h.onUndo,
         z: h.onUndo,
         Z: h.onUndo,
-        " ": h.onToggleInfo,
-        i: h.onToggleInfo,
-        I: h.onToggleInfo,
+        ...(binary
+          ? {}
+          : {
+              ArrowUp: () => h.onJudge("superlike"),
+              ArrowDown: () => h.onJudge("skip"),
+              " ": h.onToggleInfo,
+              i: h.onToggleInfo,
+              I: h.onToggleInfo,
+            }),
       };
       const run = act[e.key];
       // Espace sur un bouton focalisé : le bouton garde son sens natif.
@@ -58,5 +65,5 @@ export function useSwipeKeyboard({ enabled, onJudge, onUndo, onToggleInfo }: Swi
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [enabled]);
+  }, [enabled, binary]);
 }

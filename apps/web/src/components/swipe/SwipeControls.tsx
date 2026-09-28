@@ -8,6 +8,11 @@ interface SwipeControlsProps {
   canUndo: boolean;
   onJudge: (verdict: SwipeVerdict) => void;
   onUndo: () => void;
+  /** Deux verdicts (cf. SwipeStack) : pas pour moi · annuler · j'aime —
+   *  chaque verdict du côté où la carte part, annuler entre les deux. */
+  binary?: boolean;
+  /** Nom de la barre pour les lecteurs d'écran — « Affiner » par défaut. */
+  label?: string;
 }
 
 interface ControlSpec {
@@ -20,6 +25,8 @@ interface ControlSpec {
   disabled: boolean;
 }
 
+const BINARY_ORDER = ["dislike", "undo", "like"] as const;
+
 /**
  * Les cinq gestes en boutons — l'alternative visible au glisser (jamais un
  * geste seul pour une action). Libellé visible sous chaque bouton dès 640 px
@@ -27,7 +34,9 @@ interface ControlSpec {
  * verdicts sont larges (56 px), annuler et passer plus discrets (44 px).
  * Pas de verre ici : rien ne défile derrière, un flou ne servirait à rien.
  */
-export const SwipeControls = memo(function SwipeControls({ disabled, canUndo, onJudge, onUndo }: SwipeControlsProps) {
+export const SwipeControls = memo(function SwipeControls({
+  disabled, canUndo, onJudge, onUndo, binary = false, label: toolbarLabel,
+}: SwipeControlsProps) {
   const { t } = useTranslation("swipe");
   const specs: ControlSpec[] = [
     { key: "undo", label: t("undoShort"), Icon: Undo2, size: "sm", tone: "text-content-secondary", onPress: onUndo, disabled: !canUndo },
@@ -36,10 +45,11 @@ export const SwipeControls = memo(function SwipeControls({ disabled, canUndo, on
     { key: "like", label: t("like"), Icon: Heart, size: "lg", tone: "text-emerald-400", onPress: () => onJudge("like"), disabled },
     { key: "skip", label: t("skip"), Icon: SkipForward, size: "sm", tone: "text-content-secondary", onPress: () => onJudge("skip"), disabled },
   ];
+  const shown = binary ? BINARY_ORDER.map((key) => specs.find((s) => s.key === key)!) : specs;
 
   return (
-    <div className="flex items-start justify-center gap-0.5 sm:gap-3" role="toolbar" aria-label={t("title")}>
-      {specs.map(({ key, label, Icon, size, tone, onPress, disabled: off }) => {
+    <div className="flex items-start justify-center gap-0.5 sm:gap-3" role="toolbar" aria-label={toolbarLabel ?? t("title")}>
+      {shown.map(({ key, label, Icon, size, tone, onPress, disabled: off }) => {
         const lg = size === "lg";
         const brand = key === "superlike";
         return (

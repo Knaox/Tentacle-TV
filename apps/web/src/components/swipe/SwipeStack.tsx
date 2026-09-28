@@ -26,9 +26,13 @@ interface SwipeStackProps {
   nextDetails?: SwipeCardDetails;
   onJudge: (verdict: SwipeVerdict) => void;
   onToggleInfo: () => void;
+  /** Deux verdicts seulement — j'aime (droite), pas pour moi (gauche) : ni
+   *  coup de cœur, ni « passer », ni verso. Le swipe de groupe (Watch
+   *  Together) ; « Affiner » garde ses cinq gestes. */
+  binary?: boolean;
 }
 
-export function SwipeStack({ cards, exitVerdict, infoOpen, details, nextDetails, onJudge, onToggleInfo }: SwipeStackProps) {
+export function SwipeStack({ cards, exitVerdict, infoOpen, details, nextDetails, onJudge, onToggleInfo, binary = false }: SwipeStackProps) {
   const { t } = useTranslation("swipe");
   const client = useJellyfinClient();
   const reduced = useReducedMotion() ?? false;
@@ -60,6 +64,7 @@ export function SwipeStack({ cards, exitVerdict, infoOpen, details, nextDetails,
             label={card.year ? t("cardLabel", { title: card.title, year: card.year }) : card.title}
             onJudge={onJudge}
             onToggleInfo={onToggleInfo}
+            binary={binary}
           />
         ))}
       </AnimatePresence>

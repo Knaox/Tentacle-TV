@@ -7,6 +7,8 @@ import type { SwipeVerdict } from "@tentacle-tv/api-client";
 interface SwipeStampsProps {
   x: MotionValue<number>;
   y: MotionValue<number>;
+  /** Deux verdicts : ni tampon « coup de cœur », ni « passer ». */
+  binary?: boolean;
 }
 
 /** L'opacité d'un tampon suit la règle du verdict (`stampStrength`) : un seul
@@ -22,7 +24,7 @@ function useStamp(x: MotionValue<number>, y: MotionValue<number>, verdict: Swipe
  * repeint) ; une icône double la couleur — le sens ne tient jamais à elle.
  * « Passer » s'affiche en haut : la carte tirée vers le bas y reste visible.
  */
-export function SwipeStamps({ x, y }: SwipeStampsProps) {
+export function SwipeStamps({ x, y, binary = false }: SwipeStampsProps) {
   const { t } = useTranslation("swipe");
   const like = useStamp(x, y, "like");
   const nope = useStamp(x, y, "dislike");
@@ -41,20 +43,24 @@ export function SwipeStamps({ x, y }: SwipeStampsProps) {
         <X size={20} strokeWidth={3} aria-hidden />
         {t("stampNope")}
       </motion.div>
-      <motion.div
-        style={{ opacity: love }}
-        className={`${base} bottom-40 left-1/2 -translate-x-1/2 border-fuchsia-400 bg-black/55 text-fuchsia-200`}
-      >
-        <Star size={20} className="fill-current" aria-hidden />
-        {t("stampSuper")}
-      </motion.div>
-      <motion.div
-        style={{ opacity: skip }}
-        className={`${base} left-1/2 top-8 -translate-x-1/2 border-slate-300 bg-black/55 text-slate-100`}
-      >
-        <SkipForward size={20} aria-hidden />
-        {t("stampSkip")}
-      </motion.div>
+      {!binary && (
+        <>
+          <motion.div
+            style={{ opacity: love }}
+            className={`${base} bottom-40 left-1/2 -translate-x-1/2 border-fuchsia-400 bg-black/55 text-fuchsia-200`}
+          >
+            <Star size={20} className="fill-current" aria-hidden />
+            {t("stampSuper")}
+          </motion.div>
+          <motion.div
+            style={{ opacity: skip }}
+            className={`${base} left-1/2 top-8 -translate-x-1/2 border-slate-300 bg-black/55 text-slate-100`}
+          >
+            <SkipForward size={20} aria-hidden />
+            {t("stampSkip")}
+          </motion.div>
+        </>
+      )}
     </>
   );
 }

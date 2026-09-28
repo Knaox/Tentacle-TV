@@ -17,6 +17,9 @@ interface SwipeStackCardProps {
   label: string;
   onJudge: (verdict: SwipeVerdict) => void;
   onToggleInfo: () => void;
+  /** Deux verdicts (cf. SwipeStack) : la carte ne glisse qu'à l'horizontale,
+   *  ne se retourne pas, et seul l'écart horizontal juge. */
+  binary?: boolean;
 }
 
 const SPRING = { type: "spring", stiffness: 420, damping: 32 } as const;
@@ -43,6 +46,7 @@ export const SwipeStackCard = memo(function SwipeStackCard({
   label,
   onJudge,
   onToggleInfo,
+  binary = false,
 }: SwipeStackCardProps) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -102,7 +106,7 @@ export const SwipeStackCard = memo(function SwipeStackCard({
         },
       }}
       exit="exit"
-      drag={top}
+      drag={top ? (binary ? "x" : true) : false}
       dragMomentum={false}
       onPointerDown={() => {
         dragged.current = false;
@@ -111,14 +115,18 @@ export const SwipeStackCard = memo(function SwipeStackCard({
         dragged.current = true;
       }}
       onTap={
-        top
+        top && !binary
           ? () => {
               if (!dragged.current) onToggleInfo();
             }
           : undefined
       }
       onDragEnd={(_, info) => {
-        const verdict = verdictFromDrag(info.offset.x, info.offset.y, info.velocity.x, info.velocity.y);
+        // Deux verdicts : la carte suit le doigt à l'horizontale seulement, et
+        // c'est ce qu'elle montre qui juge — l'écart vertical ne compte pas.
+        const verdict = binary
+          ? verdictFromDrag(info.offset.x, 0, info.velocity.x, 0)
+          : verdictFromDrag(info.offset.x, info.offset.y, info.velocity.x, info.velocity.y);
         if (verdict) {
           onJudge(verdict);
           return;
@@ -134,12 +142,12 @@ export const SwipeStackCard = memo(function SwipeStackCard({
       <SwipeCardFace
         card={card}
         posterUrl={posterUrl}
-        interactive={top}
+        interactive={top && !binary}
         infoOpen={top && infoOpen}
         details={details}
         onToggleInfo={onToggleInfo}
       />
-      {top && <SwipeStamps x={x} y={y} />}
+      {top && <SwipeStamps x={x} y={y} binary={binary} />}
     </motion.div>
   );
 });
