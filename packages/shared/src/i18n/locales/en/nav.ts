@@ -61,4 +61,5 @@ export default {
   brandHome: "Tentacle TV — Home",
   libraryTitles_one: "{{count}} title",
   libraryTitles_other: "{{count}} titles",
+  stats: "My stats",
 } as const;

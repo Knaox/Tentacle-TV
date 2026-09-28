@@ -112,3 +112,11 @@ export { initI18n, detectLanguage, i18n } from "./i18n";
 export * from "./data/media-licenses";
 export * from "./theme";
 export * from "./trailers";
+// Les statistiques de visionnage : le contrat de /api/stats/me (miroir côté
+// backend), ses mises en forme sans Intl (Hermes), la lecture du rythme et le
+// profil de spectateur — une seule lecture pour le web et le mobile.
+export * from "./types/viewingStats";
+export * from "./viewingStats/format";
+export * from "./viewingStats/insights";
+export * from "./viewingStats/badges";
+export * from "./viewingStats/timeZone";

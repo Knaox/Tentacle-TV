@@ -68,4 +68,6 @@ export default {
   inviteValidity: "Valid for",
   inviteDays: "{{count}} d",
   inviteNone: "No invites yet.",
+  stats: "My stats",
+  statsHint: "Watch time, genres and habits",
 } as const;

@@ -31,6 +31,7 @@ import watchlist from "./watchlist";
 import favorites from "./favorites";
 import swipe from "./swipe";
 import share from "./share";
+import stats from "./stats";
 
 export default {
   common, auth, setup, player, admin,
@@ -39,4 +40,5 @@ export default {
   watchTogether, downloads, easterEggs, reco, whatsNew, offline, sessions, search,
   cards, library, watchlist, favorites, swipe,
   share,
+  stats,
 };
