@@ -130,7 +130,7 @@ export function FavoritesScreen() {
   const hours = Math.floor(summary.movieMinutes / 60);
   const subtitle = !hasContent
     ? ""
-    : [t("itemCount", { count }), hours > 0 ? t("favorites:summaryMovieHours", { count: hours }) : null].filter(Boolean).join(" · ");
+    : [t("itemCount", { count: summary.total }), hours > 0 ? t("favorites:summaryMovieHours", { count: hours }) : null].filter(Boolean).join(" · ");
   const refresh = <RefreshControl refreshing={isRefetching} onRefresh={selection.active ? undefined : refetch} tintColor={colors.brand.violet} />;
 
   const hero = (

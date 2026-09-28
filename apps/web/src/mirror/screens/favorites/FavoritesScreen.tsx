@@ -70,7 +70,7 @@ export function MirrorFavorites() {
   const hours = Math.floor(summary.movieMinutes / 60);
   const subtitle = isLoading || totalRaw === 0
     ? ""
-    : [t("itemCount", { count }), hours > 0 ? t("favorites:summaryMovieHours", { count: hours }) : null].filter(Boolean).join(" · ");
+    : [t("itemCount", { count: summary.total }), hours > 0 ? t("favorites:summaryMovieHours", { count: hours }) : null].filter(Boolean).join(" · ");
 
   let body: ReactNode;
   if (isLoading) {
