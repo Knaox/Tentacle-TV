@@ -6,16 +6,16 @@ interface SwipeCardRectoProps {
   card: SwipeCard;
   title: string;
   format: string;
-  /** Réserve la place du bouton d'info, en bas à droite. */
-  withInfoButton: boolean;
 }
 
 /**
  * Le texte du recto, posé sur l'affiche (blanc/noir constants) : en haut
  * l'origine de la carte et sa note ; en bas, sur un dégradé, le titre, le
- * format, les genres, la présence en bibliothèque et la raison.
+ * format, les genres, la présence en bibliothèque et la raison. La place du
+ * bouton d'info (en bas à droite) est réservée sur TOUTES les cartes : celle
+ * qui monte en tête de pile ne recompose pas son titre au moment où on la voit.
  */
-export function SwipeCardRecto({ card, title, format, withInfoButton }: SwipeCardRectoProps) {
+export function SwipeCardRecto({ card, title, format }: SwipeCardRectoProps) {
   const { t } = useTranslation("swipe");
   return (
     <>
@@ -36,11 +36,7 @@ export function SwipeCardRecto({ card, title, format, withInfoButton }: SwipeCar
         )}
       </div>
 
-      <div
-        className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pb-5 pl-5 pt-24 text-white ${
-          withInfoButton ? "pr-16" : "pr-5"
-        }`}
-      >
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pb-5 pl-5 pr-16 pt-24 text-white">
         <h2 className="text-2xl font-bold leading-tight [text-wrap:balance]">{title}</h2>
         <p className="mt-1 text-sm text-white/80">{format}</p>
         {card.genres.length > 0 && (

@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  prefetchSwipeCardDetails,
-  swipeLangOf,
-  useSwipeCardDetails,
-  useSwipeDeck,
-} from "@tentacle-tv/api-client";
+import { swipeLangOf, useSwipeCardDetails, useSwipeDeck } from "@tentacle-tv/api-client";
 import type { SwipeVerdict } from "@tentacle-tv/api-client";
 import { SwipeControls } from "./SwipeControls";
 import { SwipeHeader } from "./SwipeHeader";
@@ -31,7 +25,6 @@ import { useSwipeKeyboard } from "./useSwipeKeyboard";
 export function SwipeSection() {
   const { t, i18n } = useTranslation("swipe");
   const lang = swipeLangOf(i18n.language);
-  const qc = useQueryClient();
   const deck = useSwipeDeck(lang);
   const [exitVerdict, setExitVerdict] = useState<SwipeVerdict | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -39,12 +32,9 @@ export function SwipeSection() {
   const top = deck.cards[0];
   const next = deck.cards[1];
   const { data: details } = useSwipeCardDetails(top, lang);
-
-  // Le verso de la suivante se charge pendant qu'on juge celle-ci ; une
-  // nouvelle carte arrive toujours côté affiche.
-  useEffect(() => {
-    prefetchSwipeCardDetails(qc, next, lang);
-  }, [qc, next, lang]);
+  // Le verso de la suivante se charge pendant qu'on juge celle-ci, et elle le
+  // porte déjà : une nouvelle carte arrive toujours côté affiche.
+  const { data: nextDetails } = useSwipeCardDetails(next, lang);
   const topKey = top?.key;
   useEffect(() => {
     setInfoOpen(false);
@@ -93,6 +83,7 @@ export function SwipeSection() {
           exitVerdict={exitVerdict}
           infoOpen={infoOpen}
           details={details}
+          nextDetails={nextDetails}
           onJudge={onJudge}
           onToggleInfo={onToggleInfo}
         />

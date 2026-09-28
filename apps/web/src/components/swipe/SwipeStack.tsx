@@ -40,12 +40,16 @@ interface SwipeStackProps {
   /** Verdict de la dernière carte partie : il oriente sa sortie. */
   exitVerdict: SwipeVerdict | null;
   infoOpen: boolean;
+  /** Verso de la carte du dessus. */
   details: SwipeCardDetails | undefined;
+  /** Verso de la suivante : elle monte en tête déjà habillée (titre localisé,
+   *  durée) — son texte ne change pas sous les yeux au changement de carte. */
+  nextDetails?: SwipeCardDetails;
   onJudge: (verdict: SwipeVerdict) => void;
   onToggleInfo: () => void;
 }
 
-export function SwipeStack({ cards, exitVerdict, infoOpen, details, onJudge, onToggleInfo }: SwipeStackProps) {
+export function SwipeStack({ cards, exitVerdict, infoOpen, details, nextDetails, onJudge, onToggleInfo }: SwipeStackProps) {
   const { t } = useTranslation("swipe");
   const client = useJellyfinClient();
   const reduced = useReducedMotion() ?? false;
@@ -70,7 +74,7 @@ export function SwipeStack({ cards, exitVerdict, infoOpen, details, onJudge, onT
             )}
             reducedMotion={reduced}
             infoOpen={infoOpen}
-            details={depth === 0 ? details : undefined}
+            details={depth === 0 ? details : depth === 1 ? nextDetails : undefined}
             label={card.year ? t("cardLabel", { title: card.title, year: card.year }) : card.title}
             onJudge={onJudge}
             onToggleInfo={onToggleInfo}

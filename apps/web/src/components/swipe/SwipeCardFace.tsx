@@ -58,7 +58,7 @@ export const SwipeCardFace = memo(function SwipeCardFace({
       {/* Verso ouvert : le texte du recto s'efface — sous le voile, il
           transparaissait en fantôme. L'affiche seule reste dessous. */}
       {!(interactive && infoOpen) && (
-        <SwipeCardRecto card={card} title={title} format={format.join(" · ")} withInfoButton={interactive} />
+        <SwipeCardRecto card={card} title={title} format={format.join(" · ")} />
       )}
 
       {interactive && (
