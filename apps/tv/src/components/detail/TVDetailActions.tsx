@@ -1,16 +1,9 @@
 import { useCallback } from "react";
 import { View, Text, TVFocusGuideView } from "react-native";
 import { useTranslation } from "react-i18next";
-import {
-  useFavoriteForItem,
-  useFavoriteSeriesIds,
-  useSeriesWatchState,
-  useToggleWatchlistForItem,
-  useWatchedToggle,
-  useWatchlistSeriesIds,
-} from "@tentacle-tv/api-client";
+import { useCardToggles, useSeriesWatchState } from "@tentacle-tv/api-client";
 import type { MediaItem, RichTrailer } from "@tentacle-tv/shared";
-import { formatPosition } from "@tentacle-tv/shared";
+import { cardToggleLabelKey, formatPosition } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { PlayIcon, BookmarkIcon, BookmarkFilledIcon, MovieIcon } from "../icons/TVIcons";
 import {
@@ -45,36 +38,21 @@ interface TVDetailActionsProps {
  * (CTA), Bande-annonce, puis les trois actions RONDES Favori · Ma liste · Vu.
  *
  * Pour une série, l'épisode à lire est résolu via useSeriesWatchState (jamais
- * l'ID de la série) ; un épisode reflète l'état Favori/Ma liste de sa SÉRIE
- * (parité web via les Sets de membership) ; Ma liste passe par
- * `useToggleWatchlistForItem`, qui route l'épisode vers sa série et propage
- * l'état au cache — l'appel direct `useToggleWatchlist(item.Id)` ne le
- * faisait pas.
+ * l'ID de la série). Les trois états et leurs bascules viennent de
+ * `useCardToggles` — la logique UNIQUE des cartes, de leur feuille d'actions
+ * et du survol web : Ma liste et favori se lisent au niveau SÉRIE dans les
+ * Sets de membership, pour un épisode COMME pour la série elle-même. La fiche
+ * d'une série lisait son `UserData`, que la pastille des cartes ne lit pas :
+ * les deux pouvaient se contredire.
  */
 export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer, onFocusButtons, nextFocusUp }: TVDetailActionsProps) {
   const { t } = useTranslation("common");
+  const { t: tCards } = useTranslation("cards");
   const isSeries = item.Type === "Series";
   const isBoxSet = item.Type === "BoxSet";
-  const isEpisode = item.Type === "Episode";
   const { data: watchState } = useSeriesWatchState(isSeries ? item.Id : undefined);
-  const { add: addFav, remove: removeFav } = useFavoriteForItem(item);
-  const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlistForItem(item);
-  const { markWatched, markUnwatched } = useWatchedToggle(item.Id, {
-    seriesId: item.SeriesId,
-    seasonId: item.SeasonId,
-    itemType: item.Type,
-  });
-  const watchlistSeries = useWatchlistSeriesIds();
-  const favoriteSeries = useFavoriteSeriesIds();
-
-  // Un épisode reflète l'état de sa série ; Movie/Series lisent UserData.
-  const isFavorite = isEpisode
-    ? item.SeriesId != null && favoriteSeries.has(item.SeriesId)
-    : item.UserData?.IsFavorite === true;
-  const isInWatchlist = isEpisode
-    ? item.SeriesId != null && watchlistSeries.has(item.SeriesId)
-    : item.UserData?.Likes === true;
-  const isWatched = item.UserData?.Played === true;
+  const toggles = useCardToggles(item);
+  const { favorite: isFavorite, watchlist: isInWatchlist, watched: isWatched } = toggles;
 
   const resumePosition = item.UserData?.PlaybackPositionTicks ?? 0;
 
@@ -148,19 +126,19 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
         // (le re-focus au retour vise playBtnRef).
         focusRef={showPlay ? undefined : playBtnRef}
         preferred={!showPlay}
-        onPress={() => (isFavorite ? removeFav.mutate() : addFav.mutate())}
+        onPress={toggles.toggleFavorite}
         onFocus={onFocusButtons}
         nextFocusUp={nextFocusUp}
-        label={isFavorite ? t("removeFromFavorites") : t("addToFavorites")}
+        label={tCards(cardToggleLabelKey("favorite", isFavorite))}
       >
         {isFavorite ? <HeartFilledIcon size={22} /> : <HeartIcon size={22} color={Colors.textSecondary} />}
       </CircleAction>
 
       <CircleAction
-        onPress={() => (isInWatchlist ? removeWatchlist.mutate() : addWatchlist.mutate())}
+        onPress={toggles.toggleList}
         onFocus={onFocusButtons}
         nextFocusUp={nextFocusUp}
-        label={isInWatchlist ? t("removeFromMyList") : t("addToMyList")}
+        label={tCards(cardToggleLabelKey("watchlist", isInWatchlist))}
       >
         {isInWatchlist
           ? <BookmarkFilledIcon size={20} color={Colors.accentPurple} />
@@ -168,10 +146,10 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
       </CircleAction>
 
       <CircleAction
-        onPress={() => (isWatched ? markUnwatched.mutate() : markWatched.mutate())}
+        onPress={toggles.toggleWatched}
         onFocus={onFocusButtons}
         nextFocusUp={nextFocusUp}
-        label={isWatched ? t("markUnwatched") : t("markWatched")}
+        label={tCards(cardToggleLabelKey("watched", isWatched))}
       >
         {isWatched
           ? <CheckCircleFilledIcon size={22} color={Colors.accentPink} />
