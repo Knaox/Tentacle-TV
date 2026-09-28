@@ -3,6 +3,7 @@ import { View, FlatList, StyleSheet } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { spacing, useThemedStyles, type AppTheme } from "@/theme";
 import { RowHeader } from "@/components/RowHeader";
+import { SeriesRatingScope } from "@/contexts/SeriesRatingContext";
 
 interface Props {
   title: string;
@@ -14,7 +15,8 @@ interface Props {
 /**
  * Row horizontal cinematic — en-tête `RowHeader` (heading-3 + lien "Voir tout"
  * chevron subtle violet). Gap 14px entre cards, scroll snap horizontal
- * edge-to-edge.
+ * edge-to-edge. Ses épisodes portent la note de leur série, résolue pour
+ * toute la rangée en une requête (`SeriesRatingScope`).
  */
 export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeAll }: Props) {
   const st = useThemedStyles(makeStyles);
@@ -26,18 +28,20 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
   return (
     <View style={st.root}>
       <RowHeader title={title} onSeeAll={onSeeAll} />
-      <FlatList
-        horizontal
-        data={data}
-        // Id seul ne suffit pas : deux runs d'une même série dans « Derniers
-        // ajouts » partagent le même SeriesId (cf. groupLatestByRuns).
-        keyExtractor={(item, index) => `${item.Id}:${index}`}
-        renderItem={renderFlatItem}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={st.list}
-        decelerationRate="fast"
-        scrollEventThrottle={16}
-      />
+      <SeriesRatingScope items={data}>
+        <FlatList
+          horizontal
+          data={data}
+          // Id seul ne suffit pas : deux runs d'une même série dans « Derniers
+          // ajouts » partagent le même SeriesId (cf. groupLatestByRuns).
+          keyExtractor={(item, index) => `${item.Id}:${index}`}
+          renderItem={renderFlatItem}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={st.list}
+          decelerationRate="fast"
+          scrollEventThrottle={16}
+        />
+      </SeriesRatingScope>
     </View>
   );
 });

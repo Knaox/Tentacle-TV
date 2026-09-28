@@ -1,9 +1,10 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useResumeItems, useSearchDiscover } from "@tentacle-tv/api-client";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
+import { SeriesRatingScope } from "@/contexts/SeriesRatingContext";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { useRailCardWidth } from "./SearchSection";
 
@@ -29,6 +30,7 @@ export const SearchHome = memo(function SearchHome({ recent, onPick, onRemove, o
   const width = useRailCardWidth();
   const { data: discover } = useSearchDiscover();
   const { data: resume } = useResumeItems();
+  const resumeShown = useMemo(() => (resume ?? []).slice(0, 10), [resume]);
   const genres = discover?.genres ?? [];
 
   return (
@@ -70,20 +72,23 @@ export const SearchHome = memo(function SearchHome({ recent, onPick, onRemove, o
         </View>
       )}
 
-      {resume && resume.length > 0 && (
+      {resumeShown.length > 0 && (
         <View style={st.section}>
           <View style={st.header}>
             <Text style={st.title} accessibilityRole="header">{t("continueWatching")}</Text>
           </View>
-          <FlatList
-            horizontal
-            data={resume.slice(0, 10)}
-            keyExtractor={(item) => item.Id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={st.rail}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => <MobileMediaCard item={item} width={width} onPress={() => onOpen(item.Id)} />}
-          />
+          {/* Des épisodes, surtout : chacun porte la note de sa série. */}
+          <SeriesRatingScope items={resumeShown}>
+            <FlatList
+              horizontal
+              data={resumeShown}
+              keyExtractor={(item) => item.Id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={st.rail}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => <MobileMediaCard item={item} width={width} onPress={() => onOpen(item.Id)} />}
+            />
+          </SeriesRatingScope>
         </View>
       )}
 

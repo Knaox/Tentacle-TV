@@ -1,5 +1,7 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
+import { useSeriesRatings } from "@tentacle-tv/api-client";
+import { missingSeriesRatingIds, type MediaItem } from "@tentacle-tv/shared";
 
 /**
  * Les notes de séries résolues pour une rangée, mises à la disposition de ses
@@ -26,4 +28,17 @@ export function SeriesRatingProvider({
 
 export function useSeriesRatingMap(): ReadonlyMap<string, number> {
   return useContext(SeriesRatingContext);
+}
+
+/**
+ * La portée des notes d'une liste de cartes : les séries dont la note manque
+ * à ses épisodes (et aux tuiles de lot « +N »), demandées EN UNE requête,
+ * puis données à ses cartes. Sans elle, un épisode de « Reprendre » ou de
+ * « Prochains épisodes » n'affichait aucune note — celle de SA série, que
+ * l'affiche montre. Une liste sans épisode ne demande rien.
+ */
+export function SeriesRatingScope({ items, children }: { items: readonly MediaItem[]; children: ReactNode }) {
+  const missing = useMemo(() => missingSeriesRatingIds(items), [items]);
+  const ratings = useSeriesRatings(missing);
+  return <SeriesRatingProvider ratings={ratings}>{children}</SeriesRatingProvider>;
 }
