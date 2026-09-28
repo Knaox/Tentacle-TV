@@ -17,6 +17,8 @@ const CAROUSEL_KEYS: Record<string, string[][]> = {
   trending:          [["featured"]],
   // Titres mis de côté : l'arrivée qui les fait entrer dans Ma liste les retire de l'attente.
   watchlist:         [["watchlist"], ["watchlist-series-ids"], ["watchlist-pending"]],
+  // Cœur posé par le serveur : un « j'aime » d'Affiner, tout de suite ou à l'arrivée du titre.
+  favorites:         [["favorites"], ["favorite-series-ids"]],
   watched:           [["watched-items"]],
   featured:          [["featured"]],
   notifications:     [["notifications"]],

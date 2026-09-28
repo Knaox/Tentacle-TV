@@ -5,6 +5,8 @@ export type CarouselId =
   | "next_up"
   | "trending"
   | "watchlist"
+  /** Cœurs posés par le serveur (un « j'aime » d'Affiner, à l'arrivée ou non). */
+  | "favorites"
   | "watched"
   | "featured"
   | "notifications"

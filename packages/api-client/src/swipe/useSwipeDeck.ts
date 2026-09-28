@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { invalidateRecoQueries } from "../hooks/useRecoPage";
+import { FAVORITE_LIST_KEYS, FAVORITE_SERIES_IDS_KEY } from "../hooks/watchlistEffects";
 import { INITIAL_SWIPE_DECK, deckExcludeKeys, swipeDeckReducer } from "./swipeDeckState";
 import type { SwipeCard, SwipeCardDetails, SwipeDeckResponse, SwipeLang, SwipeVerdict } from "./swipeTypes";
 
@@ -45,6 +46,7 @@ export function useSwipeDeck(lang: SwipeLang): SwipeDeck {
   stateRef.current = state;
   const writes = useRef<Promise<unknown>>(Promise.resolve());
   const judgedAny = useRef(false);
+  const likedAny = useRef(false);
 
   // Garde SYNCHRONE : l'état `fetching` n'est vu qu'au rendu suivant — deux
   // effets rapprochés (StrictMode, recharge + annulation) partaient chacun,
@@ -79,9 +81,13 @@ export function useSwipeDeck(lang: SwipeLang): SwipeDeck {
   }, [queue.length, exhausted, loaded, fetching, error, load]);
 
   // En quittant l'onglet : les recommandations se relisent (le serveur a déjà
-  // relancé le profil à chaque verdict).
+  // relancé le profil à chaque verdict), et les favoris — un like pose le cœur
+  // de la bibliothèque (le WS « favorites » le dit aussi, s'il est ouvert).
   useEffect(() => () => {
     if (judgedAny.current) invalidateRecoQueries(qc);
+    if (likedAny.current) {
+      for (const queryKey of [...FAVORITE_LIST_KEYS, FAVORITE_SERIES_IDS_KEY]) void qc.invalidateQueries({ queryKey });
+    }
   }, [qc]);
 
   const enqueue = useCallback((write: () => Promise<unknown>, onError?: () => void) => {
@@ -92,6 +98,7 @@ export function useSwipeDeck(lang: SwipeLang): SwipeDeck {
     const card = stateRef.current.queue[0];
     if (!card) return;
     judgedAny.current = true;
+    if (verdict === "like" || verdict === "superlike") likedAny.current = true;
     dispatch({ type: "judged", verdict });
     enqueue(
       () => tentacleApiFetch("/api/swipe", {
