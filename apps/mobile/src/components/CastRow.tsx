@@ -7,7 +7,14 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { castCredits, creditRoleKey, initials, type CastCredit, type CastPerson } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, spacing, useThemedStyles, type AppTheme } from "../theme";
 
-export interface CastRowProps { people: CastPerson[] }
+export interface CastRowProps {
+  people: CastPerson[];
+  /**
+   * Les cartes ne mènent nulle part : la fiche d'un titre gardé, hors ligne,
+   * n'ouvrirait qu'une page d'erreur.
+   */
+  readOnly?: boolean;
+}
 
 const CARD_W = 96;
 const CARD_H = 144;
@@ -18,7 +25,7 @@ const CARD_H = 144;
  * personnages). Toucher une carte ouvre l'écran de la personne — sa vie, sa
  * filmographie dans la bibliothèque, puis ce que les extensions connaissent.
  */
-export function CastRow({ people }: CastRowProps) {
+export function CastRow({ people, readOnly = false }: CastRowProps) {
   const { t } = useTranslation("media");
   const st = useThemedStyles(makeStyles);
   const { crew, actors } = useMemo(() => castCredits(people), [people]);
@@ -40,7 +47,7 @@ export function CastRow({ people }: CastRowProps) {
           // première carte d'acteur : une cellule de FlatList est une colonne.
           <View style={st.cell}>
             {index === crew.length && crew.length > 0 && <View style={st.sep} />}
-            <CreditCard credit={item} />
+            <CreditCard credit={item} readOnly={readOnly} />
           </View>
         )}
       />
@@ -48,7 +55,7 @@ export function CastRow({ people }: CastRowProps) {
   );
 }
 
-const CreditCard = memo(function CreditCard({ credit }: { credit: CastCredit }) {
+const CreditCard = memo(function CreditCard({ credit, readOnly }: { credit: CastCredit; readOnly: boolean }) {
   const { t } = useTranslation("media");
   const router = useRouter();
   const st = useThemedStyles(makeStyles);
@@ -58,13 +65,14 @@ const CreditCard = memo(function CreditCard({ credit }: { credit: CastCredit }) 
 
   return (
     <Pressable
+      disabled={readOnly}
       onPress={() => router.push({
         pathname: "/person/[personId]",
         params: { personId: credit.id, ...(credit.linkRole !== "Actor" ? { role: credit.linkRole } : {}) },
       })}
       accessibilityRole="button"
       accessibilityLabel={`${credit.name}${subtitle ? `, ${subtitle}` : ""}`}
-      accessibilityHint={t("personOpen", { name: credit.name })}
+      accessibilityHint={readOnly ? undefined : t("personOpen", { name: credit.name })}
       style={({ pressed }) => [st.card, pressed && st.pressed]}
     >
       <View style={st.portrait}>

@@ -30,6 +30,15 @@ interface Props {
   logoMaxH: number;
   titleStyle?: StyleProp<ViewStyle>;
   metaStyle?: StyleProp<ViewStyle>;
+  /**
+   * Logo lu ailleurs que sur Jellyfin — la fiche d'un titre gardé le prend
+   * sur le disque (`file://`). `undefined` = celui de l'item, par le serveur.
+   */
+  logoUri?: string | null;
+  /** `false` : aucune requête — les marqueurs ne lisent que le DTO local (note, coche « vu »). */
+  markersEnabled?: boolean;
+  /** Ouvre la série d'un épisode ; par défaut sa fiche en ligne. */
+  onOpenSeries?: () => void;
 }
 
 /**
@@ -38,7 +47,9 @@ interface Props {
  * marqueurs des cartes (mêmes tracés), la ligne de faits et les jetons.
  * Jumeau de `StageBlock` du miroir web.
  */
-export const DetailStageBlock = memo(function DetailStageBlock({ item, align, tone, logoMaxW, logoMaxH, titleStyle, metaStyle }: Props) {
+export const DetailStageBlock = memo(function DetailStageBlock({
+  item, align, tone, logoMaxW, logoMaxH, titleStyle, metaStyle, logoUri, markersEnabled = true, onOpenSeries,
+}: Props) {
   const router = useRouter();
   const { t } = useTranslation("common");
   const { t: tm } = useTranslation("media");
@@ -47,7 +58,7 @@ export const DetailStageBlock = memo(function DetailStageBlock({ item, align, to
   const theme = useTheme();
   const [logoBroken, setLogoBroken] = useState(false);
   const [logoRatio, setLogoRatio] = useState(3);
-  const markers = useCardMarkers(item, { communityRating: item.CommunityRating ?? null, scope: "item" });
+  const markers = useCardMarkers(item, { communityRating: item.CommunityRating ?? null, scope: "item", enabled: markersEnabled });
 
   const onMedia = tone === "media";
   const c = onMedia
@@ -60,9 +71,9 @@ export const DetailStageBlock = memo(function DetailStageBlock({ item, align, to
   // Un logo est dessiné pour un fond sombre : posé sur la page claire (colonne
   // de l'iPad paysage), il disparaîtrait — le titre y reste en texte.
   const logoTag = !isEpisode && (onMedia || theme.isDark) ? item.ImageTags?.Logo : undefined;
-  const logo = logoTag && !logoBroken
-    ? client.getImageUrl(item.Id, "Logo", { height: logoMaxH * 2, quality: 90, tag: logoTag })
-    : null;
+  const serverLogo = logoTag ? client.getImageUrl(item.Id, "Logo", { height: logoMaxH * 2, quality: 90, tag: logoTag }) : null;
+  const localLogo = !isEpisode && (onMedia || theme.isDark) ? (logoUri ?? null) : null;
+  const logo = logoBroken ? null : logoUri === undefined ? serverLogo : localLogo;
   // La boîte du logo suit son format réel (mesuré au chargement) : ni bande
   // vide autour d'un logo étroit, ni logo large écrasé.
   const logoW = Math.min(logoMaxW, logoMaxH * logoRatio);
@@ -88,15 +99,15 @@ export const DetailStageBlock = memo(function DetailStageBlock({ item, align, to
       <Animated.View style={[{ alignItems }, titleStyle]}>
         {isEpisode && item.SeriesName && (
           <Pressable
-            onPress={() => item.SeriesId && router.push(`/media/${item.SeriesId}`)}
-            disabled={!item.SeriesId}
+            onPress={onOpenSeries ?? (() => item.SeriesId && router.push(`/media/${item.SeriesId}`))}
+            disabled={!onOpenSeries && !item.SeriesId}
             hitSlop={8}
             accessibilityRole="link"
             accessibilityLabel={item.SeriesName}
             style={st.seriesLink}
           >
             <Text numberOfLines={1} style={[st.series, { color: c.secondary }, shadow]}>{item.SeriesName}</Text>
-            {item.SeriesId && <Feather name="chevron-right" size={14} color={c.secondary} />}
+            {(onOpenSeries || item.SeriesId) && <Feather name="chevron-right" size={14} color={c.secondary} />}
           </Pressable>
         )}
         {kicker !== "" && (
