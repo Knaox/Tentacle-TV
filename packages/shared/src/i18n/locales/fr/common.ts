@@ -238,4 +238,11 @@ export default {
   // Écran de recherche du téléviseur.
   rechercheTvDictee: "Appuyez sur le micro de la télécommande pour dicter",
   rechercheTvVide: "Saisissez un titre pour lancer la recherche.",
+
+  // La bande des saisons — fiche, lecteur, mobile, téléviseurs. Lus par les
+  // lecteurs d'écran avec le nom de la saison : « Saison 14, 58 épisodes, en cours ».
+  seasonTabEpisodes_one: "{{count}} épisode",
+  seasonTabEpisodes_other: "{{count}} épisodes",
+  seasonTabCurrent: "en cours",
+  seasonTabWatched: "vue",
 } as const;

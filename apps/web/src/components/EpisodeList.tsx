@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  useSeasons,
-  useEpisodes,
+  useSeasonBrowser,
   useJellyfinClient,
   useBatchWatchedToggle,
   useDeleteRating,
@@ -16,7 +15,7 @@ import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { WatchedSelectionToolbar } from "./WatchedSelectionToolbar";
 import { useMultiSelect } from "../hooks/useMultiSelect";
-import { HorizontalScrollRow } from "./HorizontalScrollRow";
+import { SeasonTabs, seasonTabId } from "./episodes/SeasonTabs";
 import { SeasonDownloadAction } from "../downloads/SeasonDownloadAction";
 import { DownloadDialog } from "../downloads/DownloadDialog";
 import { EpisodeRow } from "./EpisodeRow";
@@ -36,9 +35,14 @@ interface EpisodeListProps {
   initialSeasonId?: string;
   /** La SÉRIE (fiche série, ou parent d'une fiche épisode) : son tmdb note les épisodes. */
   seriesItem?: MediaItem | null;
+  /**
+   * Fiche d'une SÉRIE : la liste s'ouvre sur la saison de l'épisode à
+   * reprendre, et l'attend plutôt que d'ouvrir une saison qui changerait.
+   */
+  followResume?: boolean;
 }
 
-export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, seriesItem }: EpisodeListProps) {
+export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, seriesItem, followResume = false }: EpisodeListProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   const { t: tDownloads } = useTranslation("downloads");
@@ -47,9 +51,15 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
   const { canDownload } = useDownloadsVisibility();
   const [batchItems, setBatchItems] = useState<MediaItem[] | null>(null);
   const client = useJellyfinClient();
-  const { data: seasons, isLoading: seasonsLoading } = useSeasons(seriesId);
-  const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>();
-  const { data: episodes, isLoading: episodesLoading } = useEpisodes(seriesId, selectedSeasonId);
+  // Le choix de la saison, la liste légère puis ses sources, les
+  // préchargements : la même mécanique sur toutes les plateformes.
+  const browser = useSeasonBrowser({
+    seriesId,
+    preferredSeasonId: initialSeasonId,
+    followResume,
+    currentEpisodeSeasonId: currentEpisodeId ? initialSeasonId : undefined,
+  });
+  const { seasons, selectedSeasonId, episodes } = browser;
   const ms = useMultiSelect();
 
   // Notes d'épisodes : le tmdb de la SÉRIE, la saison sélectionnée, les notes
@@ -81,15 +91,6 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
 
   const batchCtx = useMemo(() => ({ seriesId, seasonId: selectedSeasonId }), [seriesId, selectedSeasonId]);
   const { markWatched: batchMarkWatched, markUnwatched: batchMarkUnwatched } = useBatchWatchedToggle(batchCtx);
-
-  useEffect(() => {
-    if (!seasons?.length || selectedSeasonId) return;
-    const preferred =
-      initialSeasonId && seasons.some((s) => s.Id === initialSeasonId)
-        ? initialSeasonId
-        : seasons[0].Id;
-    setSelectedSeasonId(preferred);
-  }, [seasons, selectedSeasonId, initialSeasonId]);
 
   // Reset selection on season change
   useEffect(() => {
@@ -125,29 +126,23 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
 
   return (
     <div className="px-4 md:px-8 py-4">
-      {/* Season tabs */}
-      {seasonsLoading ? (
-        <div className="flex gap-3">{Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} width="100px" height="36px" />)}</div>
-      ) : (
-        <HorizontalScrollRow className="gap-2" wrapperClassName="mb-4" ariaLabel={t("common:seasons", "Saisons")}>
-          {seasons?.map((s) => (
-            <button
-              key={s.Id}
-              onClick={() => setSelectedSeasonId(s.Id)}
-              className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                selectedSeasonId === s.Id
-                  ? "bg-[var(--brand-soft)] border border-[rgba(var(--brand-rgb),0.45)] text-[var(--brand-light)]"
-                  : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
-              }`}
-            >
-              {s.Name}
-            </button>
-          ))}
-        </HorizontalScrollRow>
-      )}
+      {/* La bande des saisons : pastilles lisibles, saison en cours marquée,
+          préchargement au survol et au focus. */}
+      {browser.seasonsLoading ? (
+        <div className="flex gap-2">{Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} width="104px" height="40px" className="!rounded-full" />)}</div>
+      ) : seasons && seasons.length > 0 ? (
+        <SeasonTabs
+          seasons={seasons}
+          selectedId={selectedSeasonId}
+          markedId={browser.markedSeasonId}
+          onSelect={browser.select}
+          onIntent={browser.prefetch}
+          className="mb-4"
+        />
+      ) : null}
 
       {/* Season actions bar */}
-      {!episodesLoading && episodes?.length ? (
+      {!browser.episodesLoading && episodes?.length ? (
         <div className="mb-3 flex items-center gap-2">
           <button
             onClick={handleSeasonToggle}
@@ -164,8 +159,9 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
               {t("common:select")}
             </button>
           )}
-          {/* Téléchargement de la saison (desktop, droit requis — sinon absent). */}
-          <SeasonDownloadAction episodes={episodes ?? []} />
+          {/* Téléchargement de la saison (desktop, droit requis — sinon absent).
+              Il lit les sources (tailles, pistes) : il paraît quand elles sont là. */}
+          <SeasonDownloadAction episodes={browser.withSources ?? []} />
         </div>
       ) : null}
 
@@ -176,8 +172,12 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
           est gardée (cf. `RevealCell`) : la mise en page ne bouge pas d'un pixel,
           et la sélection multiple survit puisqu'elle porte sur des identifiants. */}
       <RevealScope>
-        <div className="space-y-3">
-          {episodesLoading ? (
+        <div
+          className="space-y-3"
+          role="tabpanel"
+          aria-labelledby={selectedSeasonId ? seasonTabId(selectedSeasonId) : undefined}
+        >
+          {browser.episodesLoading ? (
             Array.from({ length: 6 }).map((_, i) => <Shimmer key={i} height="100px" />)
           ) : (
             episodes?.map((ep, i) => (
@@ -212,7 +212,8 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
           onDownload={
             canDownload
               ? () => {
-                  const selection = (episodes ?? []).filter((ep) => ms.isSelected(ep.Id));
+                  // Les sources (tailles, pistes) sont exigées par le dialogue.
+                  const selection = (browser.withSources ?? []).filter((ep) => ms.isSelected(ep.Id));
                   if (selection.length === 0) return;
                   setBatchItems(selection);
                   ms.exitSelectionMode();

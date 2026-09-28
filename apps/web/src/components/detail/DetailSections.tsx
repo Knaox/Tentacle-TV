@@ -65,6 +65,7 @@ export function DetailSections({
             currentEpisodeId={highlightEpisodeId}
             initialSeasonId={highlightSeasonId}
             seriesItem={isSeries ? item : parentSeries}
+            followResume={isSeries}
           />
         </Reveal>
       )}

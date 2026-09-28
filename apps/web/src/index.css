@@ -15,6 +15,7 @@
 @import "./theme/surfaces.css";
 @import "./theme/cards.css";
 @import "./theme/controls.css";
+@import "./theme/seasonTabs.css";
 @import "./theme/rendering.css";
 @import "./theme/reveal.css";
 @import "./theme/chrome.css";

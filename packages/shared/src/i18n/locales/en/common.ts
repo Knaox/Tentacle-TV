@@ -232,4 +232,11 @@ export default {
   // TV search screen.
   rechercheTvDictee: "Press the microphone on the remote to dictate",
   rechercheTvVide: "Type a title to start searching.",
+
+  // The season strip — detail page, player, mobile, TVs. Read by screen
+  // readers after the season name: "Season 14, 58 episodes, in progress".
+  seasonTabEpisodes_one: "{{count}} episode",
+  seasonTabEpisodes_other: "{{count}} episodes",
+  seasonTabCurrent: "in progress",
+  seasonTabWatched: "watched",
 } as const;

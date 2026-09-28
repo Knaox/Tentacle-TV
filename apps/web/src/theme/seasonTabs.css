@@ -1,0 +1,166 @@
+/* ── Les pastilles de saison, et le bord des bandes qui défilent ──────────
+ *
+ * Les pastilles vivent au-dessus du fond de la fiche : l'image de la série,
+ * floutée, souvent très colorée. Elles étaient en gris translucide à 5 %,
+ * libellé gris à 55 % — sur un fond rouge et vert, le texte disparaissait.
+ *
+ * ── La surface
+ *
+ * `--glass-tint-strong` (72 % d'opacité) sous un libellé plein : le contraste
+ * ne dépend plus de l'image. Calculé sur les pires fonds possibles (blanc,
+ * noir, rouge, vert, jaune, cyan, magenta, bleu) : libellé ≥ 8,6:1, compteur
+ * ≥ 5:1 en thème sombre ; ≥ 13,5:1 et ≥ 6,7:1 en clair. Pas de
+ * `backdrop-filter` : vingt pastilles floutées se recalculaient à chaque
+ * image du défilement de la page, pour un fond qu'une surface à 72 % couvre
+ * déjà.
+ *
+ * ── La saison affichée
+ *
+ * Le dégradé signature, en version PROFONDE (`--brand-dark` → `--brand-mid-deep`
+ * → `--brand-accent-deep`) : le dégradé de `controls.css` tombe à 3,5:1 sous
+ * un libellé blanc à son extrémité rose ; celui-ci tient 4,6:1 d'un bout à
+ * l'autre. Même grammaire que le choix segmenté : un calque de dégradé et un
+ * voile de survol, dont seule l'OPACITÉ change — jamais un fond animé. */
+
+:root {
+  --season-tab-gradient: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid-deep) 55%, var(--brand-accent-deep) 100%);
+  --season-tab-border: rgba(255, 255, 255, 0.14);
+  /* Le point « en cours » : l'accent clair tient 3:1 sur la surface, même
+   * posée sur une image blanche. */
+  --season-tab-dot: var(--brand-accent-light);
+}
+
+:root[data-theme="light"] {
+  --season-tab-border: rgba(11, 11, 16, 0.1);
+  --season-tab-dot: var(--brand-accent-deep);
+}
+
+.season-tab {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding-inline: 1rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-primary);
+  background: var(--glass-tint-strong);
+  box-shadow: inset 0 0 0 1px var(--season-tab-border);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-instant) var(--ease-out);
+}
+
+/* AU DOIGT, la cible native reprend ses droits. */
+@media (pointer: coarse) {
+  .season-tab {
+    min-height: 44px;
+  }
+}
+
+/* Le panneau du lecteur : une bande plus serrée, sur fond déjà sombre. */
+.season-tab[data-size="sm"] {
+  min-height: 34px;
+  padding-inline: 0.875rem;
+  font-size: 13px;
+}
+
+.season-tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--season-tab-gradient);
+  box-shadow: var(--ctl-glow-segment);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.season-tab::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  border-radius: inherit;
+  background: var(--fill-medium);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.season-tab:hover::after {
+  opacity: 1;
+}
+
+.season-tab:active {
+  transform: scale(0.97);
+}
+
+.season-tab:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.season-tab[aria-selected="true"] {
+  color: var(--cta-brand-fg);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.season-tab[aria-selected="true"]::before {
+  opacity: 1;
+}
+
+.season-tab[aria-selected="true"]::after {
+  opacity: 0;
+}
+
+/* Le nombre d'épisodes : un compteur, comme sur un onglet. */
+.season-tab-count {
+  min-width: 1.5rem;
+  padding: 3px 6px;
+  border-radius: 9999px;
+  background: var(--fill-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.season-tab[aria-selected="true"] .season-tab-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--cta-brand-fg);
+}
+
+/* La saison de l'épisode à reprendre : le même point que « Épisode actuel »
+ * dans la liste. */
+.season-tab-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: var(--season-tab-dot);
+}
+
+.season-tab[aria-selected="true"] .season-tab-dot {
+  background: var(--cta-brand-fg);
+}
+
+.season-tab-watched {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.season-tab[aria-selected="true"] .season-tab-watched {
+  color: var(--cta-brand-fg);
+}
