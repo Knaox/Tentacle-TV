@@ -1,6 +1,7 @@
 import { getPrisma } from "./db";
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { getAdminUserId } from "./jellyfinLibrary";
+import { findLibraryItemByTmdb as findByTmdb } from "./jellyfinTmdbLookup";
 import { normalizeTitle } from "./libraryAddedDedup";
 import type { RegistryClaim } from "./announcedRegistry";
 
@@ -81,46 +82,6 @@ export async function resolveSeerContent(
   }
   const norm = normalizeTitle(n.title);
   return userClaims.find((c) => normalizeTitle(c.title) === norm) ?? null;
-}
-
-type Lookup = { kind: "found"; id: string } | { kind: "missing" } | { kind: "error" };
-
-/** Item Movie/Series par identifiant TMDB — stratégie éprouvée de routes/tmdb.ts
- *  (AnyProviderIdEquals + filtre exact, puis scan complet en repli — nécessaire :
- *  AnyProviderIdEquals ne filtre pas sur certaines versions Jellyfin), avec le
- *  userId admin : sans lui, /Items?Recursive=true masque une partie de la
- *  bibliothèque et produirait de faux « absent » (= reports indus). */
-async function findByTmdb(tmdbId: number, mediaType: "movie" | "tv"): Promise<Lookup> {
-  const jellyfinUrl = getJellyfinUrl();
-  const apiKey = getJellyfinApiKey();
-  const userId = await getAdminUserId();
-  if (!jellyfinUrl || !apiKey || !userId) return { kind: "error" };
-  const itemTypes = mediaType === "movie" ? "Movie" : "Series";
-  const headers = { "X-Emby-Token": apiKey };
-  type Item = { Id?: string; ProviderIds?: { Tmdb?: string } };
-  try {
-    const res = await fetch(
-      `${jellyfinUrl}/Items?userId=${userId}&AnyProviderIdEquals=tmdb.${tmdbId}` +
-        `&IncludeItemTypes=${itemTypes}&Recursive=true&Limit=100&Fields=ProviderIds&EnableImages=false`,
-      { headers, signal: AbortSignal.timeout(8_000) },
-    );
-    if (res.ok) {
-      const data = (await res.json()) as { Items?: Item[] };
-      const match = data.Items?.find((it) => it.ProviderIds?.Tmdb === String(tmdbId));
-      if (match?.Id) return { kind: "found", id: match.Id };
-    }
-    const allRes = await fetch(
-      `${jellyfinUrl}/Items?userId=${userId}&IncludeItemTypes=${itemTypes}` +
-        `&Recursive=true&Limit=10000&Fields=ProviderIds&EnableImages=false`,
-      { headers, signal: AbortSignal.timeout(15_000) },
-    );
-    if (!allRes.ok) return { kind: "error" };
-    const allData = (await allRes.json()) as { Items?: Item[] };
-    const match = allData.Items?.find((it) => it.ProviderIds?.Tmdb === String(tmdbId));
-    return match?.Id ? { kind: "found", id: match.Id } : { kind: "missing" };
-  } catch {
-    return { kind: "error" };
-  }
 }
 
 /** Numéros de saison présents dans Jellyfin pour une série, null si échec. */

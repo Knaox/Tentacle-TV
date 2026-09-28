@@ -16,6 +16,7 @@ import {
   recordDepartures,
 } from "./libraryPresence";
 import { forgetRemovedSeries, restoreAutoRetiredSeries } from "./watchlistAutoRetired";
+import { applyPendingWatchlist, sweepPendingWatchlist } from "./watchlistPending";
 
 // Les arrivées dans la bibliothèque, annoncées en push dès que JELLYFIN les a —
 // sans attendre que Jellyseerr les voie. Chaîne :
@@ -31,7 +32,9 @@ import { forgetRemovedSeries, restoreAutoRetiredSeries } from "./watchlistAutoRe
 //     à tous les ajouts ; le registre announced_contents écarte ce qui vient
 //     d'être annoncé, y compris par le pipeline Seer.
 // Le même diff nourrit le retour automatique dans « Ma liste » des séries
-// sorties parce que tout était vu (watchlistAutoRetired), hors préférences push.
+// sorties parce que tout était vu (watchlistAutoRetired), et l'entrée dans
+// « Ma liste » des titres mis de côté avant leur arrivée (watchlistPending),
+// hors préférences push.
 
 const POLL_INTERVAL = 60_000;
 const WS_DEBOUNCE_MS = 8_000;
@@ -39,6 +42,8 @@ const WS_DEBOUNCE_MS = 8_000;
 const DEFER_RECHECK_MS = 30_000;
 const NAME_CHUNK = 100; // IDs par appel getItemsByIds (longueur d'URL)
 const DEPARTURE_PURGE_EVERY_MS = 6 * 60 * 60_000;
+/** Titres mis de côté déjà présents (arrivés pendant une coupure) : rattrapés à ce rythme. */
+const PENDING_SWEEP_EVERY_MS = 30 * 60_000;
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let wsTimer: ReturnType<typeof setTimeout> | null = null;
@@ -48,6 +53,7 @@ let wsSignal = false; // un LibraryChanged force le diff même à décompte stab
 let knownIds: Set<string> | null = null; // IDs présents, chargés au 1er poll
 let backfillStarted = false;
 let lastDeparturePurge = 0;
+let lastPendingSweep = 0;
 const hold = new ArrivalHold();
 
 /** Métadonnées prêtes pour un titre propre et une reconnaissance fiable ? */
@@ -156,6 +162,9 @@ async function release(now: number): Promise<void> {
   if (released.length === 0) return;
 
   const verdict = await classifyArrivals(items, now);
+  // Les titres mis de côté entrent dans Ma liste à leur arrivée, nouveauté ou
+  // non : une seconde version d'un film n'en attendait pas moins. Ne lève jamais.
+  await applyPendingWatchlist(items);
   // Annoncer d'abord, enregistrer ensuite : un plantage entre les deux fait
   // re-détecter l'arrivée, et le registre par utilisateur écarte le doublon.
   if (verdict.news.length > 0) {
@@ -184,6 +193,14 @@ async function poll(reason: string): Promise<void> {
       knownIds = await loadPresentIds();
       console.log(`[LibNotif] instantané chargé: ${knownIds.size} ids`);
       if (knownIds.size > 0) startBackfill();
+    }
+
+    // Avant le garde-fou du décompte : ce balayage vise justement ce qui est
+    // DÉJÀ là, bibliothèque immobile comprise.
+    if (Date.now() - lastPendingSweep >= PENDING_SWEEP_EVERY_MS) {
+      lastPendingSweep = Date.now();
+      const listed = await sweepPendingWatchlist();
+      if (listed > 0) console.log(`[LibNotif] titres mis de côté déjà là, mis dans Ma liste : ${listed}`);
     }
 
     const total = await getItemCount();

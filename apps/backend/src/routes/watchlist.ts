@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
+import { watchlistTmdbRoutes } from "./watchlistTmdb";
 
 // Un id Jellyfin : GUID avec ou sans tirets — rien d'autre ne passe par l'URL.
 const seriesIdSchema = z.string().min(1).max(64).regex(/^[A-Za-z0-9-]+$/);
@@ -52,4 +53,6 @@ export const watchlistRoutes: FastifyPluginAsync = async (app) => {
     });
     return { ok: true };
   });
+
+  await app.register(watchlistTmdbRoutes);
 };

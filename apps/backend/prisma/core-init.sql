@@ -128,6 +128,17 @@ CREATE TABLE IF NOT EXISTS `watchlist_auto_retired` (
   KEY `watchlist_auto_retired_jellyfinUserId_idx` (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- « Ma liste » posée sur un titre absent de la bibliothèque, à transformer en
+-- vrai « Ma liste » dès son arrivée. Voir schema.prisma > WatchlistPending.
+CREATE TABLE IF NOT EXISTS `watchlist_pending` (
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `mediaType` varchar(10) NOT NULL,
+  `tmdbId` int NOT NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`jellyfinUserId`, `mediaType`, `tmdbId`),
+  KEY `watchlist_pending_mediaType_tmdbId_idx` (`mediaType`, `tmdbId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Segments de visionnage MESURÉS par Tentacle (remplace le greffon Playback
 -- Reporting). Une ligne = une suite continue de lecture d'un titre sur une
 -- session. Le temps est échantillonné toutes les 15 s, jamais extrapolé.

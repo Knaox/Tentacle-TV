@@ -1,6 +1,6 @@
 import type { LibItem } from "./jellyfinLibrary";
 import { getPrisma, hasPrisma } from "./db";
-import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
+import { likeItemForUser } from "./jellyfinLikes";
 import { broadcastToUser } from "./wsManager";
 import { pokeProfile } from "./reco/jobs";
 
@@ -28,22 +28,6 @@ export function seriesIdsToRestore(items: LibItem[]): string[] {
     ids.add(it.SeriesId);
   }
   return [...ids];
-}
-
-/** Like posé pour le compte d'un utilisateur, clé admin. Idempotent côté Jellyfin. */
-async function likeItemForUser(userId: string, itemId: string): Promise<boolean> {
-  const url = getJellyfinUrl();
-  const apiKey = getJellyfinApiKey();
-  if (!url || !apiKey) return false;
-  try {
-    const res = await fetch(
-      `${url}/Users/${encodeURIComponent(userId)}/Items/${encodeURIComponent(itemId)}/Rating?likes=true`,
-      { method: "POST", headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(10_000) },
-    );
-    return res.ok;
-  } catch {
-    return false;
-  }
 }
 
 /** Remet dans Ma liste les séries suivies dont un épisode vient d'arriver. Ne lève jamais. */
