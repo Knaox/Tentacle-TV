@@ -20,12 +20,10 @@ export interface AffinityParticipant {
    * bibliothèques de la salle. Un membre arrivé après ne voit que la sienne.
    */
   allowed: ReadonlySet<string> | null;
-  /** Clé de titre → dernier verdict (le dernier verdict gagne). */
-  votes: Map<string, WtAffinityVerdict>;
 }
 
-/** Un match — ses champs d'affichage sont recopiés : il survit à un
- *  changement de type, alors que la pile qui l'a produit s'en va. */
+/** Un match — ses champs d'affichage sont recopiés : la proposition se montre
+ *  sans relire la pile. */
 export interface AffinityMatch {
   key: string;
   itemId: string;
@@ -34,13 +32,6 @@ export interface AffinityMatch {
   year: number | null;
   at: number;
   likedBy: string[];
-}
-
-export interface AffinityLaunch {
-  key: string;
-  itemId: string;
-  byUserId: string;
-  at: number;
 }
 
 export interface AffinitySession {
@@ -55,7 +46,18 @@ export interface AffinitySession {
   audience: ReadonlySet<string>;
   /** Clé → position dans la pile. */
   index: Map<string, number>;
+  /** Qui swipe en ce moment : a ouvert la pile et ne l'a pas quittée. */
   participants: Map<string, AffinityParticipant>;
-  matches: Map<string, AffinityMatch>;
-  launch: AffinityLaunch | null;
+  /**
+   * Les votes de chacun (clé de titre → dernier verdict), pour toute la vie
+   * de la séance : quitter l'affinité ne les efface pas, y revenir les
+   * retrouve. Seul un départ du GROUPE les emporte.
+   */
+  ballots: Map<string, Map<string, WtAffinityVerdict>>;
+  /** Les matchs proposés, pas encore tranchés, du plus ancien au plus
+   *  récent : le premier est à l'écran de tous les participants. */
+  proposals: AffinityMatch[];
+  /** Les titres dont le match a été tranché — lancé ou écarté : jamais
+   *  reproposés, jamais resservis. */
+  settled: Set<string>;
 }

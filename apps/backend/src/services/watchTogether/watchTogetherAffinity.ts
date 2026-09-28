@@ -8,10 +8,14 @@
  * deux copies ensemble — on modifie ICI, on recopie là-bas. Aucun import : le
  * fichier se recopie tel quel.
  *
- * Les gestes (lancer, rejoindre, voter) passent en REST sous
- * `/api/watch-together/affinity` ; seul l'état redescend par le socket, dans
- * `wt:affinity`, hors `wt:state` et de son epoch — un vote ne touche jamais la
- * lecture.
+ * Les gestes (lancer, rejoindre, voter, répondre à un match) passent en REST
+ * sous `/api/watch-together/affinity` ; seul l'état redescend par le socket,
+ * dans `wt:affinity`, hors `wt:state` et de son epoch — un vote ne touche
+ * jamais la lecture.
+ *
+ * La séance est UN mode partagé : la lancer l'ouvre chez tout le groupe, un
+ * match s'affiche chez tous en même temps, et la première réponse vaut pour
+ * tous ; quand il ne reste plus deux participants, elle se referme chez tous.
  */
 
 /** Le type de titres d'une séance. Films et séries s'entendent HORS animés ;
@@ -30,7 +34,7 @@ export interface WtAffinityParticipantDto {
 }
 
 /** Un titre que TOUS les participants ont aimé : la proposition de le
- *  regarder ensemble. */
+ *  regarder ensemble, faite à tous en même temps. */
 export interface WtAffinityMatchDto {
   key: string;
   itemId: string;
@@ -42,17 +46,9 @@ export interface WtAffinityMatchDto {
   at: number;
 }
 
-/** Un match lancé : ceux qui swipaient suivent le lancement. */
-export interface WtAffinityLaunchDto {
-  key: string;
-  itemId: string;
-  byUserId: string;
-  at: number;
-}
-
 export interface WtAffinityStateDto {
-  /** Change à chaque lancement et changement de type : les cartes et les
-   *  votes d'une séance précédente ne valent plus. */
+  /** Change à chaque lancement, reprise et changement de type : les cartes
+   *  et les votes tenus pour une autre séance ne valent plus. */
   sessionId: number;
   /** Compteur monotone par salle, séances comprises : un état plus vieux que
    *  celui qu'on tient est ignoré. */
@@ -62,22 +58,29 @@ export interface WtAffinityStateDto {
   startedAt: number;
   /** Titres de la pile commune. */
   deckSize: number;
+  /** Qui swipe en ce moment : a ouvert la pile et ne l'a pas quittée. */
   participants: WtAffinityParticipantDto[];
-  /** Du plus récent au plus ancien. */
-  matches: WtAffinityMatchDto[];
-  /** Dernier match lancé — absent tant que personne n'en a lancé. */
-  launch?: WtAffinityLaunchDto;
+  /** Les matchs en attente de réponse, du plus ancien au plus récent. Le
+   *  premier est proposé à tous les participants : « Regarder ensemble »
+   *  ou « Continuer à swiper » — le premier qui répond décide pour tous. */
+  proposals: WtAffinityMatchDto[];
 }
 
 export type WtAffinityCause =
-  | "start" | "switch" | "join" | "leave" | "vote" | "match" | "unmatch" | "launch" | "end";
+  | "start" | "switch" | "join" | "quit" | "vote" | "match" | "unmatch" | "dismiss" | "launch" | "end";
 
-/** L'état poussé à chaque changement — `null` quand la séance s'arrête.
- *  `matchKeys` : les titres qui VIENNENT de devenir des matchs. */
+/**
+ * L'état poussé à chaque changement — `null` quand la séance se referme
+ * (quitter à deux, un match parti en lecture, la salle sous deux membres).
+ * `matchKeys` : les titres qui VIENNENT de devenir des matchs. `match` : le
+ * match concerné par « dismiss » (écarté), « unmatch » (défait par un dédit)
+ * ou « launch » (parti en lecture).
+ */
 export interface WtAffinityMessage {
   type: "wt:affinity";
   state: WtAffinityStateDto | null;
   cause: WtAffinityCause;
   originUserId: string | null;
   matchKeys?: string[];
+  match?: WtAffinityMatchDto;
 }

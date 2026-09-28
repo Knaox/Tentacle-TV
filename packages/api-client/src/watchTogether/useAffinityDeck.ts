@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import type { WtAffinityVerdict } from "@tentacle-tv/shared";
+import type { WtAffinityStateDto, WtAffinityVerdict } from "@tentacle-tv/shared";
 import type { SwipeCard } from "../swipe/swipeTypes";
 import { fetchAffinityCards, isAffinityGone, joinAffinity, undoAffinityVote, voteAffinity } from "./affinityApi";
 import { INITIAL_AFFINITY_DECK, affinityDeckReducer, affinityExcludeKeys } from "./affinityDeckState";
@@ -28,8 +28,9 @@ export interface AffinityDeck {
 export interface AffinityDeckEvents {
   /** La séance tenue n'est plus celle du serveur : relire l'état. */
   onGone?: () => void;
-  /** Mon geste vient de faire un match (le socket le dira aussi). */
-  onMatch?: (key: string) => void;
+  /** Mon verdict vient de faire un match : l'état qui le porte (le socket
+   *  le dira aussi, peut-être avant). */
+  onMatch?: (state: WtAffinityStateDto) => void;
 }
 
 /**
@@ -97,8 +98,8 @@ export function useAffinityDeck(sessionId: number | null, events: AffinityDeckEv
     const gen = generation.current;
     dispatch({ type: "judged", verdict });
     enqueue(async () => {
-      const { matched } = await voteAffinity(sessionId, card.key, verdict);
-      if (matched && gen === generation.current) eventsRef.current.onMatch?.(card.key);
+      const { matched, state: after } = await voteAffinity(sessionId, card.key, verdict);
+      if (matched && gen === generation.current) eventsRef.current.onMatch?.(after);
     }, (err) => {
       if (gen !== generation.current) return;
       if (isAffinityGone(err)) {

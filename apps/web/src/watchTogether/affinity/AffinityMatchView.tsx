@@ -1,21 +1,25 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
-import { Heart, Play, X } from "lucide-react";
-import type { WtAffinityStateDto } from "@tentacle-tv/shared";
-import { useToast } from "../../contexts/ToastContext";
+import { Heart, Play } from "lucide-react";
+import { WtApiError, dismissAffinityMatch } from "@tentacle-tv/api-client";
+import type { WtAffinityMatchDto, WtAffinityStateDto } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
 import { AffinityPoster } from "./AffinityPoster";
-import { closeAffinity, leaveAffinityMatch, showAffinityView, type AffinityView } from "./affinityStore";
+import { applyAffinityPush, showAffinityNotice } from "./affinityStore";
 import { formatNames, memberName } from "./affinityText";
 import { useAffinityLaunch } from "./useAffinityLaunch";
 
 /**
- * « C'est un match ! » — la proposition de regarder ensemble. L'affiche entre
- * une fois, avec un rebond (transform et opacity seuls, rien d'infini) ; sous
- * mouvement réduit, un fondu. Le premier bouton du panneau — donc celui qui
- * reçoit le focus — est « Regarder ensemble » ; la croix vient après.
+ * « C'est un match ! » — la proposition, faite à TOUS les participants en
+ * même temps, et deux réponses seulement : « Regarder ensemble » (la lecture
+ * part pour le groupe) ou « Continuer à swiper » (le match est écarté, la
+ * pile reprend chez tous). La première réponse vaut pour tous, et le dit.
+ *
+ * L'affiche entre une fois, avec un rebond (transform et opacity seuls, rien
+ * d'infini) ; sous mouvement réduit, un fondu. Le premier bouton — donc celui
+ * qui reçoit le focus — est « Regarder ensemble ».
  */
 
 const PRIMARY =
@@ -23,45 +27,50 @@ const PRIMARY =
 const SECONDARY =
   "inline-flex h-11 w-full items-center justify-center rounded-full border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-60";
 
+type Answer = "watch" | "continue";
+
 export function AffinityMatchView({
-  state, matchKey, returnTo, titleId,
+  state, match, titleId,
 }: {
   state: WtAffinityStateDto;
-  matchKey: string;
-  returnTo: AffinityView | null;
+  match: WtAffinityMatchDto;
   titleId: string;
 }) {
   const { t, i18n } = useTranslation("watchTogether");
   const { room, selfId } = useWatchTogether();
-  const { show } = useToast();
   const launch = useAffinityLaunch();
   const reduced = useReducedMotion() ?? false;
-  const [pending, setPending] = useState(false);
-  const match = state.matches.find((m) => m.key === matchKey);
-  if (!match) return null;
+  const [answering, setAnswering] = useState<Answer | null>(null);
 
   const nameOf = (id: string) => (id === selfId ? t("affinityYou") : memberName(room, id) || "…");
-  const iLiked = !!selfId && match.likedBy.includes(selfId);
-  const subtitle = iLiked
-    ? t("affinityMatchWithYou", {
-      names: formatNames(match.likedBy.filter((id) => id !== selfId).map(nameOf), i18n.language),
-      title: match.title,
-    })
+  const others = match.likedBy.filter((id) => id !== selfId).map(nameOf);
+  const subtitle = selfId && match.likedBy.includes(selfId)
+    ? t("affinityMatchWithYou", { names: formatNames(others, i18n.language), title: match.title })
     : t("affinityMatchOthers", { names: formatNames(match.likedBy.map(nameOf), i18n.language), title: match.title });
   const meta = [match.year, match.mediaType === "tv" ? t("affinitySeries") : t("affinityMovie")].filter(Boolean).join(" · ");
-  const participant = state.participants.some((p) => p.userId === selfId);
 
+  /** Une réponse que le serveur n'a pas prise. « answered » : un autre a
+   *  répondu avant — l'état qui arrive dit la suite, rien à montrer. */
+  const failed = (err: unknown) => {
+    setAnswering(null);
+    if (!(err instanceof WtApiError && err.code === "answered")) showAffinityNotice(null, t("errorGeneric"));
+  };
   const watch = async () => {
-    setPending(true);
+    setAnswering("watch");
     try {
       await launch(match);
-    } catch {
-      show("error", t("errorGeneric"));
-      setPending(false);
+    } catch (err) {
+      failed(err);
     }
   };
-  // Un participant revient à sa pile, même si le match l'a trouvé ailleurs.
-  const next = () => (participant && !returnTo ? showAffinityView("deck") : leaveAffinityMatch());
+  const keepSwiping = async () => {
+    setAnswering("continue");
+    try {
+      applyAffinityPush(await dismissAffinityMatch(match.key));
+    } catch (err) {
+      failed(err);
+    }
+  };
 
   return (
     <div className="relative overflow-y-auto px-6 pb-6 pt-9 text-center">
@@ -113,34 +122,19 @@ export function AffinityMatchView({
       </ul>
 
       <div className="relative mx-auto mt-6 flex w-full max-w-xs flex-col gap-2">
-        {/* La vue arrive souvent par-dessus la pile, modale déjà ouverte :
-            le focus de la modale ne se rejoue pas, il vient d'ici. */}
-        <button type="button" onClick={() => void watch()} disabled={pending} className={PRIMARY} autoFocus>
+        {/* La vue arrive par-dessus la pile, modale déjà ouverte : le focus
+            de la modale ne se rejoue pas, il vient d'ici. */}
+        <button type="button" onClick={() => void watch()} disabled={answering !== null} className={PRIMARY} autoFocus>
           <Play aria-hidden className="h-4 w-4" fill="currentColor" />
-          {pending ? t("affinityLaunching") : t("affinityWatchTogether")}
+          {answering === "watch" ? t("affinityLaunching") : t("affinityWatchTogether")}
         </button>
-        <button type="button" onClick={next} disabled={pending} className={SECONDARY}>
-          {participant ? t("affinityKeepSwiping") : t("affinityLater")}
+        <button type="button" onClick={() => void keepSwiping()} disabled={answering !== null} className={SECONDARY}>
+          {t("affinityKeepSwiping")}
         </button>
-        {state.matches.length > 1 && (
-          <button
-            type="button"
-            onClick={() => showAffinityView("matches")}
-            className="mx-auto mt-1 rounded px-2 py-1 text-[13px] font-semibold text-[var(--brand-light)] underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-line-focus"
-          >
-            {t("affinitySeeMatches", { count: state.matches.length })}
-          </button>
-        )}
       </div>
-
-      <button
-        type="button"
-        onClick={closeAffinity}
-        aria-label={t("close")}
-        className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full text-content-tertiary outline-none transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
-      >
-        <X aria-hidden className="h-5 w-5" />
-      </button>
+      <p className="relative mx-auto mt-3 max-w-xs text-xs leading-relaxed text-content-tertiary">
+        {t("affinityFirstAnswer", { count: Math.max(1, state.participants.length - 1) })}
+      </p>
     </div>
   );
 }

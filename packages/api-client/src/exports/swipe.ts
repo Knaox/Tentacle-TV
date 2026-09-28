@@ -13,7 +13,8 @@ export {
 // Watch Together — l'affinité, le swipe de groupe (cf. watchTogether/)
 export {
   fetchAffinity, fetchAffinityKinds, startAffinity, joinAffinity, leaveAffinity, fetchAffinityCards,
-  voteAffinity, undoAffinityVote, launchAffinityMatch, isAffinityGone, type AffinityJoinResponse,
+  voteAffinity, undoAffinityVote, dismissAffinityMatch, launchAffinityMatch, isAffinityGone,
+  type AffinityJoinResponse, type AffinityKinds,
 } from "../watchTogether/affinityApi";
 export { useAffinityDeck, type AffinityDeck, type AffinityDeckEvents } from "../watchTogether/useAffinityDeck";
 export {

@@ -1,10 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { fetchAffinity, onSocketStatus, subscribeSocket, type SocketStatus } from "@tentacle-tv/api-client";
 import { useToast } from "../../contexts/ToastContext";
 import { useWatchTogether } from "../WatchTogetherProvider";
-import { handleAffinityMessage, type AffinityEventContext } from "./affinityEvents";
+import { handleAffinityMessage, reconcileAffinity, type AffinityEventContext } from "./affinityEvents";
 import { affinityFetchMark, applyAffinityFetch, resetAffinity } from "./affinityStore";
 import { memberName } from "./affinityText";
 import { AffinityModal } from "./AffinityModal";
@@ -14,8 +14,8 @@ import { AffinityPill } from "./AffinityPill";
  * Affinité — la racine, montée par le fournisseur Watch Together tant qu'on
  * est dans une salle (et remontée à chaque changement de salle : les numéros
  * d'état repartent de zéro). Elle lit la séance au montage et à chaque
- * reconnexion du socket, écoute `wt:affinity`, et porte la modale et la
- * pilule d'invitation.
+ * reconnexion du socket — un participant qui recharge la page retrouve sa
+ * pile ouverte —, écoute `wt:affinity`, et porte la modale et la pilule.
  */
 export function AffinityRoot() {
   const { room, selfId } = useWatchTogether();
@@ -32,16 +32,19 @@ export function AffinityRoot() {
     isWatching: () => location.pathname.startsWith("/watch/"),
   };
 
+  const alive = useRef(false);
+  // Relit la séance, puis accorde l'écran à ce qu'elle est devenue.
+  const refresh = useCallback(() => {
+    const mark = affinityFetchMark();
+    fetchAffinity()
+      .then((state) => {
+        if (alive.current && applyAffinityFetch(state, mark) && ctxRef.current) reconcileAffinity(ctxRef.current);
+      })
+      .catch(() => undefined);
+  }, []);
+
   useEffect(() => {
-    let cancelled = false;
-    const refresh = () => {
-      const mark = affinityFetchMark();
-      fetchAffinity()
-        .then((state) => {
-          if (!cancelled) applyAffinityFetch(state, mark);
-        })
-        .catch(() => undefined);
-    };
+    alive.current = true;
     refresh();
 
     const unsubscribe = subscribeSocket((msg) => {
@@ -55,16 +58,16 @@ export function AffinityRoot() {
     });
 
     return () => {
-      cancelled = true;
+      alive.current = false;
       unsubscribe();
       unsubscribeStatus();
       resetAffinity();
     };
-  }, []);
+  }, [refresh]);
 
   return (
     <>
-      <AffinityModal />
+      <AffinityModal onStale={refresh} />
       <AffinityPill />
     </>
   );

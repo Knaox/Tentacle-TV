@@ -2,23 +2,38 @@ import type { Room } from "../roomTypes";
 import type { AffinitySession } from "./affinityTypes";
 
 /**
- * Affinité — la séance de chaque salle, en mémoire (comme le chat) : une
- * `WeakMap` sur la salle elle-même, qui part avec elle. Et le compteur
+ * Affinité — les séances de chaque salle, en mémoire (comme le chat) : des
+ * `WeakMap` sur la salle elle-même, qui partent avec elle. Et le compteur
  * d'états diffusés, monotone par salle, séances comprises — un client ignore
  * tout état plus vieux que celui qu'il tient.
+ *
+ * Deux places par salle : la séance OUVERTE (celle qu'on swipe) et la
+ * dernière séance REFERMÉE (quittée, partie en lecture, ou remplacée par un
+ * autre type), gardée avec ses votes — relancer le même type la rouvre.
  */
 
-const sessions = new WeakMap<Room, AffinitySession>();
+const open = new WeakMap<Room, AffinitySession>();
+const closed = new WeakMap<Room, AffinitySession>();
 const seqs = new WeakMap<Room, number>();
 let lastSessionId = 0;
 
 export function getAffinity(room: Room): AffinitySession | null {
-  return sessions.get(room) ?? null;
+  return open.get(room) ?? null;
 }
 
 export function setAffinity(room: Room, session: AffinitySession | null): void {
-  if (session) sessions.set(room, session);
-  else sessions.delete(room);
+  if (session) open.set(room, session);
+  else open.delete(room);
+}
+
+/** La dernière séance refermée de la salle, gardée pour une reprise. */
+export function getClosedAffinity(room: Room): AffinitySession | null {
+  return closed.get(room) ?? null;
+}
+
+export function setClosedAffinity(room: Room, session: AffinitySession | null): void {
+  if (session) closed.set(room, session);
+  else closed.delete(room);
 }
 
 /** Identifiant de séance, unique pour la vie du serveur. */

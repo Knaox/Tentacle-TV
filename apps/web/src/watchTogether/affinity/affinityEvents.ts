@@ -1,21 +1,28 @@
 import type { WtAffinityMessage } from "@tentacle-tv/shared";
+import { closeRoomModal } from "../roomModalStore";
 import {
-  applyAffinityPush, armLaunchFollow, closeAffinity, getAffinitySnapshot, leaveAffinityMatch, openAffinity,
-  showAffinityMatch, showAffinityView,
+  applyAffinityPush, armLaunchFollow, closeAffinity, getAffinitySnapshot, openAffinity, showAffinityNotice,
+  showAffinityView,
 } from "./affinityStore";
 import { KIND_LABEL_KEY } from "./affinityText";
 
 /**
  * Affinité — ce qu'un message `wt:affinity` change à l'écran, hors React (le
- * même motif que `wtEvents.ts`) : l'état est appliqué, puis les effets.
+ * même motif que `wtEvents.ts`) : l'état est appliqué, puis les effets. La
+ * séance est un mode PARTAGÉ :
  *
- * - un match s'annonce à TOUTE la salle, participants ou non — sauf à qui
- *   regarde un film : un toast lui suffit, rien ne recouvre son lecteur ;
- * - plusieurs matchs d'un coup (le seul qui manquait est parti) : la liste ;
- * - un match lancé par un autre : qui swipait le suivra (fenêtre de suivi) ;
- * - le type changé ou la séance lancée par un autre pendant qu'on choisissait :
- *   on rejoint la pile ;
- * - la séance arrêtée (moins de deux membres) : la modale se ferme.
+ * - lancée, reprise ou passée à un autre type par un autre : elle s'ouvre
+ *   chez moi, sur la pile, et le dit — sauf devant un film : un toast, puis
+ *   la pilule quand je reviens ;
+ * - un match s'affiche chez tous les participants (il se lit dans l'état) ;
+ *   qui ne swipe pas l'apprend par un toast ;
+ * - écarté par un autre (« Continuer à swiper ») ou défait par un dédit : la
+ *   pile reprend, et on dit pourquoi ;
+ * - refermée — l'autre l'a quittée, un match est parti en lecture, la salle
+ *   est passée sous deux membres : la modale se ferme chez tous, avec la
+ *   raison ; un lancement m'emmène si je swipais (fenêtre de suivi).
+ *
+ * Modale ouverte, un fait se dit DANS la modale (`notice`) ; fermée, par un toast.
  */
 
 export interface AffinityEventContext {
@@ -32,60 +39,87 @@ export interface AffinityEventContext {
 export function handleAffinityMessage(msg: WtAffinityMessage, ctx: AffinityEventContext): void {
   const before = getAffinitySnapshot();
   if (!applyAffinityPush(msg.state)) return;
-  const { state, cause } = msg;
-  const { modal } = getAffinitySnapshot();
+  const { state, cause, match } = msg;
   const fromOther = msg.originUserId !== null && msg.originUserId !== ctx.selfId;
-  const kind = state ? ctx.t(KIND_LABEL_KEY[state.kind]) : "";
   const name = ctx.nameOf(msg.originUserId);
+  const wasOpen = before.modal.open;
+
+  // Refermée : la modale se ferme chez tous, lanceur compris.
+  if (!state) {
+    closeAffinity();
+    if (cause === "launch" && fromOther && match) {
+      if (wasOpen) armLaunchFollow();
+      ctx.toast("info", ctx.t("affinityLaunchedBy", { name, title: match.title }));
+    } else if (cause === "quit" && fromOther && before.state) {
+      ctx.toast("info", ctx.t("affinityQuitBy", { name }));
+    } else if (cause === "end" && before.state) {
+      ctx.toast("info", ctx.t("affinityEnded"));
+    }
+    return;
+  }
 
   switch (cause) {
     case "start":
-    case "switch":
+    case "switch": {
       if (!fromOther) return;
-      if (cause === "switch" || modal.open) {
-        ctx.toast("info", ctx.t(cause === "switch" ? "affinitySwitchedBy" : "affinityStartedBy", { name, kind }));
-      }
-      // Je choisissais un type moi aussi : la pile de l'autre est là.
-      if (modal.open && modal.view === "kinds") showAffinityView("deck");
-      return;
-    case "match": {
-      const keys = msg.matchKeys ?? [];
-      if (keys.length === 0 || !state) return;
+      const kind = ctx.t(KIND_LABEL_KEY[state.kind]);
+      const text = ctx.t(cause === "switch" ? "affinitySwitchedBy" : "affinityStartedBy", { name, kind });
       if (ctx.isWatching()) {
-        const title = state.matches.find((m) => m.key === keys[0])?.title ?? "";
-        ctx.toast("success", `${ctx.t("affinityMatchTitle")} ${title}`);
+        ctx.toast("info", text);
         return;
       }
-      if (keys.length === 1) showAffinityMatch(keys[0]);
-      else if (modal.open) showAffinityView("matches");
-      else openAffinity("matches");
+      // Lancée chez l'un, ouverte chez tous : sur la pile, par-dessus la salle.
+      closeRoomModal();
+      if (wasOpen) showAffinityView("deck");
+      else openAffinity("deck");
+      showAffinityNotice(msg.originUserId, text);
       return;
     }
-    case "unmatch": {
-      // Le match affiché vient de tomber (un dédit) : on le dit, on revient.
-      if (modal.open && modal.view === "match" && modal.matchKey && !state?.matches.some((m) => m.key === modal.matchKey)) {
-        const title = before.state?.matches.find((m) => m.key === modal.matchKey)?.title ?? "";
-        ctx.toast("info", ctx.t("affinityUnmatched", { title }));
-        leaveAffinityMatch();
+    case "quit":
+      // À trois ou plus, les autres swipent encore.
+      if (fromOther && wasOpen) showAffinityNotice(msg.originUserId, ctx.t("affinityQuitBy", { name }));
+      announceToOutsiders(msg, ctx);
+      return;
+    case "match":
+      announceToOutsiders(msg, ctx);
+      return;
+    case "dismiss":
+      if (fromOther && wasOpen && match) {
+        showAffinityNotice(msg.originUserId, ctx.t("affinityDismissedBy", { name, title: match.title }));
       }
       return;
-    }
-    case "launch": {
-      const launch = state?.launch;
-      if (!fromOther || !launch) return;
-      const title = state.matches.find((m) => m.key === launch.key)?.title ?? "";
-      ctx.toast("info", ctx.t("affinityLaunchedBy", { name, title }));
-      if (modal.open) {
-        armLaunchFollow();
-        closeAffinity();
-      }
-      return;
-    }
-    case "end":
-      if (before.state) ctx.toast("info", ctx.t("affinityEnded"));
-      closeAffinity();
+    case "unmatch":
+      if (wasOpen && match) showAffinityNotice(msg.originUserId, ctx.t("affinityUnmatched", { title: match.title }));
       return;
     default:
       return;
   }
+}
+
+/** Un match chez qui ne swipe pas : un toast — les participants l'ont à l'écran. */
+function announceToOutsiders(msg: WtAffinityMessage, ctx: AffinityEventContext): void {
+  const keys = msg.matchKeys ?? [];
+  const { state } = msg;
+  if (!state || keys.length === 0 || state.participants.some((p) => p.userId === ctx.selfId)) return;
+  const title = state.proposals.find((m) => m.key === keys[0])?.title;
+  if (title) ctx.toast("success", `${ctx.t("affinityMatchTitle")} ${title}`);
+}
+
+/**
+ * Après une relecture de l'état (montage, reconnexion, séance périmée) :
+ * participant d'une séance ouverte — la page a été rechargée —, elle se
+ * rouvre chez moi ; ma pile ouverte sur une séance qui n'existe plus — une
+ * fermeture manquée pendant une coupure —, elle se ferme, et le dit.
+ */
+export function reconcileAffinity(ctx: AffinityEventContext): void {
+  const { state, modal } = getAffinitySnapshot();
+  if (!state) {
+    if (modal.open && modal.view === "deck") {
+      closeAffinity();
+      ctx.toast("info", ctx.t("affinityClosed"));
+    }
+    return;
+  }
+  if (modal.open || ctx.isWatching()) return;
+  if (state.participants.some((p) => p.userId === ctx.selfId)) openAffinity("deck");
 }

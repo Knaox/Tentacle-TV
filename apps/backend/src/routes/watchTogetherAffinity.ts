@@ -2,14 +2,16 @@ import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import { z } from "zod";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import {
-  affinityCards, affinityKinds, currentAffinity, joinAffinity, launchAffinity, leaveAffinity,
+  affinityCards, affinityKinds, currentAffinity, dismissAffinityMatch, joinAffinity, launchAffinity, quitAffinity,
   startAffinity, undoAffinityVote, voteAffinity, type AffinityResult,
 } from "../services/watchTogether/affinity/affinityService";
 
 /**
  * Watch Together — l'AFFINITÉ, le swipe de groupe (REST, même préfixe
  * /api/watch-together). Les gestes montent ici ; l'état redescend à toute la
- * salle par le socket (`wt:affinity`).
+ * salle par le socket (`wt:affinity`). La séance est un mode partagé : ce
+ * qu'un participant y décide — lancer, quitter, répondre à un match — vaut
+ * pour tous (cf. `affinityService.ts`).
  *
  * Réservé aux membres d'une salle ; lancer exige au moins deux membres. Les
  * cartes ne sont jamais que des titres de la bibliothèque que tout le groupe
@@ -48,13 +50,13 @@ export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
   /** GET /affinity — la séance de la salle (reprise au montage), ou null. */
   app.get("/affinity", async (request) => ({ state: currentAffinity(user(request).userId) }));
 
-  /** GET /affinity/kinds — titres de chaque type que tout le groupe peut lire. */
+  /** GET /affinity/kinds — titres de chaque type que tout le groupe peut lire, et le type
+   *  qu'un lancement reprendrait (`resume`). */
   app.get("/affinity/kinds", async (request, res) => {
-    const result = await affinityKinds(user(request).userId);
-    return result.ok ? { counts: result.value } : reply(res, result);
+    return reply(res, await affinityKinds(user(request).userId));
   });
 
-  /** POST /affinity — lance la séance, ou change de type. */
+  /** POST /affinity — lance la séance (ou la reprend), ou change de type. */
   app.post("/affinity", async (request, res) => {
     const body = z.object({ kind }).parse(request.body);
     const result = await startAffinity(user(request).userId, body.kind);
@@ -67,9 +69,9 @@ export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
     return reply(res, await joinAffinity(user(request).userId, body.limit));
   });
 
-  /** POST /affinity/leave — ne plus participer (ses votes partent). */
+  /** POST /affinity/leave — quitter l'affinité ; à deux, elle se referme chez l'autre aussi. */
   app.post("/affinity/leave", async (request, res) => {
-    const result = leaveAffinity(user(request).userId);
+    const result = quitAffinity(user(request).userId);
     return result.ok ? { ok: true } : reply(res, result);
   });
 
@@ -80,7 +82,7 @@ export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
     return result.ok ? { sessionId: q.sessionId, cards: result.value } : reply(res, result);
   });
 
-  /** POST /affinity/votes — un verdict sur une carte : j'aime ou pas pour moi. */
+  /** POST /affinity/votes — un verdict sur une carte ; rend `matched` et l'état. */
   app.post("/affinity/votes", async (request, res) => {
     const body = z.object({ sessionId, key: titleKey, verdict }).parse(request.body);
     return reply(res, voteAffinity(user(request).userId, body.sessionId, body.key, body.verdict));
@@ -94,7 +96,14 @@ export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
     return result.ok ? { ok: true } : reply(res, result);
   });
 
-  /** POST /affinity/launch — un match part en lecture pour le groupe. */
+  /** POST /affinity/dismiss — « Continuer à swiper » : le match est écarté chez tous. */
+  app.post("/affinity/dismiss", async (request, res) => {
+    const body = z.object({ key: titleKey }).parse(request.body);
+    const result = dismissAffinityMatch(user(request).userId, body.key);
+    return result.ok ? { state: result.value } : reply(res, result);
+  });
+
+  /** POST /affinity/launch — un match part en lecture pour le groupe ; la séance se referme. */
   app.post("/affinity/launch", async (request, res) => {
     const body = z.object({ key: titleKey }).parse(request.body);
     const result = launchAffinity(user(request).userId, body.key);

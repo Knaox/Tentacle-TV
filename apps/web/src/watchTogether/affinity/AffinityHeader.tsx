@@ -1,20 +1,22 @@
 import { useTranslation } from "react-i18next";
-import { Heart, HeartHandshake, X } from "lucide-react";
+import { HeartHandshake, LogOut } from "lucide-react";
 import type { WtAffinityStateDto } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
-import { closeAffinity, showAffinityView } from "./affinityStore";
+import { showAffinityView } from "./affinityStore";
 import { KIND_LABEL_KEY } from "./affinityText";
 
 /**
  * L'en-tête de la pile : ce qu'on swipe (type, taille de la pile, « Changer »),
- * les matchs trouvés, et qui swipe — chaque membre avec ce qu'il a jugé, ceux
- * qui n'ont pas encore rejoint en retrait. Voir les autres avancer dit qu'on
+ * « Quitter », et qui swipe — chaque membre avec ce qu'il a jugé, ceux qui
+ * n'ont pas encore rejoint en retrait. Voir les autres avancer dit qu'on
  * n'est pas seul à décider ; rien n'y dit CE qu'ils ont aimé.
+ *
+ * « Quitter » est un bouton nommé, pas une croix : la séance est partagée, et
+ * la quitter la referme aussi chez l'autre quand on n'est que deux.
  */
-export function AffinityHeader({ state, titleId }: { state: WtAffinityStateDto; titleId: string }) {
+export function AffinityHeader({ state, titleId, onQuit }: { state: WtAffinityStateDto; titleId: string; onQuit: () => void }) {
   const { t } = useTranslation("watchTogether");
-  const matches = state.matches.length;
 
   return (
     <header className="px-5 pb-2 pt-5">
@@ -42,21 +44,13 @@ export function AffinityHeader({ state, titleId }: { state: WtAffinityStateDto; 
         </div>
         <button
           type="button"
-          onClick={() => showAffinityView("matches")}
-          aria-label={`${t("affinityOpenMatches")} — ${t("affinityMatchesCount", { count: matches })}`}
-          title={t("affinityOpenMatches")}
-          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[13px] font-semibold tabular-nums text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
+          onClick={onQuit}
+          aria-label={t("affinityQuitLabel")}
+          title={t("affinityQuitLabel")}
+          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
         >
-          <Heart aria-hidden className={`h-4 w-4 ${matches > 0 ? "fill-current text-rose-400" : "text-content-tertiary"}`} />
-          {matches}
-        </button>
-        <button
-          type="button"
-          onClick={closeAffinity}
-          aria-label={t("close")}
-          className="-mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-content-tertiary outline-none transition-colors hover:bg-fill-soft hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
-        >
-          <X aria-hidden className="h-5 w-5" />
+          <LogOut aria-hidden className="h-4 w-4" />
+          {t("affinityQuit")}
         </button>
       </div>
       <AffinityParticipants state={state} />

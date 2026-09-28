@@ -13,15 +13,16 @@ import { KIND_LABEL_KEY } from "./affinityText";
  */
 export function AffinityEntry({ variant, onOpen }: { variant: "panel" | "room"; onOpen?: () => void }) {
   const { t } = useTranslation("watchTogether");
-  const { room } = useWatchTogether();
+  const { room, selfId } = useWatchTogether();
   const { state } = useAffinityStore();
   if (!room) return null;
 
   const alone = room.members.length < 2;
+  const participant = !!state && state.participants.some((p) => p.userId === selfId);
   const detail = alone
     ? t("affinityNeedTwo")
     : state
-      ? `${t(KIND_LABEL_KEY[state.kind])} · ${t("affinityMatchesCount", { count: state.matches.length })}`
+      ? `${t(KIND_LABEL_KEY[state.kind])} · ${t("affinityInProgress")}`
       : t("affinityFindHint");
   const open = () => {
     onOpen?.();
@@ -71,7 +72,7 @@ export function AffinityEntry({ variant, onOpen }: { variant: "panel" | "room"; 
           disabled={alone}
           className="inline-flex h-9 shrink-0 items-center rounded-full bg-[rgba(var(--brand-rgb),0.18)] px-4 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-[rgba(var(--brand-rgb),0.3)] focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {state ? t("affinityResume") : t("affinityStart")}
+          {state ? t(participant ? "affinityResume" : "affinityJoin") : t("affinityStart")}
         </button>
       </div>
     </section>
