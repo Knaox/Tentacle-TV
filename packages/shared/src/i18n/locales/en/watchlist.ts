@@ -1,6 +1,7 @@
 /** The “My list” page — desktop, web and mobile. */
 export default {
   stageFilterLabel: "Filter by progress",
+  typeFilterLabel: "Filter by type",
   stageAll: "All",
   stageNew: "Not started",
   stageInProgress: "In progress",

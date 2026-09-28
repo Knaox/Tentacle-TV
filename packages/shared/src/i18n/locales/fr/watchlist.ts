@@ -7,6 +7,7 @@
 export default {
   // Étapes de visionnage — les pastilles de filtre
   stageFilterLabel: "Filtrer par progression",
+  typeFilterLabel: "Filtrer par type",
   stageAll: "Tout",
   stageNew: "À découvrir",
   stageInProgress: "En cours",
