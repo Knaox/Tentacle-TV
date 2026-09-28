@@ -80,7 +80,10 @@ export const SwipeStackCard = memo(function SwipeStackCard({
       }}
       inert={!isPresent}
       initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
-      animate={{ opacity: 1, scale: 1 - depth * 0.05, y: depth * 12 }}
+      // `x: 0` n'agit qu'au retour d'une carte rendue par « annuler » en pleine
+      // sortie : sans lui, framer-motion ne ramenait pas x, et la carte restait
+      // accrochée au bord. Pendant un glisser, la cible ne change pas : rien ne bouge.
+      animate={{ opacity: 1, scale: 1 - depth * 0.05, x: 0, y: depth * 12 }}
       transition={reducedMotion ? REDUCED : SPRING}
       custom={null}
       variants={{
