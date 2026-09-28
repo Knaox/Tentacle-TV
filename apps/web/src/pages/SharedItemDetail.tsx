@@ -1,127 +1,101 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useSharedItem, useJellyfinClient } from "@tentacle-tv/api-client";
-import { formatDuration } from "@tentacle-tv/shared";
+import { motion } from "framer-motion";
+import { useSharedItem, useSharedListView, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { DetailHero } from "../components/detail/DetailHero";
+import { DetailPoster } from "../components/detail/DetailPoster";
+import { DetailTitle } from "../components/detail/DetailTitle";
+import { DetailMetadata } from "../components/detail/DetailMetadata";
+import { DetailOverview } from "../components/detail/DetailOverview";
+import { DetailFacts } from "../components/detail/DetailFacts";
+import { DetailPlaceholder } from "../components/detail/DetailPlaceholder";
+import { ExtrasRow } from "../components/detail/ExtrasRow";
 import { CastRow } from "../components/CastRow";
-import { TrailerModal } from "../components/detail/TrailerModal";
-import { parseYouTubeId } from "../components/detail/youtube";
+import { SharedItemActions } from "../components/share/SharedItemActions";
+import { ShareShell } from "../components/share/ShareShell";
+import { ShareError } from "../components/share/ShareStates";
+import { useShareVisitor } from "../components/share/useShareVisitor";
+import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { useItemRemoteTrailers } from "../hooks/useItemRemoteTrailers";
-import { StarIcon } from "../components/icons/HeroIcons";
-import { RichOverview } from "../lib/overviewHtml";
+import { textCascadeDelayed } from "../theme/motion";
 
 /** Item de repli stable pendant le chargement (les hooks doivent rester appelés). */
 const EMPTY_ITEM = {} as MediaItem;
 
 /**
- * Fiche détail PUBLIQUE d'un média de la liste partagée (/share/:token/:itemId).
- * Résumé + bandes-annonces uniquement — pas de saisons, pas de lecture du
- * contenu (réservée aux comptes connectés via la vraie fiche /media/:id).
+ * Fiche PUBLIQUE d'un titre partagé (/share/:token/:itemId), au dessin de la
+ * vraie fiche : bannière, bloc titre (surtitre, logo), méta, synopsis, puis
+ * bandes-annonces, « Casting et équipe » en lecture seule et « Informations ».
+ *
+ * Rien qui exige une session : ni lecture, ni favoris, ni liens vers la
+ * recherche ou les filmographies. Le seul geste principal mène à la connexion
+ * (ou, connecté, à la vraie fiche). Le retour ramène à la liste partagée — un
+ * visiteur arrivé par le lien n'a pas d'historique dans l'app.
  */
 export function SharedItemDetail() {
-  const { token, itemId } = useParams<{ token: string; itemId: string }>();
-  const { t } = useTranslation("common");
+  const { token = "", itemId = "" } = useParams<{ token: string; itemId: string }>();
+  const { t } = useTranslation("share");
+  const navigate = useNavigate();
   const client = useJellyfinClient();
-  const { data: item, isLoading, isError } = useSharedItem(token, itemId);
-  // Extras triés selon la langue d'interface (= préférence utilisateur si
-  // connecté) — même pipeline que les extras standard (Jellyfin + TMDB).
+  const { data: item, isLoading, isError, isFetching, refetch } = useSharedItem(token, itemId);
+  // Le nom de l'auteur : la liste est en cache quand on vient d'elle.
+  const { data: list } = useSharedListView(token);
+  const visitor = useShareVisitor(`/share/${token}/${itemId}`);
+  // Extras triés selon la langue d'interface — même pipeline que la fiche
+  // (Jellyfin + TMDB).
   const remoteTrailers = useItemRemoteTrailers(item ?? EMPTY_ITEM);
-  const [trailerOpen, setTrailerOpen] = useState(false);
-  const [trailerIndex, setTrailerIndex] = useState(0);
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-surface-0">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-line-strong border-t-content-primary" />
-      </div>
-    );
-  }
+  if (isLoading) return <DetailPlaceholder failed={false} retrying={false} onRetry={() => undefined} />;
 
   if (isError || !item) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-surface-0 px-4 text-center">
-        <p className="text-lg font-semibold text-content-primary">{t("shareLinkNotFound")}</p>
-        <Link to={token ? `/share/${token}` : "/"} className="mt-3 text-sm font-medium text-[var(--brand-light)] hover:underline">
-          {t("backHome", "Retour")}
-        </Link>
-      </div>
+      <ShareShell authed={visitor.authed}>
+        <ShareError
+          onRetry={() => void refetch()}
+          retrying={isFetching}
+          exitTo={`/share/${token}`}
+          exitLabel={t("backToList")}
+        />
+      </ShareShell>
     );
   }
 
-  const backdrop = client.getImageUrl(item.ParentBackdropItemId ?? item.Id, "Backdrop", { width: 1920, quality: 85 });
-  const poster = client.getImageUrl(item.Id, "Primary", { height: 500, quality: 90 });
-  const trailers = remoteTrailers.filter((tr) => parseYouTubeId(tr.Url));
-  const runtime = formatDuration(item.RunTimeTicks);
+  const backdropId = resolveBackdropId(item);
+  const backdropUrl = backdropId ? client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 85 }) : null;
+  const streams = item.MediaSources?.[0]?.MediaStreams ?? [];
 
   return (
     <div className="min-h-dvh bg-surface-0">
-      <DetailHero backdropUrl={backdrop} />
+      <DetailHero
+        backdropUrl={backdropUrl}
+        item={item}
+        onBack={() => navigate(`/share/${token}`)}
+        backLabel={t("backToList")}
+      />
 
-      <div className="relative z-10 -mt-40 px-4 pb-16 md:px-12">
-        <div className="flex gap-4 md:gap-8">
-          {poster && (
-            <img src={poster} alt={item.Name} className="w-28 flex-shrink-0 rounded-md shadow-2xl ring-1 ring-line-subtle md:w-48" draggable={false} />
-          )}
-          <div className="flex-1 pt-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-content-quaternary">{t("readOnlyList")}</p>
-            <h1 className="mt-1 text-2xl font-bold text-content-primary line-clamp-2 md:text-4xl">{item.Name}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-content-secondary">
-              {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
-              {item.CommunityRating != null && (
-                <span className="flex items-center gap-1 font-medium">
-                  <span aria-hidden className="text-[var(--brand-accent)]"><StarIcon /></span>
-                  {item.CommunityRating.toFixed(1)}
-                </span>
-              )}
-              {runtime && <span className="text-content-tertiary">{runtime}</span>}
-              {item.Genres?.slice(0, 3).map((g) => <span key={g} className="text-content-tertiary">· {g}</span>)}
-            </div>
+      <motion.div className="relative z-10 -mt-48 px-4 md:px-12" initial="hidden" animate="show" variants={textCascadeDelayed}>
+        <div className="flex flex-col gap-4 md:flex-row md:gap-8">
+          <DetailPoster item={item} />
+          <div className="min-w-0 flex-1 pt-4">
+            <DetailTitle item={item} />
+            <DetailMetadata item={item} streams={streams} linkGenres={false} />
+            <DetailOverview item={item} />
+            <SharedItemActions
+              itemId={item.Id}
+              authed={visitor.authed}
+              loginPath={visitor.loginPath}
+              ownerUsername={list?.ownerUsername}
+            />
           </div>
         </div>
+      </motion.div>
 
-        {item.Overview && (
-          <p className="mt-6 max-w-3xl text-base leading-relaxed text-content-secondary"><RichOverview text={item.Overview} /></p>
-        )}
-
-        {trailers.length > 0 && (
-          <section className="mt-8">
-            <h2 className="mb-3 text-xl font-semibold text-content-primary">{t("extras")}</h2>
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {trailers.map((tr, i) => {
-                const id = parseYouTubeId(tr.Url);
-                return (
-                  <button
-                    key={tr.Url}
-                    type="button"
-                    onClick={() => { setTrailerIndex(i); setTrailerOpen(true); }}
-                    className="w-[200px] shrink-0 text-left transition-transform hover:scale-[1.02]"
-                  >
-                    <div className="relative aspect-video overflow-hidden rounded-lg bg-tentacle-surface ring-1 ring-line-subtle">
-                      <img src={`https://img.youtube.com/vi/${id}/hqdefault.jpg`} alt={tr.Name ?? ""} className="h-full w-full object-cover" loading="lazy" />
-                      {/* Bouton lecture posé SUR la vignette : reste blanc/noir dans
-                          les deux thèmes (cf. règle « posé sur média »). */}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white">▶</div>
-                      </div>
-                    </div>
-                    <p className="mt-1.5 line-clamp-1 text-sm font-medium text-content-primary">{tr.Name ?? t("trailer")}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {item.People && item.People.length > 0 && (
-          <div className="mt-8">
-            <CastRow people={item.People} studios={item.Studios} readOnly />
-          </div>
-        )}
+      <div className="mt-12 space-y-12 pb-16">
+        {remoteTrailers.length > 0 && <ExtrasRow remoteTrailers={remoteTrailers} />}
+        {item.People && item.People.length > 0 && <CastRow people={item.People} readOnly />}
+        <DetailFacts item={item} readOnly />
       </div>
-
-      <TrailerModal open={trailerOpen} onClose={() => setTrailerOpen(false)} trailers={trailers} initialIndex={trailerIndex} />
     </div>
   );
 }

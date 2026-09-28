@@ -9,6 +9,7 @@ const NAMESPACES = [
   "adminPlugins", "adminInvites", "adminServices", "adminMetadata", "media", "errors", "profile", "disclaimer",
   "watchTogether", "downloads", "easterEggs", "reco", "whatsNew", "offline", "sessions", "search",
   "cards", "library", "watchlist", "favorites", "swipe",
+  "share",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {

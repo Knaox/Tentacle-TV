@@ -7,6 +7,7 @@ import { AuthLayout } from "../components/auth/AuthLayout";
 import { AuthField, PasswordField } from "../components/auth/AuthField";
 import { AuthButton } from "../components/auth/AuthButton";
 import { AuthAlert } from "../components/auth/AuthAlert";
+import { loginPathKeepingRedirect } from "../lib/authRedirect";
 
 const BACKEND_URL = backendUrl;
 
@@ -21,6 +22,8 @@ export function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation("auth");
+  // Venu d'un partage : la connexion qui suit y ramène.
+  const loginPath = loginPathKeepingRedirect(searchParams);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +39,7 @@ export function Register() {
         const data = await res.json();
         throw new Error(data.message || t("registrationFailed"));
       }
-      navigate("/login");
+      navigate(loginPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("registrationFailed"));
     } finally {
@@ -57,7 +60,7 @@ export function Register() {
         <p className="text-sm text-content-tertiary">
           {t("alreadyHaveAccount")}{" "}
           <Link
-            to="/login"
+            to={loginPath}
             className="rounded font-semibold text-[var(--brand-light)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
           >
             {t("signIn")}

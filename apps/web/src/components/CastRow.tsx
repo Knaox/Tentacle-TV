@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useLikedPeople,
@@ -13,11 +13,10 @@ import { PersonCreditCard } from "./person/PersonCreditCard";
 
 interface CastRowProps {
   people: CastPerson[];
-  /** Studios à nommer sous la rangée — la page partagée, qui n'a pas de bloc « Informations ». */
-  studios?: Array<{ Name: string; Id: string }>;
   /**
    * Page publique (liste partagée) : ni lien vers la filmographie ni « j'aime »
-   * — le visiteur n'a pas de session, les deux mèneraient à la connexion.
+   * — le visiteur n'a pas de session, les deux mèneraient à la connexion. Les
+   * personnes aimées ne sont alors même pas demandées au serveur.
    */
   readOnly?: boolean;
 }
@@ -28,12 +27,15 @@ interface CastRowProps {
  * Chaque carte ouvre la filmographie de la personne (`/person/:id`).
  *
  * Les studios ne sont plus ici : ils vivent dans le bloc « Informations » de
- * la fiche, avec le reste de ce qui n'est pas une personne.
+ * la fiche, avec le reste de ce qui n'est pas une personne — page partagée
+ * comprise.
  */
-export function CastRow({ people, studios, readOnly = false }: CastRowProps) {
-  const { t } = useTranslation("media");
-  const { crew, actors } = useMemo(() => castCredits(people), [people]);
+export function CastRow({ people, readOnly = false }: CastRowProps) {
+  return readOnly ? <CastRowView people={people} readOnly /> : <LikableCastRow people={people} />;
+}
 
+/** Le casting de la vraie fiche : un cœur « j'aime » sur chaque acteur. */
+function LikableCastRow({ people }: { people: CastPerson[] }) {
   // Personnes aimées (rangées « Avec {acteur} ») : le casting Jellyfin ne
   // connaît que le NOM — la correspondance se fait dessus, et le serveur
   // résout l'id TMDB au like.
@@ -48,6 +50,31 @@ export function CastRow({ people, studios, readOnly = false }: CastRowProps) {
     if (likedId != null) unlikePerson.mutate(likedId);
     else likePerson.mutate({ name: person.name });
   };
+
+  return (
+    <CastRowView
+      people={people}
+      actorOverlay={(credit) => (
+        <div className="absolute right-1.5 top-1.5 h-7 w-7">
+          <ActorLikeButton
+            name={credit.name}
+            liked={likedByName.has(credit.name.toLowerCase())}
+            pending={likePerson.isPending || unlikePerson.isPending}
+            onToggle={() => toggleLike(credit)}
+          />
+        </div>
+      )}
+    />
+  );
+}
+
+function CastRowView({ people, readOnly = false, actorOverlay }: {
+  people: CastPerson[];
+  readOnly?: boolean;
+  actorOverlay?: (credit: CastCredit) => ReactNode;
+}) {
+  const { t } = useTranslation("media");
+  const { crew, actors } = useMemo(() => castCredits(people), [people]);
 
   if (!actors.length && !crew.length) return null;
 
@@ -67,30 +94,10 @@ export function CastRow({ people, studios, readOnly = false }: CastRowProps) {
         )}
         <ul className="flex gap-4">
           {actors.map((credit) => (
-            <PersonCreditCard
-              key={credit.id}
-              credit={credit}
-              readOnly={readOnly}
-              overlay={readOnly ? undefined : (
-                <div className="absolute right-1.5 top-1.5 h-7 w-7">
-                  <ActorLikeButton
-                    name={credit.name}
-                    liked={likedByName.has(credit.name.toLowerCase())}
-                    pending={likePerson.isPending || unlikePerson.isPending}
-                    onToggle={() => toggleLike(credit)}
-                  />
-                </div>
-              )}
-            />
+            <PersonCreditCard key={credit.id} credit={credit} readOnly={readOnly} overlay={actorOverlay?.(credit)} />
           ))}
         </ul>
       </HorizontalScrollRow>
-      {studios && studios.length > 0 && (
-        <p className="row-gutter mt-3 text-sm text-content-tertiary">
-          <span className="text-content-quaternary">{t("media:studioLabel")} · </span>
-          {studios.map((s) => s.Name).join(", ")}
-        </p>
-      )}
     </section>
   );
 }
