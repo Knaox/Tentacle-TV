@@ -1,24 +1,24 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GlassCard } from "@tentacle-tv/ui";
+import { Globe } from "lucide-react";
 import { verifyServer } from "@tentacle-tv/shared";
-import { TentacleLogo } from "../components/ui/TentacleLogo";
 import { recordFreshInstall } from "../whatsNew/freshInstall";
+import { AuthLayout } from "../components/auth/AuthLayout";
+import { AuthField } from "../components/auth/AuthField";
+import { AuthButton } from "../components/auth/AuthButton";
+import { AuthAlert } from "../components/auth/AuthAlert";
 
 interface AppConnectProps {
   onConnected: () => void;
 }
 
 /**
- * Simple "connect to server" screen for desktop/app mode — aligned on the
- * MASTER design system (R11) :
- *  - CTA primary : pill blanc + halo violet inline
- *  - Inputs : h-11 + focus ring var(--brand) 2px
- *  - Lang toggle : violet ghost when active (no solid purple)
- *  - Title : Inter ExtraBold tracking-tight (no gradient text)
+ * Le choix du serveur, dans la coquille de bureau (première installation ou
+ * « Changer de serveur »). Même cadre que la connexion : c'est la première
+ * page que voit l'utilisateur, elle porte la marque.
  */
 export function AppConnect({ onConnected }: AppConnectProps) {
-  const { t, i18n } = useTranslation("auth");
+  const { t } = useTranslation("auth");
   const [url, setUrl] = useState("");
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState("");
@@ -48,85 +48,37 @@ export function AppConnect({ onConnected }: AppConnectProps) {
     }
   };
 
-  const switchLang = (lng: string) => {
-    i18n.changeLanguage(lng);
-    localStorage.setItem("tentacle_language", lng);
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (url && !testing) void handleConnect();
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
-      {/* Ambient violet orb top */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-80"
-        style={{
-          background: "radial-gradient(ellipse at 50% 0%, rgba(var(--brand-rgb), 0.18) 0%, rgba(var(--brand-rgb), 0.04) 30%, transparent 70%)",
-        }}
-      />
+    <AuthLayout title={t("welcomeToTentacle")} subtitle={t("enterServerUrl")}>
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        <AuthField
+          id="server-url"
+          type="url"
+          inputMode="url"
+          label={t("serverAddress")}
+          icon={Globe}
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder={t("serverUrlPlaceholder")}
+          hint={t("serverUrlHint")}
+          autoComplete="url"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoFocus
+        />
 
-      {/* Language toggle — violet ghost when active */}
-      <div className="absolute right-4 top-4 flex overflow-hidden rounded-full border border-line-subtle bg-fill-faint backdrop-blur">
-        {["fr", "en"].map((lng) => {
-          const active = i18n.language === lng;
-          return (
-            <button
-              key={lng}
-              onClick={() => switchLang(lng)}
-              className={`px-3.5 py-1.5 text-xs font-semibold tracking-wide transition ${
-                active
-                  ? "bg-[var(--brand-soft)] text-[var(--brand-light)]"
-                  : "text-content-tertiary hover:text-content-secondary"
-              }`}
-            >
-              {lng.toUpperCase()}
-            </button>
-          );
-        })}
-      </div>
+        {error && <AuthAlert tone="error">{error}</AuthAlert>}
 
-      <div className="relative z-10 w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <TentacleLogo size="lg" variant="glow" />
-          <h1 className="mt-5 mb-2 text-3xl font-extrabold tracking-tight text-content-primary">
-            {t("welcomeToTentacle")}
-          </h1>
-          <p className="text-sm text-content-tertiary">
-            {t("enterServerUrl")}
-          </p>
-        </div>
-
-        <GlassCard className="p-6">
-          <div className="mb-4">
-            <label htmlFor="server-url" className="mb-1 block text-xs font-medium text-content-tertiary">
-              {t("serverAddress")}
-            </label>
-            <input
-              id="server-url"
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={t("serverUrlPlaceholder")}
-              className="h-11 w-full rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary outline-none transition placeholder:text-content-quaternary focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)]"
-              onKeyDown={(e) => e.key === "Enter" && url && handleConnect()}
-              autoFocus
-            />
-            <p className="mt-1.5 text-xs text-content-quaternary">
-              {t("serverUrlHint")}
-            </p>
-          </div>
-
-          {error && <p className="mb-3 text-sm text-[var(--status-error-fg)]" role="alert">{error}</p>}
-
-          <button
-            onClick={handleConnect}
-            disabled={testing || !url}
-            className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-cta-primary-bg text-sm font-bold text-cta-primary-fg transition-all hover:-translate-y-0.5 hover:bg-cta-primary-bg-hover active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-           
-          >
-            {testing ? t("connecting") : t("signIn")}
-          </button>
-        </GlassCard>
-      </div>
-    </div>
+        <AuthButton type="submit" loading={testing} loadingLabel={t("connecting")} disabled={!url}>
+          {t("connectServer")}
+        </AuthButton>
+      </form>
+    </AuthLayout>
   );
 }

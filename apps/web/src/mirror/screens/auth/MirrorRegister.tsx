@@ -2,18 +2,19 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getBackendBase } from "../../../lib/backendBase";
-import { PrimaryCta } from "../misc/shared/PrimaryCta";
+import { KeyRound, Lock, User } from "lucide-react";
+import { AuthField, PasswordField } from "../../../components/auth/AuthField";
+import { AuthButton } from "../../../components/auth/AuthButton";
+import { AuthAlert } from "../../../components/auth/AuthAlert";
 import { AuthScreen } from "./AuthScreen";
-import {
-  AUTH_ERROR, AUTH_INPUT_CLASS, AUTH_INPUT_STYLE, AUTH_LINK, AUTH_LINK_ROW, AUTH_SUBTITLE, AUTH_TITLE,
-} from "./authStyles";
+import { AuthLinkRow } from "./AuthLinkRow";
 
 /**
- * `RegisterScreen` de l'app (`/register`), plein écran hors coquille : logo 56
- * (marge 16), carte de 400 ; clé d'invitation en chasse fixe (1,5), identifiant,
- * mot de passe, confirmation (filet rouge si elle diffère, message 12) ; CTA à
- * 24, 45 % tant que le formulaire est incomplet. Logique de `pages/Register.tsx`
- * (`?invite=` prérempli, `/api/auth/register`, retour à `/login`).
+ * `RegisterScreen` de l'app (`/register`), plein écran hors coquille : logo 56,
+ * retour en haut ; clé d'invitation en chasse fixe avec son aide, identifiant,
+ * mot de passe, confirmation (écart signalé au champ une fois la saisie finie).
+ * Logique de `pages/Register.tsx` (`?invite=` prérempli, `/api/auth/register`,
+ * retour à `/login`).
  */
 export function MirrorRegister() {
   const { t } = useTranslation("auth");
@@ -25,6 +26,7 @@ export function MirrorRegister() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmTouched, setConfirmTouched] = useState(false);
 
   const mismatch = confirmPassword.length > 0 && password !== confirmPassword;
   const canSubmit = !!inviteKey && !!username && !!password && !!confirmPassword && !mismatch && !loading;
@@ -52,76 +54,71 @@ export function MirrorRegister() {
     }
   };
 
-  return (
-    <AuthScreen logoSize={56} logoGap={16}>
-      <h1 style={AUTH_TITLE}>{t("joinTentacle")}</h1>
-      <p style={AUTH_SUBTITLE}>{t("invitationOnly")}</p>
+  const showMismatch = mismatch && (confirmTouched || confirmPassword.length >= password.length);
+  const backToLogin = () => navigate("/login", { replace: true });
 
-      <form onSubmit={submit}>
-        <input
+  return (
+    <AuthScreen
+      title={t("joinTentacle")}
+      subtitle={t("invitationOnly")}
+      onBack={backToLogin}
+      logoSize={56}
+      footer={<AuthLinkRow prefix={t("alreadyHaveAccount")} label={t("signIn")} onClick={backToLogin} />}
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <AuthField
+          id="m-reg-invite"
+          label={t("inviteKey")}
+          icon={KeyRound}
+          hint={t("inviteKeyHint")}
           value={inviteKey}
           onChange={(e) => setInviteKey(e.target.value)}
-          placeholder={t("inviteKey")}
-          aria-label={t("inviteKey")}
           autoCapitalize="characters"
           autoCorrect="off"
           autoComplete="off"
           spellCheck={false}
-          className={`${AUTH_INPUT_CLASS} font-mono`}
-          style={{ ...AUTH_INPUT_STYLE, letterSpacing: 1.5 }}
+          enterKeyHint="next"
+          className="font-mono tracking-wider"
         />
-        <input
+        <AuthField
+          id="m-reg-username"
+          label={t("username")}
+          icon={User}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder={t("username")}
-          aria-label={t("username")}
           autoCapitalize="none"
           autoCorrect="off"
+          spellCheck={false}
           autoComplete="username"
-          className={AUTH_INPUT_CLASS}
-          style={{ ...AUTH_INPUT_STYLE, marginTop: 12 }}
+          enterKeyHint="next"
         />
-        <input
-          type="password"
+        <PasswordField
+          id="m-reg-password"
+          label={t("password")}
+          icon={Lock}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder={t("password")}
-          aria-label={t("password")}
           autoComplete="new-password"
-          className={AUTH_INPUT_CLASS}
-          style={{ ...AUTH_INPUT_STYLE, marginTop: 12 }}
+          enterKeyHint="next"
         />
-        <input
-          type="password"
+        <PasswordField
+          id="m-reg-confirm"
+          label={t("confirmPassword")}
+          icon={Lock}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder={t("confirmPassword")}
-          aria-label={t("confirmPassword")}
-          aria-invalid={mismatch}
+          onBlur={() => setConfirmTouched(true)}
+          error={showMismatch ? t("passwordMismatch") : undefined}
           autoComplete="new-password"
-          className={AUTH_INPUT_CLASS}
-          style={{
-            ...AUTH_INPUT_STYLE,
-            marginTop: 12,
-            ...(mismatch ? { borderColor: "color-mix(in srgb, var(--status-error) 50%, transparent)" } : null),
-          }}
+          enterKeyHint="go"
         />
 
-        {mismatch && (
-          <p role="alert" style={{ ...AUTH_ERROR, fontSize: 12, marginTop: 8 }}>{t("passwordMismatch")}</p>
-        )}
-        {error && <p role="alert" style={AUTH_ERROR}>{error}</p>}
+        {error && <AuthAlert tone="error">{error}</AuthAlert>}
 
-        <PrimaryCta type="submit" disabled={!canSubmit} loading={loading} style={{ marginTop: 24 }}>
+        <AuthButton type="submit" loading={loading} loadingLabel={t("creatingAccount")} disabled={!canSubmit && !loading}>
           {t("createAccount")}
-        </PrimaryCta>
+        </AuthButton>
       </form>
-
-      <button type="button" onClick={() => navigate("/login", { replace: true })} className={AUTH_LINK_ROW} style={{ marginTop: 16, minHeight: 44 }}>
-        <span className="text-content-tertiary" style={{ fontSize: 13 }}>
-          {t("alreadyHaveAccount")} <span style={AUTH_LINK}>{t("signIn")}</span>
-        </span>
-      </button>
     </AuthScreen>
   );
 }

@@ -48,4 +48,16 @@ export default {
   forgotPasswordSuccess: "Votre demande a été transmise à l'administrateur.",
   sendRequest: "Envoyer la demande",
   noAccount: "Pas encore de compte ?",
+  // Refonte des écrans d'avant connexion (2026-09) — clés nouvelles, aucune renommée.
+  signInTitle: "Bon retour",
+  brandTagline: "Tous vos films et séries, sur tous vos écrans.",
+  showPassword: "Afficher le mot de passe",
+  hidePassword: "Masquer le mot de passe",
+  language: "Langue",
+  backToSignIn: "Retour à la connexion",
+  inviteKeyHint: "Fournie par l'administrateur de votre serveur.",
+  requestFailed: "La demande n'a pas pu être envoyée. Vérifiez votre connexion et réessayez.",
+  connectServer: "Continuer",
+  serverLabel: "Serveur",
+  forgotPasswordSentTitle: "Demande envoyée",
 } as const;

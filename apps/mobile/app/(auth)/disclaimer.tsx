@@ -24,22 +24,21 @@ const LANGS = [
 ] as const;
 
 export default function DisclaimerScreen() {
-  const { t } = useTranslation("disclaimer");
+  // `i18n.language` (et non le stockage) décide de la pastille active : au
+  // premier lancement rien n'est stocké, l'interface suit la langue de
+  // l'appareil — la pastille « EN » s'allumait sur un texte français.
+  const { t, i18n: i18nState } = useTranslation("disclaimer");
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { storage } = useTentacleConfig();
   const [checked, setChecked] = useState(false);
-  const [lang, setLang] = useState(() => {
-    const saved = storage.getItem("tentacle_language");
-    return saved?.startsWith("fr") ? "fr" : "en";
-  });
+  const lang = i18nState.language?.startsWith("fr") ? "fr" : "en";
 
   const switchLang = useCallback((code: string) => {
     i18n.changeLanguage(code);
     storage.setItem("tentacle_language", code);
-    setLang(code);
   }, [storage]);
 
   const handleAccept = useCallback(() => {
