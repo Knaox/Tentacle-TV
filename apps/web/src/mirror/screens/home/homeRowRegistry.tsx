@@ -21,8 +21,6 @@ export type SeeAllRoute = "/watchlist" | "/favorites" | "/recommendations";
 
 export interface HomeRowActions {
   renderCard: (item: MediaItem) => ReactNode;
-  onItemPress: (jellyfinId: string) => void;
-  onItemLongPress: (item: MediaItem) => void;
   onSeeAll: (route: SeeAllRoute) => void;
   canOpenReco: (item: RecoRowItem) => boolean;
   onRecoPress: (item: RecoRowItem) => void;
@@ -62,12 +60,7 @@ export const HomeRow = memo(function HomeRow({ rowKey, index, data, actions }: {
   if (rowKey === "watchlist") {
     return (
       <FadeIn delay={homeRowFadeDelay(index)}>
-        <MyListRow
-          items={data.watchlist}
-          onSeeAll={() => actions.onSeeAll("/watchlist")}
-          onItemPress={actions.onItemPress}
-          onItemLongPress={actions.onItemLongPress}
-        />
+        <MyListRow items={data.watchlist} onSeeAll={() => actions.onSeeAll("/watchlist")} renderCard={actions.renderCard} />
       </FadeIn>
     );
   }

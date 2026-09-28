@@ -99,14 +99,12 @@ export function MirrorHome() {
   const rowActions = useMemo<HomeRowActions>(
     () => ({
       renderCard,
-      onItemPress: (id) => navigate(`/media/${id}`),
-      onItemLongPress: openMedia,
       onSeeAll: (route) => navigate(route),
       canOpenReco: recoNav.canOpen,
       onRecoPress: recoNav.open,
       onRecoLongPress: openReco,
     }),
-    [renderCard, navigate, openMedia, openReco, recoNav.canOpen, recoNav.open],
+    [renderCard, navigate, openReco, recoNav.canOpen, recoNav.open],
   );
 
   // Sans bibliothèques NI mise en avant, rien à montrer : on le DIT.
