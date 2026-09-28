@@ -89,4 +89,16 @@ export default {
   imageKindStill: "Episode still",
   detailBrowseCollection_one: "See the title",
   detailBrowseCollection_other: "See all {{count}} titles",
+  // Media page — a movie's saga (TMDB collection)
+  sagaFallbackTitle: "From the same saga",
+  sagaFilms_one: "{{count}} film",
+  sagaFilms_other: "{{count}} films",
+  sagaInLibrary_one: "{{count}} in the library",
+  sagaInLibrary_other: "{{count}} in the library",
+  sagaWatched_one: "{{count}} watched",
+  sagaWatched_other: "{{count}} watched",
+  sagaPart: "Film {{position}}",
+  sagaCurrent: "This title",
+  sagaResume: "Resume",
+  sagaUpNext: "Up next",
 } as const;

@@ -89,4 +89,16 @@ export default {
   imageKindStill: "Image de l'épisode",
   detailBrowseCollection_one: "Voir le titre",
   detailBrowseCollection_other: "Voir les {{count}} titres",
+  // Fiche média — la saga (collection TMDB) d'un film
+  sagaFallbackTitle: "De la même saga",
+  sagaFilms_one: "{{count}} film",
+  sagaFilms_other: "{{count}} films",
+  sagaInLibrary_one: "{{count}} dans la bibliothèque",
+  sagaInLibrary_other: "{{count}} dans la bibliothèque",
+  sagaWatched_one: "{{count}} vu",
+  sagaWatched_other: "{{count}} vus",
+  sagaPart: "Volet {{position}}",
+  sagaCurrent: "Cette fiche",
+  sagaResume: "Reprendre",
+  sagaUpNext: "À suivre",
 } as const;
