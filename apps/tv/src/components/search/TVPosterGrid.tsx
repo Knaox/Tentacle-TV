@@ -115,15 +115,18 @@ const GridCell = memo(function GridCell({ item, index, cardW, preferred, onEntry
   // Mémoire de focus du rail, comme les cartes de rangée (`FocusableRow`) : le
   // rail reste visible sur une étagère, et sa sortie doit rendre la carte
   // qu'on avait quittée. Effacée à la mort de la cellule tant qu'elle la
-  // désigne — une vue détruite ne se refocalise pas.
+  // désigne — une vue détruite ne se refocalise pas. La vue est RELEVÉE au
+  // montage : au démontage, React a déjà remis `cellRef` à null avant ce
+  // nettoyage, et la comparaison échouait à coup sûr (même défaut que
+  // `RowCell`, corrigé par e7380e58).
   const cellRef = useRef<View | null>(null);
   const { lastContentNodeRef } = useTVNavActions();
-  useEffect(
-    () => () => {
-      if (lastContentNodeRef.current === cellRef.current) lastContentNodeRef.current = null;
-    },
-    [lastContentNodeRef],
-  );
+  useEffect(() => {
+    const node = cellRef.current;
+    return () => {
+      if (lastContentNodeRef.current === node) lastContentNodeRef.current = null;
+    };
+  }, [lastContentNodeRef]);
   const setCell = useCallback((node: View | null) => {
     cellRef.current = node;
     onEntry?.(node);
