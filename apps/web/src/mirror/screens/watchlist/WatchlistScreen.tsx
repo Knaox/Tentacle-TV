@@ -39,7 +39,7 @@ const STAGE_EMPTY = { new: "stageEmptyNew", inProgress: "stageEmptyInProgress", 
  * grille / liste, filtres de collection, puis la collection. La grille reprend
  * `SelectableGridCard` telle quelle ; la liste montre Lire et Retirer.
  *
- * Mes favoris garde `CollectionScreen` : rien ici ne le touche.
+ * Mes favoris a son propre écran (`screens/favorites`).
  */
 export function MirrorWatchlistScreen() {
   const { t } = useTranslation("common");

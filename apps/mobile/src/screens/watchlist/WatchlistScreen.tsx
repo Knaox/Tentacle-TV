@@ -32,7 +32,7 @@ const STAGE_EMPTY = { new: "stageEmptyNew", inProgress: "stageEmptyInProgress", 
  * défilante, et la collection — en grille (`SelectableGridCard`, inchangée) ou
  * en lignes avec Lire et Retirer. Retrait annulable, état vide à deux chemins.
  *
- * Mes favoris garde `CollectionScreen` : rien ici ne le touche.
+ * Mes favoris a son propre écran (`screens/favorites`).
  */
 export function WatchlistScreen() {
   const { t } = useTranslation("common");
