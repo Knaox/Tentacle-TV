@@ -1,4 +1,5 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
+import { audioLanguageOf } from "./audioLanguage";
 import type { Sample, RawSession } from "./types";
 
 /**
@@ -74,6 +75,7 @@ export function normalize(raw: RawSession[], nowMs: number): Sample[] {
       paused: s.PlayState?.IsPaused === true,
       active: s.IsActive !== false,
       positionTicks: s.PlayState?.PositionTicks ?? 0,
+      audioLang: audioLanguageOf(item.MediaStreams, s.PlayState?.AudioStreamIndex),
       // `LastPlaybackCheckIn` d'abord : il ne bouge que pendant une lecture.
       // `LastActivityDate` bouge à la moindre requête du client, y compris
       // quand il ne joue rien — il ne sert donc que de repli.

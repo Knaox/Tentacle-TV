@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS `watch_segments` (
   `deviceName` varchar(191) NULL,
   `seconds` int NOT NULL DEFAULT 0,
   `runtimeSeconds` int NULL,
+  `audioLang` varchar(12) NULL,
   `startedAt` datetime(3) NOT NULL,
   `lastSeenAt` datetime(3) NOT NULL,
   `closedAt` datetime(3) NULL,
@@ -166,6 +167,10 @@ CREATE TABLE IF NOT EXISTS `watch_segments` (
   KEY `watch_segments_sessionKey_itemId_closedAt_idx` (`sessionKey`, `itemId`, `closedAt`),
   KEY `watch_segments_closedAt_idx` (`closedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- La langue de la piste audio LUE, relevée par le collecteur (ce que l'on
+-- entend, pas la langue originale du titre). Voir schema.prisma > WatchSegment.
+ALTER TABLE `watch_segments` ADD COLUMN IF NOT EXISTS `audioLang` varchar(12) NULL;
 
 -- Bail d'exclusivité du collecteur : une seule instance mesure à la fois, sinon
 -- deux backends sur la même base compteraient chacun le même visionnage.

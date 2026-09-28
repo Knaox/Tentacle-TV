@@ -343,6 +343,10 @@ model WatchSegment {
   deviceName     String?   @db.VarChar(191)
   seconds        Int       @default(0)
   runtimeSeconds Int?
+  /// Langue de la piste audio lue (ISO 639-1), relevée dans `/Sessions` —
+  /// ce que le spectateur ENTEND. NULL : segment d'avant le relevé, ou piste
+  /// inconnue (plusieurs pistes et aucun index rapporté).
+  audioLang      String?   @db.VarChar(12)
   startedAt      DateTime
   lastSeenAt     DateTime
   closedAt       DateTime?

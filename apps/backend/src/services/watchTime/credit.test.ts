@@ -26,6 +26,7 @@ function sample(over: Partial<Sample> = {}): Sample {
     paused: false,
     active: true,
     positionTicks: 0,
+    audioLang: null,
     checkInMs: null,
     ...over,
   };

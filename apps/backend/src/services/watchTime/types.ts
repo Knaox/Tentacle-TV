@@ -7,6 +7,8 @@
  *  • `SessionState`   ce qu'on garde en mémoire d'un relevé à l'autre.
  */
 
+import type { SessionStream } from "./audioLanguage";
+
 /** Sous-ensemble de la réponse Jellyfin réellement lu. */
 export interface RawSession {
   Id?: string;
@@ -20,6 +22,8 @@ export interface RawSession {
   PlayState?: {
     IsPaused?: boolean;
     PositionTicks?: number;
+    /** Index (dans `MediaStreams`) de la piste audio que le client dit jouer. */
+    AudioStreamIndex?: number;
   };
   NowPlayingItem?: {
     Id?: string;
@@ -28,6 +32,8 @@ export interface RawSession {
     RunTimeTicks?: number;
     SeriesId?: string;
     SeriesName?: string;
+    /** Les flux de la source jouée — Jellyfin les joint à l'élément en lecture. */
+    MediaStreams?: SessionStream[];
   };
   /** Lu par l'analyse audio : un transcodage VIDÉO en cours chez un autre spectateur. */
   TranscodingInfo?: {
@@ -51,6 +57,11 @@ export interface Sample {
   paused: boolean;
   active: boolean;
   positionTicks: number;
+  /**
+   * Langue de la piste audio lue (ISO 639-1, « fr »), `null` quand on ne peut
+   * pas la savoir sans deviner — cf. `audioLanguage.ts`.
+   */
+  audioLang: string | null;
   /**
    * Dernier signe de vie du client, en millisecondes epoch. `null` quand la
    * valeur est absente ou aberrante (Jellyfin renvoie parfois `0001-01-01`) :

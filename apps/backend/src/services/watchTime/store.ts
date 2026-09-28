@@ -67,6 +67,7 @@ export async function adoptOrCreate(s: SessionState): Promise<void> {
         clientName: e.clientName,
         deviceName: e.deviceName,
         runtimeSeconds: e.runtimeSeconds,
+        audioLang: e.audioLang,
         seconds: 0,
         startedAt: new Date(s.startMs),
         lastSeenAt: new Date(s.clockMs),
@@ -80,6 +81,15 @@ export async function adoptOrCreate(s: SessionState): Promise<void> {
   }
 }
 
+/**
+ * La langue entendue suit la DERNIÈRE piste relevée : on passe d'ordinaire de
+ * la VO à la VF dans les premières minutes, et le segment dit alors ce qui a
+ * été écouté. Un relevé qui ne la connaît pas n'efface pas celle qu'on savait.
+ */
+function heard(s: SessionState): { audioLang?: string } {
+  return s.sample.audioLang ? { audioLang: s.sample.audioLang } : {};
+}
+
 /** Écrit les totaux. Absolu, donc rejouable sans dommage. */
 export async function writeSegments(segments: SessionState[]): Promise<void> {
   if (!hasPrisma() || segments.length === 0) return;
@@ -90,7 +100,7 @@ export async function writeSegments(segments: SessionState[]): Promise<void> {
     try {
       await prisma.watchSegment.updateMany({
         where: { id: s.segmentId },
-        data: { seconds: Math.round(s.seconds), lastSeenAt: new Date(s.clockMs) },
+        data: { seconds: Math.round(s.seconds), lastSeenAt: new Date(s.clockMs), ...heard(s) },
       });
     } catch {
       // Ignoré volontairement : le relevé suivant réécrira le même total.
@@ -116,6 +126,7 @@ export async function closeSegments(segments: SessionState[]): Promise<void> {
           seconds: Math.round(s.seconds),
           lastSeenAt: new Date(s.clockMs),
           closedAt: new Date(s.clockMs),
+          ...heard(s),
         },
       });
     } catch {
