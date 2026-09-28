@@ -246,6 +246,14 @@ Jamais une lecture directe de `UserData` dans une carte, jamais un plateau, une
 coche ou une barre recopiés : une nouvelle carte ou une nouvelle action passe
 par le modèle, et toutes les plateformes la reçoivent.
 
+Une seule copie tolérée, faute de pouvoir importer : la page de Vigie (dépôt
+Tentacle-Plugin-Seer, bundle à part dans son iframe ou sa WebView) rend le
+JUMEAU de ce survol, `src/components/ui/PosterHover.tsx`. Tout changement de
+ton, d'ordre ou de gabarit du plateau s'y reporte. Sur les cartes du cœur,
+« Demander » n'existe que si le Vigie installé déclare le contrat `titles` :
+un Vigie trop ancien les laisse sans « + », sans la moindre erreur — vérifier
+la version déployée (`data/plugins/installed.json`) avant de conclure au bug.
+
 ## Coding Standards
 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded
