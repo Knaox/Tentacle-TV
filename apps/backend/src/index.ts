@@ -65,6 +65,7 @@ import { startJellyfinWs } from "./services/jellyfinWs";
 import { startNotificationPushWorker } from "./services/notificationPushWorker";
 import { startTicketLifecycleWorker } from "./services/ticketLifecycle";
 import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
+import { backfillSwipeFavorites } from "./services/swipe/swipeFavoritesBackfill";
 import { startAnnouncedPurge } from "./services/announcedRegistry";
 import { startNotificationPurge } from "./services/notificationPurge";
 import { sweepStaleTempDirs } from "./services/audioFingerprint";
@@ -341,6 +342,8 @@ async function main() {
     startNotificationPushWorker();
     startTicketLifecycleWorker();
     startLibraryAddedNotifier();
+    // Une fois par serveur : les likes d'Affiner d'avant le cœur deviennent des cœurs.
+    void backfillSwipeFavorites();
     startAnnouncedPurge();
     startNotificationPurge();
     // Analyses audio et de fin de média : les temporaires d'une analyse
