@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getBackendBase } from "../../../lib/backendBase";
+import { loginPathKeepingRedirect } from "../../../lib/authRedirect";
 import { KeyRound, Lock, User } from "lucide-react";
 import { AuthField, PasswordField } from "../../../components/auth/AuthField";
 import { AuthButton } from "../../../components/auth/AuthButton";
@@ -21,6 +22,8 @@ export function MirrorRegister() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [inviteKey, setInviteKey] = useState(searchParams.get("invite") ?? "");
+  // Venu d'un partage : la connexion qui suit y ramène.
+  const loginPath = loginPathKeepingRedirect(searchParams);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -46,7 +49,7 @@ export function MirrorRegister() {
         const data = await res.json().catch(() => null);
         throw new Error(data?.message || t("registrationFailed"));
       }
-      navigate("/login", { replace: true });
+      navigate(loginPath, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("registrationFailed"));
     } finally {
@@ -55,7 +58,7 @@ export function MirrorRegister() {
   };
 
   const showMismatch = mismatch && (confirmTouched || confirmPassword.length >= password.length);
-  const backToLogin = () => navigate("/login", { replace: true });
+  const backToLogin = () => navigate(loginPath, { replace: true });
 
   return (
     <AuthScreen
