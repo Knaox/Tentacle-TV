@@ -9,7 +9,8 @@ import { TVCardImage } from "./TVCardImage";
 import { TVCardTrickplayImage } from "./TVCardTrickplayImage";
 import { TVCardProgressBar } from "./TVCardProgressBar";
 import { TVCardMarkerLayer } from "./TVCardMarkerLayer";
-import { TVMetaChips } from "../TVMetaChips";
+import { TV_STATUS_PILL_MAX_WIDTH } from "./TVCardStatusMarkers";
+import { TVMetaChips, hasMetaChips } from "../TVMetaChips";
 import { TV_EPISODE_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
 
 interface TVEpisodeCardProps {
@@ -79,6 +80,9 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
     ? item.RunTimeTicks * (1 - progress / 100)
     : null;
   const remainingMin = remainingTicks ? Math.round(ticksToSeconds(remainingTicks) / 60) : null;
+  // Les puces ne remplacent la note que si elles existent (un épisode de la
+  // recherche ne porte pas ses flux) : sinon la note reste, focus ou non.
+  const chipsShown = focused && hasMetaChips(item, true);
 
   return (
     <View style={{ width }}>
@@ -105,22 +109,25 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
         )}
 
         {/* La note de CET épisode — la vignette porte son nom et son numéro.
-            En haut-gauche, et seulement hors focus : les chips y prennent la
-            place, et le bas est tenu par le titre. La pastille d'états tient le
-            haut-droit, sous le temps restant quand il y en a un. */}
+            En haut-gauche, où les chips prennent sa place au focus ; le bas est
+            tenu par le titre. La pastille d'états tient le haut-droit, sous le
+            temps restant quand il y en a un. */}
         <TVCardMarkerLayer
           item={item}
           communityRating={cardRatingFor(item, "item").rating}
           scope="item"
-          hideRating={focused}
+          hideRating={chipsShown}
           ratingStyle={RATING_TOP_LEFT}
           statusStyle={remainingMin != null && remainingMin > 0 ? STATUS_BELOW_TIME : undefined}
         />
 
-        {/* Chips qualité/langues AU FOCUS (haut-gauche — le temps restant
-            occupe le haut-droit), comme le hover desktop. */}
-        {focused && (
-          <View style={{ position: "absolute", left: 8, top: 8, right: 70 }}>
+        {/* Chips qualité/langues AU FOCUS (haut-gauche), comme le hover
+            desktop. Leur bord droit s'arrête avant la PLUS LARGE occupation du
+            coin opposé — la pastille d'états pleine, que le temps restant
+            déplace dessous : même repliées sur deux lignes, elles ne la
+            croisent jamais. */}
+        {chipsShown && (
+          <View style={{ position: "absolute", left: 8, top: 8, right: CHIPS_RIGHT }}>
             <TVMetaChips item={item} compact />
           </View>
         )}
@@ -206,5 +213,7 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
 });
 
 const RATING_TOP_LEFT = { left: 8, top: 8, bottom: undefined } as const;
+/** Le retrait droit des puces : la pastille d'états pleine et son air. */
+const CHIPS_RIGHT = 8 + TV_STATUS_PILL_MAX_WIDTH + 8;
 /** Sous la pastille « N min » (haut-droit) : 8 + ~22 de haut + 10 d’air. */
 const STATUS_BELOW_TIME = { top: 40 } as const;

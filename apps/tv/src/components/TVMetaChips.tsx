@@ -3,6 +3,34 @@ import { View, Text } from "react-native";
 import { extractMediaQuality, type MediaItem } from "@tentacle-tv/shared";
 import { Colors, Fonts, brandAlpha } from "../theme/colors";
 
+interface MetaChip {
+  label: string;
+  accent?: boolean;
+}
+
+/** Les puces d'un item, dans leur ordre — vide : l'item ne porte pas ses
+ *  flux (résultat de recherche, recommandation, tuile de lot). */
+function metaChipList(item: MediaItem, compact: boolean): MetaChip[] {
+  const q = extractMediaQuality(item);
+  const chips: MetaChip[] = [];
+  if (q.resolution) chips.push({ label: q.resolution, accent: q.resolution === "4K" });
+  if (q.isDolbyVision) chips.push({ label: compact ? "DV" : "Dolby Vision" });
+  else if (q.isHDR) chips.push({ label: "HDR" });
+  if (q.isDolbyAtmos) chips.push({ label: "Atmos" });
+  else if (!compact && q.surroundLabel) chips.push({ label: q.surroundLabel });
+  for (const lang of q.audioLabels.slice(0, compact ? 2 : 3)) chips.push({ label: lang.token });
+  return chips;
+}
+
+/**
+ * Vrai quand `TVMetaChips` rendrait quelque chose. Une carte n'efface sa note
+ * au focus QUE si les puces viennent réellement à sa place : sans flux connus,
+ * elle effaçait sa note pour ne rien montrer.
+ */
+export function hasMetaChips(item: MediaItem, compact = false): boolean {
+  return metaChipList(item, compact).length > 0;
+}
+
 /**
  * Chips qualité/langues — équivalent TV des MetaChips web : tokens texte
  * monochromes discrets, seul le 4K est accentué (brand).
@@ -16,16 +44,7 @@ export const TVMetaChips = memo(function TVMetaChips({ item, compact = false, wr
    *  où un retour à la ligne pousserait le synopsis hors de la case. */
   wrap?: boolean;
 }) {
-  const q = extractMediaQuality(item);
-  const chips: Array<{ label: string; accent?: boolean }> = [];
-
-  if (q.resolution) chips.push({ label: q.resolution, accent: q.resolution === "4K" });
-  if (q.isDolbyVision) chips.push({ label: compact ? "DV" : "Dolby Vision" });
-  else if (q.isHDR) chips.push({ label: "HDR" });
-  if (q.isDolbyAtmos) chips.push({ label: "Atmos" });
-  else if (!compact && q.surroundLabel) chips.push({ label: q.surroundLabel });
-  for (const lang of q.audioLabels.slice(0, compact ? 2 : 3)) chips.push({ label: lang.token });
-
+  const chips = metaChipList(item, compact);
   if (chips.length === 0) return null;
 
   return (

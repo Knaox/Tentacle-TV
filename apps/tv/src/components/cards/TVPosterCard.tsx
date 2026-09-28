@@ -10,7 +10,7 @@ import { TVCardImage } from "./TVCardImage";
 import { TVCardProgressBar } from "./TVCardProgressBar";
 import { TVCardMarkerLayer } from "./TVCardMarkerLayer";
 import { useSeriesRatingMap } from "../../contexts/SeriesRatingContext";
-import { TVMetaChips } from "../TVMetaChips";
+import { TVMetaChips, hasMetaChips } from "../TVMetaChips";
 import { TV_POSTER_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -48,6 +48,11 @@ export const TVPosterFrame = memo(function TVPosterFrame({ item, width, focused 
     : null;
   const watched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage;
+  // Méta qualité/langues révélée AU FOCUS (équivalent du hover web
+  // CardMetaOverlay) — pas sur les tuiles groupées « +N » (comme web), ni
+  // sur un item qui ne porte pas ses flux : la note ne cède sa place qu'à des
+  // puces qui existent.
+  const chipsShown = focused && addedCount <= 1 && hasMetaChips(item, true);
 
   return (
     <View
@@ -85,11 +90,9 @@ export const TVPosterFrame = memo(function TVPosterFrame({ item, width, focused 
           visible au repos, ce qui est l'essentiel — une rangée du salon se lit
           sans rien toucher. La pastille, elle, reste au focus : son coin est
           libre. */}
-      <TVCardMarkerLayer item={item} communityRating={rating} hideRating={focused && addedCount <= 1} />
+      <TVCardMarkerLayer item={item} communityRating={rating} hideRating={chipsShown} />
 
-      {/* Méta qualité/langues révélée AU FOCUS (équivalent du hover web
-          CardMetaOverlay) — pas sur les tuiles groupées « +N » (comme web). */}
-      {focused && addedCount <= 1 && (
+      {chipsShown && (
         <View style={{ position: "absolute", left: 6, right: 6, bottom: 8 }}>
           <TVMetaChips item={item} compact />
         </View>

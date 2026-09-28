@@ -14,6 +14,12 @@ interface Props {
 }
 
 const GLYPH = 18;
+const GAP = 7;
+const PADDING_X = 10;
+
+/** La largeur de la pastille pleine — trois glyphes. Ce qui partage son coin
+ *  (les puces d'une vignette au focus) s'en écarte d'autant. */
+export const TV_STATUS_PILL_MAX_WIDTH = GLYPH * 3 + GAP * 2 + PADDING_X * 2;
 
 /**
  * La pastille d'états d'une affiche du salon — signet (Ma liste), cœur
@@ -53,8 +59,8 @@ const styles = StyleSheet.create({
     height: 34,
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 10,
+    gap: GAP,
+    paddingHorizontal: PADDING_X,
     borderRadius: 17,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.2)",
