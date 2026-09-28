@@ -14,6 +14,10 @@
  *              chacun compté UNE fois (la règle du classement de visionnage) ;
  *  • COMPTÉ  — films et épisodes vus, lus de Jellyfin : exacts.
  * Le goût (`taste`) est le profil du moteur de recommandations, lu tel quel.
+ *
+ * Jamais confondus : ce que l'on ÉCOUTE (la piste audio lue — `listening`) et
+ * d'où VIENNENT les titres (`origins`). Un film américain vu en VF s'écoute en
+ * français et vient des États-Unis.
  */
 
 /** La fenêtre demandée : 30 derniers jours, année civile en cours, tout. */
@@ -76,13 +80,51 @@ export interface ViewingStatsSplit {
 }
 
 export interface ViewingStatsLabeledShare {
-  /** Clé stable : id TMDB du genre (« 878 »), code ISO 639-1 de la langue (« ja »). */
+  /**
+   * Clé stable : id TMDB du genre (« 878 »), code ISO 639-1 d'une langue
+   * (« ja »), code ISO 3166-1 d'un pays (« JP »).
+   */
   key: string;
   /** Libellé dans la langue demandée. */
   label: string;
   seconds: number;
-  /** Part du temps de la période (0..1). Un titre compte dans CHACUN de ses genres. */
+  /** Part (0..1) du temps de la période — un titre compte dans CHACUN de ses genres —, ou de sa base (écoute). */
   share: number;
+}
+
+/** D'où viennent les titres : leur pays d'origine (TMDB), pondéré par le temps passé. */
+export interface ViewingStatsOrigins {
+  /** Les pays les plus présents. Un titre compte pour son PREMIER pays d'origine. */
+  countries: ViewingStatsLabeledShare[];
+  /** Part du temps des pays suivants, regroupés. */
+  otherShare: number;
+  /** Part du temps dont l'origine est inconnue (titre sans fiche TMDB). Pays + autres + inconnue = 1. */
+  unknownShare: number;
+}
+
+/**
+ * « VF ou VO ? » — d'après la piste audio LUE, relevée par Tentacle depuis
+ * `since` : les séances d'avant n'en disent rien, et rien n'est déduit pour
+ * elles. Sur un échantillon trop mince (moins de 3 h ou de 5 séances relevées
+ * dans la période), `versions` vaut null et `languages` est vide : jamais un
+ * pourcentage tiré d'une poignée de séances.
+ */
+export interface ViewingStatsListening {
+  /**
+   * Parts du temps relevé dont on connaît AUSSI la langue originale du titre :
+   * la VO, le doublage dans la langue de l'interface (la VF en français), les
+   * autres doublages. Somme = 1.
+   */
+  versions: { original: number; local: number; otherDubs: number } | null;
+  /** Secondes relevées de la période où piste ET langue originale sont connues : la base de `versions`. */
+  versionSeconds: number;
+  /** Le détail : les langues entendues, en part du temps relevé. Langues + `otherShare` = 1. */
+  languages: ViewingStatsLabeledShare[];
+  otherShare: number;
+  /** Secondes relevées de la période (piste connue) : la base de `languages`. */
+  knownSeconds: number;
+  /** Première séance relevée de ce compte (ISO), toutes périodes ; null : jamais relevé. */
+  since: string | null;
 }
 
 export interface ViewingStatsDecade {
@@ -101,6 +143,9 @@ export interface ViewingStatsDeviceShare {
   client: string | null;
 }
 
+/** Le verdict d'« Affiner » (ou un « J'aime » donné hors bibliothèque). */
+export type ViewingStatsVerdict = "superlike" | "like" | "dislike";
+
 export interface ViewingStatsTitle {
   /** Identifiant Jellyfin du film ou de la série. */
   id: string;
@@ -109,8 +154,16 @@ export interface ViewingStatsTitle {
   seconds: number;
   /** Séries : épisodes vus dans la période. Films : 0. */
   episodes: number;
-  /** Films : jours distincts où la mesure l'a vu à 60 % ou plus — « revu » dès 2. */
+  /**
+   * Films : visionnages dans la période — 1 dès qu'il est marqué « vu », et
+   * autant que de jours distincts où la mesure l'a vu à 60 % ou plus. Séries : 0.
+   */
   viewings: number;
+  /** Votre note, sur 10 (les saisons d'une série se fondent) ; null sans note. */
+  rating: number | null;
+  /** Favori Jellyfin (le cœur). */
+  favorite: boolean;
+  verdict: ViewingStatsVerdict | null;
   year: number | null;
   anime: boolean;
   primaryTag: string | null;
@@ -127,18 +180,26 @@ export interface ViewingStatsPerson {
   /** Chemin d'image TMDB (« /abc.jpg »), null sans portrait. */
   profilePath: string | null;
   role: ViewingStatsPersonRole;
-  /** Temps passé devant les titres où la personne figure. */
-  seconds: number;
+  /**
+   * Titres distincts (films ou séries) où la personne figure — le PREMIER
+   * critère du classement : une série de quinze saisons compte pour un.
+   */
   titles: number;
+  /** Temps passé devant ces titres — il départage à nombre de titres égal. */
+  seconds: number;
 }
 
 export interface ViewingStatsRecords {
   /** La journée la plus remplie (mesure). */
   biggestDay: { date: string; seconds: number } | null;
-  /** La plus longue suite de jours consécutifs avec au moins une lecture. */
+  /** La plus longue suite de jours consécutifs avec au moins 15 minutes de visionnage. */
   longestStreak: { days: number; from: string; to: string } | null;
-  /** Le plus d'épisodes d'une même série vus le même jour. */
-  binge: { seriesId: string; seriesName: string; episodes: number; date: string } | null;
+  /**
+   * Le plus de TEMPS passé sur une même série en un jour (deux épisodes au
+   * moins) — jamais le nombre d'épisodes seul : vingt épisodes de trois
+   * minutes ne font pas un marathon.
+   */
+  binge: { seriesId: string; seriesName: string; episodes: number; seconds: number; date: string } | null;
   /** La plus longue séance sur un même titre (mesure). */
   longestSession: { title: string; seconds: number; date: string } | null;
 }
@@ -211,13 +272,18 @@ export interface ViewingStats {
   rhythm: ViewingStatsRhythm;
   split: ViewingStatsSplit;
   genres: ViewingStatsLabeledShare[];
+  /** OBSOLÈTE, toujours vide : la langue ORIGINALE, que lisent encore les anciens clients — vide, elle s'y masque. */
   languages: ViewingStatsLabeledShare[];
+  origins: ViewingStatsOrigins;
+  listening: ViewingStatsListening;
   decades: ViewingStatsDecade[];
   devices: ViewingStatsDeviceShare[];
   /** Les séries les plus regardées de la période, par temps. */
   topSeries: ViewingStatsTitle[];
-  /** Les films vus dans la période, le plus récent d'abord. */
+  /** Les films vus dans la période, dans l'ordre de `moviesOrder`. */
   movies: ViewingStatsTitle[];
+  /** « preference » : note, coup de cœur, favori, revisionnages, puis le temps. « recent » : serveur plus ancien. */
+  moviesOrder: "preference" | "recent";
   people: { actors: ViewingStatsPerson[]; directors: ViewingStatsPerson[] };
   records: ViewingStatsRecords;
   taste: ViewingStatsTaste;

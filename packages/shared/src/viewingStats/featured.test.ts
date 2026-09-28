@@ -3,7 +3,8 @@ import type { ViewingStats, ViewingStatsTitle } from "../types/viewingStats";
 import { statsFeaturedItems } from "./featured";
 
 const title = (id: string, kind: "movie" | "series", seconds: number, backdropTag: string | null): ViewingStatsTitle => ({
-  id, name: id, kind, seconds, episodes: 0, viewings: 0, year: null, anime: false, primaryTag: null, backdropTag, lastPlayedAt: null,
+  id, name: id, kind, seconds, episodes: 0, viewings: 0, rating: null, favorite: false, verdict: null,
+  year: null, anime: false, primaryTag: null, backdropTag, lastPlayedAt: null,
 });
 
 describe("statsFeaturedItems", () => {

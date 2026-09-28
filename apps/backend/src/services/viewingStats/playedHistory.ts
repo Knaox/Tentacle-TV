@@ -12,8 +12,8 @@ export interface PlayedHistory {
   movies: Map<string, TitleInfo>;
   /** Séries rencontrées → leur nom, décrites plus tard par identifiants. */
   seriesNames: Map<string, string>;
-  /** Favoris Jellyfin : leur nombre, et le pont TMDB → Jellyfin des titres aimés. */
-  favorites: { count: number; byTmdbKey: Map<string, string> };
+  /** Favoris Jellyfin : leurs identifiants, et le pont TMDB → Jellyfin des titres aimés. */
+  favorites: { ids: Set<string>; byTmdbKey: Map<string, string> };
 }
 
 const dateOf = (item: JellyfinItem): number | null => {
@@ -32,7 +32,8 @@ export function movieInfo(item: JellyfinItem): TitleInfo {
     year: item.ProductionYear ?? null,
     tmdbId: tmdbIdOf(item),
     genreIds: genreIdsFromNames(item.Genres ?? []),
-    language: null,
+    origin: null,
+    originalLanguage: null,
     anime: isAnimeJellyfin(item),
     directors: [],
     cast: [],
@@ -49,7 +50,7 @@ export async function fetchPlayedHistory(userId: string): Promise<PlayedHistory>
   const movies = new Map<string, TitleInfo>();
   const seriesNames = new Map<string, string>();
   const byTmdbKey = new Map<string, string>();
-  let favoriteCount = 0;
+  const favoriteIds = new Set<string>();
 
   await Promise.all([
     scanItems(userId, { IncludeItemTypes: "Movie", Filters: "IsPlayed", Fields: "Genres,ProviderIds,ProductionYear" }, (items) => {
@@ -66,8 +67,8 @@ export async function fetchPlayedHistory(userId: string): Promise<PlayedHistory>
       }
     }),
     scanItems(userId, { IncludeItemTypes: "Movie,Series", Filters: "IsFavorite", Fields: "ProviderIds" }, (items) => {
-      favoriteCount += items.length;
       for (const it of items) {
+        favoriteIds.add(it.Id);
         const tmdb = tmdbIdOf(it);
         if (tmdb) byTmdbKey.set(`${it.Type === "Series" ? "tv" : "movie"}:${tmdb}`, it.Id);
       }
@@ -75,5 +76,5 @@ export async function fetchPlayedHistory(userId: string): Promise<PlayedHistory>
   ]);
 
   flagBulkMarks(played);
-  return { played, movies, seriesNames, favorites: { count: favoriteCount, byTmdbKey } };
+  return { played, movies, seriesNames, favorites: { ids: favoriteIds, byTmdbKey } };
 }

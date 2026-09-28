@@ -46,7 +46,7 @@ export async function fetchMeasured(userId: string): Promise<MeasuredHistory> {
     where: { jellyfinUserId: userId, itemType: { in: TYPES }, seconds: { gt: 0 } },
     select: {
       itemId: true, itemType: true, itemName: true, seriesId: true, seriesName: true,
-      clientName: true, seconds: true, runtimeSeconds: true, startedAt: true, lastSeenAt: true,
+      clientName: true, seconds: true, runtimeSeconds: true, audioLang: true, startedAt: true, lastSeenAt: true,
     },
     orderBy: { startedAt: "asc" },
   });
@@ -65,6 +65,7 @@ export async function fetchMeasured(userId: string): Promise<MeasuredHistory> {
       client: r.clientName,
       seconds: r.seconds,
       runtimeSeconds: r.runtimeSeconds,
+      audioLang: r.audioLang,
       startedAt: r.startedAt.getTime(),
       lastSeenAt: Math.max(r.lastSeenAt.getTime(), r.startedAt.getTime()),
     });

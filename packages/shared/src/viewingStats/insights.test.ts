@@ -18,7 +18,9 @@ function stats(over: Partial<ViewingStats> = {}): ViewingStats {
     timeline: { unit: "month", buckets: [], undatedSeconds: 0 },
     rhythm: { grid: grid([]) },
     split: { movieSeconds: 0, seriesSeconds: 10 * H, animeSeconds: 0 },
-    genres: [], languages: [], decades: [], devices: [], topSeries: [], movies: [],
+    genres: [], languages: [], decades: [], devices: [], topSeries: [], movies: [], moviesOrder: "preference",
+    origins: { countries: [], otherShare: 0, unknownShare: 0 },
+    listening: { versions: null, versionSeconds: 0, languages: [], otherShare: 0, knownSeconds: 0, since: null },
     people: { actors: [], directors: [] },
     records: { biggestDay: null, longestStreak: null, binge: null, longestSession: null },
     taste: { available: false, computedAt: null, animeShare: 0, loved: [], signals: {
@@ -83,7 +85,7 @@ describe("le profil de spectateur", () => {
   it("garde au plus trois traits", () => {
     const s = stats({
       rhythm: { grid: grid([[5, 23, 10 * H]]) },
-      records: { biggestDay: null, longestStreak: { days: 14, from: "", to: "" }, binge: { seriesId: "s", seriesName: "Dark", episodes: 9, date: "" }, longestSession: null },
+      records: { biggestDay: null, longestStreak: { days: 14, from: "", to: "" }, binge: { seriesId: "s", seriesName: "Dark", episodes: 9, seconds: 7 * H, date: "" }, longestSession: null },
     });
     expect(viewerBadges(s)).toHaveLength(3);
     expect(viewerBadges(s, 5).map((b) => b.key)).toContain("binger");

@@ -1,35 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computePeriod } from "./computePeriod";
-import { flagBulkMarks } from "./dataset";
-import type { MeasuredEntry, PlayedEntry, StatsDataset, TitleInfo } from "./dataset";
-import { LocalCalendar } from "./localCalendar";
-
-// Lundi 28 septembre 2026, 14 h à Paris.
-const NOW = Date.parse("2026-09-28T12:00:00Z");
-const EPOCH = Date.parse("2026-08-05T00:00:00Z");
-const cal = () => new LocalCalendar("Europe/Paris");
-const H = 3600;
-
-function title(id: string, kind: "movie" | "series", over: Partial<TitleInfo> = {}): TitleInfo {
-  return { id, kind, name: id, year: 2010, tmdbId: null, genreIds: [], language: null, anime: false, directors: [], cast: [], ...over };
-}
-
-function played(titleId: string, kind: "movie" | "episode", runtime: number, at: string | null, itemId = titleId): PlayedEntry {
-  return { titleId, itemId, kind, runtimeSeconds: runtime, lastPlayedAt: at ? Date.parse(at) : null, bulk: false };
-}
-
-function seg(titleId: string, kind: "movie" | "episode", start: string, seconds: number, over: Partial<MeasuredEntry> = {}): MeasuredEntry {
-  const startedAt = Date.parse(start);
-  return {
-    titleId, itemId: titleId, kind, client: "Tentacle TV - Mobile", seconds,
-    runtimeSeconds: null, startedAt, lastSeenAt: startedAt + seconds * 1000, ...over,
-  };
-}
-
-function dataset(titles: TitleInfo[], playedEntries: PlayedEntry[], measured: MeasuredEntry[] = [], epoch: number | null = EPOCH): StatsDataset {
-  flagBulkMarks(playedEntries);
-  return { titles: new Map(titles.map((t) => [t.id, t])), played: playedEntries, measured, epoch };
-}
+import { H, NOW, cal, dataset, played, seg, title } from "../../../test/viewingStatsFixtures";
 
 describe("le raccord mesuré / estimé", () => {
   it("estime ce qui a été vu avant la mesure, mesure ce qui a été vu après, sans double compte", () => {
@@ -151,15 +122,15 @@ describe("les répartitions", () => {
   it("compte un titre dans chacun de ses genres, et sépare les animés", () => {
     const data = dataset(
       [
-        title("dune", "movie", { genreIds: [878, 12], language: "en" }),
-        title("aot", "series", { genreIds: [16, 10759], language: "ja", anime: true }),
+        title("dune", "movie", { genreIds: [878, 12], origin: "US", originalLanguage: "en" }),
+        title("aot", "series", { genreIds: [16, 10759], origin: "JP", originalLanguage: "ja", anime: true }),
       ],
       [played("dune", "movie", 3 * H, "2026-07-01T20:00:00Z"), played("aot", "episode", H, "2026-07-02T20:00:00Z", "a1")]
     );
     const p = computePeriod(data, "all", cal(), NOW);
     expect(p.genres.map((g) => g.key)).toEqual(["12", "878", "10759", "16"]);
     expect(p.genres[0].share).toBeCloseTo(0.75);
-    expect(p.languages.map((l) => l.key)).toEqual(["en", "ja"]);
+    expect(p.origins.countries.map((c) => c.key)).toEqual(["US", "JP"]);
     expect(p.split).toEqual({ movieSeconds: 3 * H, seriesSeconds: 0, animeSeconds: H });
     expect(p.decades).toEqual([{ decade: 2010, seconds: 4 * H }]);
   });

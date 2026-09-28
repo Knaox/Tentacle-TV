@@ -22,8 +22,13 @@ export interface TitleInfo {
   tmdbId: number | null;
   /** Genres TMDB (ids) : la fiche TMDB, sinon les noms Jellyfin rapprochés. */
   genreIds: number[];
-  /** Langue originale ISO 639-1, connue par la fiche TMDB seulement. */
-  language: string | null;
+  /**
+   * Pays d'origine ISO 3166-1 (« US »), le premier de la fiche TMDB — d'où
+   * VIENT le titre, pas la langue dans laquelle on l'écoute.
+   */
+  origin: string | null;
+  /** Langue ORIGINALE (ISO 639-1, fiche TMDB) : ce qui fait d'une piste une VO ou un doublage. */
+  originalLanguage: string | null;
   anime: boolean;
   /** Films : réalisateurs. Séries : créateurs. Vides sans fiche TMDB. */
   directors: PersonRef[];
@@ -59,14 +64,30 @@ export interface MeasuredEntry {
   client: string | null;
   seconds: number;
   runtimeSeconds: number | null;
+  /** Langue de la piste audio lue (ISO 639-1) ; null avant le relevé, ou inconnue. */
+  audioLang: string | null;
   startedAt: number;
   lastSeenAt: number;
+}
+
+/**
+ * Ce que le compte a DIT des titres — sa note, ses verdicts — sous la clé du
+ * moteur (« movie:603 », « tv:1399 »). Ma liste n'en fait pas partie : un
+ * titre qu'on garde pour plus tard n'a pas encore été jugé.
+ */
+export interface Judgments {
+  /** Note moyenne sur 10 (les saisons et épisodes d'une série se fondent). */
+  ratings: Map<string, number>;
+  verdicts: Map<string, "superlike" | "like" | "dislike">;
+  /** Favoris Jellyfin (le cœur), par identifiant Jellyfin. */
+  favorites: Set<string>;
 }
 
 export interface StatsDataset {
   titles: Map<string, TitleInfo>;
   played: PlayedEntry[];
   measured: MeasuredEntry[];
+  judgments: Judgments;
   /** Premier segment mesuré, TOUS comptes confondus (ms) ; null sans mesure. */
   epoch: number | null;
 }

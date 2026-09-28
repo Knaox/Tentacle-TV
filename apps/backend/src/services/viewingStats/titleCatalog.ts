@@ -30,7 +30,8 @@ export async function describeTitles(
         year: it.ProductionYear ?? null,
         tmdbId: tmdbIdOf(it),
         genreIds: genreIdsFromNames(it.Genres ?? []),
-        language: null,
+        origin: null,
+        originalLanguage: null,
         anime: isAnimeJellyfin(it),
         directors: [],
         cast: [],
@@ -40,7 +41,7 @@ export async function describeTitles(
     }
   }
   const bare = (id: string, kind: "movie" | "series", name: string): TitleInfo => ({
-    id, kind, name, year: null, tmdbId: null, genreIds: [], language: null, anime: false, directors: [], cast: [],
+    id, kind, name, year: null, tmdbId: null, genreIds: [], origin: null, originalLanguage: null, anime: false, directors: [], cast: [],
   });
   for (const [id, name] of seriesNames) if (!out.has(id)) out.set(id, bare(id, "series", name));
   for (const [id, name] of extraMovies) if (!out.has(id)) out.set(id, bare(id, "movie", name));

@@ -179,10 +179,13 @@ export function metaKey(mediaType: "movie" | "tv", tmdbId: number): string {
 /**
  * Lecture groupée du cache, jamais d'appel TMDB : UNE requête par tranche de
  * 400 identités au lieu d'une par titre. Une ligne périmée ou illisible est
- * simplement absente de la carte rendue — comme pour getCachedMeta.
+ * simplement absente de la carte rendue — comme pour getCachedMeta — sauf
+ * `includeExpired` : les statistiques n'y lisent que des faits qui ne
+ * bougent pas (genres, pays, casting), et le moteur rafraîchit à son rythme.
  */
 export async function getCachedMetaMany(
-  refs: Array<{ mediaType: "movie" | "tv"; tmdbId: number }>
+  refs: Array<{ mediaType: "movie" | "tv"; tmdbId: number }>,
+  opts: { includeExpired?: boolean } = {}
 ): Promise<Map<string, TitleMeta>> {
   const out = new Map<string, TitleMeta>();
   if (refs.length === 0) return out;
@@ -199,7 +202,7 @@ export async function getCachedMetaMany(
       where: { OR: chunk.map((r) => ({ mediaType: r.mediaType, tmdbId: r.tmdbId })) },
     });
     for (const row of rows) {
-      if (row.expiresAt.getTime() < now) continue;
+      if (!opts.includeExpired && row.expiresAt.getTime() < now) continue;
       try {
         const mediaType = row.mediaType as "movie" | "tv";
         out.set(metaKey(mediaType, row.tmdbId), normalize(mediaType, JSON.parse(row.payload) as RawTmdbTitle));

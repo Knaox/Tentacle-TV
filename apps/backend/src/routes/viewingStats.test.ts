@@ -32,13 +32,13 @@ const tmdb = (mediaType: string, tmdbId: number, raw: Record<string, unknown>) =
 });
 const META = [
   tmdb("movie", 603, {
-    title: "The Matrix", genres: [{ id: 28, name: "Action" }, { id: 878, name: "SF" }], original_language: "en",
+    title: "The Matrix", genres: [{ id: 28, name: "Action" }, { id: 878, name: "SF" }], original_language: "en", origin_country: ["US"],
     release_date: "1999-03-31", poster_path: "/matrix.jpg",
     credits: { cast: [{ id: 6384, name: "Keanu Reeves", order: 0, profile_path: "/keanu.jpg" }],
       crew: [{ id: 9340, name: "Lana Wachowski", job: "Director", profile_path: "/lana.jpg" }] },
   }),
   tmdb("movie", 438631, {
-    title: "Dune", genres: [{ id: 878, name: "SF" }, { id: 12, name: "Aventure" }], original_language: "en",
+    title: "Dune", genres: [{ id: 878, name: "SF" }, { id: 12, name: "Aventure" }], original_language: "en", origin_country: ["US", "CA"],
     credits: { cast: [{ id: 1190668, name: "Timothée Chalamet", order: 0, profile_path: "/tc.jpg" }],
       crew: [{ id: 137427, name: "Denis Villeneuve", job: "Director" }] },
   }),
@@ -52,10 +52,11 @@ const seg = (itemId: string, itemType: string, start: string, seconds: number, e
   itemId, itemType, itemName: itemId, seriesId: null, seriesName: null, runtimeSeconds: null,
   seconds, startedAt: new Date(start), lastSeenAt: new Date(Date.parse(start) + seconds * 1000), ...extra,
 });
+// Matrix en VF, Frieren en VO japonaise — la piste que le collecteur a relevée.
 const SEGMENTS = [
-  seg("m2", "Movie", "2026-09-20T19:45:00Z", 7200, { itemName: "Matrix", clientName: "Tentacle TV - Mobile", runtimeSeconds: 8160 }),
-  seg("e1", "Episode", "2026-09-26T20:05:00Z", 1440, { seriesId: "s1", seriesName: "Frieren", clientName: "Tentacle TV - TV" }),
-  seg("e2", "Episode", "2026-09-26T20:32:00Z", 1440, { seriesId: "s1", seriesName: "Frieren", clientName: "Tentacle TV - TV" }),
+  seg("m2", "Movie", "2026-09-20T19:45:00Z", 7200, { itemName: "Matrix", clientName: "Tentacle TV - Mobile", runtimeSeconds: 8160, audioLang: "fr" }),
+  seg("e1", "Episode", "2026-09-26T20:05:00Z", 1440, { seriesId: "s1", seriesName: "Frieren", clientName: "Tentacle TV - TV", audioLang: "ja" }),
+  seg("e2", "Episode", "2026-09-26T20:32:00Z", 1440, { seriesId: "s1", seriesName: "Frieren", clientName: "Tentacle TV - TV", audioLang: "ja" }),
 ];
 
 const ANCHORS = [
@@ -80,8 +81,10 @@ vi.mock("../services/db", () => ({
       findUnique: async () => ({ anchors: JSON.stringify(ANCHORS), animeShare: 0.15, computedAt: new Date(NOW - 3_600_000) }),
     },
     userRating: { findMany: async () => [{ mediaType: "movie", tmdbId: 603, score: 9 }] },
-    userSwipe: { groupBy: async () => [{ verdict: "superlike", _count: { _all: 2 } }] },
-    userLike: { count: async () => 1 },
+    userSwipe: {
+      findMany: async () => [{ mediaType: "movie", tmdbId: 27205, verdict: "superlike" }, { mediaType: "tv", tmdbId: 1399, verdict: "superlike" }],
+    },
+    userLike: { findMany: async () => [{ mediaType: "movie", tmdbId: 157336 }] },
     userLikedPerson: { count: async () => 3 },
   }),
 }));
@@ -169,14 +172,25 @@ describe("GET /api/stats/me", () => {
     expect(calls.every((q) => new URLSearchParams(q).get("userId") === "u1")).toBe(true);
   });
 
-  it("nomme genres et langues dans la langue demandée, et sépare les animés", async () => {
+  it("nomme genres et pays d'origine dans la langue demandée, et sépare les animés", async () => {
     const fr = (await get("period=all&tz=Europe/Paris&lang=fr")).body;
     expect(fr.genres[0]).toMatchObject({ key: "878", label: "Science-fiction", seconds: 16200 });
-    expect(fr.languages.map((l) => l.label)).toEqual(["Anglais", "Japonais"]);
+    // Plus jamais la langue ORIGINALE présentée comme la langue écoutée.
+    expect(fr.languages).toEqual([]);
+    expect(fr.origins.countries.map((c) => [c.label, c.seconds])).toEqual([["États-Unis", 16200], ["Japon", 2880]]);
+    expect(fr.origins.unknownShare).toBe(0);
     expect(fr.split).toEqual({ movieSeconds: 16200, seriesSeconds: 0, animeSeconds: 2880 });
     const en = (await get("period=all&tz=Europe/Paris&lang=en")).body;
     expect(en.genres[0].label).toBe("Science Fiction");
-    expect(en.languages[1].label).toBe("Japanese");
+    expect(en.origins.countries[1].label).toBe("Japan");
+  });
+
+  it("dit depuis quand la piste est relevée, sans part tant que l'échantillon est mince", async () => {
+    const { body } = await get("period=all&tz=Europe/Paris&lang=fr");
+    // 2 h 48 relevées sur 3 séances : moins de 3 h et de 5 séances.
+    expect(body.listening).toEqual({
+      versions: null, versionSeconds: 10080, languages: [], otherShare: 0, knownSeconds: 10080, since: "2026-09-20T19:45:00.000Z",
+    });
   });
 
   it("donne titres, visages, appareils et records, avec images et portraits", async () => {
@@ -184,7 +198,11 @@ describe("GET /api/stats/me", () => {
     expect(body.topSeries).toEqual([
       expect.objectContaining({ id: "s1", episodes: 2, seconds: 2880, anime: true, primaryTag: "p-s1", backdropTag: "b-s1" }),
     ]);
-    expect(body.movies.map((m) => [m.id, m.viewings, m.primaryTag])).toEqual([["m2", 1, "p-m2"], ["m1", 0, "p-m1"]]);
+    // Matrix d'abord : noté 9 et favori ; Dune, vu avant la mesure, compte une fois.
+    expect(body.movies.map((m) => [m.id, m.viewings, m.rating, m.favorite, m.primaryTag])).toEqual([
+      ["m2", 1, 9, true, "p-m2"], ["m1", 1, null, false, "p-m1"],
+    ]);
+    expect(body.moviesOrder).toBe("preference");
     expect(body.people.actors.map((a) => [a.name, a.profilePath])).toEqual([
       ["Timothée Chalamet", "/tc.jpg"], ["Keanu Reeves", "/keanu.jpg"], ["Atsumi Tanezaki", null],
     ]);
@@ -192,7 +210,8 @@ describe("GET /api/stats/me", () => {
       { device: "mobile", client: null, seconds: 7200 },
       { device: "tv", client: null, seconds: 2880 },
     ]);
-    expect(body.records.binge).toMatchObject({ seriesId: "s1", seriesName: "Frieren", episodes: 2, date: "2026-09-26" });
+    // Deux épisodes de 24 min : 48 min, pas un marathon (une heure au moins).
+    expect(body.records.binge).toBeNull();
   });
 
   it("lit le goût tel quel : titres aimés, notes et signaux, sans l'envie ni le refus", async () => {

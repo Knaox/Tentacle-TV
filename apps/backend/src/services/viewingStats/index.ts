@@ -5,6 +5,9 @@ import { accumulate, periodWindow } from "./accumulate";
 import { computePeriod } from "./computePeriod";
 import type { PeriodCore } from "./computePeriod";
 import { secondsOf } from "./distributions";
+import { foldJudgments, loadJudgments } from "./judgments";
+import type { LoadedJudgments } from "./judgments";
+import { listeningSince } from "./listening";
 import { LocalCalendar } from "./localCalendar";
 import { fetchMeasured, measuredEpoch } from "./measuredHistory";
 import type { MeasuredHistory } from "./measuredHistory";
@@ -58,6 +61,15 @@ async function measuredOrEmpty(userId: string): Promise<{ history: MeasuredHisto
   }
 }
 
+/** Une base indisponible ne prive pas la page de ses chiffres : aucun avis, les favoris Jellyfin restent. */
+async function judgmentsOrEmpty(userId: string, favorites: Set<string>): Promise<LoadedJudgments> {
+  try {
+    return await loadJudgments(userId, favorites);
+  } catch {
+    return foldJudgments([], [], [], 0, favorites);
+  }
+}
+
 function libraryResolver(titles: Map<string, TitleInfo>, favorites: Map<string, string>): (key: string) => LibraryTitle | null {
   const byTmdb = new Map<string, LibraryTitle>();
   for (const [key, id] of favorites) byTmdb.set(key, { id, name: titles.get(id)?.name ?? "" });
@@ -79,9 +91,14 @@ async function compute(userId: string, timeZone: string): Promise<ComputedStats>
 
   const seriesNames = new Map([...measured.history.seriesNames, ...history.seriesNames]);
   const extraMovies = new Map([...measured.history.movieNames].filter(([id]) => !history.movies.has(id)));
-  const described = await describeTitles(userId, seriesNames, extraMovies);
+  const [described, judged] = await Promise.all([
+    describeTitles(userId, seriesNames, extraMovies),
+    judgmentsOrEmpty(userId, history.favorites.ids),
+  ]);
   const titles = new Map<string, TitleInfo>([...history.movies, ...described]);
-  const data: StatsDataset = { titles, played: history.played, measured: measured.history.entries, epoch: measured.epoch };
+  const data: StatsDataset = {
+    titles, played: history.played, measured: measured.history.entries, judgments: judged.judgments, epoch: measured.epoch,
+  };
 
   // Les fiches TMDB des titres qui pèsent le plus, dans l'ordre du temps passé.
   const calendar = new LocalCalendar(timeZone);
@@ -98,20 +115,20 @@ async function compute(userId: string, timeZone: string): Promise<ComputedStats>
     attachPortraits(cores.flatMap((c) => [...c.people.actors, ...c.people.directors]), titles),
   ]);
 
+  const counts = { ...judged.counts, favorites: history.favorites.ids.size };
   let taste: ViewingStatsTaste;
   try {
-    taste = await readTaste(userId, history.favorites.count, libraryResolver(titles, history.favorites.byTmdbKey));
+    taste = await readTaste(userId, counts, judged.judgments.ratings, libraryResolver(titles, history.favorites.byTmdbKey));
   } catch {
-    taste = {
-      available: false, computedAt: null, animeShare: 0, loved: [],
-      signals: { ratings: 0, ratingAverage: null, superlikes: 0, likes: 0, dislikes: 0, likedPeople: 0, favorites: history.favorites.count },
-    };
+    taste = { available: false, computedAt: null, animeShare: 0, loved: [], signals: counts };
   }
+  const heardSince = listeningSince(data.measured);
 
   return {
     timeZone,
     generatedAt: new Date(now).toISOString(),
     measuredSince: measured.epoch === null ? null : new Date(measured.epoch).toISOString(),
+    listeningSince: heardSince === null ? null : new Date(heardSince).toISOString(),
     hasHistory: history.played.length > 0 || measured.history.entries.length > 0,
     periods,
     taste,

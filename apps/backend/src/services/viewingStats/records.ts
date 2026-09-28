@@ -7,6 +7,14 @@ import type { LocalCalendar } from "./localCalendar";
 
 /** Une journée ne compte comme « active » qu'à partir d'une minute mesurée. */
 const ACTIVE_MIN_SECONDS = 60;
+/**
+ * Une journée n'entre dans une série de jours d'affilée qu'à partir d'un
+ * quart d'heure regardé : un épisode de trois minutes par soir n'est pas de
+ * l'assiduité.
+ */
+export const STREAK_MIN_SECONDS = 15 * 60;
+/** Un marathon, c'est une heure au moins sur une même série dans la journée — pas un compte d'épisodes. */
+export const BINGE_MIN_SECONDS = 3600;
 /** Deux séances séparées de moins de 20 minutes forment une seule séance. */
 const SESSION_GAP_MS = 20 * 60_000;
 /** Un épisode mesuré compte dans un marathon à partir de la moitié de sa durée (10 min sans durée). */
@@ -37,9 +45,11 @@ function longestRun(days: string[]): { days: number; from: string; to: string } 
 
 /**
  * Les records d'une période : la journée la plus remplie (mesuré + estimé
- * daté), la plus longue suite de jours actifs, le marathon (le plus d'épisodes
- * d'une série en un jour) et la plus longue séance (séances mesurées bout à
- * bout, pauses de moins de 20 minutes comprises).
+ * daté), la plus longue suite de jours à un quart d'heure au moins, le
+ * marathon (le plus de TEMPS sur une même série en un jour, deux épisodes au
+ * moins) et la plus longue séance (séances mesurées bout à bout, pauses de
+ * moins de 20 minutes comprises). Tout se juge à la durée réelle : vingt
+ * épisodes de trois minutes font une heure, pas un marathon de vingt.
  */
 export function buildRecords(
   data: StatsDataset,
@@ -50,12 +60,15 @@ export function buildRecords(
   const perDay = new Map<string, number>();
   const measuredPerDay = new Map<string, number>();
   const active = new Set<string>();
-  const episodesPerSeriesDay = new Map<string, Set<string>>();
-  const addEpisode = (seriesId: string, day: string, itemId: string) => {
+  const seriesDays = new Map<string, { items: Set<string>; seconds: number }>();
+  const seriesDay = (seriesId: string, day: string) => {
     const key = `${seriesId}|${day}`;
-    const set = episodesPerSeriesDay.get(key) ?? new Set<string>();
-    set.add(itemId);
-    episodesPerSeriesDay.set(key, set);
+    let entry = seriesDays.get(key);
+    if (!entry) {
+      entry = { items: new Set<string>(), seconds: 0 };
+      seriesDays.set(key, entry);
+    }
+    return entry;
   };
 
   for (const e of data.played) {
@@ -64,8 +77,13 @@ export function buildRecords(
     const day = calendar.parts(date).day;
     if (!win.contains(day)) continue;
     active.add(day);
-    if (isEstimated(e, data.epoch)) perDay.set(day, (perDay.get(day) ?? 0) + e.runtimeSeconds);
-    if (e.kind === "episode") addEpisode(e.titleId, day, e.itemId);
+    const estimated = isEstimated(e, data.epoch);
+    if (estimated) perDay.set(day, (perDay.get(day) ?? 0) + e.runtimeSeconds);
+    if (e.kind !== "episode") continue;
+    const entry = seriesDay(e.titleId, day);
+    entry.items.add(e.itemId);
+    // Après la première mesure, c'est la mesure qui porte le temps de l'épisode.
+    if (estimated) entry.seconds += e.runtimeSeconds;
   }
 
   const inPeriod = data.measured
@@ -76,8 +94,10 @@ export function buildRecords(
     perDay.set(day, (perDay.get(day) ?? 0) + seg.seconds);
     measuredPerDay.set(day, (measuredPerDay.get(day) ?? 0) + seg.seconds);
     if (seg.kind === "episode") {
+      const entry = seriesDay(seg.titleId, day);
+      entry.seconds += seg.seconds;
       const needed = seg.runtimeSeconds ? seg.runtimeSeconds * BINGE_EPISODE_SHARE : BINGE_EPISODE_FALLBACK_SECONDS;
-      if (seg.seconds >= needed) addEpisode(seg.titleId, day, seg.itemId);
+      if (seg.seconds >= needed) entry.items.add(seg.itemId);
     }
   }
   for (const [day, seconds] of measuredPerDay) if (seconds >= ACTIVE_MIN_SECONDS) active.add(day);
@@ -90,11 +110,13 @@ export function buildRecords(
   }
 
   let binge: ViewingStatsRecords["binge"] = null;
-  for (const [key, items] of episodesPerSeriesDay) {
+  let bingeSeconds = 0;
+  for (const [key, { items, seconds }] of seriesDays) {
     const [seriesId, day] = key.split("|");
-    if (items.size < 2) continue;
-    if (!binge || items.size > binge.episodes || (items.size === binge.episodes && day > binge.date)) {
-      binge = { seriesId, seriesName: seriesName(seriesId), episodes: items.size, date: day };
+    if (items.size < 2 || seconds < BINGE_MIN_SECONDS) continue;
+    if (!binge || seconds > bingeSeconds || (seconds === bingeSeconds && day > binge.date)) {
+      bingeSeconds = seconds;
+      binge = { seriesId, seriesName: seriesName(seriesId), episodes: items.size, seconds: Math.round(seconds), date: day };
     }
   }
 
@@ -125,8 +147,9 @@ export function buildRecords(
   }
   closeRun();
 
+  const steady = [...perDay].filter(([, seconds]) => seconds >= STREAK_MIN_SECONDS).map(([day]) => day);
   return {
-    records: { biggestDay, longestStreak: longestRun([...active]), binge, longestSession },
+    records: { biggestDay, longestStreak: longestRun(steady), binge, longestSession },
     activeDays: active.size,
   };
 }

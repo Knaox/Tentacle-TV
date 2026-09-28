@@ -6,8 +6,11 @@ import type { TitleInfo } from "./dataset";
 
 /**
  * Les fiches TMDB DÉJÀ en cache (`tmdb_meta_cache`) complètent les titres :
- * genres propres, langue originale, réalisation et premiers rôles. Jamais un
+ * genres propres, pays d'origine, réalisation et premiers rôles. Jamais un
  * appel TMDB d'ici — les statistiques lisent ce que le moteur a déjà payé.
+ * Une fiche périmée pour le moteur (plus de 30 jours) sert encore : rien de
+ * ce qu'on en lit ici ne change avec le temps, et l'écarter laissait des
+ * titres sans genre ni origine.
  *
  * Une fiche pèse ~60 Ko de JSON : on ne lit que celles des titres qui pèsent
  * le plus dans le temps de visionnage. Au-delà, les genres Jellyfin suffisent.
@@ -18,6 +21,12 @@ const CAST_PER_TITLE = 5;
 
 const mediaTypeOf = (t: TitleInfo): "movie" | "tv" => (t.kind === "movie" ? "movie" : "tv");
 
+/** Le premier pays d'origine, en code ISO 3166-1 (« US ») ; null sans pays lisible. */
+export function originOf(countries: readonly string[]): string | null {
+  const first = (countries[0] ?? "").trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(first) ? first : null;
+}
+
 /** Complète `titles` en place ; `ranking` = ids Jellyfin, le plus regardé d'abord. */
 export async function enrichWithTmdb(titles: Map<string, TitleInfo>, ranking: readonly string[]): Promise<void> {
   const refs: Array<{ mediaType: "movie" | "tv"; tmdbId: number }> = [];
@@ -27,13 +36,14 @@ export async function enrichWithTmdb(titles: Map<string, TitleInfo>, ranking: re
     if (refs.length >= META_TITLES_MAX) break;
   }
   if (refs.length === 0) return;
-  const metas = await getCachedMetaMany(refs);
+  const metas = await getCachedMetaMany(refs, { includeExpired: true });
   for (const t of titles.values()) {
     if (!t.tmdbId) continue;
     const meta = metas.get(metaKey(mediaTypeOf(t), t.tmdbId));
     if (!meta) continue;
     if (meta.genres.length > 0) t.genreIds = meta.genres.map((g) => g.id);
-    t.language = meta.originalLanguage;
+    t.origin = originOf(meta.originCountry);
+    t.originalLanguage = meta.originalLanguage ? meta.originalLanguage.toLowerCase() : null;
     t.year = t.year ?? meta.year;
     t.anime = t.anime || isAnimeTmdb(meta);
     t.directors = meta.directors.slice(0, DIRECTORS_PER_TITLE);
