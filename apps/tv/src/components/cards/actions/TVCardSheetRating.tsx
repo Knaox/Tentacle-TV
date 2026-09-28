@@ -34,9 +34,12 @@ interface TVCardSheetRatingProps {
  *
  * Le guide `autoFocus` fait entrer le focus par la première étoile (puis par
  * la dernière visitée), quelle que soit l'action d'où l'on descend.
+ *
+ * Les textes sont ceux de la feuille de la LG (`CardRatingRowTv`) :
+ * « Votre note », « Noter 8 sur 10 », « Retirer votre note (8/10) ».
  */
 export const TVCardSheetRating = memo(function TVCardSheetRating({ identity, jellyfinItemId }: TVCardSheetRatingProps) {
-  const { t } = useTranslation(["reco", "cards"]);
+  const { t } = useTranslation("reco");
   const score = useTVUserScore(identity);
   const rate = useRateItem();
   const remove = useDeleteRating();
@@ -66,7 +69,7 @@ export const TVCardSheetRating = memo(function TVCardSheetRating({ identity, jel
 
   return (
     <View style={styles.block}>
-      <Text style={styles.title}>{t("cards:rateTitle")}</Text>
+      <Text style={styles.title}>{t("reco:yourRating")}</Text>
       <View style={styles.line}>
         <TVFocusGuideView autoFocus style={styles.stars}>
           {STARS.map((star) => (
