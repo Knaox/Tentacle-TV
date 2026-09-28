@@ -13,7 +13,8 @@ import { KIND_LABEL_KEY } from "./affinityText";
  *
  * - lancée, reprise ou passée à un autre type par un autre : elle s'ouvre
  *   chez moi, sur la pile, et le dit — sauf devant un film : un toast, puis
- *   la pilule quand je reviens ;
+ *   la pilule quand je reviens ; lancée par moi d'un autre appareil, elle
+ *   s'ouvre ici aussi ;
  * - un match s'affiche chez tous les participants (il se lit dans l'état) ;
  *   qui ne swipe pas l'apprend par un toast ;
  * - écarté par un autre (« Continuer à swiper ») ou défait par un dédit : la
@@ -61,7 +62,11 @@ export function handleAffinityMessage(msg: WtAffinityMessage, ctx: AffinityEvent
   switch (cause) {
     case "start":
     case "switch": {
-      if (!fromOther) return;
+      if (!fromOther) {
+        // Lancée par moi, d'un autre appareil : elle s'ouvre ici aussi.
+        if (!wasOpen && !ctx.isWatching()) openAffinity("deck");
+        return;
+      }
       const kind = ctx.t(KIND_LABEL_KEY[state.kind]);
       const text = ctx.t(cause === "switch" ? "affinitySwitchedBy" : "affinityStartedBy", { name, kind });
       if (ctx.isWatching()) {

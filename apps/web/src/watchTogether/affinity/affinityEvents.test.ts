@@ -72,6 +72,12 @@ describe("affinité — messages du socket", () => {
     expect(toasts).toEqual([]);
   });
 
+  it("lancée par moi d'un autre appareil : elle s'ouvre ici aussi, sans rien dire", () => {
+    handleAffinityMessage({ ...msg("start", state(1)), originUserId: "me" }, ctx);
+    expect(getAffinitySnapshot().modal).toEqual({ open: true, view: "deck" });
+    expect(notice()).toBeNull();
+  });
+
   it("devant un film, elle ne s'ouvre pas : un toast suffit", () => {
     watching = true;
     handleAffinityMessage(msg("start", state(1)), ctx);
