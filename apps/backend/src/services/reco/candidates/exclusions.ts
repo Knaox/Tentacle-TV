@@ -8,8 +8,8 @@ export function canonicalKey(mediaType: string, tmdbId: number): string {
 }
 
 export interface ExclusionSets {
-  /** Exclus de TOUTES les rangées : notés, vus, favoris, likés, Ma liste,
-   *  séries entamées, « ne plus proposer ». */
+  /** Exclus de TOUTES les rangées : notés, vus, favoris, likés, Ma liste
+   *  (mise de côté comprise), séries entamées, « ne plus proposer ». */
   everywhere: Set<string>;
 }
 
@@ -47,12 +47,13 @@ export async function buildExclusions(
 
 /**
  * Les exclusions portées par la BASE (notes, refus, likes hors
- * bibliothèque) — une lecture, sans balayage Jellyfin : le chemin chaud du
- * service de page les relit à chaque requête.
+ * bibliothèque, verdicts d'Affiner, titres mis de côté) — une lecture, sans
+ * balayage Jellyfin : le chemin chaud du service de page les relit à chaque
+ * requête.
  */
 export async function accountExclusionKeys(userId: string): Promise<string[]> {
   const prisma = getPrisma();
-  const [ratings, feedback, likes, swipes] = await Promise.all([
+  const [ratings, feedback, likes, swipes, pending] = await Promise.all([
     prisma.userRating.findMany({
       where: { jellyfinUserId: userId, deletedAt: null },
       select: { mediaType: true, tmdbId: true },
@@ -70,11 +71,18 @@ export async function accountExclusionKeys(userId: string): Promise<string[]> {
       where: { jellyfinUserId: userId, verdict: { not: "skip" } },
       select: { mediaType: true, tmdbId: true },
     }),
+    // Mis de côté avant son arrivée — Ma liste d'une carte hors bibliothèque,
+    // cœur d'Affiner en attente : déjà choisi, plus une découverte.
+    prisma.watchlistPending.findMany({
+      where: { jellyfinUserId: userId },
+      select: { mediaType: true, tmdbId: true },
+    }),
   ]);
   return [
     ...ratings.map((r) => canonicalKey(r.mediaType, r.tmdbId)),
     ...feedback.map((f) => f.itemKey),
     ...likes.map((l) => canonicalKey(l.mediaType, l.tmdbId)),
     ...swipes.map((sw) => canonicalKey(sw.mediaType, sw.tmdbId)),
+    ...pending.map((p) => canonicalKey(p.mediaType, p.tmdbId)),
   ];
 }
