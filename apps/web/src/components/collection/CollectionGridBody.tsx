@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CollectionGridCard } from "./CollectionGridCard";
 import { useItemsPerRow } from "../../hooks/useItemsPerRow";
+import { useDocumentTop } from "../../hooks/useDocumentTop";
 import type { SelectionMode } from "./selectionMode";
 
 /** Mêmes constantes que la grille de bibliothèque — les deux doivent s'aligner. */
@@ -56,13 +57,12 @@ export function CollectionGridBody({ items, selectionMode, headerKey }: Collecti
     return cardWidth / POSTER_ASPECT + TEXT_HEIGHT + GAP;
   }, [containerWidth, itemsPerRow]);
 
-  // Le virtualiseur mesure depuis le haut de la FENÊTRE : il lui faut savoir de
-  // combien la grille est décalée. L'en-tête et les onglets changent de hauteur
-  // (deux lignes de filtres sur écran étroit), d'où le recalcul.
-  const [scrollMargin, setScrollMargin] = useState(0);
-  useEffect(() => {
-    if (gridRef.current) setScrollMargin(gridRef.current.offsetTop);
-  }, [headerKey]);
+  // Le virtualiseur mesure depuis le haut du DOCUMENT : il lui faut savoir de
+  // combien la grille est décalée. L'en-tête et la barre changent de hauteur
+  // (deux lignes de filtres sur écran étroit), d'où le recalcul — et la
+  // largeur, qui replie la barre. `offsetTop`, lu ici avant, ne comptait que
+  // depuis le conteneur positionné sous la bannière (cf. `useDocumentTop`).
+  const scrollMargin = useDocumentTop(gridRef, headerKey, containerWidth);
 
   const virtualizer = useWindowVirtualizer({
     count: rowCount,
