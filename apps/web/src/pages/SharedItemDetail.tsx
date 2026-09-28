@@ -6,6 +6,7 @@ import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { DetailHero } from "../components/detail/DetailHero";
 import { CastRow } from "../components/CastRow";
+import { DetailFacts } from "../components/detail/DetailFacts";
 import { TrailerModal } from "../components/detail/TrailerModal";
 import { parseYouTubeId } from "../components/detail/youtube";
 import { useItemRemoteTrailers } from "../hooks/useItemRemoteTrailers";
@@ -116,9 +117,11 @@ export function SharedItemDetail() {
 
         {item.People && item.People.length > 0 && (
           <div className="mt-8">
-            <CastRow people={item.People} studios={item.Studios} readOnly />
+            <CastRow people={item.People} readOnly />
           </div>
         )}
+        {/* Les studios vivent désormais dans « Informations », comme sur la fiche. */}
+        <div className="mt-8"><DetailFacts item={item} readOnly /></div>
       </div>
 
       <TrailerModal open={trailerOpen} onClose={() => setTrailerOpen(false)} trailers={trailers} initialIndex={trailerIndex} />

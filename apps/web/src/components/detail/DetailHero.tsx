@@ -27,6 +27,13 @@ interface DetailHeroProps {
    * le même `transform`, et une animation CSS l'emporte sur un style en ligne.
    */
   instant?: boolean;
+  /**
+   * Autre retour que l'historique : la fiche PARTAGÉE ramène à sa liste — un
+   * visiteur arrivé par le lien n'a pas d'historique dans l'app.
+   */
+  onBack?: () => void;
+  /** Libellé du retour (défaut : « Retour »). */
+  backLabel?: string;
 }
 
 /**
@@ -77,7 +84,7 @@ export const DETAIL_GLOW_BOX = "h-[calc(58vh+410px)] md:h-[calc(64vh+410px)]";
  * La qualité (4K / HDR / Dolby) n'est PAS affichée ici : elle vit à côté du
  * titre (DetailMetadata) pour ne pas surcharger la bannière.
  */
-export function DetailHero({ backdropUrl, item, instant = false }: DetailHeroProps) {
+export function DetailHero({ backdropUrl, item, instant = false, onBack, backLabel }: DetailHeroProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   // Le ken burns dure 32 s et tourne SANS FIN. Rien ne l'arrêtait : une fiche
@@ -102,12 +109,12 @@ export function DetailHero({ backdropUrl, item, instant = false }: DetailHeroPro
       <div ref={boxRef} className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
         <button
           type="button"
-          onClick={() => navigate(-1)}
-          aria-label={t("common:back")}
+          onClick={onBack ?? (() => navigate(-1))}
+          aria-label={backLabel ?? t("common:back")}
           className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-4 py-2 text-sm text-on-media-secondary backdrop-blur-md transition-colors hover:bg-[rgba(var(--scrim-media-rgb),0.65)] hover:text-on-media-primary md:left-8 md:top-8"
         >
           <ArrowLeftIcon />
-          {t("common:back")}
+          {backLabel ?? t("common:back")}
         </button>
 
         {backdropUrl && (

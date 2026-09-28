@@ -12,8 +12,12 @@ import { RowHeader } from "../rows/RowHeader";
  * parcours dans la recherche), langues audio et sous-titres.
  *
  * Une ligne sans donnée n'est pas rendue ; un bloc vide non plus.
+ *
+ * `readOnly` (page partagée, visiteur souvent sans session) : genres et studios
+ * en texte — la recherche exige un compte —, et pas d'heure de fin : on ne
+ * lance rien depuis un partage.
  */
-export const DetailFacts = memo(function DetailFacts({ item }: { item: MediaItem }) {
+export const DetailFacts = memo(function DetailFacts({ item, readOnly = false }: { item: MediaItem; readOnly?: boolean }) {
   const { t, i18n } = useTranslation(["media", "common"]);
   const locale = i18n.language || "fr";
   const streams = item.MediaSources?.[0]?.MediaStreams ?? [];
@@ -28,7 +32,7 @@ export const DetailFacts = memo(function DetailFacts({ item }: { item: MediaItem
 
   const runtime = item.Type !== "Series" ? formatDuration(item.RunTimeTicks) : null;
   if (runtime) {
-    const end = playbackEndsAt(item, Date.now());
+    const end = readOnly ? null : playbackEndsAt(item, Date.now());
     const time = end?.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
     facts.push({
       key: "runtime",
@@ -40,10 +44,10 @@ export const DetailFacts = memo(function DetailFacts({ item }: { item: MediaItem
   if (item.OfficialRating) facts.push({ key: "rating", label: t("media:detailRating"), value: item.OfficialRating });
 
   if (item.Genres && item.Genres.length > 0) {
-    facts.push({ key: "genres", label: t("media:detailGenres"), value: <Links kind="genre" names={item.Genres} /> });
+    facts.push({ key: "genres", label: t("media:detailGenres"), value: readOnly ? item.Genres.join(", ") : <Links kind="genre" names={item.Genres} /> });
   }
   if (item.Studios && item.Studios.length > 0) {
-    facts.push({ key: "studios", label: t("media:studioLabel"), value: <Links kind="studio" names={item.Studios.map((s) => s.Name)} /> });
+    facts.push({ key: "studios", label: t("media:studioLabel"), value: readOnly ? item.Studios.map((s) => s.Name).join(", ") : <Links kind="studio" names={item.Studios.map((s) => s.Name)} /> });
   }
 
   const audio = streamLanguages(streams, "Audio", locale);

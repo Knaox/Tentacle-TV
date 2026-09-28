@@ -13,6 +13,8 @@ interface DetailMetadataProps {
   /** Note globale à afficher à la place de celle de Jellyfin (fiche épisode :
    *  TMDB). `undefined` = celle de l'item, `null` = aucune. */
   communityRating?: number | null;
+  /** Faux : les genres sont du texte — page partagée, sans session pour la recherche. */
+  linkGenres?: boolean;
 }
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
@@ -25,7 +27,7 @@ const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
  * le badge overlay du hero, pour éviter les divergences (ex : Dolby Vision
  * affiché en "HDR" simple côté metadata).
  */
-export function DetailMetadata({ item, streams: _streams, communityRating }: DetailMetadataProps) {
+export function DetailMetadata({ item, streams: _streams, communityRating, linkGenres = true }: DetailMetadataProps) {
   const { t } = useTranslation("common");
   const community = communityRating === undefined ? item.CommunityRating : communityRating;
   const isSeries = item.Type === "Series";
@@ -72,7 +74,7 @@ export function DetailMetadata({ item, streams: _streams, communityRating }: Det
       {item.Genres && item.Genres.length > 0 && (
         <motion.div variants={fadeUp} className="mt-3 flex flex-wrap gap-2">
           {/* Chaque genre ouvre son parcours dans la recherche (les mieux notés d'abord). */}
-          {item.Genres.map((g) => (
+          {item.Genres.map((g) => linkGenres ? (
             <Link
               key={g}
               to={`/search?${new URLSearchParams({ genre: g }).toString()}`}
@@ -80,6 +82,10 @@ export function DetailMetadata({ item, streams: _streams, communityRating }: Det
             >
               {g}
             </Link>
+          ) : (
+            <span key={g} className="rounded-full border border-line-subtle bg-fill-subtle px-3 py-1 text-xs text-content-tertiary">
+              {g}
+            </span>
           ))}
         </motion.div>
       )}
