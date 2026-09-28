@@ -8,6 +8,8 @@
  *   sed 's#from "../playback/#from "../../playback/#' \
  *     packages/shared/src/types/watchTogetherMessages.ts \
  *     > apps/backend/src/services/watchTogether/protocolMessages.ts
+ *   cp packages/shared/src/types/watchTogetherAffinity.ts \
+ *     apps/backend/src/services/watchTogether/watchTogetherAffinity.ts
  *
  * Même esprit que `playback/sharedMirror.test.ts`, avec une tolérance : les
  * spécificateurs d'import sont normalisés avant comparaison, rien d'autre.
@@ -39,5 +41,14 @@ describe("miroir du contrat Watch Together", () => {
     const canonical = readFileSync(join(root, "packages/shared/src/types/watchTogetherMessages.ts"), "utf8");
     const mirror = readFileSync(join(root, "apps/backend/src/services/watchTogether/protocolMessages.ts"), "utf8");
     expect(normalizeImports(mirror)).toBe(normalizeImports(canonical));
+  });
+
+  // Le contrat de l'affinité n'importe rien : il se recopie tel quel,
+  // sous le même nom — `cp` suffit.
+  it("watchTogetherAffinity.ts est identique des deux côtés", () => {
+    const root = repoRoot();
+    const canonical = readFileSync(join(root, "packages/shared/src/types/watchTogetherAffinity.ts"), "utf8");
+    const mirror = readFileSync(join(root, "apps/backend/src/services/watchTogether/watchTogetherAffinity.ts"), "utf8");
+    expect(mirror).toBe(canonical);
   });
 });

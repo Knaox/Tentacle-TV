@@ -13,6 +13,10 @@
 
 import type { PlaybackSettings } from "../playback/playbackSettings";
 import type { SegmentType } from "../playback/segmentTypes";
+import type { WtAffinityMessage } from "./watchTogetherAffinity";
+
+// L'affinité (swipe de groupe) a son propre contrat, recopié à part.
+export * from "./watchTogetherAffinity";
 
 /** Ticks Jellyfin par milliseconde (10 000 000 par seconde). */
 const TICKS_PER_MS = 10_000;
@@ -235,7 +239,10 @@ export type WtServerMessage =
   /** GIF transient (même sémantique que wt:reaction — jamais stocké). */
   | { type: "wt:gif"; userId: string; username: string; url: string; w?: number; h?: number; at: number }
   /** Fil complet (ring buffer) — envoyé au join et à chaque syncRequest. */
-  | { type: "wt:chatHistory"; groupId: string; messages: WtChatMessageDto[] };
+  | { type: "wt:chatHistory"; groupId: string; messages: WtChatMessageDto[] }
+  /** Séance d'affinité (swipe de groupe) — voir `watchTogetherAffinity.ts`.
+   *  Un client d'avant l'ignore : message inconnu. */
+  | WtAffinityMessage;
 
 // ── Extrapolation (serveur ET clients) ──
 
