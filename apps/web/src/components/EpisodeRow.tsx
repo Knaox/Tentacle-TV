@@ -2,13 +2,20 @@
  * Ligne d'épisode de la liste Saisons & Épisodes — extraite d'EpisodeList
  * (limite de 300 lignes par fichier). Vignette + progression, toggle « vu »,
  * bouton de téléchargement compact (desktop, droit requis), méta qualité.
+ *
+ * Mêmes marques que les cartes : la pastille « vu » sur la vignette, la barre
+ * de progression commune, et la bascule « vu » au glyphe et au libellé du
+ * survol (`cardToggleLabelKey`) — une coche maison y avait divergé.
  */
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useWatchedToggle } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { cardToggleLabelKey, type MediaItem } from "@tentacle-tv/shared";
 import { FadeImage } from "./FadeImage";
+import { CardProgressBar } from "./cards/CardProgressBar";
+import { CardStatusMarkers } from "./cards/CardStatusMarkers";
+import { WatchedGlyph } from "./cards/cardGlyphs";
 import { QualityChips, LanguagePill } from "./media/MetaChips";
 import { extractMediaQuality } from "../lib/mediaQuality";
 import { EpisodeDownloadAction } from "../downloads/EpisodeDownloadAction";
@@ -36,8 +43,10 @@ export interface EpisodeRowProps {
   rating?: EpisodeRowRating;
 }
 
+const WATCHED_ONLY = ["watched"] as const;
+
 export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSelected, isCurrent, onToggleSelect, onPlay, rating }: EpisodeRowProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "cards"]);
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const quality = useMemo(() => extractMediaQuality(ep), [ep]);
 
@@ -52,7 +61,8 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
     : ep.SeriesId ? client.getImageUrl(ep.SeriesId, "Backdrop", { width: 300, quality: 85 }) : "";
 
   const progress = ep.UserData?.PlayedPercentage;
-  const played = ep.UserData?.Played;
+  const played = ep.UserData?.Played === true;
+  const watchedLabel = t(`cards:${cardToggleLabelKey("watched", played)}`);
   const runtime = ep.RunTimeTicks ? Math.floor(ep.RunTimeTicks / 600_000_000) : null;
 
   const handleClick = () => {
@@ -104,11 +114,9 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
               <svg className="ml-0.5 h-5 w-5 text-tentacle-bg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
             </div>
           </div>
-          {progress != null && progress > 0 && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-              <div className="h-full" style={{ width: `${progress}%`, background: "var(--progress-fill)" }} />
-            </div>
-          )}
+          {/* La pastille « vu » et la barre de TOUTES les cartes : un épisode vu
+              n'a pas de pourcentage, c'est la pastille qui le dit. */}
+          {played ? <CardStatusMarkers statuses={WATCHED_ONLY} className="right-1.5 top-1.5" /> : <CardProgressBar percent={progress} />}
         </div>
       )}
 
@@ -133,21 +141,16 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
           {!isSelecting && <EpisodeDownloadAction episode={ep} />}
           {!isSelecting && (
             <button
+              type="button"
               onClick={handleWatchedToggle}
-              title={played ? t("common:markUnwatched") : t("common:markWatched")}
+              title={watchedLabel}
+              aria-label={watchedLabel}
+              aria-pressed={played}
               className={`flex-shrink-0 transition-colors ${
-                played ? "text-tentacle-accent hover:text-content-tertiary" : "text-content-disabled hover:text-tentacle-accent"
+                played ? "text-[var(--brand-light)] hover:text-content-tertiary" : "text-content-disabled hover:text-[var(--brand-light)]"
               }`}
             >
-              {played ? (
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
+              <WatchedGlyph className="h-5 w-5" filled={played} />
             </button>
           )}
         </div>
