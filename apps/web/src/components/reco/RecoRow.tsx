@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useHeldRecoItems } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { RowHeader } from "../rows/RowHeader";
 import { RowScrollControls } from "../rows/RowScrollControls";
 import { useRowScroll } from "../rows/useRowScroll";
 import { useRowCardWidth } from "../rows/useRowCardWidth";
 import { useRowWindow } from "../rows/useRowWindow";
+import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
 import { RecoCard } from "./RecoCard";
@@ -26,18 +28,40 @@ interface RecoRowProps {
  * (montés au survol — backdrop-filter). Les items ne sont pas des MediaItem
  * Jellyfin : dupliquer la coquille (~90 lignes) coûte moins que généraliser un
  * composant chaud de l'accueil.
+ *
+ * Survolée, la rangée TIENT ses cartes et les fige (`useHeldRecoItems`) : un
+ * titre ajouté à Ma liste, aimé, vu ou noté n'en sort qu'une fois le pointeur
+ * parti — retirer une carte plus tôt ferait glisser sa voisine sous le
+ * curseur. « Ne plus me proposer », lui, part tout de suite.
  */
 export function RecoRow({ title, items, animDelay = 0, headerTrailing }: RecoRowProps) {
   const [rowEl, setRowEl] = useState<HTMLElement | null>(null);
+  const rowRef = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
   const { scrollRef, canScrollLeft, canScrollRight, scrollByAmount, onScroll } = useRowScroll();
   const cardWidth = useRowCardWidth(scrollRef, "poster");
   const { ref: observeRow, visible: rowOnScreen } = useInViewport<HTMLElement>("400px");
   const setRowRoot = useCallback((el: HTMLElement | null) => {
+    rowRef.current = el;
     setRowEl(el);
     observeRow(el);
   }, [observeRow]);
-  const track = useRowWindow({ scrollRef, count: items.length, cardWidth, onScreen: rowOnScreen });
+  const controls = useHoverMount(200);
+  // La page défile sous un curseur immobile : la rangée n'est plus survolée
+  // (cf. RecoCard), elle se relâche — ses titres jugés partent.
+  useHoverGuard(rowRef, controls.hovered, controls.onMouseLeave);
+  const held = useHeldRecoItems(items, controls.hovered);
+  // Clé = le titre : un retrait ne remonte pas les cartes qui le suivent. Un
+  // doublon (jamais servi, mais pas garanti par le type) n'en fait qu'une.
+  const cards = useMemo(() => {
+    const seen = new Set<string>();
+    return held.filter((item) => {
+      if (seen.has(item.key)) return false;
+      seen.add(item.key);
+      return true;
+    });
+  }, [held]);
+  const track = useRowWindow({ scrollRef, count: cards.length, cardWidth, onScreen: rowOnScreen });
   const { range } = track;
 
   // Cascade d'entrée jouée une seule fois (cf. MediaRow — même raison).
@@ -52,7 +76,6 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing }: RecoRow
     onScroll();
     track.onScroll();
   }, [onScroll, track]);
-  const controls = useHoverMount(200);
 
   useEffect(() => {
     if (!rowEl) return;
@@ -72,7 +95,7 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing }: RecoRow
 
   // Rangée vide : rien du tout — jamais de rangée vide ni de message d'erreur
   // sur cette page (mode dégradé silencieux).
-  if (!items.length) return null;
+  if (!cards.length) return null;
 
   return (
     <section
@@ -111,12 +134,12 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing }: RecoRow
               {range.padStart > 0 && (
                 <div aria-hidden style={{ width: range.padStart, flexShrink: 0 }} />
               )}
-              {items.slice(range.start, range.end + 1).map((item, offset) => {
+              {cards.slice(range.start, range.end + 1).map((item, offset) => {
                 const i = range.start + offset;
                 const entrance = stagger.current ? Math.min(i * 40, 400) : null;
                 return (
                   <RecoCard
-                    key={`${item.key}-${i}`}
+                    key={item.key}
                     item={item}
                     index={i}
                     width={cardWidth}

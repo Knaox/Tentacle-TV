@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useHeldRecoItems, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { AmbilightLayer } from "../../hero/AmbilightLayer";
 import { HERO_ZOOM_DURATION_S } from "../../hero/HeroBackdrop";
@@ -28,15 +28,18 @@ const ROTATE_MS = HERO_ZOOM_DURATION_S * 1000;
  * NB : pas de pause au survol — même raison documentée que HeroBillboard :
  * la bannière couvre ~76 vh, le curseur la survole quasi en permanence, un
  * timer en pause figeait le carrousel sur sa première diapositive. Le survol
- * ne sert qu'à MONTER les flèches (backdrop-filter : jamais à opacité nulle).
+ * MONTE les flèches (backdrop-filter : jamais à opacité nulle) et TIENT les
+ * diapositives (`useHeldRecoItems`) : un titre noté ici ne quitte le
+ * carrousel qu'une fois le pointeur sorti, jamais en pleine lecture.
  */
-export function RecoBillboard({ slides }: { slides: RecoRowItem[] }) {
+export function RecoBillboard({ slides: servedSlides }: { slides: RecoRowItem[] }) {
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
   const dataSaver = useDataSaverActive();
   const { ref: frameRef, visible } = useInViewport<HTMLDivElement>("200px");
   const idle = useIdle(IDLE_MS);
   const arrows = useHoverMount(300);
+  const slides = useHeldRecoItems(servedSlides, arrows.hovered);
 
   const { index, animKey, selectWithGrace, prevWithGrace, nextWithGrace } = useBillboardRotation({
     count: slides.length,

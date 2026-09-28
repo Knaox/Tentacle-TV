@@ -175,3 +175,18 @@
     transform: none;
   }
 }
+
+/* ── Recommandation jugée, lâchée ──────────────────────────────────────────
+ * Ajoutée à Ma liste, aimée, vue ou notée, puis sa rangée quittée : la carte
+ * s'efface avant que le titre ne libère sa place (reco/recoRetirement,
+ * RECO_LEAVE_MS — même durée). Opacité et échelle seulement ; sortie en
+ * accélération, plus courte qu'une entrée. Sous `prefers-reduced-motion`, la
+ * politique globale (motion-reduce.css) la rend instantanée. */
+.reco-card-leaving {
+  opacity: 0;
+  transform: scale(0.94);
+  pointer-events: none;
+  transition:
+    opacity 160ms cubic-bezier(0.4, 0, 1, 1),
+    transform 160ms cubic-bezier(0.4, 0, 1, 1);
+}

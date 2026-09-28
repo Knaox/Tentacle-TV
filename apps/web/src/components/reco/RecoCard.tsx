@@ -1,6 +1,8 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem, useSendRecoFeedback } from "@tentacle-tv/api-client";
+import {
+  useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem, useSendRecoFeedback,
+} from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { titleKey } from "@tentacle-tv/shared";
 import { CardFrame } from "../cards/CardFrame";
@@ -39,6 +41,8 @@ interface RecoCardProps {
  *   • AU SURVOL, `RecoPosterHoverLayer` : voile, étoiles et plateau —
  *     « Lire » discret en tête, « Ne plus me proposer » au bout de la capsule.
  *     MONTÉ au survol, jamais laissé à opacité nulle (règle GPU du dépôt).
+ *   • EN PARTANCE (jugée, puis sa rangée lâchée) : elle s'efface avant que
+ *     le titre ne quitte la rangée (`.reco-card-leaving`).
  */
 export const RecoCard = memo(function RecoCard({
   item,
@@ -86,6 +90,7 @@ export const RecoCard = memo(function RecoCard({
   };
 
   const face = useRecoMarkerItem(item);
+  const leaving = useIsRecoLeaving(item.key);
   // Hors bibliothèque, « Ma liste » est une mise de côté jusqu'à l'arrivée :
   // aucun cache Jellyfin ne la connaît, la carte la dit elle-même.
   const pending = useIsWatchlistPending(item.jellyfinItemId ? null : titleKey(item.mediaType, item.tmdbId));
@@ -97,7 +102,7 @@ export const RecoCard = memo(function RecoCard({
   return (
     <div
       ref={rootRef}
-      className="group/card relative shrink-0 snap-start"
+      className={`group/card relative shrink-0 snap-start${leaving ? " reco-card-leaving" : ""}`}
       style={{
         width: cardWidthStyle(width, POSTER_WIDTH.md, POSTER_VW),
         // La carte soulevée passe devant sa voisine — son ombre aussi (cf. CardFrame).
