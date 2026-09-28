@@ -37,6 +37,12 @@ export interface ActivePlugin {
    * (`pluginSearch`, @tentacle-tv/shared), qui en valide chaque champ.
    */
   search?: { path: string; person?: string; types?: string[]; labels?: Record<string, string> };
+  /**
+   * Ce que le plugin sait dire et faire d'un titre hors bibliothèque (champ
+   * `titles` du manifeste) — lu par les cartes hors bibliothèque
+   * (`pluginTitles`, @tentacle-tv/shared), qui en valident chaque champ.
+   */
+  titles?: { state: string; request?: string };
 }
 
 /**

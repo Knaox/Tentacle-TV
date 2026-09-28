@@ -47,7 +47,13 @@ export const ExternalSections = memo(function ExternalSections({ results, onOpen
           {layout === "grid" ? (
             <View style={[st.grid, { paddingHorizontal: grid.padding, gap: grid.gutter }]}>
               {result.items.map((item) => (
-                <ExternalResultCard key={item.id} item={item} width={grid.itemWidth} onPress={() => onOpen(result.provider, item)} />
+                <ExternalResultCard
+                  key={item.id}
+                  item={item}
+                  width={grid.itemWidth}
+                  onPress={() => onOpen(result.provider, item)}
+                  onOpenHref={(href) => onSeeAll(result.provider, href)}
+                />
               ))}
             </View>
           ) : (
@@ -59,7 +65,12 @@ export const ExternalSections = memo(function ExternalSections({ results, onOpen
               contentContainerStyle={st.rail}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
-                <ExternalResultCard item={item} width={railWidth} onPress={() => onOpen(result.provider, item)} />
+                <ExternalResultCard
+                  item={item}
+                  width={railWidth}
+                  onPress={() => onOpen(result.provider, item)}
+                  onOpenHref={(href) => onSeeAll(result.provider, href)}
+                />
               )}
             />
           )}

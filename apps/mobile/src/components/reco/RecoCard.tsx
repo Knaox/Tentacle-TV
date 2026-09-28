@@ -2,12 +2,14 @@ import { memo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
-import { recoPosterUrl, useJellyfinClient, useRecoMarkerItem } from "@tentacle-tv/api-client";
+import { recoPosterUrl, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem } from "@tentacle-tv/api-client";
+import { titleKey } from "@tentacle-tv/shared";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { Badge, PressableCard } from "@/components/ui";
 import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { useCardWidth } from "@/contexts/CardDensityContext";
 import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
+import { useExternalTitleState } from "@/components/external/useExternalTitle";
 
 interface Props {
   item: RecoRowItem;
@@ -26,8 +28,10 @@ interface Props {
  * MobileMediaCard (`CardMarkerLayer` sur le visage `useRecoMarkerItem` — les
  * items ne sont pas des MediaItem) : la note globale et la vôtre en bas à gauche, la pastille Ma
  * liste / favori / vu en haut à droite. En haut à gauche, empilés : « À la
- * demande » hors bibliothèque, « Découverte » pour une exploration. L'appui
- * long ouvre la feuille (notation, Ma liste, favoris) : au doigt, pas de survol.
+ * demande » hors bibliothèque (ou l'état que l'extension en donne : « Demandé »),
+ * « Découverte » pour une exploration. L'appui long ouvre la feuille : au doigt,
+ * pas de survol — celle des cartes Vigie hors bibliothèque (« Demander », Ma
+ * liste à l'arrivée, la note), MediaActionSheet sinon.
  */
 export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongPress, reason }: Props) {
   const { t } = useTranslation("reco");
@@ -39,6 +43,10 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const showFallback = !poster || imgError;
   const onDemand = item.jellyfinItemId === null;
   const face = useRecoMarkerItem(item);
+  // Hors bibliothèque : la pastille dit l'état que l'extension donne du titre
+  // (« Demandé »…), et Ma liste est une mise de côté jusqu'à l'arrivée.
+  const state = useExternalTitleState(onDemand ? { mediaType: item.mediaType, tmdbId: item.tmdbId } : null);
+  const pending = useIsWatchlistPending(onDemand ? titleKey(item.mediaType, item.tmdbId) : null);
   const subtitle = onDemand && !canOpen
     ? [item.year, t("unavailableHint")].filter(Boolean).join(" — ")
     : item.year != null ? String(item.year) : null;
@@ -71,12 +79,12 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
             de marque (« Découverte ») — les couleurs du web. */}
         {(onDemand || item.exploration) && (
           <View style={st.badges} pointerEvents="none">
-            {onDemand && <Badge label={t("onDemandBadge")} variant="onMedia" />}
+            {onDemand && <Badge label={state?.badge?.label ?? t("onDemandBadge")} variant="onMedia" />}
             {item.exploration && <Badge label={t("explorationBadge")} variant="gradient" />}
           </View>
         )}
         {/* Les marqueurs de toutes les cartes, à leurs places communes. */}
-        <CardMarkerLayer item={face} communityRating={item.voteAverage} />
+        <CardMarkerLayer item={face} communityRating={item.voteAverage} inWatchlist={onDemand ? pending : undefined} />
       </View>
       <Text numberOfLines={1} style={st.title}>{item.title}</Text>
       {subtitle && <Text numberOfLines={1} style={st.year}>{subtitle}</Text>}

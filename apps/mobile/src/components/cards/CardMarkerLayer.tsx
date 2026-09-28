@@ -17,6 +17,8 @@ interface Props {
    */
   liftRating?: boolean;
   statusStyle?: StyleProp<ViewStyle>;
+  /** Ma liste dite par l'appelant : un titre hors bibliothèque mis de côté jusqu'à son arrivée. */
+  inWatchlist?: boolean;
 }
 
 /**
@@ -31,8 +33,9 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
   scope = "series",
   liftRating = false,
   statusStyle,
+  inWatchlist,
 }: Props) {
-  const markers = useCardMarkers(item, { communityRating, scope });
+  const markers = useCardMarkers(item, { communityRating, scope, inWatchlist });
   return (
     <>
       <CardRatingBadge
