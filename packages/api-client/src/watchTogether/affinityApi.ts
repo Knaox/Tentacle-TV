@@ -30,13 +30,13 @@ export async function fetchAffinity(): Promise<WtAffinityStateDto | null> {
 export interface AffinityKinds {
   /** Titres de chaque type que tout le groupe peut lire. */
   counts: Record<WtAffinityKind, number>;
-  /** Le type de la séance refermée qu'un lancement reprendrait. */
-  resume: WtAffinityKind | null;
+  /** Les types dont une séance refermée attend : les lancer la reprend. */
+  resume: WtAffinityKind[];
 }
 
 export async function fetchAffinityKinds(): Promise<AffinityKinds> {
   const body = await wtFetch<Partial<AffinityKinds> & Pick<AffinityKinds, "counts">>("/affinity/kinds");
-  return { counts: body.counts, resume: body.resume ?? null };
+  return { counts: body.counts, resume: body.resume ?? [] };
 }
 
 /** Lance la séance (elle s'ouvre chez tout le groupe), la reprend, ou change de type. */

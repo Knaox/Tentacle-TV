@@ -118,7 +118,7 @@ export function AffinityKindsView({ state, titleId }: { state: WtAffinityStateDt
               const Icon = ICONS[kind];
               const count = counts?.[kind];
               const current = state?.kind === kind;
-              const resumable = !current && kinds?.resume === kind;
+              const resumable = !current && !!kinds?.resume.includes(kind);
               const detail = count === undefined ? t("affinityCounting") : count === 0 ? t("affinityKindNone") : t("affinityKindCount", { count });
               return (
                 <li key={kind}>

@@ -3,7 +3,9 @@ import { getRoomOf } from "../roomRegistry";
 import type { RemovalResult, Room } from "../roomTypes";
 import { affinityStateOf, broadcastAffinity } from "./affinityBroadcast";
 import { catalogDeck, catalogKindCounts, loadGroupCatalog, readableKeys } from "./affinityCatalog";
-import { getAffinity, getClosedAffinity, nextSessionId, setAffinity, setClosedAffinity } from "./affinityRegistry";
+import {
+  closedAffinities, dropClosedAffinity, getAffinity, getClosedAffinity, keepClosedAffinity, nextSessionId, setAffinity,
+} from "./affinityRegistry";
 import {
   closeSession, createSession, joinSession, leaveSession, nextCards, recordVote, reopenSession, settleProposal, undoVote,
 } from "./affinitySession";
@@ -52,24 +54,24 @@ export function currentAffinity(userId: string): WtAffinityStateDto | null {
   return room ? affinityStateOf(room) : null;
 }
 
-/** Combien de titres de chaque type tout le groupe peut lire, et le type de
- *  la séance refermée qu'un lancement reprendrait. */
+/** Combien de titres de chaque type tout le groupe peut lire, et les types
+ *  dont une séance refermée attend : les lancer la reprend. */
 export async function affinityKinds(
   userId: string,
-): Promise<AffinityResult<{ counts: Record<WtAffinityKind, number>; resume: WtAffinityKind | null }>> {
+): Promise<AffinityResult<{ counts: Record<WtAffinityKind, number>; resume: WtAffinityKind[] }>> {
   const room = getRoomOf(userId);
   if (!room) return fail(404, "not_in_group");
   if (room.members.size < 2) return fail(409, "need_two_members");
   const catalog = await loadGroupCatalog([...room.members.keys()], userId);
-  return done({ counts: catalogKindCounts(catalog), resume: getClosedAffinity(room)?.kind ?? null });
+  return done({ counts: catalogKindCounts(catalog), resume: closedAffinities(room).map((s) => s.kind) });
 }
 
 /**
  * Lance la séance : elle s'ouvre chez tout le groupe, chacun y entrant en
- * ouvrant sa pile. Le type de la séance refermée : on la rouvre, votes
- * compris. Un autre type qu'une séance ouverte : on change de type — la pile
- * repart pour tout le monde, l'ancienne est gardée refermée. Le type de la
- * séance ouverte : rien ne change.
+ * ouvrant sa pile. Un type dont une séance est refermée : on la rouvre,
+ * votes compris. Un autre type qu'une séance ouverte : on change de type —
+ * la pile repart pour tout le monde, l'ancienne est gardée refermée. Le type
+ * de la séance ouverte : rien ne change.
  */
 export async function startAffinity(userId: string, kind: WtAffinityKind): Promise<AffinityResult<WtAffinityStateDto>> {
   let room = getRoomOf(userId);
@@ -78,8 +80,9 @@ export async function startAffinity(userId: string, kind: WtAffinityKind): Promi
   if (getAffinity(room)?.kind === kind) return done(affinityStateOf(room)!);
 
   const now = Date.now();
-  let session = getClosedAffinity(room)?.kind === kind ? getClosedAffinity(room) : null;
+  let session = getClosedAffinity(room, kind);
   if (session) {
+    dropClosedAffinity(room, kind);
     reopenSession(session, { sessionId: nextSessionId(), startedBy: userId, now });
   } else {
     const audience = [...room.members.keys()];
@@ -99,9 +102,7 @@ export async function startAffinity(userId: string, kind: WtAffinityKind): Promi
   const previous = getAffinity(room);
   if (previous) {
     closeSession(previous);
-    setClosedAffinity(room, previous);
-  } else if (getClosedAffinity(room) === session) {
-    setClosedAffinity(room, null);
+    keepClosedAffinity(room, previous);
   }
   // Hors de l'audience de la pile (arrivé dans la salle après elle), il y
   // entre par sa pile : `join` calcule ce qu'il peut lire.
@@ -160,11 +161,11 @@ function depart(room: Room, session: AffinitySession, userId: string, forget: bo
   broadcastAffinity(room, "quit", userId, { matchKeys: matched });
 }
 
-/** Referme la séance ouverte ; elle prend la place de la refermée d'avant. */
+/** Referme la séance ouverte ; gardée, elle remplace la refermée de son type. */
 function closeOpenSession(room: Room, session: AffinitySession): void {
   closeSession(session);
   setAffinity(room, null);
-  setClosedAffinity(room, session);
+  keepClosedAffinity(room, session);
 }
 
 export function affinityCards(
@@ -241,10 +242,10 @@ export function launchAffinity(userId: string, key: string): AffinityResult<null
 export function handleAffinityMemberRemoved({ room, removed, dissolved }: RemovalResult): void {
   if (dissolved) {
     setAffinity(room, null);
-    setClosedAffinity(room, null);
+    dropClosedAffinity(room);
     return;
   }
-  getClosedAffinity(room)?.ballots.delete(removed.userId);
+  for (const closed of closedAffinities(room)) closed.ballots.delete(removed.userId);
   const session = getAffinity(room);
   if (!session) return;
   if (room.members.size < 2) {

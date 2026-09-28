@@ -114,7 +114,7 @@ describe("/api/watch-together/affinity — le mode partagé", () => {
     roomOf(["a", "b"]);
     const { app, call, start, join, vote } = await makeApp();
 
-    expect((await call("a", "GET", "/kinds")).json()).toEqual({ counts: { movie: 3, series: 1, anime: 0 }, resume: null });
+    expect((await call("a", "GET", "/kinds")).json()).toEqual({ counts: { movie: 3, series: 1, anime: 0 }, resume: [] });
     const { state } = (await start("a", "movie")).json();
     expect(state).toMatchObject({ kind: "movie", startedBy: "a", deckSize: 3, participants: [{ userId: "a" }], proposals: [] });
     // Toute la salle l'apprend — c'est ce qui l'ouvre chez l'autre.
@@ -167,7 +167,7 @@ describe("/api/watch-together/affinity — le mode partagé", () => {
     // Quitter une séance déjà refermée ne fait rien.
     expect((await call("b", "POST", "/leave")).json()).toEqual({ ok: true });
 
-    expect((await call("b", "GET", "/kinds")).json().resume).toBe("movie");
+    expect((await call("b", "GET", "/kinds")).json().resume).toEqual(["movie"]);
     const reopened = (await start("b", "movie")).json().state;
     expect(reopened.sessionId).not.toBe(sid);
     expect(reopened).toMatchObject({ startedBy: "b", participants: [{ userId: "b", judged: 1 }] });
@@ -195,7 +195,7 @@ describe("/api/watch-together/affinity — le mode partagé", () => {
     await app.close();
   });
 
-  it("changer de type relance la pile, périme l'ancienne séance ; revenir au type d'avant la reprend", async () => {
+  it("changer de type relance la pile, périme l'ancienne séance ; chaque type garde la sienne", async () => {
     roomOf(["a", "b"]);
     const { app, call, start, join, vote } = await makeApp();
     await start("a", "movie");
@@ -208,9 +208,14 @@ describe("/api/watch-together/affinity — le mode partagé", () => {
     expect([stale.statusCode, stale.json()]).toEqual([409, { code: "stale_session" }]);
     // Même type que la séance ouverte : rien ne change.
     expect((await start("a", "series")).json().state.sessionId).toBe(next.sessionId);
+    // Quitter les séries puis revenir aux films : chaque type a gardé sa séance.
+    await join("a");
+    await call("a", "POST", "/leave");
+    expect((await call("a", "GET", "/kinds")).json().resume.sort()).toEqual(["movie", "series"]);
     const back = (await start("a", "movie")).json().state;
     expect(back.kind).toBe("movie");
     expect((await join("b")).json().cards.map((c: AffinityCard) => c.key)).toEqual(["movie:2", "movie:3"]);
+    expect((await call("a", "GET", "/kinds")).json().resume).toEqual(["series"]);
     await app.close();
   });
 
