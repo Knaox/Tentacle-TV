@@ -310,7 +310,6 @@ export {
 export { reasonToText, type ReasonTranslate } from "./reco/recoReasonText";
 export { selectHeroSlides, heroSelectionFromRows, useRecoHeroSlides, type RecoHeroSelection } from "./reco/recoHeroSlides";
 export { buildPlatformCatalog, isFamilyActive, toggleFamily, activeFamilyCount, type PlatformCatalogEntry } from "./reco/platformCatalog";
-
 // Comptes externes — TMDB guest session (cf. hooks/useExternalAccounts)
 export {
   useExternalAccounts, useCreateTmdbGuestSession, useUnlinkTmdbGuestSession, useResyncRatings,
@@ -322,3 +321,4 @@ export {
 export { useTitleState, useRequestTitle, titleStateQueryKey } from "./titles/useTitleState";
 export { loadTitleState, type TitleFetcher } from "./titles/titleStateBatcher";
 export { useIsWatchlistPending, useWatchlistByTmdb, WATCHLIST_PENDING_KEY } from "./hooks/useWatchlistPending";
+export * from "./hooks/useViewingStats"; // Statistiques de visionnage (cf. hooks/useViewingStats)
