@@ -61,10 +61,11 @@ export function OfflineTitleSections({ entry, item, people, siblings, onRemove }
       )}
 
       <RevealOnView>
-        <OfflineDevicePanel facts={facts}>
-          <OfflineAutoDeleteField entry={entry} />
-          <RemoveFromDeviceButton label={t("downloads:detailRemove")} onClick={onRemove} />
-        </OfflineDevicePanel>
+        <OfflineDevicePanel
+          facts={facts}
+          aside={<OfflineAutoDeleteField entry={entry} />}
+          action={<RemoveFromDeviceButton label={t("downloads:detailRemove")} onClick={onRemove} />}
+        />
       </RevealOnView>
 
       {people.length > 0 && (

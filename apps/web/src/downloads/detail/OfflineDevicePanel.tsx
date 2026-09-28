@@ -10,8 +10,10 @@ export interface DeviceFact {
 
 interface Props {
   facts: readonly DeviceFact[];
-  /** Les gestes : suppression après visionnage, retrait de la machine. */
-  children?: ReactNode;
+  /** À gauche du pied : un réglage (suppression après visionnage). */
+  aside?: ReactNode;
+  /** À droite du pied : le retrait de la machine. */
+  action: ReactNode;
 }
 
 /**
@@ -22,7 +24,7 @@ interface Props {
  * de `backdrop-filter` — rien de vivant derrière —, halos statiques dans un
  * calque rogné.
  */
-export function OfflineDevicePanel({ facts, children }: Props) {
+export function OfflineDevicePanel({ facts, aside, action }: Props) {
   const { t } = useTranslation("downloads");
   return (
     <section className="group/row" aria-label={t("heroLabel")}>
@@ -47,11 +49,10 @@ export function OfflineDevicePanel({ facts, children }: Props) {
               </div>
             ))}
           </dl>
-          {children && (
-            <div className="relative mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-line-subtle pt-4">
-              {children}
-            </div>
-          )}
+          <div className="relative mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-line-subtle pt-4">
+            {aside ?? <span aria-hidden />}
+            {action}
+          </div>
         </div>
       </div>
     </section>

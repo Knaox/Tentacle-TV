@@ -1,143 +1,123 @@
 /**
- * Vue d'une SÉRIE téléchargée : bannière, métadonnées lues dans les snapshots
- * locaux, sélecteur de saison, et les épisodes de la saison choisie.
- *
- * Le sélecteur disparaît quand il n'y a qu'une saison : un choix entre une
- * seule option n'est pas un choix, c'est un clic de plus.
+ * La fiche d'une SÉRIE gardée sur cette machine — la scène de la fiche en
+ * ligne (décor, logo, note, faits, Lecture qui vise le bon épisode), puis ses
+ * épisodes présents ici, saison par saison, et ce qu'elle occupe.
  *
  * Tout vient du disque — la page fonctionne à l'identique en ligne et hors
- * ligne, sans aucune requête serveur.
+ * ligne, sans aucune requête serveur ; la fiche complète reste à un geste
+ * quand le serveur répond.
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
-import { useDownloadsList } from "./useDownloadState";
-import { groupOfflineEntries, groupSeasonsBySeries, seasonLabel } from "@tentacle-tv/offline-core";
-import { OfflineEpisodeCard } from "./OfflineEpisodeCard";
-import { SeasonPicker } from "./SeasonPicker";
-import { useLocalSnapshot } from "./useLocalSnapshot";
-import { RevealCell, RevealScope } from "../components/grid/RevealCell";
-
-/** Vignette 16:9 plus son bloc titre — hauteur réservée avant premier passage. */
-const EPISODE_CELL_HEIGHT = 230;
+import { motion } from "framer-motion";
+import { keptBytes, localVersionOfGroup } from "@tentacle-tv/offline-core";
+import { PageTransition } from "../components/PageTransition";
+import { DetailStage } from "../components/detail/DetailStage";
+import { DetailPoster } from "../components/detail/DetailPoster";
+import { DetailTitle } from "../components/detail/DetailTitle";
+import { DetailScoreline } from "../components/detail/DetailScoreline";
+import { DetailMetadata } from "../components/detail/DetailMetadata";
+import { DetailOverview } from "../components/detail/DetailOverview";
+import { DetailPlaceholder } from "../components/detail/DetailPlaceholder";
+import { textCascadeDelayed } from "../theme/motion";
+import { useOfflineMode } from "../offline/useOfflineMode";
+import { DeleteDownloadModal } from "./DeleteDownloadModal";
+import { formatBytes } from "./presets";
+import { OfflineDeviceLine } from "./detail/OfflineDeviceLine";
+import { OfflineStageActions } from "./detail/OfflineStageActions";
+import { OfflineSeriesSections } from "./detail/OfflineSeriesSections";
+import { useOfflineSeries } from "./detail/useOfflineSeries";
+import { useOfflineWatchedToggle, useRemoveFromDevice } from "./detail/useOfflineActions";
+import { versionLabel } from "./detail/offlineDetailText";
+import { seriesPlayAction } from "./detail/seriesPlayAction";
 
 export function OfflineSeriesView() {
-  const { t } = useTranslation(["downloads", "common"]);
-  const navigate = useNavigate();
   const { seriesKey } = useParams<{ seriesKey: string }>();
-  const entries = useDownloadsList();
-  const rootReady = useDownloadsRootReady();
-  const [seasonKey, setSeasonKey] = useState<string | null>(null);
-  const [backdropFailed, setBackdropFailed] = useState(false);
+  const { t } = useTranslation(["common", "downloads"]);
+  const navigate = useNavigate();
+  const offline = useOfflineMode();
+  const local = useOfflineSeries(seriesKey);
+  const toggleWatched = useOfflineWatchedToggle();
+  const removeFromDevice = useRemoveFromDevice();
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const { series, item, episodes } = local;
 
-  const series = useMemo(() => {
-    const complete = entries.filter((e) => e.status === "complete");
-    const { seasons } = groupOfflineEntries(complete);
-    return groupSeasonsBySeries(seasons).find((s) => s.key === seriesKey) ?? null;
-  }, [entries, seriesKey]);
-
-  // La saison choisie peut disparaître (dernier épisode supprimé) : on retombe
-  // sur la première plutôt que sur une page vide.
-  const season =
-    series?.seasons.find((s) => s.key === seasonKey) ?? series?.seasons[0] ?? null;
-
-  const seriesPoster = series?.posterItemId;
-  const seasonPoster = season?.posterItemId;
-  // La saison porte le synopsis le plus pertinent ; la série prend le relais.
-  const seasonSnapshot = useLocalSnapshot(seasonPoster, "season.json", rootReady);
-  const seriesSnapshot = useLocalSnapshot(seriesPoster, "series.json", rootReady);
-
-  // Le dernier épisode supprimé fait disparaître la série : ne pas rester sur
-  // une page vide.
+  // Le dernier épisode retiré fait disparaître la série : pas de page vide.
   useEffect(() => {
-    if (entries.length > 0 && !series) navigate("/", { replace: true });
-  }, [entries.length, series, navigate]);
+    if (local.ready && !series && !removing) navigate("/", { replace: true });
+  }, [local.ready, series, removing, navigate]);
 
-  if (!series || !season) {
-    // Liste encore vide = chargement en cours : ne pas annoncer une absence
-    // qui n'en est pas une (l'effet ci-dessus redirige si elle se confirme).
-    return (
-      <div className="mx-auto min-h-screen w-full max-w-5xl px-4 pt-24 md:px-8">
-        {entries.length > 0 && (
-          <p className="text-sm text-content-quaternary">{t("downloads:seriesNotFound")}</p>
-        )}
-      </div>
-    );
+  const remove = useCallback(async () => {
+    setRemoving(true);
+    await removeFromDevice(episodes);
+    setConfirmRemove(false);
+    navigate(-1);
+  }, [episodes, removeFromDevice, navigate]);
+
+  if (!local.ready || !series || !item) {
+    return <DetailPlaceholder failed={false} retrying={false} onRetry={() => undefined} />;
   }
 
-  const backdropUrl = rootReady ? localResourceUrl(`meta/${series.posterItemId}/backdrop.jpg`) : null;
-  const overview = (seasonSnapshot?.Overview ?? seriesSnapshot?.Overview ?? "").replace(/<[^>]+>/g, "");
-  const metaBits = [
-    series.seasons.length > 1
-      ? t("downloads:seasonsCount", { count: series.seasons.length })
-      : seasonLabel(t, season.seasonNumber),
-    t("downloads:episodesCount", { count: series.episodeCount }),
-    seriesSnapshot?.ProductionYear ? String(seriesSnapshot.ProductionYear) : null,
-  ].filter(Boolean);
+  const allWatched = episodes.length > 0 && episodes.every((episode) => episode.played);
+  const deviceParts = [
+    versionLabel(t, localVersionOfGroup(episodes)),
+    t("downloads:seasonsCount", { count: series.seasons.length }),
+    t("downloads:episodesCount", { count: episodes.length }),
+    formatBytes(keptBytes(episodes)),
+  ];
 
   return (
-    <div className="min-h-screen w-full pb-16">
-      <div className="relative">
-        {backdropUrl && !backdropFailed && (
-          <div className="absolute inset-x-0 top-0 h-72 overflow-hidden">
-            <img
-              src={backdropUrl}
-              alt=""
-              className="h-full w-full object-cover"
-              onError={() => setBackdropFailed(true)}
-            />
-            {/* Scrim posé sur image : noir constant dans les deux thèmes. */}
-            <div
-              className="absolute inset-0"
-              style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, var(--surface-1) 100%)" }}
-            />
-          </div>
-        )}
-
-        <div className="relative mx-auto w-full max-w-5xl px-4 pt-24 md:px-8">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 rounded-md bg-fill-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary"
+    <PageTransition>
+      <div className="min-h-screen bg-surface-0">
+        <DetailStage backdropUrl={local.backdropUrl} item={item} glowUrl={local.backdropUrl}>
+          <motion.div
+            className="flex items-end gap-8 px-5 pb-10 pt-28 md:px-12 md:pb-14 xl:gap-12 xl:px-16"
+            initial="hidden"
+            animate="show"
+            variants={textCascadeDelayed}
           >
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            {t("common:back")}
-          </Link>
+            <DetailPoster item={item} imageUrl={local.posterUrl} />
+            <div className="min-w-0 max-w-4xl flex-1">
+              <DetailTitle item={item} logoUrl={local.logoUrl} />
+              <DetailScoreline item={item} markersEnabled={false} />
+              <DetailMetadata item={item} linkGenres={false} />
+              <OfflineDeviceLine parts={deviceParts} />
+              <DetailOverview item={item} />
+              <OfflineStageActions
+                play={seriesPlayAction(t, episodes, local.playTarget)}
+                watched={allWatched}
+                onToggleWatched={() => void toggleWatched(episodes.map((episode) => episode.itemId), !allWatched)}
+                onlineItemId={offline ? null : series.seriesId}
+                onRemove={() => setConfirmRemove(true)}
+                removeLabel={t("downloads:detailRemoveSeries")}
+              />
+            </div>
+          </motion.div>
+        </DetailStage>
 
-          <h1 className="mt-4 text-3xl font-bold text-content-primary">{series.seriesName}</h1>
-          <p className="mt-1 text-sm text-content-tertiary">{metaBits.join(" · ")}</p>
-          {overview && (
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-content-tertiary line-clamp-3">
-              {overview}
-            </p>
-          )}
-        </div>
+        <OfflineSeriesSections
+          series={series}
+          episodes={episodes}
+          item={item}
+          people={local.people}
+          playTarget={local.playTarget}
+          onRemove={() => setConfirmRemove(true)}
+        />
       </div>
 
-      <div className="mx-auto mt-8 w-full max-w-5xl px-4 md:px-8">
-        <SeasonPicker seasons={series.seasons} activeKey={season.key} onSelect={setSeasonKey} />
-
-        {/* Une saison entière peut compter plus de cent épisodes, chacun avec sa
-            vignette 16:9 (≈ 200 Ko décodés). Les cellules gardent leur place,
-            seul leur contenu est démonté hors du champ. */}
-        <RevealScope>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {season.episodes.map((episode, i) => (
-              <RevealCell key={episode.id} minHeight={EPISODE_CELL_HEIGHT} aspect={16 / 9} textHeight={72} eager={i < 9}>
-                <OfflineEpisodeCard
-                  entry={episode}
-                  onSelect={(e) => navigate(`/offline/item/${e.itemId}`)}
-                  onPlay={(e) => navigate(`/watch/${e.itemId}`)}
-                />
-              </RevealCell>
-            ))}
-          </div>
-        </RevealScope>
-      </div>
-
-    </div>
+      {confirmRemove && (
+        <DeleteDownloadModal
+          title={item.Name}
+          heading={t("downloads:detailRemoveSeriesTitle", { count: episodes.length })}
+          message={t("downloads:bulkDeleteConfirmMessage")}
+          busy={removing}
+          onConfirm={() => void remove()}
+          onClose={() => setConfirmRemove(false)}
+        />
+      )}
+    </PageTransition>
   );
 }
