@@ -42,14 +42,14 @@ describe("affinité — la règle du match", () => {
   it("deux participants qui aiment le même titre font un match", () => {
     const s = withParticipants(["a", "b"]);
     expect(recordVote(s, "a", "movie:1", "like", 10).matched).toBe(false);
-    expect(recordVote(s, "b", "movie:1", "superlike", 20).matched).toBe(true);
+    expect(recordVote(s, "b", "movie:1", "like", 20).matched).toBe(true);
     const [match] = sessionToDto(s, 1).matches;
-    expect(match).toMatchObject({ key: "movie:1", itemId: "item1", likedBy: ["a", "b"], superlikedBy: ["b"], at: 20 });
+    expect(match).toMatchObject({ key: "movie:1", itemId: "item1", likedBy: ["a", "b"], at: 20 });
   });
 
   it("seul, un participant ne fait jamais de match", () => {
     const s = withParticipants(["a"]);
-    expect(recordVote(s, "a", "movie:1", "superlike", 1).matched).toBe(false);
+    expect(recordVote(s, "a", "movie:1", "like", 1).matched).toBe(false);
     expect(s.matches.size).toBe(0);
   });
 
@@ -61,12 +61,6 @@ describe("affinité — la règle du match", () => {
     recordVote(s, "a", "movie:3", "like", 4);
     expect(recordVote(s, "b", "movie:3", "like", 5).matched).toBe(false);
     expect(recordVote(s, "c", "movie:2", "like", 6).matched).toBe(true);
-  });
-
-  it("un « passer » ne vaut pas un j'aime", () => {
-    const s = withParticipants(["a", "b"]);
-    recordVote(s, "a", "movie:1", "like", 1);
-    expect(recordVote(s, "b", "movie:1", "skip", 2).matched).toBe(false);
   });
 
   it("un match est acquis : un nouveau participant ne le défait pas", () => {
@@ -97,22 +91,14 @@ describe("affinité — la règle du match", () => {
     expect(recordVote(s, "b", "movie:1", "dislike", 3).unmatched).toBe(true);
   });
 
-  it("un j'aime devenu coup de cœur se voit sur le match", () => {
-    const s = withParticipants(["a", "b"]);
-    recordVote(s, "a", "movie:1", "like", 1);
-    recordVote(s, "b", "movie:1", "like", 2);
-    recordVote(s, "a", "movie:1", "superlike", 3);
-    expect(s.matches.get("movie:1")?.superlikedBy).toEqual(["a"]);
-  });
-
   it("quand le seul qui manquait s'en va, les restants matchent", () => {
     const s = withParticipants(["a", "b", "c"]);
     recordVote(s, "a", "movie:4", "like", 1);
-    recordVote(s, "b", "movie:4", "superlike", 2);
+    recordVote(s, "b", "movie:4", "like", 2);
     recordVote(s, "c", "movie:4", "dislike", 3);
     recordVote(s, "a", "movie:5", "like", 4);
     expect(leaveSession(s, "c", 5)).toEqual(["movie:4"]);
-    expect(s.matches.get("movie:4")).toMatchObject({ likedBy: ["a", "b"], superlikedBy: ["b"] });
+    expect(s.matches.get("movie:4")).toMatchObject({ likedBy: ["a", "b"] });
     // Un départ qui laisse un participant seul ne matche rien.
     expect(leaveSession(s, "b", 6)).toEqual([]);
   });
@@ -145,17 +131,17 @@ describe("affinité — la pile servie à chacun", () => {
     const s = withParticipants(["a", "b", "c"]);
     recordVote(s, "b", "movie:5", "like", 1);
     recordVote(s, "b", "movie:6", "like", 2);
-    recordVote(s, "c", "movie:6", "superlike", 3);
+    recordVote(s, "c", "movie:6", "like", 3);
     expect(promotedFor(s, s.participants.get("a")!)).toEqual(["movie:6", "movie:5"]);
     expect(nextCards(s, "a", 4, new Set()).map((c) => c.key)).toEqual(["movie:6", "movie:5", "movie:1", "movie:2"]);
   });
 
-  it("jamais un match, et les titres passés reviennent à la fin", () => {
+  it("jamais un match, jamais ce qu'on a déjà jugé", () => {
     const s = withParticipants(["a", "b"], 3);
-    recordVote(s, "a", "movie:1", "skip", 1);
+    recordVote(s, "a", "movie:1", "dislike", 1);
     recordVote(s, "a", "movie:2", "like", 2);
     recordVote(s, "b", "movie:2", "like", 3);
-    expect(nextCards(s, "a", 10, new Set()).map((c) => c.key)).toEqual(["movie:3", "movie:1"]);
+    expect(nextCards(s, "a", 10, new Set()).map((c) => c.key)).toEqual(["movie:3"]);
     expect(nextCards(s, "b", 10, new Set()).map((c) => c.key)).toEqual(["movie:1", "movie:3"]);
   });
 
@@ -167,7 +153,7 @@ describe("affinité — la pile servie à chacun", () => {
 
   it("l'état diffusé : participants par ancienneté, avec ce qu'ils ont jugé", () => {
     const s = withParticipants(["b", "a"]);
-    recordVote(s, "a", "movie:1", "skip", 1);
+    recordVote(s, "a", "movie:1", "dislike", 1);
     recordVote(s, "a", "movie:2", "like", 2);
     const dto = sessionToDto(s, 42);
     expect(dto).toMatchObject({ sessionId: 1, seq: 42, kind: "movie", deckSize: 6, matches: [] });

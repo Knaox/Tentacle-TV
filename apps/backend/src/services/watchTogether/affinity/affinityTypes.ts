@@ -20,10 +20,8 @@ export interface AffinityParticipant {
    * bibliothèques de la salle. Un membre arrivé après ne voit que la sienne.
    */
   allowed: ReadonlySet<string> | null;
-  /** Clé de titre → dernier geste (le dernier geste gagne). */
+  /** Clé de titre → dernier verdict (le dernier verdict gagne). */
   votes: Map<string, WtAffinityVerdict>;
-  /** Titres passés, dans l'ordre : ils reviennent en fin de pile. */
-  skipped: string[];
 }
 
 /** Un match — ses champs d'affichage sont recopiés : il survit à un
@@ -36,7 +34,6 @@ export interface AffinityMatch {
   year: number | null;
   at: number;
   likedBy: string[];
-  superlikedBy: string[];
 }
 
 export interface AffinityLaunch {

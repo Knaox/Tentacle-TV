@@ -18,13 +18,13 @@
  *  « anime » réunit films et séries d'animation japonaise. */
 export type WtAffinityKind = "movie" | "series" | "anime";
 
-/** Les gestes de la pile « Affiner », repris tels quels. « skip » ne juge
- *  rien : la carte revient en fin de pile. */
-export type WtAffinityVerdict = "like" | "superlike" | "dislike" | "skip";
+/** Les deux verdicts du swipe de groupe, rien d'autre : ni coup de cœur, ni
+ *  « passer ». Annuler retire le verdict (DELETE). */
+export type WtAffinityVerdict = "like" | "dislike";
 
 export interface WtAffinityParticipantDto {
   userId: string;
-  /** Cartes jugées pendant la séance (passées comprises). */
+  /** Cartes jugées pendant la séance. */
   judged: number;
   joinedAt: number;
 }
@@ -39,8 +39,6 @@ export interface WtAffinityMatchDto {
   year: number | null;
   /** Les participants au moment du match — tous l'ont aimé. */
   likedBy: string[];
-  /** Parmi eux, ceux qui en ont fait un coup de cœur. */
-  superlikedBy: string[];
   at: number;
 }
 

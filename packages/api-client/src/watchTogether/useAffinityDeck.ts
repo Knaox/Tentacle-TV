@@ -16,15 +16,12 @@ export interface AffinityDeck {
   error: boolean;
   /** Plus rien à juger pour l'instant (file vide ET serveur à sec). */
   empty: boolean;
-  /** Titres passés pendant ce tour, qu'on peut revoir une fois la pile vide. */
-  skippedCount: number;
   canUndo: boolean;
   /** Un geste n'a pas pu être enregistré (la carte est revenue). */
   saveFailed: boolean;
   judge: (verdict: WtAffinityVerdict) => void;
   undo: () => void;
   retry: () => void;
-  revisit: () => void;
   dismissSaveFailed: () => void;
 }
 
@@ -127,7 +124,6 @@ export function useAffinityDeck(sessionId: number | null, events: AffinityDeckEv
     if (!stateRef.current.loaded) setJoinAttempt((n) => n + 1);
     else setError(false);
   }, []);
-  const revisit = useCallback(() => dispatch({ type: "revisit" }), []);
   const dismissSaveFailed = useCallback(() => setSaveFailed(false), []);
 
   return {
@@ -135,13 +131,11 @@ export function useAffinityDeck(sessionId: number | null, events: AffinityDeckEv
     loading: !loaded && !error,
     error: error && queue.length === 0,
     empty: loaded && exhausted && queue.length === 0,
-    skippedCount: state.skipped.length,
     canUndo: state.history.length > 0,
     saveFailed,
     judge,
     undo,
     retry,
-    revisit,
     dismissSaveFailed,
   };
 }

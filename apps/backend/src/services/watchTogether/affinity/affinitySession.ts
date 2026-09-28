@@ -6,21 +6,19 @@ import type { AffinityCard, AffinityMatch, AffinityParticipant, AffinitySession 
  * horloge : l'appelant fournit `now`).
  *
  * LA RÈGLE DU MATCH : un titre est un match quand TOUS les participants de la
- * séance l'ont aimé (« j'aime » ou « coup de cœur »), et qu'ils sont au moins
- * deux. Participant = membre de la salle qui a ouvert l'affinité ; il le reste
+ * séance l'ont aimé, et qu'ils sont au moins deux. Deux verdicts seulement —
+ * j'aime, pas pour moi — et annuler. Participant = membre de la salle qui a ouvert l'affinité ; il le reste
  * tant qu'il ne la quitte pas (ou le groupe) — fermer le panneau ne le retire
  * pas, ses votes comptent. Un membre qui n'a jamais ouvert l'affinité ne
  * bloque rien.
  *
  * Un match est acquis : l'arrivée d'un nouveau participant ne le défait pas
  * (la proposition a été faite). Seul celui qui l'avait aimé peut le défaire,
- * en annulant ou en changeant son geste.
+ * en annulant ou en changeant son verdict.
  */
 
-export const LIKES: ReadonlySet<WtAffinityVerdict> = new Set<WtAffinityVerdict>(["like", "superlike"]);
-
 export function isLike(verdict: WtAffinityVerdict | undefined): boolean {
-  return verdict !== undefined && LIKES.has(verdict);
+  return verdict === "like";
 }
 
 export function createSession(input: {
@@ -56,7 +54,7 @@ export function joinSession(
   now: number,
 ): boolean {
   if (session.participants.has(userId)) return false;
-  session.participants.set(userId, { userId, joinedAt: now, allowed, votes: new Map(), skipped: [] });
+  session.participants.set(userId, { userId, joinedAt: now, allowed, votes: new Map() });
   return true;
 }
 
@@ -73,7 +71,7 @@ export function leaveSession(session: AffinitySession, userId: string, now: numb
   return [...candidates].filter((key) => evaluateMatch(session, key, now));
 }
 
-/** Pose (ou remplace) le geste d'un participant sur un titre de la pile. */
+/** Pose (ou remplace) le verdict d'un participant sur un titre de la pile. */
 export function recordVote(
   session: AffinitySession,
   userId: string,
@@ -84,26 +82,15 @@ export function recordVote(
   const participant = session.participants.get(userId);
   if (!participant || !session.index.has(key)) return { matched: false, unmatched: false };
   participant.votes.set(key, verdict);
-  participant.skipped = participant.skipped.filter((k) => k !== key);
-  if (verdict === "skip") participant.skipped.push(key);
   const unmatched = !isLike(verdict) && withdrawMatch(session, userId, key);
-  if (isLike(verdict)) restampSuperlike(session.matches.get(key), userId, verdict);
   const matched = isLike(verdict) && evaluateMatch(session, key, now);
   return { matched, unmatched };
 }
 
-/** Un « j'aime » devenu coup de cœur (ou l'inverse) sur un titre déjà matché. */
-function restampSuperlike(match: AffinityMatch | undefined, userId: string, verdict: WtAffinityVerdict): void {
-  if (!match || !match.likedBy.includes(userId)) return;
-  const others = match.superlikedBy.filter((id) => id !== userId);
-  match.superlikedBy = verdict === "superlike" ? [...others, userId] : others;
-}
-
-/** Annule le geste d'un participant — un match qu'il portait tombe. */
+/** Annule le verdict d'un participant — un match qu'il portait tombe. */
 export function undoVote(session: AffinitySession, userId: string, key: string): { unmatched: boolean } {
   const participant = session.participants.get(userId);
   if (!participant || !participant.votes.delete(key)) return { unmatched: false };
-  participant.skipped = participant.skipped.filter((k) => k !== key);
   return { unmatched: withdrawMatch(session, userId, key) };
 }
 
@@ -129,7 +116,6 @@ function evaluateMatch(session: AffinitySession, key: string, now: number): bool
     year: card.year,
     at: now,
     likedBy: voters.map((p) => p.userId),
-    superlikedBy: voters.filter((p) => p.votes.get(key) === "superlike").map((p) => p.userId),
   });
   return true;
 }
@@ -160,9 +146,9 @@ export function promotedFor(session: AffinitySession, me: AffinityParticipant): 
 
 /**
  * Les prochaines cartes de `userId` : d'abord ce que d'autres ont aimé, puis
- * la pile dans l'ordre commun, enfin ce qu'il a passé. Jamais un match (la
- * proposition est déjà faite), jamais ce qu'il ne peut pas lire, jamais ce que
- * son client tient déjà (`exclude`).
+ * la pile dans l'ordre commun. Jamais un match (la proposition est déjà
+ * faite), jamais ce qu'il ne peut pas lire, jamais ce que son client tient
+ * déjà (`exclude`).
  */
 export function nextCards(
   session: AffinitySession,
@@ -187,7 +173,6 @@ export function nextCards(
     if (out.length >= limit) break;
     if (!me.votes.has(card.key)) push(card.key);
   }
-  for (const key of me.skipped) push(key);
   return out;
 }
 
@@ -213,7 +198,6 @@ export function sessionToDto(session: AffinitySession, seq: number): WtAffinityS
         title: m.title,
         year: m.year,
         likedBy: [...m.likedBy],
-        superlikedBy: [...m.superlikedBy],
         at: m.at,
       })),
     ...(launch ? { launch: { ...launch } } : {}),

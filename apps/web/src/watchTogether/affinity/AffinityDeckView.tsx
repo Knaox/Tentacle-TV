@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LogOut, PartyPopper, RotateCcw } from "lucide-react";
+import { LogOut, PartyPopper } from "lucide-react";
 import {
   fetchAffinity, leaveAffinity, swipeLangOf, useAffinityDeck, useSwipeCardDetails,
 } from "@tentacle-tv/api-client";
@@ -16,10 +16,10 @@ import {
 } from "./affinityStore";
 
 /**
- * La pile de l'affinité : la mécanique d'« Affiner » telle quelle — la pile,
- * le glisser (le bas vaut « Passer »), les boutons, le clavier (← → ↑ ↓ Z,
- * Espace), le verso — nourrie par la pile COMMUNE du groupe. Monter la vue,
- * c'est rejoindre la séance.
+ * La pile de l'affinité : la mécanique d'« Affiner » réduite à trois gestes —
+ * j'aime (droite, →), pas pour moi (gauche, ←), annuler (Z) —, sans coup de
+ * cœur, sans « passer », sans verso (`binary`), nourrie par la pile COMMUNE
+ * du groupe. Monter la vue, c'est rejoindre la séance.
  *
  * `paused` : un match ou la liste des matchs la recouvre — elle reste montée
  * (sa file, son historique d'annulation) mais n'écoute plus le clavier.
@@ -29,6 +29,9 @@ import {
  *  boutons, aide, marges du voile (cf. `CARD_WIDTH`). Mesuré à 1440×900 :
  *  à 23 rem la modale débordait de 12 px ; à 27, tout tient avec de l'air. */
 const DECK_CHROME = "27rem";
+
+/** Ni verso ni synopsis dans le swipe de groupe : rien à basculer. */
+const noop = () => undefined;
 
 export function AffinityDeckView({ state, titleId, paused }: { state: WtAffinityStateDto; titleId: string; paused: boolean }) {
   const { t, i18n } = useTranslation(["watchTogether", "swipe"]);
@@ -42,22 +45,18 @@ export function AffinityDeckView({ state, titleId, paused }: { state: WtAffinity
   const deck = useAffinityDeck(state.sessionId, { onGone: refetchState, onMatch: showAffinityMatch });
 
   const [exitVerdict, setExitVerdict] = useState<SwipeVerdict | null>(null);
-  const [infoOpen, setInfoOpen] = useState(false);
   const [announce, setAnnounce] = useState("");
   const top = deck.cards[0];
   const next = deck.cards[1];
+  // Pas de verso, mais son titre localisé et sa durée habillent le recto ;
+  // la suivante les porte déjà — promue en tête, son texte ne se recompose
+  // pas sous les yeux.
   const { data: details } = useSwipeCardDetails(top, lang);
-  // Comme Affiner : la suivante porte déjà son verso (titre localisé, durée) —
-  // promue en tête, son texte ne se recompose pas sous les yeux.
   const { data: nextDetails } = useSwipeCardDetails(next, lang);
-  const topKey = top?.key;
-  useEffect(() => {
-    setInfoOpen(false);
-  }, [topKey]);
 
   const { judge, undo, canUndo } = deck;
   const onJudge = useCallback((verdict: SwipeVerdict) => {
-    if (!top) return;
+    if (!top || (verdict !== "like" && verdict !== "dislike")) return;
     setExitVerdict(verdict);
     setAnnounce(`${t(`swipe:${verdict}`)} — ${top.title}`);
     judge(verdict);
@@ -68,8 +67,7 @@ export function AffinityDeckView({ state, titleId, paused }: { state: WtAffinity
     setAnnounce(t("swipe:undone"));
     undo();
   }, [canUndo, undo, t]);
-  const onToggleInfo = useCallback(() => setInfoOpen((v) => !v), []);
-  useSwipeKeyboard({ enabled: !paused && (!!top || canUndo), onJudge, onUndo, onToggleInfo });
+  useSwipeKeyboard({ enabled: !paused && (!!top || canUndo), onJudge, onUndo, onToggleInfo: noop, binary: true });
 
   const stopParticipating = async () => {
     await leaveAffinity().catch(() => undefined);
@@ -88,21 +86,29 @@ export function AffinityDeckView({ state, titleId, paused }: { state: WtAffinity
         ) : deck.error ? (
           <SwipeErrorState onRetry={deck.retry} />
         ) : deck.empty ? (
-          <AffinityDeckEmpty skipped={deck.skippedCount} onRevisit={deck.revisit} />
+          <AffinityDeckEmpty />
         ) : (
           <SwipeStack
             cards={deck.cards}
             exitVerdict={exitVerdict}
-            infoOpen={infoOpen}
+            infoOpen={false}
             details={details}
             nextDetails={nextDetails}
             onJudge={onJudge}
-            onToggleInfo={onToggleInfo}
+            onToggleInfo={noop}
+            binary
           />
         )}
         {deck.saveFailed && <SwipeSaveFailedNotice onDismiss={deck.dismissSaveFailed} />}
         {!deck.error && (!deck.empty || canUndo) && (
-          <SwipeControls disabled={!top} canUndo={canUndo} onJudge={onJudge} onUndo={onUndo} />
+          <SwipeControls
+            disabled={!top}
+            canUndo={canUndo}
+            onJudge={onJudge}
+            onUndo={onUndo}
+            binary
+            label={t("affinityTitle")}
+          />
         )}
         <p className="max-w-sm text-center text-xs leading-relaxed text-content-tertiary">{t("affinityHint")}</p>
         <button
@@ -121,8 +127,8 @@ export function AffinityDeckView({ state, titleId, paused }: { state: WtAffinity
   );
 }
 
-/** Tout est jugé : les titres passés peuvent revenir, ou un autre type. */
-function AffinityDeckEmpty({ skipped, onRevisit }: { skipped: number; onRevisit: () => void }) {
+/** Tout est jugé : un autre type, peut-être. */
+function AffinityDeckEmpty() {
   const { t } = useTranslation("watchTogether");
   return (
     <div className="flex max-w-sm flex-col items-center py-10 text-center" role="status">
@@ -136,16 +142,6 @@ function AffinityDeckEmpty({ skipped, onRevisit }: { skipped: number; onRevisit:
       <h3 className="mt-4 text-base font-semibold text-content-primary">{t("affinityEmptyTitle")}</h3>
       <p className="mt-1.5 text-sm leading-relaxed text-content-secondary">{t("affinityEmptyBody")}</p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
-        {skipped > 0 && (
-          <button
-            type="button"
-            onClick={onRevisit}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-4 text-[13px] font-bold text-cta-primary-fg outline-none transition-colors hover:bg-cta-primary-bg-hover focus-visible:ring-2 focus-visible:ring-line-focus"
-          >
-            <RotateCcw aria-hidden className="h-4 w-4" />
-            {t("affinityRevisit", { count: skipped })}
-          </button>
-        )}
         <button
           type="button"
           onClick={() => showAffinityView("kinds")}

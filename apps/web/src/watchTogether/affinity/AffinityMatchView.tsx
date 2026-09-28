@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
-import { Heart, Play, Star, X } from "lucide-react";
+import { Heart, Play, X } from "lucide-react";
 import type { WtAffinityStateDto } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
 import { AffinityPoster } from "./AffinityPoster";
 import { closeAffinity, leaveAffinityMatch, showAffinityView, type AffinityView } from "./affinityStore";
-import { formatNames, memberName, superlikeLabel } from "./affinityText";
+import { formatNames, memberName } from "./affinityText";
 import { useAffinityLaunch } from "./useAffinityLaunch";
 
 /**
@@ -48,9 +48,6 @@ export function AffinityMatchView({
       title: match.title,
     })
     : t("affinityMatchOthers", { names: formatNames(match.likedBy.map(nameOf), i18n.language), title: match.title });
-  const lovers = match.superlikedBy.length > 0
-    ? superlikeLabel({ ids: match.superlikedBy, selfId, nameOf: (id) => memberName(room, id) || "…", t, language: i18n.language })
-    : null;
   const meta = [match.year, match.mediaType === "tv" ? t("affinitySeries") : t("affinityMovie")].filter(Boolean).join(" · ");
   const participant = state.participants.some((p) => p.userId === selfId);
 
@@ -114,12 +111,6 @@ export function AffinityMatchView({
           );
         })}
       </ul>
-      {lovers && (
-        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[rgba(var(--brand-rgb),0.14)] px-3 py-1 text-xs font-semibold text-content-primary">
-          <Star aria-hidden className="h-3.5 w-3.5 fill-current text-amber-300" />
-          {lovers}
-        </p>
-      )}
 
       <div className="relative mx-auto mt-6 flex w-full max-w-xs flex-col gap-2">
         {/* La vue arrive souvent par-dessus la pile, modale déjà ouverte :

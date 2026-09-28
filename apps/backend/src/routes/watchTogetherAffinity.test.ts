@@ -119,11 +119,11 @@ describe("/api/watch-together/affinity", () => {
     expect(cards.json().cards.map((c: AffinityCard) => c.key)).toEqual(["movie:2", "movie:1"]);
 
     sent.length = 0;
-    expect((await vote("b", "movie:2", "superlike")).json()).toEqual({ matched: true });
+    expect((await vote("b", "movie:2", "like")).json()).toEqual({ matched: true });
     const matchMsg = sent.find((s) => s.to === "a")!.msg;
     expect(matchMsg).toMatchObject({ type: "wt:affinity", cause: "match", matchKeys: ["movie:2"] });
     expect((matchMsg.state as { matches: unknown[] }).matches).toEqual([
-      expect.objectContaining({ key: "movie:2", itemId: "it-movie:2", likedBy: ["a", "b"], superlikedBy: ["b"] }),
+      expect.objectContaining({ key: "movie:2", itemId: "it-movie:2", likedBy: ["a", "b"] }),
     ]);
 
     const launch = await app.inject({ method: "POST", url: "/api/watch-together/affinity/launch", headers: as("a"), payload: { key: "movie:2" } });
@@ -176,6 +176,11 @@ describe("/api/watch-together/affinity", () => {
     expect([unknown.statusCode, unknown.json()]).toEqual([404, { code: "unknown_title" }]);
     const notYet = await app.inject({ method: "POST", url: "/api/watch-together/affinity/votes", headers: as("b"), payload: { sessionId: sid, key: "movie:1", verdict: "like" } });
     expect([notYet.statusCode, notYet.json()]).toEqual([409, { code: "not_participant" }]);
+    // Ni coup de cœur ni « passer » : deux verdicts, rien d'autre.
+    for (const retired of ["superlike", "skip"]) {
+      const refused = await app.inject({ method: "POST", url: "/api/watch-together/affinity/votes", headers: as("a"), payload: { sessionId: sid, key: "movie:1", verdict: retired } });
+      expect(refused.statusCode).toBe(400);
+    }
     await app.close();
   });
 

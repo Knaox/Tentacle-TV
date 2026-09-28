@@ -17,7 +17,7 @@ import {
  */
 
 const kind = z.enum(["movie", "series", "anime"]);
-const verdict = z.enum(["like", "superlike", "dislike", "skip"]);
+const verdict = z.enum(["like", "dislike"]);
 const titleKey = z.string().regex(/^(movie|tv):\d{1,10}$/);
 const sessionId = z.coerce.number().int().positive();
 const limit = z.coerce.number().int().min(1).max(30).catch(12);
@@ -80,7 +80,7 @@ export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
     return result.ok ? { sessionId: q.sessionId, cards: result.value } : reply(res, result);
   });
 
-  /** POST /affinity/votes — un geste sur une carte. */
+  /** POST /affinity/votes — un verdict sur une carte : j'aime ou pas pour moi. */
   app.post("/affinity/votes", async (request, res) => {
     const body = z.object({ sessionId, key: titleKey, verdict }).parse(request.body);
     return reply(res, voteAffinity(user(request).userId, body.sessionId, body.key, body.verdict));

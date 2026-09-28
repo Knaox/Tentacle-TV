@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { SwipeCard } from "../swipe/swipeTypes";
 import {
-  AFFINITY_SKIPPED_MAX, INITIAL_AFFINITY_DECK, affinityDeckReducer, affinityExcludeKeys, type AffinityDeckAction,
+  AFFINITY_HISTORY_MAX, INITIAL_AFFINITY_DECK, affinityDeckReducer, affinityExcludeKeys, type AffinityDeckAction,
 } from "./affinityDeckState";
 
-/** La pile d'affinité côté client : file, annulation, et titres passés tenus
- *  à l'écart jusqu'à ce qu'on demande à les revoir. */
+/** La pile d'affinité côté client : file sans doublon, deux verdicts,
+ *  annulation, geste non enregistré rendu. */
 
 function card(n: number): SwipeCard {
   return {
@@ -26,44 +26,27 @@ describe("pile d'affinité (client)", () => {
     expect(s.loaded).toBe(true);
   });
 
-  it("un titre passé est écarté des recharges, pas un titre jugé (le serveur le sait)", () => {
+  it("n'écarte des recharges que sa file : un titre jugé, le serveur le sait", () => {
     const s = run(
       { type: "loaded", cards: [card(1), card(2), card(3)] },
-      { type: "judged", verdict: "skip" },
+      { type: "judged", verdict: "dislike" },
       { type: "judged", verdict: "like" },
     );
-    expect(affinityExcludeKeys(s)).toEqual(["movie:3", "movie:1"]);
-    // Resservi par le serveur pendant ce tour : ignoré.
-    expect(affinityDeckReducer(s, { type: "loaded", cards: [card(1)] }).queue.map((c) => c.key)).toEqual(["movie:3"]);
+    expect(affinityExcludeKeys(s)).toEqual(["movie:3"]);
+    expect(s.history.map((h) => [h.card.key, h.verdict])).toEqual([["movie:1", "dislike"], ["movie:2", "like"]]);
   });
 
-  it("revoir les titres passés les laisse revenir", () => {
+  it("annuler rend la carte en haut, et relance les recharges", () => {
     const s = run(
       { type: "loaded", cards: [card(1)] },
-      { type: "judged", verdict: "skip" },
+      { type: "judged", verdict: "like" },
       { type: "loaded", cards: [] },
     );
     expect(s.exhausted).toBe(true);
-    const again = run(
-      { type: "loaded", cards: [card(1)] },
-      { type: "judged", verdict: "skip" },
-      { type: "loaded", cards: [] },
-      { type: "revisit" },
-      { type: "loaded", cards: [card(1)] },
-    );
-    expect(again.queue.map((c) => c.key)).toEqual(["movie:1"]);
-    expect(again.exhausted).toBe(false);
-  });
-
-  it("annuler rend la carte, et la sort des titres passés", () => {
-    const s = run(
-      { type: "loaded", cards: [card(1), card(2)] },
-      { type: "judged", verdict: "skip" },
-      { type: "undone" },
-    );
-    expect(s.queue.map((c) => c.key)).toEqual(["movie:1", "movie:2"]);
-    expect(s.skipped).toEqual([]);
-    expect(s.history).toEqual([]);
+    const back = affinityDeckReducer(s, { type: "undone" });
+    expect(back.queue.map((c) => c.key)).toEqual(["movie:1"]);
+    expect(back.history).toEqual([]);
+    expect(back.exhausted).toBe(false);
   });
 
   it("un geste non enregistré remet la carte en haut", () => {
@@ -77,11 +60,11 @@ describe("pile d'affinité (client)", () => {
     expect(s.history.map((h) => h.card.key)).toEqual(["movie:2"]);
   });
 
-  it("borne les titres passés retenus, et repart de zéro à une nouvelle séance", () => {
-    const cards = Array.from({ length: AFFINITY_SKIPPED_MAX + 5 }, (_, i) => card(i + 1));
-    const skips = cards.map((): AffinityDeckAction => ({ type: "judged", verdict: "skip" }));
-    const s = run({ type: "loaded", cards }, ...skips);
-    expect(s.skipped).toHaveLength(AFFINITY_SKIPPED_MAX);
+  it("borne l'historique d'annulation, et repart de zéro à une nouvelle séance", () => {
+    const cards = Array.from({ length: AFFINITY_HISTORY_MAX + 5 }, (_, i) => card(i + 1));
+    const likes = cards.map((): AffinityDeckAction => ({ type: "judged", verdict: "like" }));
+    const s = run({ type: "loaded", cards }, ...likes);
+    expect(s.history).toHaveLength(AFFINITY_HISTORY_MAX);
     expect(affinityDeckReducer(s, { type: "reset" })).toBe(INITIAL_AFFINITY_DECK);
   });
 });
