@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import type { FavoritesGroup } from "@tentacle-tv/api-client";
@@ -6,6 +6,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { CollectionGridCard } from "../collection/CollectionGridCard";
 import type { SelectionMode } from "../collection/selectionMode";
 import { useItemsPerRow } from "../../hooks/useItemsPerRow";
+import { useDocumentTop } from "../../hooks/useDocumentTop";
 import { FavoritesSectionHeader, useFavoritesGroupTitle } from "./FavoritesSectionHeader";
 
 /** Mêmes constantes que `CollectionGridBody` : les deux grilles doivent s'aligner. */
@@ -74,17 +75,9 @@ export function FavoritesGroupedBody({ groups, selectionMode, headerKey }: Favor
     [rows, containerWidth, itemsPerRow],
   );
 
-  // Distance au haut du DOCUMENT, pas `offsetTop` : la grille vit dans un
-  // conteneur positionné (sous la bannière), et `offsetTop` ne compterait que
-  // depuis lui — la fenêtre de rendu du virtualiseur glisserait alors de la
-  // hauteur de la bannière, ce que l'overscan ne couvre plus quand les
-  // sections repliées ne laissent que des en-têtes de 64 px. Relue aussi quand
-  // la largeur change : le dock au-dessus change de hauteur en se repliant.
-  const [scrollMargin, setScrollMargin] = useState(0);
-  useEffect(() => {
-    const el = gridRef.current;
-    if (el) setScrollMargin(Math.round(el.getBoundingClientRect().top + window.scrollY));
-  }, [headerKey, containerWidth]);
+  // Distance au haut du DOCUMENT (cf. `useDocumentTop`), relue aussi quand la
+  // largeur change : la barre au-dessus change de hauteur en se repliant.
+  const scrollMargin = useDocumentTop(gridRef, headerKey, containerWidth);
 
   const virtualizer = useWindowVirtualizer({
     count: rows.length,

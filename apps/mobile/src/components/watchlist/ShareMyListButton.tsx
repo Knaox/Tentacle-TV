@@ -2,20 +2,26 @@ import { useState, useRef } from "react";
 import { Pressable, Text, StyleSheet, Share, Platform, View, findNodeHandle } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useCreateShareLink } from "@tentacle-tv/api-client";
+import { useCreateShareLink, type ShareListKind } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
-import { typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /**
- * « Partager ma liste » (mobile) — génère le lien de partage et ouvre la
- * feuille de partage native. Le lien ouvre la page web /share/:token.
+ * « Partager ma liste » ou « Partager mes titres likés » (mobile) — génère le
+ * lien de partage et ouvre la feuille de partage native. Le lien ouvre la page
+ * web /share/:token, la même pour les deux listes.
+ *
+ * Pilule de 36 au ton de la marque (aplat `brand.soft`, liseré `brand.glow`,
+ * icône et texte `brand.light`) : repérable sous le titre sans être l'action
+ * principale — pas de dégradé plein.
  */
-export function ShareMyListButton() {
+export function ShareMyListButton({ kind = "watchlist" }: { kind?: ShareListKind }) {
   const { t } = useTranslation("common");
+  const label = t(kind === "likes" ? "shareMyFavorites" : "shareMyList");
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { serverUrl } = useServerUrl();
-  const create = useCreateShareLink();
+  const create = useCreateShareLink(kind);
   const [busy, setBusy] = useState(false);
   const btnRef = useRef<View>(null);
 
@@ -55,11 +61,12 @@ export function ShareMyListButton() {
       onPress={onPress}
       disabled={busy}
       accessibilityRole="button"
-      accessibilityLabel={t("shareMyList")}
-      style={({ pressed }) => [styles.btn, pressed && { opacity: 0.7 }]}
+      accessibilityLabel={label}
+      hitSlop={{ top: 6, bottom: 6 }}
+      style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
     >
       <Feather name="share-2" size={15} color={colors.brand.light} />
-      <Text style={styles.label}>{t("shareMyList")}</Text>
+      <Text style={styles.label}>{label}</Text>
     </Pressable>
   );
 }
@@ -67,19 +74,20 @@ export function ShareMyListButton() {
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     btn: {
+      height: 36,
       flexDirection: "row",
       alignItems: "center",
       gap: 7,
-      paddingVertical: 8,
       paddingHorizontal: 14,
-      borderRadius: 999,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: t.colors.border.subtle,
-      backgroundColor: t.colors.fill.subtle,
+      borderRadius: RADIUS.pill,
+      borderWidth: 1,
+      borderColor: t.colors.brand.glow,
+      backgroundColor: t.colors.brand.soft,
     },
+    pressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },
     label: {
       ...typography.caption,
       fontFamily: FONT_FAMILY.semibold,
-      color: t.colors.text.primary,
+      color: t.colors.brand.light,
     },
   });

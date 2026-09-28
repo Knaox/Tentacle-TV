@@ -67,8 +67,24 @@ export function CollectionHero({ title, kicker, items, subtitle }: CollectionHer
           />
         )}
 
-        <HeroScrims bottom="h-[62%]" />
+        {/* Raccord vers la page (jeton `--hero-page-fade`, `none` en sombre).
+            Sans lui, en thème clair, l'assise noire du bas de l'image
+            s'arrêtait net 200 px sous la réserve, et tout ce qui chevauche la
+            bannière — bas du panneau, pastilles, « Reprendre », tuiles du
+            bilan — tombait en texte sombre sur du noir. Hauteur en pixels et
+            non en pour cent : le calque doit commencer SOUS le sous-titre
+            (ancré à 18 % d'une réserve d'au moins 220 px) et finir opaque là
+            où la page reprend, quelle que soit la hauteur de fenêtre. */}
+        <HeroScrims bottom="h-[62%]" seam="h-[240px]" />
       </div>
+
+      {/* Le bord bas de la boîte image, recouvert d'une bande de page. Le
+          compositeur y laissait un filet sombre d'un pixel (le découpage
+          `overflow-hidden` des voiles noirs, arrondi en pixels physiques),
+          invisible sur le fond sombre, net sur le fond clair — même avec un
+          raccord opaque au-dessus. La bande vaut `--surface-0` : en sombre,
+          c'est déjà la couleur du bas de la boîte. */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 -bottom-[202px] h-1 bg-surface-0" />
 
       {/* Démontée hors écran : une image floutée à 48 px sur toute la largeur,
           doublée d'un `mix-blend-mode`, reste composée à chaque image tant

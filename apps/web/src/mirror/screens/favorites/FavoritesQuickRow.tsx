@@ -16,7 +16,8 @@ const GROUP_LABELS: Record<FavoritesGroupMode, string> = {
  * Sous la barre de filtres de Mes favoris (`favorites/FavoritesQuickRow` de
  * l'app) : deux tuiles d'état, 56 de haut, qui comptent ET filtrent
  * (À reprendre, Pas encore vus — comptées dans le type choisi), puis la
- * rangée « Regrouper » en pastilles de 36 qui défile d'un doigt.
+ * rangée « Regrouper » en pastilles de 36 qui défile d'un doigt, à la peau
+ * de la barre rapide (`surface.s1`, liseré fort ; choisie, `brand.soft`).
  */
 export const FavoritesQuickRow = memo(function FavoritesQuickRow({
   items, type, status, onStatusChange, groupMode, onGroupModeChange,
@@ -76,7 +77,7 @@ export const FavoritesQuickRow = memo(function FavoritesQuickRow({
               onClick={() => onStatusChange(active ? null : key)}
               className="flex min-h-[56px] items-center gap-2.5 rounded-2xl border px-3 text-left active:opacity-80 disabled:opacity-45"
               style={{
-                background: active ? "var(--brand-soft)" : "var(--fill-subtle)",
+                background: active ? "var(--brand-soft)" : "var(--surface-1)",
                 borderColor: active ? "var(--brand-glow)" : "var(--border-subtle)",
               }}
             >
@@ -107,12 +108,12 @@ export const FavoritesQuickRow = memo(function FavoritesQuickRow({
               role="radio"
               aria-checked={selected}
               onClick={() => onGroupModeChange(mode)}
-              className={`min-h-[36px] shrink-0 rounded-full border px-3.5 text-[13px] active:opacity-80 ${
-                selected ? "font-semibold text-brand-light" : "font-medium text-content-secondary"
+              className={`h-9 shrink-0 rounded-full border px-3.5 text-[13px] font-semibold transition-transform duration-100 active:scale-[0.97] active:opacity-80 ${
+                selected ? "text-brand-light" : "text-content-secondary"
               }`}
               style={{
-                background: selected ? "var(--brand-soft)" : "transparent",
-                borderColor: selected ? "var(--brand-glow)" : "var(--border-subtle)",
+                background: selected ? "var(--brand-soft)" : "var(--surface-1)",
+                borderColor: selected ? "var(--brand-glow)" : "var(--border-strong)",
               }}
             >
               {t(GROUP_LABELS[mode])}

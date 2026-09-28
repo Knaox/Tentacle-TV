@@ -1,12 +1,9 @@
 import { memo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { WATCH_STAGE_FILTERS, type WatchStageFilter, type WatchlistSummary } from "@tentacle-tv/api-client";
 import { ctlGradient, spacing, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-
-type View_ = "grid" | "list";
 
 const LABEL: Record<WatchStageFilter, string> = {
   all: "stageAll",
@@ -18,24 +15,23 @@ const LABEL: Record<WatchStageFilter, string> = {
 const count = (s: WatchStageFilter, c: WatchlistSummary) => (s === "all" ? c.total : c[s]);
 
 /**
- * Les étapes de visionnage en pastilles de 36 qui défilent sous le pouce —
- * l'active au dégradé de marque — et la bascule grille / liste en rond de 44
- * au bout. Une étape vide disparaît, sauf l'active.
+ * Les étapes de visionnage, entre le champ et la barre rapide — là où la
+ * Bibliothèque pose son statut. Pastilles de 36 qui défilent sous le pouce, à
+ * la peau de la barre rapide (aplat opaque, liseré fort) ; l'active au
+ * dégradé de marque. Une étape vide disparaît, sauf l'active. La bascule
+ * grille / liste a rejoint la barre rapide.
  */
 export const StageBar = memo(function StageBar({
-  stage, onStageChange, counts, view, onViewChange,
+  stage, onStageChange, counts,
 }: {
   stage: WatchStageFilter;
   onStageChange: (s: WatchStageFilter) => void;
   counts: WatchlistSummary;
-  view: View_;
-  onViewChange: (v: View_) => void;
 }) {
   const { t } = useTranslation("watchlist");
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const stages = WATCH_STAGE_FILTERS.filter((s) => s === "all" || s === stage || count(s, counts) > 0);
-  const next: View_ = view === "grid" ? "list" : "grid";
   const gradient = ctlGradient(colors.brand);
 
   return (
@@ -44,7 +40,6 @@ export const StageBar = memo(function StageBar({
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chips}
-        style={styles.scroller}
         accessibilityRole="radiogroup"
         accessibilityLabel={t("stageFilterLabel")}
       >
@@ -65,23 +60,14 @@ export const StageBar = memo(function StageBar({
           );
         })}
       </ScrollView>
-      <Pressable
-        onPress={() => onViewChange(next)}
-        accessibilityRole="button"
-        accessibilityLabel={t(next === "grid" ? "viewGrid" : "viewList")}
-        style={({ pressed }) => [styles.toggle, pressed && styles.pressed]}
-      >
-        <Feather name={next === "grid" ? "grid" : "list"} size={18} color={colors.text.secondary} />
-      </Pressable>
     </View>
   );
 });
 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
-    row: { flexDirection: "row", alignItems: "center", paddingRight: spacing.screenPadding, paddingBottom: spacing.sm, gap: spacing.sm },
-    scroller: { flex: 1 },
-    chips: { paddingLeft: spacing.screenPadding, gap: spacing.sm, alignItems: "center" },
+    row: { paddingTop: spacing.sm, paddingBottom: spacing.xs },
+    chips: { paddingHorizontal: spacing.screenPadding, gap: spacing.sm, alignItems: "center" },
     chip: {
       minHeight: 36,
       paddingHorizontal: 14,
@@ -91,20 +77,10 @@ const makeStyles = (t: AppTheme) =>
       gap: 6,
       overflow: "hidden",
     },
-    chipIdle: { backgroundColor: t.colors.fill.subtle, borderWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.subtle },
+    chipIdle: { backgroundColor: t.colors.surface.s1, borderWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.strong },
     chipText: { fontFamily: FONT_FAMILY.semibold, fontSize: 13, color: t.colors.text.secondary },
     chipTextActive: { color: "#FFFFFF" },
     chipCount: { fontFamily: FONT_FAMILY.bold, fontSize: 11, color: t.colors.text.quaternary, fontVariant: ["tabular-nums"] },
     chipCountActive: { color: "rgba(255,255,255,0.85)" },
-    toggle: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: t.colors.fill.subtle,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: t.colors.border.subtle,
-    },
-    pressed: { opacity: 0.7 },
+    pressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },
   });

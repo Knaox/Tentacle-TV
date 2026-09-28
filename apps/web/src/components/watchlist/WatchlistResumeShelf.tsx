@@ -27,17 +27,12 @@ export const WatchlistResumeShelf = memo(function WatchlistResumeShelf({
 
   return (
     <section aria-labelledby="watchlist-resume-title" className="mb-8">
-      {/* Posé sur le bas de la bannière — sa boîte image déborde de 200 px sous
-          elle : jetons « sur média », constants dans les deux thèmes. Le texte
-          sombre du thème clair s'y perdait. */}
+      {/* Sous le panneau d'outils, sur la page : texte thémé. */}
       <div className="mb-3 flex items-baseline gap-3">
-        <h2
-          id="watchlist-resume-title"
-          className="text-lg font-bold tracking-tight text-on-media-primary drop-shadow-[0_2px_8px_var(--on-media-shadow)]"
-        >
+        <h2 id="watchlist-resume-title" className="text-lg font-bold tracking-tight text-content-primary">
           {t("resumeTitle")}
         </h2>
-        <span className="text-xs text-on-media-secondary">{t("resumeHint")}</span>
+        <span className="text-xs text-content-tertiary">{t("resumeHint")}</span>
       </div>
       <ul className="scrollbar-hide -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 md:-mx-8 md:scroll-px-8 md:px-8">
         {items.map((item) => (

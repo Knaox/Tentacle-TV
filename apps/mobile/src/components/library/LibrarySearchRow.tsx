@@ -33,9 +33,13 @@ export const LibrarySearchRow = memo(function LibrarySearchRow({ state, libraryN
   );
 });
 
-/** Les filtres avancés, à côté du champ — avec leur nombre quand il y en a. */
-function FilterButton({ count, onPress }: { count: number; onPress: () => void }) {
+/**
+ * Les filtres avancés, à côté du champ — avec leur nombre quand il y en a.
+ * Ma liste et Mes favoris posent le même (« Trier et filtrer »).
+ */
+export function FilterButton({ count, onPress, label }: { count: number; onPress: () => void; label?: string }) {
   const { t } = useTranslation("common");
+  const name = label ?? t("filters");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const active = count > 0;
@@ -44,7 +48,7 @@ function FilterButton({ count, onPress }: { count: number; onPress: () => void }
       onPress={onPress}
       hitSlop={6}
       accessibilityRole="button"
-      accessibilityLabel={active ? `${t("filters")} (${count})` : t("filters")}
+      accessibilityLabel={active ? `${name} (${count})` : name}
       style={({ pressed }) => [st.filterBtn, active && st.filterBtnActive, pressed && st.pressed]}
     >
       <Feather name="sliders" size={18} color={active ? theme.colors.brand.light : theme.colors.text.secondary} />

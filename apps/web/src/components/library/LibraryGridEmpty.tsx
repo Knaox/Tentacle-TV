@@ -90,9 +90,10 @@ export function LibraryGridEmpty({
 /**
  * Le cadre commun aux trois états : une pastille d'icône cerclée d'un
  * dégradé violet → rose, le message, puis la sortie. Aucune animation — un
- * état vide n'a rien à annoncer en boucle.
+ * état vide n'a rien à annoncer en boucle. Ma liste et Mes favoris le
+ * reprennent pour leurs propres états (`collection/CollectionStates`).
  */
-function EmptyFrame({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+export function EmptyFrame({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
     <div className="flex flex-col items-center gap-5 py-16 text-center md:py-20">
       <span

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { LayoutGrid, List } from "lucide-react";
 import {
@@ -7,6 +7,7 @@ import {
   type WatchStageFilter,
   type WatchlistSummary,
 } from "@tentacle-tv/api-client";
+import { SegmentedControl } from "../library/SegmentedControl";
 import type { WatchlistView } from "./useWatchlistPage";
 
 const STAGE_LABEL: Record<WatchStageFilter, string> = {
@@ -20,21 +21,12 @@ function countFor(stage: WatchStageFilter, counts: WatchlistSummary): number {
   return stage === "all" ? counts.total : counts[stage];
 }
 
-const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
-
 /**
- * Le repos des pastilles de la barre de filtres (`CHIP_IDLE`) : fond OPAQUE et
- * liseré fort. La barre chevauche le bas de la bannière ; un fond translucide
- * y laissait passer l'image, et le texte sombre du thème clair s'y perdait.
+ * Les étapes de visionnage, avec leur compte, dans le contrôle segmenté de la
+ * Bibliothèque — à la place de son statut, qu'elles remplacent. Une étape
+ * vide disparaît, sauf l'active, qu'on doit pouvoir voir et quitter.
  */
-const IDLE_SURFACE = "bg-[color:var(--surface-2)] ring-1 ring-line-strong shadow-[var(--elev-1)]";
-
-/**
- * Les étapes de visionnage, avec leur compte. Une étape vide disparaît — sauf
- * l'active, qu'on doit pouvoir voir et quitter. Sur écran étroit, la rangée
- * défile horizontalement plutôt que de passer à la ligne.
- */
-export const StageChips = memo(function StageChips({
+export const StageSegment = memo(function StageSegment({
   stage, onStageChange, counts,
 }: {
   stage: WatchStageFilter;
@@ -42,40 +34,24 @@ export const StageChips = memo(function StageChips({
   counts: WatchlistSummary;
 }) {
   const { t } = useTranslation("watchlist");
-  const stages = WATCH_STAGE_FILTERS.filter((s) => s === "all" || s === stage || countFor(s, counts) > 0);
-
+  const options = useMemo(
+    () => WATCH_STAGE_FILTERS
+      .filter((s) => s === "all" || s === stage || countFor(s, counts) > 0)
+      .map((s) => ({ value: s, label: t(STAGE_LABEL[s]), count: countFor(s, counts) })),
+    [stage, counts, t],
+  );
   return (
-    <div role="radiogroup" aria-label={t("stageFilterLabel")} className="flex items-center gap-1.5">
-      {stages.map((s) => {
-        const active = s === stage;
-        return (
-          <button
-            key={s}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onStageChange(s)}
-            className={`flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors duration-150 ${FOCUS} ${
-              active ? "text-white" : `${IDLE_SURFACE} text-content-secondary hover:text-content-primary`
-            }`}
-            style={active ? { background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" } : undefined}
-          >
-            {t(STAGE_LABEL[s])}
-            <span
-              className={`rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
-                active ? "bg-black/20 text-white" : "bg-fill-soft text-content-quaternary"
-              }`}
-            >
-              {countFor(s, counts)}
-            </span>
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      label={t("stageFilterLabel")}
+      markerId="watchlist-stage-marker"
+      options={options}
+      value={stage}
+      onChange={onStageChange}
+    />
   );
 });
 
-/** Tous / Films / Séries — en segment, pour ne pas ressembler aux étapes. */
+/** Tous / Films / Séries — un second segmenté, sans compte. */
 export const TypeSegment = memo(function TypeSegment({
   tabs, type, onTypeChange,
 }: {
@@ -83,30 +59,20 @@ export const TypeSegment = memo(function TypeSegment({
   type: CollectionTypeTab;
   onTypeChange: (type: CollectionTypeTab) => void;
 }) {
+  const { t } = useTranslation("watchlist");
+  const options = useMemo(() => tabs.map((tab) => ({ value: tab.key, label: tab.label })), [tabs]);
   return (
-    <div role="radiogroup" className={`flex shrink-0 items-center rounded-full p-1 ${IDLE_SURFACE}`}>
-      {tabs.map((tab) => {
-        const active = tab.key === type;
-        return (
-          <button
-            key={tab.key}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onTypeChange(tab.key)}
-            className={`h-7 cursor-pointer rounded-full px-3 text-[13px] font-medium transition-colors duration-150 ${FOCUS} ${
-              active ? "bg-fill-medium text-content-primary" : "text-content-tertiary hover:text-content-primary"
-            }`}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      label={t("typeFilterLabel")}
+      markerId="watchlist-type-marker"
+      options={options}
+      value={type}
+      onChange={onTypeChange}
+    />
   );
 });
 
-/** Grille ou liste. */
+/** Grille ou liste, en icônes. */
 export const ViewToggle = memo(function ViewToggle({
   view, onViewChange,
 }: {
@@ -114,33 +80,17 @@ export const ViewToggle = memo(function ViewToggle({
   onViewChange: (view: WatchlistView) => void;
 }) {
   const { t } = useTranslation("watchlist");
+  const options = useMemo(() => [
+    { value: "grid" as const, label: t("viewGrid"), icon: <LayoutGrid size={15} aria-hidden /> },
+    { value: "list" as const, label: t("viewList"), icon: <List size={15} aria-hidden /> },
+  ], [t]);
   return (
-    <div
-      role="radiogroup"
-      aria-label={t("viewLabel")}
-      className={`flex shrink-0 items-center rounded-full p-1 ${IDLE_SURFACE}`}
-    >
-      {(["grid", "list"] as const).map((v) => {
-        const active = v === view;
-        const Icon = v === "grid" ? LayoutGrid : List;
-        const label = t(v === "grid" ? "viewGrid" : "viewList");
-        return (
-          <button
-            key={v}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            aria-label={label}
-            title={label}
-            onClick={() => onViewChange(v)}
-            className={`flex h-8 w-9 cursor-pointer items-center justify-center rounded-full transition-colors duration-150 ${FOCUS} ${
-              active ? "bg-fill-medium text-content-primary" : "text-content-tertiary hover:text-content-primary"
-            }`}
-          >
-            <Icon size={16} aria-hidden />
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      label={t("viewLabel")}
+      markerId="watchlist-view-marker"
+      options={options}
+      value={view}
+      onChange={onViewChange}
+    />
   );
 });

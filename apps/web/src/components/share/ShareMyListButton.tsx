@@ -7,7 +7,17 @@ interface Props {
   kind?: "watchlist" | "likes";
 }
 
-/** Bouton « Partager ma liste » — ouvre le modal de lien de partage. */
+/**
+ * Bouton « Partager ma liste » — ouvre le modal de lien de partage.
+ *
+ * Un geste SECONDAIRE, mais qu'on doit trouver sans le chercher : il était
+ * gris sur gris (`fill-subtle`), sans liseré, et se fondait dans la rangée.
+ * Il prend le ton de la marque — aplat opaque teinté de violet, liseré et
+ * texte violets — sans le dégradé plein réservé à l'action principale d'un
+ * écran. 32 px de haut, comme les pastilles et menus du panneau qui
+ * l'accueille. `kind` et le modal n'ont pas changé : la page publique
+ * `/share/:token` reçoit le même lien.
+ */
 export function ShareMyListButton({ kind = "watchlist" }: Props) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
@@ -17,7 +27,8 @@ export function ShareMyListButton({ kind = "watchlist" }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-full bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
+        aria-haspopup="dialog"
+        className="inline-flex min-h-[32px] cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.16),rgba(var(--brand-rgb),0.16))] px-3.5 text-xs font-semibold text-[var(--brand-light)] shadow-[var(--elev-1)] ring-1 ring-[rgba(var(--brand-rgb),0.5)] transition-colors hover:text-content-primary hover:ring-[rgba(var(--brand-rgb),0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
       >
         <ShareIcon className="h-4 w-4" />
         {t(kind === "likes" ? "common:shareMyFavorites" : "common:shareMyList")}
@@ -29,7 +40,7 @@ export function ShareMyListButton({ kind = "watchlist" }: Props) {
 
 function ShareIcon({ className }: { className: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} aria-hidden>
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} aria-hidden>
       <path
         strokeLinecap="round"
         strokeLinejoin="round"

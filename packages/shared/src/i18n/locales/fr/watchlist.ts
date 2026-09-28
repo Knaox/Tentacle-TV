@@ -5,8 +5,12 @@
  * « téléchargé » ni « download » ici (cf. l'en-tête de `offline`).
  */
 export default {
+  // Surtitre de la bannière
+  kicker: "À regarder",
+
   // Étapes de visionnage — les pastilles de filtre
   stageFilterLabel: "Filtrer par progression",
+  typeFilterLabel: "Filtrer par type",
   stageAll: "Tout",
   stageNew: "À découvrir",
   stageInProgress: "En cours",

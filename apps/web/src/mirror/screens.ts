@@ -10,7 +10,7 @@ export const MirrorMediaDetail = lazy(() => import("./screens/detail").then((m) 
 export const MirrorPerson = lazy(() => import("./screens/person").then((m) => ({ default: m.MirrorPerson })));
 export const MirrorLibraries = lazy(() => import("./screens/libraries").then((m) => ({ default: m.MirrorLibraries })));
 export const MirrorLibraryCatalog = lazy(() => import("./screens/libraries").then((m) => ({ default: m.MirrorLibraryCatalog })));
-export const MirrorWatchlist = lazy(() => import("./screens/collection").then((m) => ({ default: m.MirrorWatchlist })));
+export const MirrorWatchlist = lazy(() => import("./screens/watchlist/WatchlistScreen").then((m) => ({ default: m.MirrorWatchlistScreen })));
 export const MirrorFavorites = lazy(() => import("./screens/favorites/FavoritesScreen").then((m) => ({ default: m.MirrorFavorites })));
 export const MirrorProfile = lazy(() => import("./screens/profile").then((m) => ({ default: m.MirrorProfile })));
 export const MirrorSettingsPane = lazy(() => import("./screens/settings").then((m) => ({ default: m.MirrorSettingsPane })));

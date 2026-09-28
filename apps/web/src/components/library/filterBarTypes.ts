@@ -22,6 +22,16 @@ export interface LibraryFilterBarProps {
   variant?: "chips" | "panel";
   /** Posé en tête du panneau — le champ de recherche de la bibliothèque. */
   leading?: ReactNode;
+  /**
+   * Panneau : les gestes propres à la page (partager, sélectionner, grille ou
+   * liste), au bout de l'étage du haut, après le tri. Ma liste, Mes favoris.
+   */
+  actions?: ReactNode;
+  /**
+   * Panneau : ce qui ouvre l'étage du bas, À LA PLACE du statut de
+   * visionnage — les étapes de Ma liste, le regroupement de Mes favoris.
+   */
+  segment?: ReactNode;
   /** Le catalogue n'a pas encore répondu : le compte n'est pas connu. */
   resultsLoading?: boolean;
   filters: LibraryFilterState;
