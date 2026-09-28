@@ -123,3 +123,4 @@ export * from "./viewingStats/timeZone";
 export * from "./viewingStats/statsFormatter";
 export * from "./viewingStats/featured";
 export * from "./viewingStats/compat";
+export * from "./viewingStats/titleReasons";

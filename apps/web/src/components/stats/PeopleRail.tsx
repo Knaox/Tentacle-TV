@@ -7,15 +7,16 @@ const TMDB_PROFILE = "https://image.tmdb.org/t/p/w185";
 
 /**
  * Les visages les plus retrouvés : portrait rond (initiale sans portrait),
- * nom, temps passé et nombre de titres. Toucher un visage lance la recherche
- * de son nom — ses autres titres de la bibliothèque.
+ * nom, nombre de titres puis temps passé. Toucher un visage lance la
+ * recherche de son nom — ses autres titres de la bibliothèque.
  */
 export const PeopleRail = memo(function PeopleRail({ people, ariaLabel }: { people: ViewingStatsPerson[]; ariaLabel: string }) {
   const f = useStatsFormat();
   return (
     <ul aria-label={ariaLabel} className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2 pt-1">
       {people.map((p) => {
-        const caption = `${f.duration(p.seconds)} · ${f.t("personTitles", { count: p.titles })}`;
+        // Le nombre de titres d'abord : c'est lui qui classe ; le temps ne fait que départager.
+        const caption = `${f.t("personTitles", { count: p.titles })} · ${f.duration(p.seconds)}`;
         return (
           <li key={`${p.role}-${p.tmdbId}`} className="w-[88px] shrink-0 sm:w-[100px]">
             <Link

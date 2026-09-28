@@ -2,7 +2,6 @@ import { memo } from "react";
 import { AppWindow, Globe, Monitor, Smartphone, Tv, type LucideIcon } from "lucide-react";
 import type { ViewingStats, ViewingStatsDevice } from "@tentacle-tv/shared";
 import { HBarList } from "./HBarList";
-import { SplitBar } from "./SplitBar";
 import { StatsSection } from "./StatsSection";
 import { useStatsFormat } from "./useStatsFormat";
 
@@ -32,31 +31,40 @@ export const GenresCard = memo(function GenresCard({ stats }: { stats: ViewingSt
   );
 });
 
-/** Films, séries, animés — puis langues originales et décennies, sur la même colonne. */
+/**
+ * Films, séries, animés — trois natures qui ne se recouvrent pas, en part du
+ * temps : une barre chacune, d'une seule teinte (plus d'aplat tricolore) —
+ * puis les décennies, sur la même carte.
+ */
 export const MixCard = memo(function MixCard({ stats }: { stats: ViewingStats }) {
   const f = useStatsFormat();
   const total = stats.totals.seconds;
-  const hasSplit = stats.split.movieSeconds + stats.split.seriesSeconds + stats.split.animeSeconds > 0;
+  const { movieSeconds, seriesSeconds, animeSeconds } = stats.split;
+  const splitTotal = movieSeconds + seriesSeconds + animeSeconds;
+  const split = [
+    { key: "movies", seconds: movieSeconds },
+    { key: "series", seconds: seriesSeconds },
+    { key: "anime", seconds: animeSeconds },
+  ].filter((p) => p.seconds > 0);
+  if (split.length === 0 && stats.decades.length === 0) return null;
   return (
-    <div className="flex flex-col gap-4">
-      {hasSplit && (
-        <StatsSection title={f.t("splitTitle")}>
-          <SplitBar split={stats.split} />
-        </StatsSection>
-      )}
-      {stats.languages.length > 0 && (
-        <StatsSection title={f.t("languagesTitle")}>
-          <HBarList
-            ariaLabel={f.t("languagesTitle")}
-            max={1}
-            items={stats.languages.map((l) => ({
-              key: l.key, label: l.label, value: l.share, display: f.percent(l.share), secondary: f.duration(l.seconds),
-            }))}
-          />
-        </StatsSection>
+    <StatsSection title={f.t("splitTitle")}>
+      {split.length > 0 && (
+        <HBarList
+          ariaLabel={f.t("splitTitle")}
+          max={1}
+          items={split.map((p) => ({
+            key: p.key,
+            label: f.t(`split_${p.key}`),
+            value: p.seconds / splitTotal,
+            display: f.percent(p.seconds / splitTotal),
+            secondary: f.duration(p.seconds),
+          }))}
+        />
       )}
       {stats.decades.length > 0 && (
-        <StatsSection title={f.t("decadesTitle")}>
+        <div className={split.length > 0 ? "mt-6 border-t border-line-subtle pt-5" : ""}>
+          <h3 className="mb-3 text-[13px] font-semibold text-content-secondary">{f.t("decadesTitle")}</h3>
           <HBarList
             ariaLabel={f.t("decadesTitle")}
             items={stats.decades.map((d) => ({
@@ -67,9 +75,9 @@ export const MixCard = memo(function MixCard({ stats }: { stats: ViewingStats })
               secondary: total > 0 ? f.percent(d.seconds / total) : undefined,
             }))}
           />
-        </StatsSection>
+        </div>
       )}
-    </div>
+    </StatsSection>
   );
 });
 

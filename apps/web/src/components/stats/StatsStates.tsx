@@ -9,28 +9,34 @@ const CTA =
   "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover";
 
 /**
- * Le chargement, à la forme de la page remplie : le chiffre du héros et le
- * sélecteur, les quatre tuiles, puis deux cartes de graphique — la page ne
- * saute pas quand les données arrivent.
+ * Le chargement, à la forme de la page remplie : la vue d'ensemble (chiffre,
+ * période, quatre compteurs), le profil, puis deux cartes de graphique — la
+ * page ne saute pas quand les données arrivent.
  */
 export const StatsSkeleton = memo(function StatsSkeleton({ label }: { label: string }) {
   return (
-    <div role="status" aria-label={label} className="flex flex-col gap-4">
-      <div className="rounded-[var(--radius-xl)] bg-[color:var(--surface-1)] p-4 ring-1 ring-line-subtle md:p-6">
-        <div className="flex flex-col-reverse gap-4 md:flex-row md:justify-between">
+    <div role="status" aria-label={label} className="flex flex-col gap-4 md:gap-5">
+      <div className="overflow-hidden rounded-2xl bg-[color:var(--surface-1)] ring-1 ring-line-subtle">
+        <div className="flex flex-col-reverse gap-5 p-5 md:flex-row md:justify-between md:p-6">
           <div className="flex flex-col gap-3">
             <div className="skeleton-shimmer h-4 w-56 rounded-full" />
-            <div className="skeleton-shimmer h-14 w-64 rounded-2xl md:h-[72px]" />
+            <div className="skeleton-shimmer h-[52px] w-64 rounded-2xl md:h-16" />
             <div className="skeleton-shimmer h-4 w-72 rounded-full" />
           </div>
           <div className="skeleton-shimmer h-9 w-72 rounded-full" />
         </div>
+        <div className="grid grid-cols-2 gap-px border-t border-line-subtle bg-line-subtle sm:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="bg-[color:var(--surface-1)] px-5 py-4 md:px-6">
+              <div className="skeleton-shimmer h-6 w-12 rounded-lg" />
+              <div className="skeleton-shimmer mt-2 h-3 w-20 rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton-shimmer h-[72px] rounded-2xl" />)}
-      </div>
+      <div className="skeleton-shimmer h-[150px] rounded-2xl" />
       <div className="skeleton-shimmer h-[300px] rounded-2xl" />
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:gap-5 lg:grid-cols-3">
         <div className="skeleton-shimmer h-[260px] rounded-2xl lg:col-span-2" />
         <div className="skeleton-shimmer h-[260px] rounded-2xl" />
       </div>

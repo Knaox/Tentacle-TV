@@ -13,17 +13,13 @@ interface RecordCardProps {
 
 const RecordCard = memo(function RecordCard({ icon, label, value, detail }: RecordCardProps) {
   return (
-    <li className="flex items-start gap-3 rounded-2xl bg-fill-faint p-4 ring-1 ring-line-subtle">
-      <span
-        aria-hidden
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
-        style={{ background: "linear-gradient(135deg, var(--brand-light), var(--brand-accent))" }}
-      >
+    <li className="flex min-w-0 items-start gap-3">
+      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-fill-soft text-[var(--brand-light)]">
         {icon}
       </span>
       <span className="min-w-0">
-        <span className="block text-xs font-medium uppercase tracking-wide text-content-tertiary">{label}</span>
-        <span className="mt-0.5 block text-xl font-bold text-content-primary">{value}</span>
+        <span className="block text-xs font-medium text-content-tertiary">{label}</span>
+        <span className="mt-0.5 block text-xl font-bold leading-tight text-content-primary">{value}</span>
         <span className="mt-0.5 block text-[13px] leading-snug text-content-secondary">{detail}</span>
       </span>
     </li>
@@ -32,8 +28,10 @@ const RecordCard = memo(function RecordCard({ icon, label, value, detail }: Reco
 
 /**
  * Vos records de la période : la journée la plus remplie, la plus longue
- * suite de jours, le marathon, la plus longue séance. Un record absent (trop
- * peu de données, rien de mesuré) n'a pas de carte ; aucun, pas de section.
+ * suite de jours (un quart d'heure par jour au moins), le marathon (le plus
+ * de TEMPS sur une série en un jour) et la plus longue séance. Un record
+ * absent (trop peu de données, rien de mesuré) n'a pas de place ; aucun, pas
+ * de section.
  */
 export const RecordsGrid = memo(function RecordsGrid({ records }: { records: ViewingStatsRecords }) {
   const f = useStatsFormat();
@@ -55,12 +53,12 @@ export const RecordsGrid = memo(function RecordsGrid({ records }: { records: Vie
       detail: `${f.day(longestStreak.from)} → ${f.day(longestStreak.to, true)}`,
     });
   }
-  if (binge) {
+  if (binge && binge.seconds > 0) {
     cards.push({
       icon: <Flame size={18} />,
       label: f.t("record_binge"),
-      value: f.t("seriesEpisodes", { count: binge.episodes }),
-      detail: f.t("recordBingeDetail", { series: binge.seriesName, date: f.day(binge.date, true) }),
+      value: f.duration(binge.seconds),
+      detail: f.t("recordBingeDetail", { series: binge.seriesName, episodes: binge.episodes, date: f.day(binge.date, true) }),
     });
   }
   if (longestSession && longestSession.seconds >= 60) {
@@ -75,7 +73,7 @@ export const RecordsGrid = memo(function RecordsGrid({ records }: { records: Vie
 
   return (
     <StatsSection title={f.t("recordsTitle")}>
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <ul className="grid gap-x-6 gap-y-5 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((c) => <RecordCard key={c.label} {...c} />)}
       </ul>
     </StatsSection>
