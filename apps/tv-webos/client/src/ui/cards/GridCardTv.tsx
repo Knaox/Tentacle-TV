@@ -21,8 +21,8 @@ interface GridCardProps {
  * d'identité de `config/substitutionModules.ts` : sans elle, la résolution se
  * substituerait à elle-même et le build partirait en boucle.
  *
- * Pas de maintien ici : dans une grille, l'appui court ouvre déjà la fiche.
- * Un second geste vers la même destination n'apprendrait rien.
+ * Le maintien y ouvre les actions de la carte (`CardActionSheetTv`), comme
+ * partout : l'appui court ouvre déjà la fiche.
  */
 export const LibraryGridCard = memo(function GridCardTv({
   item,

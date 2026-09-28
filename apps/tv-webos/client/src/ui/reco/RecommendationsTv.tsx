@@ -5,9 +5,8 @@ import {
 } from "@tentacle-tv/api-client";
 import { tvRecoHero, tvRecoNotice, tvRecoShelves, type TvRecoShelf } from "@tentacle-tv/tv-core";
 import { PageTransition } from "@/components/PageTransition";
-import { MediaRow } from "../rows/RowTv";
 import { RecoHeroTv } from "./RecoHeroTv";
-import { recoLibraryItems } from "./recoMediaItem";
+import { RecoRow } from "./RecoRowTv";
 
 const EMPTY: number[] = [];
 
@@ -69,12 +68,14 @@ export function RecommendationsTv() {
   );
 }
 
-/** Une étagère : son titre (`recoRowTitle`, clé du namespace `reco`) et ses titres. */
+/**
+ * Une étagère : son titre (`recoRowTitle`, clé du namespace `reco`) et ses
+ * titres — la rangée de recommandations de l'accueil, refus compris.
+ */
 const Shelf = memo(function Shelf({ shelf, animDelay }: { shelf: TvRecoShelf<RecoRowItem>; animDelay: number }) {
   const { t } = useTranslation("reco");
-  const items = useMemo(() => recoLibraryItems(shelf.items), [shelf.items]);
   const { key, params } = recoRowTitle(shelf);
-  return <MediaRow title={t(key, params)} items={items} animDelay={animDelay} />;
+  return <RecoRow title={t(key, params)} items={shelf.items} animDelay={animDelay} />;
 });
 
 /** La place de la tête, tenue le temps que la page ou la fiche du titre arrive. */

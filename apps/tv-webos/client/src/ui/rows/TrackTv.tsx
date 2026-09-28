@@ -52,6 +52,8 @@ export interface TrackProps {
   /** Épinglage du fenêtrage — voir `useRowWindow`. */
   onActiveIndex: (index: number | null) => void;
   onScroll: () => void;
+  /** Rangée de recommandations : l'appui long offre « Ne plus me proposer ». */
+  onDismissItem?: (itemId: string) => void;
 }
 
 export function TrackTv({
@@ -64,6 +66,7 @@ export function TrackTv({
   filled,
   onActiveIndex,
   onScroll,
+  onDismissItem,
 }: TrackProps) {
   // Le focus est-il dans cette piste ? C'est ce qui permet d'atténuer les
   // cartes voisines de celle qu'on désigne — et seulement dans la rangée
@@ -130,6 +133,10 @@ export function TrackTv({
                 width={cardWidth}
                 itemId={item.Id}
                 item={item}
+                // Les actions de l'appui long : la variante du survol de la
+                // carte (vignette 16:9, affiche, recommandation).
+                variant={onDismissItem ? "reco" : variant === "episode" ? "landscape" : "poster"}
+                onDismiss={onDismissItem ? () => onDismissItem(item.Id) : undefined}
                 onActiveIndex={onIndex}
               >
                 {variant === "episode" ? (

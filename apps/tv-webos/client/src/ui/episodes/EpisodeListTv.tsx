@@ -158,7 +158,7 @@ export function EpisodeList({
         {episodesLoading
           ? Array.from({ length: 6 }).map((_, index) => <Shimmer key={index} height="100px" />)
           : episodes?.map((episode) => (
-              <EpisodeRowTv key={episode.Id} episodeId={episode.Id}>
+              <EpisodeRowTv key={episode.Id} episodeId={episode.Id} episode={episode}>
                 <EpisodeRow
                   episode={episode}
                   client={client}

@@ -1,6 +1,8 @@
-import { useCallback, useMemo, useRef, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { createLongPress } from "../../focus/longPress";
+import { CardActionSheetTv } from "../cards/CardActionSheetTv";
+import { useSheetFocusReturn } from "../cards/useSheetFocusReturn";
 
 /**
  * Rend une ligne d'épisode atteignable à la télécommande.
@@ -18,9 +20,11 @@ import { createLongPress } from "../../focus/longPress";
  * progression, les pastilles de qualité et le synopsis restent ceux d'`apps/web`
  * et continueront de le suivre.
  *
- * **Appui court, appui long.** Bref lance l'épisode ; maintenu ouvre sa fiche.
- * C'est la convention d'Apple TV, celle que le geste rend naturelle, et c'est
- * déjà celle des cartes d'épisode de l'accueil.
+ * **Appui court, appui long.** Bref lance l'épisode ; maintenu ouvre ses
+ * ACTIONS — celles d'une vignette 16:9 (`CardActionSheetTv`, variante
+ * `landscape`) : Reprendre, vu, la note de l'épisode, et sa fiche. C'est le
+ * seul endroit du téléviseur où l'on peut marquer un épisode vu ou le noter
+ * sans quitter la liste — la bascule « vu » de la ligne du web y est masquée.
  *
  * `data-tv-cle` porte l'identifiant Jellyfin : c'est ce qui permet à la mémoire
  * de focus de retrouver CET épisode au retour du lecteur, là où un libellé
@@ -30,13 +34,17 @@ import { createLongPress } from "../../focus/longPress";
 interface EpisodeRowTvProps {
   /** Identifiant Jellyfin de l'épisode. Clé stable pour la mémoire de focus. */
   episodeId: string;
+  /** L'épisode, pour ses actions à l'appui long. */
+  episode: MediaItem;
   /** La ligne d'`apps/web`, rendue telle quelle. */
   children: ReactNode;
 }
 
-export function EpisodeRowTv({ episodeId, children }: EpisodeRowTvProps) {
+export function EpisodeRowTv({ episodeId, episode, children }: EpisodeRowTvProps) {
   const root = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
+  useSheetFocusReturn(root, sheetOpen);
 
   /**
    * L'appui court rejoue un vrai clic sur la ligne enveloppée.
@@ -51,9 +59,7 @@ export function EpisodeRowTv({ episodeId, children }: EpisodeRowTvProps) {
     if (line instanceof HTMLElement) line.click();
   }, []);
 
-  const longAction = useCallback(() => {
-    navigate(`/media/${episodeId}`);
-  }, [episodeId, navigate]);
+  const longAction = useCallback(() => setSheetOpen(true), []);
 
   const press = useMemo(
     () => createLongPress({ short: shortAction, long: longAction }),
@@ -75,6 +81,7 @@ export function EpisodeRowTv({ episodeId, children }: EpisodeRowTvProps) {
       onBlur={press.onBlur}
     >
       {children}
+      {sheetOpen && <CardActionSheetTv item={episode} variant="landscape" onClose={closeSheet} />}
     </div>
   );
 }

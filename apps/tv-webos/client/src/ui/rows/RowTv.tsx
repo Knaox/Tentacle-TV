@@ -21,6 +21,8 @@ interface RowProps {
   /** Après le titre, toujours visible : un compte de résultats, la puce du
    *  filtre de plateformes d'une rangée de recommandations. */
   headerTrailing?: ReactNode;
+  /** Rangée de recommandations : « Ne plus me proposer » à l'appui long. */
+  onDismissItem?: (itemId: string) => void;
 }
 
 /**
@@ -84,6 +86,7 @@ export function MediaRow({
   href,
   posterImageMode,
   headerTrailing,
+  onDismissItem,
 }: RowProps) {
   const { t } = useTranslation("common");
   const rowRef = useRef<HTMLElement>(null);
@@ -201,6 +204,7 @@ export function MediaRow({
           filled={reveal !== "hidden"}
           onActiveIndex={onActiveIndexChange}
           onScroll={handleScroll}
+          onDismissItem={onDismissItem}
         />
       </div>
     </section>

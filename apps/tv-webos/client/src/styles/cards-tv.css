@@ -130,11 +130,29 @@
   background-color: rgba(10, 10, 15, 0.92);
 }
 
+/* Sur une affiche, les puces se posent en BAS de l'image, à la place de la
+ * note (`FocusableCard` les monte dans la boîte de l'image) : en haut, elles
+ * chevauchaient la pastille d'états. */
+.carte-tv-meta-bas {
+  top: auto;
+  bottom: 8px;
+}
+
+/* Le bloc de puces du web s'ancre en haut (`top-1.5`) de son porteur, qui n'a
+   pas de hauteur : ancré en haut d'un point situé en bas, il sortait de
+   l'image, rogné. On le pose sur ce point par le bas. */
+.carte-tv-meta-bas > div {
+  top: auto;
+  bottom: 0;
+}
+
 /* La note posée sur l'image cède la place aux métadonnées pendant le focus —
- * sur une vignette d'épisode elles occupent le même coin, et une information à
- * la fois se lit mieux à trois mètres. Même règle que tvOS et Android TV. Le
- * composant web ne le sait pas : son `hovered` reste faux sur une dalle. */
-.carte-tv:focus [data-card-rating] {
+ * elles occupent son coin, et une information à la fois se lit mieux à trois
+ * mètres. Même règle que tvOS et Android TV. SEULEMENT quand les puces sont
+ * là (`data-meta`) : une carte sans qualité ni langue connues perdait sa note
+ * pour rien. Le composant web ne le sait pas : son `hovered` reste faux sur
+ * une dalle. */
+.carte-tv[data-meta="true"]:focus [data-card-rating] {
   opacity: 0;
 }
 

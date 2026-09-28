@@ -49,10 +49,11 @@ interface Props {
  * Qualité + langues partagent le même système de chips monochromes
  * (cf. MetaChips), seule source de vérité du style. Le 4K est le seul accent.
  */
-export function CardMetaOverlay({ item, density = "full", reveal = "always", shown, reserveCorner = false }: Props) {
-  const quality = useMemo(() => extractMediaQuality(item), [item]);
-  const compact = density === "compact";
+type MediaQuality = ReturnType<typeof extractMediaQuality>;
 
+/** Ce que les puces montreraient : rien quand le média ne dit ni qualité ni langue. */
+function metaContent(quality: MediaQuality, density: "full" | "compact") {
+  const compact = density === "compact";
   const showQuality = compact
     ? quality.resolution === "4K" ||
       quality.isDolbyVision ||
@@ -61,8 +62,24 @@ export function CardMetaOverlay({ item, density = "full", reveal = "always", sho
       Boolean(quality.resolution)
     : hasQualityChips(quality);
   const labels = quality.audioLabels.slice(0, compact ? 2 : 3);
+  return { showQuality, labels, empty: !showQuality && labels.length === 0 };
+}
 
-  if (!showQuality && labels.length === 0) return null;
+/**
+ * Vrai quand les puces auraient quelque chose à dire — pour qu'un appelant ne
+ * retire pas ce qu'elles remplacent (la note, au focus sur téléviseur) quand
+ * elles ne s'affichent pas.
+ */
+export function cardMetaVisible(item: MediaItem, density: "full" | "compact" = "full"): boolean {
+  return !metaContent(extractMediaQuality(item), density).empty;
+}
+
+export function CardMetaOverlay({ item, density = "full", reveal = "always", shown, reserveCorner = false }: Props) {
+  const quality = useMemo(() => extractMediaQuality(item), [item]);
+  const compact = density === "compact";
+  const { showQuality, labels, empty } = metaContent(quality, density);
+
+  if (empty) return null;
 
   // Mode « mount » : l'appelant ne nous monte que pendant le survol, parce que
   // chaque pastille porte un `backdrop-filter` (MetaChips) — deux à quatre par

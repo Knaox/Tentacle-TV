@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useRef, useState, type FocusEvent, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
-import type { MediaItem } from "@tentacle-tv/shared";
-import { captureDetailOrigin } from "@/components/detail/detailTransition";
-import { CardMetaOverlay } from "@/components/media/CardMetaOverlay";
+import { createPortal } from "react-dom";
+import type { CardOverlayVariant, MediaItem } from "@tentacle-tv/shared";
+import { CardMetaOverlay, cardMetaVisible } from "@/components/media/CardMetaOverlay";
 import { createLongPress } from "../../focus/longPress";
+import { CardActionSheetTv } from "./CardActionSheetTv";
 import { releaseItem, aimItem } from "./focusedItem";
+import { useSheetFocusReturn } from "./useSheetFocusReturn";
 
 /**
  * Rend une carte du client web atteignable à la télécommande.
@@ -25,7 +26,8 @@ import { releaseItem, aimItem } from "./focusedItem";
  *   `:has()` — refusé par la garde de compatibilité ;
  * - **l'épinglage dans le fenêtrage**, sans lequel la carte active serait
  *   démontée sous le focus au premier balayage rapide ;
- * - **les métadonnées au focus** — 4K, HDR, Dolby Vision, langues.
+ * - **les métadonnées au focus** — 4K, HDR, Dolby Vision, langues ;
+ * - **les actions du survol**, à l'appui long (`CardActionSheetTv`).
  *
  * Ce dernier point mérite son explication. `CardMetaOverlay` existe déjà et
  * fait exactement ce qu'il faut, mais les cartes du web ne le montent qu'au
@@ -44,10 +46,14 @@ interface FocusableCardProps {
   index: number;
   /** Largeur calculée par la rangée ; l'enveloppe et la carte la partagent. */
   width: number | null;
-  /** Identifiant de l'item, pour la navigation du maintien. */
+  /** Identifiant de l'item (les appelants le passent ; la carte lit `item`). */
   itemId: string;
-  /** L'item complet, pour les pastilles montées au focus. */
+  /** L'item complet, pour les pastilles montées au focus et les actions. */
   item?: MediaItem;
+  /** La variante du survol que l'appui long déploie (défaut : affiche). */
+  variant?: CardOverlayVariant;
+  /** « Ne plus me proposer », pour une carte de recommandation. */
+  onDismiss?: () => void;
   /** Épinglage du fenêtrage : `null` au blur. */
   onActiveIndex: (index: number | null) => void;
   children: ReactNode;
@@ -56,14 +62,23 @@ interface FocusableCardProps {
 export function FocusableCard({
   index,
   width,
-  itemId,
   item,
+  variant = "poster",
+  onDismiss,
   onActiveIndex,
   children,
 }: FocusableCardProps) {
   const root = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const [focused, setFocused] = useState(false);
+  // Sur une affiche, les puces se posent en BAS de l'image, à la place de la
+  // note — comme sur tvOS et Android TV : en haut, elles chevauchaient la
+  // pastille d'états. La vignette 16:9 garde les siennes en haut à gauche, au
+  // coin de sa note ; son bas porte le code et le titre de l'épisode.
+  const [metaHost, setMetaHost] = useState<HTMLElement | null>(null);
+  const metaShown = useMemo(() => (item ? cardMetaVisible(item, "compact") : false), [item]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
+  useSheetFocusReturn(root, sheetOpen);
 
   /**
    * L'appui court rejoue un vrai clic sur la carte enveloppée.
@@ -80,31 +95,17 @@ export function FocusableCard({
   }, []);
 
   /**
-   * Le maintien ouvre la fiche, avec l'origine de la transition.
-   *
-   * `[data-card-visual]` est déjà l'attribut par lequel la carte se désigne à
-   * ses propres mesures : on s'y raccroche plutôt que d'ajouter un marqueur au
-   * composant partagé.
+   * Le maintien ouvre les ACTIONS de la carte, au seuil — ce que le survol
+   * offre sur le web : lire, Ma liste, favori, vu, la note, et la fiche pour
+   * une vignette 16:9. Il ouvrait la fiche, que l'appui court ouvre déjà sur
+   * une affiche : le geste répondait, mais n'apprenait rien. Le verrou armé
+   * par l'action longue avale toujours la touche tenue : la feuille ne reçoit
+   * pas le relâchement comme un choix.
    */
   const longAction = useCallback(() => {
-    const visual = root.current?.querySelector<HTMLElement>("[data-card-visual]");
-    if (visual) {
-      const radius = Number.parseFloat(window.getComputedStyle(visual).borderTopLeftRadius) || 0;
-      const image = visual.querySelector("img");
-      captureDetailOrigin(visual, itemId, image?.currentSrc || image?.src || "", radius);
-    }
-    navigate(`/media/${itemId}`);
-  }, [itemId, navigate]);
+    if (item) setSheetOpen(true);
+  }, [item]);
 
-  /**
-   * Le maintien ouvre TOUJOURS la fiche, au seuil — y compris sur une
-   * affiche, dont l'appui court l'ouvre déjà au relâchement. On refusait ce
-   * doublon (« on n'invente pas un second geste ») ; mais tenir OK est le
-   * geste ordinaire d'une télécommande, et une carte qui ne répond qu'au
-   * relâchement paraît sourde pendant tout le maintien. Le geste apprend
-   * peut-être peu, il RÉPOND — et le verrou armé par l'action longue avale la
-   * touche tenue, l'écran d'arrivée ne reçoit rien.
-   */
   const press = useMemo(
     () => createLongPress({ short: shortAction, long: longAction }),
     [shortAction, longAction],
@@ -112,9 +113,12 @@ export function FocusableCard({
 
   const onFocus = useCallback(() => {
     setFocused(true);
+    if (variant !== "landscape") {
+      setMetaHost(root.current?.querySelector<HTMLElement>("[data-card-visual] > div") ?? null);
+    }
     if (item) aimItem(item);
     onActiveIndex(index);
-  }, [index, item, onActiveIndex]);
+  }, [index, item, variant, onActiveIndex]);
   const onBlur = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
       setFocused(false);
@@ -140,6 +144,9 @@ export function FocusableCard({
       role="button"
       tabIndex={0}
       data-tv-carte
+      // La note ne cède sa place au focus que si des puces la prennent
+      // (`cards-tv.css`) : sans elles, la carte perdait sa note pour rien.
+      data-meta={focused && metaShown ? "true" : undefined}
       className="carte-tv relative flex-shrink-0 snap-start"
       style={width ? { width: width } : undefined}
       onKeyDown={press.onKeyDown}
@@ -150,10 +157,22 @@ export function FocusableCard({
       {children}
       {/* Monté au focus seulement, et démonté au blur : une passe de
           composition par carte visitée, jamais quarante en permanence. */}
-      {focused && item && (
-        <span className="carte-tv-meta">
-          <CardMetaOverlay item={item} density="compact" />
-        </span>
+      {focused && item && metaShown && (
+        metaHost ? (
+          createPortal(
+            <span className="carte-tv-meta carte-tv-meta-bas">
+              <CardMetaOverlay item={item} density="compact" />
+            </span>,
+            metaHost,
+          )
+        ) : (
+          <span className="carte-tv-meta">
+            <CardMetaOverlay item={item} density="compact" />
+          </span>
+        )
+      )}
+      {sheetOpen && item && (
+        <CardActionSheetTv item={item} variant={variant} onDismiss={onDismiss} onClose={closeSheet} />
       )}
     </div>
   );

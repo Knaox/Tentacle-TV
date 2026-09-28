@@ -1,0 +1,170 @@
+/* Les actions d'une carte, à l'appui long (`CardActionSheetTv`).
+ *
+ * L'équivalent du survol du web, à trois mètres : la même liste, dans le même
+ * ordre (`cardActionEntries`), en cibles de salon. Centrée comme la surcouche
+ * de choix des réglages (`settings-tv.css`), dont elle reprend l'aplat : pas de
+ * flou — la passe verre retire les `backdrop-filter`, et un flou plein écran
+ * serait le calque le plus cher de l'application sur un processeur de dalle.
+ *
+ * Seuls `opacity` et `transform` s'animent. Pas de `gap` (Chrome 53 : la passe
+ * d'écarts ne convertit que les utilitaires Tailwind), pas de grille : des
+ * marges et du flex.
+ */
+
+.actions-carte-tv {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.72);
+  animation: actions-carte-tv-entree 160ms ease-out both;
+}
+
+@keyframes actions-carte-tv-entree {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.actions-carte-tv-boite {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  width: 600px;
+  max-height: 76%;
+  margin-left: -300px;
+  overflow-y: auto;
+  border-radius: var(--hero-frame-radius);
+  box-shadow: var(--hero-frame-ring);
+  background: var(--surface-1);
+  padding: 28px 28px 24px;
+}
+
+.actions-carte-tv-titre {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions-carte-tv-sous-titre {
+  margin-top: 6px;
+  font-size: 18px;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions-carte-tv-liste {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actions-carte-tv-liste > li + li {
+  margin-top: 6px;
+}
+
+.actions-carte-tv-entree {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-size: 22px;
+  text-align: left;
+  color: var(--text-secondary);
+  transition: transform 160ms ease-out;
+}
+
+.actions-carte-tv-entree:focus {
+  background: var(--fill-subtle);
+  color: var(--text-primary);
+  transform: scale(1.02);
+}
+
+/* L'action primaire — la seule en couleur, comme le bouton central du survol. */
+.actions-carte-tv-entree[data-principal="true"] {
+  background: linear-gradient(135deg, var(--brand), var(--brand-accent));
+  color: #fff;
+  font-weight: 700;
+}
+
+.actions-carte-tv-glyphe {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-right: 18px;
+}
+
+/* L'état vrai d'une bascule : le glyphe plein, en teinte de marque — le cœur
+   au rose de marque, comme partout. */
+.actions-carte-tv-entree[data-actif="true"] .actions-carte-tv-glyphe {
+  color: var(--brand-light);
+}
+
+.actions-carte-tv-entree[data-kind="favorite"][data-actif="true"] .actions-carte-tv-glyphe {
+  color: var(--brand-accent);
+}
+
+/* ── La note ─────────────────────────────────────────────────────────────── */
+
+.actions-carte-tv-note {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.actions-carte-tv-note-titre {
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.actions-carte-tv-etoiles {
+  display: flex;
+  margin-top: 10px;
+}
+
+.actions-carte-tv-etoile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin-right: 6px;
+  border-radius: 50%;
+  transition: transform 160ms ease-out;
+}
+
+.actions-carte-tv-etoile:focus {
+  background: var(--fill-subtle);
+  transform: scale(1.08);
+}
+
+.actions-carte-tv-etoile svg {
+  width: 44px;
+  height: 44px;
+}
+
+.actions-carte-tv-etoile-trait {
+  fill: none;
+  stroke: var(--text-tertiary);
+  stroke-width: 1.2;
+}
+
+.actions-carte-tv-etoile-plein {
+  fill: var(--brand-accent);
+}
