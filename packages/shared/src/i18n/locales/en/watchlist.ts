@@ -1,5 +1,6 @@
 /** The “My list” page — desktop, web and mobile. */
 export default {
+  kicker: "To watch",
   stageFilterLabel: "Filter by progress",
   typeFilterLabel: "Filter by type",
   stageAll: "All",
