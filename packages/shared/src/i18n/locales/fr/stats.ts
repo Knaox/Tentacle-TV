@@ -87,7 +87,7 @@ export default {
   rhythmMore: "Plus",
   rhythmNote: "Sur le temps mesuré par Tentacle, à l'heure de votre appareil.",
   rhythmEmpty: "Votre rythme se dessinera dès vos prochaines séances : il se calcule sur le temps mesuré par Tentacle.",
-  rhythmCell: "{{weekday}}, {{hour}} h : {{duration}}",
+  rhythmSlot: "{{weekday}}, {{from}} h – {{to}} h",
   noViewing: "Aucun visionnage",
 
   devicesTitle: "Vos écrans",

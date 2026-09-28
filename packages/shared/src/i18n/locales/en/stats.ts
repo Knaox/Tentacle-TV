@@ -87,7 +87,7 @@ export default {
   rhythmMore: "More",
   rhythmNote: "Based on time measured by Tentacle, in your device's time zone.",
   rhythmEmpty: "Your rhythm will take shape after your next sessions: it is based on the time measured by Tentacle.",
-  rhythmCell: "{{weekday}}, {{hour}}:00: {{duration}}",
+  rhythmSlot: "{{weekday}}, {{from}}:00–{{to}}:00",
   noViewing: "Nothing watched",
 
   devicesTitle: "Your screens",

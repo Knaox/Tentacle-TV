@@ -54,11 +54,20 @@ describe("les durées", () => {
   });
 
   it("donnent au héros des heures dès qu'il y en a une, des minutes sinon", () => {
-    expect(heroFigure(128.9 * 3600, "fr")).toEqual({ value: "128", unit: "hours", count: 128 });
-    expect(heroFigure(2.56 * 3600, "fr")).toEqual({ value: "2,5", unit: "hours", count: 2.5 });
-    expect(heroFigure(3 * 3600, "en")).toEqual({ value: "3", unit: "hours", count: 3 });
-    expect(heroFigure(42 * 60, "en")).toEqual({ value: "42", unit: "minutes", count: 42 });
+    expect(heroFigure(128.9 * 3600, "fr")).toEqual({ value: "128", unit: "hours", count: 2 });
+    expect(heroFigure(2.56 * 3600, "fr")).toEqual({ value: "2,5", unit: "hours", count: 2 });
+    expect(heroFigure(3 * 3600, "en")).toEqual({ value: "3", unit: "hours", count: 2 });
+    expect(heroFigure(42 * 60, "en")).toEqual({ value: "42", unit: "minutes", count: 2 });
     expect(heroFigure(1500 * 3600, "fr").value).toBe(`1${NNBSP}500`);
+  });
+
+  it("tranchent le pluriel pareil partout — Hermes n'a pas Intl.PluralRules", () => {
+    // Français : singulier sous 2 (« 1,7 heure », « 0 minute »).
+    expect(heroFigure(1.75 * 3600, "fr").count).toBe(1);
+    expect(heroFigure(0, "fr")).toEqual({ value: "0", unit: "minutes", count: 1 });
+    // Anglais : singulier à 1 pile seulement (« 1.7 hours », « 1 hour »).
+    expect(heroFigure(1.75 * 3600, "en").count).toBe(2);
+    expect(heroFigure(3600, "en").count).toBe(1);
   });
 });
 

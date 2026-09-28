@@ -121,3 +121,4 @@ export * from "./viewingStats/insights";
 export * from "./viewingStats/badges";
 export * from "./viewingStats/timeZone";
 export * from "./viewingStats/statsFormatter";
+export * from "./viewingStats/featured";

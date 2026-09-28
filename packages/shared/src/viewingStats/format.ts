@@ -66,6 +66,18 @@ export function formatWatchTime(seconds: number, locale: StatsLocale): string {
 }
 
 /**
+ * Le nombre qui choisit le pluriel de l'unité, le même sur tous les moteurs.
+ * Le français met le singulier sous 2 (« 1,7 heure », « 0 minute »),
+ * l'anglais seulement à 1 pile. Hermes n'a pas `Intl.PluralRules` : i18next
+ * y retombe sur « 1 = singulier, le reste au pluriel » — on lui donne donc un
+ * nombre déjà tranché (1 ou 2), que les deux règles lisent pareil.
+ */
+function pluralCount(value: number, locale: StatsLocale): number {
+  if (locale === "fr") return value < 2 ? 1 : 2;
+  return value === 1 ? 1 : 2;
+}
+
+/**
  * Le chiffre du héros et son unité : des heures dès qu'il y en a une (une
  * décimale sous dix heures), des minutes sinon. L'unité se traduit côté
  * client, au pluriel voulu par `count`.
@@ -74,14 +86,14 @@ export function heroFigure(seconds: number, locale: StatsLocale): { value: strin
   const hours = seconds / 3600;
   if (hours >= 10) {
     const whole = Math.floor(hours);
-    return { value: formatStatNumber(whole, locale), unit: "hours", count: whole };
+    return { value: formatStatNumber(whole, locale), unit: "hours", count: pluralCount(whole, locale) };
   }
   if (hours >= 1) {
     const tenth = Math.floor(hours * 10) / 10;
-    return { value: formatStatNumber(tenth, locale, Number.isInteger(tenth) ? 0 : 1), unit: "hours", count: tenth };
+    return { value: formatStatNumber(tenth, locale, Number.isInteger(tenth) ? 0 : 1), unit: "hours", count: pluralCount(tenth, locale) };
   }
   const minutes = Math.floor(seconds / 60);
-  return { value: formatStatNumber(minutes, locale), unit: "minutes", count: minutes };
+  return { value: formatStatNumber(minutes, locale), unit: "minutes", count: pluralCount(minutes, locale) };
 }
 
 /** « AAAA-MM-JJ » (ou « AAAA-MM », « AAAA ») → composantes ; mois de 0 à 11. */

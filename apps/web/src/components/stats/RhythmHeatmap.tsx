@@ -83,7 +83,11 @@ export const RhythmHeatmap = memo(function RhythmHeatmap({ grid }: { grid: numbe
             y={hover.y}
             containerWidth={width}
             headline={grid[hover.index] > 0 ? f.duration(grid[hover.index]) : f.t("noViewing")}
-            title={`${f.weekday(Math.floor(hover.index / RHYTHM_HOURS))}, ${hover.index % RHYTHM_HOURS} h – ${(hover.index % RHYTHM_HOURS) + 1} h`}
+            title={f.t("rhythmSlot", {
+              weekday: f.weekday(Math.floor(hover.index / RHYTHM_HOURS)),
+              from: hover.index % RHYTHM_HOURS,
+              to: (hover.index % RHYTHM_HOURS) + 1,
+            })}
           />
         )}
       </div>
