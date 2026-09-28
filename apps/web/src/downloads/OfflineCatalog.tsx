@@ -1,243 +1,95 @@
 /**
- * Catalogue local — accueil du mode Hors ligne, et page « Sur cet appareil »
- * quand le serveur répond (`/on-device`).
+ * L'accueil du mode Hors ligne — et la page « Sur cet appareil » quand le
+ * serveur répond (`/on-device`).
  *
- * Un bandeau reprend ce qu'on regardait, un résumé dit ce que la machine
- * porte, puis les films en affiches verticales et les épisodes regroupés par
- * SÉRIE : une carte « Rick et Morty », qui ouvre la série et laisse choisir la
- * saison. Une série de six saisons occupait sinon six cartes côte à côte —
- * c'est la série qu'on cherche, la saison ne vient qu'après.
+ * Il se lit comme l'accueil en ligne : la même bannière encadrée (les titres
+ * de la machine, reprises d'abord), un résumé de ce que la machine porte, les
+ * rangées « Reprendre la lecture » et « À suivre » tirées de la progression
+ * locale, puis tout le catalogue en grilles, cherchable et filtrable par
+ * bibliothèque d'origine. Les cartes sont celles du reste de l'app — même
+ * repos, même survol —, en mode local : seule la coche « vu » s'y bascule.
  *
- * Le filtre porte sur les BIBLIOTHÈQUES d'origine (Films, Séries, Animés…) et
- * non plus sur « film ou épisode » : c'est ainsi qu'on range son catalogue, et
- * l'entrée existe en base depuis le premier transfert.
- *
- * Images servies depuis le disque : cette page ne coûte pas un octet de
- * réseau. Seuls les téléchargements COMPLETS et lisibles du compte sont
- * montrés.
+ * Tout vient du disque : cette page ne coûte pas un octet de réseau. Seuls les
+ * titres COMPLETS et lisibles du compte y paraissent.
  */
 
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { matchesSearch } from "@tentacle-tv/shared";
-import type { DownloadEntry } from "./api";
-import { useDownloadsList } from "./useDownloadState";
-import { OfflinePosterCard } from "./OfflinePosterCard";
-import { useLocalSnapshot } from "./useLocalSnapshot";
-import { useDownloadsRootReady } from "./localFiles";
-import { RevealCell, RevealScope } from "../components/grid/RevealCell";
+import { WifiOff } from "lucide-react";
+import { PageTransition } from "../components/PageTransition";
+import { CARD_HEIGHT, FRAME_GUTTER } from "../components/hero/HeroBillboard";
 import { useOfflineMode } from "../offline/useOfflineMode";
+import { DownloadsEmptyState } from "./DownloadsEmptyState";
 import { OfflineDeviceSummary } from "./OfflineDeviceSummary";
-import { OfflineHomeHero } from "./OfflineHomeHero";
-import { ScopedSearchField } from "../components/search/ScopedSearchField";
-import {
-  groupOfflineEntries,
-  groupSeasonsBySeries,
-  groupWatchState,
-  seasonLabel,
-  seriesGroupMatches,
-  watchStateOf,
-  type OfflineSeriesGroup,
-} from "@tentacle-tv/offline-core";
-
-/** `all`, sinon le nom de la bibliothèque d'origine. */
-type Filter = string;
-
-/**
- * Hauteur réservée à une cellule d'affiche avant son premier passage — affiche
- * 2:3 plus son bloc titre, pour la colonne la plus étroite du catalogue. Elle ne
- * décide que du premier positionnement de la barre de défilement : dès qu'une
- * cellule a été montée, c'est sa hauteur réelle qui est retenue.
- */
-const POSTER_CELL_HEIGHT = 260;
-/** Bloc titre sous l'affiche — deux lignes plus la marge. */
-const POSTER_TEXT_HEIGHT = 48;
-/** Cellules montées d'emblée, pour qu'aucune case ne soit vide au premier rendu. */
-const EAGER_CELLS = 12;
+import { OfflineBillboard } from "./home/OfflineBillboard";
+import { OfflineCardRow } from "./home/OfflineCardRow";
+import { OfflineLibrarySection } from "./home/OfflineLibrarySection";
+import { useEntriesWithBackdrop } from "./home/useEntriesWithBackdrop";
+import { ALL_LIBRARIES, useOfflineHome, type OfflineHomeFilter } from "./home/useOfflineHome";
 
 export function OfflineCatalog() {
-  const { t } = useTranslation(["downloads", "nav", "common"]);
-  const navigate = useNavigate();
-  const entries = useDownloadsList();
+  const { t } = useTranslation(["downloads", "common"]);
   const offline = useOfflineMode();
-  const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<OfflineHomeFilter>(ALL_LIBRARIES);
+  const home = useOfflineHome(search, filter);
+  const billboard = useEntriesWithBackdrop(home.hero);
 
-  const complete = useMemo(() => entries.filter((e) => e.status === "complete"), [entries]);
-  // Les bibliothèques réellement présentes, dans l'ordre d'apparition — pas de
-  // puce pour une bibliothèque dont rien n'est sur la machine.
-  const libraries = useMemo(() => {
-    const seen: string[] = [];
-    for (const entry of complete) {
-      const name = entry.libraryName;
-      if (name && !seen.includes(name)) seen.push(name);
-    }
-    return seen;
-  }, [complete]);
-  const scoped = useMemo(
-    () => (filter === "all" ? complete : complete.filter((e) => e.libraryName === filter)),
-    [complete, filter],
-  );
-  const { movies, seasons } = useMemo(() => groupOfflineEntries(scoped), [scoped]);
-  const series = useMemo(() => groupSeasonsBySeries(seasons), [seasons]);
+  // Le dernier titre d'une bibliothèque filtrée vient de partir : retour à « Tout ».
+  useEffect(() => {
+    if (filter !== ALL_LIBRARIES && !home.libraries.some((library) => library.id === filter)) setFilter(ALL_LIBRARIES);
+  }, [filter, home.libraries]);
 
-  // Terme brut : c'est le comparateur partagé qui normalise.
-  const needle = search.trim();
-  const shownMovies = useMemo(
-    () => movies.filter((m) => matchesSearch(m.title ?? "", needle)),
-    [movies, needle],
-  );
-  const shownSeries = useMemo(
-    () => series.filter((s) => seriesGroupMatches(s, needle)),
-    [series, needle],
-  );
+  if (home.ready && home.complete.length === 0) {
+    return (
+      <PageTransition className="px-4 pb-24 pt-10 md:px-8">
+        <h1 className="sr-only">{t("downloads:heroLabel")}</h1>
+        {offline ? <OfflineEmpty /> : <DownloadsEmptyState />}
+      </PageTransition>
+    );
+  }
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-6xl px-4 pb-16 pt-24 md:px-8">
-      <h1 className="mb-5 text-2xl font-bold text-content-primary">{t("downloads:heroLabel")}</h1>
-
-      <OfflineHomeHero entries={complete} />
-
-      {complete.length > 0 && <OfflineDeviceSummary complete={complete} />}
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <ScopedSearchField
-          value={search}
-          onChange={setSearch}
-          placeholder={t("downloads:offlineSearchPlaceholder")}
-          className="max-w-full sm:w-80"
-        />
-        {/* Une seule bibliothèque : la puce « Tout » n'arbitre rien. */}
-        {libraries.length > 1 &&
-          ["all", ...libraries].map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setFilter(value)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
-                filter === value
-                  ? "bg-fill-medium text-content-primary"
-                  : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
-              }`}
-            >
-              {value === "all" ? t("downloads:filterAll") : value}
-            </button>
-          ))}
-      </div>
-
-      {complete.length === 0 ? (
-        <div className="mt-20 flex flex-col items-center text-center">
-          <p className="text-lg font-semibold text-content-secondary">{t("downloads:offlineEmptyTitle")}</p>
-          <p className="mt-2 max-w-md text-sm leading-relaxed text-content-quaternary">
-            {/* En ligne, « le catalogue reviendra dès que le serveur répondra »
-                est faux : le serveur répond, il n'y a simplement rien de gardé. */}
-            {offline ? t("downloads:offlineEmptyMessage") : t("downloads:offlineEmptyOnlineMessage")}
-          </p>
-          {!offline && (
-            <Link
-              to="/"
-              className="mt-5 rounded-md bg-cta-primary-bg px-4 py-2 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
-            >
-              {t("downloads:emptyAction")}
-            </Link>
-          )}
-        </div>
-      ) : shownMovies.length === 0 && shownSeries.length === 0 ? (
-        <div className="mt-20 flex flex-col items-center text-center">
-          <p className="text-sm font-medium text-content-secondary">{t("common:noResults")}</p>
-          <p className="mt-1 text-xs text-content-quaternary">{t("common:noResultsHint")}</p>
+    <PageTransition>
+      <h1 className="sr-only">{t("downloads:heroLabel")}</h1>
+      {!billboard.settled || !home.ready ? (
+        // Le temps d'une sonde (quelques millisecondes) : le cadre de la
+        // bannière, pour que rien ne saute quand elle arrive.
+        <div className={`pb-6 md:pb-10 ${FRAME_GUTTER}`}>
+          <div className={`skeleton-shimmer w-full ${CARD_HEIGHT}`} style={{ borderRadius: "var(--hero-frame-radius)" }} />
         </div>
       ) : (
-        // Un seul observateur pour les deux sections : le catalogue local n'est
-        // pas borné (il grandit avec le disque), et chaque affiche pèse une
-        // image décodée de ~540 Ko. Les cellules gardent leur place, seul leur
-        // contenu est démonté hors du champ.
-        <RevealScope>
-          <div className="mt-8 space-y-10">
-            {shownMovies.length > 0 && (
-              <Section title={t("downloads:sectionMovies")}>
-                {shownMovies.map((movie, i) => (
-                  <RevealCell key={movie.id} minHeight={POSTER_CELL_HEIGHT} aspect={2 / 3} textHeight={POSTER_TEXT_HEIGHT} eager={i < EAGER_CELLS}>
-                    <MovieCard entry={movie} onOpen={() => navigate(`/offline/item/${movie.itemId}`)} />
-                  </RevealCell>
-                ))}
-              </Section>
-            )}
-            {shownSeries.length > 0 && (
-              <Section title={t("downloads:sectionSeries")}>
-                {shownSeries.map((group, i) => (
-                  <RevealCell key={group.key} minHeight={POSTER_CELL_HEIGHT} aspect={2 / 3} textHeight={POSTER_TEXT_HEIGHT} eager={i < EAGER_CELLS}>
-                    <SeriesCard
-                      group={group}
-                      onOpen={() => navigate(`/offline/series/${encodeURIComponent(group.key)}`)}
-                    />
-                  </RevealCell>
-                ))}
-              </Section>
-            )}
-          </div>
-        </RevealScope>
+        billboard.entries.length > 0 && <OfflineBillboard entries={billboard.entries} />
       )}
 
-    </div>
+      <div className="relative z-10 space-y-10 pb-24">
+        <OfflineDeviceSummary complete={home.complete} />
+        <OfflineCardRow title={t("common:resumeWatching")} entries={home.resume} />
+        <OfflineCardRow title={t("common:nextEpisode")} entries={home.nextUp} />
+        <OfflineLibrarySection
+          search={search}
+          onSearch={setSearch}
+          filter={filter}
+          onFilter={setFilter}
+          libraries={home.libraries}
+          movies={home.movies}
+          series={home.series}
+        />
+      </div>
+    </PageTransition>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-content-quaternary">{title}</h2>
-      <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">{children}</div>
-    </section>
-  );
-}
-
-function MovieCard({ entry, onOpen }: { entry: DownloadEntry; onOpen: () => void }) {
-  const { watched, percent } = watchStateOf(entry);
-  // La note vient du snapshot écrit au téléchargement — aucune requête, et le
-  // fichier est déjà là : le moteur enregistre le DTO brut, dont
-  // `CommunityRating` fait partie d'office.
-  const rootReady = useDownloadsRootReady();
-  const snapshot = useLocalSnapshot(entry.itemId, "item.json", rootReady);
-  return (
-    <OfflinePosterCard
-      title={entry.title ?? entry.itemId}
-      imageCandidates={[`meta/${entry.itemId}/primary.jpg`]}
-      watched={watched}
-      percent={percent}
-      rating={snapshot?.CommunityRating ?? null}
-      onClick={onOpen}
-    />
-  );
-}
-
-function SeriesCard({ group, onOpen }: { group: OfflineSeriesGroup; onOpen: () => void }) {
+/** Hors ligne, et rien sur la machine : le catalogue reviendra avec le serveur. */
+function OfflineEmpty() {
   const { t } = useTranslation("downloads");
-  // Une seule saison : son numéro est plus parlant que « 1 saison ».
-  const label =
-    group.seasons.length === 1
-      ? seasonLabel(t, group.seasons[0].seasonNumber)
-      : t("downloads:seasonsCount", { count: group.seasons.length });
-  // Série vue = TOUS ses épisodes téléchargés le sont.
-  const { watched } = groupWatchState(group.seasons.flatMap((s) => s.episodes));
-  // `series.json`, donc la note de la SÉRIE — la même que celle qu'une tuile de
-  // lot affiche en ligne.
-  const rootReady = useDownloadsRootReady();
-  const snapshot = useLocalSnapshot(group.posterItemId, "series.json", rootReady);
   return (
-    <OfflinePosterCard
-      title={group.seriesName}
-      rating={snapshot?.CommunityRating ?? null}
-      subtitle={`${label} · ${t("downloads:episodesCount", { count: group.episodeCount })}`}
-      watched={watched}
-      // Affiche verticale de la série ; à défaut (téléchargement hérité non
-      // encore réparé), la vignette de l'épisode plutôt que rien.
-      imageCandidates={[
-        `meta/${group.posterItemId}/series-primary.jpg`,
-        `meta/${group.posterItemId}/primary.jpg`,
-      ]}
-      onClick={onOpen}
-    />
+    <div className="mt-16 flex flex-col items-center text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-line-subtle bg-fill-faint text-[var(--brand-light)]">
+        <WifiOff className="h-7 w-7" aria-hidden />
+      </span>
+      <p className="mt-5 text-lg font-semibold text-content-primary">{t("offlineEmptyTitle")}</p>
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-content-tertiary">{t("offlineEmptyMessage")}</p>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import { SeasonPicker } from "../SeasonPicker";
 import { formatBytes } from "../presets";
 import { RowHeader } from "../../components/rows/RowHeader";
 import { RevealCell, RevealScope } from "../../components/grid/RevealCell";
+import { useOfflineWatchedToggle } from "./useOfflineActions";
 
 /** Vignette 16:9 plus son bloc titre — hauteur réservée avant premier passage. */
 const EPISODE_CELL_HEIGHT = 230;
@@ -25,7 +26,8 @@ interface Props {
 /**
  * Les épisodes gardés sur la machine, en grille de vignettes 16:9 — l'image
  * EXACTE de la reprise pour un épisode entamé, tirée des planches déjà sur le
- * disque. La vignette ouvre la fiche de l'épisode, son bouton lance la lecture.
+ * disque. Comme toute vignette : le clic lance la lecture, la fiche de
+ * l'épisode passe par le plateau du survol, avec la coche « vu ».
  *
  * Une saison peut compter plus de cent épisodes : les cellules gardent leur
  * place, seul leur contenu est démonté hors du champ.
@@ -33,8 +35,10 @@ interface Props {
 export function OfflineEpisodesSection({ title, episodes, currentId, seasons }: Props) {
   const { t } = useTranslation("downloads");
   const navigate = useNavigate();
+  const toggleWatched = useOfflineWatchedToggle();
   const open = useCallback((entry: DownloadEntry) => navigate(`/offline/item/${entry.itemId}`), [navigate]);
   const play = useCallback((entry: DownloadEntry) => navigate(`/watch/${entry.itemId}`), [navigate]);
+  const toggle = useCallback((entry: DownloadEntry) => void toggleWatched([entry.itemId], !entry.played), [toggleWatched]);
   if (episodes.length === 0) return null;
   const summary = `${t("episodesCount", { count: episodes.length })} · ${formatBytes(keptBytes(episodes))}`;
 
@@ -59,7 +63,7 @@ export function OfflineEpisodesSection({ title, episodes, currentId, seasons }: 
                     eager={index < 8}
                     className={current ? "rounded-lg ring-2 ring-[rgba(var(--brand-rgb),0.75)] ring-offset-4 ring-offset-surface-0" : undefined}
                   >
-                    <OfflineEpisodeCard entry={episode} onSelect={open} onPlay={play} />
+                    <OfflineEpisodeCard entry={episode} onPlay={play} onOpen={open} onToggleWatched={toggle} />
                   </RevealCell>
                 </li>
               );

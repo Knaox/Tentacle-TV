@@ -1,129 +1,142 @@
 /**
- * Carte HORIZONTALE (16:9) d'un épisode téléchargé. L'affiche locale d'un
- * épisode (`primary.jpg`) EST sa vignette 16:9 : la rogner en 2:3, comme le
- * faisait le catalogue, rendait mal.
+ * Carte HORIZONTALE (16:9) d'un titre gardé : les épisodes d'une saison, et
+ * les rangées « Reprendre » et « À suivre » de l'accueil local.
  *
- * Deux gestes distincts, comme sur les cartes en ligne : la carte ouvre la
- * fiche, le bouton superposé lance la lecture.
+ * La grammaire des vignettes en ligne (`EpisodeCard`) : le clic LANCE la
+ * lecture, la fiche passe par le plateau du survol (variante `landscape`, en
+ * mode LOCAL : la coche « vu » seule, ni note ni requête). L'image est
+ * l'EXACTE image de la reprise pour un titre entamé, tirée des planches
+ * trickplay déjà sur le disque ; sinon la vignette de l'épisode, ou le décor
+ * d'un film — son affiche 2:3 se rognerait mal.
  */
 
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDuration, formatEpisodeCode, resolveResumeSprite } from "@tentacle-tv/shared";
+import { localMediaItem, watchStateOf } from "@tentacle-tv/offline-core";
+import type { DownloadEntry } from "./api";
+import { useLocalSnapshot } from "./useLocalSnapshot";
+import { useDownloadsRootReady } from "./localFiles";
+import { LocalCardImage } from "./LocalCardImage";
+import { CardFrame } from "../components/cards/CardFrame";
+import { CardHoverOverlay } from "../components/cards/CardHoverOverlay";
 import { CardProgressBar } from "../components/cards/CardProgressBar";
 import { CardRatingBadge } from "../components/cards/CardRatingBadge";
+import { CardStatusMarkers } from "../components/cards/CardStatusMarkers";
 import { CardTrickplayImage } from "../components/cards/CardTrickplayImage";
-import { CardWatchedBadge } from "../components/cards/CardWatchedBadge";
-import { useLocalSnapshot } from "./useLocalSnapshot";
 import { useLocalTrickplay } from "../hooks/useLocalTrickplay";
-import type { DownloadEntry } from "./api";
-import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
-import { watchStateOf } from "@tentacle-tv/offline-core";
+import { useMountWhile } from "../hooks/useMountWhile";
+import type { MediaItem } from "@tentacle-tv/shared";
+
+const EPISODE_ART = ["primary.jpg", "backdrop.jpg"] as const;
+const MOVIE_ART = ["backdrop.jpg", "primary.jpg"] as const;
+const WATCHED: readonly ["watched"] = ["watched"];
+const NONE: readonly [] = [];
 
 interface OfflineEpisodeCardProps {
   entry: DownloadEntry;
-  onSelect: (entry: DownloadEntry) => void;
+  /** Sous la vignette : le nom de la série ou du film (rangées de l'accueil), sinon la durée seule. */
+  showHeading?: boolean;
   onPlay: (entry: DownloadEntry) => void;
+  onOpen: (entry: DownloadEntry) => void;
+  onToggleWatched: (entry: DownloadEntry) => void;
 }
 
 export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
-  entry,
-  onSelect,
-  onPlay,
+  entry, showHeading = false, onPlay, onOpen, onToggleWatched,
 }: OfflineEpisodeCardProps) {
-  const { t } = useTranslation(["downloads", "common"]);
+  const { t } = useTranslation("common");
   const rootReady = useDownloadsRootReady();
-  const [failed, setFailed] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const overlayMounted = useMountWhile(hovered, 200);
   const { watched, percent } = watchStateOf(entry);
-  // Sa propre note — la vignette porte le nom et le numéro de CET épisode, pas
-  // ceux de la série. Lue dans le snapshot du disque, sans requête ; la cellule
-  // est démontée hors du champ (`RevealCell`), le nombre de lectures est donc
-  // borné par ce qui est à l'écran.
-  const snapshot = useLocalSnapshot(entry.itemId, "item.json", rootReady);
-  const url = rootReady ? localResourceUrl(`meta/${entry.itemId}/primary.jpg`) : null;
+  // Le snapshot de CE titre : sa note, et les puces qualité/langues du FICHIER.
+  const snapshot = useLocalSnapshot<MediaItem>(entry.itemId, "item.json", rootReady);
+  const item = useMemo(() => localMediaItem(snapshot, entry), [snapshot, entry]);
 
-  // La vignette EXACTE de la reprise, croppée dans les planches DÉJÀ
-  // téléchargées — zéro réseau. Le manifeste local n'est lu que pour un
-  // épisode entamé : les autres cartes gardent leur affiche sans requête.
-  const local = useLocalTrickplay(entry.positionTicks > 0 ? entry.itemId : undefined);
+  // La planche n'est lue que pour un titre entamé : les autres gardent leur
+  // vignette sans requête.
+  const local = useLocalTrickplay(entry.positionTicks > 0 && !watched ? entry.itemId : undefined);
   const sprite = useMemo(
-    () => (local && !watched ? resolveResumeSprite(local.manifest, entry.positionTicks) : null),
-    [local, watched, entry.positionTicks],
+    () => (local ? resolveResumeSprite(local.manifest, entry.positionTicks) : null),
+    [local, entry.positionTicks],
   );
   const frameUrl = sprite && local ? local.buildTileUrl(sprite.tileIndex) : null;
-  const frame =
-    sprite && frameUrl
-      ? { url: frameUrl, info: sprite.selection.info, col: sprite.col, row: sprite.row }
-      : null;
 
+  const isEpisode = entry.kind === "episode";
   const title = entry.title ?? entry.itemId;
-  // Numéros absents (rattrapage en attente) : pas de « S00E00 » inventé.
-  const code = entry.parentIndexNumber != null && entry.indexNumber != null
+  const code = isEpisode && entry.parentIndexNumber != null && entry.indexNumber != null
     ? formatEpisodeCode(entry.parentIndexNumber, entry.indexNumber, { style: "padded" })
     : null;
+  const heading = isEpisode ? (entry.seriesName ?? title) : title;
   const runtime = formatDuration(entry.runtimeTicks ?? undefined);
+  const art = isEpisode ? EPISODE_ART : MOVIE_ART;
+  const image = <LocalCardImage itemId={entry.itemId} candidates={art} fallback={title} />;
 
-  const banner = url && !failed ? (
-    <img
-      src={url}
-      alt=""
-      loading="lazy" decoding="async"
-      className="h-full w-full object-cover"
-      onError={() => setFailed(true)}
-    />
-  ) : (
-    <div className="flex h-full w-full items-center justify-center px-3 text-center text-xs text-content-quaternary">
-      {title}
-    </div>
-  );
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onPlay(entry);
+    }
+  };
 
   return (
     <div
-      className="group/card relative cursor-pointer"
-      onClick={() => onSelect(entry)}
+      role="button"
+      tabIndex={0}
+      aria-label={`${t("play")} — ${heading}${isEpisode ? ` · ${title}` : ""}`}
+      className="group/card relative cursor-pointer rounded-[var(--radius-lg)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+      style={{ zIndex: hovered ? 2 : undefined }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHovered(false);
+      }}
+      onClick={() => onPlay(entry)}
+      onKeyDown={onKeyDown}
     >
-      <div className="relative aspect-video overflow-hidden rounded-lg bg-surface-2 ring-1 ring-line-subtle transition-transform duration-200 group-hover/card:scale-[1.02]">
-        {frame ? (
-          // Le conteneur porte déjà son propre scale au survol : pas de second
-          // zoom interne. L'affiche reste le repli si la planche ne charge pas.
-          <CardTrickplayImage frame={frame} alt={title} zoom={false} fallback={banner} />
-        ) : (
-          banner
-        )}
-
-        {/* Scrim + textes posés SUR la vignette : blanc/noir constants dans les
-            deux thèmes (règle « posé sur média »). */}
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-        <div className="absolute inset-x-0 bottom-1.5 pl-3 pr-14 text-white">
-          {code && (
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">{code}</p>
-          )}
+      <CardFrame hovered={hovered} aspect="aspect-video" lift={{ scale: 1.04, y: -7 }}>
+        {sprite && frameUrl
+          ? <CardTrickplayImage frame={{ url: frameUrl, info: sprite.selection.info, col: sprite.col, row: sprite.row }} alt={title} fallback={image} />
+          : image}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2" style={{ background: "var(--card-reveal-scrim)" }} />
+        <CardRatingBadge rating={snapshot?.CommunityRating ?? null} shown={!hovered} className="left-2 top-2" />
+        <CardStatusMarkers statuses={watched ? WATCHED : NONE} shown={!hovered} />
+        <div className={`absolute inset-x-0 bottom-1.5 pl-3 text-on-media-primary ${hovered ? "pr-[7.5rem]" : "pr-4"}`}>
+          {code && <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-on-media-secondary">{code}</p>}
           <p className="line-clamp-1 text-xs font-semibold">{title}</p>
         </div>
-
-        <button
-          type="button"
-          aria-label={t("downloads:episodePlay")}
-          title={t("downloads:episodePlay")}
-          onClick={(e) => {
-            e.stopPropagation();
-            onPlay(entry);
-          }}
-          className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black opacity-0 transition-opacity duration-150 hover:bg-white group-hover/card:opacity-100 focus-visible:opacity-100"
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-        </button>
-
-        {/* Coche OU barre, jamais les deux — même règle qu'en ligne. La barre
-            porte sa bordure : elle est posée sur un scrim déjà sombre. */}
-        {watched
-          ? <CardWatchedBadge label={t("common:watched")} />
-          : <CardProgressBar percent={percent} border />}
-        {/* En haut : le bas porte déjà le code d'épisode et son titre. */}
-        <CardRatingBadge rating={snapshot?.CommunityRating ?? null} className="left-2 top-2" />
+        {overlayMounted && (
+          <CardHoverOverlay
+            variant="landscape"
+            item={item}
+            title={isEpisode ? `${heading} — ${title}` : title}
+            visible={hovered}
+            play={{
+              resume: percent !== null && percent > 0,
+              onPlay: (e: MouseEvent) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onPlay(entry);
+              },
+            }}
+            meta={item}
+            onOpenDetails={() => onOpen(entry)}
+            local={{
+              states: { watchlist: false, favorite: false, watched },
+              onToggle: (kind) => {
+                if (kind === "watched") onToggleWatched(entry);
+              },
+            }}
+          />
+        )}
+        {!watched && <CardProgressBar percent={percent} border />}
+      </CardFrame>
+      <div className="mt-2.5 px-0.5">
+        {showHeading && <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{heading}</h3>}
+        {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
       </div>
-
-      {runtime && <p className="mt-1 px-0.5 text-[11px] text-content-quaternary">{runtime}</p>}
     </div>
   );
 });
