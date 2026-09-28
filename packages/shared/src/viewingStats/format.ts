@@ -53,6 +53,7 @@ export function watchTimeParts(seconds: number): WatchTimeParts {
  * secondes : sur du visionnage, elles n'apprennent rien.
  */
 export function formatWatchTime(seconds: number, locale: StatsLocale): string {
+  if (seconds <= 0) return "0 min";
   if (seconds < 60) return "< 1 min";
   const { days, hours, minutes } = watchTimeParts(seconds);
   const dayUnit = locale === "fr" ? "j" : "d";

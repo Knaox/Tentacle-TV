@@ -39,6 +39,7 @@ describe("les nombres", () => {
 
 describe("les durées", () => {
   it("se lisent d'un coup d'œil, jamais en secondes", () => {
+    expect(formatWatchTime(0, "fr")).toBe("0 min");
     expect(formatWatchTime(30, "fr")).toBe("< 1 min");
     expect(formatWatchTime(45 * 60, "fr")).toBe("45 min");
     expect(formatWatchTime(3 * 3600, "fr")).toBe("3 h");
