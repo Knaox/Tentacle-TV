@@ -64,7 +64,8 @@ const SagaColumn = memo(function SagaColumn({ entry, width }: { entry: SagaEntry
   const current = entry.kind === "library" && entry.cue === "current";
 
   return (
-    <div className="shrink-0" style={{ width }} aria-current={current ? "page" : undefined}>
+    // Colonne étirée à la hauteur de la plus haute : l'étiquette se pose au pied (`mt-auto`).
+    <div className="flex shrink-0 flex-col" style={{ width }} aria-current={current ? "page" : undefined}>
       {entry.kind === "external" ? (
         <ExternalResultCard item={entry.item} width={width} onPress={() => navigate(entry.item.href)} />
       ) : current ? (
@@ -74,7 +75,7 @@ const SagaColumn = memo(function SagaColumn({ entry, width }: { entry: SagaEntry
       ) : (
         <MediaCard item={entry.item} width={width} onPress={() => navigate(`/media/${entry.item.Id}`)} />
       )}
-      <p className="mt-1 h-4 truncate text-[11.5px] font-medium leading-4 text-content-tertiary">
+      <p className="mt-auto h-5 truncate pt-1 text-[11.5px] font-medium leading-4 text-content-tertiary">
         {rank}
         {rank !== null && cue !== null && <span aria-hidden> · </span>}
         {cue !== null && <span className="font-semibold text-brand-light">{cue}</span>}

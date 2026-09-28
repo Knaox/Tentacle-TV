@@ -45,8 +45,11 @@ export const SagaColumn = memo(function SagaColumn({ entry, index, width }: {
         <PosterCard item={entry.item} index={index} width={width} />
       )}
       {/* Casse normale : en capitales espacées, « Volet 8 · Cette fiche »
-          débordait d'une carte de 150 px (fenêtre de 1024). */}
-      <p className="mt-1 h-4 truncate px-0.5 text-xs font-medium leading-4 text-content-tertiary">
+          débordait d'une carte de 150 px (fenêtre de 1024). `mt-auto` : les
+          colonnes ont toutes la hauteur de la plus haute (la piste les étire),
+          l'étiquette se pose au pied — alignée même sous un volet manquant
+          sans sous-titre. */}
+      <p className="mt-auto h-5 truncate px-0.5 pt-1 text-xs font-medium leading-4 text-content-tertiary">
         {rank}
         {rank !== null && cue !== null && <span aria-hidden> · </span>}
         {cue !== null && <span className="font-semibold text-brand-light">{cue}</span>}

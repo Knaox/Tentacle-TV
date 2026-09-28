@@ -80,7 +80,9 @@ const SagaColumn = memo(function SagaColumn({ entry, width, onOpenMedia, onOpenE
   const current = entry.kind === "library" && entry.cue === "current";
 
   return (
-    <View style={{ width }}>
+    // `flex: 1` : la colonne prend la hauteur de la cellule (la plus haute de
+    // la rangée) et l'étiquette se pose au pied, alignée d'une carte à l'autre.
+    <View style={{ width, flex: 1 }}>
       {entry.kind === "external" ? (
         <ExternalResultCard item={entry.item} width={width} onPress={() => onOpenExternal(entry.pluginId, entry.item.href)} />
       ) : (
@@ -121,6 +123,6 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
     borderWidth: 2,
     borderColor: t.colors.brand.violet,
   },
-  label: { fontSize: 11.5, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: 4 },
+  label: { fontSize: 11.5, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: "auto", paddingTop: 4 },
   cue: { fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
 });
