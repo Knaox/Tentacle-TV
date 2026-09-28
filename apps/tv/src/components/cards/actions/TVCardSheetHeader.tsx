@@ -92,6 +92,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "flex-start", gap: 20 },
   art: { borderRadius: 10, overflow: "hidden", backgroundColor: Colors.bgCard },
   text: { flex: 1, paddingTop: 4, gap: 6 },
-  title: { color: Colors.textPrimary, fontSize: 26, lineHeight: 32, fontFamily: Fonts.extrabold },
-  subtitle: { color: Colors.textSecondary, fontSize: 17, fontFamily: Fonts.medium },
+  title: { color: Colors.textPrimary, fontSize: 26, lineHeight: 32, fontWeight: "800", fontFamily: Fonts.extrabold },
+  subtitle: { color: Colors.textSecondary, fontSize: 17, fontWeight: "500", fontFamily: Fonts.medium },
 });

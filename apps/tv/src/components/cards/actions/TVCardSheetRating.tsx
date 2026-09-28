@@ -119,13 +119,13 @@ function StarCell({ fraction, dim }: { fraction: number; dim: boolean }) {
 
 const styles = StyleSheet.create({
   block: { height: SHEET_RATING_HEIGHT, justifyContent: "center", gap: 10 },
-  title: { color: Colors.textSecondary, fontSize: 16, fontFamily: Fonts.semibold, letterSpacing: 0.3 },
+  title: { color: Colors.textSecondary, fontSize: 16, fontWeight: "600", fontFamily: Fonts.semibold, letterSpacing: 0.3 },
   line: { flexDirection: "row", alignItems: "center", gap: 20 },
   stars: { flexDirection: "row", gap: 6 },
   starBox: { width: STAR_BOX, height: STAR_BOX, alignItems: "center", justifyContent: "center" },
   star: { width: STAR, height: STAR },
   starDim: { opacity: 0.4 },
   starFill: { position: "absolute", left: 0, top: 0, bottom: 0, overflow: "hidden" },
-  hint: { flex: 1, color: Colors.textSecondary, fontSize: 17, fontFamily: Fonts.medium },
+  hint: { flex: 1, color: Colors.textSecondary, fontSize: 17, fontWeight: "500", fontFamily: Fonts.medium },
   hintRemoving: { color: Colors.textPrimary },
 });

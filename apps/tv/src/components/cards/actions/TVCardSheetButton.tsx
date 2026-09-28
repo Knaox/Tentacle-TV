@@ -98,9 +98,12 @@ const styles = StyleSheet.create({
   ghost: { backgroundColor: "rgba(255, 255, 255, 0.07)" },
   ghostFocused: { backgroundColor: "rgba(255, 255, 255, 0.16)" },
   icon: { width: 26, alignItems: "center", justifyContent: "center" },
-  label: { flex: 1, color: Colors.textPrimary, fontSize: 19, fontFamily: Fonts.semibold },
-  labelPrimary: { fontFamily: Fonts.bold },
-  detail: { color: Colors.textSecondary, fontSize: 16, fontFamily: Fonts.medium },
+  // La graisse est dite DEUX fois, comme dans `Typography` : Android charge
+  // Inter par famille, tvOS ne l'embarque pas et retombe sur la police du
+  // système, qui ne lit que `fontWeight`.
+  label: { flex: 1, color: Colors.textPrimary, fontSize: 19, fontWeight: "600", fontFamily: Fonts.semibold },
+  labelPrimary: { fontWeight: "700", fontFamily: Fonts.bold },
+  detail: { color: Colors.textSecondary, fontSize: 16, fontWeight: "500", fontFamily: Fonts.medium },
   detailPrimary: { color: "rgba(255, 255, 255, 0.88)" },
   ringOver: {
     ...StyleSheet.absoluteFillObject,
