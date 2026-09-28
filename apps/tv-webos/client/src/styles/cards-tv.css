@@ -1,9 +1,8 @@
 /* L'état de focus d'une carte.
  *
- * Il n'existait pas. `useHoverPreview` exige `(hover: hover) and (pointer:
- * fine)` : sur une dalle il ne se déclenche jamais, et le panneau d'aperçu du
- * web n'a jamais été monté une seule fois. On ne le répare pas — on le
- * remplace par quelque chose qui n'a pas les mêmes besoins.
+ * Il n'existait pas : le survol du web suppose une souris, et une dalle n'en
+ * a pas. On ne le répare pas — on le remplace par quelque chose qui n'a pas
+ * les mêmes besoins.
  *
  * Ce que la carte focalisée montre : son titre complet, son année, sa
  * progression. Rien de plus. Le synopsis, la note et les pistes demandent de

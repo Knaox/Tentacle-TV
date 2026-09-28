@@ -22,8 +22,8 @@ import { useCardSize } from "../../contexts/CardDensityContext";
  * En repartant de la largeur idéale et en arrondissant au nombre de cartes le
  * plus proche, l'écart se répartit sur toutes les cartes — quelques pixels
  * chacune, invisibles — au lieu de s'accumuler sur la dernière. Effet de bord
- * appréciable : plus aucune carte n'est rognée, donc plus aucune n'est privée
- * de son panneau d'aperçu, et l'accroche au défilement tombe toujours juste.
+ * appréciable : plus aucune carte n'est rognée, donc leur survol se lit en
+ * entier, et l'accroche au défilement tombe toujours juste.
  *
  * `null` quand une seule carte tiendrait (mobile) : on garde alors le `clamp`,
  * dont le débord de la carte suivante est justement l'indice qu'il y a une

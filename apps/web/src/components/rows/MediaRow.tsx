@@ -167,7 +167,6 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
             `mb-1` de `RowHeader` : l'écart titre → cartes ne bouge pas.
             Vers le BAS il n'y a rien à réserver : la portée basse (30 px) tombe
             sur le bloc titre, à l'intérieur de la racine de la carte.
-            Le panneau d'aperçu, lui, est portalisé : il ne déborde pas d'ici.
 
             `row-dim` porté par le SCROLLER et non par la <section> : sur la
             section, survoler une flèche ou le titre éteindrait toute la rangée.
@@ -190,8 +189,8 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
             <>
               {/* Cales : elles tiennent la géométrie de la piste à la place des
                   cartes non montées, au pixel près — `scrollWidth` est identique
-                  avec ou sans fenêtrage, donc les flèches et les bornes du
-                  panneau d'aperçu restent justes et `scrollLeft` ne saute pas.
+                  avec ou sans fenêtrage, donc les flèches restent justes et
+                  `scrollLeft` ne saute pas.
                   PAS de `snap-start` : un vide n'est pas un point d'accroche. */}
               {range.padStart > 0 && (
                 <div aria-hidden style={{ width: range.padStart, flexShrink: 0 }} />

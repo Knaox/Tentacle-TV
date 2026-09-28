@@ -173,27 +173,6 @@
     rgba(var(--scrim-page-rgb), 0) 100%
   );
 
-  /* ── Panneau d'aperçu au survol (portalisé) ────────────────────────────
-   * Fond OPAQUE (`--surface-2`, la surface « panneau » des deux schémas) et
-   * non plus `--surface-dropdown` à 0.95 d'alpha. Cette translucidité imposait
-   * un `backdrop-filter: blur(12px)` — une passe de compositing sur toute la
-   * surface du panneau, demandée à l'image même de son ouverture, alors qu'il
-   * n'y a rien à voir au travers : la vignette est opaque et le tiroir ne
-   * laissait transparaître qu'une rangée déjà masquée. */
-  --preview-panel-bg: var(--surface-2);
-
-  /* Voile d'informations POSÉ SUR la vignette (disposition superposée, quand le
-   * panneau doit rester dans les limites de la carte). Noir constant dans les
-   * deux schémas — règle « posé sur média » : le texte y est en `on-media`.
-   * Translucide en haut, appuyé en bas : l'image reste lisible derrière, ce qui
-   * maintient le lien avec le média, tout en tenant le contraste sous le texte. */
-  --preview-overlay-bg: linear-gradient(
-    180deg,
-    rgba(var(--scrim-media-rgb), 0.3) 0%,
-    rgba(var(--scrim-media-rgb), 0.76) 30%,
-    rgba(var(--scrim-media-rgb), 0.9) 100%
-  );
-  --preview-overlay-blur: 7px;
 }
 
 :root[data-theme="light"] {

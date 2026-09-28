@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
@@ -8,11 +8,10 @@ import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import { CardHoverOverlay } from "./CardHoverOverlay";
-import { CardHoverPreview } from "./CardHoverPreview";
-import { useHoverPreview } from "./useHoverPreview";
 import { prefetchDetailRoute } from "./prefetchDetail";
 import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
+import { captureDetailOrigin } from "../detail/detailTransition";
 import { resolveBannerImage } from "@tentacle-tv/shared";
 import { CardTrickplayImage } from "./CardTrickplayImage";
 import { EPISODE_VW, EPISODE_WIDTH, type CardSize } from "./cardSizes";
@@ -41,10 +40,16 @@ interface EpisodeCardProps {
 }
 
 /**
- * Vignette 16:9 des rangées « Reprendre » et « Prochains épisodes ».
- * Même cadre de survol que l'affiche 2:3 (`CardFrame`) : élévation et lift, avec
+ * Vignette 16:9 des rangées « Reprendre », « Prochains épisodes » et « Déjà
+ * vu ». Même cadre que l'affiche 2:3 (`CardFrame`) : élévation et lift, avec
  * une amplitude réduite, la carte étant plus large.
- * Le clic lance la lecture ; la fiche détail passe par « Plus d'infos ».
+ *
+ * Le clic lance la lecture. Au survol, le survol UNIQUE des cartes, variante
+ * paysage (`CardHoverOverlay`) : puces qualité/langues en haut à gauche,
+ * Lecture au centre, étoiles et plateau au coin bas-droit — la fiche y a son
+ * bouton. Un panneau d'aperçu flottant, agrandi en portail avec un tiroir de
+ * synopsis, a vécu ici : c'était un quatrième survol, différent de tous les
+ * autres, retiré pour que toutes les cartes parlent la même langue.
  *
  * `memo` pour la même raison que `PosterCard` : la rangée est fenêtrée et se
  * re-rend à chaque carte franchie.
@@ -60,21 +65,19 @@ export const EpisodeCard = memo(function EpisodeCard({
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const [hovered, setHovered] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const ctx = useCardContextMenu();
-  const preview = useHoverPreview(ctx.ctxMenu !== null);
   // Survol coupé dès que la carte glisse hors du curseur pendant un défilement
-  // (cf. `useHoverGuard`). Le panneau, lui, se referme tout seul : il tient déjà
-  // sa propre boucle de suivi.
+  // (cf. `useHoverGuard`).
   const unhover = useCallback(() => setHovered(false), []);
-  useHoverGuard(preview.anchorRef, hovered, unhover);
+  useHoverGuard(rootRef, hovered, unhover);
   /**
    * Le survol est MONTÉ à la demande, jamais laissé à `opacity: 0` : il
    * porte des abonnements au cache — vu/favori/liste, notes, file hors
    * ligne, droits — que chaque vignette de « Reprendre » garderait au repos.
    * 200 ms = la durée de ses fondus de sortie.
    */
-  const fallbackVisible = !preview.panelActive && hovered;
-  const fallbackMounted = useMountWhile(fallbackVisible, 200);
+  const overlayMounted = useMountWhile(hovered, 200);
 
   const isEpisode = item.Type === "Episode";
   // La vignette EXACTE de la reprise, croppée dans sa planche trickplay —
@@ -113,19 +116,20 @@ export const EpisodeCard = memo(function EpisodeCard({
     e.preventDefault();
     navigate(`/watch/${item.Id}`);
   };
+  // La fiche s'ouvre depuis la VIGNETTE — la racine embarquerait le bloc
+  // titre, et le visuel partirait recadré (cf. `captureDetailOrigin`).
+  const openDetails = () => {
+    captureDetailOrigin(rootRef.current?.querySelector<HTMLElement>("[data-card-visual]") ?? null, item.Id, imageUrl);
+    navigate(`/media/${item.Id}`);
+  };
 
   return (
     <div
-      ref={preview.anchorRef}
-      // `cursor-pointer` UNIQUEMENT quand la carte est elle-même la cible du
-      // clic. Dès que le panneau prend le relais, c'est LUI qui porte les
-      // intentions — vignette pour lire, tiroir pour la fiche — et chacune de
-      // ses zones affiche son propre curseur. Laisser la main sur la carte
-      // dessous laissait croire à une troisième cible cliquable.
+      ref={rootRef}
       // `snap-start` : point d'accroche de la rangée (cf. `MediaRow`). C'est ce
       // qui fait qu'un défilement s'arrête sur une carte entière plutôt qu'au
       // milieu de l'une d'elles.
-      className={`group/card row-dim-card relative flex-shrink-0 snap-start ${preview.panelActive ? "" : "cursor-pointer"}`}
+      className="group/card row-dim-card relative flex-shrink-0 cursor-pointer snap-start"
       style={{
         width: cardWidthStyle(width, widths, EPISODE_VW),
         animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
@@ -138,37 +142,13 @@ export const EpisodeCard = memo(function EpisodeCard({
         setHovered(true);
         onHoverIndex?.(index);
         prefetchDetailRoute();
-        preview.handlers.onMouseEnter();
       }}
-      onMouseLeave={() => { setHovered(false); onHoverIndex?.(null); preview.handlers.onMouseLeave(); }}
+      onMouseLeave={() => { setHovered(false); onHoverIndex?.(null); }}
       onClick={handleClick}
       {...ctx.contextHandlers}
     >
-      {/* Le liseré répond dès l'entrée du curseur, mais la carte ne se déplace
-          jamais quand un panneau doit prendre le relais : c'est LUI qui porte
-          le lift, dans la continuité. Et dès qu'il est ouvert, la carte
-          s'efface : il occupe sa place au pixel près, deux calques n'ont plus
-          rien à faire l'un sur l'autre. */}
       <CardFrame
-        // `&& !preview.open` : sans lui, la carte gardait TOUTE sa pile
-        // d'effets vivante sous le panneau — halo flouté en dérive infinie,
-        // grain masqué, élévation — alors qu'elle est à `opacity: 0` et que le
-        // panneau en monte déjà une seconde. Trois images coexistaient par
-        // carte survolée.
-        //
-        // La cause est subtile : le panneau est portalisé sur `document.body`
-        // mais reste enfant REACT de la carte, et React calcule l'ancêtre
-        // commun des `mouseleave` dans l'arbre des fibres, en traversant les
-        // portails. Le `onMouseLeave` de la racine n'est donc jamais appelé
-        // quand le curseur passe de la carte au panneau.
-        //
-        // Valeur dérivée, surtout pas un `setState` : `hovered` doit continuer
-        // de dire « le curseur est là ». Sinon, à la fermeture par Échap, par
-        // défilement ou par clic ailleurs, la carte réapparaîtrait non
-        // survolée sous le curseur.
-        hovered={hovered && !preview.open}
-        suppressLift={preview.panelActive}
-        concealed={preview.open}
+        hovered={hovered}
         aspect="aspect-video"
         // Amplitude plus faible que l'affiche : la vignette est bien plus large,
         // et le débord latéral vaut `width × (échelle − 1) / 2`. À 1920 px elle
@@ -176,18 +156,14 @@ export const EpisodeCard = memo(function EpisodeCard({
         // gouttière de 12 px. `1.045` n'en laisserait que 2 : c'est le plafond.
         lift={{ scale: 1.04, y: -7 }}
       >
-        {/* Pas de zoom interne quand le panneau prend le relais : il peindrait
-            la même image à un autre cadrage, d'où le recul brutal ressenti à
-            l'ouverture. */}
         {resumeFrame ? (
           <CardTrickplayImage
             frame={resumeFrame}
             alt={item.Name}
-            zoom={!preview.panelActive}
-            fallback={<CardImage src={imageUrl} alt={item.Name} zoom={!preview.panelActive} />}
+            fallback={<CardImage src={imageUrl} alt={item.Name} />}
           />
         ) : (
-          <CardImage src={imageUrl} alt={item.Name} zoom={!preview.panelActive} />
+          <CardImage src={imageUrl} alt={item.Name} />
         )}
 
         {/* Scrim + libellé d'épisode posés SUR la vignette : blanc/noir
@@ -201,12 +177,9 @@ export const EpisodeCard = memo(function EpisodeCard({
         {/* La note de CET épisode — portée `item` : la vignette porte son nom et
             son numéro, elle porte donc sa note, jamais celle de la série. En
             HAUT à gauche : le bas est déjà pris par le code d'épisode et son
-            titre. La pastille d'états tient le coin opposé.
-            Les deux s'effacent au survol (focus sur téléviseur) : le panneau
-            d'aperçu les répète, ou le plateau de repli, et les puces
-            qualité/langues montent au même coin. Elles restent en revanche
-            AU REPOS même là où le panneau peut s'ouvrir — c'est tout l'objet
-            des marqueurs : se lire sans rien survoler. */}
+            titre. La pastille d'états tient le coin opposé. Les deux s'effacent
+            au survol (focus sur téléviseur) : les puces qualité/langues montent
+            au même coin, et le plateau reprend les états. */}
         <CardMarkerLayer
           item={item}
           communityRating={cardRatingFor(item, "item").rating}
@@ -221,7 +194,7 @@ export const EpisodeCard = memo(function EpisodeCard({
             lieu de passer dessous. */}
         <div
           className={`absolute inset-x-0 bottom-1.5 pl-3 text-on-media-primary ${
-            fallbackVisible ? "pr-[11.5rem]" : "pr-28"
+            hovered ? "pr-[11.5rem]" : "pr-28"
           }`}
         >
           {epLabel && (
@@ -232,51 +205,27 @@ export const EpisodeCard = memo(function EpisodeCard({
           {episodeName && <p className="line-clamp-1 text-xs font-semibold">{episodeName}</p>}
         </div>
 
-        {/* Le survol unique des cartes, variante paysage, partout où le
-            panneau ne peut PAS s'ouvrir : appareil tactile, petit écran, carte
-            trop basse ou rognée par le bord de la rangée. Le clic sur la
+        {/* Le survol unique des cartes, variante paysage. Le clic sur la
             vignette lance la lecture : la fiche passe par le plateau. */}
-        {!preview.panelActive && fallbackMounted && (
+        {overlayMounted && (
           <CardHoverOverlay
             variant="landscape"
             item={item}
             title={isEpisode ? `${seriesName ?? ""} — ${item.Name}` : item.Name}
-            visible={fallbackVisible}
+            visible={hovered}
             play={{ resume: progress != null && progress > 0 && !watched, onPlay: handlePlay }}
             meta={item}
-            onOpenDetails={() => navigate(`/media/${item.Id}`)}
+            onOpenDetails={openDetails}
           />
         )}
 
         {!watched && <CardProgressBar percent={progress} border />}
       </CardFrame>
 
-      {/* Le bloc titre s'efface sous le panneau, comme la vignette (cf.
-          `concealed` dans `CardFrame`) : le panneau couvre TOUTE la carte et
-          porte déjà ce titre. Les laisser tous deux visibles donnait le même
-          texte à quelques pixels d'écart, et c'est ce qui faisait lire le survol
-          comme mal cadré. `opacity` et non un démontage : la boîte garde sa
-          place, donc aucun reflow de la rangée. */}
-      <div
-        className="mt-2.5 px-0.5"
-        style={{
-          opacity: preview.open ? 0 : 1,
-          transition: "opacity var(--duration-base) var(--ease-out)",
-        }}
-      >
+      <div className="mt-2.5 px-0.5">
         <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{seriesName}</h3>
         {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
       </div>
-
-      <CardHoverPreview
-        item={item}
-        anchor={preview.anchor}
-        bounds={preview.bounds}
-        cardImageUrl={imageUrl}
-        cut={preview.cut}
-        onClose={preview.close}
-        panelHandlers={preview.panelHandlers}
-      />
 
       {ctx.ctxMenu && (
         <MediaContextMenu

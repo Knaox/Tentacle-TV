@@ -41,9 +41,8 @@ const MAX_AGE_MS = 1200;
  *
  * `element` doit être le VISUEL, pas la carte : le rectangle sert de cadre à
  * une image en `object-cover`, donc son rapport de forme est tout ce qui compte.
- * Une racine de carte embarque le bloc titre, un panneau d'aperçu embarque son
- * tiroir déplié — dans les deux cas l'image part écrasée, puis se « déplie »
- * en arrivant. Les appelants visent `[data-card-visual]` / `[data-preview-visual]`.
+ * Une racine de carte embarque le bloc titre : l'image partirait écrasée,
+ * puis se « déplierait » en arrivant. Les appelants visent `[data-card-visual]`.
  */
 export function captureDetailOrigin(
   element: HTMLElement | null,

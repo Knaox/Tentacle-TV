@@ -6,7 +6,7 @@ import { stopCardClick } from "./cardEvents";
 
 /**
  * • `compact` — colonne d'angle (la plus discrète).
- * • `bar`     — rangée horizontale (tiroir du panneau d'aperçu).
+ * • `bar`     — rangée horizontale.
  * • `inline`  — rangée pleine taille de la bannière d'accueil.
  */
 type QuickActionsVariant = "compact" | "bar" | "inline";
@@ -23,9 +23,8 @@ interface CardQuickActionsProps {
 }
 
 /**
- * Ma liste / favori / vu en boutons ronds indépendants — la bannière et le
- * tiroir du panneau d'aperçu. Les cartes, elles, ont leur plateau
- * (`CardActionTray`). Même logique (`useCardToggles`), mêmes glyphes que les
+ * Ma liste / favori / vu en boutons ronds indépendants — la bannière
+ * d'accueil. Les cartes, elles, ont leur plateau (`CardActionTray`). Même logique (`useCardToggles`), mêmes glyphes que les
  * marqueurs posés au repos : plein quand l'état est vrai.
  *
  * Noir translucide + blanc, constants dans les deux thèmes : ces boutons sont

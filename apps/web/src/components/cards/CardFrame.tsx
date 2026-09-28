@@ -6,33 +6,6 @@ interface CardFrameProps {
   aspect: string;
   /** Amplitude du lift — la vignette 16:9 étant plus large, elle monte moins. */
   lift?: { scale: number; y: number };
-  /**
-   * L'élévation répond au survol, mais la carte NE BOUGE PAS.
-   *
-   * Réservé aux cartes dont un panneau d'aperçu prend le relais : c'est lui qui
-   * porte le lift. Sans ce mode, la carte se soulevait dès l'entrée du curseur
-   * puis retombait d'un coup à l'ouverture du panneau — deux mouvements
-   * contradictoires en moins de deux dixièmes de seconde, ressentis comme une
-   * saccade. Ici le fondu croisé des deux calques d'ombre donne une réponse
-   * INSTANTANÉE au survol (donc pas d'impression de latence pendant le délai
-   * d'ouverture) et le seul déplacement visible est celui du panneau.
-   */
-  suppressLift?: boolean;
-  /**
-   * La carte s'efface : un panneau d'aperçu occupe EXACTEMENT sa place et
-   * porte la même image.
-   *
-   * Sans cet effacement, les deux calques restent superposés pendant toute la
-   * durée du survol, et le panneau — qui monte de 5 px et grandit de 3 % —
-   * laisse dépasser le liseré, l'ombre et les coins de la carte restée en
-   * dessous. C'est la seconde moitié de la saccade (la première étant le zoom
-   * interne, cf. `CardImage.zoom`) : deux cartes visibles au lieu d'une.
-   *
-   * `opacity` et non `visibility` / démontage : la boîte doit garder sa place
-   * dans la rangée (sinon reflow) ET continuer de recevoir `mouseleave`, qui
-   * est ce qui referme le panneau.
-   */
-  concealed?: boolean;
   children: ReactNode;
 }
 
@@ -64,12 +37,8 @@ export function CardFrame({
   hovered,
   aspect,
   lift = { scale: 1.06, y: -8 },
-  suppressLift = false,
-  concealed = false,
   children,
 }: CardFrameProps) {
-  const moved = hovered && !suppressLift;
-
   return (
     <div
       // Repère de la transition d'ouverture : c'est CETTE boîte — l'affiche
@@ -87,8 +56,7 @@ export function CardFrame({
       data-hovered={hovered}
       className="media-tile relative motion-reduce:!transform-none"
       style={{
-        transform: moved ? `scale(${lift.scale}) translateY(${lift.y}px)` : "scale(1)",
-        opacity: concealed ? 0 : 1,
+        transform: hovered ? `scale(${lift.scale}) translateY(${lift.y}px)` : "scale(1)",
       }}
     >
       {/* La boîte image. Elle ne porte plus aucun effet de bord : la classe

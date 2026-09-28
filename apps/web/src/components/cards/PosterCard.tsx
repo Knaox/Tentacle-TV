@@ -46,11 +46,8 @@ interface PosterCardProps {
  * cascade, bloc titre, menu contextuel. Toute l'apparence de l'affiche vit
  * dans `PosterTile`, partagé avec la grille de bibliothèque.
  *
- * PAS de panneau d'aperçu flottant ici, contrairement aux cartes 16:9. Sur une
- * colonne étroite, un panneau portalisé finit toujours désaligné de sa carte :
- * les contraintes de bord d'écran et de flèches de rangée le poussent
- * latéralement, alors que la carte, elle, ne bouge pas. Le survol des affiches
- * reste donc INTERNE (`PosterTile`), là où le désalignement est impossible.
+ * Le survol reste INTERNE à la carte (`PosterTile` → `CardHoverOverlay`), là
+ * où aucun désalignement n'est possible — comme celui de toutes les cartes.
  *
  * `memo` : la rangée est fenêtrée, donc elle se re-rend chaque fois que sa
  * fenêtre glisse — soit une fois par carte franchie. Sans cette barrière, les

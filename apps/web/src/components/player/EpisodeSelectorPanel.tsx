@@ -75,8 +75,7 @@ export function EpisodeSelectorPanel({
     // flouter, alors que le panneau flotte au-dessus d'une vidéo en lecture —
     // son arrière-plan change vingt-quatre à soixante fois par seconde, et
     // chaque changement forçait une recopie de la région et une passe de flou
-    // de 24 px sur 26 rem par 65 vh. Même arbitrage que le panneau d'aperçu
-    // des cartes (cf. theme/surfaces.css).
+    // de 24 px sur 26 rem par 65 vh.
     <motion.div data-panneau-detache
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}

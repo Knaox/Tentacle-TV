@@ -1,22 +1,15 @@
-import { useRef } from "react";
-import type { AnchorRect, PreviewBounds } from "@/components/cards/hoverPreviewGeometry";
-
 /**
  * Le survol, éteint côté JavaScript.
  *
  * `hoverPass` retire les règles `:hover` de la feuille ; il reste les
  * gestionnaires `onMouseEnter` du client web, que le CSS ne peut pas atteindre.
- * Ce sont eux qui font basculer `data-hovered`, qui montent le panneau d'aperçu
- * et qui posent des écouteurs globaux. Ce module remplace les trois hooks qui
- * les portent.
+ * Ce sont eux qui font basculer `data-hovered`, qui montent les révélations et
+ * qui posent des écouteurs globaux. Ce module remplace les hooks qui les
+ * portent.
  *
- * Il en remplace trois pour un seul motif, d'où le fichier unique — trois
+ * Il en remplace deux pour un seul motif, d'où le fichier unique — deux
  * entrées de `substitutionTable.ts` pointent ici :
  *
- *   • `useHoverPreview` — le panneau d'aperçu. Son garde est
- *     `(hover:hover) and (pointer:fine)` ET une largeur d'au moins 1024 px :
- *     mesuré à 1280 dans le canevas du téléviseur, il répond **vrai**. Le seuil
- *     ne protège donc de rien ici.
  *   • `useHoverGuard` — pose un écouteur `pointermove` global **à l'import du
  *     module**, avant même qu'un composant soit monté. Le neutraliser demandait
  *     de ne pas charger le module du tout.
@@ -30,20 +23,6 @@ import type { AnchorRect, PreviewBounds } from "@/components/cards/hoverPreviewG
  * On retire la sélection au survol, pas le pointeur.
  */
 
-/** Forme rendue par `useHoverPreview`, reprise à l'identique du client web. */
-export interface HoverPreview {
-  anchorRef: React.RefObject<HTMLDivElement | null>;
-  eligible: boolean;
-  panelActive: boolean;
-  open: boolean;
-  cut: boolean;
-  anchor: AnchorRect | null;
-  bounds: PreviewBounds | undefined;
-  close: () => void;
-  handlers: { onMouseEnter: () => void; onMouseLeave: () => void };
-  panelHandlers: { onMouseEnter: () => void; onMouseLeave: () => void };
-}
-
 function nothingAry(): void {
   /* Le survol n'existe pas sur un téléviseur. */
 }
@@ -51,29 +30,6 @@ function nothingAry(): void {
 // Identités stables : ces objets partent en props vers des composants mémoïsés,
 // une nouvelle identité à chaque rendu les re-rendrait pour rien.
 const HANDLERS = { onMouseEnter: nothingAry, onMouseLeave: nothingAry } as const;
-
-/**
- * `eligible` est faux, et ce n'est pas anodin : la carte s'en sert pour décider
- * si elle doit sortir ses propres actions en surimpression, le panneau les
- * portant d'ordinaire. Faux est bien la valeur voulue — il n'y aura pas de
- * panneau, donc la carte reste seule maîtresse de ce qu'elle affiche.
- */
-export function useHoverPreview(_disabled = false): HoverPreview {
-  const anchorRef = useRef<HTMLDivElement>(null);
-
-  return {
-    anchorRef,
-    eligible: false,
-    panelActive: false,
-    open: false,
-    cut: false,
-    anchor: null,
-    bounds: undefined,
-    close: nothingAry,
-    handlers: HANDLERS,
-    panelHandlers: HANDLERS,
-  };
-}
 
 /** Sans pointeur à surveiller, il n'y a rien à revalider. */
 export function useHoverGuard(

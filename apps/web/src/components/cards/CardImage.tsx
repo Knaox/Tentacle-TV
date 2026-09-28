@@ -23,16 +23,9 @@ interface CardImageProps {
   /** Fallback rendered when the image fails to load. */
   fallback?: React.ReactNode;
   /**
-   * Zoom interne au survol de la carte parente. À couper (`false`) dès qu'un
-   * panneau d'aperçu prend le relais du survol.
-   *
-   * C'était LA cause de la saccade ressentie sur les vignettes 16:9 : la carte
-   * commençait un zoom de 6 % sur 300 ms, et 110 ms plus tard le panneau
-   * peignait la MÊME image à l'échelle 1 par-dessus. Le contenu reculait donc
-   * d'un coup en pleine course — deux images du même média à deux cadrages
-   * différents, ce qui se lit exactement comme « une carte se met par-dessus
-   * l'ancienne ». Aucun réglage de durée ou de délai ne pouvait le corriger :
-   * il fallait supprimer l'un des deux mouvements.
+   * Zoom interne au survol de la carte parente. À couper (`false`) sur une
+   * carte qui ne mène nulle part : un zoom y promettrait un geste qui n'existe
+   * pas.
    */
   zoom?: boolean;
 }

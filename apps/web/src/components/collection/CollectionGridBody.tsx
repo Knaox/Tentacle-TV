@@ -77,8 +77,8 @@ export function CollectionGridBody({ items, selectionMode, headerKey }: Collecti
 
   return (
     <div ref={gridRef}>
-      {/* `row-dim` : ancre commune aux surfaces de cartes (cf. theme/cards.css et
-          `boundsFor`), conservée comme sur la grille de bibliothèque. */}
+      {/* `row-dim` : ancre commune aux surfaces de cartes (cf. theme/cards.css),
+          conservée comme sur la grille de bibliothèque. */}
       <div
         className="row-dim"
         style={{ height: virtualizer.getTotalSize(), width: "100%", position: "relative" }}

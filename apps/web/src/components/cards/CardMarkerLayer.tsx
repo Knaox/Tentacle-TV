@@ -10,7 +10,7 @@ interface CardMarkerLayerProps {
   communityRating: number | null;
   /** Ce que la carte montre : la série (affiche) ou l'item (vignette 16:9). */
   scope?: "item" | "series";
-  /** La note s'efface (survol, panneau d'aperçu). */
+  /** La note s'efface (survol, focus sur téléviseur). */
   hideRating?: boolean;
   /** La pastille d'états s'efface (le plateau du survol la reprend). */
   hideStatus?: boolean;

@@ -50,10 +50,6 @@ function pointerTarget(): Element | null {
 /**
  * Le curseur est-il encore sur cet élément ?
  *
- * Le panneau d'aperçu compte comme « dessus » : portalisé dans `body`, il n'est
- * pas dans la carte au sens du DOM, mais il la recouvre et lui appartient — le
- * curseur posé dessus n'a pas quitté la carte.
- *
  * `true` quand on ne sait pas où est le curseur (aucun mouvement depuis le
  * chargement — souris posée, navigation au clavier) : ne rien savoir n'autorise
  * à conclure à rien, et surtout pas à couper un survol.
@@ -61,7 +57,7 @@ function pointerTarget(): Element | null {
 export function pointerStillOn(el: HTMLElement | null): boolean {
   const hit = pointerTarget();
   if (!el || !hit) return true;
-  return el.contains(hit) || !!hit.closest("[data-preview-panel]");
+  return el.contains(hit);
 }
 
 /**

@@ -8,8 +8,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
  * survol sont MONTÉS au survol (cf. la section « Coût GPU » de CLAUDE.md), donc
  * DÉMONTÉS dès que le curseur quitte la carte — 200 ms plus tard, exactement le
  * temps d'aller cliquer dans le dialogue. Un dialogue rendu par le bouton
- * disparaîtrait sous la souris. Pire dans le panneau d'aperçu 16:9, qui se
- * ferme lui-même sur `onMouseLeave` et emporterait son portail.
+ * disparaîtrait sous la souris.
  *
  * La demande vit donc hors de l'arbre des cartes, et `DownloadRequestHost` la
  * rend. Corollaire heureux : un seul dialogue possible à l'écran.

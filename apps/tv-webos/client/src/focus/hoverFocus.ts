@@ -11,8 +11,7 @@ import { pointerMovedSinceSeal, pointerActive } from "./cursor";
  * **Pourquoi il faut couper les événements et pas seulement les hooks.** Le
  * survol du client web a été éteint par deux voies : la passe PostCSS retire
  * les règles `:hover` de la feuille — il n'en reste aucune, c'est vérifiable —
- * et `shims/inertHover.ts` remplace `useHoverPreview`, `useHoverGuard` et
- * `useHoverMount`. Ce n'était pas assez. Dix composants d'`apps/web` tiennent
+ * et `shims/inertHover.ts` remplace `useHoverGuard` et `useHoverMount`. Ce n'était pas assez. Dix composants d'`apps/web` tiennent
  * leur PROPRE état de survol, sans passer par aucun de ces hooks :
  * `EpisodeCard` et `PosterCard` posent un `hovered` local qui écrit un
  * `z-index` en style en ligne, `HorizontalScrollRow` et `MediaRow` suivent la

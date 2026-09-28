@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
  * Jumeau de [useHoverMount] pour les composants qui ne POSSÈDENT pas le survol :
  * celui-ci prend la condition en entrée au lieu de rendre des gestionnaires
  * d'évènements. C'est le cas d'une carte dont le parent détient l'état de survol
- * — il le partage avec un menu contextuel et un panneau d'aperçu, donc il ne peut
- * pas le déléguer.
+ * — il le partage avec un menu contextuel et la rangée qui l'épingle, donc il ne
+ * peut pas le déléguer.
  *
  * Sert la même règle : un contrôle en verre révélé au survol se MONTE à la
  * demande, il ne se masque pas. Un `backdrop-filter` (ou n'importe quel calque

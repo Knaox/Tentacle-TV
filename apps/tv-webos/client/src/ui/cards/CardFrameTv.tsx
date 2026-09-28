@@ -5,8 +5,6 @@ interface CardFrameProps {
   hovered: boolean;
   aspect: string;
   lift?: { scale: number; y: number };
-  suppressLift?: boolean;
-  concealed?: boolean;
   children: ReactNode;
 }
 
@@ -24,17 +22,13 @@ interface CardFrameProps {
  * passage unique : affiches, vignettes d'épisode, cartes de bibliothèque et de
  * collection le traversent toutes. Une seule substitution les couvre.
  *
- * `concealed` est également neutralisé : il efface la carte au profit du
- * panneau d'aperçu, qui ne s'ouvre plus (`shims/inertHover.ts`). Le laisser
- * passer rendrait des cartes invisibles sans rien pour les remplacer.
- *
  * Ce qui reste intact : `data-card-visual`, le repère que le calque d'ouverture
  * de la fiche fait voyager, et la boîte de ratio. On retire un comportement, pas
  * une structure.
  */
 export function CardFrame({ aspect, lift, children }: CardFrameProps) {
   return (
-    <WebFrame hovered={false} aspect={aspect} lift={lift} concealed={false}>
+    <WebFrame hovered={false} aspect={aspect} lift={lift}>
       {children}
     </WebFrame>
   );

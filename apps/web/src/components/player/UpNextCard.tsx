@@ -37,7 +37,7 @@
  * rien à l'œil. Le coût, lui, est bien réel — la carte flotte au-dessus d'une
  * vidéo EN LECTURE, dont l'arrière-plan change vingt-quatre à soixante fois par
  * seconde, et chaque changement force une recopie de la région et une passe de
- * flou. Même arbitrage que le panneau d'aperçu (cf. `theme/surfaces.css`).
+ * flou.
  */
 
 import { useTranslation } from "react-i18next";

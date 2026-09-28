@@ -134,12 +134,10 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "hooks/useItemsPerRow.ts")]: resolve(CLIENT, "ui/grid/columnsTv.ts"),
 
   // Le survol, côté JavaScript. `hoverPass` retire les règles `:hover` de la
-  // feuille ; ces trois hooks portent ce que le CSS ne peut pas atteindre — les
-  // gestionnaires `onMouseEnter` qui font basculer `data-hovered`, le panneau
-  // d'aperçu, et un écouteur `pointermove` global posé À L'IMPORT du module.
-  // Sur un téléviseur, le focus est la seule sélection ; le clic de la Magic
-  // Remote, lui, reste actif (`focus/cursor.ts`).
-  [resolve(WEB, "components/cards/useHoverPreview.ts")]: resolve(CLIENT, "shims/inertHover.ts"),
+  // feuille ; ces deux hooks portent ce que le CSS ne peut pas atteindre — les
+  // révélations montées au survol, et un écouteur `pointermove` global posé À
+  // L'IMPORT du module. Sur un téléviseur, le focus est la seule sélection ; le
+  // clic de la Magic Remote, lui, reste actif (`focus/cursor.ts`).
   [resolve(WEB, "hooks/useHoverGuard.ts")]: resolve(CLIENT, "shims/inertHover.ts"),
   [resolve(WEB, "hooks/useHoverMount.ts")]: resolve(CLIENT, "shims/inertHover.ts"),
 

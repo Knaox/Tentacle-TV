@@ -17,9 +17,8 @@
  *
  * `--ease-out` et non `--ease-spring` : cette dernière est une courbe à
  * DÉPASSEMENT (1.56), et un dépassement même léger se lit comme de l'agitation
- * quand il se répète à chaque carte traversée — c'est exactement l'arbitrage
- * déjà tranché pour le panneau d'aperçu (cf. CardHoverPreview). Une carte est
- * un objet lourd qui monte et s'arrête, pas un jouet à ressort.
+ * quand il se répète à chaque carte traversée. Une carte est un objet lourd
+ * qui monte et s'arrête, pas un jouet à ressort.
  *
  * Un seul tempo pour le déplacement ET les ombres, `--duration-base` : la
  * préférence « animations réduites » le met à 0 ms, donc elle est respectée par
@@ -127,14 +126,13 @@
  * DPR 2, soit ~130 Mo immobilisés en permanence sur les cartes de l'accueil,
  * pour un survol qui n'en concerne qu'une à la fois. C'est de surcroît inutile —
  * un élément dont le `transform` est en cours de transition est DÉJÀ promu par
- * le moteur pour la durée de celle-ci. Le seul `will-change` justifié du survol
- * est celui du panneau d'aperçu : une instance, montée à l'ouverture. */
+ * le moteur pour la durée de celle-ci. */
 
 /* PAS de mise en retrait des voisins au survol d'une rangée (règle
  * `.row-dim` retirée). L'effet « salle obscure » était joli à l'arrêt, mais
- * il ne peut pas cohabiter avec le panneau d'aperçu : celui-ci est portalisé
- * sur `document.body`, donc dès qu'il s'ouvre sous le curseur la rangée perd
- * son `:hover`. Les affiches repassaient à pleine opacité, puis se
+ * il ne pouvait pas cohabiter avec le panneau d'aperçu des vignettes 16:9 (retiré
+ * depuis) : portalisé sur `document.body`, il faisait perdre son `:hover` à la
+ * rangée dès qu'il s'ouvrait sous le curseur. Les affiches repassaient à pleine opacité, puis se
  * ré-éteignaient au moindre déplacement — un clignotement gris permanent
  * pendant la lecture des aperçus. Les classes `row-dim` / `row-dim-card`
  * restent posées dans le JSX : elles servent d'ancres de test et de point de

@@ -2,9 +2,8 @@
  * Fenêtre de cartes rendues dans une rangée, et les deux cales qui tiennent sa
  * géométrie.
  *
- * Module PUR — des nombres, aucun élément — sur le modèle de
- * `hoverPreviewGeometry` : c'est ce qui le rend testable sans DOM, et
- * l'arithmétique ci-dessous mérite de l'être. Les mesures vivent dans
+ * Module PUR — des nombres, aucun élément : c'est ce qui le rend testable
+ * sans DOM, et l'arithmétique ci-dessous mérite de l'être. Les mesures vivent dans
  * `useRowWindow`.
  *
  * # Pourquoi pas `@tanstack/react-virtual`, qui est déjà installé
@@ -67,10 +66,10 @@ export interface RowWindowRange {
 /**
  * Portée maximale de l'épingle de survol, en cartes.
  *
- * Au-delà, la carte survolée est si loin de la fenêtre visible que son aperçu
- * est de toute façon déjà refermé (le suivi de `useHoverPreview` ferme dès que
- * le curseur n'est plus sur la carte). L'épingle ne sert qu'au TRANSITOIRE : la
- * fenêtre bouge alors que le curseur, lui, n'a pas bougé.
+ * Au-delà, la carte survolée est si loin de la fenêtre visible que son survol
+ * est de toute façon déjà coupé (`useHoverGuard` le coupe dès que le curseur
+ * n'est plus sur la carte). L'épingle ne sert qu'au TRANSITOIRE : la fenêtre
+ * bouge alors que le curseur, lui, n'a pas bougé.
  */
 const PIN_REACH = 4;
 
@@ -83,9 +82,8 @@ const clamp = (v: number, min: number, max: number): number =>
  *
  * C'est l'invariant de tout ce module. `scrollWidth` doit être IDENTIQUE avec ou
  * sans fenêtrage, sinon les flèches de défilement (`useRowScroll`, qui compare
- * `scrollLeft` à `scrollWidth`) et les bornes du panneau d'aperçu
- * (`boundsFor`) se trompent — et le `scrollLeft` sauterait à chaque changement
- * de fenêtre.
+ * `scrollLeft` à `scrollWidth`) se trompent — et le `scrollLeft` sauterait à
+ * chaque changement de fenêtre.
  */
 export function rowTrackWidth(count: number, cardWidth: number, gap: number): number {
   return count <= 0 ? 0 : count * (cardWidth + gap) - gap;
