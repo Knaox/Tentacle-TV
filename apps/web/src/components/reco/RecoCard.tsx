@@ -1,11 +1,10 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useRecoCardMarkers, useSendRecoFeedback } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useRecoMarkerItem, useSendRecoFeedback } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { CardFrame } from "../cards/CardFrame";
 import { CardImage } from "../cards/CardImage";
-import { CardRatingBadge } from "../cards/CardRatingBadge";
-import { CardStatusMarkers } from "../cards/CardStatusMarkers";
+import { CardMarkerLayer } from "../cards/CardMarkerLayer";
 import { POSTER_VW, POSTER_WIDTH } from "../cards/cardSizes";
 import { cardWidthStyle } from "../cards/cardWidthStyle";
 import { captureDetailOrigin } from "../detail/detailTransition";
@@ -30,7 +29,8 @@ interface RecoCardProps {
  * bibliothèque (cadre, largeur de rangée, marqueurs, survol), avec ce que la
  * recommandation ajoute :
  *
- *   • AU REPOS, les marqueurs communs (`useRecoCardMarkers`) : la note — la
+ *   • AU REPOS, les marqueurs communs (`CardMarkerLayer`, sur le visage
+ *     `useRecoMarkerItem`) : la note — la
  *     globale TMDB, et la vôtre dès que vous notez — en bas à gauche, la
  *     pastille d'états en haut à droite ; en haut à gauche, « À la demande »
  *     (hors bibliothèque) et « Découverte » ; sous l'affiche, la RAISON.
@@ -83,7 +83,7 @@ export const RecoCard = memo(function RecoCard({
     open(item);
   };
 
-  const markers = useRecoCardMarkers(item);
+  const face = useRecoMarkerItem(item);
   const handleDismiss = () => {
     feedback.mutate({ itemKey: item.key, action: "dismissed" });
     onDismissed?.(item.key);
@@ -158,8 +158,7 @@ export const RecoCard = memo(function RecoCard({
 
           {/* Marqueurs du repos — les formes de toutes les cartes. Le plateau
               du survol les reprend : ils cèdent la place. */}
-          <CardRatingBadge rating={markers.communityRating} userScore={markers.userScore} shown={!hovered} />
-          <CardStatusMarkers statuses={markers.statuses} shown={!hovered} />
+          <CardMarkerLayer item={face} communityRating={item.voteAverage} hideRating={hovered} hideStatus={hovered} />
 
           {overlayMounted && (
             <RecoPosterHoverLayer

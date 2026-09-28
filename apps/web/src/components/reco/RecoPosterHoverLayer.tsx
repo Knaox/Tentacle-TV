@@ -1,9 +1,8 @@
 import type { MouseEvent } from "react";
-import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { EyeOff } from "lucide-react";
-import { recoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
+import { useRecoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
 import { CardActionTray, CardTrayButton, CardTrayCapsule, TRAY_SIZE } from "../cards/CardActionTray";
 import { PosterHoverShell } from "../cards/PosterHoverShell";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
@@ -42,11 +41,11 @@ export function RecoPosterHoverLayer({ item, visible, onDismiss, onOpenDetail }:
     mediaType: item.mediaType === "tv" ? ("series" as const) : ("movie" as const),
     tmdbId: item.tmdbId,
   };
-  // Le plateau bascule le FILM chargé pour la lecture (son UserData dit s'il
-  // est déjà dans Ma liste) ; une série répond par les Sets partagés.
-  const { key, mediaType, tmdbId, title, jellyfinItemId } = item;
-  const face = useMemo(() => recoMarkerItem({ key, mediaType, tmdbId, title, jellyfinItemId }), [key, mediaType, tmdbId, title, jellyfinItemId]);
-  const trayItem = mediaType === "movie" && target?.media?.Id === jellyfinItemId ? target?.media ?? face : face;
+  // Le plateau bascule le visage des marqueurs : pour un film, la fiche que
+  // la lecture vient de charger (son UserData dit s'il est déjà dans Ma
+  // liste) ; pour une série, les Sets partagés répondent.
+  const face = useRecoMarkerItem(item);
+  const { jellyfinItemId } = item;
 
   const onPlay = (e: MouseEvent) => {
     e.stopPropagation();
@@ -74,7 +73,7 @@ export function RecoPosterHoverLayer({ item, visible, onDismiss, onOpenDetail }:
           <HoverRatingStars identity={ratingIdentity} jellyfinItemId={jellyfinItemId} />
         </div>
         {jellyfinItemId ? (
-          <CardActionTray item={trayItem} size="sm" stretch>
+          <CardActionTray item={face} size="sm" stretch>
             {dismiss}
           </CardActionTray>
         ) : (

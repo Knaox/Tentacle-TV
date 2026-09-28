@@ -2,13 +2,12 @@ import { memo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
-import { recoPosterUrl, useJellyfinClient, useRecoCardMarkers } from "@tentacle-tv/api-client";
+import { recoPosterUrl, useJellyfinClient, useRecoMarkerItem } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { Badge, PressableCard } from "@/components/ui";
 import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { useCardWidth } from "@/contexts/CardDensityContext";
-import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
-import { CardStatusMarkers } from "@/components/cards/CardStatusMarkers";
+import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 
 interface Props {
   item: RecoRowItem;
@@ -24,8 +23,8 @@ interface Props {
 /**
  * Une carte de recommandation (2:3) : l'affiche Jellyfin d'un titre en
  * bibliothèque, TMDB sinon. Même gabarit et mêmes MARQUEURS que
- * MobileMediaCard (`useRecoCardMarkers` — les items ne sont pas des
- * MediaItem) : la note globale et la vôtre en bas à gauche, la pastille Ma
+ * MobileMediaCard (`CardMarkerLayer` sur le visage `useRecoMarkerItem` — les
+ * items ne sont pas des MediaItem) : la note globale et la vôtre en bas à gauche, la pastille Ma
  * liste / favori / vu en haut à droite. En haut à gauche, empilés : « À la
  * demande » hors bibliothèque, « Découverte » pour une exploration. L'appui
  * long ouvre la feuille (notation, Ma liste, favoris) : au doigt, pas de survol.
@@ -39,7 +38,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const poster = recoPosterUrl(item, (id) => client.getImageUrl(id, "Primary", { width: 300, quality: 80 }));
   const showFallback = !poster || imgError;
   const onDemand = item.jellyfinItemId === null;
-  const markers = useRecoCardMarkers(item);
+  const face = useRecoMarkerItem(item);
   const subtitle = onDemand && !canOpen
     ? [item.year, t("unavailableHint")].filter(Boolean).join(" — ")
     : item.year != null ? String(item.year) : null;
@@ -77,8 +76,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
           </View>
         )}
         {/* Les marqueurs de toutes les cartes, à leurs places communes. */}
-        <CardRatingBadge rating={markers.communityRating} userScore={markers.userScore} />
-        <CardStatusMarkers statuses={markers.statuses} />
+        <CardMarkerLayer item={face} communityRating={item.voteAverage} />
       </View>
       <Text numberOfLines={1} style={st.title}>{item.title}</Text>
       {subtitle && <Text numberOfLines={1} style={st.year}>{subtitle}</Text>}

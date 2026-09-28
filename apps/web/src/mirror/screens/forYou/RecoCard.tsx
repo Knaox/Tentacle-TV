@@ -1,14 +1,13 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { recoPosterUrl, useJellyfinClient, useRecoCardMarkers, type RecoRowItem } from "@tentacle-tv/api-client";
-import { CardRatingBadge } from "../../../components/cards/CardRatingBadge";
-import { CardStatusMarkers } from "../../../components/cards/CardStatusMarkers";
+import { recoPosterUrl, useJellyfinClient, useRecoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
+import { CardMarkerLayer } from "../../../components/cards/CardMarkerLayer";
 import { Pressable } from "../../ui/Pressable";
 import { useCardWidth } from "../../useMirrorLayout";
 
 /**
  * `RecoCard` de l'app : l'affiche 2:3 (rayon 12, ombre elev2) d'une
- * recommandation, avec les MARQUEURS de toutes les cartes (`useRecoCardMarkers`)
+ * recommandation, avec les MARQUEURS de toutes les cartes (`CardMarkerLayer`)
  * — la note globale et la vôtre en bas à gauche, la pastille Ma liste /
  * favori / vu en haut à droite, comme `MediaCard`. En haut à gauche, empilés :
  * « À la demande » (hors bibliothèque) et « Découverte » au dégradé. Titre 13
@@ -29,7 +28,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const [broken, setBroken] = useState(false);
   const poster = recoPosterUrl(item, (id) => client.getImageUrl(id, "Primary", { width: 300, quality: 80 }));
   const onDemand = item.jellyfinItemId === null;
-  const markers = useRecoCardMarkers(item);
+  const face = useRecoMarkerItem(item);
   const subtitle =
     onDemand && !canOpen
       ? [item.year, t("unavailableHint")].filter(Boolean).join(" — ")
@@ -79,8 +78,12 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
             )}
           </div>
         )}
-        <CardRatingBadge rating={markers.communityRating} userScore={markers.userScore} className="bottom-1.5 left-1.5" />
-        <CardStatusMarkers statuses={markers.statuses} className="right-[7px] top-[7px]" />
+        <CardMarkerLayer
+          item={face}
+          communityRating={item.voteAverage}
+          ratingClassName="bottom-1.5 left-1.5"
+          statusClassName="right-[7px] top-[7px]"
+        />
       </div>
       <p className="mt-2 truncate text-[13px] font-semibold tracking-[-0.1px] text-content-primary">{item.title}</p>
       {subtitle && <p className="mt-0.5 truncate text-[10px] font-medium text-content-tertiary">{subtitle}</p>}

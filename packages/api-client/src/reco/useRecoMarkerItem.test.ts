@@ -3,7 +3,7 @@ import { resolveCardMarkers } from "@tentacle-tv/shared";
 import type { UserRatingEntry } from "../hooks/useRatings";
 import { userScoreFromRatings } from "../hooks/useCardMarkers";
 import { seriesStateId } from "../hooks/useSeriesListMembership";
-import { recoMarkerItem } from "./useRecoCardMarkers";
+import { recoMarkerItem } from "./useRecoMarkerItem";
 
 function rating(partial: Partial<UserRatingEntry>): UserRatingEntry {
   return {
