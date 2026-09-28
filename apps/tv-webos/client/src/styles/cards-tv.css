@@ -98,11 +98,10 @@
 
 /* Ce qui n'apporte rien sur une dalle et qu'on retire du chemin du regard.
  *
- * Les actions rapides — vu, favori, ma liste — apparaissent au survol dans la
- * carte du web. Sur un téléviseur elles ne peuvent pas être atteintes sans
- * ajouter un niveau de navigation à l'intérieur d'une carte, ce qui rendrait
- * chaque déplacement horizontal ambigu. Elles restent accessibles depuis la
- * fiche, où elles ont la place d'exister. */
+ * Le survol de la carte du web — lecture, étoiles, plateau — ne peut pas être
+ * atteint sans ajouter un niveau de navigation à l'intérieur d'une carte, ce
+ * qui rendrait chaque déplacement horizontal ambigu. Ses actions passent par
+ * l'appui long, qui ouvre la même liste en feuille (`CardActionSheetTv`). */
 .carte-tv .hover-reveal {
   display: none;
 }
