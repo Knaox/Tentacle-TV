@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import * as TanStackQuery from "@tanstack/react-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as ReactRouterDOM from "react-router-dom";
-import { BrowserRouter } from "react-router-dom";
+import { unstable_HistoryRouter as HistoryRouter } from "react-router-dom";
 import * as ReactI18next from "react-i18next";
 import {
   JellyfinClient,
@@ -36,6 +36,7 @@ import { isDesktopApp } from "./desktop/bridge";
 import { nativeSessionPost, supportsNativeSessionPost } from "./desktop/sessionPost";
 import { nativeKillEncodings, nativePlaybackInfo, supportsNativePlayerRelay } from "./desktop/playerRelay";
 import { getBackendBase } from "./lib/backendBase";
+import { createAppHistory } from "./lib/detailChain";
 import { retryUnlessRateLimited } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
 import { installAnimationAudit } from "./dev/animationAudit";
@@ -235,6 +236,11 @@ if (import.meta.env.DEV) installLayoutShiftProbe();
 // le singleton de l'adaptateur, il n'a besoin d'aucun contexte.
 // `__PLAYER_DEBUG__` est faux dans tout build livré — la branche et son import
 // disparaissent alors du bundle.
+// L'historique de `BrowserRouter`, avec la chaîne de fiches : une fiche
+// ouverte depuis une fiche remplace l'entrée au lieu de s'empiler (cf.
+// `lib/detailChain.ts`). Un seul par document, comme celui qu'il remplace.
+const appHistory = createAppHistory();
+
 const playerDebug = (import.meta.env.DEV || __PLAYER_DEBUG__) ? <PlayerDebugPanel /> : null;
 
 function renderApp() {
@@ -251,9 +257,9 @@ function renderApp() {
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={jellyfinClient}>
             <PluginProvider backendUrl={backendUrl}>
-              <BrowserRouter>
+              <HistoryRouter history={appHistory}>
                 <App />
-              </BrowserRouter>
+              </HistoryRouter>
             </PluginProvider>
           </JellyfinClientContext.Provider>
         </TentacleConfigContext.Provider>
