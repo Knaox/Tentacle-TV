@@ -1,5 +1,5 @@
 import { recoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
-import type { CardOverlayVariant, MediaItem } from "@tentacle-tv/shared";
+import type { CardOverlayVariant, CardToggleHandlers, MediaItem } from "@tentacle-tv/shared";
 
 /**
  * Ce qu'un appui long ouvre : la carte appuyée, telle que SON appelant la
@@ -19,6 +19,17 @@ export interface CardSheetTarget {
   title: string;
   /** La recommandation d'origine (variante `reco`) : ses raisons, son refus, son tmdb. */
   reco?: RecoRowItem;
+  /**
+   * Titre lu sur le DISQUE (hors ligne, « Sur cet appareil ») : seule la coche
+   * « vu » (`resolveCardOverlay({ local })`), ni note ni hors ligne, et rien
+   * n'est demandé au serveur.
+   */
+  local?: boolean;
+  /**
+   * Des bascules fournies par l'appelant (l'état et le geste) plutôt que lues
+   * sur le serveur — la coche « vu » d'un titre `local` vit en base locale.
+   */
+  toggles?: CardToggleHandlers;
 }
 
 /**

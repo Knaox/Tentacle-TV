@@ -39,6 +39,9 @@ interface Props {
  *      la lecture), Ne plus me proposer (recommandation) ;
  *   5. les étoiles — la série pour une affiche d'épisode, l'épisode pour une
  *      vignette, le tmdb pour un titre hors bibliothèque.
+ *
+ * Un titre lu sur le disque (`local`) n'y garde que la coche « vu », fournie
+ * par l'appelant (`toggles`), et ne demande rien au serveur.
  */
 export function MediaActionSheet({ target, onClose, navigation }: Props) {
   if (!target) return null;
@@ -49,12 +52,17 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
   const { t } = useTranslation("cards");
   const router = useRouter();
   const feedback = useSendRecoFeedback();
-  // La fiche complète : état frais (UserData), et patchée par les mutations
-  // optimistes — la feuille suit ses bascules. Le visage de la carte tient la
-  // place le temps qu'elle arrive (une recherche ne rend qu'un item réduit).
-  const { data: fetched } = useMediaItem(target.item?.Id);
+  const local = target.local === true;
+  // La fiche complète, lue EN DIRECT : la feuille tient un instantané de la
+  // carte, que les mutations optimistes ne touchent pas — elles patchent la
+  // fiche `["item", id]`. Chargée à l'ouverture pour toute carte de la
+  // bibliothèque (et gardée : la page de détail la retrouve) ; `useCardFace`
+  // ne la demande que pour une carte réduite, ce qui suffit au survol web —
+  // la carte s'y re-rend — mais laissait ici un film basculé dans son ancien
+  // état. Le visage de la carte tient la place le temps qu'elle arrive.
+  const { data: fetched, isLoading: fetching } = useMediaItem(local ? undefined : target.item?.Id);
   const item = target.item ? (fetched ?? target.item) : null;
-  const play = useSheetPlay(item);
+  const play = useSheetPlay(item, { local });
 
   // Hors bibliothèque, la note vit sur le tmdb : il n'y a pas d'item Jellyfin
   // à qui la rattacher (cf. `RecoPosterHoverLayer` web).
@@ -63,9 +71,9 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
     () => (reco && !reco.jellyfinItemId ? { mediaType: reco.mediaType === "tv" ? "series" : "movie", tmdbId: reco.tmdbId } : null),
     [reco],
   );
-  const ratingTarget = useCardRatingTarget(tmdbIdentity ? null : item, {
+  const ratingTarget = useCardRatingTarget(tmdbIdentity || local ? null : item, {
     scope: target.variant === "landscape" ? "item" : "series",
-    enabled: true,
+    enabled: !local,
   });
   const identity = tmdbIdentity ?? ratingTarget.identity;
 
@@ -74,11 +82,17 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
     inLibrary: item !== null,
     playable: play !== null,
     resume: play?.resume,
-    rateable: identity !== null || ratingTarget.pending,
+    // Un résultat de recherche arrive sans son tmdb : la fiche le porte. Tant
+    // qu'elle se charge, la place des étoiles est gardée.
+    rateable: identity !== null || ratingTarget.pending || fetching,
     // Le mobile garde hors ligne ; la cellule se tait d'elle-même quand le
     // titre ne s'y prête pas (droits, collection).
     offline: true,
+    local,
   });
+  // Un titre local n'a d'autres bascules que celles de l'appelant : le
+  // serveur, qui porte Ma liste et les favoris, n'est peut-être pas là.
+  const toggles = local && !target.toggles ? [] : overlay.toggles;
 
   const go: CardSheetNavigation = navigation ?? {
     play: (id) => router.push(`/watch/${id}`),
@@ -106,7 +120,8 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
           )}
           <SheetActionGrid
             item={item}
-            overlay={overlay}
+            overlay={{ toggles, extras: overlay.extras }}
+            handlers={target.toggles}
             onClose={dismiss}
             onOpenDetails={() => { if (item) leave(() => go.open(item.Id)); }}
             onDismiss={() => {

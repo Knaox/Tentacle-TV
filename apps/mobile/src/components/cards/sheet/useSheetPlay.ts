@@ -29,11 +29,13 @@ export interface SheetPlay {
  * par série (clé `series-watch-state`, celle de la fiche et du lecteur), que
  * la fiche retrouvera en cache.
  */
-export function useSheetPlay(item: MediaItem | null): SheetPlay | null {
-  const seriesId = item?.Type === "Series" ? item.Id : undefined;
+export function useSheetPlay(item: MediaItem | null, options: { local?: boolean } = {}): SheetPlay | null {
+  // Un titre lu sur le disque ne demande rien au serveur : sa série s'ouvre.
+  const seriesId = item?.Type === "Series" && options.local !== true ? item.Id : undefined;
   const { data: state, isError } = useSeriesWatchState(seriesId);
   if (!item || !PLAYABLE_TYPES.has(item.Type)) return null;
 
+  if (item.Type === "Series" && !seriesId) return { resume: false, targetId: null, episodeCode: null, pending: false };
   if (!seriesId) {
     const percent = item.UserData?.PlayedPercentage ?? 0;
     return { resume: percent > 0 && item.UserData?.Played !== true, targetId: item.Id, episodeCode: null, pending: false };

@@ -5,6 +5,7 @@ import {
   cardExtraLabelKey,
   cardToggleLabelKey,
   type CardOverlay,
+  type CardToggleHandlers,
   type CardToggleKind,
   type MediaItem,
 } from "@tentacle-tv/shared";
@@ -32,6 +33,8 @@ interface Props {
   item: MediaItem | null;
   /** Ce que la feuille offre (`resolveCardOverlay`) : bascules puis extras, dans l'ordre. */
   overlay: Pick<CardOverlay, "toggles" | "extras">;
+  /** Bascules fournies par l'appelant (titre lu sur le disque) ; le serveur sinon. */
+  handlers?: CardToggleHandlers;
   /** Fermeture animée — le hors ligne ferme la feuille avant son propre dialogue. */
   onClose: () => void;
   /** Extra `details` : la fiche d'une carte dont le tap lance la lecture. */
@@ -46,7 +49,7 @@ interface Props {
  * d'états), puis les extras, centrés sur la même grille de trois colonnes
  * (hors ligne, fiche, refus). L'ordre vient du modèle partagé, jamais d'ici.
  */
-export function SheetActionGrid({ item, overlay, onClose, onOpenDetails, onDismiss }: Props) {
+export function SheetActionGrid({ item, overlay, handlers, onClose, onOpenDetails, onDismiss }: Props) {
   const { t } = useTranslation("cards");
   const width = useColumnWidth();
   const cell: ViewStyle = { flex: 0, width };
@@ -55,7 +58,11 @@ export function SheetActionGrid({ item, overlay, onClose, onOpenDetails, onDismi
 
   return (
     <View style={st.grid}>
-      {toggles && <ToggleRow item={item} toggles={overlay.toggles} cell={cell} />}
+      {toggles && (handlers ? (
+        <ToggleCells toggles={overlay.toggles} states={handlers.states} onToggle={handlers.onToggle} cell={cell} />
+      ) : (
+        <ServerToggleRow item={item} toggles={overlay.toggles} cell={cell} />
+      ))}
       {overlay.extras.length > 0 && (
         <View style={st.row}>
           {overlay.extras.map((extra) => {
@@ -79,17 +86,28 @@ export function SheetActionGrid({ item, overlay, onClose, onOpenDetails, onDismi
 }
 
 /**
- * Les bascules seules. Composant à part : `useCardToggles` lit les Sets de
- * séries entiers, et une carte hors bibliothèque n'a rien à y lire.
+ * Les bascules lues sur le serveur. Composant à part : `useCardToggles` lit
+ * les Sets de séries entiers, et une carte hors bibliothèque — ou un titre lu
+ * sur le disque — n'a rien à y lire.
  */
-function ToggleRow({ item, toggles, cell }: { item: MediaItem; toggles: readonly CardToggleKind[]; cell: ViewStyle }) {
+function ServerToggleRow({ item, toggles, cell }: { item: MediaItem; toggles: readonly CardToggleKind[]; cell: ViewStyle }) {
+  const state = useCardToggles(item);
+  return <ToggleCells toggles={toggles} states={state.states} onToggle={state.toggle} cell={cell} />;
+}
+
+interface ToggleCellsProps extends CardToggleHandlers {
+  toggles: readonly CardToggleKind[];
+  cell: ViewStyle;
+}
+
+/** La rangée des bascules, d'où que viennent leur état et leur geste. */
+function ToggleCells({ toggles, states, onToggle, cell }: ToggleCellsProps) {
   const { t } = useTranslation("cards");
   const { colors } = useTheme();
-  const state = useCardToggles(item);
   return (
     <View style={st.row}>
       {toggles.map((kind) => {
-        const active = state[kind];
+        const active = states[kind] === true;
         return (
           <ActionCell
             key={kind}
@@ -100,7 +118,7 @@ function ToggleRow({ item, toggles, cell }: { item: MediaItem; toggles: readonly
             renderIcon={(color) => <ToggleGlyph kind={kind} color={color} filled={active} />}
             onPress={() => {
               Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              state.toggle(kind);
+              onToggle(kind);
             }}
             style={cell}
           />
