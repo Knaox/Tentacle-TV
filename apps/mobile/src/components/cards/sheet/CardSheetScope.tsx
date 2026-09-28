@@ -1,4 +1,5 @@
 import { useCallback, useState, type ReactNode } from "react";
+import { useRecoCardHold } from "@tentacle-tv/api-client";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
 import { CardSheetContext, type CardSheetNavigation } from "./cardSheetContext";
@@ -26,6 +27,8 @@ export function CardSheetScope({ children, navigation }: Props) {
   const [target, setTarget] = useState<CardSheetTarget | null>(null);
   const open = useCallback((next: CardSheetTarget) => setTarget(next), []);
   const close = useCallback(() => setTarget(null), []);
+  // Feuille ouverte = carte tenue : un titre jugé quitte « Pour vous » à la fermeture.
+  useRecoCardHold(target?.reco?.key ?? target?.item?.Id ?? null);
   const external = target?.variant === "reco" && target.item === null ? (target.reco ?? null) : null;
   return (
     <CardSheetContext.Provider value={open}>
