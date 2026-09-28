@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import type { RecoRowItem } from "@tentacle-tv/api-client";
+import { useRecoCardHold, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaActionSheet } from "../../cards/MediaActionSheet";
 import type { CardSheetTarget } from "../../cards/cardSheet";
@@ -14,6 +14,10 @@ import { RecoActionSheet } from "./RecoActionSheet";
  *   • une recommandation HORS bibliothèque ouvre la feuille des cartes Vigie
  *     (`RecoActionSheet` → `ExternalActionSheet` : Demander, Ma liste à
  *     l'arrivée, note, refus).
+ *
+ * La carte visée est TENUE tant que sa feuille est ouverte : un titre ajouté
+ * à Ma liste, aimé, vu ou noté quitte les recommandations quand elle se
+ * referme (cf. `useRecoCardHold`).
  */
 export function useItemSheets() {
   const [target, setTarget] = useState<CardSheetTarget | null>(null);
@@ -25,6 +29,7 @@ export function useItemSheets() {
   }, []);
   const close = useCallback(() => setTarget(null), []);
   const closeExternal = useCallback(() => setExternal(null), []);
+  useRecoCardHold(target ? (target.kind === "reco" ? target.reco.key : target.item.Id) : (external?.key ?? null));
   const sheets = useMemo(
     () => (
       <>
