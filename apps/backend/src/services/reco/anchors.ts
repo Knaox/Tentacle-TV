@@ -34,6 +34,8 @@ const ANCHOR_EPSILON = 0.02;
 interface Acc extends Omit<Anchor, "kinds"> {
   kinds: Set<AnchorKind>;
   ratingWeights: number[];
+  /** Les « j'aime » du titre, par toutes leurs voies : seul le plus fort compte. */
+  likeWeights: number[];
 }
 
 function canonicalType(mediaType: string): "movie" | "tv" {
@@ -65,7 +67,7 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
   const touch = (key: string, mediaType: "movie" | "tv", tmdbId: number, title: string): Acc => {
     let a = acc.get(key);
     if (!a) {
-      a = { key, mediaType, tmdbId, title, weight: 0, consumption: false, hours: 0, lastAt: null, kinds: new Set(), ratingWeights: [] };
+      a = { key, mediaType, tmdbId, title, weight: 0, consumption: false, hours: 0, lastAt: null, kinds: new Set(), ratingWeights: [], likeWeights: [] };
       acc.set(key, a);
     }
     if (!a.title && title) a.title = title;
@@ -96,17 +98,18 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     a.lastAt = laterOf(a.lastAt, new Date(r.updatedAt).toISOString());
   }
 
-  // 2) Favoris, likes hors bibliothèque, Ma liste.
+  // 2) Favoris, likes hors bibliothèque, Ma liste. Un « j'aime » est UN
+  //    goût, quelle que soit sa voie (cf. likeWeights).
   for (const item of input.favorites) {
     const a = touchItem(item);
     if (!a) continue;
-    a.weight += ANCHOR_FAVORITE;
+    a.likeWeights.push(ANCHOR_FAVORITE);
     a.kinds.add("favorite");
   }
   for (const like of input.likes) {
     const mediaType = canonicalType(like.mediaType);
     const a = touch(`${mediaType}:${like.tmdbId}`, mediaType, like.tmdbId, "");
-    a.weight += ANCHOR_LIKE * explicitDecay(ageOf(like.createdAt));
+    a.likeWeights.push(ANCHOR_LIKE * explicitDecay(ageOf(like.createdAt)));
     a.kinds.add("like");
   }
   for (const item of input.watchlist) {
@@ -122,7 +125,9 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     if (base === 0) continue;
     const mediaType = canonicalType(sw.mediaType);
     const a = touch(`${mediaType}:${sw.tmdbId}`, mediaType, sw.tmdbId, "");
-    a.weight += base * explicitDecay(ageOf(sw.updatedAt));
+    // Un like d'Affiner POSE le cœur (swipeFavorites) : c'est le même goût.
+    if (base > 0) a.likeWeights.push(base * explicitDecay(ageOf(sw.updatedAt)));
+    else a.weight += base * explicitDecay(ageOf(sw.updatedAt));
     a.kinds.add(base < 0 ? "swipe_dislike" : sw.verdict === "superlike" ? "superlike" : "swipe_like");
     if (base > 0) a.lastAt = laterOf(a.lastAt, new Date(sw.updatedAt).toISOString());
   }
@@ -211,7 +216,10 @@ export function buildAnchors(input: AnchorInputs): AnchorSet {
     const rating = a.ratingWeights.length
       ? a.ratingWeights.reduce((s, w) => s + w, 0) / a.ratingWeights.length
       : 0;
-    const weight = Math.min(ANCHOR_MAX, Math.max(ANCHOR_MIN, a.weight + rating));
+    // Un même « j'aime » dit par plusieurs voies — le cœur, un like Vigie, un
+    // like ou un coup de cœur d'Affiner — ne compte qu'une fois : le plus fort.
+    const liked = a.likeWeights.length ? Math.max(...a.likeWeights) : 0;
+    const weight = Math.min(ANCHOR_MAX, Math.max(ANCHOR_MIN, a.weight + liked + rating));
     if (Math.abs(weight) < ANCHOR_EPSILON) continue;
     anchors.push({
       key: a.key,

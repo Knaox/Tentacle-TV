@@ -110,6 +110,21 @@ describe("verdicts du swipe → ancres", () => {
     expect(byKey.get("movie:1")!.consumption).toBe(false);
   });
 
+  it("un like d'Affiner qui a posé le cœur ne compte pas deux fois : le plus fort des deux", () => {
+    const withHeart = (verdict: string) =>
+      buildAnchors({
+        now: NOW, ratings: [], likes: [], feedback: [], swipes: [swipe(1, verdict)],
+        favorites: [{ Id: "m1", Name: "Film", Type: "Movie", ProviderIds: { Tmdb: "1" } }],
+        watchlist: [], playedMovies: [], resumable: [], playedEpisodes: [], seriesById: new Map(),
+      }).anchors[0];
+    const liked = withHeart("like");
+    expect(liked.weight).toBeCloseTo(ANCHOR_FAVORITE, 10);
+    expect(liked.kinds.sort()).toEqual(["favorite", "swipe_like"]);
+    expect(withHeart("superlike").weight).toBeCloseTo(ANCHOR_SWIPE_SUPERLIKE, 10);
+    // Un refus reste un refus : il ne se fond pas dans le cœur, il le contredit.
+    expect(withHeart("dislike").weight).toBeCloseTo(ANCHOR_FAVORITE + ANCHOR_SWIPE_DISLIKE, 10);
+  });
+
   it("un vieux verdict pèse moins, sans jamais s'effacer (décroissance explicite)", () => {
     const [old] = anchorsOf([swipe(1, "superlike", 1460)]);
     expect(old.weight).toBeCloseTo(ANCHOR_SWIPE_SUPERLIKE * explicitDecay(1460), 10);
