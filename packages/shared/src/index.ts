@@ -36,6 +36,8 @@ export * from "./search/searchSuggestions";
 export * from "./person/personProfile";
 export * from "./person/filmography";
 export * from "./person/castCredits";
+// La saga TMDB d'un film : le contrat de /api/sagas (miroir backend) et son ordre.
+export * from "./saga/sagaTypes";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
