@@ -19,6 +19,11 @@ export interface SearchUserData {
   PlayCount: number;
   IsFavorite: boolean;
   Played: boolean;
+  /**
+   * Dans Ma liste (le « j'aime » de Jellyfin). Absent d'un serveur plus
+   * ancien : la carte d'un film trouvé n'affiche alors pas son signet.
+   */
+  Likes?: boolean | null;
   PlayedPercentage?: number;
   UnplayedItemCount?: number;
   LastPlayedDate?: string;

@@ -5,7 +5,7 @@
  * ceux de Jellyfin, appliqués par Jellyfin : un relevé des identifiants au nom
  * du compte (clé admin + `userId`, SANS liste d'`Ids` — avec une liste,
  * Jellyfin n'applique plus le filtre des bibliothèques autorisées), qui porte
- * au passage vu / en cours / favori. Rien d'autre n'est demandé : pas de
+ * au passage vu / en cours / favori / Ma liste. Rien d'autre n'est demandé : pas de
  * champ, pas d'image — quelques centaines d'octets par titre.
  *
  * Même mémoïsation que l'index de la reco (`libraryMemo.ts`) : servi tout de
@@ -41,12 +41,16 @@ const memo = new Map<string, Entry>();
 const pending = new Map<string, Promise<UserAccess | null>>();
 const timers = new Map<string, NodeJS.Timeout>();
 
-function toUserData(raw: Partial<SearchUserData> | undefined): SearchUserData {
+/** Pur, pour les tests : les données de visionnage réduites à ce que la recherche rend. */
+export function toUserData(raw: Partial<SearchUserData> | undefined): SearchUserData {
   return {
     PlaybackPositionTicks: raw?.PlaybackPositionTicks ?? 0,
     PlayCount: raw?.PlayCount ?? 0,
     IsFavorite: raw?.IsFavorite === true,
     Played: raw?.Played === true,
+    // Ma liste : sans lui, un film trouvé par la recherche, un parcours ou
+    // une filmographie n'affichait jamais son signet sur sa carte.
+    ...(raw?.Likes === true ? { Likes: true } : {}),
     ...(raw?.PlayedPercentage != null ? { PlayedPercentage: raw.PlayedPercentage } : {}),
     ...(raw?.UnplayedItemCount != null ? { UnplayedItemCount: raw.UnplayedItemCount } : {}),
     ...(raw?.LastPlayedDate ? { LastPlayedDate: raw.LastPlayedDate } : {}),
