@@ -28,14 +28,11 @@ export function FauxPersonPage({ page, name, visible, filmography }: FauxPersonP
     <Place x={0} y={0} w={640} h={360} visible={visible} dy={visible ? 0 : 14} transition={sceneTween} className="z-10 overflow-hidden bg-surface-0">
       <div className="absolute inset-x-0 top-0 h-[190px] overflow-hidden">
         {page.backdropUrl && <img src={page.backdropUrl} alt="" draggable={false} className="h-full w-full object-cover opacity-60" />}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(0deg, var(--surface-0) 0%, color-mix(in srgb, var(--surface-0) 82%, transparent) 38%, color-mix(in srgb, var(--surface-0) 30%, transparent) 75%, color-mix(in srgb, var(--surface-0) 55%, transparent) 100%)," +
-              "linear-gradient(90deg, color-mix(in srgb, var(--surface-0) 70%, transparent) 0%, transparent 60%)",
-          }}
-        />
+        {/* Voiles en calques plutôt qu'en `color-mix()` : le socle Chrome 53 du
+            téléviseur ignorerait la déclaration entière. */}
+        <div className="absolute inset-0 bg-surface-0 opacity-30" />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(0deg, var(--surface-0) 0%, var(--surface-0) 10%, transparent 72%)" }} />
+        <div className="absolute inset-0 opacity-70" style={{ background: "linear-gradient(90deg, var(--surface-0) 0%, transparent 60%)" }} />
       </div>
       <span className="absolute left-4 top-3 flex h-7 items-center gap-1.5 rounded-full border border-line-subtle bg-[var(--glass-tint)] px-3 text-[11px] text-content-secondary [&_svg]:h-3.5 [&_svg]:w-3.5">
         <ArrowLeftIcon />

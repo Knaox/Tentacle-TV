@@ -6,7 +6,8 @@ import { FauxCollectionPanel, PANEL, VIEW_TOGGLE } from "./FauxCollectionPanel";
 import { FauxResumeTile, FauxUndoToast, FauxWatchlistRow } from "./FauxWatchlistPieces";
 
 const STEPS = [1100, 700, 300, 800, 300, 900, 300, 1600] as const;
-const SHELF = { y: 128, tileW: 128, gap: 10 } as const;
+// L'écart de 10 px est une classe (`gap-[10px]`) : la passe webOS l'émule, pas un `gap` en ligne.
+const SHELF = { y: 128, tileW: 128 } as const;
 const BODY_Y = 234;
 const ROW = { h: 46, gap: 6 } as const;
 const TOAST = { x: 170, y: 316, w: 300 } as const;
@@ -45,7 +46,7 @@ export function WatchlistScene({ active, reduced }: SceneProps) {
           <span className="text-[12px] font-bold text-content-primary">{t("watchlist:resumeTitle")}</span>
           <span className="text-[9px] text-content-tertiary">{t("watchlist:resumeHint")}</span>
         </p>
-        <div className="flex" style={{ gap: SHELF.gap }}>
+        <div className="flex gap-[10px]">
           {[0, 1, 2, 3].map((i) => (
             <span key={i} style={{ width: SHELF.tileW }}><FauxResumeTile poster={posterAt(media, i)} tone={i} /></span>
           ))}
