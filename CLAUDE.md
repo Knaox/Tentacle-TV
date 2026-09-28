@@ -207,6 +207,34 @@ Trois pièges déjà payés :
 - **`stroke-linejoin="round"` est obligatoire** sur les bras : ce sont des
   polylignes, et le `miter` par défaut projette des piques sur leurs angles aigus.
 
+## Cartes — un seul survol, trois variantes
+
+Toute carte d'un titre de la bibliothèque, sur toutes les plateformes, rend le
+MÊME modèle, dans `packages/shared/src/utils/` :
+
+- **au repos**, les marqueurs (`cardMarkers.ts` → `useCardMarkers`) : note
+  globale et note perso en bas à gauche, pastille Ma liste · favori · vu en
+  haut à droite, barre de progression commune ;
+- **au survol**, `cardOverlay.ts` (`resolveCardOverlay`, `cardActionEntries`) :
+  Lire / Reprendre, la note, puis Ma liste → favori → vu (l'ordre de la
+  pastille), puis les extras — hors ligne, fiche, « Ne plus me proposer ».
+  Trois variantes, pas une de plus : `poster` (2:3, le clic ouvre la fiche),
+  `landscape` (16:9, le clic lance la lecture), `reco`. Un titre lu sur le
+  disque passe `local: true` ; un titre hors bibliothèque (Vigie) a son
+  pendant, `externalCardOverlay.ts`.
+
+Seule l'ENTRÉE change : la souris sur le web et le bureau (`CardHoverOverlay`,
+monté au survol), l'appui long sur le mobile et le miroir (`CardSheetScope` /
+`CardSheetProvider` → la feuille), le focus sur TV — les marqueurs restent,
+l'appui long ouvre la feuille (`TVCardActionSheet`, `CardActionSheetTv` sur
+webOS, notation en étoiles entières). État et gestes : `useCardToggles`,
+`useCardRatingTarget`, `useCardFace` (api-client). Une feuille qui garde un
+instantané de sa carte lit la fiche `["item", id]`, que les mutations patchent.
+
+Jamais une lecture directe de `UserData` dans une carte, jamais un plateau, une
+coche ou une barre recopiés : une nouvelle carte ou une nouvelle action passe
+par le modèle, et toutes les plateformes la reçoivent.
+
 ## Coding Standards
 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded
