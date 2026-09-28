@@ -11,6 +11,8 @@ export * from "./utils/cardMarkerGlyphs";
 export * from "./utils/mediaQuality";
 export * from "./utils/streamLanguages";
 export * from "./utils/mediaFacts";
+// La scène de la fiche : galerie de la vue plein écran et état de reprise.
+export * from "./utils/detailStage";
 export * from "./utils/qualityLadder";
 export * from "./utils/scrubStep";
 export * from "./utils/playbackRates";
