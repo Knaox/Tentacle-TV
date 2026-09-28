@@ -39,7 +39,7 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
   const ratio = usedBytes !== null && total > 0 ? Math.min(1, usedBytes / total) : null;
 
   return (
-    <section className="row-gutter" aria-label={t("heroLabel")}>
+    <div className="row-gutter">
       <div className="relative flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line-subtle bg-surface-1 p-4 md:px-5">
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
           <div
@@ -94,6 +94,6 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
           </Link>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

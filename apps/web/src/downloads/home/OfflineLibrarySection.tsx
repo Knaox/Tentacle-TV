@@ -42,7 +42,7 @@ export function OfflineLibrarySection({ search, onSearch, filter, onFilter, libr
   const empty = movies.length === 0 && series.length === 0;
 
   return (
-    <section aria-label={t("downloads:heroLabel")}>
+    <section>
       <div className="row-gutter flex flex-wrap items-center justify-between gap-3">
         <ScopedSearchField
           value={search}
