@@ -75,3 +75,40 @@ export function pickSeriesPlayTarget(episodes: readonly DownloadEntry[]): Downlo
   if (inProgress[0] !== undefined) return inProgress[0];
   return ordered.find((entry) => !entry.played) ?? ordered[0] ?? null;
 }
+
+/**
+ * « À suivre », le jumeau local de la rangée du même nom : pour chaque série
+ * dont un épisode a été vu ici, le premier épisode gardé et pas encore vu qui
+ * suit le dernier vu (ordre de diffusion). Un épisode entamé n'y figure pas —
+ * il est déjà dans « Reprendre » —, ni une série jamais commencée : le bandeau
+ * et les grilles la montrent. Séries les plus récemment regardées d'abord.
+ */
+export function pickNextUpEntries(entries: readonly DownloadEntry[], max = 12): DownloadEntry[] {
+  const bySeries = new Map<string, DownloadEntry[]>();
+  for (const entry of entries) {
+    if (entry.status !== "complete" || entry.kind !== "episode") continue;
+    const key = seriesKeyOf(entry);
+    const bucket = bySeries.get(key);
+    if (bucket) bucket.push(entry);
+    else bySeries.set(key, [entry]);
+  }
+
+  const picks: Array<{ entry: DownloadEntry; recency: number }> = [];
+  for (const episodes of bySeries.values()) {
+    const ordered = [...episodes].sort(byEpisodeNumber);
+    let lastSeen = -1;
+    ordered.forEach((entry, index) => {
+      if (entry.played) lastSeen = index;
+    });
+    if (lastSeen < 0) continue;
+    const next = ordered.slice(lastSeen + 1).find((entry) => !entry.played);
+    if (next === undefined || isInProgress(next)) continue;
+    const recency = Math.max(...ordered.map((entry) => entry.lastPlayedAt ?? -1));
+    picks.push({ entry: next, recency });
+  }
+
+  return picks
+    .sort((a, b) => b.recency - a.recency || byAdded(a.entry, b.entry))
+    .slice(0, max)
+    .map((pick) => pick.entry);
+}

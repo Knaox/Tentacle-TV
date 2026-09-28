@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DownloadListEntry as DownloadEntry } from "../core/listing";
-import { isInProgress, pickHeroEntries, pickResumeEntries, pickSeriesPlayTarget, remainingTicks } from "./offlineHighlights";
+import { isInProgress, pickHeroEntries, pickNextUpEntries, pickResumeEntries, pickSeriesPlayTarget, remainingTicks } from "./offlineHighlights";
 
 let nextId = 1;
 function entry(over: Partial<DownloadEntry> = {}): DownloadEntry {
@@ -117,5 +117,45 @@ describe("pickSeriesPlayTarget", () => {
     expect(pickSeriesPlayTarget([s2e1, s1e1])?.id).toBe(s2e1.id);
     expect(pickSeriesPlayTarget([episode("M", 1, 2, { played: true }), episode("M", 1, 1, { played: true })])?.indexNumber).toBe(1);
     expect(pickSeriesPlayTarget([])).toBeNull();
+  });
+});
+
+describe("pickNextUpEntries", () => {
+  it("l'épisode gardé qui suit le dernier vu, séries les plus récentes d'abord", () => {
+    const m1 = episode("Malcolm", 1, 1, { played: true, lastPlayedAt: 100 });
+    const m2 = episode("Malcolm", 1, 2);
+    const m3 = episode("Malcolm", 1, 3);
+    const d1 = episode("Dark", 1, 1, { played: true, lastPlayedAt: 500 });
+    const d2 = episode("Dark", 1, 2, { played: true, lastPlayedAt: 600 });
+    const d4 = episode("Dark", 2, 1);
+
+    expect(pickNextUpEntries([m3, m1, d4, m2, d2, d1]).map((e) => e.id)).toEqual([d4.id, m2.id]);
+  });
+
+  it("ni série jamais commencée, ni épisode déjà entamé, ni série finie", () => {
+    const fresh = episode("Neuve", 1, 1);
+    const seen = episode("Entamée", 1, 1, { played: true, lastPlayedAt: 10 });
+    const inProgress = episode("Entamée", 1, 2, { positionTicks: 5, lastPlayedAt: 20 });
+    const done = episode("Finie", 1, 1, { played: true, lastPlayedAt: 30 });
+    const films = entry({ played: true });
+
+    expect(pickNextUpEntries([fresh, seen, inProgress, done, films])).toEqual([]);
+  });
+
+  it("suit le DERNIER vu dans l'ordre de diffusion, pas le premier trou", () => {
+    const e1 = episode("Lost", 1, 1);
+    const e2 = episode("Lost", 1, 2, { played: true, lastPlayedAt: 5 });
+    const e3 = episode("Lost", 1, 3);
+    const transfer = episode("Lost", 1, 4, { status: "downloading" });
+
+    expect(pickNextUpEntries([e3, e1, e2, transfer]).map((e) => e.id)).toEqual([e3.id]);
+  });
+
+  it("plafonne", () => {
+    const list = ["A", "B", "C"].flatMap((name, i) => [
+      episode(name, 1, 1, { played: true, lastPlayedAt: i }),
+      episode(name, 1, 2),
+    ]);
+    expect(pickNextUpEntries(list, 2)).toHaveLength(2);
   });
 });

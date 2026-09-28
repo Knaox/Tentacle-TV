@@ -51,6 +51,7 @@ export { seasonKey } from "./catalog/seasonKey";
 export * from "./catalog/localEpisodeNav";
 export * from "./catalog/offlineHighlights";
 export * from "./catalog/offlineOverview";
+export * from "./catalog/localMediaView";
 export {
   prune as pruneSelection,
   state as selectionState,
