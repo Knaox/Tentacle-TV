@@ -31,7 +31,7 @@ export function SwipeInfoPanel({ title, format, details }: SwipeInfoPanelProps) 
             <div className="h-3.5 w-4/5 rounded bg-white/10" />
           </div>
         ) : (
-          <p>{details.overview || t("noOverview")}</p>
+          <p className="whitespace-pre-line">{details.overview || t("noOverview")}</p>
         )}
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import { tmdbConfigured, tmdbFetch } from "../tmdb/client";
+import { mergeDetails } from "./detailsMerge";
 import type { SwipeLang } from "./tmdbGenres";
 
 /** Ce que le verso d'une carte affiche : titre localisé, synopsis, format. */
@@ -51,7 +52,7 @@ async function fromJellyfin(userId: string, itemId: string): Promise<CardDetails
   if (!item) return null;
   return {
     title: item.Name ?? null,
-    overview: item.Overview?.trim() || null,
+    overview: item.Overview ?? null,
     runtimeMinutes: item.Type === "Movie" && item.RunTimeTicks ? Math.round(item.RunTimeTicks / 600_000_000) : null,
     seasons: item.Type === "Series" ? item.ChildCount ?? null : null,
   };
@@ -62,16 +63,17 @@ async function fromTmdb(mediaType: "movie" | "tv", tmdbId: number, lang: SwipeLa
   const raw = await tmdbFetch<TmdbDetail>(`/${mediaType}/${tmdbId}`, { language: lang === "fr" ? "fr-FR" : "en-US" });
   return {
     title: raw.title ?? raw.name ?? null,
-    overview: raw.overview?.trim() || null,
+    overview: raw.overview ?? null,
     runtimeMinutes: raw.runtime || null,
     seasons: raw.number_of_seasons ?? null,
   };
 }
 
 /**
- * Le verso d'une carte : Jellyfin quand le titre est en bibliothèque (ses
- * métadonnées locales), TMDB sinon — toujours par le backend. Jamais
- * d'exception : un verso vide vaut mieux qu'une carte en erreur.
+ * Le verso d'une carte : TMDB dans la langue de l'utilisateur quand la clé
+ * existe, Jellyfin (avec les droits du compte) en repli ou sans clé — cf.
+ * mergeDetails. Toujours par le backend. Jamais d'exception : un verso vide
+ * vaut mieux qu'une carte en erreur.
  */
 export async function cardDetails(
   userId: string,
@@ -84,13 +86,11 @@ export async function cardDetails(
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.details;
   try {
-    const local = jellyfinItemId ? await fromJellyfin(userId, jellyfinItemId) : null;
-    // Un synopsis Jellyfin vide se complète par TMDB quand on le peut.
-    const remote = local?.overview ? null : await fromTmdb(mediaType, tmdbId, lang).catch(() => null);
-    const details = local
-      ? { ...local, overview: local.overview ?? remote?.overview ?? null }
-      : remote ?? EMPTY;
-    return remember(key, details);
+    const remote = await fromTmdb(mediaType, tmdbId, lang).catch(() => null);
+    // Jellyfin n'est lu que s'il peut apporter quelque chose : synopsis ou format manquants.
+    const needLocal = !!jellyfinItemId && (!remote?.overview || (remote.runtimeMinutes == null && remote.seasons == null));
+    const local = needLocal && jellyfinItemId ? await fromJellyfin(userId, jellyfinItemId).catch(() => null) : null;
+    return remember(key, mergeDetails(remote, local, !!jellyfinItemId));
   } catch {
     return EMPTY;
   }
