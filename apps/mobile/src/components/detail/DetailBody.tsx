@@ -16,6 +16,7 @@ import { LicenseAttribution } from "../LicenseAttribution";
 import { MobileExtrasSection } from "./MobileExtrasSection";
 import { DetailRating } from "./DetailRating";
 import { DetailFacts } from "./DetailFacts";
+import { SagaRow } from "./SagaRow";
 import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
 
 interface Props {
@@ -31,7 +32,7 @@ interface Props {
 /**
  * Corps de la fiche détail (genres → synopsis → contenu de la collection →
  * casting et équipe → extras → saisons/épisodes → informations → licence →
- * similaires). Extrait de MediaDetailScreen (règle 300 lignes) ; partagé entre
+ * saga du film → similaires). Extrait de MediaDetailScreen (règle 300 lignes) ; partagé entre
  * le layout portrait (sous le hero) et paysage (colonne droite défilante).
  */
 export function DetailBody({ item, isEpisode, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId }: Props) {
@@ -107,6 +108,8 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
       <DetailFacts item={item} />
 
       <LicenseAttribution item={item} />
+      {/* La saga d'un film, comme au bureau : juste avant les similaires. */}
+      {item.Type === "Movie" && <SagaRow item={item} />}
       {similar && similar.length > 0 && (
         <MediaRow title={t("recommendations")} data={similar}
           renderItem={(s: MediaItem) => <MobileMediaCard item={s} onPress={() => router.push(`/media/${s.Id}`)} />} />

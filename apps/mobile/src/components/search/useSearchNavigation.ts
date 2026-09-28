@@ -35,7 +35,9 @@ export function useSearchNavigation({ modal = true }: { modal?: boolean } = {}) 
    * route (`/discover?media=movie:603`) : chemin et requête séparés, comme le
    * deep-link des recommandations. Le lien est déjà validé (interne, borné).
    */
-  const openExternal = useCallback((provider: SearchProvider, href: string) => {
+  // Du fournisseur, seul `pluginId` compte : la rangée d'une saga, qui n'a
+  // pas de `SearchProvider` sous la main, ouvre ses volets par ici aussi.
+  const openExternal = useCallback((provider: Pick<SearchProvider, "pluginId">, href: string) => {
     const at = href.indexOf("?");
     const path = at < 0 ? href : href.slice(0, at);
     const query = at < 0 ? undefined : href.slice(at);
