@@ -67,7 +67,15 @@ export function CollectionHero({ title, kicker, items, subtitle }: CollectionHer
           />
         )}
 
-        <HeroScrims bottom="h-[62%]" />
+        {/* Raccord vers la page (jeton `--hero-page-fade`, `none` en sombre).
+            Sans lui, en thème clair, l'assise noire du bas de l'image
+            s'arrêtait net 200 px sous la réserve, et tout ce qui chevauche la
+            bannière — bas du panneau, pastilles, « Reprendre », tuiles du
+            bilan — tombait en texte sombre sur du noir. Hauteur en pixels et
+            non en pour cent : le calque doit commencer SOUS le sous-titre
+            (ancré à 18 % d'une réserve d'au moins 220 px) et finir opaque là
+            où la page reprend, quelle que soit la hauteur de fenêtre. */}
+        <HeroScrims bottom="h-[62%]" seam="h-[240px]" />
       </div>
 
       {/* Démontée hors écran : une image floutée à 48 px sur toute la largeur,
