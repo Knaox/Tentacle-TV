@@ -23,6 +23,11 @@ interface DetailPosterProps {
   instant?: boolean;
   /** Ouvre la vue « image plein écran » sur ce visuel. */
   onOpen?: () => void;
+  /**
+   * Visuel venu d'ailleurs que Jellyfin — la fiche d'un titre gardé le lit sur
+   * le disque. `undefined` = la Primary de l'item, par le serveur.
+   */
+  imageUrl?: string | null;
 }
 
 /**
@@ -35,11 +40,11 @@ interface DetailPosterProps {
  *    haut de la case et flottait, minuscule, à côté d'un titre en display-2.
  *    Elle prend désormais toute la largeur de la colonne, en 16:9.
  */
-export function DetailPoster({ item, onMeasure, instant = false, onOpen }: DetailPosterProps) {
+export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUrl }: DetailPosterProps) {
   const { t } = useTranslation("media");
   const client = useJellyfinClient();
   const boxRef = useRef<HTMLDivElement>(null);
-  const hasImage = Boolean(item.ImageTags?.Primary);
+  const hasImage = imageUrl === undefined ? Boolean(item.ImageTags?.Primary) : Boolean(imageUrl);
 
   const publish = useCallback(() => {
     const el = boxRef.current;
@@ -71,7 +76,7 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen }: Detai
   if (!hasImage) return null;
 
   const isEpisode = item.Type === "Episode";
-  const url = client.getImageUrl(item.Id, "Primary", {
+  const url = imageUrl ?? client.getImageUrl(item.Id, "Primary", {
     ...(isEpisode ? { width: 832 } : { height: 600 }),
     quality: 90,
   });

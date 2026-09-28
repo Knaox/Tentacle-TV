@@ -17,7 +17,12 @@ import { RowHeader } from "../rows/RowHeader";
  * en texte — la recherche exige un compte —, et pas d'heure de fin : on ne
  * lance rien depuis un partage.
  */
-export const DetailFacts = memo(function DetailFacts({ item, readOnly = false }: { item: MediaItem; readOnly?: boolean }) {
+export const DetailFacts = memo(function DetailFacts({ item, readOnly = false, links = !readOnly }: {
+  item: MediaItem;
+  readOnly?: boolean;
+  /** Genres et studios en liens vers la recherche ; la fiche d'un titre gardé les veut en texte (hors ligne, pas de recherche). */
+  links?: boolean;
+}) {
   const { t, i18n } = useTranslation(["media", "common"]);
   const locale = i18n.language || "fr";
   const streams = item.MediaSources?.[0]?.MediaStreams ?? [];
@@ -44,10 +49,10 @@ export const DetailFacts = memo(function DetailFacts({ item, readOnly = false }:
   if (item.OfficialRating) facts.push({ key: "rating", label: t("media:detailRating"), value: item.OfficialRating });
 
   if (item.Genres && item.Genres.length > 0) {
-    facts.push({ key: "genres", label: t("media:detailGenres"), value: readOnly ? item.Genres.join(", ") : <Links kind="genre" names={item.Genres} /> });
+    facts.push({ key: "genres", label: t("media:detailGenres"), value: links ? <Links kind="genre" names={item.Genres} /> : item.Genres.join(", ") });
   }
   if (item.Studios && item.Studios.length > 0) {
-    facts.push({ key: "studios", label: t("media:studioLabel"), value: readOnly ? item.Studios.map((s) => s.Name).join(", ") : <Links kind="studio" names={item.Studios.map((s) => s.Name)} /> });
+    facts.push({ key: "studios", label: t("media:studioLabel"), value: links ? <Links kind="studio" names={item.Studios.map((s) => s.Name)} /> : item.Studios.map((s) => s.Name).join(", ") });
   }
 
   const audio = streamLanguages(streams, "Audio", locale);

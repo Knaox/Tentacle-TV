@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
+import { AmbilightLayer } from "../hero/AmbilightLayer";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
@@ -31,6 +32,12 @@ interface DetailStageProps {
   /** Retour sur mesure (page partagée : la liste, pas l'historique). */
   onBack?: () => void;
   backLabel?: string;
+  /**
+   * Source de la lueur de raccord, quand elle ne vient pas de Jellyfin : la
+   * fiche d'un titre gardé la tire du décor posé sur le disque. `undefined` =
+   * celle de l'item, par le serveur.
+   */
+  glowUrl?: string | null;
 }
 
 /**
@@ -57,7 +64,7 @@ const SETTLE_EASE = [0.16, 1, 0.3, 1] as const;
  * thèmes. Un seul `backdrop-filter` par contrôle de coin — ils sont petits et
  * floutent réellement une image vivante.
  */
-export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, children, onBack, backLabel }: DetailStageProps) {
+export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, children, onBack, backLabel, glowUrl }: DetailStageProps) {
   const navigate = useNavigate();
   const { t } = useTranslation(["common", "media"]);
   // La lueur est une image floutée en fusion `screen` : démontée hors champ
@@ -91,13 +98,20 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
 
       {/* Lueur de raccord : peinte AVANT le bloc titre, le texte n'est jamais
           touché par la fusion. */}
-      {visible && (
+      {visible && (glowUrl === undefined ? (
         <HeroAmbilight
           item={item}
           opacity="var(--detail-ambilight-opacity)"
           className={`hero-glow pointer-events-none absolute inset-x-0 top-0 ${DETAIL_STAGE_GLOW_BOX}`}
         />
-      )}
+      ) : (
+        <AmbilightLayer
+          url={glowUrl}
+          layerKey={item.Id}
+          opacity="var(--detail-ambilight-opacity)"
+          className={`hero-glow pointer-events-none absolute inset-x-0 top-0 ${DETAIL_STAGE_GLOW_BOX}`}
+        />
+      ))}
 
       <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-4 md:px-8 md:pt-8">
         <StageButton onClick={onBack ?? (() => navigate(-1))} label={backLabel ?? t("common:back")} icon={<ArrowLeftIcon />} showLabel />

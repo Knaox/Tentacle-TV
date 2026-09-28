@@ -49,11 +49,7 @@ export function DetailActionCapsule({ item }: { item: MediaItem }) {
   const canWatchTogether = item.Type !== "BoxSet" && (!isInGroup || isHost);
 
   return (
-    <div
-      role="group"
-      className="flex h-14 items-center gap-0.5 rounded-full border border-on-media-muted px-1.5"
-      style={{ background: "rgba(var(--scrim-media-rgb), 0.38)" }}
-    >
+    <DetailCapsule>
       <CapsuleButton
         active={isInWatchlist}
         onClick={() => (isInWatchlist ? removeWatchlist.mutate() : addWatchlist.mutate())}
@@ -100,11 +96,27 @@ export function DetailActionCapsule({ item }: { item: MediaItem }) {
           <UsersIcon />
         </CapsuleButton>
       )}
+    </DetailCapsule>
+  );
+}
+
+/**
+ * La capsule elle-même — un seul objet secondaire posé sur le décor. Partagée
+ * avec la fiche d'un titre gardé, qui y range ses propres bascules.
+ */
+export function DetailCapsule({ children }: { children: ReactNode }) {
+  return (
+    <div
+      role="group"
+      className="flex h-14 items-center gap-0.5 rounded-full border border-on-media-muted px-1.5"
+      style={{ background: "rgba(var(--scrim-media-rgb), 0.38)" }}
+    >
+      {children}
     </div>
   );
 }
 
-function CapsuleButton({ active, onClick, label, tone = "brand", children }: {
+export function CapsuleButton({ active, onClick, label, tone = "brand", children }: {
   active: boolean;
   onClick: () => void;
   label: string;

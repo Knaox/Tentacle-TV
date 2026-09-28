@@ -71,10 +71,22 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   // de fiche : celle-ci reprend donc un pixel DÉJÀ décodé, sans un octet de
   // plus. Une URL recalculée d'un côté ou de l'autre (largeur ou qualité
   // différente) suffirait à provoquer un second chargement, donc un blanc.
-  //
+  const url = item ? heroBackdropUrl(client, item) : null;
+  return <HeroBackdropLayer imageKey={item?.Id ?? null} url={url} />;
+}
+
+/**
+ * La pile elle-même, pour une image déjà résolue : le bandeau de l'accueil
+ * hors ligne la nourrit du décor posé sur le disque — mêmes fondus, même zoom,
+ * mêmes voiles que l'accueil en ligne.
+ */
+export function HeroBackdropLayer({ imageKey, url }: {
+  /** Clé de la diapositive (`null` = aucune) : pilote le fondu enchaîné. */
+  imageKey: string | null;
+  url: string | null;
+}) {
   // Calculée AVANT le retour anticipé : le suivi de l'échec est un hook, il ne
   // peut pas vivre après une sortie conditionnelle.
-  const url = item ? heroBackdropUrl(client, item) : null;
   const { broken, reportFailure } = useBrokenImage(url ?? undefined);
 
   // Solid base + gradients restent rendus en permanence (jamais animés).
@@ -96,7 +108,7 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   // bord bas est un vrai bord, net, et plus rien ne la chevauche.
   const overlays = <HeroScrims bottom="h-[62%]" />;
 
-  if (!item) {
+  if (imageKey === null) {
     return (
       <>
         <div className="absolute inset-0 bg-surface-0" />
@@ -112,7 +124,7 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
       <AnimatePresence>
         {url && (
           <motion.img
-            key={item.Id}
+            key={imageKey}
             src={url}
             alt=""
             draggable={false}

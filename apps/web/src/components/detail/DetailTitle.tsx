@@ -36,15 +36,28 @@ const KIND_KEYS: Partial<Record<MediaItem["Type"], string>> = {
  * Tout est posé sur le voile de la bannière : jetons `on-media` dans les deux
  * thèmes, comme avant.
  */
-export const DetailTitle = memo(function DetailTitle({ item, collectionCount }: { item: MediaItem; collectionCount?: number }) {
+interface DetailTitleProps {
+  item: MediaItem;
+  collectionCount?: number;
+  /**
+   * Logo venu d'ailleurs que Jellyfin — la fiche d'un titre gardé le lit sur
+   * le disque. `undefined` = celui de l'item, par le serveur.
+   */
+  logoUrl?: string | null;
+  /** Ouvre la série d'un épisode ; par défaut sa fiche en ligne. */
+  onOpenSeries?: () => void;
+}
+
+export const DetailTitle = memo(function DetailTitle({ item, collectionCount, logoUrl: localLogoUrl, onOpenSeries }: DetailTitleProps) {
   const { t } = useTranslation(["media", "common"]);
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const isEpisode = item.Type === "Episode";
   // Un épisode garde son nom en texte : le logo serait celui de la série.
-  const logoUrl = !isEpisode && item.ImageTags?.Logo
+  const serverLogoUrl = !isEpisode && item.ImageTags?.Logo
     ? client.getImageUrl(item.Id, "Logo", { height: 320, quality: 90, tag: item.ImageTags.Logo })
     : null;
+  const logoUrl = isEpisode ? null : localLogoUrl === undefined ? serverLogoUrl : localLogoUrl;
   const { broken, reportFailure } = useBrokenImage(logoUrl);
   const showLogo = logoUrl !== null && !broken;
   const kindKey = KIND_KEYS[item.Type];
@@ -97,7 +110,7 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount }: 
         <motion.button
           variants={fadeUp}
           type="button"
-          onClick={() => navigate(`/media/${item.SeriesId}`)}
+          onClick={onOpenSeries ?? (() => navigate(`/media/${item.SeriesId}`))}
           aria-label={t("common:goToSeries")}
           title={t("common:goToSeries")}
           className="group/series mt-1 inline-flex items-center gap-1.5 py-1 text-lg text-on-media-secondary transition-colors hover:text-on-media-primary"

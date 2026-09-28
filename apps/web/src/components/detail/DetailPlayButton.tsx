@@ -59,17 +59,42 @@ export function DetailPlayButton({ item, collectionCount = 0 }: { item: MediaIte
   const remaining = resume?.remainingMinutes != null ? remainingLabel(resume.remainingMinutes, t) : null;
 
   return (
+    <DetailPlayPill
+      label={label}
+      remaining={remaining}
+      progress={resume?.progress ?? null}
+      ariaLabel={`${label} — ${target.Name}`}
+      onClick={() => navigate(`/watch/${target.Id}`)}
+    />
+  );
+}
+
+/**
+ * Le bouton lui-même, sans ce qui le décide : la fiche d'un titre gardé le
+ * nourrit de sa progression LOCALE, la fiche en ligne de celle de Jellyfin —
+ * un seul dessin pour les deux.
+ */
+export function DetailPlayPill({ label, remaining, progress, ariaLabel, onClick }: {
+  label: string;
+  /** « Reste 1 h 48 min », ou rien. */
+  remaining: string | null;
+  /** Avancement 0..1 dans l'anneau de l'icône, `null` sans reprise. */
+  progress: number | null;
+  ariaLabel: string;
+  onClick: () => void;
+}) {
+  return (
     <PressableScale
       hoverScale={1.03}
       tapScale={0.97}
-      onClick={() => navigate(`/watch/${target.Id}`)}
-      aria-label={`${label} — ${target.Name}`}
+      onClick={onClick}
+      aria-label={ariaLabel}
       className={`${PRIMARY_CLASS} pl-4`}
       style={PRIMARY_STYLE}
     >
       {/* Éclat au survol : un calque en fondu d'OPACITÉ, jamais un fond animé. */}
       <span aria-hidden className="pointer-events-none absolute inset-0 bg-white/15 opacity-0 transition-opacity duration-200 group-hover/play:opacity-100" />
-      <ProgressRing progress={resume?.progress ?? null} />
+      <ProgressRing progress={progress} />
       <span className="relative flex flex-col leading-tight">
         <span className="whitespace-nowrap text-base font-bold">{label}</span>
         {remaining && <span className="whitespace-nowrap text-xs font-medium opacity-85">{remaining}</span>}
@@ -99,7 +124,8 @@ function ProgressRing({ progress }: { progress: number | null }) {
   );
 }
 
-function remainingLabel(total: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
+/** « Reste 1 h 48 min » / « Reste 42 min » — partagé avec la fiche d'un titre gardé. */
+export function remainingLabel(total: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const { hours, minutes } = splitMinutes(total);
   return hours > 0
     ? t("media:detailRemainingHours", { hours, minutes: String(minutes).padStart(2, "0") })

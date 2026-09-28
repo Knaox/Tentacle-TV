@@ -9,6 +9,17 @@ import { PressableScale } from "../ui/PressableScale";
 import { CardQuickActions } from "../cards/CardQuickActions";
 import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 
+/**
+ * Les deux boutons de la bannière, partagés avec le bandeau de l'accueil hors
+ * ligne : même poids, même verre, à la classe près.
+ */
+export const HERO_PLAY_CLASS =
+  "flex items-center gap-2.5 rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-colors duration-200 hover:bg-cta-primary-bg-hover";
+export const HERO_PLAY_STYLE = { boxShadow: "var(--elev-2)" };
+/** Posé sur l'affiche : verre sombre + texte blanc constants, jamais les tokens `--cta-ghost-*` du fond de PAGE. */
+export const HERO_INFO_CLASS =
+  "flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-6 py-3 text-base font-semibold text-on-media-primary backdrop-blur-md transition-colors duration-200 hover:bg-[rgba(var(--scrim-media-rgb),0.65)]";
+
 interface HeroActionsProps {
   item: MediaItem;
   onPlay: () => void;
@@ -60,22 +71,13 @@ export function HeroActions({ item, onPlay, resuming, episodeCode }: HeroActions
 
   return (
     <div className="flex flex-wrap items-center gap-2.5">
-      <PressableScale
-        onClick={onPlay}
-        className="flex items-center gap-2.5 rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-colors duration-200 hover:bg-cta-primary-bg-hover"
-        style={{ boxShadow: "var(--elev-2)" }}
-      >
+      <PressableScale onClick={onPlay} className={HERO_PLAY_CLASS} style={HERO_PLAY_STYLE}>
         <PlayIcon />
         {resuming ? t("common:resume") : t("common:play")}
         {episodeCode && <span className="font-semibold opacity-60">{episodeCode}</span>}
       </PressableScale>
 
-      {/* Posé sur l'affiche : verre sombre + texte blanc constants, plutôt que
-          les tokens `--cta-ghost-*` qui suivent le fond de PAGE. */}
-      <PressableScale
-        onClick={openDetail}
-        className="flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-6 py-3 text-base font-semibold text-on-media-primary backdrop-blur-md transition-colors duration-200 hover:bg-[rgba(var(--scrim-media-rgb),0.65)]"
-      >
+      <PressableScale onClick={openDetail} className={HERO_INFO_CLASS}>
         <InfoIcon />
         {t("common:moreInfo")}
       </PressableScale>

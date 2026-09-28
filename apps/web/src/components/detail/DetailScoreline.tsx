@@ -10,6 +10,11 @@ interface DetailScorelineProps {
   item: MediaItem;
   /** Note globale à afficher (fiche épisode : TMDB). `undefined` = celle de l'item. */
   communityRating?: number | null;
+  /**
+   * `false` : aucune requête — la fiche d'un titre gardé ne lit que ce que
+   * porte son DTO local (la note, la coche « vu »).
+   */
+  markersEnabled?: boolean;
 }
 
 const STATUS_GLYPH: Record<CardStatusKind, typeof BookmarkGlyph> = {
@@ -26,12 +31,13 @@ const STATUS_GLYPH: Record<CardStatusKind, typeof BookmarkGlyph> = {
  *
  * Les BASCULES restent dans la capsule d'actions : ici on lit, on ne touche pas.
  */
-export const DetailScoreline = memo(function DetailScoreline({ item, communityRating }: DetailScorelineProps) {
+export const DetailScoreline = memo(function DetailScoreline({ item, communityRating, markersEnabled = true }: DetailScorelineProps) {
   const { t } = useTranslation(["cards", "media"]);
   const gradientId = useId();
   const markers = useCardMarkers(item, {
     communityRating: communityRating === undefined ? (item.CommunityRating ?? null) : communityRating,
     scope: "item",
+    enabled: markersEnabled,
   });
   // Votre note n'est pas répétée ici : le contrôle d'étoiles de la rangée
   // d'actions l'affiche déjà, et c'est là qu'on la change.
