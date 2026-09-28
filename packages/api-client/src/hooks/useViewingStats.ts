@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { deviceTimeZone } from "@tentacle-tv/shared";
+import { deviceTimeZone, withViewingStatsDefaults } from "@tentacle-tv/shared";
 import type { StatsLocale, ViewingStats, ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { TentacleApiError, tentacleApiFetch } from "./usePreferences";
 
@@ -25,14 +25,15 @@ export function viewingStatsKey(period: ViewingStatsPeriod, locale: StatsLocale)
   return [...VIEWING_STATS_KEY, period, locale, timeZone()] as const;
 }
 
-export function fetchViewingStats(
+/** Une période des statistiques ; la réponse d'un serveur plus ancien est remise à la forme du contrat. */
+export async function fetchViewingStats(
   period: ViewingStatsPeriod,
   locale: StatsLocale,
   opts: { refresh?: boolean } = {}
 ): Promise<ViewingStats> {
   const q = new URLSearchParams({ period, lang: locale, tz: timeZone() });
   if (opts.refresh) q.set("refresh", "1");
-  return tentacleApiFetch<ViewingStats>(`/api/stats/me?${q.toString()}`);
+  return withViewingStatsDefaults(await tentacleApiFetch<ViewingStats>(`/api/stats/me?${q.toString()}`));
 }
 
 /**

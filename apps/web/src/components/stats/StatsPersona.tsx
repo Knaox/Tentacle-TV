@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
 import {
-  CalendarHeart, Clapperboard, Compass, Flame, Heart, Hourglass, Languages, Moon, Repeat, Sparkles, Sunrise, Tv,
+  CalendarHeart, Clapperboard, Compass, Flame, Globe, Headphones, Heart, Hourglass, Moon, Repeat, Sparkles, Sunrise, Tv,
   type LucideIcon,
 } from "lucide-react";
 import { viewerBadges, type ViewerBadge, type ViewerBadgeKey, type ViewingStats } from "@tentacle-tv/shared";
@@ -19,7 +19,8 @@ const BADGE_ICONS: Record<ViewerBadgeKey, LucideIcon> = {
   loyal: Heart,
   explorer: Compass,
   vintage: Hourglass,
-  polyglot: Languages,
+  polyglot: Headphones,
+  worldly: Globe,
 };
 
 const BadgeCard = memo(function BadgeCard({ badge }: { badge: ViewerBadge }) {
@@ -29,6 +30,7 @@ const BadgeCard = memo(function BadgeCard({ badge }: { badge: ViewerBadge }) {
     share: badge.share !== undefined ? f.percent(badge.share) : "",
     count: badge.count ?? 0,
     label: badge.label ?? "",
+    duration: badge.seconds !== undefined ? f.duration(badge.seconds) : "",
   });
   return (
     <li className="flex items-start gap-3 rounded-2xl bg-[color:var(--surface-1)] p-4 ring-1 ring-line-subtle">

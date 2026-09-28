@@ -19,7 +19,8 @@ const BADGE_ICONS: Record<ViewerBadgeKey, keyof typeof Feather.glyphMap> = {
   loyal: "heart",
   explorer: "compass",
   vintage: "clock",
-  polyglot: "globe",
+  polyglot: "headphones",
+  worldly: "globe",
 };
 
 const BadgeCard = memo(function BadgeCard({ badge }: { badge: ViewerBadge }) {
@@ -31,6 +32,7 @@ const BadgeCard = memo(function BadgeCard({ badge }: { badge: ViewerBadge }) {
     share: badge.share !== undefined ? f.percent(badge.share) : "",
     count: badge.count ?? 0,
     label: badge.label ?? "",
+    duration: badge.seconds !== undefined ? f.duration(badge.seconds) : "",
   });
   return (
     <View style={st.badge} accessible accessibilityLabel={`${title}. ${detail}`}>

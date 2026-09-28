@@ -4,11 +4,20 @@ import { fetchViewingStats, viewingStatsFailure, viewingStatsKey } from "./useVi
 
 const urls: string[] = [];
 
+/** La réponse d'un serveur d'avant l'origine et l'écoute — sa forme minimale. */
+const LEGACY = {
+  period: "30d",
+  languages: [{ key: "en", label: "Anglais", seconds: 3600, share: 0.65 }],
+  movies: [{ id: "m1", kind: "movie", viewings: 0 }],
+  topSeries: [],
+  records: { biggestDay: null, longestStreak: null, binge: { seriesId: "s", seriesName: "Dark", episodes: 9, date: "" }, longestSession: null },
+};
+
 beforeEach(() => {
   urls.length = 0;
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     urls.push(String(input));
-    return new Response(JSON.stringify({ period: "30d" }), { status: 200 });
+    return new Response(JSON.stringify(LEGACY), { status: 200 });
   }));
 });
 
@@ -30,6 +39,15 @@ describe("fetchViewingStats", () => {
   it("ne demande un recalcul que sur « tirer pour rafraîchir »", async () => {
     await fetchViewingStats("all", "en", { refresh: true });
     expect(new URL(urls[0], "http://x").searchParams.get("refresh")).toBe("1");
+  });
+
+  it("remet la réponse d'un serveur plus ancien à la forme du contrat, sans rien inventer", async () => {
+    const stats = await fetchViewingStats("30d", "fr");
+    expect(stats.origins.countries).toEqual([]);
+    expect(stats.listening).toMatchObject({ versions: null, languages: [], since: null });
+    expect(stats.moviesOrder).toBe("recent");
+    expect(stats.movies[0]).toMatchObject({ viewings: 1, rating: null, favorite: false, verdict: null });
+    expect(stats.records.binge?.seconds).toBe(0);
   });
 });
 

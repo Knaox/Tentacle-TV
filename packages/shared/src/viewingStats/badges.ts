@@ -6,7 +6,8 @@ import { analyzeRhythm } from "./insights";
  * chiffres de la période et accompagné du chiffre qui le justifie (« 62 % de
  * votre temps après 22 h »). Jamais un trait sans preuve, jamais sur trop peu
  * de données : un compte à vingt minutes n'est l'« oiseau de nuit » de
- * personne.
+ * personne. Et toujours sur la DURÉE réelle, jamais sur un compte
+ * d'épisodes : vingt épisodes de trois minutes ne font pas un marathonien.
  */
 
 export type ViewerBadgeKey =
@@ -21,7 +22,8 @@ export type ViewerBadgeKey =
   | "loyal"
   | "explorer"
   | "vintage"
-  | "polyglot";
+  | "polyglot"
+  | "worldly";
 
 export interface ViewerBadge {
   key: ViewerBadgeKey;
@@ -29,8 +31,10 @@ export interface ViewerBadge {
   strength: number;
   /** La part qui le justifie (0..1), quand c'en est une. */
   share?: number;
-  /** Le compte qui le justifie (épisodes, jours, genres, langues). */
+  /** Le compte qui le justifie (jours, genres, langues, pays). */
   count?: number;
+  /** La durée qui le justifie (le marathon). */
+  seconds?: number;
   /** Le nom qui l'accompagne (une série, un titre, une décennie). */
   label?: string;
 }
@@ -38,6 +42,10 @@ export interface ViewerBadge {
 /** En dessous de deux heures sur la période, pas de trait : trop peu pour dire. */
 export const BADGES_MIN_SECONDS = 2 * 3600;
 export const BADGES_MAX = 3;
+/** Marathonien : trois heures d'une même série dans la journée. */
+export const BINGER_SECONDS = 3 * 3600;
+/** Une langue entendue ou un pays d'origine compte pour un trait à partir de 10 % du temps. */
+const DIVERSITY_SHARE = 0.1;
 
 export function viewerBadges(stats: ViewingStats, max = BADGES_MAX): ViewerBadge[] {
   const total = stats.totals.seconds;
@@ -56,7 +64,9 @@ export function viewerBadges(stats: ViewingStats, max = BADGES_MAX): ViewerBadge
   }
 
   const binge = stats.records.binge;
-  if (binge) add({ key: "binger", strength: binge.episodes / 5, count: binge.episodes, label: binge.seriesName });
+  if (binge && binge.seconds > 0) {
+    add({ key: "binger", strength: binge.seconds / BINGER_SECONDS, seconds: binge.seconds, label: binge.seriesName });
+  }
   const streak = stats.records.longestStreak;
   if (streak) add({ key: "regular", strength: streak.days / 7, count: streak.days });
 
@@ -76,8 +86,11 @@ export function viewerBadges(stats: ViewingStats, max = BADGES_MAX): ViewerBadge
   const oldest = stats.decades.filter((d) => d.decade < 2000).sort((a, b) => b.seconds - a.seconds)[0];
   if (oldest) add({ key: "vintage", strength: oldest.seconds / total / 0.3, share: oldest.seconds / total, label: String(oldest.decade) });
 
-  const spoken = stats.languages.filter((l) => l.share >= 0.1).length;
-  add({ key: "polyglot", strength: spoken / 3, count: spoken });
+  // Ce qu'on ENTEND (la piste lue), jamais la langue originale des titres.
+  const heard = stats.listening.languages.filter((l) => l.share >= DIVERSITY_SHARE).length;
+  add({ key: "polyglot", strength: heard / 3, count: heard });
+  const countries = stats.origins.countries.filter((c) => c.share >= DIVERSITY_SHARE).length;
+  add({ key: "worldly", strength: countries / 4, count: countries });
 
   return out.sort((a, b) => b.strength - a.strength).slice(0, max);
 }
