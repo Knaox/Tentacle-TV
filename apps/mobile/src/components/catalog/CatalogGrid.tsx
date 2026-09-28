@@ -1,18 +1,16 @@
 import { memo, useCallback, useMemo, useRef, useState, type ReactElement, type Ref } from "react";
-import { View, Text, StyleSheet, useWindowDimensions, type FlatList } from "react-native";
+import { View, StyleSheet, useWindowDimensions, type FlatList } from "react-native";
 import Animated, { runOnJS, useAnimatedScrollHandler, useComposedEventHandler, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Image } from "expo-image";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
-import { BrandSpinner, PressableCard, ProgressBar, FadeIn } from "@/components/ui";
+import type { MediaItem } from "@tentacle-tv/shared";
+import { BrandSpinner, FadeIn } from "@/components/ui";
 import { ScrollTopFab } from "@/components/ui/ScrollTopFab";
-import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
-import { motion, spacing, typography, useGrid, useResponsive, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { MobileMediaCard } from "@/components/MobileMediaCard";
+import { SeriesRatingScope } from "@/contexts/SeriesRatingContext";
+import { motion, spacing, useGrid, useResponsive, useThemedStyles, type AppTheme } from "@/theme";
 import { CatalogEmpty, CatalogGridSkeleton } from "./CatalogGridStates";
 
-const POSTER_ASPECT = 2 / 3;
 /** En hauteurs d'écran : au-delà, le bouton « revenir en haut » se montre. */
 const SCROLL_TOP_SCREENS = 1.5;
 
@@ -37,12 +35,18 @@ interface Props {
   onReset?: () => void;
 }
 
+/**
+ * La grille d'une bibliothèque : l'affiche de toutes les rangées
+ * (`MobileMediaCard` — marqueurs, note, repli d'image, appui long vers la
+ * feuille des cartes), en colonnes, chargée page à page. Le filtre « En
+ * cours » y fait entrer des ÉPISODES : leur note, celle de leur série, se
+ * résout pour toute la grille (`SeriesRatingScope`).
+ */
 export const CatalogGrid = memo(function CatalogGrid({
   catalog, onItemPress, overrideItems, header, empty, onScroll, topInset = 0, bottomInset = 0, listRef,
   filtered = false, onReset,
 }: Props) {
   const styles = useThemedStyles(makeStyles);
-  const client = useJellyfinClient();
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
 
   /* « Revenir en haut » : après un écran et demi de défilement, un bouton rond
@@ -84,9 +88,11 @@ export const CatalogGrid = memo(function CatalogGrid({
 
   const renderItem = useCallback(
     ({ item }: { item: MediaItem }) => (
-      <CatalogItemCard item={item} width={itemWidth} client={client} onPress={() => onItemPress(item)} />
+      <View style={styles.cell}>
+        <MobileMediaCard item={item} width={itemWidth} onPress={() => onItemPress(item)} />
+      </View>
     ),
-    [itemWidth, client, onItemPress],
+    [itemWidth, onItemPress, styles.cell],
   );
 
   const keyExtractor = useCallback((item: MediaItem) => item.Id, []);
@@ -117,90 +123,46 @@ export const CatalogGrid = memo(function CatalogGrid({
 
   return (
     <FadeIn delay={100} style={{ flex: 1 }}>
-      <Animated.FlatList
-        ref={setRefs as never}
-        key={`catalog-${numColumns}`}
-        data={items}
-        numColumns={numColumns}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        // La marge latérale va aux RANGÉES, pas au contenu : l'en-tête (l'ambiance
-        // de l'onglet Bibliothèque) court d'un bord à l'autre. Une seule colonne
-        // n'accepte pas `columnWrapperStyle` : la marge y reste au contenu.
-        contentContainerStyle={[
-          styles.gridContent,
-          { paddingTop: topInset, paddingBottom: spacing.xxl + bottomInset },
-          numColumns > 1 ? null : { paddingHorizontal: padding },
-        ]}
-        columnWrapperStyle={numColumns > 1 ? { gap: gutter, paddingHorizontal: padding } : undefined}
-        ListHeaderComponent={header}
-        onScroll={composedScroll}
-        scrollEventThrottle={16}
-        keyboardShouldPersistTaps="handled"
-        // Un champ dans l'en-tête (l'onglet Bibliothèque) : le clavier ne doit
-        // jamais cacher le bas de ce qu'il fait apparaître (« Tous les résultats »).
-        automaticallyAdjustKeyboardInsets
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={footer}
-        ListEmptyComponent={emptyComponent}
-        onRefresh={catalog.refetch}
-        refreshing={catalog.isRefetching && !catalog.isFetchingNextPage}
-        showsVerticalScrollIndicator={false}
-      />
+      <SeriesRatingScope items={items}>
+        <Animated.FlatList
+          ref={setRefs as never}
+          key={`catalog-${numColumns}`}
+          data={items}
+          numColumns={numColumns}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          // La marge latérale va aux RANGÉES, pas au contenu : l'en-tête (l'ambiance
+          // de l'onglet Bibliothèque) court d'un bord à l'autre. Une seule colonne
+          // n'accepte pas `columnWrapperStyle` : la marge y reste au contenu.
+          contentContainerStyle={[
+            styles.gridContent,
+            { paddingTop: topInset, paddingBottom: spacing.xxl + bottomInset },
+            numColumns > 1 ? null : { paddingHorizontal: padding },
+          ]}
+          columnWrapperStyle={numColumns > 1 ? { gap: gutter, paddingHorizontal: padding } : undefined}
+          ListHeaderComponent={header}
+          onScroll={composedScroll}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+          // Un champ dans l'en-tête (l'onglet Bibliothèque) : le clavier ne doit
+          // jamais cacher le bas de ce qu'il fait apparaître (« Tous les résultats »).
+          automaticallyAdjustKeyboardInsets
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={footer}
+          ListEmptyComponent={emptyComponent}
+          onRefresh={catalog.refetch}
+          refreshing={catalog.isRefetching && !catalog.isFetchingNextPage}
+          showsVerticalScrollIndicator={false}
+        />
+      </SeriesRatingScope>
       <ScrollTopFab shown={shown} active={topActive} bottom={fabBottom} onPress={scrollTop} />
     </FadeIn>
   );
 });
 
-/* ── Carte catalogue (mémoïsée) ─────────────────────── */
-
-interface CardProps {
-  item: MediaItem;
-  width: number;
-  client: ReturnType<typeof useJellyfinClient>;
-  onPress: () => void;
-}
-
-const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onPress }: CardProps) {
-  const { colors } = useTheme();
-  const styles = useThemedStyles(makeStyles);
-  const isEpisode = item.Type === "Episode";
-  const posterId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const poster = client.getImageUrl(posterId, "Primary", { width: 300, quality: 80 });
-  const progress = item.UserData?.PlayedPercentage;
-  const isWatched = item.UserData?.Played === true;
-  // Portée `series` : cette grille montre l'affiche de la série pour un épisode
-  // (cf. `posterId` ci-dessus). Le catalogue ne rend que des films et des
-  // séries, donc rien à résoudre — aucune requête ici.
-  const { rating } = cardRatingFor(item, "series");
-
-  return (
-    <PressableCard onPress={onPress} style={{ width, marginBottom: spacing.md }}>
-      <View style={{ aspectRatio: POSTER_ASPECT, borderRadius: spacing.cardRadius, overflow: "hidden", backgroundColor: colors.surface.s2 }}>
-        <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} contentFit="cover" />
-        {progress != null && progress > 0 && !isWatched && (
-          <View style={styles.progressContainer}>
-            <ProgressBar progress={progress / 100} height={3} />
-          </View>
-        )}
-        {/* Marqueurs du repos (note, ma liste, favori, vu) — modèle partagé. */}
-        <CardMarkerLayer item={item} communityRating={rating} />
-      </View>
-      <Text numberOfLines={1} style={styles.itemTitle}>
-        {isEpisode && item.SeriesName ? item.SeriesName : item.Name}
-      </Text>
-      {item.ProductionYear != null && (
-        <Text style={styles.itemYear}>{item.ProductionYear}</Text>
-      )}
-    </PressableCard>
-  );
-});
-
-const makeStyles = (t: AppTheme) => StyleSheet.create({
+const makeStyles = (_t: AppTheme) => StyleSheet.create({
   gridContent: { paddingBottom: spacing.xxl },
   loader: { paddingVertical: spacing.xl },
-  progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
-  itemTitle: { ...typography.small, color: t.colors.text.primary, fontWeight: "600", marginTop: spacing.xs + 2 },
-  itemYear: { ...typography.badge, color: t.colors.text.tertiary, marginTop: 2 },
+  cell: { marginBottom: spacing.md },
 });
