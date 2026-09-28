@@ -1,15 +1,19 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
 import { useJellyfinClient, useWatchedToggle } from "@tentacle-tv/api-client";
-import { resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
+import { cardToggleLabelKey, resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
+import { CardStatusMarkers } from "../../../components/cards/CardStatusMarkers";
+import { WatchedGlyph } from "../../../components/cards/cardGlyphs";
 import { cardProgress } from "../../cards/cardProgress";
+import { useOpenCardSheet } from "../../cards/cardSheet";
 import { ProgressBar } from "../../ui/ProgressBar";
+import { useLongPress } from "../../ui/useLongPress";
 import { MetaTokens } from "./MetaTokens";
 import { episodeCode } from "./detailMetrics";
 
 export const THUMB_W = 110;
 export const THUMB_H = 62;
+const WATCHED_ONLY = ["watched"] as const;
 
 interface Props {
   ep: MediaItem;
@@ -21,24 +25,45 @@ interface Props {
 
 /**
  * `EpisodeItemRow` de l'app : fond `fill.faint` rayon 10, vignette 110 × 62
- * (rayon 6) et sa piste de progression de 3, numéro et titre 13 (800 pour
- * l'épisode courant, précédé d'un point rose de 7), « Épisode actuel » et durée,
- * jetons compacts, résumé sur 2 lignes, puis le rond « vu » de 30.
+ * (rayon 6), numéro et titre 13 (800 pour l'épisode courant, précédé d'un
+ * point rose de 7), « Épisode actuel » et durée, jetons compacts, résumé sur
+ * 2 lignes, puis la bascule « vu ».
+ *
+ * Les marques de toutes les cartes : sur la vignette, la pastille « vu »
+ * (un épisode vu n'a plus de pourcentage, c'est elle qui le dit) ou la barre
+ * commune ; la bascule prend le glyphe et le libellé du survol
+ * (`cardToggleLabelKey`). L'appui long ouvre la feuille de l'épisode, en
+ * vignette 16:9 : son toucher le lance, la fiche passe par la feuille.
  */
 export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, onPlay, isCurrent = false }: Props) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "cards"]);
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
+  const openSheet = useOpenCardSheet();
+  const press = useLongPress(openSheet ? () => openSheet({ kind: "media", variant: "landscape", item: ep }) : undefined);
   const played = ep.UserData?.Played === true;
+  const watchedLabel = t(`cards:${cardToggleLabelKey("watched", played)}`);
   const progress = cardProgress(ep.UserData);
   const runtime = ep.RunTimeTicks ? Math.round(ep.RunTimeTicks / 600_000_000) : null;
   const epLabel = ep.IndexNumber != null ? `${episodeCode(ep.ParentIndexNumber, ep.IndexNumber)} · ` : "";
 
   return (
     <div className="flex min-h-[62px] items-center overflow-hidden rounded-[10px] bg-fill-faint">
-      <button type="button" onClick={() => onPlay(ep)} className="flex min-w-0 flex-1 text-left" style={{ WebkitTapHighlightColor: "transparent" }}>
+      <button
+        type="button"
+        {...press.handlers}
+        onClick={() => {
+          if (!press.consumeClick()) onPlay(ep);
+        }}
+        className="flex min-w-0 flex-1 select-none text-left"
+        style={{ WebkitTapHighlightColor: "transparent", WebkitTouchCallout: "none" }}
+      >
         <span className="relative shrink-0 self-center overflow-hidden rounded-md bg-surface-2" style={{ width: THUMB_W, height: THUMB_H }}>
           <EpisodeThumb ep={ep} seriesId={seriesId} />
-          {progress !== null && <ProgressBar progress={progress} className="absolute inset-x-0 bottom-0" />}
+          {played ? (
+            <CardStatusMarkers statuses={WATCHED_ONLY} className="right-1 top-1" />
+          ) : (
+            progress !== null && <ProgressBar progress={progress} className="absolute inset-x-0 bottom-0" />
+          )}
         </span>
         <span className="flex min-w-0 flex-1 flex-col justify-center p-2.5">
           <span className="flex items-center gap-1.5">
@@ -50,9 +75,9 @@ export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, onP
           </span>
           <span className="mt-0.5 flex items-center gap-2">
             {isCurrent && (
-              <span className="mirror-detail-accent-text text-[10px] font-bold uppercase tracking-[0.6px]">{t("currentEpisode")}</span>
+              <span className="mirror-detail-accent-text text-[10px] font-bold uppercase tracking-[0.6px]">{t("common:currentEpisode")}</span>
             )}
-            {runtime ? <span className="text-[11px] text-content-quaternary">{t("minutesShort", { count: runtime })}</span> : null}
+            {runtime ? <span className="text-[11px] text-content-quaternary">{t("common:minutesShort", { count: runtime })}</span> : null}
           </span>
           <MetaTokens item={ep} compact />
           {ep.Overview && (
@@ -64,21 +89,13 @@ export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, onP
       <button
         type="button"
         onClick={() => (played ? markUnwatched.mutate() : markWatched.mutate())}
-        aria-label={played ? t("markUnwatched") : t("markWatched")}
-        className="shrink-0 py-3 pl-1 pr-3"
+        aria-label={watchedLabel}
+        aria-pressed={played}
+        className="shrink-0 px-2.5 py-3"
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
-        <span
-          className={`mirror-detail-pop flex h-[30px] w-[30px] items-center justify-center rounded-full border ${
-            played ? "mirror-detail-accent-text" : "border-line-subtle bg-fill-subtle text-content-disabled"
-          }`}
-          style={
-            played
-              ? { background: "rgba(var(--brand-accent-rgb), 0.15)", borderColor: "rgba(var(--brand-accent-rgb), 0.45)" }
-              : undefined
-          }
-        >
-          <Check size={16} aria-hidden />
+        <span className={`mirror-detail-pop block ${played ? "mirror-detail-accent-text" : "text-content-tertiary"}`}>
+          <WatchedGlyph className="h-[26px] w-[26px]" filled={played} />
         </span>
       </button>
     </div>
