@@ -5,13 +5,6 @@ import { TentacleLogo } from "../ui/TentacleLogo";
 import { TentacleSvg } from "../ui/TentacleSvg";
 import { LanguageToggle } from "./LanguageToggle";
 
-/**
- * Marge de la zone sûre, en style en ligne et non en classe : Tailwind génère
- * ses classes pour TOUTES les cibles, téléviseur compris, et `max()` n'existe
- * pas sous Chrome 53 (la garde de compatibilité webOS refuse la classe).
- */
-const SAFE_TOP = { paddingTop: "max(env(safe-area-inset-top), 1rem)" } as const;
-
 interface AuthLayoutProps {
   /** Titre de la carte — le seul `h1` de l'écran. */
   title: string;
@@ -54,7 +47,7 @@ export function AuthLayout({ title, subtitle, children, footer, header, width = 
 
       {/* Barre haute : la langue, seule, à droite — la gauche reste libre pour
           les feux de fenêtre de macOS dans la coquille de bureau. */}
-      <div className="flex justify-end px-4 sm:px-6" style={SAFE_TOP}>
+      <div className="flex justify-end px-4 pt-[max(env(safe-area-inset-top),1rem)] sm:px-6">
         <LanguageToggle />
       </div>
 
