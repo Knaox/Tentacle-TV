@@ -43,6 +43,12 @@
    * fond déjà vers `--surface-0`. */
   --hero-page-fade: none;
   --detail-page-fade: none;
+
+  /* Scène de la fiche : une assise elliptique sous le bloc titre (bas gauche),
+   * STATIQUE. Le texte y est `on-media` (blanc) dans les deux thèmes ; ce voile
+   * lui garantit son contraste sur un décor clair sans assombrir le reste de
+   * l'image — c'est ce qui permet de donner tout l'écran au décor. */
+  --detail-stage-focus: radial-gradient(70% 62% at 16% 90%, rgba(var(--scrim-media-rgb), 0.58) 0%, rgba(var(--scrim-media-rgb), 0.3) 45%, transparent 78%);
 }
 
 :root[data-theme="light"] {
@@ -84,7 +90,10 @@
     rgba(var(--scrim-page-rgb), 0.92) 52%,
     rgb(var(--scrim-page-rgb)) 100%
   );
-  --detail-page-fade: linear-gradient(
+/* Même assise qu'en sombre, un cran plus forte : les scrims clairs sont à
+   * ×0,7 et le texte posé sur la scène reste blanc. */
+  --detail-stage-focus: radial-gradient(70% 62% at 16% 90%, rgba(var(--scrim-media-rgb), 0.62) 0%, rgba(var(--scrim-media-rgb), 0.34) 45%, transparent 78%);
+    --detail-page-fade: linear-gradient(
     180deg,
     rgba(var(--scrim-page-rgb), 0) 0%,
     rgba(var(--scrim-page-rgb), 0.55) 22%,

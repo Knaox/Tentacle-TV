@@ -25,7 +25,11 @@ import { useDownloadsList, useDownloadsVisibility, useItemDownloadState } from "
 
 const ACTIVE_STATUSES = new Set(["queued", "downloading", "paused", "error"]);
 
-export function DetailDownloadAction({ item }: { item: MediaItem }) {
+/**
+ * `capsule` : posé dans la capsule d'actions de la scène de la fiche — pas de
+ * liseré propre, couleurs `on-media` (le décor est dessous dans les deux thèmes).
+ */
+export function DetailDownloadAction({ item, variant = "circle" }: { item: MediaItem; variant?: "circle" | "capsule" }) {
   const { t } = useTranslation("downloads");
   const navigate = useNavigate();
   const { canDownload } = useDownloadsVisibility();
@@ -87,11 +91,15 @@ export function DetailDownloadAction({ item }: { item: MediaItem }) {
         disabled={wanted}
         aria-label={label}
         title={label}
-        className={`relative flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-150 hover:scale-105 hover:bg-fill-medium active:scale-95 ${
-          isComplete
-            ? "border-content-primary bg-fill-medium text-content-primary"
-            : "border-line-strong text-content-secondary"
-        }`}
+        className={variant === "capsule"
+          ? `relative flex h-11 w-11 items-center justify-center rounded-full transition-[color,background-color,transform] duration-150 hover:bg-white/10 active:scale-95 ${
+            isComplete ? "text-on-media-primary" : "text-on-media-secondary hover:text-on-media-primary"
+          }`
+          : `relative flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-150 hover:scale-105 hover:bg-fill-medium active:scale-95 ${
+            isComplete
+              ? "border-content-primary bg-fill-medium text-content-primary"
+              : "border-line-strong text-content-secondary"
+          }`}
       >
         <DownloadGlyph done={isComplete} />
         {isActive && (

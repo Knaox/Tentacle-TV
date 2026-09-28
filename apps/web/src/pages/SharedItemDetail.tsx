@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useSharedItem, useSharedListView, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { DetailHero } from "../components/detail/DetailHero";
+import { DetailStage } from "../components/detail/DetailStage";
 import { DetailPoster } from "../components/detail/DetailPoster";
 import { DetailTitle } from "../components/detail/DetailTitle";
 import { DetailMetadata } from "../components/detail/DetailMetadata";
@@ -63,23 +63,27 @@ export function SharedItemDetail() {
 
   const backdropId = resolveBackdropId(item);
   const backdropUrl = backdropId ? client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 85 }) : null;
-  const streams = item.MediaSources?.[0]?.MediaStreams ?? [];
 
   return (
     <div className="min-h-dvh bg-surface-0">
-      <DetailHero
+      {/* La scène de la vraie fiche : ses blocs sont dessinés pour le décor
+          (jetons on-media), jamais pour un fond de page. */}
+      <DetailStage
         backdropUrl={backdropUrl}
         item={item}
         onBack={() => navigate(`/share/${token}`)}
         backLabel={t("backToList")}
-      />
-
-      <motion.div className="relative z-10 -mt-48 px-4 md:px-12" initial="hidden" animate="show" variants={textCascadeDelayed}>
-        <div className="flex flex-col gap-4 md:flex-row md:gap-8">
+      >
+        <motion.div
+          className="flex items-end gap-8 px-5 pb-10 pt-28 md:px-12 md:pb-14 xl:gap-12 xl:px-16"
+          initial="hidden"
+          animate="show"
+          variants={textCascadeDelayed}
+        >
           <DetailPoster item={item} />
-          <div className="min-w-0 flex-1 pt-4">
+          <div className="min-w-0 max-w-4xl flex-1">
             <DetailTitle item={item} />
-            <DetailMetadata item={item} streams={streams} linkGenres={false} />
+            <DetailMetadata item={item} linkGenres={false} />
             <DetailOverview item={item} />
             <SharedItemActions
               itemId={item.Id}
@@ -88,8 +92,8 @@ export function SharedItemDetail() {
               ownerUsername={list?.ownerUsername}
             />
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </DetailStage>
 
       <div className="mt-12 space-y-12 pb-16">
         {remoteTrailers.length > 0 && <ExtrasRow remoteTrailers={remoteTrailers} />}

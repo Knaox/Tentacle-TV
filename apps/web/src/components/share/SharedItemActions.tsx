@@ -33,8 +33,8 @@ export const SharedItemActions = memo(function SharedItemActions({ itemId, authe
         <PlayIcon />
         {authed ? t("openDetail") : t("signInToWatch")}
       </Link>
-      <p className="mt-3 max-w-xl text-sm leading-relaxed text-content-tertiary">
-        {ownerUsername && <span className="font-medium text-content-secondary">{t("itemFrom", { name: ownerUsername })} · </span>}
+      <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-media-muted drop-shadow-[0_1px_4px_var(--on-media-shadow)]">
+        {ownerUsername && <span className="font-medium text-on-media-secondary">{t("itemFrom", { name: ownerUsername })} · </span>}
         {t("itemPreviewNote")}
       </p>
     </motion.div>

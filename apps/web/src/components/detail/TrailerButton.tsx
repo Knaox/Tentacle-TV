@@ -49,7 +49,9 @@ export function TrailerButton({ item }: { item: MediaItem }) {
         type="button"
         onClick={handleClick}
         aria-label={t("common:watchTrailer")}
-        className="flex items-center gap-2 rounded-md border border-line-strong bg-fill-soft px-5 py-3 text-base font-semibold text-content-primary backdrop-blur-sm transition-colors duration-150 hover:border-line-strong hover:bg-fill-medium"
+        // Posé sur la scène : `on-media`, sans flou (le voile dessous est déjà
+        // sombre, un `backdrop-filter` n'y changerait rien de visible).
+        className="flex h-14 items-center gap-2.5 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.38)] px-6 text-base font-semibold text-on-media-primary transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)]"
       >
         <FilmIcon /> {t("common:trailer")}
       </button>

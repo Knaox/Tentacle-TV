@@ -1,11 +1,12 @@
-import { useCallback } from "react";
-import { View, ScrollView, RefreshControl, useWindowDimensions, StyleSheet } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { View, ScrollView, RefreshControl, Pressable, useWindowDimensions, StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
+import { detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useToggleWatchlist, useWatchedToggle, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { spacing, DETAIL_MAX_WIDTH, useResponsive, useTheme, withAlpha } from "../theme";
 import { GradientOverlay, IconButton } from "../components/ui";
@@ -13,6 +14,9 @@ import { DetailSkeleton } from "../components/detail/DetailSkeleton";
 import { DetailHeader } from "../components/detail/DetailHeader";
 import { DetailTopBar } from "../components/detail/DetailTopBar";
 import { DetailBody } from "../components/detail/DetailBody";
+import { DetailStageBlock } from "../components/detail/DetailStageBlock";
+import { DetailImageViewer } from "../components/detail/DetailImageViewer";
+import { StageFocus } from "../components/detail/StageFocus";
 import { useMediaDetailAnimations } from "../hooks/useMediaDetailAnimations";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
@@ -25,10 +29,11 @@ export function MediaDetailScreen({ itemId }: Props) {
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const { isTablet, isLandscape } = useResponsive();
   const twoCol = isTablet && isLandscape;
-  // Bornés sur grand écran : sans cap, 52% de haut / 32% de large deviennent
-  // démesurés sur iPad. Sur iPhone les min() sont sans effet (cap tablette 620
-  // pour un hero plein bord plus cinématique en portrait iPad).
-  const BACKDROP_H = Math.min(isTablet ? 620 : 520, Math.round(SCREEN_HEIGHT * 0.52));
+  // La SCÈNE : le décor sur 70 % de l'écran (plafond 680), 64 % sur tablette
+  // (plafond 860) ; le bloc titre se pose dans son bas.
+  const BACKDROP_H = isTablet ? Math.min(860, Math.round(SCREEN_HEIGHT * 0.64)) : Math.min(680, Math.round(SCREEN_HEIGHT * 0.7));
+  const LOGO_MAX_W = Math.min(isTablet ? 460 : 300, Math.round(SCREEN_WIDTH * 0.76));
+  const LOGO_MAX_H = isTablet ? 140 : 96;
   const POSTER_W = Math.min(200, Math.round(SCREEN_WIDTH * 0.32));
   const POSTER_H = Math.round(POSTER_W * 1.5);
   const insets = useSafeAreaInsets();
@@ -55,6 +60,10 @@ export function MediaDetailScreen({ itemId }: Props) {
     itemType: item?.Type,
   });
   const onRefresh = useCallback(() => { refetch(); }, [refetch]);
+  // Vue « image plein écran » : index de l'image ouverte, `null` = fermée.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const gallery = useMemo(() => (item ? detailGallery(item) : []), [item]);
+  const closeViewer = useCallback(() => setViewerIndex(null), []);
 
   const anims = useMediaDetailAnimations(itemId, item, BACKDROP_H);
 
@@ -69,10 +78,13 @@ export function MediaDetailScreen({ itemId }: Props) {
   const highlightSeasonId = isEpisode ? item.SeasonId : seriesResumeEp?.SeasonId;
   const isWatched = item.UserData?.Played === true;
 
+  const openImages = gallery.length > 0 ? () => setViewerIndex(0) : undefined;
+  const openPoster = gallery.length > 0 ? () => setViewerIndex(galleryIndexOf(gallery, isEpisode ? "still" : "poster")) : undefined;
+  const viewer = <DetailImageViewer title={item.Name} gallery={gallery} index={viewerIndex} onClose={closeViewer} />;
   const headerActions = { target: actionTargetItem, item, isWatched, favorite, watchlist: watchlistToggle, watched };
   const header = (
     <DetailHeader item={item} twoCol={twoCol} isEpisode={isEpisode} seriesWatchState={seriesWatchState}
-      posterW={POSTER_W} posterH={POSTER_H} actions={headerActions} anims={anims} />
+      posterW={POSTER_W} posterH={POSTER_H} actions={headerActions} anims={anims} onOpenPoster={openPoster} />
   );
   const body = (
     <Animated.View style={anims.contentStyle}>
@@ -103,13 +115,17 @@ export function MediaDetailScreen({ itemId }: Props) {
         <View style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(theme.colors.surface.s0Tint, 0.86, theme.colors.overlay.scrimHeavy) }]} />
         {backBtn}
         <View style={{ flex: 1, flexDirection: "row", width: "100%", maxWidth: 1180, alignSelf: "center", paddingTop: Math.max(insets.top, 24) + 8 }}>
-          <View style={{ width: 380 }}>{header}</View>
+          {/* La colonne démarre sous le retour fixe (l'affiche passait dessous). */}
+          <ScrollView style={{ width: 380, flexGrow: 0 }} contentContainerStyle={{ paddingTop: 52, paddingBottom: spacing.xl }} showsVerticalScrollIndicator={false}>
+            {header}
+          </ScrollView>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: spacing.xxxl + 40, paddingTop: spacing.sm }}
             refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={theme.colors.brand.violet} />}
             showsVerticalScrollIndicator={false}>
             {body}
           </ScrollView>
         </View>
+        {viewer}
       </View>
     );
   }
@@ -124,16 +140,27 @@ export function MediaDetailScreen({ itemId }: Props) {
         contentContainerStyle={{ paddingBottom: spacing.xxxl + 40 }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={theme.colors.brand.violet} />}
         showsVerticalScrollIndicator={false}>
-        <View style={{ width: "100%", height: BACKDROP_H, overflow: "hidden" }}>
-          <Animated.View style={[StyleSheet.absoluteFillObject, anims.backdropStyle]}>
-            <Image source={{ uri: backdrop }} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={400} />
-          </Animated.View>
-          <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
-          {/* Fade bas : rampe « detail » du bureau (extinction plus progressive
-              que le hero). Voile SOMBRE en clair (sinon l'affiche est délavée
-              et le titre onMedia illisible) — noir PUR : le plafond 0,70 du
-              clair est déjà dans la rampe (cf. GradientOverlay). */}
-          <GradientOverlay direction="bottom" height={BACKDROP_H * 0.8} intensity="detail" color={theme.isDark ? undefined : `rgb(${theme.colors.onMedia.scrimRgb})`} />
+        {/* La SCÈNE : le bloc titre est posé DANS le décor, il ne le quitte
+            jamais — c'est ce qui garde son texte blanc lisible dans les deux
+            thèmes. Toucher le décor ouvre la vue plein écran des images. */}
+        <View style={{ width: "100%", minHeight: BACKDROP_H, justifyContent: "flex-end", overflow: "hidden" }}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={openImages} disabled={!openImages}
+            accessibilityRole="imagebutton" accessibilityLabel={t("media:detailViewImages")}>
+            <Animated.View style={[StyleSheet.absoluteFillObject, anims.backdropStyle]}>
+              <Image source={{ uri: backdrop }} style={{ width: "100%", height: "100%" }} contentFit="cover" contentPosition={{ top: "30%", left: "50%" }} transition={400} />
+            </Animated.View>
+          </Pressable>
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
+            {/* Fondu bas : rampe « detail » ; voile SOMBRE en clair (noir pur,
+                le plafond 0,70 du clair est déjà dans la rampe). */}
+            <GradientOverlay direction="bottom" height={BACKDROP_H * 0.8} intensity="detail" color={theme.isDark ? undefined : `rgb(${theme.colors.onMedia.scrimRgb})`} />
+            <StageFocus />
+          </View>
+          <View pointerEvents="box-none" style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center", paddingHorizontal: spacing.screenPadding, paddingTop: Math.max(insets.top, 24) + 64, paddingBottom: spacing.sm }}>
+            <DetailStageBlock item={item} align="center" tone="media" logoMaxW={LOGO_MAX_W} logoMaxH={LOGO_MAX_H}
+              titleStyle={anims.titleStyle} metaStyle={anims.metaStyle} />
+          </View>
         </View>
         <View style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center" }}>
           {header}
@@ -146,9 +173,11 @@ export function MediaDetailScreen({ itemId }: Props) {
       <DetailTopBar
         title={item?.Name ?? ""}
         scrollY={anims.scrollY}
-        revealAt={BACKDROP_H * 0.62}
+        revealAt={BACKDROP_H * 0.82}
         onBack={() => backOrHome(router)}
+        onOpenImages={openImages}
       />
+      {viewer}
     </View>
   );
 }

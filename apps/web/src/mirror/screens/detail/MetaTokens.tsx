@@ -9,7 +9,12 @@ const CHIP = "rounded-[5px] px-[7px] py-0.5 text-[10.5px] font-semibold uppercas
  * semi-gras capitales, rayon 5, filet `border.strong`) ; seul le 4K porte
  * l'accent de marque. Marge 10 au-dessus, 4 en compact (lignes d'épisodes).
  */
-export const MetaTokens = memo(function MetaTokens({ item, compact = false }: { item?: MediaItem; compact?: boolean }) {
+export const MetaTokens = memo(function MetaTokens({ item, compact = false, onMedia = false }: {
+  item?: MediaItem;
+  compact?: boolean;
+  /** Posés sur la scène : jetons `on-media` (le décor est dessous dans les deux thèmes). */
+  onMedia?: boolean;
+}) {
   const { tokens, langs } = metaTokens(item);
   if (tokens.length === 0 && langs.length === 0) return null;
   return (
@@ -17,17 +22,23 @@ export const MetaTokens = memo(function MetaTokens({ item, compact = false }: { 
       {tokens.map((tk) => (
         <span
           key={tk.label}
-          className={`${CHIP} ${tk.accent ? "bg-[var(--brand-soft)] text-brand-light" : "bg-fill-subtle text-content-secondary"}`}
+          className={`${CHIP} ${tk.accent ? "bg-[var(--brand-soft)] text-brand-light" : onMedia ? "text-on-media-secondary" : "bg-fill-subtle text-content-secondary"}`}
           style={{
             border: "0.5px solid",
-            borderColor: tk.accent ? "rgba(var(--brand-rgb), 0.5)" : "var(--border-strong)",
+            borderColor: tk.accent ? "rgba(var(--brand-rgb), 0.5)" : onMedia ? "var(--on-media-muted)" : "var(--border-strong)",
+            background: !tk.accent && onMedia ? "rgba(var(--scrim-media-rgb), 0.4)" : undefined,
           }}
         >
           {tk.label}
         </span>
       ))}
       {langs.length > 0 && (
-        <span className={`${CHIP} bg-fill-subtle text-content-secondary`} style={{ border: "0.5px solid var(--border-strong)" }}>
+        <span
+          className={`${CHIP} ${onMedia ? "text-on-media-secondary" : "bg-fill-subtle text-content-secondary"}`}
+          style={onMedia
+            ? { border: "0.5px solid var(--on-media-muted)", background: "rgba(var(--scrim-media-rgb), 0.4)" }
+            : { border: "0.5px solid var(--border-strong)" }}
+        >
           {langs.join(" · ")}
         </span>
       )}

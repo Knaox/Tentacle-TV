@@ -1,4 +1,6 @@
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
+import { Images } from "lucide-react";
 import { BackButton } from "./BackButton";
 import { HEADER_BAR_HEIGHT } from "./detailMetrics";
 
@@ -16,7 +18,8 @@ export const TOP_INSET = "max(env(safe-area-inset-top), 24px)";
  * qui se pose sur du texte doit le cacher. Les fondus lisent `--bar` et
  * `--title` (`useDetailScroll`).
  */
-export const DetailTopBar = memo(function DetailTopBar({ title }: { title: string }) {
+export const DetailTopBar = memo(function DetailTopBar({ title, onOpenImages }: { title: string; onOpenImages?: () => void }) {
+  const { t } = useTranslation("media");
   const height = `calc(${TOP_INSET} + ${HEADER_BAR_HEIGHT}px)`;
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-20" style={{ height }}>
@@ -37,6 +40,18 @@ export const DetailTopBar = memo(function DetailTopBar({ title }: { title: strin
         <div className="mirror-detail-bar-title min-w-0 flex-1">
           <h2 className="truncate text-[18px] font-semibold tracking-[-0.4px] text-content-primary">{title}</h2>
         </div>
+        {/* « Voir les images » : même rond que le retour, à droite. */}
+        {onOpenImages && (
+          <button
+            type="button"
+            onClick={onOpenImages}
+            aria-label={t("detailViewImages")}
+            className="mirror-press pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-glass-backdrop text-content-primary"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+          >
+            <Images size={17} aria-hidden />
+          </button>
+        )}
       </div>
     </div>
   );

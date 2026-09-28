@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -20,6 +21,8 @@ interface DetailPosterProps {
    * s'effaçait avant la fin, on voyait l'affiche à mi-opacité sur le backdrop.
    */
   instant?: boolean;
+  /** Ouvre la vue « image plein écran » sur ce visuel. */
+  onOpen?: () => void;
 }
 
 /**
@@ -32,7 +35,8 @@ interface DetailPosterProps {
  *    haut de la case et flottait, minuscule, à côté d'un titre en display-2.
  *    Elle prend désormais toute la largeur de la colonne, en 16:9.
  */
-export function DetailPoster({ item, onMeasure, instant = false }: DetailPosterProps) {
+export function DetailPoster({ item, onMeasure, instant = false, onOpen }: DetailPosterProps) {
+  const { t } = useTranslation("media");
   const client = useJellyfinClient();
   const boxRef = useRef<HTMLDivElement>(null);
   const hasImage = Boolean(item.ImageTags?.Primary);
@@ -68,7 +72,7 @@ export function DetailPoster({ item, onMeasure, instant = false }: DetailPosterP
 
   const isEpisode = item.Type === "Episode";
   const url = client.getImageUrl(item.Id, "Primary", {
-    ...(isEpisode ? { width: 640 } : { height: 500 }),
+    ...(isEpisode ? { width: 832 } : { height: 600 }),
     quality: 90,
   });
 
@@ -92,20 +96,34 @@ export function DetailPoster({ item, onMeasure, instant = false }: DetailPosterP
       // beaucoup plus haut que son image, avec un aplat vide en dessous —
       // criant sur un still d'épisode (352 × 198 dans un cadre de 330 de haut),
       // discret sur une affiche 2:3 qui remplit presque la rangée.
-      className={`relative flex-shrink-0 self-start overflow-hidden rounded-[var(--radius-lg)] ring-1 ring-line-subtle ${
-        isEpisode ? "w-40 md:w-[22rem]" : "w-24 md:w-56"
+      // `self-end` : l'affiche s'aligne sur le BAS du bloc titre, sur la ligne
+      // des actions — c'est le socle de la composition.
+      className={`group/poster relative hidden flex-shrink-0 self-end overflow-hidden rounded-[var(--radius-lg)] ring-1 ring-white/15 sm:block ${
+        isEpisode ? "w-72 md:w-[22rem] xl:w-[26rem]" : "w-40 md:w-52 xl:w-60"
       }`}
-      style={{ boxShadow: "var(--elev-3)" }}
+      style={{ boxShadow: "0 30px 60px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(var(--brand-rgb),0.12)" }}
     >
       {/* Seconde et dernière mesure : la boîte épouse son image, sa hauteur
           n'est donc définitive qu'une fois celle-ci placée. */}
-      <img
-        src={url}
-        alt={item.Name}
-        draggable={false}
-        onLoad={publish}
-        className={`w-full object-cover ${isEpisode ? "aspect-video" : "aspect-[2/3]"}`}
-      />
+      <button
+        type="button"
+        onClick={onOpen}
+        disabled={!onOpen}
+        aria-label={t("media:detailOpenPoster")}
+        className="block w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--border-focus)] disabled:cursor-default"
+      >
+        {/* Le zoom au survol vit sur l'IMAGE, jamais sur la boîte mesurée. */}
+        <img
+          src={url}
+          alt={item.Name}
+          draggable={false}
+          onLoad={publish}
+          className={`w-full object-cover transition-transform duration-300 ease-out group-hover/poster:scale-[1.03] ${isEpisode ? "aspect-video" : "aspect-[2/3]"}`}
+        />
+        <span aria-hidden className="pointer-events-none absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover/poster:opacity-100">
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+        </span>
+      </button>
       {/* Qualité + langues directement sur le visuel, comme sur les vignettes —
           cohérence d'un bout à l'autre du parcours. */}
       <CardMetaOverlay item={item} />

@@ -1,5 +1,6 @@
-import { useRef, type CSSProperties } from "react";
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   useFavorite,
   useJellyfinClient,
@@ -9,12 +10,15 @@ import {
   useToggleWatchlist,
   useWatchedToggle,
 } from "@tentacle-tv/api-client";
+import { detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
+import { DetailImageViewer } from "../../../components/detail/DetailImageViewer";
 import { useViewport } from "../../useFormFactor";
 import { DETAIL_MAX_WIDTH } from "../../responsive";
 import { BackButton } from "./BackButton";
 import { DetailBody } from "./DetailBody";
 import { DetailHeader } from "./DetailHeader";
 import { DetailSkeleton } from "./DetailSkeleton";
+import { StageBlock } from "./StageBlock";
 import { DetailTopBar, TOP_INSET } from "./DetailTopBar";
 import { detailGeometry, TWO_COL_LEFT_WIDTH, TWO_COL_MAX_WIDTH } from "./detailMetrics";
 import { useDetailScroll } from "./useDetailScroll";
@@ -42,6 +46,7 @@ function DetailScreen({ itemId }: { itemId: string }) {
   const { width, height, formFactor, landscape } = useViewport();
   const geo = detailGeometry(width, height, formFactor === "tablet", landscape);
   const client = useJellyfinClient();
+  const { t } = useTranslation("media");
   const hostRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +72,11 @@ function DetailScreen({ itemId }: { itemId: string }) {
 
   useDetailScroll(scrollerRef, hostRef, geo.revealAt, !!item && !geo.twoCol);
 
+  // Vue « image plein écran » : la même que le bureau (glisser au doigt).
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const gallery = useMemo(() => (item ? detailGallery(item) : []), [item]);
+  const closeViewer = useCallback(() => setViewerIndex(null), []);
+
   if (!item) return <DetailSkeleton />;
 
   const backdrop = client.getImageUrl(item.ParentBackdropItemId ?? item.Id, "Backdrop", { width: 1200, quality: 85 });
@@ -76,14 +86,18 @@ function DetailScreen({ itemId }: { itemId: string }) {
   const highlightEpisodeId = isEpisode ? item.Id : seriesResumeEp?.Id;
   const highlightSeasonId = isEpisode ? item.SeasonId : seriesResumeEp?.SeasonId;
 
+  const openImages = gallery.length > 0 ? () => setViewerIndex(0) : undefined;
+  const openPoster = gallery.length > 0 ? () => setViewerIndex(galleryIndexOf(gallery, isEpisode ? "still" : "poster")) : undefined;
+  const viewer = (
+    <DetailImageViewer title={item.Name} gallery={gallery} index={viewerIndex} onIndexChange={setViewerIndex} onClose={closeViewer} />
+  );
   const header = (
     <DetailHeader
       item={item}
-      twoCol={geo.twoCol}
+      geo={geo}
       seriesWatchState={seriesWatchState}
-      posterW={geo.posterW}
-      posterH={geo.posterH}
       actions={{ target: actionTargetItem, isWatched: item.UserData?.Played === true, favorite, watchlist, watched }}
+      onOpenPoster={openPoster}
     />
   );
   const body = (
@@ -110,11 +124,14 @@ function DetailScreen({ itemId }: { itemId: string }) {
         <div className="absolute left-4 z-10" style={{ top: `calc(${TOP_INSET} + 8px)` }}>
           <BackButton large />
         </div>
+        {viewer}
         <div
           className="relative mx-auto flex h-full w-full"
           style={{ maxWidth: TWO_COL_MAX_WIDTH, paddingTop: `calc(${TOP_INSET} + 8px)` }}
         >
-          <div className="shrink-0" style={{ width: TWO_COL_LEFT_WIDTH }}>{header}</div>
+          {/* Le retour est fixe en haut à gauche : la colonne commence sous lui
+              (l'affiche passait dessous). */}
+          <div className="mirror-detail-rail mirror-no-scrollbar shrink-0 overflow-y-auto pb-6 pt-14" style={{ width: TWO_COL_LEFT_WIDTH }}>{header}</div>
           <div
             className="mirror-no-scrollbar min-w-0 flex-1 overflow-y-auto overscroll-y-contain pt-2"
             style={{ paddingBottom: BOTTOM_PAD }}
@@ -135,10 +152,21 @@ function DetailScreen({ itemId }: { itemId: string }) {
         className="mirror-no-scrollbar h-full overflow-y-auto overflow-x-hidden overscroll-y-contain"
         style={{ paddingBottom: BOTTOM_PAD }}
       >
-        <div className="relative w-full overflow-hidden" style={{ height: geo.backdropH }}>
-          <div className="mirror-detail-parallax absolute inset-0">
-            <img src={backdrop} alt="" decoding="async" draggable={false} className="mirror-detail-kenburns h-full w-full object-cover" />
-          </div>
+        {/* La SCÈNE : le décor sur 70 % de l'écran, le bloc titre posé dans son
+            bas — il ne quitte jamais l'image, ce qui garde le texte `on-media`
+            lisible dans les deux thèmes. Toucher le décor ouvre les images. */}
+        <section className="relative flex w-full flex-col justify-end overflow-hidden" style={{ minHeight: geo.backdropH }}>
+          <button
+            type="button"
+            onClick={openImages}
+            disabled={!openImages}
+            aria-label={t("detailViewImages")}
+            className="absolute inset-0 block cursor-zoom-in disabled:cursor-default"
+          >
+            <span className="mirror-detail-parallax absolute inset-0 block">
+              <img src={backdrop} alt="" decoding="async" draggable={false} className="mirror-detail-kenburns h-full w-full object-cover" style={{ objectPosition: "center 30%" }} />
+            </span>
+          </button>
           {/* Voile haut « soft » vers le fond de page, 120 + zone sûre. */}
           <div
             className="pointer-events-none absolute inset-x-0 top-0"
@@ -148,18 +176,27 @@ function DetailScreen({ itemId }: { itemId: string }) {
                 "linear-gradient(180deg, color-mix(in srgb, var(--surface-0) 85%, transparent) 0%, color-mix(in srgb, var(--surface-0) 40%, transparent) 35%, color-mix(in srgb, var(--surface-0) 10%, transparent) 75%, transparent 100%)",
             }}
           />
-          {/* Fondu bas : la rampe « detail » (noire plafonnée à 0,70 en clair). */}
+          {/* Fondu bas (rampe « detail ») puis l'assise du bloc titre : une
+              ellipse sombre STATIQUE, centrée sous le texte. */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{ height: "80%", background: "var(--detail-scrim-bottom)" }} />
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0"
-            style={{ height: geo.backdropH * 0.8, background: "var(--detail-scrim-bottom)" }}
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "radial-gradient(95% 48% at 50% 100%, rgba(var(--scrim-media-rgb), 0.62) 0%, rgba(var(--scrim-media-rgb), 0.3) 50%, transparent 85%)" }}
           />
-        </div>
+          <div
+            className="pointer-events-none relative mx-auto w-full px-5 pb-2 [&_a]:pointer-events-auto [&_button]:pointer-events-auto"
+            style={{ maxWidth: DETAIL_MAX_WIDTH, paddingTop: `calc(${TOP_INSET} + 64px)` }}
+          >
+            <StageBlock item={item} align="center" logoMaxW={geo.logoMaxW} logoMaxH={geo.logoMaxH} />
+          </div>
+        </section>
         <div className="mx-auto w-full" style={{ maxWidth: DETAIL_MAX_WIDTH }}>
           {header}
           {body}
         </div>
       </div>
-      <DetailTopBar title={item.Name ?? ""} />
+      <DetailTopBar title={item.Name ?? ""} onOpenImages={openImages} />
+      {viewer}
     </div>
   );
 }

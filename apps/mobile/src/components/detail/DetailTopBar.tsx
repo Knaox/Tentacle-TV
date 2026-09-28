@@ -17,6 +17,8 @@ interface Props {
   /** Défilement à partir duquel la barre est pleine — la hauteur du héros, en pratique. */
   revealAt: number;
   onBack: () => void;
+  /** Ouvre la vue « image plein écran » ; absent = pas d'images. */
+  onOpenImages?: () => void;
 }
 
 /**
@@ -29,7 +31,8 @@ interface Props {
  * pleine du thème une fois le héros passé, avec son filet de séparation.
  * L'un s'efface quand l'autre paraît : jamais les deux à la fois.
  */
-export function DetailTopBar({ title, scrollY, revealAt, onBack }: Props) {
+export function DetailTopBar({ title, scrollY, revealAt, onBack, onOpenImages }: Props) {
+  const { t: tm } = useTranslation("media");
   const { t } = useTranslation("common");
   const insets = useSafeAreaInsets();
   const theme = useTheme();
@@ -66,6 +69,9 @@ export function DetailTopBar({ title, scrollY, revealAt, onBack }: Props) {
         <Animated.View style={[st.titleWrap, titleStyle]} pointerEvents="none">
           <Text style={st.title} numberOfLines={1} accessibilityRole="header">{title}</Text>
         </Animated.View>
+        {onOpenImages && (
+          <IconButton icon="image" size={36} onPress={onOpenImages} accessibilityLabel={tm("detailViewImages")} bgColor={theme.colors.glass.backdrop} />
+        )}
       </View>
     </View>
   );

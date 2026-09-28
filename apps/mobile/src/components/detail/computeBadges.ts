@@ -1,5 +1,5 @@
 import type { MediaItem } from "@tentacle-tv/shared";
-import { ticksToSeconds } from "@tentacle-tv/shared";
+import { resumeState, ticksToSeconds } from "@tentacle-tv/shared";
 
 interface PlayableEp {
   ParentIndexNumber?: number | null;
@@ -16,7 +16,11 @@ function fmtTime(sec: number): string {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-/** Label pour le CTA Lecture d'une série — inclut S/E + position de reprise. */
+/**
+ * Label pour le CTA Lecture d'une série — inclut S/E + position de reprise.
+ * Encore lu par les écrans hors ligne ; la fiche en ligne passe par
+ * `detailPlayCta`.
+ */
 export function buildSeriesPlayLabel(ep: PlayableEp, t: (k: string, o?: any) => string): string {
   const sNum = String(ep.ParentIndexNumber ?? 1).padStart(2, "0");
   const eNum = String(ep.IndexNumber ?? 1).padStart(2, "0");
@@ -27,6 +31,43 @@ export function buildSeriesPlayLabel(ep: PlayableEp, t: (k: string, o?: any) => 
 }
 
 export { fmtTime as formatTime };
+
+type SeriesWatchState = { type: string; episode?: MediaItem } | undefined;
+
+export interface DetailPlayCta {
+  /** Ce que lance le bouton ; `null` = pas de bouton (série terminée, collection). */
+  targetId: string | null;
+  label: string;
+  /** Avancement 0 → 1, `null` s'il n'y a rien à reprendre. */
+  progress: number | null;
+  /** Minutes restantes, `null` sans reprise ou sans durée. */
+  remainingMinutes: number | null;
+}
+
+/**
+ * Le bouton Lecture de la fiche — jumeau de `playCta` du miroir web.
+ *
+ * Le libellé ne porte plus l'horodatage (« Reprendre à 58:00 ») : le temps
+ * restant se lit en clair sous le verbe, l'avancement dans l'anneau de
+ * l'icône. Série : le verbe et le code de l'épisode visé.
+ */
+export function detailPlayCta(item: MediaItem, seriesWatchState: SeriesWatchState, t: (k: string) => string): DetailPlayCta {
+  const isSeries = item.Type === "Series";
+  const seriesEp = isSeries && seriesWatchState?.type !== "completed" ? seriesWatchState?.episode : null;
+  const target = seriesEp ?? (isSeries || item.Type === "BoxSet" ? null : item);
+  if (!target) return { targetId: null, label: t("play"), progress: null, remainingMinutes: null };
+  const resume = resumeState(target);
+  const verb = resume ? t("resume") : t("play");
+  const code = seriesEp
+    ? `S${String(seriesEp.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(seriesEp.IndexNumber ?? 1).padStart(2, "0")}`
+    : "";
+  return {
+    targetId: target.Id,
+    label: code ? `${verb} · ${code}` : verb,
+    progress: resume?.progress ?? null,
+    remainingMinutes: resume?.remainingMinutes ?? null,
+  };
+}
 
 interface StreamLike {
   Type?: string;
