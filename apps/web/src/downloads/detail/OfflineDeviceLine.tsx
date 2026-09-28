@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { HardDrive } from "lucide-react";
@@ -9,6 +8,9 @@ import { fadeUp } from "../../theme/motion";
  * appareil · Original · 4,2 Gio », ou « … · 2 saisons · 14 épisodes · … »
  * pour une série. Posée sur le décor : jetons `on-media` dans les deux thèmes,
  * comme la ligne de faits juste au-dessus.
+ *
+ * Un seul paragraphe : chaque morceau est insécable et garde son point collé
+ * à gauche — une fenêtre étroite coupe APRÈS un point, jamais devant un morceau.
  */
 export function OfflineDeviceLine({ parts }: { parts: ReadonlyArray<string | null> }) {
   const { t } = useTranslation("downloads");
@@ -16,15 +18,15 @@ export function OfflineDeviceLine({ parts }: { parts: ReadonlyArray<string | nul
   return (
     <motion.p
       variants={fadeUp}
-      className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
+      className="mt-3 text-sm leading-relaxed text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
     >
-      <HardDrive aria-hidden className="h-4 w-4 text-[var(--brand-light)]" strokeWidth={1.8} />
-      <span className="font-semibold text-on-media-primary">{t("heroLabel")}</span>
+      <HardDrive aria-hidden className="mr-2 inline-block h-4 w-4 -translate-y-px align-middle text-[var(--brand-light)]" strokeWidth={1.8} />
+      <span className="whitespace-nowrap font-semibold text-on-media-primary">{t("heroLabel")}</span>
       {shown.map((part) => (
-        <Fragment key={part}>
-          <span aria-hidden className="text-on-media-muted">·</span>
-          <span className="tabular-nums">{part}</span>
-        </Fragment>
+        <span key={part}>
+          <span aria-hidden className="whitespace-nowrap text-on-media-muted">{"\u00A0·"}</span>{" "}
+          <span className="whitespace-nowrap tabular-nums">{part}</span>
+        </span>
       ))}
     </motion.p>
   );

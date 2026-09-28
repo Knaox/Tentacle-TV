@@ -68,38 +68,36 @@ export function OfflineStageRail({ posterItemId, posterCandidates, metrics, stag
   );
 }
 
-/** « Sur l'appareil · Qualité d'origine · 4,2 Gio » — ce que l'appareil garde de ce titre. */
+/**
+ * « Sur l'appareil · Qualité d'origine · 4,2 Gio » — ce que l'appareil garde
+ * de ce titre. UN paragraphe : chaque morceau est insécable et porte son point
+ * collé à gauche, si bien qu'un retour à la ligne tombe APRÈS un point, jamais
+ * devant un morceau.
+ */
 function OfflineDeviceLine({ parts }: { parts: ReadonlyArray<string | null> }) {
   const { t } = useTranslation("offline");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const shown = parts.filter((part): part is string => part !== null && part !== "");
   return (
-    <View style={st.line} accessible accessibilityLabel={[t("stateOnDevice"), ...shown].join(", ")}>
+    <Text style={st.line} accessibilityLabel={[t("stateOnDevice"), ...shown].join(", ")}>
       <Feather name="smartphone" size={13} color={theme.colors.brand.light} />
-      <Text style={st.lead}>{t("stateOnDevice")}</Text>
+      <Text style={st.lead}>{`${NBSP}${NBSP}${t("stateOnDevice").replace(/ /g, NBSP)}`}</Text>
       {shown.map((part) => (
         <Text key={part} style={st.part}>
-          <Text style={st.dot}>·  </Text>
-          {part}
+          <Text style={st.dot}>{`${NBSP}· `}</Text>
+          {part.replace(/ /g, NBSP)}
         </Text>
       ))}
-    </View>
+    </Text>
   );
 }
 
+const NBSP = "\u00A0";
+
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
-    line: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      alignItems: "center",
-      justifyContent: "center",
-      columnGap: 8,
-      rowGap: 2,
-      marginTop: spacing.md,
-      paddingHorizontal: spacing.screenPadding,
-    },
+    line: { textAlign: "center", lineHeight: 20, marginTop: spacing.md, paddingHorizontal: spacing.screenPadding },
     lead: { fontSize: 12.5, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
     part: { fontSize: 12.5, fontFamily: FONT_FAMILY.medium, color: t.colors.text.secondary, fontVariant: ["tabular-nums"] },
     dot: { color: t.colors.text.quaternary },
