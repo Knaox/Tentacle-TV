@@ -14,6 +14,7 @@ import { TVEpisodeList } from "../components/TVEpisodeList";
 import { TVExtrasRow } from "../components/detail/TVExtrasRow";
 import { TVCastCrew } from "../components/detail/TVCastCrew";
 import { TVDetailHeader } from "../components/detail/TVDetailHeader";
+import { TVSagaRow } from "../components/detail/TVSagaRow";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTvTrailers } from "../hooks/useTvTrailers";
 import { Colors, Spacing, CardConfig } from "../theme/colors";
@@ -43,6 +44,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   // leur focus fait défiler la PAGE — ces sections n'ont pas de scroll propre.
   const extrasY = useRef(0);
   const episodesY = useRef(0);
+  const sagaY = useRef(0);
   // HAUT depuis une tuile extras → bouton Lecture : l'ancrage de page sur la
   // rangée sort les actions de l'écran, la cible géométrique n'existe plus.
   const [playHandle, setPlayHandle] = useState<number | undefined>(undefined);
@@ -149,6 +151,18 @@ export function MediaDetailScreen({ route, navigation }: Props) {
       <View style={{ paddingHorizontal: TV_OVERSCAN_PT.x, marginTop: Spacing.sectionGap }}>
         <TVCastCrew item={item} />
       </View>
+
+      {/* La saga d'un film (collection TMDB) : juste avant les similaires, comme
+          sur le web. Son focus ancre la PAGE sur elle ; HAUT rend « Lecture ». */}
+      {item.Type === "Movie" && (
+        <TVSagaRow
+          item={item}
+          onOpen={(id) => navigation.push("MediaDetail", { itemId: id })}
+          onLayout={(e) => { sagaY.current = e.nativeEvent.layout.y; }}
+          onRowFocus={() => scrollRef.current?.scrollTo({ y: Math.max(0, sagaY.current - 60), animated: true })}
+          cellNextFocusUp={playHandle}
+        />
+      )}
 
       {/* Similar items */}
       {similar && similar.length > 0 && (
