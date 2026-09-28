@@ -8,8 +8,10 @@ import { LibraryGridEmpty } from "../components/library/LibraryGridEmpty";
 import { FavoritesEmpty } from "../components/favorites/FavoritesEmpty";
 import { FavoritesGroupedBody } from "../components/favorites/FavoritesGroupedBody";
 import { FavoritesOverview } from "../components/favorites/FavoritesOverview";
-import { FavoritesSkeleton } from "../components/favorites/FavoritesSkeleton";
-import { FavoritesToolbar } from "../components/favorites/FavoritesToolbar";
+import { FavoritesGroupPicker } from "../components/favorites/FavoritesGroupPicker";
+import { CollectionActions } from "../components/collection/CollectionActions";
+import { CollectionToolbarPanel } from "../components/collection/CollectionToolbarPanel";
+import { CollectionSkeleton } from "../components/collection/CollectionStates";
 import { useFavoritesGroupMode } from "../components/favorites/useFavoritesGroupMode";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { PageTransition } from "../components/PageTransition";
@@ -19,11 +21,14 @@ import { useMultiSelect } from "../hooks/useMultiSelect";
 /**
  * Mes favoris — les titres likés.
  *
- * Bannière (le premier titre de la liste, zéro requête), puis le BILAN en
- * tuiles qui servent de filtres rapides (type et état de visionnage), la barre
- * de recherche / regroupement / filtres, et la grille — plate, ou découpée en
- * sections repliables (type, visionnage, genre, décennie). Tout se calcule en
- * mémoire sur `["favorites","all"]`, la clé du cache optimiste.
+ * La grammaire de la Bibliothèque : la bannière (le premier titre de la
+ * liste, zéro requête), puis le MÊME panneau d'outils qui la chevauche —
+ * recherche, compte, tri, partager / sélectionner ; à l'étage du bas,
+ * « Regrouper » à la place du statut, puis les menus de filtres. Sous le
+ * panneau, ce qui n'appartient qu'aux favoris : le BILAN en tuiles qui servent
+ * de filtres rapides (type et état de visionnage), puis la grille — plate, ou
+ * découpée en sections repliables (type, visionnage, genre, décennie). Tout se
+ * calcule en mémoire sur `["favorites","all"]`, la clé du cache optimiste.
  *
  * ⚠️ Sur webOS, cette page est SUBSTITUÉE au build (`substitutionTable.ts`) :
  * rien de ce qui est importé ici n'y part, et l'export `Favorites` doit garder
@@ -64,19 +69,9 @@ export function Favorites() {
   const title = t("common:myFavorites");
   const hasItems = !!items && items.length > 0;
 
+  // Le lien public des titres likés se gère ICI, sur la liste elle-même.
   const actions = !sel.isSelecting ? (
-    <div className="flex shrink-0 items-center gap-2">
-      {/* Le lien public des titres likés se gère ICI, sur la liste elle-même. */}
-      <ShareMyListButton kind="likes" />
-      {hasItems && (
-        <button
-          onClick={sel.enterSelectionMode}
-          className="h-9 cursor-pointer rounded-full bg-fill-subtle px-4 text-sm font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-secondary"
-        >
-          {t("common:select")}
-        </button>
-      )}
-    </div>
+    <CollectionActions shareKind="likes" onSelect={filters.filtered.length > 0 ? sel.enterSelectionMode : undefined} />
   ) : undefined;
 
   let body;
@@ -101,7 +96,7 @@ export function Favorites() {
     <PageTransition>
       <div className="min-h-screen pb-20">
         {isLoading ? (
-          <FavoritesSkeleton />
+          <CollectionSkeleton label={title} />
         ) : !hasItems ? (
           <FavoritesEmpty extra={<ShareMyListButton kind="likes" />} />
         ) : (
@@ -113,15 +108,19 @@ export function Favorites() {
             </div>
 
             <div className="relative z-10 -mt-10 px-4 pt-6 md:-mt-14 md:px-8">
-              {/* Le « dock » : bilan et barre dans un seul panneau de verre.
-                  Il repose sur le bas de la bannière, qui reste SOMBRE dans
-                  les deux thèmes : sans lui, les libellés du thème clair
-                  (sombres) s'y perdaient. Pas de `backdrop-filter` : le voile
-                  suffit à la lecture, et l'image dessous est immobile. */}
-              <section
-                aria-label={title}
-                className="mb-6 rounded-[28px] border border-line-subtle bg-[var(--glass-tint)] p-3 sm:p-4"
-              >
+              <div className="mb-6">
+                <CollectionToolbarPanel
+                  filters={filters}
+                  name={title}
+                  showFavorite={false}
+                  actions={actions}
+                  segment={<FavoritesGroupPicker mode={mode} onChange={setMode} />}
+                />
+              </div>
+              {/* Le bilan : quatre tuiles qui comptent ET filtrent. Sur la
+                  page, sous le panneau — le raccord de la bannière leur rend
+                  une assise claire en thème clair. */}
+              <div className="mb-6">
                 <FavoritesOverview
                   items={items}
                   type={filters.type}
@@ -129,16 +128,7 @@ export function Favorites() {
                   onTypeChange={filters.setType}
                   onStatusChange={filters.setStatusFilter}
                 />
-                <div className="mt-4">
-                  <FavoritesToolbar
-                    filters={filters}
-                    name={title}
-                    groupMode={mode}
-                    onGroupModeChange={setMode}
-                    actions={actions}
-                  />
-                </div>
-              </section>
+              </div>
               {body}
             </div>
           </>

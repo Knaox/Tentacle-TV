@@ -35,7 +35,7 @@ const Tile = memo(function Tile({ icon, label, count, active, onToggle }: TilePr
       className={`group relative flex min-h-[64px] cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-light)] disabled:cursor-default disabled:opacity-45 ${
         active
           ? "border-[rgba(var(--brand-rgb),0.45)] bg-[rgba(var(--brand-rgb),0.16)]"
-          : "border-line-subtle bg-fill-subtle"
+          : "border-line-subtle bg-[color:var(--surface-1)]"
       }`}
     >
       <span

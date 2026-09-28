@@ -8,27 +8,30 @@ import { CollectionGridBody } from "../components/collection/CollectionGridBody"
 import { LibraryGridEmpty } from "../components/library/LibraryGridEmpty";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { PageTransition } from "../components/PageTransition";
-import { ShareMyListButton } from "../components/share/ShareMyListButton";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { useWatchlistPage } from "../components/watchlist/useWatchlistPage";
 import { usePlayFromWatchlist, useRemovalUndo } from "../components/watchlist/useWatchlistActions";
-import { WatchlistToolbar } from "../components/watchlist/WatchlistToolbar";
+import { CollectionActions } from "../components/collection/CollectionActions";
+import { CollectionToolbarPanel } from "../components/collection/CollectionToolbarPanel";
+import { CollectionSkeleton } from "../components/collection/CollectionStates";
+import { StageSegment, TypeSegment, ViewToggle } from "../components/watchlist/WatchlistControls";
 import { WatchlistResumeShelf } from "../components/watchlist/WatchlistResumeShelf";
 import { WatchlistListBody } from "../components/watchlist/WatchlistListBody";
-import { WatchlistEmpty, WatchlistSkeleton, WatchlistStageEmpty } from "../components/watchlist/WatchlistStates";
+import { WatchlistEmpty, WatchlistStageEmpty } from "../components/watchlist/WatchlistStates";
 import { WatchlistUndoToast } from "../components/watchlist/WatchlistUndoToast";
 import { useSummaryLine } from "../components/watchlist/useSummaryLine";
 
 /**
  * Ma liste — bureau et web grand écran.
  *
- * De haut en bas : la bannière (sujet = premier titre, résumé chiffré), la
- * file « Reprendre » des titres commencés, les étapes de visionnage et le
- * choix grille / liste, la barre de filtres de la bibliothèque, puis la
- * collection. La grille reprend telles quelles les cartes du catalogue ; la
- * liste montre la progression et les gestes Lire / Retirer sans survol.
- *
- * Mes favoris garde `CollectionGrid` : rien ici ne la touche.
+ * La grammaire de la Bibliothèque : la bannière (sujet = premier titre,
+ * résumé chiffré), puis le MÊME panneau d'outils qui la chevauche — recherche,
+ * compte, tri, et au bout partager / sélectionner / grille ou liste ; à
+ * l'étage du bas, les étapes de visionnage et le type à la place du statut,
+ * puis les menus de filtres. Sous le panneau, ce qui n'appartient qu'à Ma
+ * liste : la file « Reprendre », puis la collection. La grille reprend telles
+ * quelles les cartes du catalogue ; la liste montre la progression et les
+ * gestes Lire / Retirer sans survol.
  */
 export function Watchlist() {
   const { t } = useTranslation("common");
@@ -55,16 +58,11 @@ export function Watchlist() {
   const headerKey = `${filters.queryKey ?? ""}|${filters.type}|${stage}|${page.view}|${visible.length}|${sel.isSelecting ? 1 : 0}|${showResume ? page.resume.length : 0}`;
 
   const actions = !sel.isSelecting ? (
-    <div className="flex items-center gap-2">
-      <ShareMyListButton />
-      <button
-        type="button"
-        onClick={sel.enterSelectionMode}
-        className="h-9 cursor-pointer rounded-full bg-[color:var(--surface-2)] px-4 text-sm font-medium text-content-secondary shadow-[var(--elev-1)] ring-1 ring-line-strong transition-colors hover:text-content-primary"
-      >
-        {t("common:select")}
-      </button>
-    </div>
+    <CollectionActions
+      shareKind="watchlist"
+      onSelect={visible.length > 0 ? sel.enterSelectionMode : undefined}
+      extra={<ViewToggle view={page.view} onViewChange={page.setView} />}
+    />
   ) : undefined;
 
   let body: ReactNode;
@@ -100,7 +98,7 @@ export function Watchlist() {
     <PageTransition>
       <div className="min-h-screen pb-20">
         {isLoading ? (
-          <WatchlistSkeleton view={page.view} />
+          <CollectionSkeleton view={page.view} label={t("common:myList")} />
         ) : !hasItems ? (
           <WatchlistEmpty />
         ) : (
@@ -113,8 +111,20 @@ export function Watchlist() {
             </div>
 
             <div className="relative z-10 -mt-10 px-4 pt-6 md:-mt-14 md:px-8">
+              <div className="mb-6">
+                <CollectionToolbarPanel
+                  filters={filters}
+                  name={t("common:myList")}
+                  actions={actions}
+                  segment={
+                    <>
+                      <StageSegment stage={stage} onStageChange={page.setStage} counts={page.stageCounts} />
+                      <TypeSegment tabs={filters.tabs} type={filters.type} onTypeChange={filters.setType} />
+                    </>
+                  }
+                />
+              </div>
               {showResume && <WatchlistResumeShelf items={page.resume} onPlay={play} pendingPlayId={pendingId} />}
-              <WatchlistToolbar page={page} name={t("common:myList")} actions={actions} />
               {body}
             </div>
           </>

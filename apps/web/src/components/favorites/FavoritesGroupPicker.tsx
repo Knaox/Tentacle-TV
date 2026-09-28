@@ -1,6 +1,8 @@
-import { memo, useRef, type KeyboardEvent } from "react";
+import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Layers } from "lucide-react";
 import { FAVORITES_GROUP_MODES, type FavoritesGroupMode } from "@tentacle-tv/api-client";
+import { SegmentedControl } from "../library/SegmentedControl";
 
 const LABEL_KEYS: Record<FavoritesGroupMode, string> = {
   none: "groupNone",
@@ -11,10 +13,10 @@ const LABEL_KEYS: Record<FavoritesGroupMode, string> = {
 };
 
 /**
- * « Regrouper » : un contrôle segmenté (radiogroup), flèches gauche/droite
- * pour passer d'un mode à l'autre comme dans un groupe de boutons radio natif.
- * Sur écran étroit, la rangée défile horizontalement plutôt que de se
- * replier sur deux lignes.
+ * « Regrouper » : le contrôle segmenté de la Bibliothèque (radiogroup, flèches
+ * gauche/droite), précédé de son intitulé. Il ouvre l'étage du bas du
+ * panneau, là où la Bibliothèque pose le statut de visionnage — que les
+ * tuiles du bilan portent déjà ici.
  */
 export const FavoritesGroupPicker = memo(function FavoritesGroupPicker({
   mode, onChange,
@@ -23,50 +25,22 @@ export const FavoritesGroupPicker = memo(function FavoritesGroupPicker({
   onChange: (mode: FavoritesGroupMode) => void;
 }) {
   const { t } = useTranslation("favorites");
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-    e.preventDefault();
-    const idx = FAVORITES_GROUP_MODES.indexOf(mode);
-    const step = e.key === "ArrowRight" ? 1 : -1;
-    const next = (idx + step + FAVORITES_GROUP_MODES.length) % FAVORITES_GROUP_MODES.length;
-    onChange(FAVORITES_GROUP_MODES[next]);
-    refs.current[next]?.focus();
-  };
+  const options = useMemo(() => FAVORITES_GROUP_MODES.map((m) => ({ value: m, label: t(LABEL_KEYS[m]) })), [t]);
 
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <span id="favorites-group-label" className="shrink-0 text-xs font-semibold uppercase tracking-[0.14em] text-content-quaternary">
+      <span aria-hidden className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-content-tertiary">
+        <Layers className="h-3.5 w-3.5" strokeWidth={2.1} />
         {t("groupBy")}
       </span>
-      <div
-        role="radiogroup"
-        aria-labelledby="favorites-group-label"
-        onKeyDown={onKeyDown}
-        className="scrollbar-hide flex min-w-0 gap-1 overflow-x-auto rounded-full border border-line-subtle bg-fill-subtle p-1"
-      >
-        {FAVORITES_GROUP_MODES.map((m, i) => {
-          const selected = m === mode;
-          return (
-            <button
-              key={m}
-              ref={(el) => { refs.current[i] = el; }}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => onChange(m)}
-              className={`h-8 shrink-0 cursor-pointer rounded-full px-3.5 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-light)] ${
-                selected
-                  ? "bg-[rgba(var(--brand-rgb),0.22)] font-semibold text-[var(--brand-light)]"
-                  : "font-medium text-content-tertiary hover:text-content-primary"
-              }`}
-            >
-              {t(LABEL_KEYS[m])}
-            </button>
-          );
-        })}
+      <div className="scrollbar-hide min-w-0 overflow-x-auto">
+        <SegmentedControl
+          label={t("groupBy")}
+          markerId="favorites-group-marker"
+          options={options}
+          value={mode}
+          onChange={onChange}
+        />
       </div>
     </div>
   );

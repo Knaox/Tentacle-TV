@@ -51,7 +51,14 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
             émule `gap` pose une marge sur chaque enfant et écrase `ml-auto` —
             le groupe de droite finissait au milieu de la barre. */}
         <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
-          {props.leading && <div className="w-full min-w-0 md:w-auto md:max-w-xl md:flex-1">{props.leading}</div>}
+          {/* Avec des actions au bout (Ma liste, Mes favoris), l'étage haut est
+              plus long : le champ garde toute la ligne jusqu'au grand écran,
+              sinon il n'y montrait plus que « Rechercher d… » à 800 px. */}
+          {props.leading && (
+            <div className={`w-full min-w-0 ${props.actions ? "xl:w-auto xl:max-w-xl xl:flex-1" : "md:w-auto md:max-w-xl md:flex-1"}`}>
+              {props.leading}
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-2">
             <ResultCount loading={props.resultsLoading} total={props.totalResults} narrowed={narrowed} />
