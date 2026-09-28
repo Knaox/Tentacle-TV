@@ -48,6 +48,8 @@ export function item(partial: Partial<CatalogItem> & Pick<CatalogItem, "name">):
     backdropTag: null,
     primaryAspect: null,
     dateCreated: null,
+    tmdbId: null,
+    tmdbCollection: null,
     ...partial,
   };
 }

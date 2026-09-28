@@ -11,6 +11,11 @@
  * Paginé par 500 : une bibliothèque de vingt mille films ne tient pas dans une
  * seule réponse raisonnable. Un relevé INCRÉMENTAL (`MinDateLastSaved`) ne
  * rapporte que ce qui a changé depuis — ce que déclenche un `LibraryChanged`.
+ *
+ * Les identifiants TMDB suivent au passage (`ProviderIds`) : celui du titre et,
+ * pour un film, celui de sa SAGA (`TmdbCollection`, posé par le fournisseur
+ * TMDB de Jellyfin). Jellyfin ne sait pas filtrer dessus — c'est cet index
+ * qui répond « les films de la même saga » (`services/search/sagaMembers.ts`).
  */
 
 import type { SearchItemKind } from "../../search/searchTypes";
@@ -45,6 +50,10 @@ export interface CatalogItem {
   backdropTag: string | null;
   primaryAspect: number | null;
   dateCreated: string | null;
+  /** Identifiant TMDB du titre (`ProviderIds.Tmdb`), tel quel. */
+  tmdbId: string | null;
+  /** Film seulement : identifiant TMDB de sa saga (`ProviderIds.TmdbCollection`). */
+  tmdbCollection: string | null;
 }
 
 interface RawPerson {
@@ -73,6 +82,7 @@ interface RawItem {
   BackdropImageTags?: string[];
   PrimaryImageAspectRatio?: number;
   DateCreated?: string;
+  ProviderIds?: Record<string, string>;
 }
 
 const PAGE = 500;
@@ -86,6 +96,7 @@ const ROLE_LIMITS: Readonly<Record<string, number>> = { Actor: 10, Director: 4, 
 const FIELDS = [
   "OriginalTitle", "Genres", "Studios", "People", "ProductionYear", "EndDate", "CommunityRating",
   "OfficialRating", "RunTimeTicks", "ChildCount", "Status", "DateCreated", "PrimaryImageAspectRatio",
+  "ProviderIds",
 ].join(",");
 
 const KINDS: ReadonlySet<string> = new Set(["Movie", "Series", "BoxSet"]);
@@ -107,7 +118,20 @@ function keptPeople(raw: readonly RawPerson[] | undefined): { people: CatalogPer
   return { people, images };
 }
 
-function toCatalogItem(raw: RawItem): CatalogItem | null {
+/**
+ * Un identifiant TMDB lu dans `ProviderIds` — la casse des clés n'est pas
+ * garantie d'une version de Jellyfin à l'autre. Seul un entier positif compte.
+ */
+function providerId(ids: Record<string, string> | undefined, key: string): string | null {
+  if (!ids) return null;
+  const wanted = key.toLowerCase();
+  for (const [name, value] of Object.entries(ids)) {
+    if (name.toLowerCase() === wanted && /^[1-9][0-9]{0,9}$/.test(String(value).trim())) return String(value).trim();
+  }
+  return null;
+}
+
+export function toCatalogItem(raw: RawItem): CatalogItem | null {
   if (!raw.Id || !raw.Name || !raw.Type || !KINDS.has(raw.Type)) return null;
   const { people, images } = keptPeople(raw.People);
   const endYear = raw.EndDate ? new Date(raw.EndDate).getUTCFullYear() : null;
@@ -137,6 +161,10 @@ function toCatalogItem(raw: RawItem): CatalogItem | null {
     backdropTag: raw.BackdropImageTags?.[0] ?? null,
     primaryAspect: raw.PrimaryImageAspectRatio ?? null,
     dateCreated: raw.DateCreated ?? null,
+    tmdbId: providerId(raw.ProviderIds, "Tmdb"),
+    // Une collection TMDB n'a de sens que sur un film : une série ou un
+    // BoxSet qui en porterait une ne rejoint pas la saga.
+    tmdbCollection: raw.Type === "Movie" ? providerId(raw.ProviderIds, "TmdbCollection") : null,
   };
 }
 
