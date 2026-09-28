@@ -53,7 +53,7 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
         <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
           {props.leading && <div className="w-full min-w-0 md:w-auto md:max-w-xl md:flex-1">{props.leading}</div>}
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ResultCount loading={props.resultsLoading} total={props.totalResults} narrowed={narrowed} />
             <SortMenu
               toolbar
@@ -72,6 +72,12 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
                 ? <ArrowDownWideNarrow aria-hidden className="h-4 w-4" strokeWidth={2.1} />
                 : <ArrowUpNarrowWide aria-hidden className="h-4 w-4" strokeWidth={2.1} />}
             </button>
+            {props.actions && (
+              <>
+                <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-fill-soft sm:block" />
+                {props.actions}
+              </>
+            )}
           </div>
         </div>
 
@@ -79,12 +85,15 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <WatchStatusSegment
-              statusFilter={filters.statusFilter}
-              isFavorite={filters.isFavorite}
-              onStatusChange={props.onStatusChange}
-              onFavoriteChange={props.onFavoriteChange}
-            />
+            {props.segment}
+            {!props.segment && (props.showStatus ?? true) && (
+              <WatchStatusSegment
+                statusFilter={filters.statusFilter}
+                isFavorite={filters.isFavorite}
+                onStatusChange={props.onStatusChange}
+                onFavoriteChange={props.onFavoriteChange}
+              />
+            )}
             {(props.showFavorite ?? true) && (
               <button
                 type="button"
