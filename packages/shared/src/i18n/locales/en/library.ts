@@ -1,0 +1,22 @@
+/** Library pages — cf. `fr/library.ts`. */
+export default {
+  toolbar: "Search, sort and filters",
+  titles_one: "{{count}} title",
+  titles_other: "{{count}} titles",
+  sortedBy: "Sorted by {{sort}}",
+  reverseOrder: "Reverse order",
+  orderAscending: "Ascending order — reverse",
+  orderDescending: "Descending order — reverse",
+  watchStatus: "Watch status",
+  activeFilters: "Active filters",
+  removeFilter: "Remove filter {{name}}",
+  loading: "Loading the catalog…",
+  emptyTitle: "This library is empty",
+  emptyHint: "No titles have been added to it on the server yet.",
+  emptyFilteredTitle: "No titles match",
+  emptyFilteredHint: "Broaden the filters or remove one to bring titles back.",
+  noLibraries: "No libraries",
+  noLibrariesHint: "This server doesn't share any movie or TV library with this account yet.",
+  sortShort: "Sort",
+  filtersShort: "Filters",
+} as const;

@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, useWindowDimensions, type FlatList } from "reac
 import Animated, { runOnJS, useAnimatedScrollHandler, useComposedEventHandler, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
@@ -12,6 +11,7 @@ import { BrandSpinner, PressableCard, ProgressBar, FadeIn } from "@/components/u
 import { ScrollTopFab } from "@/components/ui/ScrollTopFab";
 import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 import { motion, spacing, typography, useGrid, useResponsive, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { CatalogEmpty, CatalogGridSkeleton } from "./CatalogGridStates";
 
 const POSTER_ASPECT = 2 / 3;
 /** En hauteurs d'écran : au-delà, le bouton « revenir en haut » se montre. */
@@ -32,13 +32,16 @@ interface Props {
   /** Ce que la barre d'onglets flottante couvre en bas : la fin de la liste doit la dépasser. */
   bottomInset?: number;
   listRef?: Ref<FlatList<MediaItem>>;
+  /** Une recherche ou un filtre resserre la grille : l'état vide propose de les lever. */
+  filtered?: boolean;
+  /** Lever les filtres depuis l'état vide. */
+  onReset?: () => void;
 }
 
 export const CatalogGrid = memo(function CatalogGrid({
   catalog, onItemPress, overrideItems, header, empty, onScroll, topInset = 0, bottomInset = 0, listRef,
+  filtered = false, onReset,
 }: Props) {
-  const { t } = useTranslation("common");
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
@@ -102,17 +105,16 @@ export const CatalogGrid = memo(function CatalogGrid({
     return null;
   }, [catalog.isFetchingNextPage, styles]);
 
+  // Pendant le premier chargement, la grille montre sa propre silhouette
+  // (même colonnes, même gouttière) ; ensuite, un état vide qui propose une
+  // sortie quand un filtre en est la cause.
   const emptyComponent = useMemo(() => {
     if (empty !== undefined) return empty;
-    if (catalog.isLoading) return null;
-    return (
-      <View style={styles.emptyContainer}>
-        <Feather name="inbox" size={48} color={colors.text.tertiary} />
-        <Text style={styles.emptyTitle}>{t("noResults")}</Text>
-        <Text style={styles.emptyHint}>{t("noResultsHint")}</Text>
-      </View>
-    );
-  }, [empty, catalog.isLoading, t, colors, styles]);
+    if (catalog.isLoading) {
+      return <CatalogGridSkeleton columns={numColumns} itemWidth={itemWidth} gutter={gutter} padding={padding} />;
+    }
+    return <CatalogEmpty filtered={filtered} onReset={onReset} />;
+  }, [empty, catalog.isLoading, numColumns, itemWidth, gutter, padding, filtered, onReset]);
 
   return (
     <FadeIn delay={100} style={{ flex: 1 }}>
@@ -199,9 +201,6 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
 const makeStyles = (t: AppTheme) => StyleSheet.create({
   gridContent: { paddingBottom: spacing.xxl },
   loader: { paddingVertical: spacing.xl },
-  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: spacing.xxxl * 2 },
-  emptyTitle: { ...typography.subtitle, color: t.colors.text.tertiary, marginTop: spacing.md },
-  emptyHint: { ...typography.caption, color: t.colors.text.quaternary, marginTop: spacing.xs },
   progressContainer: { position: "absolute", bottom: 0, left: 0, right: 0 },
   itemTitle: { ...typography.small, color: t.colors.text.primary, fontWeight: "600", marginTop: spacing.xs + 2 },
   itemYear: { ...typography.badge, color: t.colors.text.tertiary, marginTop: 2 },

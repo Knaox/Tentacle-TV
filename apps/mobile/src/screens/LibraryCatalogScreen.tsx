@@ -1,116 +1,80 @@
-import { useState, useCallback } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { useMemo } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { useLibraries } from "@tentacle-tv/api-client";
+import type { LibraryView } from "@tentacle-tv/shared";
 import { SubtleBackground } from "@/components/ui";
-import { CatalogGrid } from "@/components/catalog";
-import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
-import { ScopedSearchField } from "@/components/search/ScopedSearchField";
-import { SearchAssistPane } from "@/components/search/SearchAssistPane";
-import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { LibraryFilterBar, LibrarySheets } from "./library/LibraryFilterBar";
-import { useLibraryCatalogState } from "./library/useLibraryCatalogState";
+import { LibraryCatalogView } from "@/components/library/LibraryCatalogView";
+import { backOrHome } from "@/utils/backOrHome";
+import { RADIUS, spacing, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 interface Props { libraryId: string; libraryName?: string }
 
+/** Le rond du retour flottant, en points. */
+const BACK_SIZE = 40;
+
 /**
- * Une bibliothèque, ouverte depuis ailleurs (accueil, lien) — en-tête avec
- * retour, titre, recherche et filtres ; pastilles de filtre ; grille infinie.
- * Son état et ses filtres sont ceux de l'onglet Bibliothèque
- * (`useLibraryCatalogState`) : les deux se comportent à l'identique.
+ * Une bibliothèque, ouverte depuis ailleurs (accueil, lien) : la même vue que
+ * l'onglet Bibliothèque — héros, recherche, barre rapide, grille —, sans la
+ * capsule, avec un bouton retour flottant qui reste à portée du pouce pendant
+ * tout le défilement.
+ *
+ * Tant que la liste des bibliothèques n'a pas répondu, le héros se contente
+ * du nom passé par la route : la grille, elle, n'attend pas.
  */
 export function LibraryCatalogScreen({ libraryId, libraryName }: Props) {
   const { t } = useTranslation("common");
   const { colors } = useTheme();
-  const styles = useThemedStyles(makeStyles);
+  const st = useThemedStyles(makeStyles);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const state = useLibraryCatalogState(libraryId);
-  const { assist, catalog, searching, totalCount } = state;
-  const [searchVisible, setSearchVisible] = useState(false);
-
-  const handleItemPress = useCallback((item: MediaItem) => router.push(`/media/${item.Id}`), [router]);
-  // Replier la barre, c'est aussi lever le filtre — jamais une grille filtrée en douce.
-  const toggleSearch = () => {
-    if (searchVisible) state.setSearchQuery("");
-    setSearchVisible(!searchVisible);
-  };
+  const { data: libraries } = useLibraries();
+  const library = useMemo<LibraryView>(
+    () => libraries?.find((lib) => lib.Id === libraryId)
+      ?? ({ Id: libraryId, Name: libraryName ?? "" } as LibraryView),
+    [libraries, libraryId, libraryName],
+  );
+  const top = Math.max(insets.top, 24);
 
   return (
     <SubtleBackground ambient>
-      <View style={[styles.container, { paddingTop: Math.max(insets.top, 24) }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => backOrHome(router)} hitSlop={12} style={styles.backBtn} accessibilityRole="button" accessibilityLabel={t("back")}>
-            <Feather name="chevron-left" size={26} color={colors.text.primary} />
-          </Pressable>
-          <Text style={styles.headerTitle} numberOfLines={1}>{libraryName ?? ""}</Text>
-          <View style={styles.headerActions}>
-            <Pressable onPress={toggleSearch} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("search")}>
-              <Feather name="search" size={20} color={searchVisible ? colors.brand.violet : colors.text.secondary} />
-            </Pressable>
-            <Pressable onPress={() => state.setSheet("filters")} hitSlop={12} style={{ marginLeft: spacing.md }} accessibilityRole="button" accessibilityLabel={t("filters")}>
-              <View>
-                <Feather name="sliders" size={20} color={state.filterCount > 0 ? colors.brand.violet : colors.text.secondary} />
-                {state.filterCount > 0 && (
-                  <View style={styles.headerBadge}>
-                    <Text style={styles.headerBadgeText}>{state.filterCount}</Text>
-                  </View>
-                )}
-              </View>
-            </Pressable>
-          </View>
-        </View>
-
-        {searchVisible && (
-          <View style={styles.searchContainer}>
-            <ScopedSearchField
-              assist={assist}
-              placeholder={t("searchInLibrary", { name: libraryName ?? "" })}
-              count={searching && !catalog.isLoading ? totalCount : null}
-              autoFocus
-            />
-          </View>
-        )}
-
-        {/* Pendant la frappe, les suggestions prennent la place de la page. */}
-        {assist.open ? (
-          <SearchAssistPane assist={assist} />
-        ) : (
-          <>
-            <LibraryFilterBar state={state} />
-            {/* Rien trouvé : la bonne orthographe, toute la recherche, et ce que
-                les extensions trouvent ailleurs — jamais une grille vide. */}
-            {searching && !catalog.isLoading && totalCount === 0 ? (
-              <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-                <ScopedSearchEmpty query={state.debouncedSearch} onApply={state.setSearchQuery} />
-              </ScrollView>
-            ) : (
-              <CatalogGrid
-                catalog={catalog}
-                onItemPress={handleItemPress}
-                overrideItems={state.platformActive ? state.platformFiltered : undefined}
-              />
-            )}
-          </>
-        )}
-
-        <LibrarySheets state={state} />
+      <LibraryCatalogView
+        library={library}
+        topInset={top}
+        bottomInset={insets.bottom}
+        searchDockOffset={BACK_SIZE + spacing.sm}
+      />
+      <View style={[st.backWrap, { top: top + spacing.xs }]} pointerEvents="box-none">
+        <Pressable
+          onPress={() => backOrHome(router)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t("back")}
+          style={({ pressed }) => [st.back, pressed && st.pressed]}
+        >
+          <Feather name="chevron-left" size={24} color={colors.text.primary} />
+        </Pressable>
       </View>
     </SubtleBackground>
   );
 }
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.screenPadding, paddingVertical: spacing.sm, gap: 4 },
-  backBtn: { marginRight: spacing.xs, padding: 4 },
-  headerTitle: { ...typography.title, fontFamily: FONT_FAMILY.extrabold, fontSize: 22, letterSpacing: -0.4, color: t.colors.text.primary, flex: 1 },
-  headerActions: { flexDirection: "row", alignItems: "center" },
-  searchContainer: { marginBottom: spacing.sm },
-  headerBadge: { position: "absolute" as const, top: -4, right: -6, width: 15, height: 15, borderRadius: 8, backgroundColor: t.colors.brand.violet, alignItems: "center" as const, justifyContent: "center" as const },
-  headerBadgeText: { color: t.colors.cta.brandFg, fontSize: 9, fontFamily: FONT_FAMILY.extrabold },
+  backWrap: { position: "absolute", left: spacing.screenPadding - 4 },
+  // Pas de flou : la grille défile dessous, un flou y serait recalculé à
+  // chaque image. Un aplat translucide et un liseré suffisent à le détacher.
+  back: {
+    width: BACK_SIZE,
+    height: BACK_SIZE,
+    borderRadius: RADIUS.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: withAlpha(t.colors.surface.s0, 0.72, t.colors.surface.s0),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: t.colors.border.strong,
+  },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.95 }] },
 });

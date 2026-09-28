@@ -17,6 +17,15 @@ interface FilterMenuProps {
    * sur ses panneaux et sur les téléviseurs natifs.
    */
   closeButton?: boolean;
+  /** Icône posée avant le libellé (tri, par exemple). */
+  icon?: ReactNode;
+  /**
+   * Garder l'allure de repos même quand une valeur est posée. Le tri en a
+   * toujours une : teinté en permanence, il se lisait comme un filtre actif.
+   */
+  neutral?: boolean;
+  /** Ancrer le panneau sur le bord droit du déclencheur (menus en fin de barre). */
+  align?: "left" | "right";
   children: ReactNode;
 }
 
@@ -28,12 +37,14 @@ interface FilterMenuProps {
  * genre : on filtrait à l'aveugle, sans jamais voir l'effet sur les résultats
  * avant d'avoir refermé le panneau.
  */
-export function FilterMenu({ label, value, onClear, width = 260, closeButton = false, children }: FilterMenuProps) {
+export function FilterMenu({
+  label, value, onClear, width = 260, closeButton = false, icon, neutral = false, align = "left", children,
+}: FilterMenuProps) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const active = Boolean(value);
+  const active = Boolean(value) && !neutral;
 
   // La croix rend le focus à la pastille : sans cela, il disparaissait avec
   // le panneau démonté.
@@ -68,12 +79,13 @@ export function FilterMenu({ label, value, onClear, width = 260, closeButton = f
         // deux composants, une seule pastille au style différent se voit
         // immédiatement. Fond opaque pour la même raison — ces contrôles
         // reposent sur la bannière et se perdaient sur une affiche claire.
-        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+        className={`inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)] ${
           active
             ? "bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.24),rgba(var(--brand-rgb),0.24))] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.6)]"
             : "bg-[color:var(--surface-2)] text-content-secondary ring-1 ring-line-strong shadow-[var(--elev-1)] hover:bg-fill-medium hover:text-content-primary"
         }`}
       >
+        {icon}
         {active && (
           <span
             aria-hidden
@@ -82,7 +94,7 @@ export function FilterMenu({ label, value, onClear, width = 260, closeButton = f
           />
         )}
         <span className="max-w-[14rem] truncate">{value || label}</span>
-        {active && onClear ? (
+        {Boolean(value) && onClear && !neutral ? (
           <span
             role="button"
             tabIndex={0}
@@ -116,7 +128,7 @@ export function FilterMenu({ label, value, onClear, width = 260, closeButton = f
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.1 } }}
             transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-0 top-full z-40 mt-2 origin-top-left overflow-hidden rounded-[var(--radius-lg)] bg-surface-dropdown p-3 backdrop-blur-[var(--blur-dropdown)]"
+            className={`absolute top-full z-40 mt-2 overflow-hidden ${align === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left"} rounded-[var(--radius-lg)] bg-surface-dropdown p-3 backdrop-blur-[var(--blur-dropdown)]`}
             style={{ width, boxShadow: "var(--shadow-dropdown)" }}
           >
             {closeButton && (

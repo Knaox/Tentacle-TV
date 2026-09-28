@@ -26,11 +26,12 @@ import offline from "./offline";
 import sessions from "./sessions";
 import search from "./search";
 import cards from "./cards";
+import library from "./library";
 
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
   adminPlugins, adminInvites, adminServices, adminMetadata, media, errors, profile, disclaimer,
   watchTogether, downloads, easterEggs, reco, whatsNew, offline, sessions, search,
-  cards,
+  cards, library,
 };

@@ -1,12 +1,11 @@
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { useTranslation } from "react-i18next";
-import { Inbox } from "lucide-react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Spinner } from "../../components/ui/Spinner";
 import { MediaCard } from "../cards/MediaCard";
 import { MediaActionSheet } from "../cards/MediaActionSheet";
 import { useGrid } from "../useMirrorLayout";
 import { ScrollTopFab } from "./ScrollTopFab";
+import { CatalogEmpty } from "./CatalogGridStates";
 
 /** Le bas de page approche : la page suivante part à une demi-hauteur d'écran (`onEndReachedThreshold` 0,5). */
 const END_MARGIN = "0px 0px 50% 0px";
@@ -21,6 +20,11 @@ interface Props {
   onItemPress?: (item: MediaItem) => void;
   /** Remplace l'état vide — `null` : rien (la place est déjà prise). */
   empty?: ReactNode | null;
+  /** Une recherche ou un filtre resserre la grille : l'état vide propose de les lever. */
+  filtered?: boolean;
+  onReset?: () => void;
+  /** Le squelette porte les deux lignes de légende (catalogue de bibliothèque). */
+  captions?: boolean;
 }
 
 /**
@@ -35,8 +39,8 @@ interface Props {
  */
 export const CatalogGrid = memo(function CatalogGrid({
   items, isLoading, hasNextPage = false, isFetchingNextPage = false, fetchNextPage, onItemPress, empty,
+  filtered = false, onReset, captions = false,
 }: Props) {
-  const { t } = useTranslation("common");
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
   const [sheetId, setSheetId] = useState<string | null>(null);
   const closeSheet = useCallback(() => setSheetId(null), []);
@@ -59,17 +63,11 @@ export const CatalogGrid = memo(function CatalogGrid({
     return () => observer.disconnect();
   }, [items.length]);
 
-  if (isLoading && items.length === 0) return <GridSkeleton />;
+  if (isLoading && items.length === 0) return <GridSkeleton rows={captions ? 3 : 2} captions={captions} />;
 
   if (items.length === 0) {
     if (empty !== undefined) return <>{empty}</>;
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <Inbox size={48} className="text-content-tertiary" aria-hidden />
-        <p className="mt-3 text-lg font-bold tracking-[-0.4px] text-content-tertiary">{t("noResults")}</p>
-        <p className="mt-1 text-[13px] text-content-quaternary">{t("noResultsHint")}</p>
-      </div>
-    );
+    return <CatalogEmpty filtered={filtered} onReset={onReset} />;
   }
 
   return (
@@ -118,8 +116,11 @@ const GridCell = memo(function GridCell({ item, width, onPress, onLongPress }: {
   );
 });
 
-/** Le squelette de la grille : deux rangées d'affiches 2:3 au rayon 12. */
-export function GridSkeleton({ rows = 2 }: { rows?: number }) {
+/**
+ * Le squelette de la grille : des rangées d'affiches 2:3 au rayon 12 — avec,
+ * pour un catalogue, les deux lignes de légende de la vraie carte.
+ */
+export function GridSkeleton({ rows = 2, captions = false }: { rows?: number; captions?: boolean }) {
   const { numColumns, itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
   return (
     <div
@@ -127,7 +128,13 @@ export function GridSkeleton({ rows = 2 }: { rows?: number }) {
       aria-hidden
       style={{ gridTemplateColumns: `repeat(${numColumns}, ${itemWidth}px)`, gap: gutter, paddingLeft: padding, paddingRight: padding }}
     >
-      {Array.from({ length: numColumns * rows }, (_, i) => (
+      {Array.from({ length: numColumns * rows }, (_, i) => captions ? (
+        <div key={i} className="mb-1 flex flex-col gap-1.5" style={{ width: itemWidth }}>
+          <div className="skeleton-shimmer rounded-xl" style={{ height: itemWidth * 1.5 }} />
+          <div className="skeleton-shimmer h-2.5 w-3/4 rounded-full" />
+          <div className="skeleton-shimmer h-2 w-1/3 rounded-full" />
+        </div>
+      ) : (
         <div key={i} className="skeleton-shimmer rounded-xl" style={{ width: itemWidth, height: itemWidth * 1.5 }} />
       ))}
     </div>

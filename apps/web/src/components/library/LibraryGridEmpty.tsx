@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { SearchX } from "lucide-react";
+import type { ReactNode } from "react";
+import { Clapperboard, FilterX, SearchX, type LucideIcon } from "lucide-react";
 import { SearchSuggestions } from "../search/SearchSuggestions";
 
 /**
@@ -43,16 +44,15 @@ export function LibraryGridEmpty({
   /** Remplace la recherche par une correction proposée. */
   onApplyQuery?: (term: string) => void;
 }) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "library"]);
   const navigate = useNavigate();
   const searching = query.trim().length > 0 && onApplyQuery !== undefined;
 
   if (searching) {
     return (
-      <div className="flex flex-col items-center gap-5 py-20 text-center">
-        <SearchX aria-hidden className="h-10 w-10 text-content-quaternary" strokeWidth={1.6} />
+      <EmptyFrame icon={SearchX}>
         <p className="max-w-md text-base text-content-secondary">
-          {t("noResultsFor", { query: query.trim(), name: scopeName })}
+          {t("common:noResultsFor", { query: query.trim(), name: scopeName })}
         </p>
         <SearchSuggestions query={query} onApply={onApplyQuery} />
         <button
@@ -60,24 +60,51 @@ export function LibraryGridEmpty({
           onClick={onReset}
           className="text-sm font-medium text-content-tertiary underline-offset-4 transition-colors hover:text-content-primary hover:underline"
         >
-          {t("resetSearchAndFilters")}
+          {t("common:resetSearchAndFilters")}
         </button>
-      </div>
+      </EmptyFrame>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-6 py-20">
-      <p className="text-center text-content-quaternary">
-        {filtered ? t("noResults") : t("emptyLibrary")}
-      </p>
+    <EmptyFrame icon={filtered ? FilterX : Clapperboard}>
+      <div className="flex max-w-md flex-col gap-1.5">
+        <h2 className="text-lg font-semibold text-content-primary">
+          {filtered ? t("library:emptyFilteredTitle") : t("library:emptyTitle")}
+        </h2>
+        <p className="text-sm text-content-tertiary">
+          {filtered ? t("library:emptyFilteredHint") : t("library:emptyHint")}
+        </p>
+      </div>
       <button
         type="button"
         onClick={filtered ? onReset : () => navigate("/")}
         className="inline-flex h-11 items-center justify-center rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
       >
-        {filtered ? t("resetFilters") : t("browseLibraries")}
+        {filtered ? t("common:resetFilters") : t("common:browseLibraries")}
       </button>
+    </EmptyFrame>
+  );
+}
+
+/**
+ * Le cadre commun aux trois états : une pastille d'icône cerclée d'un
+ * dégradé violet → rose, le message, puis la sortie. Aucune animation — un
+ * état vide n'a rien à annoncer en boucle.
+ */
+function EmptyFrame({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-5 py-16 text-center md:py-20">
+      <span
+        aria-hidden
+        className="flex h-20 w-20 items-center justify-center rounded-full p-px"
+        style={{ background: "linear-gradient(135deg, rgba(var(--brand-rgb),0.7), rgba(var(--brand-accent-rgb),0.55))" }}
+      >
+        <span className="flex h-full w-full items-center justify-center rounded-full bg-[color:var(--surface-1)]">
+          <Icon className="h-8 w-8 text-[var(--brand-light)]" strokeWidth={1.6} />
+        </span>
+      </span>
+      {children}
     </div>
   );
 }
