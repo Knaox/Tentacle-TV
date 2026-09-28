@@ -17,3 +17,8 @@ export function isAppleKeyboard(): boolean {
 export function searchShortcutLabel(): string {
   return isAppleKeyboard() ? "⌘K" : "Ctrl+K";
 }
+
+/** « ⌘C » sur les claviers Apple, « Ctrl+C » ailleurs — la copie à la main. */
+export function copyShortcutLabel(): string {
+  return isAppleKeyboard() ? "⌘C" : "Ctrl+C";
+}

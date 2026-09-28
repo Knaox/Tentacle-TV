@@ -192,6 +192,12 @@ export default {
   linkCopied: "Copié !",
   revokeLink: "Révoquer le lien",
   shareAction: "Partager",
+  // Copier ou partager un lien : un échec se voit, et dit comment finir à la main.
+  copyFailed: "Copie impossible",
+  copyFailedHint: "La copie automatique n'a pas abouti. Le lien est sélectionné : copiez-le avec {{shortcut}}.",
+  copyFailedHintTouch: "La copie automatique n'a pas abouti. Touchez longuement le lien pour le copier.",
+  shareLinkField: "Lien de partage",
+  shareFailed: "Partage impossible",
   readOnlyList: "Liste partagée",
   sharedListBy: "Liste de {{name}}",
   signInToAdd: "Connecte-toi pour ajouter des médias à ta liste.",
