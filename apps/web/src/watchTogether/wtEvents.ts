@@ -63,6 +63,12 @@ export interface WtEventHelpers {
   onInviteArrived?: (invite: WtInviteDto) => void;
   /** L'invitation envoyée à `toUserId` a reçu sa réponse : elle n'attend plus. */
   onInviteResult?: (toUserId: string, accepted: boolean) => void;
+  /**
+   * Un autre vient de lancer un match de l'affinité pendant que je swipais :
+   * le lancement de média qui suit m'emmène, comme un premier lancement.
+   * Consommé une fois.
+   */
+  followsLaunch?: () => boolean;
 }
 
 /** Anti-rafale : un seek se coalesce désormais côté serveur, mais chaque
@@ -160,12 +166,13 @@ export function handleWtServerMessage(msg: WsServerMessage, h: WtEventHelpers): 
       // Auto-follow : suivent le changement de média (émetteur compris —
       // chemin de navigation unique du protocole) :
       //  - ceux qui REGARDENT (page de lecture) — épisode suivant, autre film ;
-      //  - tout le monde au PREMIER lancement du groupe (itemId null → média).
+      //  - tout le monde au PREMIER lancement du groupe (itemId null → média) ;
+      //  - qui swipait quand un autre a lancé un match de l'affinité.
       // Un membre qui a quitté la lecture n'est pas ramené de force : la
       // pilule « Rejoindre » l'attend.
       if (cause === "setItem" && state.itemId && !h.isOnWatchPage(state.itemId)) {
         const firstLaunch = !prev || prev.itemId === null;
-        if (firstLaunch || h.isWatching()) {
+        if (firstLaunch || h.isWatching() || h.followsLaunch?.()) {
           h.navigateToWatch(state.itemId);
         }
       }

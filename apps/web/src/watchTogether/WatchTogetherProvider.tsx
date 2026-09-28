@@ -18,6 +18,8 @@ import { InviteInboxModal } from "./InviteInboxModal";
 import { ChatRoot } from "./chat/ChatRoot";
 import { WatchTogetherRoomModal } from "./room/WatchTogetherRoomModal";
 import { usePendingInvites, type WtPendingInvite } from "./usePendingInvites";
+import { AffinityRoot } from "./affinity/AffinityRoot";
+import { consumeLaunchFollow } from "./affinity/affinityStore";
 
 /** Watch Together — état global du groupe (app-level, sous le Router). */
 
@@ -93,6 +95,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     isWatching: () => locationRef.current.startsWith("/watch/"),
     onInviteArrived: () => { if (locationRef.current === "/") setInboxOpen(true); },
     onInviteResult: (toUserId) => resolvePending(toUserId),
+    followsLaunch: () => consumeLaunchFollow(),
   };
 
   // Connexion + abonnements + resynchronisation d'état.
@@ -205,6 +208,9 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
       <WatchTogetherRoomModal />
       <GroupPlaybackPill />
       {state.room && <ChatRoot />}
+      {/* L'affinité (swipe de groupe) : remontée à chaque salle — ses numéros
+          d'état repartent de zéro avec elle. */}
+      {state.room && <AffinityRoot key={state.room.groupId} />}
     </Ctx.Provider>
   );
 }

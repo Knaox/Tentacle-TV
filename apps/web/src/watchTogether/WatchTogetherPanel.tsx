@@ -5,6 +5,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import { InviteRow, MemberRow } from "./WatchTogetherRows";
 import { openRoomModal } from "./roomModalStore";
+import { AffinityEntry } from "./affinity/AffinityEntry";
 
 interface WatchTogetherPanelProps {
   onClose: () => void;
@@ -94,6 +95,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
             )}
           </div>
           <div className="space-y-2 border-t border-line-subtle p-3">
+            <AffinityEntry variant="panel" onOpen={onClose} />
             <div className="flex gap-2">
               {isHost && (
                 <button type="button" onClick={() => open("invite")} className={PRIMARY}>

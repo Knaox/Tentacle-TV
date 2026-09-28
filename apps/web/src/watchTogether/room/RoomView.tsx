@@ -7,6 +7,7 @@ import { useJellyfinClient, useMediaItem } from "@tentacle-tv/api-client";
 import { useToast } from "../../contexts/ToastContext";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { closeRoomModal, showRoomView } from "../roomModalStore";
+import { AffinityEntry } from "../affinity/AffinityEntry";
 import { PendingInviteRow, RoomMemberRow } from "./RoomMemberRow";
 
 /**
@@ -130,6 +131,8 @@ export function RoomView({ room, fresh, titleId }: { room: WtRoomStateDto; fresh
             <p className="mt-2 text-[13px] text-content-tertiary">{t("roomAlone")}</p>
           )}
         </section>
+
+        <AffinityEntry variant="room" />
       </div>
 
       <footer className="flex items-center justify-between gap-2 border-t border-line-subtle px-6 py-4">
