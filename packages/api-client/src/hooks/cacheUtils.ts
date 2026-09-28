@@ -1,49 +1,7 @@
 import type { QueryClient, InfiniteData } from "@tanstack/react-query";
 import type { MediaItem, UserItemData } from "@tentacle-tv/shared";
+import { LIST_QUERY_PREFIXES, WATCH_COMPOSED_PREFIXES } from "./cacheQueryKeys";
 import { patchSearchResponse } from "./searchCachePatch";
-
-/**
- * Préfixes de query keys contenant des listes de MediaItem avec UserData.
- * TanStack Query ne refetch que les queries avec observers actifs → pas d'impact perf.
- */
-const LIST_QUERY_PREFIXES = [
-  "favorites",
-  "watchlist",
-  "latest-items",
-  "resume-items",
-  "next-up",
-  "watched-items",
-  "featured",
-  "continue-watching",
-  "library",
-  "episodes",
-  "search",
-  "similar",
-  // Les films d'une saga (rangée de la fiche) — cf. `useSaga.ts`.
-  "saga-items",
-  "seasons",
-  "series-watch-state",
-] as const;
-
-/**
- * Les listes dont l'APPARTENANCE dépend de l'état « vu », et non le seul badge.
- *
- * Un patch de `UserData` en cache suffit à corriger une pastille ; il ne sait
- * pas retirer un titre d'une liste ni l'y remettre. « Prochains épisodes » se
- * recompose à partir de trois requêtes serveur (proposition, vivier des non
- * vus, épisodes vus par date) : démarquer un épisode ne le ramenait donc
- * jamais en tête — la rangée restait sur l'épisode d'après jusqu'à ce qu'un
- * hasard la rafraîchisse. Ces listes-là se redemandent vraiment.
- *
- * Seules celles qui ont un observateur actif partent : `refetchType: "active"`.
- */
-const WATCH_COMPOSED_PREFIXES = [
-  "next-up",
-  "resume-items",
-  "watched-items",
-  "continue-watching",
-  "series-watch-state",
-] as const;
 
 /** Clé de la rangée « Reprendre la lecture » (cf. `useResumeItems`). */
 const RESUME_KEY = ["resume-items"] as const;
