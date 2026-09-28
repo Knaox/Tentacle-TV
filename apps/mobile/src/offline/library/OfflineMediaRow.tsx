@@ -10,12 +10,14 @@ import type { OfflineEntry } from "@/offline/engineApi";
 import { spacing } from "@/theme";
 import { MOVIE_ART, SERIES_ART } from "./offlineArt";
 import { OfflinePosterCard } from "./OfflinePosterCard";
+import { useOpenLocalSheet, type OpenLocalSheet } from "./useOpenLocalSheet";
 
 interface Props {
   title: string;
   entries: readonly OfflineEntry[];
   onOpen: (entry: OfflineEntry) => void;
-  onLongPress: (entry: OfflineEntry) => void;
+  /** « Gérer » : la feuille de gestion de l'appareil, depuis la feuille des cartes. */
+  onManage: (entry: OfflineEntry) => void;
 }
 
 /**
@@ -23,15 +25,17 @@ interface Props {
  * dans la grammaire des rangées en ligne (`MediaRow`) : en-tête au rail de
  * marque, affiches 2:3 à la largeur du compte, défilement horizontal. Un
  * épisode montre le visage de sa SÉRIE, comme en ligne : son affiche, sa note,
- * et « S01E03 · Titre » dessous.
+ * et « S01E03 · Titre » dessous. L'appui long ouvre la feuille unique des
+ * cartes en mode local ; ses gestes d'appareil passent par « Gérer ».
  */
-export const OfflineMediaRow = memo(function OfflineMediaRow({ title, entries, onOpen, onLongPress }: Props) {
+export const OfflineMediaRow = memo(function OfflineMediaRow({ title, entries, onOpen, onManage }: Props) {
   const width = useCardWidth();
+  const openLocal = useOpenLocalSheet();
   const renderItem = useCallback(
     ({ item }: { item: OfflineEntry }) => (
-      <RowTile entry={item} width={width} onOpen={onOpen} onLongPress={onLongPress} />
+      <RowTile entry={item} width={width} onOpen={onOpen} onManage={onManage} openLocal={openLocal} />
     ),
-    [width, onOpen, onLongPress],
+    [width, onOpen, onManage, openLocal],
   );
   if (entries.length === 0) return null;
   return (
@@ -50,11 +54,13 @@ export const OfflineMediaRow = memo(function OfflineMediaRow({ title, entries, o
   );
 });
 
-function RowTile({ entry, width, onOpen, onLongPress }: {
+function RowTile({ entry, width, onOpen, onManage, openLocal }: {
   entry: OfflineEntry;
   width: number;
   onOpen: (entry: OfflineEntry) => void;
-  onLongPress: (entry: OfflineEntry) => void;
+  onManage: (entry: OfflineEntry) => void;
+  /** La feuille des cartes ; sans portée, l'appui long garde la feuille de gestion. */
+  openLocal: OpenLocalSheet | null;
 }) {
   const isEpisode = entry.kind === "episode";
   // La note de ce que l'affiche montre : la série pour un épisode, le film sinon.
@@ -75,7 +81,7 @@ function RowTile({ entry, width, onOpen, onLongPress }: {
       rating={data?.CommunityRating ?? null}
       width={width}
       onPress={() => onOpen(entry)}
-      onLongPress={() => onLongPress(entry)}
+      onLongPress={() => (openLocal ? openLocal(entry, "poster", () => onManage(entry)) : onManage(entry))}
       accessibilityLabel={percent !== null ? `${title}, ${Math.round(percent)} %` : title}
     />
   );

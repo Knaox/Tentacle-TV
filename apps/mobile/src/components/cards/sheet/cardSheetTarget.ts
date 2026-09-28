@@ -1,5 +1,6 @@
 import { recoMarkerItem, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { CardOverlayVariant, CardToggleHandlers, MediaItem } from "@tentacle-tv/shared";
+import type { CardSheetNavigation } from "./cardSheetContext";
 
 /**
  * Ce qu'un appui long ouvre : la carte appuyée, telle que SON appelant la
@@ -26,10 +27,21 @@ export interface CardSheetTarget {
    */
   local?: boolean;
   /**
-   * Des bascules fournies par l'appelant (l'état et le geste) plutôt que lues
-   * sur le serveur — la coche « vu » d'un titre `local` vit en base locale.
+   * Des bascules fournies par l'appelant (l'état à l'ouverture et le geste)
+   * plutôt que lues sur le serveur — la coche « vu » d'un titre `local` vit en
+   * base locale. `onToggle` inverse l'état ; la feuille suit, en optimiste.
    */
   toggles?: CardToggleHandlers;
+  /** Où mènent Lire et Plus d'infos pour CETTE carte (un titre local : ses écrans). */
+  navigation?: CardSheetNavigation;
+  /** Les visuels de l'en-tête, fournis par l'appelant (fichiers du disque) — rien du serveur. */
+  images?: { poster: string | null; backdrop: string | null };
+  /**
+   * « Gérer » : les gestes de l'appareil (retirer, reprendre ou annuler un
+   * transfert, supprimer après visionnage), dans la feuille de gestion de
+   * l'appelant — ouverte une fois celle-ci refermée.
+   */
+  manage?: () => void;
 }
 
 /**

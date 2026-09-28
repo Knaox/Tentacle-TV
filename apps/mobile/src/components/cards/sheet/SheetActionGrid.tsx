@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StyleSheet, View, useWindowDimensions, type ViewStyle } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useCardToggles } from "@tentacle-tv/api-client";
@@ -41,6 +42,8 @@ interface Props {
   onOpenDetails: () => void;
   /** Extra `dismiss` : « Ne plus me proposer ». */
   onDismiss: () => void;
+  /** « Gérer » sur cet appareil (titre local), au bout des extras : hors du modèle, propre au mobile. */
+  onManage?: () => void;
 }
 
 /**
@@ -49,37 +52,51 @@ interface Props {
  * d'états), puis les extras, centrés sur la même grille de trois colonnes
  * (hors ligne, fiche, refus). L'ordre vient du modèle partagé, jamais d'ici.
  */
-export function SheetActionGrid({ item, overlay, handlers, onClose, onOpenDetails, onDismiss }: Props) {
-  const { t } = useTranslation("cards");
+export function SheetActionGrid({ item, overlay, handlers, onClose, onOpenDetails, onDismiss, onManage }: Props) {
+  const { t } = useTranslation(["cards", "offline"]);
   const width = useColumnWidth();
   const cell: ViewStyle = { flex: 0, width };
-  const toggles = item !== null && overlay.toggles.length > 0;
-  if (!toggles && overlay.extras.length === 0) return null;
+  const toggleCount = item !== null ? overlay.toggles.length : 0;
+  const extraCount = overlay.extras.length + (onManage ? 1 : 0);
+  if (toggleCount + extraCount === 0) return null;
 
+  const toggleCells = item !== null && toggleCount > 0 && (handlers ? (
+    <ProvidedToggles handlers={handlers} toggles={overlay.toggles} cell={cell} />
+  ) : (
+    <ServerToggles item={item} toggles={overlay.toggles} cell={cell} />
+  ));
+  const extraCells = extraCount > 0 && (
+    <>
+      {overlay.extras.map((extra) => {
+        if (extra === "offline") {
+          return item ? <KeepOfflineActionCell key={extra} item={item} onClose={onClose} style={cell} /> : null;
+        }
+        return (
+          <ActionCell
+            key={extra}
+            label={t(`cards:${cardExtraLabelKey(extra)}`)}
+            icon={extra === "details" ? "info" : "eye-off"}
+            onPress={extra === "details" ? onOpenDetails : onDismiss}
+            style={cell}
+          />
+        );
+      })}
+      {/* Le glyphe du bouton « ⋯ » des lignes, qui ouvre la même feuille. */}
+      {onManage && <ActionCell label={t("offline:manage")} icon="more-horizontal" onPress={onManage} style={cell} />}
+    </>
+  );
+
+  // Les bascules sur une rangée, les extras sur la suivante — sur UNE seule
+  // quand tout tient dans les trois colonnes (un titre local : « vu », Gérer).
   return (
     <View style={st.grid}>
-      {toggles && (handlers ? (
-        <ToggleCells toggles={overlay.toggles} states={handlers.states} onToggle={handlers.onToggle} cell={cell} />
+      {toggleCount + extraCount <= COLUMNS ? (
+        <View style={st.row}>{toggleCells}{extraCells}</View>
       ) : (
-        <ServerToggleRow item={item} toggles={overlay.toggles} cell={cell} />
-      ))}
-      {overlay.extras.length > 0 && (
-        <View style={st.row}>
-          {overlay.extras.map((extra) => {
-            if (extra === "offline") {
-              return item ? <KeepOfflineActionCell key={extra} item={item} onClose={onClose} style={cell} /> : null;
-            }
-            return (
-              <ActionCell
-                key={extra}
-                label={t(cardExtraLabelKey(extra))}
-                icon={extra === "details" ? "info" : "eye-off"}
-                onPress={extra === "details" ? onOpenDetails : onDismiss}
-                style={cell}
-              />
-            );
-          })}
-        </View>
+        <>
+          {toggleCells && <View style={st.row}>{toggleCells}</View>}
+          {extraCells && <View style={st.row}>{extraCells}</View>}
+        </>
       )}
     </View>
   );
@@ -90,9 +107,23 @@ export function SheetActionGrid({ item, overlay, handlers, onClose, onOpenDetail
  * les Sets de séries entiers, et une carte hors bibliothèque — ou un titre lu
  * sur le disque — n'a rien à y lire.
  */
-function ServerToggleRow({ item, toggles, cell }: { item: MediaItem; toggles: readonly CardToggleKind[]; cell: ViewStyle }) {
+function ServerToggles({ item, toggles, cell }: { item: MediaItem; toggles: readonly CardToggleKind[]; cell: ViewStyle }) {
   const state = useCardToggles(item);
   return <ToggleCells toggles={toggles} states={state.states} onToggle={state.toggle} cell={cell} />;
+}
+
+/**
+ * Les bascules fournies par l'appelant (un titre lu sur le disque). Elles ne
+ * vivent pas dans un cache que la feuille relirait : son affichage suit le
+ * geste en optimiste, l'appelant écrit (en base locale, de façon synchrone).
+ */
+function ProvidedToggles({ handlers, toggles, cell }: { handlers: CardToggleHandlers; toggles: readonly CardToggleKind[]; cell: ViewStyle }) {
+  const [states, setStates] = useState(handlers.states);
+  const onToggle = (kind: CardToggleKind) => {
+    setStates((current) => ({ ...current, [kind]: !current[kind] }));
+    handlers.onToggle(kind);
+  };
+  return <ToggleCells toggles={toggles} states={states} onToggle={onToggle} cell={cell} />;
 }
 
 interface ToggleCellsProps extends CardToggleHandlers {
@@ -100,12 +131,12 @@ interface ToggleCellsProps extends CardToggleHandlers {
   cell: ViewStyle;
 }
 
-/** La rangée des bascules, d'où que viennent leur état et leur geste. */
+/** Les cellules des bascules, d'où que viennent leur état et leur geste. */
 function ToggleCells({ toggles, states, onToggle, cell }: ToggleCellsProps) {
   const { t } = useTranslation("cards");
   const { colors } = useTheme();
   return (
-    <View style={st.row}>
+    <>
       {toggles.map((kind) => {
         const active = states[kind] === true;
         return (
@@ -124,7 +155,7 @@ function ToggleCells({ toggles, states, onToggle, cell }: ToggleCellsProps) {
           />
         );
       })}
-    </View>
+    </>
   );
 }
 

@@ -51,8 +51,14 @@ export const SheetHeader = memo(function SheetHeader({ target, item }: Props) {
   );
 });
 
-/** L'affiche (la série pour un épisode, comme la carte) et l'arrière-plan. */
+/**
+ * L'affiche (la série pour un épisode, comme la carte) et l'arrière-plan. Un
+ * titre lu sur le disque ne demande rien au serveur : les visuels de
+ * l'appelant, sinon aucun (l'initiale tient la place de l'affiche).
+ */
 function sheetImages(target: CardSheetTarget, item: MediaItem | null, client: Client) {
+  if (target.images) return target.images;
+  if (target.local) return { poster: null, backdrop: null };
   if (!item) {
     const reco = target.reco;
     return {

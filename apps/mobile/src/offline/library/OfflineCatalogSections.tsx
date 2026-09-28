@@ -11,6 +11,7 @@ import { MOVIE_ART, SERIES_ART } from "./offlineArt";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { OfflinePosterCard } from "./OfflinePosterCard";
 import { useLocalSnapshotJson } from "@/hooks/offline/useLocalSnapshot";
+import { useOpenLocalSheet } from "./useOpenLocalSheet";
 
 interface Props {
   movies: readonly OfflineEntry[];
@@ -19,17 +20,20 @@ interface Props {
   /** Rang de la première section dans la cascade d'entrée de la page. */
   fadeIndex: number;
   onMovie: (entry: OfflineEntry) => void;
-  onMovieLongPress: (entry: OfflineEntry) => void;
+  /** « Gérer » un film : la feuille de gestion de l'appareil, depuis la feuille des cartes. */
+  onMovieManage: (entry: OfflineEntry) => void;
   onSeries: (group: OfflineSeriesGroup) => void;
 }
 
 /**
  * Les sections Films et Séries du catalogue local : un en-tête de rangée avec
  * le compte, puis une GRILLE d'affiches (un catalogue fini se cherche et se
- * filtre en entier — une rangée cacherait tout ce qui dépasse).
+ * filtre en entier — une rangée cacherait tout ce qui dépasse). L'appui long
+ * d'un film ouvre la feuille unique des cartes, en mode local.
  */
-export function OfflineCatalogSections({ movies, series, layout, fadeIndex, onMovie, onMovieLongPress, onSeries }: Props) {
+export function OfflineCatalogSections({ movies, series, layout, fadeIndex, onMovie, onMovieManage, onSeries }: Props) {
   const { t } = useTranslation(["offline", "downloads"]);
+  const openLocal = useOpenLocalSheet();
   const grid = [styles.grid, { gap: layout.gutter, paddingHorizontal: layout.padding }];
 
   return (
@@ -54,7 +58,7 @@ export function OfflineCatalogSections({ movies, series, layout, fadeIndex, onMo
                     percent={percent}
                     width={layout.itemWidth}
                     onPress={() => onMovie(movie)}
-                    onLongPress={() => onMovieLongPress(movie)}
+                    onLongPress={() => (openLocal ? openLocal(movie, "poster", () => onMovieManage(movie)) : onMovieManage(movie))}
                     accessibilityLabel={percent !== null ? `${title}, ${Math.round(percent)} %` : title}
                   />
                 );

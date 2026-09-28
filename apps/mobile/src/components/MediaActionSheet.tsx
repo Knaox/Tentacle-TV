@@ -94,7 +94,8 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
   // serveur, qui porte Ma liste et les favoris, n'est peut-être pas là.
   const toggles = local && !target.toggles ? [] : overlay.toggles;
 
-  const go: CardSheetNavigation = navigation ?? {
+  const manage = target.manage;
+  const go: CardSheetNavigation = target.navigation ?? navigation ?? {
     play: (id) => router.push(`/watch/${id}`),
     open: (id) => router.push(`/media/${id}`),
   };
@@ -122,6 +123,7 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
             item={item}
             overlay={{ toggles, extras: overlay.extras }}
             handlers={target.toggles}
+            onManage={manage ? () => leave(manage) : undefined}
             onClose={dismiss}
             onOpenDetails={() => { if (item) leave(() => go.open(item.Id)); }}
             onDismiss={() => {

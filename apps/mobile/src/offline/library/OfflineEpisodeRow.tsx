@@ -17,6 +17,7 @@ import { FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { EPISODE_ART } from "./offlineArt";
 import { OfflineLocalImage } from "./OfflineLocalImage";
 import { ResumeSpriteImage } from "./ResumeSpriteImage";
+import { useOpenLocalSheet } from "./useOpenLocalSheet";
 
 let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: { Light: unknown } } | null = null;
 try { Haptics = require("expo-haptics"); } catch { /* module natif absent */ }
@@ -35,7 +36,9 @@ const TICKS_PER_MINUTE = 600_000_000;
  * Une ligne d'épisode gardé sur l'appareil — le dessin d'`EpisodeItemRow` :
  * vignette (l'image EXACTE de la reprise quand l'épisode est entamé), piste
  * de progression dégradée, « S01E03 · Titre », durée et version, jetons de
- * qualité, synopsis, le rond « vu » (local) et « ⋯ » vers la feuille.
+ * qualité, synopsis, le rond « vu » (local) et « ⋯ » vers la feuille de
+ * gestion. L'appui long ouvre la feuille unique des cartes (vignette 16:9, mode
+ * local) : Lire, « vu », Plus d'infos, et « Gérer » vers la même gestion.
  */
 export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurrent, onPlay, onMore, onToggleWatched }: Props) {
   const { t } = useTranslation(["common", "offline", "downloads"]);
@@ -53,6 +56,7 @@ export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurr
   const runtime = entry.runtimeTicks ? Math.round(entry.runtimeTicks / TICKS_PER_MINUTE) : null;
   const version = [variantLabel(entry, (key) => t(`downloads:${key}`), (key) => t(`offline:${key}`)), formatBytes(entry.bytesDone)].join(" · ");
   const overview = (item?.Overview ?? "").replace(/<[^>]+>/g, "").trim();
+  const openLocal = useOpenLocalSheet();
 
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -66,7 +70,13 @@ export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurr
 
   return (
     <View style={st.row} collapsable={false}>
-      <Pressable onPress={() => onPlay(entry)} style={st.main} accessibilityRole="button" accessibilityLabel={`${code}${title}`}>
+      <Pressable
+        onPress={() => onPlay(entry)}
+        onLongPress={openLocal ? () => openLocal(entry, "landscape", () => onMore(entry)) : undefined}
+        style={st.main}
+        accessibilityRole="button"
+        accessibilityLabel={`${code}${title}`}
+      >
         <View style={st.thumb}>
           <View style={ex.fallback}>
             <Text style={ex.fallbackText}>{entry.indexNumber != null ? `E${entry.indexNumber}` : title.charAt(0).toUpperCase()}</Text>

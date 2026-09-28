@@ -104,12 +104,12 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
           )}
           {!searching && resume.length > 0 && (
             <FadeIn delay={homeRowFadeDelay(1)}>
-              <OfflineMediaRow title={t("common:resumeWatching")} entries={resume} onOpen={info} onLongPress={setMore} />
+              <OfflineMediaRow title={t("common:resumeWatching")} entries={resume} onOpen={info} onManage={setMore} />
             </FadeIn>
           )}
           {!searching && nextUp.length > 0 && (
             <FadeIn delay={homeRowFadeDelay(2)}>
-              <OfflineMediaRow title={t("common:nextEpisode")} entries={nextUp} onOpen={info} onLongPress={setMore} />
+              <OfflineMediaRow title={t("common:nextEpisode")} entries={nextUp} onOpen={info} onManage={setMore} />
             </FadeIn>
           )}
           <FadeIn delay={homeRowFadeDelay(3)}>
@@ -122,7 +122,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
             layout={layout}
             fadeIndex={4}
             onMovie={info}
-            onMovieLongPress={setMore}
+            onMovieManage={setMore}
             onSeries={openSeries}
           />
         </Animated.ScrollView>
