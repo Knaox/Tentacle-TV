@@ -56,7 +56,7 @@ export default {
   saveFailed: "Ce jugement n'a pas été enregistré — la carte est revenue en haut de la pile.",
   undone: "Dernier geste annulé",
 
-  hint: "Glissez à droite pour aimer, à gauche pour refuser, vers le haut pour un coup de cœur, vers le bas pour passer.",
+  hint: "Glissez : à droite j'aime, à gauche non merci, en haut coup de cœur, en bas passer.",
   shortcutsLabel: "Raccourcis clavier",
   keyLeft: "Pas pour moi",
   keyRight: "J'aime",
