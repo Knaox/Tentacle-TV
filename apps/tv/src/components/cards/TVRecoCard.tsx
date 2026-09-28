@@ -2,11 +2,11 @@ import { memo } from "react";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import LinearGradient from "react-native-linear-gradient";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useRecoMarkerItem } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { BRAND } from "@tentacle-tv/shared";
 import { Colors, Typography, Fonts } from "../../theme/colors";
-import { TVCardRatingBadge } from "./TVCardRatingBadge";
+import { TVCardMarkerLayer } from "./TVCardMarkerLayer";
 import { TVCardImage } from "./TVCardImage";
 import { TV_POSTER_WIDTH, TV_CARD_RADIUS } from "./cardSizes";
 
@@ -20,12 +20,20 @@ interface TVRecoCardProps {
  * Une carte de recommandation (2:3) : l'affiche Jellyfin du titre — sur le
  * téléviseur, seules les recommandations EN bibliothèque s'affichent —, un
  * badge « Découverte » pour une exploration (gradient de marque, comme le
- * « +N » de TVPosterFrame), la note globale, puis titre et année sous
- * l'affiche (mêmes styles que TVPosterMeta). Au focus, la première raison.
+ * « +N » de TVPosterFrame), les marqueurs du modèle commun, puis titre et
+ * année sous l'affiche (mêmes styles que TVPosterMeta). Au focus, la
+ * première raison.
+ *
+ * Les marqueurs sont ceux de TOUTES les cartes (`TVCardMarkerLayer`) : la
+ * note — globale et la vôtre — en bas à gauche, la pastille d'états en haut
+ * à droite. Leur visage vient de `useRecoMarkerItem`, comme sur le web et le
+ * mobile : une note posée depuis la feuille d'actions, un ajout à Ma liste,
+ * s'y lisent sans attendre la prochaine page du moteur.
  */
 export const TVRecoCard = memo(function TVRecoCard({ item, focused = false, width = TV_POSTER_WIDTH.md }: TVRecoCardProps) {
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
+  const face = useRecoMarkerItem(item);
   const imageUrl = item.jellyfinItemId
     ? client.getImageUrl(item.jellyfinItemId, "Primary", { height: 360, quality: 85 })
     : null;
@@ -45,9 +53,9 @@ export const TVRecoCard = memo(function TVRecoCard({ item, focused = false, widt
             <Text style={{ color: "#fff", fontSize: 12, fontFamily: Fonts.bold }}>{t("explorationBadge")}</Text>
           </LinearGradient>
         )}
-        {/* Le badge commun : la note d'un titre recommandé ne se dessine plus
-            à part. Ancrée à DROITE ici — « Découverte » tient le coin gauche. */}
-        <TVCardRatingBadge rating={item.voteAverage} style={{ right: 8, left: undefined }} />
+        {/* Les marqueurs communs, à leurs coins : « Découverte » tient le HAUT
+            gauche, la note le bas gauche — ils ne se croisent pas. */}
+        <TVCardMarkerLayer item={face} communityRating={item.voteAverage} />
       </View>
       <Text numberOfLines={1} style={{ color: Colors.textSecondary, ...Typography.cardTitle, marginTop: 10 }}>
         {item.title}
