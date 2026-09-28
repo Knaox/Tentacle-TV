@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Maximize2 } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { DetailActionsRow, type DetailActions } from "./DetailActionsRow";
+import { DetailActionsRow } from "./DetailActionsRow";
 import { PlayCtaButton } from "./PlayCtaButton";
 import { StageBlock } from "./StageBlock";
 import { playCta, PLAY_MAX_WIDTH, type DetailGeometry } from "./detailMetrics";
@@ -14,7 +14,6 @@ interface Props {
   item: MediaItem;
   geo: DetailGeometry;
   seriesWatchState: SeriesWatchState;
-  actions: DetailActions;
   /** Ouvre la vue « image plein écran » sur l'affiche (iPad paysage). */
   onOpenPoster?: () => void;
 }
@@ -27,7 +26,7 @@ interface Props {
  * iPad paysage (`twoCol`) : la colonne gauche figée — affiche (qui ouvre la
  * vue plein écran), bloc titre aligné à gauche, Lecture, actions.
  */
-export const DetailHeader = memo(function DetailHeader({ item, geo, seriesWatchState, actions, onOpenPoster }: Props) {
+export const DetailHeader = memo(function DetailHeader({ item, geo, seriesWatchState, onOpenPoster }: Props) {
   const { t } = useTranslation("common");
   const { t: tm } = useTranslation("media");
   const client = useJellyfinClient();
@@ -42,7 +41,7 @@ export const DetailHeader = memo(function DetailHeader({ item, geo, seriesWatchS
   const actionsEl = (
     // Largeur de la rangée de l'app (420 + 2 × 16), centrée sous Lecture.
     <div className="mirror-detail-in-actions mx-auto w-full" style={{ maxWidth: PLAY_MAX_WIDTH + 32 }}>
-      <DetailActionsRow {...actions} />
+      <DetailActionsRow item={item} />
     </div>
   );
 

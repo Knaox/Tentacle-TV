@@ -1,59 +1,51 @@
 import { memo, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, CircleCheck, Heart, Plus, type LucideProps } from "lucide-react";
+import { useCardToggles } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PLAY_MAX_WIDTH } from "./detailMetrics";
-
-interface MutationHandle { mutate: () => void }
-interface ToggleHandle { add: MutationHandle; remove: MutationHandle }
-interface WatchedHandle { markWatched: MutationHandle; markUnwatched: MutationHandle }
-
-export interface DetailActions {
-  /** La série pour un épisode (Favoris, Ma liste), sinon le titre lui-même. */
-  target?: MediaItem;
-  isWatched: boolean;
-  favorite: ToggleHandle;
-  watchlist: ToggleHandle;
-  watched: WatchedHandle;
-}
 
 /**
  * `DetailActionsRow` de l'app : Favoris / Ma liste / Vu, en colonnes fixes de
  * 25 % réparties d'un bord à l'autre, 20 au-dessus, marges 16, alignée sur le
  * bouton Lecture (420 + 2 × 16 au plus).
  *
+ * L'état et les gestes sont ceux de toutes les cartes (`useCardToggles`) :
+ * Ma liste et Favoris au niveau SÉRIE par les Sets partagés — la fiche d'un
+ * épisode et les pastilles de ses cartes ne peuvent plus se contredire —,
+ * « Vu » sur le titre montré (jamais toute la série d'un épisode).
+ *
  * La quatrième cellule de l'app, « Garder hors ligne », n'existe pas dans un
  * navigateur : l'app la retire elle-même quand l'action n'est pas offerte
  * (`entry.visible` faux → `null`), et la rangée garde alors ses trois
  * cellules de 25 % en `space-between`. C'est ce qui est reproduit ici.
  */
-export const DetailActionsRow = memo(function DetailActionsRow({ target, isWatched, favorite, watchlist, watched }: DetailActions) {
+export const DetailActionsRow = memo(function DetailActionsRow({ item }: { item: MediaItem }) {
   const { t } = useTranslation("common");
-  const isFav = !!target?.UserData?.IsFavorite;
-  const isInList = !!target?.UserData?.Likes;
+  const toggles = useCardToggles(item);
   return (
     <div className="mt-5 flex items-start justify-between px-4" style={{ maxWidth: PLAY_MAX_WIDTH + 32 }}>
       <ActionButton
         Icon={Heart}
         label={t("actionFavorite")}
-        active={isFav}
+        active={toggles.favorite}
         activeColor="var(--status-error)"
-        onPress={() => (isFav ? favorite.remove.mutate() : favorite.add.mutate())}
+        onPress={toggles.toggleFavorite}
       />
       <ActionButton
         Icon={Plus}
         IconActive={Check}
         label={t("actionMyList")}
-        active={isInList}
+        active={toggles.watchlist}
         activeColor="var(--brand)"
-        onPress={() => (isInList ? watchlist.remove.mutate() : watchlist.add.mutate())}
+        onPress={toggles.toggleList}
       />
       <ActionButton
         Icon={CircleCheck}
         label={t("actionWatched")}
-        active={isWatched}
+        active={toggles.watched}
         activeColor="var(--brand)"
-        onPress={() => (isWatched ? watched.markUnwatched.mutate() : watched.markWatched.mutate())}
+        onPress={toggles.toggleWatched}
       />
     </div>
   );

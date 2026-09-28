@@ -1,15 +1,7 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  useFavorite,
-  useJellyfinClient,
-  useMediaItem,
-  useSeriesWatchState,
-  useSimilarItems,
-  useToggleWatchlist,
-  useWatchedToggle,
-} from "@tentacle-tv/api-client";
+import { useJellyfinClient, useMediaItem, useSeriesWatchState, useSimilarItems } from "@tentacle-tv/api-client";
 import { detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { DetailImageViewer } from "../../../components/detail/DetailImageViewer";
 import { CardSheetProvider } from "../../cards/CardSheetProvider";
@@ -65,17 +57,6 @@ function DetailScreen({ itemId }: { itemId: string }) {
   const { data: similar } = useSimilarItems(similarId, similarParentId);
   // Séries : l'épisode à regarder (à suivre, à reprendre, premier).
   const { data: seriesWatchState } = useSeriesWatchState(item?.Type === "Series" ? item.Id : undefined);
-  // Favoris et Ma liste visent la SÉRIE pour un épisode ; « Vu », jamais : il
-  // ne marque que ce qu'on a désigné (sinon Jellyfin marque toute la série).
-  const actionTargetId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
-  const actionTargetItem = isEpisode ? parentSeries : item;
-  const favorite = useFavorite(actionTargetId);
-  const watchlist = useToggleWatchlist(actionTargetId);
-  const watched = useWatchedToggle(itemId, {
-    seriesId: item?.SeriesId,
-    seasonId: item?.SeasonId ?? undefined,
-    itemType: item?.Type,
-  });
 
   useDetailScroll(scrollerRef, hostRef, geo.revealAt, !!item && !geo.twoCol);
 
@@ -103,7 +84,6 @@ function DetailScreen({ itemId }: { itemId: string }) {
       item={item}
       geo={geo}
       seriesWatchState={seriesWatchState}
-      actions={{ target: actionTargetItem, isWatched: item.UserData?.Played === true, favorite, watchlist, watched }}
       onOpenPoster={openPoster}
     />
   );

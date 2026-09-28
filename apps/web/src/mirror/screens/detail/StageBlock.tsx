@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 import { useCardMarkers, useJellyfinClient } from "@tentacle-tv/api-client";
-import { formatCommunityRating, STAR_PATH, STAR_VIEWBOX, type CardStatusKind, type MediaItem } from "@tentacle-tv/shared";
+import { formatCommunityRating, formatUserScore, STAR_PATH, STAR_VIEWBOX, type CardStatusKind, type MediaItem } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "../../../components/cards/cardGlyphs";
 import { useThemeMode } from "../../../theme/useThemeMode";
 import { MetaTokens } from "./MetaTokens";
@@ -28,7 +28,8 @@ interface Props {
 /**
  * Le bloc titre de la scène — le `StageBlock` de l'app : surtitre, LOGO du
  * titre (le nom en texte à défaut, et toujours pour un épisode), puis la note
- * en grand avec les marqueurs des cartes, la ligne de faits et les jetons.
+ * en grand avec les marqueurs des cartes — votre note comprise, au dégradé de
+ * marque comme sur les cartes —, la ligne de faits et les jetons.
  *
  * Posé sur le décor : jetons `on-media` dans les deux thèmes. Chaque ligne
  * entre à son tour (`mirror-detail-in-*`, opacité et transform seulement).
@@ -119,6 +120,19 @@ export const StageBlock = memo(function StageBlock({ item, align, logoMaxW, logo
               {formatCommunityRating(markers.communityRating)}
             </span>
             <span aria-hidden className="self-end text-[11px] font-medium text-on-media-muted">/10</span>
+          </span>
+        )}
+        {markers.userScore !== null && (
+          <span
+            role="img"
+            aria-label={tc("userRating", { score: formatUserScore(markers.userScore) })}
+            className="flex h-7 items-center gap-1 rounded-full px-2.5 text-[13px] font-bold tabular-nums text-cta-brand-fg"
+            style={{ background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }}
+          >
+            <svg className="h-3 w-3" viewBox={STAR_VIEWBOX} aria-hidden>
+              <path d={STAR_PATH} fill="currentColor" />
+            </svg>
+            {formatUserScore(markers.userScore)}
           </span>
         )}
         {markers.statuses.map((kind) => {
