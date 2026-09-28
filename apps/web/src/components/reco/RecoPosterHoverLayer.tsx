@@ -22,17 +22,17 @@ interface RecoPosterHoverLayerProps {
  * l'épisode à suivre), le visage des marqueurs et l'identité tmdb.
  *
  * Titre hors bibliothèque : c'est une carte Vigie, et son survol est celui de
- * toutes les cartes hors bibliothèque (`ExternalHoverOverlay`) — « Demander »
- * au centre, les étoiles (par tmdb), Ma liste à l'arrivée et le refus dans la
- * même capsule. Le même que sur la recherche ou dans l'extension.
+ * toutes les cartes hors bibliothèque (`ExternalHoverOverlay`) — les étoiles
+ * (par tmdb), puis la capsule : « Demander » en tête, Ma liste à l'arrivée et
+ * le refus. Le même que sur la recherche ou dans l'extension.
  *
  * Monté au survol seulement : la cible de lecture (une ou deux requêtes), les
  * Sets du plateau et la liste des notes n'existent que le temps du survol.
  */
 export function RecoPosterHoverLayer(props: RecoPosterHoverLayerProps) {
   const { item } = props;
-  // Hors bibliothèque, c'est le survol des cartes Vigie : « Demander » au
-  // centre, Ma liste à l'arrivée — le même que sur la recherche.
+  // Hors bibliothèque, c'est le survol des cartes Vigie : « Demander » en
+  // tête du plateau, Ma liste à l'arrivée — le même que sur la recherche.
   if (item.jellyfinItemId === null) {
     return (
       <ExternalHoverOverlay

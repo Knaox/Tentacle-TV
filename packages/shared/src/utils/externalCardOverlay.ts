@@ -8,10 +8,10 @@ import type { TitleRequestOffer } from "../search/pluginTitles";
  * les autres, quelle que soit la page (recherche, recommandations,
  * filmographie, saga) — et comme dans l'extension elle-même :
  *
- *   • au centre, l'action primaire, seule en couleur : « Demander » tient la
- *     place de « Lire » (il n'y a rien à lire) ;
- *   • en bas, les étoiles (la note vit sur le tmdb), puis le plateau :
- *     « Ma liste à l'arrivée » — le signet des autres cartes, qui met le
+ *   • en bas, les étoiles (la note vit sur le tmdb), puis le plateau ;
+ *   • EN TÊTE du plateau, l'action primaire, seule en couleur : « Demander »
+ *     (il n'y a rien à lire). Plus de gros bouton au centre de l'affiche ;
+ *   • puis « Ma liste à l'arrivée » — le signet des autres cartes, qui met le
  *     titre de côté jusqu'à son arrivée —, puis « Ne plus me proposer » sur
  *     une recommandation.
  *
@@ -37,7 +37,7 @@ export interface ExternalCardOverlayInput {
 
 export interface ExternalCardOverlay {
   variant: ExternalCardVariant;
-  /** L'action du centre. */
+  /** L'action primaire, en tête du plateau. */
   request: TitleRequestOffer | null;
   /** Le clic sur la carte ouvre toujours la page du titre. */
   open: "details";
@@ -70,7 +70,7 @@ export function externalWatchlistLabelKey(active: boolean): string {
   return active ? "removeFromWatchlistOnArrival" : "addToWatchlistOnArrival";
 }
 
-/** Une action de carte hors bibliothèque, telle qu'une feuille la présente. */
+/** Une action de carte hors bibliothèque, telle que le plateau ou une feuille la présente. */
 export interface ExternalCardActionEntry {
   kind: "request" | "watchlist" | CardTrayExtra;
   /** Les mots de l'extension (« Demander ») — l'action `request` seulement. */
@@ -82,9 +82,10 @@ export interface ExternalCardActionEntry {
 }
 
 /**
- * Les actions, à plat, dans l'ordre où une FEUILLE les présente : l'action
- * primaire d'abord, puis la bascule, puis les extras. La note n'y figure pas :
- * elle se rend en étoiles, à part (`overlay.rate`).
+ * Les actions, à plat, dans l'ordre UNIQUE du plateau du survol comme de la
+ * feuille de l'appui long : l'action primaire d'abord, puis la bascule, puis
+ * les extras. La note n'y figure pas : elle se rend en étoiles, à part
+ * (`overlay.rate`).
  */
 export function externalCardActionEntries(
   overlay: ExternalCardOverlay,

@@ -4,11 +4,11 @@
  * de l'extension qui montre le titre (`item.href`).
  *
  * Au survol — et au focus : c'est une grille qu'on parcourt au clavier —, le
- * survol UNIQUE des cartes hors bibliothèque (`ExternalHoverOverlay`) :
- * « Demander » au centre, les étoiles, « Ma liste à l'arrivée ». Au repos, la
- * pastille suit l'état que l'extension donne du titre (« Demandé » dès la
- * demande faite), et les marqueurs communs disent la note posée et la mise de
- * côté. Il faut pour cela que l'extension donne l'identifiant TMDB du titre
+ * survol UNIQUE des cartes hors bibliothèque (`ExternalHoverOverlay`) : les
+ * étoiles, puis le plateau — « Demander » en tête, « Ma liste à l'arrivée ».
+ * Au repos, la pastille suit l'état que l'extension donne du titre
+ * (« Demandé » dès la demande faite), et les marqueurs communs disent la note
+ * posée et la mise de côté. Il faut pour cela que l'extension donne l'identifiant TMDB du titre
  * (`item.tmdbId`) ; sans lui, la carte reste celle d'avant.
  *
  * Elle occupe toute la largeur que son parent lui donne : la grille des

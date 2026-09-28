@@ -4,7 +4,7 @@ import { externalCardActionEntries, externalWatchlistLabelKey, resolveExternalCa
 const direct = { mode: "direct" as const, label: "Demander", href: null };
 
 describe("le survol d'une carte hors bibliothèque", () => {
-  it("met « Demander » au centre, la note et Ma liste à l'arrivée en bas", () => {
+  it("offre « Demander », la note et Ma liste à l'arrivée", () => {
     expect(resolveExternalCardOverlay({ variant: "poster", request: direct, identified: true })).toEqual({
       variant: "poster", request: direct, open: "details", rate: true, watchlist: true, extras: [],
     });
@@ -21,7 +21,7 @@ describe("le survol d'une carte hors bibliothèque", () => {
     expect(overlay.watchlist).toBe(false);
   });
 
-  it("présente à une feuille : la demande, la bascule (libellé selon l'état), puis le refus", () => {
+  it("range le plateau comme la feuille : la demande en tête, la bascule (libellé selon l'état), puis le refus", () => {
     const overlay = resolveExternalCardOverlay({ variant: "reco", request: direct, identified: true });
     expect(externalCardActionEntries(overlay, { watchlist: true })).toEqual([
       { kind: "request", label: "Demander" },
