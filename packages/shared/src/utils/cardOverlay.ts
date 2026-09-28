@@ -59,6 +59,13 @@ export interface CardOverlayInput {
   rateable: boolean;
   /** La plateforme garde hors ligne, et ce titre s'y prête. */
   offline?: boolean;
+  /**
+   * Titre lu sur le DISQUE (catalogue local, fiche locale), sans le serveur —
+   * hors ligne, ou sur la page « Sur cet appareil ». Seule la coche « vu » s'y
+   * bascule (en base locale) : Ma liste et les favoris vivent sur le serveur,
+   * la note aussi (moteur de notes), et le titre est déjà sur l'appareil.
+   */
+  local?: boolean;
 }
 
 export interface CardOverlay {
@@ -76,6 +83,7 @@ export interface CardOverlay {
 }
 
 const NO_TOGGLES: readonly CardToggleKind[] = [];
+const LOCAL_TOGGLES: readonly CardToggleKind[] = ["watched"];
 
 /**
  * Le survol d'une carte.
@@ -85,14 +93,17 @@ const NO_TOGGLES: readonly CardToggleKind[] = [];
  * le refus d'une recommandation aussi.
  */
 export function resolveCardOverlay(input: CardOverlayInput): CardOverlay {
-  const { variant, inLibrary } = input;
+  const { variant } = input;
+  const local = input.local === true;
+  // Un titre gardé sur l'appareil vient de la bibliothèque, même lu sans elle.
+  const inLibrary = input.inLibrary || local;
   const playable = inLibrary && input.playable;
   // La vignette 16:9 se LANCE au clic : c'est tout l'objet de « Reprendre ».
   // Une vignette qui n'a rien à lire retombe sur la fiche, comme une affiche.
   const open = variant === "landscape" && playable ? "play" : "details";
 
   const extras: CardTrayExtra[] = [];
-  if (inLibrary && input.offline === true) extras.push("offline");
+  if (inLibrary && !local && input.offline === true) extras.push("offline");
   if (open === "play") extras.push("details");
   if (variant === "reco") extras.push("dismiss");
 
@@ -100,14 +111,23 @@ export function resolveCardOverlay(input: CardOverlayInput): CardOverlay {
     variant,
     play: playable ? { labelKey: input.resume === true ? "resume" : "play" } : null,
     open,
-    rate: input.rateable,
-    toggles: inLibrary ? CARD_TOGGLE_ORDER : NO_TOGGLES,
+    rate: input.rateable && !local,
+    toggles: local ? LOCAL_TOGGLES : inLibrary ? CARD_TOGGLE_ORDER : NO_TOGGLES,
     extras,
   };
 }
 
 /** L'état des trois bascules d'une carte (`useCardToggles`). */
 export type CardToggleStates = Readonly<Record<CardToggleKind, boolean>>;
+
+/**
+ * Des bascules fournies par l'appelant plutôt que lues sur le serveur — un
+ * titre `local`, dont la coche « vu » vit en base sur l'appareil.
+ */
+export interface CardToggleHandlers {
+  states: CardToggleStates;
+  onToggle: (kind: CardToggleKind) => void;
+}
 
 const TOGGLE_LABEL_KEYS: Record<CardToggleKind, readonly [add: string, remove: string]> = {
   watchlist: ["addToWatchlist", "removeFromWatchlist"],

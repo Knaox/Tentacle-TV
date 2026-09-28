@@ -2,7 +2,14 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EyeOff, Info } from "lucide-react";
 import { useCardToggles } from "@tentacle-tv/api-client";
-import { cardExtraLabelKey, cardToggleLabelKey, type CardOverlay, type CardToggleKind, type MediaItem } from "@tentacle-tv/shared";
+import {
+  cardExtraLabelKey,
+  cardToggleLabelKey,
+  type CardOverlay,
+  type CardToggleHandlers,
+  type CardToggleKind,
+  type MediaItem,
+} from "@tentacle-tv/shared";
 import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "./cardGlyphs";
 import { stopCardClick } from "./cardEvents";
@@ -22,6 +29,8 @@ interface CardActionTrayProps {
   onOpenDetails?: () => void;
   /** Extra `dismiss` : « Ne plus me proposer ». */
   onDismiss?: () => void;
+  /** Bascules d'un titre lu sur le disque : l'état et le geste viennent de l'appelant. */
+  localToggles?: CardToggleHandlers;
 }
 
 /** Les gabarits des boutons de capsule. */
@@ -51,15 +60,20 @@ export function CardActionTray({
   stretch = false,
   onOpenDetails,
   onDismiss,
+  localToggles,
 }: CardActionTrayProps) {
   const { t } = useTranslation("cards");
   const { box, icon } = TRAY_SIZE[size];
+  const sizes = { box, icon };
 
   return (
     <CardTrayCapsule label={label} stretch={stretch}>
-      {item && overlay.toggles.length > 0 && (
-        <CardTrayToggles item={item} toggles={overlay.toggles} box={box} icon={icon} />
-      )}
+      {overlay.toggles.length > 0 &&
+        (localToggles ? (
+          <CardTrayToggleButtons toggles={overlay.toggles} handlers={localToggles} {...sizes} />
+        ) : item ? (
+          <ServerTrayToggles item={item} toggles={overlay.toggles} {...sizes} />
+        ) : null)}
       {overlay.extras.map((extra) => {
         if (extra === "offline") {
           // Bureau ET droit, sinon PAS rendu (ni grisé, ni cadenas). Même
@@ -80,17 +94,29 @@ export function CardActionTray({
   );
 }
 
+interface TogglesProps {
+  toggles: readonly CardToggleKind[];
+  box: string;
+  icon: string;
+}
+
 /**
- * Les bascules seules. Composant à part : `useCardToggles` s'abonne aux Sets
- * de séries, et une carte hors bibliothèque n'a rien à y lire.
+ * Les bascules lues sur le serveur. Composant à part : `useCardToggles`
+ * s'abonne aux Sets de séries, et une carte hors bibliothèque — ou lue sur le
+ * disque — n'a rien à y lire.
  */
-function CardTrayToggles({ item, toggles, box, icon }: { item: MediaItem; toggles: readonly CardToggleKind[]; box: string; icon: string }) {
-  const { t } = useTranslation("cards");
+function ServerTrayToggles({ item, ...rest }: TogglesProps & { item: MediaItem }) {
   const state = useCardToggles(item);
+  return <CardTrayToggleButtons {...rest} handlers={{ states: state.states, onToggle: state.toggle }} />;
+}
+
+/** Les boutons des bascules, quelle que soit la source de leur état. */
+function CardTrayToggleButtons({ toggles, box, icon, handlers }: TogglesProps & { handlers: CardToggleHandlers }) {
+  const { t } = useTranslation("cards");
   return (
     <>
       {toggles.map((kind) => {
-        const active = state[kind];
+        const active = handlers.states[kind];
         return (
           <CardTrayButton
             key={kind}
@@ -98,7 +124,7 @@ function CardTrayToggles({ item, toggles, box, icon }: { item: MediaItem; toggle
             active={active}
             accent={kind === "favorite"}
             label={t(cardToggleLabelKey(kind, active))}
-            onPress={() => state.toggle(kind)}
+            onPress={() => handlers.onToggle(kind)}
           >
             <ToggleGlyph kind={kind} className={icon} filled={active} />
           </CardTrayButton>

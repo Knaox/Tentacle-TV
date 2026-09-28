@@ -65,6 +65,18 @@ describe("resolveCardOverlay", () => {
     expect(resolveCardOverlay({ variant: "poster", ...LIBRARY, rateable: false }).rate).toBe(false);
   });
 
+  it("réduit un titre lu sur le disque à la coche « vu », sans note ni hors ligne", () => {
+    const poster = resolveCardOverlay({ variant: "poster", inLibrary: false, playable: true, rateable: true, offline: true, local: true });
+    expect(poster.toggles).toEqual(["watched"]);
+    expect(poster.rate).toBe(false);
+    expect(poster.extras).toEqual([]);
+    expect(poster.play).toEqual({ labelKey: "play" });
+    expect(poster.open).toBe("details");
+    const landscape = resolveCardOverlay({ variant: "landscape", ...LIBRARY, offline: true, local: true });
+    expect(landscape.open).toBe("play");
+    expect(landscape.extras).toEqual(["details"]);
+  });
+
   it("met « garder hors ligne » avant la fiche, là où la plateforme le permet", () => {
     const overlay = resolveCardOverlay({ variant: "landscape", ...LIBRARY, offline: true });
     expect(overlay.extras).toEqual(["offline", "details"]);

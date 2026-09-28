@@ -1,7 +1,13 @@
 import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useCardRatingTarget, type RatingIdentity } from "@tentacle-tv/api-client";
-import { resolveCardOverlay, type CardOverlayVariant, type MediaItem } from "@tentacle-tv/shared";
+import {
+  CARD_TOGGLE_ORDER,
+  resolveCardOverlay,
+  type CardOverlayVariant,
+  type CardToggleHandlers,
+  type MediaItem,
+} from "@tentacle-tv/shared";
 import { CardActionTray } from "./CardActionTray";
 import { CardHoverShell } from "./CardHoverShell";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
@@ -29,6 +35,11 @@ interface CardHoverOverlayProps {
   onOpenDetails?: () => void;
   /** Extra « Ne plus me proposer » d'une recommandation. */
   onDismiss?: () => void;
+  /**
+   * Titre lu sur le DISQUE (catalogue local) : seule la coche « vu », dont
+   * l'appelant fournit l'état et le geste ; ni note ni requête au serveur.
+   */
+  local?: CardToggleHandlers;
 }
 
 /**
@@ -54,12 +65,13 @@ export function CardHoverOverlay({
   meta,
   onOpenDetails,
   onDismiss,
+  local,
 }: CardHoverOverlayProps) {
   const { t } = useTranslation("cards");
   const landscape = variant === "landscape";
   // Une identité fournie (titre hors bibliothèque) court-circuite la
-  // résolution — et sa requête de série.
-  const target = useCardRatingTarget(ratingIdentity === undefined ? item : null, {
+  // résolution — et sa requête de série. Un titre local n'en fait aucune.
+  const target = useCardRatingTarget(ratingIdentity === undefined && !local ? item : null, {
     scope: landscape ? "item" : "series",
     enabled: true,
   });
@@ -73,9 +85,14 @@ export function CardHoverOverlay({
     resume: play?.resume,
     rateable: identity !== null || target.pending,
     offline: supportsDownloads(),
+    local: local !== undefined,
   });
   const playLabel = overlay.play && play ? `${play.label ?? t(overlay.play.labelKey)} — ${title}` : null;
   const hasTray = overlay.toggles.length > 0 || overlay.extras.length > 0;
+  // Pleine largeur sur une affiche seulement quand le plateau est complet :
+  // une capsule d'un ou deux boutons (hors bibliothèque, titre local) épouse
+  // son contenu, au centre — étirée, un bouton seul flotterait au bord.
+  const stretch = !landscape && overlay.toggles.length >= CARD_TOGGLE_ORDER.length;
 
   return (
     <>
@@ -101,17 +118,16 @@ export function CardHoverOverlay({
           </div>
         )}
         {hasTray && (
-          // Une capsule sans bascule (hors bibliothèque) épouse son contenu,
-          // au centre : pleine largeur, un bouton seul flotterait au bord.
-          <div className={landscape ? "flex justify-end" : overlay.toggles.length > 0 ? "" : "flex justify-center"}>
+          <div className={landscape ? "flex justify-end" : stretch ? "" : "flex justify-center"}>
             <CardActionTray
               item={item}
               overlay={overlay}
               label={title}
               size={landscape ? "md" : "sm"}
-              stretch={!landscape && overlay.toggles.length > 0}
+              stretch={stretch}
               onOpenDetails={onOpenDetails}
               onDismiss={onDismiss}
+              localToggles={local}
             />
           </div>
         )}
