@@ -22,3 +22,15 @@ describe("isAllowedProxyPath — mesure de débit", () => {
     expect(isAllowedProxyPath("Playback/BitrateTest")).toBe(true);
   });
 });
+
+describe("isAllowedProxyPath — nouveautés de Jellyfin 12", () => {
+  it("laisse passer « Fait partie de » (collections d'un titre) et les filtres de langues", () => {
+    expect(isAllowedProxyPath("Items/abc/Collections")).toBe(true);
+    expect(isAllowedProxyPath("Items/Filters2")).toBe(true);
+  });
+
+  it("n'ouvre pas pour autant la gestion des collections", () => {
+    expect(isAllowedProxyPath("Collections")).toBe(false);
+    expect(isAllowedProxyPath("Collections/abc/Items")).toBe(false);
+  });
+});

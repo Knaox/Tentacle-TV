@@ -44,6 +44,12 @@ function namer(locale: string): LanguageNamer {
   }
 }
 
+/** Le nom d'une langue dans celle de l'interface (« fr » → « Français »), le code à défaut. */
+export function languageName(code: string, locale: string): string {
+  const normalized = normalizeLanguageCode(code);
+  return normalized ? namer(locale)(normalized) : code.toUpperCase();
+}
+
 /** Les langues distinctes des pistes d'un type, dans l'ordre du fichier. */
 export function streamLanguages(
   streams: readonly MediaStream[] | null | undefined,

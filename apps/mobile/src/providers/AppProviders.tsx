@@ -35,6 +35,7 @@ import {
   HOME_PERSIST_WHITELIST,
   RECO_PAGE_KEY,
 } from "@tentacle-tv/api-client";
+import { i18n } from "@tentacle-tv/shared";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuthRefresh } from "@/auth/useAuthRefresh";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
@@ -88,6 +89,8 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
     const MOBILE_VERSION: string = require("../../package.json").version ?? "1.0.0";
     const deviceName = Platform.OS === "android" ? "Tentacle-Android" : "Tentacle-iOS";
     const c = new JellyfinClient(jellyfinBase, storage, uuid, deviceName, "Tentacle TV - Mobile", MOBILE_VERSION);
+    // Jellyfin 12 nomme pistes et libellés dans la langue de l'interface (Accept-Language).
+    c.followLanguage(i18n);
     const token = storage.getItem("tentacle_token");
     if (token) c.setAccessToken(token);
     return c;

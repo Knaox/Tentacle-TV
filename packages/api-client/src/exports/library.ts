@@ -10,6 +10,11 @@ export {
 } from "../hooks/useSeasonEpisodeList";
 export { useSeasonBrowser, type SeasonBrowser, type SeasonBrowserOptions } from "../hooks/useSeasonBrowser";
 export { useRandomLibraryBackdrop, getLibraryBackdropKey, prefetchLibraryBackdrop } from "../hooks/useLibraryBackdrop";
+// Nouveautés de Jellyfin 12, derrière une détection de capacité : filtres de
+// langues du catalogue, et « Fait partie de » (collections d'un titre).
+export { useLibraryLanguages } from "../hooks/useLibraryLanguages";
+export { parseLibraryLanguages, libraryLanguagesPath, type LanguageOption, type LibraryLanguages } from "../hooks/libraryLanguages";
+export { useIncludedInCollections, includedInPath } from "../hooks/useIncludedInCollections";
 export { useSearchItems } from "../hooks/useSearchItems";
 // Le moteur de recherche du serveur Tentacle (web, bureau et mobile), et ce
 // que les plugins trouvent hors de la bibliothèque.

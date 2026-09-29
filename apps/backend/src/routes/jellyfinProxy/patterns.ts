@@ -13,6 +13,8 @@ const ALLOWED_PROXY_PATTERNS: RegExp[] = [
   // Items & metadata
   /^Items(\/[^/]+)?(\/Images|\/Similar|\/Ancestors|\/PlaybackInfo)?$/,
   /^Items\/[^/]+\/Images\//,
+  // « Fait partie de » : les collections d'un titre (Jellyfin 12.0+).
+  /^Items\/[^/]+\/Collections$/,
 
   // User data
   /^Users\/[^/]+\/Images\/Primary$/,

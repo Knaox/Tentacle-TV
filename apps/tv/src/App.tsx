@@ -118,6 +118,8 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   // pas changer l'identifiant des devices Android déjà appariés.
   const clientName = Platform.OS === "ios" ? "Apple TV" : "AndroidTV";
   const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, clientName, "Tentacle TV - TV", TV_VERSION);
+  // Jellyfin 12 nomme pistes et libellés dans la langue de l'interface (Accept-Language).
+  jfClient.followLanguage(i18n);
 
   const savedToken = storage.getItem("tentacle_token");
   if (savedToken) {

@@ -16,6 +16,8 @@ export interface FetchWithRetryOptions {
   /** Telemetry/fire-and-forget calls (playback reporting): a 401 must NOT count
    *  toward the auth-expired threshold nor log the user out. */
   noAuthExpiry?: boolean;
+  /** Langue de l'interface (`Accept-Language`) : Jellyfin 12 y nomme pistes et libellés. */
+  language?: string | null;
 }
 
 export interface FetchWithRetryState {
@@ -72,6 +74,7 @@ export async function fetchWithRetry<T>(
     "Content-Type": "application/json",
     [JELLYFIN_AUTH_HEADER]: opts.authHeader,
     ...(opts.accessToken ? { [JELLYFIN_TOKEN_HEADER]: opts.accessToken } : {}),
+    ...(opts.language ? { "Accept-Language": opts.language } : {}),
     ...(opts.init?.headers as Record<string, string>),
   };
 

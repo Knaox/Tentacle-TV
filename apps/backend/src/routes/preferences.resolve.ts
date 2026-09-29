@@ -24,6 +24,9 @@ import { getPrisma } from "../services/db";
 import type { JellyfinUser } from "../middleware/auth";
 import { ALIAS_MAP, isForcedTrack, langMatches, parseVariant, variantMatchesTitle } from "./preferences.lang";
 
+/** Préférence « VO » — même valeur que `ORIGINAL_AUDIO_LANG` de @tentacle-tv/shared (le backend n'en dépend pas). */
+const ORIGINAL_AUDIO_LANG = "original";
+
 const resolveSchema = z.object({
   libraryId: z.string().min(1),
   libraryIds: z.array(z.string()).optional(),
@@ -34,7 +37,11 @@ const resolveSchema = z.object({
     language: z.string().optional(),
     isDefault: z.boolean().optional(),
     title: z.string().optional(),
+    /** Piste de la version originale (`IsOriginal`, Jellyfin 12+). */
+    isOriginal: z.boolean().optional(),
   })).default([]),
+  /** Langue originale du titre (`OriginalLanguage`, Jellyfin 12+) — pour la préférence « VO ». */
+  originalLanguage: z.string().max(16).nullable().optional(),
   subtitleTracks: z.array(z.object({
     index: z.number(),
     language: z.string().optional(),
@@ -117,6 +124,7 @@ export function registerResolveRoute(app: FastifyInstance): void {
 function resolveAudio(app: FastifyInstance, body: ResolveBody, pref: TrackPreference): number | null {
   let audioIndex = body.audioTracks.find((t) => t.isDefault)?.index ?? body.audioTracks[0]?.index ?? null;
   if (!pref.audioLang) return audioIndex;
+  if (pref.audioLang === ORIGINAL_AUDIO_LANG) return originalAudio(body) ?? audioIndex;
 
   const [baseLang, variant] = parseVariant(pref.audioLang);
   const langGroup = ALIAS_MAP.get(baseLang.toLowerCase());
@@ -144,6 +152,18 @@ function resolveAudio(app: FastifyInstance, body: ResolveBody, pref: TrackPrefer
     audioIndex = langCandidates[0].index;
   }
   return audioIndex;
+}
+
+/**
+ * La « VO » : la piste que Jellyfin marque originale, sinon celle de la langue
+ * originale du titre. Un Jellyfin d'avant 12.0 ne donne ni l'une ni l'autre :
+ * la piste par défaut du fichier reste choisie.
+ */
+function originalAudio(body: ResolveBody): number | null {
+  const flagged = body.audioTracks.find((t) => t.isOriginal);
+  if (flagged) return flagged.index;
+  const original = body.originalLanguage;
+  return original ? body.audioTracks.find((t) => langMatches(t.language, original))?.index ?? null : null;
 }
 
 /**

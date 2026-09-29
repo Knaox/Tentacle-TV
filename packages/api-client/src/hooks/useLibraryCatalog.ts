@@ -17,6 +17,13 @@ export interface CatalogFilters {
   minCommunityRating?: number;
   isFavorite?: boolean;
   studioIds?: string[];
+  /**
+   * Langues audio / de sous-titres (codes Jellyfin : « fre », « fra »…) —
+   * Jellyfin 12+ seulement : un serveur plus ancien IGNORE le paramètre et rend
+   * tout. N'en passer que si `useLibraryLanguages` a dit que le serveur sait.
+   */
+  audioLanguages?: string[];
+  subtitleLanguages?: string[];
   /** "light" (TV) : champs minimum pour la grille ; "full" (web, défaut) :
    *  + ProviderIds/Studios (requis par le filtre plateforme web). */
   fields?: "light" | "full";
@@ -31,9 +38,9 @@ export function getLibraryCatalogKey(libraryId: string | undefined, filters: Cat
     sortBy = "DateCreated", sortOrder = "Descending",
     genreIds, years, statusFilter, searchTerm,
     limit = 30, minCommunityRating, isFavorite, studioIds,
-    fields = "full",
+    audioLanguages, subtitleLanguages, fields = "full",
   } = filters;
-  return ["library", "catalog", libraryId, sortBy, sortOrder, genreIds, years, statusFilter, searchTerm, limit, minCommunityRating, isFavorite, studioIds, fields];
+  return ["library", "catalog", libraryId, sortBy, sortOrder, genreIds, years, statusFilter, searchTerm, limit, minCommunityRating, isFavorite, studioIds, audioLanguages, subtitleLanguages, fields];
 }
 
 interface CatalogFetchClient {
@@ -51,7 +58,7 @@ function buildCatalogPageFetcher(
     sortBy = "DateCreated", sortOrder = "Descending",
     genreIds, years, statusFilter, searchTerm,
     limit = 30, minCommunityRating, isFavorite, studioIds,
-    fields = "full",
+    audioLanguages, subtitleLanguages, fields = "full",
   } = filters;
   // RecursiveItemCount requis par le filtre des séries vides ci-dessous ;
   // MediaSources requis pour les chips qualité au focus/hover.
@@ -78,6 +85,8 @@ function buildCatalogPageFetcher(
     if (isFavorite) url += `&IsFavorite=true`;
     if (minCommunityRating != null) url += `&MinCommunityRating=${minCommunityRating}`;
     if (studioIds && studioIds.length > 0) url += `&StudioIds=${studioIds.join(",")}`;
+    if (audioLanguages && audioLanguages.length > 0) url += `&AudioLanguages=${audioLanguages.map(encodeURIComponent).join(",")}`;
+    if (subtitleLanguages && subtitleLanguages.length > 0) url += `&SubtitleLanguages=${subtitleLanguages.map(encodeURIComponent).join(",")}`;
     if (searchTerm && searchTerm.length >= 2) url += `&searchTerm=${encodeURIComponent(searchTerm)}`;
     return client.fetch<{ Items: MediaItem[]; TotalRecordCount: number }>(url).then((res) => ({
       Items: res.Items.filter((item) =>

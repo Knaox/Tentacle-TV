@@ -41,6 +41,18 @@ export class JellyfinClient {
   };
   /** When true, send credentials: "include" (httpOnly cookies) instead of token headers. */
   useCredentials = false;
+  /**
+   * Langue de l'interface, envoyée en `Accept-Language` : Jellyfin 12 y rend
+   * noms de pistes (« Japonais - AAC - Stéréo ») et libellés serveur. Sans
+   * effet sur un Jellyfin plus ancien, qui l'ignore.
+   */
+  language: string | null = null;
+
+  /** Suit la langue de l'interface (i18next) pour `Accept-Language`. */
+  followLanguage(i18n: { language?: string; on(event: "languageChanged", cb: (lng: string) => void): unknown }): void {
+    this.language = i18n.language ?? null;
+    i18n.on("languageChanged", (lng) => { this.language = lng; });
+  }
 
   constructor(
     baseUrl: string,
@@ -223,6 +235,7 @@ export class JellyfinClient {
         onAuthExpired: this.authExpiredCallback,
         isLoggingIn: this._isLoggingIn,
         noAuthExpiry: opts?.noAuthExpiry,
+        language: this.language,
       },
       this.fetchState,
     );

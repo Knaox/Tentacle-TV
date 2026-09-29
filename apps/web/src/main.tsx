@@ -157,6 +157,9 @@ const jellyfinClient = new JellyfinClient(
   clientVersion,
 );
 
+// Jellyfin 12 nomme pistes et libellés dans la langue de l'interface (Accept-Language).
+jellyfinClient.followLanguage(i18n);
+
 // Web: use httpOnly cookies for auth (XSS-proof token storage)
 if (!isDesktop) {
   jellyfinClient.useCredentials = true;

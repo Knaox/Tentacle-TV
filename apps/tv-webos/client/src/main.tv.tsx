@@ -135,6 +135,8 @@ const jellyfinClient = new JellyfinClient(
   "Tentacle TV - webOS",
   __APP_VERSION_WEB__,
 );
+// Jellyfin 12 nomme pistes et libellés dans la langue de l'interface (Accept-Language).
+jellyfinClient.followLanguage(i18n);
 
 // L'authentification vient du jumelage quand il y en a un, du cookie sinon.
 //

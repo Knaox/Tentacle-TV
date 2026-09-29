@@ -16,6 +16,8 @@ export interface AudioTrackInfo {
   language?: string;
   isDefault?: boolean;
   title?: string;
+  /** Piste de la version originale, marquée par Jellyfin (`IsOriginal`, 12.0+). */
+  isOriginal?: boolean;
 }
 
 export interface SubtitleTrackInfo {
@@ -32,7 +34,16 @@ export interface TrackResolution {
 
 // ── Language display list ──
 
+/**
+ * La préférence « VO » : la langue originale DU TITRE, quelle qu'elle soit —
+ * le japonais d'un animé, l'anglais d'un film américain. Jellyfin 12 la donne
+ * (`OriginalLanguage` sur la fiche, `IsOriginal` sur la piste) ; plus ancien,
+ * il ne la connaît pas et la piste par défaut du fichier reste choisie.
+ */
+export const ORIGINAL_AUDIO_LANG = "original";
+
 export const LANGUAGES = [
+  { code: ORIGINAL_AUDIO_LANG, label: "VO (langue originale)" },
   { code: "fre", label: "Français" },
   { code: "fre-vff", label: "Français VFF" },
   { code: "fre-vfq", label: "Français VFQ" },
@@ -179,10 +190,20 @@ export function variantMatchesTitle(title: string | undefined, variant: string):
 
 // ── Client-side track resolution ──
 
+/** La piste de la VO : celle que Jellyfin marque, sinon celle de la langue originale du titre. */
+export function originalAudioIndex(tracks: readonly AudioTrackInfo[], originalLanguage?: string | null): number | null {
+  const flagged = tracks.find((t) => t.isOriginal);
+  if (flagged) return flagged.index;
+  if (!originalLanguage) return null;
+  return tracks.find((t) => langMatches(t.language, originalLanguage))?.index ?? null;
+}
+
 export function resolveMediaTracks(
   pref: LibraryPreference | null,
   audioTracks: AudioTrackInfo[],
   subtitleTracks: SubtitleTrackInfo[],
+  /** La langue originale du titre (`OriginalLanguage`, Jellyfin 12+), pour la préférence « VO ». */
+  originalLanguage?: string | null,
 ): TrackResolution {
   // No preference — use defaults
   if (!pref) {
@@ -195,7 +216,9 @@ export function resolveMediaTracks(
   // Resolve audio: prefer matching language, fallback to default.
   // Supports variant codes like "fre-vff" or "fre-vfq" — splits into base lang + variant tag.
   let audioIndex = audioTracks.find((t) => t.isDefault)?.index ?? audioTracks[0]?.index ?? null;
-  if (pref.audioLang) {
+  if (pref.audioLang === ORIGINAL_AUDIO_LANG) {
+    audioIndex = originalAudioIndex(audioTracks, originalLanguage) ?? audioIndex;
+  } else if (pref.audioLang) {
     const [baseLang, variant] = parseVariant(pref.audioLang);
     const langCandidates = audioTracks.filter((t) => langMatches(t.language, baseLang));
     if (variant && langCandidates.length > 0) {
