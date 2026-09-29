@@ -4,8 +4,9 @@ import { getCompatManifestState } from "../jellyfinCompat/manifestStore";
 import type { JellyfinSetupReport } from "../jellyfinCompat/setupContract";
 import { getSeerrConfig } from "../seerConfig";
 import { BACKEND_VERSION } from "../version";
-import { evaluateSetup, type SetupContext } from "./setupChecks";
-import { readSetupSnapshot } from "./setupSnapshot";
+import { evaluateSetup, isVideoLibrary, type SetupContext } from "./setupChecks";
+import { readSetupSnapshot, type SetupSnapshot } from "./setupSnapshot";
+import { forgetTrailerCoverage } from "./trailerCoverage";
 
 /**
  * Les réglages recommandés de Jellyfin, tels que les lit l'administration : un
@@ -43,12 +44,19 @@ export function setupContext(version: string): SetupContext {
   };
 }
 
+/** Une bibliothèque vidéo s'actualise : ce qu'on vient de compter sera faux dans une minute. */
+export function isRefreshing(snapshot: SetupSnapshot): boolean {
+  return snapshot.libraries?.some((library) => isVideoLibrary(library) && library.RefreshStatus === "Active") ?? false;
+}
+
 export async function buildSetupReport(): Promise<JellyfinSetupReport> {
   const read = await readSetupSnapshot();
   const checkedAt = new Date().toISOString();
   if (!read.ok) {
     return { checkedAt, jellyfinVersion: null, dashboardUrl: dashboardUrl(), restartPending: false, error: read.failure, checks: [] };
   }
+  // Pendant une actualisation, le compte des bandes-annonces se refait à chaque lecture.
+  if (isRefreshing(read.snapshot)) forgetTrailerCoverage();
   return {
     checkedAt,
     jellyfinVersion: read.snapshot.version,

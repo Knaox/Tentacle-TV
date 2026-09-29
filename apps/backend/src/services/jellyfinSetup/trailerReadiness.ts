@@ -1,6 +1,7 @@
 import { getJellyfinUrl } from "../configStore";
 import type { SetupLibrary, TrailerReadiness, TrailerReadinessReason } from "../jellyfinCompat/setupContract";
 import { evaluateSetup, isVideoLibrary, tmdbPluginActive } from "./setupChecks";
+import { isRefreshing } from "./setupService";
 import { readSetupSnapshot, type SetupSnapshot } from "./setupSnapshot";
 
 /**
@@ -48,21 +49,22 @@ export function summarizeReadiness(snapshot: SetupSnapshot, tmdbLibraries: Setup
   return { state: reasons.length > 0 ? "misconfigured" : "ready", reasons, coverage, checkedAt };
 }
 
-async function compute(): Promise<TrailerReadiness> {
+/** Le résumé, et s'il peut être gardé : pas pendant qu'une bibliothèque s'actualise. */
+async function compute(): Promise<{ value: TrailerReadiness; keep: boolean }> {
   const checkedAt = new Date().toISOString();
   const read = await readSetupSnapshot();
-  if (!read.ok) return { state: "unknown", reasons: [], coverage: null, checkedAt };
+  if (!read.ok) return { value: { state: "unknown", reasons: [], coverage: null, checkedAt }, keep: true };
   // Les fournisseurs par bibliothèque, lus par la même règle que la vue d'ensemble.
   const tmdb = evaluateSetup(read.snapshot).find((check) => check.id === "metadataTmdb");
-  return summarizeReadiness(read.snapshot, tmdb?.libraries ?? null, checkedAt);
+  return { value: summarizeReadiness(read.snapshot, tmdb?.libraries ?? null, checkedAt), keep: !isRefreshing(read.snapshot) };
 }
 
 export async function readTrailerReadiness(): Promise<TrailerReadiness> {
   const key = getJellyfinUrl() ?? "";
   if (cached && cached.key === key && Date.now() - cached.at < TTL_MS) return cached.value;
   inFlight ??= compute()
-    .then((value) => {
-      cached = { key, value, at: Date.now() };
+    .then(({ value, keep }) => {
+      cached = keep ? { key, value, at: Date.now() } : null;
       return value;
     })
     .finally(() => {

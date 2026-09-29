@@ -87,8 +87,10 @@ export function useJellyfinSetup() {
     // C'est l'état d'aujourd'hui qu'on vient y chercher.
     staleTime: 0,
     retry: retryUnlessOutdated,
-    // Une tâche lancée d'ici (génération, repérage) se suit jusqu'au bout.
-    refetchInterval: (query) => (query.state.data?.checks.some((check) => check.task?.state === "running") ? 5000 : false),
+    // Une tâche lancée d'ici (génération, repérage) ou une actualisation de
+    // bibliothèque se suit jusqu'au bout.
+    refetchInterval: (query) =>
+      query.state.data?.checks.some((check) => check.task?.state === "running" || check.trailers?.refreshing) ? 5000 : false,
   });
 }
 
