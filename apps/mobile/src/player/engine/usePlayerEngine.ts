@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform } from "react-native";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { pickMediaSource, type MediaItem } from "@tentacle-tv/shared";
 import { isAirPlayRouteActive, isMpvAvailable, supportsAv1HardwareDecode } from "../../../modules/mpv-player";
 import {
   decideEngine, nativeMediaPlausible,
@@ -40,7 +40,7 @@ const AIRPLAY_DECISION: EngineDecision = { engine: "native", reason: "airplay" }
  * redevient celle du média, et le lecteur avancé reprend là où le système ne
  * le remplaçait que pour AirPlay.
  */
-export function usePlayerEngine(item: MediaItem | undefined): PlayerEngineState {
+export function usePlayerEngine(item: MediaItem | undefined, version?: string | null): PlayerEngineState {
   const settings = useEngineSettings();
   const [override, setOverride] = useState<EngineDecision | null>(null);
   // Initialisé sur la route courante ; jamais remis à zéro au changement
@@ -55,7 +55,8 @@ export function usePlayerEngine(item: MediaItem | undefined): PlayerEngineState 
     triedRef.current = new Set();
   }, [itemId]);
 
-  const source = item?.MediaSources?.[0];
+  // La version choisie sur la fiche : c'est ELLE qui sera lue, et jugée.
+  const source = pickMediaSource(item?.MediaSources, version);
   const mpvAvailable = isMpvAvailable();
 
   // Ce que le routeur juge du média — AirPlay mis à part, tenu à côté.

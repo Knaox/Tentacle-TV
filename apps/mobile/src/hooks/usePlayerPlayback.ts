@@ -4,7 +4,7 @@ import {
   usePlaybackReporting, usePlaybackSegments, useEpisodeNavigation,
   type PlaybackReporter,
 } from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, pickMediaSource, ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaItem, MediaStream as JfStream, MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import type { ExternalSubtitleSource, PlayerEngineKind } from "@/player/engine/types";
 import {
@@ -83,7 +83,7 @@ export interface PlayerSessionCore {
  * la façade (`usePlayerEngine`) : le profil d'appareil envoyé à Jellyfin est
  * le sien, et les pistes se changent dans le moteur en lecture directe.
  */
-export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind) {
+export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, version?: string | null) {
   const client = useJellyfinClient();
   const userId = useUserId();
   const { data: item } = useMediaItem(itemId);
@@ -111,13 +111,12 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind) {
   const audioIndexRef = useRef(0);
   const subtitleIndexRef = useRef(-1);
 
-  const streams: JfStream[] = useMemo(
-    () => item?.MediaSources?.[0]?.MediaStreams ?? [],
-    [item],
-  );
-  const mediaSourceId = item?.MediaSources?.[0]?.Id ?? itemId;
+  // La version choisie sur la fiche (Jellyfin 12 : aussi un épisode), sinon la première.
+  const source = pickMediaSource(item?.MediaSources, version);
+  const streams: JfStream[] = useMemo(() => source?.MediaStreams ?? [], [source]);
+  const mediaSourceId = source?.Id ?? itemId;
   // Échelle, palier et cap automatique de débit : tout vit dans usePlayerQuality.
-  const quality = usePlayerQuality({ itemId, mediaSource: item?.MediaSources?.[0] });
+  const quality = usePlayerQuality({ itemId, mediaSource: source });
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
   const episodeNav = useEpisodeNavigation(item);

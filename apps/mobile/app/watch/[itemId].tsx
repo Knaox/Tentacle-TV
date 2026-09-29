@@ -29,7 +29,8 @@ import { PLAYER } from "@/theme";
  * attendrait vingt secondes une réponse qui ne viendra pas.
  */
 export default function WatchRoute() {
-  const { itemId } = useLocalSearchParams<{ itemId: string }>();
+  // `version` : la version choisie sur la fiche (`VERSION_QUERY_PARAM`), sinon celle de Jellyfin.
+  const { itemId, version } = useLocalSearchParams<{ itemId: string; version?: string }>();
   const { t } = useTranslation("downloads");
   const router = useRouter();
   const { localSource, waiting, refetch } = useLocalSource(itemId);
@@ -64,5 +65,5 @@ export default function WatchRoute() {
       />
     );
   }
-  return <PlayerScreen itemId={itemId} />;
+  return <PlayerScreen itemId={itemId} version={version} />;
 }

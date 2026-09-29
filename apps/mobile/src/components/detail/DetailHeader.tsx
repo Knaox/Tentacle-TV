@@ -1,16 +1,17 @@
-import { type ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 import { View, Pressable } from "react-native";
 import Animated from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { VERSION_QUERY_PARAM, type MediaItem } from "@tentacle-tv/shared";
 import { spacing, RADIUS, useTheme } from "../../theme";
 import { DetailActionsRow } from "./DetailActionsRow";
 import { DetailPlayCta } from "./DetailPlayCta";
 import { DetailStageBlock } from "./DetailStageBlock";
 import { DetailTrailerButton } from "./DetailTrailerButton";
+import { DetailVersionPicker } from "./DetailVersionPicker";
 import { detailPlayCta } from "./computeBadges";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../../constants/featureFlags";
 import type { useMediaDetailAnimations } from "../../hooks/useMediaDetailAnimations";
@@ -48,12 +49,18 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
   const client = useJellyfinClient();
   const theme = useTheme();
   const cta = detailPlayCta(item, seriesWatchState, t);
+  // La version à lire : seulement quand « Lecture » lit CE titre (pas l'épisode
+  // à suivre d'une série) ; le lecteur la lit dans l'adresse.
+  const [version, setVersion] = useState<string | null>(null);
+  const playsItem = cta.targetId === item.Id;
+  const watchPath = playsItem && version ? `/watch/${cta.targetId}?${VERSION_QUERY_PARAM}=${encodeURIComponent(version)}` : `/watch/${cta.targetId}`;
 
   const playEl = (
     <>
       {cta.targetId && (
         <Animated.View style={[{ marginTop: spacing.xl, alignItems: "center" }, anims.actionsStyle]}>
-          <DetailPlayCta cta={cta} title={item.Name} onPress={() => router.push(`/watch/${cta.targetId}`)} />
+          <DetailPlayCta cta={cta} title={item.Name} onPress={() => router.push(watchPath)} />
+          {playsItem && <DetailVersionPicker item={item} value={version} onChange={setVersion} />}
         </Animated.View>
       )}
       <DetailTrailerButton item={item} belowPlay={!!cta.targetId} animStyle={anims.actionsStyle} />

@@ -24,18 +24,18 @@ import { PlayerLoadingScreen } from "../components/player/loading/PlayerLoadingS
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
 import { PlayerErrorView } from "../components/player/PlayerErrorView";
 
-interface Props { itemId: string }
+interface Props { itemId: string; version?: string }
 
-export function PlayerScreen({ itemId }: Props) {
+export function PlayerScreen({ itemId, version }: Props) {
   const { t } = useTranslation("player");
   const engineRef = useRef<PlayerEngineHandle>(null);
 
   // Le moteur se décide sur les flux de l'élément, AVANT PlaybackInfo : le
   // profil envoyé à Jellyfin est celui du moteur qui lira.
   const { data: routedItem } = useMediaItem(itemId);
-  const eng = usePlayerEngine(routedItem);
+  const eng = usePlayerEngine(routedItem, version);
   const engineSettings = useEngineSettings();
-  const pb = usePlayerPlayback(itemId, eng.engine);
+  const pb = usePlayerPlayback(itemId, eng.engine, version);
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
