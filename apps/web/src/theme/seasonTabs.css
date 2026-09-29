@@ -35,6 +35,20 @@
   --season-tab-dot: var(--brand-accent-deep);
 }
 
+/* Une bande posée sur une feuille toujours noire (le lecteur du miroir) garde
+ * les valeurs SOMBRES, quel que soit le thème : en clair, des pastilles
+ * nacrées sur du noir détonneraient. Les jetons se redéfinissent pour la
+ * seule bande. */
+[data-season-tabs][data-tone="dark"] {
+  --glass-tint-strong: rgba(10, 10, 18, 0.72);
+  --season-tab-border: rgba(255, 255, 255, 0.14);
+  --season-tab-dot: var(--brand-accent-light);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.78);
+  --fill-soft: rgba(255, 255, 255, 0.08);
+  --fill-medium: rgba(255, 255, 255, 0.12);
+}
+
 .season-tab {
   position: relative;
   isolation: isolate;

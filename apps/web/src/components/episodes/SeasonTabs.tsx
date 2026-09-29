@@ -12,8 +12,11 @@ const EDGE = 64;
 /** Délai d'intention avant de précharger une saison survolée : balayer la bande ne charge rien. */
 const INTENT_MS = 120;
 
+/** Ce qu'une pastille lit d'une saison — une saison Jellyfin, ou une saison gardée sur l'appareil. */
+export type SeasonTabItem = Pick<MediaItem, "Id" | "Name" | "RecursiveItemCount" | "ChildCount" | "UserData">;
+
 export interface SeasonTabsProps {
-  seasons: MediaItem[];
+  seasons: readonly SeasonTabItem[];
   selectedId: string | undefined;
   /** La saison de l'épisode à reprendre (ou de l'épisode ouvert) : marquée d'un point. */
   markedId?: string;
@@ -22,7 +25,11 @@ export interface SeasonTabsProps {
   onIntent?: (seasonId: string) => void;
   /** `sm` : le panneau du lecteur. */
   size?: "md" | "sm";
+  /** `dark` : posée sur une feuille toujours noire (lecteur du miroir), quel que soit le thème. */
+  tone?: "dark";
   className?: string;
+  /** Marges intérieures de la bande (le miroir la fait courir d'un bord à l'autre). */
+  stripClassName?: string;
 }
 
 /** Identifiant DOM d'un onglet — le panneau d'épisodes s'y rattache (`aria-labelledby`). */
@@ -41,7 +48,7 @@ export const seasonTabId = (seasonId: string) => `season-tab-${seasonId}`;
  *   bande ne charge pas chaque saison traversée, il la précharge).
  * - Bords : fondu par masque ; flèches au survol, du côté qui déborde.
  */
-export function SeasonTabs({ seasons, selectedId, markedId, onSelect, onIntent, size = "md", className = "" }: SeasonTabsProps) {
+export function SeasonTabs({ seasons, selectedId, markedId, onSelect, onIntent, size = "md", tone, className = "", stripClassName = "" }: SeasonTabsProps) {
   const { t } = useTranslation("common");
   const { ref, canLeft, canRight, scrollBy } = useHorizontalScroll();
   const arrows = useHoverMount(150);
@@ -70,10 +77,11 @@ export function SeasonTabs({ seasons, selectedId, markedId, onSelect, onIntent, 
         role="tablist"
         aria-label={t("seasons")}
         data-season-tabs
+        data-tone={tone}
         onKeyDown={onKeyDown}
         // `py-2` / `-my-2` : la lueur de la pastille active et l'anneau de focus
         // débordent — un défilement horizontal rogne aussi à la verticale.
-        className="relative -my-2 flex gap-2 overflow-x-auto py-2 scrollbar-hide"
+        className={`relative -my-2 flex gap-2 overflow-x-auto py-2 scrollbar-hide ${stripClassName}`}
         style={{ overscrollBehaviorX: "contain", scrollBehavior: "smooth", ...edgeFadeMask(canLeft, canRight, EDGE) }}
       >
         {seasons.map((season) => (
@@ -95,7 +103,7 @@ export function SeasonTabs({ seasons, selectedId, markedId, onSelect, onIntent, 
 }
 
 interface SeasonTabProps {
-  season: MediaItem;
+  season: SeasonTabItem;
   selected: boolean;
   marked: boolean;
   focusable: boolean;

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
-import { HorizontalScrollRow } from "../HorizontalScrollRow";
+import { SeasonTabs, type SeasonTabItem } from "../episodes/SeasonTabs";
 import { useDownloadsList } from "../../downloads/useDownloadState";
 import { byEpisodeNumber } from "@tentacle-tv/offline-core";
 import { localResourceUrl, useDownloadsRootReady } from "../../downloads/localFiles";
@@ -15,6 +15,9 @@ interface LocalEpisodeSelectorPanelProps {
 }
 
 const LAST = Number.MAX_SAFE_INTEGER;
+
+/** L'identifiant d'onglet d'une saison gardée (son numéro, ou « inconnue »). */
+const seasonKey = (num: number | null | undefined) => (num != null ? `season-${num}` : "season-unknown");
 
 /**
  * Variante LOCALE du panneau « Épisodes » du lecteur : liste les épisodes
@@ -48,6 +51,17 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
     [siblings],
   );
   const currentSeason = siblings.find((e) => e.itemId === currentEpisodeId)?.parentIndexNumber ?? null;
+  // Les saisons GARDÉES, sous la forme que lisent les pastilles : leur compteur
+  // est celui des épisodes présents sur l'appareil.
+  const tabs = useMemo<SeasonTabItem[]>(
+    () =>
+      seasonNumbers.map((num) => ({
+        Id: seasonKey(num),
+        Name: num != null ? t("downloads:seasonLabel", { num }) : t("downloads:seasonUnknown"),
+        RecursiveItemCount: siblings.filter((e) => e.parentIndexNumber === num).length,
+      })),
+    [seasonNumbers, siblings, t],
+  );
   const [selected, setSelected] = useState<number | null | undefined>(undefined);
   const effectiveSeason = selected !== undefined ? selected : currentSeason;
   const episodes = useMemo(
@@ -85,25 +99,15 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
       </div>
 
       {seasonNumbers.length > 1 && (
-        <HorizontalScrollRow
-          wrapperClassName="border-b border-line-subtle"
-          className="items-center gap-2 px-4 py-2"
-          ariaLabel={t("player:episodes")}
-        >
-          {seasonNumbers.map((num) => (
-            <button
-              key={num ?? "unknown"}
-              onClick={() => setSelected(num)}
-              className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium leading-5 transition-colors ${
-                num === effectiveSeason
-                  ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]"
-                  : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
-              }`}
-            >
-              {num != null ? t("downloads:seasonLabel", { num }) : t("downloads:seasonUnknown")}
-            </button>
-          ))}
-        </HorizontalScrollRow>
+        <div className="border-b border-line-subtle px-2 py-2.5">
+          <SeasonTabs
+            seasons={tabs}
+            selectedId={seasonKey(effectiveSeason)}
+            markedId={seasonKey(currentSeason)}
+            onSelect={(id) => setSelected(seasonNumbers.find((num) => seasonKey(num) === id) ?? null)}
+            size="sm"
+          />
+        </div>
       )}
 
       <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">

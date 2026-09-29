@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import {
-  useSeasons,
-  useSeasonEpisodesLite,
+  useSeasonBrowser,
   useJellyfinClient,
   useMediaItem,
   useMyEpisodeRatings,
@@ -12,7 +11,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { HorizontalScrollRow } from "../HorizontalScrollRow";
+import { SeasonTabs } from "../episodes/SeasonTabs";
 import { EpisodeScoreChips } from "../rating/EpisodeRatingLine";
 import { tmdbIdForItem } from "../../lib/ratingIdentity";
 import { CardProgressBar } from "../cards/CardProgressBar";
@@ -39,13 +38,19 @@ export function EpisodeSelectorPanel({
 }: EpisodeSelectorPanelProps) {
   const { t } = useTranslation("player");
   const navigate = useNavigate();
-  const { data: seasons } = useSeasons(seriesId);
-  const [seasonId, setSeasonId] = useState<string | undefined>(currentSeasonId);
-  const effectiveSeasonId = seasonId ?? currentSeasonId ?? seasons?.[0]?.Id;
   // Sans leurs sources : le panneau n'affiche ni qualité ni langues, et le
   // serveur mettait une demi-seconde à calculer les sources d'une longue saison
-  // (196 épisodes : 2,7 Mo contre 0,3). Le bureau et la LG en profitent.
-  const { data: episodes } = useSeasonEpisodesLite(seriesId, effectiveSeasonId);
+  // (196 épisodes : 2,7 Mo contre 0,3). Le bureau et la LG en profitent. La
+  // mécanique est celle de la fiche : voisines préchargées, préchargement au
+  // survol, saison de l'épisode en lecture marquée.
+  const browser = useSeasonBrowser({
+    seriesId,
+    preferredSeasonId: currentSeasonId,
+    currentEpisodeSeasonId: currentSeasonId,
+    sources: false,
+  });
+  const { seasons, episodes } = browser;
+  const effectiveSeasonId = browser.selectedSeasonId;
   // Notes des épisodes (TMDB + compte) : un cache par saison, un seul abonnement.
   const { data: series } = useMediaItem(seriesId);
   const seriesTmdbId = tmdbIdForItem(series);
@@ -93,25 +98,16 @@ export function EpisodeSelectorPanel({
       </div>
 
       {seasons && seasons.length > 1 && (
-        <HorizontalScrollRow
-          wrapperClassName="border-b border-line-subtle"
-          className="items-center gap-2 px-4 py-2"
-          ariaLabel={t("player:episodes")}
-        >
-          {seasons.map((s) => (
-            <button
-              key={s.Id}
-              onClick={() => setSeasonId(s.Id)}
-              className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium leading-5 transition-colors ${
-                s.Id === effectiveSeasonId
-                  ? "border-[rgba(var(--brand-accent-rgb),0.45)] bg-[var(--brand-accent-soft)] text-[var(--brand-accent-light)]"
-                  : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
-              }`}
-            >
-              {s.Name}
-            </button>
-          ))}
-        </HorizontalScrollRow>
+        <div className="border-b border-line-subtle px-2 py-2.5">
+          <SeasonTabs
+            seasons={seasons}
+            selectedId={effectiveSeasonId}
+            markedId={browser.markedSeasonId}
+            onSelect={browser.select}
+            onIntent={browser.prefetch}
+            size="sm"
+          />
+        </div>
       )}
 
       <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
@@ -126,7 +122,7 @@ export function EpisodeSelectorPanel({
             mine={ep.IndexNumber != null ? (myRatings.get(ep.IndexNumber) ?? null) : null}
           />
         ))}
-        {(!episodes || episodes.length === 0) && (
+        {!browser.episodesLoading && (!episodes || episodes.length === 0) && (
           <p className="px-3 py-8 text-center text-sm text-content-quaternary">{t("player:noEpisodes")}</p>
         )}
       </div>
