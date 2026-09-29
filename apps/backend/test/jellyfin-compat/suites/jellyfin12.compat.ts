@@ -20,7 +20,8 @@ feature("jellyfin12.episode-versions", () => {
 
   check("l'épisode en deux fichiers n'est qu'une entrée à deux versions", async () => {
     const versions = mediaVersions((await item(bbS02E01)).MediaSources);
-    expect(versions.map((v) => v.label)).toEqual(["1080p", "720p"]);
+    // Jellyfin met en tête la dernière version LUE par le compte : l'ordre varie.
+    expect(versions.map((v) => v.label).sort()).toEqual(["1080p", "720p"]);
   });
 
   check("PlaybackInfo et flux de la version choisie, pas de la première", async () => {
