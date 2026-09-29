@@ -632,3 +632,148 @@ vide garde un GPU dédié éveillé sur un portable Optimus, et la mesure ne
 l'exigeait pas. Autre reste, préexistant : l'application de développement sort
 en SIGSEGV à la fermeture par `window.close()`, avant comme après ce chantier,
 une fois le ménage de la colle fait.
+
+## Le démarrage, deuxième passe — préchauffer (29.09.2026)
+
+Symptôme rapporté : « le premier titre est toujours lent ; si je reviens sur le
+même titre c'est rapide, mais un AUTRE titre est lent » — alors que Windows est
+instantané. Le parking de la première passe ne couvrait que trois secondes après
+une lecture : le retour à la bibliothèque les dépasse, et la première lecture
+d'un lancement n'avait rien à reprendre. Chaque titre neuf repayait donc la
+naissance de la sortie vidéo.
+
+### Trois bancs, rien sur la session de l'utilisateur
+
+Mesuré pendant que l'utilisateur regardait une série sur la même machine : rien
+ne s'affiche sur sa session, rien ne sort sur ses haut-parleurs, rien ne touche
+son compte.
+
+1. **libplacebo seule** (`plbench.c`) : la `libplacebo.so.351` du dépôt appelée
+   EXACTEMENT comme mpv 0.41 (`mppl_create_vulkan` : files, extensions, chaîne de
+   fonctionnalités), sans fenêtre — instance et périphérique chronométrés, dix-huit
+   créations.
+2. **libmpv seule** (`mpvbench.c`) : la `libmpv.so.2` du dépôt, les options de
+   l'app (Linux, montage collé), `ao=null`, dans un **KWin VIRTUEL** —
+   `kwin_wayland --virtual` sous `dbus-run-session`, dossiers XDG à lui, clavier
+   virtuel coupé dans son `kwinrc` (sinon il réveille des portails qui, eux, se
+   connectent à `wayland-0`). Le Vulkan de la RTX 5090 y présente normalement
+   (`vkcube`, 60 i/s). Flux Jellyfin en lecture directe (clé admin, `Static=true`,
+   rien dans l'historique).
+3. **L'application de dev** dans ce même KWin virtuel (`XDG_DATA_HOME`/`CONFIG`/
+   `CACHE` à elle, `PULSE_SERVER` inexistant + ALSA `null`), connectée au compte
+   de TEST par un backend jetable (données sans plugins, jeton d'appareil signé),
+   pilotée par CDP : soit les gestes du lecteur par le pont (`mpv_init`,
+   `loadfile`, `mpv_destroy`), soit la vraie page `/watch/<id>`. Captures du
+   KWin virtuel par `spectacle -b -n -f` lancé DANS la session imbriquée.
+
+⚠️ Jellyfin 12.1 refuse désormais l'en-tête `X-Emby-Token` (401) :
+`Authorization: MediaBrowser Token="…"`. Le paramètre `api_key` des URL de flux
+passe toujours.
+
+### Où va la seconde — libplacebo seule
+
+| Demande | `vkCreateDevice` | destruction |
+|---|---|---|
+| celle de mpv (files graphique + calcul + transfert + décodage vidéo) | 545-597 ms | 150 ms |
+| sans la file de décodage vidéo | 550 ms | 145 ms |
+| sans extensions ni fonctionnalités optionnelles | 553 ms | 150 ms |
+| sans la file de **transfert** asynchrone | 544-560 ms | 149 ms |
+| sans la file de **calcul** asynchrone | 390-406 ms | 108 ms |
+| une seule file, rien d'optionnel | 347-366 ms | 94 ms |
+
+Le pilote NVIDIA (615.71) paie ~350 ms par périphérique, quoi qu'on lui demande,
+et à CHAQUE création — une instance ou un périphérique gardés vivants à côté
+n'y changent rien (l'instance, elle, passe de 45 à 15 ms : les ICD restent
+chargés). La file de calcul coûte ~160 ms à elle seule : le manuel de mpv dit
+de `--vulkan-async-compute` « Nvidia users may want to disable it ». Coupée sur
+NVIDIA (`linux/mpvBaseOptions.ts`) ; vingt secondes de 4K HDR (nvdec, HDR10+ et
+Dolby Vision) et de 4K AV1 décodé au processeur : zéro image perdue ou retardée,
+avec comme sans.
+
+### libmpv seule — de `loadfile` à la première image, quatre titres différents
+
+| Montage | 1re image | image qui bouge |
+|---|---|---|
+| instance neuve (l'app hors parking) | 687-810 ms | 871-1019 ms |
+| instance neuve, sans file de calcul | 547-615 ms | 728-824 ms |
+| instance reprise (garée après une lecture) | 78-87 ms | 252-294 ms |
+| instance préchauffée, jamais lue | 79-154 ms | 253-364 ms |
+
+À froid, dans le journal de mpv : ouverture réseau 65 ms, **Vulkan 658 ms**
+(dont `vkCreateDevice` 591), **interop CUDA 63 ms**, décodeur et image 35 ms.
+L'instance préchauffée paie encore l'interop CUDA à son premier titre (~70 ms),
+jamais ensuite. L'« image qui bouge » attend en plus le remplissage de
+`cache-pause-wait` (15 s de flux) — choix du lecteur, pas de Linux.
+
+### La mémoire, qui a décidé du recyclage
+
+| Instance au repos | VRAM | RSS |
+|---|---|---|
+| préchauffée, jamais lue | 91 Mio | 290 Mo |
+| garée après un 1080p nvdec | 864 Mio | 1 Go |
+| garée après un 4K HDR nvdec | **2 079 Mio** | 700 Mo |
+| garée après un 1080p décodé au processeur | 153 Mio | 830 Mo |
+
+Garée, une instance garde le pool de surfaces du décodeur, retenu par la
+dernière image : charger un fichier logiciel minuscule (`av://lavfi:color`) le
+libère (2 079 → 670 Mio). Forcer des redessins pour vieillir les blocs de
+libplacebo (`MAXIMUM_SLAB_AGE` = 32 présentations, jamais atteintes par une
+fenêtre garée qui ne présente plus rien) et `malloc_trim` ne rendent rien.
+Deux gigas gardés indéfiniment, sur une carte de 8 Go d'un poste qui joue aussi,
+c'était non. D'où le schéma retenu (`video/mpvPark.ts`, `ipc/videoPrewarm.ts`) :
+
+- une instance **mince** naît d'avance — la page la demande (`mpv_prewarm`) deux
+  secondes après la connexion, avec les options mêmes de `mpv_init`, sinon la
+  signature du parking diffère et rien n'est repris ;
+- après une lecture, l'instance **chaude** reste 60 s (enchaînement, retour),
+  puis elle est arrêtée et une mince la remplace, à la dernière demande de la page ;
+- sur batterie, le comportement d'avant (3 s, ni recyclage ni préchauffage), et
+  le passage sur batterie arrête l'instance garée ; la mise en veille aussi (un
+  périphérique NVIDIA peut revenir perdu du réveil), une neuve naît au réveil ;
+- garée, la pompe d'évènements passe de 20 à 250 ms ;
+- `mpv_init`, `mpv_destroy`, le préchauffage, l'expiration et l'alimentation
+  passent par UNE file (`serialized`), et l'expiration ne touche que l'instance
+  qu'elle a garée (poignée comparée).
+
+Mesuré dans l'app de dev : après recyclage, 66 Mio de VRAM pour tout le
+processus principal (2 037 Mio juste avant, instance chaude après un 4K HDR).
+Relevé KWin : la fenêtre mince naît titre vide, hors barre des tâches et hors
+Alt+Tab, sous l'hôte et à sa géométrie ; l'hôte reste actif.
+
+### Dans l'application
+
+Par le pont (mêmes gestes que le lecteur), de `mpv_init` à la première image :
+**989 ms** à froid, **141 ms** instance reprise, **283 ms** 4K HDR depuis une
+instance mince (interop CUDA comprise). Par la vraie page, du clic à la première
+image : **1 183-1 498 ms** à froid, **306-333 ms** au calme depuis une instance
+préchauffée ou chaude. Ces derniers chiffres sont bruités — l'accueil recharge
+des listes de 150 ms à 1,5 s à chaque retour, pendant que mpv ouvre le titre
+suivant — et la page met elle-même 150 à 250 ms avant d'envoyer le fichier
+(fiche du titre, préférences) : ce coût-là est aussi celui de Windows.
+
+### Écarté, et pourquoi
+
+- **`force-window=yes` dès l'init**, pour monter la sortie vidéo pendant
+  l'ouverture réseau : le cœur de mpv est BLOQUÉ dans `vo_create` le temps de la
+  création Vulkan, et le `loadfile` attend derrière (mesuré : 529-621 ms contre
+  547-615, aucun recouvrement).
+- **Une instance ou un périphérique Vulkan « témoins »** gardés vivants pour
+  réchauffer le pilote : `vkCreateDevice` coûte pareil.
+- **Filtrer les ICD et couches implicites** du chargeur Vulkan (douze pilotes
+  Mesa chargés pour rien, `VK_LAYER_MESA_device_select`) : ~30 ms d'instance,
+  pour un risque de mauvais GPU sur les machines hybrides.
+- **Précharger l'interop CUDA** dans l'instance mince : ~70 ms au premier titre,
+  contre des centaines de Mio de VRAM gardés sans lecture.
+- **`probesize`/`analyzeduration`** de `demuxer-lavf-o` : ~10 ms sur un MP4, sans
+  effet sur un MKV (démuxeur de mpv).
+
+### Ce qui reste
+
+- Le disque du serveur : un titre jamais lu coûte 30-75 ms de premier octet et
+  90-185 ms pour l'index en fin de MKV ; préchargés (1 Mo de tête, 2 Mo de fin),
+  la première image passe de 254-282 à 79-86 ms. Un préchargement à l'intention
+  (fiche, survol) — idéalement fait par le serveur lui-même, sans bande passante
+  cliente — vaudrait sur toutes les plateformes.
+- La page : 150-250 ms entre le clic et le `loadfile`.
+- Les montages sans parking (X11, GNOME en plein écran forcé) : seule la file de
+  calcul coupée les accélère.

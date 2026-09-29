@@ -362,12 +362,16 @@ Cinq conséquences à ne pas défaire :
   PENDANT la réduction — la réduction s'annulait elle-même. Pendant la lecture,
   c'est la fenêtre mpv qui représente l'app dans Alt+Tab (la vignette n'y rend
   qu'UNE fenêtre) ; son titre vide veut dire « garée ».
-- **mpv reste au chaud entre deux épisodes sur le montage collé**
-  (`ipc/videoLifecycle.ts`, `video/mpvPark.ts`) : `vkCreateDevice` coûte 569 ms
-  sur NVIDIA, par instance. Et hors Windows, aucune lecture ni écriture
-  SYNCHRONE de propriété mpv — elles retiennent le thread principal le temps
-  du montage vidéo (`mpvProperties.ts`). Mesures : `docs/LINUX-FENETRE-VIDEO.md`,
-  « Le démarrage, mesuré ».
+- **mpv est préchauffé et reste chaud sur le montage collé**
+  (`ipc/videoPrewarm.ts`, `video/mpvPark.ts`) : `vkCreateDevice` coûte ~550 ms
+  sur NVIDIA, par instance (~390 sans la file de calcul, coupée sur NVIDIA).
+  Une instance MINCE naît d'avance (91 Mio, la page l'envoie avec les options
+  MÊMES de `mpv_init`, sinon rien n'est repris) ; après une lecture, l'instance
+  chaude reste 60 s puis est recyclée — gardée, elle retiendrait jusqu'à 2 Go
+  de VRAM. Rien sur batterie ni à travers une veille. Et hors Windows, aucune
+  lecture ni écriture SYNCHRONE de propriété mpv — elles retiennent le thread
+  principal le temps du montage vidéo (`mpvProperties.ts`). Mesures :
+  `docs/LINUX-FENETRE-VIDEO.md`, « Le démarrage, mesuré » et « deuxième passe ».
 
 Le verdict HDR se lit sur le COUPLE `video-params` / `video-target-params`, jamais
 sur l'un des deux : sur un écran laissé en HDR, un contenu SDR sort lui aussi en
