@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { TrailerGuideLinkContext, TrailerGuideStep } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, spacing, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
@@ -40,9 +40,13 @@ export const GuideStepCard = memo(function GuideStepCard({
         </View>
         {first && <Text style={g.paragraph}>{t(first)}</Text>}
         {step.exampleKey && (
-          <Text style={g.example} selectable>
-            {t(step.exampleKey)}
-          </Text>
+          // Des chemins de fichiers : une ligne chacun, jamais coupés — le
+          // bloc défile de côté plutôt que de casser « Dune (2021)-trailer ».
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={g.exampleBox} contentContainerStyle={g.exampleContent}>
+            <Text style={g.example} selectable>
+              {t(step.exampleKey)}
+            </Text>
+          </ScrollView>
         )}
         {rest.map((key) => (
           <Text key={key} style={g.paragraph}>

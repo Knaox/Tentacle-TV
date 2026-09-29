@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "reac
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useJellyfinDashboardUrl } from "@tentacle-tv/api-client";
+import { useJellyfinDashboardUrl, useTrailerReadiness } from "@tentacle-tv/api-client";
 import { TRAILER_GUIDE_STEPS, type TrailerGuideLinkContext, type TrailerGuidePart } from "@tentacle-tv/shared";
 import { SubtleBackground } from "@/components/ui";
 import { FLOATING_BACK_SIZE, FloatingBackButton } from "@/components/navigation/FloatingBackButton";
@@ -60,12 +60,16 @@ export function TrailerGuideScreen() {
     },
     [offsets, top],
   );
-  const jumped = useRef(false);
+  // `?section=admin` : le saut attend l'encadré « Sur ce serveur », qui
+  // arrive avec le diagnostic et pousse la partie vers le bas — puis suit la
+  // partie tant que la personne n'a pas fait défiler elle-même.
+  const readiness = useTrailerReadiness();
+  const settled = readiness.isFetched || readiness.isError;
+  const touched = useRef(false);
   useEffect(() => {
-    if (jumped.current || params.section !== "admin" || offsets.admin === undefined) return;
-    jumped.current = true;
+    if (touched.current || params.section !== "admin" || offsets.admin === undefined || !settled) return;
     jump("admin", false);
-  }, [params.section, offsets.admin, jump]);
+  }, [params.section, offsets.admin, settled, jump]);
 
   return (
     <SubtleBackground ambient>
@@ -74,11 +78,12 @@ export function TrailerGuideScreen() {
           ref={scroll}
           contentContainerStyle={{ paddingTop: top, paddingBottom: insets.bottom + spacing.xxxl, paddingHorizontal: padding }}
           showsVerticalScrollIndicator={false}
+          onScrollBeginDrag={() => { touched.current = true; }}
         >
-          <GuideHeader topInset={0} onJump={(part) => jump(part)} />
+          <GuideHeader topInset={0} onJump={(part) => { touched.current = true; jump(part); }} />
           <GuideStatusNotice isAdmin={isAdmin} />
           <View style={st.part} onLayout={measure("everyone")}>
-            <GuideEveryoneSection isAdmin={isAdmin} onSeeSteps={() => jump("admin")} />
+            <GuideEveryoneSection isAdmin={isAdmin} onSeeSteps={() => { touched.current = true; jump("admin"); }} />
           </View>
           <View style={st.part} onLayout={measure("admin")}>
             <Text style={g.partTitle} accessibilityRole="header">

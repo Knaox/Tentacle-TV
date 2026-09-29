@@ -30,10 +30,13 @@ export const makeGuideStyles = (t: AppTheme) =>
     blockTitle: { fontSize: 16, lineHeight: 22, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
     paragraph: { marginTop: spacing.sm, fontSize: 15, lineHeight: 23, fontFamily: FONT_FAMILY.regular, color: t.colors.text.secondary },
     small: { fontSize: 14, lineHeight: 21, fontFamily: FONT_FAMILY.regular, color: t.colors.text.secondary },
+    // Un filet d'1 point, pas `hairlineWidth` : le tiers de point rendait la
+    // largeur du texte fractionnaire (295,33), et iOS y perdait la dernière
+    // ligne de certains paragraphes (mesuré au simulateur). Le web a 1 px.
     card: {
       padding: spacing.lg,
       borderRadius: RADIUS.xl,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: 1,
       borderColor: t.colors.border.subtle,
       backgroundColor: t.colors.fill.faint,
     },
@@ -45,15 +48,7 @@ export const makeGuideStyles = (t: AppTheme) =>
       justifyContent: "center",
       backgroundColor: t.colors.fill.soft,
     },
-    example: {
-      marginTop: spacing.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm + 2,
-      borderRadius: RADIUS.lg,
-      backgroundColor: t.colors.fill.subtle,
-      fontFamily: MONO,
-      fontSize: 12,
-      lineHeight: 20,
-      color: t.colors.text.secondary,
-    },
+    exampleBox: { marginTop: spacing.md, borderRadius: RADIUS.lg, backgroundColor: t.colors.fill.subtle },
+    exampleContent: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
+    example: { fontFamily: MONO, fontSize: 12, lineHeight: 20, color: t.colors.text.secondary },
   });
