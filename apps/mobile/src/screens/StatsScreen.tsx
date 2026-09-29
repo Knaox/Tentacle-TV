@@ -6,10 +6,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRefreshViewingStats, useViewingStats, viewingStatsFailure } from "@tentacle-tv/api-client";
 import { statsLocale, VIEWING_STATS_PERIODS, type ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { SubtleBackground } from "@/components/ui";
-import { CollectionHero } from "@/components/collection/CollectionHero";
 import { FloatingBackButton } from "@/components/navigation/FloatingBackButton";
+import { StatsHeader } from "@/components/stats/StatsHeader";
 import { StatsFailure, StatsNeverWatched, StatsSkeleton } from "@/components/stats/StatsStates";
-import { useFeaturedTitle } from "@/components/stats/useFeaturedTitle";
 import { backOrHome } from "@/utils/backOrHome";
 import { spacing, useContentPadding, useTheme } from "@/theme";
 import { StatsBody } from "./stats/StatsBody";
@@ -23,8 +22,9 @@ const parsePeriod = (raw: unknown): ViewingStatsPeriod =>
 /**
  * « Vos statistiques » — ce que vous avez regardé, quand, comment, et ce que
  * vos recommandations ont appris de vous : la page du web, à la forme des
- * écrans empilés de l'app (l'ambiance du titre le plus regardé, le retour
- * flottant, tirer pour rafraîchir). `?period=30d|year` ouvre sur une période.
+ * écrans empilés de l'app (le retour flottant, tirer pour rafraîchir), aux
+ * couleurs de l'app — plus aucune image de titre en en-tête.
+ * `?period=30d|year` ouvre sur une période.
  *
  * Changer de période garde l'écran, estompé, le temps de la réponse ; tirer
  * vers le bas fait recalculer le serveur (au plus une fois toutes les 30 s).
@@ -46,7 +46,6 @@ export function StatsScreen() {
   const posterWidth = wide ? 136 : 112;
   const top = Math.max(insets.top, 24);
   const stats = query.data;
-  const featured = useFeaturedTitle(stats);
 
   const onPull = useCallback(() => {
     setPulling(true);
@@ -82,7 +81,7 @@ export function StatsScreen() {
           refreshControl={stats ? <RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={theme.colors.brand.violet} /> : undefined}
           showsVerticalScrollIndicator={false}
         >
-          <CollectionHero items={featured} title={t("title")} kicker={t("kicker")} icon="pie-chart" topInset={top} />
+          <StatsHeader title={t("title")} kicker={t("kicker")} topInset={top} inset={padding} />
           <View style={{ paddingHorizontal: padding }}>{body}</View>
         </ScrollView>
         <FloatingBackButton top={top} onPress={() => backOrHome(router)} />

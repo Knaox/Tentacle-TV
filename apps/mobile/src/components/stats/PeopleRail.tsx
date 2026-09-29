@@ -11,8 +11,8 @@ const SIZE = 72;
 
 /**
  * Les visages les plus retrouvés : portrait rond (initiale sans portrait),
- * nom, temps passé et nombre de titres. Toucher un visage lance la recherche
- * de son nom — ses autres titres de la bibliothèque.
+ * nom, nombre de titres puis temps passé. Toucher un visage lance la
+ * recherche de son nom — ses autres titres de la bibliothèque.
  */
 export const PeopleRail = memo(function PeopleRail({ people, inset }: { people: ViewingStatsPerson[]; inset: number }) {
   const st = useThemedStyles(makeStyles);
@@ -26,7 +26,8 @@ export const PeopleRail = memo(function PeopleRail({ people, inset }: { people: 
       contentContainerStyle={{ paddingHorizontal: inset, gap: spacing.lg }}
     >
       {people.map((p) => {
-        const caption = `${f.duration(p.seconds)} · ${f.t("personTitles", { count: p.titles })}`;
+        // Le nombre de titres d'abord : c'est lui qui classe ; le temps ne fait que départager.
+        const caption = `${f.t("personTitles", { count: p.titles })} · ${f.duration(p.seconds)}`;
         return (
           <Pressable
             key={`${p.role}-${p.tmdbId}`}

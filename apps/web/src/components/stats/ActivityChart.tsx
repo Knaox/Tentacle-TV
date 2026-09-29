@@ -14,7 +14,12 @@ const LABEL_SPACING = 30;
 
 export const MEASURED_COLOR = "var(--brand)";
 export const MEASURED_ACTIVE = "var(--brand-light)";
-export const ESTIMATED_COLOR = "rgba(var(--brand-rgb), 0.38)";
+/**
+ * L'estimé : la même teinte, plus pâle — une relation ORDINALE (même grandeur,
+ * moins de certitude), pas une autre série. 55 % : le plus pâle qui garde 2:1
+ * sur la carte en sombre comme en clair (validateur dataviz, `--ordinal`).
+ */
+export const ESTIMATED_COLOR = "rgba(var(--brand-rgb), 0.55)";
 
 /** Une colonne : carrée à la base, 4 px arrondis au bout de la donnée seulement. */
 function columnPath(x: number, w: number, yTop: number, yBottom: number, rounded: boolean): string {
@@ -120,7 +125,7 @@ export const ActivityChart = memo(function ActivityChart({ timeline }: { timelin
                     <path d={columnPath(x, barW, measuredTop, base, !both)} fill={isActive ? MEASURED_ACTIVE : MEASURED_COLOR} />
                   )}
                   {b.estimatedSeconds > 0 && estimatedTop < estimatedBottom && (
-                    <path d={columnPath(x, barW, estimatedTop, estimatedBottom, true)} fill={ESTIMATED_COLOR} opacity={isActive ? 1 : 0.9} />
+                    <path d={columnPath(x, barW, estimatedTop, estimatedBottom, true)} fill={ESTIMATED_COLOR} />
                   )}
                   {(i === n - 1 || (n - 1 - i) % labelEvery === 0) && (
                     <text x={LEFT + band * (i + 0.5)} y={TOP + PLOT_H + 17} textAnchor="middle" className="fill-content-tertiary text-[11px]">

@@ -49,7 +49,8 @@ export const ActivityChart = memo(function ActivityChart({ timeline }: { timelin
   const active = picked ?? model.peak;
 
   const measured = theme.colors.brand.violet;
-  const estimated = withAlpha(theme.colors.brand.violet, 0.38, theme.colors.brand.violet);
+  // Même teinte, plus pâle : l'estimé est un degré de certitude, pas une autre série (cf. le web).
+  const estimated = withAlpha(theme.colors.brand.violet, 0.55, theme.colors.brand.violet);
   const plotW = Math.max(0, width - LEFT - RIGHT);
   const band = n > 0 ? plotW / n : 0;
   const barW = Math.min(22, Math.max(3, band * 0.62));

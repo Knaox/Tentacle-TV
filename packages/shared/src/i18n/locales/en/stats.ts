@@ -132,7 +132,6 @@ export default {
   seriesEpisodes_other: "{{count}} episodes",
   moviesTitle: "Your movies",
   movieSeenOn: "Watched {{date}}",
-  movieViewings: "Watched {{count}} times",
   rank: "No. {{rank}}",
   seriesHint: "By time spent in this period",
   moviesFavoritesTitle: "Your favorite movies",
@@ -153,7 +152,6 @@ export default {
 
   decadesTitle: "Your decades",
   decadeLabel: "{{decade}}s",
-  languagesTitle: "Original languages",
 
   recordsTitle: "Your records",
   record_biggestDay: "Biggest day",

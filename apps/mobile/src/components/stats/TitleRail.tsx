@@ -1,15 +1,17 @@
 import { memo, useCallback } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
-import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { ReasonChips, type ReasonChip } from "./ReasonChips";
 
 export interface RailTitle {
   key: string;
   title: string;
   caption: string;
-  /** Pastille sous le titre (« Vu 2 fois »). */
-  chip?: string;
+  /** Les avis du titre (note, coup de cœur, favori…), sous la légende. */
+  chips?: ReasonChip[];
   imageUrl: string | null;
   /** Ouverture de la fiche ; absente pour un titre qu'on ne sait pas ouvrir. */
   onPress?: () => void;
@@ -17,8 +19,8 @@ export interface RailTitle {
 
 interface Props {
   items: RailTitle[];
-  /** Rang en grands chiffres à gauche de l'affiche (« Top »). */
-  ranked?: boolean;
+  /** Rang du premier titre, pour un classement ; absent : pas de rang. */
+  firstRank?: number;
   /** Largeur d'une affiche (plus large sur tablette). */
   posterWidth: number;
   /** Marge latérale de l'écran : la rangée déborde jusqu'aux bords. */
@@ -26,17 +28,18 @@ interface Props {
 }
 
 /**
- * Une rangée d'affiches qui défile à l'horizontale : titre, légende et, pour
- * un classement, le rang en grands chiffres calé sur le bas de l'affiche.
- * Liste virtualisée, cartes mémorisées, clés stables.
+ * Une rangée d'affiches qui défile à l'horizontale : titre, légende, avis
+ * et, pour un classement, le rang en petite pastille sur l'affiche — un
+ * repère, pas un chiffre géant. Liste virtualisée, cartes mémorisées, clés
+ * stables.
  */
-export const TitleRail = memo(function TitleRail({ items, ranked, posterWidth, inset }: Props) {
+export const TitleRail = memo(function TitleRail({ items, firstRank, posterWidth, inset }: Props) {
   const st = useThemedStyles(makeStyles);
   const renderItem = useCallback(
     ({ item, index }: { item: RailTitle; index: number }) => (
-      <RailCard item={item} rank={ranked ? index + 1 : undefined} posterWidth={posterWidth} />
+      <RailCard item={item} rank={firstRank !== undefined ? firstRank + index : undefined} posterWidth={posterWidth} />
     ),
-    [ranked, posterWidth]
+    [firstRank, posterWidth]
   );
   return (
     <FlatList
@@ -54,46 +57,43 @@ export const TitleRail = memo(function TitleRail({ items, ranked, posterWidth, i
 const RailCard = memo(function RailCard({ item, rank, posterWidth }: { item: RailTitle; rank?: number; posterWidth: number }) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const posterHeight = Math.round(posterWidth * 1.5);
+  const { t } = useTranslation("stats");
+  const label = [rank !== undefined ? t("rank", { rank }) : null, item.title, item.caption, ...(item.chips ?? []).map((c) => c.accessibilityLabel ?? c.label)]
+    .filter(Boolean)
+    .join(", ");
   return (
     <Pressable
       onPress={item.onPress}
       disabled={!item.onPress}
       accessibilityRole={item.onPress ? "button" : undefined}
-      accessibilityLabel={`${rank ? `${rank}. ` : ""}${item.title}, ${item.caption}${item.chip ? `, ${item.chip}` : ""}`}
-      style={({ pressed }) => [st.card, pressed && st.pressed]}
+      accessibilityLabel={label}
+      style={({ pressed }) => [{ width: posterWidth }, pressed && st.pressed]}
     >
-      <View style={st.top}>
+      <View style={[st.poster, { width: posterWidth, height: Math.round(posterWidth * 1.5) }]}>
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} recyclingKey={item.key} />
+        ) : (
+          <Feather name="film" size={26} color={theme.colors.text.quaternary} />
+        )}
         {rank !== undefined ? (
-          <View style={[st.rankBox, { height: posterHeight }]}>
-            <Text style={[st.rank, { color: withAlpha(theme.colors.brand.light, 0.55, theme.colors.brand.light) }]}>{rank}</Text>
+          <View style={st.rank}>
+            <Text style={st.rankTxt}>{rank}</Text>
           </View>
         ) : null}
-        <View style={[st.poster, { width: posterWidth, height: posterHeight }]}>
-          {item.imageUrl ? (
-            <Image source={{ uri: item.imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} recyclingKey={item.key} />
-          ) : (
-            <Feather name="film" size={26} color={theme.colors.text.quaternary} />
-          )}
-        </View>
       </View>
-      <View style={{ width: posterWidth, marginLeft: rank !== undefined ? st.rankBox.width - 10 : 0 }}>
-        <Text style={st.title} numberOfLines={2}>{item.title}</Text>
-        <Text style={st.caption} numberOfLines={1}>{item.caption}</Text>
-        {item.chip ? <Text style={[st.chip, { color: theme.colors.brand.light, backgroundColor: theme.colors.brand.ghost }]}>{item.chip}</Text> : null}
-      </View>
+      <Text style={st.title} numberOfLines={2}>{item.title}</Text>
+      {item.caption ? <Text style={st.caption} numberOfLines={1}>{item.caption}</Text> : null}
+      {item.chips && item.chips.length > 0 ? <View style={st.chips}><ReasonChips chips={item.chips} /></View> : null}
     </Pressable>
   );
 });
 
+// La pastille de rang est posée SUR l'affiche : noir et blanc constants dans les deux
+// thèmes, comme le badge de note des cartes.
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     list: { flexGrow: 0 },
-    card: {},
     pressed: { opacity: 0.7 },
-    top: { flexDirection: "row", alignItems: "flex-end" },
-    rankBox: { width: 44, justifyContent: "flex-end", marginRight: -10 },
-    rank: { fontSize: 64, lineHeight: 60, fontFamily: FONT_FAMILY.extrabold, letterSpacing: -2, textAlign: "right" },
     poster: {
       borderRadius: RADIUS.lg,
       overflow: "hidden",
@@ -103,16 +103,22 @@ const makeStyles = (t: AppTheme) =>
       borderColor: t.colors.border.subtle,
       backgroundColor: t.colors.fill.soft,
     },
+    rank: {
+      position: "absolute",
+      top: 6,
+      left: 6,
+      minWidth: 24,
+      height: 24,
+      paddingHorizontal: 6,
+      borderRadius: 6,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(255,255,255,0.2)",
+      backgroundColor: "rgba(0,0,0,0.7)",
+    },
+    rankTxt: { fontSize: 12, fontFamily: FONT_FAMILY.semibold, color: "#FFFFFF", fontVariant: ["tabular-nums"] },
     title: { marginTop: 8, fontSize: 14, lineHeight: 18, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
     caption: { marginTop: 2, fontSize: 12, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary, fontVariant: ["tabular-nums"] },
-    chip: {
-      alignSelf: "flex-start",
-      marginTop: 6,
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: RADIUS.pill,
-      overflow: "hidden",
-      fontSize: 11,
-      fontFamily: FONT_FAMILY.semibold,
-    },
+    chips: { marginTop: 6 },
   });

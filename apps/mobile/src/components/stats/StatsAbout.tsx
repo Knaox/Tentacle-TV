@@ -21,6 +21,9 @@ export const StatsAbout = memo(function StatsAbout({ stats }: { stats: ViewingSt
     since ? f.t("aboutEstimated") : f.t("aboutNoMeasure"),
     f.t("aboutCounts"),
     f.t("aboutTimeZone", { timeZone: stats.timeZone }),
+    f.t("aboutOrigins"),
+    stats.listening.since ? f.t("aboutListening", { date: f.isoDay(stats.listening.since, true) }) : null,
+    f.t("aboutRecords"),
     stats.taste.computedAt ? f.t("aboutTaste", { date: f.isoDay(stats.taste.computedAt, true) }) : null,
   ].filter((l): l is string => !!l);
 

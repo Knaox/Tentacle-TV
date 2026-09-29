@@ -1,17 +1,18 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import type { ViewingStats, ViewingStatsPeriod } from "@tentacle-tv/shared";
+import { listeningState, type ViewingStats, type ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { ActivityChart } from "@/components/stats/ActivityChart";
 import { RecordsBlock } from "@/components/stats/RecordsBlock";
 import { RhythmHeatmap } from "@/components/stats/RhythmHeatmap";
 import { StatsAbout } from "@/components/stats/StatsAbout";
 import { StatsBlock } from "@/components/stats/StatsBlock";
-import { DevicesBlock, GenresBlock, MixBlocks } from "@/components/stats/StatsDistributions";
-import { StatsHeroFigure } from "@/components/stats/StatsHeroFigure";
-import { StatsKpis } from "@/components/stats/StatsKpis";
+import { DevicesBlock, GenresBlock, MixBlock } from "@/components/stats/StatsDistributions";
+import { ListeningBlock, OriginsBlock } from "@/components/stats/StatsLanguages";
+import { MoviesBlock } from "@/components/stats/StatsMovies";
+import { StatsOverview } from "@/components/stats/StatsOverview";
 import { StatsPersona } from "@/components/stats/StatsPersona";
 import { StatsPeriodEmpty } from "@/components/stats/StatsStates";
-import { MoviesBlock, PeopleBlock, SeriesBlock } from "@/components/stats/StatsTitleBlocks";
+import { PeopleBlock, SeriesBlock } from "@/components/stats/StatsTitleBlocks";
 import { TasteBlock } from "@/components/stats/TasteBlock";
 import { useStatsFormat } from "@/components/stats/useStatsFormat";
 import { spacing } from "@/theme";
@@ -33,15 +34,36 @@ interface Props {
 }
 
 /**
- * Le corps de l'écran de statistiques, dans l'ordre du web : le chiffre, les
- * comptes, le profil de spectateur, l'activité, le rythme et les écrans, les
- * genres et la répartition, les séries, les films, les visages, les records,
- * puis le goût et d'où viennent les chiffres.
+ * Deux cartes par rangée sur tablette, empilées au téléphone ; une carte
+ * seule (l'autre n'a rien à dire) prend toute la largeur.
+ */
+function Pairs({ wide, cards }: { wide: boolean; cards: Array<[visible: boolean, node: ReactNode]> }) {
+  const shown = cards.filter(([visible]) => visible).map(([, node]) => node);
+  if (!wide) return <>{shown}</>;
+  const rows: ReactNode[][] = [];
+  for (let i = 0; i < shown.length; i += 2) rows.push(shown.slice(i, i + 2));
+  return (
+    <>
+      {rows.map((row, i) => (
+        <View key={i} style={st.row}>
+          {row.map((node, j) => <View key={j} style={st.half}>{node}</View>)}
+        </View>
+      ))}
+    </>
+  );
+}
+
+/**
+ * Le corps de l'écran de statistiques, dans l'ordre du web : la vue
+ * d'ensemble, le profil, l'activité, le rythme et les écrans, les genres et
+ * les formats, l'origine et « VF ou VO ? », les films préférés, les séries,
+ * les visages, les records, puis le goût et d'où viennent les chiffres.
  */
 export const StatsBody = memo(function StatsBody({ stats, period, onPeriodChange, pending, wide, posterWidth, inset }: Props) {
   const f = useStatsFormat();
   const empty = stats.totals.seconds < NOISE_SECONDS && stats.totals.movies + stats.totals.episodes === 0;
   const hasDevices = stats.devices.length > 0;
+  const { movieSeconds, seriesSeconds, animeSeconds } = stats.split;
 
   const rhythm = (
     <StatsBlock title={f.t("rhythmTitle")}>
@@ -51,13 +73,12 @@ export const StatsBody = memo(function StatsBody({ stats, period, onPeriodChange
 
   return (
     <View style={st.stack}>
-      <StatsHeroFigure stats={stats} period={period} onPeriodChange={onPeriodChange} pending={pending} />
+      <StatsOverview stats={stats} period={period} onPeriodChange={onPeriodChange} pending={pending} counters={!empty} wide={wide} />
       {empty ? (
         <StatsPeriodEmpty onShowAll={() => onPeriodChange("all")} />
       ) : (
         <View style={[st.stack, pending && st.pending]}>
-          <StatsKpis totals={stats.totals} wide={wide} />
-          <StatsPersona stats={stats} />
+          <StatsPersona stats={stats} wide={wide} />
           <StatsBlock title={f.t("activityTitle")} hint={f.t(`activityHint_${stats.timeline.unit}`)}>
             <ActivityChart key={period} timeline={stats.timeline} />
           </StatsBlock>
@@ -72,19 +93,17 @@ export const StatsBody = memo(function StatsBody({ stats, period, onPeriodChange
               <DevicesBlock stats={stats} />
             </>
           )}
-          {wide ? (
-            <View style={st.row}>
-              <View style={st.half}><GenresBlock stats={stats} /></View>
-              <View style={st.half}><MixBlocks stats={stats} /></View>
-            </View>
-          ) : (
-            <>
-              <GenresBlock stats={stats} />
-              <MixBlocks stats={stats} />
-            </>
-          )}
-          <SeriesBlock stats={stats} posterWidth={posterWidth} inset={inset} />
+          <Pairs
+            wide={wide}
+            cards={[
+              [stats.genres.length > 0, <GenresBlock key="genres" stats={stats} />],
+              [movieSeconds + seriesSeconds + animeSeconds > 0 || stats.decades.length > 0, <MixBlock key="mix" stats={stats} />],
+              [stats.origins.countries.length > 0, <OriginsBlock key="origins" stats={stats} />],
+              [listeningState(stats.listening) !== "hidden", <ListeningBlock key="listening" stats={stats} />],
+            ]}
+          />
           <MoviesBlock stats={stats} posterWidth={posterWidth} inset={inset} />
+          <SeriesBlock stats={stats} posterWidth={posterWidth} inset={inset} />
           <PeopleBlock stats={stats} inset={inset} />
           <RecordsBlock records={stats.records} wide={wide} />
         </View>

@@ -8,16 +8,14 @@ import { useStatsFormat } from "./useStatsFormat";
 
 type FeatherName = keyof typeof Feather.glyphMap;
 
-/** Le chargement, à la forme de l'écran rempli : le chiffre, les tuiles, deux cartes. */
+/** Le chargement, à la forme de l'écran rempli : la vue d'ensemble (chiffre et compteurs), le profil, deux cartes. */
 export const StatsSkeleton = memo(function StatsSkeleton() {
   const st = useThemedStyles(makeStyles);
   const f = useStatsFormat();
   return (
     <View style={st.skeleton} accessible accessibilityLabel={f.t("loading")} accessibilityRole="progressbar">
-      <Skeleton width="100%" height={172} radius={RADIUS.xl} />
-      <View style={st.skeletonTiles}>
-        {[0, 1, 2, 3].map((i) => <Skeleton key={i} width="48.5%" height={68} radius={RADIUS.xl} />)}
-      </View>
+      <Skeleton width="100%" height={300} radius={RADIUS.xl} />
+      <Skeleton width="100%" height={150} radius={RADIUS.xl} />
       <Skeleton width="100%" height={250} radius={RADIUS.xl} />
       <Skeleton width="100%" height={230} radius={RADIUS.xl} />
     </View>
@@ -107,7 +105,6 @@ export const StatsFailure = memo(function StatsFailure({ outdated, onRetry }: { 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     skeleton: { gap: spacing.md },
-    skeletonTiles: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: spacing.sm },
     frame: { alignItems: "center", gap: spacing.md, paddingVertical: spacing.xxxl, paddingHorizontal: spacing.lg },
     badge: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
     title: { fontSize: 22, lineHeight: 28, textAlign: "center", fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary },

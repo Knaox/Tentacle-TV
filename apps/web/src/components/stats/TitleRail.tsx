@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Film } from "lucide-react";
 import { CardImage } from "../cards/CardImage";
@@ -46,6 +47,7 @@ export const TitleRail = memo(function TitleRail({ items, ariaLabel, firstRank }
 });
 
 const RailCard = memo(function RailCard({ item, rank }: { item: RailTitle; rank?: number }) {
+  const { t } = useTranslation("stats");
   const body = (
     <>
       <span className={`relative block aspect-[2/3] ${POSTER} overflow-hidden rounded-xl bg-fill-soft ring-1 ring-line-subtle`}>
@@ -73,7 +75,7 @@ const RailCard = memo(function RailCard({ item, rank }: { item: RailTitle; rank?
     </>
   );
   const className = "group block rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--surface-0)]";
-  const label = [rank !== undefined ? `${rank}.` : null, item.title, item.caption, ...(item.chips ?? []).map((c) => c.ariaLabel ?? c.label)]
+  const label = [rank !== undefined ? t("rank", { rank }) : null, item.title, item.caption, ...(item.chips ?? []).map((c) => c.ariaLabel ?? c.label)]
     .filter(Boolean)
     .join(", ");
   if (item.href) {
