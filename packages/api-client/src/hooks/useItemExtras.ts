@@ -12,6 +12,13 @@ export interface ItemExtras {
   features: MediaItem[];
   /** Les deux, dans l'ordre de toutes les rangées « Extras » : bandes-annonces d'abord. */
   local: MediaItem[];
+  /** Les listes demandées ont toutes répondu (ou échoué) : plus rien n'est en route. */
+  settled: boolean;
+}
+
+/** Une liste est acquise : pas demandée, ou revenue (réponse ou erreur) — même lecture en v4 (TV) et v5. */
+function answered(wanted: boolean, query: { isSuccess: boolean; isError: boolean }): boolean {
+  return !wanted || query.isSuccess || query.isError;
 }
 
 const NONE: MediaItem[] = [];
@@ -27,11 +34,14 @@ const NONE: MediaItem[] = [];
  */
 export function useItemExtras(owner: ExtrasOwner | undefined): ItemExtras {
   const wanted = localExtrasToFetch(owner);
-  const { data: trailers } = useLocalTrailers(wanted.trailers ? owner?.Id : undefined);
-  const { data: features } = useSpecialFeatures(wanted.features ? owner?.Id : undefined);
+  const trailersQuery = useLocalTrailers(wanted.trailers ? owner?.Id : undefined);
+  const featuresQuery = useSpecialFeatures(wanted.features ? owner?.Id : undefined);
+  const trailers = trailersQuery.data;
+  const features = featuresQuery.data;
+  const settled = !!owner && answered(wanted.trailers, trailersQuery) && answered(wanted.features, featuresQuery);
   return useMemo(() => {
     const t = wanted.trailers ? (trailers ?? NONE) : NONE;
     const f = wanted.features ? (features ?? NONE) : NONE;
-    return { trailers: t, features: f, local: t.length || f.length ? [...t, ...f] : NONE };
-  }, [wanted.trailers, wanted.features, trailers, features]);
+    return { trailers: t, features: f, local: t.length || f.length ? [...t, ...f] : NONE, settled };
+  }, [wanted.trailers, wanted.features, trailers, features, settled]);
 }

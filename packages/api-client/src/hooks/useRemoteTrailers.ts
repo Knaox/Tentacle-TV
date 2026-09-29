@@ -41,17 +41,31 @@ async function fetchTmdbTrailers(tmdbId: string, mediaType: "movie" | "tv"): Pro
  * la TV partageaient déjà.
  */
 export function useRemoteTrailers(owner: RemoteTrailersOwner | undefined, lang: string | undefined): RichTrailer[] {
+  return useRemoteTrailersState(owner, lang).trailers;
+}
+
+/**
+ * Les mêmes, avec de quoi savoir que la liste TMDB a répondu (`settled`) —
+ * pour ne rien conclure de leur absence tant qu'elle est en route.
+ */
+export function useRemoteTrailersState(
+  owner: RemoteTrailersOwner | undefined,
+  lang: string | undefined,
+): { trailers: RichTrailer[]; settled: boolean } {
   const tmdbId = owner?.ProviderIds?.Tmdb;
   const mediaType = tmdbMediaType(owner?.Type);
-  const { data: tmdb } = useQuery({
+  const enabled = !!tmdbId && !!mediaType;
+  const query = useQuery({
     queryKey: ["tmdb-trailers", tmdbId, mediaType],
     queryFn: () => fetchTmdbTrailers(tmdbId!, mediaType!),
-    enabled: !!tmdbId && !!mediaType,
+    enabled,
     staleTime: TMDB_TRAILERS_STALE_TIME,
   });
+  const tmdb = query.data;
   const jellyfin = owner?.RemoteTrailers;
-  return useMemo(
+  const trailers = useMemo(
     () => mergeTrailers((jellyfin ?? []).filter((trailer) => !!trailer.Url), tmdb ?? [], lang),
     [jellyfin, tmdb, lang],
   );
+  return { trailers, settled: !!owner && (!enabled || query.isSuccess || query.isError) };
 }
