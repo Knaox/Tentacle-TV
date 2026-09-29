@@ -3,7 +3,7 @@ import { getTokenFromRequest } from "../middleware/auth";
 import { hashToken } from "../services/jwt";
 import { sendToUser } from "../services/wsManager";
 
-export type PreferencesScope = "home-layout" | "reco-settings";
+export type PreferencesScope = "home-layout" | "reco-settings" | "hints";
 
 /**
  * Après l'enregistrement d'un bloc de préférences : prévenir les AUTRES

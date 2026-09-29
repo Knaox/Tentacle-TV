@@ -21,7 +21,7 @@ export type WsServerMessage =
   | { type: "reco:update" }
   /** Un autre appareil du compte a enregistré ses préférences (doublon du
    *  membre de packages/shared, les deux vivent côte à côte). */
-  | { type: "preferences:update"; scope: "home-layout" | "reco-settings" }
+  | { type: "preferences:update"; scope: "home-layout" | "reco-settings" | "hints" }
   | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */

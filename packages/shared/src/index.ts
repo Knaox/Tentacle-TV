@@ -55,8 +55,10 @@ export * from "./jellyfinCompat/setupContract";
 // manifeste) : rendu par l'administration sans rien savoir du plugin.
 export * from "./plugins/pluginSetup";
 // L'aide : le guide « Bandes-annonces » (sa structure ; ses mots sont dans
-// l'espace i18n `trailerHelp`).
+// l'espace i18n `trailerHelp`) et les rappels qu'un compte masque pour de bon
+// (contrat de /api/preferences/hints, miroir backend).
 export * from "./help/trailerGuide";
+export * from "./help/dismissibleHints";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";

@@ -6,6 +6,7 @@ import { registerResolveRoute } from "./preferences.resolve";
 import { registerPlaybackSettingsRoutes } from "./preferences.playback";
 import { registerHomeLayoutRoutes } from "./preferences.homeLayout";
 import { registerRecoSettingsRoutes } from "./preferences.reco";
+import { registerHintsRoutes } from "./preferences.hints";
 
 const upsertSchema = z.object({
   libraryId: z.string().min(1),
@@ -226,4 +227,5 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   registerPlaybackSettingsRoutes(app);
   registerHomeLayoutRoutes(app);
   registerRecoSettingsRoutes(app);
+  registerHintsRoutes(app);
 };

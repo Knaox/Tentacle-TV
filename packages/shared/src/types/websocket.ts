@@ -38,8 +38,10 @@ export type WsServerMessage =
   | SessionServerMessage
   | WtServerMessage;
 
-/** Les blocs de préférences diffusés en direct — les clés de cache des clients. */
-export type PreferencesScope = "home-layout" | "reco-settings";
+/** Les blocs de préférences diffusés en direct — les clés de cache des clients.
+ *  `hints` : les rappels masqués pour de bon (`/api/preferences/hints`) — masqué
+ *  sur le téléphone, le rappel quitte aussi la fiche ouverte sur le téléviseur. */
+export type PreferencesScope = "home-layout" | "reco-settings" | "hints";
 
 /** Messages sent from clients to the server. */
 export type WsClientMessage =
