@@ -1,0 +1,15 @@
+{
+  "$comment": "Manifeste de compatibilité Jellyfin — ce que Tentacle SAIT de chaque version, éprouvée par `pnpm test:jellyfin-compat`. Schéma : packages/shared/src/jellyfinCompat/compatManifest.ts ; règles : compat/README.md. Embarqué dans l'image du serveur ET relu sur raw.githubusercontent.com : `revision` monte de 1 à chaque publication, un serveur n'accepte jamais une révision plus basse que la sienne.",
+  "schema": 1,
+  "revision": 0,
+  "generatedAt": null,
+  "minimum": null,
+  "lines": [
+    { "id": "10.10", "from": "10.10.0", "until": "10.11.0" },
+    { "id": "10.11", "from": "10.11.0", "until": "10.12.0" },
+    { "id": "12", "from": "12.0.0", "until": "13.0.0" }
+  ],
+  "areas": {},
+  "features": [],
+  "versions": []
+}

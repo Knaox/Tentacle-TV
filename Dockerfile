@@ -54,6 +54,9 @@ COPY apps/tv-webos/ apps/tv-webos/
 COPY tsconfig.base.json tsconfig.base.json
 # Source unique des versions (BACKEND_VERSION + versions affichées par le web)
 COPY versions.json versions.json
+# Manifeste de compatibilité Jellyfin : le verdict connu hors ligne, que le
+# serveur remplace par une révision plus récente lue sur GitHub.
+COPY compat/jellyfin.json compat/jellyfin.json
 
 # Build frontend
 WORKDIR /app/apps/web
@@ -126,6 +129,8 @@ COPY --from=base /app/apps/web/dist ./apps/web/dist
 COPY --from=base /app/apps/tv-webos/client/dist ./apps/tv-webos/client/dist
 # versions.json à /app : lu par BACKEND_VERSION (dist/services → ../../../../)
 COPY --from=base /app/versions.json ./versions.json
+# compat/jellyfin.json à /app : cherché en remontant depuis dist/services/jellyfinCompat
+COPY --from=base /app/compat/jellyfin.json ./compat/jellyfin.json
 
 # Copy entrypoint script
 COPY apps/backend/docker-entrypoint.sh ./apps/backend/docker-entrypoint.sh

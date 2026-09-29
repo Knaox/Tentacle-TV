@@ -43,6 +43,10 @@ export * from "./person/castCredits";
 export * from "./saga/sagaTypes";
 export * from "./saga/sagaModel";
 export * from "./saga/sagaLabels";
+// La compatibilité Jellyfin : la forme du manifeste que produit la suite de
+// tests (compat/jellyfin.json, miroir backend) et le verdict d'une version.
+export * from "./jellyfinCompat/compatManifest";
+export * from "./jellyfinCompat/compatVerdict";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
