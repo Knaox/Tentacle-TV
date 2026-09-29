@@ -90,6 +90,8 @@ export default {
   linkAdminOverview: "Vue d'ensemble",
   linkAdminPlugins: "Extensions de Tentacle",
   linkAdminServices: "Services",
+  // Le contrôle « Bandes-annonces » de la vue d'ensemble de l'administration.
+  adminGuideLink: "Voir le guide",
   linkOpensOutside: "s'ouvre hors de l'application",
 
   // ── Le rappel masqué ───────────────────────────────────────────────────

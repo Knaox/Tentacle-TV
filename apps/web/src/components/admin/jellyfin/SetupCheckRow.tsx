@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CircleAlert, CircleCheck, CircleHelp, CircleMinus, ExternalLink, RotateCw, Sparkles, type LucideIcon } from "lucide-react";
-import type { SetupActionId, SetupCheck, SetupState } from "@tentacle-tv/shared";
+import { BookOpen, CircleAlert, CircleCheck, CircleHelp, CircleMinus, ExternalLink, RotateCw, Sparkles, type LucideIcon } from "lucide-react";
+import { trailerGuideHref, type SetupActionId, type SetupCheck, type SetupState } from "@tentacle-tv/shared";
 import { ConfirmDialog } from "../../ui/ConfirmDialog";
 import { ActionPill } from "../sessions/ActionPill";
 import { StatusPill, type StatusTone } from "../kit";
@@ -59,6 +60,9 @@ export function SetupCheckRow({ check, dashboardUrl, jellyfinVersion, language, 
   const dashboardHref = dashboardUrl ? `${dashboardUrl}${check.dashboardPath}` : null;
   // Rien en un clic et quelque chose à faire : le tableau de bord EST le geste.
   const dashboardIsMain = !fixable && (check.state === "todo" || check.state === "unknown");
+  // Les bandes-annonces ont leur guide : ses étapes pour l'administrateur,
+  // dans l'ordre (TheMovieDb, actualisation, fichiers locaux, Jellyseerr).
+  const guideHref = check.id === "trailers" ? trailerGuideHref("admin") : null;
 
   const label = (() => {
     switch (action) {
@@ -96,7 +100,7 @@ export function SetupCheckRow({ check, dashboardUrl, jellyfinVersion, language, 
         <div className="mt-1.5 space-y-1">
           <SetupCheckDetails check={check} jellyfinVersion={jellyfinVersion} />
         </div>
-        {(action || dashboardHref) && (
+        {(action || dashboardHref || guideHref) && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {action && (
               <ActionPill
@@ -124,6 +128,15 @@ export function SetupCheckRow({ check, dashboardUrl, jellyfinVersion, language, 
                 <ExternalLink size={dashboardIsMain ? 14 : 12} aria-hidden="true" />
                 <span className="sr-only"> {t("opensNewTab")}</span>
               </a>
+            )}
+            {guideHref && (
+              <Link
+                to={guideHref}
+                className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-xs font-medium text-content-secondary underline-offset-4 transition hover:text-content-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+              >
+                <BookOpen size={12} aria-hidden="true" />
+                {t("trailerHelp:adminGuideLink")}
+              </Link>
             )}
           </div>
         )}

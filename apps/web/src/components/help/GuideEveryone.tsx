@@ -21,7 +21,7 @@ function GuideBlock({ title, children }: { title: string; children: ReactNode })
  * pas un réglage à faire soi-même, la marche à suivre est pour
  * l'administrateur — un administrateur qui lit ceci y est renvoyé d'un lien.
  */
-export const GuideEveryone = memo(function GuideEveryone({ isAdmin, status }: { isAdmin: boolean; status?: ReactNode }) {
+export const GuideEveryone = memo(function GuideEveryone({ isAdmin }: { isAdmin: boolean }) {
   const { t } = useTranslation("trailerHelp");
 
   return (
@@ -29,7 +29,6 @@ export const GuideEveryone = memo(function GuideEveryone({ isAdmin, status }: { 
       <h2 id="guide-everyone-title" className="text-heading-1 text-content-primary">
         {t("partEveryone")}
       </h2>
-      {status}
       <div className="mt-6 space-y-9">
         <GuideBlock title={t("notYouTitle")}>
           <p className={GUIDE_PARAGRAPH}>{t("notYouBody")}</p>

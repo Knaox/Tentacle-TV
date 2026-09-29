@@ -80,10 +80,17 @@ export function useCompatRefresh() {
   });
 }
 
+/**
+ * Le rapport des réglages, lu une fois. Le guide « Bandes-annonces » n'en veut
+ * que `dashboardUrl` (ses liens vers le tableau de bord) : il partage la clé,
+ * sans le suivi serré de la vue d'ensemble.
+ */
+export const fetchJellyfinSetup = () => call("/jellyfin/setup", readSetupReport);
+
 export function useJellyfinSetup() {
   return useQuery({
     queryKey: JELLYFIN_ADMIN_KEYS.setup,
-    queryFn: () => call("/jellyfin/setup", readSetupReport),
+    queryFn: fetchJellyfinSetup,
     // C'est l'état d'aujourd'hui qu'on vient y chercher.
     staleTime: 0,
     retry: retryUnlessOutdated,
