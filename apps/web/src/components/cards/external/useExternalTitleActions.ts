@@ -1,6 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { useIsWatchlistPending, useRequestTitle, useTitleState, useWatchlistByTmdb } from "@tentacle-tv/api-client";
+import {
+  useFavoriteByTmdb, useIsFavoritePending, useIsWatchlistPending, useLikesAvailable, useRequestTitle, useTitleState,
+  useWatchlistByTmdb,
+} from "@tentacle-tv/api-client";
 import type { RatingIdentity } from "@tentacle-tv/api-client";
 import type { TitleState } from "@tentacle-tv/shared";
 import { useToast } from "../../../contexts/ToastContext";
@@ -15,6 +18,11 @@ export interface ExternalTitleActions {
   /** Le titre attend son arrivée pour entrer dans Ma liste. */
   pending: boolean;
   toggleWatchlist: () => void;
+  /** Le titre est aimé : le cœur attend son arrivée. */
+  favorite: boolean;
+  /** Le serveur sait aimer un titre absent — sinon, pas de cœur. */
+  likes: boolean;
+  toggleFavorite: () => void;
   /** Ce que notent les étoiles : le tmdb du titre. */
   ratingIdentity: RatingIdentity;
 }
@@ -27,10 +35,13 @@ export interface ExternalTitleActions {
  *     film), sinon sa page, pour le choix qu'elle réclame (les saisons) ;
  *   • « Ma liste à l'arrivée » : mis de côté, le titre entre dans Ma liste
  *     dès qu'il arrive — tout de suite s'il est déjà là ;
+ *   • « J'aime » : le goût des recommandations le compte aussitôt, et le
+ *     cœur est posé à l'arrivée — tout de suite s'il est déjà là ;
  *   • la note, par le tmdb (les étoiles la posent elles-mêmes).
  *
  * À ne monter qu'au survol ou à l'ouverture d'une feuille : l'état de Ma
- * liste et la mutation n'ont rien à faire sur quatre-vingts cartes au repos.
+ * liste, du cœur et les mutations n'ont rien à faire sur quatre-vingts cartes
+ * au repos.
  */
 export function useExternalTitleActions(title: ExternalTitle): ExternalTitleActions {
   const { t } = useTranslation("cards");
@@ -42,6 +53,9 @@ export function useExternalTitleActions(title: ExternalTitle): ExternalTitleActi
   const requestTitle = useRequestTitle(provider, lang);
   const pending = useIsWatchlistPending(key);
   const watchlist = useWatchlistByTmdb();
+  const favorite = useIsFavoritePending(key);
+  const likes = useLikesAvailable();
+  const favorites = useFavoriteByTmdb();
 
   const request = () => {
     const offer = state?.request;
@@ -71,12 +85,26 @@ export function useExternalTitleActions(title: ExternalTitle): ExternalTitleActi
     });
   };
 
+  const toggleFavorite = () => {
+    if (favorite) {
+      favorites.remove.mutate(title, { onError: () => toast.show("error", t("favoriteFailed")) });
+      return;
+    }
+    favorites.add.mutate(title, {
+      onSuccess: (res) => toast.show("success", t(res.state === "favorited" ? "favoriteAdded" : "favoriteOnArrivalAdded")),
+      onError: () => toast.show("error", t("favoriteFailed")),
+    });
+  };
+
   return {
     state,
     requesting: requestTitle.isPending,
     request,
     pending,
     toggleWatchlist,
+    favorite,
+    likes,
+    toggleFavorite,
     ratingIdentity: { mediaType: title.mediaType === "tv" ? "series" : "movie", tmdbId: title.tmdbId },
   };
 }

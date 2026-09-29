@@ -9,7 +9,7 @@ import {
 import { CardHoverShell } from "../CardHoverShell";
 import { CardTrayButton, CardTrayCapsule, TRAY_SIZE } from "../CardActionTray";
 import { CardTrayPrimaryButton } from "../CardTrayPrimaryButton";
-import { BookmarkGlyph } from "../cardGlyphs";
+import { BookmarkGlyph, HeartGlyph } from "../cardGlyphs";
 import { HoverRatingStars } from "../../rating/HoverRatingStars";
 import { useExternalTitleActions, type ExternalTitleActions } from "./useExternalTitleActions";
 import type { ExternalTitle } from "./useTitleProvider";
@@ -37,18 +37,21 @@ interface ExternalHoverOverlayProps {
  *   • EN TÊTE de la capsule, « Demander », seule action en couleur : un film
  *     se demande d'un geste, une série ouvre ses saisons. Rien au centre de
  *     l'affiche ;
- *   • puis « Ma liste à l'arrivée », et « Ne plus me proposer » sur une
- *     recommandation — l'ordre de la feuille d'appui long (`externalCardActionEntries`).
+ *   • puis « Ma liste à l'arrivée » et « J'aime » — le signet et le cœur de
+ *     la pastille —, et « Ne plus me proposer » sur une recommandation —
+ *     l'ordre de la feuille d'appui long (`externalCardActionEntries`).
  *
  * MONTÉ au survol seulement, par l'appelant (`useMountWhile`) : la liste des
- * notes, celle des titres mis de côté et la mutation n'existent que le temps
- * du survol.
+ * notes, celles des titres mis de côté et aimés, et les mutations n'existent
+ * que le temps du survol.
  */
 export function ExternalHoverOverlay({ variant, title, name, visible, onDismiss }: ExternalHoverOverlayProps) {
   const actions = useExternalTitleActions(title);
-  const overlay = resolveExternalCardOverlay({ variant, request: actions.state?.request ?? null, identified: true });
+  const overlay = resolveExternalCardOverlay({
+    variant, request: actions.state?.request ?? null, identified: true, likes: actions.likes,
+  });
   // « Ne plus me proposer » n'existe que si l'appelant sait le faire.
-  const entries = externalCardActionEntries(overlay, { watchlist: actions.pending })
+  const entries = externalCardActionEntries(overlay, { watchlist: actions.pending, favorite: actions.favorite })
     .filter((entry) => entry.kind !== "dismiss" || onDismiss);
 
   return (
@@ -100,6 +103,14 @@ function TrayEntry({ entry, actions, name, onDismiss }: {
     return (
       <CardTrayButton box={box} active={entry.active} label={t(entry.labelKey ?? "")} onPress={actions.toggleWatchlist}>
         <BookmarkGlyph className={icon} filled={entry.active === true} />
+      </CardTrayButton>
+    );
+  }
+  if (entry.kind === "favorite") {
+    return (
+      // Le cœur actif prend l'accent de marque, comme sur le plateau des titres de la bibliothèque.
+      <CardTrayButton box={box} active={entry.active} accent label={t(entry.labelKey ?? "")} onPress={actions.toggleFavorite}>
+        <HeartGlyph className={icon} filled={entry.active === true} />
       </CardTrayButton>
     );
   }

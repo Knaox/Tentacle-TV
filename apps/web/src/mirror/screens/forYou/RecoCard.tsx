@@ -1,7 +1,8 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  recoPosterUrl, useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem, type RecoRowItem,
+  recoPosterUrl, useIsFavoritePending, useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem,
+  type RecoRowItem,
 } from "@tentacle-tv/api-client";
 import { titleKey } from "@tentacle-tv/shared";
 import { CardMarkerLayer } from "../../../components/cards/CardMarkerLayer";
@@ -19,7 +20,8 @@ import { useCardWidth } from "../../useMirrorLayout";
  * sur deux lignes sur la page Pour vous. Carte atténuée (0,7) quand il n'y a
  * nulle part où aller. Au doigt, pas de survol : l'appui long ouvre la feuille
  * — celle des cartes Vigie pour un titre hors bibliothèque (« Demander », la
- * note, Ma liste à l'arrivée), dont la pastille suit l'état (« Demandé »).
+ * note, Ma liste et le cœur à l'arrivée), dont la pastille suit l'état
+ * (« Demandé »).
  * Jugée depuis sa feuille (Ma liste, cœur, vu, note), elle s'efface quand la
  * feuille se referme, avant de quitter la rangée (`.reco-card-leaving`).
  */
@@ -37,8 +39,10 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const poster = recoPosterUrl(item, (id) => client.getImageUrl(id, "Primary", { width: 300, quality: 80 }));
   const onDemand = item.jellyfinItemId === null;
   const face = useRecoMarkerItem(item);
-  // Hors bibliothèque, Ma liste est une mise de côté jusqu'à l'arrivée : la carte la dit elle-même.
-  const pending = useIsWatchlistPending(onDemand ? titleKey(item.mediaType, item.tmdbId) : null);
+  // Hors bibliothèque, Ma liste et le cœur attendent l'arrivée : la carte les dit elle-même.
+  const externalKey = onDemand ? titleKey(item.mediaType, item.tmdbId) : null;
+  const pending = useIsWatchlistPending(externalKey);
+  const liked = useIsFavoritePending(externalKey);
   const leaving = useIsRecoLeaving(item.key);
   const subtitle =
     onDemand && !canOpen
@@ -97,6 +101,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
           ratingClassName="bottom-1.5 left-1.5"
           statusClassName="right-[7px] top-[7px]"
           inWatchlist={onDemand ? pending : undefined}
+          isFavorite={onDemand ? liked : undefined}
         />
       </div>
       <p className="mt-2 truncate text-[13px] font-semibold tracking-[-0.1px] text-content-primary">{item.title}</p>

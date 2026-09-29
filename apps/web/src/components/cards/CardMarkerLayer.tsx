@@ -17,6 +17,8 @@ interface CardMarkerLayerProps {
   hideStatus?: boolean;
   /** Ma liste dite par l'appelant : un titre hors bibliothèque mis de côté jusqu'à son arrivée. */
   inWatchlist?: boolean;
+  /** Le cœur dit par l'appelant : un titre hors bibliothèque aimé en attendant son arrivée. */
+  isFavorite?: boolean;
   ratingClassName?: string;
   statusClassName?: string;
 }
@@ -37,11 +39,12 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
   hideRating = false,
   hideStatus = false,
   inWatchlist,
+  isFavorite,
   ratingClassName,
   statusClassName,
 }: CardMarkerLayerProps) {
   const device = useCardDeviceState(item);
-  const markers = useCardMarkers(item, { communityRating, scope, inWatchlist, device });
+  const markers = useCardMarkers(item, { communityRating, scope, inWatchlist, isFavorite, device });
   return (
     <>
       <CardRatingBadge

@@ -5,10 +5,11 @@
  *
  * Au survol — et au focus : c'est une grille qu'on parcourt au clavier —, le
  * survol UNIQUE des cartes hors bibliothèque (`ExternalHoverOverlay`) : les
- * étoiles, puis le plateau — « Demander » en tête, « Ma liste à l'arrivée ».
- * Au repos, la pastille suit l'état que l'extension donne du titre
- * (« Demandé » dès la demande faite), et les marqueurs communs disent la note
- * posée et la mise de côté. Il faut pour cela que l'extension donne l'identifiant TMDB du titre
+ * étoiles, puis le plateau — « Demander » en tête, « Ma liste à l'arrivée »,
+ * « J'aime ». Au repos, la pastille suit l'état que l'extension donne du
+ * titre (« Demandé » dès la demande faite), et les marqueurs communs disent
+ * la note posée, la mise de côté et le cœur qui attend l'arrivée. Il faut
+ * pour cela que l'extension donne l'identifiant TMDB du titre
  * (`item.tmdbId`) ; sans lui, la carte reste celle d'avant.
  *
  * Elle occupe toute la largeur que son parent lui donne : la grille des
@@ -17,7 +18,7 @@
 
 import { memo, useCallback, useMemo, useRef, useState, type FocusEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useIsWatchlistPending } from "@tentacle-tv/api-client";
+import { useIsFavoritePending, useIsWatchlistPending } from "@tentacle-tv/api-client";
 import { titleMediaType, type ExternalSearchItem, type MediaItem } from "@tentacle-tv/shared";
 import { ExternalBadge, ExternalPoster } from "./ExternalVisuals";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
@@ -54,6 +55,7 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
   const overlayMounted = useMountWhile(active && title !== null, 200);
   const state = useExternalTitleState(title);
   const pending = useIsWatchlistPending(externalTitleKey(title));
+  const liked = useIsFavoritePending(externalTitleKey(title));
   const face = useMemo(() => (title ? markerFace(item, title) : null), [item, title]);
   const badge = state?.badge ?? item.badge;
 
@@ -95,7 +97,14 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
             />
           )}
           {face && (
-            <CardMarkerLayer item={face} communityRating={null} hideRating={active} hideStatus={active} inWatchlist={pending} />
+            <CardMarkerLayer
+              item={face}
+              communityRating={null}
+              hideRating={active}
+              hideStatus={active}
+              inWatchlist={pending}
+              isFavorite={liked}
+            />
           )}
           {overlayMounted && title && (
             <ExternalHoverOverlay variant="poster" title={title} name={item.title} visible={active} />

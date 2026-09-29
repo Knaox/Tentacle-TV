@@ -1,7 +1,8 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem, useSendRecoFeedback,
+  useIsFavoritePending, useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem,
+  useSendRecoFeedback,
 } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { titleKey } from "@tentacle-tv/shared";
@@ -91,9 +92,11 @@ export const RecoCard = memo(function RecoCard({
 
   const face = useRecoMarkerItem(item);
   const leaving = useIsRecoLeaving(item.key);
-  // Hors bibliothèque, « Ma liste » est une mise de côté jusqu'à l'arrivée :
-  // aucun cache Jellyfin ne la connaît, la carte la dit elle-même.
-  const pending = useIsWatchlistPending(item.jellyfinItemId ? null : titleKey(item.mediaType, item.tmdbId));
+  // Hors bibliothèque, « Ma liste » et le cœur attendent l'arrivée du titre :
+  // aucun cache Jellyfin ne les connaît, la carte les dit elle-même.
+  const externalKey = item.jellyfinItemId ? null : titleKey(item.mediaType, item.tmdbId);
+  const pending = useIsWatchlistPending(externalKey);
+  const liked = useIsFavoritePending(externalKey);
   const handleDismiss = () => {
     feedback.mutate({ itemKey: item.key, action: "dismissed" });
     onDismissed?.(item.key);
@@ -175,6 +178,7 @@ export const RecoCard = memo(function RecoCard({
             hideRating={hovered}
             hideStatus={hovered}
             inWatchlist={item.jellyfinItemId ? undefined : pending}
+            isFavorite={item.jellyfinItemId ? undefined : liked}
           />
 
           {overlayMounted && (

@@ -1,15 +1,19 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Bookmark, BookmarkCheck, EyeOff, Film, Loader2, Plus, Tv } from "lucide-react";
+import { EyeOff, Film, Loader2, Plus, Tv } from "lucide-react";
 import { useDeleteRating, useItemRating, useRateItem } from "@tentacle-tv/api-client";
 import { externalCardActionEntries, resolveExternalCardOverlay, type ExternalCardVariant } from "@tentacle-tv/shared";
 import { ActionSheet } from "../ui/ActionSheet";
 import { ActionCell, type ActionCellTone } from "./sheet/ActionCell";
 import { StarRating } from "../../components/rating/StarRating";
+import { BookmarkGlyph, HeartGlyph } from "../../components/cards/cardGlyphs";
 import { useExternalTitleActions } from "../../components/cards/external/useExternalTitleActions";
 import type { ExternalTitle } from "../../components/cards/external/useTitleProvider";
 
+// Les teintes de la feuille des titres de la bibliothèque (`SheetActions`) :
+// le signet au violet, le cœur au rose de marque.
 const BRAND: ActionCellTone = { color: "var(--brand)", rgb: "var(--brand-rgb)" };
+const ACCENT: ActionCellTone = { color: "var(--brand-accent)", rgb: "var(--brand-accent-rgb)" };
 
 /** Ce que la feuille montre d'un titre hors bibliothèque. */
 export interface ExternalSheetTarget {
@@ -22,9 +26,10 @@ export interface ExternalSheetTarget {
 /**
  * La feuille de l'appui long d'une carte HORS bibliothèque — le pendant tactile
  * du survol des cartes Vigie (`externalCardOverlay.ts`), dans l'ordre que le
- * modèle fixe : l'action primaire (« Demander »), la note, puis la bascule
- * « Ma liste à l'arrivée » et, sur une recommandation, « Ne plus me proposer ».
- * Même bandeau que `MediaActionSheet`.
+ * modèle fixe : l'action primaire (« Demander »), la note, puis les bascules
+ * « Ma liste » et « J'aime » à l'arrivée — le signet et le cœur de la
+ * pastille, comme sur la feuille des titres de la bibliothèque — et, sur une
+ * recommandation, « Ne plus me proposer ». Même bandeau que `MediaActionSheet`.
  */
 export function ExternalActionSheet({ target, variant, onClose, extra, onDismiss }: {
   target: ExternalSheetTarget | null;
@@ -59,8 +64,10 @@ function SheetBody({ target, variant, onClose, extra, onDismiss }: {
   const { t } = useTranslation("cards");
   const { t: tc } = useTranslation("common");
   const actions = useExternalTitleActions(target.title);
-  const overlay = resolveExternalCardOverlay({ variant, request: actions.state?.request ?? null, identified: true });
-  const entries = externalCardActionEntries(overlay, { watchlist: actions.pending });
+  const overlay = resolveExternalCardOverlay({
+    variant, request: actions.state?.request ?? null, identified: true, likes: actions.likes,
+  });
+  const entries = externalCardActionEntries(overlay, { watchlist: actions.pending, favorite: actions.favorite });
   const rating = useItemRating(actions.ratingIdentity);
   const rate = useRateItem();
   const remove = useDeleteRating();
@@ -119,7 +126,20 @@ function SheetBody({ target, variant, onClose, extra, onDismiss }: {
                 tone={BRAND}
                 onPress={actions.toggleWatchlist}
               >
-                {entry.active ? <BookmarkCheck size={26} aria-hidden /> : <Bookmark size={26} aria-hidden />}
+                <BookmarkGlyph className="h-[26px] w-[26px]" filled={entry.active === true} />
+              </ActionCell>
+            );
+          }
+          if (entry.kind === "favorite") {
+            return (
+              <ActionCell
+                key="favorite"
+                label={t(entry.active ? "favoritesOnArrival" : "addToFavoritesOnArrival")}
+                active={entry.active === true}
+                tone={ACCENT}
+                onPress={actions.toggleFavorite}
+              >
+                <HeartGlyph className="h-[26px] w-[26px]" filled={entry.active === true} />
               </ActionCell>
             );
           }
