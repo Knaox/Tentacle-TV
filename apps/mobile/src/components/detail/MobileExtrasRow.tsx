@@ -1,73 +1,51 @@
+import { useMemo } from "react";
 import { View, Text, Pressable, FlatList, Linking } from "react-native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useSpecialFeatures, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useItemExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
+import { buildExtraEntries, sortTrailersByLang, type ExtraEntry, type RichTrailer } from "@tentacle-tv/shared";
 import { spacing, FONT_FAMILY, RADIUS, useTheme } from "@/theme";
-
-interface RemoteTrailer { Url: string; Name?: string }
-
-interface Tile {
-  key: string;
-  title: string;
-  sub: string;
-  thumb: string;
-  onPress: () => void;
-}
-
-/** Extrait l'ID vidéo YouTube d'une URL (watch?v=, youtu.be/, embed/). */
-function youtubeId(url: string): string | null {
-  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{6,})/);
-  return m ? m[1] : null;
-}
 
 const W = 168;
 const H = 95;
 
 /**
- * Rangée d'extras (mobile) : special features locaux (lus dans le player) +
- * bandes-annonces distantes YouTube (ouvertes dans le navigateur). Se masque
- * d'elle-même si aucun extra. Titre optionnel (nom de saison).
+ * Rangée d'extras (mobile) : bandes-annonces locales et bonus (lus dans le
+ * player), puis vidéos distantes YouTube (confiées au système : l'app YouTube
+ * ou le navigateur) — ordre et libellés du modèle partagé
+ * (`buildExtraEntries`). Se masque d'elle-même si aucun extra. Titre optionnel
+ * (nom de saison).
  */
 export function MobileExtrasRow({
-  itemId,
+  owner,
   remoteTrailers,
   title,
 }: {
-  itemId: string;
-  remoteTrailers?: RemoteTrailer[];
+  owner: ExtrasOwner;
+  remoteTrailers: RichTrailer[];
   title?: string;
 }) {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const router = useRouter();
   const client = useJellyfinClient();
   const { colors } = useTheme();
-  const { data: features } = useSpecialFeatures(itemId);
+  const { local } = useItemExtras(owner);
+  const entries = useMemo(
+    () => buildExtraEntries(t, local, sortTrailersByLang(remoteTrailers, i18n.language)),
+    [t, local, remoteTrailers, i18n.language],
+  );
 
-  const tiles: Tile[] = [];
-  for (const f of features ?? []) {
-    tiles.push({
-      key: `local-${f.Id}`,
-      title: f.Name ?? t("extras"),
-      sub: f.Type ?? "",
-      thumb: client.getImageUrl(f.Id, "Primary", { width: 360, quality: 75 }),
-      onPress: () => router.push(`/watch/${f.Id}`),
-    });
-  }
-  for (const r of remoteTrailers ?? []) {
-    const id = youtubeId(r.Url);
-    if (!id) continue;
-    tiles.push({
-      key: `remote-${id}`,
-      title: r.Name ?? t("trailer"),
-      sub: "YouTube",
-      thumb: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
-      onPress: () => Linking.openURL(r.Url).catch(() => {}),
-    });
-  }
+  if (entries.length === 0) return null;
 
-  if (tiles.length === 0) return null;
+  const open = (entry: ExtraEntry) => {
+    if (entry.source === "local") router.push(`/watch/${entry.itemId}`);
+    else Linking.openURL(entry.trailer.Url).catch(() => {});
+  };
+  const thumbOf = (entry: ExtraEntry) => entry.source === "local"
+    ? client.getImageUrl(entry.itemId, "Primary", { width: 360, quality: 75 })
+    : entry.thumbUrl;
 
   return (
     <View style={{ marginTop: spacing.xl }}>
@@ -84,24 +62,32 @@ export function MobileExtrasRow({
       </Text>
       <FlatList
         horizontal
-        data={tiles}
-        keyExtractor={(tl) => tl.key}
+        data={entries}
+        keyExtractor={(entry) => entry.key}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, gap: 12 }}
-        renderItem={({ item: tile }) => (
-          <Pressable onPress={tile.onPress} style={({ pressed }) => [{ width: W }, pressed && { opacity: 0.8 }]}>
-            <View style={{ width: W, height: H, borderRadius: RADIUS.md, overflow: "hidden", backgroundColor: colors.surface.s2, borderWidth: 1, borderColor: colors.border.subtle }}>
-              <Image source={{ uri: tile.thumb }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
-              <View style={{ position: "absolute", inset: 0, alignItems: "center", justifyContent: "center" }}>
-                <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.overlay.scrimSoft, alignItems: "center", justifyContent: "center" }}>
-                  <Feather name="play" size={16} color={colors.cta.brandFg} />
+        renderItem={({ item: entry }) => {
+          const thumb = thumbOf(entry);
+          return (
+            <Pressable
+              onPress={() => open(entry)}
+              accessibilityRole="button"
+              accessibilityLabel={entry.subtitle ? `${entry.title}, ${entry.subtitle}` : entry.title}
+              style={({ pressed }) => [{ width: W }, pressed && { opacity: 0.8 }]}
+            >
+              <View style={{ width: W, height: H, borderRadius: RADIUS.md, overflow: "hidden", backgroundColor: colors.surface.s2, borderWidth: 1, borderColor: colors.border.subtle }}>
+                {thumb ? <Image source={{ uri: thumb }} style={{ width: "100%", height: "100%" }} contentFit="cover" /> : null}
+                <View style={{ position: "absolute", inset: 0, alignItems: "center", justifyContent: "center" }}>
+                  <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.overlay.scrimSoft, alignItems: "center", justifyContent: "center" }}>
+                    <Feather name="play" size={16} color={colors.cta.brandFg} />
+                  </View>
                 </View>
               </View>
-            </View>
-            <Text numberOfLines={1} style={{ marginTop: 6, fontSize: 13, fontFamily: FONT_FAMILY.medium, color: colors.text.primary }}>{tile.title}</Text>
-            {tile.sub ? <Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.tertiary }}>{tile.sub}</Text> : null}
-          </Pressable>
-        )}
+              <Text numberOfLines={1} style={{ marginTop: 6, fontSize: 13, fontFamily: FONT_FAMILY.medium, color: colors.text.primary }}>{entry.title}</Text>
+              {entry.subtitle ? <Text numberOfLines={1} style={{ fontSize: 11, color: colors.text.tertiary }}>{entry.subtitle}</Text> : null}
+            </Pressable>
+          );
+        }}
       />
     </View>
   );

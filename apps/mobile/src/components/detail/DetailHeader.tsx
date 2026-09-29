@@ -10,6 +10,7 @@ import { spacing, RADIUS, useTheme } from "../../theme";
 import { DetailActionsRow } from "./DetailActionsRow";
 import { DetailPlayCta } from "./DetailPlayCta";
 import { DetailStageBlock } from "./DetailStageBlock";
+import { DetailTrailerButton } from "./DetailTrailerButton";
 import { detailPlayCta } from "./computeBadges";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../../constants/featureFlags";
 import type { useMediaDetailAnimations } from "../../hooks/useMediaDetailAnimations";
@@ -31,12 +32,14 @@ interface Props {
 }
 
 /**
- * Sous la scène de la fiche : le bouton Lecture au dégradé de marque puis la
- * rangée d'actions (Favoris / Ma liste / Vu / Garder hors ligne), centrés sur
- * 420. Le bloc titre, lui, vit DANS la scène (`MediaDetailScreen`).
+ * Sous la scène de la fiche : le bouton Lecture au dégradé de marque, la
+ * bande-annonce s'il y en a une, puis la rangée d'actions (Favoris / Ma liste /
+ * Vu / Garder hors ligne), centrés sur 420. Le bloc titre, lui, vit DANS la
+ * scène (`MediaDetailScreen`).
  *
  * iPad paysage (`twoCol`) : la colonne gauche figée reprend tout — affiche (qui
- * ouvre la vue plein écran), bloc titre en ton « page », Lecture, actions.
+ * ouvre la vue plein écran), bloc titre en ton « page », Lecture,
+ * bande-annonce, actions.
  */
 export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, posterW, posterH, actions, anims, onOpenPoster }: Props) {
   const router = useRouter();
@@ -46,11 +49,16 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
   const theme = useTheme();
   const cta = detailPlayCta(item, seriesWatchState, t);
 
-  const playEl = cta.targetId ? (
-    <Animated.View style={[{ marginTop: spacing.xl, alignItems: "center" }, anims.actionsStyle]}>
-      <DetailPlayCta cta={cta} title={item.Name} onPress={() => router.push(`/watch/${cta.targetId}`)} />
-    </Animated.View>
-  ) : null;
+  const playEl = (
+    <>
+      {cta.targetId && (
+        <Animated.View style={[{ marginTop: spacing.xl, alignItems: "center" }, anims.actionsStyle]}>
+          <DetailPlayCta cta={cta} title={item.Name} onPress={() => router.push(`/watch/${cta.targetId}`)} />
+        </Animated.View>
+      )}
+      <DetailTrailerButton item={item} belowPlay={!!cta.targetId} animStyle={anims.actionsStyle} />
+    </>
+  );
   const actionsEl = (
     <Animated.View style={[{ width: "100%", maxWidth: 452, alignSelf: "center" }, anims.actionsStyle]}>
       <DetailActionsRow {...actions} />

@@ -1,46 +1,49 @@
-import { useSeasons } from "@tentacle-tv/api-client";
-import { seasonHasExtras, type MediaItem } from "@tentacle-tv/shared";
+import { useTranslation } from "react-i18next";
+import { useRemoteTrailers, useSeasons } from "@tentacle-tv/api-client";
+import { seasonHasExtras, type MediaItem, type RichTrailer } from "@tentacle-tv/shared";
 import { MobileExtrasRow } from "./MobileExtrasRow";
-
-interface RemoteTrailer { Url: string; Name?: string }
 
 /**
  * Section « Extras » (mobile) — parité desktop :
- *  - Film : special features + bandes-annonces de l'item.
- *  - Série : trailers série + une rangée par saison.
+ *  - Film : bandes-annonces locales, bonus, puis vidéos distantes (Jellyfin +
+ *    TMDB, triées par langue).
+ *  - Série : sa rangée à elle + une rangée par saison qui a des extras.
  *  - Épisode : extras de l'épisode, puis extras de la série parente en repli.
  * Chaque rangée se masque si vide.
  */
 export function MobileExtrasSection({ item, seriesItem }: { item: MediaItem; seriesItem?: MediaItem }) {
-  if (item.Type === "Series") return <SeriesExtras item={item} />;
+  const { i18n } = useTranslation();
+  const remote = useRemoteTrailers(item, i18n.language);
+  if (item.Type === "Series") return <SeriesExtras item={item} remote={remote} />;
   if (item.Type === "Episode") {
     return (
       <>
-        <MobileExtrasRow itemId={item.Id} remoteTrailers={item.RemoteTrailers as RemoteTrailer[] | undefined} />
-        {seriesItem && <SeriesExtras item={seriesItem} />}
+        <MobileExtrasRow owner={item} remoteTrailers={remote} />
+        {seriesItem && <SeriesExtrasAuto item={seriesItem} />}
       </>
     );
   }
-  return <MobileExtrasRow itemId={item.Id} remoteTrailers={item.RemoteTrailers as RemoteTrailer[] | undefined} />;
+  return <MobileExtrasRow owner={item} remoteTrailers={remote} />;
+}
+
+function SeriesExtrasAuto({ item }: { item: MediaItem }) {
+  const { i18n } = useTranslation();
+  const remote = useRemoteTrailers(item, i18n.language);
+  return <SeriesExtras item={item} remote={remote} />;
 }
 
 /**
- * Trailers au niveau série + une rangée d'extras par saison QUI EN A
- * (`seasonHasExtras` : compteur et bandes-annonces servis avec les saisons —
+ * Rangée de la série + une rangée d'extras par saison QUI EN A
+ * (`seasonHasExtras` : compteurs et bandes-annonces servis avec les saisons —
  * interroger chaque saison coûtait une requête par saison à l'ouverture).
  */
-function SeriesExtras({ item }: { item: MediaItem }) {
+function SeriesExtras({ item, remote }: { item: MediaItem; remote: RichTrailer[] }) {
   const { data: seasons } = useSeasons(item.Id);
   return (
     <>
-      <MobileExtrasRow itemId={item.Id} remoteTrailers={item.RemoteTrailers as RemoteTrailer[] | undefined} />
+      <MobileExtrasRow owner={item} remoteTrailers={remote} />
       {seasons?.filter(seasonHasExtras).map((s) => (
-        <MobileExtrasRow
-          key={s.Id}
-          itemId={s.Id}
-          title={s.Name}
-          remoteTrailers={s.RemoteTrailers as RemoteTrailer[] | undefined}
-        />
+        <MobileExtrasRow key={s.Id} owner={s} title={s.Name} remoteTrailers={s.RemoteTrailers ?? []} />
       ))}
     </>
   );
