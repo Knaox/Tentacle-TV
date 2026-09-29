@@ -19,6 +19,7 @@ import { useShareVisitor } from "../components/share/useShareVisitor";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { useItemRemoteTrailers } from "../hooks/useItemRemoteTrailers";
 import { textCascadeDelayed } from "../theme/motion";
+import { DetailTextColumn } from "../components/detail/DetailTextColumn";
 
 /** Item de repli stable pendant le chargement (les hooks doivent rester appelés). */
 const EMPTY_ITEM = {} as MediaItem;
@@ -81,7 +82,7 @@ export function SharedItemDetail() {
           variants={textCascadeDelayed}
         >
           <DetailPoster item={item} />
-          <div className="min-w-0 max-w-4xl flex-1">
+          <DetailTextColumn>
             <DetailTitle item={item} />
             <DetailMetadata item={item} linkGenres={false} />
             <DetailOverview item={item} />
@@ -91,7 +92,7 @@ export function SharedItemDetail() {
               loginPath={visitor.loginPath}
               ownerUsername={list?.ownerUsername}
             />
-          </div>
+          </DetailTextColumn>
         </motion.div>
       </DetailStage>
 

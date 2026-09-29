@@ -1,11 +1,3 @@
-export function QualityBadge({ label }: { label: string }) {
-  return (
-    <span className="rounded border border-[rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.1)] px-1.5 py-0.5 text-xs font-semibold text-[var(--brand-light)] backdrop-blur-sm transition-shadow duration-200 hover:shadow-[0_0_12px_var(--brand-glow)]">
-      {label}
-    </span>
-  );
-}
-
 export function PlayIcon() {
   return <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>;
 }

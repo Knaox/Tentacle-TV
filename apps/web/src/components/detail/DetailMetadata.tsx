@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { formatDuration, playbackEndsAt } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { QualityBadge } from "../media/MediaDetailIcons";
 import { extractMediaQuality } from "../../lib/mediaQuality";
+import { MetaChip } from "../media/MetaChips";
 import { PremiumQualityBadges } from "../media/PremiumQualityBadges";
 import { fadeUp } from "../../theme/motion";
 
@@ -61,7 +61,9 @@ export function DetailMetadata({ item, linkGenres = true }: DetailMetadataProps)
         ))}
         <span className="flex items-center gap-1.5 [&:empty]:hidden">
           <PremiumQualityBadges quality={quality} compact />
-          {quality.surroundLabel && <QualityBadge label={quality.surroundLabel} />}
+          {/* Le canal son : la puce commune, comme la qualité — un badge violet
+              sans assise y tombait à 1,1:1 sur un décor clair. */}
+          {quality.surroundLabel && <MetaChip>{quality.surroundLabel}</MetaChip>}
         </span>
       </motion.div>
 

@@ -32,6 +32,7 @@ import { useOfflineSeries } from "./detail/useOfflineSeries";
 import { useOfflineWatchedToggle, useRemoveFromDevice } from "./detail/useOfflineActions";
 import { versionLabel } from "./detail/offlineDetailText";
 import { seriesPlayAction } from "./detail/seriesPlayAction";
+import { DetailTextColumn } from "../components/detail/DetailTextColumn";
 
 export function OfflineSeriesView() {
   const { seriesKey } = useParams<{ seriesKey: string }>();
@@ -80,7 +81,7 @@ export function OfflineSeriesView() {
             variants={textCascadeDelayed}
           >
             <DetailPoster item={item} imageUrl={local.posterUrl} />
-            <div className="min-w-0 max-w-4xl flex-1">
+            <DetailTextColumn>
               <DetailTitle item={item} logoUrl={local.logoUrl} />
               <DetailScoreline item={item} markersEnabled={false} />
               <DetailMetadata item={item} linkGenres={false} />
@@ -94,7 +95,7 @@ export function OfflineSeriesView() {
                 onRemove={() => setConfirmRemove(true)}
                 removeLabel={t("downloads:detailRemoveSeries")}
               />
-            </div>
+            </DetailTextColumn>
           </motion.div>
         </DetailStage>
 

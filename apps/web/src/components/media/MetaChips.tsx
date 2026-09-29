@@ -13,9 +13,15 @@ import type { AudioLabel, MediaQuality } from "../../lib/mediaQuality";
 
 type Tone = "glass" | "accent" | "lang";
 
+/**
+ * Le verre est à 0,72 et non plus 0,55 : posé sur une affiche claire (le haut
+ * d'une carte, où le voile ne vaut que 0,1), le texte à 82 % tombait à
+ * 3,5:1 sous 10 px — le téléviseur l'avait déjà remonté à 0,92 pour la même
+ * raison (`cards-tv.css`). À 0,72, 6:1 sur un blanc pur.
+ */
 const TONE_STYLE: Record<Tone, CSSProperties> = {
   glass: {
-    background: "rgba(12,12,18,0.55)",
+    background: "rgba(12,12,18,0.72)",
     color: "rgba(255,255,255,0.82)",
     boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.13)",
   },
@@ -27,8 +33,8 @@ const TONE_STYLE: Record<Tone, CSSProperties> = {
   },
   // Langues : même verre, texte légèrement plus discret que la qualité.
   lang: {
-    background: "rgba(12,12,18,0.55)",
-    color: "rgba(255,255,255,0.72)",
+    background: "rgba(12,12,18,0.72)",
+    color: "rgba(255,255,255,0.76)",
     boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)",
   },
 };

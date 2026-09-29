@@ -110,9 +110,11 @@ export function AmbilightLayer({
             style={{
               // Rayon divisé par la sous-échelle : agrandi d'autant ensuite, il
               // redonne exactement le flou d'origine.
+              // `brightness` : 1 par défaut ; la lueur de la fiche le baisse
+              // (`.hero-glow`), où des textes se posent sur elle.
               filter:
                 `blur(calc(var(--hero-ambilight-blur) / ${RENDER_DOWNSCALE}))` +
-                " saturate(var(--hero-ambilight-sat))",
+                " saturate(var(--hero-ambilight-sat)) brightness(var(--hero-ambilight-brightness, 1))",
             }}
           />
         </AnimatePresence>

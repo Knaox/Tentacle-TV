@@ -18,6 +18,7 @@ import { localVersionOf } from "@tentacle-tv/offline-core";
 import { resumeState } from "@tentacle-tv/shared";
 import { PageTransition } from "../../components/PageTransition";
 import { DetailStage } from "../../components/detail/DetailStage";
+import { DetailTextColumn } from "../../components/detail/DetailTextColumn";
 import { DetailPoster } from "../../components/detail/DetailPoster";
 import { DetailTitle } from "../../components/detail/DetailTitle";
 import { DetailScoreline } from "../../components/detail/DetailScoreline";
@@ -91,7 +92,7 @@ export function OfflineMediaDetail() {
             variants={textCascadeDelayed}
           >
             <DetailPoster item={item} imageUrl={local.posterUrl} />
-            <div className="min-w-0 max-w-4xl flex-1">
+            <DetailTextColumn>
               <DetailTitle item={item} logoUrl={local.logoUrl} onOpenSeries={local.seriesKey ? openSeries : undefined} />
               <DetailScoreline item={item} markersEnabled={false} />
               <DetailMetadata item={item} linkGenres={false} />
@@ -105,7 +106,7 @@ export function OfflineMediaDetail() {
                 onRemove={() => setConfirmRemove(true)}
                 removeLabel={t("downloads:detailRemove")}
               />
-            </div>
+            </DetailTextColumn>
           </motion.div>
         </DetailStage>
 

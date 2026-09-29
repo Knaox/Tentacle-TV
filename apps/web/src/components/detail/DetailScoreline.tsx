@@ -64,7 +64,7 @@ export const DetailScoreline = memo(function DetailScoreline({ item, communityRa
           <span aria-hidden className="text-[1.75rem] font-bold leading-none tabular-nums tracking-tight text-on-media-primary">
             {formatCommunityRating(community)}
           </span>
-          <span aria-hidden className="self-end pb-0.5 text-xs font-medium text-on-media-muted">/10</span>
+          <span aria-hidden className="self-end pb-0.5 text-xs font-medium text-on-media-secondary">/10</span>
         </span>
       )}
 

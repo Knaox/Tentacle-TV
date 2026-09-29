@@ -92,7 +92,9 @@
    * couleur telle quelle, screen sur du blanc rend blanc), il ne peut donc pas
    * créer de bande sombre. Un masque vertical doux aux deux bouts interdit la
    * moindre arête. La lumière nappe la couture et déborde dans la page. */
-  --detail-ambilight-opacity: 0.6;
+  /* 0,5 et non plus 0,6, avec le plafond de luminance de `.hero-glow` : les
+   * sections sous la scène se lisent sur cette lueur (mesuré au banc). */
+  --detail-ambilight-opacity: 0.5;
 
   /* Il n'y a PAS de hairline de couture basse (`--hero-edge-light`, supprimée).
    * Elle supposait une couture visible entre bannière et page. En réalité les
@@ -257,6 +259,12 @@
  * `z-10` de `MediaDetail`) : la fusion se mélange à la bannière et à la page,
  * jamais au texte du titre, qui reste intact. */
 .hero-glow {
+  /* Plafond de luminance de la lueur de la FICHE : les sections (saisons,
+   * épisodes gardés) commencent dans sa bande la plus forte, et une image
+   * claire, fusionnée en `screen`, y blanchissait la page — texte blanc à
+   * 2,2:1 sous une vraie photo de neige (mesuré au banc). La teinte reste,
+   * saturée ; seule la lumière est plafonnée. */
+  --hero-ambilight-brightness: 0.4;
   mix-blend-mode: screen;
   -webkit-mask-image: linear-gradient(180deg, transparent 48%, #000 74%, #000 92%, transparent 100%);
   mask-image: linear-gradient(180deg, transparent 48%, #000 74%, #000 92%, transparent 100%);

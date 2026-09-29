@@ -5,6 +5,7 @@ import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, u
 import { detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { PageTransition } from "../components/PageTransition";
 import { DetailStage } from "../components/detail/DetailStage";
+import { DetailTextColumn } from "../components/detail/DetailTextColumn";
 import { DetailScoreline } from "../components/detail/DetailScoreline";
 import { DetailImageViewer } from "../components/detail/DetailImageViewer";
 import { DetailMetadata } from "../components/detail/DetailMetadata";
@@ -182,13 +183,13 @@ export function MediaDetail() {
               onOpen={openPoster}
             />
 
-            <div className="min-w-0 max-w-4xl flex-1">
+            <DetailTextColumn>
               <DetailTitle item={item} collectionCount={collectionItems?.length} />
               <DetailScoreline item={item} communityRating={episodeCommunityRating} />
               <DetailMetadata item={item} />
               <DetailOverview item={item} />
               <DetailActions item={item} collectionCount={collectionItems?.length} />
-            </div>
+            </DetailTextColumn>
           </motion.div>
         </DetailStage>
 
