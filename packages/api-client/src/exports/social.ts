@@ -6,7 +6,7 @@ export {
 
 // Share link ("Partager ma liste")
 export {
-  useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedListView, useSharedView, useSharedItem,
+  useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedView, useSharedItem,
   setShareLinkBackendUrl, setShareLinkToken, type SharedListData, type SharedListItem, type ShareListKind, type SharedView,
 } from "../hooks/useShareLink";
 

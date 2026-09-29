@@ -7,7 +7,8 @@ import { TentacleSvg } from "../ui/TentacleSvg";
 
 interface Props {
   ownerUsername: string;
-  kind: ShareListKind;
+  /** Ce qui est partagé : une liste, ou des statistiques. */
+  kind: ShareListKind | "stats";
   authed: boolean;
   loginPath: string;
   registerPath: string;
@@ -36,7 +37,7 @@ export const ShareJoinCard = memo(function ShareJoinCard({ ownerUsername, kind, 
       <GlassCard className="p-5 sm:p-6">
         <p className="text-base font-bold text-content-primary">{t("memberTitle")}</p>
         <p className="mt-1.5 text-sm leading-relaxed text-content-tertiary">
-          {t(kind === "likes" ? "memberLeadLikes" : "memberLeadWatchlist")}
+          {t(kind === "stats" ? "memberLeadStats" : kind === "likes" ? "memberLeadLikes" : "memberLeadWatchlist")}
         </p>
       </GlassCard>
     );

@@ -4,6 +4,8 @@ import { motion, useReducedMotion } from "framer-motion";
 export interface HBarItem {
   key: string;
   label: string;
+  /** Une précision après le libellé, en retrait (« 18 h – 23 h »). */
+  hint?: string;
   value: number;
   /** La valeur écrite en bout de barre (« 32 % », « 12 h 40 »). */
   display: string;
@@ -43,7 +45,10 @@ export const HBarList = memo(function HBarList({ items, ariaLabel, max }: HBarLi
             <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
               <span className={`flex min-w-0 items-center gap-2 ${item.muted ? "text-content-tertiary" : "text-content-secondary"}`}>
                 {item.icon && <span aria-hidden className="shrink-0 text-content-tertiary">{item.icon}</span>}
-                <span className="truncate">{item.label}</span>
+                <span className="truncate">
+                  {item.label}
+                  {item.hint && <span className="ml-1.5 text-xs tabular-nums text-content-tertiary">{item.hint}</span>}
+                </span>
               </span>
               <span className="shrink-0 tabular-nums">
                 <span className={`font-semibold ${item.muted ? "text-content-secondary" : "text-content-primary"}`}>{item.display}</span>

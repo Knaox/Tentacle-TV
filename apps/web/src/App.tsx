@@ -21,7 +21,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Search, Person, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, OfflineMediaDetail, AdminDownloads, AdminHome
+  Home, Login, Register, SharePage, SharedItemDetail, Watch, MediaDetail, Library, Search, Person, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, OfflineMediaDetail, AdminDownloads, AdminHome
 } from "./lazyPages";
 import { Stats } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
@@ -136,7 +136,7 @@ export function App() {
           {/* Public */}
           <Route path="/login" element={<ByFormFactor desktop={<Login />} mirror={<MirrorLogin />} />} />
           <Route path="/register" element={<ByFormFactor desktop={<Register />} mirror={<MirrorRegister />} />} />
-          <Route path="/share/:token" element={<SharedListView />} />
+          <Route path="/share/:token" element={<SharePage />} />
           <Route path="/share/:token/:itemId" element={<SharedItemDetail />} />
 
           {/* Protected — immersive (no sidebar/tabbar) */}

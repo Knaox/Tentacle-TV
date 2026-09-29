@@ -128,7 +128,7 @@ export const OfflineMediaDetail = Unavailable;
 export const SettingsDownloads = Unavailable;
 
 // Partage et assistance : demandent une saisie de texte suivie.
-export const SharedListView = Unavailable;
+export const SharePage = Unavailable;
 export const SharedItemDetail = Unavailable;
 export const Support = Unavailable;
 

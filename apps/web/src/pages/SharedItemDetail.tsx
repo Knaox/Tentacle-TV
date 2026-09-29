@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { useSharedItem, useSharedListView, useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { useSharedItem, useSharedView, useJellyfinClient } from "@tentacle-tv/api-client";
+import { statsLocale, type MediaItem } from "@tentacle-tv/shared";
 import { DetailStage } from "../components/detail/DetailStage";
 import { DetailPoster } from "../components/detail/DetailPoster";
 import { DetailTitle } from "../components/detail/DetailTitle";
@@ -36,12 +36,14 @@ const EMPTY_ITEM = {} as MediaItem;
  */
 export function SharedItemDetail() {
   const { token = "", itemId = "" } = useParams<{ token: string; itemId: string }>();
-  const { t } = useTranslation("share");
+  const { t, i18n } = useTranslation(["share", "statsPublic"]);
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const { data: item, isLoading, isError, isFetching, refetch } = useSharedItem(token, itemId);
-  // Le nom de l'auteur : la liste est en cache quand on vient d'elle.
-  const { data: list } = useSharedListView(token);
+  // Le nom de l'auteur : le partage est en cache quand on vient de lui.
+  const { data: list } = useSharedView(token, statsLocale(i18n.language));
+  // Le retour ramène au partage : une liste, ou des statistiques.
+  const backLabel = list?.kind === "stats" ? t("statsPublic:backToStats") : t("backToList");
   const visitor = useShareVisitor(`/share/${token}/${itemId}`);
   // Extras triés selon la langue d'interface — même pipeline que la fiche
   // (Jellyfin + TMDB).
@@ -56,7 +58,7 @@ export function SharedItemDetail() {
           onRetry={() => void refetch()}
           retrying={isFetching}
           exitTo={`/share/${token}`}
-          exitLabel={t("backToList")}
+          exitLabel={backLabel}
         />
       </ShareShell>
     );
@@ -73,7 +75,7 @@ export function SharedItemDetail() {
         backdropUrl={backdropUrl}
         item={item}
         onBack={() => navigate(`/share/${token}`)}
-        backLabel={t("backToList")}
+        backLabel={backLabel}
       >
         <motion.div
           className="flex items-end gap-8 px-5 pb-10 pt-28 md:px-12 md:pb-14 xl:gap-12 xl:px-16"

@@ -13,7 +13,7 @@ import { preloadable } from "./lib/preloadable";
 export const Home = lazy(() => import("./pages/Home").then((m) => ({ default: m.Home })));
 export const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
 export const Register = lazy(() => import("./pages/Register").then((m) => ({ default: m.Register })));
-export const SharedListView = lazy(() => import("./pages/SharedListView").then((m) => ({ default: m.SharedListView })));
+export const SharePage = lazy(() => import("./pages/SharePage").then((m) => ({ default: m.SharePage })));
 export const SharedItemDetail = lazy(() => import("./pages/SharedItemDetail").then((m) => ({ default: m.SharedItemDetail })));
 export const Watch = lazy(() => import("./pages/Watch").then((m) => ({ default: m.Watch })));
 export const MediaDetail = lazy(() => import("./pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));

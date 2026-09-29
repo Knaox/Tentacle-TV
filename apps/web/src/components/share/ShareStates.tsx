@@ -4,10 +4,11 @@ import { useTranslation } from "react-i18next";
 import { Link2Off, ListVideo } from "lucide-react";
 
 /**
- * Squelette à la forme de la page remplie : en-tête, carte d'accueil, grille.
- * Le miroitement est celui des cartes (`skeleton-shimmer`), sans spinner.
+ * Le chargement d'un partage dont on ne sait pas encore s'il est une liste
+ * ou des statistiques : l'en-tête et la carte d'accueil, communs aux deux,
+ * puis des blocs neutres — ni grille d'affiches, ni graphiques promis.
  */
-export const ShareListSkeleton = memo(function ShareListSkeleton() {
+export const SharePageSkeleton = memo(function SharePageSkeleton() {
   const { t } = useTranslation("share");
   return (
     <div role="status" aria-label={t("loading")} className="px-4 pb-16 sm:px-6 md:px-12">
@@ -17,17 +18,12 @@ export const ShareListSkeleton = memo(function ShareListSkeleton() {
           <div className="h-10 w-3/4 rounded-xl bg-fill-subtle" />
           <div className="h-4 w-1/2 rounded-full bg-fill-subtle" />
         </div>
-        <div className="h-40 w-full rounded-2xl bg-fill-subtle lg:w-[22rem]" />
+        <div className="hidden h-40 w-[22rem] rounded-2xl bg-fill-subtle lg:block" />
       </div>
-      <div className="mt-10 grid grid-cols-2 gap-4 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 2xl:grid-cols-8">
-        {Array.from({ length: 12 }, (_, i) => (
-          <div key={i}>
-            <div className="relative aspect-[2/3] overflow-hidden rounded-[var(--radius-lg)] bg-fill-subtle">
-              <div aria-hidden className="absolute inset-0 skeleton-shimmer" />
-            </div>
-            <div className="mt-2.5 h-3.5 w-3/4 rounded-full bg-fill-subtle" />
-          </div>
-        ))}
+      <div className="mt-10 space-y-4">
+        <div className="skeleton-shimmer h-44 rounded-2xl" />
+        <div className="skeleton-shimmer h-28 rounded-2xl" />
+        <div className="skeleton-shimmer h-64 rounded-2xl" />
       </div>
     </div>
   );

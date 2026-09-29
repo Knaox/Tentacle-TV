@@ -98,17 +98,6 @@ export function useRevokeShareLink(kind: ShareListKind = "watchlist") {
   });
 }
 
-/** Vue PUBLIQUE d'une liste partagée (lecture seule, sans auth requise). */
-export function useSharedListView(token: string | null | undefined) {
-  return useQuery({
-    queryKey: ["share", "view", token],
-    queryFn: () => shareFetch<SharedListData>(`/${token}`),
-    enabled: !!token,
-    staleTime: 30_000,
-    retry: false,
-  });
-}
-
 /**
  * Vue PUBLIQUE d'un partage, dans la langue du visiteur : les statistiques
  * nomment genres et pays côté serveur. Changer de langue garde la page à

@@ -1,4 +1,4 @@
-import { useCallback, type ReactNode } from "react";
+import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useViewingStats, viewingStatsFailure } from "@tentacle-tv/api-client";
@@ -16,6 +16,7 @@ import { StatsHeader } from "../components/stats/StatsHeader";
 import { ListeningCard, OriginsCard } from "../components/stats/StatsLanguages";
 import { MoviesSection } from "../components/stats/StatsMovies";
 import { StatsOverview } from "../components/stats/StatsOverview";
+import { StatsPairs } from "../components/stats/StatsPairs";
 import { StatsPersona } from "../components/stats/StatsPersona";
 import { StatsSection } from "../components/stats/StatsSection";
 import { StatsFailure, StatsNeverWatched, StatsPeriodEmpty, StatsSkeleton } from "../components/stats/StatsStates";
@@ -87,18 +88,6 @@ interface StatsBodyProps {
   pending: boolean;
 }
 
-/**
- * Deux cartes par rangée au bureau ; une carte seule (l'autre n'a rien à
- * dire) prend toute la largeur au lieu de laisser un trou.
- */
-function Pairs({ cards }: { cards: Array<[visible: boolean, node: ReactNode]> }) {
-  const shown = cards.filter(([visible]) => visible).map(([, node]) => node);
-  if (shown.length === 0) return null;
-  return (
-    <div className="grid gap-4 md:gap-5 lg:grid-cols-2 lg:items-start lg:[&>*:last-child:nth-child(odd)]:col-span-2">{shown}</div>
-  );
-}
-
 function StatsBody({ stats, period, onPeriodChange, pending }: StatsBodyProps) {
   const { t } = useTranslation("stats");
   const empty = stats.totals.seconds < NOISE_SECONDS && stats.totals.movies + stats.totals.episodes === 0;
@@ -122,7 +111,7 @@ function StatsBody({ stats, period, onPeriodChange, pending }: StatsBodyProps) {
             </StatsSection>
             {hasDevices && <DevicesCard stats={stats} />}
           </div>
-          <Pairs
+          <StatsPairs
             cards={[
               [stats.genres.length > 0, <GenresCard key="genres" stats={stats} />],
               [movieSeconds + seriesSeconds + animeSeconds > 0 || stats.decades.length > 0, <MixCard key="mix" stats={stats} />],
