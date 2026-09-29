@@ -31,7 +31,8 @@ export function SetupInput({ field, value, storedSecret, error, onChange, disabl
 
   return (
     <div className="min-w-0">
-      <div className="flex items-end justify-between gap-2">
+      {/* Même hauteur avec ou sans « Afficher » : deux champs côte à côte restent alignés. */}
+      <div className="flex min-h-[28px] items-end justify-between gap-2">
         <label htmlFor={id} className={cls.lbl}>{localized(field.label, i18n.language)}</label>
         {secret && (
           <button

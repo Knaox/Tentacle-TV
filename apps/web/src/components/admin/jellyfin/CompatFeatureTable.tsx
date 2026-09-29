@@ -44,7 +44,9 @@ function StateCell({ state }: { state: Cell }) {
 
 function ProbeCell({ feature }: { feature: CompatFeatureView | null }) {
   const { t } = useTranslation("adminJellyfin");
-  const probe = feature?.probe;
+  // Une nouveauté que la version installée n'a pas : rien à chercher sur ce serveur.
+  if (!feature) return <StateCell state="n/a" />;
+  const probe = feature.probe;
   if (!probe) return <span className="text-xs text-content-quaternary">{t("probeNone")}</span>;
   if (probe.state === "present") return <StateCellText tone="text-status-success-fg" Icon={CircleCheck} text={t("probePresent")} />;
   return (
