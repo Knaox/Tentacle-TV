@@ -9,3 +9,7 @@ export {
   useJellyfinDashboardUrl, fetchJellyfinDashboardUrl, JELLYFIN_DASHBOARD_URL_KEY,
 } from "../hooks/useJellyfinDashboardUrl";
 export { useTrailerHint, type TrailerHint, type UseTrailerHintInput } from "../hooks/useTrailerHint";
+export {
+  useFicheTrailerHint, TRAILER_HINT_CONFIRM_MS,
+  type FicheTrailerHint, type FicheTrailerHintOwner, type TrailerHintPhase,
+} from "../hooks/useFicheTrailerHint";
