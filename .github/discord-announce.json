@@ -1,0 +1,18 @@
+{
+  "$comment": "Annonces Discord des versions en ligne (store-watch.yml → .github/scripts/discord-announce.mjs). channels : salons d'annonces du serveur Discord Tentacle TV, EN et FR. floors : par boutique, la version en ligne au 2026-09-29, jour de la mise en service — rien n'est annoncé à ce niveau ni en dessous, pour que le premier passage ne republie pas l'historique. Baisser un seuil fait annoncer la version en ligne au passage suivant.",
+  "channels": {
+    "en": "1554228047241281622",
+    "fr": "1554228047241281618"
+  },
+  "floors": {
+    "macos": "1.24.0",
+    "windows": "1.24.0",
+    "linux": "1.24.0",
+    "ios": "1.9.0",
+    "android": "1.8.1",
+    "appletv": "1.3.1",
+    "androidtv": "1.3.1",
+    "server": "1.21.0",
+    "webos": "1.0.0"
+  }
+}

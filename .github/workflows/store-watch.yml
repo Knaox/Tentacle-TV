@@ -1,8 +1,11 @@
 name: Store Watch (manifeste stores)
 
-# Ce que les boutiques servent REELLEMENT — et rien d'autre : le job `watch`
-# lit chaque boutique (.github/scripts/store-live.mjs), aligne le manifeste
-# d'auto-update sur ce qu'elles servent, et le commite.
+# Ce que les boutiques servent REELLEMENT — et rien d'autre. Deux jobs :
+#
+# 1. `watch` lit chaque boutique (.github/scripts/store-live.mjs), aligne le
+#    manifeste d'auto-update sur ce qu'elles servent, et le commite.
+# 2. `announce` annonce sur Discord ce qui vient d'arriver en ligne
+#    (.github/scripts/discord-announce.mjs), EN et FR.
 #
 # macOS : le cran store de desktop.yml ne patche pas ce bloc, et c'est voulu —
 # entre la soumission et l'approbation d'Apple il s'ecoule des heures, et
@@ -18,13 +21,23 @@ name: Store Watch (manifeste stores)
 # ouverte ici : une edition ouverte pendant une publication peut invalider
 # la sienne, et ce veilleur tourne toutes les trente minutes.
 #
-# Toutes les 30 minutes + declenchable a la main. Idempotent : ne committe
-# que ce qui a change. Rien n'y publie quoi que ce soit dans une boutique.
+# SECRETS CLOISONNES. `watch` voit les cles des boutiques et peut ecrire le
+# manifeste ; `announce` ne voit que le jeton Discord, en lecture seule sur le
+# depot. Aucun des deux ne publie quoi que ce soit dans une boutique.
+#
+# Toutes les 30 minutes + declenchable a la main (annonces a blanc par defaut).
+# Idempotent : ne committe que ce qui a change, n'annonce que ce qui est neuf.
 
 on:
   schedule:
     - cron: "*/30 * * * *"
   workflow_dispatch:
+    inputs:
+      discord:
+        description: "Annonces Discord : dry-run (rien n'est publie) ou post"
+        type: choice
+        options: [dry-run, post]
+        default: dry-run
 
 permissions:
   contents: read
@@ -40,6 +53,14 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+    outputs:
+      # EN BASE64, et c'est vital. GitHub masque chaque LIGNE des secrets du
+      # job ; le compte de service Play est un JSON multi-ligne, donc « { » et
+      # « } » deviennent des masques. Une sortie de job qui contient un masque
+      # est SUPPRIMÉE (« Skip output since it may contain secret ») : le JSON
+      # nu n'atteindrait jamais le job des annonces. Constaté à l'essai du
+      # 2026-09-29, où toutes les accolades du journal sortaient en ***.
+      live: ${{ steps.live.outputs.b64 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,8 +82,10 @@ jobs:
         run: |
           set -euo pipefail
           node .github/scripts/store-live.mjs --out "$RUNNER_TEMP/live.json"
-          echo "En ligne : $(cat "$RUNNER_TEMP/live.json")"
+          # Sans accolades : le journal les masque (voir « outputs » plus haut).
+          node -e 'const j = require(process.argv[1]); console.log("En ligne : " + Object.entries(j).map(([k, v]) => `${k}=${v ?? "?"}`).join(" · "))' "$RUNNER_TEMP/live.json"
           echo "live=$(cat "$RUNNER_TEMP/live.json")" >> "$GITHUB_OUTPUT"
+          echo "b64=$(base64 -w0 "$RUNNER_TEMP/live.json")" >> "$GITHUB_OUTPUT"
 
       - name: Aligner le manifeste
         env:
@@ -113,3 +136,32 @@ jobs:
           LIVE: ${{ steps.live.outputs.live }}
         run: |
           node -e 'if (!JSON.parse(process.env.LIVE).macos) { console.log("::error title=Veilleur des stores::App Store Connect muet — version macOS inconnue, bloc macAppStore fige."); process.exit(1) }'
+
+  announce:
+    name: Annonces Discord
+    needs: watch
+    # Meme si le manifeste n'a pas pu etre commite : les versions lues suffisent.
+    if: ${{ !cancelled() && needs.watch.outputs.live != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Sans le secret DISCORD_BOT_TOKEN, le script ne fait rien et sort en 0.
+      - name: Annoncer ce qui vient d'arriver en ligne
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          LIVE_B64: ${{ needs.watch.outputs.live }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.discord != 'post' }}
+        run: |
+          set -euo pipefail
+          LIVE="$(printf '%s' "$LIVE_B64" | base64 -d)"
+          export LIVE
+          node .github/scripts/discord-announce.mjs
