@@ -24,7 +24,7 @@ function stats(over: Partial<ViewingStats> = {}): ViewingStats {
     people: { actors: [], directors: [] },
     records: { biggestDay: null, longestStreak: null, binge: null, longestSession: null },
     taste: { available: false, computedAt: null, animeShare: 0, loved: [], signals: {
-      ratings: 0, ratingAverage: null, superlikes: 0, likes: 0, dislikes: 0, likedPeople: 0, favorites: 0 } },
+      ratings: 0, ratingAverage: null, superlikes: 0, likes: 0, dislikes: 0, likedPeople: 0, favorites: 0 }, potential: null },
     ...over,
   };
 }

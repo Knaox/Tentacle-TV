@@ -190,6 +190,11 @@ export default {
   tasteRefine: "Affiner mes goûts",
   tasteUnavailable: "Votre profil de goût se construit : il apparaîtra ici dès que les recommandations vous connaîtront un peu.",
   tasteAnime: "{{share}} d'animés dans vos goûts",
+  potentialTitle: "À voir",
+  potentialBody_one: "{{count}} titre gardé dans Ma liste, pas encore vu ni aimé.",
+  potentialBody_other: "{{count}} titres gardés dans Ma liste, pas encore vus ni aimés.",
+  potentialNote: "Un potentiel, pas un avis : ils ne comptent dans aucune statistique.",
+  potentialCta: "Ma liste",
 
   aboutTitle: "À propos de ces chiffres",
   aboutMeasured: "Depuis le {{date}}, Tentacle chronomètre ce que vous regardez, quelle que soit l'application.",

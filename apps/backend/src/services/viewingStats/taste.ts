@@ -1,8 +1,10 @@
 import { getPrisma, hasPrisma } from "../db";
-import { parseAnchors } from "../reco/anchorStore";
+import { parseAnchors, parsePotentials } from "../reco/anchorStore";
 import type { AnchorKind } from "../reco/anchors";
 import { getCachedMetaMany, metaKey } from "../tmdb/metaCache";
-import type { ViewingStatsSignals, ViewingStatsTaste, ViewingStatsTasteReason, ViewingStatsTasteTitle } from "./contract";
+import type {
+  ViewingStatsPotentialTitle, ViewingStatsSignals, ViewingStatsTaste, ViewingStatsTasteReason, ViewingStatsTasteTitle,
+} from "./contract";
 import type { JudgmentCounts } from "./judgments";
 
 /**
@@ -13,6 +15,8 @@ import type { JudgmentCounts } from "./judgments";
  */
 
 export const LOVED_MAX = 10;
+/** « À voir » : quelques affiches suffisent, le compte dit le reste. */
+export const POTENTIAL_PREVIEW = 5;
 
 /** Les signaux qui disent « aimé », du plus parlant au plus discret. */
 const REASONS: Array<[AnchorKind, ViewingStatsTasteReason]> = [
@@ -52,11 +56,14 @@ export async function readTaste(
   libraryTitleOf: (key: string) => LibraryTitle | null
 ): Promise<ViewingStatsTaste> {
   const signals: ViewingStatsSignals = { ...counts };
-  if (!hasPrisma()) return { available: false, computedAt: null, animeShare: 0, loved: [], signals };
+  if (!hasPrisma()) return { available: false, computedAt: null, animeShare: 0, loved: [], signals, potential: null };
   const profile = await getPrisma().tasteProfile.findUnique({
     where: { jellyfinUserId: userId },
-    select: { anchors: true, animeShare: true, computedAt: true },
+    select: { anchors: true, potentials: true, animeShare: true, computedAt: true },
   });
+  // Ma liste seule : un potentiel, jamais une ancre — lu à part, montré à part (reco/potentials.ts).
+  const potentials = profile ? parsePotentials(profile.potentials) : null;
+  const preview = (potentials ?? []).slice(0, POTENTIAL_PREVIEW);
 
   const anchors = profile ? parseAnchors(profile.anchors) ?? [] : [];
   const lovedAnchors = anchors
@@ -64,7 +71,7 @@ export async function readTaste(
     .sort((a, b) => b.weight - a.weight)
     .slice(0, LOVED_MAX);
   const metas = await getCachedMetaMany(
-    lovedAnchors.filter((a) => a.tmdbId > 0).map((a) => ({ mediaType: a.mediaType, tmdbId: a.tmdbId }))
+    [...lovedAnchors, ...preview].filter((a) => a.tmdbId > 0).map((a) => ({ mediaType: a.mediaType, tmdbId: a.tmdbId }))
   );
 
   const loved: ViewingStatsTasteTitle[] = lovedAnchors.map((a) => {
@@ -90,5 +97,15 @@ export async function readTaste(
     // Un titre sans nom ne se montre pas : une affiche muette n'apprend rien.
     loved: loved.filter((l) => l.title !== ""),
     signals,
+    potential: potentials === null ? null : {
+      count: potentials.length,
+      titles: preview.map((p): ViewingStatsPotentialTitle => {
+        const meta = p.tmdbId > 0 ? metas.get(metaKey(p.mediaType, p.tmdbId)) : undefined;
+        return {
+          key: p.key, mediaType: p.mediaType, tmdbId: p.tmdbId, title: p.title || meta?.title || "",
+          jellyfinId: p.jellyfinId, posterPath: meta?.posterPath ?? null,
+        };
+      }),
+    },
   };
 }

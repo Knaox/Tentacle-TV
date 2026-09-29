@@ -190,6 +190,11 @@ export default {
   tasteRefine: "Refine my taste",
   tasteUnavailable: "Your taste profile is taking shape: it will show up here once recommendations get to know you a little.",
   tasteAnime: "{{share}} anime in your taste",
+  potentialTitle: "To watch",
+  potentialBody_one: "{{count}} title saved in My List, not yet watched or liked.",
+  potentialBody_other: "{{count}} titles saved in My List, not yet watched or liked.",
+  potentialNote: "Potential, not an opinion: they don't count in any statistic.",
+  potentialCta: "My List",
 
   aboutTitle: "About these numbers",
   aboutMeasured: "Since {{date}}, Tentacle clocks what you watch, whatever the app.",

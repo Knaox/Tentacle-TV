@@ -247,6 +247,9 @@ export interface ViewingStatsSignals {
   favorites: number;
 }
 
+/** Un titre « à voir » : seulement dans Ma liste. */
+export type ViewingStatsPotentialTitle = Pick<ViewingStatsTasteTitle, "key" | "mediaType" | "tmdbId" | "title" | "jellyfinId" | "posterPath">;
+
 export interface ViewingStatsTaste {
   /** Faux tant que le moteur n'a pas calculé de profil pour ce compte. */
   available: boolean;
@@ -256,6 +259,12 @@ export interface ViewingStatsTaste {
   /** Les titres qui pèsent le plus dans le goût, le plus fort d'abord. */
   loved: ViewingStatsTasteTitle[];
   signals: ViewingStatsSignals;
+  /**
+   * « À voir » : les titres seulement dans Ma liste — ni vus, ni aimés, ni
+   * jugés. Un potentiel, pas un avis : ils ne pèsent sur AUCUNE autre
+   * statistique. `titles` : les premiers ; null : profil d'avant les potentiels.
+   */
+  potential: { count: number; titles: ViewingStatsPotentialTitle[] } | null;
 }
 
 export interface ViewingStats {

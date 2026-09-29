@@ -7,6 +7,7 @@ import {
 } from "@tentacle-tv/shared";
 import { PageTransition } from "../components/PageTransition";
 import { ActivityChart } from "../components/stats/ActivityChart";
+import { PotentialTile } from "../components/stats/PotentialTile";
 import { RecordsGrid } from "../components/stats/RecordsGrid";
 import { RhythmHeatmap } from "../components/stats/RhythmHeatmap";
 import { StatsAbout } from "../components/stats/StatsAbout";
@@ -136,6 +137,7 @@ function StatsBody({ stats, period, onPeriodChange, pending }: StatsBodyProps) {
         </div>
       )}
       <TasteSection taste={stats.taste} />
+      <PotentialTile taste={stats.taste} />
       <StatsAbout stats={stats} />
     </div>
   );

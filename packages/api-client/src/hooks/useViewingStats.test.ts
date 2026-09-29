@@ -11,6 +11,7 @@ const LEGACY = {
   movies: [{ id: "m1", kind: "movie", viewings: 0 }],
   topSeries: [],
   records: { biggestDay: null, longestStreak: null, binge: { seriesId: "s", seriesName: "Dark", episodes: 9, date: "" }, longestSession: null },
+  taste: { available: true, computedAt: null, animeShare: 0, loved: [], signals: {} },
 };
 
 beforeEach(() => {
@@ -48,6 +49,7 @@ describe("fetchViewingStats", () => {
     expect(stats.moviesOrder).toBe("recent");
     expect(stats.movies[0]).toMatchObject({ viewings: 1, rating: null, favorite: false, verdict: null });
     expect(stats.records.binge?.seconds).toBe(0);
+    expect(stats.taste.potential).toBeNull();
   });
 });
 

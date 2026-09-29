@@ -9,6 +9,7 @@ import { StatsBlock } from "@/components/stats/StatsBlock";
 import { DevicesBlock, GenresBlock, MixBlock } from "@/components/stats/StatsDistributions";
 import { ListeningBlock, OriginsBlock } from "@/components/stats/StatsLanguages";
 import { MoviesBlock } from "@/components/stats/StatsMovies";
+import { PotentialTile } from "@/components/stats/PotentialTile";
 import { StatsOverview } from "@/components/stats/StatsOverview";
 import { StatsPersona } from "@/components/stats/StatsPersona";
 import { StatsPeriodEmpty } from "@/components/stats/StatsStates";
@@ -109,6 +110,7 @@ export const StatsBody = memo(function StatsBody({ stats, period, onPeriodChange
         </View>
       )}
       <TasteBlock taste={stats.taste} posterWidth={posterWidth} inset={inset} />
+      <PotentialTile taste={stats.taste} />
       <StatsAbout stats={stats} />
     </View>
   );

@@ -107,6 +107,12 @@ dite elle aussi.
 avec les notes, coups de cœur, favoris. Aucun recalcul, aucune reconstruction
 déclenchée d'ici.
 
+« À voir » : les titres seulement dans Ma liste, ni vus ni aimés
+(`taste_profiles.potentials`, cf. `reco/potentials.ts`). Une tuile à part —
+le compte, quelques affiches, le chemin vers Ma liste — et jamais un
+pourcentage : un potentiel n'est pas un avis, il ne pèse sur aucune autre
+statistique de la page.
+
 ## Coût
 
 Un calcul (170 à 300 ms mesurés sur les comptes de test) lit tout une fois,

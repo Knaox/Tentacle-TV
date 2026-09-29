@@ -42,6 +42,7 @@ const META = [
     credits: { cast: [{ id: 1190668, name: "Timothée Chalamet", order: 0, profile_path: "/tc.jpg" }],
       crew: [{ id: 137427, name: "Denis Villeneuve", job: "Director" }] },
   }),
+  tmdb("tv", 1399, { name: "Game of Thrones", poster_path: "/got.jpg", origin_country: ["US"] }),
   tmdb("tv", 209867, {
     name: "Frieren", genres: [{ id: 16, name: "Animation" }, { id: 10765, name: "SF & F" }], original_language: "ja",
     origin_country: ["JP"], credits: { cast: [{ id: 1, name: "Atsumi Tanezaki", order: 0 }] },
@@ -57,6 +58,12 @@ const SEGMENTS = [
   seg("m2", "Movie", "2026-09-20T19:45:00Z", 7200, { itemName: "Matrix", clientName: "Tentacle TV - Mobile", runtimeSeconds: 8160, audioLang: "fr" }),
   seg("e1", "Episode", "2026-09-26T20:05:00Z", 1440, { seriesId: "s1", seriesName: "Frieren", clientName: "Tentacle TV - TV", audioLang: "ja" }),
   seg("e2", "Episode", "2026-09-26T20:32:00Z", 1440, { seriesId: "s1", seriesName: "Frieren", clientName: "Tentacle TV - TV", audioLang: "ja" }),
+];
+
+// Ma liste seule : Inception (en bibliothèque) et Game of Thrones (pas encore arrivé) — des potentiels.
+const POTENTIALS = [
+  { key: "movie:27205", mediaType: "movie", tmdbId: 27205, title: "Inception", jellyfinId: "m9" },
+  { key: "tv:1399", mediaType: "tv", tmdbId: 1399, title: "", jellyfinId: null },
 ];
 
 const ANCHORS = [
@@ -78,7 +85,9 @@ vi.mock("../services/db", () => ({
         META.filter((m) => args.where.OR.some((r) => r.mediaType === m.mediaType && r.tmdbId === m.tmdbId)),
     },
     tasteProfile: {
-      findUnique: async () => ({ anchors: JSON.stringify(ANCHORS), animeShare: 0.15, computedAt: new Date(NOW - 3_600_000) }),
+      findUnique: async () => ({
+        anchors: JSON.stringify(ANCHORS), potentials: JSON.stringify(POTENTIALS), animeShare: 0.15, computedAt: new Date(NOW - 3_600_000),
+      }),
     },
     userRating: { findMany: async () => [{ mediaType: "movie", tmdbId: 603, score: 9 }] },
     userSwipe: {
@@ -222,6 +231,20 @@ describe("GET /api/stats/me", () => {
       ["Frieren", "s1", null, ["series"]],
     ]);
     expect(body.taste.signals).toEqual({ ratings: 1, ratingAverage: 9, superlikes: 2, likes: 1, dislikes: 0, likedPeople: 3, favorites: 1 });
+  });
+
+  it("montre Ma liste seule comme un potentiel « à voir », sans qu'elle pèse sur rien d'autre", async () => {
+    const { body } = await get("period=all&tz=Europe/Paris");
+    expect(body.taste.potential).toEqual({
+      count: 2,
+      titles: [
+        { key: "movie:27205", mediaType: "movie", tmdbId: 27205, title: "Inception", jellyfinId: "m9", posterPath: null },
+        { key: "tv:1399", mediaType: "tv", tmdbId: 1399, title: "Game of Thrones", jellyfinId: null, posterPath: "/got.jpg" },
+      ],
+    });
+    expect(body.taste.loved.map((l) => l.key)).not.toContain("movie:27205");
+    expect(body.totals.movies).toBe(2);
+    expect(body.origins.countries.map((c) => [c.key, c.seconds])).toEqual([["US", 16200], ["JP", 2880]]);
   });
 
   it("borne « 30 jours » aux jours locaux récents, sans relancer de calcul", async () => {

@@ -120,7 +120,7 @@ async function compute(userId: string, timeZone: string): Promise<ComputedStats>
   try {
     taste = await readTaste(userId, counts, judged.judgments.ratings, libraryResolver(titles, history.favorites.byTmdbKey));
   } catch {
-    taste = { available: false, computedAt: null, animeShare: 0, loved: [], signals: counts };
+    taste = { available: false, computedAt: null, animeShare: 0, loved: [], signals: counts, potential: null };
   }
   const heardSince = listeningSince(data.measured);
 

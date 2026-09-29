@@ -6,7 +6,8 @@ import type { ViewingStats, ViewingStatsTitle } from "../types/viewingStats";
  * section plutôt que d'afficher un chiffre qu'il n'a pas calculé.
  *
  * Un serveur d'avant l'origine et l'écoute envoie encore `languages` (la
- * langue ORIGINALE des titres, le chiffre trompeur) : on ne la lit plus.
+ * langue ORIGINALE des titres, le chiffre trompeur) : on ne la lit plus. Sans
+ * potentiels, la tuile « À voir » se tait.
  * Ses films sont triés par date (`moviesOrder: "recent"`) et n'ont pas
  * d'avis ; tous sont vus au moins une fois (il ne liste que ceux-là).
  */
@@ -35,5 +36,6 @@ export function withViewingStatsDefaults(raw: Legacy): ViewingStats {
     topSeries: raw.topSeries.map((s) => withJudgments(s, legacy)),
     // Un ancien marathon se comptait en épisodes : sans sa durée, il ne fait aucun trait.
     records: binge && binge.seconds === undefined ? { ...raw.records, binge: { ...binge, seconds: 0 } } : raw.records,
+    taste: raw.taste && raw.taste.potential === undefined ? { ...raw.taste, potential: null } : raw.taste,
   };
 }
