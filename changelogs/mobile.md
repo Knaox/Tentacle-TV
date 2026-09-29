@@ -17,7 +17,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Avec Jellyfin 12** : choix de la version, filtres de langue, VO
 
 ### EN
-- **Your statistics**: time spent, genres, records, "Dub or original?", shareable through a link
+- **Your stats**: time spent, genres, records, "Dubbed or original?", shareable through a link
 - **A movie's saga** on its page
 - **Faster seasons**, the current season right away
 - **Trailer**: a button on the title page, and extras
@@ -41,7 +41,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - Une saison contenant un épisode très court ne fait plus planter la liste des épisodes
 
 ### EN
-- **Your statistics**: a new screen shows your screen time, your genres, your favorite movies and actors, your records, what you really listen to ("Dub or original?") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time
+- **Your stats**: a new screen shows your screen time, your genres, your favorite movies and actors, your records, what you really listen to ("Dubbed or original?") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time
 - **A movie's saga** on its page: every installment in order, the ones you have watched and the one that comes next
 - **Much faster seasons and episodes**: the current season opens right away, and season pills read on any image
 - **Trailer**: a button on the title page, and season trailers, extras and local trailers finally visible. A guide in Help › Trailers, and a discreet reminder on the title page when the server is not set up; it can be hidden for good

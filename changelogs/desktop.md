@@ -30,7 +30,7 @@ et Linux reçoivent l'ensemble.
 - **Administrateurs : la vue d'ensemble** dit si votre Jellyfin et sa dernière version publiée sont compatibles, montre l'état réel des réglages Jellyfin conseillés et les applique d'un clic quand c'est sûr, et compte les titres qui ont une bande-annonce, avec la raison de ceux qui n'en ont pas. Services dit si chaque greffon de détection des passages (génériques, résumés) est actif, installé ou absent
 
 ### EN
-- **Your statistics**: a new page shows your screen time, your genres, your favorite movies and actors, your pace and your records, what you really listen to ("Dub or original?") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time
+- **Your stats**: a new page shows your screen time, your genres, your favorite movies and actors, your pace and your records, what you really listen to ("Dubbed or original?") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time
 - **Watch Together: Affinity mode** — swipe the library's movies, series or anime together; as soon as the whole group likes the same title, "It's a match!" offers to watch it together. Three gestures, no more: like, not for me, undo. Opening or leaving Affinity applies to the whole group
 - **A movie's saga** on its page: every installment in order, its rank, the ones you have watched and the one that comes next
 - **Clearer cards**: no more big Play button in the middle of posters, a discreet "Play" leading the actions, and clicking a 16:9 thumbnail starts playback. The same hover everywhere, search, people pages and episode rows included; a single "watched" marker, and "On this device" for what you downloaded
@@ -60,7 +60,7 @@ et Linux reçoivent l'ensemble.
 - **Administrateurs** : compatibilité de Jellyfin et réglages conseillés dans la vue d'ensemble
 
 ### EN
-- **Your statistics**: time spent, genres, favorites, records, "Dub or original?", shareable through a revocable link
+- **Your stats**: time spent, genres, favorites, records, "Dubbed or original?", shareable through a revocable link
 - **Watch Together: Affinity mode** — swipe together, and a match offers to watch the title as a group
 - **A movie's saga** on its page, in order
 - **Clearer cards**: a discreet "Play", the same hover everywhere, a single "watched" marker
