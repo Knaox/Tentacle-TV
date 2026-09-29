@@ -28,6 +28,11 @@ function hasNativeCommand(command: string): boolean {
   return window.tentacle?.capabilities.includes(command) ?? false;
 }
 
+/** Préchargement du fichier que « Lire » jouerait (`lib/mediaWarmup.ts`). */
+export function supportsMediaWarm(): boolean {
+  return hasNativeCommand("media_warm");
+}
+
 /** Téléchargements et lecture hors ligne (moteur, catalogue local, purge). */
 export function supportsDownloads(): boolean {
   return hasNativeCommand("downloads_list");

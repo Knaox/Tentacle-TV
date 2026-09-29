@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSeriesWatchState } from "@tentacle-tv/api-client";
+import { useMediaWarmup } from "../../hooks/useMediaWarmup";
 import { formatEpisodeCode, resumeState, splitMinutes, VERSION_QUERY_PARAM, type MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon } from "../media/MediaDetailIcons";
 import { PressableScale } from "../ui/PressableScale";
@@ -32,6 +33,12 @@ export function DetailPlayButton({ item, collectionCount = 0, version = null }: 
   const navigate = useNavigate();
   const isSeries = item.Type === "Series";
   const { data: watchState } = useSeriesWatchState(isSeries ? item.Id : undefined);
+  const episode = isSeries && watchState && watchState.type !== "completed" ? watchState.episode : undefined;
+  const target = episode ?? item;
+  // La fiche est la plus sûre des intentions : le serveur lit d'avance la tête
+  // et la fin du fichier que ce bouton jouerait (`lib/mediaWarmup.ts`). Une
+  // demi-seconde d'abord, pour laisser passer ce que la fiche charge elle-même.
+  useMediaWarmup(item.Type === "BoxSet" ? null : target, 600, target === item ? version : null);
 
   // Une collection n'a rien à lire : son action principale est d'en parcourir
   // le contenu, juste sous la scène.
@@ -51,10 +58,8 @@ export function DetailPlayButton({ item, collectionCount = 0, version = null }: 
       </PressableScale>
     );
   }
-  const episode = isSeries && watchState && watchState.type !== "completed" ? watchState.episode : undefined;
   if (isSeries && !episode) return null;
 
-  const target = episode ?? item;
   const resume = resumeState(target);
   // « Lecture » tout court pour une série jamais commencée : le code du premier
   // épisode n'apprendrait rien.

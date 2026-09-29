@@ -12,6 +12,14 @@ import { CardHoverShell } from "./CardHoverShell";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { HoverRatingStars } from "../rating/HoverRatingStars";
 import { supportsDownloads } from "../../desktop/bridge";
+import { useMediaWarmup } from "../../hooks/useMediaWarmup";
+
+/**
+ * Un survol qui s'attarde sur une carte qui LIT : le serveur lit d'avance la
+ * tête et la fin du fichier (`lib/mediaWarmup.ts`). Assez long pour qu'un
+ * balayage de rangée ne demande rien, assez court pour précéder le clic.
+ */
+const WARMUP_AFTER_MS = 400;
 
 interface CardHoverOverlayProps {
   variant: CardOverlayVariant;
@@ -86,6 +94,9 @@ export function CardHoverOverlay({
   const jellyfinItemId = ratingIdentity === undefined ? target.jellyfinItemId : (item?.Id ?? null);
   // Les puces montrent la fiche complète quand c'est le même titre.
   const metaItem = meta && face && meta.Id === face.Id ? face : meta;
+  // Ce que le clic lirait — le film, l'épisode résolu d'une série ; rien pour
+  // un titre lu sur le disque. Le survol quitté avant le délai ne demande rien.
+  useMediaWarmup(visible && play !== null && !local ? (metaItem ?? face) : null, WARMUP_AFTER_MS);
 
   const overlay = resolveCardOverlay({
     variant,

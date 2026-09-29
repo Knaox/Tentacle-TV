@@ -28,6 +28,7 @@ export {
 export {
   supportsAppUpdates,
   supportsDownloads,
+  supportsMediaWarm,
   supportsMpv,
   supportsOfflineSession,
   supportsSmtc,
