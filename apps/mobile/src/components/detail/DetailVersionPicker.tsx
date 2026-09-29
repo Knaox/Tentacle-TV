@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
-import { mediaVersions, type MediaItem } from "@tentacle-tv/shared";
+import { mediaVersions, pickMediaSource, type MediaItem } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, seasonTabGradient, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 interface Props {
@@ -24,7 +24,8 @@ export function DetailVersionPicker({ item, value, onChange }: Props) {
   const st = useThemedStyles(makeStyles);
   const versions = mediaVersions(item.MediaSources);
   if (versions.length === 0) return null;
-  const selected = value ?? versions[0].id;
+  // Sans choix (ou un choix périmé), celle que Jellyfin lirait : sa première.
+  const selected = pickMediaSource(item.MediaSources, value)?.Id;
   return (
     <View accessibilityRole="radiogroup" accessibilityLabel={t("detailVersionLabel")} style={st.row}>
       <Text style={st.caption}>{t("detailVersion")}</Text>

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { mediaVersions, type MediaItem } from "@tentacle-tv/shared";
+import { mediaVersions, pickMediaSource, type MediaItem } from "@tentacle-tv/shared";
 
 const ACTIVE_STYLE = {
   background: "linear-gradient(120deg, var(--brand) 0%, var(--brand-accent) 100%)",
@@ -25,7 +25,8 @@ export function DetailVersionPicker({ item, value, onChange }: {
   const { t } = useTranslation("media");
   const versions = mediaVersions(item.MediaSources);
   if (versions.length === 0) return null;
-  const selected = value ?? versions[0].id;
+  // Sans choix (ou un choix périmé), celle que Jellyfin lirait : sa première.
+  const selected = pickMediaSource(item.MediaSources, value)?.Id;
   return (
     <div role="group" aria-label={t("detailVersionLabel")} className="mt-4 flex flex-wrap items-center gap-2">
       <span className="mr-1 text-sm font-medium text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]">

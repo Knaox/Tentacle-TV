@@ -11,11 +11,16 @@ describe("mediaVersions", () => {
     expect(mediaVersions([src("a", "1080p")])).toEqual([]);
   });
 
-  it("les noms de Jellyfin, dans son ordre (la première est lue par défaut)", () => {
-    expect(mediaVersions([src("a", "1080p"), src("b", "720p")])).toEqual([
-      { id: "a", label: "1080p" },
-      { id: "b", label: "720p" },
-    ]);
+  it("les noms de Jellyfin, dans un ordre stable : définition décroissante", () => {
+    const expected = [{ id: "a", label: "1080p" }, { id: "b", label: "720p" }];
+    expect(mediaVersions([src("a", "1080p"), src("b", "720p")])).toEqual(expected);
+    // Jellyfin met en tête la dernière version lue : l'ordre affiché, lui, ne bouge pas.
+    expect(mediaVersions([src("b", "720p"), src("a", "1080p")])).toEqual(expected);
+    expect(mediaVersions([src("b", "Version courte", 720), src("a", "Director's Cut", 1080)]).map((v) => v.id)).toEqual(["a", "b"]);
+  });
+
+  it("même définition : par nom", () => {
+    expect(mediaVersions([src("t", "Théâtrale", 1080), src("d", "Director's Cut", 1080)]).map((v) => v.label)).toEqual(["Director's Cut", "Théâtrale"]);
   });
 
   it("sans nom, la définition ; sans définition, un rang", () => {

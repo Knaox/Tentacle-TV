@@ -23,17 +23,37 @@ export interface MediaVersion {
 
 type VersionSource = Pick<MediaSource, "Id" | "Name"> & { MediaStreams?: MediaSource["MediaStreams"] };
 
+const videoHeight = (source: VersionSource): number | undefined =>
+  source.MediaStreams?.find((s) => s.Type === "Video")?.Height;
+
 function versionLabel(source: VersionSource, index: number): string {
   const name = source.Name?.trim();
   if (name) return name;
-  const height = source.MediaStreams?.find((s) => s.Type === "Video")?.Height;
+  const height = videoHeight(source);
   return height ? `${height}p` : `Version ${index + 1}`;
 }
 
-/** Les versions à proposer ; vide quand il n'y a rien à choisir (une source, ou aucune). */
+/** La définition d'une version : celle du flux vidéo, sinon celle que dit son nom (« 720p »). */
+function definition(source: VersionSource, label: string): number {
+  return videoHeight(source) ?? Number(/(\d{3,4})p\b/i.exec(label)?.[1] ?? 0);
+}
+
+/**
+ * Les versions à proposer ; vide quand il n'y a rien à choisir (une source, ou
+ * aucune). Dans un ordre STABLE — définition décroissante, puis nom : Jellyfin
+ * met en tête la dernière version lue par le compte, et les pastilles ne
+ * doivent pas changer de place d'une visite à l'autre. La version par défaut,
+ * elle, reste la première de Jellyfin (`pickMediaSource`).
+ */
 export function mediaVersions(sources: readonly VersionSource[] | null | undefined): MediaVersion[] {
   if (!sources || sources.length < 2) return [];
-  return sources.map((source, index) => ({ id: source.Id, label: versionLabel(source, index) }));
+  return sources
+    .map((source, index) => {
+      const label = versionLabel(source, index);
+      return { id: source.Id, label, rank: definition(source, label) };
+    })
+    .sort((a, b) => b.rank - a.rank || a.label.localeCompare(b.label, undefined, { numeric: true }))
+    .map(({ id, label }) => ({ id, label }));
 }
 
 /** La source à lire : la version demandée si le titre l'a, sinon la première (celle de Jellyfin). */
