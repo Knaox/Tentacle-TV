@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CircleHelp, ExternalLink, Info, Lock, LogOut, Server, Shield, Trash2, UserX } from "lucide-react";
+import { CircleHelp, ExternalLink, Film, Info, Lock, LogOut, Server, Shield, Trash2, UserX } from "lucide-react";
+import { TRAILER_GUIDE_PATH } from "@tentacle-tv/shared";
 import { isDesktopApp } from "../../../desktop/bridge";
 import { SettingsRow } from "../settings/ui/SettingsRow";
 import { SettingsSection } from "../settings/ui/SettingsSection";
@@ -24,6 +25,7 @@ export function ProfileAccountSections({ ctx, actions, serverUrl, version }: {
 }) {
   const { t } = useTranslation("profile");
   const { t: to } = useTranslation("offline");
+  const { t: tg } = useTranslation("trailerHelp");
   const navigate = useNavigate();
   const { offline } = ctx;
   const canChangeServer = !offline && isDesktopApp();
@@ -32,6 +34,10 @@ export function ProfileAccountSections({ ctx, actions, serverUrl, version }: {
     <>
       <SettingsSection title={t("help")}>
         {!offline && <SettingsRow icon={CircleHelp} label={t("support")} chevron onPress={() => navigate("/support")} />}
+        {/* Le guide « Bandes-annonces » : l'app le range au même endroit. */}
+        {!offline && (
+          <SettingsRow icon={Film} label={tg("helpEntryTitle")} chevron onPress={() => navigate(TRAILER_GUIDE_PATH)} />
+        )}
         <SettingsRow icon={Info} label={t("about")} chevron onPress={() => navigate("/about")} />
         <SettingsRow
           icon={Shield}
