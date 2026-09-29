@@ -15,6 +15,7 @@ import type { RecoRowItem } from "../hooks/recoTypes";
 import type { UserRatingEntry } from "../hooks/useRatings";
 import { RECO_PAGE_KEY, selectRecoPage, type RecoPage } from "../hooks/useRecoPage";
 import { WATCHLIST_PENDING_KEY } from "../hooks/useWatchlistPending";
+import { FAVORITE_PENDING_KEY } from "../hooks/useFavoritePending";
 import { FAVORITE_SERIES_IDS_KEY, WATCHLIST_SERIES_IDS_KEY } from "../hooks/watchlistEffects";
 import { dropRecoItemUnlessHeld } from "./recoCacheItems";
 import { RECO_LEAVE_MS, isRecoItemJudged, releaseRecoCard } from "./recoRetirement";
@@ -102,6 +103,13 @@ describe("ce qui juge un titre, lu dans les caches des marqueurs", () => {
 
   it("une carte Vigie : sa mise de côté pour Ma liste", () => {
     qc.setQueryData(WATCHLIST_PENDING_KEY, ["movie:11"]);
+    expect(isRecoItemJudged(qc, VIGIE)).toBe(true);
+  });
+
+  it("une carte Vigie : son cœur qui attend l'arrivée du titre — le sien, pas celui d'un autre", () => {
+    qc.setQueryData(FAVORITE_PENDING_KEY, ["movie:12"]);
+    expect(isRecoItemJudged(qc, VIGIE)).toBe(false);
+    qc.setQueryData(FAVORITE_PENDING_KEY, ["movie:12", "movie:11"]);
     expect(isRecoItemJudged(qc, VIGIE)).toBe(true);
   });
 });

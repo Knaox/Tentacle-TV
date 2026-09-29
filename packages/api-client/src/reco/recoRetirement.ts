@@ -6,6 +6,7 @@ import type { UserRatingEntry } from "../hooks/useRatings";
 import { dropRecoItemEverywhere } from "../hooks/useRecoPage";
 import { seriesStateId } from "../hooks/useSeriesListMembership";
 import { WATCHLIST_PENDING_KEY } from "../hooks/useWatchlistPending";
+import { FAVORITE_PENDING_KEY } from "../hooks/useFavoritePending";
 import { FAVORITE_SERIES_IDS_KEY, WATCHLIST_SERIES_IDS_KEY } from "../hooks/watchlistEffects";
 import { recoItemsOf } from "./recoCacheItems";
 import { isRecoItemHeld, markRecoRetired, startRecoLeave, unholdRecoCard } from "./recoRetirementState";
@@ -23,7 +24,8 @@ import { recoMarkerItem } from "./useRecoMarkerItem";
  * « Jugé » se lit au lâcher, dans les caches mêmes que les marqueurs de la
  * carte affichent (`resolveCardMarkers`) : la pastille d'états (Ma liste,
  * favori, vu) ou une note. Une carte hors bibliothèque (Vigie) est jugée
- * quand elle est mise de côté pour Ma liste, ou notée.
+ * quand elle est mise de côté pour Ma liste, aimée en attendant son arrivée,
+ * ou notée.
  */
 
 /** Le titre porte-t-il un jugement, d'après les caches des marqueurs de carte ? */
@@ -36,16 +38,17 @@ export function isRecoItemJudged(qc: QueryClient, item: RecoRowItem): boolean {
     const ids = qc.getQueryData<string[]>(key);
     return ids ? ids.includes(seriesId) : undefined;
   };
-  // Hors bibliothèque, Ma liste est une mise de côté jusqu'à l'arrivée.
-  const pending = !item.jellyfinItemId
-    && (qc.getQueryData<string[]>(WATCHLIST_PENDING_KEY) ?? []).includes(titleKey(item.mediaType, item.tmdbId));
+  // Hors bibliothèque, Ma liste et le cœur attendent l'arrivée du titre.
+  const key = titleKey(item.mediaType, item.tmdbId);
+  const pending = !item.jellyfinItemId && (qc.getQueryData<string[]>(WATCHLIST_PENDING_KEY) ?? []).includes(key);
+  const liked = !item.jellyfinItemId && (qc.getQueryData<string[]>(FAVORITE_PENDING_KEY) ?? []).includes(key);
   const ratings = qc.getQueryData<UserRatingEntry[]>(["ratings"]);
   const markers = resolveCardMarkers({
     item: face,
     communityRating: null,
     userScore: ratings ? userScoreFromRatings(ratings, face) : null,
     inWatchlist: pending || inSeriesSet(WATCHLIST_SERIES_IDS_KEY),
-    isFavorite: inSeriesSet(FAVORITE_SERIES_IDS_KEY),
+    isFavorite: liked || inSeriesSet(FAVORITE_SERIES_IDS_KEY),
   });
   return markers.statuses.length > 0 || markers.userScore !== null;
 }

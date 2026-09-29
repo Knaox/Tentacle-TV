@@ -99,6 +99,11 @@ export interface CardMarkersOptions {
    */
   inWatchlist?: boolean;
   /**
+   * Le cœur dit par l'appelant — un titre hors bibliothèque aimé en attendant
+   * son arrivée (`useIsFavoritePending`). Absent : les Sets et le `UserData`.
+   */
+  isFavorite?: boolean;
+  /**
    * « Sur cet appareil » — lu par la plateforme qui garde hors ligne (bureau,
    * mobile) dans SA liste locale (`cardDeviceState`, offline-core). Absent :
    * rien à dire (web, TV, carte déjà lue sur le disque).
@@ -145,7 +150,7 @@ export function useCardMarkers(item: MediaItem, options: CardMarkersOptions): Ca
     userScore: userScore ?? null,
     // Pas de série (film) ou Set pas encore chargé : `UserData` répond.
     inWatchlist: options.inWatchlist ?? (seriesId ? inWatchlist : undefined),
-    isFavorite: seriesId ? isFavorite : undefined,
+    isFavorite: options.isFavorite ?? (seriesId ? isFavorite : undefined),
     device: options.device,
   });
 }
