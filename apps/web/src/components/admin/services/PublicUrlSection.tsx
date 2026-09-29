@@ -11,6 +11,7 @@ import { SERVICES_KEYS, type PublicUrlConfig } from "./servicesModel";
 import { isHttpUrl, summarizePublicUrl } from "./serviceSummary";
 import { useExplainFailure, usePublicUrlConfig } from "./useServicesData";
 import { useUnsavedGuard } from "./useUnsavedGuard";
+import { SERVER_LINKS_KEY } from "../../serverLinks/useServerLinks";
 
 /**
  * L'adresse publique du serveur — celle que les téléviseurs reçoivent au
@@ -63,6 +64,8 @@ function PublicUrlForm({ frame, config }: { frame: Frame; config: PublicUrlConfi
     onSuccess: (_saved, url) => {
       show("success", url ? t("publicUrlSaved") : t("publicUrlCleared"));
       void queryClient.invalidateQueries({ queryKey: SERVICES_KEYS.publicUrl });
+      // La vue d'ensemble resonde ce qui vient de changer.
+      void queryClient.invalidateQueries({ queryKey: SERVER_LINKS_KEY });
     },
     onError: (err) => setFailure(explain(err)),
   });

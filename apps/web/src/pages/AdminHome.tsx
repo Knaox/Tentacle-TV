@@ -17,6 +17,7 @@ import { OVERVIEW_ID, adminSectionPath, useAdminSections } from "../components/a
 import { JellyfinCompatSection } from "../components/admin/jellyfin/JellyfinCompatSection";
 import { SetupChecklist } from "../components/admin/jellyfin/SetupChecklist";
 import { RecommendedPluginsSection } from "../components/admin/recommended/RecommendedPluginsSection";
+import { ServerLinksSection } from "../components/admin/links/ServerLinksSection";
 import { cls } from "./adminUtils";
 
 /**
@@ -30,8 +31,9 @@ import { cls } from "./adminUtils";
  * les gestes les plus fréquents.
  *
  * Puis ce qui rend Tentacle complet : la compatibilité de Jellyfin (installé
- * et dernier publié), les extensions recommandées — installées et branchées
- * d'ici — et les réglages de Jellyfin, chacun avec son remède.
+ * et dernier publié), l'accès au serveur (lien public, lecture directe), les
+ * extensions recommandées — installées et branchées d'ici — et les réglages
+ * de Jellyfin, chacun avec son remède.
  *
  * Sur mobile, le rail n'est pas affiché : la liste de toutes les sections
  * clôt la page, c'est elle qui sert de navigation.
@@ -53,6 +55,7 @@ export function AdminHome() {
         <DownloadsTile />
       </div>
       <JellyfinCompatSection variant="overview" />
+      <ServerLinksSection />
       <RecommendedPluginsSection />
       <SetupChecklist />
       <Shortcuts />

@@ -13,6 +13,7 @@ import { SERVICES_KEYS, type DirectStreamingConfig, type DirectStreamingTest } f
 import { isHttpUrl, isMixedContent, summarizeDirectStreaming } from "./serviceSummary";
 import { useDirectStreamingConfig, useExplainFailure } from "./useServicesData";
 import { useUnsavedGuard } from "./useUnsavedGuard";
+import { SERVER_LINKS_KEY } from "../../serverLinks/useServerLinks";
 
 /**
  * La lecture directe : les applications lisent chez Jellyfin sans passer par
@@ -70,6 +71,8 @@ function DirectStreamingForm({ frame, config }: { frame: Frame; config: DirectSt
     onSuccess: () => {
       show("success", t("directSaved"));
       void queryClient.invalidateQueries({ queryKey: SERVICES_KEYS.directStreaming });
+      // La vue d'ensemble resonde ce qui vient de changer.
+      void queryClient.invalidateQueries({ queryKey: SERVER_LINKS_KEY });
     },
     onError: (error) => setFailure(explain(error)),
   });
@@ -128,6 +131,7 @@ function DirectStreamingForm({ frame, config }: { frame: Frame; config: DirectSt
               error={errors.public}
               warning={mixed(draft.publicUrl)}
               hint={t("directPublicHint")}
+              data-hash-focus=""
             />
             <Field
               label={t("directPrivateLabel")}
