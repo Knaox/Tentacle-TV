@@ -1,5 +1,5 @@
 import { useSeasons } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { seasonHasExtras, type MediaItem } from "@tentacle-tv/shared";
 import { ExtrasRow } from "./ExtrasRow";
 import { useItemRemoteTrailers } from "../../hooks/useItemRemoteTrailers";
 import type { RichTrailer } from "./trailerLang";
@@ -51,19 +51,4 @@ function SeriesExtras({ item, seriesTrailers }: { item: MediaItem; seriesTrailer
       ))}
     </>
   );
-}
-
-/**
- * Une saison a-t-elle de quoi remplir une rangée d'extras ?
- *
- * La liste des saisons sert déjà leurs compteurs (`SpecialFeatureCount`) et
- * leurs bandes-annonces (`RemoteTrailers`) — le même `DtoService` côté
- * Jellyfin que la fiche d'une saison seule. Interroger chaque saison coûtait
- * deux requêtes par saison à l'ouverture de la fiche (quarante-six sur une
- * série de vingt-trois saisons), pour des rangées presque toujours vides. Un
- * serveur qui ne renverrait pas le compteur garde l'ancienne conduite : on
- * demande.
- */
-function seasonHasExtras(season: MediaItem): boolean {
-  return season.SpecialFeatureCount === undefined || season.SpecialFeatureCount > 0 || (season.RemoteTrailers?.length ?? 0) > 0;
 }

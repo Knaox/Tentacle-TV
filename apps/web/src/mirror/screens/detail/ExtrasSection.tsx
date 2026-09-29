@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react";
 import { useJellyfinClient, useSeasons, useSpecialFeatures } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { seasonHasExtras, type MediaItem } from "@tentacle-tv/shared";
 import { youtubeId } from "./detailMetrics";
 
 interface RemoteTrailer { Url: string; Name?: string }
@@ -42,7 +42,8 @@ function SeriesExtras({ item }: { item: MediaItem }) {
   return (
     <>
       <ExtrasRow itemId={item.Id} remoteTrailers={item.RemoteTrailers} />
-      {seasons?.map((s) => (
+      {/* Seulement les saisons qui ont des extras (cf. `seasonHasExtras`). */}
+      {seasons?.filter(seasonHasExtras).map((s) => (
         <ExtrasRow key={s.Id} itemId={s.Id} title={s.Name} remoteTrailers={s.RemoteTrailers} />
       ))}
     </>
