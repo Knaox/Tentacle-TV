@@ -1,89 +1,67 @@
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff } from "lucide-react";
-import { useBatchWatchedToggle, useEpisodes, useSeasons } from "@tentacle-tv/api-client";
+import { useBatchWatchedToggle, useSeasonBrowser } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { EpisodeRow } from "./EpisodeRow";
+import { SeasonTabs } from "../../../components/episodes/SeasonTabs";
 
 interface Props {
   seriesId: string;
   onPlay: (episode: MediaItem) => void;
   currentEpisodeId?: string;
   initialSeasonId?: string;
+  /** Fiche d'une SÉRIE : la liste s'ouvre sur la saison de l'épisode à reprendre. */
+  followResume?: boolean;
 }
 
 /**
- * `MobileEpisodeList` de l'app : les pilules de saison, puis la barre de la
+ * `MobileEpisodeList` de l'app : les pastilles de saison, puis la barre de la
  * saison et ses épisodes (24 au-dessus). Les emplacements du hors ligne de
  * l'app (« Toute la saison », bouton par ligne) restent vides : pas de hors
  * ligne dans un navigateur.
+ *
+ * La mécanique est celle du bureau (`useSeasonBrowser`) : la saison en cours
+ * d'emblée, liste légère puis sources, voisines préchargées. La bande aussi
+ * (`SeasonTabs`) : au doigt, les pastilles montent à 44 px.
  */
-export const EpisodeList = memo(function EpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId }: Props) {
-  const { data: seasons } = useSeasons(seriesId);
-  const [selectedSeason, setSelectedSeason] = useState<string | undefined>(undefined);
-  const activeSeason = selectedSeason ?? initialSeasonId ?? seasons?.[0]?.Id;
+export const EpisodeList = memo(function EpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId, followResume = false }: Props) {
+  const browser = useSeasonBrowser({
+    seriesId,
+    preferredSeasonId: initialSeasonId,
+    followResume,
+    currentEpisodeSeasonId: currentEpisodeId ? initialSeasonId : undefined,
+  });
+  const { seasons, selectedSeasonId, episodes } = browser;
 
   return (
     <div className="mt-6">
       {seasons && seasons.length > 0 && (
-        <SeasonPills seasons={seasons} activeSeasonId={activeSeason} onSelect={setSelectedSeason} />
+        <SeasonTabs
+          seasons={seasons}
+          selectedId={selectedSeasonId}
+          markedId={browser.markedSeasonId}
+          onSelect={browser.select}
+          onIntent={browser.prefetch}
+          className="mb-3"
+          stripClassName="px-4"
+        />
       )}
-      {activeSeason && (
-        <SeasonEpisodes seriesId={seriesId} seasonId={activeSeason} onPlay={onPlay} currentEpisodeId={currentEpisodeId} />
+      {selectedSeasonId && episodes && episodes.length > 0 && (
+        <SeasonEpisodes seriesId={seriesId} seasonId={selectedSeasonId} episodes={episodes} onPlay={onPlay} currentEpisodeId={currentEpisodeId} />
       )}
     </div>
   );
 });
 
-/**
- * `SeasonPills` de l'app : pilules bordées de 36 de haut, texte 13 moyen
- * tertiaire ; la saison active parle ROSE (fond 15 %, filet 45 %).
- */
-function SeasonPills({ seasons, activeSeasonId, onSelect }: {
-  seasons: MediaItem[];
-  activeSeasonId: string | undefined;
-  onSelect: (seasonId: string) => void;
-}) {
-  return (
-    <div role="tablist" className="mirror-no-scrollbar mb-3 flex gap-2 overflow-x-auto overscroll-x-contain px-4">
-      {seasons.map((season) => {
-        const isActive = activeSeasonId === season.Id;
-        return (
-          <button
-            key={season.Id}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            onClick={() => onSelect(season.Id)}
-            className={`flex min-h-9 shrink-0 items-center rounded-full border px-3.5 py-2 text-[13px] tracking-[0.1px] ${
-              isActive ? "mirror-detail-accent-text font-semibold" : "border-line-subtle bg-fill-subtle font-medium text-content-tertiary"
-            }`}
-            style={
-              isActive
-                ? {
-                    background: "rgba(var(--brand-accent-rgb), 0.15)",
-                    borderColor: "rgba(var(--brand-accent-rgb), 0.45)",
-                  }
-                : undefined
-            }
-          >
-            <span className="whitespace-nowrap">{season.Name}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 /** `EpisodeItems` de l'app : 640 au plus, la barre de saison, puis les lignes à 8 d'écart. */
-function SeasonEpisodes({ seriesId, seasonId, onPlay, currentEpisodeId }: {
+function SeasonEpisodes({ seriesId, seasonId, episodes, onPlay, currentEpisodeId }: {
   seriesId: string;
   seasonId: string;
+  episodes: MediaItem[];
   onPlay: (ep: MediaItem) => void;
   currentEpisodeId?: string;
 }) {
-  const { data: episodes } = useEpisodes(seriesId, seasonId);
-  if (!episodes || episodes.length === 0) return null;
   return (
     <div className="w-full max-w-[640px]">
       <SeasonActionBar seriesId={seriesId} seasonId={seasonId} episodes={episodes} />

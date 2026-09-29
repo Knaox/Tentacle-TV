@@ -71,6 +71,7 @@ export const DetailBody = memo(function DetailBody({ item, parentSeries, similar
             seriesId={episodeListSeriesId}
             currentEpisodeId={highlightEpisodeId}
             initialSeasonId={highlightSeasonId}
+            followResume={item.Type === "Series"}
             onPlay={onPlay}
           />
         </>

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff } from "lucide-react";
-import { useBatchWatchedToggle, useEpisodes, useSeasons } from "@tentacle-tv/api-client";
+import { useBatchWatchedToggle, useSeasonBrowser } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { EpisodeRow } from "./EpisodeRow";
 import { SHEET } from "./sheetColors";
+import { SeasonTabs } from "../../../components/episodes/SeasonTabs";
 
 interface Props {
   seriesId: string;
@@ -17,50 +18,43 @@ interface Props {
 
 /**
  * La liste des épisodes du sélecteur du lecteur — `MobileEpisodeList` de
- * l'app (et ses `SeasonPills`, `SeasonActionBar`, `EpisodeItems`) : les
- * pilules de saison (hauteur 36, sélection rose), « Marquer la saison vue »,
- * puis une ligne par épisode, 8 d'écart, marges 16, 640 au plus.
+ * l'app (et ses `SeasonActionBar`, `EpisodeItems`) : la bande des saisons
+ * (en valeurs sombres, la feuille est noire dans les deux thèmes), « Marquer
+ * la saison vue », puis une ligne par épisode, 8 d'écart, marges 16, 640 au
+ * plus.
  */
 export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, scrollRef, onPlay }: Props) {
-  const { data: seasons } = useSeasons(seriesId);
-  const [selected, setSelected] = useState<string | undefined>(undefined);
-  const activeSeason = selected ?? initialSeasonId ?? seasons?.[0]?.Id;
+  // Liste légère seulement : ces lignes n'affichent ni qualité ni langues.
+  const browser = useSeasonBrowser({
+    seriesId,
+    preferredSeasonId: initialSeasonId,
+    currentEpisodeSeasonId: initialSeasonId,
+    sources: false,
+  });
+  const { seasons, selectedSeasonId, episodes } = browser;
 
   return (
     <div style={{ marginTop: 24 }}>
       {seasons && seasons.length > 0 && (
-        <div className="mirror-no-scrollbar flex flex-row overflow-x-auto" style={{ paddingInline: 16, gap: 8, marginBottom: 12 }}>
-          {seasons.map((season) => {
-            const active = season.Id === activeSeason;
-            return (
-              <button
-                key={season.Id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setSelected(season.Id)}
-                className="flex shrink-0 items-center justify-center whitespace-nowrap rounded-full [-webkit-tap-highlight-color:transparent]"
-                style={{
-                  minHeight: 36, paddingInline: 14, paddingBlock: 8,
-                  backgroundColor: active ? SHEET.accentSoft : SHEET.fillSubtle,
-                  border: `1px solid ${active ? SHEET.accentGlow : SHEET.borderSubtle}`,
-                  color: active ? SHEET.accentText : SHEET.textTertiary,
-                  fontSize: 13, fontWeight: active ? 600 : 500, letterSpacing: 0.1,
-                }}
-              >
-                {season.Name}
-              </button>
-            );
-          })}
-        </div>
+        <SeasonTabs
+          seasons={seasons}
+          selectedId={selectedSeasonId}
+          markedId={browser.markedSeasonId}
+          onSelect={browser.select}
+          onIntent={browser.prefetch}
+          tone="dark"
+          className="mb-3"
+          stripClassName="px-4"
+        />
       )}
-      {activeSeason && (
+      {selectedSeasonId && episodes && episodes.length > 0 && (
         <SeasonEpisodes
           seriesId={seriesId}
-          seasonId={activeSeason}
+          seasonId={selectedSeasonId}
+          episodes={episodes}
           currentEpisodeId={currentEpisodeId}
           // Le ciblage ne vaut que pour la saison de l'épisode courant.
-          scrollRef={selected === undefined ? scrollRef : undefined}
+          scrollRef={selectedSeasonId === initialSeasonId ? scrollRef : undefined}
           onPlay={onPlay}
         />
       )}
@@ -68,22 +62,22 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, scrol
   );
 }
 
-function SeasonEpisodes({ seriesId, seasonId, currentEpisodeId, scrollRef, onPlay }: {
+function SeasonEpisodes({ seriesId, seasonId, episodes, currentEpisodeId, scrollRef, onPlay }: {
   seriesId: string;
   seasonId: string;
+  episodes: MediaItem[];
   currentEpisodeId?: string;
   scrollRef?: RefObject<HTMLDivElement | null>;
   onPlay: (ep: MediaItem) => void;
 }) {
   const { t } = useTranslation("common");
-  const { data: episodes } = useEpisodes(seriesId, seasonId);
   const batchCtx = useMemo(() => ({ seriesId, seasonId }), [seriesId, seasonId]);
   const { markWatched, markUnwatched } = useBatchWatchedToggle(batchCtx);
-  const allWatched = useMemo(() => !!episodes && episodes.every((ep) => ep.UserData?.Played), [episodes]);
+  const allWatched = useMemo(() => episodes.every((ep) => ep.UserData?.Played), [episodes]);
   const busy = markWatched.isPending || markUnwatched.isPending;
   const currentRef = useRef<HTMLDivElement | null>(null);
   const didScroll = useRef(false);
-  const hasCurrent = !!currentEpisodeId && !!episodes?.some((ep) => ep.Id === currentEpisodeId);
+  const hasCurrent = !!currentEpisodeId && episodes.some((ep) => ep.Id === currentEpisodeId);
 
   // L'épisode courant s'amène à l'écran de lui-même, une fois par ouverture.
   useEffect(() => {
@@ -95,7 +89,6 @@ function SeasonEpisodes({ seriesId, seasonId, currentEpisodeId, scrollRef, onPla
     scroll.scrollTop = Math.max(0, scroll.scrollTop + delta - 96);
   }, [hasCurrent, scrollRef]);
 
-  if (!episodes || episodes.length === 0) return null;
   const ids = episodes.map((ep) => ep.Id);
 
   return (
