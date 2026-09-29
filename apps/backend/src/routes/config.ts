@@ -7,6 +7,7 @@ import { resolvePairedDeviceToken } from "../services/deviceTokenHealth";
 import { pairedJellyfinDeviceId } from "../services/deviceSessions/deviceAuth";
 import { isPrivateIp, getRealClientIp } from "../services/networkUtils";
 import { BACKEND_VERSION } from "../services/version";
+import { jellyfinAcceptsLegacyAuth } from "../services/jellyfinLegacyAuth";
 
 const DEMO_MODE = process.env.DEMO_MODE === "true";
 
@@ -58,6 +59,16 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
 
     const cfg = getDirectStreamingConfig();
     if (!cfg.enabled || !cfg.publicUrl || !cfg.privateUrl) return disabled;
+
+    // Un client qui ne sait parler à Jellyfin qu'en X-Emby-Token / api_key (les
+    // versions d'avant Jellyfin 12) n'a pas le direct si Jellyfin les refuse :
+    // chacun de ses appels directs vaudrait un 401. Il reste sur le proxy, qui
+    // traduit. Les clients à jour l'annoncent par `?jellyfinAuth=modern`.
+    const modernClient = (request.query as { jellyfinAuth?: string } | undefined)?.jellyfinAuth === "modern";
+    if (!modernClient && !(await jellyfinAcceptsLegacyAuth())) {
+      request.log.info("Direct streaming refuse a un client ancien : Jellyfin n'accepte plus l'auth heritee");
+      return disabled;
+    }
 
     const clientIp = getRealClientIp(request);
     const mediaBaseUrl = isPrivateIp(clientIp) ? cfg.privateUrl : cfg.publicUrl;

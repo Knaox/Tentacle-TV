@@ -36,7 +36,10 @@ export async function fetchStreamingConfig(token: string | null): Promise<Stream
       headers.Authorization = `Bearer ${token}`;
     }
     // token === "__cookie__" means web (use cookies); real token means desktop/mobile (use header)
-    const res = await fetch(`${_backendBase}/api/config/streaming`, {
+    // `jellyfinAuth=modern` : ce client parle à Jellyfin en `Authorization` /
+    // `ApiKey` (cf. directAuth) — le serveur peut lui confier le direct même
+    // quand Jellyfin refuse l'authentification héritée (12.x).
+    const res = await fetch(`${_backendBase}/api/config/streaming?jellyfinAuth=modern`, {
       headers,
       credentials: token === "__cookie__" ? "include" : undefined,
     });
