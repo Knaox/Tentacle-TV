@@ -16,6 +16,7 @@ import { readTitlesMeta, type PluginTitlesMeta } from "./pluginTitlesMeta";
 import { registerPluginSourceRoutes } from "./pluginSources";
 import { registerPluginInstalledRoutes } from "./pluginInstalled";
 import { registerPluginConfigRoutes } from "./pluginConfig";
+import { registerPluginSetupRoutes } from "./pluginSetup/pluginSetupRoutes";
 
 // ── Route registration ──
 export const pluginRoutes: FastifyPluginAsync = async (app) => {
@@ -110,5 +111,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     registerPluginSourceRoutes(admin);
     registerPluginInstalledRoutes(admin);
     registerPluginConfigRoutes(admin);
+    // Le formulaire générique que déclare un plugin (`setup` de son manifeste).
+    registerPluginSetupRoutes(admin);
   });
 };

@@ -50,6 +50,9 @@ export * from "./jellyfinCompat/compatManifest";
 export * from "./jellyfinCompat/compatVerdict";
 export * from "./jellyfinCompat/compatReport";
 export * from "./jellyfinCompat/setupContract";
+// Le formulaire qu'un plugin déclare pour se brancher (`setup` de son
+// manifeste) : rendu par l'administration sans rien savoir du plugin.
+export * from "./plugins/pluginSetup";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";

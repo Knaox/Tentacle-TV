@@ -23,6 +23,7 @@ import {
 } from "../services/pluginRestart";
 import { isNewerVersion } from "../services/semver";
 import { isValidRouteId, pluginHasServerModule, restartPolicy } from "./pluginRouteGuards";
+import { setupOfManifest } from "./pluginSetup/pluginSetupRoutes";
 
 const installSchema = z.object({
   pluginId: z.string().min(1).regex(/^[a-z0-9][a-z0-9._-]{0,63}$/, "Invalid plugin ID format"),
@@ -57,17 +58,21 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
   admin.get("/", async () => getInstalled().map((p) => {
     const pluginDir = resolve(DATA_DIR, p.pluginId);
     let navItems: unknown[] = [];
+    // Le formulaire que le plugin déclare pour se brancher (cf. pluginSetup.ts).
+    let setup: ReturnType<typeof setupOfManifest>;
     const manifestPath = resolve(pluginDir, "plugin.json");
     if (isValidPluginId(p.pluginId) && existsSync(manifestPath)) {
       try {
         const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
         if (Array.isArray(manifest.navItems)) navItems = manifest.navItems;
+        setup = setupOfManifest(manifest);
       } catch { /* ignore */ }
     }
     return {
       ...p,
       hasBundle: isValidPluginId(p.pluginId) && existsSync(resolve(pluginDir, "dist")),
       navItems,
+      ...(setup ? { setup } : {}),
       ...restartPolicy(p),
     };
   }));
