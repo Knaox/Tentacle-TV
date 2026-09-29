@@ -35,6 +35,7 @@ export default {
   preview: "Voir la page publique",
   shareLink: "Partager le lien",
   periodSaved: "Lien mis à jour : {{period}}",
+  periodError: "Impossible de changer la période. Réessayez dans un instant.",
   periodSaving: "Mise à jour du lien…",
 
   revoke: "Révoquer le lien",

@@ -33,6 +33,7 @@ export default {
   preview: "View the public page",
   shareLink: "Share the link",
   periodSaved: "Link updated: {{period}}",
+  periodError: "Couldn't change the period. Try again in a moment.",
   periodSaving: "Updating the link…",
 
   revoke: "Revoke the link",

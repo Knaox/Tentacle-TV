@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
 import { STACKED_TOP } from "../../mirror/screens/collection/CollectionHero";
@@ -18,6 +18,8 @@ interface StatsHeaderProps {
   kicker: string;
   /** Au téléphone (miroir) : le retour flottant de l'écran empilé. */
   onBack?: () => void;
+  /** Un geste secondaire, à droite du titre (sous lui quand la place manque) : « Partager ». */
+  action?: ReactNode;
 }
 
 /**
@@ -25,7 +27,7 @@ interface StatsHeaderProps {
  * de l'app, sur le halo de marque. Les marges sont celles du contenu :
  * titre et cartes s'alignent.
  */
-export const StatsHeader = memo(function StatsHeader({ title, kicker, onBack }: StatsHeaderProps) {
+export const StatsHeader = memo(function StatsHeader({ title, kicker, onBack, action }: StatsHeaderProps) {
   const { t } = useTranslation("common");
   return (
     <header
@@ -41,7 +43,10 @@ export const StatsHeader = memo(function StatsHeader({ title, kicker, onBack }: 
         />
         {kicker}
       </p>
-      <h1 className="mt-2 text-display-3 text-content-primary md:text-display-2">{title}</h1>
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <h1 className="text-display-3 text-content-primary md:text-display-2">{title}</h1>
+        {action}
+      </div>
       {onBack && (
         <button
           type="button"

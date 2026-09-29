@@ -6,6 +6,7 @@ import {
   listeningState, statsLocale, VIEWING_STATS_PERIODS, type ViewingStats, type ViewingStatsPeriod,
 } from "@tentacle-tv/shared";
 import { PageTransition } from "../components/PageTransition";
+import { ShareStatsButton } from "../components/share/stats/ShareStatsButton";
 import { ActivityChart } from "../components/stats/ActivityChart";
 import { PotentialTile } from "../components/stats/PotentialTile";
 import { RecordsGrid } from "../components/stats/RecordsGrid";
@@ -73,7 +74,15 @@ export function Stats() {
   return (
     <PageTransition>
       <div className="min-h-screen pb-20">
-        {(mirror || !neverWatched) && <StatsHeader title={t("title")} kicker={t("kicker")} onBack={mirror ? back : undefined} />}
+        {(mirror || !neverWatched) && (
+          <StatsHeader
+            title={t("title")}
+            kicker={t("kicker")}
+            onBack={mirror ? back : undefined}
+            // Rien à partager avant la première séance, ni tant que la page n'a pas ses chiffres.
+            action={stats?.hasHistory ? <ShareStatsButton period={period} /> : undefined}
+          />
+        )}
         {/* Mêmes marges que l'en-tête : titre et contenu s'alignent. */}
         <div className="relative z-10 px-4 sm:px-8 md:px-14">{body}</div>
       </div>
