@@ -12,6 +12,13 @@ function generateToken(): string {
 }
 
 /**
+ * Ce qu'une route lit d'un lien — jamais `options`, les réglages d'un partage
+ * de statistiques : sur une base où la colonne n'est pas encore posée (elle
+ * arrive par core-init.sql), les listes continuent de marcher.
+ */
+const LINK_HEAD = { kind: true, ownerUserId: true, ownerUsername: true } as const;
+
+/**
  * Liens de partage de listes — watchlist (« Ma liste ») et titres likés
  * (favoris + likes hors bibliothèque). MÊME mécanisme, paramétré par `kind` :
  * un lien actif par (propriétaire, liste), résolution Live à l'ouverture via
@@ -31,6 +38,7 @@ function registerOwnerRoutes(app: FastifyInstance, kind: "watchlist" | "likes", 
         kind,
       },
       update: { ownerUsername: user.username },
+      select: { token: true },
     });
     return { token: link.token };
   });
@@ -41,6 +49,7 @@ function registerOwnerRoutes(app: FastifyInstance, kind: "watchlist" | "likes", 
     const prisma = getPrisma();
     const link = await prisma.shareLink.findUnique({
       where: { ownerUserId_kind: { ownerUserId: user.userId, kind } },
+      select: { token: true },
     });
     return { token: link?.token ?? null };
   });
@@ -65,7 +74,7 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
   app.get("/:token", async (request, reply) => {
     const { token } = request.params as { token: string };
     const prisma = getPrisma();
-    const link = await prisma.shareLink.findUnique({ where: { token } });
+    const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
     if (!link) return reply.status(404).send({ message: "Lien introuvable" });
 
     try {
@@ -94,7 +103,7 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
   app.get("/:token/item/:itemId", async (request, reply) => {
     const { token, itemId } = request.params as { token: string; itemId: string };
     const prisma = getPrisma();
-    const link = await prisma.shareLink.findUnique({ where: { token } });
+    const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
     if (!link) return reply.status(404).send({ message: "Lien introuvable" });
 
     try {

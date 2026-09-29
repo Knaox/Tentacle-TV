@@ -310,12 +310,16 @@ model PairedDevice {
 // propriétaire (via la clé admin), aucun item n'est stocké ici.
 // `kind` est arrivé avec le partage des favoris : les bases d'avant reçoivent
 // la colonne et la bascule d'index unique par core-init.sql (additif).
+// `options` est arrivé avec le partage des statistiques : les réglages du lien,
+// en JSON (la période partagée et le fuseau du propriétaire), lus par
+// services/share/statsShareOptions.ts ; NULL pour une liste.
 model ShareLink {
   id            String   @id @default(cuid())
   token         String   @unique @db.VarChar(32)
   ownerUserId   String   @db.VarChar(255)
   ownerUsername String   @db.VarChar(255)
-  kind          String   @default("watchlist") @db.VarChar(20) // "watchlist" | "likes"
+  kind          String   @default("watchlist") @db.VarChar(20) // "watchlist" | "likes" | "stats"
+  options       String?  @db.Text
   createdAt     DateTime @default(now())
 
   @@unique([ownerUserId, kind])

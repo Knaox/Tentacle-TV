@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS `share_links` (
   `ownerUserId` varchar(255) NOT NULL,
   `ownerUsername` varchar(255) NOT NULL,
   `kind` varchar(20) NOT NULL DEFAULT 'watchlist',
+  `options` text NULL,
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`id`),
   UNIQUE KEY `share_links_token_key` (`token`),
@@ -32,6 +33,19 @@ CREATE TABLE IF NOT EXISTS `share_links` (
 ALTER TABLE `share_links` ADD COLUMN IF NOT EXISTS `kind` varchar(20) NOT NULL DEFAULT 'watchlist';
 ALTER TABLE `share_links` DROP INDEX IF EXISTS `share_links_ownerUserId_key`;
 CREATE UNIQUE INDEX IF NOT EXISTS `share_links_ownerUserId_kind_key` ON `share_links` (`ownerUserId`, `kind`);
+
+-- Réglages d'un lien (JSON) : la période partagée et le fuseau du propriétaire
+-- d'un partage de statistiques ; NULL pour une liste. Décidé dans
+-- information_schema, comme les potentiels du goût : rejouable sur MariaDB
+-- comme sur MySQL. Voir schema.prisma > ShareLink.options.
+SET @sl_options_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_links' AND COLUMN_NAME = 'options');
+SET @sl_options_sql := IF(@sl_options_col = 0,
+  'ALTER TABLE `share_links` ADD COLUMN `options` text NULL AFTER `kind`',
+  'DO 0');
+PREPARE sl_options_stmt FROM @sl_options_sql;
+EXECUTE sl_options_stmt;
+DEALLOCATE PREPARE sl_options_stmt;
 
 -- Code de jumelage de provisionnement (singleton). Voir schema.prisma > ProvisioningCode.
 CREATE TABLE IF NOT EXISTS `provisioning_codes` (
