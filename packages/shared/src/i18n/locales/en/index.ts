@@ -37,6 +37,7 @@ import stats from "./stats";
 import statsShare from "./statsShare";
 import statsPublic from "./statsPublic";
 import trailerHelp from "./trailerHelp";
+import serverLinks from "./serverLinks";
 
 export default {
   common, auth, setup, player, admin,
@@ -49,4 +50,5 @@ export default {
   statsShare,
   statsPublic,
   trailerHelp,
+  serverLinks,
 };

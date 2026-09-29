@@ -14,6 +14,7 @@ const NAMESPACES = [
   "statsShare",
   "statsPublic",
   "trailerHelp",
+  "serverLinks",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {

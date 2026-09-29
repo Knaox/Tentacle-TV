@@ -61,6 +61,11 @@ export * from "./plugins/pluginSetup";
 export * from "./help/trailerGuide";
 export * from "./help/dismissibleHints";
 export * from "./help/trailerHint";
+// Les liens du serveur : le lien public et la lecture directe, sondés par le
+// serveur (contrat de /api/admin/server-links, miroir backend), et leur
+// verdict — lu par la vue d'ensemble et par l'assistant d'installation.
+export * from "./serverLinks/serverLinksContract";
+export * from "./serverLinks/serverLinksVerdict";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
