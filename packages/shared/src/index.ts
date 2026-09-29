@@ -44,11 +44,12 @@ export * from "./saga/sagaTypes";
 export * from "./saga/sagaModel";
 export * from "./saga/sagaLabels";
 // La compatibilité Jellyfin : la forme du manifeste que produit la suite de
-// tests (compat/jellyfin.json, miroir backend), le verdict d'une version et le
-// contrat de /api/admin/jellyfin/compat.
+// tests (compat/jellyfin.json, miroir backend), le verdict d'une version, et les
+// contrats de /api/admin/jellyfin/compat et /api/admin/jellyfin/setup.
 export * from "./jellyfinCompat/compatManifest";
 export * from "./jellyfinCompat/compatVerdict";
 export * from "./jellyfinCompat/compatReport";
+export * from "./jellyfinCompat/setupContract";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";

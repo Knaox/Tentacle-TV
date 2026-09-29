@@ -17,7 +17,7 @@
  * `@tentacle-tv/shared` — tsc CommonJS, image Docker sans packages/). On le
  * modifie ICI, puis :
  *
- *   cp packages/shared/src/jellyfinCompat/compat{Manifest,Verdict,Report}.ts apps/backend/src/services/jellyfinCompat/
+ *   cp packages/shared/src/jellyfinCompat/{compat{Manifest,Verdict,Report},setupContract}.ts apps/backend/src/services/jellyfinCompat/
  *
  * `compatMirror.test.ts` (backend) refuse toute divergence. Aucun import hors
  * du trio : les fichiers compilent seuls des deux côtés.

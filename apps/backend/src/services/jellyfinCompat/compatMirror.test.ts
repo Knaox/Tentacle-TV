@@ -1,12 +1,13 @@
 /**
  * Les deux verrous du manifeste de compatibilité Jellyfin :
  *
- * 1. le MIROIR : `compatManifest.ts`, `compatVerdict.ts` et `compatReport.ts`
- *    sont l'octet pour octet de ceux de `packages/shared/src/jellyfinCompat/`
- *    (le backend ne dépend pas de `@tentacle-tv/shared`). La source canonique
- *    est SHARED ; on modifie là-bas, on recopie ici :
+ * 1. le MIROIR : `compatManifest.ts`, `compatVerdict.ts`, `compatReport.ts` et
+ *    `setupContract.ts` sont l'octet pour octet de ceux de
+ *    `packages/shared/src/jellyfinCompat/` (le backend ne dépend pas de
+ *    `@tentacle-tv/shared`). La source canonique est SHARED ; on modifie
+ *    là-bas, on recopie ici :
  *
- *      cp packages/shared/src/jellyfinCompat/compat{Manifest,Verdict,Report}.ts apps/backend/src/services/jellyfinCompat/
+ *      cp packages/shared/src/jellyfinCompat/{compat{Manifest,Verdict,Report},setupContract}.ts apps/backend/src/services/jellyfinCompat/
  *
  * 2. le FICHIER COMMITÉ, `compat/jellyfin.json` : il se lit sans une faute, et
  *    chaque verdict global est celui que la règle tire de ses fonctionnalités.
@@ -31,7 +32,7 @@ function repoRoot(): string {
 }
 
 describe("miroir du manifeste de compatibilité", () => {
-  for (const file of ["compatManifest.ts", "compatVerdict.ts", "compatReport.ts"]) {
+  for (const file of ["compatManifest.ts", "compatVerdict.ts", "compatReport.ts", "setupContract.ts"]) {
     it(`${file} est identique octet pour octet à celui de shared`, () => {
       const root = repoRoot();
       expect(readFileSync(join(root, "apps/backend/src/services/jellyfinCompat", file), "utf8"))
