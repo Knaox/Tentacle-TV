@@ -46,8 +46,20 @@ export function useHorizontalScroll(): HorizontalScrollControls {
     const onScroll = () => updateEdges();
     el.addEventListener("scroll", onScroll, { passive: true });
 
+    // Le contenu aussi : une bande dont les pastilles s'élargissent (police
+    // chargée après coup, compteur qui arrive) déborde sans que la bande
+    // change de taille ni défile — le bord restait net, sans fondu ni flèche,
+    // sur une pastille à demi coupée.
     const ro = new ResizeObserver(updateEdges);
     ro.observe(el);
+    for (const child of Array.from(el.children)) ro.observe(child);
+    const mo = new MutationObserver((records) => {
+      for (const record of records) {
+        record.addedNodes.forEach((node) => { if (node instanceof Element) ro.observe(node); });
+      }
+      updateEdges();
+    });
+    mo.observe(el, { childList: true });
 
     // Pointer drag-to-scroll (desktop mouse users without wheel).
     let dragStartX = 0;
@@ -91,6 +103,7 @@ export function useHorizontalScroll(): HorizontalScrollControls {
       el.removeEventListener("pointerup", onPointerUp);
       el.removeEventListener("pointercancel", onPointerUp);
       ro.disconnect();
+      mo.disconnect();
     };
   }, [updateEdges]);
 
