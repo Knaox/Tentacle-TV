@@ -17,10 +17,12 @@ et Linux reçoivent l'ensemble.
 ### FR
 - **Sous Linux, n'importe quel titre démarre sans attendre la carte graphique** (KDE Plasma) : le lecteur est prêt dès l'ouverture de l'application et le reste d'un titre à l'autre. Le premier film d'une séance, ou un autre titre choisi après être revenu à la bibliothèque, ne recréent plus la sortie vidéo de mpv — trois quarts de seconde de pilote graphique à chaque fois. Mesuré de la demande de lecture à la première image : environ 1 s auparavant, 0,15 à 0,3 s désormais. Au repos, le lecteur prêt occupe 91 Mo de mémoire vidéo ; sur batterie, rien n'est gardé
 - **Cartes NVIDIA : la sortie vidéo naît 160 ms plus vite** (Linux) : mpv n'y crée plus de file de calcul asynchrone, qui ne sert pas sur ces cartes
+- **Un titre que le serveur n'a jamais lu démarre presque aussi vite qu'un autre** (Windows, macOS, Linux) : dès que sa fiche est ouverte, ou qu'une carte est survolée un instant, le serveur lit d'avance le début et la fin du fichier. Mesuré du clic à la première image : 0,25 à 0,38 s au lieu de 0,55 à 1 s
 
 ### EN
 - **On Linux, any title starts without waiting for the graphics card** (KDE Plasma): the player is ready as soon as the app opens and stays ready from one title to the next. The first film of a session, or another title picked after going back to the library, no longer rebuild mpv's video output — three quarters of a second of graphics driver every time. Measured from the play request to the first frame: about 1 s before, 0.15 to 0.3 s now. At rest, the ready player uses 91 MB of video memory; on battery, nothing is kept
 - **NVIDIA cards: the video output starts 160 ms sooner** (Linux): mpv no longer creates an async compute queue there, which these cards do not benefit from
+- **A title the server has never read starts almost as fast as any other** (Windows, macOS, Linux): as soon as its page is open, or a card is hovered for a moment, the server reads the start and the end of the file ahead of time. Measured from the click to the first frame: 0.25 to 0.38 s instead of 0.55 to 1 s
 
 ## [1.25.0]
 ### FR

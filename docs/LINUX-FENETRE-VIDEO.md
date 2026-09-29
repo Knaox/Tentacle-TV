@@ -767,13 +767,26 @@ suivant — et la page met elle-même 150 à 250 ms avant d'envoyer le fichier
 - **`probesize`/`analyzeduration`** de `demuxer-lavf-o` : ~10 ms sur un MP4, sans
   effet sur un MKV (démuxeur de mpv).
 
+### Le disque du serveur, réchauffé à l'intention
+
+Une fois Vulkan hors du chemin, un titre que le serveur n'a JAMAIS lu restait
+lent : dans l'app, instance chaude, 298 / 558 / 1 000 ms d'ouverture. Le
+journal de mpv le décompose — premier octet 55-365 ms, puis l'index en fin de
+MKV (Cues, Tags) 95-410 ms : le NAS qui cherche. Lus une fois, les mêmes
+fichiers s'ouvrent en 35-80 ms. D'où `media_warm` (`ipc/mediaWarm.ts`) : la
+fiche ouverte depuis 0,6 s, ou une carte survolée 0,4 s, fait lire au serveur
+2 Mio de tête et 1 Mio de fin du fichier que « Lire » jouerait — par la
+coquille, en Node : depuis la page, le CORS l'interdit vers le Jellyfin direct,
+et un `Range` écarté en mode opaque aurait fait lire le fichier ENTIER. Au banc,
+ces plages exactes : titres jamais lus ouverts en 94-110 ms (index lu en 13-15
+ms). Dans l'app, fiche puis « Lire » : **253-377 ms** du clic à la première
+image, contre 553-1 039 ms sans. Vaut pour les trois systèmes.
+
 ### Ce qui reste
 
-- Le disque du serveur : un titre jamais lu coûte 30-75 ms de premier octet et
-  90-185 ms pour l'index en fin de MKV ; préchargés (1 Mo de tête, 2 Mo de fin),
-  la première image passe de 254-282 à 79-86 ms. Un préchargement à l'intention
-  (fiche, survol) — idéalement fait par le serveur lui-même, sans bande passante
-  cliente — vaudrait sur toutes les plateformes.
-- La page : 150-250 ms entre le clic et le `loadfile`.
+- Une reprise en milieu de fichier lit un endroit que rien n'a préchargé : la
+  position en octets ne se connaît qu'après l'index.
+- Le parcours accueil → lecture paie 150-250 ms de page (la fiche du titre, les
+  préférences) ; fiche → « Lire », 40 ms seulement : la fiche a déjà tout.
 - Les montages sans parking (X11, GNOME en plein écran forcé) : seule la file de
   calcul coupée les accélère.
