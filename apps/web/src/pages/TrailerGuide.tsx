@@ -1,3 +1,4 @@
+import { useTrailerReadiness } from "@tentacle-tv/api-client";
 import { PageTransition } from "../components/PageTransition";
 import { GuideAdmin } from "../components/help/GuideAdmin";
 import { GuideEveryone } from "../components/help/GuideEveryone";
@@ -26,8 +27,10 @@ export function TrailerGuide() {
   const back = useBackOrHome();
   const ctx = useGuideLinkContext();
   // `/help/trailers#admin` mène à la partie administrateur, à l'arrivée comme
-  // depuis le sommaire — la page est entière dès son premier rendu.
-  useHashTarget(true);
+  // depuis le sommaire — une fois le diagnostic arrivé : l'encadré « Sur ce
+  // serveur » pousse la page, sauter avant laisserait la partie trop bas.
+  const readiness = useTrailerReadiness();
+  useHashTarget(readiness.isFetched || readiness.isError);
 
   return (
     <PageTransition>
