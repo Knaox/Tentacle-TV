@@ -4,6 +4,7 @@ import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { pokeProfile } from "../services/reco/jobs";
+import { likesTmdbRoutes } from "./likesTmdb";
 
 // `coerce` : la même forme sert au corps JSON (PUT) et aux params d'URL (DELETE).
 const likeSchema = z.object({
@@ -17,10 +18,12 @@ const likeSchema = z.object({
  * En bibliothèque, le like reste `IsFavorite` chez Jellyfin (via le proxy) —
  * cette table ne porte QUE ce que Jellyfin ne peut pas porter : un média
  * absent. La vue unifiée (favoris Jellyfin + likes Vigie) vit dans
- * services/reco, côté moteur.
+ * services/reco, côté moteur. Les cartes hors bibliothèque passent par
+ * `/tmdb` (likesTmdb.ts) : le like, ET le cœur posé à l'arrivée.
  */
 export const likeRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
+  await app.register(likesTmdbRoutes);
 
   // ── GET / — les likes hors bibliothèque du compte ──
   app.get("/", async (request) => {

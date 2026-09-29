@@ -19,6 +19,8 @@ interface Row {
   createdAt: Date;
 }
 const rows: Row[] = [];
+// Les likes du catalogue (user_likes), vocabulaire « series ».
+const catalogLikes: Array<{ jellyfinUserId: string; mediaType: string; tmdbId: number }> = [];
 const liked: Array<[string, string]> = [];
 const favorited: Array<[string, string]> = [];
 let jellyfinAccepts = true;
@@ -78,6 +80,17 @@ vi.mock("./db", () => ({
         return { count: before - rows.length };
       },
     },
+    userLike: {
+      deleteMany: async (args: { where: { jellyfinUserId: string; mediaType: string; tmdbId: number } }) => {
+        const w = args.where;
+        const before = catalogLikes.length;
+        for (let i = catalogLikes.length - 1; i >= 0; i--) {
+          const l = catalogLikes[i];
+          if (l.jellyfinUserId === w.jellyfinUserId && l.mediaType === w.mediaType && l.tmdbId === w.tmdbId) catalogLikes.splice(i, 1);
+        }
+        return { count: before - catalogLikes.length };
+      },
+    },
   }),
 }));
 
@@ -95,6 +108,7 @@ const episode = (id: string, seriesId: string, seriesTmdbId?: number): LibItem =
 
 beforeEach(() => {
   rows.length = 0;
+  catalogLikes.length = 0;
   liked.length = 0;
   favorited.length = 0;
   jellyfinAccepts = true;
@@ -140,6 +154,34 @@ describe("l'arrivée d'un titre mis de côté", () => {
     expect(liked).toEqual([]);
     expect(rows).toHaveLength(0);
     expect(broadcastToUser.mock.calls).toEqual([["u1", "favorites"]]);
+  });
+
+  it("le cœur posé efface le like du catalogue du titre — seulement lui, seulement ce compte", async () => {
+    rows.push(row("u1", "tv", 1399, "favorite"));
+    catalogLikes.push(
+      { jellyfinUserId: "u1", mediaType: "series", tmdbId: 1399 },
+      { jellyfinUserId: "u2", mediaType: "series", tmdbId: 1399 },
+      { jellyfinUserId: "u1", mediaType: "movie", tmdbId: 1399 },
+    );
+    await applyPendingWatchlist([series("s1", 1399)]);
+    expect(favorited).toEqual([["u1", "s1"]]);
+    expect(catalogLikes.map((l) => `${l.jellyfinUserId}:${l.mediaType}`)).toEqual(["u2:series", "u1:movie"]);
+  });
+
+  it("Ma liste posée à l'arrivée ne touche pas au like du catalogue", async () => {
+    rows.push(row("u1", "movie", 603));
+    catalogLikes.push({ jellyfinUserId: "u1", mediaType: "movie", tmdbId: 603 });
+    await applyPendingWatchlist([movie("m1", 603)]);
+    expect(catalogLikes).toHaveLength(1);
+  });
+
+  it("un cœur refusé par Jellyfin garde le like du catalogue", async () => {
+    rows.push(row("u1", "movie", 603, "favorite"));
+    catalogLikes.push({ jellyfinUserId: "u1", mediaType: "movie", tmdbId: 603 });
+    jellyfinAccepts = false;
+    await applyPendingWatchlist([movie("m1", 603)]);
+    expect(catalogLikes).toHaveLength(1);
+    expect(rows).toHaveLength(1);
   });
 
   it("un titre attendu dans Ma liste ET aimé reçoit les deux drapeaux, un évènement chacun", async () => {

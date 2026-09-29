@@ -10,8 +10,10 @@ import { refreshLibraryMemo } from "./reco/candidates/libraryMemo";
 // posé chez Jellyfin (table watchlist_pending), un DRAPEAU par ligne :
 //   • « watchlist » — Ma liste, posée depuis une carte hors bibliothèque
 //     (recommandation, recherche, extension de demandes) : routes/watchlistTmdb.ts ;
-//   • « favorite »  — J'aime, le cœur, donné dans « Affiner » :
-//     services/swipe/swipeFavorites.ts.
+//   • « favorite »  — J'aime, le cœur, donné dans « Affiner »
+//     (services/swipe/swipeFavorites.ts) ou sur une carte hors bibliothèque
+//     (routes/likesTmdb.ts, qui pose AUSSI le like du catalogue, user_likes :
+//     le goût le lit tout de suite ; l'arrivée l'efface, le cœur prend le relais).
 // Le drapeau est posé POUR LE COMPTE de l'utilisateur avec la clé admin dès
 // que le titre arrive, puis la ligne s'efface. Deux chemins, comme les séries
 // sorties automatiquement (watchlistAutoRetired) :
@@ -40,6 +42,11 @@ const FLAG_ACTIONS: Record<PendingFlag, {
   watchlist: { apply: (userId, itemId) => likeItemForUser(userId, itemId), carousel: "watchlist", label: "Ma liste" },
   favorite: { apply: (userId, itemId) => favoriteItemForUser(userId, itemId), carousel: "favorites", label: "J'aime" },
 };
+
+/** Le vocabulaire de `user_likes` (« series ») — celui des notes, pas celui de TMDB. */
+export function likeMediaType(mediaType: string): "movie" | "series" {
+  return mediaType === "movie" ? "movie" : "series";
+}
 
 /** Le drapeau d'une ligne ; une ligne d'avant la colonne vaut « Ma liste ». */
 export function pendingFlagOf(value: string | null | undefined): PendingFlag {
@@ -124,6 +131,13 @@ async function applyRows(rows: readonly PendingRow[], targets: ReadonlyMap<strin
     await prisma.watchlistPending.deleteMany({
       where: { jellyfinUserId: row.jellyfinUserId, mediaType: row.mediaType, tmdbId: row.tmdbId, flag: row.flag },
     });
+    // Le cœur de Jellyfin porte désormais le « j'aime » : le like du catalogue
+    // n'a plus d'objet — gardé, il survivrait à un cœur retiré plus tard.
+    if (flag === "favorite") {
+      await prisma.userLike.deleteMany({
+        where: { jellyfinUserId: row.jellyfinUserId, mediaType: likeMediaType(row.mediaType), tmdbId: row.tmdbId },
+      });
+    }
     const flags = changed.get(row.jellyfinUserId) ?? new Set<PendingFlag>();
     flags.add(flag);
     changed.set(row.jellyfinUserId, flags);
