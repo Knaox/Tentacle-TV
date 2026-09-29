@@ -23,3 +23,8 @@ export { usePersonDetails, usePersonFilmography, type PersonFilmography } from "
 export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog, type CatalogFilters } from "../hooks/useLibraryCatalog";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "../hooks/useHome";
 export { useLocalTrailers, useSpecialFeatures } from "../hooks/useTrailers";
+// Les extras d'une fiche, pour toutes les plateformes : locaux (bandes-annonces
+// puis bonus), distants (Jellyfin + TMDB, triés par langue), et le bouton.
+export { useItemExtras, type ExtrasOwner, type ItemExtras } from "../hooks/useItemExtras";
+export { useRemoteTrailers, type RemoteTrailersOwner } from "../hooks/useRemoteTrailers";
+export { useItemTrailer, type ItemTrailer } from "../hooks/useItemTrailer";

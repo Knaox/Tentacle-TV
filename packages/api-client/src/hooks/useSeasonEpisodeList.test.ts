@@ -29,7 +29,9 @@ describe("liste d'épisodes d'une saison", () => {
     expect(mergeSeasonSources([lone], [])![0]).toBe(lone);
   });
 
-  it("les saisons portent leurs compteurs : épisodes, extras, bandes-annonces", () => {
-    expect(SEASON_FIELDS.split(",")).toEqual(expect.arrayContaining(["RecursiveItemCount", "SpecialFeatureCount", "RemoteTrailers"]));
+  it("les saisons portent leurs compteurs : épisodes, extras, bandes-annonces locales et distantes", () => {
+    expect(SEASON_FIELDS.split(",")).toEqual(
+      expect.arrayContaining(["RecursiveItemCount", "SpecialFeatureCount", "LocalTrailerCount", "RemoteTrailers"]),
+    );
   });
 });

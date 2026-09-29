@@ -29,11 +29,13 @@ const EPISODES_STALE_TIME = 2 * 60 * 1000;
  * Les saisons, avec ce que leurs pastilles et leurs extras affichent :
  * - `RecursiveItemCount` : le nombre d'épisodes, et du même coup le
  *   pourcentage vu (`UserData.PlayedPercentage`, calculé par Jellyfin) ;
- * - `SpecialFeatureCount` et `RemoteTrailers` : de quoi savoir quelles
- *   saisons ont des extras SANS interroger chacune — la fiche d'une série de
- *   vingt saisons en faisait quarante requêtes à l'ouverture.
+ * - `SpecialFeatureCount`, `LocalTrailerCount` et `RemoteTrailers` : de quoi
+ *   savoir quelles saisons ont des extras SANS interroger chacune — la fiche
+ *   d'une série de vingt saisons en faisait quarante requêtes à l'ouverture.
+ *   `LocalTrailerCount` n'arrive que demandé (mesuré sur 10.11 et 12.1) : sans
+ *   lui, une saison à la seule bande-annonce locale restait invisible.
  */
-export const SEASON_FIELDS = "PrimaryImageAspectRatio,RemoteTrailers,RecursiveItemCount,SpecialFeatureCount";
+export const SEASON_FIELDS = "PrimaryImageAspectRatio,RemoteTrailers,RecursiveItemCount,SpecialFeatureCount,LocalTrailerCount";
 
 function fetchSeasons(client: ItemsFetchClient, userId: string, seriesId: string) {
   return client
