@@ -20,3 +20,4 @@ export * from "./exports/swipe"; // « Affiner » et affinité de groupe
 export * from "./exports/home"; // Accueil configurable et préférences en direct
 export * from "./exports/titles"; // Titres hors bibliothèque
 export * from "./exports/stats"; // Statistiques de visionnage
+export * from "./exports/help"; // Aide : diagnostic des bandes-annonces
