@@ -43,3 +43,18 @@ export function ctlGradient(brand: BrandSlice): GradientSpec {
     end: { x: 1, y: 1 },
   };
 }
+
+/**
+ * La pastille de la saison affichée : le dégradé de marque en version
+ * PROFONDE (`--season-tab-gradient` du bureau). Le dégradé des contrôles tombe
+ * à 3,5:1 sous un libellé blanc à son extrémité rose ; celui-ci tient 4,6:1
+ * d'un bout à l'autre.
+ */
+export function seasonTabGradient(brand: BrandSlice): GradientSpec {
+  return {
+    colors: [brand.dark, mixHex(brand.dark, brand.accentLight, 0.5, "#9333EA"), brand.accentDark],
+    locations: [0, 0.55, 1],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  };
+}
