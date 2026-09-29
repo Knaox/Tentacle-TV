@@ -40,7 +40,7 @@ export const DetailBody = memo(function DetailBody({ item, parentSeries, similar
       {item.Genres && item.Genres.length > 0 && (
         <div className="mt-5 flex flex-wrap gap-1.5 px-4" style={{ maxWidth: CONTENT_MAX_WIDTH }}>
           {item.Genres.slice(0, 6).map((g) => (
-            <span key={g} className="truncate rounded bg-fill-soft px-2 py-[3.5px] text-[10px] font-bold tracking-[0.3px] text-content-tertiary">
+            <span key={g} className="card-caption truncate rounded bg-fill-soft px-2 py-[3.5px] text-[10px] font-bold tracking-[0.3px]">
               {g}
             </span>
           ))}

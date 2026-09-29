@@ -37,16 +37,24 @@ export function hasMetaChips(item: MediaItem, compact = false): boolean {
  * `compact` = densité réduite pour les overlays d'affiches (CardMetaOverlay
  * web `density="compact"`) : fond sombre lisible sur image.
  */
-export const TVMetaChips = memo(function TVMetaChips({ item, compact = false, wrap = true }: {
+export const TVMetaChips = memo(function TVMetaChips({ item, compact = false, wrap = true, onMedia = false }: {
   item: MediaItem;
   compact?: boolean;
   /** Faux : une seule ligne, rognée — pour une ligne de liste à hauteur fixe,
    *  où un retour à la ligne pousserait le synopsis hors de la case. */
   wrap?: boolean;
+  /**
+   * Posées sur une IMAGE (en-tête de fiche, bannière) : assise sombre et blanc
+   * à 88 %, comme les puces compactes. Le verre blanc à 5 % et le blanc à 55 %
+   * de la fiche tombaient sous 3:1 sur un décor clair.
+   */
+  onMedia?: boolean;
 }) {
   const chips = metaChipList(item, compact);
   if (chips.length === 0) return null;
 
+  // L'habillage « posé sur image » des puces compactes, à la taille normale.
+  const dense = compact || onMedia;
   return (
     <View style={{ flexDirection: "row", flexWrap: wrap ? "wrap" : "nowrap", overflow: wrap ? "visible" : "hidden", gap: compact ? 4 : 6 }}>
       {chips.map((c) => (
@@ -57,14 +65,14 @@ export const TVMetaChips = memo(function TVMetaChips({ item, compact = false, wr
             paddingVertical: 2,
             borderRadius: 4,
             borderWidth: 1,
-            borderColor: c.accent ? brandAlpha(0.55) : compact ? "rgba(255,255,255,0.18)" : Colors.border,
+            borderColor: c.accent ? brandAlpha(0.55) : dense ? "rgba(255,255,255,0.18)" : Colors.border,
             backgroundColor: c.accent
-              ? (compact ? brandAlpha(0.40) : brandAlpha(0.18))
-              : (compact ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.05)"),
+              ? (dense ? brandAlpha(0.40) : brandAlpha(0.18))
+              : (dense ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.05)"),
           }}
         >
           <Text style={{
-            color: c.accent ? (compact ? "#fff" : Colors.accentPurpleLight) : (compact ? "rgba(255,255,255,0.85)" : Colors.textTertiary),
+            color: c.accent ? (dense ? "#fff" : Colors.accentPurpleLight) : (dense ? "rgba(255,255,255,0.88)" : Colors.textTertiary),
             fontSize: compact ? 10 : 11,
             fontFamily: Fonts.semibold,
             letterSpacing: 0.4,

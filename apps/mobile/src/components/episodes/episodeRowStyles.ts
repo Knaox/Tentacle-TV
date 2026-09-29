@@ -23,7 +23,9 @@ export const makeEpisodeRowStyles = (t: AppTheme) =>
     title: { flex: 1, color: t.colors.text.primary, fontSize: 13, fontWeight: "600" },
     metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
     current: { fontSize: 10, fontFamily: FONT_FAMILY.bold, letterSpacing: 0.6, textTransform: "uppercase" },
-    runtime: { color: t.colors.text.quaternary, fontSize: 11 },
-    overview: { color: t.colors.text.quaternary, fontSize: 11, marginTop: 4, lineHeight: 15 },
+    // Tertiaire en sombre (6,3:1), secondaire en clair (7,8:1) : le quaternaire
+    // tombait à 2,9:1 — la règle `card-caption` du web.
+    runtime: { color: t.isDark ? t.colors.text.tertiary : t.colors.text.secondary, fontSize: 11 },
+    overview: { color: t.isDark ? t.colors.text.tertiary : t.colors.text.secondary, fontSize: 11, marginTop: 4, lineHeight: 15 },
     toggle: { paddingRight: 12, paddingLeft: 4 },
   });

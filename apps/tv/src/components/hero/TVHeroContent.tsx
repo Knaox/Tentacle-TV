@@ -172,7 +172,7 @@ export const TVHeroContent = memo(function TVHeroContent({
       {/* Chips qualité/langues (4K · HDR · Atmos · VF…) — hero web */}
       {!isEpisode && (
         <View style={{ marginTop: 10 }}>
-          <TVMetaChips item={item} />
+          <TVMetaChips item={item} onMedia />
         </View>
       )}
 

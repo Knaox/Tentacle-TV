@@ -44,7 +44,9 @@ function variantStyle(t: AppTheme, variant: Variant): BadgeStyle {
         text: colors.status.rating,
       };
     case "muted":
-      return { bg: colors.fill.soft, text: colors.text.tertiary };
+      // Tertiaire en sombre (6,3:1), secondaire en clair : le tertiaire du
+      // thème clair n'y tient que 4,2:1 (genres de la fiche, compteurs).
+      return { bg: colors.fill.soft, text: t.isDark ? colors.text.tertiary : colors.text.secondary };
     case "onMedia":
       return { bg: "rgba(0, 0, 0, 0.65)", text: colors.onMedia.primary, border: colors.onMedia.muted };
     case "gradient":

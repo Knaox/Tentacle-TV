@@ -47,6 +47,9 @@ interface Props {
  * marqueurs des cartes (mêmes tracés), la ligne de faits et les jetons.
  * Jumeau de `StageBlock` du miroir web.
  */
+/** Le texte secondaire posé sur la scène — blanc à 90 %, constant dans les deux thèmes. */
+const STAGE_SECONDARY = "rgba(255, 255, 255, 0.9)";
+
 export const DetailStageBlock = memo(function DetailStageBlock({
   item, align, tone, logoMaxW, logoMaxH, titleStyle, metaStyle, logoUri, markersEnabled = true, onOpenSeries,
 }: Props) {
@@ -61,8 +64,11 @@ export const DetailStageBlock = memo(function DetailStageBlock({
   const markers = useCardMarkers(item, { communityRating: item.CommunityRating ?? null, scope: "item", enabled: markersEnabled });
 
   const onMedia = tone === "media";
+  // Posé sur la scène, le texte secondaire (série, surtitre, faits, « /10 »)
+  // passe à 90 % de blanc : à 80 %, il tombait à 4,3:1 sur un décor clair
+  // (mesuré au banc sur le jumeau web, le miroir).
   const c = onMedia
-    ? { primary: theme.colors.onMedia.primary, secondary: theme.colors.onMedia.secondary, muted: theme.colors.onMedia.muted, shadow: theme.colors.onMedia.shadow }
+    ? { primary: theme.colors.onMedia.primary, secondary: STAGE_SECONDARY, muted: theme.colors.onMedia.muted, shadow: theme.colors.onMedia.shadow }
     : { primary: theme.colors.text.primary, secondary: theme.colors.text.secondary, muted: theme.colors.border.strong, shadow: "transparent" };
   const shadow = { textShadowColor: c.shadow, textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 };
   const centered = align === "center";
@@ -143,7 +149,7 @@ export const DetailStageBlock = memo(function DetailStageBlock({
               <View style={st.score} accessible accessibilityLabel={tc("communityRating", { score: formatCommunityRating(markers.communityRating) })}>
                 <StarGlyph size={17} color={theme.colors.brand.accentLight} />
                 <Text style={[st.scoreValue, { color: c.primary }, shadow]}>{formatCommunityRating(markers.communityRating)}</Text>
-                <Text style={[st.scoreMax, { color: c.muted }]}>/10</Text>
+                <Text style={[st.scoreMax, { color: c.secondary }]}>/10</Text>
               </View>
             )}
             {markers.statuses.map((kind) => {

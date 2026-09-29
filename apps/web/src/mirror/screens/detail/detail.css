@@ -118,3 +118,21 @@
   --on-media-shadow: transparent;
   --scrim-media-rgb: var(--scrim-page-rgb);
 }
+
+/* Le bloc posé sur la scène : le texte secondaire (nom de la série, surtitre,
+ * faits, « /10 ») à 90 % de blanc — à 80 %, il tombait à 4,3:1 sur un décor
+ * clair en thème clair (mesuré au banc). La colonne de l'iPad paysage n'a pas
+ * cette classe : ses jetons `on-media` suivent la page. */
+.mirror-stage-text {
+  --on-media-secondary: rgba(255, 255, 255, 0.9);
+}
+
+/* Le 4K posé sur la PAGE (lignes d'épisode) : le violet clair en sombre, le
+ * violet de marque en clair — le violet clair y tombait à 3,9:1. */
+.mirror-token-accent {
+  color: var(--brand-light);
+}
+
+:root[data-theme="light"] .mirror-token-accent {
+  color: var(--brand);
+}

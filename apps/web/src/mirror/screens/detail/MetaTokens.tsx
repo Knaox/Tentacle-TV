@@ -22,11 +22,21 @@ export const MetaTokens = memo(function MetaTokens({ item, compact = false, onMe
       {tokens.map((tk) => (
         <span
           key={tk.label}
-          className={`${CHIP} ${tk.accent ? "bg-[var(--brand-soft)] text-brand-light" : onMedia ? "text-on-media-secondary" : "bg-fill-subtle text-content-secondary"}`}
+          className={`${CHIP} ${
+            tk.accent
+              ? onMedia ? "text-white" : "mirror-token-accent bg-[var(--brand-soft)]"
+              : onMedia ? "text-on-media-secondary" : "bg-fill-subtle text-content-secondary"
+          }`}
           style={{
             border: "0.5px solid",
             borderColor: tk.accent ? "rgba(var(--brand-rgb), 0.5)" : onMedia ? "var(--on-media-muted)" : "var(--border-strong)",
-            background: !tk.accent && onMedia ? "rgba(var(--scrim-media-rgb), 0.4)" : undefined,
+            // Sur la scène, le 4K a son assise sombre teintée de marque et son
+            // blanc CONSTANT, comme la puce du web (même dans la colonne claire
+            // de l'iPad, où les jetons `on-media` suivent la page) : le violet
+            // léger sur un voile violet à 15 % tombait à 3:1 sur un décor clair.
+            background: onMedia
+              ? tk.accent ? "linear-gradient(180deg, rgba(42,28,70,0.78), rgba(22,14,40,0.86))" : "rgba(var(--scrim-media-rgb), 0.4)"
+              : undefined,
           }}
         >
           {tk.label}

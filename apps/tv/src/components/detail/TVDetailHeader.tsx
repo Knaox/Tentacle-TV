@@ -133,12 +133,16 @@ export function TVDetailHeader({
           locations={[0, 0.5, 1]}
           style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "70%" }}
         />
+        {/* Voile gauche sur TOUTE la largeur, et non plus la moitié : la
+            colonne de texte d'un épisode commence à 480 et son synopsis court
+            jusqu'à 80 % de l'écran — passé la moitié, le blanc tombait à
+            3:1 et moins sur un décor clair. */}
         <LinearGradient
-          colors={[Colors.bgDeep, "rgba(0,0,0,0.7)", "transparent"]}
-          locations={[0, 0.4, 1]}
+          colors={[Colors.bgDeep, "rgba(0,0,0,0.8)", "rgba(0,0,0,0.5)", "rgba(0,0,0,0.2)", "transparent"]}
+          locations={[0, 0.35, 0.65, 0.85, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: screenW * 0.5 }}
+          style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: screenW }}
         />
       </View>
 
@@ -210,7 +214,9 @@ export function TVDetailHeader({
                   flexDirection: "row", alignItems: "center", gap: 8,
                   paddingHorizontal: 14, paddingVertical: 8,
                   ...Button.large,
-                  backgroundColor: "rgba(255,255,255,0.06)",
+                  // Verre SOMBRE : posée sur l'image, un blanc à 6 % laissait
+                  // passer un décor clair sous le texte.
+                  backgroundColor: "rgba(0,0,0,0.45)",
                 }}>
                   <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>
                     {item.SeriesName}
@@ -236,13 +242,13 @@ export function TVDetailHeader({
             {runtime && !isSeries && (
               <>
                 <Text style={{ color: Colors.textTertiary }}>·</Text>
-                <Text style={{ color: Colors.textMuted, ...Typography.meta }}>{runtime}</Text>
+                <Text style={{ color: Colors.textSecondary, ...Typography.meta }}>{runtime}</Text>
               </>
             )}
             {isSeries && item.ChildCount && (
               <>
                 <Text style={{ color: Colors.textTertiary }}>·</Text>
-                <Text style={{ color: Colors.textMuted, ...Typography.meta }}>
+                <Text style={{ color: Colors.textSecondary, ...Typography.meta }}>
                   {item.ChildCount} {t("seasons")}
                 </Text>
               </>
@@ -251,17 +257,17 @@ export function TVDetailHeader({
 
           {/* Méta qualité/langues complète (4K · Dolby Vision · Atmos · VF…) */}
           <Animated.View style={[{ marginTop: 12 }, metaStyle]}>
-            <TVMetaChips item={item} />
+            <TVMetaChips item={item} onMedia />
           </Animated.View>
 
           {/* Genre pills */}
           <Animated.View style={[{ flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" }, metaStyle]}>
             {item.Genres?.map((g) => (
               <View key={g} style={{
-                backgroundColor: "rgba(255,255,255,0.06)",
+                backgroundColor: "rgba(0,0,0,0.45)",
                 paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6,
               }}>
-                <Text style={{ color: Colors.textMuted, fontSize: 14 }}>{g}</Text>
+                <Text style={{ color: Colors.textSecondary, fontSize: 14 }}>{g}</Text>
               </View>
             ))}
           </Animated.View>

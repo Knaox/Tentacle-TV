@@ -32,8 +32,8 @@ export function MetaTokens({ item, compact = false, onMedia = false }: {
   return (
     <View style={[styles.row, compact && styles.rowCompact]}>
       {tokens.map((tk) => (
-        <View key={tk.label} style={[styles.chip, onMedia && styles.chipMedia, tk.accent && styles.chipAccent]}>
-          <Text style={[styles.txt, onMedia && styles.txtMedia, tk.accent && styles.txtAccent]}>{tk.label}</Text>
+        <View key={tk.label} style={[styles.chip, onMedia && styles.chipMedia, tk.accent && (onMedia ? styles.chipAccentMedia : styles.chipAccent)]}>
+          <Text style={[styles.txt, onMedia && styles.txtMedia, tk.accent && (onMedia ? styles.txtAccentMedia : styles.txtAccent)]}>{tk.label}</Text>
         </View>
       ))}
       {langs.length > 0 && (
@@ -68,7 +68,16 @@ const makeStyles = (t: AppTheme) =>
       textTransform: "uppercase",
       color: t.colors.text.secondary,
     },
-    txtAccent: { color: t.colors.brand.light },
+    // Sur la page claire, le violet clair tombait à 3,9:1 : le violet de marque.
+    txtAccent: { color: t.isDark ? t.colors.brand.light : t.colors.brand.violet },
     chipMedia: { backgroundColor: "rgba(0, 0, 0, 0.4)", borderColor: t.colors.onMedia.muted },
     txtMedia: { color: t.colors.onMedia.secondary },
+    // Sur la scène, le 4K a son assise sombre teintée de marque et un blanc
+    // constant, comme la puce du web : le violet léger sur un voile violet à
+    // 15 % tombait à 3:1 sur un décor clair.
+    chipAccentMedia: {
+      backgroundColor: "rgba(30, 20, 52, 0.82)",
+      borderColor: withAlpha(t.colors.brand.violet, 0.5, t.colors.brand.glow),
+    },
+    txtAccentMedia: { color: "#FFFFFF" },
   });

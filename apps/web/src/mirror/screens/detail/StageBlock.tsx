@@ -66,7 +66,10 @@ export const StageBlock = memo(function StageBlock({ item, align, logoMaxW, logo
   ].filter(Boolean) as string[];
 
   return (
-    <div className={`flex min-w-0 flex-col ${centered ? "items-center text-center" : "items-start"}`}>
+    // Posé sur la scène (centré), le texte secondaire passe à 90 % de blanc
+    // (`.mirror-stage-text`) ; dans la colonne de l'iPad paysage, les jetons
+    // `on-media` sont remappés sur ceux de la page — on n'y touche pas.
+    <div className={`flex min-w-0 flex-col ${centered ? "mirror-stage-text items-center text-center" : "items-start"}`}>
       {isEpisode && item.SeriesName && (
         <button
           type="button"
@@ -119,7 +122,7 @@ export const StageBlock = memo(function StageBlock({ item, align, logoMaxW, logo
             <span aria-hidden className="text-[20px] font-bold leading-none tabular-nums text-on-media-primary" style={SHADOW}>
               {formatCommunityRating(markers.communityRating)}
             </span>
-            <span aria-hidden className="self-end text-[11px] font-medium text-on-media-muted">/10</span>
+            <span aria-hidden className="self-end text-[11px] font-medium text-on-media-secondary">/10</span>
           </span>
         )}
         {markers.userScore !== null && (
