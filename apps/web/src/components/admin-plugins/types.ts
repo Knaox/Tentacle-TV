@@ -1,3 +1,5 @@
+import type { PluginSetupMeta } from "@tentacle-tv/shared";
+
 /**
  * Le module serveur d'un plugin dans le processus qui répond : chargé
  * (`running`), en échec (`failed`), présent mais pas chargé (`idle`), absent.
@@ -29,6 +31,8 @@ export interface InstalledPlugin {
   restartRequired?: boolean;
   /** Les gestes qui redémarreront le serveur. */
   restartsOn?: { update: boolean; uninstall: boolean };
+  /** Le formulaire que le plugin déclare pour se brancher — absent d'un serveur plus ancien. */
+  setup?: PluginSetupMeta;
 }
 
 export interface MarketplacePlugin {
