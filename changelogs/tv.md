@@ -11,7 +11,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Un appui long sur une carte** ouvre ses actions : Ma liste, favori, vu et votre note en étoiles
 - **La saga d'un film** sur sa fiche
 - **Saisons plus rapides**, la saison en cours d'emblée
-- **Bandes-annonces locales et bonus** enfin visibles
+- **Bandes-annonces locales et bonus** enfin visibles, et la fiche dit où trouver le guide si le serveur n'est pas réglé
 - **La VO** parmi vos langues audio préférées
 - **La fiche se lit** sur les images claires
 - **Premier lancement** dans la langue de l'appareil
@@ -20,7 +20,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **A long press on a card** opens its actions: My list, favorite, watched and your star rating
 - **A movie's saga** on its page
 - **Faster seasons**, the current season right away
-- **Local trailers and extras** finally visible
+- **Local trailers and extras** finally visible, and the title page says where to find the guide if the server is not set up
 - **Original language** among your preferred audio languages
 - **The title page reads** on light images
 - **First launch** in the device's language

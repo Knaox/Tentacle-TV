@@ -26,7 +26,7 @@ lancement), ou une version de référence.
   - **la saga d'un film** sur sa fiche, atteignable à la télécommande
   - **des saisons plus rapides** : la saison en cours d'emblée, des pastilles lisibles, des vignettes chargées à l'approche de l'écran
   - **avec Jellyfin 12** : le choix de la version, les filtres de langue audio et de sous-titres, et la VO parmi vos langues audio préférées
-  - un lien discret sur la fiche quand le serveur n'est pas réglé pour les bandes-annonces
+  - « Vous ne voyez pas les bandes-annonces ? » : un lien discret sur la fiche quand le serveur n'est pas réglé, qui mène au guide ; masqué une fois, il l'est sur tous les appareils du compte
 
 ### EN
 - **Tentacle's new logo** on the icon and the launch screen
@@ -36,7 +36,7 @@ lancement), ou une version de référence.
   - **a movie's saga** on its page, reachable with the remote
   - **faster seasons**: the current season right away, readable pills, thumbnails loaded as they approach the screen
   - **with Jellyfin 12**: version choice, audio and subtitle language filters, and original language among your preferred audio languages
-  - a discreet link on the title page when the server is not set up for trailers
+  - "Not seeing any trailers?": a discreet link on the title page when the server is not set up, leading to the guide; hidden once, it stays hidden on all the account's devices
 
 ## [1.0.0]
 ### FR

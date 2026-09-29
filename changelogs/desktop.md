@@ -20,7 +20,7 @@ et Linux reçoivent l'ensemble.
 - **La saga d'un film** sur sa fiche : tous les volets dans l'ordre, leur rang, ceux que vous avez vus et celui qui vient ensuite
 - **Des cartes plus claires** : plus de gros bouton Lecture au milieu des affiches, un « Lire » discret en tête des actions, et un clic sur une vignette 16:9 lance la lecture. Le même survol partout, recherche, pages des personnes et lignes d'épisodes comprises ; un seul marqueur « vu », et « Sur cet appareil » pour ce que vous avez téléchargé
 - **Saisons et épisodes bien plus rapides** : la saison en cours s'ouvre d'emblée, une grosse saison s'affiche six fois plus vite, et les pastilles de saison se lisent sur n'importe quelle image
-- **Bandes-annonces** : les bandes-annonces de saison, les bonus et les bandes-annonces locales s'affichent enfin sur la fiche. Un guide (Aide › Bandes-annonces) explique comment les obtenir, et un lien discret apparaît sur la fiche quand le serveur n'est pas réglé ; on peut le masquer pour de bon
+- **Bandes-annonces** : les bandes-annonces de saison, les bonus et les bandes-annonces locales s'affichent enfin sur la fiche. Un guide (Aide › Bandes-annonces) explique comment les obtenir, et un lien discret apparaît sur la fiche quand le serveur n'est pas réglé ; on peut le masquer pour de bon, sur tous ses appareils
 - **Hors ligne** : la fiche d'un film ou d'une série téléchargés prend la nouvelle fiche, et l'accueil hors ligne se lit comme l'autre, avec Reprendre, À suivre et la place utilisée
 - **Recommandations** : un « j'aime » dans Affiner met le cœur au titre, même s'il n'arrive dans la bibliothèque que plus tard ; un titre ajouté à Ma liste, aimé, vu ou noté quitte « Pour vous » quand vous quittez sa rangée, jamais sous le curseur ; un titre seulement dans Ma liste ne fausse plus vos goûts
 - **Affiner** : glisser vers le bas passe le titre, et la carte jugée ne tremble plus en passant sous la suivante
@@ -37,7 +37,7 @@ et Linux reçoivent l'ensemble.
 - **A movie's saga** on its page: every installment in order, its rank, the ones you have watched and the one that comes next
 - **Clearer cards**: no more big Play button in the middle of posters, a discreet "Play" leading the actions, and clicking a 16:9 thumbnail starts playback. The same hover everywhere, search, people pages and episode rows included; a single "watched" marker, and "On this device" for what you downloaded
 - **Much faster seasons and episodes**: the current season opens right away, a large season shows up six times faster, and season pills read on any image
-- **Trailers**: season trailers, extras and local trailers finally show on the title page. A guide (Help › Trailers) explains how to get them, and a discreet link appears on the title page when the server is not set up; it can be hidden for good
+- **Trailers**: season trailers, extras and local trailers finally show on the title page. A guide (Help › Trailers) explains how to get them, and a discreet link appears on the title page when the server is not set up; it can be hidden for good, on all your devices
 - **Offline**: a downloaded movie or series opens in the new title page, and the offline home reads like the online one, with Resume, Up next and the space used
 - **Recommendations**: a "like" in Refine hearts the title, even if it only reaches the library later; a title added to My list, liked, watched or rated leaves "For you" once you leave its row, never under the pointer; a title that is only in My list no longer skews your taste
 - **Refine**: dragging down skips the title, and the judged card no longer shakes by slipping under the next one
@@ -56,7 +56,7 @@ et Linux reçoivent l'ensemble.
 - **La saga d'un film** sur sa fiche, dans l'ordre
 - **Des cartes plus claires** : un « Lire » discret, le même survol partout, un seul marqueur « vu »
 - **Saisons et épisodes bien plus rapides**, la saison en cours d'emblée
-- **Bandes-annonces** de saison, bonus et locales sur la fiche, et un guide dans l'Aide
+- **Bandes-annonces** de saison, bonus et locales sur la fiche, un guide dans l'Aide et un rappel masquable
 - **Hors ligne** : la nouvelle fiche et un accueil repensé
 - **Affiner** : un « j'aime » met le cœur au titre, glisser vers le bas le passe
 - **Avec Jellyfin 12** : choix de la version, filtres de langue, VO
@@ -69,7 +69,7 @@ et Linux reçoivent l'ensemble.
 - **A movie's saga** on its page, in order
 - **Clearer cards**: a discreet "Play", the same hover everywhere, a single "watched" marker
 - **Much faster seasons and episodes**, the current season right away
-- **Season trailers**, extras and local trailers on the title page, and a guide in Help
+- **Season trailers**, extras and local trailers on the title page, a guide in Help and a reminder you can hide
 - **Offline**: the new title page and a redesigned home
 - **Refine**: a "like" hearts the title, dragging down skips it
 - **With Jellyfin 12**: version choice, language filters, original language
