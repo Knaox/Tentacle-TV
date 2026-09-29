@@ -67,6 +67,12 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      # Les scripts de la CI elle-même (veilleur des boutiques, annonces
+      # Discord) : zéro dépendance, aucun réseau — joués à chaque fois, avant
+      # l'installation dont ils n'ont pas besoin.
+      - name: Tests des scripts de la CI
+        run: node --test .github/scripts/test/*.test.mjs
+
       # `--frozen-lockfile` : un lockfile qui ne correspond pas au manifeste doit
       # faire ÉCHOUER la CI, jamais être corrigé en silence à l'installation.
       - name: Installer les dépendances

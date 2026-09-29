@@ -309,8 +309,9 @@ jobs:
     name: Play Console (${{ needs.prepare.outputs.play_track }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Lecture seule : ce job ne commite plus le manifeste (voir plus bas).
     permissions:
-      contents: write
+      contents: read
     concurrency:
       group: play-com.tentacletv.mobile
       cancel-in-progress: false
@@ -352,21 +353,11 @@ jobs:
             --version "${{ needs.prepare.outputs.version }}" \
             --changelog changelogs/tv.md $SOURCE $ALSO
 
-      # Le manifeste est repris de `main` et non du sha figé : d'autres jobs
-      # écrivent le même fichier, repartir d'une copie périmée effacerait leur
-      # bloc. Le CHANGELOG, lui, reste celui du sha figé.
-      - name: Aligner updates/store-versions.json
-        if: steps.publish.outputs.committed == 'true'
-        run: |
-          git fetch --depth=1 origin main
-          git checkout FETCH_HEAD -- updates/store-versions.json
-          node .github/scripts/patch-store-manifest.mjs "${{ needs.prepare.outputs.version }}" \
-            --changelog=changelogs/tv.md --only=play-tv
-      - uses: ./.github/actions/push-main
-        if: steps.publish.outputs.committed == 'true'
-        with:
-          paths: updates/store-versions.json
-          message: "chore(update) : manifeste Play TV ${{ needs.prepare.outputs.version }} (${{ needs.prepare.outputs.play_track }})"
+      # Le manifeste (updates/store-versions.json) n'est PLUS patché ici. Il
+      # l'était dès l'envoi à Google, cran test compris : le site affichait une
+      # version de piste fermée, ou une version encore à l'examen. C'est le
+      # veilleur (store-watch.yml) qui patche le bloc playTv, quand la
+      # PRODUCTION sert réellement la version — la règle du bloc macAppStore.
 
   # ── Apple TV ───────────────────────────────────────────────────────────────
   apple-tv:

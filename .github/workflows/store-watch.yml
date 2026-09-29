@@ -1,28 +1,53 @@
 name: Store Watch (manifeste stores)
 
-# Aligne le manifeste d'auto-update sur ce que les stores servent REELLEMENT.
+# Ce que les boutiques servent REELLEMENT — et rien d'autre. Deux jobs :
+#
+# 1. `watch` lit chaque boutique (.github/scripts/store-live.mjs), aligne le
+#    manifeste d'auto-update sur ce qu'elles servent, et le commite.
+# 2. `announce` annonce sur Discord ce qui vient d'arriver en ligne
+#    (.github/scripts/discord-announce.mjs), EN et FR.
 #
 # macOS : le cran store de desktop.yml ne patche pas ce bloc, et c'est voulu —
 # entre la soumission et l'approbation d'Apple il s'ecoule des heures, et
 # patcher tout de suite faisait annoncer aux utilisateurs une version encore
 # introuvable sur le store : une pop-up vers le vide.
 #
-# Play (mobile + TV) : depuis que play-publish.mjs pose les releases en
-# « completed », le workflow de livraison patche lui-meme son bloc. Le veilleur
-# ne sert plus qu'a rattraper ce qui lui echappe — une promotion faite a la main
-# dans la console, ou un examen Google qui traine. Il n'interroge donc Play QUE
-# si le manifeste et versions.json divergent : rien a detecter, aucun appel.
+# Windows : MEME REGLE depuis le 2026-09-29. desktop.yml posait le bloc des la
+# soumission acceptee, avant une certification de plusieurs heures. Le
+# veilleur le pose quand la vitrine publique du Store affiche ses notes.
 #
-# Toutes les 30 minutes + declenchable a la main. Idempotent : ne committe que
-# si la version servie differe du manifeste ET que son bloc changelog existe.
+# Play (mobile + TV) : MEME REGLE depuis le 2026-09-29. mobile.yml et tv.yml
+# patchaient leur bloc des l'envoi a Google, au cran test compris : le site
+# affichait la 1.9.0 de la piste fermee alors que la production servait la
+# 1.8.1. Seul le veilleur les patche, quand la PRODUCTION sert la version :
+# API de rapports Play (releases actives, lecture seule) et, pour le
+# telephone, la fiche publique en recoupement. AUCUNE edition Play n'est
+# ouverte ici : une edition ouverte pendant une publication peut invalider
+# la sienne, et ce veilleur tourne toutes les trente minutes.
+#
+# SECRETS CLOISONNES. `watch` voit les cles des boutiques et peut ecrire le
+# manifeste ; `announce` ne voit que le jeton Discord, en lecture seule sur le
+# depot. Aucun des deux ne publie quoi que ce soit dans une boutique.
+#
+# Deux fois par heure, a 13 et 43 : GitHub abandonne les taches planifiees aux
+# heures pleines et aux demi-heures, les plus chargees — le « */30 » d'avant ne
+# tournait qu'une fois toutes les six heures environ (constate le 2026-09-29).
+# Declenchable a la main (annonces a blanc par defaut).
+# Idempotent : ne committe que ce qui a change, n'annonce que ce qui est neuf.
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "13,43 * * * *"
   workflow_dispatch:
+    inputs:
+      discord:
+        description: "Annonces Discord : dry-run (rien n'est publie) ou post"
+        type: choice
+        options: [dry-run, post]
+        default: dry-run
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: store-watch
@@ -30,8 +55,19 @@ concurrency:
 
 jobs:
   watch:
+    name: Versions en ligne et manifeste
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      # EN BASE64, et c'est vital. GitHub masque chaque LIGNE des secrets du
+      # job ; le compte de service Play est un JSON multi-ligne, donc « { » et
+      # « } » deviennent des masques. Une sortie de job qui contient un masque
+      # est SUPPRIMÉE (« Skip output since it may contain secret ») : le JSON
+      # nu n'atteindrait jamais le job des annonces. Constaté à l'essai du
+      # 2026-09-29, où toutes les accolades du journal sortaient en ***.
+      live: ${{ steps.live.outputs.b64 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,66 +75,65 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Version macOS en vente (ASC)
+
+      # Chaque source echoue seule : un avertissement, sa valeur a null, et le
+      # bloc correspondant du manifeste n'est pas touche.
+      - name: Ce que chaque boutique sert
         id: live
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
           ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
-          BUNDLE_ID: com.tentacle.mobile
-        run: |
-          LIVE=$(node .github/scripts/asc-live-version.mjs)
-          echo "Version en vente sur l'App Store : ${LIVE}"
-          echo "live=${LIVE}" >> "$GITHUB_OUTPUT"
-      - name: Comparer au manifeste
-        id: cmp
-        run: |
-          CURRENT=$(node -p "require('./updates/store-versions.json').macAppStore.version")
-          echo "Manifeste : ${CURRENT} — ASC : ${{ steps.live.outputs.live }}"
-          if [ "${CURRENT}" = "${{ steps.live.outputs.live }}" ]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Patcher le bloc macAppStore
-        if: steps.cmp.outputs.changed == 'true'
-        run: |
-          node .github/scripts/patch-store-manifest.mjs "${{ steps.live.outputs.live }}" --only=mac
-      # ── Play : uniquement s'il y a quelque chose a rattraper ──────────────
-      - name: Pistes Play a verifier
-        id: play
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          CHECKS=""
-          MOBILE_MANIFEST=$(node -p "require('./updates/store-versions.json').playMobile.version")
-          TV_MANIFEST=$(node -p "require('./updates/store-versions.json').playTv.version")
-          MOBILE_WANTED=$(jq -r .mobile versions.json)
-          TV_WANTED=$(jq -r .tv versions.json)
-          [ "$MOBILE_MANIFEST" != "$MOBILE_WANTED" ] && CHECKS="$CHECKS mobile"
-          [ "$TV_MANIFEST" != "$TV_WANTED" ] && CHECKS="$CHECKS tv"
-          echo "A verifier :${CHECKS:- rien}"
-          echo "checks=$CHECKS" >> "$GITHUB_OUTPUT"
+          node .github/scripts/store-live.mjs --out "$RUNNER_TEMP/live.json"
+          # Sans accolades : le journal les masque (voir « outputs » plus haut).
+          node -e 'const j = require(process.argv[1]); console.log("En ligne : " + Object.entries(j).map(([k, v]) => `${k}=${v ?? "?"}`).join(" · "))' "$RUNNER_TEMP/live.json"
+          echo "live=$(cat "$RUNNER_TEMP/live.json")" >> "$GITHUB_OUTPUT"
+          echo "b64=$(base64 -w0 "$RUNNER_TEMP/live.json")" >> "$GITHUB_OUTPUT"
 
-      - name: Aligner les blocs Play
-        if: steps.play.outputs.checks != ''
-        continue-on-error: true
+      - name: Aligner le manifeste
         env:
-          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          CHECKS: ${{ steps.play.outputs.checks }}
+          LIVE: ${{ steps.live.outputs.live }}
         run: |
-          set -uo pipefail
-          for what in $CHECKS; do
-            if [ "$what" = "mobile" ]; then
-              TRACK="alpha"; CL="changelogs/mobile.md"; ONLY="play-mobile"; KEY="playMobile"
-            else
-              TRACK="tv:Alpha"; CL="changelogs/tv.md"; ONLY="play-tv"; KEY="playTv"
+          set -euo pipefail
+          live() { node -e 'process.stdout.write(JSON.parse(process.env.LIVE)[process.argv[1]] ?? "")' "$1"; }
+          field() { node -e 'const b = require("./updates/store-versions.json")[process.argv[1]]; process.stdout.write(String((b && b[process.argv[2]]) ?? ""))' "$1" "$2"; }
+
+          MAC=$(live macos)
+          if [ -n "$MAC" ] && [ "$MAC" != "$(field macAppStore version)" ]; then
+            echo "macAppStore : $(field macAppStore version) -> ${MAC}"
+            node .github/scripts/patch-store-manifest.mjs "$MAC" --only=mac
+          fi
+
+          # Windows : la version dont la vitrine du Store affiche les notes.
+          WIN=$(live windows)
+          if [ -n "$WIN" ] && [ "$WIN" != "$(field microsoftStore version)" ]; then
+            echo "microsoftStore : $(field microsoftStore version) -> ${WIN}"
+            node .github/scripts/patch-store-manifest.mjs "$WIN" --only=ms
+          fi
+
+          # Play : ce que sert la PRODUCTION, piste inscrite dans le bloc.
+          align_play() {  # <cle live> <bloc> <--only> <changelog> <piste>
+            local version current
+            version=$(live "$1")
+            current="$(field "$2" version)/$(field "$2" track)"
+            if [ -z "$version" ]; then
+              echo "$2 : version servie en production inconnue, bloc inchange."
+              return 0
             fi
-            LIVE=$(node .github/scripts/play-live-version.mjs --package com.tentacletv.mobile --track "$TRACK") || continue
-            CURRENT=$(node -p "require('./updates/store-versions.json').${KEY}.version")
-            [ "$LIVE" = "$CURRENT" ] && { echo "${KEY} : deja ${LIVE}."; continue; }
-            echo "${KEY} : ${CURRENT} -> ${LIVE}"
-            node .github/scripts/patch-store-manifest.mjs "$LIVE" --changelog="$CL" --only="$ONLY" || true
-          done
+            if [ "$current" = "${version}/$5" ]; then
+              echo "$2 : deja ${version} ($5)."
+              return 0
+            fi
+            echo "$2 : ${current} -> ${version}/$5"
+            node .github/scripts/patch-store-manifest.mjs "$version" --changelog="$4" --only="$3" --track="$5" \
+              || echo "::warning title=Veilleur des stores::$2 : bloc ${version} introuvable dans $4, bloc inchange."
+          }
+          align_play android playMobile play-mobile changelogs/mobile.md production
+          align_play androidtv playTv play-tv changelogs/tv.md tv:production
 
       # Un seul commit pour les blocs qui ont bouge — l'action ne fait rien si
       # rien n'a change, et rejoue le rebase si quelqu'un est passe devant.
@@ -106,3 +141,41 @@ jobs:
         with:
           paths: updates/store-versions.json
           message: "chore(update) : manifeste des versions en ligne (veilleur)"
+
+      # Comme avant le veilleur multi-boutiques : App Store Connect muet (cle
+      # expiree, revoquee) rougit le run. Les autres sources, plus fragiles ou
+      # optionnelles, ne laissent qu'un avertissement.
+      - name: App Store Connect a repondu
+        env:
+          LIVE: ${{ steps.live.outputs.live }}
+        run: |
+          node -e 'if (!JSON.parse(process.env.LIVE).macos) { console.log("::error title=Veilleur des stores::App Store Connect muet — version macOS inconnue, bloc macAppStore fige."); process.exit(1) }'
+
+  announce:
+    name: Annonces Discord
+    needs: watch
+    # Meme si le manifeste n'a pas pu etre commite : les versions lues suffisent.
+    if: ${{ !cancelled() && needs.watch.outputs.live != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Sans le secret DISCORD_BOT_TOKEN, le script ne fait rien et sort en 0.
+      - name: Annoncer ce qui vient d'arriver en ligne
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          LIVE_B64: ${{ needs.watch.outputs.live }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.discord != 'post' }}
+        run: |
+          set -euo pipefail
+          LIVE="$(printf '%s' "$LIVE_B64" | base64 -d)"
+          export LIVE
+          node .github/scripts/discord-announce.mjs

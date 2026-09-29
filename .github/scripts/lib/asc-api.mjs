@@ -2,6 +2,7 @@
 // les ~8 min (les tokens ASC expirent à 600 s — indispensable pour les scripts
 // qui pollent longtemps, ex. asc-attach-build). Zéro dépendance npm.
 import crypto from 'node:crypto';
+import { maxVersion } from './versions.mjs';
 
 const b64url = (b) => Buffer.from(b).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
@@ -160,3 +161,20 @@ export const SUBMITTED_VERSION_STATES = new Set([
 
 /** L'état d'une version : `appVersionState` fait foi, `appStoreState` est déprécié. */
 export const versionState = (ver) => ver?.attributes?.appVersionState ?? ver?.attributes?.appStoreState ?? null;
+
+/** États où une version est EN VENTE, dans les deux vocabulaires d'Apple. */
+export const LIVE_VERSION_STATES = new Set(['READY_FOR_DISTRIBUTION', 'READY_FOR_SALE']);
+
+/**
+ * La version en vente d'une plateforme (MAC_OS, IOS, TV_OS), ou null.
+ *
+ * Une version remplacée par la suivante GARDE « READY_FOR_DISTRIBUTION » dans
+ * `appVersionState` : constaté le 2026-09-29, toutes les versions publiées de
+ * macOS, iOS et tvOS l'affichent encore. Seule la plus haute est donc en vente
+ * — jamais « la première de la réponse », dont l'ordre n'est pas garanti.
+ */
+export async function liveVersion(api, appId, platform) {
+  const r = await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[platform]=${platform}&limit=20`);
+  const live = (r.data ?? []).filter((v) => LIVE_VERSION_STATES.has(versionState(v)));
+  return maxVersion(live.map((v) => v.attributes?.versionString));
+}
