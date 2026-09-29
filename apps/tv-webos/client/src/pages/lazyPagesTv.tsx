@@ -131,6 +131,10 @@ export const SettingsDownloads = Unavailable;
 export const SharePage = Unavailable;
 export const SharedItemDetail = Unavailable;
 export const Support = Unavailable;
+// Le guide « Bandes-annonces » : un texte à lire et des liens vers des
+// tableaux de bord, pas un écran de salon — la fiche du téléviseur en garde
+// une phrase qui renvoie vers l'app web ou mobile.
+export const TrailerGuide = Unavailable;
 
 // Écrans pensés pour un téléphone.
 export const MobileProfile = Unavailable;

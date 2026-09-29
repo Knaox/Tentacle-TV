@@ -23,7 +23,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 import {
   Home, Login, Register, SharePage, SharedItemDetail, Watch, MediaDetail, Library, Search, Person, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, OfflineMediaDetail, AdminDownloads, AdminHome
 } from "./lazyPages";
-import { Stats } from "./lazyPages";
+import { Stats, TrailerGuide } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 import { ByFormFactor } from "./mirror/ByFormFactor";
 import { RECO_REFINE_PATH } from "./lib/recoSections";
@@ -177,6 +177,9 @@ export function App() {
             <Route path="on-device" element={<OfflineCatalog />} />
 
             <Route path="support" element={onlineOnly(<ByFormFactor desktop={<Support />} mirror={<MirrorSupport />} />)} />
+            {/* Le guide « Bandes-annonces » : l'Aide le liste, le lien discret des
+                fiches y mène, la vue d'ensemble de l'administration vise #admin. */}
+            <Route path="help/trailers" element={onlineOnly(<TrailerGuide />)} />
             {/* Reglages en maitre-detail, meme coquille que l'admin.
                 `/settings` reste l'URL d'entree ; les sections deviennent des
                 enfants, et Securite regroupe ce qui etait disperse. */}

@@ -115,20 +115,37 @@ export const TRAILER_GUIDE_STEPS: readonly TrailerGuideStep[] = [
   },
 ];
 
+/**
+ * Les pictogrammes du guide, par SENS : chaque plateforme les dessine avec son
+ * propre jeu (lucide sur le web, Feather sur le mobile) — le même dessin
+ * partout, sans importer d'icônes ici.
+ */
+export type TrailerGuideIcon = "file" | "globe" | "film" | "smartphone" | "tv";
+
 export interface TrailerGuideSource {
   id: "local" | "remote";
+  icon: TrailerGuideIcon;
   titleKey: string;
   bodyKey: string;
 }
 
 /** Pour tous : les deux sources d'une bande-annonce, dans l'ordre où Tentacle les essaie. */
 export const TRAILER_GUIDE_SOURCES: readonly TrailerGuideSource[] = [
-  { id: "local", titleKey: "sourceLocalTitle", bodyKey: "sourceLocalBody" },
-  { id: "remote", titleKey: "sourceRemoteTitle", bodyKey: "sourceRemoteBody" },
+  { id: "local", icon: "file", titleKey: "sourceLocalTitle", bodyKey: "sourceLocalBody" },
+  { id: "remote", icon: "globe", titleKey: "sourceRemoteTitle", bodyKey: "sourceRemoteBody" },
 ];
 
+export interface TrailerGuideNote {
+  key: string;
+  icon: TrailerGuideIcon;
+}
+
 /** Pour tous : « Bon à savoir ». */
-export const TRAILER_GUIDE_NOTES: readonly string[] = ["noteRare", "notePhone", "noteAppleTv"];
+export const TRAILER_GUIDE_NOTES: readonly TrailerGuideNote[] = [
+  { key: "noteRare", icon: "film" },
+  { key: "notePhone", icon: "smartphone" },
+  { key: "noteAppleTv", icon: "tv" },
+];
 
 /** Ce qu'une plateforme sait ouvrir. */
 export interface TrailerGuideLinkContext {
@@ -178,7 +195,7 @@ export function resolveGuideLink(link: TrailerGuideLink, ctx: TrailerGuideLinkCo
 
 /** Toutes les clés i18n que le modèle référence — le test vérifie qu'elles existent dans les deux langues. */
 export function trailerGuideKeys(): string[] {
-  const keys = new Set<string>(TRAILER_GUIDE_NOTES);
+  const keys = new Set<string>(TRAILER_GUIDE_NOTES.map((note) => note.key));
   for (const source of TRAILER_GUIDE_SOURCES) keys.add(source.titleKey).add(source.bodyKey);
   for (const step of TRAILER_GUIDE_STEPS) {
     keys.add(step.titleKey);

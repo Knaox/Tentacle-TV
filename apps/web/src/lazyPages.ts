@@ -58,3 +58,5 @@ export const MobileProfile = lazy(() => import("./pages/MobileProfile").then((m)
 export const NotFound = lazy(() => import("./pages/NotFound").then((m) => ({ default: m.NotFound })));
 // Vos statistiques de visionnage — bureau ET miroir (une page réactive, cf. pages/Stats).
 export const Stats = lazy(() => import("./pages/Stats").then((m) => ({ default: m.Stats })));
+// Le guide « Bandes-annonces » (Aide) — bureau ET miroir (une page réactive, cf. pages/TrailerGuide).
+export const TrailerGuide = lazy(() => import("./pages/TrailerGuide").then((m) => ({ default: m.TrailerGuide })));

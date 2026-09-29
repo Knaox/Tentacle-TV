@@ -28,7 +28,7 @@ const IMMERSIVE_ROUTES = ["/search"];
  * `app/watchlist.tsx`…) : pas d'en-tête persistant ni de barre ni de rail ;
  * l'écran porte son propre en-tête à retour, sous `max(zone sûre, 24)`.
  */
-const STACKED_ROUTES = ["/library", "/watchlist", "/favorites", "/about", "/credits", "/support", "/pair-device", "/settings", "/stats"];
+const STACKED_ROUTES = ["/library", "/watchlist", "/favorites", "/about", "/credits", "/support", "/help", "/pair-device", "/settings", "/stats"];
 
 const matches = (pathname: string, routes: string[]) =>
   routes.some((r) => pathname === r || pathname.startsWith(`${r}/`));
