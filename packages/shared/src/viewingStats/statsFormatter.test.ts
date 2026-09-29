@@ -29,6 +29,12 @@ describe("createStatsFormatter", () => {
     expect(en.bucket("day", "2026-09-28")).toBe("Monday Sep 28");
   });
 
+  it("dit une date au mois en mois, année comprise — les records d'une page partagée", () => {
+    expect(fr.day("2026-03")).toBe("mars 2026");
+    expect(fr.day("2026-03", true)).toBe("mars 2026");
+    expect(en.day("2026-03")).toBe("March 2026");
+  });
+
   it("dit un instant au jour local de l'appareil", () => {
     const local = new Date(2026, 8, 26, 23, 30);
     expect(fr.isoDay(local.toISOString())).toBe("26 sept.");

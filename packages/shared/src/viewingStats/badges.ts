@@ -1,5 +1,5 @@
 import type { ViewingStats } from "../types/viewingStats";
-import { analyzeRhythm } from "./insights";
+import { analyzeRhythm, type RhythmInsight } from "./insights";
 
 /**
  * Le « profil de spectateur » : trois traits au plus, chacun gagné sur les
@@ -47,7 +47,16 @@ export const BINGER_SECONDS = 3 * 3600;
 /** Une langue entendue ou un pays d'origine compte pour un trait à partir de 10 % du temps. */
 const DIVERSITY_SHARE = 0.1;
 
-export function viewerBadges(stats: ViewingStats, max = BADGES_MAX): ViewerBadge[] {
+/**
+ * `rhythm` : la lecture du rythme, tirée par défaut de la grille jour × heure.
+ * La page publique n'a pas la grille, seulement ses habitudes à gros grain
+ * (`habitsInsight`) — les mêmes parts, donc les mêmes traits.
+ */
+export function viewerBadges(
+  stats: ViewingStats,
+  max = BADGES_MAX,
+  rhythm: RhythmInsight = analyzeRhythm(stats.rhythm.grid),
+): ViewerBadge[] {
   const total = stats.totals.seconds;
   if (total < BADGES_MIN_SECONDS) return [];
   const out: ViewerBadge[] = [];
@@ -56,7 +65,6 @@ export function viewerBadges(stats: ViewingStats, max = BADGES_MAX): ViewerBadge
   };
 
   // Le rythme ne se lit que sur le temps MESURÉ.
-  const rhythm = analyzeRhythm(stats.rhythm.grid);
   if (rhythm.totalSeconds >= BADGES_MIN_SECONDS) {
     add({ key: "nightOwl", strength: rhythm.lateShare / 0.35, share: rhythm.lateShare });
     add({ key: "earlyBird", strength: rhythm.earlyShare / 0.25, share: rhythm.earlyShare });

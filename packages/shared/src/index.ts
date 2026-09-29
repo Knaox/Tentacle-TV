@@ -122,10 +122,13 @@ export * from "./trailers";
 // backend), ses mises en forme sans Intl (Hermes), la lecture du rythme et le
 // profil de spectateur — une seule lecture pour le web et le mobile.
 export * from "./types/viewingStats";
+export * from "./types/viewingStatsShare";
 export * from "./viewingStats/format";
+export * from "./viewingStats/habits";
 export * from "./viewingStats/insights";
 export * from "./viewingStats/badges";
 export * from "./viewingStats/timeZone";
 export * from "./viewingStats/statsFormatter";
 export * from "./viewingStats/compat";
 export * from "./viewingStats/titleReasons";
+export * from "./viewingStats/publicStats";

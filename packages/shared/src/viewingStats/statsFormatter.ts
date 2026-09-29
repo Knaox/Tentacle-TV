@@ -16,7 +16,7 @@ export interface StatsFormatter {
   duration: (seconds: number) => string;
   number: (value: number, decimals?: number) => string;
   percent: (share: number) => string;
-  /** « 26 sept. » / « Sep 26 » ; avec l'année sur demande. */
+  /** « 26 sept. » / « Sep 26 » ; avec l'année sur demande. Une clé au mois (« AAAA-MM ») : « mars 2026 ». */
   day: (key: string, withYear?: boolean) => string;
   /** Un instant ISO, dit au jour LOCAL de l'appareil. */
   isoDay: (iso: string, withYear?: boolean) => string;
@@ -38,6 +38,8 @@ export interface StatsFormatter {
 export function createStatsFormatter(t: StatsTranslate, locale: StatsLocale): StatsFormatter {
   const day = (key: string, withYear = false) => {
     const { year, month, day: d } = parseDateKey(key);
+    // Une date au mois (« AAAA-MM » : les records d'une page partagée) se dit au mois, année comprise.
+    if (d === null) return t("dateMonth", { month: t(`month_${month ?? 0}`), year });
     return t(withYear ? "dateDayYear" : "dateDay", { day: d, month: t(`monthShort_${month ?? 0}`), year });
   };
   const pad = (n: number) => String(n).padStart(2, "0");

@@ -1,14 +1,22 @@
 /**
- * Le verrou du contrat des statistiques : `contract.ts` DOIT être
- * `packages/shared/src/types/viewingStats.ts`, octet pour octet (le backend
- * ne dépend pas de `@tentacle-tv/shared` — tsc CommonJS, image Docker sans
- * packages/). La source canonique est SHARED ; on modifie là-bas, puis :
+ * Le verrou des contrats des statistiques : ils DOIVENT être ceux de
+ * `packages/shared/src/` (le backend ne dépend pas de `@tentacle-tv/shared` —
+ * tsc CommonJS, image Docker sans packages/). La source canonique est SHARED ;
+ * on modifie là-bas, puis :
  *
  *   cp packages/shared/src/types/viewingStats.ts \
  *     apps/backend/src/services/viewingStats/contract.ts
+ *   cp packages/shared/src/viewingStats/habits.ts \
+ *     apps/backend/src/services/viewingStats/habits.ts
+ *   sed -e 's#from "../viewingStats/habits"#from "./habits"#' \
+ *       -e 's#from "./viewingStats"#from "./contract"#' \
+ *     packages/shared/src/types/viewingStatsShare.ts \
+ *     > apps/backend/src/services/viewingStats/contractShare.ts
  *
- * Même esprit que `watchTogether/protocolMirror.test.ts`, sans tolérance :
- * le contrat n'importe rien, il n'y a pas de chemin à normaliser.
+ * Les deux premiers n'importent rien : octet pour octet. Le contrat du
+ * partage importe les deux autres ; ses chemins d'import sont normalisés
+ * avant comparaison, rien d'autre (même esprit que
+ * `watchTogether/protocolMirror.test.ts`).
  */
 
 import { existsSync, readFileSync } from "fs";
@@ -26,11 +34,30 @@ function repoRoot(): string {
   return folder;
 }
 
-describe("miroir du contrat des statistiques de visionnage", () => {
+const read = (path: string): string => readFileSync(join(repoRoot(), path), "utf8");
+
+/** Les imports des deux contrats ramenés à une forme commune. */
+function normalizeImports(source: string): string {
+  return source
+    .replace(/from "(\.\.\/viewingStats\/|\.\/)habits"/g, 'from "<habits>"')
+    .replace(/from "\.\/(viewingStats|contract)"/g, 'from "<contract>"');
+}
+
+describe("miroir des contrats des statistiques de visionnage", () => {
   it("contract.ts est viewingStats.ts de shared, à l'octet près", () => {
-    const root = repoRoot();
-    const canonical = readFileSync(join(root, "packages/shared/src/types/viewingStats.ts"), "utf8");
-    const mirror = readFileSync(join(root, "apps/backend/src/services/viewingStats/contract.ts"), "utf8");
-    expect(mirror).toBe(canonical);
+    expect(read("apps/backend/src/services/viewingStats/contract.ts")).toBe(read("packages/shared/src/types/viewingStats.ts"));
+  });
+
+  it("habits.ts est celui de shared, à l'octet près", () => {
+    expect(read("apps/backend/src/services/viewingStats/habits.ts")).toBe(read("packages/shared/src/viewingStats/habits.ts"));
+  });
+
+  it("contractShare.ts est viewingStatsShare.ts de shared, aux imports près", () => {
+    const mirror = read("apps/backend/src/services/viewingStats/contractShare.ts");
+    const canonical = read("packages/shared/src/types/viewingStatsShare.ts");
+    expect(normalizeImports(mirror)).toBe(normalizeImports(canonical));
+    // La normalisation ne doit pas tout effacer : les imports existent bien.
+    expect(normalizeImports(mirror)).toContain('from "<habits>"');
+    expect(normalizeImports(mirror)).toContain('from "<contract>"');
   });
 });

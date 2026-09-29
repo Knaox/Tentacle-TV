@@ -2,21 +2,14 @@
  * Ce que disent les chiffres — lectures pures de la réponse de
  * `/api/stats/me`, partagées par le web et le mobile : le rythme (pic,
  * moments de la journée, week-end), l'échelle des graphiques, et les niveaux
- * de la grille jour × heure.
+ * de la grille jour × heure. Les moments de la journée et leurs parts
+ * viennent de `habits.ts`, que lit aussi la page publique.
  */
+
+import { DAYPART_ORDER, habitsOf, type Daypart, type ViewingHabits } from "./habits";
 
 export const RHYTHM_DAYS = 7;
 export const RHYTHM_HOURS = 24;
-
-/** Les moments de la journée, en heures locales : [début, fin). */
-export const DAYPARTS = {
-  morning: [5, 12],
-  afternoon: [12, 18],
-  evening: [18, 23],
-  night: [23, 29], // 23 h → 5 h le lendemain
-} as const;
-
-export type Daypart = keyof typeof DAYPARTS;
 
 export interface RhythmInsight {
   totalSeconds: number;
@@ -35,9 +28,6 @@ export interface RhythmInsight {
   earlyShare: number;
 }
 
-const inRange = (hour: number, [from, to]: readonly [number, number]) =>
-  (hour >= from && hour < to) || (hour + 24 >= from && hour + 24 < to);
-
 function argmax(values: number[]): number | null {
   let at: number | null = null;
   for (let i = 0; i < values.length; i++) {
@@ -46,35 +36,34 @@ function argmax(values: number[]): number | null {
   return at;
 }
 
+/**
+ * La lecture des habitudes seules : moments de la journée, week-end, soirées
+ * et matins, sans jour ni heure dominants — c'est tout ce que la page
+ * publique reçoit.
+ */
+export function habitsInsight(habits: ViewingHabits): RhythmInsight {
+  const { dayparts, measuredSeconds } = habits;
+  return {
+    totalSeconds: measuredSeconds,
+    topWeekday: null,
+    topHour: null,
+    topDaypart: measuredSeconds > 0 ? DAYPART_ORDER.reduce((a, b) => (dayparts[b] > dayparts[a] ? b : a)) : null,
+    dayparts,
+    weekendShare: habits.weekendShare,
+    lateShare: habits.lateShare,
+    earlyShare: habits.earlyShare,
+  };
+}
+
 /** La lecture du rythme : `grid` = 168 cases, lundi 0 h en tête (cf. le contrat). */
 export function analyzeRhythm(grid: readonly number[]): RhythmInsight {
   const byDay = new Array<number>(RHYTHM_DAYS).fill(0);
   const byHour = new Array<number>(RHYTHM_HOURS).fill(0);
-  let total = 0;
   grid.forEach((v, i) => {
     byDay[Math.floor(i / RHYTHM_HOURS)] += v;
     byHour[i % RHYTHM_HOURS] += v;
-    total += v;
   });
-  const share = (pick: (hour: number) => boolean) =>
-    total > 0 ? byHour.reduce((n, v, h) => n + (pick(h) ? v : 0), 0) / total : 0;
-
-  const dayparts = {} as Record<Daypart, number>;
-  for (const part of Object.keys(DAYPARTS) as Daypart[]) dayparts[part] = share((h) => inRange(h, DAYPARTS[part]));
-  const topDaypart = total > 0
-    ? (Object.keys(dayparts) as Daypart[]).reduce((a, b) => (dayparts[b] > dayparts[a] ? b : a))
-    : null;
-
-  return {
-    totalSeconds: total,
-    topWeekday: argmax(byDay),
-    topHour: argmax(byHour),
-    topDaypart,
-    dayparts,
-    weekendShare: total > 0 ? (byDay[5] + byDay[6]) / total : 0,
-    lateShare: share((h) => h >= 22 || h < 5),
-    earlyShare: share((h) => h >= 5 && h < 10),
-  };
+  return { ...habitsInsight(habitsOf(grid)), topWeekday: argmax(byDay), topHour: argmax(byHour) };
 }
 
 /** Niveau d'une case de la grille, de 0 (rien) à 4 (le maximum), à pas égaux. */
