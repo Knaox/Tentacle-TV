@@ -3,7 +3,8 @@
 Une pile de films et de séries à juger d'un geste — **j'aime**, **coup de cœur**
 (super like), **pas pour moi** (dislike) — ou à **passer** sans juger, avec
 **annulation** du dernier geste. Chaque verdict nourrit le moteur de
-recommandations.
+recommandations, et un **j'aime** (ou un coup de cœur) EST le cœur de la
+bibliothèque : posé tout de suite si le titre est là, à son arrivée sinon.
 
 ## Où elle vit
 
@@ -98,6 +99,29 @@ remplace) un verdict ; `DELETE /api/swipe/:mediaType/:tmdbId` l'annule ;
 (synopsis, durée, saisons) — Jellyfin en bibliothèque (droits du compte),
 TMDB sinon.
 
+## Le j'aime est le cœur de la bibliothèque
+
+Un like ou un coup de cœur pose le **cœur** du titre (`IsFavorite` Jellyfin),
+pour le compte, à la clé admin (`services/swipe/swipeFavorites.ts`) :
+
+| Le titre… | Ce qui se passe |
+|-----------|-----------------|
+| est dans la bibliothèque | cœur posé tout de suite ; l'index de la reco est retouché ; évènement WS `favorites` |
+| n'y est pas (ou Jellyfin est muet) | drapeau `favorite` dans `watchlist_pending` — posé à son **arrivée** (diff de `libraryAddedNotifier`) ou au **balayage** (30 min), comme « Ma liste à l'arrivée » |
+| avait déjà son cœur | rien |
+
+Annuler le verdict — ou le remplacer par un refus, un « passer » — défait ce
+que le like a posé, et rien d'autre : le cœur mis de côté, ou celui que CE
+like a mis (mémorisé 24 h, le temps que la pile reste annulable) ; un cœur
+d'avant le like reste. `saveSwipe` / `deleteSwipe` rendent le verdict d'avant
+pour ça. L'affinité Watch Together n'y passe jamais.
+
+**Rattrapage** : les likes donnés avant cette règle (bureau 1.24.0) reçoivent
+leur cœur UNE fois par serveur, au démarrage (`swipeFavoritesBackfill.ts`,
+marque `swipe_likes_favorited_at` dans `server_config`). Sur une base de dev
+partagée avec de vrais comptes, poser la marque à la main AVANT de démarrer
+le nouveau code — le rattrapage écrirait dans leurs favoris Jellyfin.
+
 ## Le poids dans le moteur
 
 Les verdicts deviennent des **ancres du goût** (`services/reco/anchors.ts`,
@@ -105,7 +129,7 @@ poids dans `anchorSignals.ts`), au même titre que les notes et les favoris :
 
 | Verdict | Poids d'ancre | Pour comparer |
 |---------|---------------|---------------|
-| coup de cœur | **+1,2** | favori +0,8 · like Vigie +0,7 |
+| coup de cœur | **+1,2** | favori +0,8 · like Vigie +0,7 (un même « j'aime » ne compte qu'une fois : le plus fort) |
 | j'aime | **+0,7** | |
 | pas pour moi | **−0,6** | « pas intéressé » −0,6 · abandon −0,6 |
 | passer | 0 (aucune ancre) | |
@@ -162,3 +186,14 @@ Si le moteur de reco n'a jamais tourné sur la base, vérifier aussi
 précédent) : `SELECT COUNT(*) FROM information_schema.COLUMNS WHERE
 TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'taste_profiles' AND COLUMN_NAME =
 'anchors'` — à 0, `ALTER TABLE taste_profiles ADD COLUMN anchors mediumtext NULL`.
+
+**Le cœur en attente et les potentiels** (le like qui attend son titre,
+cf. plus haut ; les titres seulement dans Ma liste, cf.
+`docs/RECO-POUR-VOUS.md`) ajoutent deux changements, écrits dans
+`core-init.sql` sous une forme **rejouable sur MariaDB comme sur MySQL**
+(décision prise dans `information_schema`, `PREPARE`) : la colonne `flag` et
+la clé primaire élargie de `watchlist_pending`, la colonne `potentials` de
+`taste_profiles`. Sur le poste local, rejouer ces deux blocs tels quels
+(extraits de `core-init.sql`, depuis « La table d'avant le drapeau » et
+« Potentiels du goût ») par `npx prisma db execute --stdin`, puis
+`pnpm db:generate`.

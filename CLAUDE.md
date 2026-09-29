@@ -254,6 +254,20 @@ ton, d'ordre ou de gabarit du plateau s'y reporte. Sur les cartes du cœur,
 un Vigie trop ancien les laisse sans « + », sans la moindre erreur — vérifier
 la version déployée (`data/plugins/installed.json`) avant de conclure au bug.
 
+## Recommandations — le goût, et le retrait jamais sous le curseur
+
+- **Ma liste n'est pas un goût.** Un titre seulement listé (ni vu, ni aimé,
+  ni noté) est un POTENTIEL (`services/reco/potentials.ts`,
+  `taste_profiles.potentials`) : aucun poids, aucune graine. Un même
+  « j'aime » (cœur, like Vigie, like d'Affiner) ne compte qu'une fois.
+- **Le like d'Affiner EST le cœur de la bibliothèque** — tout de suite, ou à
+  l'arrivée du titre (`watchlist_pending`, drapeau `favorite`).
+- **Un titre jugé sort de « Pour vous » au LÂCHER de sa carte** : fin du
+  survol de sa RANGÉE (web), feuille refermée (mobile, miroir, TV). Jamais de
+  retrait direct du cache reco pour un geste de carte : passer par
+  `useHeldRecoItems` / `useRecoCardHold` (`reco/recoRetirement.ts`). Seul
+  « Ne plus me proposer » part tout de suite. Détail : `docs/RECO-POUR-VOUS.md`.
+
 ## Coding Standards
 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded
