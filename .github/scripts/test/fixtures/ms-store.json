@@ -1,0 +1,10 @@
+{
+  "$comment": "Extrait réel de la vitrine Microsoft Store 9NKHL0T84245 (en-us), 2026-09-29 : notes de la 1.24.0.",
+  "Payload": {
+    "Version": "",
+    "LastUpdateDateUtc": "2026-09-28T14:54:36Z",
+    "Notes": [
+      "• A redesigned title page: the backdrop fills the screen, with the title's logo, the rating in large and your markers; \"Play\" or \"Resume\" shows the time left, actions are gathered in one capsule, and the title's images open full screen\n• Clicking an actor or a crew member opens their page: portrait, biography and their titles on the server\n• Posters that say more: the audience rating and yours, My list, favorite and watched read at a glance; on hover, play in the center, stars and quick actions\n• Refine your recommendations: in Recommendations, a stack of titles to judge (like, love, not for me), by dragging or with the keyboard. Every verdict truly weighs on what you are offered\n• Library, My list and My favorites redesigned with one shared toolbar; My list sorts your titles by stage (to discover, in progress, finished), offers \"Resume\", a grid or list view and an undoable removal; My favorites group by type, genre or decade. The Share button is finally visible\n• One back to leave a chain of similar titles opened one after another\n• Sign in, sign up and forgotten password redesigned, clearer and more accessible, with a language choice\n• The downloads screen redesigned: a summary of the queue and the space used, the offline mode switch, sections per series and \"Retry\" on a failure\n• Shared lists and title pages redesigned: you see what is shared and how to join the server"
+    ]
+  }
+}

@@ -14,13 +14,17 @@ const SCOPE = 'https://www.googleapis.com/auth/androidpublisher';
 
 const b64url = (b) => Buffer.from(b).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
-/** Jeton OAuth2 depuis un compte de service (assertion JWT RS256). */
-async function mintToken({ client_email, private_key }) {
+/**
+ * Jeton OAuth2 depuis un compte de service (assertion JWT RS256). Le scope est
+ * celui de la publication par défaut ; les lectures qui n'ont rien à publier
+ * (lib/play-reporting.mjs) en demandent un plus étroit.
+ */
+export async function mintToken({ client_email, private_key }, scope = SCOPE) {
   const now = Math.floor(Date.now() / 1000);
   const input =
     b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' })) + '.' +
     b64url(JSON.stringify({
-      iss: client_email, scope: SCOPE,
+      iss: client_email, scope,
       aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600,
     }));
   const assertion = input + '.' + b64url(crypto.sign('RSA-SHA256', Buffer.from(input), private_key));
