@@ -14,6 +14,8 @@ import {
   TicketsTile,
 } from "../components/admin/home/OverviewTiles";
 import { OVERVIEW_ID, adminSectionPath, useAdminSections } from "../components/admin/adminSections";
+import { JellyfinCompatSection } from "../components/admin/jellyfin/JellyfinCompatSection";
+import { SetupChecklist } from "../components/admin/jellyfin/SetupChecklist";
 import { cls } from "./adminUtils";
 
 /**
@@ -25,6 +27,9 @@ import { cls } from "./adminUtils";
  * plugins) et l'état des accès (comptes, invitations actives, droit de
  * téléchargement). Chaque tuile mène à sa section ; les raccourcis ouvrent
  * les gestes les plus fréquents.
+ *
+ * Puis ce qui rend Tentacle complet : la compatibilité de Jellyfin (installé
+ * et dernier publié) et les réglages de Jellyfin, chacun avec son remède.
  *
  * Sur mobile, le rail n'est pas affiché : la liste de toutes les sections
  * clôt la page, c'est elle qui sert de navigation.
@@ -45,6 +50,8 @@ export function AdminHome() {
         <InvitesTile />
         <DownloadsTile />
       </div>
+      <JellyfinCompatSection variant="overview" />
+      <SetupChecklist />
       <Shortcuts />
       <SectionList />
     </AdminPage>

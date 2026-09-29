@@ -13,6 +13,7 @@ import adminPlugins from "./adminPlugins";
 import adminInvites from "./adminInvites";
 import adminServices from "./adminServices";
 import adminMetadata from "./adminMetadata";
+import adminJellyfin from "./adminJellyfin";
 import media from "./media";
 import errors from "./errors";
 import profile from "./profile";
@@ -38,7 +39,7 @@ import statsPublic from "./statsPublic";
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
-  adminPlugins, adminInvites, adminServices, adminMetadata, media, errors, profile, disclaimer,
+  adminPlugins, adminInvites, adminServices, adminMetadata, adminJellyfin, media, errors, profile, disclaimer,
   watchTogether, downloads, easterEggs, reco, whatsNew, offline, sessions, search,
   cards, library, watchlist, favorites, swipe,
   share,

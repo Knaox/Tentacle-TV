@@ -5,6 +5,7 @@ import { getUserInfo } from "../components/userMenu/menuItems";
 import { AdminPage } from "../components/admin/kit";
 import { ServicesSummary } from "../components/admin/services/ServicesSummary";
 import { JellyfinSection } from "../components/admin/services/JellyfinSection";
+import { JellyfinCompatSection } from "../components/admin/jellyfin/JellyfinCompatSection";
 import { DatabaseSection } from "../components/admin/services/DatabaseSection";
 import { PublicUrlSection } from "../components/admin/services/PublicUrlSection";
 import { DirectStreamingSection } from "../components/admin/services/DirectStreamingSection";
@@ -22,9 +23,10 @@ import { cls } from "./adminUtils";
 
 /**
  * Page « Services » (route /admin/services, admin seulement) : l'état des
- * connexions du serveur en tête, puis une section par service — Jellyfin,
- * base, adresse publique, lecture directe, détection des passages — et la
- * réinitialisation à part, dans sa zone de danger.
+ * connexions du serveur en tête, puis une section par service — Jellyfin et
+ * sa compatibilité (`#compat` : installé, dernier publié, fonctionnalité par
+ * fonctionnalité), base, adresse publique, lecture directe, détection des
+ * passages — et la réinitialisation à part, dans sa zone de danger.
  *
  * Les ancres (`#jellyfin`, `#publicurl`…) mènent à leur section et à son
  * champ : le verrou de jumelage TV et le bandeau de clé Jellyfin y renvoient.
@@ -57,6 +59,7 @@ function ServicesContent() {
     >
       <ServicesSummary />
       <JellyfinSection />
+      <JellyfinCompatSection variant="services" />
       <DatabaseSection />
       <PublicUrlSection />
       <DirectStreamingSection />

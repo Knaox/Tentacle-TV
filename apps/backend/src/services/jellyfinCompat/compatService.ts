@@ -94,6 +94,7 @@ export async function buildCompatReport(force = false): Promise<JellyfinCompatRe
           remoteCheckedAt: manifestState.remoteCheckedAt,
           remoteError: manifestState.remoteError,
           testedVersions: manifest.versions.map((entry) => entry.version),
+          areas: manifest.areas,
         }
       : null,
     installed,

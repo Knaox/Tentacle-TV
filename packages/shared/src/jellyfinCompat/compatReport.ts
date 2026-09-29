@@ -9,6 +9,7 @@
  * `compatManifest.ts`. N'importer que les fichiers du trio.
  */
 
+import type { LocalizedText } from "./compatManifest";
 import type { CompatBasis, CompatReason, CompatStatus, ResolvedFeature } from "./compatVerdict";
 
 /** Ce que le document OpenAPI du Jellyfin connecté dit d'une fonctionnalité. */
@@ -44,6 +45,8 @@ export interface CompatManifestInfo {
   remoteCheckedAt: string | null;
   remoteError: string | null;
   testedVersions: string[];
+  /** Les libellés des zones de fonctionnalités (« auth » → « Connexion »). */
+  areas: Record<string, LocalizedText>;
 }
 
 /** Pourquoi la version installée n'a pas pu être lue. */
