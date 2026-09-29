@@ -59,13 +59,37 @@ function parseExpiry(url: string): number {
  * 480p/360p. Repli sur le meilleur muxé restant (MP4 progressif 18=360p si
  * c'est tout ce qui reste). Tous lus nativement par AVPlayer/tvOS, aucun remux
  * ffmpeg requis (la 4K n'existe qu'en DASH séparé → hors scope).
+ *
+ * Le HLS est demandé EN PREMIER : à résolution voisine, yt-dlp classe le MP4
+ * progressif au-dessus (protocole https), et l'itag 18 qu'il rend est refusé
+ * en 403 à la lecture (mesuré le 2026-09-29) — « Lecture YouTube
+ * indisponible » sur l'Apple TV.
  */
+const FORMAT =
+  "best[protocol*=m3u8][acodec!=none][vcodec!=none][height<=1080]" +
+  "/best[acodec!=none][vcodec!=none][height<=1080]/best[acodec!=none][vcodec!=none]";
+
+/**
+ * Les défis JavaScript de YouTube (« EJS ») : sans les résoudre, YouTube ne
+ * donne plus de HLS muxé, seulement l'itag 18 ou des flux séparés. Il faut à
+ * yt-dlp un moteur JS (deno, son défaut) et le solveur, qu'on l'autorise à
+ * tirer de GitHub. Mesuré le 2026-09-29 : yt-dlp 2026.06 + deno rend un HLS
+ * lisible à une extraction sur trois environ ; sans moteur, ou avec le yt-dlp
+ * 2026.03 d'Alpine, jamais. `--js-runtimes node` n'aide pas (node 20 refusé,
+ * node 26 retenu mais sans HLS). Un yt-dlp trop ancien pour cette option
+ * (sortie 2, erreur d'usage) est relancé sans elle, une fois pour toutes.
+ */
+const EJS_ARGS = ["--remote-components", "ejs:github"];
+let ejsSupported = true;
+
 function resolveOnce(ytId: string): Promise<ResolvedStream | null> {
+  const withEjs = ejsSupported;
   return new Promise((resolve) => {
     execFile(
       "yt-dlp",
       [
-        "-f", "best[acodec!=none][vcodec!=none][height<=1080]/best[acodec!=none][vcodec!=none]",
+        ...(withEjs ? EJS_ARGS : []),
+        "-f", FORMAT,
         "-g", // imprime l'URL directe du flux/manifest
         "--no-warnings",
         "--no-playlist",
@@ -75,6 +99,10 @@ function resolveOnce(ytId: string): Promise<ResolvedStream | null> {
       // PO token + manifest m3u8) est plus lourde que l'ancien chemin progressif.
       { timeout: 20_000, maxBuffer: 1024 * 1024 },
       (err, stdout) => {
+        if (err && withEjs && (err as { code?: unknown }).code === 2) {
+          ejsSupported = false;
+          return resolve(resolveOnce(ytId));
+        }
         if (err) return resolve(null);
         const url = (stdout || "").trim().split("\n")[0];
         if (!url || !url.startsWith("http")) return resolve(null);
@@ -86,24 +114,41 @@ function resolveOnce(ytId: string): Promise<ResolvedStream | null> {
 }
 
 /**
+ * Le flux progressif se laisse-t-il lire ? Les premiers octets suffisent : un
+ * itag 18 obtenu sans résoudre les défis YouTube répond 403 — le rendre au
+ * téléviseur, c'était lui faire afficher « indisponible » après coup.
+ */
+async function isReadable(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { headers: { Range: "bytes=0-1023" }, signal: AbortSignal.timeout(5_000) });
+    await res.body?.cancel();
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Mesuré le 2026-09-29 : le HLS muxé n'est offert qu'à 2 extractions sur 5. */
+const MAX_ATTEMPTS = 5;
+
+/**
  * Résout en privilégiant le HLS muxé HD (jusqu'à 1080p). YouTube force par
  * intermittence le « SABR streaming » : quand l'extraction dégrade, yt-dlp ne
- * renvoie plus que le MP4 progressif 360p (itag 18). Comme l'extraction HLS
- * réussit quasi systématiquement à l'essai suivant, on retente jusqu'à 3 fois
- * tant qu'on n'obtient qu'un flux progressif (`video/mp4`). La tentative
- * dégradée revient vite (pas de téléchargement m3u8) → le coût du retry est
- * faible. On conserve le meilleur progressif obtenu comme ultime repli (mieux
- * vaut 360p que rien si la vidéo n'a réellement aucun HLS).
+ * renvoie plus que le MP4 progressif 360p (itag 18). On retente donc tant
+ * qu'on n'obtient qu'un flux progressif (`video/mp4`) ; la tentative dégradée
+ * revient vite (pas de téléchargement m3u8), le coût du retry est faible. Le
+ * meilleur progressif obtenu reste l'ultime repli — mieux vaut 360p que rien
+ * si la vidéo n'a réellement aucun HLS —, mais seulement s'il se laisse lire.
  */
 async function resolveYtStream(ytId: string): Promise<ResolvedStream | null> {
   let fallback: ResolvedStream | null = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const r = await resolveOnce(ytId);
     if (!r) continue;
     if (r.mimeType === "application/vnd.apple.mpegurl") return r; // HLS HD → on prend
     fallback = r; // progressif 360p : extraction dégradée probable → on retente
   }
-  return fallback;
+  return fallback && (await isReadable(fallback.url)) ? fallback : null;
 }
 
 export async function trailerRoutes(app: FastifyInstance) {
