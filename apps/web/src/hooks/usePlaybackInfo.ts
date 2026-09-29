@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
-import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
 import type { MediaSource } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
@@ -198,9 +198,12 @@ export function usePlaybackInfo(nativePlayer = false) {
       let url: string;
       const ds = client.getDirectStreaming();
       if (directPlay) {
-        const baseUrl = ds ? ds.mediaBaseUrl : client.getBaseUrl();
-        const token = ds ? ds.jellyfinToken : client.getAccessToken();
-        url = `${baseUrl}/Videos/${opts.itemId}/stream?Static=true&MediaSourceId=${ms.Id}&api_key=${token}`;
+        // En direct, `ApiKey` : Jellyfin 12 refuse `api_key` ; vers le proxy,
+        // `api_key` que tout serveur Tentacle lit.
+        const path = `/Videos/${opts.itemId}/stream?Static=true&MediaSourceId=${ms.Id}`;
+        url = ds
+          ? withDirectApiKey(`${ds.mediaBaseUrl}${path}`, ds.jellyfinToken)
+          : `${client.getBaseUrl()}${path}&api_key=${client.getAccessToken()}`;
       } else if (ms.TranscodingUrl) {
         // Transcodage = HLS chargé par hls.js (XHR), donc soumis au CORS. Sur
         // la coquille Electron (origine applicative), le manifeste direct part
@@ -214,14 +217,9 @@ export function usePlaybackInfo(nativePlayer = false) {
         const baseUrl = ds && !hlsWithoutCors ? ds.mediaBaseUrl : client.getBaseUrl();
         // TranscodingUrl from proxy contains the admin API key (from token swap).
         // Replace it with the user's own Jellyfin token for direct streaming.
-        let transcodingPath = ms.TranscodingUrl;
-        if (ds && !hlsWithoutCors) {
-          transcodingPath = transcodingPath.replace(
-            /([?&])(api_key|ApiKey)=[^&]*/i,
-            `$1ApiKey=${encodeURIComponent(ds.jellyfinToken)}`
-          );
-        }
-        url = `${baseUrl}${transcodingPath}`;
+        url = ds && !hlsWithoutCors
+          ? withDirectApiKey(`${baseUrl}${ms.TranscodingUrl}`, ds.jellyfinToken)
+          : `${baseUrl}${ms.TranscodingUrl}`;
       } else {
         console.warn(DBG, "no TranscodingUrl and not direct play");
         setState((prev) => ({ ...prev, isLoading: false }));

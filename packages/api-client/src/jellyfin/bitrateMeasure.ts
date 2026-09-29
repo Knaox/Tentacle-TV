@@ -1,4 +1,5 @@
 import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared";
+import { directJellyfinHeaders } from "./directAuth";
 import type { JellyfinClient } from "../jellyfin";
 
 /**
@@ -62,10 +63,7 @@ function routeFor(client: JellyfinClient, options: BitrateMeasureOptions): Measu
     return {
       key: `direct:${direct.mediaBaseUrl}`,
       url: `${direct.mediaBaseUrl}/Playback/BitrateTest?size=${SIZE_BYTES}`,
-      headers: {
-        [JELLYFIN_AUTH_HEADER]: client.getAuthHeader(direct.jellyfinToken),
-        [JELLYFIN_TOKEN_HEADER]: direct.jellyfinToken,
-      },
+      headers: directJellyfinHeaders(client.getAuthHeader(direct.jellyfinToken)),
       withCookies: false,
     };
   }

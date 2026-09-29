@@ -1,7 +1,6 @@
 import { NativeModules } from "react-native";
-import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
-import type { useJellyfinClient } from "@tentacle-tv/api-client";
+import { nativePlayerHeaders } from "./nativePlayerHeaders";
 import { plog } from "./playerDiag";
 
 /**
@@ -89,18 +88,8 @@ export function prismEligible(a: {
     && (a.vcodec === "hevc" || a.vcodec === "h265" || a.vcodec === "h264");
 }
 
-/**
- * En-têtes d'auth Jellyfin pour PrismCore — INDISPENSABLES : quand le direct
- * streaming n'est pas actif, l'URL passe par le proxy Tentacle, qui retire
- * `api_key` de la query et n'authentifie que par `X-Emby-Token` (sinon 401 →
- * `originRefused`). En direct streaming, ils sont redondants et inoffensifs.
- */
-export function prismHeaders(client: ReturnType<typeof useJellyfinClient>): Record<string, string> | undefined {
-  const ds = client.getDirectStreaming?.();
-  const token = ds?.jellyfinToken ?? client.getAccessToken();
-  if (!token) return undefined;
-  return { [JELLYFIN_AUTH_HEADER]: client.getAuthHeader(token), [JELLYFIN_TOKEN_HEADER]: token };
-}
+/** En-têtes d'auth du lecteur natif — la règle vit dans `nativePlayerHeaders`. */
+export const prismHeaders = nativePlayerHeaders;
 
 /** Langue de la piste audio choisie, telle que PrismCore la marque `DEFAULT`. */
 export function preferredAudioLanguageOf(streams: JfStream[], audioIndex: number): string | undefined {

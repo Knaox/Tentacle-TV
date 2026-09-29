@@ -91,6 +91,21 @@ const KILL_ENCODINGS = z.object({
   authHeader: z.string().min(1),
 });
 
+/**
+ * Les en-têtes d'authentification selon la cible.
+ *
+ * Vers le PROXY Tentacle (`…/api/jellyfin`) : `X-Emby-Token` et
+ * `X-Emby-Authorization`, que tout serveur Tentacle lit — un serveur à jour les
+ * traduit pour Jellyfin. Vers Jellyfin EN DIRECT : `Authorization` seul, la
+ * forme que Jellyfin 12 garde par défaut (les X-Emby-* y valent un 401).
+ */
+export function jellyfinRequestHeaders(baseUrl: string, token: string, authHeader: string): Record<string, string> {
+  if (/\/api\/jellyfin\/?$/i.test(new URL(baseUrl).pathname)) {
+    return { "X-Emby-Token": token, "X-Emby-Authorization": authHeader };
+  }
+  return { Authorization: /Token="/.test(authHeader) ? authHeader : `${authHeader}, Token="${token}"` };
+}
+
 /** Un report de lecture, posté par le processus principal. Rend le statut HTTP. */
 async function postSession(baseUrl: string, path: string, token: string, authHeader: string, body: string): Promise<number> {
   const abort = new AbortController();
@@ -99,11 +114,7 @@ async function postSession(baseUrl: string, path: string, token: string, authHea
     const response = await net.fetch(`${baseUrl}${path}`, {
       method: "POST",
       body,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Emby-Token": token,
-        "X-Emby-Authorization": authHeader,
-      },
+      headers: { "Content-Type": "application/json", ...jellyfinRequestHeaders(baseUrl, token, authHeader) },
       signal: abort.signal,
     });
     return response.status;
@@ -144,11 +155,7 @@ export function registerJellyfinCommands(registry: CommandRegistry): void {
         const response = await net.fetch(`${baseUrl}${path}`, {
           method: "POST",
           body,
-          headers: {
-            "Content-Type": "application/json",
-            "X-Emby-Token": token,
-            "X-Emby-Authorization": authHeader,
-          },
+          headers: { "Content-Type": "application/json", ...jellyfinRequestHeaders(baseUrl, token, authHeader) },
           signal: abort.signal,
         });
         return { status: response.status, body: await response.text() };
@@ -172,10 +179,7 @@ export function registerJellyfinCommands(registry: CommandRegistry): void {
       try {
         const response = await net.fetch(`${baseUrl}${path}`, {
           method: "DELETE",
-          headers: {
-            "X-Emby-Token": token,
-            "X-Emby-Authorization": authHeader,
-          },
+          headers: jellyfinRequestHeaders(baseUrl, token, authHeader),
           signal: abort.signal,
         });
         return { status: response.status };

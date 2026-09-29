@@ -1,4 +1,5 @@
 import { fetchStreamingConfig } from "./useStreamingConfig";
+import { directJellyfinHeaders, withDirectApiKey } from "../jellyfin/directAuth";
 
 const TICKS_PER_SEC = 10_000_000;
 const DBG = "[Playback]";
@@ -130,11 +131,7 @@ export async function sessionPost(
           ? { ok: status >= 200 && status < 300, status }
           : await fetch(`${ds.mediaBaseUrl}${path}`, {
               method: "POST", body: bodyStr,
-              headers: {
-                "Content-Type": "application/json",
-                "X-Emby-Token": ds.jellyfinToken,
-                "X-Emby-Authorization": authHeader,
-              },
+              headers: { "Content-Type": "application/json", ...directJellyfinHeaders(authHeader) },
             });
       if (res.ok || res.status === 204) return;
       if (res.status === 401 || res.status === 403) {
@@ -199,11 +196,12 @@ export async function sessionPost(
 
 /** Build a sendBeacon-compatible URL.
  *  When using httpOnly cookies (web), no api_key needed — cookie is sent automatically.
- *  Mobile/desktop still need api_key in the URL (sendBeacon can't set headers). */
+ *  Mobile/desktop still need the token in the URL (sendBeacon can't set headers) :
+ *  `ApiKey` en direct (Jellyfin 12 refuse `api_key`), `api_key` vers le proxy. */
 export function beaconUrl(client: JfClient, path: string): string {
   const ds = client.getDirectStreaming?.();
   if (ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken) {
-    return `${ds.mediaBaseUrl}${path}?api_key=${encodeURIComponent(ds.jellyfinToken)}`;
+    return withDirectApiKey(`${ds.mediaBaseUrl}${path}`, ds.jellyfinToken);
   }
   const base = client.getBaseUrl();
   if (client.useCredentials) return `${base}${path}`;
@@ -274,7 +272,7 @@ export function killActiveEncoding(client: JfClient, playSessionId: string | und
     killLog("[WT kill] DELETE ActiveEncodings via DIRECT", { playSessionId, deviceId });
     return fetch(`${ds.mediaBaseUrl}${path}`, {
       method: "DELETE", keepalive,
-      headers: { "X-Emby-Token": ds.jellyfinToken, "X-Emby-Authorization": client.getAuthHeader(ds.jellyfinToken) },
+      headers: directJellyfinHeaders(client.getAuthHeader(ds.jellyfinToken)),
     }).then((res) => {
       if (!res.ok) return viaProxy(`direct HTTP ${res.status}`);
       killLog("[WT kill] direct → OK (ffmpeg tué)");

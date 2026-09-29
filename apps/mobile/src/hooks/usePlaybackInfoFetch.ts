@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import { TextTrackType } from "react-native-video";
 import type { MediaSource, MediaStream as JfStream, PlaybackInfoResponse } from "@tentacle-tv/shared";
+import { withDirectApiKey } from "@tentacle-tv/api-client";
 import { supportsAv1HardwareDecode } from "../../modules/mpv-player";
 import { externalSubtitleFormat } from "@/player/engine/trackMapping";
 import type { ExternalSubtitleSource, PlayerEngineKind } from "@/player/engine/types";
@@ -97,9 +98,10 @@ export function buildStreamUrl(opts: {
   const { itemId, ms, directPlay, ds, baseUrl, accessToken, subIdx } = opts;
 
   if (directPlay) {
-    const root = ds ? ds.mediaBaseUrl : baseUrl;
-    const token = ds ? ds.jellyfinToken : accessToken;
-    return `${root}/Videos/${itemId}/stream?Static=true&MediaSourceId=${ms.Id}&api_key=${token}`;
+    // En direct, `ApiKey` : Jellyfin 12 refuse `api_key` ; vers le proxy,
+    // `api_key` que tout serveur Tentacle lit.
+    const path = `/Videos/${itemId}/stream?Static=true&MediaSourceId=${ms.Id}`;
+    return ds ? withDirectApiKey(`${ds.mediaBaseUrl}${path}`, ds.jellyfinToken) : `${baseUrl}${path}&api_key=${accessToken}`;
   }
 
   if (!ms.TranscodingUrl) return null;
@@ -108,10 +110,7 @@ export function buildStreamUrl(opts: {
   let transcodingPath = ms.TranscodingUrl;
 
   if (ds) {
-    transcodingPath = transcodingPath.replace(
-      /([?&])(api_key|ApiKey)=[^&]*/i,
-      `$1ApiKey=${encodeURIComponent(ds.jellyfinToken)}`,
-    );
+    transcodingPath = withDirectApiKey(transcodingPath, ds.jellyfinToken);
   } else if (Platform.OS === "ios") {
     // iOS AirPlay: Apple TV needs api_key in the URL (no cookie support)
     if (accessToken && !/api_key|ApiKey/i.test(transcodingPath)) {

@@ -28,7 +28,7 @@ vi.mock("electron", () => ({
   },
 }));
 
-import { registerJellyfinCommands } from "./jellyfin";
+import { jellyfinRequestHeaders, registerJellyfinCommands } from "./jellyfin";
 import { playbackFarewell } from "../playbackFarewell";
 import type { CommandRegistry } from "./registry";
 
@@ -72,8 +72,10 @@ describe("jellyfin_playback_info", () => {
     expect(net.calls[0]?.url).toBe(
       "https://serveur.example/Items/b79c162e7cd612a4/PlaybackInfo?UserId=u1&IsPlayback=true",
     );
+    // Jellyfin EN DIRECT : Authorization seul — Jellyfin 12 refuse les X-Emby-*.
     const headers = net.calls[0]?.init.headers as Record<string, string>;
-    expect(headers["X-Emby-Token"]).toBe("jeton");
+    expect(headers.Authorization).toBe('MediaBrowser …, Token="jeton"');
+    expect(headers["X-Emby-Token"]).toBeUndefined();
     expect(net.calls[0]?.init.method).toBe("POST");
   });
 
@@ -140,5 +142,23 @@ describe("jellyfin_session_post", () => {
     ).rejects.toThrow(/refuse/);
     expect(net.calls).toHaveLength(0);
     expect(playbackFarewell.pending()).toBe(false);
+  });
+});
+
+describe("jellyfinRequestHeaders", () => {
+  it("vers le proxy Tentacle : les en-têtes que tout serveur Tentacle lit", () => {
+    expect(jellyfinRequestHeaders("https://tentacle.example/api/jellyfin", "t", 'MediaBrowser Token="t"')).toEqual({
+      "X-Emby-Token": "t",
+      "X-Emby-Authorization": 'MediaBrowser Token="t"',
+    });
+  });
+
+  it("vers Jellyfin en direct : Authorization seul, jeton ajouté s'il manque", () => {
+    expect(jellyfinRequestHeaders("http://jf.local:8096", "t", 'MediaBrowser Client="C", Token="t"')).toEqual({
+      Authorization: 'MediaBrowser Client="C", Token="t"',
+    });
+    expect(jellyfinRequestHeaders("http://jf.local:8096/jellyfin", "t", 'MediaBrowser Client="C"')).toEqual({
+      Authorization: 'MediaBrowser Client="C", Token="t"',
+    });
   });
 });

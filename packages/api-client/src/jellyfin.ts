@@ -12,6 +12,7 @@ import {
   type StreamUrlOptions,
 } from "./jellyfin/urlBuilder";
 import { fetchWithRetry, type FetchWithRetryState } from "./jellyfin/fetchWithRetry";
+import { DirectStreamingControl } from "./jellyfin/directStreaming";
 
 // Re-exports for backward-compatible public API.
 export { JellyfinError } from "./jellyfin/types";
@@ -28,17 +29,7 @@ export class JellyfinClient {
   private clientName: string;
   private version: string;
   private authExpiredCallback?: () => void | Promise<void>;
-  private directStreaming: DirectStreamingState | null = null;
-  private directStreamingErrors = 0;
-  private directStreamingFailCallback?: () => void;
-  private static readonly DS_ERROR_THRESHOLD = 3;
-  /**
-   * Ce navigateur ne peut PAS joindre le serveur média en direct : verrou de
-   * session, posé sur constat (cf. `signalDirectStreamingBlocked`). Il survit
-   * aux resynchronisations de la config admin, sans quoi celle-ci rallumerait
-   * aussitôt un chemin dont on vient de mesurer qu'il ne passe pas.
-   */
-  private directStreamingLocked = false;
+  private direct = new DirectStreamingControl();
   private _isLoggingIn = false;
   // Seuil à 5 (et non 3) pour absorber les 401 transitoires (Jellyfin qui rotate
   // ses tokens, glitches DNS, redémarrage serveur de quelques secondes) sans
@@ -83,37 +74,11 @@ export class JellyfinClient {
 
   getBaseUrl() { return this.baseUrl; }
 
-  setDirectStreaming(config: DirectStreamingState | null) {
-    if (config && this.directStreamingLocked) return;
-    this.directStreaming = config;
-    if (config) this.directStreamingErrors = 0;
-  }
-  getDirectStreaming() { return this.directStreaming; }
+  setDirectStreaming(config: DirectStreamingState | null) { this.direct.set(config); }
+  getDirectStreaming() { return this.direct.get(); }
 
-  /**
-   * Le direct est inatteignable depuis cette origine — typiquement un serveur
-   * Jellyfin sans en-tête CORS. On coupe pour toute la session.
-   *
-   * Sans ce verrou, chaque lecture repayait la découverte : le `PlaybackInfo`
-   * direct échouait puis repartait en proxy MAIS laissait `directStreaming`
-   * actif, l'URL de stream se construisait donc encore sur le serveur média,
-   * hls.js se cassait sur le manifeste, et le lecteur redemandait un
-   * `PlaybackInfo` complet. Deux allers-retours et un rechargement visible, à
-   * chaque démarrage.
-   *
-   * On ne déclenche PAS `directStreamingFailCallback` ici : il invalide la
-   * config admin, dont la resynchronisation rallumerait le direct.
-   *
-   * Le prix d'une erreur réseau passagère prise pour un refus est faible : le
-   * proxy sert tout, et un rechargement de page repart de zéro.
-   */
-  signalDirectStreamingBlocked(reason: string) {
-    if (this.directStreamingLocked) return;
-    this.directStreamingLocked = true;
-    this.directStreaming = null;
-    this.directStreamingErrors = 0;
-    console.warn("[Tentacle:DirectStreaming] coupe pour la session —", reason);
-  }
+  /** Le direct est inatteignable depuis cette origine : coupé pour la session (cf. DirectStreamingControl.block). */
+  signalDirectStreamingBlocked(reason: string) { this.direct.block(reason); }
 
   /**
    * Voie native pour la télémétrie de lecture, posée par l'hôte s'il en a une.
@@ -152,39 +117,17 @@ export class JellyfinClient {
     authHeader: string,
   ) => Promise<number>;
 
-  setOnDirectStreamingFail(cb: () => void) { this.directStreamingFailCallback = cb; }
+  setOnDirectStreamingFail(cb: () => void) { this.direct.onFail(cb); }
 
-  /** Report a direct streaming media failure. After DS_ERROR_THRESHOLD consecutive
-   *  errors, auto-disables direct streaming and fires the fail callback. */
-  reportDirectStreamingError(): void {
-    if (!this.directStreaming) return;
-    if (++this.directStreamingErrors >= JellyfinClient.DS_ERROR_THRESHOLD) {
-      this.directStreaming = null;
-      this.directStreamingErrors = 0;
-      this.directStreamingFailCallback?.();
-    }
-  }
+  /** Report a direct streaming media failure. After a few consecutive errors,
+   *  auto-disables direct streaming and fires the fail callback. */
+  reportDirectStreamingError(): void { this.direct.reportError(); }
 
   /** Reset consecutive error counter (call on successful media load). */
-  reportDirectStreamingSuccess(): void { this.directStreamingErrors = 0; }
+  reportDirectStreamingSuccess(): void { this.direct.reportSuccess(); }
 
-  /** Resolve a media URL: use direct Jellyfin URL if active, otherwise proxy.
-   *  Also replaces api_key/ApiKey with the user's own Jellyfin token. */
-  private resolveMediaUrl = (proxyUrl: string): string => {
-    if (!this.directStreaming) return proxyUrl;
-    const { mediaBaseUrl, jellyfinToken } = this.directStreaming;
-    const path = proxyUrl.replace(this.baseUrl, "");
-    // Images stay proxied to avoid CORS — only streams & subtitles go direct
-    if (/\/Images\//i.test(path)) return proxyUrl;
-    let url = `${mediaBaseUrl}${path}`;
-    const encoded = encodeURIComponent(jellyfinToken);
-    if (/([?&])(api_key|ApiKey)=/i.test(url)) {
-      url = url.replace(/([?&])(api_key|ApiKey)=[^&]*/i, `$1api_key=${encoded}`);
-    } else {
-      url += (url.includes("?") ? "&" : "?") + `api_key=${encoded}`;
-    }
-    return url;
-  };
+  /** Resolve a media URL: use direct Jellyfin URL if active, otherwise proxy. */
+  private resolveMediaUrl = (proxyUrl: string): string => this.direct.resolve(proxyUrl, this.baseUrl);
 
   /**
    * L'identité d'appareil présentée à Jellyfin : en-tête `MediaBrowser`, URLs de
@@ -326,7 +269,7 @@ export class JellyfinClient {
   getPlaybackInfo(itemId: string, options: PlaybackInfoOptions): Promise<PlaybackInfoResponse> {
     return fetchPlaybackInfo(
       {
-        directStreaming: this.directStreaming,
+        directStreaming: this.direct.get(),
         getAuthHeader: (t) => this.getAuthHeader(t),
         signalDirectBlocked: (reason) => this.signalDirectStreamingBlocked(reason),
         viaProxy: (path, init) => this.fetch<PlaybackInfoResponse>(path, init),

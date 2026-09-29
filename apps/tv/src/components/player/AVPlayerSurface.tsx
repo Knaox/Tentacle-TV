@@ -8,8 +8,8 @@ import Video, {
   TextTrackType,
 } from "react-native-video";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared";
 import { parseStart } from "../../utils/playerHelpers";
+import { nativePlayerHeaders } from "../../utils/nativePlayerHeaders";
 import { plog } from "../../utils/playerDiag";
 import type { MPVPlayerHandle, MpvTrack, ExoTextTrack } from "./playerTypes";
 
@@ -131,18 +131,10 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     );
 
     // Headers d'auth Jellyfin — INDISPENSABLES sur tvOS : l'URL passe par le proxy
-    // `/api/jellyfin` qui authentifie via X-Emby-Authorization / X-Emby-Token (le
-    // player natif Android les injecte ; AVPlayer ne reçoit rien → 401/-1013 sans).
-    // En direct streaming, on utilise le vrai token Jellyfin (sinon le token apparié).
-    const headers = useMemo(() => {
-      const ds = client.getDirectStreaming?.();
-      const token = ds?.jellyfinToken ?? client.getAccessToken();
-      if (!token) return undefined;
-      return {
-        [JELLYFIN_AUTH_HEADER]: client.getAuthHeader(token),
-        [JELLYFIN_TOKEN_HEADER]: token,
-      } as Record<string, string>;
-    }, [client]);
+    // `/api/jellyfin` qui authentifie par en-tête (le player natif Android les
+    // injecte ; AVPlayer ne reçoit rien → 401/-1013 sans). En direct streaming, le
+    // vrai token Jellyfin en `Authorization` (cf. nativePlayerHeaders).
+    const headers = useMemo(() => nativePlayerHeaders(client), [client]);
 
     useImperativeHandle(ref, () => ({
       // Timeline absolue partout : la position JS est celle d'AVPlayer.

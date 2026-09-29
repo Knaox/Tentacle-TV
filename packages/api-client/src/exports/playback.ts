@@ -22,6 +22,9 @@ export type { SkipProposal, PlaybackOverlayInput, PlaybackOverlayResult } from "
 export { useMutedSegments, NO_MUTED_SEGMENTS } from "../playback/useMutedSegments";
 export { usePostCreditsClaim } from "../playback/usePostCreditsClaim";
 export { buildTrickplayTileUrl } from "../jellyfin/trickplayUrl";
+// Parler à Jellyfin EN DIRECT (streaming direct) : `Authorization` et `ApiKey`,
+// les seules formes que Jellyfin 12 garde (cf. directAuth).
+export { directJellyfinHeaders, withDirectApiKey } from "../jellyfin/directAuth";
 
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le
 // cap automatique de qualité des clients TV.

@@ -1,6 +1,6 @@
-import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared";
 import type { DeviceProfile, PlaybackInfoResponse } from "@tentacle-tv/shared";
 import { DirectStreamingState, JellyfinError, buildQuery } from "./types";
+import { directJellyfinHeaders } from "./directAuth";
 
 /**
  * `POST /Items/{id}/PlaybackInfo` — c'est le serveur qui choisit le flux.
@@ -112,11 +112,7 @@ export async function fetchPlaybackInfo(
       const { mediaBaseUrl, jellyfinToken } = deps.directStreaming;
       const res = await fetch(`${mediaBaseUrl}${path}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          [JELLYFIN_AUTH_HEADER]: deps.getAuthHeader(jellyfinToken),
-          [JELLYFIN_TOKEN_HEADER]: jellyfinToken,
-        },
+        headers: { "Content-Type": "application/json", ...directJellyfinHeaders(deps.getAuthHeader(jellyfinToken)) },
         body,
       });
       if (!res.ok) throw new JellyfinError(res.status, res.statusText, path);

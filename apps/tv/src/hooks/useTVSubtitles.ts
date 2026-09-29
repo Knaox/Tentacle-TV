@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient, withDirectApiKey } from "@tentacle-tv/api-client";
 import { BURN_IN_SUBTITLE_CODECS, parseVttCues } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, SubtitleCue } from "@tentacle-tv/shared";
 
@@ -41,10 +41,11 @@ export function useTVSubtitles(args: {
     if (!active || !itemId || !mediaSourceId) return;
     let cancelled = false;
     // Même logique d'URL que useTVMpvTracks : URL directe Jellyfin si le
-    // direct streaming est actif (le proxy strippe api_key), sinon proxy.
+    // direct streaming est actif (jeton en `ApiKey`, seul accepté par 12.x),
+    // sinon proxy.
     const ds = client.getDirectStreaming?.();
     const url = ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken
-      ? `${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${subtitleIndex}/Stream.vtt?api_key=${encodeURIComponent(ds.jellyfinToken)}`
+      ? withDirectApiKey(`${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${subtitleIndex}/Stream.vtt`, ds.jellyfinToken)
       : client.getSubtitleUrl(itemId, mediaSourceId, subtitleIndex);
     fetch(url)
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))

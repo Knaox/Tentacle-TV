@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Platform } from "react-native";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient, withDirectApiKey } from "@tentacle-tv/api-client";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
 import type { ExoTextTrack } from "../components/player/ExoPlayer";
@@ -21,7 +21,7 @@ function nativeSubFormat(codec?: string): string {
  * Construit la liste des pistes de sous-titres TEXTE (non-burn-in) à charger
  * nativement dans le MediaItem ExoPlayer (rendu par le subtitleView natif,
  * cf. plan sous-titres). Même logique d'URL que useTVSubtitles : URL Jellyfin
- * directe si le direct streaming est actif (le proxy strippe api_key), sinon
+ * directe si le direct streaming est actif (jeton en `ApiKey`), sinon
  * proxy. Mémoïsé sur `streams` → stable pour une source donnée (pas de
  * re-prepare). `enabled` = ExoPlayer (direct play) ; en MPV/transcode, on
  * conserve l'overlay JS (useTVSubtitles).
@@ -50,7 +50,7 @@ export function useTVTextTracks(args: {
           language: (s.Language ?? "").toLowerCase(),
           label: s.DisplayTitle || s.Title || s.Language || `Sub ${s.Index}`,
           uri: ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken
-            ? `${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${s.Index}/Stream.${fmt}?api_key=${encodeURIComponent(ds.jellyfinToken)}`
+            ? withDirectApiKey(`${ds.mediaBaseUrl}/Videos/${itemId}/${mediaSourceId}/Subtitles/${s.Index}/Stream.${fmt}`, ds.jellyfinToken)
             : client.getSubtitleUrl(itemId, mediaSourceId, s.Index, fmt),
         };
       });
