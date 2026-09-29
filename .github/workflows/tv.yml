@@ -11,7 +11,9 @@
 #             TestFlight garde le build soumis à Apple.
 #
 # `promote` (par défaut vrai, au cran store seulement) REPREND LE BINAIRE DÉJÀ
-# TESTÉ au lieu d'en reconstruire un autre.
+# TESTÉ au lieu d'en reconstruire un autre. Une cible qui n'a RIEN à reprendre
+# (aucun run de test pour cette version) se construit : `prepare` le vérifie
+# avant le moindre job (promote-probe.mjs).
 #
 # TOUT EST FIGÉ SUR UN COMMIT : le job `prepare` publie un `sha`, et chaque job
 # checkout CE sha — y compris `apple-tv-attach`, qui attend jusqu'à 35 minutes.
@@ -154,6 +156,12 @@ jobs:
           IN_CHANNEL: ${{ inputs.channel }}
           IN_PROMOTE: ${{ inputs.promote }}
           BUMPED_SHA: ${{ steps.pushed.outputs.sha }}
+          # Le pré-contrôle de la reprise (promote-probe.mjs).
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
           set -euo pipefail
           SHA="${BUMPED_SHA:-${{ github.sha }}}"
@@ -179,6 +187,15 @@ jobs:
             if [ "$CHANNEL" = "store" ] && [ "$PROMOTE" = "true" ]; then echo promote; else echo build; fi
           }
           ANDROID=$(plan androidtv); APPLE=$(plan appletv)
+
+          # Rien à reprendre (aucun run de test pour cette version) : la cible
+          # se CONSTRUIT. Même règle que desktop.yml et mobile.yml.
+          if [ "$ANDROID" = promote ]; then
+            ANDROID=$(LABEL="Android TV" PLAY_PACKAGE="$PLAY_PACKAGE" FORM_FACTOR=tv VERSION="$VERSION" node .github/scripts/promote-probe.mjs play)
+          fi
+          if [ "$APPLE" = promote ]; then
+            APPLE=$(LABEL="Apple TV" PLATFORM=TV_OS VERSION="$VERSION" node .github/scripts/promote-probe.mjs asc)
+          fi
           [ "$CHANNEL" = "store" ] && TRACK="${PLAY_TV_PRODUCTION}" || TRACK="${PLAY_TV_TRACK}"
 
           echo "TV ${VERSION} — cran ${CHANNEL} · androidtv=${ANDROID} · appletv=${APPLE} · piste ${TRACK} · build ${BUILD} · sha ${SHA}"
