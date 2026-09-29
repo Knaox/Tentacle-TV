@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { i18n } from "@tentacle-tv/shared";
+import { i18n, uiLanguage } from "@tentacle-tv/shared";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
 
 interface DisclaimerProps {
@@ -13,11 +13,11 @@ const LANGS = [
 ] as const;
 
 export function Disclaimer({ onAccepted }: DisclaimerProps) {
-  const { t } = useTranslation("disclaimer");
-  const [lang, setLang] = useState(() => {
-    const saved = localStorage.getItem("tentacle_language");
-    return saved?.startsWith("fr") ? "fr" : "en";
-  });
+  // La pastille active suit `i18n.language`, comme le texte : au premier
+  // lancement rien n'est stocké et l'interface suit la langue détectée — lue
+  // sur le stockage, la pastille « EN » s'allumait sur un texte français.
+  const { t, i18n: i18nState } = useTranslation("disclaimer");
+  const lang = uiLanguage(i18nState.language);
   const [checked, setChecked] = useState(false);
   const [showDecline, setShowDecline] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -25,7 +25,6 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
   const switchLang = useCallback((code: string) => {
     i18n.changeLanguage(code);
     localStorage.setItem("tentacle_language", code);
-    setLang(code);
   }, []);
 
   // Fade-in on mount
@@ -63,6 +62,8 @@ export function Disclaimer({ onAccepted }: DisclaimerProps) {
             <button
               key={l.code}
               type="button"
+              lang={l.code}
+              aria-pressed={lang === l.code}
               onClick={() => switchLang(l.code)}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                 lang === l.code
