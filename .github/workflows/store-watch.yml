@@ -29,12 +29,15 @@ name: Store Watch (manifeste stores)
 # manifeste ; `announce` ne voit que le jeton Discord, en lecture seule sur le
 # depot. Aucun des deux ne publie quoi que ce soit dans une boutique.
 #
-# Toutes les 30 minutes + declenchable a la main (annonces a blanc par defaut).
+# Deux fois par heure, a 13 et 43 : GitHub abandonne les taches planifiees aux
+# heures pleines et aux demi-heures, les plus chargees — le « */30 » d'avant ne
+# tournait qu'une fois toutes les six heures environ (constate le 2026-09-29).
+# Declenchable a la main (annonces a blanc par defaut).
 # Idempotent : ne committe que ce qui a change, n'annonce que ce qui est neuf.
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "13,43 * * * *"
   workflow_dispatch:
     inputs:
       discord:
