@@ -21,7 +21,7 @@ interface Props {
   scrollTargetRef?: RefObject<ScrollView | null>;
   /** Pilule ajoutée à la barre de saison (« Toute la saison »). */
   seasonTrailing?: (episodes: MediaItem[]) => ReactNode;
-  /** Bouton ajouté à chaque ligne, à gauche du rond « vu ». */
+  /** Bouton ajouté au bout de chaque ligne, avant son « ⋯ » (les actions de la carte). */
   rowLeading?: (ep: MediaItem) => ReactNode;
   /**
    * L'appui long d'une ligne — la feuille des cartes sur la fiche. Absent

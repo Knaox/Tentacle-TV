@@ -87,10 +87,6 @@
 }
 .mirror-detail-fade-press:active { opacity: var(--press-opacity, 0.7); }
 
-/* Le rond « vu » d'un épisode se tasse à 0,7 puis rebondit. */
-.mirror-detail-pop { transition: transform 220ms cubic-bezier(0.34, 1.6, 0.64, 1); }
-.mirror-detail-pop:active { transform: scale(0.7); }
-
 @media (prefers-reduced-motion: reduce) {
   .mirror-detail-kenburns,
   .mirror-detail-in-poster,
@@ -102,8 +98,7 @@
   .mirror-detail-shimmer {
     animation: none;
   }
-  .mirror-detail-fade-press,
-  .mirror-detail-pop {
+  .mirror-detail-fade-press {
     transition: none;
   }
 }
