@@ -19,6 +19,7 @@ import { OfflineSwitchBanner } from "./offline/OfflineSwitchBanner";
 import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
 import { DownloadsEvents } from "./downloads/DownloadsEvents";
 import { DownloadRequestHost } from "./downloads/DownloadRequestHost";
+import { PlayerWarmupBinding } from "./desktop/PlayerWarmupBinding";
 import { SoakHarness } from "./dev/soakPlayer";
 import { AutoWatchHarness } from "./dev/autoWatch";
 import { FrameMeter, frameMeterEnabled } from "./dev/FrameMeter";
@@ -68,6 +69,9 @@ export function AppBindings({ authed, offlineMode }: AppBindingsProps) {
           porter (cf. downloadRequest.ts). */}
       {authed && <DownloadRequestHost />}
       {authed && <DirectStreamingSync />}
+      {/* Linux : mpv prêt d'avance — la première lecture ne paie plus la
+          naissance de sa sortie vidéo (desktop/playerWarmup.ts). */}
+      {authed && <PlayerWarmupBinding />}
       {authed && <ImpersonationBanner />}
       {/* Fil temps réel des recommandations : la page en cache se rafraîchit
           en silence quand le serveur l'a reconstruite. */}
