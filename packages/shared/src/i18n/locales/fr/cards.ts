@@ -40,14 +40,20 @@ export default {
   dismiss: "Ne plus me proposer",
   keepOffline: "Garder hors ligne",
 
-  // Cartes hors bibliothèque (`externalCardOverlay.ts`) : Ma liste à l'arrivée,
-  // et ce qu'on dit quand l'extension de demandes ne suit pas.
+  // Cartes hors bibliothèque (`externalCardOverlay.ts`) : Ma liste et le cœur
+  // à l'arrivée, et ce qu'on dit quand l'extension de demandes ne suit pas.
   addToWatchlistOnArrival: "Ajouter à ma liste dès son arrivée",
   removeFromWatchlistOnArrival: "Ne plus l'ajouter à son arrivée",
   watchlistOnArrival: "Dans ma liste dès son arrivée",
+  addToFavoritesOnArrival: "Ajouter aux favoris dès son arrivée",
+  removeFromFavoritesOnArrival: "Ne plus l'ajouter aux favoris à son arrivée",
+  favoritesOnArrival: "Dans les favoris dès son arrivée",
   requestSent: "Demande envoyée.",
   requestFailed: "La demande n'a pas abouti.",
   watchlistAdded: "Ajouté à ma liste.",
   watchlistOnArrivalAdded: "Il entrera dans ma liste dès son arrivée.",
   watchlistFailed: "Ma liste n'a pas pu être modifiée.",
+  favoriteAdded: "Ajouté aux favoris.",
+  favoriteOnArrivalAdded: "Aimé — il entrera dans vos favoris dès son arrivée.",
+  favoriteFailed: "Les favoris n'ont pas pu être modifiés.",
 } as const;
