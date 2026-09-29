@@ -1,13 +1,23 @@
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { StyleSheet, View, type ScrollView } from "react-native";
-import { useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { SeasonActionBar } from "./SeasonActionBar";
 import { EpisodeItemRow } from "./EpisodeItemRow";
+import { useProgressiveCount } from "./useProgressiveCount";
+
+/** Hauteur d'une ligne avant la première mesure : celle d'une ligne à vignette 16:9. */
+const ROW_ESTIMATE = 96;
+/** L'écart entre deux lignes (`gap` de la liste). */
+const ROW_GAP = 8;
 
 interface Props {
   seriesId: string;
   seasonId: string;
+  /** Les épisodes de la saison — sources comprises dès qu'elles sont là. */
+  episodes: MediaItem[];
+  /** La même liste, une fois les sources arrivées : « Toute la saison » en a besoin (tailles). */
+  withSources?: MediaItem[];
   onPlay: (ep: MediaItem) => void;
   currentEpisodeId?: string;
   scrollTargetRef?: RefObject<ScrollView | null>;
@@ -19,16 +29,22 @@ interface Props {
   onLongPressEpisode?: (ep: MediaItem) => void;
 }
 
-/** Les épisodes d'UNE saison : la barre de saison, puis une ligne par épisode. */
-export function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId, scrollTargetRef, seasonTrailing, rowLeading, onLongPressEpisode }: Props) {
+/**
+ * Les épisodes d'UNE saison : la barre de saison, puis une ligne par épisode,
+ * montées par lots (`useProgressiveCount`) ; la hauteur des lignes à venir est
+ * réservée, la page ne grandit pas par à-coups sous le doigt.
+ */
+export function EpisodeItems({ seriesId, seasonId, episodes, withSources, onPlay, currentEpisodeId, scrollTargetRef, seasonTrailing, rowLeading, onLongPressEpisode }: Props) {
   const client = useJellyfinClient();
-  const { data: episodes } = useEpisodes(seriesId, seasonId);
+  const currentIndex = currentEpisodeId ? episodes.findIndex((ep) => ep.Id === currentEpisodeId) : -1;
+  const mounted = useProgressiveCount(episodes.length, seasonId, currentIndex);
+  const [rowHeight, setRowHeight] = useState(ROW_ESTIMATE);
 
   // L'épisode courant s'amène à l'écran DE LUI-MÊME, une seule fois par
   // ouverture : une saison de quarante épisodes ne se parcourt plus au doigt.
   const currentRowRef = useRef<View | null>(null);
   const didAutoScrollRef = useRef(false);
-  const hasCurrent = !!currentEpisodeId && !!episodes?.some((ep) => ep.Id === currentEpisodeId);
+  const hasCurrent = currentIndex >= 0;
   useEffect(() => {
     if (!hasCurrent || didAutoScrollRef.current) return;
     const scroll = scrollTargetRef?.current;
@@ -52,13 +68,23 @@ export function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId, scr
     return () => clearTimeout(timer);
   }, [hasCurrent, scrollTargetRef]);
 
-  if (!episodes || episodes.length === 0) return null;
+  if (episodes.length === 0) return null;
+  const pending = episodes.length - mounted;
 
   return (
     <View style={st.wrap}>
-      <SeasonActionBar seriesId={seriesId} seasonId={seasonId} episodes={episodes} trailing={seasonTrailing?.(episodes)} />
-      <View style={st.list}>
-        {episodes.map((ep) => {
+      <SeasonActionBar seriesId={seriesId} seasonId={seasonId} episodes={episodes} trailing={withSources ? seasonTrailing?.(withSources) : undefined} />
+      <View
+        style={st.list}
+        // La hauteur moyenne d'une ligne, mesurée sur ce qui est monté : la
+        // réserve des lignes à venir colle à la réalité dès le premier lot.
+        onLayout={(e) => {
+          if (pending <= 0 || mounted === 0) return;
+          const measured = (e.nativeEvent.layout.height - pending * (rowHeight + ROW_GAP) + ROW_GAP) / mounted - ROW_GAP;
+          if (measured > 24 && Math.abs(measured - rowHeight) > 2) setRowHeight(measured);
+        }}
+      >
+        {episodes.slice(0, mounted).map((ep) => {
           const isCurrent = ep.Id === currentEpisodeId;
           return (
             <View key={ep.Id} ref={isCurrent ? currentRowRef : undefined} collapsable={false}>
@@ -75,6 +101,7 @@ export function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId, scr
             </View>
           );
         })}
+        {pending > 0 && <View style={{ height: pending * (rowHeight + ROW_GAP) - ROW_GAP }} />}
       </View>
     </View>
   );

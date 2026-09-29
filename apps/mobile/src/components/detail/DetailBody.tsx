@@ -103,6 +103,7 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
             seriesId={episodeListSeriesId}
             currentEpisodeId={highlightEpisodeId}
             initialSeasonId={highlightSeasonId}
+            followResume={item.Type === "Series"}
             onPlay={(ep) => router.push(`/watch/${ep.Id}`)}
             seasonTrailing={(episodes) => <SeasonKeepOfflinePill episodes={episodes} />}
             rowLeading={(ep) => <EpisodeKeepOfflineButton episode={ep} />}
