@@ -36,6 +36,7 @@
 
 import { linuxWindowing, linuxMontage } from "../linux/session";
 import { linuxBase } from "../linux/mpvBaseOptions";
+import { nvidiaDriverLoaded } from "../linux/nvidiaDriver";
 import { mpvApi } from "./mpvFfi";
 
 /**
@@ -91,10 +92,11 @@ export function applyOptions(
   }
   for (const [k, v] of Object.entries(NO_SCRIPTS)) apply(k, v);
   // Sous Linux, le contexte GPU, la transmission HDR et le plein écran dépendent
-  // de la SESSION, que la page ne connaît pas. Voir `linux/mpvBaseOptions.ts`.
+  // de la SESSION, que la page ne connaît pas ; la file de calcul, du PILOTE.
+  // Voir `linux/mpvBaseOptions.ts`.
   const montage = linuxMontage();
   if (montage !== null) {
-    const base = linuxBase(montage, linuxWindowing() === "libre");
+    const base = linuxBase(montage, linuxWindowing() === "libre", nvidiaDriverLoaded());
     for (const [k, v] of Object.entries(base)) apply(k, v);
   }
 }

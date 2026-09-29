@@ -35,6 +35,22 @@
  * et le plein écran est la seule géométrie qu'un client Wayland puisse garantir.
  * Sous X11, c'est nous qui plaçons la fenêtre : elle ne doit surtout PAS se
  * mettre en plein écran toute seule.
+ *
+ * # `vulkan-async-compute=no`, sur NVIDIA seulement
+ *
+ * Chaque instance mpv crée son périphérique Vulkan, et c'est LA lenteur de
+ * Linux au démarrage d'une lecture. Mesuré le 29.09.2026 (RTX 5090, pilote
+ * 615.71, libplacebo 7.351 appelée à l'identique de mpv 0.41, dix-huit
+ * créations) : 550 ms par `vkCreateDevice`, dont ~160 ms pour la seule file
+ * de CALCUL asynchrone — 390 ms sans elle, 150 → 105 ms à la destruction. La
+ * file de TRANSFERT, elle, ne coûte rien : on la garde (elle sert aux envois de
+ * textures du décodage logiciel). Le manuel de mpv le dit de lui-même à
+ * `--vulkan-async-compute` : « Nvidia users may want to disable it ». Vingt
+ * secondes de 4K HDR (nvdec, HDR10+ et Dolby Vision) et de 4K AV1 décodé au
+ * processeur : zéro image perdue ou retardée, avec comme sans.
+ *
+ * Ailleurs (AMD, Intel) le périphérique naît en quelques dizaines de
+ * millisecondes et la file de calcul sert vraiment : rien ne change.
  */
 
 import type { Montage } from "./graphicsSession";
@@ -43,6 +59,7 @@ import type { Montage } from "./graphicsSession";
 export function linuxBase(
   montage: Montage,
   kwinGlue = false,
+  nvidia = false,
 ): Readonly<Record<string, string>> {
   const common = {
     // libplacebo n'a de HDR que par Vulkan ; le contexte OpenGL ne sait pas
@@ -51,6 +68,8 @@ export function linuxBase(
     // La fenêtre ne prend jamais l'activation : c'est ce qui garde la nôtre
     // devant, sur Wayland comme sous X11.
     "focus-on": "never",
+    // 160 ms de moins à chaque sortie vidéo neuve — voir l'en-tête.
+    ...(nvidia ? { "vulkan-async-compute": "no" } : {}),
   };
   if (montage === "wayland") {
     // La saveur COLLÉE (fenêtré libre, `kwinGlue.ts`) : la fenêtre mpv est

@@ -47,4 +47,23 @@ describe("socleLinux", () => {
   it("la colle ne change rien à X11 — le calage y est déjà à nous", () => {
     expect(linuxBase("x11", true)).toEqual(linuxBase("x11"));
   });
+
+  it("NVIDIA : la file de calcul asynchrone coupée, celle de transfert gardée", () => {
+    // 160 ms de vkCreateDevice par sortie vidéo neuve (mesuré le 29.09.2026) ;
+    // la file de transfert, elle, ne coûte rien et sert au décodage logiciel.
+    for (const m of ["wayland", "x11"] as const) {
+      for (const glue of [false, true]) {
+        const base = linuxBase(m, glue, true);
+        expect(base["vulkan-async-compute"]).toBe("no");
+        expect(base["vulkan-async-transfer"]).toBeUndefined();
+      }
+    }
+  });
+
+  it("hors NVIDIA, les files de mpv restent les siennes", () => {
+    for (const m of ["wayland", "x11"] as const) {
+      expect(linuxBase(m, true)["vulkan-async-compute"]).toBeUndefined();
+      expect(linuxBase(m, false, false)).toEqual(linuxBase(m));
+    }
+  });
 });
