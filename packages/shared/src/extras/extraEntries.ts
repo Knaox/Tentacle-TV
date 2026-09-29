@@ -16,6 +16,7 @@ export interface LocalExtraEntry {
   key: string;
   itemId: string;
   title: string;
+  /** Son genre traduit — vide quand le titre le dit déjà. */
   subtitle: string;
 }
 
@@ -57,13 +58,11 @@ export function buildExtraEntries(
     const key = `local-${extra.Id}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    entries.push({
-      source: "local",
-      key,
-      itemId: extra.Id,
-      title: localExtraTitle(t, extra),
-      subtitle: extraKindLabel(t, localExtraKind(extra)),
-    });
+    const title = localExtraTitle(t, extra);
+    const kind = extraKindLabel(t, localExtraKind(extra));
+    // Un extra que Jellyfin 12 n'a nommé que par son genre (« Trailer ») ne
+    // répète pas « Bande-annonce » sous « Bande-annonce » : sous-titre vide.
+    entries.push({ source: "local", key, itemId: extra.Id, title, subtitle: kind === title ? "" : kind });
   }
   for (const trailer of remote) {
     if (!trailer.Url) continue;

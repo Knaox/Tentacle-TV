@@ -20,7 +20,8 @@ describe("buildExtraEntries", () => {
     const entries = buildExtraEntries(i18n.t, [trailerFile, teaserFile, makingOf], [vf, bare]);
     expect(entries.map((e) => e.key)).toEqual(["local-t1", "local-t2", "local-f1", "remote-9aijfXkbkXg", "remote-HcoZbHBDHQA"]);
     expect(entries.map((e) => [e.title, e.subtitle])).toEqual([
-      ["Bande-annonce", "Bande-annonce"],
+      // Nommé par son seul genre : le sous-titre ne le répète pas.
+      ["Bande-annonce", ""],
       ["Teaser", "Bande-annonce"],
       ["Making Of", "Coulisses"],
       ["Bande-annonce 3 VF", "Bande-annonce · YouTube"],
