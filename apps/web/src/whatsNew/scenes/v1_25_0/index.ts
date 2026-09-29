@@ -6,3 +6,5 @@ export { ExtrasScene } from "./ExtrasScene";
 export { SagaScene } from "./SagaScene";
 export { SeasonsScene } from "./SeasonsScene";
 export { StatsScene } from "./StatsScene";
+export { AdminCompatScene } from "./AdminCompatScene";
+export { AdminSetupScene } from "./AdminSetupScene";

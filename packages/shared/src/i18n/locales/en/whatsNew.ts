@@ -52,6 +52,10 @@ export default {
   v1_25_0_seasons_body: "A series page opens on the current season, and a large season shows up six times faster. Season pills read on any image: a dot for the current season, a check for the watched ones.",
   v1_25_0_extras_title: "Trailers and extras",
   v1_25_0_extras_body: "Season trailers, extras and trailers kept on the server finally show on the title page. Seeing none? The guide in Help explains how to get them.",
+  v1_25_0_adminCompat_title: "Jellyfin 12, no surprises",
+  v1_25_0_adminCompat_body: "The overview judges your Jellyfin and its latest published version against Tentacle's tests: compatible, incomplete or incompatible, with what is missing. Jellyfin 12 rejects the old sign-in: update the Tentacle server before it.",
+  v1_25_0_adminSetup_title: "Recommended settings, in one click",
+  v1_25_0_adminSetup_body: "The Jellyfin settings that make Tentacle complete, with their real state on your server: one click when it is safe, otherwise the right dashboard page.",
 
   // 1.24.0
   v1_24_0_detailStage_title: "The detail page, full screen",

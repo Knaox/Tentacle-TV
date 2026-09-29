@@ -1,5 +1,7 @@
 import type { WhatsNewRelease } from "../types";
-import { AffinityScene, ExtrasScene, SagaScene, SeasonsScene, StatsScene } from "../scenes/v1_25_0";
+import {
+  AdminCompatScene, AdminSetupScene, AffinityScene, ExtrasScene, SagaScene, SeasonsScene, StatsScene,
+} from "../scenes/v1_25_0";
 
 /**
  * 1.25.0 — ce qu'on regarde, et avec qui : ses statistiques, l'Affinité de
@@ -9,8 +11,11 @@ import { AffinityScene, ExtrasScene, SagaScene, SeasonsScene, StatsScene } from 
  * Restent au changelog : les cartes (« Lire » discret, même survol partout,
  * déjà mis en scène en 1.24.0), le hors ligne (seulement avec des titres téléchargés),
  * les recommandations et Affiner, les nouveautés de Jellyfin 12 (seulement
- * avec un serveur en 12), le bouton Copier réparé et la vue d'ensemble de
- * l'administration.
+ * avec un serveur en 12) et le bouton Copier réparé.
+ *
+ * Pour les administrateurs (`audience`, sans lien profond, comme en 1.23.0) :
+ * la compatibilité de Jellyfin et les réglages recommandés de la vue
+ * d'ensemble.
  *
  * Les textes vivent dans l'espace i18n `whatsNew` (v1_25_0_<id>_title / _body).
  */
@@ -28,6 +33,22 @@ export const RELEASE_1_25_0: WhatsNewRelease = {
       bodyKey: "v1_25_0_extras_body",
       Scene: ExtrasScene,
       route: "/help/trailers",
+    },
+    {
+      id: "adminCompat",
+      kind: "new",
+      titleKey: "v1_25_0_adminCompat_title",
+      bodyKey: "v1_25_0_adminCompat_body",
+      Scene: AdminCompatScene,
+      audience: "admin",
+    },
+    {
+      id: "adminSetup",
+      kind: "new",
+      titleKey: "v1_25_0_adminSetup_title",
+      bodyKey: "v1_25_0_adminSetup_body",
+      Scene: AdminSetupScene,
+      audience: "admin",
     },
   ],
 };

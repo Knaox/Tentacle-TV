@@ -56,6 +56,10 @@ export default {
   v1_25_0_seasons_body: "La fiche d'une série s'ouvre sur la saison en cours, et une grosse saison s'affiche six fois plus vite. Les pastilles se lisent sur n'importe quelle image : un point pour la saison en cours, une coche pour les saisons vues.",
   v1_25_0_extras_title: "Bandes-annonces et bonus",
   v1_25_0_extras_body: "Les bandes-annonces des saisons, les bonus et les bandes-annonces gardées sur le serveur s'affichent enfin sur la fiche. Vous n'en voyez aucune ? Le guide de l'Aide explique comment les obtenir.",
+  v1_25_0_adminCompat_title: "Jellyfin 12, sans surprise",
+  v1_25_0_adminCompat_body: "La vue d'ensemble juge votre Jellyfin et sa dernière version publiée d'après les tests de Tentacle : compatible, incomplète ou incompatible, avec ce qui manque. Jellyfin 12 refuse l'ancienne connexion : mettez à jour le serveur Tentacle avant lui.",
+  v1_25_0_adminSetup_title: "Les réglages conseillés, en un clic",
+  v1_25_0_adminSetup_body: "Les réglages de Jellyfin qui rendent Tentacle complet, avec leur état réel sur votre serveur : un clic quand c'est sûr, sinon la bonne page du tableau de bord.",
 
   // 1.24.0
   v1_24_0_detailStage_title: "La fiche, en grand",
