@@ -15,9 +15,8 @@
 // Discord et sort en 0. Exit 1 si une annonce due n'a pas pu partir.
 import { readFileSync } from 'node:fs';
 import {
-  PRODUCTS, buildAnnouncement, mergeStores, parseAnnouncement, storesServing, targetVersion,
+  PRODUCTS, buildAnnouncement, mergeStores, parseAnnouncement, releaseNotes, storesServing, targetVersion,
 } from './lib/announce-model.mjs';
-import { extractSection } from './lib/changelog.mjs';
 import { createDiscordClient } from './lib/discord.mjs';
 import { isVersion } from './lib/versions.mjs';
 
@@ -67,10 +66,8 @@ if (!token) {
 }
 
 /** Notes markdown d'une version dans une langue, ou null si le bloc manque. */
-function notesFor(productKey, version, lang) {
-  const md = readFileSync(PRODUCTS[productKey].changelog, 'utf8');
-  return extractSection(md, { version })?.[lang] ?? null;
-}
+const notesFor = (productKey, version, lang) =>
+  releaseNotes(readFileSync(PRODUCTS[productKey].changelog, 'utf8'), productKey, version, lang);
 
 const discord = createDiscordClient(token);
 const me = await discord.me();

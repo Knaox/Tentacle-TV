@@ -1,9 +1,11 @@
 // Le modèle des annonces Discord : quoi annoncer, et un message qui se relit.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   DESCRIPTION_MAX, PRODUCTS, STORES, buildAnnouncement, discordNotes, footerText, mergeStores,
-  parseAnnouncement, storesServing, targetVersion,
+  parseAnnouncement, releaseNotes, storesServing, targetVersion,
 } from '../lib/announce-model.mjs';
 
 const desktop = PRODUCTS.desktop;
@@ -75,4 +77,14 @@ test('libellés de boutons uniques dans chaque plateforme (ils servent à relire
     const labels = product.stores.map((s) => STORES[s].label);
     assert.equal(new Set(labels).size, labels.length, key);
   }
+});
+
+test('notes : le mobile annonce le bloc complet ios-, pas le bloc court de Google Play', () => {
+  const md = readFileSync(fileURLToPath(new URL('./fixtures/changelog-mobile.md', import.meta.url)), 'utf8');
+  const full = releaseNotes(md, 'mobile', '1.8.1', 'en');
+  const bare = md.split('## [1.8.1]')[1];
+  assert.ok(full && !bare.includes(full), 'le texte vient du bloc [ios-1.8.1]');
+  assert.ok(md.split('## [1.8.1]')[0].includes(full));
+  assert.ok(releaseNotes(md, 'mobile', '1.9.0', 'fr'), 'sans bloc ios-, repli sur le bloc nu');
+  assert.equal(releaseNotes(md, 'mobile', '0.0.1', 'fr'), null);
 });

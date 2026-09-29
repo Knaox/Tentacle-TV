@@ -7,6 +7,7 @@
 // d'abord, « Microsoft Store » ajouté au passage suivant. L'état vit dans
 // Discord même — le pied du message porte la plateforme et la version, ses
 // boutons les boutiques — donc rien à commiter, et un run rejoué ne double rien.
+import { extractSection } from './changelog.mjs';
 import { compareVersions, isVersion, maxVersion } from './versions.mjs';
 
 const REPO = 'https://github.com/Knaox/Tentacle-TV';
@@ -29,17 +30,22 @@ export const STORES = {
   server: { label: 'Docker', emoji: '🐳', url: (v) => `${REPO}/releases/tag/server-v${v}` },
 };
 
+// `notesChannel` : le bloc de changelog que lit l'annonce. Pour le mobile et
+// la TV, le bloc NU est la version courte faite pour Google Play (500
+// caractères) ; la version complète est le bloc `ios-` / `atv-` (App Store).
+// Discord n'a pas la limite de Play : il prend la complète, et retombe sur le
+// bloc nu quand elle n'existe pas. Le bloc nu du bureau est déjà complet.
 export const PRODUCTS = {
   desktop: {
     changelog: 'changelogs/desktop.md', stores: ['macos', 'windows', 'linux'], emoji: '🖥️',
     name: { en: 'Tentacle TV for desktop', fr: 'Tentacle TV pour ordinateur' },
   },
   mobile: {
-    changelog: 'changelogs/mobile.md', stores: ['ios', 'android'], emoji: '📱',
+    changelog: 'changelogs/mobile.md', notesChannel: 'ios', stores: ['ios', 'android'], emoji: '📱',
     name: { en: 'Tentacle TV for iPhone, iPad & Android', fr: 'Tentacle TV pour iPhone, iPad et Android' },
   },
   tv: {
-    changelog: 'changelogs/tv.md', stores: ['appletv', 'androidtv'], emoji: '📺',
+    changelog: 'changelogs/tv.md', notesChannel: 'atv', stores: ['appletv', 'androidtv'], emoji: '📺',
     name: { en: 'Tentacle TV for Apple TV & Android TV', fr: 'Tentacle TV pour Apple TV et Android TV' },
   },
   webos: {
@@ -84,6 +90,12 @@ export function discordNotes(md, fullUrl, lang) {
   const cut = text.slice(0, DESCRIPTION_MAX - tail.length);
   const nl = cut.lastIndexOf('\n');
   return `${(nl > 0 ? cut.slice(0, nl) : cut).trimEnd()}${tail}`;
+}
+
+/** Les notes markdown d'une version dans une langue (bloc `notesChannel`, sinon nu), ou null. */
+export function releaseNotes(md, productKey, version, lang) {
+  const section = extractSection(md, { channel: PRODUCTS[productKey].notesChannel, version });
+  return section?.[lang] ?? null;
 }
 
 /** Le pied d'un message : lu par `parseAnnouncement`, ne pas changer sa forme. */
