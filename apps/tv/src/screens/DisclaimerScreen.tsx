@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TVFocusGuideView } from "react-native";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
-import { i18n } from "@tentacle-tv/shared";
+import { i18n, uiLanguage } from "@tentacle-tv/shared";
 import { Colors } from "../theme/colors";
 import { Focusable } from "../components/focus/Focusable";
 import { TentacleLogo } from "../components/icons/TentacleLogo";
@@ -17,20 +17,18 @@ const LANGS = [
 ] as const;
 
 export function DisclaimerScreen() {
-  const { t } = useTranslation("disclaimer");
+  // La pastille active suit `i18n.language`, comme le texte — jamais le
+  // stockage, vide au premier lancement.
+  const { t, i18n: i18nState } = useTranslation("disclaimer");
   const navigation = useNavigation();
   const { storage } = useTentacleConfig();
   const [checked, setChecked] = useState(false);
   const [declineOpen, setDeclineOpen] = useState(false);
-  const [lang, setLang] = useState(() => {
-    const saved = storage.getItem("tentacle_language");
-    return saved?.startsWith("fr") ? "fr" : "en";
-  });
+  const lang = uiLanguage(i18nState.language);
 
   const switchLang = useCallback((code: string) => {
     i18n.changeLanguage(code);
     storage.setItem("tentacle_language", code);
-    setLang(code);
   }, [storage]);
 
   const handleAccept = useCallback(() => {

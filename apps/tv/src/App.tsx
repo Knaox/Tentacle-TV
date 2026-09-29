@@ -21,7 +21,7 @@ import {
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
 } from "@tentacle-tv/api-client";
-import { initI18n, i18n } from "@tentacle-tv/shared";
+import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
 import { rehydrateStores } from "./lib/stores";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
@@ -258,7 +258,7 @@ export function App() {
       // maintenant que le cache est rempli (voir `lib/stores.ts`).
       rehydrateStores();
       const tentacleUrl = storage.getItem("tentacle_server_url");
-      const savedLang = storage.getItem("tentacle_language") ?? "en";
+      const savedLang = storage.getItem("tentacle_language") ?? detectLanguage();
       initI18n({ lng: savedLang });
       const jfClient = initializeBackend(tentacleUrl);
 
