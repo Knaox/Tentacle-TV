@@ -7,6 +7,8 @@ import { useRefreshViewingStats, useViewingStats, viewingStatsFailure } from "@t
 import { statsLocale, VIEWING_STATS_PERIODS, type ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { SubtleBackground } from "@/components/ui";
 import { FloatingBackButton } from "@/components/navigation/FloatingBackButton";
+import { ShareStatsButton } from "@/components/stats/ShareStatsButton";
+import { ShareStatsSheet } from "@/components/stats/ShareStatsSheet";
 import { StatsHeader } from "@/components/stats/StatsHeader";
 import { StatsFailure, StatsNeverWatched, StatsSkeleton } from "@/components/stats/StatsStates";
 import { backOrHome } from "@/utils/backOrHome";
@@ -40,6 +42,7 @@ export function StatsScreen() {
   const query = useViewingStats(period, locale);
   const refresh = useRefreshViewingStats();
   const [pulling, setPulling] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const { width } = useWindowDimensions();
   const padding = useContentPadding(1000);
   const wide = width - padding * 2 >= WIDE_MIN;
@@ -81,10 +84,18 @@ export function StatsScreen() {
           refreshControl={stats ? <RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={theme.colors.brand.violet} /> : undefined}
           showsVerticalScrollIndicator={false}
         >
-          <StatsHeader title={t("title")} kicker={t("kicker")} topInset={top} inset={padding} />
+          <StatsHeader
+            title={t("title")}
+            kicker={t("kicker")}
+            topInset={top}
+            inset={padding}
+            // Rien à partager avant la première séance, ni tant que l'écran n'a pas ses chiffres.
+            action={stats?.hasHistory ? <ShareStatsButton onPress={() => setSharing(true)} /> : undefined}
+          />
           <View style={{ paddingHorizontal: padding }}>{body}</View>
         </ScrollView>
         <FloatingBackButton top={top} onPress={() => backOrHome(router)} />
+        <ShareStatsSheet visible={sharing} onClose={() => setSharing(false)} defaultPeriod={period} />
       </View>
     </SubtleBackground>
   );
