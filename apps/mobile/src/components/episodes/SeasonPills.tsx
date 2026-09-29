@@ -38,27 +38,40 @@ export function SeasonPills({ seasons, activeSeasonId, onSelect, markedSeasonId,
   const st = useThemedStyles(makeStyles);
   const scrollRef = useRef<ScrollView>(null);
   const boxes = useRef(new Map<string, LayoutRectangle>());
-  const viewport = useRef({ width: 0, x: 0 });
+  const viewport = useRef({ width: 0, x: 0, content: 0 });
   const placed = useRef(false);
 
+  /**
+   * La saison affichée au centre de la bande, si elle est hors champ. Rien
+   * tant que la pastille, la bande ET la taille du contenu ne sont pas
+   * connues : un `scrollTo` émis avant que le natif connaisse la largeur du
+   * contenu est ramené à zéro, et la bande restait sur « Spéciaux ». On
+   * réessaie donc à chaque mesure (pastille, bande, contenu).
+   */
   const reveal = useCallback((animated: boolean): boolean => {
     const box = activeSeasonId ? boxes.current.get(activeSeasonId) : undefined;
-    const { width, x } = viewport.current;
-    if (!box || !width) return false;
+    const { width, x, content } = viewport.current;
+    if (!box || !width || content < box.x + box.width) return false;
     if (box.x >= x + EDGE && box.x + box.width <= x + width - EDGE) return true;
-    scrollRef.current?.scrollTo({ x: Math.max(0, box.x - (width - box.width) / 2), animated });
+    const target = Math.min(Math.max(0, box.x - (width - box.width) / 2), Math.max(0, content - width));
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ x: target, animated }));
     return true;
   }, [activeSeasonId]);
 
+  const tryPlace = useCallback(() => {
+    if (!placed.current && reveal(false)) placed.current = true;
+  }, [reveal]);
+
   // À l'ouverture d'un coup, ensuite en glissant.
   useEffect(() => {
-    if (reveal(placed.current)) placed.current = true;
-  }, [reveal]);
+    if (!placed.current) tryPlace();
+    else reveal(true);
+  }, [reveal, tryPlace]);
 
   const onPillLayout = useCallback((seasonId: string, layout: LayoutRectangle) => {
     boxes.current.set(seasonId, layout);
-    if (!placed.current && seasonId === activeSeasonId && reveal(false)) placed.current = true;
-  }, [activeSeasonId, reveal]);
+    if (seasonId === activeSeasonId) tryPlace();
+  }, [activeSeasonId, tryPlace]);
 
   return (
     <ScrollView
@@ -71,7 +84,11 @@ export function SeasonPills({ seasons, activeSeasonId, onSelect, markedSeasonId,
       onScroll={(e) => { viewport.current.x = e.nativeEvent.contentOffset.x; }}
       onLayout={(e) => {
         viewport.current.width = e.nativeEvent.layout.width;
-        if (!placed.current && reveal(false)) placed.current = true;
+        tryPlace();
+      }}
+      onContentSizeChange={(w) => {
+        viewport.current.content = w;
+        tryPlace();
       }}
     >
       {seasons.map((season) => (
