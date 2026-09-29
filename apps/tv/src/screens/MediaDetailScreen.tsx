@@ -15,6 +15,7 @@ import { TVEpisodeList } from "../components/TVEpisodeList";
 import { TVExtrasSection } from "../components/detail/TVExtrasSection";
 import { TVCastCrew } from "../components/detail/TVCastCrew";
 import { TVDetailHeader } from "../components/detail/TVDetailHeader";
+import { TVTrailerHint } from "../components/detail/TVTrailerHint";
 import { TVSagaRow } from "../components/detail/TVSagaRow";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { Colors, Spacing, CardConfig } from "../theme/colors";
@@ -126,6 +127,10 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         onFocusButtons={scrollToButtons}
         onBack={() => navigation.goBack()}
       />
+
+      {/* Sans aucune bande-annonce, sur un serveur mal réglé : une phrase qui
+          renvoie vers l'app web ou mobile — rien de focalisable. */}
+      <TVTrailerHint item={item} trailer={trailer} />
 
       {/* Collection (BoxSet) : contenu navigable */}
       {isBoxSet && collectionItems && collectionItems.length > 0 && (
