@@ -45,6 +45,24 @@ describe("lecture des rapports", () => {
     expect(report?.latest).toMatchObject({ tag: "v12.1", newer: false });
   });
 
+  it("les mesures des bandes-annonces passent, et un manque de compatibilité mal formé est écarté", () => {
+    const report = readSetupReport({
+      checkedAt: "t",
+      checks: [{
+        id: "trailers",
+        state: "todo",
+        trailers: {
+          titles: 120, withTmdb: 100, withTrailer: 30, sampled: false, tmdbBlocked: false, jellyseerr: true, refreshing: true,
+          compatGaps: [{ label: label("Bandes-annonces locales"), note: label("vides") }, { label: "cassé" }],
+        },
+      }],
+    });
+    expect(report?.checks[0].trailers).toEqual({
+      titles: 120, withTmdb: 100, withTrailer: 30, sampled: false, tmdbBlocked: false, jellyseerr: true, refreshing: true,
+      compatGaps: [{ label: label("Bandes-annonces locales"), note: label("vides") }],
+    });
+  });
+
   it("une forme inattendue ne fait rien tomber", () => {
     expect(readCompatReport({ nope: true })).toBeNull();
     expect(readCompatReport({ checkedAt: "t", installed: { version: 12, status: "?" } })).toMatchObject({ installed: null, manifest: null, latest: null });

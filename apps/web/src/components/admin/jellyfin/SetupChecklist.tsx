@@ -77,6 +77,7 @@ export function SetupChecklist() {
                 key={check.id}
                 check={check}
                 dashboardUrl={report.dashboardUrl}
+                jellyfinVersion={report.jellyfinVersion}
                 language={language}
                 running={running}
                 failed={failed}

@@ -10,7 +10,7 @@ import fr from "./locales/fr/adminJellyfin";
 import enRecommended from "./locales/en/adminRecommended";
 import frRecommended from "./locales/fr/adminRecommended";
 
-const CHECKS = ["metadataTmdb", "metadataLanguage", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "chapterImages"];
+const CHECKS = ["metadataTmdb", "metadataLanguage", "trailers", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "chapterImages"];
 
 describe("vocabulaire de Jellyfin dans l'administration", () => {
   it("le français et l'anglais ont les mêmes clés", () => {

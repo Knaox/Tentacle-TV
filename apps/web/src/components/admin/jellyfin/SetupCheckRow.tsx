@@ -33,11 +33,14 @@ const ICON_TONE: Record<StatusTone, string> = {
 };
 
 /** Les gestes qui RÈGLENT quelque chose ; les autres (générer, relancer) prolongent un réglage fait. */
-const FIXES: ReadonlySet<SetupActionId> = new Set(["enableTrickplay", "enableRealtimeMonitor", "setMetadataLanguage", "installChapterSegments"]);
+const FIXES: ReadonlySet<SetupActionId> = new Set([
+  "enableTrickplay", "enableRealtimeMonitor", "setMetadataLanguage", "installChapterSegments", "refreshMissingMetadata",
+]);
 
 interface Props {
   check: SetupCheck;
   dashboardUrl: string | null;
+  jellyfinVersion: string | null;
   language: LanguageChoice;
   /** Le geste en vol dans toute la liste — un seul à la fois, comme le serveur. */
   running: SetupActionId | null;
@@ -45,7 +48,7 @@ interface Props {
   onApply: (action: SetupActionId) => void;
 }
 
-export function SetupCheckRow({ check, dashboardUrl, language, running, failed, onApply }: Props) {
+export function SetupCheckRow({ check, dashboardUrl, jellyfinVersion, language, running, failed, onApply }: Props) {
   const { t } = useTranslation(["adminJellyfin", "common"]);
   const [confirming, setConfirming] = useState(false);
   const tone = stateTone(check);
@@ -70,6 +73,8 @@ export function SetupCheckRow({ check, dashboardUrl, language, running, failed, 
         return t("generateNow");
       case "scanMediaSegments":
         return t("rescanSegments");
+      case "refreshMissingMetadata":
+        return t("refreshMetadata");
       default:
         return "";
     }
@@ -89,7 +94,7 @@ export function SetupCheckRow({ check, dashboardUrl, language, running, failed, 
         </div>
         <p className="mt-1 max-w-3xl text-sm leading-relaxed text-content-tertiary">{t(`why_${check.id}`)}</p>
         <div className="mt-1.5 space-y-1">
-          <SetupCheckDetails check={check} />
+          <SetupCheckDetails check={check} jellyfinVersion={jellyfinVersion} />
         </div>
         {(action || dashboardHref) && (
           <div className="mt-3 flex flex-wrap items-center gap-2">

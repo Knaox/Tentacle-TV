@@ -84,6 +84,7 @@ export const CONFIRMED_ACTIONS: Partial<Record<SetupActionId, ConfirmCopy>> = {
   installChapterSegments: { title: "installConfirmTitle", body: "installConfirmBody", confirm: "installConfirm" },
   generateTrickplay: { title: "generateConfirmTitle", body: "generateConfirmBody", confirm: "generateConfirm" },
   scanMediaSegments: { title: "rescanConfirmTitle", body: "rescanConfirmBody", confirm: "rescanConfirm" },
+  refreshMissingMetadata: { title: "refreshConfirmTitle", body: "refreshConfirmBody", confirm: "refreshConfirm" },
 };
 
 /** Les bibliothèques d'un réglage par bibliothèque, séparées entre activées et à activer. */

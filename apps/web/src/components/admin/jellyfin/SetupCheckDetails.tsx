@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Copy, ExternalLink } from "lucide-react";
-import type { SetupCheck, SetupPlugin, SetupTask } from "@tentacle-tv/shared";
+import type { SetupCheck, SetupPlugin, SetupTask, SetupTrailers } from "@tentacle-tv/shared";
 import { useToast } from "../../../contexts/ToastContext";
 import { StatusPill, type StatusTone } from "../kit";
-import { formatMoment } from "./compatPresentation";
+import { formatMoment, localized } from "./compatPresentation";
 import { splitLibraries } from "./setupPresentation";
 
 /**
@@ -95,9 +95,40 @@ function Plugins({ plugins }: { plugins: SetupPlugin[] }) {
   );
 }
 
-export function SetupCheckDetails({ check }: { check: SetupCheck }) {
+/** Les bandes-annonces : la cause (TMDB écarté), la couverture mesurée, Jellyseerr, et la compatibilité. */
+function Trailers({ check, trailers, jellyfinVersion }: { check: SetupCheck; trailers: SetupTrailers; jellyfinVersion: string | null }) {
+  const { t, i18n } = useTranslation("adminJellyfin");
+  const excluded = splitLibraries(check).off;
+  const low = trailers.withTmdb === 0 || trailers.withTrailer / trailers.withTmdb < 0.5;
+  return (
+    <>
+      {excluded.length > 0 && <Line tone="warning">{t("tmdbExcluded", { names: excluded.join(" · ") })}</Line>}
+      {trailers.tmdbBlocked && excluded.length === 0 && <Line tone="warning">{t("tmdbPluginOff")}</Line>}
+      {trailers.withTmdb === 0 ? (
+        <Line tone="warning">{t("trailersNoTmdbTitles")}</Line>
+      ) : (
+        <Line tone={low ? "warning" : "success"}>
+          {t("trailersCoverage", { count: trailers.withTmdb, withTrailer: trailers.withTrailer, withTmdb: trailers.withTmdb })}
+          {trailers.sampled && ` ${t("trailersSampled", { count: trailers.titles })}`}
+        </Line>
+      )}
+      {trailers.refreshing && <Line>{t("trailersRefreshing")}</Line>}
+      <Line tone={trailers.jellyseerr ? "success" : "muted"}>{t(trailers.jellyseerr ? "trailersSeerrOn" : "trailersSeerrOff")}</Line>
+      {trailers.compatGaps.map((gap) => (
+        <Line key={gap.label.fr} tone="warning">
+          {t("trailersCompatGap", { version: jellyfinVersion ?? "", label: localized(gap.label, i18n.language) })}
+          {gap.note && ` — ${localized(gap.note, i18n.language)}`}
+        </Line>
+      ))}
+    </>
+  );
+}
+
+export function SetupCheckDetails({ check, jellyfinVersion }: { check: SetupCheck; jellyfinVersion: string | null }) {
   const { t } = useTranslation("adminJellyfin");
   switch (check.id) {
+    case "trailers":
+      return check.trailers ? <Trailers check={check} trailers={check.trailers} jellyfinVersion={jellyfinVersion} /> : null;
     case "metadataTmdb": {
       const excluded = splitLibraries(check).off;
       return (

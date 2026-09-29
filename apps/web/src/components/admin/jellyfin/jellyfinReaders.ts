@@ -11,6 +11,7 @@ import type {
   LocalizedText,
   SetupCheck,
   SetupCheckId,
+  SetupTrailers,
 } from "@tentacle-tv/shared";
 
 /**
@@ -29,7 +30,7 @@ const isText = (value: unknown): value is LocalizedText => isRecord(value) && ty
 
 const STATUSES: readonly CompatStatus[] = ["compatible", "partial", "presumed", "untested", "incompatible"];
 const CHECK_IDS: readonly SetupCheckId[] = [
-  "metadataTmdb", "metadataLanguage", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "chapterImages",
+  "metadataTmdb", "metadataLanguage", "trailers", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "chapterImages",
 ];
 
 function readFeature(raw: unknown): CompatFeatureView | null {
@@ -116,6 +117,26 @@ export function readCompatReport(raw: unknown): JellyfinCompatReport | null {
   };
 }
 
+const count = (value: unknown): number => (typeof value === "number" && Number.isFinite(value) ? value : 0);
+
+function readTrailers(raw: unknown): SetupTrailers | null {
+  if (!isRecord(raw)) return null;
+  const gaps = Array.isArray(raw.compatGaps) ? raw.compatGaps.filter(isRecord) : [];
+  return {
+    titles: count(raw.titles),
+    withTmdb: count(raw.withTmdb),
+    withTrailer: count(raw.withTrailer),
+    sampled: raw.sampled === true,
+    tmdbBlocked: raw.tmdbBlocked === true,
+    jellyseerr: raw.jellyseerr === true,
+    refreshing: raw.refreshing === true,
+    compatGaps: gaps.filter((gap) => isText(gap.label)).map((gap) => ({
+      label: gap.label as LocalizedText,
+      note: isText(gap.note) ? gap.note : null,
+    })),
+  };
+}
+
 function readCheck(raw: unknown): SetupCheck | null {
   if (!isRecord(raw) || !CHECK_IDS.includes(raw.id as SetupCheckId) || typeof raw.state !== "string") return null;
   return {
@@ -129,6 +150,7 @@ function readCheck(raw: unknown): SetupCheck | null {
     missingTmdb: typeof raw.missingTmdb === "number" ? raw.missingTmdb : null,
     plugins: Array.isArray(raw.plugins) ? (raw.plugins.filter(isRecord) as unknown as SetupCheck["plugins"]) : null,
     task: isRecord(raw.task) ? (raw.task as unknown as SetupCheck["task"]) : null,
+    trailers: readTrailers(raw.trailers),
     action: (text(raw.action) as SetupCheck["action"]) ?? null,
     dashboardPath: text(raw.dashboardPath) ?? "/web/#/dashboard",
   };
