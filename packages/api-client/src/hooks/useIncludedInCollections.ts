@@ -10,26 +10,32 @@ export function includedInPath(itemId: string, userId: string): string {
 }
 
 /**
- * Les collections qui contiennent un titre (« Fait partie de »). Capacité de
- * Jellyfin 12.0 : un serveur plus ancien répond 404 — la liste est alors vide
- * et la rangée ne s'affiche pas, sans erreur.
+ * Les collections qui contiennent un titre. Capacité de Jellyfin 12.0 : un
+ * serveur plus ancien répond 404 — la liste est alors vide, sans erreur.
  */
+export async function fetchIncludedInCollections(
+  client: { fetch<T>(url: string): Promise<T> },
+  itemId: string,
+  userId: string,
+): Promise<MediaItem[]> {
+  try {
+    const res = await client.fetch<{ Items?: MediaItem[] } | MediaItem[]>(includedInPath(itemId, userId));
+    return Array.isArray(res) ? res : res.Items ?? [];
+  } catch (err) {
+    // 404 : route absente (avant 12.0) ; 403 : proxy d'un serveur Tentacle
+    // qui ne la laisse pas encore passer. Dans les deux cas, rien à montrer.
+    if (err instanceof JellyfinError && (err.status === 404 || err.status === 403)) return [];
+    throw err;
+  }
+}
+
+/** « Fait partie de » : la rangée ne s'affiche que si la liste n'est pas vide. */
 export function useIncludedInCollections(itemId: string | undefined) {
   const client = useJellyfinClient();
   const userId = useUserId();
   return useQuery<MediaItem[]>({
     queryKey: ["item", itemId, "included-in"],
-    queryFn: async () => {
-      try {
-        const res = await client.fetch<{ Items?: MediaItem[] } | MediaItem[]>(includedInPath(itemId ?? "", userId ?? ""));
-        return Array.isArray(res) ? res : res.Items ?? [];
-      } catch (err) {
-        // 404 : route absente (avant 12.0) ; 403 : proxy d'un serveur Tentacle
-        // qui ne la laisse pas encore passer. Dans les deux cas, rien à montrer.
-        if (err instanceof JellyfinError && (err.status === 404 || err.status === 403)) return [];
-        throw err;
-      }
-    },
+    queryFn: () => fetchIncludedInCollections(client, itemId ?? "", userId ?? ""),
     enabled: !!itemId && !!userId,
     staleTime: 10 * 60_000,
   });
