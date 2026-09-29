@@ -80,10 +80,12 @@ export function EpisodeItemRow({ ep, seriesId, client, onPlay, isCurrent, leadin
           </View>
           <View style={st.metaRow}>
             {isCurrent && <Text style={[st.current, { color: accentText }]}>{t("currentEpisode")}</Text>}
-            {runtime && <Text style={st.runtime}>{t("minutesShort", { count: runtime })}</Text>}
+            {/* Ternaire, pas `&&` : une durée arrondie à 0 (épisode de moins de
+                30 s) rendait un « 0 » nu hors <Text> — plantage de la liste. */}
+            {runtime ? <Text style={st.runtime}>{t("minutesShort", { count: runtime })}</Text> : null}
           </View>
           <MetaTokens item={ep} compact />
-          {ep.Overview && <Text numberOfLines={2} style={st.overview}>{ep.Overview}</Text>}
+          {ep.Overview ? <Text numberOfLines={2} style={st.overview}>{ep.Overview}</Text> : null}
         </View>
       </Pressable>
 
