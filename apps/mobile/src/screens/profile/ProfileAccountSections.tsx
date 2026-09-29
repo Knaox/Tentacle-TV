@@ -32,6 +32,7 @@ export function ProfileAccountSections({ ctx, canGoOffline, actions }: Props) {
   const { t } = useTranslation("profile");
   const { t: tn } = useTranslation("nav");
   const { t: to } = useTranslation("offline");
+  const { t: tg } = useTranslation("trailerHelp");
   const router = useRouter();
   const st = useThemedStyles(makeStyles);
   const theme = useTheme();
@@ -43,6 +44,7 @@ export function ProfileAccountSections({ ctx, canGoOffline, actions }: Props) {
       <FadeIn delay={300}>
         <SettingsSection title={t("help")}>
           {!offline && <SettingsRow icon="help-circle" label={t("support")} chevron onPress={() => router.push("/support")} />}
+          {!offline && <SettingsRow icon="film" label={tg("helpEntryTitle")} chevron onPress={() => router.push("/help/trailers")} />}
           <SettingsRow icon="info" label={t("about")} chevron onPress={() => router.push("/about")} />
           <SettingsRow
             icon="shield"
