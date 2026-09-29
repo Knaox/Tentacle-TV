@@ -25,16 +25,18 @@
   --brand-accent-soft: rgba(var(--brand-accent-rgb), 0.15);
 
   /* Pastille d'un titre hors bibliothèque posée sur son AFFICHE (web :
-   * `ExternalBadge onMedia` ; miroir : `ExternalResultCard`). En sombre, les
-   * paires d'état et le verre clair d'origine — rendu inchangé ; la variante
-   * claire est dans le bloc `[data-theme="light"]`. */
-  --media-badge-neutral-bg: var(--fill-medium);
-  --media-badge-neutral-fg: var(--text-secondary);
-  --media-badge-info-bg: var(--status-info-bg);
+   * `ExternalBadge onMedia` ; miroir : `ExternalResultCard`). Posée sur
+   * MÉDIA : voile noir à 72 % et teinte claire, dans les DEUX thèmes. Les
+   * paires d'état des surfaces (voile teinté à 12 %) ne se lisaient pas sur le
+   * haut clair d'une affiche — un logo blanc, un ciel — en sombre non plus.
+   * Le bloc `[data-theme="light"]` redit les teintes claires du sombre. */
+  --media-badge-neutral-bg: rgba(var(--scrim-media-rgb), 0.72);
+  --media-badge-neutral-fg: var(--on-media-primary);
+  --media-badge-info-bg: rgba(var(--scrim-media-rgb), 0.72);
   --media-badge-info-fg: var(--status-info-fg);
-  --media-badge-success-bg: var(--status-success-bg);
+  --media-badge-success-bg: rgba(var(--scrim-media-rgb), 0.72);
   --media-badge-success-fg: var(--status-success-fg);
-  --media-badge-warning-bg: var(--status-warning-bg);
+  --media-badge-warning-bg: rgba(var(--scrim-media-rgb), 0.72);
   --media-badge-warning-fg: var(--status-warning-fg);
 
   /* ── Bannières ───────────────────────────────────────────────────────

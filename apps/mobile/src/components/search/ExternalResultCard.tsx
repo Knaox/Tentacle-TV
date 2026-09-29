@@ -78,11 +78,10 @@ export function ExternalResultCard({ item, width, onPress, onOpenHref }: {
 
 /**
  * La pastille d'état que le plugin pose sur un titre (« Demandé », « Bientôt »…),
- * sur l'AFFICHE. En sombre, les paires d'état du thème — inchangées. En clair,
- * ces paires (voile teinté léger, texte foncé) sont faites pour une surface
- * claire : sur une affiche, du foncé sur du foncé. La pastille garde alors son
- * voile noir et prend la teinte CLAIRE de la paire du thème sombre. `neutral` :
- * voile noir et blanc, dans les deux thèmes.
+ * sur l'AFFICHE : voile noir et teinte CLAIRE de la paire du thème sombre, dans
+ * les deux thèmes. Les paires des surfaces (voile teinté léger) ne se lisaient
+ * pas sur le haut clair d'une affiche — un logo blanc —, en sombre non plus.
+ * `neutral` : voile noir et blanc.
  */
 function Badge({ label, tone, right }: { label: string; tone: ExternalTone; right: number }) {
   const theme = useTheme();
@@ -92,7 +91,7 @@ function Badge({ label, tone, right }: { label: string; tone: ExternalTone; righ
   // Dans le coin haut-gauche, bornée par `right` (la pastille d'états, s'il y en a une).
   return (
     <View style={[st.badgeSlot, { right }]} pointerEvents="none">
-      <View style={[st.badge, pair && theme.isDark && { backgroundColor: pair.bg }]}>
+      <View style={st.badge}>
         <Text style={[st.badgeTxt, pair && { color: pair.fg }]} numberOfLines={1}>{label}</Text>
       </View>
     </View>
