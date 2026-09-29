@@ -27,6 +27,7 @@
 import fs from 'node:fs';
 import { createPlayClient } from './lib/play-api.mjs';
 import { loadNotes } from './lib/changelog.mjs';
+import { promotableVersionCodes } from './lib/promote.mjs';
 
 const args = process.argv.slice(2);
 const flag = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : null; };
@@ -71,14 +72,6 @@ function releaseNotes() {
     .map(([language, text]) => ({ language, text }));
 }
 
-/** Le versionCode le plus haut effectivement servi sur une piste. */
-function servedVersionCodes(trackData) {
-  const usable = (trackData.releases ?? []).filter((r) => ['completed', 'inProgress'].includes(r.status));
-  if (usable.length === 0) return null;
-  const codes = usable.flatMap((r) => (r.versionCodes ?? []).map(Number)).filter(Number.isFinite);
-  return codes.length > 0 ? [String(Math.max(...codes))] : null;
-}
-
 async function publish(play) {
   const base = `/applications/${pkg}`;
   const edit = await play.call(`${base}/edits`, { method: 'POST', body: {} });
@@ -96,9 +89,11 @@ async function publish(play) {
       console.log(`[play] versionCode ${bundle.versionCode} reçu.`);
     } else {
       const from = await play.call(`${base}/edits/${editId}/tracks/${encodeURIComponent(promoteFrom)}`);
-      versionCodes = servedVersionCodes(from);
+      versionCodes = promotableVersionCodes(from, version);
       if (!versionCodes) {
-        console.error(`::error::la piste « ${promoteFrom} » ne sert aucune release (statuts vus : ${(from.releases ?? []).map((r) => r.status).join(', ') || 'aucune'}). Rien à promouvoir.`);
+        const seen = (from.releases ?? []).map((r) => `${r.name ?? '?'} (${r.status})`).join(', ') || 'aucune';
+        console.error(`::error::la piste « ${promoteFrom} » ne sert aucune release ${version} (vues : ${seen}). Rien à promouvoir.`);
+        console.error('Livre d\'abord au cran « test », ou relance au cran « store » sans « reprendre le binaire testé ».');
         process.exit(1);
       }
       console.log(`[play] promotion de « ${promoteFrom} » vers « ${track} » : versionCode ${versionCodes.join(', ')}.`);
