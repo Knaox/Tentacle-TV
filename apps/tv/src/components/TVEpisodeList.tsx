@@ -1,13 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import { View } from "react-native";
-import { useSeasons, useSeriesWatchState, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useSeasonBrowser, useSeriesWatchState, useJellyfinClient } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TVSeasonPills } from "./episodes/TVSeasonPills";
 import { TVEpisodePanelList } from "./episodes/TVEpisodePanelList";
 import { TVEpisodePageList } from "./episodes/TVEpisodePageList";
 import { EPISODE_ROW_GAP, episodeRowHeight } from "./TVEpisodeRow";
-import { useSeasonEpisodes } from "../hooks/useSeasonEpisodes";
 import { Radius, Spacing } from "../theme/colors";
 
 interface TVEpisodeListProps {
@@ -39,21 +38,27 @@ export function TVEpisodeList({
 }: TVEpisodeListProps) {
   const client = useJellyfinClient();
   const { t } = useTranslation("common");
-  const { data: seasons } = useSeasons(seriesId);
   // Épisode « courant » (à reprendre / prochain) — surligné comme sur le web,
   // et sa saison est présélectionnée. Le lecteur n'en a pas l'usage : il nomme
   // l'épisode ET son badge, et la requête parcourt TOUTE la série.
-  const watch = useSeriesWatchState(currentBadgeLabel ? undefined : seriesId);
+  const followWatch = !currentBadgeLabel;
+  const watch = useSeriesWatchState(followWatch ? seriesId : undefined);
   const watchState = watch.data;
   const currentEp = watchState && watchState.type !== "completed" ? watchState.episode : undefined;
-  const [selectedSeason, setSelectedSeason] = useState<string | undefined>(undefined);
-  // Fiche série : tant que l'état de visionnage n'a pas répondu, on ne sait
-  // pas quelle saison ouvrir — la première partait pour rien, puis la liste
-  // sautait à la bonne une fois la réponse arrivée.
-  const watchPending = !currentEpisodeId && !initialSeasonId && watchState === undefined && !watch.isError;
-  const activeSeasonId = selectedSeason ?? initialSeasonId
-    ?? (watchPending ? undefined : currentEp?.SeasonId ?? seasons?.[0]?.Id);
-  const episodes = useSeasonEpisodes(seriesId, activeSeasonId);
+  // La mécanique commune (`useSeasonBrowser`) : liste légère puis sources,
+  // voisines préchargées. Fiche série : tant que l'état de visionnage n'a pas
+  // répondu, on ne sait pas quelle saison ouvrir — et une liste qui changerait
+  // sous le focus de la télécommande le perdrait : on attend (`provisional:
+  // false`), mais la saison pressentie se précharge pendant ce temps.
+  const browser = useSeasonBrowser({
+    seriesId,
+    preferredSeasonId: initialSeasonId,
+    followResume: followWatch && !currentEpisodeId && !initialSeasonId,
+    currentEpisodeSeasonId: initialSeasonId,
+    provisional: false,
+  });
+  const { seasons, episodes } = browser;
+  const activeSeasonId = browser.selectedSeasonId;
 
   const highlightId = currentEpisodeId ?? currentEp?.Id;
 
@@ -64,10 +69,11 @@ export function TVEpisodeList({
    * redescendre à la main après chaque changement.
    */
   const [seasonNonce, setSeasonNonce] = useState(0);
+  const { select } = browser;
   const chooseSeason = useCallback((seasonId: string) => {
-    setSelectedSeason(seasonId);
+    select(seasonId);
     setSeasonNonce((n) => n + 1);
-  }, []);
+  }, [select]);
 
   const highlightIndex = episodes?.findIndex((e) => e.Id === highlightId) ?? -1;
   const claimIndex = seasonNonce > 0 || autoFocusCurrent ? Math.max(0, highlightIndex) : -1;
@@ -102,11 +108,17 @@ export function TVEpisodeList({
 
   return (
     <View style={fillHeight ? { flex: 1 } : undefined}>
-      <TVSeasonPills seasons={seasons} activeSeasonId={activeSeasonId} onSelect={chooseSeason} />
+      <TVSeasonPills
+        seasons={seasons}
+        activeSeasonId={activeSeasonId}
+        markedSeasonId={browser.markedSeasonId}
+        onSelect={chooseSeason}
+        onIntent={browser.prefetch}
+      />
       {/* Une liste par saison (clé) : le focus d'entrée et la position de
           départ se recalculent à chaque changement, sans reste de la précédente. */}
       {rows == null ? (
-        episodes === undefined ? <EpisodeGhosts thumbWidth={thumbWidth} /> : null
+        browser.episodesLoading ? <EpisodeGhosts thumbWidth={thumbWidth} /> : null
       ) : fillHeight ? (
         <TVEpisodePanelList key={activeSeasonId} {...rows} />
       ) : (

@@ -1,35 +1,8 @@
 import { useEffect } from "react";
 import { InteractionManager } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  useEpisodes,
-  useSeasonEpisodesLite,
-  useJellyfinClient,
-  useUserId,
-  prefetchSeasons,
-  prefetchSeasonEpisodesLite,
-} from "@tentacle-tv/api-client";
+import { useJellyfinClient, useUserId, prefetchSeasons, prefetchSeasonEpisodesLite } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-
-/**
- * Les épisodes d'une saison pour une liste du téléviseur : la version LÉGÈRE
- * d'abord, la complète dès qu'elle répond.
- *
- * Rien ne disparaît de l'écran. Les pastilles de qualité et de langues lisent
- * les sources de chaque fichier, que seule la version complète porte : elles
- * arrivent avec elle, une demi-seconde plus tard sur une longue saison. La
- * liste, elle, n'attend plus que le serveur ait calculé ces sources — c'est ce
- * calcul, et non le transfert ni l'analyse du JSON (19 ms pour 2,7 Mo sur
- * l'Apple TV), qui tenait le panneau vide.
- */
-export function useSeasonEpisodes(
-  seriesId: string | undefined,
-  seasonId: string | undefined,
-): MediaItem[] | undefined {
-  const lite = useSeasonEpisodesLite(seriesId, seasonId);
-  const full = useEpisodes(seriesId, seasonId);
-  return full.data ?? lite.data;
-}
 
 /**
  * Précharge ce que le panneau des épisodes affichera — les saisons, et la
