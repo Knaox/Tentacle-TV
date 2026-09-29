@@ -1,0 +1,15 @@
+// La suite de compatibilité importe l'api-client (ESM, hors du backend) : elle a
+// son propre contrôle de types, joué par `pnpm typecheck` du backend, au lieu du
+// réglage CommonJS dont `rootDir` exclut tout ce qui vit hors d'apps/backend.
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "rootDir": "../../../..",
+    "types": ["node"]
+  },
+  "include": ["./**/*.ts"]
+}

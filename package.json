@@ -20,6 +20,7 @@
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "test:jellyfin-compat": "pnpm --filter @tentacle-tv/backend test:jellyfin-compat",
     "clean": "pnpm -r exec rm -rf node_modules dist .turbo && rm -rf node_modules",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",

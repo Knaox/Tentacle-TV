@@ -17,5 +17,6 @@
     "rootDir": "."
   },
   "include": ["src", "test"],
-  "exclude": ["node_modules", "dist"]
+  // La suite de compatibilité a son contrôle à elle (test/jellyfin-compat/tsconfig.json).
+  "exclude": ["node_modules", "dist", "test/jellyfin-compat"]
 }
