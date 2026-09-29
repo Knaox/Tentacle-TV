@@ -6,6 +6,7 @@ import { isLovedTitle, moviesRankMode, titleReasons, type ViewingStats, type Vie
 import { CardImage } from "../cards/CardImage";
 import { ReasonChips, reasonChips } from "./ReasonChips";
 import { StatsSection } from "./StatsSection";
+import { useStatsVoice } from "./statsVoice";
 import { posterOf } from "./StatsTitleRails";
 import { TitleRail, type RailTitle } from "./TitleRail";
 import { useStatsFormat, type StatsFormat } from "./useStatsFormat";
@@ -17,18 +18,18 @@ function movieCaption(f: StatsFormat, m: ViewingStatsTitle): string {
     .join(" · ");
 }
 
+const FAVORITE = "group mb-4 flex max-w-xl gap-4 rounded-2xl bg-[color:var(--surface-1)] p-3 pr-5 ring-1 ring-line-subtle outline-none";
+
 /** Le film préféré, mis en avant : l'affiche, le titre, combien de fois, et pourquoi. */
 const FavoriteMovie = memo(function FavoriteMovie({ movie }: { movie: ViewingStatsTitle }) {
   const f = useStatsFormat();
+  const href = useStatsVoice().titleHref(movie.id);
   const client = useJellyfinClient();
   const chips = reasonChips(f, titleReasons(movie));
   const caption = [movie.year ? String(movie.year) : null, movieCaption(f, movie)].filter(Boolean).join(" · ");
-  return (
-    <Link
-      to={`/media/${movie.id}`}
-      aria-label={[f.t("favoriteMovie"), movie.name, caption, ...chips.map((c) => c.ariaLabel ?? c.label)].join(", ")}
-      className="group mb-4 flex max-w-xl cursor-pointer gap-4 rounded-2xl bg-[color:var(--surface-1)] p-3 pr-5 ring-1 ring-line-subtle outline-none transition-colors duration-150 hover:bg-[color:var(--surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
-    >
+  const label = [f.t("favoriteMovie"), movie.name, caption, ...chips.map((c) => c.ariaLabel ?? c.label)].join(", ");
+  const body = (
+    <>
       <span className="relative aspect-[2/3] w-[84px] shrink-0 overflow-hidden rounded-xl bg-fill-soft sm:w-[96px]">
         <CardImage
           src={posterOf(client, movie, 300)}
@@ -43,6 +44,16 @@ const FavoriteMovie = memo(function FavoriteMovie({ movie }: { movie: ViewingSta
         {caption && <span className="mt-1 text-sm tabular-nums text-content-secondary">{caption}</span>}
         {chips.length > 0 && <ReasonChips chips={chips} className="mt-2.5" />}
       </span>
+    </>
+  );
+  if (!href) return <div role="group" aria-label={label} className={FAVORITE}>{body}</div>;
+  return (
+    <Link
+      to={href}
+      aria-label={label}
+      className={`${FAVORITE} cursor-pointer transition-colors duration-150 hover:bg-[color:var(--surface-2)] focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]`}
+    >
+      {body}
     </Link>
   );
 });
@@ -58,6 +69,7 @@ const FavoriteMovie = memo(function FavoriteMovie({ movie }: { movie: ViewingSta
  */
 export const MoviesSection = memo(function MoviesSection({ stats }: { stats: ViewingStats }) {
   const f = useStatsFormat();
+  const { titleHref } = useStatsVoice();
   const client = useJellyfinClient();
   const mode = moviesRankMode(stats);
   const featured = mode === "preference" && stats.movies[0] && isLovedTitle(stats.movies[0]) ? stats.movies[0] : null;
@@ -65,13 +77,13 @@ export const MoviesSection = memo(function MoviesSection({ stats }: { stats: Vie
     () =>
       (featured ? stats.movies.slice(1) : stats.movies).map((m) => ({
         key: m.id,
-        href: `/media/${m.id}`,
+        href: titleHref(m.id),
         title: m.name,
         caption: mode === "recent" && m.lastPlayedAt ? f.t("movieSeenOn", { date: f.isoDay(m.lastPlayedAt) }) : movieCaption(f, m),
         chips: reasonChips(f, titleReasons(m)),
         imageUrl: posterOf(client, m),
       })),
-    [stats.movies, featured, mode, f, client]
+    [stats.movies, featured, mode, f, client, titleHref]
   );
   if (stats.movies.length === 0) return null;
   return (

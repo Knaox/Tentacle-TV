@@ -92,5 +92,5 @@ const RailCard = memo(function RailCard({ item, rank }: { item: RailTitle; rank?
       </button>
     );
   }
-  return <div className={className} aria-label={label}>{body}</div>;
+  return <div role="group" className={className} aria-label={label}>{body}</div>;
 });

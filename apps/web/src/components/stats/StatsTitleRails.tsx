@@ -4,6 +4,7 @@ import { titleReasons, type ViewingStats, type ViewingStatsTitle } from "@tentac
 import { PeopleRail } from "./PeopleRail";
 import { reasonChips } from "./ReasonChips";
 import { StatsSection } from "./StatsSection";
+import { useStatsVoice } from "./statsVoice";
 import { TitleRail, type RailTitle } from "./TitleRail";
 import { useStatsFormat } from "./useStatsFormat";
 
@@ -18,12 +19,13 @@ export function posterOf(client: JellyfinClient, title: ViewingStatsTitle, heigh
 /** Vos séries — les plus regardées de la période, au temps passé ; le rang en pastille. */
 export const SeriesRail = memo(function SeriesRail({ stats }: { stats: ViewingStats }) {
   const f = useStatsFormat();
+  const { titleHref } = useStatsVoice();
   const client = useJellyfinClient();
   const items: RailTitle[] = useMemo(
     () =>
       stats.topSeries.map((s) => ({
         key: s.id,
-        href: `/media/${s.id}`,
+        href: titleHref(s.id),
         title: s.name,
         caption: [s.episodes > 0 ? f.t("seriesEpisodes", { count: s.episodes }) : null, s.seconds >= 60 ? f.duration(s.seconds) : null]
           .filter(Boolean)
@@ -31,7 +33,7 @@ export const SeriesRail = memo(function SeriesRail({ stats }: { stats: ViewingSt
         chips: reasonChips(f, titleReasons(s)),
         imageUrl: posterOf(client, s),
       })),
-    [stats.topSeries, f, client]
+    [stats.topSeries, f, client, titleHref]
   );
   if (items.length === 0) return null;
   return (

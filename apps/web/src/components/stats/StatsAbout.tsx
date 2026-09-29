@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { ChevronDown, Info } from "lucide-react";
 import type { ViewingStats } from "@tentacle-tv/shared";
+import { useStatsVoice } from "./statsVoice";
 import { useStatsFormat } from "./useStatsFormat";
 
 /**
@@ -10,13 +11,15 @@ import { useStatsFormat } from "./useStatsFormat";
  */
 export const StatsAbout = memo(function StatsAbout({ stats }: { stats: ViewingStats }) {
   const f = useStatsFormat();
+  const publicPage = useStatsVoice().audience === "public";
   const [open, setOpen] = useState(false);
   const since = stats.measuredSince ? f.isoDay(stats.measuredSince, true) : null;
   const lines = [
     since ? f.t("aboutMeasured", { date: since }) : null,
     since ? f.t("aboutEstimated") : f.t("aboutNoMeasure"),
     f.t("aboutCounts"),
-    f.t("aboutTimeZone", { timeZone: stats.timeZone }),
+    // Le fuseau du propriétaire ne quitte pas le serveur : la page publique dit seulement à quelle heure elle lit.
+    publicPage ? f.t("aboutMoments") : f.t("aboutTimeZone", { timeZone: stats.timeZone }),
     f.t("aboutOrigins"),
     stats.listening.since ? f.t("aboutListening", { date: f.isoDay(stats.listening.since, true) }) : null,
     f.t("aboutRecords"),

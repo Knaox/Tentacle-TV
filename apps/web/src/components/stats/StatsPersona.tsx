@@ -3,7 +3,7 @@ import {
   CalendarHeart, Clapperboard, Compass, Drama, Flame, Globe, Headphones, Heart, Hourglass, Moon, Repeat, Sparkles, Sunrise, Tv,
   type LucideIcon,
 } from "lucide-react";
-import { viewerBadges, type ViewerBadgeKey, type ViewingStats } from "@tentacle-tv/shared";
+import { viewerBadges, type RhythmInsight, type ViewerBadgeKey, type ViewingStats } from "@tentacle-tv/shared";
 import { StatsSection } from "./StatsSection";
 import { useStatsFormat } from "./useStatsFormat";
 
@@ -52,7 +52,11 @@ const TraitItem = memo(function TraitItem({ trait }: { trait: Trait }) {
  * de données, rien n'est inventé : la section se réduit au genre, ou
  * disparaît.
  */
-export const StatsPersona = memo(function StatsPersona({ stats }: { stats: ViewingStats }) {
+export const StatsPersona = memo(function StatsPersona({ stats, rhythm }: {
+  stats: ViewingStats;
+  /** La lecture du rythme quand la grille manque : les habitudes de la page publique (`habitsInsight`). */
+  rhythm?: RhythmInsight;
+}) {
   const f = useStatsFormat();
   const traits = useMemo(() => {
     const out: Trait[] = [];
@@ -65,7 +69,7 @@ export const StatsPersona = memo(function StatsPersona({ stats }: { stats: Viewi
         detail: `${f.t("favoriteGenre")} · ${f.t("favoriteGenreDetail", { share: f.percent(genre.share) })}`,
       });
     }
-    for (const badge of viewerBadges(stats)) {
+    for (const badge of viewerBadges(stats, undefined, rhythm)) {
       out.push({
         key: badge.key,
         Icon: BADGE_ICONS[badge.key],
@@ -79,7 +83,7 @@ export const StatsPersona = memo(function StatsPersona({ stats }: { stats: Viewi
       });
     }
     return out;
-  }, [stats, f]);
+  }, [stats, rhythm, f]);
   if (traits.length === 0) return null;
 
   return (

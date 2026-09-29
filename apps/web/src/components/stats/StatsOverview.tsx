@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Info } from "lucide-react";
+import { CalendarRange, Info } from "lucide-react";
 import { heroFigure, VIEWING_STATS_PERIODS, type ViewingStats, type ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { SegmentedControl } from "../library/SegmentedControl";
 import { useStatsFormat } from "./useStatsFormat";
@@ -10,7 +10,8 @@ const LITTLE_HISTORY_SECONDS = 2 * 3600;
 interface StatsOverviewProps {
   stats: ViewingStats;
   period: ViewingStatsPeriod;
-  onPeriodChange: (period: ViewingStatsPeriod) => void;
+  /** Absent : la période est fixée (la page publique d'un partage) — dite, pas choisie. */
+  onPeriodChange?: (period: ViewingStatsPeriod) => void;
   /** Vrai pendant qu'une autre période se charge : l'ancienne reste, estompée. */
   pending: boolean;
   /** Faux sur une période vide : le chiffre et la période restent, pas les compteurs. */
@@ -66,13 +67,21 @@ export const StatsOverview = memo(function StatsOverview({ stats, period, onPeri
             <p className="mt-2 text-sm text-content-secondary">{f.t("littleHistory")}</p>
           )}
         </div>
-        <SegmentedControl
-          label={f.t("periodGroup")}
-          markerId="stats-period"
-          value={period}
-          onChange={onPeriodChange}
-          options={VIEWING_STATS_PERIODS.map((p) => ({ value: p, label: f.t(`period_${p}`) }))}
-        />
+        {onPeriodChange ? (
+          <SegmentedControl
+            label={f.t("periodGroup")}
+            markerId="stats-period"
+            value={period}
+            onChange={onPeriodChange}
+            options={VIEWING_STATS_PERIODS.map((p) => ({ value: p, label: f.t(`period_${p}`) }))}
+          />
+        ) : (
+          <p className="inline-flex h-9 shrink-0 items-center gap-2 self-start rounded-full bg-[color:var(--surface-2)] px-3.5 text-xs font-semibold text-content-secondary ring-1 ring-line-strong">
+            <CalendarRange size={14} aria-hidden className="text-[var(--brand-light)]" />
+            <span className="sr-only">{f.t("periodGroup")}</span>
+            {f.t(`period_${period}`)}
+          </p>
+        )}
       </div>
       {counters && (
         <ul

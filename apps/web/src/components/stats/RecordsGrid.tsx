@@ -50,7 +50,10 @@ export const RecordsGrid = memo(function RecordsGrid({ records }: { records: Vie
       icon: <CalendarCheck size={18} />,
       label: f.t("record_longestStreak"),
       value: f.t("recordDetail_longestStreak", { count: longestStreak.days }),
-      detail: `${f.day(longestStreak.from)} → ${f.day(longestStreak.to, true)}`,
+      // Au mois (page publique), une série tenue dans un seul mois se dit une fois.
+      detail: longestStreak.from === longestStreak.to
+        ? f.day(longestStreak.to, true)
+        : `${f.day(longestStreak.from)} → ${f.day(longestStreak.to, true)}`,
     });
   }
   if (binge && binge.seconds > 0) {
