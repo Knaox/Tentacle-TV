@@ -8,7 +8,8 @@
 #             Windows : artefact MSIX seulement. Le Microsoft Store n'a PAS de
 #             canal de test : une soumission y est publique par construction.
 #   • store — macOS soumis à l'examen, mise en vente automatique à l'approbation.
-#             Windows soumis au Microsoft Store (publication immédiate).
+#             Windows soumis au Microsoft Store (publication immédiate après
+#             certification ; son bloc du manifeste suit, par store-watch.yml).
 #             Linux : Release publiée et manifeste patché. Aucun clic ensuite.
 #
 # `promote` (par défaut vrai, au cran store) reprend ce qui a déjà été testé :
@@ -822,37 +823,9 @@ jobs:
           paths: updates/store-versions.json
           message: "chore(update) : manifeste linux ${{ needs.prepare.outputs.tag }}"
 
-  # Bloc microsoftStore, DÉCOUPLÉ du job linux : une livraison Windows seule
-  # doit patcher son bloc, et desktop-v1.13.1 était parti avec un manifeste
-  # périmé parce que ce patch vivait en queue du job Linux.
-  #
-  # Le bloc macAppStore, lui, n'est PAS patché ici : entre la soumission et
-  # l'approbation d'Apple il s'écoule des heures, et l'annoncer au run faisait
-  # pointer la pop-up de mise à jour vers une version introuvable. C'est
-  # store-watch.yml qui le pose quand ASC la déclare en vente.
-  manifest-stores:
-    needs: [prepare, windows-store]
-    if: needs.prepare.outputs.channel == 'store' && needs.prepare.outputs.windows == 'build' && needs['windows-store'].result == 'success'
-    name: Manifeste stores (Microsoft)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Patcher le bloc microsoftStore
-        run: |
-          git fetch --depth=1 origin main
-          git checkout FETCH_HEAD -- updates/store-versions.json
-          node .github/scripts/patch-store-manifest.mjs \
-            "${{ needs.prepare.outputs.version }}" --only=ms
-      - uses: ./.github/actions/push-main
-        with:
-          paths: updates/store-versions.json
-          message: "chore(update) : manifeste Microsoft Store ${{ needs.prepare.outputs.version }}"
-
+  # Le bloc microsoftStore du manifeste n'est PLUS patché ici : le job
+  # « manifest-stores » le posait dès la soumission ACCEPTÉE, alors que la
+  # certification du Store prend ensuite des heures — le site et la modale de
+  # mise à jour annonçaient une version pas encore servie. C'est store-watch.yml
+  # qui le pose, quand la vitrine publique du Store affiche les notes de la
+  # version : la règle du bloc macAppStore, qui n'est pas patché ici non plus.

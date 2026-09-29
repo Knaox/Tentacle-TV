@@ -10,12 +10,15 @@
 // Usage : node patch-store-manifest.mjs <version> [--changelog=...] [--only=<bloc>] [--track=<piste>]
 //         blocs : mac | ms | linux | play-mobile | play-tv
 //
-// --only=ms  : au TAG — le bloc macAppStore n'est PLUS patche a la livraison.
-//              La pop-up de mise a jour macOS ne doit annoncer que ce qui est
-//              REELLEMENT en ligne, or le tag precede la review Apple de
-//              plusieurs heures ; c'est le veilleur store-watch.yml qui patche
-//              le bloc mac quand ASC passe la version en READY_FOR_SALE.
-// --only=mac : par le veilleur, precisement pour ce bloc-la.
+// --only=mac : par le veilleur store-watch.yml, quand ASC passe la version en
+//              vente. La pop-up de mise a jour macOS ne doit annoncer que ce
+//              qui est REELLEMENT en ligne, or la livraison precede la review
+//              Apple de plusieurs heures.
+// --only=ms  : par le veilleur aussi, depuis le 2026-09-29, quand la vitrine
+//              publique du Microsoft Store affiche les notes de la version.
+//              desktop.yml le patchait des la soumission acceptee, avant une
+//              certification de plusieurs heures. Notes du canal « win » —
+//              celles que msstore-submit.mjs envoie au Store.
 //
 // --only=play-mobile / play-tv : par le veilleur SEULEMENT, comme le bloc mac.
 //              mobile.yml et tv.yml patchaient ces blocs des l'envoi a Google,
@@ -79,7 +82,10 @@ const wants = (block) => only === null || only === block;
 const ascMac = wants("mac") ? required("macAppStore", "asc", "mac") : null;
 // Le bloc linux, lui, prend les notes NEUTRES (même limite de 4000).
 const asc = wants("linux") ? required("linux.notes", "asc") : null;
-const msstore = wants("ms") ? required("microsoftStore", "msstore") : null;
+// Canal « win », comme msstore-submit.mjs : un bloc « ## [win-X.Y.Z] » est la
+// version faite pour le Store (1500 caractères) ; le bloc nu, celle de macOS
+// et Linux, y était coupé à la puce.
+const msstore = wants("ms") ? required("microsoftStore", "msstore", "win") : null;
 const playMobile = wants("play-mobile") ? required("playMobile", "play") : null;
 const playTv = wants("play-tv") ? required("playTv", "play") : null;
 

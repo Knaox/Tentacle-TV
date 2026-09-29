@@ -12,6 +12,10 @@ name: Store Watch (manifeste stores)
 # patcher tout de suite faisait annoncer aux utilisateurs une version encore
 # introuvable sur le store : une pop-up vers le vide.
 #
+# Windows : MEME REGLE depuis le 2026-09-29. desktop.yml posait le bloc des la
+# soumission acceptee, avant une certification de plusieurs heures. Le
+# veilleur le pose quand la vitrine publique du Store affiche ses notes.
+#
 # Play (mobile + TV) : MEME REGLE depuis le 2026-09-29. mobile.yml et tv.yml
 # patchaient leur bloc des l'envoi a Google, au cran test compris : le site
 # affichait la 1.9.0 de la piste fermee alors que la production servait la
@@ -99,6 +103,13 @@ jobs:
           if [ -n "$MAC" ] && [ "$MAC" != "$(field macAppStore version)" ]; then
             echo "macAppStore : $(field macAppStore version) -> ${MAC}"
             node .github/scripts/patch-store-manifest.mjs "$MAC" --only=mac
+          fi
+
+          # Windows : la version dont la vitrine du Store affiche les notes.
+          WIN=$(live windows)
+          if [ -n "$WIN" ] && [ "$WIN" != "$(field microsoftStore version)" ]; then
+            echo "microsoftStore : $(field microsoftStore version) -> ${WIN}"
+            node .github/scripts/patch-store-manifest.mjs "$WIN" --only=ms
           fi
 
           # Play : ce que sert la PRODUCTION, piste inscrite dans le bloc.
