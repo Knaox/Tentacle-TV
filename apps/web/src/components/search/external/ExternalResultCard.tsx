@@ -19,7 +19,7 @@
 import { memo, useCallback, useMemo, useRef, useState, type FocusEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useIsFavoritePending, useIsWatchlistPending } from "@tentacle-tv/api-client";
-import { titleMediaType, type ExternalSearchItem, type MediaItem } from "@tentacle-tv/shared";
+import { externalMarkerFace, titleMediaType, type ExternalSearchItem } from "@tentacle-tv/shared";
 import { ExternalBadge, ExternalPoster } from "./ExternalVisuals";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
 import { ExternalHoverOverlay } from "../../cards/external/ExternalHoverOverlay";
@@ -30,16 +30,6 @@ import { useHoverGuard } from "../../../hooks/useHoverGuard";
 /** L'identité TMDB d'un résultat, quand l'extension l'a donnée. */
 function titleOf(item: ExternalSearchItem): ExternalTitle | null {
   return item.tmdbId ? { mediaType: titleMediaType(item.kind), tmdbId: item.tmdbId } : null;
-}
-
-/** Le visage `MediaItem` des marqueurs communs : un id qui ne désigne aucun item, le tmdb pour la note. */
-function markerFace(item: ExternalSearchItem, title: ExternalTitle): MediaItem {
-  return {
-    Id: `ext:${title.mediaType}:${title.tmdbId}`,
-    Name: item.title,
-    Type: title.mediaType === "tv" ? "Series" : "Movie",
-    ProviderIds: { Tmdb: String(title.tmdbId) },
-  } as MediaItem;
 }
 
 export const ExternalResultCard = memo(function ExternalResultCard({ item }: { item: ExternalSearchItem }) {
@@ -56,7 +46,7 @@ export const ExternalResultCard = memo(function ExternalResultCard({ item }: { i
   const state = useExternalTitleState(title);
   const pending = useIsWatchlistPending(externalTitleKey(title));
   const liked = useIsFavoritePending(externalTitleKey(title));
-  const face = useMemo(() => (title ? markerFace(item, title) : null), [item, title]);
+  const face = useMemo(() => (title ? externalMarkerFace(title, item.title) : null), [item.title, title]);
   const badge = state?.badge ?? item.badge;
 
   const open = () => navigate(item.href);

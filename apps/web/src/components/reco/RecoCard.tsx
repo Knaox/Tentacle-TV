@@ -5,7 +5,7 @@ import {
   useSendRecoFeedback,
 } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
-import { titleKey } from "@tentacle-tv/shared";
+import { titleKey, topLabelInsetRight } from "@tentacle-tv/shared";
 import { CardFrame } from "../cards/CardFrame";
 import { CardImage } from "../cards/CardImage";
 import { CardMarkerLayer } from "../cards/CardMarkerLayer";
@@ -97,6 +97,11 @@ export const RecoCard = memo(function RecoCard({
   const externalKey = item.jellyfinItemId ? null : titleKey(item.mediaType, item.tmdbId);
   const pending = useIsWatchlistPending(externalKey);
   const liked = useIsFavoritePending(externalKey);
+  // La pastille d'états (Ma liste, cœur) tient le coin opposé : l'étiquette
+  // « À la demande » s'arrête avant elle et, sur une affiche étroite, passe
+  // sur deux lignes plutôt que de se tronquer. Au survol, la pastille
+  // s'efface et lui rend la place.
+  const pillGlyphs = hovered ? 0 : Number(pending) + Number(liked);
   const handleDismiss = () => {
     feedback.mutate({ itemKey: item.key, action: "dismissed" });
     onDismissed?.(item.key);
@@ -156,14 +161,15 @@ export const RecoCard = memo(function RecoCard({
               className={`pointer-events-none absolute left-2 top-2 z-10 flex flex-col items-start gap-1 transition-opacity duration-150 ${
                 hovered && item.jellyfinItemId ? "opacity-0" : "opacity-100"
               }`}
+              style={{ right: topLabelInsetRight(item.jellyfinItemId ? 0 : pillGlyphs, 8) }}
             >
               {!item.jellyfinItemId && (
-                <span className="rounded-md border border-white/30 bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                <span className="max-w-full rounded-md border border-white/30 bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
                   <RecoOnDemandLabel item={item} />
                 </span>
               )}
               {item.exploration && (
-                <span className="rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cta-brand-fg">
+                <span className="max-w-full rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cta-brand-fg">
                   {t("explorationBadge")}
                 </span>
               )}

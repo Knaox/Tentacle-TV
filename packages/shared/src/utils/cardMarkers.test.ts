@@ -4,6 +4,8 @@ import {
   cardMarkerLabelParts,
   isEmptyCardMarkers,
   resolveCardMarkers,
+  statusPillWidth,
+  topLabelInsetRight,
 } from "./cardMarkers";
 
 function item(userData?: Partial<NonNullable<MediaItem["UserData"]>>, type = "Movie"): MediaItem {
@@ -89,5 +91,18 @@ describe("« sur cet appareil »", () => {
 
   it("se tait sur une plateforme qui ne garde rien", () => {
     expect(resolveCardMarkers({ item: item(), communityRating: null }).device).toBeNull();
+  });
+});
+
+describe("la place de la pastille d'états, pour l'étiquette du coin haut-gauche", () => {
+  it("rien sans glyphe ; 16 px par glyphe, marges et liseré compris", () => {
+    expect(statusPillWidth(0)).toBe(0);
+    expect(statusPillWidth(1)).toBe(26);
+    expect(statusPillWidth(2)).toBe(42);
+  });
+
+  it("l'étiquette s'arrête avant la pastille, écart de 4 compris — ou à la marge sans pastille", () => {
+    expect(topLabelInsetRight(0, 7)).toBe(7);
+    expect(topLabelInsetRight(2, 7)).toBe(7 + 42 + 4);
   });
 });

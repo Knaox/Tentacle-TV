@@ -4,7 +4,7 @@ import {
   recoPosterUrl, useIsFavoritePending, useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem,
   type RecoRowItem,
 } from "@tentacle-tv/api-client";
-import { titleKey } from "@tentacle-tv/shared";
+import { titleKey, topLabelInsetRight } from "@tentacle-tv/shared";
 import { CardMarkerLayer } from "../../../components/cards/CardMarkerLayer";
 import { RecoOnDemandLabel } from "../../../components/reco/RecoOnDemandLabel";
 import { Pressable } from "../../ui/Pressable";
@@ -43,6 +43,10 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const externalKey = onDemand ? titleKey(item.mediaType, item.tmdbId) : null;
   const pending = useIsWatchlistPending(externalKey);
   const liked = useIsFavoritePending(externalKey);
+  // La pastille d'états (Ma liste, cœur) tient le coin opposé : l'étiquette
+  // « À la demande » s'arrête avant elle et passe sur deux lignes plutôt que
+  // de se tronquer.
+  const labelRight = topLabelInsetRight(onDemand ? Number(pending) + Number(liked) : 0, 7);
   const leaving = useIsRecoLeaving(item.key);
   const subtitle =
     onDemand && !canOpen
@@ -79,15 +83,15 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
           )}
         </div>
         {(onDemand || item.exploration) && (
-          <div className="pointer-events-none absolute left-[7px] top-[7px] flex flex-col items-start gap-1">
+          <div className="pointer-events-none absolute left-[7px] top-[7px] flex flex-col items-start gap-1" style={{ right: labelRight }}>
             {onDemand && (
-              <span className="rounded border-[0.5px] border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.65)] px-2 py-[3.5px] text-[10px] font-bold uppercase leading-3 tracking-[0.3px] text-on-media-primary">
+              <span className="max-w-full rounded border-[0.5px] border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.65)] px-2 py-[3.5px] text-[10px] font-bold uppercase leading-3 tracking-[0.3px] text-on-media-primary">
                 <RecoOnDemandLabel item={item} />
               </span>
             )}
             {item.exploration && (
               <span
-                className="rounded px-2 py-[3.5px] text-[10px] font-bold uppercase leading-3 tracking-[0.3px] text-cta-brand-fg"
+                className="max-w-full rounded px-2 py-[3.5px] text-[10px] font-bold uppercase leading-3 tracking-[0.3px] text-cta-brand-fg"
                 style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
               >
                 {t("explorationBadge")}

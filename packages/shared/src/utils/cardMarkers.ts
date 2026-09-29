@@ -19,6 +19,26 @@ import type { MediaItem } from "../types/media";
  * c'est déjà arrivé aux coches « vu », recopiées trois fois.
  */
 
+/**
+ * La largeur, en px, de la pastille d'états qui porte `glyphs` glyphes :
+ * glyphes de 12 espacés de 4, marges de 6 et liseré — la même sur le web et
+ * sur le natif. Aucun glyphe : pas de pastille. Sert à borner une étiquette
+ * posée en HAUT À GAUCHE d'une affiche (« À la demande », l'état qu'une
+ * extension donne du titre) : sur une affiche étroite, elle ne doit jamais
+ * passer sous la pastille.
+ */
+export function statusPillWidth(glyphs: number): number {
+  return glyphs > 0 ? 16 * glyphs + 10 : 0;
+}
+
+/**
+ * Le retrait à droite d'une étiquette du coin haut-gauche : la marge de
+ * l'affiche, plus la pastille et un écart de 4 quand elle est là.
+ */
+export function topLabelInsetRight(glyphs: number, inset: number): number {
+  return glyphs > 0 ? inset + statusPillWidth(glyphs) + 4 : inset;
+}
+
 /** Un état binaire affiché dans la pastille d'états. */
 export type CardStatusKind = "watchlist" | "favorite" | "watched";
 

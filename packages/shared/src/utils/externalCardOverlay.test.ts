@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   externalCardActionEntries,
   externalFavoriteLabelKey,
+  externalMarkerFace,
   externalWatchlistLabelKey,
   resolveExternalCardOverlay,
 } from "./externalCardOverlay";
@@ -50,5 +51,14 @@ describe("le survol d'une carte hors bibliothèque", () => {
   it("jamais plus de quatre boutons : la règle des cinq au plus sur une affiche tient", () => {
     const overlay = resolveExternalCardOverlay({ variant: "reco", request: direct, identified: true });
     expect(externalCardActionEntries(overlay, { watchlist: true, favorite: true })).toHaveLength(4);
+  });
+});
+
+describe("le visage des marqueurs d'un titre absent", () => {
+  it("un id qui ne désigne aucun item, le type et le tmdb", () => {
+    expect(externalMarkerFace({ mediaType: "tv", tmdbId: 1399 }, "Game of Thrones")).toEqual({
+      Id: "ext:tv:1399", Name: "Game of Thrones", Type: "Series", ProviderIds: { Tmdb: "1399" },
+    });
+    expect(externalMarkerFace({ mediaType: "movie", tmdbId: 603 }, "Matrix").Type).toBe("Movie");
   });
 });

@@ -1,5 +1,6 @@
 import { cardExtraLabelKey, type CardOverlayVariant, type CardTrayExtra } from "./cardOverlay";
-import type { TitleRequestOffer } from "../search/pluginTitles";
+import type { TitleMediaType, TitleRequestOffer } from "../search/pluginTitles";
+import type { MediaItem } from "../types/media";
 
 /**
  * Le SURVOL d'une carte HORS bibliothèque — un titre qu'une extension de
@@ -118,4 +119,19 @@ export function externalCardActionEntries(
   }
   for (const extra of overlay.extras) entries.push({ kind: extra, labelKey: cardExtraLabelKey(extra) });
   return entries;
+}
+
+/**
+ * Le visage `MediaItem` des marqueurs communs (`useCardMarkers`) d'une carte
+ * hors bibliothèque : un id qui ne désigne aucun item, le type, et le tmdb —
+ * c'est par lui que la note posée se retrouve. Ma liste et le cœur, que
+ * Jellyfin ne connaît pas encore, sont dits par l'appelant.
+ */
+export function externalMarkerFace(title: { mediaType: TitleMediaType; tmdbId: number }, name: string): MediaItem {
+  return {
+    Id: `ext:${title.mediaType}:${title.tmdbId}`,
+    Name: name,
+    Type: title.mediaType === "tv" ? "Series" : "Movie",
+    ProviderIds: { Tmdb: String(title.tmdbId) },
+  } as MediaItem;
 }
