@@ -136,7 +136,7 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
       </CardFrame>
       <div className="mt-2.5 px-0.5">
         {showHeading && <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{heading}</h3>}
-        {runtime && <p className="mt-0.5 text-xs text-content-secondary">{runtime}</p>}
+        {runtime && <p className="mt-0.5 text-xs card-caption">{runtime}</p>}
       </div>
     </div>
   );

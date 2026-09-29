@@ -166,7 +166,7 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
             </span>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-content-quaternary">
+        <div className="card-caption mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
           {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
           {rating && <EpisodeRatingLine {...rating} />}
@@ -174,7 +174,7 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
           <QualityChips quality={quality} density="full" />
           <LanguagePill labels={quality.audioLabels} max={3} />
         </div>
-        {ep.Overview && <p className="mt-1.5 text-xs leading-relaxed text-content-tertiary line-clamp-2"><RichOverview text={ep.Overview} /></p>}
+        {ep.Overview && <p className="card-caption mt-1.5 text-xs leading-relaxed line-clamp-2"><RichOverview text={ep.Overview} /></p>}
       </div>
     </div>
   );

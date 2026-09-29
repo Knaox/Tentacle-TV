@@ -190,3 +190,19 @@
     opacity 160ms cubic-bezier(0.4, 0, 1, 1),
     transform 160ms cubic-bezier(0.4, 0, 1, 1);
 }
+
+/* ── La légende sous une carte (année, durée, épisode, sous-titre) ────────
+ *
+ * Elle était en `--text-quaternary` (34 %) : 2,9:1 sur la page sombre, 2,4:1
+ * sur la page claire — sous le seuil de WCAG AA pour du texte de 12 px (la
+ * durée d'un épisode gardé était illisible, relevé de l'utilisateur).
+ * `tertiary` tient 6,3:1 en sombre mais 4,2:1 en clair : le thème clair prend
+ * donc `secondary` (7,8:1). Deux jetons, une seule classe pour toutes les
+ * cartes. */
+.card-caption {
+  color: var(--text-tertiary);
+}
+
+:root[data-theme="light"] .card-caption {
+  color: var(--text-secondary);
+}

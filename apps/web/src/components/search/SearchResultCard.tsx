@@ -93,7 +93,7 @@ export function SearchResultCard({
       >
         <PosterTile item={item} imageUrl={imageUrl} hovered={hover.hovered} />
         <p className="mt-2.5 truncate px-0.5 text-sm font-semibold tracking-tight text-content-primary">{item.Name}</p>
-        <p className="px-0.5 text-xs text-content-quaternary">
+        <p className="px-0.5 text-xs card-caption">
           {type}
           {item.ProductionYear ? ` · ${item.ProductionYear}` : ""}
         </p>

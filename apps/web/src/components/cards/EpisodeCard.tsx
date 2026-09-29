@@ -215,7 +215,7 @@ export const EpisodeCard = memo(function EpisodeCard({
 
       <div className="mt-2.5 px-0.5">
         <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{seriesName}</h3>
-        {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
+        {runtime && <p className="mt-0.5 text-xs card-caption">{runtime}</p>}
       </div>
 
       {ctx.ctxMenu && (

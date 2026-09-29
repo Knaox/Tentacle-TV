@@ -111,7 +111,7 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
       </CardFrame>
       <div className="mt-2.5 px-0.5">
         <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">{title}</h3>
-        {subtitle && <p className="mt-0.5 truncate text-xs text-content-secondary">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 truncate text-xs card-caption">{subtitle}</p>}
       </div>
     </div>
   );

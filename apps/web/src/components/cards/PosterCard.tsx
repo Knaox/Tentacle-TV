@@ -137,16 +137,16 @@ export const PosterCard = memo(function PosterCard({
           {isEpisode ? (item.SeriesName ?? item.Name) : item.Name}
         </h3>
         {addedCount > 1 ? (
-          <p className="mt-0.5 truncate text-xs text-content-quaternary">
+          <p className="mt-0.5 truncate text-xs card-caption">
             {t("common:addedEpisodes", { count: addedCount })}
           </p>
         ) : isEpisode ? (
-          <p className="mt-0.5 truncate text-xs text-content-quaternary">
+          <p className="mt-0.5 truncate text-xs card-caption">
             {[epLabel, item.Name].filter(Boolean).join(" · ")}
           </p>
         ) : (
           item.ProductionYear && (
-            <p className="mt-0.5 text-xs text-content-quaternary">{item.ProductionYear}</p>
+            <p className="mt-0.5 text-xs card-caption">{item.ProductionYear}</p>
           )
         )}
       </div>

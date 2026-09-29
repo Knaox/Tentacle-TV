@@ -54,7 +54,7 @@ export const SharedPosterCard = memo(function SharedPosterCard({ item, to, selec
       </CardFrame>
       <div className="mt-2.5 px-0.5">
         <p className="line-clamp-1 text-sm font-semibold tracking-tight text-content-primary">{item.Name}</p>
-        {meta && <p className="mt-0.5 text-xs text-content-quaternary">{meta}</p>}
+        {meta && <p className="mt-0.5 text-xs card-caption">{meta}</p>}
       </div>
     </>
   );
