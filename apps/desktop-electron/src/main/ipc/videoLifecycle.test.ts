@@ -12,6 +12,7 @@ const h = vi.hoisted(() => ({
     commands: [] as string[][],
     reobserve: vi.fn(),
     destroy: vi.fn(),
+    cadence: [] as string[],
   },
   stop: vi.fn(() => Promise.resolve()),
   session: { montage: "wayland" as string | null, windowing: "libre" as string | null },
@@ -24,6 +25,7 @@ vi.mock("../video/mpv", () => ({
   },
   destroy: h.mpv.destroy,
   isRunning: () => h.mpv.running,
+  setPumpCadence: (mode: string) => h.mpv.cadence.push(mode),
   reobserve: h.mpv.reobserve,
   // Sous Linux, l'écriture passe par la même file que les commandes : elle est
   // rangée dans la même liste, pour que l'ORDRE se vérifie.
@@ -51,6 +53,7 @@ beforeEach(() => {
   h.mpv.commands.length = 0;
   h.mpv.reobserve.mockClear();
   h.mpv.destroy.mockClear();
+  h.mpv.cadence.length = 0;
   h.stop.mockClear();
   h.session.montage = "wayland";
   h.session.windowing = "libre";
@@ -116,6 +119,19 @@ describe("le parking entre deux épisodes", () => {
     rememberInit(OPTIONS, OBSERVED);
     h.mpv.running = false;
     await releasePlayer();
+    expect(h.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("garée, la pompe ralentit ; reprise ou arrêtée, elle repart à la cadence de lecture", async () => {
+    rememberInit(OPTIONS, OBSERVED);
+    await releasePlayer();
+    expect(h.mpv.cadence).toEqual(["parked"]);
+    expect(reuseParked(OPTIONS, OBSERVED)).toBe(true);
+    expect(h.mpv.cadence).toEqual(["parked", "active"]);
+    await releasePlayer();
+    await stopPlayer();
+    // L'arrêt gracieux guette l'idle au rythme de la pompe : cadence rendue AVANT.
+    expect(h.mpv.cadence.slice(-1)).toEqual(["active"]);
     expect(h.stop).toHaveBeenCalledTimes(1);
   });
 });

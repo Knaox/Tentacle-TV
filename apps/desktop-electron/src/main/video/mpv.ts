@@ -22,6 +22,24 @@ export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 
 let ctx: unknown = null;
 let pump: ReturnType<typeof setInterval> | null = null;
+/** Ce que la pompe exécute à chaque tour — gardé pour pouvoir changer sa cadence. */
+let pumpTick: (() => void) | null = null;
+
+/**
+ * 20 ms en lecture : assez fin pour que la file ne déborde jamais — libmpv se
+ * bloque quand elle est pleine, c'est documenté et ça gèlerait la lecture.
+ */
+const ACTIVE_PUMP_MS = 20;
+/**
+ * Une instance GARÉE (`mpvPark.ts`) peut le rester tant que l'application est
+ * ouverte : à 20 ms, elle réveillerait le processus principal cinquante fois
+ * par seconde pendant qu'on parcourt la bibliothèque. À l'idle, mpv n'émet
+ * presque rien — quatre tours par seconde suffisent. La reprise et l'arrêt
+ * repassent en cadence de lecture AVANT tout geste (`ipc/videoLifecycle.ts`) :
+ * l'arrêt gracieux guette l'`idle` au rythme de la pompe.
+ */
+export const PARKED_PUMP_MS = 250;
+let pumpMs = ACTIVE_PUMP_MS;
 let observedIds = new Map<number, string>();
 /**
  * Évènements `idle` reçus depuis le lancement — monotone, jamais remis à
@@ -62,8 +80,7 @@ export function setHandle(value: unknown): void {
  * ce qui vaut une commande native perdue à chaque changement d'épisode.
  */
 export function clearState(): void {
-  if (pump !== null) clearInterval(pump);
-  pump = null;
+  stopPump();
   observedIds = new Map();
   forgetCadence();
   forgetState();
@@ -177,9 +194,7 @@ export function init(opts: InitOptions, sink: Sink): string | null {
 
   observe(ctx, opts.observed);
 
-  // 20 ms : assez fin pour que la file ne déborde jamais — libmpv se bloque
-  // quand elle est pleine, c'est documenté et ça gèlerait la lecture.
-  pump = setInterval(() => drain(ctx, sink, {
+  startPump(() => drain(ctx, sink, {
     settle: settleCommand,
     onIdle: () => {
       idleEvents += 1;
@@ -191,8 +206,31 @@ export function init(opts: InitOptions, sink: Sink): string | null {
     onShutdown: () => {
       if (onShutdown !== null) onShutdown();
     },
-  }), 20);
+  }));
   return null;
+}
+
+function startPump(tick: () => void): void {
+  stopPump();
+  pumpTick = tick;
+  pumpMs = ACTIVE_PUMP_MS;
+  pump = setInterval(tick, pumpMs);
+}
+
+function stopPump(): void {
+  if (pump !== null) clearInterval(pump);
+  pump = null;
+  pumpTick = null;
+  pumpMs = ACTIVE_PUMP_MS;
+}
+
+/** La cadence de la pompe : celle de la lecture, ou celle d'une instance garée. */
+export function setPumpCadence(mode: "active" | "parked"): void {
+  const ms = mode === "parked" ? PARKED_PUMP_MS : ACTIVE_PUMP_MS;
+  if (pump === null || pumpTick === null || ms === pumpMs) return;
+  clearInterval(pump);
+  pumpMs = ms;
+  pump = setInterval(pumpTick, ms);
 }
 
 function observe(handle: unknown, observed: InitOptions["observed"]): void {
@@ -230,8 +268,7 @@ export function reobserve(observed: InitOptions["observed"]): void {
  * main sans attendre personne.
  */
 export function destroy(): void {
-  if (pump !== null) clearInterval(pump);
-  pump = null;
+  stopPump();
   if (ctx) {
     if (process.platform === "darwin") mpvApi().destroyClient(ctx);
     else mpvApi().terminateDestroy(ctx);

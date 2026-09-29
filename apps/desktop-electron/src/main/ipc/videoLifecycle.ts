@@ -39,7 +39,7 @@
  */
 
 import { linuxMontage, linuxWindowing } from "../linux/session";
-import { command, destroy, isRunning, reobserve, setProperty } from "../video/mpv";
+import { command, destroy, isRunning, reobserve, setProperty, setPumpCadence } from "../video/mpv";
 import type { MpvValue } from "../video/mpvAllowlist";
 import { Park, optionsSignature } from "../video/mpvPark";
 import { stop } from "../video/mpvShutdown";
@@ -84,6 +84,9 @@ export function parkable(): boolean {
 /** Arrête le lecteur, par le chemin que la plateforme supporte. */
 export async function stopPlayer(): Promise<void> {
   park.cancel();
+  // L'arrêt gracieux guette l'`idle` et le `shutdown` au rythme de la pompe :
+  // celle d'une instance garée est lente (`mpv.ts`).
+  setPumpCadence("active");
   const surface = video;
   video = null;
   liveSignature = null;
@@ -120,6 +123,7 @@ export async function releasePlayer(): Promise<void> {
     void setProperty("title", "");
     void command(["stop"]);
     park.park(liveSignature);
+    setPumpCadence("parked");
     console.info("[mpv] instance gardée au chaud — reprise si une lecture suit dans les 3 s");
   } else {
     await stopPlayer();
@@ -134,6 +138,7 @@ export async function releasePlayer(): Promise<void> {
  */
 export function reuseParked(options: Readonly<Record<string, MpvValue>>, observed: Observed): boolean {
   if (!isRunning() || !park.reuse(optionsSignature(options, observed))) return false;
+  setPumpCadence("active");
   // Le titre que le parking avait vidé : la fenêtre vidéo représente de
   // nouveau l'application dans Alt+Tab. Parti avant le `loadfile` de la page,
   // il est poussé à la reconfiguration vidéo du fichier suivant.
