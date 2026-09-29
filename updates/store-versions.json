@@ -17,23 +17,19 @@
   },
   "playMobile": {
     "$comment": "Version Android (téléphone/tablette) RÉELLEMENT servie par la piste de PRODUCTION de la fiche Play. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (.github/scripts/store-live.mjs : API de rapports Play en lecture seule, recoupée avec la fiche publique ; puis patch-store-manifest.mjs --only=play-mobile --track=production), comme le bloc macAppStore — jamais à l’envoi : mobile.yml le patchait dès la publication, cran test compris, et le site annonçait une version de piste fermée. Ne PAS le déduire de versions.json → mobile, qui porte l’intention et non la publication.",
-    "version": "1.9.0",
+    "version": "1.8.1",
     "packageName": "com.tentacletv.mobile",
-    "track": "alpha",
+    "track": "production",
     "notes": {
-      "fr": "• Une fiche refaite : l'image en grand, le logo, la note et vos marqueurs, et les images en plein écran\n• Notez vos titres depuis la fiche ou d'un appui long\n• Affiner, dans Pour vous : jugez des titres d'un glissement pour affiner vos recommandations\n• Bibliothèque, Ma liste et Mes favoris refaits\n• Un seul retour après une suite de titres similaires\n• La page d'un acteur, en touchant son portrait\n• Connexion et inscription refaites",
-      "en": "• A redesigned title page: a large image, the logo, the rating and your markers, and full-screen images\n• Rate your titles from the title page or with a long press\n• Refine, in For You: judge titles with a swipe to fine-tune your recommendations\n• Library, My list and My favorites redesigned\n• One back after a chain of similar titles\n• An actor's page, by tapping their portrait\n• Sign in and sign up redesigned\n• Titles kept offline: a clear summary, the offline mode switch and \"Retry\""
+      "fr": "• Une recherche qui propose : le moteur de Tentacle à chaque lettre, fautes corrigées, suggestions et meilleurs résultats dans toutes les barres\n• Bibliothèque : Films, Séries, Animés d'un geste, tri et filtres réunis\n• L'accueil à l'affiche, un en-tête allégé\n• La filmographie d'un acteur d'un toucher\n• Chargement plein écran, qu'on peut quitter\n• Messages de l'administrateur, même en lecture\n• Administrateurs : « Sessions en direct »\n• Nécessite un serveur 1.19.0 ou plus",
+      "en": "• Search that suggests: Tentacle's engine with every letter, typos fixed, suggestions and top results in every bar\n• Library: Movies, Shows, Anime in one swipe, sorting and filters together\n• A poster-first home, a lighter header\n• An actor's filmography in one tap\n• Full-screen loading you can leave\n• Administrator messages, even during playback\n• Administrators: \"Live sessions\"\n• Requires a server on 1.19.0 or newer"
     }
   },
   "playTv": {
     "$comment": "Version Android TV RÉELLEMENT servie en production. MÊME fiche Play que le mobile (com.tentacletv.mobile, form factor TV), mais piste distincte et versionCode préfixé 2e9 — donc un numéro de version propre. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (--only=play-tv --track=tv:production), comme playMobile ; tv.yml ne le patche plus.",
-    "version": "1.3.1",
+    "version": "1.2.1",
     "packageName": "com.tentacletv.mobile",
-    "track": "tv:Alpha",
-    "notes": {
-      "fr": "• Des affiches qui en disent plus : la note du public et la vôtre, et un repère pour Ma liste, vos favoris et ce que vous avez déjà vu",
-      "en": "• Posters that say more: the audience rating and yours, and a marker for My list, your favorites and what you have already watched"
-    }
+    "track": "tv:production"
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/desktop.yml (job « manifest ») à chaque release desktop-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
