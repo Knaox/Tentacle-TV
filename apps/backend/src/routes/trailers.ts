@@ -11,6 +11,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { execFile } from "child_process";
 import { requireAuth } from "../middleware/auth";
+import { startYtDlpUpdates, ytDlpCommand } from "../services/ytDlp";
 
 /** Même contrainte que parseYouTubeId (@tentacle-tv/shared) : 11 caractères. */
 const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
@@ -86,7 +87,7 @@ function resolveOnce(ytId: string): Promise<ResolvedStream | null> {
   const withEjs = ejsSupported;
   return new Promise((resolve) => {
     execFile(
-      "yt-dlp",
+      ytDlpCommand(),
       [
         ...(withEjs ? EJS_ARGS : []),
         "-f", FORMAT,
@@ -153,6 +154,8 @@ async function resolveYtStream(ytId: string): Promise<ResolvedStream | null> {
 
 export async function trailerRoutes(app: FastifyInstance) {
   app.addHook("preHandler", requireAuth);
+  // yt-dlp suit YouTube : la copie à jour remplace l'épinglé de l'image (cf. services/ytDlp).
+  startYtDlpUpdates();
 
   /**
    * GET /api/trailers/resolve?ytId=<11 chars>

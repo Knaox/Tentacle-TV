@@ -177,6 +177,14 @@ node scripts/package-macos.mjs --lib ./lib/mpv --arch arm64
   profil de distribution pour une 1re app tvOS. Bundle `com.tentacle.mobile`.
 - Job `continue-on-error` dans `tv.yml` : un échec tvOS ne bloque pas l'Android TV.
 
+### Serveur (image Docker)
+
+- **yt-dlp** (bandes-annonces YouTube de l'Apple TV) : l'image épingle le zipapp
+  officiel. Monter de version = `YTDLP_VERSION` et `YTDLP_SHA256` du `Dockerfile`
+  (la ligne `yt-dlp` du `SHA2-256SUMS` de la release) ; entre deux images, le
+  backend pose seul la dernière version (`services/ytDlp.ts`, `TENTACLE_YTDLP_AUTOUPDATE=0`
+  pour s'en tenir à l'épinglée).
+
 ### Doc d'installation utilisateur (Android TV / Shield)
 
 Plus de sideload : l'app s'installe depuis le Play Store, sur la fiche

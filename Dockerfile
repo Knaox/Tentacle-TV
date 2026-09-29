@@ -101,15 +101,30 @@ ENV NODE_ENV=production
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# yt-dlp : résolution des bandes-annonces YouTube → flux MP4 jouable (Apple TV
-# n'a pas de WebView). Paquet du dépôt community Alpine (tire python3 en dépendance).
 # chromaprint : fournit `fpcalc`, l'empreinte audio de l'analyse inter-épisodes
 # (services/audioFingerprintTool.ts). Binaire LGPL invoqué, jamais lié — comme
 # yt-dlp. Tire les bibliothèques ffmpeg d'Alpine (≈ 60-80 Mo, amd64 et arm64).
 # ffmpeg : décode l'extrait audio de l'analyse de fin de média
-# (services/tailAnalysis/tailAudio.ts). yt-dlp le tirait déjà ; nommé ici pour
-# qu'il ne disparaisse pas le jour où yt-dlp cesserait d'en dépendre.
-RUN apk add --no-cache yt-dlp chromaprint ffmpeg
+# (services/tailAnalysis/tailAudio.ts) ; nommé à part, il ne dépend de rien.
+# python3 : fait tourner le zipapp de yt-dlp, ci-dessous.
+# deno : le moteur JavaScript avec lequel yt-dlp résout les défis de YouTube
+# (« EJS ») — sans lui, YouTube ne sert plus de HLS muxé, seulement un MP4 que
+# googlevideo refuse en 403 (mesuré le 2026-09-29). node 20 ne compte pas :
+# yt-dlp le refuse comme moteur.
+RUN apk add --no-cache chromaprint ffmpeg python3 deno
+
+# yt-dlp : résolution des bandes-annonces YouTube → flux HLS jouable (Apple TV
+# n'a pas de WebView). Le zipapp OFFICIEL, épinglé et vérifié : le paquet
+# Alpine traînait des mois derrière YouTube (2026.03.17 dans Alpine 3.23, sans
+# HLS). Le backend le remplace à l'exécution par la dernière version officielle
+# (services/ytDlp.ts) ; celui-ci reste le repli. Monter de version :
+# docs/RELEASE.md, « Serveur (image Docker) ».
+ARG YTDLP_VERSION=2026.08.19
+ARG YTDLP_SHA256=1fa6733c37ea6fb51c99ad8fe785e7b7e5f3246c9b980230329d4fb72ed8d4d6
+RUN wget -q -O /usr/local/bin/yt-dlp "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp" \
+  && echo "${YTDLP_SHA256}  /usr/local/bin/yt-dlp" | sha256sum -c - \
+  && chmod +x /usr/local/bin/yt-dlp \
+  && [ "$(yt-dlp --version)" = "${YTDLP_VERSION}" ]
 
 WORKDIR /app
 
