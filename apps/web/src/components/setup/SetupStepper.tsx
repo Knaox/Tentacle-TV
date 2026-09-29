@@ -1,12 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 
-export type SetupStep = "db" | "jellyfin" | "admin";
+export type SetupStep = "db" | "jellyfin" | "admin" | "links";
 
 const STEPS: { key: SetupStep; label: string }[] = [
   { key: "db", label: "stepDatabase" },
   { key: "jellyfin", label: "stepJellyfin" },
   { key: "admin", label: "stepAdmin" },
+  // Facultative : le lien public et la lecture directe (l'espace `serverLinks`).
+  { key: "links", label: "serverLinks:stepLabel" },
 ];
 
 /**
@@ -42,7 +44,7 @@ export function SetupStepper({ step }: { step: SetupStep }) {
               >
                 {done ? <Check aria-hidden size={14} strokeWidth={2.5} /> : i + 1}
               </span>
-              {/* Sur un téléphone, seule l'étape courante garde son nom : trois libellés
+              {/* Sur un téléphone, seule l'étape courante garde son nom : quatre libellés
                   n'y tiennent pas sans être tronqués. */}
               <span className={`whitespace-nowrap text-xs ${current ? "font-semibold text-content-primary" : "hidden text-content-tertiary sm:inline"}`}>
                 {t(s.label)}

@@ -6,6 +6,7 @@ import { SetupStepper, type SetupStep } from "../components/setup/SetupStepper";
 import { DbStep } from "../components/setup/DbStep";
 import { JellyfinStep } from "../components/setup/JellyfinStep";
 import { AdminStep } from "../components/setup/AdminStep";
+import { LinksStep } from "../components/setup/links/LinksStep";
 
 interface SetupProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- l'utilisateur renvoyé par /api/setup/create-admin, stocké tel quel
@@ -16,15 +17,23 @@ const STEP_COPY: Record<SetupStep, { title: string; subtitle: string }> = {
   db: { title: "dbTitle", subtitle: "dbSubtitle" },
   jellyfin: { title: "jellyfinTitle", subtitle: "jellyfinSubtitle" },
   admin: { title: "adminTitle", subtitle: "adminSubtitle" },
+  links: { title: "serverLinks:wizardTitle", subtitle: "serverLinks:wizardSubtitle" },
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- l'utilisateur renvoyé par /api/setup/create-admin, stocké tel quel
+type Session = { token: string; user: any };
+
 /**
- * L'assistant d'installation du serveur web (base → Jellyfin → admin), dans le
- * même cadre que la connexion. Les étapes vivent dans `components/setup/`.
+ * L'assistant d'installation du serveur web (base → Jellyfin → admin → accès),
+ * dans le même cadre que la connexion. Les étapes vivent dans `components/setup/`.
+ *
+ * L'administrateur créé, l'installation est faite : la session est gardée ici
+ * le temps de l'étape « Accès », facultative, puis remise à l'application.
  */
 export function ServerSetup({ onComplete }: SetupProps) {
   const [step, setStep] = useState<SetupStep>("db");
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
   const { t } = useTranslation("setup");
 
   useEffect(() => {
@@ -67,7 +76,15 @@ export function ServerSetup({ onComplete }: SetupProps) {
     <AuthLayout width="wide" title={t(copy.title)} subtitle={t(copy.subtitle)} header={<SetupStepper step={step} />}>
       {step === "db" && <DbStep onNext={() => setStep("jellyfin")} />}
       {step === "jellyfin" && <JellyfinStep onNext={() => setStep("admin")} />}
-      {step === "admin" && <AdminStep onComplete={onComplete} />}
+      {step === "admin" && (
+        <AdminStep
+          onComplete={(token, user) => {
+            setSession({ token, user });
+            setStep("links");
+          }}
+        />
+      )}
+      {step === "links" && session && <LinksStep token={session.token} onDone={() => onComplete(session.token, session.user)} />}
     </AuthLayout>
   );
 }
