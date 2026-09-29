@@ -163,3 +163,15 @@ describe("en production, /tv n'est servi qu'à un téléviseur", () => {
     await app.close();
   });
 });
+
+describe("les pages de partage", () => {
+  it("sont servies, mais jamais indexées ni suivies par un moteur de recherche", async () => {
+    const app = await server();
+    const response = await app.inject({ method: "GET", url: "/share/0123456789abcdef", headers: { "user-agent": DESKTOP_AGENT } });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["x-robots-tag"]).toBe("noindex, nofollow");
+    const home = await app.inject({ method: "GET", url: "/library/42", headers: { "user-agent": DESKTOP_AGENT } });
+    expect(home.headers["x-robots-tag"]).toBeUndefined();
+    await app.close();
+  });
+});

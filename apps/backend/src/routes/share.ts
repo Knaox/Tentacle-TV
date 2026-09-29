@@ -1,15 +1,23 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { FastifyInstance } from "fastify";
-import crypto from "crypto";
+import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { getUserWatchlist, getItemDetail } from "../services/jellyfin";
 import { getLikedListItems } from "../services/shareLists";
+import { generateShareToken } from "../services/shareToken";
+import { registerStatsOwnerRoutes, replySharedStats, sharedStatsShowsTitle } from "./shareStats";
 
-function generateToken(): string {
-  return crypto.randomBytes(8).toString("hex");
-}
+/**
+ * Les routes PUBLIQUES (sans compte) ont leur propre plafond, bien sous le
+ * plafond global : une personne qui parcourt un partage n'en fait pas soixante
+ * par minute, un robot qui essaierait des jetons si.
+ */
+const PUBLIC_RATE_LIMIT = { rateLimit: { max: 60, timeWindow: "1 minute" } };
+
+/** La langue des étiquettes d'une page publique (genres, pays) : celle du visiteur. */
+const publicQuery = z.object({ lang: z.enum(["fr", "en"]).catch("fr") });
 
 /**
  * Ce qu'une route lit d'un lien — jamais `options`, les réglages d'un partage
@@ -32,7 +40,7 @@ function registerOwnerRoutes(app: FastifyInstance, kind: "watchlist" | "likes", 
     const link = await prisma.shareLink.upsert({
       where: { ownerUserId_kind: { ownerUserId: user.userId, kind } },
       create: {
-        token: generateToken(),
+        token: generateShareToken(),
         ownerUserId: user.userId,
         ownerUsername: user.username,
         kind,
@@ -65,17 +73,22 @@ function registerOwnerRoutes(app: FastifyInstance, kind: "watchlist" | "likes", 
 
 export const shareRoutes: FastifyPluginAsync = async (app) => {
   registerOwnerRoutes(app, "watchlist", "");
-  // Routes STATIQUES /likes/* déclarées avant les paramétriques /:token.
+  // Routes STATIQUES /likes/* et /stats/* déclarées avant les paramétriques /:token.
   registerOwnerRoutes(app, "likes", "/likes");
+  registerStatsOwnerRoutes(app);
 
-  // ── GET /:token — vue PUBLIQUE (pas d'auth) de la liste, en lecture seule.
-  //    La forme dépend du `kind` du lien : watchlist (projection Jellyfin
-  //    historique) ou likes (favoris + hors bibliothèque avec affiche TMDB). ──
-  app.get("/:token", async (request, reply) => {
+  // ── GET /:token — vue PUBLIQUE (pas d'auth), en lecture seule. La forme
+  //    dépend du `kind` du lien : watchlist (projection Jellyfin historique),
+  //    likes (favoris + hors bibliothèque avec affiche TMDB) ou stats (les
+  //    statistiques du propriétaire, passées à la liste blanche). ──
+  app.get("/:token", { config: PUBLIC_RATE_LIMIT }, async (request, reply) => {
     const { token } = request.params as { token: string };
     const prisma = getPrisma();
     const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
     if (!link) return reply.status(404).send({ message: "Lien introuvable" });
+    if (link.kind === "stats") {
+      return replySharedStats(reply, { token, ...link }, publicQuery.parse(request.query ?? {}).lang);
+    }
 
     try {
       if (link.kind === "likes") {
@@ -98,9 +111,10 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ── GET /:token/item/:itemId — détail PUBLIC (résumé + bandes-annonces) d'un
-  //    média de la liste partagée. Sécurité : l'item doit être dans la watchlist
-  //    du propriétaire (pas d'énumération de la bibliothèque via un token). ──
-  app.get("/:token/item/:itemId", async (request, reply) => {
+  //    média du partage. Sécurité : l'item doit être dans la liste partagée, ou
+  //    parmi les titres que montrent les statistiques partagées (pas
+  //    d'énumération de la bibliothèque via un token). ──
+  app.get("/:token/item/:itemId", { config: PUBLIC_RATE_LIMIT }, async (request, reply) => {
     const { token, itemId } = request.params as { token: string; itemId: string };
     const prisma = getPrisma();
     const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
@@ -110,9 +124,11 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
       // Contrôle d'appartenance selon le kind — toujours là pour empêcher
       // l'énumération de la bibliothèque via un token.
       const inList =
-        link.kind === "likes"
-          ? (await getLikedListItems(link.ownerUserId)).some((i) => i.Id === itemId)
-          : ((await getUserWatchlist(link.ownerUserId)).Items ?? []).some((i) => i.Id === itemId);
+        link.kind === "stats"
+          ? await sharedStatsShowsTitle({ token, ownerUserId: link.ownerUserId }, itemId)
+          : link.kind === "likes"
+            ? (await getLikedListItems(link.ownerUserId)).some((i) => i.Id === itemId)
+            : ((await getUserWatchlist(link.ownerUserId)).Items ?? []).some((i) => i.Id === itemId);
       if (!inList) return reply.status(404).send({ message: "Média introuvable" });
       // Vue anonyme : l'historique de visionnage du propriétaire (UserData —
       // dates, compteurs, position de lecture) ne regarde pas les visiteurs.

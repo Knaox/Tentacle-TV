@@ -106,6 +106,9 @@ export async function registerStaticClients(
     if (!webPresent) {
       return reply.status(404).send({ message: "Not found" });
     }
+    // Une page de partage est publique, pas publiée : qui a le lien la voit,
+    // aucun moteur de recherche ne l'indexe ni ne suit ses liens.
+    if (path.startsWith("/share/")) reply.header("x-robots-tag", "noindex, nofollow");
     return reply.sendFile("index.html");
   });
 }
