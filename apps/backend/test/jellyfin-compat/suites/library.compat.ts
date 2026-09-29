@@ -1,7 +1,8 @@
 import { QueryClient } from "@tanstack/react-query";
 import { expect } from "vitest";
 import { getLibraryCatalogKey, prefetchLibraryCatalog } from "../../../../../packages/api-client/src/hooks/useLibraryCatalog";
-import { check, feature } from "../harness";
+import { libraryLanguagesPath, parseLibraryLanguages } from "../../../../../packages/api-client/src/hooks/libraryLanguages";
+import { applies, check, feature } from "../harness";
 import { ctx, tentacleClient, type ItemsPage } from "./support";
 
 interface Named { Id: string; Name: string; Type?: string; CollectionType?: string; SeriesId?: string; IndexNumber?: number }
@@ -59,6 +60,15 @@ feature("library.catalog", () => {
     expect(Array.isArray(genres.Items)).toBe(true);
     expect(Array.isArray(studios.Items)).toBe(true);
     if (genres.Items.length === 0) return { partial: "aucun genre (métadonnées TMDB absentes ?)" };
+  });
+
+  // Détection de capacité, pas de numéro de version : le menu des langues ne
+  // s'affiche que si Filters2 en rend. Avant Jellyfin 12, il doit s'effacer.
+  check("filtre par langue : proposé seulement si le serveur sait filtrer", async () => {
+    const raw = await tentacleClient(ctx().user.token).fetch<unknown>(libraryLanguagesPath(ctx().user.id, library("Séries")));
+    const languages = parseLibraryLanguages(raw);
+    if (applies("jellyfin12.language-filters")) expect(languages?.audio.length).toBeGreaterThan(0);
+    else expect(languages).toBeNull();
   });
 });
 

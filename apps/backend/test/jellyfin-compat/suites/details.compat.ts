@@ -1,6 +1,7 @@
 import { expect } from "vitest";
 import type { MediaItem } from "../../../../../packages/shared/src/types/media";
-import { check, feature } from "../harness";
+import { fetchIncludedInCollections } from "../../../../../packages/api-client/src/hooks/useIncludedInCollections";
+import { applies, check, feature } from "../harness";
 import { ctx, jellyfin, tentacleClient, type ItemsPage } from "./support";
 
 /** Les champs que la fiche demande (`useMediaItem`, packages/api-client/src/hooks/useLibrary.ts). */
@@ -41,6 +42,13 @@ feature("details.item", () => {
     const similar = await client.fetch<ItemsPage>(`/Items/${bbb}/Similar?userId=${u()}&Limit=24&Fields=Overview,PrimaryImageAspectRatio,ParentId,MediaSources&EnableUserData=true`);
     expect(Array.isArray(similar.Items)).toBe(true);
   });
+
+  // « Fait partie de » (Jellyfin 12) : avant, la route n'existe pas — la rangée
+  // doit rester vide sans que la fiche n'échoue.
+  check("« Fait partie de » : vide sans erreur quand le serveur ne le sait pas", async () => {
+    const collections = await fetchIncludedInCollections(tentacleClient(ctx().user.token), bbb, u());
+    expect(collections).toEqual([]);
+  }, { skip: applies("jellyfin12.included-in") });
 });
 
 feature("details.series", () => {

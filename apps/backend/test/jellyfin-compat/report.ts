@@ -40,7 +40,7 @@ export interface RunReport {
 }
 
 export function readRecords(file: string): CheckRecord[] {
-  let text = "";
+  let text: string;
   try {
     text = readFileSync(file, "utf8");
   } catch {

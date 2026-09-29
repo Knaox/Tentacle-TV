@@ -13,7 +13,13 @@
 
 import { createHash } from "node:crypto";
 
-interface AudioTrack { lang: string; codec: "aac" | "ac3"; channels: 2 | 6 }
+interface AudioTrack {
+  lang: string;
+  codec: "aac" | "ac3";
+  channels: 2 | 6;
+  /** Drapeau « piste originale » du conteneur (Matroska FlagOriginal) — `IsOriginal` en 12.0+. */
+  original?: boolean;
+}
 interface SubTrack { lang: string; forced?: boolean }
 type Size = "360p" | "720p" | "1080p";
 
@@ -77,9 +83,9 @@ export const MEDIA_FILES: MediaFile[] = [
   clip(`${BB}/extras/Coulisses.mp4`),
   clip(`${BB}/Season 01/extras/Retour sur la saison.mp4`),
   { path: `${BEBOP}/Season 01/Cowboy Bebop - S01E01.mkv`, seconds: 45, size: "360p", video: "h264", audio: [JA, FR], subs: [{ lang: "fre" }, { lang: "eng" }] },
-  // Doublage en PREMIÈRE piste (par défaut), VO en seconde : la préférence
-  // « VO » doit aller la chercher (langue originale, nouveauté 12.0).
-  { path: `${BEBOP}/Season 01/Cowboy Bebop - S01E02.mkv`, seconds: 45, size: "360p", video: "h264", audio: [FR, JA], subs: [{ lang: "fre" }] },
+  // Doublage en PREMIÈRE piste (par défaut), VO en seconde, marquée originale
+  // par le fichier : la préférence « VO » doit aller la chercher (nouveauté 12.0).
+  { path: `${BEBOP}/Season 01/Cowboy Bebop - S01E02.mkv`, seconds: 45, size: "360p", video: "h264", audio: [FR, { ...JA, original: true }], subs: [{ lang: "fre" }] },
   clip("mixed/Night of the Living Dead (1968)/Night of the Living Dead (1968).mkv", 30),
   clip("mixed/Pioneer One (2010)/Season 01/Pioneer One - S01E01.mkv", 30),
 ];
@@ -142,7 +148,7 @@ function ffmpegCommand(file: MediaFile, index: number): string[] {
   const audio = file.audio.map((a, i) => [
     `-c:a:${i} ${a.codec} -ac:a:${i} ${a.channels} -b:a:${i} ${a.codec === "ac3" ? "384k" : "128k"}`,
     `-metadata:s:a:${i} language=${a.lang}`,
-    `-disposition:a:${i} ${i === 0 ? "default" : "0"}`,
+    `-disposition:a:${i} ${[i === 0 && "default", a.original && "original"].filter(Boolean).join("+") || "0"}`,
   ].join(" "));
   const subArgs = subs.map((s, i) => `-metadata:s:s:${i} language=${s.lang} -disposition:s:${i} ${s.forced ? "forced" : "0"}`);
   lines.push([

@@ -49,6 +49,7 @@ export const FEATURES: CompatFeature[] = [
   f("playback.transcode", "playback", true, "Transcodage (HLS)", "Transcoding (HLS)", ["POST /Items/{itemId}/PlaybackInfo"]),
   f("playback.subtitles", "playback", false, "Sous-titres intégrés et externes", "Embedded and external subtitles", ["GET /Videos/{routeItemId}/{routeMediaSourceId}/Subtitles/{routeIndex}/Stream.{routeFormat}"]),
   f("playback.bitrate", "playback", false, "Mesure du débit", "Bandwidth test", ["GET /Playback/BitrateTest"]),
+  f("playback.track-preferences", "playback", false, "Pistes préférées (langue audio, sous-titres, VO)", "Preferred tracks (audio and subtitle language, original)", ["GET /Shows/{seriesId}/Episodes"]),
   f("direct.streaming", "direct", false, "Streaming direct vers Jellyfin", "Direct streaming to Jellyfin", ["POST /Items/{itemId}/PlaybackInfo", "GET /Videos/{itemId}/stream", "POST /Sessions/Playing"]),
   f("media.images", "media", true, "Affiches, fonds et avatars", "Posters, backdrops and avatars", ["GET /Items/{itemId}/Images/{imageType}", "GET /UserImage"]),
   f("media.trickplay", "media", false, "Vignettes de navigation (trickplay)", "Seek thumbnails (trickplay)", ["GET /Videos/{itemId}/Trickplay/{width}/{index}.jpg"]),
@@ -61,7 +62,7 @@ export const FEATURES: CompatFeature[] = [
   f("jellyfin12.original-language", "jellyfin12", false, "Langue originale (VO)", "Original language", ["GET /Items/{itemId}"], "12.0.0"),
   f("jellyfin12.language-filters", "jellyfin12", false, "Filtrer par langue audio ou de sous-titres", "Filter by audio or subtitle language", ["GET /Items/Filters2", "GET /Items"], "12.0.0"),
   f("jellyfin12.included-in", "jellyfin12", false, "« Fait partie de » : collections d'un titre", "\"Included in\": a title's collections", ["GET /Items/{itemId}/Collections"], "12.0.0"),
-  f("jellyfin12.localized-tracks", "jellyfin12", false, "Pistes nommées dans la langue de l'utilisateur", "Tracks named in the user's language", ["POST /Items/{itemId}/PlaybackInfo"], "12.0.0"),
+  f("jellyfin12.localized-tracks", "jellyfin12", false, "Mentions des pistes dans la langue de l'utilisateur (« Par défaut », « Forcé »)", "Track labels in the user's language (\"Default\", \"Forced\")", ["GET /Items/{itemId}"], "12.0.0"),
 ];
 
 export function featureById(id: string): CompatFeature {
