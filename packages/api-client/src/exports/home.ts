@@ -5,7 +5,7 @@ export {
   fetchHomeLayout, fetchRecoSettings, putHomeLayout, putRecoSettings,
   type HomeLayoutInput, type HeroMode, type CardDensity, type HomeRowDescriptor, type HomeLayoutData, type RecoSettingsData,
 } from "../hooks/useHomeLayout";
-// Ces deux blocs de préférences suivis en direct d'un appareil à l'autre
+// Les blocs de préférences suivis en direct d'un appareil à l'autre
 // (cf. hooks/usePreferencesLive)
 export {
   usePreferencesLive, applyPreferencesUpdate, catchUpPreferences, PREFERENCES_LIVE_SCOPES, type UsePreferencesLiveOptions,

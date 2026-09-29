@@ -6,7 +6,7 @@ import type { SocketStatus } from "../socket/tentacleSocket";
 import { invalidateRecoQueries } from "./useRecoPage";
 
 /** Les blocs diffusés en direct → la clé de cache de chacun (préfixe des sauvegardes). */
-export const PREFERENCES_LIVE_SCOPES: readonly PreferencesScope[] = ["home-layout", "reco-settings"];
+export const PREFERENCES_LIVE_SCOPES: readonly PreferencesScope[] = ["home-layout", "reco-settings", "hints"];
 
 /**
  * Applique un `preferences:update` reçu d'un autre appareil : relire le bloc —
@@ -38,8 +38,9 @@ export interface UsePreferencesLiveOptions {
 
 /**
  * Un réglage enregistré sur un autre appareil arrive en direct : la mise en
- * page de l'accueil et les réglages de recommandation se relisent en
- * SILENCE (l'accueil se réordonne sans rien toucher). Au retour « open »
+ * page de l'accueil, les réglages de recommandation et les rappels masqués se
+ * relisent en SILENCE (l'accueil se réordonne sans rien toucher, un rappel
+ * masqué ailleurs quitte la fiche ouverte). Au retour « open »
  * après une coupure, un rattrapage. Consomme le socket PARTAGÉ (tentacleSocket)
  * comme useRecoLive ; un seul montage suffit par application.
  */
