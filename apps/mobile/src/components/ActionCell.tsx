@@ -21,15 +21,17 @@ interface Props {
   ring?: ReactNode;
   /** Gabarit imposé par la grille (largeur de colonne) ; `flex: 1` sinon. */
   style?: StyleProp<ViewStyle>;
+  /** Lignes du libellé au plus (défaut 2) — trois pour les libellés « … dès son arrivée ». */
+  lines?: number;
 }
 
 /**
  * Cellule d'action ronde de la feuille d'appui long (style Apple TV +) : un
- * anneau de 60, le libellé dessous, deux lignes au plus. Une bascule annonce
+ * anneau de 60, le libellé dessous, deux lignes au plus (`lines`). Une bascule annonce
  * son état (`selected`) et teinte son anneau ; une action simple reste
  * neutre. La cellule entière est la cible tactile, bien au-delà de 44 pt.
  */
-export function ActionCell({ label, onPress, renderIcon, icon, active, activeColor, ring, style }: Props) {
+export function ActionCell({ label, onPress, renderIcon, icon, active, activeColor, ring, style, lines = 2 }: Props) {
   const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
   const on = active === true;
@@ -50,7 +52,7 @@ export function ActionCell({ label, onPress, renderIcon, icon, active, activeCol
           {renderIcon ? renderIcon(iconColor) : icon ? <Feather name={icon} size={26} color={iconColor} /> : null}
         </View>
       )}
-      <Text numberOfLines={2} style={[st.cellLabel, { color: on ? tint : colors.text.secondary }]}>
+      <Text numberOfLines={lines} style={[st.cellLabel, { color: on ? tint : colors.text.secondary }]}>
         {label}
       </Text>
     </Pressable>

@@ -8,7 +8,7 @@ import type { RecoReason } from "@tentacle-tv/api-client";
 import { externalCardActionEntries, resolveExternalCardOverlay, type ExternalCardVariant } from "@tentacle-tv/shared";
 import { BottomSheet } from "@/components/ui";
 import { ActionCell } from "@/components/ActionCell";
-import { BookmarkGlyph } from "@/components/cards/cardGlyphs";
+import { BookmarkGlyph, HeartGlyph } from "@/components/cards/cardGlyphs";
 import { RecoReasonList } from "@/components/reco/RecoReasonList";
 import { RatingPanelMobile } from "@/components/rating/RatingPanelMobile";
 import { FONT_FAMILY, RADIUS, SHADOW_RN, progressGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -37,9 +37,11 @@ interface Props {
 /**
  * La feuille de l'appui long d'une carte HORS bibliothèque — le pendant
  * tactile du survol des cartes Vigie (`externalCardOverlay.ts`), dans l'ordre
- * que le modèle fixe : « Demander », puis la bascule « Ma liste à l'arrivée »
- * et, sur une recommandation, « Ne plus me proposer » ; la note en dessous,
- * comme sur `MediaActionSheet`. La même au téléphone que dans l'extension.
+ * que le modèle fixe : « Demander », puis les bascules « Ma liste » et
+ * « J'aime » à l'arrivée — le signet et le cœur de la pastille, teintés comme
+ * sur la feuille des titres de la bibliothèque — et, sur une recommandation,
+ * « Ne plus me proposer » ; la note en dessous, comme sur `MediaActionSheet`.
+ * La même au téléphone que dans l'extension.
  */
 export function ExternalActionSheet({ target, variant, onClose, reasons, onDismiss, openHref }: Props) {
   // La feuille descend encore un instant après sa fermeture : elle garde son titre.
@@ -63,8 +65,10 @@ function SheetBody({ target, variant, onClose, reasons, onDismiss, openHref }: P
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const actions = useExternalTitleActions(target.title, openHref, onClose);
-  const overlay = resolveExternalCardOverlay({ variant, request: actions.state?.request ?? null, identified: true });
-  const entries = externalCardActionEntries(overlay, { watchlist: actions.pending });
+  const overlay = resolveExternalCardOverlay({
+    variant, request: actions.state?.request ?? null, identified: true, likes: actions.likes,
+  });
+  const entries = externalCardActionEntries(overlay, { watchlist: actions.pending, favorite: actions.favorite });
   const request = entries.find((e) => e.kind === "request");
   const gradient = progressGradient(theme.colors.brand);
   const type = target.title.mediaType === "tv" ? tc("series") : tc("movie");
@@ -126,6 +130,20 @@ function SheetBody({ target, variant, onClose, reasons, onDismiss, openHref }: P
                 active={entry.active === true}
                 activeColor={theme.colors.brand.violet}
                 onPress={actions.toggleWatchlist}
+                lines={3}
+              />
+            );
+          }
+          if (entry.kind === "favorite") {
+            return (
+              <ActionCell
+                key="favorite"
+                renderIcon={(color) => <HeartGlyph size={26} color={color} filled={entry.active === true} />}
+                label={t(entry.active ? "favoritesOnArrival" : "addToFavoritesOnArrival")}
+                active={entry.active === true}
+                activeColor={theme.colors.brand.accent}
+                onPress={actions.toggleFavorite}
+                lines={3}
               />
             );
           }
@@ -135,6 +153,7 @@ function SheetBody({ target, variant, onClose, reasons, onDismiss, openHref }: P
                 key="dismiss"
                 icon="eye-off"
                 label={t("dismiss")}
+                lines={3}
                 onPress={() => { onDismiss(); onClose(); }}
               />
             );

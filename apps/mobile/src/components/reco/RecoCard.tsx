@@ -3,9 +3,10 @@ import { Animated, Easing, View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import {
-  RECO_LEAVE_MS, recoPosterUrl, useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient, useRecoMarkerItem,
+  RECO_LEAVE_MS, recoPosterUrl, useIsFavoritePending, useIsRecoLeaving, useIsWatchlistPending, useJellyfinClient,
+  useRecoMarkerItem,
 } from "@tentacle-tv/api-client";
-import { titleKey } from "@tentacle-tv/shared";
+import { titleKey, topLabelInsetRight } from "@tentacle-tv/shared";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { Badge, PressableCard } from "@/components/ui";
 import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, motion, useThemedStyles, type AppTheme } from "@/theme";
@@ -58,7 +59,13 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   // Hors bibliothèque : la pastille dit l'état que l'extension donne du titre
   // (« Demandé »…), et Ma liste est une mise de côté jusqu'à l'arrivée.
   const state = useExternalTitleState(onDemand ? { mediaType: item.mediaType, tmdbId: item.tmdbId } : null);
-  const pending = useIsWatchlistPending(onDemand ? titleKey(item.mediaType, item.tmdbId) : null);
+  const externalKey = onDemand ? titleKey(item.mediaType, item.tmdbId) : null;
+  const pending = useIsWatchlistPending(externalKey);
+  const liked = useIsFavoritePending(externalKey);
+  // La pastille d'états (Ma liste, cœur) tient le coin opposé : l'étiquette
+  // « À la demande » s'arrête avant elle, et passe sur deux lignes plutôt
+  // que de se tronquer.
+  const labelRight = topLabelInsetRight(onDemand ? Number(pending) + Number(liked) : 0, 7);
   const openSheet = useCardSheetOpener();
   const leaving = useIsRecoLeaving(item.key);
   // Un Animated.Value par carte, sans rien animer au repos : le pilote natif
@@ -112,13 +119,18 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
           {/* Posés sur l'affiche : blanc/noir constants (« À la demande »), dégradé
               de marque (« Découverte ») — les couleurs du web. */}
           {(onDemand || item.exploration) && (
-            <View style={st.badges} pointerEvents="none">
-              {onDemand && <Badge label={state?.badge?.label ?? t("onDemandBadge")} variant="onMedia" />}
-              {item.exploration && <Badge label={t("explorationBadge")} variant="gradient" />}
+            <View style={[st.badges, { right: labelRight }]} pointerEvents="none">
+              {onDemand && <Badge label={state?.badge?.label ?? t("onDemandBadge")} variant="onMedia" lines={2} />}
+              {item.exploration && <Badge label={t("explorationBadge")} variant="gradient" lines={2} />}
             </View>
           )}
           {/* Les marqueurs de toutes les cartes, à leurs places communes. */}
-          <CardMarkerLayer item={face} communityRating={item.voteAverage} inWatchlist={onDemand ? pending : undefined} />
+          <CardMarkerLayer
+            item={face}
+            communityRating={item.voteAverage}
+            inWatchlist={onDemand ? pending : undefined}
+            isFavorite={onDemand ? liked : undefined}
+          />
         </View>
         <Text numberOfLines={1} style={st.title}>{item.title}</Text>
         {subtitle && <Text numberOfLines={1} style={st.year}>{subtitle}</Text>}

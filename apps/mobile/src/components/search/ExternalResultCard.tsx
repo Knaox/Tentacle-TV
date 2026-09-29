@@ -4,17 +4,26 @@
  * vient du parent (rail ou grille).
  *
  * Au doigt, pas de survol : l'appui long ouvre la feuille des cartes Vigie
- * (`ExternalActionSheet` — « Demander », Ma liste à l'arrivée, la note),
- * portée par la carte elle-même, pour que toute rangée qui la montre l'ait.
- * Il faut l'identifiant TMDB du titre (`item.tmdbId`). La pastille suit
- * l'état que l'extension donne du titre (« Demandé » dès la demande).
+ * (`ExternalActionSheet` — « Demander », Ma liste et le cœur à l'arrivée, la
+ * note), portée par la carte elle-même, pour que toute rangée qui la montre
+ * l'ait. Il faut l'identifiant TMDB du titre (`item.tmdbId`).
+ *
+ * Au repos, les marqueurs de TOUTES les cartes (`CardMarkerLayer`, comme la
+ * carte d'une recommandation) : la note posée en bas à gauche, Ma liste et le
+ * cœur qui attendent l'arrivée en haut à droite. L'étiquette que l'extension
+ * donne du titre (« Demandé » dès la demande) tient le coin haut-gauche, et
+ * s'arrête avant la pastille.
  */
 
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
-import { titleMediaType, type ExternalSearchItem, type ExternalTone } from "@tentacle-tv/shared";
+import { useIsFavoritePending, useIsWatchlistPending } from "@tentacle-tv/api-client";
+import {
+  externalMarkerFace, titleKey, titleMediaType, topLabelInsetRight, type ExternalSearchItem, type ExternalTone,
+} from "@tentacle-tv/shared";
+import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 import { FONT_FAMILY, RADIUS, buildDarkPalette, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { ExternalActionSheet, type ExternalSheetTarget } from "@/components/external/ExternalActionSheet";
 import { useExternalTitleState, type ExternalTitle } from "@/components/external/useExternalTitle";
@@ -36,6 +45,10 @@ export function ExternalResultCard({ item, width, onPress, onOpenHref }: {
   );
   const state = useExternalTitleState(title);
   const badge = state?.badge ?? item.badge;
+  const key = title ? titleKey(title.mediaType, title.tmdbId) : null;
+  const pending = useIsWatchlistPending(key);
+  const liked = useIsFavoritePending(key);
+  const face = useMemo(() => (title ? externalMarkerFace(title, item.title) : null), [title, item.title]);
 
   return (
     <>
@@ -52,7 +65,8 @@ export function ExternalResultCard({ item, width, onPress, onOpenHref }: {
           ) : (
             <Feather name={item.kind === "series" ? "tv" : "film"} size={26} color={theme.colors.text.quaternary} />
           )}
-          {badge && <Badge label={badge.label} tone={badge.tone} />}
+          {badge && <Badge label={badge.label} tone={badge.tone} right={topLabelInsetRight(Number(pending) + Number(liked), 7)} />}
+          {face && <CardMarkerLayer item={face} communityRating={null} inWatchlist={pending} isFavorite={liked} />}
         </View>
         <Text style={st.itemTitle} numberOfLines={2}>{item.title}</Text>
         {item.year !== null && <Text style={st.itemYear}>{item.year}</Text>}
@@ -70,14 +84,17 @@ export function ExternalResultCard({ item, width, onPress, onOpenHref }: {
  * voile noir et prend la teinte CLAIRE de la paire du thème sombre. `neutral` :
  * voile noir et blanc, dans les deux thèmes.
  */
-function Badge({ label, tone }: { label: string; tone: ExternalTone }) {
+function Badge({ label, tone, right }: { label: string; tone: ExternalTone; right: number }) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const pairs = useMemo(() => (theme.isDark ? theme.colors : buildDarkPalette()).statusPairs, [theme]);
   const pair = tone === "neutral" ? null : pairs[tone];
+  // Dans le coin haut-gauche, bornée par `right` (la pastille d'états, s'il y en a une).
   return (
-    <View style={[st.badge, pair && theme.isDark && { backgroundColor: pair.bg }]}>
-      <Text style={[st.badgeTxt, pair && { color: pair.fg }]} numberOfLines={1}>{label}</Text>
+    <View style={[st.badgeSlot, { right }]} pointerEvents="none">
+      <View style={[st.badge, pair && theme.isDark && { backgroundColor: pair.bg }]}>
+        <Text style={[st.badgeTxt, pair && { color: pair.fg }]} numberOfLines={1}>{label}</Text>
+      </View>
     </View>
   );
 }
@@ -95,11 +112,9 @@ const makeStyles = (t: AppTheme) =>
       borderColor: t.colors.border.subtle,
       borderStyle: "dashed" as const,
     },
+    badgeSlot: { position: "absolute" as const, left: 6, top: 6, alignItems: "flex-start" as const },
     badge: {
-      position: "absolute" as const,
-      left: 6,
-      bottom: 6,
-      maxWidth: "88%" as const,
+      maxWidth: "100%" as const,
       paddingHorizontal: 7,
       paddingVertical: 3,
       borderRadius: RADIUS.pill,

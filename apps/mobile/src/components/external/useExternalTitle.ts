@@ -1,7 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { useIsWatchlistPending, useRequestTitle, useTitleState, useWatchlistByTmdb, type RatingIdentity } from "@tentacle-tv/api-client";
+import {
+  useFavoriteByTmdb, useIsFavoritePending, useIsWatchlistPending, useLikesAvailable, useRequestTitle, useTitleState,
+  useWatchlistByTmdb, type RatingIdentity,
+} from "@tentacle-tv/api-client";
 import { titleKey, titleProvider, type TitleMediaType, type TitleProvider, type TitleState } from "@tentacle-tv/shared";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
 
@@ -33,14 +36,19 @@ export interface ExternalTitleActions {
   outcome: { ok: boolean; message: string } | null;
   pending: boolean;
   toggleWatchlist: () => void;
+  /** Aimé : le cœur attend l'arrivée du titre ; le goût le compte déjà. */
+  favorite: boolean;
+  /** Le serveur sait aimer un titre absent — sinon, pas de cœur. */
+  likes: boolean;
+  toggleFavorite: () => void;
   ratingIdentity: RatingIdentity;
 }
 
 /**
  * Les gestes d'une carte hors bibliothèque au téléphone — la même logique que
  * le survol du web (`externalCardOverlay.ts`) : « Demander » sur place (un
- * film) ou dans la page de l'extension (les saisons d'une série), « Ma liste
- * à l'arrivée », et la note par le tmdb. Ne monter qu'à l'ouverture de la
+ * film) ou dans la page de l'extension (les saisons d'une série), « Ma liste »
+ * et « J'aime » à l'arrivée, et la note par le tmdb. Ne monter qu'à l'ouverture de la
  * feuille : rien de tout cela n'a à vivre sur une rangée au repos.
  */
 export function useExternalTitleActions(
@@ -62,6 +70,9 @@ export function useExternalTitleActions(
   const requestTitle = useRequestTitle(provider, lang);
   const pending = useIsWatchlistPending(key);
   const watchlist = useWatchlistByTmdb();
+  const favorite = useIsFavoritePending(key);
+  const likes = useLikesAvailable();
+  const favorites = useFavoriteByTmdb();
   const [outcome, setOutcome] = useState<{ ok: boolean; message: string } | null>(null);
 
   // La page de l'extension, par sa route (`/discover?request=tv:1399`) : chemin et requête séparés.
@@ -99,6 +110,13 @@ export function useExternalTitleActions(
     else watchlist.add.mutate(title);
   };
 
+  // Comme Ma liste : la cellule qui s'allume EST la réponse ; un refus la rend, écrit sur place.
+  const toggleFavorite = () => {
+    const failed = () => setOutcome({ ok: false, message: t("favoriteFailed") });
+    if (favorite) favorites.remove.mutate(title, { onError: failed });
+    else favorites.add.mutate(title, { onError: failed });
+  };
+
   return {
     state,
     requesting: requestTitle.isPending,
@@ -106,6 +124,9 @@ export function useExternalTitleActions(
     outcome,
     pending,
     toggleWatchlist,
+    favorite,
+    likes,
+    toggleFavorite,
     ratingIdentity: { mediaType: title.mediaType === "tv" ? "series" : "movie", tmdbId: title.tmdbId },
   };
 }

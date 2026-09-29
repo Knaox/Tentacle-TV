@@ -16,6 +16,8 @@ interface Props {
   variant?: Variant;
   style?: ViewStyle;
   uppercase?: boolean;
+  /** Lignes au plus (défaut 1) : une étiquette bornée passe à la ligne plutôt que de se tronquer. */
+  lines?: number;
 }
 
 interface BadgeStyle {
@@ -54,7 +56,7 @@ function variantStyle(t: AppTheme, variant: Variant): BadgeStyle {
   }
 }
 
-export function Badge({ label, variant = "muted", style, uppercase = true }: Props) {
+export function Badge({ label, variant = "muted", style, uppercase = true, lines = 1 }: Props) {
   const theme = useTheme();
   const v = variantStyle(theme, variant);
   const gradient = variant === "gradient" ? progressGradient(theme.colors.brand) : null;
@@ -84,7 +86,7 @@ export function Badge({ label, variant = "muted", style, uppercase = true }: Pro
           color: v.text,
           textTransform: uppercase ? "uppercase" : "none",
         }}
-        numberOfLines={1}
+        numberOfLines={lines}
       >
         {label}
       </Text>
