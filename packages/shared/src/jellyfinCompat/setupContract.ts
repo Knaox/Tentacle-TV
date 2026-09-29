@@ -13,6 +13,7 @@
 export type SetupCheckId =
   | "metadataTmdb"
   | "metadataLanguage"
+  | "trailers"
   | "trickplay"
   | "segmentsProvider"
   | "realtimeMonitor"
@@ -37,7 +38,8 @@ export type SetupActionId =
   | "setMetadataLanguage"
   | "installChapterSegments"
   | "generateTrickplay"
-  | "scanMediaSegments";
+  | "scanMediaSegments"
+  | "refreshMissingMetadata";
 
 /** Une bibliothèque de films, de séries ou mixte, et ce réglage chez elle. */
 export interface SetupLibrary {
@@ -68,6 +70,30 @@ export interface SetupTask {
   lastStatus: string | null;
 }
 
+/**
+ * Les bandes-annonces, mesurées (`trailers`) : Tentacle en tire de trois
+ * sources — celles que TMDB donne à Jellyfin (`RemoteTrailers`), les fichiers
+ * locaux, et Jellyseerr quand Vigie y est branchée.
+ */
+export interface SetupTrailers {
+  /** Films et séries lus — plafonnés, voir `sampled`. */
+  titles: number;
+  /** Ceux qui ont un identifiant TMDB : les seuls dont TMDB peut donner une bande-annonce. */
+  withTmdb: number;
+  /** Ceux qui ont au moins une bande-annonce, distante ou locale. */
+  withTrailer: number;
+  /** Au-delà du plafond, seuls les premiers titres ont été lus. */
+  sampled: boolean;
+  /** TMDB écarté — greffon coupé, ou retiré des fournisseurs d'une bibliothèque : la cause première. */
+  tmdbBlocked: boolean;
+  /** Jellyseerr branché par Vigie : chaque fiche y cherche aussi les vidéos TMDB. */
+  jellyseerr: boolean;
+  /** Une actualisation de bibliothèque tourne dans Jellyfin. */
+  refreshing: boolean;
+  /** Ce que la compatibilité de la version installée dit des bonus et bandes-annonces. */
+  compatGaps: Array<{ label: { fr: string; en: string }; note: { fr: string; en: string } | null }>;
+}
+
 export interface SetupCheck {
   id: SetupCheckId;
   level: SetupLevel;
@@ -80,6 +106,7 @@ export interface SetupCheck {
   missingTmdb: number | null;
   plugins: SetupPlugin[] | null;
   task: SetupTask | null;
+  trailers: SetupTrailers | null;
   /** Le geste en un clic, quand il existe et qu'il y a quelque chose à faire. */
   action: SetupActionId | null;
   /** La page du tableau de bord de Jellyfin, à partir de sa racine (« /web/#/dashboard/libraries »). */
@@ -102,6 +129,24 @@ export interface JellyfinSetupReport {
   restartPending: boolean;
   error: SetupFailure | null;
   checks: SetupCheck[];
+}
+
+/** Pourquoi les bandes-annonces manquent, vu d'un client. */
+export type TrailerReadinessReason = "tmdb-plugin-disabled" | "tmdb-fetcher-disabled" | "few-trailers";
+
+/**
+ * `GET /api/trailers/readiness` — le diagnostic des bandes-annonces résumé
+ * pour TOUT compte connecté (pas seulement l'administration) : une fiche sans
+ * bande-annonce peut dire « le serveur est mal réglé » sans rien révéler de
+ * ses bibliothèques. Gardé dix minutes côté serveur. `unknown` : Jellyfin
+ * muet, aucune bibliothèque, lecture ratée — rien à dire.
+ */
+export interface TrailerReadiness {
+  state: "ready" | "misconfigured" | "unknown";
+  reasons: TrailerReadinessReason[];
+  /** Part des titres connus de TMDB qui ont au moins une bande-annonce (0 à 1) ; `null` : pas mesurée. */
+  coverage: number | null;
+  checkedAt: string;
 }
 
 /** Le corps de `POST /api/admin/jellyfin/setup/apply`. */

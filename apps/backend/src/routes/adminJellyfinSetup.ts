@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { applySetupAction, type ApplyError } from "../services/jellyfinSetup/setupActions";
 import { buildSetupReport } from "../services/jellyfinSetup/setupService";
+import { forgetTrailerReadiness } from "../services/jellyfinSetup/trailerReadiness";
 
 /**
  * Les réglages recommandés de Jellyfin, vus et appliqués depuis
@@ -17,6 +18,7 @@ const applySchema = z.object({
     "installChapterSegments",
     "generateTrickplay",
     "scanMediaSegments",
+    "refreshMissingMetadata",
   ]),
   language: z.string().max(8).optional(),
   country: z.string().max(4).optional(),
@@ -44,6 +46,8 @@ export const adminJellyfinSetupRoutes: FastifyPluginAsync = async (app) => {
     const outcome = await applySetupAction(parsed.data);
     if (!outcome.ok) return reply.status(STATUS[outcome.error]).send({ error: outcome.error });
     request.log.info({ action: parsed.data.action, changed: outcome.changed }, "[jellyfin-setup] réglage appliqué");
+    // Le résumé que lisent les fiches se refait au prochain appel.
+    forgetTrailerReadiness();
     return { changed: outcome.changed, report: await buildSetupReport() };
   });
 };

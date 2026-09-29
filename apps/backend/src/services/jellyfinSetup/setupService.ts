@@ -1,6 +1,10 @@
 import { getDirectStreamingConfig, getJellyfinUrl } from "../configStore";
+import { resolveCompat } from "../jellyfinCompat/compatVerdict";
+import { getCompatManifestState } from "../jellyfinCompat/manifestStore";
 import type { JellyfinSetupReport } from "../jellyfinCompat/setupContract";
-import { evaluateSetup } from "./setupChecks";
+import { getSeerrConfig } from "../seerConfig";
+import { BACKEND_VERSION } from "../version";
+import { evaluateSetup, type SetupContext } from "./setupChecks";
 import { readSetupSnapshot } from "./setupSnapshot";
 
 /**
@@ -21,6 +25,24 @@ export function dashboardUrl(): string | null {
   return raw.trim().replace(/\/+$/, "") || null;
 }
 
+/** La zone du manifeste qui parle des bonus et bandes-annonces (cf. `compat/README.md`). */
+const EXTRAS_AREA = "extras";
+
+/**
+ * Hors de Jellyfin : Jellyseerr branché par Vigie (la source des vidéos de
+ * `/api/tmdb/trailers`), et ce que la compatibilité de la version installée
+ * dit des bonus et bandes-annonces.
+ */
+export function setupContext(version: string): SetupContext {
+  const compat = resolveCompat(getCompatManifestState().manifest, version, BACKEND_VERSION);
+  return {
+    jellyseerr: getSeerrConfig() !== null,
+    compatGaps: compat.gaps
+      .filter((gap) => gap.area === EXTRAS_AREA)
+      .map((gap) => ({ label: gap.label, note: gap.note })),
+  };
+}
+
 export async function buildSetupReport(): Promise<JellyfinSetupReport> {
   const read = await readSetupSnapshot();
   const checkedAt = new Date().toISOString();
@@ -33,6 +55,6 @@ export async function buildSetupReport(): Promise<JellyfinSetupReport> {
     dashboardUrl: dashboardUrl(),
     restartPending: read.snapshot.restartPending,
     error: null,
-    checks: evaluateSetup(read.snapshot),
+    checks: evaluateSetup(read.snapshot, setupContext(read.snapshot.version)),
   };
 }

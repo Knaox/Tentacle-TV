@@ -47,6 +47,7 @@ function snapshot(patch: Partial<SetupSnapshot> = {}): SetupSnapshot {
       },
     ],
     missingTmdb: 1,
+    trailers: { titles: 4, withTmdb: 3, withTrailer: 1, sampled: false },
     ...patch,
   };
 }
@@ -68,9 +69,9 @@ describe("bibliothèques concernées", () => {
 });
 
 describe("réglages recommandés", () => {
-  it("rend les sept réglages, dans l'ordre de la page", () => {
+  it("rend les huit réglages, dans l'ordre de la page", () => {
     expect(evaluateSetup(snapshot()).map((c) => c.id)).toEqual([
-      "metadataTmdb", "metadataLanguage", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "chapterImages",
+      "metadataTmdb", "metadataLanguage", "trailers", "trickplay", "segmentsProvider", "realtimeMonitor", "hardwareAcceleration", "chapterImages",
     ]);
   });
 
@@ -148,8 +149,8 @@ describe("réglages recommandés", () => {
   });
 
   it("ce que Jellyfin n'a pas rendu est inconnu, sans rien inventer", () => {
-    const checks = evaluateSetup(snapshot({ libraries: null, plugins: null, config: null, encoding: null, tasks: null, missingTmdb: null }));
-    expect(checks.filter((c) => c.id !== "chapterImages").map((c) => c.state)).toEqual(Array(6).fill("unknown"));
+    const checks = evaluateSetup(snapshot({ libraries: null, plugins: null, config: null, encoding: null, tasks: null, missingTmdb: null, trailers: null }));
+    expect(checks.filter((c) => c.id !== "chapterImages").map((c) => c.state)).toEqual(Array(7).fill("unknown"));
     expect(checks.every((c) => c.action === null)).toBe(true);
   });
 });

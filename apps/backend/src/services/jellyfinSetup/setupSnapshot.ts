@@ -1,9 +1,11 @@
 import { jellyfinAdminFetch, type JellyfinFailure } from "../jellyfinAdminFetch";
+import { readTrailerCoverage, type TrailerCounts } from "./trailerCoverage";
 
 /**
  * L'état réel du Jellyfin connecté, en une lecture : bibliothèques et leurs
  * options, greffons, configuration du serveur et du transcodage, tâches
- * planifiées, titres sans identifiant TMDB. Tout part en parallèle avec la clé
+ * planifiées, titres sans identifiant TMDB, bandes-annonces comptées. Tout part
+ * en parallèle avec la clé
  * d'administration ; une lecture qui échoue vaut `null` et ne rend « inconnu »
  * que le réglage qui en dépend.
  *
@@ -23,6 +25,7 @@ export interface SetupSnapshot {
   encoding: Loose | null;
   tasks: Loose[] | null;
   missingTmdb: number | null;
+  trailers: TrailerCounts | null;
 }
 
 export type SnapshotRead = { ok: true; snapshot: SetupSnapshot } | { ok: false; failure: JellyfinFailure };
@@ -43,13 +46,14 @@ export async function readSetupSnapshot(): Promise<SnapshotRead> {
   if (!info.ok) return { ok: false, failure: info.failure };
   if (!isRecord(info.data) || typeof info.data.Version !== "string") return { ok: false, failure: "invalid" };
 
-  const [libraries, plugins, config, encoding, tasks, missingTmdb] = await Promise.all([
+  const [libraries, plugins, config, encoding, tasks, missingTmdb, trailers] = await Promise.all([
     read("/Library/VirtualFolders", records),
     read("/Plugins", records),
     read("/System/Configuration", (data) => (isRecord(data) ? data : null)),
     read("/System/Configuration/encoding", (data) => (isRecord(data) ? data : null)),
     read("/ScheduledTasks?isHidden=false", records),
     read(MISSING_TMDB_PATH, (data) => (isRecord(data) && typeof data.TotalRecordCount === "number" ? data.TotalRecordCount : null)),
+    readTrailerCoverage(),
   ]);
   return {
     ok: true,
@@ -62,6 +66,7 @@ export async function readSetupSnapshot(): Promise<SnapshotRead> {
       encoding,
       tasks,
       missingTmdb,
+      trailers,
     },
   };
 }

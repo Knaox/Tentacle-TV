@@ -59,6 +59,10 @@ const fake = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     case "GET /ScheduledTasks":
       return json([{ Key: "RefreshTrickplayImages", Id: "trick" }, { Key: "TaskExtractMediaSegments", Id: "seg" }, { Key: "RefreshLibrary", Id: "scan" }]);
     default:
+      if (method === "POST" && /^\/Items\/[^/]+\/Refresh$/.test(url.pathname)) {
+        jf.started.push(`refresh:${url.pathname.split("/")[2]}?${url.search.includes("ReplaceAllMetadata=false") ? "sans-remplacer" : "REMPLACE"}`);
+        return empty();
+      }
       if (method === "POST" && url.pathname.startsWith("/ScheduledTasks/Running/")) {
         jf.started.push(url.pathname.split("/").pop() ?? "");
         return empty();
@@ -135,6 +139,11 @@ describe("gestes en un clic", () => {
     await applySetupAction({ action: "scanMediaSegments" });
     expect(jf.started).toEqual(["trick", "seg"]);
     expect(await applySetupAction({ action: "RefreshLibrary" as never })).toEqual({ ok: false, error: "bad-request" });
+  });
+
+  it("métadonnées manquantes : chaque bibliothèque VIDÉO relue, sans rien remplacer", async () => {
+    expect(await applySetupAction({ action: "refreshMissingMetadata" })).toEqual({ ok: true, changed: 2 });
+    expect(jf.started).toEqual(["refresh:films?sans-remplacer", "refresh:series?sans-remplacer"]);
   });
 
   it("sans Jellyfin configuré : rien ne part", async () => {

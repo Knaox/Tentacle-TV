@@ -2,6 +2,7 @@ import { jellyfinAdminFetch, type JellyfinFailure } from "../jellyfinAdminFetch"
 import type { SetupApplyRequest } from "../jellyfinCompat/setupContract";
 import { CHAPTER_SEGMENTS } from "./segmentProviders";
 import { TASK_KEYS, isVideoLibrary } from "./setupChecks";
+import { forgetTrailerCoverage } from "./trailerCoverage";
 import type { Loose } from "./setupSnapshot";
 
 /**
@@ -101,6 +102,28 @@ async function runTask(key: string): Promise<ApplyOutcome> {
   return res.ok ? { ok: true, changed: 1 } : fail(res.failure);
 }
 
+/**
+ * « Rechercher les métadonnées manquantes », comme le propose le tableau de
+ * bord de Jellyfin : chaque bibliothèque vidéo relue en profondeur, SANS rien
+ * remplacer de ce qui existe (`ReplaceAllMetadata=false`) — seuls les champs
+ * vides se remplissent, bandes-annonces comprises. Jellyfin met le travail en
+ * file ; son avancement se lit dans `RefreshStatus`.
+ */
+async function refreshMissingMetadata(): Promise<ApplyOutcome> {
+  const libraries = await videoLibraries();
+  if (typeof libraries === "string") return fail(libraries);
+  const query = "Recursive=true&MetadataRefreshMode=FullRefresh&ImageRefreshMode=Default&ReplaceAllMetadata=false&ReplaceAllImages=false";
+  let queued = 0;
+  for (const library of libraries) {
+    if (typeof library.ItemId !== "string") continue;
+    const res = await jellyfinAdminFetch(`/Items/${encodeURIComponent(library.ItemId)}/Refresh?${query}`, { method: "POST", expectEmpty: true });
+    if (!res.ok) return fail(res.failure);
+    queued += 1;
+  }
+  forgetTrailerCoverage();
+  return queued > 0 ? { ok: true, changed: queued } : fail("not-applied");
+}
+
 let busy = false;
 
 /** Un geste à la fois : deux écritures d'options croisées se remplaceraient l'une l'autre. */
@@ -121,6 +144,8 @@ export async function applySetupAction(request: SetupApplyRequest): Promise<Appl
         return await runTask(TASK_KEYS.trickplay);
       case "scanMediaSegments":
         return await runTask(TASK_KEYS.segments);
+      case "refreshMissingMetadata":
+        return await refreshMissingMetadata();
       default:
         return fail("bad-request");
     }

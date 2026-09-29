@@ -1,6 +1,7 @@
 import type { SetupCheck, SetupLibrary, SetupState, SetupTask } from "../jellyfinCompat/setupContract";
 import { segmentPlugins } from "./segmentProviders";
 import type { Loose, SetupSnapshot } from "./setupSnapshot";
+import { trailersCheck, type TrailersContext } from "./trailersCheck";
 
 /**
  * Les réglages de Jellyfin qui rendent Tentacle complet, jugés sur l'état lu
@@ -62,16 +63,21 @@ export function readTask(tasks: readonly Loose[] | null, key: string): SetupTask
   };
 }
 
-const base = { libraries: null, current: null, missingTmdb: null, plugins: null, task: null, action: null } as const;
+const base = { libraries: null, current: null, missingTmdb: null, plugins: null, task: null, trailers: null, action: null } as const;
 
 /**
  * TMDB : l'identifiant dont vivent les recommandations, les sagas, Vigie et la
  * recherche hors bibliothèque. Le greffon TMDb est intégré à Jellyfin ; une
  * bibliothèque peut pourtant l'écarter de ses fournisseurs (`TypeOptions`).
  */
+/** Le greffon TMDb intégré à Jellyfin est-il actif ? `null` : liste des greffons non lue, ou greffon absent. */
+export function tmdbPluginActive(plugins: readonly Loose[] | null): boolean | null {
+  const plugin = plugins?.find((p) => /^tmdb$/i.test(text(p.Name)) || text(p.Id).toLowerCase() === "b8715ed16c4745289ad3f72deb539cd4");
+  return plugin ? text(plugin.Status).toLowerCase() === "active" : null;
+}
+
 function tmdbCheck(snapshot: SetupSnapshot, videos: Loose[] | null): SetupCheck {
-  const plugin = snapshot.plugins?.find((p) => /^tmdb$/i.test(text(p.Name)) || text(p.Id).toLowerCase() === "b8715ed16c4745289ad3f72deb539cd4");
-  const pluginActive = plugin ? text(plugin.Status).toLowerCase() === "active" : null;
+  const pluginActive = tmdbPluginActive(snapshot.plugins);
   const libraries = videos && flagged(videos, (options, library) => {
     const types = text(library.CollectionType).toLowerCase() === "tvshows" ? ["Series"]
       : text(library.CollectionType).toLowerCase() === "movies" ? ["Movie"] : ["Movie", "Series"];
@@ -172,11 +178,16 @@ function chapterImagesCheck(videos: Loose[] | null): SetupCheck {
   };
 }
 
-export function evaluateSetup(snapshot: SetupSnapshot): SetupCheck[] {
+/** Ce que les réglages lisent hors de Jellyfin : Vigie, et ce que la compatibilité dit des bonus. */
+export type SetupContext = Omit<TrailersContext, "coverage">;
+
+export function evaluateSetup(snapshot: SetupSnapshot, context: SetupContext = { jellyseerr: false, compatGaps: [] }): SetupCheck[] {
   const videos = snapshot.libraries ? snapshot.libraries.filter(isVideoLibrary) : null;
+  const tmdb = tmdbCheck(snapshot, videos);
   return [
-    tmdbCheck(snapshot, videos),
+    tmdb,
     languageCheck(snapshot),
+    trailersCheck(videos, tmdb, { ...context, coverage: snapshot.trailers }),
     libraryFlagCheck("trickplay", "EnableTrickplayImageExtraction", videos, readTask(snapshot.tasks, TASK_KEYS.trickplay)),
     segmentsCheck(snapshot),
     libraryFlagCheck("realtimeMonitor", "EnableRealtimeMonitor", videos, null),
