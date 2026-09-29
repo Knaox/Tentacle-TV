@@ -78,7 +78,9 @@ une entrée déclarée que la page n'envoie plus prend son défaut, en silence.
 
 `promote` (le défaut au cran store) reprend **le binaire déjà testé** au lieu
 d'en reconstruire un autre. Windows fait exception : le Microsoft Store exige le
-paquet à chaque soumission.
+paquet à chaque soumission. Une cible sans RIEN de testé pour cette version se
+construit : `prepare` le vérifie avant le moindre job (`promote-probe.mjs`), au
+lieu de laisser la reprise échouer pendant que Windows part seul au Store.
 
 ### Les cinq workflows
 

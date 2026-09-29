@@ -15,7 +15,9 @@
 # `promote` (par défaut vrai, au cran store) reprend ce qui a déjà été testé :
 # macOS soumet le build DÉJÀ rattaché, Linux bascule sa pré-version en version
 # publiée sans rien reconstruire. Windows fait exception — le Microsoft Store
-# exige le paquet à chaque soumission, donc il rebâtit toujours.
+# exige le paquet à chaque soumission, donc il rebâtit toujours. Une cible qui
+# n'a RIEN à reprendre (aucun run de test pour cette version) se construit :
+# `prepare` le vérifie avant le moindre job (promote-probe.mjs).
 #
 # TOUT EST FIGÉ SUR UN COMMIT : le job `prepare` publie un `sha`, et chaque job
 # checkout CE sha — y compris `mac-attach`, qui attend jusqu'à 35 minutes, et
@@ -137,6 +139,12 @@ jobs:
           IN_CHANNEL: ${{ inputs.channel }}
           IN_PROMOTE: ${{ inputs.promote }}
           BUMPED_SHA: ${{ steps.pushed.outputs.sha }}
+          # Le pré-contrôle de la reprise (promote-probe.mjs, gh release view).
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           SHA="${BUMPED_SHA:-${{ github.sha }}}"
@@ -163,6 +171,26 @@ jobs:
             if [ "$CHANNEL" = "store" ] && [ "$PROMOTE" = "true" ]; then echo promote; else echo build; fi
           }
           MACOS=$(plan macos); LINUX=$(plan linux)
+
+          # « Reprendre ce qui a été testé » suppose qu'un run de test est passé
+          # par là. Sinon la cible se CONSTRUIT : sans ce contrôle, macOS et
+          # Linux échouaient à mi-chemin pendant que Windows partait seul au
+          # Microsoft Store (1.25.0, 2026-09-29). Une vérification impossible
+          # garde la reprise : le job de reprise dira ce qui manque.
+          if [ "$MACOS" = promote ]; then
+            MACOS=$(LABEL=macOS PLATFORM=MAC_OS VERSION="$VERSION" node .github/scripts/promote-probe.mjs asc)
+          fi
+          if [ "$LINUX" = promote ]; then
+            if OUT=$(gh release view "$TAG" --json tagName 2>&1); then
+              echo "::notice::Linux ${VERSION} : reprise de la Release ${TAG}."
+            elif grep -qi "release not found" <<<"$OUT"; then
+              echo "::warning::Linux ${VERSION} : aucune Release ${TAG} à reprendre — la cible est CONSTRUITE au lieu d'être promue."
+              LINUX=build
+            else
+              echo "::warning::Linux ${VERSION} : impossible de vérifier la Release ${TAG} (${OUT}) — la reprise demandée est gardée."
+            fi
+          fi
+
           # Windows ne connaît pas la promotion : le Microsoft Store veut le
           # paquet à chaque soumission, il n'y a rien à « faire monter ».
           want windows && WINDOWS=build || WINDOWS=skip
