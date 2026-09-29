@@ -12,7 +12,7 @@ import { libraryReady, resolveFixtures, scanLibrary, type Fixtures } from "./fix
 import { JellyfinHttp } from "./jellyfinHttp";
 import { mediaScript } from "./media";
 import {
-  ADMIN_NAME, USER2_NAME, USER_NAME, allowShortResume, authenticate, completeWizard, ensureApiKey, ensureLibraries, ensureUser,
+  ADMIN_NAME, USER2_NAME, USER_NAME, allowShortResume, authenticate, completeWizard, ensureApiKey, ensureLibraries, ensureUser, libraryIds,
   setLegacyAuthorization, waitForServer, type Account, type Library,
 } from "./provision";
 
@@ -75,10 +75,11 @@ export async function prepareInstance(opts: InstanceOptions, log: (l: string) =>
   const legacyAuth = opts.legacyAuth === "default" ? await legacyState(http, admin.token) : await setLegacyAuthorization(http, admin.token, opts.legacyAuth === "on");
   log(`Autorisation héritée : ${legacyAuth === null ? "sans option (toujours acceptée)" : legacyAuth ? "acceptée" : "COUPÉE"}`);
   await allowShortResume(http, admin.token);
-  const libraries = await ensureLibraries(http, admin.token);
+  await ensureLibraries(http, admin.token);
   const userIds = { user: await ensureUser(http, admin.token, USER_NAME), user2: await ensureUser(http, admin.token, USER2_NAME) };
   const counts = (opts.reuse ? await libraryReady(http, admin.token) : null) ?? await scanLibrary(http, admin.token, log);
   log(`Indexés : ${counts.MovieCount} films, ${counts.SeriesCount} séries, ${counts.EpisodeCount} épisodes.`);
+  const libraries = await libraryIds(http, admin.token);
   const fixtures = await resolveFixtures(http, admin.token, admin.id);
 
   const openapi = await fetch(`${url}/api-docs/openapi.json`);

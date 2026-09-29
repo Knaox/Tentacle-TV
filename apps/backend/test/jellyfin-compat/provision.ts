@@ -135,10 +135,14 @@ const LIBRARY_OPTIONS = {
 };
 
 /** Les trois bibliothèques, créées si besoin ; rend leurs identifiants. */
-export async function ensureLibraries(http: JellyfinHttp, adminToken: string): Promise<Library[]> {
-  type Folder = { Name: string; ItemId: string; CollectionType?: string | null };
-  const list = async (): Promise<Folder[]> => http.get<Folder[]>("/Library/VirtualFolders", adminToken);
-  const existing = await list();
+type Folder = { Name: string; ItemId?: string; CollectionType?: string | null };
+
+const virtualFolders = (http: JellyfinHttp, adminToken: string): Promise<Folder[]> =>
+  http.get<Folder[]>("/Library/VirtualFolders", adminToken);
+
+/** Crée les bibliothèques qui manquent (sans scan : `scanLibrary` s'en charge). */
+export async function ensureLibraries(http: JellyfinHttp, adminToken: string): Promise<void> {
+  const existing = await virtualFolders(http, adminToken);
   for (const lib of LIBRARIES) {
     if (existing.some((f) => f.Name === lib.name)) continue;
     const params = new URLSearchParams({ name: lib.name, paths: lib.path, refreshLibrary: "false" });
@@ -147,12 +151,21 @@ export async function ensureLibraries(http: JellyfinHttp, adminToken: string): P
       method: "POST", token: adminToken, body: { LibraryOptions: LIBRARY_OPTIONS },
     });
   }
-  const folders = await list();
-  return LIBRARIES.map((lib) => {
-    const folder = folders.find((f) => f.Name === lib.name);
-    if (!folder) throw new Error(`Bibliothèque « ${lib.name} » introuvable après création`);
-    return { id: folder.ItemId, name: lib.name, collectionType: lib.collectionType };
-  });
+}
+
+/**
+ * Les identifiants des bibliothèques, APRÈS le scan : Jellyfin 10.10 ne donne
+ * l'`ItemId` d'une bibliothèque qu'une fois son dossier scanné (10.11 et 12.x,
+ * dès la création) — relevés plus tôt, ils manquaient, et chaque requête
+ * partait avec `ParentId=undefined`.
+ */
+export async function libraryIds(http: JellyfinHttp, adminToken: string): Promise<Library[]> {
+  let folders: Folder[] = [];
+  await waitUntil(async () => {
+    folders = await virtualFolders(http, adminToken);
+    return LIBRARIES.every((lib) => folders.find((f) => f.Name === lib.name)?.ItemId);
+  }, 60_000, "identifiants des bibliothèques");
+  return LIBRARIES.map((lib) => ({ id: folders.find((f) => f.Name === lib.name)!.ItemId!, name: lib.name, collectionType: lib.collectionType }));
 }
 
 /** Un compte non administrateur ; rend son identifiant. */
