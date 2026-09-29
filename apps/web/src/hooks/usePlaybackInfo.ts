@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
+import { directPlayUrl } from "../lib/directPlayUrl";
 import type { MediaSource } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
@@ -198,12 +199,7 @@ export function usePlaybackInfo(nativePlayer = false) {
       let url: string;
       const ds = client.getDirectStreaming();
       if (directPlay) {
-        // En direct, `ApiKey` : Jellyfin 12 refuse `api_key` ; vers le proxy,
-        // `api_key` que tout serveur Tentacle lit.
-        const path = `/Videos/${opts.itemId}/stream?Static=true&MediaSourceId=${ms.Id}`;
-        url = ds
-          ? withDirectApiKey(`${ds.mediaBaseUrl}${path}`, ds.jellyfinToken)
-          : `${client.getBaseUrl()}${path}&api_key=${client.getAccessToken()}`;
+        url = directPlayUrl(client, opts.itemId, ms.Id);
       } else if (ms.TranscodingUrl) {
         // Transcodage = HLS chargé par hls.js (XHR), donc soumis au CORS. Sur
         // la coquille Electron (origine applicative), le manifeste direct part
