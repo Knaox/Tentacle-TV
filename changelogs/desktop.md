@@ -29,6 +29,7 @@ et Linux reçoivent l'ensemble.
 - **Des textes lisibles** : la fiche sur un décor clair, les légendes sous les cartes
 - La mention légale du premier lancement s'ouvre dans la langue affichée
 - **Administrateurs : la vue d'ensemble** dit si votre Jellyfin et sa dernière version publiée sont compatibles, montre l'état réel des réglages Jellyfin conseillés et les applique d'un clic quand c'est sûr, et compte les titres qui ont une bande-annonce, avec la raison de ceux qui n'en ont pas. Services dit si chaque greffon de détection des passages (génériques, résumés) est actif, installé ou absent
+- **Administrateurs : « Accès au serveur »** dans la vue d'ensemble — le lien public et la lecture directe, chacun avec son état réellement vérifié depuis le serveur, ce que chaque adresse a répondu, pourquoi il compte et où le régler
 
 ### EN
 - **Your stats**: a new page shows your screen time, your genres, your favorite movies and actors, your pace and your records, what you really listen to ("Dubbed or original?") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time
@@ -45,6 +46,7 @@ et Linux reçoivent l'ensemble.
 - **Readable text**: the title page on a light backdrop, the captions under cards
 - The first-launch legal notice opens in the displayed language
 - **Administrators: the overview** tells whether your Jellyfin and its latest published version are compatible, shows the real state of the recommended Jellyfin settings and applies them in one click when it is safe, and counts the titles that have a trailer, with the reason for those that do not. Services tells whether each segment-detection plugin (credits, recaps) is active, installed or missing
+- **Administrators: "Server access"** in the overview — the public link and direct streaming, each with its state actually checked from the server, what each address answered, why it matters and where to set it
 
 ## [win-1.25.0]
 <!-- Microsoft Store : 1500 caractères. Le bloc nu part vers macOS et Linux. -->
@@ -59,7 +61,7 @@ et Linux reçoivent l'ensemble.
 - **Affiner** : un « j'aime » met le cœur au titre, glisser vers le bas le passe
 - **Avec Jellyfin 12** : choix de la version, filtres de langue, VO
 - **Le bouton Copier fonctionne** de nouveau
-- **Administrateurs** : compatibilité de Jellyfin et réglages conseillés dans la vue d'ensemble
+- **Administrateurs** : compatibilité de Jellyfin, réglages conseillés et accès au serveur dans la vue d'ensemble
 
 ### EN
 - **Your stats**: time spent, genres, favorites, records, "Dubbed or original?", shareable through a revocable link
@@ -72,7 +74,7 @@ et Linux reçoivent l'ensemble.
 - **Refine**: a "like" hearts the title, dragging down skips it
 - **With Jellyfin 12**: version choice, language filters, original language
 - **The Copy button works** again
-- **Administrators**: Jellyfin compatibility and recommended settings in the overview
+- **Administrators**: Jellyfin compatibility, recommended settings and server access in the overview
 
 ## [1.24.0]
 ### FR
