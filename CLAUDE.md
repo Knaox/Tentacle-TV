@@ -268,6 +268,23 @@ la version déployée (`data/plugins/installed.json`) avant de conclure au bug.
   `useHeldRecoItems` / `useRecoCardHold` (`reco/recoRetirement.ts`). Seul
   « Ne plus me proposer » part tout de suite. Détail : `docs/RECO-POUR-VOUS.md`.
 
+## Aide — un guide, une source ; un rappel, jamais une bannière
+
+Le guide « Bandes-annonces » (`/help/trailers`, `#admin` pour la partie
+administrateur) n'a qu'UNE source : sa structure dans
+`packages/shared/src/help/trailerGuide.ts`, ses mots dans l'espace i18n
+`trailerHelp` (lu par le mobile : son garde-fou refuse « téléchargement »).
+Le web, le bureau, le miroir et le mobile le rendent ; les téléviseurs n'en
+disent qu'une phrase qui renvoie vers eux — rien de focalisable sur la fiche.
+
+Le rappel de la fiche (« Vous ne voyez pas les bandes-annonces ? ») suit une
+règle partagée (`help/trailerHint.ts`, `useFicheTrailerHint`) : titre sans
+AUCUNE bande-annonce ET serveur mal réglé (`/api/trailers/readiness`), rien
+tant qu'on ne sait pas. Masqué « pour de bon », c'est une préférence du
+COMPTE (`/api/preferences/hints`, liste FERMÉE `help/dismissibleHints.ts`,
+miroir backend verrouillé, suivie en direct par la portée `hints`) : un
+nouveau rappel masquable s'y ajoute, jamais une clé de stockage d'appareil.
+
 ## Coding Standards
 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded
