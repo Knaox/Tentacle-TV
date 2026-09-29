@@ -16,9 +16,10 @@ const FOCUS =
  * taille de « Afficher plus », qui mène au guide, et une croix pour ne plus
  * jamais la voir — suivie quelques secondes d'un « Annuler » à la même place.
  *
- * Posée SOUS la rangée d'actions mais HORS du flux (`absolute`, dans la marge
- * basse de la scène) : elle paraît quand les listes arrivent sans pousser
- * « Lecture » d'un pixel — la scène est ancrée par le bas.
+ * En BOUT de la rangée d'actions, en ligne : elle paraît quand les listes
+ * arrivent sans rien pousser — ni « Lecture », ni la capsule, ni la scène,
+ * ancrée par le bas. Sous la rangée, elle tombait dans la marge basse de la
+ * scène, que la barre de titre du bureau fait passer sous la fenêtre.
  *
  * ⚠️ Substituée sur webOS (`TrailerHelpHintTv`) : une phrase sans lien.
  */
@@ -33,7 +34,7 @@ export const TrailerHelpHint = memo(function TrailerHelpHint({ item }: { item: M
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
       aria-live="polite"
-      className="absolute left-0 top-full mt-2 flex items-center gap-1 text-[0.8125rem] font-medium text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
+      className="flex items-center gap-1 text-[0.8125rem] font-medium text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]"
     >
       {phase === "hint" ? (
         <>

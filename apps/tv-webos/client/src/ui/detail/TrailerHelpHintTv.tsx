@@ -11,8 +11,9 @@ import type { MediaItem } from "@tentacle-tv/shared";
  * le guide vit — et où l'on masque le rappel, pour tous les appareils du
  * compte.
  *
- * Même règle que partout (`useFicheTrailerHint`, phase `hint`) ; même place
- * que sur le web : sous les actions, hors du flux.
+ * Même règle que partout (`useFicheTrailerHint`, phase `hint`). Rendue en
+ * bout de la rangée d'actions comme sur le web, mais sur SA ligne
+ * (`basis-full`) : une phrase entre deux boutons ne se lit pas au salon.
  *
  * Substitué à `apps/web/src/components/detail/TrailerHelpHint.tsx`.
  */
@@ -22,7 +23,7 @@ export const TrailerHelpHint = memo(function TrailerHelpHint({ item }: { item: M
   if (phase !== "hint") return null;
 
   return (
-    <p className="pointer-events-none absolute left-0 top-full mt-3 max-w-3xl text-base leading-snug text-on-media-secondary">
+    <p className="pointer-events-none basis-full max-w-3xl text-base leading-snug text-on-media-secondary">
       {t("hintTv")}
     </p>
   );

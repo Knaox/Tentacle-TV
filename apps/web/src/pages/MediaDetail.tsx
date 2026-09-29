@@ -11,7 +11,6 @@ import { DetailImageViewer } from "../components/detail/DetailImageViewer";
 import { DetailMetadata } from "../components/detail/DetailMetadata";
 import { DetailOverview } from "../components/detail/DetailOverview";
 import { DetailActions } from "../components/detail/DetailActions";
-import { TrailerHelpHint } from "../components/detail/TrailerHelpHint";
 import { DetailPoster } from "../components/detail/DetailPoster";
 import { DetailOpenOverlay, type TargetRect } from "../components/detail/DetailOpenOverlay";
 import { DetailPlaceholder } from "../components/detail/DetailPlaceholder";
@@ -190,9 +189,6 @@ export function MediaDetail() {
               <DetailMetadata item={item} />
               <DetailOverview item={item} />
               <DetailActions item={item} collectionCount={collectionItems?.length} />
-              {/* Sous les actions, hors du flux : « Vous ne voyez pas les
-                  bandes-annonces ? », seulement quand le serveur est mal réglé. */}
-              <TrailerHelpHint item={item} />
             </DetailTextColumn>
           </motion.div>
         </DetailStage>
