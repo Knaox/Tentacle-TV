@@ -71,6 +71,9 @@ export default {
   collectionTitles_one: "{{count}} title",
   collectionTitles_other: "{{count}} titles",
   // Media page — the stage and the full-screen image view
+  detailIncludedIn: "Included in",
+  detailVersion: "Version",
+  detailVersionLabel: "Choose a version",
   detailRemainingMinutes: "{{count}} min left",
   detailRemainingHours: "{{hours}} h {{minutes}} min left",
   detailCommunityScore: "Audience score",

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSeriesWatchState } from "@tentacle-tv/api-client";
-import { formatEpisodeCode, resumeState, splitMinutes, type MediaItem } from "@tentacle-tv/shared";
+import { formatEpisodeCode, resumeState, splitMinutes, VERSION_QUERY_PARAM, type MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon } from "../media/MediaDetailIcons";
 import { PressableScale } from "../ui/PressableScale";
 import { DETAIL_COLLECTION_ANCHOR } from "./detailStageGeometry";
@@ -22,7 +22,12 @@ const PRIMARY_STYLE = {
  * (« Reprendre S1 E3 »), avec SA reprise. Collection, série terminée : aucun
  * bouton, il n'y a rien à lancer.
  */
-export function DetailPlayButton({ item, collectionCount = 0 }: { item: MediaItem; collectionCount?: number }) {
+export function DetailPlayButton({ item, collectionCount = 0, version = null }: {
+  item: MediaItem;
+  collectionCount?: number;
+  /** Version choisie sous la rangée (`DetailVersionPicker`) ; la fiche d'une série n'en a pas. */
+  version?: string | null;
+}) {
   const { t } = useTranslation(["common", "media"]);
   const navigate = useNavigate();
   const isSeries = item.Type === "Series";
@@ -64,7 +69,7 @@ export function DetailPlayButton({ item, collectionCount = 0 }: { item: MediaIte
       remaining={remaining}
       progress={resume?.progress ?? null}
       ariaLabel={`${label} — ${target.Name}`}
-      onClick={() => navigate(`/watch/${target.Id}`)}
+      onClick={() => navigate(`/watch/${target.Id}${version && target === item ? `?${VERSION_QUERY_PARAM}=${encodeURIComponent(version)}` : ""}`)}
     />
   );
 }

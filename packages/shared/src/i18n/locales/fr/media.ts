@@ -71,6 +71,9 @@ export default {
   collectionTitles_one: "{{count}} titre",
   collectionTitles_other: "{{count}} titres",
   // Fiche média — la scène et la vue « image plein écran »
+  detailIncludedIn: "Fait partie de",
+  detailVersion: "Version",
+  detailVersionLabel: "Choisir la version",
   detailRemainingMinutes: "Reste {{count}} min",
   detailRemainingHours: "Reste {{hours}} h {{minutes}} min",
   detailCommunityScore: "Note du public",

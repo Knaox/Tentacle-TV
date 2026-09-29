@@ -9,6 +9,7 @@ import { RowHeader } from "../rows/RowHeader";
 import { LicenseAttribution } from "../media/LicenseAttribution";
 import { ExtrasSection } from "./ExtrasSection";
 import { SagaSection } from "./saga/SagaSection";
+import { IncludedInRow } from "./IncludedInRow";
 import { DetailFacts } from "./DetailFacts";
 import { TechInfo } from "../TechInfo";
 import { DETAIL_COLLECTION_ANCHOR } from "./detailStageGeometry";
@@ -88,6 +89,13 @@ export function DetailSections({
       {/* La saga d'un film (collection TMDB), comme dans Vigie : juste avant
           les similaires, la même famille de titres liés. */}
       {item.Type === "Movie" && <SagaSection item={item} />}
+
+      {/* Les collections de la bibliothèque qui le contiennent (Jellyfin 12+). */}
+      {item.Type !== "BoxSet" && (
+        <Reveal>
+          <IncludedInRow itemId={item.Id} />
+        </Reveal>
+      )}
 
       {similar && similar.length > 0 && (
         <Reveal>

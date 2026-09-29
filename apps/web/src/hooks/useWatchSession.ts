@@ -1,8 +1,8 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemAncestors, useJellyfinClient, useEpisodeNavigation } from "@tentacle-tv/api-client";
-import { ticksToSeconds, TICKS_PER_SECOND, extractSourceQuality } from "@tentacle-tv/shared";
+import { ticksToSeconds, TICKS_PER_SECOND, extractSourceQuality, pickMediaSource, VERSION_QUERY_PARAM } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
@@ -46,6 +46,7 @@ export interface WatchSessionOptions {
 export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSessionOptions) {
   const { t } = useTranslation("player");
   const { itemId } = useParams<{ itemId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const client = useJellyfinClient();
   // Résolution de la source locale AVANT toute requête serveur : en lecture
@@ -76,7 +77,8 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     }
   }, [item, isLoading, navigate]);
 
-  const mediaSource = item?.MediaSources?.[0];
+  // La version choisie sur la fiche (`?version=`), sinon celle que Jellyfin lit par défaut.
+  const mediaSource = pickMediaSource(item?.MediaSources, searchParams.get(VERSION_QUERY_PARAM));
   const mediaSourceId = mediaSource?.Id ?? itemId;
   const streams: JfStream[] = mediaSource?.MediaStreams ?? [];
   const defaultAudio = streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
