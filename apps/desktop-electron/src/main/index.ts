@@ -45,6 +45,7 @@ import { registerShellCapabilities, registerShellCommands, releaseDisplayWakeLoc
 import { registerUpdateCommands } from "./ipc/updates";
 import { registerLinuxSessionCommands } from "./ipc/linuxSession";
 import { registerVideoCommands, restoreDisplay, stopPlayer } from "./ipc/video";
+import { registerMediaWarmCommands } from "./ipc/mediaWarm";
 import { isRunning } from "./video/mpv";
 import { installCloseSequence } from "./closeSequence";
 import { claimSingleInstance, installContentSecurityPolicy, restrictPermissions } from "./security";
@@ -214,6 +215,7 @@ function main(): void {
       registerSessionCommands(registry);
       registerUpdateCommands(registry);
       registerVideoCommands(registry);
+      registerMediaWarmCommands(registry);
       registerLinuxSessionCommands(registry);
       // Stockage et lecture AVANT le moteur : c'est `downloads_list`, enregistrée
       // en dernier par lui, qui fait basculer `supportsDownloads()` côté page. Dès
