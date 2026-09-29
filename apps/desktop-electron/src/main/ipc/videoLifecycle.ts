@@ -35,13 +35,24 @@
  * puis `stop`, et mpv retombe à l'idle en gardant sa sortie vidéo — VkDevice,
  * décodeur, fenêtre collée. Un `mpv_init` qui suit dans le délai avec les
  * mêmes options la reprend telle quelle ; la page, elle, ne voit rien d'autre
- * qu'un `mpv_init` très rapide.
+ * qu'un `mpv_init` très rapide. À l'expiration, l'instance chaude est arrêtée
+ * et, sur secteur, une instance MINCE la remplace (`videoPrewarm.ts`).
+ *
+ * # Une file, un geste à la fois
+ *
+ * `mpv_init`, `mpv_destroy`, le préchauffage, l'expiration et les changements
+ * d'alimentation passent par `serialized` : chacun voit l'instance que le
+ * précédent a laissée. Sans elle, un `mpv_init` arrivé pendant un recyclage
+ * arrêtait l'instance neuve, ou le recyclage arrêtait la lecture qui venait
+ * de commencer. L'expiration vérifie EN PLUS que l'instance qui tourne est
+ * bien celle qu'elle a garée : sa minuterie a pu tirer pendant qu'un `mpv_init`
+ * attendait son tour.
  */
 
 import { linuxMontage, linuxWindowing } from "../linux/session";
-import { command, destroy, isRunning, reobserve, setProperty, setPumpCadence } from "../video/mpv";
+import { command, destroy, handle, isRunning, reobserve, setProperty, setPumpCadence } from "../video/mpv";
 import type { MpvValue } from "../video/mpvAllowlist";
-import { Park, optionsSignature } from "../video/mpvPark";
+import { Park, optionsSignature, parkPolicy } from "../video/mpvPark";
 import { stop } from "../video/mpvShutdown";
 import { beginShutdown, endShutdown, markStartup } from "../video/startupClock";
 import type { VideoSurface } from "../video/surface";
@@ -67,10 +78,58 @@ export function rememberInit(options: Readonly<Record<string, MpvValue>>, observ
   liveSignature = optionsSignature(options, observed);
 }
 
+/** Ce que le parking demande au reste de la coquille — `videoPrewarm.ts` le branche. */
+export interface ParkingHooks {
+  /** La machine est-elle sur batterie ? */
+  onBattery: () => boolean;
+  /** L'instance chaude vient d'être arrêtée : en préchauffer une mince à sa place. */
+  recycle: () => Promise<unknown>;
+}
+
+let hooks: ParkingHooks = { onBattery: () => false, recycle: () => Promise.resolve() };
+
+export function configureParking(next: ParkingHooks): void {
+  hooks = next;
+}
+
+let queue: Promise<unknown> = Promise.resolve();
+
+/** Exécute `task` après tous les gestes déjà en file — voir l'en-tête. */
+export function serialized<T>(task: () => Promise<T>): Promise<T> {
+  const run = queue.then(task, task);
+  queue = run.catch(() => undefined);
+  return run;
+}
+
+/** La poignée mpv de l'instance garée : l'expiration ne touche qu'à ELLE. */
+let parkedHandle: unknown = null;
+
 const park = new Park(() => {
-  console.info("[mpv] instance gardée au chaud : délai écoulé, arrêt");
-  void stopPlayer();
+  void serialized(expireParked);
 });
+
+async function expireParked(): Promise<void> {
+  if (parkedHandle === null || handle() !== parkedHandle) return;
+  const { recycle } = parkPolicy(hooks.onBattery());
+  console.info(
+    recycle
+      ? "[mpv] instance chaude : délai écoulé — une instance préchauffée prend sa place"
+      : "[mpv] instance gardée au chaud : délai écoulé, arrêt",
+  );
+  await stopPlayer();
+  if (recycle) await hooks.recycle();
+}
+
+/** Une instance est garée — chaude ou mince ? */
+export function isParked(): boolean {
+  return park.isParked();
+}
+
+function parkInstance(signature: string, graceMs: number | null): void {
+  park.park(signature, graceMs);
+  parkedHandle = handle();
+  setPumpCadence("parked");
+}
 
 /**
  * Le parking n'existe que là où la fenêtre garée est GARANTIE sous la nôtre :
@@ -84,6 +143,7 @@ export function parkable(): boolean {
 /** Arrête le lecteur, par le chemin que la plateforme supporte. */
 export async function stopPlayer(): Promise<void> {
   park.cancel();
+  parkedHandle = null;
   // L'arrêt gracieux guette l'`idle` et le `shutdown` au rythme de la pompe :
   // celle d'une instance garée est lente (`mpv.ts`).
   setPumpCadence("active");
@@ -122,9 +182,10 @@ export async function releasePlayer(): Promise<void> {
     // il pourrait attendre la prochaine mise à jour de l'OSD.
     void setProperty("title", "");
     void command(["stop"]);
-    park.park(liveSignature);
-    setPumpCadence("parked");
-    console.info("[mpv] instance gardée au chaud — reprise si une lecture suit dans les 3 s");
+    // Sur secteur une minute, puis recyclée ; sur batterie, le temps d'un épisode.
+    const { hotGraceMs } = parkPolicy(hooks.onBattery());
+    parkInstance(liveSignature, hotGraceMs);
+    console.info(`[mpv] instance gardée au chaud — reprise si une lecture suit dans les ${String(hotGraceMs / 1000)} s`);
   } else {
     await stopPlayer();
   }
@@ -138,6 +199,7 @@ export async function releasePlayer(): Promise<void> {
  */
 export function reuseParked(options: Readonly<Record<string, MpvValue>>, observed: Observed): boolean {
   if (!isRunning() || !park.reuse(optionsSignature(options, observed))) return false;
+  parkedHandle = null;
   setPumpCadence("active");
   // Le titre que le parking avait vidé : la fenêtre vidéo représente de
   // nouveau l'application dans Alt+Tab. Parti avant le `loadfile` de la page,
@@ -146,5 +208,19 @@ export function reuseParked(options: Readonly<Record<string, MpvValue>>, observe
   if (typeof title === "string") void setProperty("title", title);
   reobserve(observed);
   markStartup("reused");
+  return true;
+}
+
+/**
+ * L'instance NEUVE du préchauffage (`videoPrewarm.ts`), garée sans limite : pas
+ * de fichier, rien à arrêter — `force-window=yes` fait naître sa sortie vidéo
+ * sur-le-champ, et c'est elle qu'on vient chercher d'avance. Le titre vide
+ * AVANT : la fenêtre naît alors déjà « garée » pour la colle (Alt+Tab).
+ */
+export function parkSlim(): boolean {
+  if (!parkable() || !isRunning() || liveSignature === null) return false;
+  void setProperty("title", "");
+  void command(["set", "force-window", "yes"]);
+  parkInstance(liveSignature, null);
   return true;
 }

@@ -6,29 +6,30 @@
  * n'est dupliqué.
  */
 
+import { powerMonitor } from "electron";
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { finish } from "../video/hdrSession";
-import { command, getProperty, init, isRunning, setProperty } from "../video/mpv";
+import { command, getProperty, isRunning, setProperty } from "../video/mpv";
 import { libmpvAvailable } from "../video/mpvFfi";
 import { refuseCommand, refuseWrite } from "../video/mpvAllowlist";
-import { nativeHandle, trace } from "../video/native";
+import { trace } from "../video/native";
 import { beginStartup, forgetStartup, markStartup } from "../video/startupClock";
-import { createVideoSurface, videoMontage } from "../video/surface";
+import { videoMontage } from "../video/surface";
 import { assembleInitOptions } from "./videoInitOptions";
+import { launchForRequest, launchInstance } from "./videoLaunch";
 import {
-  adoptSurface,
   currentSurface,
   releasePlayer,
-  rememberInit,
   reuseParked,
+  serialized,
   stopPlayer,
 } from "./videoLifecycle";
+import { installPrewarm, prewarmPlayer, rememberRequest, type InitRequest } from "./videoPrewarm";
 
 // Deux autres appelants — le point d'entrée et la séquence de fermeture —
 // l'importent d'ici : le déménagement ne les regarde pas.
 export { stopPlayer } from "./videoLifecycle";
-import { eventRelay } from "./videoEvents";
 import { registerDisplayHdrCommands } from "./videoHdr";
 import { registerVideoProbe, resetReport } from "./videoProbe";
 import { CommandRegistry } from "./registry";
@@ -81,89 +82,50 @@ export function registerVideoCommands(registry: CommandRegistry): void {
   registerVideoProbe(registry, currentSurface);
 }
 
+/** La demande de la page, telle que `mpv_init` et `mpv_prewarm` la reçoivent. */
+function toRequest(options: z.infer<typeof INIT>["options"]): InitRequest {
+  return {
+    page: options?.initialOptions ?? {},
+    observed: (options?.observedProperties ?? []).map(([name, format]) => [name, format] as const),
+  };
+}
+
 function registerMpvCommands(registry: CommandRegistry): void {
+  // Linux : l'instance mince née d'avance, et ce que l'alimentation en permet —
+  // voir `videoPrewarm.ts`. Ailleurs le parking n'existe pas (`parkable`).
+  if (process.platform === "linux") {
+    installPrewarm({ onBattery: () => powerMonitor.isOnBatteryPower(), launch: launchForRequest }, powerMonitor);
+  }
   registry
+    .add("mpv_prewarm", {
+      schema: INIT,
+      // Jamais d'erreur : un préchauffage manqué ne coûte que l'attente d'avant.
+      run: ({ options }) => serialized(() => prewarmPlayer("demande de la page", toRequest(options))),
+    })
     .add("mpv_init", {
       schema: INIT,
-      run: async ({ options }) => {
-        // L'horloge part ICI, avant l'arrêt du précédent : au changement
-        // d'épisode, c'est lui que la page attend en premier (`startupClock.ts`).
+      run: ({ options }) => {
+        // L'horloge part ICI, avant l'arrêt du précédent — et avant la file :
+        // au changement d'épisode, c'est lui que la page attend en premier
+        // (`startupClock.ts`).
         beginStartup();
-        const win = getMainWindow();
-        if (!win) throw new Error("aucune fenetre pour accueillir la video");
-
-        const observed = (options?.observedProperties ?? []).map(
-          ([name, format]) => [name, format] as const,
-        );
-        // Ce que la page demande, ce que la coquille y ajoute, ce que le
-        // montage réécrit : `videoInitOptions.ts`.
-        const mpvOptions = await assembleInitOptions(win, options?.initialOptions ?? {});
-
-        // L'instance gardée au chaud par le `mpv_destroy` précédent reprend du
-        // service si ses options sont les mêmes — sortie vidéo, décodeur et
-        // fenêtre collée compris. Voir `mpvPark.ts` pour ce que ça épargne.
-        if (reuseParked(mpvOptions, observed)) {
-          resetReport();
-          trace("mpv reste chaud — instance reprise, sortie vidéo conservée");
-          return "ok";
-        }
-
-        // Une instance encore vivante doit partir par la porte que la
-        // plateforme supporte. `init` fait bien un `destroy()` de son côté,
-        // mais celui-ci est l'arrêt de SECOURS : sur macOS il ne convient
-        // qu'en l'absence de sortie vidéo. La page appelle normalement
-        // `mpv_destroy` avant de remonter le lecteur ; ceci couvre le cas où
-        // elle ne l'a pas fait — un changement d'épisode qui se chevauche.
-        if (isRunning()) {
-          await stopPlayer();
-          markStartup("stopped-in-init");
-        }
-
-        const parent = nativeHandle(win);
-        const err = init(
-          { options: mpvOptions, observed, wid: parent },
-          eventRelay(currentSurface),
-        );
-        if (err) throw new Error(err);
-        rememberInit(mpvOptions, observed);
-        markStartup("init");
-
-        // Le journal doit dire ce que mpv a REELLEMENT recu : une option
-        // ecartee par la liste blanche l'est en SILENCE, et le defaut ne se
-        // voit alors qu'a l'image — un ecran noir sans un mot.
-        trace(
-          `mpv demarre — montage ${videoMontage()}, ` +
-            `${Object.keys(mpvOptions).length} options retenues (vo=${String(mpvOptions["vo"] ?? "?")}` +
-            `, target-trc=${String(mpvOptions["target-trc"] ?? "-")}` +
-            `, target-peak=${String(mpvOptions["target-peak"] ?? "-")}` +
-            `, gpu-context=${String(mpvOptions["gpu-context"] ?? "-")})`,
-        );
-
-        // La fenêtre de mpv naît de façon asynchrone : `attach` la cherche,
-        // puis la désarme et la maintient calée à chaque changement de
-        // géométrie. Les écouteurs de la fenêtre principale appartiennent à
-        // `VideoWindow` et partent avec elle — posés ici, rien ne les retirait,
-        // et le lecteur est remonté à chaque épisode.
-        adoptSurface(createVideoSurface(win));
-        await currentSurface()?.attach();
-        markStartup("attach");
-        resetReport();
-
-        return "ok";
+        return serialized(() => initPlayer(toRequest(options)));
       },
     })
     .add("mpv_destroy", {
       schema: NO_ARGS,
-      run: async () => {
-        // AVANT l'arrêt : après, mpv n'est plus là pour entendre qu'on coupe la
-        // transmission. L'écran est rendu dans la foulée — un écran qu'on a
-        // basculé et laissé en HDR délave tout le reste de Windows.
-        finish();
-        forgetStartup();
-        // Garée si l'on peut, arrêtée sinon — voir `videoLifecycle.ts`.
-        await releasePlayer();
-      },
+      run: () =>
+        serialized(async () => {
+          // AVANT l'arrêt : après, mpv n'est plus là pour entendre qu'on coupe la
+          // transmission. L'écran est rendu dans la foulée — un écran qu'on a
+          // basculé et laissé en HDR délave tout le reste de Windows.
+          finish();
+          forgetStartup();
+          // Garée si l'on peut, arrêtée sinon — voir `videoLifecycle.ts`.
+          await releasePlayer();
+        }),
     })
+
     .add("mpv_command", {
       schema: COMMAND,
       run: async ({ name, args }) => {
@@ -244,6 +206,59 @@ function registerMpvCommands(registry: CommandRegistry): void {
       // est partagé avec l'app Tauri, et qu'elle ne coûte rien.
       run: () => currentSurface()?.harden() ?? false,
     });
+}
+
+/**
+ * `mpv_init`, dans la file (`videoLifecycle.ts`) : reprendre l'instance garée
+ * si elle convient, sinon arrêter ce qui tourne et en faire naître une.
+ */
+async function initPlayer(request: InitRequest): Promise<string> {
+  const win = getMainWindow();
+  if (!win) throw new Error("aucune fenetre pour accueillir la video");
+  // La demande la plus récente : c'est elle que reproduira le recyclage.
+  rememberRequest(request);
+  const { observed } = request;
+  // Ce que la page demande, ce que la coquille y ajoute, ce que le montage
+  // réécrit : `videoInitOptions.ts`.
+  const mpvOptions = await assembleInitOptions(win, request.page);
+
+  // L'instance gardée au chaud — ou préchauffée — reprend du service si ses
+  // options sont les mêmes : sortie vidéo et fenêtre collée comprises. Voir
+  // `mpvPark.ts` pour ce que ça épargne.
+  if (reuseParked(mpvOptions, observed)) {
+    resetReport();
+    trace("mpv reste chaud — instance reprise, sortie vidéo conservée");
+    return "ok";
+  }
+
+  // Une instance encore vivante doit partir par la porte que la plateforme
+  // supporte. `init` fait bien un `destroy()` de son côté, mais celui-ci est
+  // l'arrêt de SECOURS : sur macOS il ne convient qu'en l'absence de sortie
+  // vidéo. La page appelle normalement `mpv_destroy` avant de remonter le
+  // lecteur ; ceci couvre le cas où elle ne l'a pas fait — un changement
+  // d'épisode qui se chevauche — et l'instance garée aux options périmées.
+  if (isRunning()) {
+    await stopPlayer();
+    markStartup("stopped-in-init");
+  }
+
+  const err = await launchInstance(win, mpvOptions, observed, () => {
+    markStartup("init");
+    // Le journal doit dire ce que mpv a REELLEMENT recu : une option ecartee
+    // par la liste blanche l'est en SILENCE, et le defaut ne se voit alors
+    // qu'a l'image — un ecran noir sans un mot.
+    trace(
+      `mpv demarre — montage ${videoMontage()}, ` +
+        `${Object.keys(mpvOptions).length} options retenues (vo=${String(mpvOptions["vo"] ?? "?")}` +
+        `, target-trc=${String(mpvOptions["target-trc"] ?? "-")}` +
+        `, target-peak=${String(mpvOptions["target-peak"] ?? "-")}` +
+        `, gpu-context=${String(mpvOptions["gpu-context"] ?? "-")})`,
+    );
+  });
+  if (err !== null) throw new Error(err);
+  markStartup("attach");
+  resetReport();
+  return "ok";
 }
 
 /**

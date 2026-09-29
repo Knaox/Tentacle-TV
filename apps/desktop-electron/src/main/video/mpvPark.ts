@@ -35,12 +35,61 @@
  * resterait plein écran derrière une page revenue en fenêtré ; Windows et
  * macOS n'ont pas ce coût de création.
  *
+ * # Trois secondes ne suffisaient pas (29.09.2026)
+ *
+ * Symptôme rapporté : « le même titre repart vite, un AUTRE titre est lent, et
+ * le premier est toujours lent » — le retour à la bibliothèque dépasse trois
+ * secondes, et la première lecture d'un lancement n'avait rien à reprendre.
+ * Banc (libmpv du paquet, options de l'app, KWin virtuel, RTX 5090), de
+ * `loadfile` à la première image, sur quatre titres différents :
+ *
+ *     instance neuve                          687-810 ms
+ *     instance reprise (chaude, après lecture)  78-87 ms
+ *     instance PRÉCHAUFFÉE, jamais lue          79-154 ms (+70 ms d'interop
+ *                                             CUDA au premier titre seulement)
+ *
+ * Mais une instance garée APRÈS une lecture garde tout : 864 Mio de VRAM après
+ * un 1080p nvdec, 2 079 Mio après un 4K HDR — le pool de surfaces du décodeur,
+ * retenu par la dernière image. Préchauffée sans jamais lire : 91 Mio, aucun
+ * contexte CUDA. D'où deux parkings :
+ *
+ * - l'instance CHAUDE, après une lecture, le temps d'enchaîner ou de revenir
+ *   (`HOT_PARK_MS`) ;
+ * - puis l'instance MINCE : la chaude est arrêtée et une neuve est préchauffée
+ *   à sa place, gardée sans limite — 91 Mio pour que le titre suivant, quel
+ *   qu'il soit, démarre en ~150 ms. `mpv_prewarm` fait naître la même au
+ *   lancement de l'application.
+ *
+ * Sur batterie, rien de tout cela : un VkDevice tenu garde éveillé le GPU
+ * dédié d'un portable hybride. Le délai redevient celui d'un épisode suivant
+ * (`PARK_GRACE_MS`), sans recyclage ni préchauffage.
+ *
  * Pure : le temps et la minuterie sont injectés, l'appelant (`ipc/videoLifecycle.ts`)
  * fait les gestes mpv.
  */
 
-/** Délai de grâce : le temps qu'un épisode suivant, ou une reprise, se relance. */
+/** Délai de grâce sur batterie : le temps qu'un épisode suivant, ou une reprise, se relance. */
 export const PARK_GRACE_MS = 3000;
+
+/** Sur secteur : l'instance chaude attend le titre suivant une minute, puis se recycle. */
+export const HOT_PARK_MS = 60_000;
+
+/** Ce que la source d'alimentation permet. */
+export interface ParkPolicy {
+  /** Le délai de l'instance chaude, après une lecture. */
+  hotGraceMs: number;
+  /** À son expiration, une instance mince (préchauffée) la remplace. */
+  recycle: boolean;
+  /** Une instance mince peut naître d'avance, à la demande de la page. */
+  prewarm: boolean;
+}
+
+/** La politique du parking, selon que la machine est sur batterie ou non. */
+export function parkPolicy(onBattery: boolean): ParkPolicy {
+  return onBattery
+    ? { hotGraceMs: PARK_GRACE_MS, recycle: false, prewarm: false }
+    : { hotGraceMs: HOT_PARK_MS, recycle: true, prewarm: true };
+}
 
 export interface ParkTimers {
   set: (callback: () => void, ms: number) => unknown;
@@ -69,16 +118,18 @@ export class Park {
 
   /**
    * Gare l'instance vivante, identifiée par la signature de ses options.
-   * À l'expiration du délai, `onExpire` — l'arrêt réel — est appelé.
+   * À l'expiration du délai, `onExpire` — l'arrêt réel — est appelé ; un délai
+   * `null` n'expire jamais (l'instance mince).
    */
-  park(signature: string): void {
+  park(signature: string, graceMs: number | null = this.graceMs): void {
     this.cancel();
     this.signature = signature;
+    if (graceMs === null) return;
     this.handle = this.timers.set(() => {
       this.handle = null;
       this.signature = null;
       this.onExpire();
-    }, this.graceMs);
+    }, graceMs);
   }
 
   /**

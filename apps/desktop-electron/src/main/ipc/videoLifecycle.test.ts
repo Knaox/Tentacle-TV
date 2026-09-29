@@ -13,6 +13,8 @@ const h = vi.hoisted(() => ({
     reobserve: vi.fn(),
     destroy: vi.fn(),
     cadence: [] as string[],
+    // L'identité de l'instance vivante : l'expiration ne touche qu'à celle qu'elle a garée.
+    handle: { id: 1 } as object,
   },
   stop: vi.fn(() => Promise.resolve()),
   session: { montage: "wayland" as string | null, windowing: "libre" as string | null },
@@ -26,6 +28,7 @@ vi.mock("../video/mpv", () => ({
   destroy: h.mpv.destroy,
   isRunning: () => h.mpv.running,
   setPumpCadence: (mode: string) => h.mpv.cadence.push(mode),
+  handle: () => (h.mpv.running ? h.mpv.handle : null),
   reobserve: h.mpv.reobserve,
   // Sous Linux, l'écriture passe par la même file que les commandes : elle est
   // rangée dans la même liste, pour que l'ORDRE se vérifie.
@@ -40,8 +43,18 @@ vi.mock("../linux/session", () => ({
   linuxWindowing: () => h.session.windowing,
 }));
 
-import { releasePlayer, rememberInit, reuseParked, stopPlayer } from "./videoLifecycle";
+import {
+  configureParking,
+  isParked,
+  parkSlim,
+  releasePlayer,
+  rememberInit,
+  reuseParked,
+  serialized,
+  stopPlayer,
+} from "./videoLifecycle";
 
+const power = { onBattery: false, recycle: vi.fn(() => Promise.resolve()) };
 const OPTIONS = { vo: "gpu-next", hwdec: "nvdec", geometry: "2304x1600" };
 const OBSERVED = [["pause", "flag"]] as const;
 const realPlatform = process.platform;
@@ -54,7 +67,11 @@ beforeEach(() => {
   h.mpv.reobserve.mockClear();
   h.mpv.destroy.mockClear();
   h.mpv.cadence.length = 0;
+  h.mpv.handle = { id: 1 };
   h.stop.mockClear();
+  power.onBattery = false;
+  power.recycle.mockClear();
+  configureParking({ onBattery: () => power.onBattery, recycle: power.recycle });
   h.session.montage = "wayland";
   h.session.windowing = "libre";
 });
@@ -95,12 +112,42 @@ describe("le parking entre deux épisodes", () => {
     expect(h.mpv.reobserve).not.toHaveBeenCalled();
   });
 
-  it("le délai écoulé arrête pour de bon", async () => {
+  it("sur batterie, le délai d'un épisode, puis l'arrêt pour de bon — sans recyclage", async () => {
+    power.onBattery = true;
     rememberInit(OPTIONS, OBSERVED);
     await releasePlayer();
-    await vi.advanceTimersByTimeAsync(3000);
+    await vi.advanceTimersByTimeAsync(2999);
+    expect(h.stop).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
     expect(h.stop).toHaveBeenCalledTimes(1);
+    expect(power.recycle).not.toHaveBeenCalled();
     expect(reuseParked(OPTIONS, OBSERVED)).toBe(false);
+  });
+
+  it("sur secteur, l'instance chaude attend une minute, puis cède la place à une mince", async () => {
+    rememberInit(OPTIONS, OBSERVED);
+    await releasePlayer();
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(h.stop).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(h.stop).toHaveBeenCalledTimes(1);
+    expect(power.recycle).toHaveBeenCalledTimes(1);
+  });
+
+  it("l'expiration ne touche pas une instance qu'un mpv_init a mise à la place", async () => {
+    rememberInit(OPTIONS, OBSERVED);
+    await releasePlayer();
+    // La minuterie tire pendant qu'un mpv_init tient la file ; quand vient son
+    // tour, l'instance vivante n'est plus celle qui était garée.
+    let release!: () => void;
+    const busy = serialized(() => new Promise<void>((r) => (release = r)));
+    await vi.advanceTimersByTimeAsync(60_000);
+    h.mpv.handle = { id: 2 };
+    release();
+    await busy;
+    await vi.advanceTimersByTimeAsync(0);
+    expect(h.stop).not.toHaveBeenCalled();
+    expect(power.recycle).not.toHaveBeenCalled();
   });
 
   it("hors du montage collé, mpv_destroy arrête comme avant", async () => {
@@ -133,5 +180,47 @@ describe("le parking entre deux épisodes", () => {
     // L'arrêt gracieux guette l'idle au rythme de la pompe : cadence rendue AVANT.
     expect(h.mpv.cadence.slice(-1)).toEqual(["active"]);
     expect(h.stop).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("l'instance mince du préchauffage", () => {
+  it("naît déjà garée : titre vide AVANT la sortie vidéo, sans expiration", async () => {
+    rememberInit(OPTIONS, OBSERVED);
+    expect(parkSlim()).toBe(true);
+    // Le titre d'abord : la fenêtre naît « garée » pour la colle (Alt+Tab).
+    expect(h.mpv.commands).toEqual([["set", "title", ""], ["set", "force-window", "yes"]]);
+    expect(h.mpv.cadence).toEqual(["parked"]);
+    await vi.advanceTimersByTimeAsync(24 * 3600_000);
+    expect(h.stop).not.toHaveBeenCalled();
+    expect(isParked()).toBe(true);
+    expect(reuseParked({ ...OPTIONS, geometry: "1280x720" }, OBSERVED)).toBe(true);
+  });
+
+  it("rien sans montage collé, sans instance, ou sans options connues", () => {
+    h.session.windowing = "plein-ecran";
+    rememberInit(OPTIONS, OBSERVED);
+    expect(parkSlim()).toBe(false);
+    h.session.windowing = "libre";
+    h.mpv.running = false;
+    expect(parkSlim()).toBe(false);
+    expect(h.mpv.commands).toEqual([]);
+  });
+});
+
+describe("la file des gestes", () => {
+  it("chaque geste attend le précédent, même en échec", async () => {
+    const order: string[] = [];
+    const a = serialized(async () => {
+      await Promise.resolve();
+      order.push("a");
+      throw new Error("raté");
+    });
+    const b = serialized(async () => {
+      order.push("b");
+      return "ok";
+    });
+    await expect(a).rejects.toThrow("raté");
+    await expect(b).resolves.toBe("ok");
+    expect(order).toEqual(["a", "b"]);
   });
 });
