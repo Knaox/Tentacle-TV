@@ -6,7 +6,8 @@ import { getBackendBase } from "../../../lib/backendBase";
 /**
  * Watch Together — recherche de GIFs via le proxy backend `/api/gifs`
  * (clé Klipy côté serveur uniquement). Requête vide → tendances (featured),
- * sinon recherche plein texte. Pattern fetch identique à useTmdbTrailers.
+ * sinon recherche plein texte. Fetch direct : `getBackendBase()` + le Bearer
+ * du `localStorage`.
  */
 
 export interface GifItem {

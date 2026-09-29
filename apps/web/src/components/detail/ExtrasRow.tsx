@@ -1,22 +1,24 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useSpecialFeatures, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useItemExtras, useJellyfinClient, type ExtrasOwner } from "@tentacle-tv/api-client";
+import { buildExtraEntries, type ExtraEntry } from "@tentacle-tv/shared";
 import { PlayIcon } from "../media/MediaDetailIcons";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
 import { RowHeader } from "../rows/RowHeader";
 import { TrailerModal } from "./TrailerModal";
-import { parseYouTubeId, shouldOpenYouTubeExternally } from "./youtube";
+import { shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
 import { sortTrailersByLang, type RichTrailer } from "./trailerLang";
 
 interface ExtrasRowProps {
   /**
-   * Item dont on liste les special features (film ou saison). Absent : les
+   * Le titre dont on liste les extras locaux (film, série, saison, épisode) :
+   * ses compteurs évitent de demander une liste vide. Absent : les
    * bandes-annonces distantes seules — la page partagée, où un visiteur sans
    * session ne peut rien lire du serveur.
    */
-  itemId?: string;
+  owner?: ExtrasOwner;
   /** Trailers distants attachés à cet item/saison (déjà fusionnés ou bruts). */
   remoteTrailers: RichTrailer[];
   /** Libellé de groupe optionnel (nom de saison). */
@@ -24,20 +26,35 @@ interface ExtrasRowProps {
 }
 
 /**
- * Rangée « Extras » : special features LOCAUX (jouables in-player via /watch) +
- * trailers DISTANTS (ouverts dans la modale YouTube). Masquée si rien à montrer.
+ * Rangée « Extras » : bandes-annonces LOCALES et bonus (lus dans le lecteur via
+ * /watch), puis trailers DISTANTS (modale YouTube) — l'ordre et les libellés du
+ * modèle partagé (`buildExtraEntries`). Masquée si rien à montrer.
  */
-export function ExtrasRow({ itemId, remoteTrailers, title }: ExtrasRowProps) {
+export function ExtrasRow({ owner, remoteTrailers, title }: ExtrasRowProps) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
   const client = useJellyfinClient();
-  const { data: features } = useSpecialFeatures(itemId);
+  const { local } = useItemExtras(owner);
   const [modalOpen, setModalOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
 
-  const local = features ?? [];
-  const remote = sortTrailersByLang(remoteTrailers, i18n.language);
-  if (local.length === 0 && remote.length === 0) return null;
+  const remote = useMemo(() => sortTrailersByLang(remoteTrailers, i18n.language), [remoteTrailers, i18n.language]);
+  const entries = useMemo(() => buildExtraEntries(t, local, remote), [t, local, remote]);
+  if (entries.length === 0) return null;
+
+  const open = (entry: ExtraEntry) => {
+    if (entry.source === "local") {
+      navigate(`/watch/${entry.itemId}`);
+      return;
+    }
+    // macOS DMG : ouverture dans le navigateur système (cf. TrailerButton).
+    if (shouldOpenYouTubeExternally()) {
+      void openExternal(entry.trailer.Url);
+      return;
+    }
+    setStartIndex(Math.max(0, remote.indexOf(entry.trailer)));
+    setModalOpen(true);
+  };
 
   return (
     // Même en-tête à rail de marque que les autres sections de la fiche ; le
@@ -49,35 +66,18 @@ export function ExtrasRow({ itemId, remoteTrailers, title }: ExtrasRowProps) {
         className="row-gutter gap-3 overflow-y-visible pb-2"
         ariaLabel={t("common:extras")}
       >
-        {local.map((ex) => (
+        {entries.map((entry) => (
           <ExtraTile
-            key={ex.Id}
-            label={ex.Name}
-            sublabel={ex.Type}
-            thumb={client.getImageUrl(ex.Id, "Primary", { width: 320, quality: 80 })}
-            onClick={() => navigate(`/watch/${ex.Id}`)}
+            key={entry.key}
+            label={entry.title}
+            sublabel={entry.subtitle}
+            thumb={entry.source === "local"
+              ? client.getImageUrl(entry.itemId, "Primary", { width: 320, quality: 80 })
+              : entry.thumbUrl ?? undefined}
+            youtubeId={entry.source === "remote" ? entry.youtubeId ?? undefined : undefined}
+            onClick={() => open(entry)}
           />
         ))}
-        {remote.map((tr, i) => {
-          const yt = parseYouTubeId(tr.Url);
-          return (
-            <ExtraTile
-              key={tr.Url}
-              label={tr.Name || t("common:trailer")}
-              sublabel={tr.type || "YouTube"}
-              youtubeId={yt ?? undefined}
-              onClick={() => {
-                // macOS DMG : ouverture dans le navigateur système (cf. TrailerButton).
-                if (shouldOpenYouTubeExternally()) {
-                  void openExternal(tr.Url);
-                  return;
-                }
-                setStartIndex(i);
-                setModalOpen(true);
-              }}
-            />
-          );
-        })}
       </HorizontalScrollRow>
       {remote.length > 0 && (
         <TrailerModal
@@ -108,8 +108,11 @@ function ExtraTile({
   // YouTube renvoie un placeholder gris 120x90 sur hqdefault.jpg pour les vidéos
   // supprimées ou privées → on masque la tuile au chargement de la vignette.
   const [unavailable, setUnavailable] = useState(false);
-  const src = youtubeId ? `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg` : thumb;
+  // Un extra local sans image (aucune vignette extraite) garde la tuile, sur
+  // son fond, plutôt qu'une icône d'image cassée.
+  const [broken, setBroken] = useState(false);
   if (unavailable) return null;
+  const src = broken ? undefined : thumb;
 
   return (
     <button
@@ -121,7 +124,7 @@ function ExtraTile({
         {src ? (
           <img
             src={src}
-            alt={label}
+            alt=""
             loading="lazy" decoding="async"
             className="h-full w-full object-cover"
             onLoad={
@@ -133,7 +136,7 @@ function ExtraTile({
                   }
                 : undefined
             }
-            onError={youtubeId ? () => setUnavailable(true) : undefined}
+            onError={() => (youtubeId ? setUnavailable(true) : setBroken(true))}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-content-disabled">
@@ -141,14 +144,13 @@ function ExtraTile({
           </div>
         )}
         {/* Halo lecture posé SUR la vignette : reste blanc/noir dans les deux
-            thèmes (cf. règle « posé sur média »). */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/0 text-white transition-colors duration-200 group-hover/extra:bg-black/35">
-          <span className="opacity-0 transition-opacity duration-200 group-hover/extra:opacity-100">
-            <PlayIcon />
-          </span>
+            thèmes (cf. règle « posé sur média »). Un voile en fondu
+            d'OPACITÉ, pas une couleur de fond animée (peinture par image). */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/35 text-white opacity-0 transition-opacity duration-200 group-hover/extra:opacity-100">
+          <PlayIcon />
         </div>
       </div>
-      <p className="mt-1.5 truncate text-sm font-medium text-content-primary">{label}</p>
+      <p className="mt-1.5 truncate text-sm font-medium text-content-primary" title={label}>{label}</p>
       {sublabel && <p className="truncate text-xs text-content-quaternary">{sublabel}</p>}
     </button>
   );

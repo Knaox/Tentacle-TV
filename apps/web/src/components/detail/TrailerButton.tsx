@@ -1,43 +1,44 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useLocalTrailers } from "@tentacle-tv/api-client";
+import { useItemTrailer } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FilmIcon } from "../media/MediaDetailIcons";
 import { TrailerModal } from "./TrailerModal";
 import { shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
-import { useItemRemoteTrailers } from "../../hooks/useItemRemoteTrailers";
 
 /**
  * Bouton « Bande-annonce » sur la page détail (film ET série).
  *
- * Comportement Jellyfin — local d'abord :
+ * Même règle sur toutes les plateformes (`useItemTrailer`) — local d'abord :
  *  - trailer local présent → lecture directe dans le player Tentacle (/watch/{id}) ;
  *  - sinon trailer distant (YouTube) → modale d'embed.
- * Masqué si aucun trailer (local ni distant) : pas de bouton mort.
+ * Masqué si aucun trailer (local ni distant) : pas de bouton mort. Posé dès que
+ * la fiche ANNONCE une bande-annonce locale (`LocalTrailerCount`), sans attendre
+ * sa liste : la rangée d'actions ne bouge pas une fraction de seconde après.
  */
 export function TrailerButton({ item }: { item: MediaItem }) {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
-  const { data: localTrailers } = useLocalTrailers(item.Id);
-  // Trailers distants fusionnés (Jellyfin + TMDB), dédupliqués et triés par langue.
-  const remote = useItemRemoteTrailers(item);
+  const { target, visible, remote } = useItemTrailer(item, i18n.language);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const local = localTrailers ?? [];
-  if (local.length === 0 && remote.length === 0) return null;
+  if (!visible) return null;
 
   const handleClick = () => {
-    if (local.length > 0) {
-      navigate(`/watch/${local[0].Id}`);
+    // Bande-annonce locale annoncée, liste encore en route : rien à lancer
+    // pour l'instant — elle arrive en quelques millisecondes.
+    if (!target) return;
+    if (target.kind === "local") {
+      navigate(`/watch/${target.itemId}`);
       return;
     }
     // macOS DMG : WKWebView strip le Referer pour les iframes sous frame racine
     // tauri:// → YouTube refuse l'embed (erreur 153). On ouvre dans le navigateur
     // système où le top-level est youtube.com (pas de problème de Referer).
-    if (shouldOpenYouTubeExternally() && remote[0]?.Url) {
-      void openExternal(remote[0].Url);
+    if (shouldOpenYouTubeExternally()) {
+      void openExternal(target.trailer.Url);
       return;
     }
     setModalOpen(true);
