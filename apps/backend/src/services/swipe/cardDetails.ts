@@ -2,6 +2,7 @@ import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import { tmdbConfigured, tmdbFetch } from "../tmdb/client";
 import { mergeDetails } from "./detailsMerge";
 import type { SwipeLang } from "./tmdbGenres";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 /** Ce que le verso d'une carte affiche : titre localisé, synopsis, format. */
 export interface CardDetails {
@@ -42,7 +43,7 @@ async function fromJellyfin(userId: string, itemId: string): Promise<CardDetails
   // voit pas ne rend rien, même à la clé admin.
   const q = `userId=${encodeURIComponent(userId)}&Ids=${encodeURIComponent(itemId)}&Fields=Overview,ChildCount`;
   const res = await fetch(`${url}/Items?${q}`, {
-    headers: { "X-Emby-Token": apiKey },
+    headers: jellyfinAuthHeaders(apiKey),
   });
   if (!res.ok) return null;
   const data = (await res.json()) as {

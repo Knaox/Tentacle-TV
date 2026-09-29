@@ -29,6 +29,7 @@
 
 import { decode } from "jpeg-js";
 import { measureCell, type ThumbnailMeasure } from "./tailAnalysis/tailCells";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 /** Ce que Jellyfin publie par (source, largeur) dans le champ `Trickplay`. */
 export interface TrickplayInfo {
@@ -128,7 +129,7 @@ export function sampleTile(
 async function fetchTile(url: string, apiKey: string): Promise<Buffer | null> {
   try {
     const res = await fetch(url, {
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) return null;

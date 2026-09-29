@@ -1,4 +1,5 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 // La bibliothèque vue par le serveur (clé admin) : ce que la détection des
 // ajouts, la reconnaissance des contenus et les recommandations lisent — les
@@ -51,7 +52,7 @@ export async function getItemsByIds(ids: string[]): Promise<LibItem[]> {
   const userParam = userId ? `&userId=${userId}` : "";
   const res = await fetch(
     `${jellyfinUrl}/Items?Ids=${ids.join(",")}&Fields=SeriesName,ProviderIds${userParam}`,
-    { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(10_000) },
+    { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(10_000) },
   );
   if (!res.ok) {
     console.warn(`[LibNotif] getItemsByIds HTTP ${res.status}`);
@@ -71,7 +72,7 @@ export async function getItemCount(): Promise<number | null> {
   if (!jellyfinUrl || !apiKey) return null;
   try {
     const res = await fetch(`${jellyfinUrl}/Items/Counts`, {
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return null;
@@ -94,7 +95,7 @@ export async function getAdminUserId(): Promise<string | null> {
   if (!jellyfinUrl || !apiKey) return null;
   try {
     const res = await fetch(`${jellyfinUrl}/Users`, {
-      headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(10_000),
+      headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return null;
     const users = (await res.json()) as Array<{ Id: string; Policy?: { IsAdministrator?: boolean } }>;
@@ -129,7 +130,7 @@ export async function getAllLibraryItemIds(): Promise<string[]> {
         `${jellyfinUrl}/Items?userId=${userId}&Recursive=true&IncludeItemTypes=Movie,Series,Episode` +
           `&Fields=&EnableImages=false&EnableUserData=false&EnableTotalRecordCount=true` +
           `&StartIndex=${start}&Limit=${PAGE}`,
-        { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(15_000) },
+        { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(15_000) },
       );
       if (!res.ok) {
         console.warn(`[LibNotif] getAllLibraryItemIds HTTP ${res.status}`);
@@ -168,7 +169,7 @@ export async function getAllLibraryItemsForIdentity(): Promise<LibItem[] | null>
         `${jellyfinUrl}/Items?userId=${userId}&Recursive=true&IncludeItemTypes=Movie,Series,Episode` +
           `&Fields=ProviderIds,SeriesName&EnableImages=false&EnableUserData=false&EnableTotalRecordCount=true` +
           `&StartIndex=${start}&Limit=${PAGE}`,
-        { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(30_000) },
+        { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(30_000) },
       );
       if (!res.ok) {
         console.warn(`[LibNotif] getAllLibraryItemsForIdentity HTTP ${res.status}`);

@@ -3,6 +3,7 @@ import { getPrisma } from "../services/db";
 import { getJellyfinUrl } from "../services/configStore";
 import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
 import { setSessionCookie } from "./authCookie";
+import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 /**
  * POST /api/auth/refresh — revalide le token et refait glisser le cookie.
@@ -73,7 +74,7 @@ export const authRefreshRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const res = await fetch(`${jellyfinUrl}/Users/Me`, {
-        headers: { "X-Emby-Token": token },
+        headers: jellyfinAuthHeaders(token),
         signal: AbortSignal.timeout(5000),
       });
 

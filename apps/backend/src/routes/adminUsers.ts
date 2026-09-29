@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { signImpersonationToken } from "../services/jwt";
+import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 interface JellyfinUserDto {
   Id: string;
@@ -49,7 +50,7 @@ export const adminUsersRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const res = await fetch(`${jellyfinUrl}/Users`, {
-        headers: { "X-Emby-Token": apiKey },
+        headers: jellyfinAuthHeaders(apiKey),
         signal: AbortSignal.timeout(5000),
       });
       if (!res.ok) {
@@ -83,7 +84,7 @@ export const adminUsersRoutes: FastifyPluginAsync = async (app) => {
     let target: JellyfinUserDto;
     try {
       const res = await fetch(`${jellyfinUrl}/Users/${userId}`, {
-        headers: { "X-Emby-Token": apiKey },
+        headers: jellyfinAuthHeaders(apiKey),
         signal: AbortSignal.timeout(5000),
       });
       if (res.status === 404) {

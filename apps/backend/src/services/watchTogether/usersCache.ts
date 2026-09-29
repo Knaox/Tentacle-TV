@@ -1,4 +1,5 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 /**
  * Watch Together — cache court des utilisateurs Jellyfin (clé API admin).
@@ -31,7 +32,7 @@ async function fetchUsers(): Promise<CachedJellyfinUser[] | null> {
   if (!jellyfinUrl || !apiKey) return null;
   try {
     const res = await fetch(`${jellyfinUrl}/Users`, {
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;

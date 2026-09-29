@@ -22,6 +22,7 @@ import { requireAdmin } from "../middleware/auth";
 import { injectCorsHosts } from "../services/jellyfinCors";
 import { restartJellyfinWs } from "../services/jellyfinWs";
 import { buildAuthHeader, deviceIdFor } from "../services/jellyfinIdentity";
+import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 /**
  * Guard: if the app is already running (setup completed), require admin auth.
@@ -155,7 +156,7 @@ export const setupRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const res = await fetch(`${url}/System/Info`, {
-        headers: { "X-Emby-Token": body.apiKey },
+        headers: jellyfinAuthHeaders(body.apiKey),
         signal: AbortSignal.timeout(5000),
       });
       if (!res.ok) {

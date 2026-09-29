@@ -11,6 +11,7 @@ import { dirname, join } from "path";
 import Fastify from "fastify";
 import { ZodError } from "zod";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 
 interface InviteRow {
   id: string; key: string; maxUses: number; currentUses: number;
@@ -81,7 +82,7 @@ beforeEach(() => {
   invites.clear(); usages.length = 0; findManyArgs.length = 0; seq = 0;
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     if (String(input).includes("/Users/Me")) {
-      const token = String((init?.headers as Record<string, string>)?.["X-Emby-Token"] ?? "");
+      const token = modernJellyfinToken(init?.headers);
       const user = USERS[token];
       return user ? new Response(JSON.stringify(user), { status: 200 }) : new Response("{}", { status: 401 });
     }

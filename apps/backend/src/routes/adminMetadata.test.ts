@@ -6,6 +6,7 @@
 
 import Fastify from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 
 const configStore = vi.hoisted(() => new Map<string, string>());
 const kicks = vi.hoisted(() => [] as unknown[]);
@@ -74,7 +75,7 @@ beforeEach(() => {
         if (key === OFFLINE_KEY) throw new TypeError("fetch failed");
         return Response.json({ status_code: 7 }, { status: 401 });
       }
-      const token = new Headers(init?.headers).get("x-emby-token");
+      const token = modernJellyfinToken(init?.headers);
       if (url.endsWith("/Users/Me")) {
         if (token === "tok-admin") return Response.json({ Id: "admin-1", Name: "Admin", Policy: { IsAdministrator: true } });
         if (token === "tok-user") return Response.json({ Id: "user-1", Name: "Banc", Policy: { IsAdministrator: false } });

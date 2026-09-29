@@ -1,6 +1,7 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import { audioLanguageOf } from "./audioLanguage";
 import type { Sample, RawSession } from "./types";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 /**
  * Lecture des sessions Jellyfin — la vue du SERVEUR, pas celle des clients.
@@ -24,7 +25,7 @@ export async function readSessions(): Promise<RawSession[] | null> {
 
   try {
     const res = await fetch(`${base}/Sessions`, {
-      headers: { "X-Emby-Token": key },
+      headers: jellyfinAuthHeaders(key),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return null;

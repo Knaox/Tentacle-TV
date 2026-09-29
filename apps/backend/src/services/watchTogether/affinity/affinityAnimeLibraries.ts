@@ -1,5 +1,6 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../../configStore";
 import { isAnimeLibraryName } from "./affinityKinds";
+import { jellyfinAuthHeaders } from "../../jellyfinAuth";
 
 /**
  * Affinité — les titres rangés dans une bibliothèque d'ANIMÉS (nommée
@@ -26,7 +27,7 @@ interface RawView {
 const memo = new Map<string, { at: number; ids: Set<string> }>();
 
 async function fetchJson<T>(url: string, apiKey: string): Promise<T | null> {
-  const res = await fetch(url, { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+  const res = await fetch(url, { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(TIMEOUT_MS) });
   return res.ok ? ((await res.json()) as T) : null;
 }
 

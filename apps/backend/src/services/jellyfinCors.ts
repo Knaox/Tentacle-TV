@@ -1,3 +1,4 @@
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 /**
  * Injection automatique des CORS hosts dans la configuration Jellyfin.
  * Permet au navigateur de faire du direct streaming sans erreur CORS.
@@ -18,7 +19,7 @@ export async function injectCorsHosts(
   tentacleUrls: string[],
   logger?: Logger,
 ): Promise<{ added: string[]; alreadyPresent: string[] }> {
-  const headers = { "X-Emby-Token": apiKey, "Content-Type": "application/json" };
+  const headers = { ...jellyfinAuthHeaders(apiKey), "Content-Type": "application/json" };
 
   // 1. Récupérer la config actuelle
   const res = await fetch(`${jellyfinUrl}/System/Configuration`, {

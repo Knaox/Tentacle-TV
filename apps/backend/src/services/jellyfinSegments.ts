@@ -28,6 +28,7 @@ import type { SegmentSources } from "../playback/resolveSegments";
 import type { TrickplayManifest } from "./trickplayFrames";
 import { TICKS_PER_MS } from "../playback/segmentTypes";
 import { getConfigValue, getJellyfinApiKey, getJellyfinUrl } from "./configStore";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 const TTL_MS = 60_000;
 const MAX_ENTRIES = 200;
@@ -104,7 +105,7 @@ export function clearSegmentSourceCache(): void {
 export async function fetchJson(url: string, apiKey: string): Promise<unknown | null> {
   try {
     const res = await fetch(url, {
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) return null;

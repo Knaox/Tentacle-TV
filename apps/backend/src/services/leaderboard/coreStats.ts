@@ -1,5 +1,6 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import type { LeaderboardEntry } from "./types";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 /**
  * Ce que Jellyfin sait vraiment, sans plugin : « vu / pas vu », le nombre de
@@ -88,7 +89,7 @@ async function aggregate(
     let data: PageItems;
     try {
       const res = await fetch(urlPage(base, account.id, startIndex), {
-        headers: { "X-Emby-Token": key },
+        headers: jellyfinAuthHeaders(key),
         signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) return null;

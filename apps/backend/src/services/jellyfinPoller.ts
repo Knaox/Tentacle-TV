@@ -1,6 +1,7 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
 import { sessionsLive } from "./jellyfinWs";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 const POLL_INTERVAL = 300_000; // 5 min (fallback — le WebSocket Jellyfin gère le temps réel)
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -17,7 +18,7 @@ async function jfFetch<T>(path: string): Promise<T | null> {
 
   try {
     const res = await fetch(`${url}${path}`, {
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return null;

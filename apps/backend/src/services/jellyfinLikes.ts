@@ -1,4 +1,5 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 // Deux drapeaux des données utilisateur d'un item, que le serveur pose POUR
 // LE COMPTE d'un utilisateur, avec la clé admin :
@@ -17,7 +18,7 @@ async function call(path: string, method: "POST" | "DELETE"): Promise<boolean> {
   try {
     const res = await fetch(`${url}${path}`, {
       method,
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(10_000),
     });
     return res.ok;

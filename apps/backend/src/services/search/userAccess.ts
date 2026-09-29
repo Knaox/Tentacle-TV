@@ -16,6 +16,7 @@
 
 import type { SearchUserData } from "../../search/searchTypes";
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 export interface UserAccess {
   at: number;
@@ -66,7 +67,7 @@ async function fetchUserAccess(userId: string): Promise<UserAccess | null> {
     const res = await fetch(
       `${url}/Items?userId=${encodeURIComponent(userId)}&Recursive=true&IncludeItemTypes=Movie,Series,BoxSet` +
         `&EnableImages=false&EnableUserData=true&StartIndex=${page * PAGE}&Limit=${PAGE}`,
-      { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(TIMEOUT_MS) },
+      { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(TIMEOUT_MS) },
     );
     if (!res.ok) return null;
     const data = (await res.json()) as { Items?: RawUserItem[]; TotalRecordCount?: number };

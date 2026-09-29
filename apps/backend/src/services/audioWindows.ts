@@ -39,6 +39,7 @@
 
 import { randomUUID } from "crypto";
 import { open, type FileHandle } from "fs/promises";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 /** Part de la durée écoutée à chaque bout. */
 export const WINDOW_RATIO = 0.2;
@@ -154,7 +155,7 @@ export async function fetchAudioWindowToFile(request: WindowFetchRequest): Promi
   try {
     let res: Response;
     try {
-      res = await fetch(url, { headers: { "X-Emby-Token": request.apiKey }, signal: controller.signal });
+      res = await fetch(url, { headers: jellyfinAuthHeaders(request.apiKey), signal: controller.signal });
     } catch {
       return { ok: false, failure: "transient" };
     }
@@ -199,7 +200,7 @@ async function releaseEncoding(jellyfinUrl: string, apiKey: string, playSessionI
   try {
     await fetch(activeEncodingUrl(jellyfinUrl, playSessionId), {
       method: "DELETE",
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(ENCODING_RELEASE_TIMEOUT_MS),
     });
   } catch {

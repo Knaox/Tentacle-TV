@@ -1,4 +1,5 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 /** Défaut Jellyfin quand la config est injoignable ou le champ absent. */
 const DEFAULT_MAX_RESUME_PCT = 90;
@@ -26,7 +27,7 @@ export async function getMaxResumePct(): Promise<number> {
 
   try {
     const res = await fetch(`${url}/System/Configuration`, {
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

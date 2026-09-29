@@ -1,5 +1,6 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { buildAuthHeader, deviceIdFor } from "./jellyfinIdentity";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 interface JellyfinUserResponse {
   Id: string;
@@ -69,7 +70,7 @@ export async function createJellyfinUser(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Emby-Token": apiKey,
+      ...jellyfinAuthHeaders(apiKey),
     },
     body: JSON.stringify({ Name: username }),
   });
@@ -87,7 +88,7 @@ export async function createJellyfinUser(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Emby-Token": apiKey,
+        ...jellyfinAuthHeaders(apiKey),
       },
       body: JSON.stringify({ NewPw: password, ResetPassword: false }),
     }
@@ -109,7 +110,7 @@ export async function listJellyfinUsers(): Promise<{ Id: string; Name: string }[
   }
 
   const res = await fetch(`${jellyfinUrl}/Users`, {
-    headers: { "X-Emby-Token": apiKey },
+    headers: jellyfinAuthHeaders(apiKey),
   });
 
   if (!res.ok) {
@@ -132,7 +133,7 @@ export async function getJellyfinItemInfo(itemId: string): Promise<{
   }
 
   const res = await fetch(`${jellyfinUrl}/Items/${itemId}`, {
-    headers: { "X-Emby-Token": apiKey },
+    headers: jellyfinAuthHeaders(apiKey),
   });
 
   if (!res.ok) return null;
@@ -162,7 +163,7 @@ export async function getUserItemsBatch(
 
   const res = await fetch(
     `${jellyfinUrl}/Users/${userId}/Items?Ids=${itemIds.join(",")}&Fields=PrimaryImageAspectRatio&EnableUserData=true`,
-    { headers: { "X-Emby-Token": apiKey } }
+    { headers: jellyfinAuthHeaders(apiKey) }
   );
 
   if (!res.ok) {
@@ -184,7 +185,7 @@ export async function getUserWatchlist(userId: string): Promise<{ Items: { Id: s
     `${jellyfinUrl}/Users/${userId}/Items?Filters=Likes&Recursive=true` +
       `&IncludeItemTypes=Movie,Series&SortBy=DateCreated&SortOrder=Descending` +
       `&Fields=Overview,Genres,PrimaryImageAspectRatio&EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1&EnableUserData=true`,
-    { headers: { "X-Emby-Token": apiKey } }
+    { headers: jellyfinAuthHeaders(apiKey) }
   );
 
   if (!res.ok) {
@@ -206,7 +207,7 @@ export async function getItemDetail(userId: string, itemId: string): Promise<Rec
   const res = await fetch(
     `${jellyfinUrl}/Users/${userId}/Items/${itemId}` +
       `?Fields=Overview,Genres,Taglines,People,Studios,ProviderIds,RemoteTrailers,RunTimeTicks,ParentBackdropImageTags,ParentBackdropItemId`,
-    { headers: { "X-Emby-Token": apiKey } }
+    { headers: jellyfinAuthHeaders(apiKey) }
   );
 
   if (!res.ok) {

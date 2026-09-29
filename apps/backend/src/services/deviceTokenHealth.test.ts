@@ -5,6 +5,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 // Import statique : Vitest remonte les `vi.mock` ci-dessous AU-DESSUS des
 // imports, le module est donc chargé avec ses bouchons. Un `await import` de
 // premier niveau faisait la même chose, mais le typecheck (tests compris) le
@@ -71,7 +72,7 @@ beforeEach(() => {
   resetTokenOwnerCacheForTests();
   vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: { headers?: Record<string, string> }) => {
     if (jellyfinDown) throw new Error("ECONNREFUSED");
-    const owner = owners.get(init?.headers?.["X-Emby-Token"] ?? "");
+    const owner = owners.get(modernJellyfinToken(init?.headers));
     if (!owner) return new Response("", { status: 401 });
     return new Response(JSON.stringify({ Id: owner, Name: "x" }), { status: 200 });
   }));

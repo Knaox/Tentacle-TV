@@ -3,6 +3,7 @@ import { Readable } from "stream";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { verifyDeviceToken } from "../services/jwt";
+import { jellyfinAuthHeaders, tokenFromAuthHeaders, tokenFromQuery } from "../services/jellyfinAuth";
 
 const ParamsSchema = z.object({
   itemId: z.string().min(1).max(64).regex(/^[A-Za-z0-9-]+$/),
@@ -12,9 +13,10 @@ const ParamsSchema = z.object({
 
 const QuerySchema = z.object({
   mediaSourceId: z.string().min(1).max(64).regex(/^[A-Za-z0-9-]+$/).optional(),
-  // Token fallback for img/background-image requests that cannot send headers
-  // nor cross-origin cookies (matches Jellyfin's native ?api_key= convention).
+  // Jeton en query pour les <img> et background-image, qui ne posent ni
+  // en-tête ni cookie tiers : `api_key` (clients anciens) ou `ApiKey`.
   api_key: z.string().min(1).optional(),
+  ApiKey: z.string().min(1).optional(),
 });
 
 const TRICKPLAY_CACHE_CONTROL = "public, max-age=31536000, immutable";
@@ -34,13 +36,13 @@ export const jellyfinTrickplayRoutes: FastifyPluginAsync = async (app) => {
     const params = ParamsSchema.parse(request.params);
     const query = QuerySchema.parse(request.query);
 
-    // Auth: accept cookie, X-Emby-Token header, or ?api_key= query.
-    // If the token is a Tentacle JWT, swap to admin key. Otherwise pass it
-    // through to Jellyfin as-is — it may be a native Jellyfin access token.
+    // Auth : en-têtes Jellyfin (anciens ou `MediaBrowser`), cookie, ou jeton en
+    // query. Un JWT Tentacle est remplacé par la clé admin ; un jeton Jellyfin
+    // natif passe tel quel.
     const cookieToken = (request as { cookies?: Record<string, string> }).cookies?.tentacle_token;
-    const incomingToken = (request.headers["x-emby-token"] as string | undefined)
+    const incomingToken = tokenFromAuthHeaders(request.headers)
       || cookieToken
-      || query.api_key;
+      || tokenFromQuery(request.query as Record<string, unknown>);
     if (!incomingToken) {
       return reply.status(401).send({ message: "Unauthorized" });
     }
@@ -58,7 +60,7 @@ export const jellyfinTrickplayRoutes: FastifyPluginAsync = async (app) => {
     try {
       const response = await fetch(url, {
         method: "GET",
-        headers: { "X-Emby-Token": jellyfinToken },
+        headers: jellyfinAuthHeaders(jellyfinToken),
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
 

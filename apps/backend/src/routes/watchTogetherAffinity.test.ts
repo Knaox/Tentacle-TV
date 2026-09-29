@@ -11,6 +11,7 @@
 import Fastify from "fastify";
 import { ZodError } from "zod";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 import type { AffinityCard } from "../services/watchTogether/affinity/affinityTypes";
 
 type Sent = { type: string; cause?: string; matchKeys?: string[]; state?: unknown; match?: { key: string } };
@@ -66,7 +67,7 @@ const unplug = onMemberRemoved(handleAffinityMemberRemoved);
 beforeEach(() => {
   sent.length = 0;
   vi.stubGlobal("fetch", vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-    const token = (init?.headers as Record<string, string> | undefined)?.["X-Emby-Token"] ?? "";
+    const token = modernJellyfinToken(init?.headers);
     const found = USERS[token];
     return found ? Response.json({ ...found, Policy: { IsAdministrator: false } }) : new Response("{}", { status: 401 });
   }));

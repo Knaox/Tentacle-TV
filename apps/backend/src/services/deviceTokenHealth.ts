@@ -1,6 +1,7 @@
 import { getPrisma, hasPrisma } from "./db";
 import { hashToken } from "./jwt";
 import { getJellyfinUrl } from "./configStore";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 /**
  * Le jeton Jellyfin d'un appareil jumelé : à qui il appartient, et lequel
@@ -57,7 +58,7 @@ export async function jellyfinTokenOwner(token: string): Promise<string | null |
   if (!jellyfinUrl) return undefined;
   try {
     const res = await fetch(`${jellyfinUrl}/Users/Me`, {
-      headers: { "X-Emby-Token": token },
+      headers: jellyfinAuthHeaders(token),
       signal: AbortSignal.timeout(3000),
     });
     if (res.status === 401 || res.status === 403) {

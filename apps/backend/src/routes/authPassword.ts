@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getJellyfinUrl } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken, verifyImpersonationToken } from "../services/jwt";
+import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
@@ -49,7 +50,7 @@ export const authPasswordRoutes: FastifyPluginAsync = async (app) => {
     try {
       const res = await fetch(`${jellyfinUrl}/Users/${user.userId}/Password`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Emby-Token": token },
+        headers: { "Content-Type": "application/json", ...jellyfinAuthHeaders(token) },
         body: JSON.stringify({ CurrentPw: body.currentPassword, NewPw: body.newPassword }),
         signal: AbortSignal.timeout(5000),
       });

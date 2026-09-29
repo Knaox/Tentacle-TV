@@ -11,6 +11,7 @@ import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { getSeerrConfig } from "../services/seerConfig";
 import { getWatchProviderDirectory } from "../services/tmdb/providerDirectory";
 import { getSeasonEpisodes } from "../services/tmdb/seasonEpisodes";
+import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 // Cache par plateforme : "movies-8" → Set<tmdbId>
 const discoverCache = new Map<string, Set<number>>();
@@ -171,7 +172,7 @@ export async function tmdbRoutes(app: FastifyInstance) {
       // Stratégie 1 : AnyProviderIdEquals + filtre exact côté serveur
       const res = await fetch(
         `${jellyfinUrl}/Items?AnyProviderIdEquals=tmdb.${tmdbId}&IncludeItemTypes=${itemTypes}&Recursive=true&Limit=100&Fields=${fields}`,
-        { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(8_000) },
+        { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(8_000) },
       );
       if (res.ok) {
         const data = (await res.json()) as { Items?: ResolvedItem[] };
@@ -185,7 +186,7 @@ export async function tmdbRoutes(app: FastifyInstance) {
       // Stratégie 2 : Fallback — scan complet
       const allRes = await fetch(
         `${jellyfinUrl}/Items?IncludeItemTypes=${itemTypes}&Recursive=true&Limit=10000&Fields=${fields}`,
-        { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(15_000) },
+        { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(15_000) },
       );
       if (allRes.ok) {
         const allData = (await allRes.json()) as { Items?: ResolvedItem[] };

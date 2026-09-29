@@ -89,10 +89,12 @@ export class FakeJellyfin {
   }
 
   private userFor(req: IncomingMessage, url: URL): FakeUser | null {
+    // Comme Jellyfin 12 : en-tête MediaBrowser ou `ApiKey` ; les formes
+    // héritées (X-Emby-Token, api_key) y valent un 401.
     const token =
-      (req.headers["x-emby-token"] as string | undefined) ??
-      url.searchParams.get("api_key") ??
-      /Token="([^"]+)"/.exec(String(req.headers["authorization"] ?? ""))?.[1];
+      /Token="([^"]+)"/.exec(String(req.headers["authorization"] ?? ""))?.[1] ??
+      url.searchParams.get("ApiKey") ??
+      undefined;
     if (!token) return null;
     if (token === ADMIN_API_KEY) return this.users.find((u) => u.admin) ?? null;
     return this.users.find((u) => u.token === token) ?? null;

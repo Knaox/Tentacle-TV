@@ -5,6 +5,7 @@
 
 import Fastify from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 
 const configStore = vi.hoisted(() => new Map<string, string>());
 vi.mock("../services/configStore", () => ({
@@ -41,7 +42,7 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      const token = new Headers(init?.headers).get("x-emby-token");
+      const token = modernJellyfinToken(init?.headers);
       if (url.endsWith("/Users/Me")) {
         if (token === "tok-admin") return Response.json({ Id: "admin-1", Name: "Admin", Policy: { IsAdministrator: true } });
         if (token === "tok-user") return Response.json({ Id: "user-1", Name: "Banc", Policy: { IsAdministrator: false } });

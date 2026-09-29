@@ -12,6 +12,7 @@ import {
 import { parseDatabaseUrl } from "../services/databaseInfo";
 import { restartJellyfinWs } from "../services/jellyfinWs";
 import { invalidateAdminKeyHealth } from "../services/jellyfinKeyHealth";
+import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 /**
  * Les connexions du serveur, vues de la page admin « Services » : état de
@@ -78,7 +79,7 @@ async function probeJellyfin(url: string, apiKey: string, timeoutMs: number): Pr
   let res: Response;
   try {
     res = await fetch(`${url}/System/Info`, {
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch {

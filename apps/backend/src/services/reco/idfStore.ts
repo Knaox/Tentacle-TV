@@ -4,6 +4,7 @@ import { facetsFromJellyfin, facetsFromTmdb } from "./facets";
 import { getAllCachedMeta } from "../tmdb/metaCache";
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import type { SignalItem } from "./signals";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 // Le job quotidien écrit la table facet_idf ; les lectures passent par ce
 // cache mémoire, rechargé après chaque recalcul. Une facette inconnue vaut
@@ -42,7 +43,7 @@ async function scanLibraryFacets(): Promise<Array<Set<string>>> {
       `${url}/Items?Recursive=true&IncludeItemTypes=Movie,Series&EnableImages=false` +
         `&EnableUserData=false&Fields=Genres,Studios,ProductionYear,ProviderIds` +
         `&StartIndex=${page * PAGE}&Limit=${PAGE}`,
-      { headers: { "X-Emby-Token": apiKey } }
+      { headers: jellyfinAuthHeaders(apiKey) }
     );
     if (!res.ok) break;
     const data = (await res.json()) as { Items?: SignalItem[]; TotalRecordCount?: number };

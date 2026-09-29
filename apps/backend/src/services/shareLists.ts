@@ -1,6 +1,7 @@
 import { getPrisma } from "./db";
 import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
 import { getCachedMeta } from "./tmdb/metaCache";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 /**
  * La liste « titres likés » partageable : les FAVORIS Jellyfin (IsFavorite)
@@ -44,7 +45,7 @@ export async function getLikedListItems(ownerUserId: string): Promise<SharedList
       `${url}/Users/${ownerUserId}/Items?Filters=IsFavorite&Recursive=true` +
         `&IncludeItemTypes=Movie,Series&SortBy=SortName&SortOrder=Ascending` +
         `&Fields=PrimaryImageAspectRatio&EnableImageTypes=Primary`,
-      { headers: { "X-Emby-Token": apiKey } }
+      { headers: jellyfinAuthHeaders(apiKey) }
     );
     if (res.ok) {
       const data = (await res.json()) as JellyfinItemsPage;

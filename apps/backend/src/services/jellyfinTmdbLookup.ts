@@ -1,5 +1,6 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { getAdminUserId } from "./jellyfinLibrary";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 // Retrouver dans Jellyfin le film ou la série qui porte un identifiant TMDB.
 // Deux besoins, deux coûts :
@@ -37,7 +38,7 @@ export async function findLibraryItemByTmdb(tmdbId: number, mediaType: TmdbMedia
   const userId = await getAdminUserId();
   if (!jellyfinUrl || !apiKey || !userId) return { kind: "error" };
   const itemTypes = mediaType === "movie" ? "Movie" : "Series";
-  const headers = { "X-Emby-Token": apiKey };
+  const headers = jellyfinAuthHeaders(apiKey);
   try {
     const res = await fetch(
       `${jellyfinUrl}/Items?userId=${userId}&AnyProviderIdEquals=tmdb.${tmdbId}` +
@@ -77,7 +78,7 @@ export async function libraryTmdbIndex(): Promise<Map<string, string> | null> {
     const res = await fetch(
       `${jellyfinUrl}/Items?userId=${userId}&IncludeItemTypes=Movie,Series&Recursive=true` +
         `&HasTmdbId=true&Fields=ProviderIds&EnableImages=false&EnableUserData=false`,
-      { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(20_000) },
+      { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(20_000) },
     );
     if (!res.ok) return null;
     const data = (await res.json()) as { Items?: Item[] };

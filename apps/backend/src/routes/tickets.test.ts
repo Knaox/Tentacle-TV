@@ -9,6 +9,7 @@
 import Fastify from "fastify";
 import { ZodError } from "zod";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 
 interface TicketRow {
   id: string; jellyfinUserId: string; username: string; subject: string;
@@ -115,8 +116,8 @@ beforeEach(() => {
   resetAdminRecipientsCache();
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     if (String(input).includes("/Users/Me")) {
-      // Le middleware présente le jeton en `X-Emby-Token` (cf. auth.ts).
-      const token = String((init?.headers as Record<string, string>)?.["X-Emby-Token"] ?? "");
+      // Le middleware présente le jeton en `Authorization: MediaBrowser` (cf. auth.ts).
+      const token = modernJellyfinToken(init?.headers);
       const user = USERS[token];
       return user ? new Response(JSON.stringify(user), { status: 200 }) : new Response("{}", { status: 401 });
     }

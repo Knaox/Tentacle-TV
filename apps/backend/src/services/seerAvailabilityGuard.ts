@@ -4,6 +4,7 @@ import { getAdminUserId } from "./jellyfinLibrary";
 import { findLibraryItemByTmdb as findByTmdb } from "./jellyfinTmdbLookup";
 import { normalizeTitle } from "./libraryAddedDedup";
 import type { RegistryClaim } from "./announcedRegistry";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 // Garde de VÉRITÉ des annonces de disponibilité Seer. Le plugin (bundle généré
 // intouchable) fabrique ses notifs « … est sorti(e) sur Tentacle TV » sur la
@@ -93,7 +94,7 @@ async function fetchSeasonNumbers(seriesId: string): Promise<Set<number> | null>
   try {
     const res = await fetch(
       `${jellyfinUrl}/Shows/${seriesId}/Seasons?userId=${userId}&EnableImages=false`,
-      { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(8_000) },
+      { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(8_000) },
     );
     if (!res.ok) return null;
     const data = (await res.json()) as { Items?: Array<{ IndexNumber?: number }> };

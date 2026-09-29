@@ -1,4 +1,5 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 /**
  * Les lectures Jellyfin des statistiques : toujours la clé d'administration
@@ -40,7 +41,7 @@ async function getJson<T>(path: string): Promise<T> {
   const { base, key } = connection();
   let res: Response;
   try {
-    res = await fetch(`${base}${path}`, { headers: { "X-Emby-Token": key }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    res = await fetch(`${base}${path}`, { headers: jellyfinAuthHeaders(key), signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch (err) {
     throw new JellyfinUnavailable(err instanceof Error ? err.message : "réseau");
   }

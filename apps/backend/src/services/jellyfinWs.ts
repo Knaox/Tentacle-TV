@@ -1,18 +1,15 @@
 import WebSocket from "ws";
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
-import { poke as pokeLibraryAdded } from "./libraryAddedNotifier";
 import { pokeWatchTime } from "./watchTime/collector";
-import { pokeProfile } from "./reco/jobs";
-import { refreshLibraryMemo } from "./reco/candidates/libraryMemo";
-import { markCatalogChanged } from "./search/catalog";
-import { markAllUserAccessStale, refreshUserAccess } from "./search/userAccess";
 import { sessionSignatures } from "./jellyfinWsSessions";
+import { handleServerEvent } from "./jellyfinWsEvents";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 /**
  * Le WebSocket Jellyfin — ce qu'il livre vraiment, et à quelles conditions.
  *
- * Mesuré sur Jellyfin 10.11.8, connexion par `?api_key=` (la nôtre) :
+ * Mesuré sur Jellyfin 10.11.8, connexion par la clé d'API (la nôtre) :
  *
  *  1. **Sans abonnement, la socket est MUETTE.** Dix minutes d'écoute, deux
  *     lectures en cours sur le serveur : zéro message, hormis le
@@ -88,12 +85,16 @@ export function sessionsLive(): boolean {
   return wsConnected && Date.now() - lastSessionsFrameMs < SESSIONS_FRESH_MS;
 }
 
-/** Construit l'URL WebSocket Jellyfin à partir de la config */
-function buildWsUrl(): string | null {
+/**
+ * L'URL WebSocket Jellyfin et son authentification. La clé part en en-tête
+ * `Authorization: MediaBrowser` : `?api_key=` vaut un 401 en 12.x (autorisation
+ * héritée coupée), et une clé dans l'URL finit dans les journaux.
+ */
+function buildWsTarget(): { url: string; headers: Record<string, string> } | null {
   const url = getJellyfinUrl();
   const apiKey = getJellyfinApiKey();
   if (!url || !apiKey) return null;
-  return url.replace(/^http/, "ws") + "/socket?api_key=" + encodeURIComponent(apiKey);
+  return { url: url.replace(/^http/, "ws") + "/socket", headers: jellyfinAuthHeaders(apiKey) };
 }
 
 /** Trame `Sessions` : ne réveiller la maison que sur un vrai changement. */
@@ -132,46 +133,13 @@ function handleMessage(data: WebSocket.Data): void {
       case "Sessions":
         handleSessions(msg.Data);
         break;
-      case "LibraryChanged":
-        broadcastAll("recently_added");
-        broadcastAll("featured");
-        // Accélère la détection + fournit les IDs exacts des ajouts (pour titrer
-        // la notif, même si la date n'est pas fiable). Poll aussi périodiquement.
-        pokeLibraryAdded(msg?.Data?.ItemsAdded);
-        // Le moteur de recherche relève ce qui a changé (une fois par salve de
-        // scan), et les droits des comptes se relèveront à leur recherche.
-        markCatalogChanged();
-        markAllUserAccessStale();
-        break;
-      case "UserDataChanged":
-        broadcastAll("watchlist");
-        broadcastAll("watched");
-        // Un favori posé, un titre terminé… : le mémo de bibliothèque se
-        // rafraîchit EN FOND (l'index courant reste servi, jamais de scan
-        // dans une requête) et le profil de goût de CE compte se reconstruit
-        // (débouncé 8 s côté jobs — une salve ne coûte qu'un rebuild).
-        refreshLibraryMemo(msg?.Data?.UserId ?? "");
-        pokeProfile(msg?.Data?.UserId);
-        // Vu, en cours, favori : la recherche de CE compte les reflète.
-        refreshUserAccess(msg?.Data?.UserId ?? "");
-        break;
-      case "PlaybackStart":
-      case "PlaybackStopped":
-        broadcastAll("continue_watching");
-        broadcastAll("next_up");
-        pokeWatchTime();
-        break;
-      // Le contenu de ces messages n'est JAMAIS lu : ils ne servent que de
-      // sonnette au collecteur, qui va relever les sessions lui-même. Une
-      // mesure ne doit pas dépendre d'une source qui peut mentir ou manquer.
-      case "PlaybackProgress":
-        pokeWatchTime();
-        break;
       case "ForceKeepAlive":
         if (ws?.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ MessageType: "KeepAlive" }));
         }
         break;
+      default:
+        handleServerEvent(type, msg.Data);
     }
   } catch {
     // Message non-JSON ou invalide, ignorer
@@ -211,8 +179,8 @@ function scheduleReconnect(): void {
 function connect(): void {
   if (stopped) return;
 
-  const wsUrl = buildWsUrl();
-  if (!wsUrl) {
+  const target = buildWsTarget();
+  if (!target) {
     console.warn("[JellyfinWs] URL ou API key manquante, nouvelle tentative dans 10s");
     reconnectTimer = setTimeout(connect, 10_000);
     return;
@@ -222,7 +190,7 @@ function connect(): void {
   const isMine = () => mine === generation;
 
   try {
-    ws = new WebSocket(wsUrl);
+    ws = new WebSocket(target.url, { headers: target.headers });
   } catch (err) {
     console.error("[JellyfinWs] Erreur de création:", err);
     scheduleReconnect();

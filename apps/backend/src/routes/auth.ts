@@ -9,6 +9,7 @@ import { authPasswordRoutes } from "./authPassword";
 import { authAccountRoutes } from "./authAccount";
 import { authRefreshRoutes } from "./authRefresh";
 import { clearSessionCookie, setSessionCookie } from "./authCookie";
+import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 /** Session : ouverture, sortie d'impersonation, fermeture. Le cycle de vie du
  *  compte vit dans `authAccount.ts`, la revalidation dans `authRefresh.ts` et le
@@ -151,7 +152,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         try {
           await fetch(`${jellyfinUrl}/Sessions/Logout`, {
             method: "POST",
-            headers: { "X-Emby-Token": token },
+            headers: jellyfinAuthHeaders(token),
             signal: AbortSignal.timeout(5000),
           });
         } catch {

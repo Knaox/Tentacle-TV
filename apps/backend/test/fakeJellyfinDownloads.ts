@@ -55,8 +55,7 @@ export const POLICIES: Record<string, FakePolicy> = {
 };
 
 function tokenFromHeaders(headers: Headers): string | null {
-  const emby = headers.get("x-emby-token");
-  if (emby) return emby;
+  // Comme Jellyfin 12 : l'en-tête MediaBrowser seul, les X-Emby-* sont refusés.
   const auth = headers.get("authorization") ?? "";
   const match = auth.match(/Token="([^"]+)"/);
   return match ? match[1] : null;

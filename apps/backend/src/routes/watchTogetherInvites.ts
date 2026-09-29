@@ -17,6 +17,7 @@ import { getJellyfinUsers, getUserBasic } from "../services/watchTogether/usersC
 import { sendChatHistory } from "../services/watchTogether/chat";
 import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { WT_MAX_INVITES_PER_REQUEST } from "../services/watchTogether/protocol";
+import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 /** Nom d'un item Jellyfin (clé admin, best-effort — contexte d'invitation). */
 async function fetchItemName(itemId: string): Promise<string | null> {
@@ -25,7 +26,7 @@ async function fetchItemName(itemId: string): Promise<string | null> {
   if (!jellyfinUrl || !apiKey) return null;
   try {
     const res = await fetch(`${jellyfinUrl}/Items/${encodeURIComponent(itemId)}`, {
-      headers: { "X-Emby-Token": apiKey },
+      headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return null;

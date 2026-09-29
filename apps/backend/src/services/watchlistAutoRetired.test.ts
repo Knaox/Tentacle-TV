@@ -113,7 +113,7 @@ describe("la remise dans Ma liste", () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit & { headers: Record<string, string> }];
     expect(url).toBe("http://jf.test/Users/u1/Items/s1/Rating?likes=true");
     expect(init.method).toBe("POST");
-    expect(init.headers["X-Emby-Token"]).toBe("admin-key");
+    expect(init.headers.Authorization).toBe('MediaBrowser Token="admin-key"');
     expect(rows).toHaveLength(0);
     expect(broadcastToUser).toHaveBeenCalledTimes(1);
     expect(broadcastToUser).toHaveBeenCalledWith("u1", "watchlist");

@@ -1,5 +1,6 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../../configStore";
 import type { JellyfinFacetSource } from "../facets";
+import { jellyfinAuthHeaders } from "../../jellyfinAuth";
 
 /** Un titre de bibliothèque, indexé par sa clé canonique "movie:603"/"tv:1399". */
 export interface LibraryEntry extends JellyfinFacetSource {
@@ -70,7 +71,7 @@ export async function buildLibraryIndex(userId: string): Promise<LibraryIndex> {
         `&ImageTypeLimit=1&EnableImageTypes=Primary,Backdrop&EnableUserData=true` +
         `&Fields=ProviderIds,Genres,Studios,ProductionYear,RunTimeTicks,CommunityRating,BackdropImageTags,RecursiveItemCount` +
         `&StartIndex=${page * PAGE}&Limit=${PAGE}`,
-      { headers: { "X-Emby-Token": apiKey } }
+      { headers: jellyfinAuthHeaders(apiKey) }
     );
     if (!res.ok) break;
     const data = (await res.json()) as { Items?: RawItem[]; TotalRecordCount?: number };

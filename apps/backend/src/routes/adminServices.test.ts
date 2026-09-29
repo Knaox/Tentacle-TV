@@ -6,6 +6,7 @@
 
 import Fastify from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 
 type Probe = { ok: true; version: string } | { ok: false };
 
@@ -61,7 +62,7 @@ const jellyfin = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = String(input);
   if (url.startsWith("http://down.test")) throw new TypeError("fetch failed");
   if (url.startsWith("http://html.test")) return new Response("<html></html>", { status: 200 });
-  if (new Headers(init?.headers).get("x-emby-token") !== "bonne-cle") return new Response("", { status: 401 });
+  if (modernJellyfinToken(init?.headers) !== "bonne-cle") return new Response("", { status: 401 });
   return Response.json({ Version: "10.10.7", ServerName: "Poulpy" });
 });
 
@@ -87,7 +88,7 @@ async function call(method: "GET" | "POST" | "PUT", url: string, payload?: objec
 }
 
 /** La clé que le serveur a présentée à Jellyfin, au dernier appel. */
-const lastKeySent = () => new Headers(jellyfin.mock.calls.at(-1)?.[1]?.headers).get("x-emby-token");
+const lastKeySent = () => modernJellyfinToken(jellyfin.mock.calls.at(-1)?.[1]?.headers);
 
 describe("GET /services", () => {
   it("sonde Jellyfin et la base : versions, nom du serveur, clé présente, origine de la connexion", async () => {

@@ -16,6 +16,7 @@
 import type { SearchMediaItem } from "../../search/searchTypes";
 import { fallbackTerm, searchScore } from "../../utils/textSearch";
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 const TIMEOUT_MS = 8_000;
 
@@ -36,7 +37,7 @@ async function searchTermQuery(
     `${url}/Items?userId=${encodeURIComponent(userId)}&searchTerm=${encodeURIComponent(term)}` +
       `&IncludeItemTypes=${types}&Recursive=true&Limit=${limit}&Fields=${fields}` +
       `&EnableImageTypes=Primary,Thumb,Backdrop&ImageTypeLimit=1&EnableUserData=true`,
-    { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(TIMEOUT_MS) },
+    { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(TIMEOUT_MS) },
   );
   if (!res.ok) return [];
   const data = (await res.json()) as { Items?: SearchMediaItem[] };

@@ -1,5 +1,6 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import type { JellyfinFacetSource } from "./facets";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 /** Ce qu'un scan de signaux rapporte d'un item — facettes + UserData. */
 export interface SignalItem extends JellyfinFacetSource {
@@ -40,7 +41,7 @@ async function pagedUserItems(userId: string, params: string): Promise<SignalIte
     const res = await fetch(
       `${url}/Items?userId=${userId}&Recursive=true&EnableImages=false&EnableUserData=true` +
         `&Fields=${FACET_FIELDS}&${params}&StartIndex=${page * PAGE}&Limit=${PAGE}`,
-      { headers: { "X-Emby-Token": apiKey } }
+      { headers: jellyfinAuthHeaders(apiKey) }
     );
     if (!res.ok) break;
     const data = (await res.json()) as PageItems;

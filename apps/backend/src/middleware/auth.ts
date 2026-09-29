@@ -2,6 +2,7 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import { getJellyfinUrl } from "../services/configStore";
 import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
 import { getPrisma, hasPrisma } from "../services/db";
+import { jellyfinAuthHeaders, tokenFromAuthHeaders } from "../services/jellyfinAuth";
 
 export interface JellyfinUser {
   userId: string;
@@ -42,7 +43,7 @@ async function validateJellyfinToken(token: string): Promise<ValidationResult> {
 
   try {
     const res = await fetch(`${jellyfinUrl}/Users/Me`, {
-      headers: { "X-Emby-Token": token },
+      headers: jellyfinAuthHeaders(token),
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) {
@@ -125,10 +126,9 @@ export function getTokenFromRequest(request: FastifyRequest): string | null {
   // 2. Authorization: Bearer header (mobile/desktop)
   const authHeader = request.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
-  // 3. X-Emby-Token header (Jellyfin client direct)
-  const embyToken = request.headers["x-emby-token"];
-  if (typeof embyToken === "string" && embyToken) return embyToken;
-  return null;
+  // 3. En-têtes Jellyfin : `X-Emby-Token` des clients anciens, ou le `Token="…"`
+  //    d'un en-tête `MediaBrowser` (Authorization ou X-Emby-Authorization).
+  return tokenFromAuthHeaders(request.headers) ?? null;
 }
 
 export async function requireAuth(request: FastifyRequest, reply: FastifyReply) {

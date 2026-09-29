@@ -4,6 +4,7 @@ import { getPrisma } from "../services/db";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
 import { clearSessionCookie } from "./authCookie";
+import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 /** Cycle de vie du compte : création par invitation, suppression, demande de
  *  réinitialisation. Séparé de `auth.ts`, qui ne garde que la session. */
@@ -48,7 +49,7 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
     try {
       const createRes = await fetch(`${jellyfinUrl}/Users/New`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Emby-Token": apiKey },
+        headers: { "Content-Type": "application/json", ...jellyfinAuthHeaders(apiKey) },
         body: JSON.stringify({ Name: body.username }),
       });
       if (!createRes.ok) throw new Error(await createRes.text());
@@ -56,7 +57,7 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
 
       await fetch(`${jellyfinUrl}/Users/${jellyfinUser.Id}/Password`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Emby-Token": apiKey },
+        headers: { "Content-Type": "application/json", ...jellyfinAuthHeaders(apiKey) },
         body: JSON.stringify({ NewPw: body.password, ResetPassword: false }),
       });
     } catch (err) {
@@ -107,7 +108,7 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
     try {
       const res = await fetch(`${jellyfinUrl}/Users/${user.userId}`, {
         method: "DELETE",
-        headers: { "X-Emby-Token": apiKey },
+        headers: jellyfinAuthHeaders(apiKey),
       });
       if (!res.ok && res.status !== 404) {
         throw new Error(`Jellyfin responded with ${res.status}`);
@@ -159,7 +160,7 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
 
     try {
       const res = await fetch(`${jellyfinUrl}/Users`, {
-        headers: { "X-Emby-Token": apiKey },
+        headers: jellyfinAuthHeaders(apiKey),
         signal: AbortSignal.timeout(5000),
       });
       if (!res.ok) return reply.send(successResponse);

@@ -1,5 +1,6 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import type { FavoriteSeries } from "./types";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 /**
  * Les séries les plus regardées d'un compte.
@@ -64,7 +65,7 @@ export async function favoriteSeries(userId: string): Promise<FavoriteSeries[] |
     let items: PlayedEpisode[];
     try {
       const res = await fetch(`${base}/Items?${p}`, {
-        headers: { "X-Emby-Token": key },
+        headers: jellyfinAuthHeaders(key),
         signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) return null;

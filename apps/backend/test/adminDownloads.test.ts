@@ -70,7 +70,7 @@ function fakeJellyfin(input: RequestInfo | URL, init?: RequestInit): Response {
   const method = (init?.method ?? "GET").toUpperCase();
   const headers = new Headers(init?.headers);
   const auth = headers.get("authorization") ?? "";
-  const token = auth.match(/Token="([^"]+)"/)?.[1] ?? headers.get("x-emby-token");
+  const token = auth.match(/Token="([^"]+)"/)?.[1];
 
   // Auth du middleware requireAdmin (Users/Me avec le token utilisateur).
   if (url.endsWith("/Users/Me")) {

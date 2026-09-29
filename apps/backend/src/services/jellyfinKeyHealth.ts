@@ -1,4 +1,5 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
+import { jellyfinAuthHeaders } from "./jellyfinAuth";
 
 /**
  * Santé de la CLÉ ADMIN Jellyfin.
@@ -50,7 +51,7 @@ async function check(): Promise<AdminKeyHealth> {
 
   try {
     const res = await fetch(`${url}/Users`, {
-      headers: { "X-Emby-Token": key },
+      headers: jellyfinAuthHeaders(key),
       signal: AbortSignal.timeout(5000),
     });
     if (res.ok) return { etat: "ok", verifieA: checkedAt };

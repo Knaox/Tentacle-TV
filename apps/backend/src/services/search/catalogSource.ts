@@ -20,6 +20,7 @@
 
 import type { SearchItemKind } from "../../search/searchTypes";
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
+import { jellyfinAuthHeaders } from "../jellyfinAuth";
 
 export interface CatalogPersonRef {
   id: string;
@@ -184,7 +185,7 @@ export async function fetchCatalogItems(since: Date | null = null): Promise<Cata
       `${url}/Items?Recursive=true&IncludeItemTypes=Movie,Series,BoxSet&Fields=${FIELDS}` +
         `&EnableImageTypes=Primary,Backdrop,Logo,Thumb&ImageTypeLimit=1&EnableUserData=false` +
         `${sinceParam}&StartIndex=${page * PAGE}&Limit=${PAGE}`,
-      { headers: { "X-Emby-Token": apiKey }, signal: AbortSignal.timeout(TIMEOUT_MS) },
+      { headers: jellyfinAuthHeaders(apiKey), signal: AbortSignal.timeout(TIMEOUT_MS) },
     );
     // Une page refusée invalide TOUT le relevé : un index amputé ferait
     // disparaître des titres jusqu'au suivant — l'ancien vaut mieux.
