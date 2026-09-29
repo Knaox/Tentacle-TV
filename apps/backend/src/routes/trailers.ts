@@ -83,6 +83,13 @@ const FORMAT =
 const EJS_ARGS = ["--remote-components", "ejs:github"];
 let ejsSupported = true;
 
+/**
+ * Le client « web_safari » d'abord : c'est à Safari que YouTube sert le HLS
+ * muxé (5 formats contre 1 pour les clients par défaut, mesuré dans l'image),
+ * celui qu'AVPlayer lit tel quel ; les clients par défaut restent en repli.
+ */
+const CLIENT_ARGS = ["--extractor-args", "youtube:player_client=web_safari,default"];
+
 function resolveOnce(ytId: string): Promise<ResolvedStream | null> {
   const withEjs = ejsSupported;
   return new Promise((resolve) => {
@@ -90,6 +97,7 @@ function resolveOnce(ytId: string): Promise<ResolvedStream | null> {
       ytDlpCommand(),
       [
         ...(withEjs ? EJS_ARGS : []),
+        ...CLIENT_ARGS,
         "-f", FORMAT,
         "-g", // imprime l'URL directe du flux/manifest
         "--no-warnings",
@@ -133,6 +141,14 @@ async function isReadable(url: string): Promise<boolean> {
 const MAX_ATTEMPTS = 5;
 
 /**
+ * Une vidéo introuvable n'est pas redemandée avant 10 min. Chaque échec coûte
+ * cinq extractions, et YouTube bride l'adresse qui en enchaîne trop — plus
+ * aucun flux pour personne (vécu le 2026-09-29, après une centaine d'essais).
+ */
+const MISS_TTL_MS = 10 * 60 * 1000;
+const misses = new Map<string, number>();
+
+/**
  * Résout en privilégiant le HLS muxé HD (jusqu'à 1080p). YouTube force par
  * intermittence le « SABR streaming » : quand l'extraction dégrade, yt-dlp ne
  * renvoie plus que le MP4 progressif 360p (itag 18). On retente donc tant
@@ -159,9 +175,10 @@ export async function trailerRoutes(app: FastifyInstance) {
 
   /**
    * GET /api/trailers/resolve?ytId=<11 chars>
-   * → 200 { url, mimeType, expiresAt }   flux MP4 jouable
+   * → 200 { url, mimeType, expiresAt }   flux HLS (ou MP4 lisible) jouable
    * → 400 { error: "invalid ytId" }
    * → 404 { error: "unavailable" }       aucun flux muxé jouable / extraction KO
+   *                                       (retenu 10 min, cf. MISS_TTL_MS)
    */
   app.get("/resolve", async (request: FastifyRequest, reply: FastifyReply) => {
     const { ytId } = request.query as { ytId?: string };
@@ -173,12 +190,18 @@ export async function trailerRoutes(app: FastifyInstance) {
     if (cached && cached.expiresAt > Date.now() + 60_000) {
       return cached;
     }
+    if ((misses.get(ytId) ?? 0) > Date.now()) {
+      return reply.status(404).send({ error: "unavailable" });
+    }
 
     const resolved = await resolveYtStream(ytId);
     if (!resolved) {
       cache.delete(ytId);
+      if (misses.size > 500) for (const [id, until] of misses) if (until <= Date.now()) misses.delete(id);
+      misses.set(ytId, Date.now() + MISS_TTL_MS);
       return reply.status(404).send({ error: "unavailable" });
     }
+    misses.delete(ytId);
     // On ne met en cache (longue durée) que le HLS HD. Un repli progressif 360p
     // (extraction dégradée par le SABR YouTube) n'est PAS caché : sinon une
     // dégradation passagère figerait la 360p pendant des heures. La requête
