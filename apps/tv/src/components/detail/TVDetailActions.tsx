@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { View, Text, TVFocusGuideView } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useCardToggles, useSeriesWatchState } from "@tentacle-tv/api-client";
-import type { MediaItem, RichTrailer } from "@tentacle-tv/shared";
+import { useCardToggles, useSeriesWatchState, type ItemTrailer } from "@tentacle-tv/api-client";
+import type { MediaItem, TrailerTarget } from "@tentacle-tv/shared";
 import { cardToggleLabelKey, formatPosition } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { PlayIcon, BookmarkIcon, BookmarkFilledIcon, MovieIcon } from "../icons/TVIcons";
@@ -22,10 +22,11 @@ const CIRCLE = 56;
 
 interface TVDetailActionsProps {
   item: MediaItem;
-  trailers: RichTrailer[];
+  /** Le bouton « Bande-annonce » (`useItemTrailer`) : la locale d'abord, sinon la distante. */
+  trailer: ItemTrailer;
   playBtnRef: React.RefObject<View | null>;
   onPlay: (itemId: string) => void;
-  onTrailer: (trailer: RichTrailer) => void;
+  onTrailer: (target: TrailerTarget) => void;
   onFocusButtons: () => void;
   /** HAUT depuis une action → la pilule Retour (aucun chevauchement horizontal
    *  avec elle : la cible géométrique n'existe pas, il faut la désigner). */
@@ -44,7 +45,7 @@ interface TVDetailActionsProps {
  * d'une série lisait son `UserData`, que la pastille des cartes ne lit pas :
  * les deux pouvaient se contredire.
  */
-export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer, onFocusButtons, nextFocusUp }: TVDetailActionsProps) {
+export function TVDetailActions({ item, trailer, playBtnRef, onPlay, onTrailer, onFocusButtons, nextFocusUp }: TVDetailActionsProps) {
   const { t } = useTranslation("common");
   const { t: tCards } = useTranslation("cards");
   const isSeries = item.Type === "Series";
@@ -96,11 +97,11 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
           </View>
         </Focusable>
       )}
-      {trailers.length > 0 && (
+      {trailer.visible && (
         <Focusable
           variant="button"
           focusRadius={Button.large.borderRadius}
-          onPress={() => onTrailer(trailers[0])}
+          onPress={() => trailer.target && onTrailer(trailer.target)}
           onFocus={onFocusButtons}
           accessibilityLabel={t("trailer")}
           nextFocusUp={nextFocusUp}

@@ -8,8 +8,8 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem, RichTrailer } from "@tentacle-tv/shared";
+import { useJellyfinClient, type ItemTrailer } from "@tentacle-tv/api-client";
+import type { MediaItem, TrailerTarget } from "@tentacle-tv/shared";
 import { formatDuration } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { TV_DETAIL_BANNER, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
@@ -23,10 +23,10 @@ import { Button } from "../../theme/buttons";
 
 interface TVDetailHeaderProps {
   item: MediaItem;
-  trailers: RichTrailer[];
+  trailer: ItemTrailer;
   playBtnRef: React.RefObject<View | null>;
   onPlay: (itemId: string) => void;
-  onTrailer: (trailer: RichTrailer) => void;
+  onTrailer: (target: TrailerTarget) => void;
   onSeriesPress: (seriesId: string) => void;
   onFocusButtons: () => void;
   /** Bouton « Retour » visible (parité LG `DetailHero`) — la télécommande
@@ -43,7 +43,7 @@ interface TVDetailHeaderProps {
  */
 export function TVDetailHeader({
   item,
-  trailers,
+  trailer,
   playBtnRef,
   onPlay,
   onTrailer,
@@ -285,7 +285,7 @@ export function TVDetailHeader({
           <Animated.View style={[{ flexDirection: "row", marginTop: Spacing.synopsisToButtons }, buttonsStyle]}>
             <TVDetailActions
               item={item}
-              trailers={trailers}
+              trailer={trailer}
               playBtnRef={playBtnRef}
               onPlay={onPlay}
               onTrailer={onTrailer}

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, ScrollView, InteractionManager, findNodeHandle } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMediaItem, useSimilarItems, useCollectionItems } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { useItemTrailer, useMediaItem, useSimilarItems, useCollectionItems } from "@tentacle-tv/api-client";
+import type { ExtraEntry, MediaItem, TrailerTarget } from "@tentacle-tv/shared";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -12,12 +12,11 @@ import { FocusableRow } from "../components/focus/FocusableRow";
 import { TVPosterFrame, TVPosterMeta } from "../components/cards/TVPosterCard";
 import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
 import { TVEpisodeList } from "../components/TVEpisodeList";
-import { TVExtrasRow } from "../components/detail/TVExtrasRow";
+import { TVExtrasSection } from "../components/detail/TVExtrasSection";
 import { TVCastCrew } from "../components/detail/TVCastCrew";
 import { TVDetailHeader } from "../components/detail/TVDetailHeader";
 import { TVSagaRow } from "../components/detail/TVSagaRow";
 import { useTVRemote } from "../components/focus/useTVRemote";
-import { useTvTrailers } from "../hooks/useTvTrailers";
 import { Colors, Spacing, CardConfig } from "../theme/colors";
 import { SHOWS_VERTICAL_SCROLL_INDICATOR } from "../theme/focus";
 
@@ -30,7 +29,7 @@ const renderPoster = (s: MediaItem, _i: number, focused: boolean) => (
 const renderPosterMeta = (s: MediaItem) => <TVPosterMeta item={s} width={CardConfig.portrait.width} />;
 
 export function MediaDetailScreen({ route, navigation }: Props) {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const { itemId } = route.params;
   const queryClient = useQueryClient();
   const { data: item } = useMediaItem(itemId);
@@ -39,8 +38,9 @@ export function MediaDetailScreen({ route, navigation }: Props) {
   const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
   const similarParentId = isEpisode ? parentSeries?.ParentId : item?.ParentId;
   const { data: similar } = useSimilarItems(similarId, similarParentId);
-  // Bandes-annonces Jellyfin + TMDB, triées par langue du profil (DB Tentacle)
-  const trailers = useTvTrailers(item);
+  // Le bouton « Bande-annonce » : la locale d'abord (lecteur), sinon la
+  // distante (Jellyfin + TMDB, triées par langue du profil) — `useItemTrailer`.
+  const trailer = useItemTrailer(item, i18n.language);
   // Collection (BoxSet) : contenu navigable (pas de lecture sur un conteneur)
   const isBoxSet = item?.Type === "BoxSet";
   const { data: collectionItems } = useCollectionItems(isBoxSet ? item?.Id : undefined);
@@ -50,9 +50,8 @@ export function MediaDetailScreen({ route, navigation }: Props) {
 
   const scrollRef = useRef<ScrollView>(null);
   const playBtnRef = useRef<View>(null);
-  // Positions Y des sections extras/épisodes (relatives au contenu de page) :
+  // Positions Y des sections épisodes/saga (relatives au contenu de page) :
   // leur focus fait défiler la PAGE — ces sections n'ont pas de scroll propre.
-  const extrasY = useRef(0);
   const episodesY = useRef(0);
   const sagaY = useRef(0);
   // HAUT depuis une tuile extras → bouton Lecture : l'ancrage de page sur la
@@ -93,6 +92,19 @@ export function MediaDetailScreen({ route, navigation }: Props) {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
+  // Une bande-annonce ou un bonus LOCAL se lit dans le lecteur ; une vidéo
+  // YouTube dans l'écran de bande-annonce (WebView Android, flux résolu tvOS).
+  const openTrailer = useCallback((target: TrailerTarget) => {
+    if (target.kind === "local") navigation.navigate("Player", { itemId: target.itemId });
+    else navigation.navigate("Trailer", { url: target.trailer.Url, name: target.trailer.Name });
+  }, [navigation]);
+  const openExtra = useCallback((entry: ExtraEntry) => {
+    openTrailer(entry.source === "local" ? { kind: "local", itemId: entry.itemId } : { kind: "remote", trailer: entry.trailer });
+  }, [openTrailer]);
+  const anchorExtras = useCallback((y: number) => {
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - 60), animated: true });
+  }, []);
+
   if (!item) return <View style={{ flex: 1, backgroundColor: Colors.bgDeep }} />;
 
   const isSeries = item.Type === "Series";
@@ -106,10 +118,10 @@ export function MediaDetailScreen({ route, navigation }: Props) {
     >
       <TVDetailHeader
         item={item}
-        trailers={trailers}
+        trailer={trailer}
         playBtnRef={playBtnRef}
         onPlay={(id) => navigation.navigate("Player", { itemId: id })}
-        onTrailer={(tr) => navigation.navigate("Trailer", { url: tr.Url, name: tr.Name })}
+        onTrailer={openTrailer}
         onSeriesPress={(seriesId) => navigation.push("MediaDetail", { itemId: seriesId })}
         onFocusButtons={scrollToButtons}
         onBack={() => navigation.goBack()}
@@ -130,17 +142,16 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         />
       )}
 
-      {/* Extras (bandes-annonces + teasers) — AU-DESSUS des saisons, comme le web */}
-      {trailers.length > 0 && (
-        <TVExtrasRow
-          trailers={trailers}
-          onSelect={(tr) => navigation.navigate("Trailer", { url: tr.Url, name: tr.Name })}
-          style={{ marginTop: Spacing.sectionGap }}
-          onLayout={(e) => { extrasY.current = e.nativeEvent.layout.y; }}
-          onRowFocus={() => scrollRef.current?.scrollTo({ y: Math.max(0, extrasY.current - 60), animated: true })}
-          tilesNextFocusUp={playHandle}
-        />
-      )}
+      {/* Extras — bandes-annonces locales, bonus, vidéos distantes ; la série
+          d'un épisode ; une rangée par saison qui en a. AU-DESSUS des
+          saisons, comme le web. */}
+      <TVExtrasSection
+        item={item}
+        parentSeries={isEpisode ? parentSeries : undefined}
+        onOpen={openExtra}
+        onFocusY={anchorExtras}
+        firstNextFocusUp={playHandle}
+      />
 
       {/* Episodes — série, ou série parente d'un épisode (fiche centrée épisode,
           saison présélectionnée + épisode surligné, comme le web) */}
