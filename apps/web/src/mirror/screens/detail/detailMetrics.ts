@@ -111,9 +111,3 @@ export function metaTokens(item: MediaItem | undefined): { tokens: MetaToken[]; 
 export function runtimeMinutes(ticks: number | null | undefined): number | null {
   return ticks ? Math.round(ticksToSeconds(ticks) / 60) : null;
 }
-
-/** Extrait l'identifiant d'une vidéo YouTube (watch?v=, youtu.be/, embed/). */
-export function youtubeId(url: string): string | null {
-  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{6,})/);
-  return m ? m[1] : null;
-}

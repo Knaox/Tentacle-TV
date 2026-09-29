@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { detailGeometry, playCta, youtubeId } from "./detailMetrics";
+import { detailGeometry, playCta } from "./detailMetrics";
 import { progressBetween, topBarProgress } from "./useDetailScroll";
 
 const t = (key: string, opts?: Record<string, unknown>) => (opts?.time ? `${key}(${opts.time})` : key);
@@ -63,14 +63,5 @@ describe("fondus de la barre haute", () => {
   it("borne basse à zéro quand le seuil est court", () => {
     expect(progressBetween(-10, 0, 50)).toBe(0);
     expect(topBarProgress(25, 50).bar).toBeCloseTo(0.5);
-  });
-});
-
-describe("bandes-annonces", () => {
-  it("reconnaît les trois formes d'URL YouTube", () => {
-    expect(youtubeId("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-    expect(youtubeId("https://youtu.be/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-    expect(youtubeId("https://www.youtube.com/embed/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-    expect(youtubeId("https://vimeo.com/1234")).toBeNull();
   });
 });
