@@ -11,13 +11,16 @@
 // (un par plateforme et par version, enrichi boutique après boutique) est
 // dans lib/announce-model.mjs.
 //
-// Sans jeton, ou sans rien de neuf au-dessus des seuils : ne touche pas à
-// Discord et sort en 0. Exit 1 si une annonce due n'a pas pu partir.
+// Sans jeton : ne touche pas à Discord et sort en 0 (annonces désactivées).
+// Avec : vérifie à CHAQUE passage que le bot peut encore écrire dans les deux
+// salons — un droit retiré se voit tout de suite, pas le jour d'une sortie.
+// Exit 1 si le jeton ou un droit manque, ou si une annonce due n'est pas partie ;
+// une panne passagère de Discord sans rien à annoncer n'est qu'un avertissement.
 import { readFileSync } from 'node:fs';
 import {
   PRODUCTS, buildAnnouncement, mergeStores, parseAnnouncement, releaseNotes, storesServing, targetVersion,
 } from './lib/announce-model.mjs';
-import { createDiscordClient } from './lib/discord.mjs';
+import { DiscordError, createDiscordClient, effectivePermissions, missingPermissions } from './lib/discord.mjs';
 import { isVersion } from './lib/versions.mjs';
 
 const LANGS = ['en', 'fr'];
@@ -53,11 +56,11 @@ for (const [key, product] of Object.entries(PRODUCTS)) {
   const version = targetVersion(product, serving, floors);
   if (version) plan.push({ key, version, stores: storesServing(product, serving, version) });
 }
-if (plan.length === 0) {
-  console.log('Rien de neuf au-dessus des seuils : aucune annonce.');
-  process.exit(0);
-}
-console.log(`À annoncer : ${plan.map((p) => `${p.key} ${p.version} (${p.stores.join(', ')})`).join(' · ')}`);
+console.log(
+  plan.length === 0
+    ? 'Rien de neuf au-dessus des seuils : aucune annonce.'
+    : `À annoncer : ${plan.map((p) => `${p.key} ${p.version} (${p.stores.join(', ')})`).join(' · ')}`,
+);
 
 const token = process.env.DISCORD_BOT_TOKEN;
 if (!token) {
@@ -69,20 +72,59 @@ if (!token) {
 const notesFor = (productKey, version, lang) =>
   releaseNotes(readFileSync(PRODUCTS[productKey].changelog, 'utf8'), productKey, version, lang);
 
-const discord = createDiscordClient(token);
-const me = await discord.me();
+// Un refus (jeton, droit, salon disparu) est une panne de configuration ; un
+// 5xx ou un réseau muet passe tout seul — il ne rougit le run que si une
+// annonce était due.
+const transient = (e) => !(e instanceof DiscordError) || e.status === 429 || e.status >= 500;
 let failures = 0;
+const trouble = (msg, e) => {
+  if (plan.length === 0 && transient(e)) {
+    console.log(`::warning title=Annonces Discord::${msg} : ${why(e)}`);
+  } else {
+    failures++;
+    console.log(`::error title=Annonces Discord::${msg} : ${why(e)}`);
+  }
+};
+
+const discord = createDiscordClient(token);
+let me;
+try {
+  me = await discord.me();
+} catch (e) {
+  trouble('jeton du bot refusé ou Discord injoignable', e);
+  process.exit(failures ? 1 : 0);
+}
+
+const guilds = new Map();
+/** Ce que le bot a le droit de faire dans un salon (rôles et dérogations lus une fois par serveur). */
+async function botAccess(channel) {
+  if (!guilds.has(channel.guild_id)) {
+    const [roles, member] = await Promise.all([discord.roles(channel.guild_id), discord.member(channel.guild_id, me.id)]);
+    guilds.set(channel.guild_id, { roles, memberRoleIds: member.roles ?? [] });
+  }
+  const { roles, memberRoleIds } = guilds.get(channel.guild_id);
+  return effectivePermissions({
+    guildId: channel.guild_id, roles, memberRoleIds, userId: me.id, overwrites: channel.permission_overwrites ?? [],
+  });
+}
 
 for (const lang of LANGS) {
   const channelId = config.channels[lang];
   let channel;
-  let mine;
+  let mine = [];
   try {
     channel = await discord.channel(channelId);
-    mine = (await discord.recentMessages(channelId)).filter((m) => m.author?.id === me.id);
+    const access = await botAccess(channel);
+    const missing = missingPermissions(access);
+    if (missing.length > 0) {
+      failures++;
+      console.log(`::error title=Annonces Discord::#${channel.name} : le bot n'a pas ${missing.join(', ')}.`);
+      continue;
+    }
+    console.log(`#${channel.name} : le bot peut annoncer (${access.admin ? 'administrateur' : 'sans administrateur'}).`);
+    if (plan.length > 0) mine = (await discord.recentMessages(channelId)).filter((m) => m.author?.id === me.id);
   } catch (e) {
-    failures++;
-    console.log(`::error title=Annonces Discord::salon ${lang} (${channelId}) illisible : ${why(e)}`);
+    trouble(`salon ${lang} (${channelId}) illisible`, e);
     continue;
   }
 

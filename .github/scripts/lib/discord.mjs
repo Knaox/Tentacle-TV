@@ -6,6 +6,52 @@
 const API = 'https://discord.com/api/v10';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Les permissions qui comptent pour le bot d'annonces (bits de l'API Discord). */
+export const PERMISSIONS = {
+  ADMINISTRATOR: 1n << 3n,
+  VIEW_CHANNEL: 1n << 10n,
+  SEND_MESSAGES: 1n << 11n,
+  EMBED_LINKS: 1n << 14n,
+  READ_MESSAGE_HISTORY: 1n << 16n,
+};
+/** Ce qu'une annonce exige dans son salon. */
+export const ANNOUNCE_NEEDS = ['VIEW_CHANNEL', 'SEND_MESSAGES', 'EMBED_LINKS', 'READ_MESSAGE_HISTORY'];
+
+/**
+ * Permissions effectives d'un membre dans un salon, dans l'ordre documenté
+ * par Discord : @everyone puis ses rôles ; Administrateur ouvre tout ; puis
+ * les dérogations du salon — @everyone, ses rôles, lui-même.
+ */
+export function effectivePermissions({ guildId, roles, memberRoleIds, userId, overwrites }) {
+  const rolePerms = (id) => BigInt(roles.find((r) => r.id === id)?.permissions ?? 0);
+  let base = rolePerms(guildId);
+  for (const id of memberRoleIds) base |= rolePerms(id);
+  if (base & PERMISSIONS.ADMINISTRATOR) return { admin: true, bits: base };
+  let bits = base;
+  const apply = (allow, deny) => {
+    bits &= ~deny;
+    bits |= allow;
+  };
+  const everyone = overwrites.find((o) => o.id === guildId);
+  if (everyone) apply(BigInt(everyone.allow), BigInt(everyone.deny));
+  let allow = 0n;
+  let deny = 0n;
+  for (const o of overwrites) {
+    if (Number(o.type) === 0 && o.id !== guildId && memberRoleIds.includes(o.id)) {
+      allow |= BigInt(o.allow);
+      deny |= BigInt(o.deny);
+    }
+  }
+  apply(allow, deny);
+  const own = overwrites.find((o) => Number(o.type) === 1 && o.id === userId);
+  if (own) apply(BigInt(own.allow), BigInt(own.deny));
+  return { admin: false, bits };
+}
+
+/** Les permissions d'annonce qui manquent, par leur nom (vide si tout y est). */
+export const missingPermissions = ({ admin, bits }) =>
+  admin ? [] : ANNOUNCE_NEEDS.filter((name) => !(bits & PERMISSIONS[name]));
+
 export class DiscordError extends Error {
   constructor(method, path, status, body) {
     super(`${method} ${path} → ${status} ${JSON.stringify(body)}`);
@@ -48,6 +94,8 @@ export function createDiscordClient(token, { fetchImpl = fetch } = {}) {
   return {
     me: () => call('GET', '/users/@me'),
     channel: (id) => call('GET', `/channels/${id}`),
+    roles: (guildId) => call('GET', `/guilds/${guildId}/roles`),
+    member: (guildId, userId) => call('GET', `/guilds/${guildId}/members/${userId}`),
     /** Les derniers messages d'un salon, du plus récent au plus ancien (au plus `pages` × 100). */
     async recentMessages(channelId, pages = 2) {
       const all = [];
