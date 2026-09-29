@@ -34,6 +34,24 @@ export default {
   sceneVigieDescription: "Request films and shows, follow their arrival and see upcoming releases. Connects to your Jellyseerr / Overseerr instance.",
 
   scenePersonName: "Camille Laurent",
+  sceneFriend: "Camille",
+  sceneEpisode: "Episode {{number}}",
+  sceneGenreScifi: "Science fiction",
+  sceneGenreDrama: "Drama",
+  sceneGenreAnimation: "Animation",
+  sceneGenreThriller: "Thriller",
+
+  // 1.25.0
+  v1_25_0_stats_title: "Your stats",
+  v1_25_0_stats_body: "Your screen time, your genres, your favorite movies and actors, your records, what you really listen to (\"Dubbed or original?\") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time.",
+  v1_25_0_affinity_title: "Watch Together: Affinity",
+  v1_25_0_affinity_body: "Swipe the library's movies, series or anime together. As soon as the whole group likes the same title, \"It's a match!\" offers to watch it together. Three gestures, no more: like, not for me, undo.",
+  v1_25_0_saga_title: "A movie's saga",
+  v1_25_0_saga_body: "On a movie's page, every installment of its saga, in order: the ones you have watched, and the one that comes next.",
+  v1_25_0_seasons_title: "Seasons, right away",
+  v1_25_0_seasons_body: "A series page opens on the current season, and a large season shows up six times faster. Season pills read on any image: a dot for the current season, a check for the watched ones.",
+  v1_25_0_extras_title: "Trailers and extras",
+  v1_25_0_extras_body: "Season trailers, extras and trailers kept on the server finally show on the title page. Seeing none? The guide in Help explains how to get them.",
 
   // 1.24.0
   v1_24_0_detailStage_title: "The detail page, full screen",

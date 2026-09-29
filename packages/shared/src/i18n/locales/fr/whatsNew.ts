@@ -38,6 +38,24 @@ export default {
   sceneVigieDescription: "Demandez films et séries, suivez leur arrivée et voyez les prochaines sorties. Se connecte à votre instance Jellyseerr / Overseerr.",
 
   scenePersonName: "Camille Laurent",
+  sceneFriend: "Camille",
+  sceneEpisode: "Épisode {{number}}",
+  sceneGenreScifi: "Science-fiction",
+  sceneGenreDrama: "Drame",
+  sceneGenreAnimation: "Animation",
+  sceneGenreThriller: "Thriller",
+
+  // 1.25.0
+  v1_25_0_stats_title: "Vos statistiques",
+  v1_25_0_stats_body: "Votre temps devant l'écran, vos genres, vos films et acteurs préférés, vos records, ce que vous écoutez vraiment (« VF ou VO ? ») et l'origine des titres. Un lien public les partage, sans compte ni lecture possible, et se révoque à tout moment.",
+  v1_25_0_affinity_title: "Watch Together : l'Affinité",
+  v1_25_0_affinity_body: "Swipez ensemble les films, séries ou animés de la bibliothèque. Dès que tout le groupe aime le même titre, « C'est un match ! » propose de le regarder ensemble. Trois gestes, pas un de plus : j'aime, pas pour moi, annuler.",
+  v1_25_0_saga_title: "La saga d'un film",
+  v1_25_0_saga_body: "Sur la fiche d'un film, tous les volets de sa saga, dans l'ordre : ceux que vous avez vus, et celui qui vient ensuite.",
+  v1_25_0_seasons_title: "Les saisons, tout de suite",
+  v1_25_0_seasons_body: "La fiche d'une série s'ouvre sur la saison en cours, et une grosse saison s'affiche six fois plus vite. Les pastilles se lisent sur n'importe quelle image : un point pour la saison en cours, une coche pour les saisons vues.",
+  v1_25_0_extras_title: "Bandes-annonces et bonus",
+  v1_25_0_extras_body: "Les bandes-annonces des saisons, les bonus et les bandes-annonces gardées sur le serveur s'affichent enfin sur la fiche. Vous n'en voyez aucune ? Le guide de l'Aide explique comment les obtenir.",
 
   // 1.24.0
   v1_24_0_detailStage_title: "La fiche, en grand",
