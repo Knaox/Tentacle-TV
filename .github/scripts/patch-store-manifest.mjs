@@ -7,7 +7,7 @@
 // Lancé par le job « manifest » de desktop.yml à chaque tag desktop-v* — fini
 // la recopie manuelle (macAppStore était fossilisé à 1.2.1, détection morte).
 //
-// Usage : node patch-store-manifest.mjs <version> [--changelog=...] [--only=<bloc>]
+// Usage : node patch-store-manifest.mjs <version> [--changelog=...] [--only=<bloc>] [--track=<piste>]
 //         blocs : mac | ms | linux | play-mobile | play-tv
 //
 // --only=ms  : au TAG — le bloc macAppStore n'est PLUS patche a la livraison.
@@ -17,13 +17,14 @@
 //              le bloc mac quand ASC passe la version en READY_FOR_SALE.
 // --only=mac : par le veilleur, precisement pour ce bloc-la.
 //
-// --only=play-mobile / play-tv : les deux blocs Play etaient tenus A LA MAIN,
-//              parce que tv.yml et mobile.yml publiaient en « status: draft »
-//              sur une piste fermee — « publie » n'etait donc pas deductible
-//              d'un run. Depuis que play-publish.mjs pose « completed », il
-//              l'est, et ces blocs suivent leur workflow. Leur changelog n'est
-//              pas celui du bureau : passer --changelog=changelogs/mobile.md
-//              (ou tv.md), avec les limites Play.
+// --only=play-mobile / play-tv : par le veilleur SEULEMENT, comme le bloc mac.
+//              mobile.yml et tv.yml patchaient ces blocs des l'envoi a Google,
+//              y compris au cran test : le site annonçait une version de piste
+//              fermee, ou une version encore a l'examen. Le veilleur ne les
+//              patche que quand la PRODUCTION la sert (store-live.mjs), et
+//              --track=<piste> y inscrit la piste. Leur changelog n'est pas
+//              celui du bureau : passer --changelog=changelogs/mobile.md (ou
+//              tv.md), avec les limites Play.
 import { readFileSync, writeFileSync } from "node:fs";
 import { loadNotes } from "./lib/changelog.mjs";
 
@@ -35,6 +36,12 @@ if (!version) {
 const changelog = rest.find((a) => a.startsWith("--changelog="))?.slice("--changelog=".length)
   ?? "changelogs/desktop.md";
 const only = rest.find((a) => a.startsWith("--only="))?.slice("--only=".length) ?? null;
+// La piste ne s'inscrit que dans un bloc Play ; ailleurs elle n'a pas de sens.
+const track = rest.find((a) => a.startsWith("--track="))?.slice("--track=".length) ?? null;
+if (track !== null && !/^(tv:)?[a-z][\w-]*$/i.test(track)) {
+  console.error(`--track invalide: ${track}`);
+  process.exit(1);
+}
 const BLOCKS = ["mac", "ms", "linux", "play-mobile", "play-tv"];
 if (only && !BLOCKS.includes(only)) {
   console.error(`--only invalide: ${only} (attendu ${BLOCKS.join("|")})`);
@@ -97,11 +104,11 @@ if (asc) {
   touched.push(`linux.notes (FR ${asc.fr.length}c / EN ${asc.en.length}c)`);
 }
 if (playMobile) {
-  json.playMobile = { ...(json.playMobile ?? {}), version, notes: playMobile };
+  json.playMobile = { ...(json.playMobile ?? {}), version, ...(track ? { track } : {}), notes: playMobile };
   touched.push(`playMobile (FR ${playMobile.fr.length}c / EN ${playMobile.en.length}c)`);
 }
 if (playTv) {
-  json.playTv = { ...(json.playTv ?? {}), version, notes: playTv };
+  json.playTv = { ...(json.playTv ?? {}), version, ...(track ? { track } : {}), notes: playTv };
   touched.push(`playTv (FR ${playTv.fr.length}c / EN ${playTv.en.length}c)`);
 }
 writeFileSync(path, JSON.stringify(json, null, 2) + "\n");

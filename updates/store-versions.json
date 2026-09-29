@@ -16,7 +16,7 @@
     }
   },
   "playMobile": {
-    "$comment": "Version Android (téléphone/tablette) RÉELLEMENT en ligne sur la fiche Play. MAINTENU AUTOMATIQUEMENT par mobile.yml (.github/scripts/patch-store-manifest.mjs --only=play-mobile --changelog=changelogs/mobile.md), au moment où play-publish.mjs a réellement posé la release. C'était auparavant un geste manuel, parce que la CI publiait en `status: draft` : « publié » n'était alors pas déductible d'un run. Ne PAS le déduire de versions.json → mobile, qui porte l'intention et non la publication.",
+    "$comment": "Version Android (téléphone/tablette) RÉELLEMENT servie par la piste de PRODUCTION de la fiche Play. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (.github/scripts/store-live.mjs : API de rapports Play en lecture seule, recoupée avec la fiche publique ; puis patch-store-manifest.mjs --only=play-mobile --track=production), comme le bloc macAppStore — jamais à l’envoi : mobile.yml le patchait dès la publication, cran test compris, et le site annonçait une version de piste fermée. Ne PAS le déduire de versions.json → mobile, qui porte l’intention et non la publication.",
     "version": "1.9.0",
     "packageName": "com.tentacletv.mobile",
     "track": "alpha",
@@ -26,7 +26,7 @@
     }
   },
   "playTv": {
-    "$comment": "Version Android TV en ligne. MÊME fiche Play que le mobile (com.tentacletv.mobile, form factor TV), mais piste distincte et versionCode préfixé 2e9 — donc un numéro de version propre. MAINTENU AUTOMATIQUEMENT par tv.yml (--only=play-tv --changelog=changelogs/tv.md), comme playMobile.",
+    "$comment": "Version Android TV RÉELLEMENT servie en production. MÊME fiche Play que le mobile (com.tentacletv.mobile, form factor TV), mais piste distincte et versionCode préfixé 2e9 — donc un numéro de version propre. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (--only=play-tv --track=tv:production), comme playMobile ; tv.yml ne le patche plus.",
     "version": "1.3.1",
     "packageName": "com.tentacletv.mobile",
     "track": "tv:Alpha",
