@@ -7,6 +7,7 @@ import { DetailActionsRow } from "./DetailActionsRow";
 import { PlayCtaButton } from "./PlayCtaButton";
 import { StageBlock } from "./StageBlock";
 import { TrailerPill } from "./TrailerPill";
+import { TrailerHintMirror } from "./TrailerHintMirror";
 import { playCta, PLAY_MAX_WIDTH, type DetailGeometry } from "./detailMetrics";
 
 type SeriesWatchState = { type: string; episode?: MediaItem } | undefined;
@@ -42,9 +43,12 @@ export const DetailHeader = memo(function DetailHeader({ item, geo, seriesWatchS
           <PlayCtaButton cta={cta} title={item.Name} maxWidth={PLAY_MAX_WIDTH} />
         </div>
       )}
-      {/* Sous Lecture, 12 d'écart ; seule, 20 comme Lecture elle-même. */}
+      {/* Sous Lecture, 12 d'écart ; seule, 20 comme Lecture elle-même. Sans
+          aucune bande-annonce sur un serveur mal réglé, le rappel discret
+          prend la place de la pilule. */}
       <div className={`mirror-detail-in-actions flex justify-center empty:hidden ${cta.targetId ? "mt-3" : "mt-5"}`}>
         <TrailerPill item={item} maxWidth={PLAY_MAX_WIDTH} />
+        <TrailerHintMirror item={item} />
       </div>
     </>
   );
