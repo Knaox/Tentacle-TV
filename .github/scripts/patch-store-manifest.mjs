@@ -86,8 +86,16 @@ const asc = wants("linux") ? required("linux.notes", "asc") : null;
 // version faite pour le Store (1500 caractères) ; le bloc nu, celle de macOS
 // et Linux, y était coupé à la puce.
 const msstore = wants("ms") ? required("microsoftStore", "msstore", "win") : null;
-const playMobile = wants("play-mobile") ? required("playMobile", "play") : null;
-const playTv = wants("play-tv") ? required("playTv", "play") : null;
+// Les blocs Play n'alimentent que le site, qui n'en affiche que la version :
+// une version servie sans bloc de changelog (Android TV 1.2.1, antérieure à la
+// convention) s'inscrit quand même, SANS notes — mieux qu'un bloc qui ment.
+const playNotes = (label) => {
+  const notes = notesFor("play");
+  if (!notes) console.error(`Bloc « ## [${version}] » absent de ${changelog} — ${label} inscrit sans notes.`);
+  return { notes };
+};
+const playMobile = wants("play-mobile") ? playNotes("playMobile") : null;
+const playTv = wants("play-tv") ? playNotes("playTv") : null;
 
 const path = "updates/store-versions.json";
 const json = JSON.parse(readFileSync(path, "utf8"));
@@ -109,13 +117,14 @@ if (asc) {
   json.linux = { ...(json.linux ?? {}), notes: asc };
   touched.push(`linux.notes (FR ${asc.fr.length}c / EN ${asc.en.length}c)`);
 }
-if (playMobile) {
-  json.playMobile = { ...(json.playMobile ?? {}), version, ...(track ? { track } : {}), notes: playMobile };
-  touched.push(`playMobile (FR ${playMobile.fr.length}c / EN ${playMobile.en.length}c)`);
-}
-if (playTv) {
-  json.playTv = { ...(json.playTv ?? {}), version, ...(track ? { track } : {}), notes: playTv };
-  touched.push(`playTv (FR ${playTv.fr.length}c / EN ${playTv.en.length}c)`);
-}
+/** Un bloc Play : version, piste, et les notes de CETTE version — ou aucune. */
+const playBlock = (key, { notes }) => {
+  const block = { ...(json[key] ?? {}), version, ...(track ? { track } : {}) };
+  delete block.notes;
+  json[key] = notes ? { ...block, notes } : block;
+  touched.push(`${key} (${notes ? `FR ${notes.fr.length}c / EN ${notes.en.length}c` : "sans notes"})`);
+};
+if (playMobile) playBlock("playMobile", playMobile);
+if (playTv) playBlock("playTv", playTv);
 writeFileSync(path, JSON.stringify(json, null, 2) + "\n");
 console.log(`blocs ${touched.join(" + ")} → v${version}`);

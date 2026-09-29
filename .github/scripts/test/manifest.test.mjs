@@ -45,3 +45,16 @@ test('manifeste : un bloc Play inscrit sa piste et garde ses autres champs', () 
   assert.equal(run('9.9.9', '--only=ms').status, 1, 'sans bloc de changelog, rien n’est écrit');
   assert.equal(manifest().microsoftStore.version, '1.0.0');
 });
+
+test('manifeste : une version Play sans bloc de changelog s’inscrit, sans les notes d’une autre', () => {
+  const { run, manifest } = sandbox();
+  assert.equal(run('1.1.0', '--changelog=changelogs/mobile.md', '--only=play-mobile', '--track=production').status, 0);
+  assert.ok(manifest().playMobile.notes, 'la 1.1.0 a ses notes');
+  const r = run('1.0.9', '--changelog=changelogs/mobile.md', '--only=play-mobile', '--track=production');
+  assert.equal(r.status, 0);
+  assert.match(r.stderr, /inscrit sans notes/);
+  const play = manifest().playMobile;
+  assert.equal(play.version, '1.0.9');
+  assert.equal(play.notes, undefined, 'les notes de la 1.1.0 ne restent pas collées à la 1.0.9');
+  assert.equal(play.packageName, 'com.exemple');
+});
