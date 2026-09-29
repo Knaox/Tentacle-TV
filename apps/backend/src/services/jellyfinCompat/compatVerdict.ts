@@ -12,7 +12,7 @@
  *
  * MIROIR : recopié octet pour octet dans
  * `apps/backend/src/services/jellyfinCompat/` — voir l'en-tête de
- * `compatManifest.ts`. N'importer que la paire.
+ * `compatManifest.ts`. N'importer que les fichiers du trio.
  */
 
 import {
@@ -95,11 +95,12 @@ export function deriveTestedVerdict(
 const isNotApplicable = (feature: CompatFeature, version: string) =>
   feature.since !== null && compareJellyfinVersions(version, feature.since) < 0;
 
-function resolveFeatures(catalogue: readonly CompatFeature[], basis: TestedVersion, version: string): ResolvedFeature[] {
+/** Le catalogue vu depuis `version` ; sans version éprouvée de référence, tout y est « non testé ». */
+function resolveFeatures(catalogue: readonly CompatFeature[], basis: TestedVersion | null, version: string): ResolvedFeature[] {
   return catalogue
     .filter((feature) => !isNotApplicable(feature, version))
     .map((feature) => {
-      const result = basis.features[feature.id];
+      const result = basis?.features[feature.id];
       return {
         id: feature.id,
         area: feature.area,
@@ -147,7 +148,9 @@ export function resolveCompat(
     : [];
   const basis: TestedVersion | undefined =
     exact ?? [...siblings].reverse().find((entry) => compareJellyfinVersions(entry.version, version) <= 0) ?? siblings[0];
-  if (!basis) return { ...unknown(version), line: line?.id ?? null };
+  // Rien d'éprouvé : le catalogue reste montré, « non testé », pour que les
+  // sondes du serveur connecté disent au moins ce qui y est présent.
+  if (!basis) return { ...unknown(version), line: line?.id ?? null, features: resolveFeatures(manifest.features, null, version) };
   // Une sœur en échec ne dit rien de celle-ci : elle a pu être corrigée.
   const status: CompatStatus = exact
     ? STATUS_OF[exact.verdict]

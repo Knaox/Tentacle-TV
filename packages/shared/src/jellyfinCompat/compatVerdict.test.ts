@@ -114,7 +114,16 @@ describe("verdict d'une version", () => {
 
   it("hors de toute lignée, ou sans manifeste : non testée", () => {
     expect(resolveCompat(manifest(), "13.0")).toMatchObject({ status: "untested", reason: "unknown", basis: null });
-    expect(resolveCompat(null, "10.11.8")).toMatchObject({ status: "untested", reason: "unknown" });
-    expect(resolveCompat(manifest(), "12.0-rc7")).toMatchObject({ status: "untested" });
+    expect(resolveCompat(null, "10.11.8")).toMatchObject({ status: "untested", reason: "unknown", features: [] });
+    expect(resolveCompat(manifest(), "12.0-rc7")).toMatchObject({ status: "untested", features: [] });
+  });
+
+  it("non testée : le catalogue reste listé, tout « non testé », sans ce qui n'existe pas encore", () => {
+    const result = resolveCompat(manifest(), "13.0");
+    expect(result.features.map((f) => [f.id, f.state])).toEqual([
+      ["auth.header", "untested"], ["segments.api", "untested"], ["items.collections", "untested"], ["extras.trailers", "untested"],
+    ]);
+    expect(result.gaps).toEqual([]);
+    expect(resolveCompat(manifest(), "10.11.99").features.map((f) => f.id)).toContain("segments.api");
   });
 });

@@ -16,6 +16,7 @@ import { adminJellyfinKeyRoutes } from "./adminJellyfinKey";
 import { adminWatchTimeRoutes } from "./adminWatchTime";
 import { adminSessionsRoutes } from "./adminSessions";
 import { adminServicesRoutes } from "./adminServices";
+import { adminJellyfinCompatRoutes } from "./adminJellyfinCompat";
 
 export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAdmin);
@@ -37,6 +38,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Jellyfin, base de données, réinitialisation (hérite de requireAdmin).
   await app.register(adminServicesRoutes);
+
+  // Compatibilité de Jellyfin : installé, dernier publié, sondes (hérite de requireAdmin).
+  await app.register(adminJellyfinCompatRoutes);
 
   /** GET /api/admin/public-url — Read the public server URL (DB value + env fallback). */
   app.get("/public-url", async () => {
