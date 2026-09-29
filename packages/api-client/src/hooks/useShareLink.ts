@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem, SharedStatsView, StatsLocale } from "@tentacle-tv/shared";
 
 /**
  * « Partager ma liste » — hooks du lien de partage.
@@ -63,6 +63,12 @@ export interface SharedListData {
   items: SharedListItem[];
 }
 
+/**
+ * Ce que sert `GET /api/share/:token`, selon le lien : une liste (Ma liste,
+ * titres likés ; `kind` absent sur un serveur ancien) ou des statistiques.
+ */
+export type SharedView = SharedListData | SharedStatsView;
+
 /** Crée (ou récupère) mon lien de partage — watchlist par défaut, `likes`
  *  pour la liste des titres likés (favoris + hors bibliothèque). */
 export function useCreateShareLink(kind: ShareListKind = "watchlist") {
@@ -99,6 +105,23 @@ export function useSharedListView(token: string | null | undefined) {
     queryFn: () => shareFetch<SharedListData>(`/${token}`),
     enabled: !!token,
     staleTime: 30_000,
+    retry: false,
+  });
+}
+
+/**
+ * Vue PUBLIQUE d'un partage, dans la langue du visiteur : les statistiques
+ * nomment genres et pays côté serveur. Changer de langue garde la page à
+ * l'écran le temps de la réponse.
+ */
+export function useSharedView(token: string | null | undefined, lang: StatsLocale) {
+  return useQuery({
+    queryKey: ["share", "view", token, lang],
+    queryFn: () => shareFetch<SharedView>(`/${token}?lang=${lang}`),
+    enabled: !!token,
+    staleTime: 30_000,
+    // Le même partage dans l'autre langue, jamais un autre partage.
+    placeholderData: (previous, previousQuery) => (previousQuery?.queryKey[2] === token ? previous : undefined),
     retry: false,
   });
 }

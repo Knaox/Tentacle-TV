@@ -6,6 +6,11 @@ export {
 
 // Share link ("Partager ma liste")
 export {
-  useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedListView, useSharedItem,
-  setShareLinkBackendUrl, setShareLinkToken, type SharedListData, type SharedListItem, type ShareListKind,
+  useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedListView, useSharedView, useSharedItem,
+  setShareLinkBackendUrl, setShareLinkToken, type SharedListData, type SharedListItem, type ShareListKind, type SharedView,
 } from "../hooks/useShareLink";
+
+// Partager ses statistiques (lien du propriétaire)
+export {
+  useMyStatsShare, useSaveStatsShare, useRevokeStatsShare, statsShareFailure, STATS_SHARE_KEY, type StatsShareFailure,
+} from "../hooks/useStatsShare";

@@ -32,6 +32,7 @@ export default {
   memberTitle: "You're on this server",
   memberLeadWatchlist: "Check titles to add them to your list.",
   memberLeadLikes: "Check titles to add them to your favorites.",
+  memberLeadStats: "Your own stats are waiting in the app, from your profile.",
   openApp: "Open Tentacle TV",
 
   offServerBadge: "Not on server",

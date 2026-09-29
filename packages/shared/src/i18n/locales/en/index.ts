@@ -32,6 +32,8 @@ import favorites from "./favorites";
 import swipe from "./swipe";
 import share from "./share";
 import stats from "./stats";
+import statsShare from "./statsShare";
+import statsPublic from "./statsPublic";
 
 export default {
   common, auth, setup, player, admin,
@@ -41,4 +43,6 @@ export default {
   cards, library, watchlist, favorites, swipe,
   share,
   stats,
+  statsShare,
+  statsPublic,
 };

@@ -11,6 +11,8 @@ const NAMESPACES = [
   "cards", "library", "watchlist", "favorites", "swipe",
   "share",
   "stats",
+  "statsShare",
+  "statsPublic",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {
