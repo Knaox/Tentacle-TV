@@ -27,6 +27,8 @@ export default {
   removeFromFavorites: "Retirer des favoris",
   markWatched: "Marquer comme vu",
   markUnwatched: "Marquer comme non vu",
+  // Le « ⋯ » d'une ligne tactile : la feuille des actions de la carte.
+  moreActions: "Plus d'actions",
 
   // Notation (fiche mobile, feuille d'appui long).
   rateTitle: "Noter ce titre",

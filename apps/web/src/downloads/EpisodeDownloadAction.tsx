@@ -55,8 +55,8 @@ export function EpisodeDownloadAction({ episode }: { episode: MediaItem }) {
         title={label}
         className={`relative flex-shrink-0 transition-colors ${
           isComplete
-            ? "text-status-success-fg hover:text-content-tertiary"
-            : "text-content-disabled hover:text-content-primary"
+            ? "text-status-success-fg hover:text-content-secondary"
+            : "text-content-tertiary hover:text-content-primary"
         }`}
       >
         <DownloadGlyph done={isComplete} strokeWidth={1.8} />

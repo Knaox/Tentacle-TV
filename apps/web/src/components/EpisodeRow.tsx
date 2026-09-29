@@ -1,17 +1,23 @@
 /**
  * Ligne d'épisode de la liste Saisons & Épisodes — extraite d'EpisodeList
- * (limite de 300 lignes par fichier). Vignette + progression, toggle « vu »,
- * bouton de téléchargement compact (desktop, droit requis), méta qualité.
+ * (limite de 300 lignes par fichier). Vignette + progression, méta qualité,
+ * et les actions de l'épisode : garder hors ligne (bureau, droit requis) et
+ * la bascule « vu ».
  *
- * Mêmes marques que les cartes : la pastille « vu » sur la vignette, la barre
- * de progression commune, et la bascule « vu » au glyphe et au libellé du
- * survol (`cardToggleLabelKey`) — une coche maison y avait divergé.
+ * La grammaire des cartes, jusqu'au bout : AU REPOS, l'état se lit sur la
+ * vignette et nulle part ailleurs — la pastille du modèle (vu, sur cette
+ * machine) et la barre de progression commune ; AU SURVOL (ou au focus
+ * clavier), les actions paraissent au bout du titre et la pastille leur cède
+ * la place, comme le plateau d'une carte. Une coche violette restait
+ * affichée à côté du titre, pleine quand l'épisode était vu : elle doublait
+ * la pastille. Aucun bouton de lecture sur la vignette : la ligne entière lit.
  */
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useWatchedToggle } from "@tentacle-tv/api-client";
-import { cardToggleLabelKey, type MediaItem } from "@tentacle-tv/shared";
+import { cardToggleLabelKey, resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
+import { useCardDeviceState } from "../downloads/useDeviceState";
 import { FadeImage } from "./FadeImage";
 import { CardProgressBar } from "./cards/CardProgressBar";
 import { CardStatusMarkers } from "./cards/CardStatusMarkers";
@@ -43,8 +49,6 @@ export interface EpisodeRowProps {
   rating?: EpisodeRowRating;
 }
 
-const WATCHED_ONLY = ["watched"] as const;
-
 export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSelected, isCurrent, onToggleSelect, onPlay, rating }: EpisodeRowProps) {
   const { t } = useTranslation(["common", "cards"]);
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
@@ -60,8 +64,13 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
     ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 85 })
     : ep.SeriesId ? client.getImageUrl(ep.SeriesId, "Backdrop", { width: 300, quality: 85 }) : "";
 
+  // Le modèle des marqueurs, réduit à ce qu'une LIGNE dit d'un épisode : vu,
+  // et sur cette machine. Ma liste et les favoris vivent au niveau de la
+  // série, sur la fiche — les répéter à chaque ligne serait du bruit.
+  const device = useCardDeviceState(ep);
+  const markers = resolveCardMarkers({ item: ep, communityRating: null, inWatchlist: false, isFavorite: false, device });
+  const played = markers.statuses.includes("watched");
   const progress = ep.UserData?.PlayedPercentage;
-  const played = ep.UserData?.Played === true;
   const watchedLabel = t(`cards:${cardToggleLabelKey("watched", played)}`);
   const runtime = ep.RunTimeTicks ? Math.floor(ep.RunTimeTicks / 600_000_000) : null;
 
@@ -107,16 +116,15 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
           <div className="aspect-video">
             {thumbUrl && <FadeImage src={thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
           </div>
-          {/* Halo + bouton lecture + barre de progression posés SUR la vignette :
-              restent blanc/noir dans les deux thèmes (cf. règle « posé sur média »). */}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90">
-              <svg className="ml-0.5 h-5 w-5 text-tentacle-bg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-            </div>
-          </div>
-          {/* La pastille « vu » et la barre de TOUTES les cartes : un épisode vu
-              n'a pas de pourcentage, c'est la pastille qui le dit. */}
-          {played ? <CardStatusMarkers statuses={WATCHED_ONLY} className="right-1.5 top-1.5" /> : <CardProgressBar percent={progress} />}
+          {/* La pastille et la barre de TOUTES les cartes, posées sur la
+              vignette : un épisode vu n'a pas de pourcentage, c'est la pastille
+              qui le dit. Au survol, elle cède la place aux actions. */}
+          <CardStatusMarkers
+            statuses={markers.statuses}
+            device={markers.device}
+            className="right-1.5 top-1.5 group-hover:opacity-0 group-focus-within:opacity-0"
+          />
+          {!played && <CardProgressBar percent={progress} />}
         </div>
       )}
 
@@ -137,21 +145,25 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
               {t("common:currentEpisode")}
             </span>
           )}
-          {/* Téléchargement de CET épisode (desktop, droit requis — sinon absent) */}
-          {!isSelecting && <EpisodeDownloadAction episode={ep} />}
+          {/* Les actions de l'épisode, au survol ou au focus seulement :
+              garder hors ligne (bureau, droit requis — sinon absent) puis
+              « vu ». Toujours à leur place (opacité), le titre ne bouge pas. */}
           {!isSelecting && (
-            <button
-              type="button"
-              onClick={handleWatchedToggle}
-              title={watchedLabel}
-              aria-label={watchedLabel}
-              aria-pressed={played}
-              className={`flex-shrink-0 transition-colors ${
-                played ? "text-[var(--brand-light)] hover:text-content-tertiary" : "text-content-disabled hover:text-[var(--brand-light)]"
-              }`}
-            >
-              <WatchedGlyph className="h-5 w-5" filled={played} />
-            </button>
+            <span className="flex flex-shrink-0 items-center gap-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+              <EpisodeDownloadAction episode={ep} />
+              <button
+                type="button"
+                onClick={handleWatchedToggle}
+                title={watchedLabel}
+                aria-label={watchedLabel}
+                aria-pressed={played}
+                className={`flex-shrink-0 transition-colors ${
+                  played ? "text-[var(--brand-light)] hover:text-content-secondary" : "text-content-tertiary hover:text-[var(--brand-light)]"
+                }`}
+              >
+                <WatchedGlyph className="h-5 w-5" filled={played} />
+              </button>
+            </span>
           )}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-content-quaternary">

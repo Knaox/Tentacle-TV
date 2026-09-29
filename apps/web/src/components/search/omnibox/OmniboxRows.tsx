@@ -20,6 +20,7 @@ import {
   type SearchMediaItem,
   type SearchPersonHit,
 } from "@tentacle-tv/shared";
+import { WatchedGlyph } from "../../cards/cardGlyphs";
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar, PosterThumb } from "../SearchThumbs";
 import { ExternalBadge, ExternalPoster } from "../external/ExternalVisuals";
@@ -60,16 +61,18 @@ function RowShell({ index, active, onHover, onActivate, children }: RowProps & {
   );
 }
 
-/** La reprise en cours, ou « vu » — ce que l'utilisateur sait déjà du titre. */
+/**
+ * La reprise en cours, ou « vu » — ce que l'utilisateur sait déjà du titre.
+ * « Vu » prend le glyphe du modèle des cartes (disque plein, coche évidée) :
+ * une coche verte maison en tenait lieu, un troisième dessin de « vu ».
+ */
 function WatchState({ item }: { item: SearchMediaItem | MediaItem }) {
   const { t } = useTranslation("search");
   const data = item.UserData;
   if (data?.Played) {
     return (
-      <span className="shrink-0 text-[11px] font-medium text-[var(--status-success-fg)]" title={t("watched")}>
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.4} aria-label={t("watched")}>
-          <path d="M5 12.5l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+      <span role="img" aria-label={t("watched")} title={t("watched")} className="shrink-0 text-[var(--brand-light)]">
+        <WatchedGlyph className="h-4 w-4" filled />
       </span>
     );
   }

@@ -54,7 +54,6 @@ export function OfflineItemScreen({ itemId }: { itemId: string }) {
   const info = useCallback((target: OfflineEntry) => {
     if (target.itemId !== itemId) router.push(`/on-device/item/${target.itemId}` as never);
   }, [router, itemId]);
-  const toggle = useCallback((target: OfflineEntry, played: boolean) => toggleWatched([target.itemId], played), [toggleWatched]);
   const openSeries = useCallback(() => {
     if (local.seriesKey === null) return;
     router.push({
@@ -118,7 +117,6 @@ export function OfflineItemScreen({ itemId }: { itemId: string }) {
             seasonName={local.seasonName}
             onPlay={play}
             onMore={setMore}
-            onToggleWatched={toggle}
           />
         }
       />

@@ -1,64 +1,59 @@
-import { useCallback, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useWatchedToggle, type useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import type { useJellyfinClient } from "@tentacle-tv/api-client";
+import { resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
 import { ProgressBar } from "@/components/ui";
-import { WatchedGlyph } from "@/components/cards/cardGlyphs";
+import { CardStatusMarkers } from "@/components/cards/CardStatusMarkers";
 import { cardProgress } from "@/components/cards/cardProgress";
+import { useCardDeviceState } from "@/hooks/offline/useDeviceState";
 import { useTheme, useThemedStyles } from "@/theme";
 import { MetaTokens } from "../detail/MetaTokens";
 import { makeEpisodeRowStyles } from "./episodeRowStyles";
 import { EpisodeThumb } from "./EpisodeThumb";
 
-let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: { Light: unknown } } | null = null;
-try { Haptics = require("expo-haptics"); } catch { /* module natif absent */ }
-
 interface Props {
   ep: MediaItem;
   seriesId: string;
+  /** La saison du conteneur — la bascule « vu », qui s'en servait, est passée à la feuille. */
   seasonId: string;
   client: ReturnType<typeof useJellyfinClient>;
   onPlay: (ep: MediaItem) => void;
   isCurrent?: boolean;
-  /** À gauche du rond « vu » : le bouton « Garder hors ligne » de l'épisode. */
+  /** Avant le « ⋯ » : le bouton « Garder hors ligne » de l'épisode. */
   leading?: ReactNode;
-  /** L'appui long : la feuille des cartes (variante 16:9) sur la fiche ; rien dans le lecteur. */
+  /** L'appui long, et le « ⋯ » : la feuille des cartes (variante 16:9) sur la fiche ; rien dans le lecteur. */
   onLongPress?: (ep: MediaItem) => void;
 }
 
 /**
- * Une ligne d'épisode : vignette, numéro et titre, durée, résumé, et le rond
- * « vu ». Toucher lance l'épisode. Le rond dessine la coche de la pastille
- * d'états des cartes (tracé partagé, pleine quand l'épisode est vu), la barre
- * suit la règle commune (`cardProgress`).
+ * Une ligne d'épisode : vignette, numéro et titre, durée, résumé. Toucher
+ * lance l'épisode.
+ *
+ * La grammaire des cartes : l'ÉTAT se lit sur la vignette et nulle part
+ * ailleurs — la pastille du modèle (vu, sur cet appareil) et la barre commune
+ * (`cardProgress`) ; les ACTIONS vivent dans la feuille des cartes, ouverte
+ * par l'appui long ou par le « ⋯ » qui la rend visible. Un rond « vu », plein
+ * quand l'épisode l'était, tenait lieu de marqueur au bout de la ligne : il
+ * doublait la pastille, et n'était pas celui du modèle. Dans le lecteur, sans
+ * feuille, la ligne ne porte que son état.
  */
-export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent, leading, onLongPress }: Props) {
-  const { t } = useTranslation("common");
+export function EpisodeItemRow({ ep, seriesId, client, onPlay, isCurrent, leading, onLongPress }: Props) {
+  const { t } = useTranslation(["common", "cards"]);
   const { colors, isDark } = useTheme();
   const st = useThemedStyles(makeEpisodeRowStyles);
   // Texte d'accent lisible : la nuance vive en sombre, la foncée en clair.
   const accentText = isDark ? colors.brand.accentLight : colors.brand.accent;
-  const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
-  const played = ep.UserData?.Played === true;
+  // Le modèle des marqueurs, réduit à ce qu'une LIGNE dit d'un épisode : vu,
+  // et sur cet appareil. Ma liste et les favoris vivent au niveau de la série.
+  const device = useCardDeviceState(ep);
+  const markers = resolveCardMarkers({ item: ep, communityRating: null, inWatchlist: false, isFavorite: false, device });
   const progress = cardProgress(ep);
   const runtime = ep.RunTimeTicks ? Math.round(ep.RunTimeTicks / 600_000_000) : null;
   const epLabel = ep.IndexNumber != null
     ? `S${String(ep.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(ep.IndexNumber).padStart(2, "0")} · `
     : "";
-
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-
-  const handleToggle = useCallback(() => {
-    Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    scale.value = withSpring(0.7, { damping: 8, stiffness: 300 }, () => {
-      scale.value = withSpring(1, { damping: 8, stiffness: 300 });
-    });
-    if (played) markUnwatched.mutate();
-    else markWatched.mutate();
-  }, [played, markWatched, markUnwatched, scale]);
 
   return (
     <View style={st.row}>
@@ -74,6 +69,7 @@ export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurre
               <ProgressBar progress={progress / 100} height={3} />
             </View>
           )}
+          <CardStatusMarkers statuses={markers.statuses} device={markers.device} style={local.status} />
         </View>
         <View style={st.body}>
           <View style={st.titleRow}>
@@ -93,26 +89,32 @@ export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurre
 
       {leading}
 
-      {/* Le rond « vu » : la coche de la pastille d'états des cartes. */}
-      <Pressable
-        onPress={handleToggle}
-        hitSlop={12}
-        accessibilityRole="button"
-        accessibilityLabel={played ? t("markUnwatched") : t("markWatched")}
-        accessibilityState={{ selected: played }}
-        style={st.toggle}
-      >
-        <Animated.View style={[animStyle, local.watched]}>
-          <WatchedGlyph size={26} color={played ? accentText : colors.text.tertiary} filled={played} />
-        </Animated.View>
-      </Pressable>
+      {/* Le « ⋯ » : la feuille des actions — vu, garder hors ligne, fiche,
+          note —, la même que l'appui long, rendue visible. */}
+      {onLongPress ? (
+        <Pressable
+          onPress={() => onLongPress(ep)}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={`${t("cards:moreActions")} — ${ep.Name ?? ""}`}
+          style={st.toggle}
+        >
+          <View style={local.more}>
+            <Feather name="more-horizontal" size={20} color={colors.text.secondary} />
+          </View>
+        </Pressable>
+      ) : (
+        <View style={local.end} />
+      )}
     </View>
   );
 }
 
 // Propre à la ligne en ligne : sa jumelle hors ligne garde, pour l'instant,
-// la piste et l'anneau des styles partagés (`episodeRowStyles`).
+// la piste des styles partagés (`episodeRowStyles`).
 const local = StyleSheet.create({
   progress: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 4, paddingBottom: 4 },
-  watched: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
+  status: { top: 4, right: 4 },
+  more: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
+  end: { width: 10 },
 });

@@ -25,6 +25,8 @@ export default {
   removeFromFavorites: "Remove from favorites",
   markWatched: "Mark as watched",
   markUnwatched: "Mark as unwatched",
+  // Le « ⋯ » d'une ligne tactile : la feuille des actions de la carte.
+  moreActions: "More actions",
 
   rateTitle: "Rate this title",
   rateHint: "Tap a star — its left half counts as half a star.",

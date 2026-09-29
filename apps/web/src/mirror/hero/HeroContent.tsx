@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Info, Play, Star } from "lucide-react";
+import { Info, Play, Star } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { WatchedGlyph } from "../../components/cards/cardGlyphs";
 import { useIsTablet } from "../useMirrorLayout";
 import { CascadeGroup } from "./CascadeGroup";
 import { HERO_CTA_ROW, HERO_INFO_STYLE, TEXT_SHADOW, TITLE_SHADOW, heroInfoClass, heroPlayClass } from "./heroCta";
@@ -54,7 +55,8 @@ export function HeroContent({ item, active, onPlay, onInfo }: {
           <div className="mb-3 flex flex-wrap items-center gap-2.5">
             {(hasProgress || isWatched) && (
               <span className="flex items-center gap-[5px] rounded-[3px] bg-cta-primary-bg px-[7px] py-[3px] text-[9.5px] font-extrabold uppercase tracking-[1.6px] text-cta-primary-fg">
-                {hasProgress ? <Play size={9} fill="currentColor" aria-hidden /> : <Check size={10} aria-hidden />}
+                {/* « Vu » : le glyphe du modèle des cartes, pas une coche à part. */}
+                {hasProgress ? <Play size={9} fill="currentColor" aria-hidden /> : <WatchedGlyph className="h-2.5 w-2.5" filled />}
                 {hasProgress ? t("continueLabel") : t("watched")}
               </span>
             )}

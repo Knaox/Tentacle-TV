@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { FONT_FAMILY, withAlpha, type AppTheme } from "@/theme";
+import { FONT_FAMILY, type AppTheme } from "@/theme";
 
 /** La vignette d'une ligne d'épisode, en ligne comme hors ligne. */
 export const THUMB_W = 110;
@@ -7,8 +7,9 @@ export const THUMB_H = 62;
 
 /**
  * Le dessin d'une ligne d'épisode (fond, vignette, piste de progression,
- * titre, méta, synopsis, rond « vu »), partagé par la liste en ligne
- * (`EpisodeItemRow`) et sa jumelle hors ligne (`OfflineEpisodeRow`).
+ * titre, méta, synopsis, bouton de bout de ligne), partagé par la liste en
+ * ligne (`EpisodeItemRow`) et sa jumelle hors ligne (`OfflineEpisodeRow`).
+ * « Vu » n'a plus de rond ici : il se lit dans la pastille de la vignette.
  */
 export const makeEpisodeRowStyles = (t: AppTheme) =>
   StyleSheet.create({
@@ -25,18 +26,4 @@ export const makeEpisodeRowStyles = (t: AppTheme) =>
     runtime: { color: t.colors.text.quaternary, fontSize: 11 },
     overview: { color: t.colors.text.quaternary, fontSize: 11, marginTop: 4, lineHeight: 15 },
     toggle: { paddingRight: 12, paddingLeft: 4 },
-    ring: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: t.colors.fill.subtle,
-      borderWidth: 1,
-      borderColor: t.colors.border.subtle,
-    },
-    ringPlayed: {
-      backgroundColor: withAlpha(t.colors.brand.accent, 0.15, t.colors.brand.soft),
-      borderColor: withAlpha(t.colors.brand.accent, 0.45, t.colors.brand.glow),
-    },
   });

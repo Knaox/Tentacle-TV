@@ -25,7 +25,6 @@ interface Props {
   seasonName: string;
   onPlay: (entry: OfflineEntry) => void;
   onMore: (entry: OfflineEntry) => void;
-  onToggleWatched: (entry: OfflineEntry, played: boolean) => void;
 }
 
 /**
@@ -36,7 +35,7 @@ interface Props {
  * ligne, où la page d'une personne ne s'ouvrirait pas), puis « Informations »,
  * lues dans le FICHIER : ses langues, ses sous-titres.
  */
-export function OfflineItemBody({ entry, item, people, genres, siblings, seasonName, onPlay, onMore, onToggleWatched }: Props) {
+export function OfflineItemBody({ entry, item, people, genres, siblings, seasonName, onPlay, onMore }: Props) {
   const { t, i18n } = useTranslation(["offline", "downloads"]);
   const st = useThemedStyles(makeMediaDetailStyles);
   const offline = useOfflineMode();
@@ -76,7 +75,6 @@ export function OfflineItemBody({ entry, item, people, genres, siblings, seasonN
                 isCurrent={sibling.itemId === entry.itemId}
                 onPlay={onPlay}
                 onMore={onMore}
-                onToggleWatched={onToggleWatched}
               />
             ))}
           </View>

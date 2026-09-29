@@ -5,7 +5,9 @@ import { motion } from "framer-motion";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import { SeasonTabs, type SeasonTabItem } from "../episodes/SeasonTabs";
 import { useDownloadsList } from "../../downloads/useDownloadState";
-import { byEpisodeNumber } from "@tentacle-tv/offline-core";
+import { byEpisodeNumber, watchStateOf } from "@tentacle-tv/offline-core";
+import { CardProgressBar } from "../cards/CardProgressBar";
+import { CardStatusMarkers } from "../cards/CardStatusMarkers";
 import { localResourceUrl, useDownloadsRootReady } from "../../downloads/localFiles";
 import type { DownloadEntry } from "../../downloads/api";
 
@@ -122,8 +124,17 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
   );
 }
 
+const WATCHED: readonly ["watched"] = ["watched"];
+const NONE: readonly [] = [];
+
+/**
+ * Un épisode gardé, dans le panneau du lecteur hors ligne : la pastille « vu »
+ * des cartes et la barre commune sur la vignette, comme son jumeau en ligne
+ * (`EpisodeSelectorPanel`) — ce panneau ne disait pas ce qui était déjà vu.
+ */
 function LocalEpisodeItem({ ep, active, onClick }: { ep: DownloadEntry; active: boolean; onClick: () => void }) {
   const rootReady = useDownloadsRootReady();
+  const { watched, percent } = watchStateOf(ep);
   const thumb = rootReady ? localResourceUrl(`meta/${ep.itemId}/primary.jpg`) : null;
   const runtime = formatDuration(ep.runtimeTicks ?? undefined);
   const epLabel = formatEpisodeCode(ep.parentIndexNumber ?? undefined, ep.indexNumber ?? undefined, { style: "padded" });
@@ -137,13 +148,15 @@ function LocalEpisodeItem({ ep, active, onClick }: { ep: DownloadEntry; active: 
     >
       <div className="relative aspect-video w-28 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
         {thumb && <img src={thumb} alt={ep.title ?? ""} loading="lazy" decoding="async" className="h-full w-full object-cover" />}
+        {!watched && <CardProgressBar percent={percent} />}
+        <CardStatusMarkers statuses={watched ? WATCHED : NONE} className="right-1 top-1" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-accent-light)]" : "text-content-quaternary"}`}>
+        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-accent-light)]" : "text-content-tertiary"}`}>
           {epLabel}
         </p>
         <p className="line-clamp-1 text-sm font-medium text-content-primary">{ep.title ?? ""}</p>
-        {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
+        {runtime && <p className="mt-0.5 text-xs text-content-tertiary">{runtime}</p>}
       </div>
     </button>
   );

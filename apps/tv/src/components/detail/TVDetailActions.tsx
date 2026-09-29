@@ -7,11 +7,10 @@ import { cardToggleLabelKey, formatPosition } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { PlayIcon, BookmarkIcon, BookmarkFilledIcon, MovieIcon } from "../icons/TVIcons";
 import {
-  CheckCircleFilledIcon,
-  CheckCircleIcon,
   HeartFilledIcon,
   HeartIcon,
 } from "../icons/TVActionIcons";
+import { TVWatchedGlyph } from "../cards/tvCardGlyphs";
 import { Colors, Spacing, Typography } from "../../theme/colors";
 import { Button, roundButton } from "../../theme/buttons";
 
@@ -151,9 +150,9 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
         nextFocusUp={nextFocusUp}
         label={tCards(cardToggleLabelKey("watched", isWatched))}
       >
-        {isWatched
-          ? <CheckCircleFilledIcon size={22} color={Colors.accentPink} />
-          : <CheckCircleIcon size={22} color={Colors.textSecondary} />}
+        {/* Le glyphe « vu » du modèle des cartes (tracé partagé), celui de la
+            pastille des vignettes : une coche d'un autre dessin en tenait lieu. */}
+        <TVWatchedGlyph size={22} color={isWatched ? Colors.accentPink : Colors.textSecondary} filled={isWatched} />
       </CircleAction>
     </TVFocusGuideView>
   );

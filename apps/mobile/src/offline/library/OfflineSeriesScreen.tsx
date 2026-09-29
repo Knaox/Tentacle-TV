@@ -52,7 +52,6 @@ export function OfflineSeriesScreen() {
 
   const play = useCallback((entry: OfflineEntry) => router.push(`/watch/${entry.itemId}` as never), [router]);
   const info = useCallback((entry: OfflineEntry) => router.push(`/on-device/item/${entry.itemId}` as never), [router]);
-  const toggle = useCallback((entry: OfflineEntry, played: boolean) => toggleWatched([entry.itemId], played), [toggleWatched]);
 
   if (!series || !local.season) return <DetailSkeleton top={insets.top} />;
 
@@ -120,7 +119,6 @@ export function OfflineSeriesScreen() {
             currentEpisodeId={local.playTarget?.itemId}
             onPlay={play}
             onMore={setMore}
-            onToggleWatched={toggle}
           />
         }
       />

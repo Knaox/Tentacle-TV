@@ -1,11 +1,11 @@
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { formatEpisodeCode, type MediaItem } from "@tentacle-tv/shared";
 import { isInProgress, watchStateOf } from "@tentacle-tv/offline-core";
+import { CardStatusMarkers } from "@/components/cards/CardStatusMarkers";
 import { MetaTokens } from "@/components/detail/MetaTokens";
 import { makeEpisodeRowStyles } from "@/components/episodes/episodeRowStyles";
 import { useLocalSnapshotJson } from "@/hooks/offline/useLocalSnapshot";
@@ -19,28 +19,30 @@ import { OfflineLocalImage } from "./OfflineLocalImage";
 import { ResumeSpriteImage } from "./ResumeSpriteImage";
 import { useOpenLocalSheet } from "./useOpenLocalSheet";
 
-let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: { Light: unknown } } | null = null;
-try { Haptics = require("expo-haptics"); } catch { /* module natif absent */ }
-
 interface Props {
   entry: OfflineEntry;
   isCurrent?: boolean;
   onPlay: (entry: OfflineEntry) => void;
   onMore: (entry: OfflineEntry) => void;
-  onToggleWatched: (entry: OfflineEntry, played: boolean) => void;
 }
 
 const TICKS_PER_MINUTE = 600_000_000;
+const WATCHED: readonly ["watched"] = ["watched"];
+const NONE: readonly [] = [];
 
 /**
  * Une ligne d'épisode gardé sur l'appareil — le dessin d'`EpisodeItemRow` :
  * vignette (l'image EXACTE de la reprise quand l'épisode est entamé), piste
  * de progression dégradée, « S01E03 · Titre », durée et version, jetons de
- * qualité, synopsis, le rond « vu » (local) et « ⋯ » vers la feuille de
- * gestion. L'appui long ouvre la feuille unique des cartes (vignette 16:9, mode
- * local) : Lire, « vu », Plus d'infos, et « Gérer » vers la même gestion.
+ * qualité, synopsis, et « ⋯ » vers la feuille de gestion. L'appui long ouvre
+ * la feuille unique des cartes (vignette 16:9, mode local) : Lire, « vu »,
+ * Plus d'infos, et « Gérer » vers la même gestion.
+ *
+ * « Vu » se lit sur la vignette, dans la pastille des cartes — pas « sur cet
+ * appareil » : tout ce qui est ici l'est. Un anneau coché en bout de ligne,
+ * l'ancien dessin, en tenait lieu ; la bascule est dans les deux feuilles.
  */
-export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurrent, onPlay, onMore, onToggleWatched }: Props) {
+export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurrent, onPlay, onMore }: Props) {
   const { t } = useTranslation(["common", "offline", "downloads"]);
   const { colors, isDark } = useTheme();
   const st = useThemedStyles(makeEpisodeRowStyles);
@@ -57,16 +59,6 @@ export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurr
   const version = [variantLabel(entry, (key) => t(`downloads:${key}`), (key) => t(`offline:${key}`)), formatBytes(entry.bytesDone)].join(" · ");
   const overview = (item?.Overview ?? "").replace(/<[^>]+>/g, "").trim();
   const openLocal = useOpenLocalSheet();
-
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const handleToggle = useCallback(() => {
-    Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    scale.value = withSpring(0.7, { damping: 8, stiffness: 300 }, () => {
-      scale.value = withSpring(1, { damping: 8, stiffness: 300 });
-    });
-    onToggleWatched(entry, !watched);
-  }, [entry, watched, onToggleWatched, scale]);
 
   return (
     <View style={st.row} collapsable={false}>
@@ -88,6 +80,7 @@ export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurr
               <LinearGradient colors={[colors.brand.violet, colors.brand.accent]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ height: "100%", width: `${percent}%` }} />
             </View>
           )}
+          <CardStatusMarkers statuses={watched ? WATCHED : NONE} style={ex.status} />
         </View>
         <View style={[st.body, ex.body]}>
           <View style={st.titleRow}>
@@ -104,20 +97,8 @@ export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurr
         </View>
       </Pressable>
 
-      <Pressable onPress={() => onMore(entry)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("offline:manage")} style={ex.more}>
+      <Pressable onPress={() => onMore(entry)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t("offline:manage")} style={[ex.more, ex.moreEnd]}>
         <Feather name="more-horizontal" size={18} color={colors.text.secondary} />
-      </Pressable>
-
-      <Pressable
-        onPress={handleToggle}
-        hitSlop={12}
-        accessibilityRole="button"
-        accessibilityLabel={watched ? t("common:markUnwatched") : t("common:markWatched")}
-        style={st.toggle}
-      >
-        <Animated.View style={[animStyle, st.ring, watched && st.ringPlayed]} collapsable={false}>
-          <Feather name="check" size={16} color={watched ? accentText : colors.text.disabled} />
-        </Animated.View>
       </Pressable>
     </View>
   );
@@ -128,6 +109,8 @@ const makeExtraStyles = (t: AppTheme) =>
     fallback: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
     fallbackText: { fontSize: 14, fontFamily: FONT_FAMILY.bold, color: t.colors.text.tertiary },
     more: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18 },
+    moreEnd: { marginRight: 6 },
+    status: { top: 4, right: 4 },
     // Sans `minWidth: 0`, un texte long élargit le corps sous les boutons de droite.
     body: { minWidth: 0 },
     version: { flexShrink: 1 },

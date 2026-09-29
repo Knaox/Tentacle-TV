@@ -9,7 +9,7 @@ import {
   useMyEpisodeRatings,
   useTmdbSeasonEpisodes,
 } from "@tentacle-tv/api-client";
-import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
+import { formatDuration, formatEpisodeCode, resolveCardMarkers } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { SeasonTabs } from "../episodes/SeasonTabs";
 import { EpisodeScoreChips } from "../rating/EpisodeRatingLine";
@@ -130,8 +130,6 @@ export function EpisodeSelectorPanel({
   );
 }
 
-const WATCHED_ONLY = ["watched"] as const;
-
 function EpisodeItem({ ep, active, onClick, innerRef, community, mine }: {
   ep: MediaItem; active: boolean; onClick: () => void;
   /** Note globale (TMDB, Jellyfin à défaut) et note du compte — affichage seul. */
@@ -141,7 +139,9 @@ function EpisodeItem({ ep, active, onClick, innerRef, community, mine }: {
 }) {
   const client = useJellyfinClient();
   const thumb = client.getImageUrl(ep.Id, "Primary", { width: 240, quality: 80 });
-  const watched = ep.UserData?.Played === true;
+  // Le modèle des marqueurs, réduit à ce que la ligne dit d'un épisode : « vu ».
+  const markers = resolveCardMarkers({ item: ep, communityRating: null, inWatchlist: false, isFavorite: false });
+  const watched = markers.statuses.includes("watched");
   const progress = ep.UserData?.PlayedPercentage;
   const runtime = formatDuration(ep.RunTimeTicks);
   const epLabel = formatEpisodeCode(ep.ParentIndexNumber, ep.IndexNumber, { style: "padded" });
@@ -158,14 +158,15 @@ function EpisodeItem({ ep, active, onClick, innerRef, community, mine }: {
           cartes (un disque blanc recopié ici avait fini par diverger). */}
       <div className="relative aspect-video w-28 flex-shrink-0 overflow-hidden rounded-md bg-surface-2">
         <img src={thumb} alt={ep.Name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-        {watched ? <CardStatusMarkers statuses={WATCHED_ONLY} className="right-1 top-1" /> : <CardProgressBar percent={progress} />}
+        {!watched && <CardProgressBar percent={progress} />}
+        <CardStatusMarkers statuses={markers.statuses} className="right-1 top-1" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-accent-light)]" : "text-content-quaternary"}`}>
+        <p className={`truncate text-[11px] font-bold uppercase tracking-wider ${active ? "text-[var(--brand-accent-light)]" : "text-content-tertiary"}`}>
           {epLabel}
         </p>
         <p className="line-clamp-1 text-sm font-medium text-content-primary">{ep.Name}</p>
-        <p className="mt-0.5 flex items-center gap-2 text-xs text-content-quaternary">
+        <p className="mt-0.5 flex items-center gap-2 text-xs text-content-tertiary">
           {runtime && <span>{runtime}</span>}
           <EpisodeScoreChips community={community} mine={mine} />
         </p>

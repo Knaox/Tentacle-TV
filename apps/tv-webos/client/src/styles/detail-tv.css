@@ -213,7 +213,9 @@
  * Elle était le SEUL élément focusable d'une ligne, et c'est ce qui rendait la
  * liste inutilisable : l'anneau sautait de coche en coche en enjambant les
  * épisodes. Vingt pixels de côté, sans libellé, pour une action qui n'a pas sa
- * place à trois mètres — l'état « vu » se lit déjà sur la barre de progression.
+ * place à trois mètres — l'état « vu » se lit sur la pastille de la vignette,
+ * celle de toutes les cartes (sur le web aussi, la bascule n'y paraît plus
+ * qu'au survol ; l'appui long l'offre ici).
  *
  * C'est le seul `<button>` d'une ligne : l'action de téléchargement, l'autre
  * candidat, est déjà rendue inerte par substitution et ne rend rien. */

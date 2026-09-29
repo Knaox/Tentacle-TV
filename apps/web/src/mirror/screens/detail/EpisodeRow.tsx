@@ -1,9 +1,9 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useWatchedToggle } from "@tentacle-tv/api-client";
-import { cardToggleLabelKey, resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
+import { MoreHorizontal } from "lucide-react";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { resolveBannerImage, resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
 import { CardStatusMarkers } from "../../../components/cards/CardStatusMarkers";
-import { WatchedGlyph } from "../../../components/cards/cardGlyphs";
 import { cardProgress } from "../../cards/cardProgress";
 import { useOpenCardSheet } from "../../cards/cardSheet";
 import { ProgressBar } from "../../ui/ProgressBar";
@@ -13,11 +13,11 @@ import { episodeCode } from "./detailMetrics";
 
 export const THUMB_W = 110;
 export const THUMB_H = 62;
-const WATCHED_ONLY = ["watched"] as const;
 
 interface Props {
   ep: MediaItem;
   seriesId: string;
+  /** La saison du conteneur — la bascule « vu », qui s'en servait, est passée à la feuille. */
   seasonId: string;
   onPlay: (ep: MediaItem) => void;
   isCurrent?: boolean;
@@ -27,21 +27,22 @@ interface Props {
  * `EpisodeItemRow` de l'app : fond `fill.faint` rayon 10, vignette 110 × 62
  * (rayon 6), numéro et titre 13 (800 pour l'épisode courant, précédé d'un
  * point rose de 7), « Épisode actuel » et durée, jetons compacts, résumé sur
- * 2 lignes, puis la bascule « vu ».
+ * 2 lignes, puis « ⋯ ».
  *
- * Les marques de toutes les cartes : sur la vignette, la pastille « vu »
- * (un épisode vu n'a plus de pourcentage, c'est elle qui le dit) ou la barre
- * commune ; la bascule prend le glyphe et le libellé du survol
- * (`cardToggleLabelKey`). L'appui long ouvre la feuille de l'épisode, en
- * vignette 16:9 : son toucher le lance, la fiche passe par la feuille.
+ * La grammaire des cartes : l'ÉTAT se lit sur la vignette et nulle part
+ * ailleurs — la pastille du modèle (« vu ») ou la barre commune ; les ACTIONS
+ * vivent dans la feuille de l'épisode (vignette 16:9 : son toucher le lance,
+ * la fiche passe par la feuille), ouverte par l'appui long ou par le « ⋯ ».
+ * Une bascule « vu » toujours visible, pleine quand l'épisode l'était,
+ * doublait la pastille.
  */
-export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, onPlay, isCurrent = false }: Props) {
+export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, onPlay, isCurrent = false }: Props) {
   const { t } = useTranslation(["common", "cards"]);
-  const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const openSheet = useOpenCardSheet();
-  const press = useLongPress(openSheet ? () => openSheet({ kind: "media", variant: "landscape", item: ep }) : undefined);
-  const played = ep.UserData?.Played === true;
-  const watchedLabel = t(`cards:${cardToggleLabelKey("watched", played)}`);
+  const openActions = openSheet ? () => openSheet({ kind: "media", variant: "landscape", item: ep }) : undefined;
+  const press = useLongPress(openActions);
+  const markers = resolveCardMarkers({ item: ep, communityRating: null, inWatchlist: false, isFavorite: false });
+  const played = markers.statuses.includes("watched");
   const progress = cardProgress(ep.UserData);
   const runtime = ep.RunTimeTicks ? Math.round(ep.RunTimeTicks / 600_000_000) : null;
   const epLabel = ep.IndexNumber != null ? `${episodeCode(ep.ParentIndexNumber, ep.IndexNumber)} · ` : "";
@@ -59,11 +60,8 @@ export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, onP
       >
         <span className="relative shrink-0 self-center overflow-hidden rounded-md bg-surface-2" style={{ width: THUMB_W, height: THUMB_H }}>
           <EpisodeThumb ep={ep} seriesId={seriesId} />
-          {played ? (
-            <CardStatusMarkers statuses={WATCHED_ONLY} className="right-1 top-1" />
-          ) : (
-            progress !== null && <ProgressBar progress={progress} className="absolute inset-x-0 bottom-0" />
-          )}
+          {!played && progress !== null && <ProgressBar progress={progress} className="absolute inset-x-0 bottom-0" />}
+          <CardStatusMarkers statuses={markers.statuses} className="right-1 top-1" />
         </span>
         <span className="flex min-w-0 flex-1 flex-col justify-center p-2.5">
           <span className="flex items-center gap-1.5">
@@ -77,27 +75,28 @@ export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, onP
             {isCurrent && (
               <span className="mirror-detail-accent-text text-[10px] font-bold uppercase tracking-[0.6px]">{t("common:currentEpisode")}</span>
             )}
-            {runtime ? <span className="text-[11px] text-content-quaternary">{t("common:minutesShort", { count: runtime })}</span> : null}
+            {runtime ? <span className="text-[11px] text-content-tertiary">{t("common:minutesShort", { count: runtime })}</span> : null}
           </span>
           <MetaTokens item={ep} compact />
           {ep.Overview && (
-            <span className="mt-1 line-clamp-2 text-[11px] leading-[15px] text-content-quaternary">{ep.Overview}</span>
+            <span className="mt-1 line-clamp-2 text-[11px] leading-[15px] text-content-tertiary">{ep.Overview}</span>
           )}
         </span>
       </button>
 
-      <button
-        type="button"
-        onClick={() => (played ? markUnwatched.mutate() : markWatched.mutate())}
-        aria-label={watchedLabel}
-        aria-pressed={played}
-        className="shrink-0 px-2.5 py-3"
-        style={{ WebkitTapHighlightColor: "transparent" }}
-      >
-        <span className={`mirror-detail-pop block ${played ? "mirror-detail-accent-text" : "text-content-tertiary"}`}>
-          <WatchedGlyph className="h-[26px] w-[26px]" filled={played} />
-        </span>
-      </button>
+      {openActions ? (
+        <button
+          type="button"
+          onClick={openActions}
+          aria-label={`${t("cards:moreActions")} — ${ep.Name ?? ""}`}
+          className="shrink-0 px-2.5 py-3 text-content-secondary"
+          style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+          <MoreHorizontal size={20} aria-hidden />
+        </button>
+      ) : (
+        <span aria-hidden className="w-2.5 shrink-0" />
+      )}
     </div>
   );
 });

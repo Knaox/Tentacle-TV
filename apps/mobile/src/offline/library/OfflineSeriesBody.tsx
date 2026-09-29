@@ -32,7 +32,6 @@ interface Props {
   currentEpisodeId?: string;
   onPlay: (entry: OfflineEntry) => void;
   onMore: (entry: OfflineEntry) => void;
-  onToggleWatched: (entry: OfflineEntry, played: boolean) => void;
 }
 
 /**
@@ -43,7 +42,7 @@ interface Props {
  */
 export function OfflineSeriesBody({
   seriesItem, allEpisodes, seasonCount, genres, overview, people, seasonItems, activeSeasonKey, onSelectSeason,
-  episodes, currentEpisodeId, onPlay, onMore, onToggleWatched,
+  episodes, currentEpisodeId, onPlay, onMore,
 }: Props) {
   const { t, i18n } = useTranslation(["common", "offline", "downloads"]);
   const st = useThemedStyles(makeMediaDetailStyles);
@@ -81,7 +80,6 @@ export function OfflineSeriesBody({
             isCurrent={entry.itemId === currentEpisodeId}
             onPlay={onPlay}
             onMore={onMore}
-            onToggleWatched={onToggleWatched}
           />
         ))}
       </View>

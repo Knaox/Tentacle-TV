@@ -1,8 +1,8 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
-import { useJellyfinClient, useWatchedToggle } from "@tentacle-tv/api-client";
-import { resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { resolveBannerImage, resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
+import { CardStatusMarkers } from "../../../components/cards/CardStatusMarkers";
 import { stripOverviewHtml } from "../../../lib/overviewHtml";
 import { episodeCode } from "../playerMetrics";
 import { SHEET } from "./sheetColors";
@@ -13,24 +13,28 @@ const THUMB_H = 62;
 interface Props {
   ep: MediaItem;
   seriesId: string;
+  /** La saison du conteneur — la bascule « vu », qui s'en servait, a quitté la ligne. */
   seasonId: string;
   isCurrent: boolean;
   onPlay: (ep: MediaItem) => void;
 }
 
 /**
- * Une ligne d'épisode — `EpisodeItemRow` de l'app : fond `fill.faint` rayon
- * 10, vignette 110 × 62 (rayon 6) avec sa piste de progression de 3, titre
- * 13 px (« S01E02 · »), point et mention « épisode actuel », durée 11 px,
- * synopsis 2 lignes, et le rond « vu » de 30 qui bascule l'état.
+ * Une ligne d'épisode — `EpisodeItemRow` de l'app, dans le lecteur : fond
+ * `fill.faint` rayon 10, vignette 110 × 62 (rayon 6) avec sa piste de
+ * progression de 3 et la pastille du modèle des cartes (« vu »), titre 13 px
+ * (« S01E02 · »), point et mention « épisode actuel », durée 11 px, synopsis
+ * 2 lignes. Un rond coché de 30 tenait lieu de marqueur « vu » en bout de
+ * ligne : l'ancien dessin, hors du modèle. Comme sur l'app, la ligne du
+ * lecteur ne porte que son état.
  */
-export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, isCurrent, onPlay }: Props) {
+export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, isCurrent, onPlay }: Props) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
-  const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const [thumbFailed, setThumbFailed] = useState(false);
-  const played = ep.UserData?.Played === true;
-  const progress = ep.UserData?.PlayedPercentage;
+  const markers = resolveCardMarkers({ item: ep, communityRating: null, inWatchlist: false, isFavorite: false });
+  const played = markers.statuses.includes("watched");
+  const progress = played ? null : ep.UserData?.PlayedPercentage;
   const runtime = ep.RunTimeTicks ? Math.round(ep.RunTimeTicks / 600_000_000) : null;
   const code = ep.IndexNumber != null ? `${episodeCode(ep.ParentIndexNumber ?? 1, ep.IndexNumber)} · ` : "";
   const resolved = resolveBannerImage(ep);
@@ -55,6 +59,7 @@ export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, isC
               <div className="h-full" style={{ width: `${progress}%`, background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }} />
             </div>
           )}
+          <CardStatusMarkers statuses={markers.statuses} className="right-1 top-1" />
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-center" style={{ padding: 10 }}>
           <div className="flex flex-row items-center" style={{ gap: 6 }}>
@@ -69,30 +74,12 @@ export const EpisodeRow = memo(function EpisodeRow({ ep, seriesId, seasonId, isC
                 {t("currentEpisode")}
               </span>
             )}
-            {runtime && <span style={{ color: SHEET.textQuaternary, fontSize: 11 }}>{t("minutesShort", { count: runtime })}</span>}
+            {runtime && <span style={{ color: SHEET.textTertiary, fontSize: 11 }}>{t("minutesShort", { count: runtime })}</span>}
           </div>
           {overview && (
-            <p className="line-clamp-2" style={{ color: SHEET.textQuaternary, fontSize: 11, marginTop: 4, lineHeight: "15px" }}>{overview}</p>
+            <p className="line-clamp-2" style={{ color: SHEET.textTertiary, fontSize: 11, marginTop: 4, lineHeight: "15px" }}>{overview}</p>
           )}
         </div>
-      </button>
-      <button
-        type="button"
-        aria-label={played ? t("markUnwatched") : t("markWatched")}
-        onClick={() => (played ? markUnwatched.mutate() : markWatched.mutate())}
-        className="relative shrink-0 active:scale-75 transition-transform motion-reduce:transition-none [-webkit-tap-highlight-color:transparent]"
-        style={{ paddingRight: 12, paddingLeft: 4 }}
-      >
-        <span
-          className="flex items-center justify-center"
-          style={{
-            width: 30, height: 30, borderRadius: 15,
-            backgroundColor: played ? SHEET.accentSoft : SHEET.fillSubtle,
-            border: `1px solid ${played ? SHEET.accentGlow : SHEET.borderSubtle}`,
-          }}
-        >
-          <Check size={16} color={played ? SHEET.accentText : SHEET.textDisabled} />
-        </span>
       </button>
     </div>
   );

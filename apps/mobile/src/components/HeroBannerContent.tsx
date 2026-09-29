@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useResponsive, useTheme, useThemedStyles } from "@/theme";
+import { WatchedGlyph } from "./cards/cardGlyphs";
 import { CascadeGroup } from "./hero/CascadeGroup";
 import { makeHeroCtaStyles } from "./hero/heroCtaStyles";
 import { makeHeroTextStyles } from "./hero/heroTextStyles";
@@ -65,7 +66,7 @@ export function HeroContent({ item, active = true, onPlay, onInfo }: HeroContent
           )}
           {isWatched && !hasProgress && (
             <View style={st.continueTag}>
-              <Feather name="check" size={10} color={theme.colors.cta.primaryFg} />
+              <WatchedGlyph size={10} color={theme.colors.cta.primaryFg} filled />
               <Text style={st.continueTagTxt}>{t("watched")}</Text>
             </View>
           )}

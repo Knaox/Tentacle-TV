@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Modal, Pressable, SectionList, StyleSheet, Text, View } from "react-native";
-import { X, Check } from "lucide-react-native";
+import { X } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import { groupOfflineEntries, seasonLabel, watchStateOf } from "@tentacle-tv/off
 import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import type { OfflineEntry } from "@/offline/engineApi";
 import { OfflineLocalImage } from "@/offline/library/OfflineLocalImage";
+import { CardStatusMarkers } from "@/components/cards/CardStatusMarkers";
 import { PLAYER, spacing, FONT_FAMILY, SHEET_MAX_WIDTH } from "@/theme";
 
 interface Props {
@@ -21,9 +22,13 @@ interface Props {
 /**
  * Le sélecteur d'épisodes d'une lecture locale HORS LIGNE : les épisodes
  * complets de la série sur l'appareil, par saison, avec leur vignette
- * locale, la coche ou la barre, et l'épisode courant surligné. En ligne, le
- * sélecteur serveur (liste complète) reste celui du bureau.
+ * locale, la pastille « vu » des cartes ou la barre, et l'épisode courant
+ * surligné. En ligne, le sélecteur serveur (liste complète) reste celui du
+ * bureau.
  */
+
+const WATCHED: readonly ["watched"] = ["watched"];
+const NONE: readonly [] = [];
 export function LocalPlayerEpisodePicker({ visible, seriesId, currentEpisodeId, onClose }: Props) {
   const router = useRouter();
   const { t } = useTranslation("common");
@@ -75,9 +80,11 @@ export function LocalPlayerEpisodePicker({ visible, seriesId, currentEpisodeId, 
                       {watch.percent !== null && (
                         <View style={st.track}><View style={[st.fill, { width: `${watch.percent}%` }]} /></View>
                       )}
+                      {/* « Vu » : la pastille des cartes, sur la vignette — une coche
+                          maison en bout de ligne en tenait lieu. */}
+                      <CardStatusMarkers statuses={watch.watched ? WATCHED : NONE} style={st.status} />
                     </View>
                     <Text numberOfLines={2} style={[st.label, current && st.labelCurrent]}>{code(entry)}{entry.title ?? entry.itemId}</Text>
-                    {watch.watched && <Check size={16} color={PLAYER.text} />}
                   </Pressable>
                 );
               }}
@@ -99,6 +106,7 @@ const st = StyleSheet.create({
   thumb: { width: 96, height: 54, borderRadius: 6, overflow: "hidden", backgroundColor: PLAYER.controlBg },
   track: { position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "rgba(255,255,255,0.25)" },
   fill: { height: "100%", backgroundColor: PLAYER.text },
+  status: { top: 3, right: 3 },
   label: { flex: 1, color: PLAYER.text, fontSize: 14, fontFamily: FONT_FAMILY.medium },
   labelCurrent: { fontFamily: FONT_FAMILY.bold },
 });

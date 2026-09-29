@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { formatDuration, formatEpisodeCode, type MediaItem } from "@tentacle-tv/shared";
 import { watchStateOf } from "@tentacle-tv/offline-core";
+import { WatchedGlyph } from "@/components/cards/cardGlyphs";
 import { CascadeGroup } from "@/components/hero/CascadeGroup";
 import { HeroEyebrow } from "@/components/hero/HeroEyebrow";
 import { makeHeroCtaStyles } from "@/components/hero/heroCtaStyles";
@@ -70,7 +71,7 @@ export function OfflineHeroContent({ entry, active, onPlay, onInfo }: Props) {
             )}
             {watched && !hasProgress && (
               <View style={st.continueTag}>
-                <Feather name="check" size={10} color={theme.colors.cta.primaryFg} />
+                <WatchedGlyph size={10} color={theme.colors.cta.primaryFg} filled />
                 <Text style={st.continueTagTxt}>{t("common:watched")}</Text>
               </View>
             )}
