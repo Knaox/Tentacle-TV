@@ -30,12 +30,32 @@ export function initI18n(options?: { lng?: string; fallbackLng?: string }) {
   return i18n;
 }
 
-/** Detect preferred language from browser or system. Returns "fr" or "en". */
+/**
+ * Langue préférée de l'appareil : « fr » ou « en ». Le navigateur d'abord ;
+ * React Native n'a pas de `navigator.language`, la locale d'`Intl` (Hermes la
+ * fournit) prend alors le relais — sans elle, le mobile démarrait en français
+ * sur un téléphone anglais.
+ */
 export function detectLanguage(): string {
+  let locale: string | undefined;
   if (typeof navigator !== "undefined" && navigator.language) {
-    return navigator.language.startsWith("fr") ? "fr" : "en";
+    locale = navigator.language;
+  } else {
+    try {
+      locale = Intl.DateTimeFormat().resolvedOptions().locale;
+    } catch { /* pas d'Intl : défaut anglais */ }
   }
-  return "en";
+  return uiLanguage(locale);
+}
+
+/**
+ * Réduit une langue i18next (« fr-FR », « en », indéfinie) aux deux langues
+ * de l'interface. Toute pastille de langue s'allume sur CETTE valeur, lue sur
+ * `i18n.language` — jamais sur le stockage, vide au premier lancement alors
+ * que le texte suit déjà la langue détectée.
+ */
+export function uiLanguage(lng: string | undefined | null): "fr" | "en" {
+  return lng?.startsWith("fr") ? "fr" : "en";
 }
 
 export { i18n };
