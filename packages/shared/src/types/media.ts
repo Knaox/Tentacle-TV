@@ -54,6 +54,10 @@ export interface MediaItem {
   // Nombre d'extras locaux (making-of, scènes coupées…). Demandé via Fields=SpecialFeatureCount :
   // il évite d'interroger chaque saison pour savoir si elle en a.
   SpecialFeatureCount?: number;
+  // Nombre de bandes-annonces LOCALES (fichiers du serveur) — même rôle, via Fields=LocalTrailerCount.
+  LocalTrailerCount?: number;
+  // Le genre d'un extra local (Trailer, BehindTheScenes, DeletedScene…) ; absent d'un titre ordinaire.
+  ExtraType?: string;
 
   // External IDs
   ProviderIds?: Record<string, string>;

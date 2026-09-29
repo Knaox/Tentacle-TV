@@ -124,6 +124,9 @@ export { initI18n, detectLanguage, i18n } from "./i18n";
 export * from "./data/media-licenses";
 export * from "./theme";
 export * from "./trailers";
+// Les extras d'un titre : genre et titre lisibles, tuiles d'une rangée, cible
+// du bouton « Bande-annonce » (la locale d'abord) — toutes plateformes.
+export * from "./extras";
 // Les statistiques de visionnage : le contrat de /api/stats/me (miroir côté
 // backend), ses mises en forme sans Intl (Hermes), la lecture du rythme et le
 // profil de spectateur — une seule lecture pour le web et le mobile.
