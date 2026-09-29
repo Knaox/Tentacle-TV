@@ -1,6 +1,6 @@
 {
   "name": "@tentacle-tv/tv-webos",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Client LG webOS — coquille IPK + variante de build servie par le serveur Tentacle",
