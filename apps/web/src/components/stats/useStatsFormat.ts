@@ -16,7 +16,9 @@ export interface StatsFormat extends StatsFormatter {
  */
 export function useStatsFormat(): StatsFormat {
   const { namespaces, vars } = useStatsVoice();
-  const { t, i18n } = useTranslation(namespaces as string[]);
+  // « fallback » : une clé absente du premier espace se cherche dans les suivants
+  // (par défaut, react-i18next ne lit que le premier).
+  const { t, i18n } = useTranslation(namespaces as string[], { nsMode: "fallback" });
   const locale = statsLocale(i18n.language);
   return useMemo(() => {
     const voiced = vars
