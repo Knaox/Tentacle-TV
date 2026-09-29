@@ -14,6 +14,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Bandes-annonces locales et bonus** enfin visibles
 - **La VO** parmi vos langues audio préférées
 - **La fiche se lit** sur les images claires
+- **Premier lancement** dans la langue de l'appareil
 
 ### EN
 - **A long press on a card** opens its actions: My list, favorite, watched and your star rating
@@ -22,6 +23,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Local trailers and extras** finally visible
 - **Original language** among your preferred audio languages
 - **The title page reads** on light images
+- **First launch** in the device's language
 
 ## [atv-1.4.0]
 <!-- Bloc Apple TV (App Store Connect, 4000 caractères) : la version complète. -->
@@ -35,6 +37,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Des cartes plus nettes** : l'anneau de focus épouse l'image, un seul marqueur « vu », et les cartes de recommandation portent les mêmes repères que les autres
 - **La fiche se lit** sur les images claires
 - Dans la recherche, OK sur un épisode lance la lecture, comme sur l'accueil
+- Au premier lancement, l'app et sa mention légale parlent la langue de l'appareil
 
 ### EN
 - **A long press on a card** opens its actions, on every row, search and recommendations: My list, favorite, watched, and your rating in whole stars. A judged title leaves "For you" when the sheet closes
@@ -46,6 +49,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Sharper cards**: the focus ring hugs the image, a single "watched" marker, and recommendation cards carry the same markers as the others
 - **The title page reads** on light images
 - In search, OK on an episode starts playback, as on the home screen
+- On first launch, the app and its legal notice speak the device's language
 
 ## [1.3.1]
 ### FR

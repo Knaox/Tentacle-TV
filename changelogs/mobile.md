@@ -15,6 +15,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Un appui long** ouvre les mêmes actions sur toutes les cartes
 - **Hors ligne** : la nouvelle fiche et un accueil repensé
 - **Avec Jellyfin 12** : choix de la version, filtres de langue, VO
+- **Premier lancement** dans la langue du téléphone
 
 ### EN
 - **Your stats**: time spent, genres, records, "Dubbed or original?", shareable through a link
@@ -24,6 +25,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **A long press** opens the same actions on every card
 - **Offline**: the new title page and a redesigned home
 - **With Jellyfin 12**: version choice, language filters, original language
+- **First launch** in your phone's language
 
 ## [ios-1.10.0]
 <!-- Bloc iOS (App Store Connect, 4000 caractères) : la version complète. -->
@@ -39,6 +41,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Avec Jellyfin 12** : le choix de la version d'un film ou d'un épisode, « Fait partie de » sur la fiche, le filtre des bibliothèques par langue audio ou de sous-titres, et la VO parmi vos langues audio préférées
 - **La fiche se lit sur les images claires**, et les pastilles des affiches dans les deux thèmes
 - Une saison contenant un épisode très court ne fait plus planter la liste des épisodes
+- **Au premier lancement, l'app parle la langue du téléphone**, mention légale comprise
 
 ### EN
 - **Your stats**: a new screen shows your screen time, your genres, your favorite movies and actors, your records, what you really listen to ("Dubbed or original?") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time
@@ -52,6 +55,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **With Jellyfin 12**: pick the version of a movie or an episode, "Part of" on the title page, filter libraries by audio or subtitle language, and original language among your preferred audio languages
 - **The title page reads on light images**, and poster badges in both themes
 - A season with a very short episode no longer crashes the episode list
+- **On first launch, the app speaks your phone's language**, legal notice included
 
 ## [1.9.0]
 ### FR

@@ -20,6 +20,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Recommandations** : un « j'aime » d'Affiner met le cœur au titre dans Jellyfin, tout de suite ou à l'arrivée du titre ; au premier démarrage, les « j'aime » déjà donnés reçoivent le leur, une seule fois. Un même « j'aime » ne compte qu'une fois, un titre seulement dans Ma liste ne pèse plus sur les goûts, et un titre ajouté à Ma liste, aimé, vu ou noté quitte « Pour vous » une fois le geste fini
 - **Affiner** : glisser vers le bas passe le titre, et la carte jugée ne tremble plus
 - **Téléviseurs LG** : le focus tient lieu de survol et l'appui long ouvre les actions d'une carte, la saga et les saisons refaites
+- La mention légale du premier lancement s'ouvre dans la langue affichée
 - **Le schéma de la base évolue au démarrage** (`share_links.options`, `watchlist_pending.flag`, `taste_profiles.potentials`, `watch_segments.audioLang`)
 - **Les clients 1.25.0 (bureau), 1.10.0 (mobile) et 1.4.0 (TV) demandent ce serveur** : la version minimale exigée passe à 1.22.0
 
@@ -37,6 +38,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Recommendations**: a "like" in Refine hearts the title in Jellyfin, right away or when the title arrives; on first startup, likes already given receive theirs, once. A single "like" counts only once, a title that is only in My list no longer weighs on taste, and a title added to My list, liked, watched or rated leaves "For you" once the gesture is over
 - **Refine**: dragging down skips the title, and the judged card no longer shakes
 - **LG TVs**: focus stands in for hover and a long press opens a card's actions, the saga and redesigned seasons
+- The first-launch legal notice opens in the displayed language
 - **The database schema evolves at startup** (`share_links.options`, `watchlist_pending.flag`, `taste_profiles.potentials`, `watch_segments.audioLang`)
 - **Desktop 1.25.0, mobile 1.10.0 and TV 1.4.0 require this server**: the minimum required version moves to 1.22.0
 

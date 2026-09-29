@@ -27,6 +27,7 @@ et Linux reçoivent l'ensemble.
 - **Avec Jellyfin 12** : le choix de la version d'un film ou d'un épisode, « Fait partie de » sur la fiche, le filtre des bibliothèques par langue audio ou de sous-titres, et la VO parmi vos langues audio préférées
 - **Le bouton Copier fonctionne** : il ne copiait rien dans l'application de bureau (les liens de partage de Ma liste et des favoris), et il dit maintenant si la copie a réussi
 - **Des textes lisibles** : la fiche sur un décor clair, les légendes sous les cartes
+- La mention légale du premier lancement s'ouvre dans la langue affichée
 - **Administrateurs : la vue d'ensemble** dit si votre Jellyfin et sa dernière version publiée sont compatibles, montre l'état réel des réglages Jellyfin conseillés et les applique d'un clic quand c'est sûr, et compte les titres qui ont une bande-annonce, avec la raison de ceux qui n'en ont pas. Services dit si chaque greffon de détection des passages (génériques, résumés) est actif, installé ou absent
 
 ### EN
@@ -42,6 +43,7 @@ et Linux reçoivent l'ensemble.
 - **With Jellyfin 12**: pick the version of a movie or an episode, "Part of" on the title page, filter libraries by audio or subtitle language, and original language among your preferred audio languages
 - **The Copy button works**: it copied nothing in the desktop app (the share links of My list and favorites), and it now tells you whether the copy succeeded
 - **Readable text**: the title page on a light backdrop, the captions under cards
+- The first-launch legal notice opens in the displayed language
 - **Administrators: the overview** tells whether your Jellyfin and its latest published version are compatible, shows the real state of the recommended Jellyfin settings and applies them in one click when it is safe, and counts the titles that have a trailer, with the reason for those that do not. Services tells whether each segment-detection plugin (credits, recaps) is active, installed or missing
 
 ## [win-1.25.0]
