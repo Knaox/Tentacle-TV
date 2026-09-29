@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://discord.gg/FRse3yMhnc"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
   <a href="#quick-start-docker"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker" /></a>
   <img src="https://img.shields.io/badge/version-1.11.0-8b5cf6" alt="Version" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License" /></a>
@@ -709,6 +710,14 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 | CI/CD | GitHub Actions (Docker build on push to main) |
 
 ---
+
+## Community
+
+Join the **[Tentacle TV Discord](https://discord.gg/FRse3yMhnc)** to get help, share ideas and hear about new releases first. English and French are both welcome.
+
+Rejoignez le **[Discord de Tentacle TV](https://discord.gg/FRse3yMhnc)** pour obtenir de l'aide, proposer des idées et suivre les nouveautés — annonces et salon de discussion en français.
+
+Bugs and feature requests still go to [GitHub issues](https://github.com/Knaox/Tentacle-TV/issues).
 
 ## Contributing
 
