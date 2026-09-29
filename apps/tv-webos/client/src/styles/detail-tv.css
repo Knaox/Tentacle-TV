@@ -123,23 +123,81 @@
   display: none;
 }
 
+/* Les pastilles : la grammaire des autres plateformes. Le gris translucide
+ * d'avant (5 %, libellé à 78 %) disparaissait sur le fond coloré de la fiche ;
+ * un verre à 80 % sous un libellé blanc tient 10:1 sur n'importe quelle image.
+ * Valeurs SOMBRES fixes : la dalle n'a qu'un thème, et une pastille claire
+ * n'y aurait pas de sens. Le liseré est une vraie bordure et non une ombre
+ * intérieure : l'anneau de focus (`box-shadow`, cf. focus.css) la remplacerait. */
 .saison-tv {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
   margin-right: 12px;
   padding: 10px 20px;
-  border-radius: var(--radius-md);
-  background-color: var(--fill-subtle);
-  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+  background-color: rgba(10, 10, 18, 0.8);
+  color: #ffffff;
   font-size: 16px;
   font-weight: 600;
   white-space: nowrap;
 }
 
+.saison-tv > * + * {
+  margin-left: 8px;
+}
+
 /* La saison affichée se distingue au repos, sans dépendre du focus : on doit
-   savoir laquelle on regarde même quand l'anneau est descendu dans la liste. */
+   savoir laquelle on regarde même quand l'anneau est descendu dans la liste.
+   Le dégradé de marque en version PROFONDE : 4,6:1 sous le blanc d'un bout à
+   l'autre (les jetons ont leur valeur littérale d'abord, pour Chrome 53). */
 .saison-tv-active {
-  background-color: var(--brand-soft);
-  color: var(--brand-light);
+  border-color: transparent;
+  background-color: var(--brand-dark);
+  background-image: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid-deep) 55%, var(--brand-accent-deep) 100%);
+  font-weight: 700;
+}
+
+/* Le point de la saison en cours, la coche d'une saison vue, le compteur
+ * d'épisodes (classes en anglais : code neuf, cf. CLAUDE.md). */
+.season-tv-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: var(--brand-accent-light);
+}
+
+.season-tv-watched {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.season-tv-count {
+  min-width: 26px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.saison-tv-active .season-tv-dot {
+  background-color: #ffffff;
+}
+
+.saison-tv-active .season-tv-watched,
+.saison-tv-active .season-tv-count {
+  color: #ffffff;
+}
+
+.saison-tv-active .season-tv-count {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 /* L'enveloppe ne dessine rien : elle porte le focus, et la ligne du web garde

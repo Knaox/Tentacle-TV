@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useSeasonBrowser, useJellyfinClient } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import { EpisodeRow } from "@/components/EpisodeRow";
 import { EpisodeRowTv } from "./EpisodeRowTv";
+import { SeasonBandTv } from "./SeasonBandTv";
 import { giveFocus } from "../../focus/active";
 
 /**
@@ -43,6 +44,12 @@ import { giveFocus } from "../../focus/active";
  * **Changer de saison mène aux épisodes.** Valider un onglet pose le focus sur
  * le premier épisode de la saison choisie dès qu'il est monté : sans cela on
  * restait sur la bande, à devoir redescendre à la main après chaque changement.
+ *
+ * **Les données sont celles de toutes les plateformes** (`useSeasonBrowser`) :
+ * la fiche d'une série attend l'état de visionnage pour ouvrir la saison en
+ * cours (elle ouvrait la première saison du serveur — souvent « Spéciaux » — et
+ * y restait) en préchargeant la saison pressentie ; liste légère puis sources ;
+ * voisines préchargées ; un onglet qui garde le focus précharge sa saison.
  */
 
 interface EpisodeListTvProps {
@@ -51,35 +58,34 @@ interface EpisodeListTvProps {
   currentEpisodeId?: string;
   /** Saison à présélectionner : celle de l'épisode en cours de reprise. */
   initialSeasonId?: string;
+  /** Fiche d'une SÉRIE : la liste s'ouvre sur la saison de l'épisode à reprendre. */
+  followResume?: boolean;
 }
 
 export function EpisodeList({
   seriesId,
   currentEpisodeId,
   initialSeasonId,
+  followResume = false,
 }: EpisodeListTvProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
-  const { data: seasons, isLoading: seasonsLoading } = useSeasons(seriesId);
-  const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>();
-  const { data: episodes, isLoading: episodesLoading } = useEpisodes(seriesId, selectedSeasonId);
+  // `provisional: false` : une liste qui changerait sous le focus de la
+  // télécommande le perdrait — on attend l'état de visionnage.
+  const browser = useSeasonBrowser({
+    seriesId,
+    preferredSeasonId: initialSeasonId,
+    followResume,
+    currentEpisodeSeasonId: currentEpisodeId ? initialSeasonId : undefined,
+    provisional: false,
+  });
+  const { seasons, selectedSeasonId, episodes } = browser;
+  const episodesLoading = browser.episodesLoading;
 
   const list = useRef<HTMLDivElement>(null);
   /** Une saison vient d'être validée : le premier épisode monté prend le focus. */
   const aimTheFirst = useRef(false);
-  const band = useRef<HTMLDivElement>(null);
-  /** La bande ne se cale sur la saison active qu'UNE fois, à l'arrivée. */
-  const wedgedBand = useRef(false);
-
-  useEffect(() => {
-    if (!seasons?.length || selectedSeasonId) return;
-    const preferred =
-      initialSeasonId && seasons.some((season) => season.Id === initialSeasonId)
-        ? initialSeasonId
-        : seasons[0].Id;
-    setSelectedSeasonId(preferred);
-  }, [seasons, selectedSeasonId, initialSeasonId]);
 
   // Le premier épisode de la nouvelle saison, dès qu'il existe. L'effet dépend
   // des épisodes et non de la saison : c'est leur arrivée qui rend le focus
@@ -94,64 +100,29 @@ export function EpisodeList({
     if (first) giveFocus(first);
   }, [episodes, episodesLoading]);
 
+  const { select } = browser;
   const chooseSeason = useCallback((seasonId: string) => {
     aimTheFirst.current = true;
-    setSelectedSeasonId(seasonId);
-  }, []);
-
-  // Le calage initial de la bande : la saison active en vue, une seule fois.
-  //
-  // Une série reprise en saison 5 présélectionne l'onglet 5 — hors de la bande
-  // visible sur une longue série. Sans ce défilement, l'entrée de zone visait
-  // un onglet que l'écran ne montrait pas. Écriture directe de `scrollLeft`,
-  // jamais `scrollIntoView(options)` : Chrome 53 évalue l'objet comme un
-  // booléen et saute brutalement. La position se mesure par les rectangles —
-  // `offsetLeft` se rapporte au premier ancêtre positionné, pas au scroller.
-  useEffect(() => {
-    if (wedgedBand.current || !selectedSeasonId) return;
-    const container = band.current;
-    const active = container?.querySelector<HTMLElement>('[aria-selected="true"]');
-    if (!container || !active) return;
-    wedgedBand.current = true;
-    const delta =
-      active.getBoundingClientRect().left - container.getBoundingClientRect().left - 24;
-    if (delta > 0) container.scrollLeft += delta;
-  }, [selectedSeasonId, seasons]);
+    select(seasonId);
+  }, [select]);
 
   return (
     <div className="px-4 md:px-8 py-4">
-      {seasonsLoading ? (
+      {browser.seasonsLoading ? (
         <div className="flex gap-3">
           {Array.from({ length: 4 }).map((_, index) => (
             <Shimmer key={index} width="100px" height="36px" />
           ))}
         </div>
       ) : (
-        /* La bande est une PISTE — confinement horizontal, défilement suivi —
-           et une ZONE : y entrer transversalement vise l'onglet actif
-           (aria-selected), pas la pastille que l'abscisse du point de départ
-           désignait — la saison 4 sous « Infos techniques ». */
-        <div
-          className="saisons-tv"
-          role="tablist"
-          aria-label={t("common:seasons", "Saisons")}
-          data-tv-piste=""
-          data-tv-zone="saisons"
-          ref={band}
-        >
-          {seasons?.map((season) => (
-            <button
-              key={season.Id}
-              type="button"
-              role="tab"
-              aria-selected={selectedSeasonId === season.Id}
-              onClick={() => chooseSeason(season.Id)}
-              className={`saison-tv ${selectedSeasonId === season.Id ? "saison-tv-active" : ""}`}
-            >
-              {season.Name}
-            </button>
-          ))}
-        </div>
+        <SeasonBandTv
+          seasons={seasons ?? []}
+          selectedId={selectedSeasonId}
+          markedId={browser.markedSeasonId}
+          label={t("common:seasons", "Saisons")}
+          onSelect={chooseSeason}
+          onIntent={browser.prefetch}
+        />
       )}
 
       <div className="space-y-3" ref={list}>
