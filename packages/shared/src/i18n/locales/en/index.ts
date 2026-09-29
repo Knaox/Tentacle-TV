@@ -36,6 +36,7 @@ import share from "./share";
 import stats from "./stats";
 import statsShare from "./statsShare";
 import statsPublic from "./statsPublic";
+import trailerHelp from "./trailerHelp";
 
 export default {
   common, auth, setup, player, admin,
@@ -47,4 +48,5 @@ export default {
   stats,
   statsShare,
   statsPublic,
+  trailerHelp,
 };
