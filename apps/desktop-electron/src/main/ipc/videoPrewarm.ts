@@ -17,8 +17,11 @@
  *   une mince prend sa place avec la DERNIÈRE demande de la page ;
  * - le retour sur secteur.
  *
- * Et une mort anticipée : le passage sur batterie arrête l'instance garée, qui
- * tiendrait éveillé le GPU dédié d'un portable hybride (`parkPolicy`).
+ * Et deux morts anticipées : le passage sur batterie arrête l'instance garée,
+ * qui tiendrait éveillé le GPU dédié d'un portable hybride (`parkPolicy`) ; la
+ * mise en veille aussi — sans `NVreg_PreserveVideoMemoryAllocations`, un
+ * périphérique Vulkan NVIDIA peut revenir PERDU du réveil, et l'instance garée
+ * ferait échouer la lecture suivante. Une neuve naît après le réveil.
  *
  * Le montage collé seulement (`parkable`), comme le parking lui-même.
  */
@@ -52,8 +55,11 @@ export interface PrewarmDeps {
 
 /** Les évènements d'alimentation — la part de `powerMonitor` dont on se sert. */
 export interface PowerEvents {
-  on(event: "on-battery" | "on-ac", listener: () => void): unknown;
+  on(event: "on-battery" | "on-ac" | "suspend" | "resume", listener: () => void): unknown;
 }
+
+/** Après le réveil : le temps que le pilote et le compositeur se remettent. */
+export const RESUME_PREWARM_DELAY_MS = 5000;
 
 let deps: PrewarmDeps | null = null;
 let lastRequest: InitRequest | null = null;
@@ -92,14 +98,21 @@ export function installPrewarm(next: PrewarmDeps, power?: PowerEvents): void {
     onBattery: next.onBattery,
     recycle: () => prewarmPlayer("recyclage de l'instance chaude"),
   });
-  power?.on("on-battery", () => {
+  const releaseParked = (why: string): void => {
     void serialized(async () => {
       if (!isParked()) return;
-      console.info("[mpv] passage sur batterie — l'instance garée est arrêtée");
+      console.info(`[mpv] ${why} — l'instance garée est arrêtée`);
       await stopPlayer();
     });
-  });
+  };
+  power?.on("on-battery", () => releaseParked("passage sur batterie"));
   power?.on("on-ac", () => {
     void serialized(() => prewarmPlayer("retour sur secteur"));
+  });
+  power?.on("suspend", () => releaseParked("mise en veille"));
+  power?.on("resume", () => {
+    setTimeout(() => {
+      void serialized(() => prewarmPlayer("réveil"));
+    }, RESUME_PREWARM_DELAY_MS);
   });
 }

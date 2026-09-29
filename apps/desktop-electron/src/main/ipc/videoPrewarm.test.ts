@@ -40,7 +40,13 @@ vi.mock("../linux/session", () => ({
 }));
 
 import { isParked, rememberInit, releasePlayer, reuseParked, stopPlayer } from "./videoLifecycle";
-import { installPrewarm, prewarmPlayer, rememberRequest, type InitRequest } from "./videoPrewarm";
+import {
+  installPrewarm,
+  prewarmPlayer,
+  rememberRequest,
+  RESUME_PREWARM_DELAY_MS,
+  type InitRequest,
+} from "./videoPrewarm";
 
 const REQUEST: InitRequest = { page: { vo: "gpu-next", hwdec: "nvdec" }, observed: [["pause", "flag"]] };
 const realPlatform = process.platform;
@@ -137,5 +143,32 @@ describe("le préchauffage", () => {
     expect(h.stop).toHaveBeenCalledTimes(1);
     expect(launch).toHaveBeenCalledWith(played);
     expect(isParked()).toBe(true);
+  });
+
+  it("la mise en veille arrête l'instance garée, le réveil en fait naître une neuve", async () => {
+    const power = fakePower();
+    installPrewarm({ onBattery: () => onBattery, launch }, power);
+    await prewarmPlayer("test", REQUEST);
+    launch.mockClear();
+    power.emit("suspend");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(h.stop).toHaveBeenCalledTimes(1);
+    expect(isParked()).toBe(false);
+    power.emit("resume");
+    await vi.advanceTimersByTimeAsync(RESUME_PREWARM_DELAY_MS - 1);
+    expect(launch).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(launch).toHaveBeenCalledWith(REQUEST);
+    expect(isParked()).toBe(true);
+  });
+
+  it("une veille en pleine lecture ne coupe rien : seule une instance GARÉE part", async () => {
+    const power = fakePower();
+    installPrewarm({ onBattery: () => onBattery, launch }, power);
+    h.mpv.running = true;
+    rememberInit(REQUEST.page, REQUEST.observed);
+    power.emit("suspend");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(h.stop).not.toHaveBeenCalled();
   });
 });
