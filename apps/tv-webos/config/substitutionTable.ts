@@ -203,6 +203,12 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "components/detail/DetailActions.tsx")]:
     resolve(CLIENT, "ui/detail/DetailActionsTv.tsx"),
 
+  // « Vous ne voyez pas les bandes-annonces ? » : au téléviseur, une phrase
+  // qui renvoie vers l'app web ou mobile — ni lien ni croix, rien qui entre
+  // dans la zone d'actions ou dérange son entrée (le premier bouton du bloc).
+  [resolve(WEB, "components/detail/TrailerHelpHint.tsx")]:
+    resolve(CLIENT, "ui/detail/TrailerHelpHintTv.tsx"),
+
   // La rangée des extras : son conteneur de défilement gagne `data-tv-piste`
   // — confinement horizontal, défilement suivi — et perd le `tabIndex` qui en
   // faisait une grande cible sans anneau.
