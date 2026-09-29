@@ -19,6 +19,7 @@ import { MobileExtrasSection } from "./MobileExtrasSection";
 import { DetailRating } from "./DetailRating";
 import { DetailFacts } from "./DetailFacts";
 import { SagaRow } from "./SagaRow";
+import { IncludedInRow } from "./IncludedInRow";
 import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
 
 interface Props {
@@ -117,6 +118,7 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
       <LicenseAttribution item={item} />
       {/* La saga d'un film, comme au bureau : juste avant les similaires. */}
       {item.Type === "Movie" && <SagaRow item={item} />}
+      <IncludedInRow itemId={item.Id} />
       {similar && similar.length > 0 && (
         <MediaRow title={t("recommendations")} data={similar}
           renderItem={(s: MediaItem) => <MobileMediaCard item={s} onPress={() => router.push(`/media/${s.Id}`)} />} />
