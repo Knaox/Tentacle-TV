@@ -1,5 +1,5 @@
 import { useSeasons } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { seasonHasExtras, type MediaItem } from "@tentacle-tv/shared";
 import { MobileExtrasRow } from "./MobileExtrasRow";
 
 interface RemoteTrailer { Url: string; Name?: string }
@@ -24,13 +24,17 @@ export function MobileExtrasSection({ item, seriesItem }: { item: MediaItem; ser
   return <MobileExtrasRow itemId={item.Id} remoteTrailers={item.RemoteTrailers as RemoteTrailer[] | undefined} />;
 }
 
-/** Trailers au niveau série + une rangée d'extras par saison (RemoteTrailers déjà fournis par useSeasons). */
+/**
+ * Trailers au niveau série + une rangée d'extras par saison QUI EN A
+ * (`seasonHasExtras` : compteur et bandes-annonces servis avec les saisons —
+ * interroger chaque saison coûtait une requête par saison à l'ouverture).
+ */
 function SeriesExtras({ item }: { item: MediaItem }) {
   const { data: seasons } = useSeasons(item.Id);
   return (
     <>
       <MobileExtrasRow itemId={item.Id} remoteTrailers={item.RemoteTrailers as RemoteTrailer[] | undefined} />
-      {seasons?.map((s) => (
+      {seasons?.filter(seasonHasExtras).map((s) => (
         <MobileExtrasRow
           key={s.Id}
           itemId={s.Id}
