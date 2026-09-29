@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseLibraryLanguages } from "./libraryLanguages";
+import { languageValues, parseLibraryLanguages } from "./libraryLanguages";
 
 describe("parseLibraryLanguages", () => {
   it("regroupe les codes d'une même langue (fre/fra) sous un code stable", () => {
@@ -21,5 +21,19 @@ describe("parseLibraryLanguages", () => {
 
   it("une liste vide reste une capacité : le serveur sait filtrer, il n'y a rien", () => {
     expect(parseLibraryLanguages({ AudioLanguages: [], SubtitleLanguages: [] })).toEqual({ audio: [], subtitle: [] });
+  });
+});
+
+describe("languageValues", () => {
+  const options = [{ code: "fr", values: ["fre", "fra"] }, { code: "ja", values: ["jpn"] }];
+
+  it("rend tous les codes Jellyfin de la langue choisie", () => {
+    expect(languageValues(options, "fr")).toEqual(["fre", "fra"]);
+  });
+
+  it("rien sans choix, sans liste, ou pour une langue absente", () => {
+    expect(languageValues(options, null)).toBeUndefined();
+    expect(languageValues(undefined, "fr")).toBeUndefined();
+    expect(languageValues(options, "ko")).toBeUndefined();
   });
 });

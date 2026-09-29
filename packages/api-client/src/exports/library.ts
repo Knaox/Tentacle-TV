@@ -13,7 +13,7 @@ export { useRandomLibraryBackdrop, getLibraryBackdropKey, prefetchLibraryBackdro
 // Nouveautés de Jellyfin 12, derrière une détection de capacité : filtres de
 // langues du catalogue, et « Fait partie de » (collections d'un titre).
 export { useLibraryLanguages } from "../hooks/useLibraryLanguages";
-export { parseLibraryLanguages, libraryLanguagesPath, type LanguageOption, type LibraryLanguages } from "../hooks/libraryLanguages";
+export { parseLibraryLanguages, libraryLanguagesPath, languageValues, type LanguageOption, type LibraryLanguages } from "../hooks/libraryLanguages";
 export { useIncludedInCollections, includedInPath, fetchIncludedInCollections } from "../hooks/useIncludedInCollections";
 export { useSearchItems } from "../hooks/useSearchItems";
 // Le moteur de recherche du serveur Tentacle (web, bureau et mobile), et ce

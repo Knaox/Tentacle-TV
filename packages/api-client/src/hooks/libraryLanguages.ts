@@ -47,6 +47,15 @@ export function parseLibraryLanguages(raw: unknown): LibraryLanguages | null {
   };
 }
 
+/**
+ * Ce que le catalogue envoie à Jellyfin pour la langue choisie (son code
+ * stable, « fr ») : TOUS ses codes Jellyfin — « fre » ET « fra », que Jellyfin
+ * 12 mélange dans une même bibliothèque. Rien sans choix.
+ */
+export function languageValues(options: readonly LanguageOption[] | null | undefined, code: string | null | undefined): string[] | undefined {
+  return code ? options?.find((o) => o.code === code)?.values : undefined;
+}
+
 /** La route qui les donne — celle que le hook et la suite appellent. */
 export function libraryLanguagesPath(userId: string, libraryId: string): string {
   return `/Items/Filters2?userId=${userId}&parentId=${libraryId}&includeItemTypes=Movie,Series&recursive=true`;
