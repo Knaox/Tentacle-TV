@@ -9,8 +9,21 @@ const AUDIO = [
 ];
 
 describe("préférence « VO » (langue originale)", () => {
-  it("la piste marquée originale par Jellyfin 12 l'emporte", () => {
-    expect(originalAudioIndex([AUDIO[0], { ...AUDIO[1], isOriginal: true }], "fr")).toBe(2);
+  it("sans langue originale connue, la piste que le fichier marque originale", () => {
+    expect(originalAudioIndex([AUDIO[0], { ...AUDIO[1], isOriginal: true }], null)).toBe(2);
+  });
+
+  it("la langue originale du titre prime sur le drapeau d'une autre piste (règle de Jellyfin 12)", () => {
+    expect(originalAudioIndex([AUDIO[0], { ...AUDIO[1], isOriginal: true }], "fr")).toBe(1);
+  });
+
+  it("parmi les pistes de la langue originale, celle que le fichier marque", () => {
+    const commentary = { index: 3, language: "jpn", title: "Commentaire" };
+    expect(originalAudioIndex([AUDIO[0], commentary, { ...AUDIO[1], isOriginal: true }], "ja")).toBe(2);
+  });
+
+  it("faute de piste dans la langue originale, la piste marquée", () => {
+    expect(originalAudioIndex([AUDIO[0], { ...AUDIO[1], isOriginal: true }], "ko")).toBe(2);
   });
 
   it("sinon la langue originale du titre, codes ISO 639-1 contre 639-2", () => {

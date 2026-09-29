@@ -155,15 +155,16 @@ function resolveAudio(app: FastifyInstance, body: ResolveBody, pref: TrackPrefer
 }
 
 /**
- * La « VO » : la piste que Jellyfin marque originale, sinon celle de la langue
- * originale du titre. Un Jellyfin d'avant 12.0 ne donne ni l'une ni l'autre :
- * la piste par défaut du fichier reste choisie.
+ * La « VO », selon la règle de Jellyfin 12 (jellyfin#12579) — même règle que
+ * `originalAudioIndex` de @tentacle-tv/shared : la langue originale du titre
+ * d'abord (la piste marquée originale parmi les siennes, sinon la première),
+ * puis la piste que le fichier marque. Un Jellyfin d'avant 12.0 ne donne ni
+ * l'une ni l'autre : la piste par défaut du fichier reste choisie.
  */
 function originalAudio(body: ResolveBody): number | null {
-  const flagged = body.audioTracks.find((t) => t.isOriginal);
-  if (flagged) return flagged.index;
   const original = body.originalLanguage;
-  return original ? body.audioTracks.find((t) => langMatches(t.language, original))?.index ?? null : null;
+  const inLanguage = original ? body.audioTracks.filter((t) => langMatches(t.language, original)) : [];
+  return (inLanguage.find((t) => t.isOriginal) ?? inLanguage[0] ?? body.audioTracks.find((t) => t.isOriginal))?.index ?? null;
 }
 
 /**

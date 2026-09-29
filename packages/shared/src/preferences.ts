@@ -190,12 +190,15 @@ export function variantMatchesTitle(title: string | undefined, variant: string):
 
 // ── Client-side track resolution ──
 
-/** La piste de la VO : celle que Jellyfin marque, sinon celle de la langue originale du titre. */
+/**
+ * La piste de la VO, selon la règle de Jellyfin 12 (jellyfin#12579) : la langue
+ * originale du titre d'abord — parmi ses pistes, celle que le fichier marque
+ * originale, sinon la première ; faute de piste dans cette langue, ou de langue
+ * connue, celle que le fichier marque. `null` : rien ne la désigne.
+ */
 export function originalAudioIndex(tracks: readonly AudioTrackInfo[], originalLanguage?: string | null): number | null {
-  const flagged = tracks.find((t) => t.isOriginal);
-  if (flagged) return flagged.index;
-  if (!originalLanguage) return null;
-  return tracks.find((t) => langMatches(t.language, originalLanguage))?.index ?? null;
+  const inLanguage = originalLanguage ? tracks.filter((t) => langMatches(t.language, originalLanguage)) : [];
+  return (inLanguage.find((t) => t.isOriginal) ?? inLanguage[0] ?? tracks.find((t) => t.isOriginal))?.index ?? null;
 }
 
 export function resolveMediaTracks(

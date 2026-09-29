@@ -41,6 +41,10 @@ describe("POST /resolve — préférence VO", () => {
     expect(await audioFor({ originalLanguage: "ja" })).toBe(2);
   });
 
+  it("la langue originale du titre prime sur le drapeau d'une autre piste (règle de Jellyfin 12)", async () => {
+    expect(await audioFor({ audioTracks: [TRACKS[0], { ...TRACKS[1], isOriginal: true }], originalLanguage: "fr" })).toBe(1);
+  });
+
   it("sans rien pour la reconnaître (Jellyfin d'avant 12), la piste par défaut", async () => {
     expect(await audioFor({})).toBe(1);
     expect(await audioFor({ originalLanguage: null })).toBe(1);
