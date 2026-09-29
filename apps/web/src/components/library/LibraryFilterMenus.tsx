@@ -26,7 +26,7 @@ const SORT_OPTIONS = [
 ] as const;
 
 /** Ligne cochable — même gabarit dans tous les menus, d'où la factorisation. */
-function CheckRow({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
+export function CheckRow({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
   return (
     <button
       type="button"

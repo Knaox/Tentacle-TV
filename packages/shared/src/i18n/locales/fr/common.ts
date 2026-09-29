@@ -187,6 +187,8 @@ export default {
   sortOrderAsc: "Croissant",
   sortOrderDesc: "Décroissant",
   genres: "Genres",
+  filterAudioLanguage: "Langue audio",
+  filterSubtitleLanguage: "Sous-titres",
   favorites: "Favoris",
   allFilter: "Tous",
   moviesFilter: "Films",

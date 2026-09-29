@@ -5,6 +5,7 @@ import { useGenres, useLibraryCatalog } from "@tentacle-tv/api-client";
 import { useItemsPerRow } from "../hooks/useItemsPerRow";
 import { LibraryFilterBar } from "./LibraryFilters";
 import { useLibraryFilters, yearsBetween } from "../hooks/useLibraryFilters";
+import { useLibraryLanguageFilter } from "../hooks/useLibraryLanguageFilter";
 import { LibrarySearchField } from "./library/LibrarySearchField";
 import { LibraryGridCard } from "./LibraryGridCard";
 import { LibraryGridEmpty } from "./library/LibraryGridEmpty";
@@ -49,9 +50,10 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
   const {
     filters, search, setSearch, queryKey,
     toggleGenre, togglePlatform, setYearFrom, setYearTo,
-    setRatingMin, setStatusFilter, setIsFavorite, setSortBy, setSortOrder,
+    setRatingMin, setStatusFilter, setIsFavorite, setAudioLang, setSubtitleLang, setSortBy, setSortOrder,
     resetFilters, clearYears, clearRating, activeCount, hasActiveFilters,
   } = useLibraryFilters();
+  const languageFilter = useLibraryLanguageFilter(libraryId, filters);
 
   // La frappe reste locale, l'adresse ne prend que la valeur stabilisée.
   const { input, setInput, pending } = useSearchInput(search, setSearch);
@@ -80,6 +82,7 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
     statusFilter: filters.statusFilter ?? undefined,
     minCommunityRating: filters.ratingMin ?? undefined,
     isFavorite: filters.isFavorite || undefined,
+    ...languageFilter.catalog,
     limit: filters.platformIds.length > 0 ? 500 : 50,
   });
 
@@ -190,6 +193,9 @@ export function LibraryGrid({ libraryId, libraryName, collectionType }: LibraryG
           onReset={resetFilters}
           onClearYears={clearYears}
           onClearRating={clearRating}
+          languages={languageFilter.languages}
+          onAudioLangChange={setAudioLang}
+          onSubtitleLangChange={setSubtitleLang}
         />
       </div>
 

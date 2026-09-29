@@ -10,6 +10,9 @@ export interface LibraryFilterState {
   ratingMin: number | null;
   statusFilter: string | null;
   isFavorite: boolean;
+  /** Langue audio / de sous-titres (code normalisé, « fr ») — Jellyfin 12+. */
+  audioLang: string | null;
+  subtitleLang: string | null;
   sortBy: string;
   sortOrder: string;
 }
@@ -23,6 +26,8 @@ export const DEFAULT_FILTERS: LibraryFilterState = {
   ratingMin: null,
   statusFilter: null,
   isFavorite: false,
+  audioLang: null,
+  subtitleLang: null,
   sortBy: "SortName",
   sortOrder: "Ascending",
 };
@@ -56,6 +61,8 @@ function parseQuery(sp: URLSearchParams): LibraryQuery {
       ratingMin: toNumber(sp.get("rating")),
       statusFilter: sp.get("status"),
       isFavorite: sp.get("fav") === "1",
+      audioLang: sp.get("audio"),
+      subtitleLang: sp.get("subs"),
       sortBy: sp.get("sort") ?? DEFAULT_FILTERS.sortBy,
       sortOrder: sp.get("order") === "desc" ? "Descending" : DEFAULT_FILTERS.sortOrder,
     },
@@ -84,6 +91,8 @@ function serializeQuery(q: LibraryQuery, base: URLSearchParams): URLSearchParams
   put("rating", f.ratingMin != null ? String(f.ratingMin) : null);
   put("status", f.statusFilter);
   put("fav", f.isFavorite ? "1" : null);
+  put("audio", f.audioLang);
+  put("subs", f.subtitleLang);
   put("sort", f.sortBy === DEFAULT_FILTERS.sortBy ? null : f.sortBy);
   put("order", f.sortOrder === "Descending" ? "desc" : null);
 
@@ -164,6 +173,8 @@ export function useLibraryFilters() {
   const setRatingMin = useCallback((v: number | null) => patchFilters((f) => ({ ...f, ratingMin: v })), [patchFilters]);
   const setStatusFilter = useCallback((v: string | null) => patchFilters((f) => ({ ...f, statusFilter: v })), [patchFilters]);
   const setIsFavorite = useCallback((v: boolean) => patchFilters((f) => ({ ...f, isFavorite: v })), [patchFilters]);
+  const setAudioLang = useCallback((v: string | null) => patchFilters((f) => ({ ...f, audioLang: v })), [patchFilters]);
+  const setSubtitleLang = useCallback((v: string | null) => patchFilters((f) => ({ ...f, subtitleLang: v })), [patchFilters]);
   const setSortBy = useCallback((v: string) => patchFilters((f) => ({ ...f, sortBy: v })), [patchFilters]);
   const setSortOrder = useCallback((v: string) => patchFilters((f) => ({ ...f, sortOrder: v })), [patchFilters]);
   const clearYears = useCallback(() => patchFilters((f) => ({ ...f, yearFrom: null, yearTo: null })), [patchFilters]);
@@ -182,13 +193,15 @@ export function useLibraryFilters() {
     if (filters.ratingMin != null) c++;
     if (filters.statusFilter) c++;
     if (filters.isFavorite) c++;
+    if (filters.audioLang) c++;
+    if (filters.subtitleLang) c++;
     return c;
   }, [filters]);
 
   return {
     filters, search, setSearch,
     toggleGenre, toggleStudio, togglePlatform, setYearFrom, setYearTo,
-    setRatingMin, setStatusFilter, setIsFavorite, setSortBy, setSortOrder,
+    setRatingMin, setStatusFilter, setIsFavorite, setAudioLang, setSubtitleLang, setSortBy, setSortOrder,
     resetFilters, clearYears, clearRating, activeCount, hasActiveFilters: activeCount > 0,
     /** Signature stable de l'état courant — de quoi distinguer un vrai
      *  changement de filtre d'un simple remontage de la grille. */

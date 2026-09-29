@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { LibraryLanguages } from "@tentacle-tv/api-client";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
 
 export interface LibraryFilterBarProps {
@@ -50,4 +51,11 @@ export interface LibraryFilterBarProps {
   onReset: () => void;
   onClearYears: () => void;
   onClearRating: () => void;
+  /**
+   * Les langues filtrables (Jellyfin 12+) ; absentes ou `null` : le serveur ne
+   * sait pas filtrer par langue, les menus ne s'affichent pas.
+   */
+  languages?: LibraryLanguages | null;
+  onAudioLangChange?: (code: string | null) => void;
+  onSubtitleLangChange?: (code: string | null) => void;
 }

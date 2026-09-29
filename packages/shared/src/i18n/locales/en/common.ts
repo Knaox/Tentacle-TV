@@ -183,6 +183,8 @@ export default {
   sortOrderAsc: "Ascending",
   sortOrderDesc: "Descending",
   genres: "Genres",
+  filterAudioLanguage: "Audio language",
+  filterSubtitleLanguage: "Subtitles",
   favorites: "Favorites",
   allFilter: "All",
   moviesFilter: "Movies",

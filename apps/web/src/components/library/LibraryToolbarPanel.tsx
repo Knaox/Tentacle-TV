@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, RotateCcw } from "lucide-react";
 import { LibraryActiveFilterPills } from "../LibraryActiveFilterPills";
 import { GenreMenu, PlatformMenu, RatingMenu, SortMenu, YearMenu } from "./LibraryFilterMenus";
+import { LanguageMenus } from "./LanguageMenus";
 import { WatchStatusSegment } from "./WatchStatusSegment";
 import { HeartIcon, chipCls } from "./filterChip";
 import type { LibraryFilterBarProps } from "./filterBarTypes";
@@ -124,6 +125,12 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
             />
             <RatingMenu filters={filters} onRatingMinChange={props.onRatingMinChange} onClear={props.onClearRating} />
             <PlatformMenu filters={filters} onTogglePlatform={props.onTogglePlatform} onClear={clearPlatforms} />
+            <LanguageMenus
+              languages={props.languages}
+              filters={filters}
+              onAudioLangChange={props.onAudioLangChange}
+              onSubtitleLangChange={props.onSubtitleLangChange}
+            />
           </div>
 
           {narrowed && (
