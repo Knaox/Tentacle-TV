@@ -125,7 +125,8 @@ export default {
 
   check_trailers: "Trailers",
   why_trailers: "They come from TMDB through Jellyfin, from local files, and from Jellyseerr when Vigie is connected to it. Without TMDB, none.",
-  trailersCoverage: "{{withTrailer}} of {{withTmdb}} title known to TMDB has a trailer.",
+  // Agreement follows the titles THAT HAVE a trailer (`count` = withTrailer).
+  trailersCoverage: "{{withTrailer}} of {{withTmdb}} titles known to TMDB has a trailer.",
   trailersCoverage_other: "{{withTrailer}} of {{withTmdb}} titles known to TMDB have a trailer.",
   trailersSampled: "Counted over the first {{count}} titles.",
   trailersNoTmdbTitles: "No title has a TMDB identifier: TMDB cannot provide anything.",

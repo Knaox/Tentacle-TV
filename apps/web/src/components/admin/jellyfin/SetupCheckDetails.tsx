@@ -108,7 +108,7 @@ function Trailers({ check, trailers, jellyfinVersion }: { check: SetupCheck; tra
         <Line tone="warning">{t("trailersNoTmdbTitles")}</Line>
       ) : (
         <Line tone={low ? "warning" : "success"}>
-          {t("trailersCoverage", { count: trailers.withTmdb, withTrailer: trailers.withTrailer, withTmdb: trailers.withTmdb })}
+          {t("trailersCoverage", { count: trailers.withTrailer, withTrailer: trailers.withTrailer, withTmdb: trailers.withTmdb })}
           {trailers.sampled && ` ${t("trailersSampled", { count: trailers.titles })}`}
         </Line>
       )}

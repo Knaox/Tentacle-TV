@@ -125,7 +125,8 @@ export default {
 
   check_trailers: "Bandes-annonces",
   why_trailers: "Elles viennent de TMDB par Jellyfin, des fichiers locaux, et de Jellyseerr quand Vigie y est branchée. Sans TMDB, aucune.",
-  trailersCoverage: "{{withTrailer}} titre sur {{withTmdb}} connu de TMDB a une bande-annonce.",
+  // L'accord suit les titres QUI ONT une bande-annonce (`count` = withTrailer).
+  trailersCoverage: "{{withTrailer}} titre sur {{withTmdb}} connus de TMDB a une bande-annonce.",
   trailersCoverage_other: "{{withTrailer}} titres sur {{withTmdb}} connus de TMDB ont une bande-annonce.",
   trailersSampled: "Compté sur les {{count}} premiers titres.",
   trailersNoTmdbTitles: "Aucun titre n'a d'identifiant TMDB : TMDB ne peut rien donner.",
