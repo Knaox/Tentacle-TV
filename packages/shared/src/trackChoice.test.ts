@@ -18,6 +18,18 @@ describe("itemTrackChoiceFromStreams", () => {
     expect(itemTrackChoiceFromStreams(streams, 1, 5)).toEqual({ audioLang: "jpn", subtitleLang: "eng", subtitleMode: "always" });
   });
 
+  // Jellyfin 12 nomme les pistes dans la langue de la requête : « Forcé » en
+  // fin de mot doit valoir « Forced », sans que « forcément » ne s'y trompe.
+  it("reconnaît « Forcé » dans un titre en français, pas « forcément »", () => {
+    const french = [
+      streams[0],
+      { Type: "Subtitle", Index: 6, Language: "eng", Codec: "subrip", IsDefault: false, DisplayTitle: "English - Forcé - SUBRIP" },
+      { Type: "Subtitle", Index: 7, Language: "fre", Codec: "subrip", IsDefault: false, Title: "Pas forcément utile" },
+    ] as MediaStream[];
+    expect(itemTrackChoiceFromStreams(french, 1, 6).subtitleMode).toBe("forced");
+    expect(itemTrackChoiceFromStreams(french, 1, 7).subtitleMode).toBe("always");
+  });
+
   it("un index inconnu ne casse rien", () => {
     expect(itemTrackChoiceFromStreams(streams, 99, -1)).toEqual({ audioLang: null, subtitleLang: null, subtitleMode: "none" });
   });

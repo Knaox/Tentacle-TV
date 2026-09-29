@@ -89,5 +89,5 @@ export function buildLocalSubtitleTracks(
 
 /** Piste forcée ? mpv ne pose pas ce drapeau sur un side-car : le nom fait foi. */
 export function isForcedTrack(track: SubtitleTrack): boolean {
-  return track.forced === true || /\bforc(ed|é|ee|ée)s?\b/i.test(track.label);
+  return track.forced === true || /\bforc(ed|é|ee|ée)s?(?![a-z0-9_à-öø-ÿ])/i.test(track.label);
 }

@@ -31,6 +31,7 @@ describe("formatLocalTrackLabel", () => {
   it("signale les pistes forcées et SDH", () => {
     expect(formatLocalTrackLabel({ lang: "fr", forced: true }, fr)).toBe("Français — Forced");
     expect(formatLocalTrackLabel({ lang: "fr", title: "Forced" }, fr)).toBe("Français — Forced");
+    expect(formatLocalTrackLabel({ lang: "fr", title: "Forcé" }, fr)).toBe("Français — Forced");
     expect(formatLocalTrackLabel({ lang: "fr", sdh: true }, fr)).toBe("Français — SDH");
     expect(formatLocalTrackLabel({ lang: "fr", title: "SDH", codec: "ass" }, fr))
       .toBe("Français — SDH - ASS");

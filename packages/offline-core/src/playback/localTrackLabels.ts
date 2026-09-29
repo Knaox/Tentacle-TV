@@ -26,7 +26,7 @@ export interface LocalTrackInput {
   sdh?: boolean;
 }
 
-const FORCED_RE = /\bforc(ed|é|ee|ée)s?\b/i;
+const FORCED_RE = /\bforc(ed|é|ee|ée)s?(?![a-z0-9_à-öø-ÿ])/i;
 const SDH_RE = /\b(sdh|cc|hearing[- ]impaired|malentendants?)\b/i;
 
 /** Codecs aux noms d'affichage établis ; sinon la valeur brute si elle a l'air d'un sigle. */

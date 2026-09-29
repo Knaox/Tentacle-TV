@@ -232,7 +232,7 @@ export function resolveMediaTracks(
   // Resolve subtitle based on mode.
   // IsForced est parfois absent des MediaStreams → heuristique sur le titre.
   const isForcedTrack = (t: SubtitleTrackInfo) =>
-    !!t.isForced || /\bforc(ed|é)e?s?\b/i.test(t.title ?? "");
+    !!t.isForced || /\bforc(ed|é)e?s?(?![a-z0-9_à-öø-ÿ])/i.test(t.title ?? "");
   let subtitleIndex: number | null = null;
   if (pref.subtitleMode === "forced") {
     // Pistes forcées : langue de sous-titres préférée → langue de la piste

@@ -103,5 +103,5 @@ export function variantMatchesTitle(title: string | undefined, variant: string):
 
 /** `IsForced` est parfois absent des MediaStreams → heuristique sur le titre. */
 export function isForcedTrack(t: { isForced?: boolean; title?: string }): boolean {
-  return !!t.isForced || /\bforc(ed|é)e?s?\b/i.test(t.title ?? "");
+  return !!t.isForced || /\bforc(ed|é)e?s?(?![a-z0-9_à-öø-ÿ])/i.test(t.title ?? "");
 }

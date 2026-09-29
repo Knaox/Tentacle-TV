@@ -66,7 +66,7 @@ export function useRememberItemTracks({
     }
     const sub = streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex);
     const title = [sub?.Title, sub?.DisplayTitle].filter(Boolean).join(" ");
-    const forced = !!sub?.IsForced || /\bforc(ed|é)e?s?\b/i.test(title);
+    const forced = !!sub?.IsForced || /\bforc(ed|é)e?s?(?![a-z0-9_à-öø-ÿ])/i.test(title);
     const signes = /\b(sign|songs)\b/i.test(title);
     return {
       audioLang,

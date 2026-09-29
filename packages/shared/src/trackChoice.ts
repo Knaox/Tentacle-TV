@@ -16,7 +16,7 @@ export interface ItemTrackChoice {
   subtitleMode: ItemTrackChoiceMode;
 }
 
-const FORCED_RE = /\bforc(ed|é)e?s?\b/i;
+const FORCED_RE = /\bforc(ed|é)e?s?(?![a-z0-9_à-öø-ÿ])/i;
 const SIGNS_RE = /\b(signs?|songs?)\b/i;
 
 export function itemTrackChoiceFromStreams(
