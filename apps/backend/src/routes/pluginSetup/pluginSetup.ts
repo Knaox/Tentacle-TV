@@ -13,6 +13,7 @@
  *       { "key": "apiKey", "kind": "secret", "required": true, "label": { "fr", "en" } }
  *     ],
  *     "test": "/admin/test-connection",
+ *     "success": { "fr": "Connecté à Jellyseerr {{version}}", "en": "…" },
  *     "errors": { "invalid-key": { "fr": "…", "en": "…" } }
  *   }
  *
@@ -50,6 +51,8 @@ export interface PluginSetupMeta {
   fields: PluginSetupField[];
   /** La route de test, sous la racine du plugin. */
   test: string;
+  /** Les mots d'un test réussi ; `{{version}}` y reçoit la version que le test rapporte. */
+  success: SetupText | null;
   /** Les mots du plugin pour ses codes d'échec. */
   errors: Record<string, SetupText>;
 }
@@ -137,6 +140,7 @@ export function readPluginSetupMeta(raw: unknown): PluginSetupMeta | null {
     description: readText(raw.description),
     fields: fields as PluginSetupField[],
     test: raw.test,
+    success: readText(raw.success),
     errors,
   };
 }

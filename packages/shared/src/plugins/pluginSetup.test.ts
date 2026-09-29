@@ -11,13 +11,14 @@ const valid = () => ({
     { key: "apiKey", kind: "secret", required: true, label: text("Clé d'API") },
   ],
   test: "/admin/test-connection",
+  success: text("Connecté à {{version}}"),
   errors: { "invalid-key": text("Clé refusée"), "Bad Code!": text("ignoré") },
 });
 
 describe("contrat setup d'un plugin", () => {
   it("lit un contrat complet, en nettoyant ce qui dépasse", () => {
     const meta = readPluginSetupMeta(valid());
-    expect(meta).toMatchObject({ title: { fr: "Connexion" }, test: "/admin/test-connection" });
+    expect(meta).toMatchObject({ title: { fr: "Connexion" }, test: "/admin/test-connection", success: { fr: "Connecté à {{version}}" } });
     expect(meta?.fields[0]).toEqual({
       key: "url", kind: "url", required: true, label: { fr: "Adresse", en: "ADRESSE" }, placeholder: "http://jellyseerr:5055",
       hint: { fr: "Joignable par le serveur", en: "JOIGNABLE PAR LE SERVEUR" },
