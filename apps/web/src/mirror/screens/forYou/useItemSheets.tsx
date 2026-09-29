@@ -5,6 +5,9 @@ import { MediaActionSheet } from "../../cards/MediaActionSheet";
 import type { CardSheetTarget } from "../../cards/cardSheet";
 import { RecoActionSheet } from "./RecoActionSheet";
 
+/** La sortie d'une feuille du miroir (`ActionSheet` : 380 ms) — la carte reste tenue jusque-là. */
+const SHEET_EXIT_MS = 380;
+
 /**
  * Les feuilles d'appui long de l'accueil et de Pour vous, aiguillées selon ce
  * que la carte porte :
@@ -29,7 +32,10 @@ export function useItemSheets() {
   }, []);
   const close = useCallback(() => setTarget(null), []);
   const closeExternal = useCallback(() => setExternal(null), []);
-  useRecoCardHold(target ? (target.kind === "reco" ? target.reco.key : target.item.Id) : (external?.key ?? null));
+  useRecoCardHold(
+    target ? (target.kind === "reco" ? target.reco.key : target.item.Id) : (external?.key ?? null),
+    SHEET_EXIT_MS,
+  );
   const sheets = useMemo(
     () => (
       <>

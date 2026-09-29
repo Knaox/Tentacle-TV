@@ -24,10 +24,26 @@ export function useRecoHold(ids: readonly string[] | null): void {
 /**
  * Une carte tenue le temps que sa feuille d'actions est ouverte : à brancher
  * dans la portée qui l'ouvre, avec l'identité de la carte visée (null :
- * aucune feuille).
+ * aucune feuille). `lingerMs` : une feuille qui glisse ENCORE après sa
+ * fermeture tient la carte le temps de sa sortie — le titre jugé s'efface
+ * une fois la feuille partie, pas dessous.
  */
-export function useRecoCardHold(id: string | null): void {
-  useRecoHold(id ? [id] : null);
+export function useRecoCardHold(id: string | null, lingerMs = 0): void {
+  const [previous, setPrevious] = useState(id);
+  const [lingering, setLingering] = useState<string | null>(null);
+  // État dérivé, posé pendant le rendu : le rendu qui ferme la feuille tient
+  // DÉJÀ la carte par `lingering` — aucun lâcher intermédiaire ne part.
+  if (id !== previous) {
+    setPrevious(id);
+    setLingering(!id && previous && lingerMs > 0 ? previous : null);
+  }
+  useEffect(() => {
+    if (!lingering) return;
+    const timer = setTimeout(() => setLingering(null), lingerMs);
+    return () => clearTimeout(timer);
+  }, [lingering, lingerMs]);
+  const held = id ?? lingering;
+  useRecoHold(held ? [held] : null);
 }
 
 /** Pur : ce qu'une rangée tenue montre — sa photographie, moins les titres écartés. */
