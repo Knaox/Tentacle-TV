@@ -9,6 +9,7 @@ import { ActionPill } from "../sessions/ActionPill";
 import { ActionError } from "../../admin-plugins/ActionError";
 import { usePluginAdmin } from "../../admin-plugins/PluginAdminContext";
 import { PLUGIN_QUERY_ROOT, useInstalledPlugins, useMarketplacePlugins } from "../../admin-plugins/queries";
+import { JELLYFIN_ADMIN_KEYS } from "../jellyfin/jellyfinAdminApi";
 import { PluginSetupForm } from "./PluginSetupForm";
 import { adminPathOf, mainPathOf, recommendedStatus, type RecommendedPlugin, type RecommendedStatus } from "./recommendedPlugins";
 
@@ -47,9 +48,12 @@ export function RecommendedPluginCard({ rec }: { rec: RecommendedPlugin }) {
   const pill = PILL[status.kind];
   const Icon = rec.icon;
 
-  // Branchée : la navigation, les routes et la carte suivent sans rechargement.
+  // Branchée : la navigation, les routes et la carte suivent sans rechargement —
+  // et les réglages recommandés, qui comptent ce qu'une extension branchée
+  // apporte (les bandes-annonces de Jellyseerr, par exemple).
   const onSaved = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: PLUGIN_QUERY_ROOT });
+    void queryClient.invalidateQueries({ queryKey: JELLYFIN_ADMIN_KEYS.setup });
     refreshPlugins();
   }, [queryClient, refreshPlugins]);
 
