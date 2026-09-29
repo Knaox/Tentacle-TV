@@ -8,14 +8,15 @@
 export function buildTargetUrl(base: string, path: string, query: string): string {
   let url = `${base}/${path}${query}`;
 
-  // La clé d'API ne doit pas franchir le proxy : l'authentification part en
-  // en-tête `X-Emby-Token`. La laisser dans l'URL la sèmerait dans les journaux
-  // du serveur et de tout ce qui se trouve en aval.
+  // Le jeton ne franchit pas le proxy dans l'URL : l'authentification part en
+  // en-tête `Authorization: MediaBrowser`. Le laisser dans l'URL le sèmerait
+  // dans les journaux du serveur et de tout ce qui se trouve en aval. Toutes
+  // les casses : Jellyfin lit `ApiKey` sans égard à la sienne.
   try {
     const u = new URL(url);
-    if (u.searchParams.has("api_key") || u.searchParams.has("ApiKey")) {
-      u.searchParams.delete("api_key");
-      u.searchParams.delete("ApiKey");
+    const keys = [...u.searchParams.keys()].filter((k) => /^(api_key|apikey)$/i.test(k));
+    if (keys.length > 0) {
+      for (const k of keys) u.searchParams.delete(k);
       url = u.toString();
     }
   } catch { /* URL inexploitable : on rend telle quelle */ }

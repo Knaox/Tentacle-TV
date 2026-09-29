@@ -14,9 +14,10 @@ import { hashToken } from "./jwt";
  * lignes identiques, et un utilisateur incapable de révoquer le bon.
  *
  * L'information existe pourtant, et depuis toujours : chaque client se présente
- * à Jellyfin par `X-Emby-Authorization`, qui transite par le proxy. webOS s'y
- * annonce « LG TV », tvOS « Apple TV », Android TV « AndroidTV ». Il suffit de
- * la lire — rien à livrer côté téléviseur.
+ * à Jellyfin par un en-tête `MediaBrowser` (`X-Emby-Authorization` chez les
+ * clients anciens, `Authorization` chez les autres), qui transite par le proxy.
+ * webOS s'y annonce « LG TV », tvOS « Apple TV », Android TV « AndroidTV ». Il
+ * suffit de la lire — rien à livrer côté téléviseur.
  *
  * La marque voyage dans `Device="…"`, PAS dans `Client="…"`. Le quatrième
  * argument de `JellyfinClient` s'appelle `deviceName`, et c'est lui que les

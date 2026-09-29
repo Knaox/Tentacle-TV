@@ -25,8 +25,15 @@
  *    raison d'être. Le garde ne s'applique qu'aux jetons d'APPAREIL.
  *  - **`Users/Me`** et **`Users/AuthenticateByName`** : ce ne sont pas des
  *    identifiants. Le motif exige un segment suivant, ils n'en ont pas.
- *  - **`UserItems/{itemId}/UserData`** : la route moderne ne porte pas
- *    d'identifiant d'utilisateur — c'est le jeton qui décide, comme il se doit.
+ *  - **`UserItems/{itemId}/UserData`** sans `userId` : c'est le jeton qui
+ *    décide, comme il se doit.
+ *
+ * # Le `userId` en QUERY compte aussi
+ *
+ * Les formes modernes de Jellyfin (`/Items?userId=`, `/Shows/NextUp?userId=`,
+ * `/UserViews?userId=`…) portent le compte en paramètre, pas dans le chemin.
+ * La liste blanche en laissait déjà passer (`Items`, `Shows/…`, `Genres`) : un
+ * appareil jumelé y lisait le compte de son choix. Le garde lit donc les deux.
  *
  * Ce fichier n'importe rien et se teste seul.
  */
@@ -46,18 +53,28 @@ export function userIdFromPath(path: string): string | null {
   return id.toLowerCase() === "me" ? null : id;
 }
 
+/** Identifiant d'utilisateur passé en query (`userId`, toute casse), ou `null`. */
+export function userIdFromQuery(query: Record<string, unknown> | undefined): string | null {
+  if (!query) return null;
+  for (const [key, value] of Object.entries(query)) {
+    if (key.toLowerCase() !== "userid") continue;
+    const id = Array.isArray(value) ? value[0] : value;
+    if (typeof id === "string" && id !== "") return id;
+  }
+  return null;
+}
+
 /**
- * Ce chemin sort-il du périmètre de cet utilisateur ?
+ * Cette requête sort-elle du périmètre de cet utilisateur ?
  *
  * Comparaison insensible à la casse : Jellyfin rend ses identifiants tantôt
  * avec tirets, tantôt sans, et la casse varie selon l'appelant. Une comparaison
  * stricte refuserait des requêtes légitimes — un garde qui bloque le cas normal
  * finit toujours par être retiré.
  */
-export function isOutOfScope(path: string, userId: string): boolean {
-  const target = userIdFromPath(path);
-  if (target === null) return false;
-  return normalize(target) !== normalize(userId);
+export function isOutOfScope(path: string, userId: string, query?: Record<string, unknown>): boolean {
+  const mine = normalize(userId);
+  return [userIdFromPath(path), userIdFromQuery(query)].some((target) => target !== null && normalize(target) !== mine);
 }
 
 /** Sans tirets, en minuscules : les deux formes que Jellyfin emploie. */

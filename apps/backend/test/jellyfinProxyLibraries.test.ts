@@ -52,7 +52,15 @@ let base = "";
 beforeAll(async () => {
   jellyfin = http.createServer((req, res) => {
     upstream.hits++;
-    if ((req.url ?? "").toLowerCase().startsWith("/users/u1/views")) {
+    // Comme Jellyfin 12 : l'en-tête MediaBrowser seul, et la forme documentée
+    // de la route — le proxy traduit l'une et l'autre pour le client ancien.
+    if (!/Token="jeton-de-test-/.test(String(req.headers.authorization ?? "")) || req.headers["x-emby-token"]) {
+      res.writeHead(401);
+      res.end();
+      return;
+    }
+    const url = new URL(req.url ?? "/", "http://jellyfin.test");
+    if (url.pathname === "/UserViews" && url.searchParams.get("userId")?.toLowerCase() === "u1") {
       res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
       res.end(JSON.stringify(VIEWS));
       return;

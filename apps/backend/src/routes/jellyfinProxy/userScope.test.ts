@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { isOutOfScope, userIdFromPath } from "./userScope";
+import { isOutOfScope, userIdFromPath, userIdFromQuery } from "./userScope";
 
 const ME = "f12b22ea52da40ef8b8bbafcfa1df3dc";
 const OTHER = "f9cd69c53abe4af08c47d8b911011f02";
@@ -99,5 +99,34 @@ describe("la casse du chemin ne contourne pas le garde", () => {
     // suffirait d'ecrire « users/… » pour passer a cote.
     expect(isOutOfScope(`users/${OTHER}/Items`, ME)).toBe(true);
     expect(isOutOfScope(`USERS/${OTHER}/items`, ME)).toBe(true);
+  });
+});
+
+describe("le compte passe en query (formes modernes de Jellyfin)", () => {
+  it("refuse la lecture d'un autre compte par ?userId=, quelle qu'en soit la casse", () => {
+    // `Items`, `Shows/NextUp`, `Genres`… sont dans la liste blanche : avec la
+    // cle admin substituee, `?userId=` ouvrait le compte de son choix.
+    expect(isOutOfScope("Items", ME, { userId: OTHER })).toBe(true);
+    expect(isOutOfScope("Shows/NextUp", ME, { UserId: OTHER })).toBe(true);
+    expect(isOutOfScope("UserViews", ME, { userid: OTHER })).toBe(true);
+    expect(isOutOfScope("UserFavoriteItems/item1", ME, { userId: [OTHER] })).toBe(true);
+  });
+
+  it("laisse passer son propre compte et l'absence de compte", () => {
+    expect(isOutOfScope("Items", ME, { userId: ME })).toBe(false);
+    expect(isOutOfScope("Items", ME, { userId: "f12b22ea-52da-40ef-8b8b-bafcfa1df3dc" })).toBe(false);
+    expect(isOutOfScope("Items", ME, { Recursive: "true" })).toBe(false);
+    expect(isOutOfScope("Items", ME, {})).toBe(false);
+  });
+
+  it("le chemin ET la query doivent designer le porteur", () => {
+    expect(isOutOfScope(`Users/${ME}/Items`, ME, { userId: OTHER })).toBe(true);
+    expect(isOutOfScope(`Users/${OTHER}/Items`, ME, { userId: ME })).toBe(true);
+  });
+
+  it("lit le parametre sans egard a sa casse", () => {
+    expect(userIdFromQuery({ USERID: ME })).toBe(ME);
+    expect(userIdFromQuery({ userId: "" })).toBeNull();
+    expect(userIdFromQuery(undefined)).toBeNull();
   });
 });

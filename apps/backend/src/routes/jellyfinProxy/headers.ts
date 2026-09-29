@@ -1,3 +1,5 @@
+import { forwardedAuthorization, LEGACY_AUTH_HEADERS } from "../../services/jellyfinAuth";
+
 /** Headers to skip when proxying (hop-by-hop). */
 export const SKIP_REQUEST_HEADERS = new Set([
   "host", "connection", "keep-alive", "transfer-encoding",
@@ -99,29 +101,32 @@ export function apiCacheControl(path: string): string | null {
   return IMAGE_PATH.test(path) ? null : "no-store";
 }
 
-/** Build the headers to forward to Jellyfin, swapping the X-Emby auth fields
- *  to use the admin API key when the incoming request carries a verified
- *  device JWT. */
+/** Les en-têtes d'authentification entrants : aucun ne part tel quel. */
+const INCOMING_AUTH_HEADERS = new Set(["authorization", ...LEGACY_AUTH_HEADERS]);
+
+/**
+ * Les en-têtes relayés à Jellyfin : ceux du client, SAUF son authentification,
+ * remplacée par un unique `Authorization: MediaBrowser …` — l'identité
+ * d'appareil qu'il annonçait, et le jeton effectif (le sien, ou la clé d'API
+ * qui remplace un JWT d'appareil ou d'usurpation).
+ *
+ * Jellyfin 12 refuse `X-Emby-Token` et `X-Emby-Authorization` : les relayer tels
+ * quels, comme avant, valait un 401 à chaque requête des clients installés.
+ * Et un `Authorization: Bearer …` destiné au serveur Tentacle n'a rien à faire
+ * chez Jellyfin.
+ */
 export function buildForwardHeaders(
   incoming: Record<string, string | string[] | undefined>,
-  apiKeyOverride: string | undefined,
+  auth: { identity: Record<string, string> | null; token: string | undefined },
 ): Record<string, string> {
   const headers: Record<string, string> = {};
   for (const [key, value] of Object.entries(incoming)) {
     if (typeof value !== "string") continue;
-    if (SKIP_REQUEST_HEADERS.has(key.toLowerCase())) continue;
     const lower = key.toLowerCase();
-    if (apiKeyOverride) {
-      if (lower === "x-emby-token") {
-        headers[key] = apiKeyOverride;
-        continue;
-      }
-      if (lower === "x-emby-authorization") {
-        headers[key] = value.replace(/Token="[^"]*"/, `Token="${apiKeyOverride}"`);
-        continue;
-      }
-    }
+    if (SKIP_REQUEST_HEADERS.has(lower) || INCOMING_AUTH_HEADERS.has(lower)) continue;
     headers[key] = value;
   }
+  const authorization = forwardedAuthorization(auth.identity, auth.token);
+  if (authorization) headers.Authorization = authorization;
   return headers;
 }

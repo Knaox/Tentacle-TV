@@ -17,7 +17,9 @@ import { emitProxyEvents } from "./jellyfinProxy/events";
 import { carriesPlaybackUrl, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
 import { readsInFull, sendBuffered } from "./jellyfinProxy/bufferedReply";
-import { isOutOfScope, userIdFromPath } from "./jellyfinProxy/userScope";
+import { isOutOfScope, userIdFromPath, userIdFromQuery } from "./jellyfinProxy/userScope";
+import { readIncomingAuth } from "./jellyfinProxy/incomingAuth";
+import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
 import { resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
 import { buildTargetUrl } from "./jellyfinProxy/targetUrl";
@@ -39,23 +41,25 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const qs = request.url.includes("?") ? request.url.slice(request.url.indexOf("?")) : "";
-    let targetUrl = buildTargetUrl(jellyfinUrl, wildcardPath, qs);
+    // Les routes héritées `/Users/{id}/…` partent sous leur forme documentée
+    // (cf. modernRoutes) ; tout le reste du proxy raisonne sur le chemin du client.
+    const route = translateLegacyRoute(wildcardPath, qs) ?? { path: wildcardPath, query: qs };
+    let targetUrl = buildTargetUrl(jellyfinUrl, route.path, route.query);
 
-    // Web clients send auth via httpOnly cookie — inject as X-Emby-Token header.
-    // tvOS : react-native-video (VTT sideload), Image (trickplay) et sendBeacon
-    // ne peuvent pas poser de header → ils passent le token en `api_key` query.
-    // On l'accepte comme source d'auth (le strip de l'URL forwardée plus haut
-    // reste, anti-fuite).
+    // Le jeton du client, sous toutes ses formes (cf. incomingAuth) : en-têtes
+    // Jellyfin anciens ou `MediaBrowser`, cookie de la page web, `api_key` /
+    // `ApiKey` des lecteurs qui ne posent pas d'en-tête (tvOS, mpv, sendBeacon),
+    // `Bearer`. Le jeton en query est retiré de l'URL relayée (anti-fuite).
     const cookieToken = (request as { cookies?: { tentacle_token?: string } }).cookies?.tentacle_token;
     const q = request.query as Record<string, string | undefined> | undefined;
-    const queryToken = q?.api_key || q?.ApiKey;
-    const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken || queryToken;
+    const incoming = readIncomingAuth(request.headers as Record<string, string | string[] | undefined>, cookieToken, q);
+    const incomingToken = incoming.token;
 
     // Un téléviseur jumelé par le relais naît sous le nom « TV » — le relais ne
     // transporte pas son identité. Il l'annonce en revanche ici, à chaque
     // requête, dans l'en-tête qu'il destine à Jellyfin. En oubli volontaire, et
     // une seule fois par appareil.
-    nameDeviceFromHeader(incomingToken, request.headers["x-emby-authorization"]);
+    nameDeviceFromHeader(incomingToken, incoming.identityHeader);
 
     // Un appareil jumelé ne parle que pour SON compte.
     //
@@ -69,9 +73,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // sur TOUTES les méthodes et toutes les routes qui nomment un utilisateur.
     // Un jeton Jellyfin natif n'est pas concerné (Jellyfin décide lui-même), ni
     // un jeton d'usurpation, dont c'est justement la raison d'être.
-    if (incomingToken && userIdFromPath(wildcardPath) !== null) {
+    if (incomingToken && (userIdFromPath(wildcardPath) !== null || userIdFromQuery(q) !== null)) {
       const devicePayload = await verifyDeviceToken(incomingToken);
-      if (devicePayload && isOutOfScope(wildcardPath, devicePayload.userId)) {
+      if (devicePayload && isOutOfScope(wildcardPath, devicePayload.userId, q)) {
         request.log.warn(
           { path: wildcardPath, method: request.method },
           "acces refuse : appareil hors de son perimetre utilisateur",
@@ -103,20 +107,15 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    const headers = buildForwardHeaders(request.headers as Record<string, string | string[] | undefined>, apiKeyOverride);
-
-    // Cookie/query auth: inject token as X-Emby-Token if not already present
-    // from headers. Use apiKeyOverride (admin API key) when the token was a
-    // verified device JWT, otherwise forward the raw token (Jellyfin native).
-    // Le queryToken est INDISPENSABLE ici : mpv (desktop), AVPlayer (tvOS) et
-    // sendBeacon n'envoient ni header ni cookie — leur auth arrive en
-    // `api_key` query, qu'on STRIPPE de l'URL forwardée (anti-fuite). Sans
-    // réinjection en header, la requête partait SANS AUCUNE auth → 401
-    // Jellyfin sur les routes DynamicHls (master.m3u8) → mpv end-file error
-    // immédiat (transcode impossible via le proxy).
-    if ((cookieToken || queryToken) && !headers["x-emby-token"] && !headers["X-Emby-Token"]) {
-      headers["X-Emby-Token"] = apiKeyOverride ?? incomingToken!;
-    }
+    // Un seul en-tête `Authorization: MediaBrowser` part chez Jellyfin : le
+    // jeton du client, ou la clé d'API qui remplace un JWT d'appareil. Le jeton
+    // venu du cookie ou de la query y est réinjecté — mpv, AVPlayer et
+    // sendBeacon n'ont que la query, strippée de l'URL : sans lui, 401 sur
+    // master.m3u8 et transcodage impossible par le proxy.
+    const headers = buildForwardHeaders(
+      request.headers as Record<string, string | string[] | undefined>,
+      { identity: incoming.identity, token: apiKeyOverride ?? incomingToken },
+    );
 
     // Progressive video streams (remux) can last hours — use a long timeout.
     // HLS segments and API calls complete quickly, keep short timeout.

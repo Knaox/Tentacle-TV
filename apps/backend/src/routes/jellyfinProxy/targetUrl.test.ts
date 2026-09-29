@@ -17,6 +17,11 @@ describe("buildTargetUrl", () => {
     expect(buildTargetUrl(BASE, "Items", "?ApiKey=secret&Limit=5")).not.toContain("secret");
   });
 
+  it("la retire sous toute casse — Jellyfin lit `apikey` comme `ApiKey`", () => {
+    expect(buildTargetUrl(BASE, "Items", "?apikey=secret&Limit=5")).not.toContain("secret");
+    expect(buildTargetUrl(BASE, "Items", "?API_KEY=secret&APIKEY=autre")).not.toMatch(/secret|autre/);
+  });
+
   it("conserve les autres paramètres en retirant la clé", () => {
     expect(buildTargetUrl(BASE, "Items", "?api_key=secret&Limit=5")).toContain("Limit=5");
   });

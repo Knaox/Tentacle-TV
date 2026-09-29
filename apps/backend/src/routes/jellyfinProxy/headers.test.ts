@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { imageCacheControl, skipResponseHeader } from "./headers";
+import { buildForwardHeaders, imageCacheControl, skipResponseHeader } from "./headers";
 
 const IMAGE = { media: false, image: true };
 const API = { media: false, image: false };
@@ -49,5 +49,34 @@ describe("imageCacheControl", () => {
   it("ne garde pas la photo d'un compte sans étiquette — une adresse fixe resservirait l'ancienne", () => {
     expect(imageCacheControl("Users/abc/Images/Primary")).toBeNull();
     expect(imageCacheControl("Users/abc/Images/Primary", "")).toBeNull();
+  });
+});
+
+describe("buildForwardHeaders", () => {
+  const identity = { Client: "Tentacle TV - TV", Device: "AndroidTV", DeviceId: "d-1", Version: "2.0" };
+
+  it("ne relaie AUCUN en-tête d'authentification tel quel — Jellyfin 12 les refuse", () => {
+    const out = buildForwardHeaders(
+      {
+        "x-emby-token": "jwt",
+        "x-emby-authorization": 'MediaBrowser Token="jwt"',
+        "x-mediabrowser-token": "jwt",
+        authorization: "Bearer jwt",
+        accept: "application/json",
+      },
+      { identity, token: "cle-admin" },
+    );
+    expect(Object.keys(out).map((k) => k.toLowerCase()).sort()).toEqual(["accept", "authorization"]);
+    expect(out.Authorization).toBe('MediaBrowser Client="Tentacle TV - TV", Device="AndroidTV", DeviceId="d-1", Version="2.0", Token="cle-admin"');
+  });
+
+  it("sans identité ni jeton, pas d'en-tête : la route est publique", () => {
+    const out = buildForwardHeaders({ "accept-language": "fr-FR" }, { identity: null, token: undefined });
+    expect(out).toEqual({ "accept-language": "fr-FR" });
+  });
+
+  it("écarte toujours les en-têtes de saut", () => {
+    const out = buildForwardHeaders({ host: "x", connection: "keep-alive", "content-length": "12" }, { identity: null, token: "t" });
+    expect(out).toEqual({ Authorization: 'MediaBrowser Token="t"' });
   });
 });
