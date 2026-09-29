@@ -4,7 +4,7 @@ import { View, StyleSheet } from "react-native";
 import { Stack, useRouter, useSegments, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { initI18n, i18n } from "@tentacle-tv/shared";
+import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { setPreferencesBackendUrl, fetchInterfaceLanguage, useAdminMetadataStatus } from "@tentacle-tv/api-client";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
@@ -30,7 +30,10 @@ const uuid = new RNUuidGenerator();
 
 // Init i18n immediately so useTranslation works on first render.
 // Language will be corrected after storage hydration if needed.
-initI18n({ lng: "fr" });
+// Au premier lancement rien n'est stocké : la langue de l'appareil, pas un
+// français en dur — la mention légale s'affichait en français sur un
+// téléphone anglais.
+initI18n({ lng: detectLanguage() });
 
 /** Bandeaux serveur — admins uniquement, masquables en mémoire, UN à la
  *  fois : « serveur à mettre à jour » prime sur « clé TMDB manquante ».

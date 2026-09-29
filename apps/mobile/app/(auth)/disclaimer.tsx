@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
-import { i18n } from "@tentacle-tv/shared";
+import { i18n, uiLanguage } from "@tentacle-tv/shared";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { TentacleLogo } from "@/components/TentacleLogo";
 import { SubtleBackground, GlassCard, FadeIn } from "@/components/ui";
@@ -34,7 +34,7 @@ export default function DisclaimerScreen() {
   const router = useRouter();
   const { storage } = useTentacleConfig();
   const [checked, setChecked] = useState(false);
-  const lang = i18nState.language?.startsWith("fr") ? "fr" : "en";
+  const lang = uiLanguage(i18nState.language);
 
   const switchLang = useCallback((code: string) => {
     i18n.changeLanguage(code);
