@@ -10,6 +10,24 @@ interface Logger {
 }
 
 /**
+ * Les origines à autoriser : celle de la page qui enregistre ET celle du lien
+ * public. Jellyfin (mesuré en 10.11) ne répond au CORS que pour les origines
+ * listées, `*` compris dans la liste. Enregistré depuis la maison, le lien
+ * public manquait, et la lecture directe échouait dans tout navigateur venu
+ * d'Internet. Une origine, pas une adresse : ni chemin, ni barre finale.
+ */
+export function corsOriginsToInject(requestOrigin: string | undefined, publicUrl: string | null): string[] {
+  const origins = [requestOrigin, publicUrl].map((url) => {
+    try {
+      return url ? new URL(url).origin : null;
+    } catch {
+      return null;
+    }
+  });
+  return [...new Set(origins.filter((origin): origin is string => origin !== null && origin !== "null"))];
+}
+
+/**
  * Injecte les URLs Tentacle dans les CorsHosts de Jellyfin si absentes.
  * Non-bloquant : les erreurs sont loguées mais ne remontent pas.
  */

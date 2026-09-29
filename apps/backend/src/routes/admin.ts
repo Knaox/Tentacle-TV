@@ -9,7 +9,7 @@ import {
   getDirectStreamingConfig,
   getPublicUrl,
 } from "../services/configStore";
-import { injectCorsHosts } from "../services/jellyfinCors";
+import { corsOriginsToInject, injectCorsHosts } from "../services/jellyfinCors";
 import { adminUsersRoutes } from "./adminUsers";
 import { adminProvisioningRoutes } from "./adminProvisioning";
 import { adminJellyfinKeyRoutes } from "./adminJellyfinKey";
@@ -111,8 +111,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     const jellyfinUrl = getJellyfinUrl();
     const apiKey = getJellyfinApiKey();
     if (jellyfinUrl && apiKey && body.enabled) {
-      const tentacleOrigin = (request.headers.origin as string) || getPublicUrl() || undefined;
-      const urlsToInject = [tentacleOrigin].filter(Boolean) as string[];
+      const urlsToInject = corsOriginsToInject(request.headers.origin as string | undefined, getPublicUrl());
       try {
         const result = await injectCorsHosts(jellyfinUrl, apiKey, urlsToInject, request.log);
         if (result.added.length) request.log.info({ added: result.added }, "CORS hosts injected");
