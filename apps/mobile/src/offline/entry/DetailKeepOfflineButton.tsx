@@ -10,7 +10,7 @@ interface Props {
 
 /**
  * Le quatrième bouton rond de la fiche (film, épisode) : « Garder hors
- * ligne » → « En préparation » → « Sur l'appareil ». Même cellule que
+ * ligne » → « En préparation » → « Sur cet appareil ». Même cellule que
  * `DetailActionButton` (25 %, 88 pt) pour une rangée uniforme.
  */
 export function DetailKeepOfflineButton({ item }: Props) {

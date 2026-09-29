@@ -18,7 +18,7 @@ import { addedOnText, versionText } from "./localText";
 
 interface Props {
   seriesItem: MediaItem;
-  /** Tous les épisodes gardés de la série — la carte « Sur l'appareil » les compte. */
+  /** Tous les épisodes gardés de la série — la carte « Sur cet appareil » les compte. */
   allEpisodes: readonly OfflineEntry[];
   seasonCount: number;
   genres: string[];
@@ -37,7 +37,7 @@ interface Props {
 /**
  * Le corps de la fiche locale d'une série — dans l'ordre de `DetailBody` :
  * genres, synopsis, « Saisons & Épisodes » (pilules de saison et lignes
- * d'épisodes gardés ici), la carte « Sur l'appareil » (version, place,
+ * d'épisodes gardés ici), la carte « Sur cet appareil » (version, place,
  * épisodes, dernier arrivé), le casting sans photo, puis « Informations ».
  */
 export function OfflineSeriesBody({

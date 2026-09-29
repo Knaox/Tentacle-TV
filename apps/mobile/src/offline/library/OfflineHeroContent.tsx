@@ -25,7 +25,7 @@ interface Props {
 
 /**
  * Le contenu d'une diapositive du bandeau local — le jumeau de `HeroContent`
- * sans une URL serveur : sur-titre « Sur l'appareil · Qualité d'origine »,
+ * sans une URL serveur : sur-titre « Sur cet appareil · Qualité d'origine »,
  * étiquette Continuer / Vu / S01E03, LOGO du snapshot (enfin rendu) sinon le
  * titre, méta (année, classification, note, durée, genres), synopsis,
  * progression au halo rose, puis Reprendre / Lire et Plus d'infos.

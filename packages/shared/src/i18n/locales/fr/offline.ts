@@ -14,7 +14,7 @@ export default {
   keepSeriesOffline: "Toute la série",
   keepSelectionOffline: "Garder la sélection ({{count}})",
   tabOnDevice: "Sur cet appareil",
-  stateOnDevice: "Sur l'appareil",
+  stateOnDevice: "Sur cet appareil",
   stateInProgress: "En préparation",
   stateWaitingWifi: "En attente du Wi-Fi",
   stateWaitingNetwork: "En attente du réseau",

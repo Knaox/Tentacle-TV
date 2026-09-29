@@ -30,7 +30,7 @@ interface Props {
 /**
  * Le corps de la fiche locale d'un titre — dans l'ordre de `DetailBody` :
  * genres, synopsis, pour un épisode les autres épisodes de sa saison présents
- * ici, la carte « Sur l'appareil » (version, place, arrivée, sous-titres,
+ * ici, la carte « Sur cet appareil » (version, place, arrivée, sous-titres,
  * suppression après visionnage), le casting (initiales — et sans lien hors
  * ligne, où la page d'une personne ne s'ouvrirait pas), puis « Informations »,
  * lues dans le FICHIER : ses langues, ses sous-titres.

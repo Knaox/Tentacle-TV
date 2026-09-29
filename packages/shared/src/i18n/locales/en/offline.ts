@@ -12,7 +12,7 @@ export default {
   keepSeriesOffline: "Whole series",
   keepSelectionOffline: "Keep selection ({{count}})",
   tabOnDevice: "On this device",
-  stateOnDevice: "On device",
+  stateOnDevice: "On this device",
   stateInProgress: "Preparing",
   stateWaitingWifi: "Waiting for Wi-Fi",
   stateWaitingNetwork: "Waiting for the network",

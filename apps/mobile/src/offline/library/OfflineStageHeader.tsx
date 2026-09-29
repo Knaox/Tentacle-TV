@@ -24,7 +24,7 @@ interface Props {
 /**
  * Sous la scène d'une fiche locale : Lecture au dégradé de marque (le bouton
  * de la fiche en ligne, anneau d'avancement et temps restant compris), la
- * ligne « Sur l'appareil » qui dit ce que l'appareil garde, puis les actions.
+ * ligne « Sur cet appareil » qui dit ce que l'appareil garde, puis les actions.
  */
 export function OfflineStageHeader({ item, cta, deviceParts, actions, anims }: Props) {
   const router = useRouter();
@@ -69,7 +69,7 @@ export function OfflineStageRail({ posterItemId, posterCandidates, metrics, stag
 }
 
 /**
- * « Sur l'appareil · Qualité d'origine · 4,2 Gio » — ce que l'appareil garde
+ * « Sur cet appareil · Qualité d'origine · 4,2 Gio » — ce que l'appareil garde
  * de ce titre. UN paragraphe : chaque morceau est insécable et porte son point
  * collé à gauche, si bien qu'un retour à la ligne tombe APRÈS un point, jamais
  * devant un morceau.

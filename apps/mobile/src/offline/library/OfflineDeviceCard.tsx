@@ -20,7 +20,7 @@ interface Props {
 }
 
 /**
- * La carte « Sur l'appareil » d'une fiche locale : ce que le titre EST ici —
+ * La carte « Sur cet appareil » d'une fiche locale : ce que le titre EST ici —
  * sa version et sa place, puis les faits dans la grammaire du bloc
  * « Informations » (libellé en petites capitales, valeur dessous, deux
  * colonnes) — et ce qui s'y règle. Le retrait vit dans la rangée d'actions,
