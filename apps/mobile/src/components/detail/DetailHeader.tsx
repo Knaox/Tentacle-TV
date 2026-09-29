@@ -12,6 +12,7 @@ import { DetailPlayCta } from "./DetailPlayCta";
 import { DetailStageBlock } from "./DetailStageBlock";
 import { DetailTrailerButton } from "./DetailTrailerButton";
 import { DetailVersionPicker } from "./DetailVersionPicker";
+import { DetailTrailerHint } from "./DetailTrailerHint";
 import { detailPlayCta } from "./computeBadges";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "../../constants/featureFlags";
 import type { useMediaDetailAnimations } from "../../hooks/useMediaDetailAnimations";
@@ -64,6 +65,8 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
         </Animated.View>
       )}
       <DetailTrailerButton item={item} belowPlay={!!cta.targetId} animStyle={anims.actionsStyle} />
+      {/* Sans aucune bande-annonce, sur un serveur mal réglé : le rappel discret, à sa place. */}
+      <DetailTrailerHint item={item} belowPlay={!!cta.targetId} animStyle={anims.actionsStyle} />
     </>
   );
   const actionsEl = (
