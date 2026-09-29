@@ -48,6 +48,9 @@ export interface FilterControls {
   setRatingMin: (v: number | null) => void;
   setStatusFilter: (v: string | null) => void;
   setIsFavorite: (v: boolean) => void;
+  /** Langue audio / de sous-titres (Jellyfin 12) : sans elles, le retour d'une fiche les perdait. */
+  setAudioLang: (v: string | null) => void;
+  setSubtitleLang: (v: string | null) => void;
   setSortBy: (v: string) => void;
   setSortOrder: (v: string) => void;
 }
@@ -72,6 +75,8 @@ export function replayFilters(controls: FilterControls, guard: LibraryFilterStat
   if (guard.ratingMin !== null) controls.setRatingMin(guard.ratingMin);
   if (guard.statusFilter !== null) controls.setStatusFilter(guard.statusFilter);
   if (guard.isFavorite) controls.setIsFavorite(true);
+  if (guard.audioLang) controls.setAudioLang(guard.audioLang);
+  if (guard.subtitleLang) controls.setSubtitleLang(guard.subtitleLang);
   controls.setSortBy(guard.sortBy);
   controls.setSortOrder(guard.sortOrder);
 }
