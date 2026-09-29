@@ -1,5 +1,6 @@
 import type { ServerLinksDraft, ServerLinksReport } from "@tentacle-tv/shared";
-import { BACKEND, creds, hdrs } from "../../pages/adminUtils";
+import { isDesktopApp } from "../../desktop/bridge";
+import { getBackendBase } from "../../lib/backendBase";
 import { isRecord, readServerLinksReport, str } from "./serverLinksReader";
 
 /**
@@ -10,6 +11,10 @@ import { isRecord, readServerLinksReport, str } from "./serverLinksReader";
  *
  * L'enregistrement reste celui de la page « Services » (`/public-url`,
  * `/direct-streaming`) : une seule écriture, quel que soit l'écran.
+ *
+ * Pas de `pages/adminUtils` ici : l'assistant est chargé d'emblée, et ce
+ * module-là lit `main.tsx` — importé avant sa fin, il tombait sur un
+ * `backendUrl` pas encore initialisé et l'application restait noire.
  */
 
 /** Un refus du serveur ; `404` : un serveur Tentacle d'avant ces routes. */
@@ -26,16 +31,18 @@ export class ServerLinksError extends Error {
 export const isOutdatedLinksServer = (error: unknown) => error instanceof ServerLinksError && error.status === 404;
 
 async function call(path: string, { method = "GET", body, token }: { method?: string; body?: object; token?: string } = {}): Promise<unknown> {
-  const headers = hdrs();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers: Record<string, string> = {};
   // Un appel sans corps mais typé JSON, Fastify le refuse : pas de corps, pas d'en-tête.
-  if (body === undefined) delete headers["Content-Type"];
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const bearer = token ?? localStorage.getItem("tentacle_token");
+  if (bearer) headers.Authorization = `Bearer ${bearer}`;
   let res: Response;
   try {
-    res = await fetch(`${BACKEND}/api/admin${path}`, {
+    res = await fetch(`${getBackendBase()}/api/admin${path}`, {
       method,
       headers,
-      credentials: creds(),
+      // Le cookie de session sur le web ; le bureau passe le jeton en en-tête.
+      credentials: isDesktopApp() ? undefined : "include",
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
   } catch {

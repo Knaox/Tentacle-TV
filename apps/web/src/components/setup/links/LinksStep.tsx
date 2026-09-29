@@ -29,10 +29,9 @@ export function LinksStep({ token, onDone }: { token: string; onDone: () => void
       {links.failure && <AuthAlert tone="error">{t("saveError", { message: links.failure })}</AuthAlert>}
       <p className="text-xs leading-relaxed text-content-tertiary">{t("wizardLater")}</p>
 
-      <div className="flex flex-col-reverse gap-3 pt-1 xs:flex-row xs:items-center">
-        <AuthTextButton onClick={onDone} disabled={links.busy === "save"}>
-          {t("skip")}
-        </AuthTextButton>
+      {/* Deux boutons côte à côte, la sortie en dessous : trois sur une ligne
+          ne tenaient pas dans la carte sans passer à la ligne. */}
+      <div className="flex flex-col-reverse gap-3 pt-1 xs:flex-row">
         <AuthButton
           variant="secondary"
           fullWidth={false}
@@ -40,7 +39,7 @@ export function LinksStep({ token, onDone }: { token: string; onDone: () => void
           loading={links.busy === "check"}
           loadingLabel={t("checking")}
           disabled={!links.filled || links.busy !== null}
-          className="xs:ml-auto"
+          className="whitespace-nowrap"
         >
           {t("check")}
         </AuthButton>
@@ -50,9 +49,15 @@ export function LinksStep({ token, onDone }: { token: string; onDone: () => void
           loading={links.busy === "save"}
           loadingLabel={t("saving")}
           disabled={!links.filled || links.busy !== null}
+          className="whitespace-nowrap xs:flex-1"
         >
           {t("saveAndFinish")}
         </AuthButton>
+      </div>
+      <div className="flex justify-center">
+        <AuthTextButton onClick={onDone} disabled={links.busy === "save"}>
+          {t("skip")}
+        </AuthTextButton>
       </div>
     </div>
   );
