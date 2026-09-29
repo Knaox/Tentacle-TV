@@ -33,6 +33,10 @@ declare module "@/components/SkipBadge?original" {
   export * from "@/components/SkipBadge";
 }
 
+declare module "@/components/FadeImage?original" {
+  export * from "@/components/FadeImage";
+}
+
 declare module "@/components/player/VideoPlayerOverlays?original" {
   export * from "@/components/player/VideoPlayerOverlays";
 }

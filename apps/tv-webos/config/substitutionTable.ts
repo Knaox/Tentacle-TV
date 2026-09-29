@@ -92,6 +92,11 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   [resolve(WEB, "components/EpisodeList.tsx")]:
     resolve(CLIENT, "ui/episodes/EpisodeListTv.tsx"),
 
+  // La vignette des lignes d'épisodes : Chrome 53 ignore `loading="lazy"`, et
+  // la liste monte toutes ses lignes — une saison de 196 épisodes demandait
+  // ses 196 vignettes d'un coup. La nôtre attend d'approcher de l'écran.
+  [resolve(WEB, "components/FadeImage.tsx")]: resolve(CLIENT, "ui/episodes/FadeImageTv.tsx"),
+
   // La barre horizontale du web oblige à traverser tout l'écran pour changer
   // de section, et sa barre d'onglets mobile se déclenche sous 768 px. Le
   // téléviseur navigue par un rail latéral, toujours présent et déployé au
