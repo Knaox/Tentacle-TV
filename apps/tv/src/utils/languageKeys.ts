@@ -18,6 +18,8 @@ export const LANGUAGE_CODES = [
 
 /** Code → clé du namespace `preferences` (les 38 existent en FR et EN). */
 export const LANGUAGE_KEYS: Record<string, string> = {
+  // « VO » : la langue originale du titre (Jellyfin 12+) — pour l'audio seulement.
+  original: "langOriginal",
   fre: "langFr",
   "fre-vff": "langFrVff",
   "fre-vfq": "langFrVfq",

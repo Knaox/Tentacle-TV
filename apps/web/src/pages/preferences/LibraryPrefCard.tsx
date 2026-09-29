@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { LibraryPreference } from "@tentacle-tv/api-client";
+import { ORIGINAL_AUDIO_LANG } from "@tentacle-tv/shared";
 
 /**
  * Carte de préférences de langues d'UNE bibliothèque (extraction de
@@ -58,7 +59,9 @@ export function LibraryPrefCard({ libraryId, libraryName, pref, languages, subti
             <div className="flex items-center gap-2 text-xs text-content-tertiary">
               {pref.audioLang && (
                 <span className="rounded bg-[rgba(var(--brand-rgb),0.2)] px-2 py-0.5 text-[var(--brand-light)]">
-                  {t("preferences:audio")}: {languages.find((l) => l.code === pref.audioLang)?.label ?? pref.audioLang}
+                  {t("preferences:audio")}: {pref.audioLang === ORIGINAL_AUDIO_LANG
+                    ? t("preferences:langOriginal")
+                    : languages.find((l) => l.code === pref.audioLang)?.label ?? pref.audioLang}
                 </span>
               )}
               {pref.subtitleLang && pref.subtitleMode !== "none" && (
@@ -83,6 +86,8 @@ export function LibraryPrefCard({ libraryId, libraryName, pref, languages, subti
             <select value={audioLang} onChange={(e) => setAudioLang(e.target.value)}
               className="w-full appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary">
               <option value="">{t("preferences:default")}</option>
+              {/* La langue originale DU TITRE, quelle qu'elle soit (Jellyfin 12+). */}
+              <option value={ORIGINAL_AUDIO_LANG}>{t("preferences:langOriginal")}</option>
               {languages.map((l) => (
                 <option key={l.code} value={l.code}>{l.label}</option>
               ))}

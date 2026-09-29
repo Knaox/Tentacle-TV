@@ -43,12 +43,14 @@ export function usePlayerPreferences({
         // title obligatoire pour matcher une VARIANTE (VFF/VFQ) : le backend la
         // reconnaît uniquement dans le titre de la piste (parité useWatchSession web).
         .map((s) => ({
-          index: s.Index, language: s.Language, isDefault: s.IsDefault,
+          index: s.Index, language: s.Language, isDefault: s.IsDefault, isOriginal: s.IsOriginal,
           title: [s.Title, s.DisplayTitle].filter(Boolean).join(" "),
         })),
       subtitleTracks: streams
         .filter((s) => s.Type === "Subtitle")
         .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: s.DisplayTitle })),
+      // Préférence « VO » : la langue originale du titre (Jellyfin 12+).
+      originalLanguage: item.OriginalLanguage ?? null,
     }, {
       onSuccess: (result) => {
         if (result.audioIndex != null) onAudioResolved(result.audioIndex);

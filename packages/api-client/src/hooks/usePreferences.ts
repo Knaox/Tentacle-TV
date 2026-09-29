@@ -157,8 +157,10 @@ export function useResolveMediaTracks() {
       libraryIds?: string[];
       /** Contenu en cours : sa préférence propre bat toutes les autres. */
       itemId?: string;
-      audioTracks: Array<{ index: number; language?: string; isDefault?: boolean; title?: string }>;
+      audioTracks: Array<{ index: number; language?: string; isDefault?: boolean; title?: string; isOriginal?: boolean }>;
       subtitleTracks: Array<{ index: number; language?: string; isForced?: boolean; title?: string }>;
+      /** Langue originale du titre (Jellyfin 12+) : ce que vise la préférence « VO ». */
+      originalLanguage?: string | null;
     }) => prefFetch<TrackResolution>("/resolve", {
       method: "POST",
       body: JSON.stringify(data),

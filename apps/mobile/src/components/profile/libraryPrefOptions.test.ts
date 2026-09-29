@@ -14,6 +14,11 @@ describe("résumé des langues d'une bibliothèque", () => {
       .toBe("audio : langJa · subtitles : langFr (modeAlwaysOn)");
   });
 
+  it("« VO » (langue originale du titre, Jellyfin 12) se nomme comme telle", () => {
+    expect(summarizeLibraryPref({ audioLang: "original", subtitleLang: null, subtitleMode: "none" }, t))
+      .toBe("audio : langOriginal");
+  });
+
   it("des sous-titres désactivés ne s'annoncent pas", () => {
     expect(summarizeLibraryPref({ audioLang: "eng", subtitleLang: "fre", subtitleMode: "none" }, t))
       .toBe("audio : langEn");

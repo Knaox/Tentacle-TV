@@ -114,6 +114,7 @@ export default {
   modeAlwaysOn: "Toujours affichés",
   modeForcedOnly: "Forcés uniquement",
   modeSignsSongs: "Signs & Songs",
+  langOriginal: "VO (langue originale)",
   langFr: "Français",
   langFrVff: "Français VFF",
   langFrVfq: "Français VFQ",

@@ -121,7 +121,7 @@ export function PlaybackScreenTv() {
             key: "audio",
             label: t("audio"),
             value: languageName(pref?.audioLang, t("default")),
-            choice: [{ value: "", label: t("default") }, ...languages],
+            choice: [{ value: "", label: t("default") }, { value: "original", label: t("langOriginal") }, ...languages],
             selection: pref?.audioLang ?? "",
           },
           {

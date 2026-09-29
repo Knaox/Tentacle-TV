@@ -149,7 +149,7 @@ export function TVSettingsPlaybackSection() {
               key: "audio",
               label: t("audio"),
               value: languageName(pref?.audioLang, t("default")),
-              choices: [{ value: "", label: t("default") }, ...languages],
+              choices: [{ value: "", label: t("default") }, { value: "original", label: t("langOriginal") }, ...languages],
               selection: pref?.audioLang ?? "",
             },
             {

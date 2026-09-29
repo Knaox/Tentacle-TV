@@ -3,6 +3,8 @@ export interface MediaItem {
   Name: string;
   Type: "Movie" | "Series" | "Episode" | "Season" | "BoxSet" | "Audio" | "MusicAlbum";
   OriginalTitle?: string;
+  /** Langue originale du titre, ISO 639-1 (« ja ») — Jellyfin 12.0+, héritée de la série. */
+  OriginalLanguage?: string;
   Overview?: string;
   Taglines?: string[];
   Genres?: string[];
@@ -130,6 +132,8 @@ export interface MediaStream {
   IsDefault: boolean;
   IsForced?: boolean;
   IsExternal?: boolean;
+  /** Piste de la version originale (Jellyfin 12.0+, drapeau « original » du conteneur). */
+  IsOriginal?: boolean;
   Index: number;
   Width?: number;
   Height?: number;

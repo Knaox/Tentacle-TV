@@ -27,6 +27,13 @@ export const PREF_LANGUAGES: readonly PrefChoice[] = [
   { code: "chi", labelKey: "langZh" },
 ];
 
+/**
+ * « VO » : la langue originale DU TITRE, quelle qu'elle soit (Jellyfin 12+,
+ * `ORIGINAL_AUDIO_LANG`). Pour l'audio seulement — un sous-titre « en VO » ne
+ * voudrait rien dire.
+ */
+export const PREF_AUDIO_EXTRA: readonly PrefChoice[] = [{ code: "original", labelKey: "langOriginal" }];
+
 export const PREF_SUBTITLE_MODES: readonly PrefChoice[] = [
   { code: "none", labelKey: "modeDisabled" },
   { code: "always", labelKey: "modeAlwaysOn" },
@@ -42,7 +49,7 @@ export const PREF_SUBTITLE_MODES: readonly PrefChoice[] = [
 export function summarizeLibraryPref(pref: LibraryPrefValues | null, t: (key: string) => string): string | null {
   if (!pref) return null;
   const parts: string[] = [];
-  const audio = PREF_LANGUAGES.find((l) => l.code === pref.audioLang);
+  const audio = [...PREF_AUDIO_EXTRA, ...PREF_LANGUAGES].find((l) => l.code === pref.audioLang);
   if (audio) parts.push(`${t("audio")} : ${t(audio.labelKey)}`);
   const sub = PREF_LANGUAGES.find((l) => l.code === pref.subtitleLang);
   const mode = PREF_SUBTITLE_MODES.find((m) => m.code === pref.subtitleMode);

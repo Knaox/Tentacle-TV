@@ -70,13 +70,16 @@ export function useServerTrackPrefs({
     if (allCandidates.length === 0) { setPrefsReady(true); return; }
     requestSent.current = item.Id;
     const aTracks = streams.filter((s) => s.Type === "Audio")
-      .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
+      .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, isOriginal: s.IsOriginal, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     const sTracks = streams.filter((s) => s.Type === "Subtitle")
       .map((s) => ({ index: s.Index, language: s.Language, isForced: s.IsForced, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     // `itemId` en premier : le backend s'arrête au premier niveau trouvé, donc le
     // choix fait la dernière fois qu'on a regardé CE contenu bat la saison, la
     // série et la bibliothèque (cf. `preferences.resolve.ts`).
-    resolveTracks.mutate({ libraryId: allCandidates[0], libraryIds: allCandidates, itemId: item.Id, audioTracks: aTracks, subtitleTracks: sTracks }, {
+    resolveTracks.mutate({
+      libraryId: allCandidates[0], libraryIds: allCandidates, itemId: item.Id, audioTracks: aTracks, subtitleTracks: sTracks,
+      originalLanguage: item.OriginalLanguage ?? null,
+    }, {
       onSuccess: (result) => {
         // Ici seulement : les préférences ont vraiment été résolues.
         prefsApplied.current = true;

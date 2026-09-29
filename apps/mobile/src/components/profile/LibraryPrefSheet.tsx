@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { SubtitleMode } from "@tentacle-tv/offline-core";
 import { BottomSheet } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
-import { PREF_LANGUAGES, PREF_SUBTITLE_MODES, type LibraryPrefValues, type PrefChoice } from "./libraryPrefOptions";
+import { PREF_AUDIO_EXTRA, PREF_LANGUAGES, PREF_SUBTITLE_MODES, type LibraryPrefValues, type PrefChoice } from "./libraryPrefOptions";
 
 interface Props {
   visible: boolean;
@@ -48,7 +48,7 @@ export function LibraryPrefSheet({ visible, onClose, libraryName, pref, onSave }
 
         <Text style={st.label}>{t("audio")}</Text>
         <ChipGrid
-          items={[{ code: "", labelKey: "default" }, ...PREF_LANGUAGES]}
+          items={[{ code: "", labelKey: "default" }, ...PREF_AUDIO_EXTRA, ...PREF_LANGUAGES]}
           selected={current.audioLang ?? ""}
           onSelect={(code) => patch({ audioLang: code || null })}
           label={t("audio")}
