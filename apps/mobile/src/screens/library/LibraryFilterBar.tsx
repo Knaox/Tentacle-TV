@@ -2,6 +2,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useGenres } from "@tentacle-tv/api-client";
+import { languageName } from "@tentacle-tv/shared";
+import { languageDisplayName } from "@tentacle-tv/offline-core";
 import { CatalogFilterSheet, PLATFORMS, SORT_OPTIONS, STATUS_OPTIONS } from "@/components/catalog";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { LibraryQuickBar } from "@/components/library/LibraryQuickBar";
@@ -24,10 +26,11 @@ export function LibraryFilterBar({ state, showCount = true, quick = false }: {
    */
   quick?: boolean;
 }) {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
   const { data: genres } = useGenres(state.libraryId);
+  const lang = (code: string) => languageDisplayName(code, i18n.language) ?? languageName(code, i18n.language);
   const { advancedFilters: f, advanced } = state;
 
   const status = STATUS_OPTIONS.find((o) => o.value !== null && o.value === state.statusFilter);
@@ -45,6 +48,8 @@ export function LibraryFilterBar({ state, showCount = true, quick = false }: {
       : []),
     ...(f.ratingMin != null ? [{ key: "rating", label: `≥ ${f.ratingMin}/10`, remove: () => advanced.onRatingMinChange(null) }] : []),
     ...(!quick && f.isFavorite ? [{ key: "fav", label: `♥ ${t("favorites")}`, remove: () => advanced.onFavoriteChange(false) }] : []),
+    ...(f.audioLang ? [{ key: "audio", label: t("filterAudioChip", { name: lang(f.audioLang) }), remove: () => advanced.onAudioLangChange(null) }] : []),
+    ...(f.subtitleLang ? [{ key: "subs", label: t("filterSubtitleChip", { name: lang(f.subtitleLang) }), remove: () => advanced.onSubtitleLangChange(null) }] : []),
   ];
 
   return (

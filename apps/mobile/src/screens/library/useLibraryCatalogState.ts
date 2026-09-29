@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLibraries, useLibraryCatalog } from "@tentacle-tv/api-client";
+import { languageValues, useLibraries, useLibraryCatalog, useLibraryLanguages } from "@tentacle-tv/api-client";
 import type { ExternalKind } from "@tentacle-tv/shared";
 import { SORT_OPTIONS, type AdvancedFilters } from "@/components/catalog";
 import { useSearchAssist } from "@/components/search/useSearchAssist";
@@ -10,7 +10,7 @@ export type CatalogSheet = "filters" | null;
 
 const DEFAULT_ADVANCED: AdvancedFilters = {
   studioIds: [], platformIds: [], yearFrom: null, yearTo: null,
-  ratingMin: null, isFavorite: false,
+  ratingMin: null, isFavorite: false, audioLang: null, subtitleLang: null,
 };
 
 /**
@@ -55,6 +55,8 @@ export function useLibraryCatalogState(libraryId: string) {
     if (advancedFilters.yearFrom != null || advancedFilters.yearTo != null) c++;
     if (advancedFilters.ratingMin != null) c++;
     if (advancedFilters.isFavorite) c++;
+    if (advancedFilters.audioLang) c++;
+    if (advancedFilters.subtitleLang) c++;
     return c;
   }, [advancedFilters]);
 
@@ -73,6 +75,9 @@ export function useLibraryCatalogState(libraryId: string) {
     return arr;
   }, [advancedFilters.yearFrom, advancedFilters.yearTo]);
 
+  // Filtre de langues (Jellyfin 12+) : rien ne part tant que le serveur n'a pas
+  // dit qu'il sait filtrer — un Jellyfin 10.x ignorerait le paramètre.
+  const { data: languages } = useLibraryLanguages(libraryId);
   const catalog = useLibraryCatalog(libraryId, {
     sortBy: SORT_OPTIONS[sortIndex].sortBy,
     sortOrder: SORT_OPTIONS[sortIndex].sortOrder,
@@ -83,6 +88,8 @@ export function useLibraryCatalogState(libraryId: string) {
     studioIds: advancedFilters.studioIds.length > 0 ? advancedFilters.studioIds : undefined,
     minCommunityRating: advancedFilters.ratingMin ?? undefined,
     isFavorite: advancedFilters.isFavorite || undefined,
+    audioLanguages: languageValues(languages?.audio, advancedFilters.audioLang),
+    subtitleLanguages: languageValues(languages?.subtitle, advancedFilters.subtitleLang),
     limit: selectedPlatformIds.length > 0 ? 500 : undefined,
   });
 
@@ -128,6 +135,8 @@ export function useLibraryCatalogState(libraryId: string) {
       onYearToChange: (v: number | null) => setAdvancedFilters((f) => ({ ...f, yearTo: v })),
       onRatingMinChange: (v: number | null) => setAdvancedFilters((f) => ({ ...f, ratingMin: v })),
       onFavoriteChange: (v: boolean) => setAdvancedFilters((f) => ({ ...f, isFavorite: v })),
+      onAudioLangChange: (code: string | null) => setAdvancedFilters((f) => ({ ...f, audioLang: code })),
+      onSubtitleLangChange: (code: string | null) => setAdvancedFilters((f) => ({ ...f, subtitleLang: code })),
       // « Réinitialiser » : tout ce que la feuille règle, le tri compris.
       onReset: () => {
         setSelectedGenres([]);

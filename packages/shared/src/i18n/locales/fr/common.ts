@@ -189,6 +189,8 @@ export default {
   genres: "Genres",
   filterAudioLanguage: "Langue audio",
   filterSubtitleLanguage: "Sous-titres",
+  filterAudioChip: "Audio : {{name}}",
+  filterSubtitleChip: "Sous-titres : {{name}}",
   favorites: "Favoris",
   allFilter: "Tous",
   moviesFilter: "Films",

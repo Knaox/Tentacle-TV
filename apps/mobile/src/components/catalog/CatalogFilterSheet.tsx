@@ -6,6 +6,7 @@ import { useGenres } from "@tentacle-tv/api-client";
 import { PLATFORMS } from "./PlatformFilter";
 import { SORT_OPTIONS } from "./catalogSorts";
 import { STATUS_OPTIONS } from "./StatusFilter";
+import { LanguageFilterSections } from "./LanguageFilterSections";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { FilterChip, FilterSection } from "@/components/filters/FilterChip";
@@ -22,6 +23,9 @@ export interface AdvancedFilters {
   yearTo: number | null;
   ratingMin: number | null;
   isFavorite: boolean;
+  /** Langue audio / de sous-titres choisie (code stable, « fr ») — Jellyfin 12+. */
+  audioLang: string | null;
+  subtitleLang: string | null;
 }
 
 interface Props {
@@ -41,6 +45,8 @@ interface Props {
   onYearToChange: (v: number | null) => void;
   onRatingMinChange: (v: number | null) => void;
   onFavoriteChange: (v: boolean) => void;
+  onAudioLangChange: (code: string | null) => void;
+  onSubtitleLangChange: (code: string | null) => void;
   onReset: () => void;
   activeCount: number;
   /** Titres correspondants, pour le pied ; `null` pendant le chargement. */
@@ -60,7 +66,8 @@ export const CatalogFilterSheet = memo(function CatalogFilterSheet(props: Props)
   const {
     visible, onClose, libraryId, sortIndex, onSortIndex, statusFilter, onStatusFilter,
     selectedGenres, onToggleGenre, onClearGenres, filters, onTogglePlatform,
-    onYearFromChange, onYearToChange, onRatingMinChange, onFavoriteChange, onReset, activeCount, resultCount,
+    onYearFromChange, onYearToChange, onRatingMinChange, onFavoriteChange, onAudioLangChange, onSubtitleLangChange,
+    onReset, activeCount, resultCount,
   } = props;
   const { t } = useTranslation("common");
   const styles = useThemedStyles(makeStyles);
@@ -99,6 +106,14 @@ export const CatalogFilterSheet = memo(function CatalogFilterSheet(props: Props)
               ))}
             </FilterSection>
           )}
+
+          <LanguageFilterSections
+            libraryId={libraryId}
+            audioLang={filters.audioLang}
+            subtitleLang={filters.subtitleLang}
+            onAudioLangChange={onAudioLangChange}
+            onSubtitleLangChange={onSubtitleLangChange}
+          />
 
           <FilterSection title={t("platforms")}>
             {PLATFORMS.map((p) => (
