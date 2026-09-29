@@ -142,6 +142,60 @@ affichés.
   globe-trotteur sur les pays), avis d'un titre et états de « VF ou VO ? »
   (`titleReasons.ts`) — `packages/shared/src/viewingStats/`.
 
+## Partager ses statistiques : une page publique
+
+« Partager » (web, bureau, miroir : panneau ; mobile : feuille) crée un lien
+vers une page PUBLIQUE, ouverte sans compte : `/share/:token`, la même adresse
+et la même coquille que Ma liste et Favoris. Aucune lecture n'y est possible :
+ni bouton Lire, ni flux, ni jeton Jellyfin ; un titre ouvre au plus sa fiche
+publique (`/share/:token/:itemId`, « Se connecter pour regarder »).
+
+**Le lien** — `share_links`, kind `stats`, un par compte, révocable (révoquer =
+supprimer : 404 ensuite, et un nouveau lien a un nouveau jeton). La colonne
+`options` (JSON) garde la PÉRIODE choisie par le propriétaire et le FUSEAU de
+son appareil : le visiteur voit ses jours à lui, le fuseau ne sort jamais du
+serveur. Changer la période garde le jeton. Routes : `POST /api/share/stats`
+(`{ period, tz }`), `GET /api/share/stats/mine`, `DELETE /api/share/stats`.
+Sans la colonne (base d'avant core-init.sql), elles répondent 503 « base à
+mettre à jour » ; les listes, qui ne la lisent jamais, continuent de marcher.
+
+**La réponse publique** — `GET /api/share/:token?lang=` : une LISTE BLANCHE,
+`PublicViewingStats` (`packages/shared/src/types/viewingStatsShare.ts`, miroir
+backend `contractShare.ts`), construite champ par champ par
+`publicProjection.ts` — jamais une copie rognée de la réponse du propriétaire.
+Son test tient la forme exacte : un champ de plus doit être décidé.
+
+| Public | Reste au serveur |
+|---|---|
+| temps, films, épisodes, séries, jours ; profil de spectateur (traits compris) | la grille jour × heure (heures précises) |
+| activité ; « À quel moment ? » (4 moments de la journée + week-end, `habits.ts`) | écrans et applications |
+| genres, formats, décennies, origines, VF ou VO | le fuseau du propriétaire |
+| films préférés, séries, visages, avec ses notes et avis | la date de dernière lecture de chaque titre |
+| records, **datés au mois** ; instants au jour (midi UTC) | « À voir » (Ma liste) et la date du profil de goût |
+| ce qu'il aime (titres du goût, avis comptés) | |
+
+Les traits « Oiseau de nuit », « Lève-tôt », « Spectateur du week-end » se
+lisent sur les habitudes seules (`habitsInsight`) : mêmes parts, mêmes traits
+que sur la page du propriétaire (`analyzeRhythm` lit ses parts dans
+`habits.ts`, que le backend recopie). « VF ou VO ? » se mesure par rapport à
+la langue du VISITEUR, comme les étiquettes : identique au propriétaire dans le
+cas courant, et « Langues entendues » lève l'ambiguïté sinon.
+
+**Sûreté** — le jeton (8 octets aléatoires) désigne le propriétaire, aucun
+paramètre ne le peut ; un visiteur ne force jamais de recalcul (le cache de dix
+minutes du propriétaire sert) ; les routes publiques ont leur plafond (60 par
+minute et par adresse) et répondent `no-store` ; les pages `/share/*` portent
+`X-Robots-Tag: noindex, nofollow`. Réponse légère : ~11 Ko, ~3 Ko compressés.
+
+**Les clients** — la page publique réutilise les cartes de « Vos statistiques »
+dans une VOIX publique (`components/stats/statsVoice.ts`) : l'espace de textes
+`statsPublic`, à la troisième personne, est lu avant `stats` (react-i18next en
+`nsMode: "fallback"`), le nom du propriétaire posé sur chaque texte, les titres
+vers leur fiche publique, les visages sans lien. Le panneau du propriétaire
+(`share/stats/`) et la feuille mobile (`components/stats/ShareStatsSheet.tsx`)
+disent ce qui devient public et ce qui reste privé AVANT le moindre lien, et
+chaque résultat au plus près du geste (un toast passerait sous la modale).
+
 ## Pièges connus
 
 - **Hermes n'a ni `Intl.PluralRules`, ni `DisplayNames`, ni
