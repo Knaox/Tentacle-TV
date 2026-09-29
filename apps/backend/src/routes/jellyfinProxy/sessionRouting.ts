@@ -10,9 +10,9 @@ import { buildPlaystateRewrite, type PlaystateRewrite } from "./playstate";
  *    user-data ciblent /Users/{userId}/* explicitement, la clé admin suffit.
  *  - Device JWT, route de session :
  *    · si le device a un token Jellyfin stocké → on l'utilise (compte correct) ;
- *    · sinon → clé admin + RÉÉCRITURE du report de lecture vers l'endpoint scopé
- *      userId (/Users/{userId}/PlayingItems/*), car /Sessions/Playing* avec la
- *      clé admin enregistrerait la progression sur le compte admin.
+ *    · sinon → clé admin + RÉÉCRITURE du report de lecture en écriture des
+ *      données utilisateur (/UserItems/{itemId}/UserData?userId=), car
+ *      /Sessions/Playing* avec la clé admin perdrait la progression.
  *  - Device JWT, autre route → admin API key (user-data ciblé par /Users/{id}). */
 export async function resolveSessionRouting(
   incomingToken: string | undefined,
@@ -50,9 +50,9 @@ export async function resolveSessionRouting(
   const { token: deviceToken } = await resolvePairedDeviceToken(incomingToken, payload.userId);
   if (deviceToken) return { apiKey: deviceToken, usedDeviceToken: true };
 
-  // Aucun token Jellyfin pour cet utilisateur : repli best-effort sur la réécriture user-scopée.
-  // N'attribue correctement que sur d'anciens Jellyfin (où l'userId d'URL est honoré) ; sinon la
-  // télémétrie est perdue (mais aucune attribution erronée bloquante).
+  // Aucun token Jellyfin pour cet utilisateur : la position s'écrit directement
+  // dans les données du compte (cf. playstate.ts — mesuré juste de 10.10 à 12.1).
+  // Seule la session « en cours » du tableau de bord Jellyfin manque.
   if (adminKey) {
     const rewrite = buildPlaystateRewrite(payload.userId, wildcardPath, body) ?? undefined;
     if (rewrite) return { apiKey: adminKey, rewrite };

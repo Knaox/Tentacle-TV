@@ -111,7 +111,7 @@ describe("la remise dans Ma liste", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit & { headers: Record<string, string> }];
-    expect(url).toBe("http://jf.test/Users/u1/Items/s1/Rating?likes=true");
+    expect(url).toBe("http://jf.test/UserItems/s1/Rating?userId=u1&likes=true");
     expect(init.method).toBe("POST");
     expect(init.headers.Authorization).toBe('MediaBrowser Token="admin-key"');
     expect(rows).toHaveLength(0);

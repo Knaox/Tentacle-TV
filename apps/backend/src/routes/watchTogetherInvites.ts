@@ -19,13 +19,17 @@ import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { WT_MAX_INVITES_PER_REQUEST } from "../services/watchTogether/protocol";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
-/** Nom d'un item Jellyfin (clé admin, best-effort — contexte d'invitation). */
-async function fetchItemName(itemId: string): Promise<string | null> {
+/**
+ * Nom d'un item Jellyfin (clé admin, best-effort — contexte d'invitation), vu
+ * par l'hôte. Sans `userId`, Jellyfin répond 400 à une clé d'API (mesuré de
+ * 10.10.7 à 12.1.0) : le titre n'apparaissait jamais dans l'invitation.
+ */
+async function fetchItemName(itemId: string, userId: string): Promise<string | null> {
   const jellyfinUrl = getJellyfinUrl();
   const apiKey = getJellyfinApiKey();
   if (!jellyfinUrl || !apiKey) return null;
   try {
-    const res = await fetch(`${jellyfinUrl}/Items/${encodeURIComponent(itemId)}`, {
+    const res = await fetch(`${jellyfinUrl}/Items/${encodeURIComponent(itemId)}?userId=${encodeURIComponent(userId)}`, {
       headers: jellyfinAuthHeaders(apiKey),
       signal: AbortSignal.timeout(3000),
     });
@@ -58,7 +62,7 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
 
     const allUsers = await getJellyfinUsers();
     const contextItemId = room.itemId ?? room.contextItemId;
-    const itemName = contextItemId ? await fetchItemName(contextItemId) : null;
+    const itemName = contextItemId ? await fetchItemName(contextItemId, user.userId) : null;
 
     const invited: string[] = [];
     for (const targetId of new Set(userIds)) {

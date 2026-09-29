@@ -2,21 +2,27 @@ export interface PlaystateRewrite {
   /** Nouveau wildcard path (sans slash initial), query string incluse. */
   path: string;
   method: "POST" | "DELETE";
+  /** Corps JSON à envoyer à la place de celui du client. */
+  body?: string;
 }
 
 const SESSION_PLAYSTATE = /^Sessions\/Playing(?:\/(Progress|Stopped))?$/;
 
 /**
- * Réécrit un report de lecture `/Sessions/Playing*` vers l'endpoint scopé par
- * userId (`/Users/{userId}/PlayingItems/{itemId}*`).
+ * Réécrit un report de lecture `/Sessions/Playing*` d'un appareil jumelé SANS
+ * jeton Jellyfin en une écriture de ses DONNÉES UTILISATEUR :
+ * `POST /UserItems/{itemId}/UserData?userId=…`, position et date de lecture.
  *
- * Les endpoints `/Sessions/Playing*` attribuent l'état de lecture au compte du
- * TOKEN porteur : envoyés avec la clé admin (cas d'un device jumelé SANS token
- * Jellyfin stocké), ils enregistrent la progression sur le compte admin et la
- * perdent pour l'utilisateur. Les endpoints `/Users/{userId}/PlayingItems/*`
- * portent l'userId dans l'URL → la clé admin attribue correctement la lecture
- * à l'utilisateur. Ces endpoints prennent leurs paramètres en QUERY (pas de
- * body).
+ * Les endpoints `/Sessions/Playing*` attribuent la lecture au compte du jeton
+ * porteur : avec la clé admin, la progression était perdue pour l'utilisateur.
+ * L'ancienne réécriture visait `/Users/{userId}/PlayingItems/*` : mesuré de
+ * 10.10.7 à 12.1.0, ces routes (et `/PlayingItems/{id}?userId=`) répondent 204
+ * mais n'écrivent RIEN sur le compte visé — et la 12.1 les retire de son
+ * document OpenAPI. `UserItems/{id}/UserData`, documenté partout, écrit bien la
+ * position sur le compte passé en query (même mesure).
+ *
+ * On y perd la session « en cours de lecture » du tableau de bord Jellyfin ;
+ * on y gagne la reprise au bon endroit, qui est ce que l'utilisateur voit.
  *
  * Retourne `null` si la route n'est pas un report de lecture, ou si le corps ne
  * contient pas d'`ItemId`.
@@ -25,38 +31,20 @@ export function buildPlaystateRewrite(
   userId: string,
   wildcardPath: string,
   body: unknown,
+  now: Date = new Date(),
 ): PlaystateRewrite | null {
-  const m = SESSION_PLAYSTATE.exec(wildcardPath);
-  if (!m) return null;
+  if (!SESSION_PLAYSTATE.test(wildcardPath)) return null;
 
   const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
   const itemId = typeof b.ItemId === "string" ? b.ItemId : undefined;
   if (!itemId) return null;
 
-  const kind = m[1]; // undefined (start) | "Progress" | "Stopped"
-  const q = new URLSearchParams();
-  const set = (k: string, v: unknown) => {
-    if (v !== undefined && v !== null) q.set(k, String(v));
+  const data: Record<string, unknown> = { LastPlayedDate: now.toISOString() };
+  if (typeof b.PositionTicks === "number" && b.PositionTicks >= 0) data.PlaybackPositionTicks = b.PositionTicks;
+  const query = new URLSearchParams({ userId });
+  return {
+    path: `UserItems/${encodeURIComponent(itemId)}/UserData?${query.toString()}`,
+    method: "POST",
+    body: JSON.stringify(data),
   };
-  set("mediaSourceId", b.MediaSourceId ?? itemId);
-  set("playSessionId", b.PlaySessionId);
-
-  const base = `Users/${userId}/PlayingItems/${itemId}`;
-
-  if (kind === "Stopped") {
-    set("positionTicks", b.PositionTicks);
-    return { path: `${base}?${q.toString()}`, method: "DELETE" };
-  }
-
-  // start + progress : champs communs
-  set("playMethod", b.PlayMethod);
-  set("audioStreamIndex", b.AudioStreamIndex);
-  set("subtitleStreamIndex", b.SubtitleStreamIndex);
-  set("canSeek", b.CanSeek);
-  set("positionTicks", b.PositionTicks);
-  if (kind === "Progress") {
-    set("isPaused", b.IsPaused);
-    return { path: `${base}/Progress?${q.toString()}`, method: "POST" };
-  }
-  return { path: `${base}?${q.toString()}`, method: "POST" };
 }

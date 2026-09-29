@@ -48,7 +48,7 @@ import { resetAnimeLibrariesForTests } from "./affinityAnimeLibraries";
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    if (url.endsWith("/Users/a/Views")) {
+    if (url.endsWith("/UserViews?userId=a")) {
       return Response.json({ Items: [{ Id: "lib-films", Name: "Films" }, { Id: "lib-animes", Name: "Animés" }] });
     }
     if (url.includes("ParentId=lib-animes")) {

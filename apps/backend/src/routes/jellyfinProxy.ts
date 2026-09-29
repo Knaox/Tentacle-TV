@@ -86,9 +86,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
 
     const { apiKey: apiKeyOverride, rewrite, usedDeviceToken } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
 
-    // Report de lecture d'un device sans token Jellyfin : on cible l'endpoint
-    // scopé userId (clé admin) pour attribuer la progression au bon compte.
-    // L'URL réécrite porte déjà sa query → pas d'append de `qs`, body non envoyé.
+    // Report de lecture d'un device sans token Jellyfin : réécrit en écriture
+    // des données du compte (clé admin, userId en query, corps propre).
+    // L'URL réécrite porte déjà sa query → pas d'append de `qs`.
     const effectiveMethod = rewrite ? rewrite.method : request.method;
     if (rewrite) targetUrl = `${jellyfinUrl}/${rewrite.path}`;
 
@@ -134,8 +134,11 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       dispatcher: getJellyfinDispatcher(),
     };
 
-    // Forward body for POST/PUT/PATCH/DELETE — sauf report réécrit (params en query).
-    if (!rewrite && request.method !== "GET" && request.method !== "HEAD") {
+    // Forward body for POST/PUT/PATCH/DELETE — le report réécrit porte le sien.
+    if (rewrite?.body) {
+      fetchInit.body = rewrite.body;
+      headers["content-type"] = "application/json";
+    } else if (!rewrite && request.method !== "GET" && request.method !== "HEAD") {
       const rawBody = request.body;
       if (rawBody !== undefined && rawBody !== null) {
         if (typeof rawBody === "string" || Buffer.isBuffer(rawBody)) {

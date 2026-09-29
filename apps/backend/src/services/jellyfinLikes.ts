@@ -8,8 +8,8 @@ import { jellyfinAuthHeaders } from "./jellyfinAuth";
 //     titre mis de côté avant son arrivée (watchlistPending) ;
 //   • « J'aime » = le cœur, `IsFavorite` — un like donné dans « Affiner »
 //     (services/swipe/swipeFavorites.ts), tout de suite ou à l'arrivée.
-// Mêmes URL que le client (`useToggleWatchlist`, `useFavorite`), idempotentes
-// côté Jellyfin.
+// Les formes documentées de ce que le client appelle (`useToggleWatchlist`,
+// `useFavorite`), idempotentes côté Jellyfin ; l'utilisateur voyage en query.
 
 async function call(path: string, method: "POST" | "DELETE"): Promise<boolean> {
   const url = getJellyfinUrl();
@@ -28,12 +28,12 @@ async function call(path: string, method: "POST" | "DELETE"): Promise<boolean> {
 }
 
 function ratingPath(userId: string, itemId: string, likes: boolean): string {
-  const query = likes ? "?likes=true" : "";
-  return `/Users/${encodeURIComponent(userId)}/Items/${encodeURIComponent(itemId)}/Rating${query}`;
+  const query = likes ? "&likes=true" : "";
+  return `/UserItems/${encodeURIComponent(itemId)}/Rating?userId=${encodeURIComponent(userId)}${query}`;
 }
 
 function favoritePath(userId: string, itemId: string): string {
-  return `/Users/${encodeURIComponent(userId)}/FavoriteItems/${encodeURIComponent(itemId)}`;
+  return `/UserFavoriteItems/${encodeURIComponent(itemId)}?userId=${encodeURIComponent(userId)}`;
 }
 
 /** Met l'item dans « Ma liste » de l'utilisateur. Vrai si Jellyfin a suivi. */

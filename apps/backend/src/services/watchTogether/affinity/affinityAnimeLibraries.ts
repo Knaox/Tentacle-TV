@@ -54,7 +54,7 @@ export async function animeLibraryItemIds(userId: string): Promise<Set<string>> 
   const apiKey = getJellyfinApiKey();
   if (!base || !apiKey) return new Set();
   try {
-    const views = await fetchJson<{ Items?: RawView[] }>(`${base}/Users/${userId}/Views`, apiKey);
+    const views = await fetchJson<{ Items?: RawView[] }>(`${base}/UserViews?userId=${userId}`, apiKey);
     const animeViews = (views?.Items ?? []).filter((v) => v.Id && isAnimeLibraryName(v.Name ?? ""));
     const ids = new Set<string>();
     for (const view of animeViews) {

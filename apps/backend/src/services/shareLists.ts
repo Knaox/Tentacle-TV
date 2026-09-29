@@ -42,7 +42,7 @@ export async function getLikedListItems(ownerUserId: string): Promise<SharedList
 
   if (url && apiKey) {
     const res = await fetch(
-      `${url}/Users/${ownerUserId}/Items?Filters=IsFavorite&Recursive=true` +
+      `${url}/Items?userId=${ownerUserId}&Filters=IsFavorite&Recursive=true` +
         `&IncludeItemTypes=Movie,Series&SortBy=SortName&SortOrder=Ascending` +
         `&Fields=PrimaryImageAspectRatio&EnableImageTypes=Primary`,
       { headers: jellyfinAuthHeaders(apiKey) }

@@ -48,7 +48,7 @@ export const authPasswordRoutes: FastifyPluginAsync = async (app) => {
     }
 
     try {
-      const res = await fetch(`${jellyfinUrl}/Users/${user.userId}/Password`, {
+      const res = await fetch(`${jellyfinUrl}/Users/Password?userId=${user.userId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...jellyfinAuthHeaders(token) },
         body: JSON.stringify({ CurrentPw: body.currentPassword, NewPw: body.newPassword }),

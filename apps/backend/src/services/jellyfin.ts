@@ -83,7 +83,7 @@ export async function createJellyfinUser(
   const user: JellyfinUserResponse = await createRes.json();
 
   const passwordRes = await fetch(
-    `${jellyfinUrl}/Users/${user.Id}/Password`,
+    `${jellyfinUrl}/Users/Password?userId=${user.Id}`,
     {
       method: "POST",
       headers: {
@@ -162,7 +162,7 @@ export async function getUserItemsBatch(
   if (itemIds.length === 0) return { Items: [] };
 
   const res = await fetch(
-    `${jellyfinUrl}/Users/${userId}/Items?Ids=${itemIds.join(",")}&Fields=PrimaryImageAspectRatio&EnableUserData=true`,
+    `${jellyfinUrl}/Items?userId=${userId}&Ids=${itemIds.join(",")}&Fields=PrimaryImageAspectRatio&EnableUserData=true`,
     { headers: jellyfinAuthHeaders(apiKey) }
   );
 
@@ -182,7 +182,7 @@ export async function getUserWatchlist(userId: string): Promise<{ Items: { Id: s
   }
 
   const res = await fetch(
-    `${jellyfinUrl}/Users/${userId}/Items?Filters=Likes&Recursive=true` +
+    `${jellyfinUrl}/Items?userId=${userId}&Filters=Likes&Recursive=true` +
       `&IncludeItemTypes=Movie,Series&SortBy=DateCreated&SortOrder=Descending` +
       `&Fields=Overview,Genres,PrimaryImageAspectRatio&EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1&EnableUserData=true`,
     { headers: jellyfinAuthHeaders(apiKey) }
@@ -205,8 +205,8 @@ export async function getItemDetail(userId: string, itemId: string): Promise<Rec
   }
 
   const res = await fetch(
-    `${jellyfinUrl}/Users/${userId}/Items/${itemId}` +
-      `?Fields=Overview,Genres,Taglines,People,Studios,ProviderIds,RemoteTrailers,RunTimeTicks,ParentBackdropImageTags,ParentBackdropItemId`,
+    `${jellyfinUrl}/Items/${itemId}?userId=${userId}` +
+      `&Fields=Overview,Genres,Taglines,People,Studios,ProviderIds,RemoteTrailers,RunTimeTicks,ParentBackdropImageTags,ParentBackdropItemId`,
     { headers: jellyfinAuthHeaders(apiKey) }
   );
 
