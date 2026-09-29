@@ -1,0 +1,816 @@
+{
+  "schema": 1,
+  "jellyfin": {
+    "version": "10.10.7",
+    "image": "jellyfin/jellyfin:10.10.7",
+    "legacyAuthorization": null
+  },
+  "tentacle": {
+    "server": "1.21.0",
+    "commit": "063ceb17"
+  },
+  "ranAt": "2026-09-29T13:19:39.402Z",
+  "verdict": "ok",
+  "features": [
+    {
+      "id": "auth.login",
+      "area": "auth",
+      "verdict": "ok",
+      "checks": 5,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "auth.modern",
+      "area": "auth",
+      "verdict": "ok",
+      "checks": 4,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "auth.installed-apps",
+      "area": "auth",
+      "verdict": "ok",
+      "checks": 7,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "library.views",
+      "area": "library",
+      "verdict": "ok",
+      "checks": 2,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "library.catalog",
+      "area": "library",
+      "verdict": "ok",
+      "checks": 6,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "library.home",
+      "area": "library",
+      "verdict": "ok",
+      "checks": 4,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "details.item",
+      "area": "details",
+      "verdict": "ok",
+      "checks": 6,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "details.series",
+      "area": "details",
+      "verdict": "ok",
+      "checks": 4,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "userdata.lists",
+      "area": "userdata",
+      "verdict": "ok",
+      "checks": 5,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "userdata.resume",
+      "area": "userdata",
+      "verdict": "ok",
+      "checks": 4,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "userdata.paired-devices",
+      "area": "userdata",
+      "verdict": "ok",
+      "checks": 4,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "playback.direct-play",
+      "area": "playback",
+      "verdict": "ok",
+      "checks": 3,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "playback.transcode",
+      "area": "playback",
+      "verdict": "ok",
+      "checks": 5,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "playback.subtitles",
+      "area": "playback",
+      "verdict": "ok",
+      "checks": 3,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "playback.bitrate",
+      "area": "playback",
+      "verdict": "ok",
+      "checks": 2,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "playback.track-preferences",
+      "area": "playback",
+      "verdict": "ok",
+      "checks": 4,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "direct.streaming",
+      "area": "direct",
+      "verdict": "ok",
+      "checks": 6,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "media.images",
+      "area": "media",
+      "verdict": "ok",
+      "checks": 4,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "media.trickplay",
+      "area": "media",
+      "verdict": "ok",
+      "checks": 3,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "segments.skip",
+      "area": "segments",
+      "verdict": "ok",
+      "checks": 3,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "extras.trailers",
+      "area": "extras",
+      "verdict": "ok",
+      "checks": 5,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "sessions.live",
+      "area": "sessions",
+      "verdict": "ok",
+      "checks": 4,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "admin.server",
+      "area": "admin",
+      "verdict": "ok",
+      "checks": 5,
+      "failed": 0,
+      "note": null
+    },
+    {
+      "id": "search.catalog",
+      "area": "search",
+      "verdict": "ok",
+      "checks": 3,
+      "failed": 0,
+      "note": null
+    }
+  ],
+  "checks": [
+    {
+      "feature": "playback.direct-play",
+      "check": "PlaybackInfo (api-client) : lecture directe du fichier H.264/AAC",
+      "status": "ok",
+      "ms": 50
+    },
+    {
+      "feature": "playback.direct-play",
+      "check": "flux du fichier par getStreamUrl, requête partielle respectée",
+      "status": "ok",
+      "ms": 24
+    },
+    {
+      "feature": "playback.direct-play",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 8
+    },
+    {
+      "feature": "playback.transcode",
+      "check": "PlaybackInfo propose un transcodage HLS pour le HEVC d'un lecteur H.264",
+      "status": "ok",
+      "ms": 12
+    },
+    {
+      "feature": "playback.transcode",
+      "check": "manifeste, variante et premier segment servis par le proxy",
+      "status": "ok",
+      "ms": 1276
+    },
+    {
+      "feature": "playback.transcode",
+      "check": "un téléviseur jumelé ne reçoit jamais la clé admin (PlaybackInfo et manifeste)",
+      "status": "ok",
+      "ms": 49
+    },
+    {
+      "feature": "playback.transcode",
+      "check": "arrêt d'un transcodage (DELETE Videos/ActiveEncodings)",
+      "status": "ok",
+      "ms": 4
+    },
+    {
+      "feature": "playback.transcode",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 9
+    },
+    {
+      "feature": "playback.subtitles",
+      "check": "sous-titre intégré converti en WebVTT (getSubtitleUrl)",
+      "status": "ok",
+      "ms": 32
+    },
+    {
+      "feature": "playback.subtitles",
+      "check": "sous-titre externe (.fr.srt) converti en WebVTT",
+      "status": "ok",
+      "ms": 31
+    },
+    {
+      "feature": "playback.subtitles",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 8
+    },
+    {
+      "feature": "playback.bitrate",
+      "check": "mesure du débit par le proxy (measureBitrate)",
+      "status": "ok",
+      "ms": 288
+    },
+    {
+      "feature": "playback.bitrate",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 7
+    },
+    {
+      "feature": "library.views",
+      "check": "bibliothèques du compte : films, séries et mixte (route héritée traduite)",
+      "status": "ok",
+      "ms": 27
+    },
+    {
+      "feature": "library.views",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 8
+    },
+    {
+      "feature": "library.catalog",
+      "check": "catalogue des films (prefetchLibraryCatalog de l'api-client)",
+      "status": "ok",
+      "ms": 19
+    },
+    {
+      "feature": "library.catalog",
+      "check": "tri par nom, ordre croissant",
+      "status": "ok",
+      "ms": 25
+    },
+    {
+      "feature": "library.catalog",
+      "check": "séries de la bibliothèque et filtre « non vus »",
+      "status": "ok",
+      "ms": 22
+    },
+    {
+      "feature": "library.catalog",
+      "check": "genres et studios d'une bibliothèque",
+      "status": "ok",
+      "ms": 17
+    },
+    {
+      "feature": "library.catalog",
+      "check": "filtre par langue : proposé seulement si le serveur sait filtrer",
+      "status": "ok",
+      "ms": 6
+    },
+    {
+      "feature": "library.catalog",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 7
+    },
+    {
+      "feature": "library.home",
+      "check": "reprise : un titre entamé remonte (Users/{u}/Items/Resume)",
+      "status": "ok",
+      "ms": 25
+    },
+    {
+      "feature": "library.home",
+      "check": "à suivre : l'épisode d'après un épisode vu (Shows/NextUp)",
+      "status": "ok",
+      "ms": 18
+    },
+    {
+      "feature": "library.home",
+      "check": "nouveautés : derniers ajouts d'une bibliothèque",
+      "status": "ok",
+      "ms": 13
+    },
+    {
+      "feature": "library.home",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 6
+    },
+    {
+      "feature": "auth.login",
+      "check": "connexion d'un compte Jellyfin par le serveur Tentacle",
+      "status": "ok",
+      "ms": 166
+    },
+    {
+      "feature": "auth.login",
+      "check": "mauvais mot de passe : refus franc (401), pas une erreur",
+      "status": "ok",
+      "ms": 136
+    },
+    {
+      "feature": "auth.login",
+      "check": "le serveur valide la session d'un compte (route protégée)",
+      "status": "ok",
+      "ms": 15
+    },
+    {
+      "feature": "auth.login",
+      "check": "rafraîchissement de session (/api/auth/refresh, cookie de la page web)",
+      "status": "ok",
+      "ms": 9
+    },
+    {
+      "feature": "auth.login",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 8
+    },
+    {
+      "feature": "auth.modern",
+      "check": "Jellyfin accepte l'en-tête Authorization: MediaBrowser",
+      "status": "ok",
+      "ms": 9
+    },
+    {
+      "feature": "auth.modern",
+      "check": "Jellyfin accepte ApiKey en query",
+      "status": "ok",
+      "ms": 5
+    },
+    {
+      "feature": "auth.modern",
+      "check": "le serveur Tentacle parle à Jellyfin (vue des services)",
+      "status": "ok",
+      "ms": 12
+    },
+    {
+      "feature": "auth.modern",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 13
+    },
+    {
+      "feature": "auth.installed-apps",
+      "check": "X-Emby-Token et X-Emby-Authorization par le proxy",
+      "status": "ok",
+      "ms": 10
+    },
+    {
+      "feature": "auth.installed-apps",
+      "check": "api_key en query par le proxy (lecteurs sans en-tête)",
+      "status": "ok",
+      "ms": 7
+    },
+    {
+      "feature": "auth.installed-apps",
+      "check": "cookie de la page web par le proxy",
+      "status": "ok",
+      "ms": 6
+    },
+    {
+      "feature": "auth.installed-apps",
+      "check": "Authorization: MediaBrowser d'une application à jour",
+      "status": "ok",
+      "ms": 9
+    },
+    {
+      "feature": "auth.installed-apps",
+      "check": "Bearer du relais des extensions mobiles",
+      "status": "ok",
+      "ms": 6
+    },
+    {
+      "feature": "auth.installed-apps",
+      "check": "connexion par le proxy (AuthenticateByName du bureau)",
+      "status": "ok",
+      "ms": 122
+    },
+    {
+      "feature": "auth.installed-apps",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 7
+    },
+    {
+      "feature": "userdata.lists",
+      "check": "favori posé et retiré (Users/{u}/FavoriteItems, traduit)",
+      "status": "ok",
+      "ms": 43
+    },
+    {
+      "feature": "userdata.lists",
+      "check": "« Ma liste » posée et retirée (Rating?likes=true)",
+      "status": "ok",
+      "ms": 30
+    },
+    {
+      "feature": "userdata.lists",
+      "check": "« vu » posé et retiré (Users/{u}/PlayedItems, traduit)",
+      "status": "ok",
+      "ms": 19
+    },
+    {
+      "feature": "userdata.lists",
+      "check": "la liste d'un compte ne déborde pas sur un autre",
+      "status": "ok",
+      "ms": 24
+    },
+    {
+      "feature": "userdata.lists",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 8
+    },
+    {
+      "feature": "userdata.resume",
+      "check": "report de lecture par le proxy : la position est gardée (sessionPost de l'api-client)",
+      "status": "ok",
+      "ms": 22
+    },
+    {
+      "feature": "userdata.resume",
+      "check": "écriture directe de la reprise (UserItems/{id}/UserData)",
+      "status": "ok",
+      "ms": 10
+    },
+    {
+      "feature": "userdata.resume",
+      "check": "« vu » retiré quand la reprise l'emporte (clearPlayedWhenResumable)",
+      "status": "ok",
+      "ms": 17
+    },
+    {
+      "feature": "userdata.resume",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 6
+    },
+    {
+      "feature": "userdata.paired-devices",
+      "check": "le téléviseur lit la bibliothèque de SON compte (clé admin substituée)",
+      "status": "ok",
+      "ms": 27
+    },
+    {
+      "feature": "userdata.paired-devices",
+      "check": "le garde refuse le compte d'un autre, par le chemin comme par la query",
+      "status": "ok",
+      "ms": 2
+    },
+    {
+      "feature": "userdata.paired-devices",
+      "check": "report de lecture sans jeton Jellyfin : la reprise est écrite sur son compte",
+      "status": "ok",
+      "ms": 27
+    },
+    {
+      "feature": "userdata.paired-devices",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 6
+    },
+    {
+      "feature": "segments.skip",
+      "check": "intro et générique tirés des chapitres (backend /api/playback/segments)",
+      "status": "ok",
+      "ms": 52
+    },
+    {
+      "feature": "segments.skip",
+      "check": "API MediaSegments de Jellyfin joignable par le proxy",
+      "status": "ok",
+      "ms": 243
+    },
+    {
+      "feature": "segments.skip",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 10
+    },
+    {
+      "feature": "details.item",
+      "check": "fiche complète d'un film (champs de useMediaItem)",
+      "status": "ok",
+      "ms": 28
+    },
+    {
+      "feature": "details.item",
+      "check": "un film en deux versions expose ses deux sources",
+      "status": "ok",
+      "ms": 12
+    },
+    {
+      "feature": "details.item",
+      "check": "route héritée et forme documentée rendent la même fiche (hypothèse de la traduction du proxy)",
+      "status": "ok",
+      "ms": 14
+    },
+    {
+      "feature": "details.item",
+      "check": "ancêtres et titres similaires",
+      "status": "ok",
+      "ms": 17
+    },
+    {
+      "feature": "details.item",
+      "check": "« Fait partie de » : vide sans erreur quand le serveur ne le sait pas",
+      "status": "ok",
+      "ms": 3
+    },
+    {
+      "feature": "details.item",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 7
+    },
+    {
+      "feature": "details.series",
+      "check": "saisons, spéciaux compris (champs de useSeasons)",
+      "status": "ok",
+      "ms": 10
+    },
+    {
+      "feature": "details.series",
+      "check": "épisodes d'une saison",
+      "status": "ok",
+      "ms": 7
+    },
+    {
+      "feature": "details.series",
+      "check": "épisodes voisins (adjacentTo, navigation et épisode suivant)",
+      "status": "ok",
+      "ms": 8
+    },
+    {
+      "feature": "details.series",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 6
+    },
+    {
+      "feature": "extras.trailers",
+      "check": "bandes-annonces locales d'un film (Users/{u}/Items/{id}/LocalTrailers, traduit)",
+      "status": "ok",
+      "ms": 26
+    },
+    {
+      "feature": "extras.trailers",
+      "check": "bonus d'un film (SpecialFeatures)",
+      "status": "ok",
+      "ms": 12
+    },
+    {
+      "feature": "extras.trailers",
+      "check": "compteurs sur la fiche (LocalTrailerCount, SpecialFeatureCount)",
+      "status": "ok",
+      "ms": 9
+    },
+    {
+      "feature": "extras.trailers",
+      "check": "bonus d'une série et d'une saison",
+      "status": "ok",
+      "ms": 17
+    },
+    {
+      "feature": "extras.trailers",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 7
+    },
+    {
+      "feature": "media.images",
+      "check": "affiche d'un film et d'une série (getImageUrl)",
+      "status": "ok",
+      "ms": 108
+    },
+    {
+      "feature": "media.images",
+      "check": "fond (Backdrop) d'un film",
+      "status": "ok",
+      "ms": 6
+    },
+    {
+      "feature": "media.images",
+      "check": "avatar d'un compte posé puis lu (Users/{u}/Images/Primary, traduit en UserImage)",
+      "status": "ok",
+      "ms": 30
+    },
+    {
+      "feature": "media.images",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 7
+    },
+    {
+      "feature": "media.trickplay",
+      "check": "manifeste trickplay sur la fiche (Fields=Trickplay)",
+      "status": "ok",
+      "ms": 10
+    },
+    {
+      "feature": "media.trickplay",
+      "check": "planche trickplay par la route du backend (buildTrickplayTileUrl)",
+      "status": "ok",
+      "ms": 16
+    },
+    {
+      "feature": "media.trickplay",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 6
+    },
+    {
+      "feature": "direct.streaming",
+      "check": "le serveur confie le direct à une application à jour",
+      "status": "ok",
+      "ms": 21
+    },
+    {
+      "feature": "direct.streaming",
+      "check": "PlaybackInfo en direct (en-tête Authorization)",
+      "status": "ok",
+      "ms": 37
+    },
+    {
+      "feature": "direct.streaming",
+      "check": "flux direct (URL en ApiKey), requête partielle",
+      "status": "ok",
+      "ms": 16
+    },
+    {
+      "feature": "direct.streaming",
+      "check": "sous-titres et images restent au proxy, flux en direct",
+      "status": "ok",
+      "ms": 8
+    },
+    {
+      "feature": "direct.streaming",
+      "check": "télémétrie en direct : la position est gardée (sessionPost)",
+      "status": "ok",
+      "ms": 46
+    },
+    {
+      "feature": "direct.streaming",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 8
+    },
+    {
+      "feature": "playback.track-preferences",
+      "check": "langue audio préférée : la piste française, que Jellyfin écrive « fre » ou « fra »",
+      "status": "ok",
+      "ms": 65
+    },
+    {
+      "feature": "playback.track-preferences",
+      "check": "sous-titres toujours, en anglais",
+      "status": "ok",
+      "ms": 32
+    },
+    {
+      "feature": "playback.track-preferences",
+      "check": "« VO » sur un Jellyfin qui ne connaît pas la langue originale : la piste par défaut",
+      "status": "ok",
+      "ms": 25
+    },
+    {
+      "feature": "playback.track-preferences",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 11
+    },
+    {
+      "feature": "sessions.live",
+      "check": "le serveur tient la socket Jellyfin (clé en en-tête)",
+      "status": "ok",
+      "ms": 0
+    },
+    {
+      "feature": "sessions.live",
+      "check": "une lecture en cours apparaît au tableau de bord admin",
+      "status": "ok",
+      "ms": 41
+    },
+    {
+      "feature": "sessions.live",
+      "check": "message envoyé à une session depuis le tableau de bord",
+      "status": "ok",
+      "ms": 19
+    },
+    {
+      "feature": "sessions.live",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 7
+    },
+    {
+      "feature": "search.catalog",
+      "check": "recherche Tentacle d'un titre de la bibliothèque",
+      "status": "ok",
+      "ms": 32
+    },
+    {
+      "feature": "search.catalog",
+      "check": "recherche d'épisodes par titre",
+      "status": "ok",
+      "ms": 15
+    },
+    {
+      "feature": "search.catalog",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 8
+    },
+    {
+      "feature": "admin.server",
+      "check": "vue des services : Jellyfin connecté, version et nom",
+      "status": "ok",
+      "ms": 21
+    },
+    {
+      "feature": "admin.server",
+      "check": "tester la connexion avec la clé enregistrée",
+      "status": "ok",
+      "ms": 9
+    },
+    {
+      "feature": "admin.server",
+      "check": "comptes Jellyfin listés pour l'administration",
+      "status": "ok",
+      "ms": 11
+    },
+    {
+      "feature": "admin.server",
+      "check": "un compte non administrateur est refusé",
+      "status": "ok",
+      "ms": 2
+    },
+    {
+      "feature": "admin.server",
+      "check": "endpoints déclarés présents dans l'OpenAPI de l'instance",
+      "status": "ok",
+      "ms": 10
+    }
+  ]
+}

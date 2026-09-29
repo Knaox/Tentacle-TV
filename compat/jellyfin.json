@@ -1,15 +1,982 @@
 {
   "$comment": "Manifeste de compatibilité Jellyfin — ce que Tentacle SAIT de chaque version, éprouvée par `pnpm test:jellyfin-compat`. Schéma : packages/shared/src/jellyfinCompat/compatManifest.ts ; règles : compat/README.md. Embarqué dans l'image du serveur ET relu sur raw.githubusercontent.com : `revision` monte de 1 à chaque publication, un serveur n'accepte jamais une révision plus basse que la sienne.",
   "schema": 1,
-  "revision": 0,
-  "generatedAt": null,
-  "minimum": null,
+  "revision": 1,
+  "generatedAt": "2026-09-29T13:24:36.398Z",
+  "minimum": "10.10.0",
   "lines": [
-    { "id": "10.10", "from": "10.10.0", "until": "10.11.0" },
-    { "id": "10.11", "from": "10.11.0", "until": "10.12.0" },
-    { "id": "12", "from": "12.0.0", "until": "13.0.0" }
+    {
+      "id": "10.10",
+      "from": "10.10.0",
+      "until": "10.11.0"
+    },
+    {
+      "id": "10.11",
+      "from": "10.11.0",
+      "until": "10.12.0"
+    },
+    {
+      "id": "12",
+      "from": "12.0.0",
+      "until": "13.0.0"
+    }
   ],
-  "areas": {},
-  "features": [],
-  "versions": []
+  "areas": {
+    "auth": {
+      "fr": "Connexion",
+      "en": "Sign-in"
+    },
+    "library": {
+      "fr": "Bibliothèque",
+      "en": "Library"
+    },
+    "details": {
+      "fr": "Fiches",
+      "en": "Details"
+    },
+    "userdata": {
+      "fr": "Suivi et listes",
+      "en": "Tracking and lists"
+    },
+    "playback": {
+      "fr": "Lecture",
+      "en": "Playback"
+    },
+    "direct": {
+      "fr": "Streaming direct",
+      "en": "Direct streaming"
+    },
+    "media": {
+      "fr": "Images et vignettes",
+      "en": "Images and thumbnails"
+    },
+    "segments": {
+      "fr": "Intro et génériques",
+      "en": "Intros and credits"
+    },
+    "extras": {
+      "fr": "Bonus et bandes-annonces",
+      "en": "Extras and trailers"
+    },
+    "sessions": {
+      "fr": "Sessions en direct",
+      "en": "Live sessions"
+    },
+    "admin": {
+      "fr": "Administration",
+      "en": "Administration"
+    },
+    "search": {
+      "fr": "Recherche",
+      "en": "Search"
+    },
+    "jellyfin12": {
+      "fr": "Nouveautés de Jellyfin 12",
+      "en": "Jellyfin 12 features"
+    }
+  },
+  "features": [
+    {
+      "id": "auth.login",
+      "area": "auth",
+      "critical": true,
+      "label": {
+        "fr": "Connexion d'un compte",
+        "en": "Account sign-in"
+      },
+      "endpoints": [
+        "POST /Users/AuthenticateByName",
+        "GET /Users/Me"
+      ],
+      "since": null
+    },
+    {
+      "id": "auth.modern",
+      "area": "auth",
+      "critical": true,
+      "label": {
+        "fr": "Authentification moderne (en-tête MediaBrowser, ApiKey)",
+        "en": "Modern authentication (MediaBrowser header, ApiKey)"
+      },
+      "endpoints": [
+        "GET /System/Info"
+      ],
+      "since": null
+    },
+    {
+      "id": "auth.installed-apps",
+      "area": "auth",
+      "critical": true,
+      "label": {
+        "fr": "Applications déjà installées (anciens en-têtes)",
+        "en": "Already-installed apps (legacy headers)"
+      },
+      "endpoints": [
+        "GET /Users/Me"
+      ],
+      "since": null
+    },
+    {
+      "id": "library.views",
+      "area": "library",
+      "critical": true,
+      "label": {
+        "fr": "Bibliothèques films, séries et mixtes",
+        "en": "Movie, show and mixed libraries"
+      },
+      "endpoints": [
+        "GET /UserViews"
+      ],
+      "since": null
+    },
+    {
+      "id": "library.catalog",
+      "area": "library",
+      "critical": true,
+      "label": {
+        "fr": "Catalogue, tris et filtres",
+        "en": "Catalog, sorting and filters"
+      },
+      "endpoints": [
+        "GET /Items",
+        "GET /Genres",
+        "GET /Studios"
+      ],
+      "since": null
+    },
+    {
+      "id": "library.home",
+      "area": "library",
+      "critical": true,
+      "label": {
+        "fr": "Accueil : reprise, à suivre, nouveautés",
+        "en": "Home: resume, next up, recently added"
+      },
+      "endpoints": [
+        "GET /UserItems/Resume",
+        "GET /Shows/NextUp",
+        "GET /Items"
+      ],
+      "since": null
+    },
+    {
+      "id": "details.item",
+      "area": "details",
+      "critical": true,
+      "label": {
+        "fr": "Fiche d'un titre",
+        "en": "Title details"
+      },
+      "endpoints": [
+        "GET /Items/{itemId}",
+        "GET /Items/{itemId}/Ancestors",
+        "GET /Items/{itemId}/Similar"
+      ],
+      "since": null
+    },
+    {
+      "id": "details.series",
+      "area": "details",
+      "critical": true,
+      "label": {
+        "fr": "Saisons et épisodes",
+        "en": "Seasons and episodes"
+      },
+      "endpoints": [
+        "GET /Shows/{seriesId}/Seasons",
+        "GET /Shows/{seriesId}/Episodes"
+      ],
+      "since": null
+    },
+    {
+      "id": "userdata.lists",
+      "area": "userdata",
+      "critical": false,
+      "label": {
+        "fr": "Ma liste, favoris et « vu »",
+        "en": "My list, favorites and watched"
+      },
+      "endpoints": [
+        "POST /UserFavoriteItems/{itemId}",
+        "POST /UserPlayedItems/{itemId}",
+        "POST /UserItems/{itemId}/Rating"
+      ],
+      "since": null
+    },
+    {
+      "id": "userdata.resume",
+      "area": "userdata",
+      "critical": true,
+      "label": {
+        "fr": "Reprise de lecture",
+        "en": "Resume position"
+      },
+      "endpoints": [
+        "POST /Sessions/Playing",
+        "POST /Sessions/Playing/Progress",
+        "POST /Sessions/Playing/Stopped",
+        "GET /UserItems/{itemId}/UserData"
+      ],
+      "since": null
+    },
+    {
+      "id": "userdata.paired-devices",
+      "area": "userdata",
+      "critical": false,
+      "label": {
+        "fr": "Téléviseurs jumelés",
+        "en": "Paired TVs"
+      },
+      "endpoints": [
+        "POST /UserItems/{itemId}/UserData"
+      ],
+      "since": null
+    },
+    {
+      "id": "playback.direct-play",
+      "area": "playback",
+      "critical": true,
+      "label": {
+        "fr": "Lecture directe du fichier",
+        "en": "Direct play"
+      },
+      "endpoints": [
+        "POST /Items/{itemId}/PlaybackInfo",
+        "GET /Videos/{itemId}/stream"
+      ],
+      "since": null
+    },
+    {
+      "id": "playback.transcode",
+      "area": "playback",
+      "critical": true,
+      "label": {
+        "fr": "Transcodage (HLS)",
+        "en": "Transcoding (HLS)"
+      },
+      "endpoints": [
+        "POST /Items/{itemId}/PlaybackInfo"
+      ],
+      "since": null
+    },
+    {
+      "id": "playback.subtitles",
+      "area": "playback",
+      "critical": false,
+      "label": {
+        "fr": "Sous-titres intégrés et externes",
+        "en": "Embedded and external subtitles"
+      },
+      "endpoints": [
+        "GET /Videos/{routeItemId}/{routeMediaSourceId}/Subtitles/{routeIndex}/Stream.{routeFormat}"
+      ],
+      "since": null
+    },
+    {
+      "id": "playback.bitrate",
+      "area": "playback",
+      "critical": false,
+      "label": {
+        "fr": "Mesure du débit",
+        "en": "Bandwidth test"
+      },
+      "endpoints": [
+        "GET /Playback/BitrateTest"
+      ],
+      "since": null
+    },
+    {
+      "id": "playback.track-preferences",
+      "area": "playback",
+      "critical": false,
+      "label": {
+        "fr": "Pistes préférées (langue audio, sous-titres, VO)",
+        "en": "Preferred tracks (audio and subtitle language, original)"
+      },
+      "endpoints": [
+        "GET /Shows/{seriesId}/Episodes"
+      ],
+      "since": null
+    },
+    {
+      "id": "direct.streaming",
+      "area": "direct",
+      "critical": false,
+      "label": {
+        "fr": "Streaming direct vers Jellyfin",
+        "en": "Direct streaming to Jellyfin"
+      },
+      "endpoints": [
+        "POST /Items/{itemId}/PlaybackInfo",
+        "GET /Videos/{itemId}/stream",
+        "POST /Sessions/Playing"
+      ],
+      "since": null
+    },
+    {
+      "id": "media.images",
+      "area": "media",
+      "critical": true,
+      "label": {
+        "fr": "Affiches, fonds et avatars",
+        "en": "Posters, backdrops and avatars"
+      },
+      "endpoints": [
+        "GET /Items/{itemId}/Images/{imageType}",
+        "GET /UserImage"
+      ],
+      "since": null
+    },
+    {
+      "id": "media.trickplay",
+      "area": "media",
+      "critical": false,
+      "label": {
+        "fr": "Vignettes de navigation (trickplay)",
+        "en": "Seek thumbnails (trickplay)"
+      },
+      "endpoints": [
+        "GET /Videos/{itemId}/Trickplay/{width}/{index}.jpg"
+      ],
+      "since": null
+    },
+    {
+      "id": "segments.skip",
+      "area": "segments",
+      "critical": false,
+      "label": {
+        "fr": "Passer l'intro et le générique",
+        "en": "Skip intro and credits"
+      },
+      "endpoints": [
+        "GET /MediaSegments/{itemId}"
+      ],
+      "since": null
+    },
+    {
+      "id": "extras.trailers",
+      "area": "extras",
+      "critical": false,
+      "label": {
+        "fr": "Bandes-annonces locales et bonus",
+        "en": "Local trailers and extras"
+      },
+      "endpoints": [
+        "GET /Items/{itemId}/LocalTrailers",
+        "GET /Items/{itemId}/SpecialFeatures"
+      ],
+      "since": null
+    },
+    {
+      "id": "sessions.live",
+      "area": "sessions",
+      "critical": false,
+      "label": {
+        "fr": "Sessions en direct et télécommande",
+        "en": "Live sessions and remote control"
+      },
+      "endpoints": [
+        "GET /Sessions",
+        "POST /Sessions/{sessionId}/Message"
+      ],
+      "since": null
+    },
+    {
+      "id": "admin.server",
+      "area": "admin",
+      "critical": false,
+      "label": {
+        "fr": "État du serveur, comptes et droits",
+        "en": "Server status, accounts and permissions"
+      },
+      "endpoints": [
+        "GET /System/Info",
+        "GET /Users",
+        "POST /Users/{userId}/Policy"
+      ],
+      "since": null
+    },
+    {
+      "id": "search.catalog",
+      "area": "search",
+      "critical": false,
+      "label": {
+        "fr": "Recherche Tentacle",
+        "en": "Tentacle search"
+      },
+      "endpoints": [
+        "GET /Items"
+      ],
+      "since": null
+    },
+    {
+      "id": "jellyfin12.episode-versions",
+      "area": "jellyfin12",
+      "critical": false,
+      "label": {
+        "fr": "Versions multiples d'un épisode",
+        "en": "Multiple versions of an episode"
+      },
+      "endpoints": [
+        "POST /Items/{itemId}/PlaybackInfo"
+      ],
+      "since": "12.0.0"
+    },
+    {
+      "id": "jellyfin12.original-language",
+      "area": "jellyfin12",
+      "critical": false,
+      "label": {
+        "fr": "Langue originale (VO)",
+        "en": "Original language"
+      },
+      "endpoints": [
+        "GET /Items/{itemId}"
+      ],
+      "since": "12.0.0"
+    },
+    {
+      "id": "jellyfin12.language-filters",
+      "area": "jellyfin12",
+      "critical": false,
+      "label": {
+        "fr": "Filtrer par langue audio ou de sous-titres",
+        "en": "Filter by audio or subtitle language"
+      },
+      "endpoints": [
+        "GET /Items/Filters2",
+        "GET /Items"
+      ],
+      "since": "12.0.0"
+    },
+    {
+      "id": "jellyfin12.included-in",
+      "area": "jellyfin12",
+      "critical": false,
+      "label": {
+        "fr": "« Fait partie de » : collections d'un titre",
+        "en": "\"Included in\": a title's collections"
+      },
+      "endpoints": [
+        "GET /Items/{itemId}/Collections"
+      ],
+      "since": "12.0.0"
+    },
+    {
+      "id": "jellyfin12.localized-tracks",
+      "area": "jellyfin12",
+      "critical": false,
+      "label": {
+        "fr": "Mentions des pistes dans la langue de l'utilisateur (« Par défaut », « Forcé »)",
+        "en": "Track labels in the user's language (\"Default\", \"Forced\")"
+      },
+      "endpoints": [
+        "GET /Items/{itemId}"
+      ],
+      "since": "12.0.0"
+    }
+  ],
+  "versions": [
+    {
+      "version": "12.1.0",
+      "image": "jellyfin/jellyfin:12.1",
+      "ranAt": "2026-09-29T13:24:36.398Z",
+      "tentacle": {
+        "server": "1.21.0",
+        "commit": "1b1ecf51"
+      },
+      "minTentacle": null,
+      "verdict": "ok",
+      "features": {
+        "auth.login": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "auth.modern": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "auth.installed-apps": {
+          "verdict": "ok",
+          "checks": 7,
+          "failed": 0,
+          "note": null
+        },
+        "library.views": {
+          "verdict": "ok",
+          "checks": 2,
+          "failed": 0,
+          "note": null
+        },
+        "library.catalog": {
+          "verdict": "ok",
+          "checks": 6,
+          "failed": 0,
+          "note": null
+        },
+        "library.home": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "details.item": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "details.series": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "userdata.lists": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "userdata.resume": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "userdata.paired-devices": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "playback.direct-play": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "playback.transcode": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "playback.subtitles": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "playback.bitrate": {
+          "verdict": "ok",
+          "checks": 2,
+          "failed": 0,
+          "note": null
+        },
+        "playback.track-preferences": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "direct.streaming": {
+          "verdict": "ok",
+          "checks": 7,
+          "failed": 0,
+          "note": null
+        },
+        "media.images": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "media.trickplay": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "segments.skip": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "extras.trailers": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "sessions.live": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "admin.server": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "search.catalog": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "jellyfin12.episode-versions": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "jellyfin12.original-language": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "jellyfin12.language-filters": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "jellyfin12.included-in": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "jellyfin12.localized-tracks": {
+          "verdict": "ok",
+          "checks": 2,
+          "failed": 0,
+          "note": null
+        }
+      }
+    },
+    {
+      "version": "10.11.8",
+      "image": "jellyfin/jellyfin:10.11.8",
+      "ranAt": "2026-09-29T13:20:05.319Z",
+      "tentacle": {
+        "server": "1.21.0",
+        "commit": "1b1ecf51"
+      },
+      "minTentacle": null,
+      "verdict": "ok",
+      "features": {
+        "auth.login": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "auth.modern": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "auth.installed-apps": {
+          "verdict": "ok",
+          "checks": 7,
+          "failed": 0,
+          "note": null
+        },
+        "library.views": {
+          "verdict": "ok",
+          "checks": 2,
+          "failed": 0,
+          "note": null
+        },
+        "library.catalog": {
+          "verdict": "ok",
+          "checks": 6,
+          "failed": 0,
+          "note": null
+        },
+        "library.home": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "details.item": {
+          "verdict": "ok",
+          "checks": 6,
+          "failed": 0,
+          "note": null
+        },
+        "details.series": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "userdata.lists": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "userdata.resume": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "userdata.paired-devices": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "playback.direct-play": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "playback.transcode": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "playback.subtitles": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "playback.bitrate": {
+          "verdict": "ok",
+          "checks": 2,
+          "failed": 0,
+          "note": null
+        },
+        "playback.track-preferences": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "direct.streaming": {
+          "verdict": "ok",
+          "checks": 7,
+          "failed": 0,
+          "note": null
+        },
+        "media.images": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "media.trickplay": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "segments.skip": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "extras.trailers": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "sessions.live": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "admin.server": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "search.catalog": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        }
+      }
+    },
+    {
+      "version": "10.10.7",
+      "image": "jellyfin/jellyfin:10.10.7",
+      "ranAt": "2026-09-29T13:19:39.402Z",
+      "tentacle": {
+        "server": "1.21.0",
+        "commit": "063ceb17"
+      },
+      "minTentacle": null,
+      "verdict": "ok",
+      "features": {
+        "auth.login": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "auth.modern": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "auth.installed-apps": {
+          "verdict": "ok",
+          "checks": 7,
+          "failed": 0,
+          "note": null
+        },
+        "library.views": {
+          "verdict": "ok",
+          "checks": 2,
+          "failed": 0,
+          "note": null
+        },
+        "library.catalog": {
+          "verdict": "ok",
+          "checks": 6,
+          "failed": 0,
+          "note": null
+        },
+        "library.home": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "details.item": {
+          "verdict": "ok",
+          "checks": 6,
+          "failed": 0,
+          "note": null
+        },
+        "details.series": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "userdata.lists": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "userdata.resume": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "userdata.paired-devices": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "playback.direct-play": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "playback.transcode": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "playback.subtitles": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "playback.bitrate": {
+          "verdict": "ok",
+          "checks": 2,
+          "failed": 0,
+          "note": null
+        },
+        "playback.track-preferences": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "direct.streaming": {
+          "verdict": "ok",
+          "checks": 6,
+          "failed": 0,
+          "note": null
+        },
+        "media.images": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "media.trickplay": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "segments.skip": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        },
+        "extras.trailers": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "sessions.live": {
+          "verdict": "ok",
+          "checks": 4,
+          "failed": 0,
+          "note": null
+        },
+        "admin.server": {
+          "verdict": "ok",
+          "checks": 5,
+          "failed": 0,
+          "note": null
+        },
+        "search.catalog": {
+          "verdict": "ok",
+          "checks": 3,
+          "failed": 0,
+          "note": null
+        }
+      }
+    }
+  ]
 }
