@@ -5,6 +5,48 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
+## [1.4.0]
+<!-- Bloc nu : Google Play, 500 caractères. Le bloc atv- porte la version complète. -->
+### FR
+- **Un appui long sur une carte** ouvre ses actions : Ma liste, favori, vu et votre note en étoiles
+- **La saga d'un film** sur sa fiche
+- **Saisons plus rapides**, la saison en cours d'emblée
+- **Bandes-annonces locales et bonus** enfin visibles
+- **La VO** parmi vos langues audio préférées
+- **La fiche se lit** sur les images claires
+
+### EN
+- **A long press on a card** opens its actions: My list, favorite, watched and your star rating
+- **A movie's saga** on its page
+- **Faster seasons**, the current season right away
+- **Local trailers and extras** finally visible
+- **Original language** among your preferred audio languages
+- **The title page reads** on light images
+
+## [atv-1.4.0]
+<!-- Bloc Apple TV (App Store Connect, 4000 caractères) : la version complète. -->
+### FR
+- **Un appui long sur une carte** ouvre ses actions, sur toutes les rangées, la recherche et les recommandations : Ma liste, favori, vu, et votre note en étoiles entières. Un titre jugé quitte « Pour vous » quand la feuille se referme
+- **La saga d'un film** sur sa fiche : tous les volets dans l'ordre, ceux que vous avez vus et celui qui vient ensuite
+- **Saisons et épisodes plus rapides** : la saison en cours s'ouvre d'emblée, marquée, et la saison voisine se prépare dès qu'elle reçoit le focus
+- **Bandes-annonces locales, de saison et bonus** enfin visibles sur la fiche
+- **Bandes-annonces YouTube réparées** avec le serveur Tentacle 1.22.0 ; quand le serveur n'est pas réglé pour les bandes-annonces, la fiche dit où trouver le guide
+- **La VO** parmi vos langues audio préférées
+- **Des cartes plus nettes** : l'anneau de focus épouse l'image, un seul marqueur « vu », et les cartes de recommandation portent les mêmes repères que les autres
+- **La fiche se lit** sur les images claires
+- Dans la recherche, OK sur un épisode lance la lecture, comme sur l'accueil
+
+### EN
+- **A long press on a card** opens its actions, on every row, search and recommendations: My list, favorite, watched, and your rating in whole stars. A judged title leaves "For you" when the sheet closes
+- **A movie's saga** on its page: every installment in order, the ones you have watched and the one that comes next
+- **Faster seasons and episodes**: the current season opens right away, marked, and the next season gets ready as soon as it is focused
+- **Local trailers, season trailers and extras** finally visible on the title page
+- **YouTube trailers fixed** with Tentacle server 1.22.0; when the server is not set up for trailers, the title page says where to find the guide
+- **Original language** among your preferred audio languages
+- **Sharper cards**: the focus ring hugs the image, a single "watched" marker, and recommendation cards carry the same markers as the others
+- **The title page reads** on light images
+- In search, OK on an episode starts playback, as on the home screen
+
 ## [1.3.1]
 ### FR
 - **Des affiches qui en disent plus** : la note du public et la vôtre, et un repère pour Ma liste, vos favoris et ce que vous avez déjà vu

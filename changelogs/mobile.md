@@ -5,6 +5,54 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.10.0]
+<!-- Bloc nu : Google Play, 500 caractères. Le bloc ios- porte la version complète. -->
+### FR
+- **Vos statistiques** : temps passé, genres, records, « VF ou VO ? », à partager par un lien
+- **La saga d'un film** sur sa fiche
+- **Saisons plus rapides**, la saison en cours d'emblée
+- **Bande-annonce** : un bouton sur la fiche, et les bonus
+- **Un appui long** ouvre les mêmes actions sur toutes les cartes
+- **Hors ligne** : la nouvelle fiche et un accueil repensé
+- **Avec Jellyfin 12** : choix de la version, filtres de langue, VO
+
+### EN
+- **Your statistics**: time spent, genres, records, "Dub or original?", shareable through a link
+- **A movie's saga** on its page
+- **Faster seasons**, the current season right away
+- **Trailer**: a button on the title page, and extras
+- **A long press** opens the same actions on every card
+- **Offline**: the new title page and a redesigned home
+- **With Jellyfin 12**: version choice, language filters, original language
+
+## [ios-1.10.0]
+<!-- Bloc iOS (App Store Connect, 4000 caractères) : la version complète. -->
+### FR
+- **Vos statistiques** : un nouvel écran dit votre temps devant l'écran, vos genres, vos films préférés et vos acteurs favoris, vos records, ce que vous écoutez vraiment (« VF ou VO ? ») et l'origine des titres. Un lien public les partage, sans compte ni lecture possible, et se révoque à tout moment
+- **La saga d'un film** sur sa fiche : tous les volets dans l'ordre, ceux que vous avez vus et celui qui vient ensuite
+- **Saisons et épisodes bien plus rapides** : la saison en cours s'ouvre d'emblée, et les pastilles de saison se lisent sur n'importe quelle image
+- **Bande-annonce** : un bouton sur la fiche, et les bandes-annonces de saison, les bonus et les bandes-annonces locales enfin visibles. Un guide dans Aide › Bandes-annonces, et un rappel discret sur la fiche quand le serveur n'est pas réglé ; on peut le masquer pour de bon
+- **Un appui long, les mêmes actions partout** : sur toutes les cartes, dans la recherche, Ma liste et les lignes d'épisodes. Un seul marqueur « vu », et « Sur cet appareil » pour ce que vous gardez hors ligne
+- **Hors ligne** : un titre gardé s'ouvre dans la nouvelle fiche, et l'accueil hors ligne propose Reprendre, À suivre et la place utilisée sur le téléphone
+- **Recommandations** : un « j'aime » dans Affiner met le cœur au titre, même s'il n'arrive dans la bibliothèque que plus tard ; un titre ajouté à Ma liste, aimé, vu ou noté quitte « Pour vous » quand vous refermez sa feuille ; un titre seulement dans Ma liste ne fausse plus vos goûts
+- **Affiner** : glisser vers le bas passe le titre, et la carte jugée part proprement, au-dessus de la suivante
+- **Avec Jellyfin 12** : le choix de la version d'un film ou d'un épisode, « Fait partie de » sur la fiche, le filtre des bibliothèques par langue audio ou de sous-titres, et la VO parmi vos langues audio préférées
+- **La fiche se lit sur les images claires**, et les pastilles des affiches dans les deux thèmes
+- Une saison contenant un épisode très court ne fait plus planter la liste des épisodes
+
+### EN
+- **Your statistics**: a new screen shows your screen time, your genres, your favorite movies and actors, your records, what you really listen to ("Dub or original?") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time
+- **A movie's saga** on its page: every installment in order, the ones you have watched and the one that comes next
+- **Much faster seasons and episodes**: the current season opens right away, and season pills read on any image
+- **Trailer**: a button on the title page, and season trailers, extras and local trailers finally visible. A guide in Help › Trailers, and a discreet reminder on the title page when the server is not set up; it can be hidden for good
+- **One long press, the same actions everywhere**: on every card, in search, My list and episode rows. A single "watched" marker, and "On this device" for what you keep offline
+- **Offline**: a kept title opens in the new title page, and the offline home offers Resume, Up next and the space used on the phone
+- **Recommendations**: a "like" in Refine hearts the title, even if it only reaches the library later; a title added to My list, liked, watched or rated leaves "For you" when you close its sheet; a title that is only in My list no longer skews your taste
+- **Refine**: swiping down skips the title, and the judged card leaves cleanly, above the next one
+- **With Jellyfin 12**: pick the version of a movie or an episode, "Part of" on the title page, filter libraries by audio or subtitle language, and original language among your preferred audio languages
+- **The title page reads on light images**, and poster badges in both themes
+- A season with a very short episode no longer crashes the episode list
+
 ## [1.9.0]
 ### FR
 - **Une fiche refaite** : l'image en grand, le logo, la note et vos marqueurs, et les images en plein écran

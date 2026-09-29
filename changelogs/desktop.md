@@ -13,6 +13,65 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.25.0]
+### FR
+- **Vos statistiques** : une nouvelle page dit votre temps devant l'écran, vos genres, vos films préférés et vos acteurs favoris, votre rythme et vos records, ce que vous écoutez vraiment (« VF ou VO ? ») et l'origine des titres. Un lien public les partage, sans compte ni lecture possible, et se révoque à tout moment
+- **Watch Together : le mode Affinité** — swipez ensemble les films, séries ou animés de la bibliothèque ; dès que tout le groupe aime le même titre, « C'est un match ! » propose de le regarder ensemble. Trois gestes, pas un de plus : j'aime, pas pour moi, annuler. Ouvrir ou quitter l'Affinité vaut pour tout le groupe
+- **La saga d'un film** sur sa fiche : tous les volets dans l'ordre, leur rang, ceux que vous avez vus et celui qui vient ensuite
+- **Des cartes plus claires** : plus de gros bouton Lecture au milieu des affiches, un « Lire » discret en tête des actions, et un clic sur une vignette 16:9 lance la lecture. Le même survol partout, recherche, pages des personnes et lignes d'épisodes comprises ; un seul marqueur « vu », et « Sur cet appareil » pour ce que vous avez téléchargé
+- **Saisons et épisodes bien plus rapides** : la saison en cours s'ouvre d'emblée, une grosse saison s'affiche six fois plus vite, et les pastilles de saison se lisent sur n'importe quelle image
+- **Bandes-annonces** : les bandes-annonces de saison, les bonus et les bandes-annonces locales s'affichent enfin sur la fiche. Un guide (Aide › Bandes-annonces) explique comment les obtenir, et un lien discret apparaît sur la fiche quand le serveur n'est pas réglé ; on peut le masquer pour de bon
+- **Hors ligne** : la fiche d'un film ou d'une série téléchargés prend la nouvelle fiche, et l'accueil hors ligne se lit comme l'autre, avec Reprendre, À suivre et la place utilisée
+- **Recommandations** : un « j'aime » dans Affiner met le cœur au titre, même s'il n'arrive dans la bibliothèque que plus tard ; un titre ajouté à Ma liste, aimé, vu ou noté quitte « Pour vous » quand vous quittez sa rangée, jamais sous le curseur ; un titre seulement dans Ma liste ne fausse plus vos goûts
+- **Affiner** : glisser vers le bas passe le titre, et la carte jugée ne tremble plus en passant sous la suivante
+- **Avec Jellyfin 12** : le choix de la version d'un film ou d'un épisode, « Fait partie de » sur la fiche, le filtre des bibliothèques par langue audio ou de sous-titres, et la VO parmi vos langues audio préférées
+- **Le bouton Copier fonctionne** : il ne copiait rien dans l'application de bureau (les liens de partage de Ma liste et des favoris), et il dit maintenant si la copie a réussi
+- **Des textes lisibles** : la fiche sur un décor clair, les légendes sous les cartes
+- **Administrateurs : la vue d'ensemble** dit si votre Jellyfin et sa dernière version publiée sont compatibles, montre l'état réel des réglages Jellyfin conseillés et les applique d'un clic quand c'est sûr, et compte les titres qui ont une bande-annonce, avec la raison de ceux qui n'en ont pas. Services dit si chaque greffon de détection des passages (génériques, résumés) est actif, installé ou absent
+
+### EN
+- **Your statistics**: a new page shows your screen time, your genres, your favorite movies and actors, your pace and your records, what you really listen to ("Dub or original?") and where your titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time
+- **Watch Together: Affinity mode** — swipe the library's movies, series or anime together; as soon as the whole group likes the same title, "It's a match!" offers to watch it together. Three gestures, no more: like, not for me, undo. Opening or leaving Affinity applies to the whole group
+- **A movie's saga** on its page: every installment in order, its rank, the ones you have watched and the one that comes next
+- **Clearer cards**: no more big Play button in the middle of posters, a discreet "Play" leading the actions, and clicking a 16:9 thumbnail starts playback. The same hover everywhere, search, people pages and episode rows included; a single "watched" marker, and "On this device" for what you downloaded
+- **Much faster seasons and episodes**: the current season opens right away, a large season shows up six times faster, and season pills read on any image
+- **Trailers**: season trailers, extras and local trailers finally show on the title page. A guide (Help › Trailers) explains how to get them, and a discreet link appears on the title page when the server is not set up; it can be hidden for good
+- **Offline**: a downloaded movie or series opens in the new title page, and the offline home reads like the online one, with Resume, Up next and the space used
+- **Recommendations**: a "like" in Refine hearts the title, even if it only reaches the library later; a title added to My list, liked, watched or rated leaves "For you" once you leave its row, never under the pointer; a title that is only in My list no longer skews your taste
+- **Refine**: dragging down skips the title, and the judged card no longer shakes by slipping under the next one
+- **With Jellyfin 12**: pick the version of a movie or an episode, "Part of" on the title page, filter libraries by audio or subtitle language, and original language among your preferred audio languages
+- **The Copy button works**: it copied nothing in the desktop app (the share links of My list and favorites), and it now tells you whether the copy succeeded
+- **Readable text**: the title page on a light backdrop, the captions under cards
+- **Administrators: the overview** tells whether your Jellyfin and its latest published version are compatible, shows the real state of the recommended Jellyfin settings and applies them in one click when it is safe, and counts the titles that have a trailer, with the reason for those that do not. Services tells whether each segment-detection plugin (credits, recaps) is active, installed or missing
+
+## [win-1.25.0]
+<!-- Microsoft Store : 1500 caractères. Le bloc nu part vers macOS et Linux. -->
+### FR
+- **Vos statistiques** : temps passé, genres, favoris, records, « VF ou VO ? », à partager par un lien révocable
+- **Watch Together : le mode Affinité** — swipez ensemble, et un match propose de regarder le titre à plusieurs
+- **La saga d'un film** sur sa fiche, dans l'ordre
+- **Des cartes plus claires** : un « Lire » discret, le même survol partout, un seul marqueur « vu »
+- **Saisons et épisodes bien plus rapides**, la saison en cours d'emblée
+- **Bandes-annonces** de saison, bonus et locales sur la fiche, et un guide dans l'Aide
+- **Hors ligne** : la nouvelle fiche et un accueil repensé
+- **Affiner** : un « j'aime » met le cœur au titre, glisser vers le bas le passe
+- **Avec Jellyfin 12** : choix de la version, filtres de langue, VO
+- **Le bouton Copier fonctionne** de nouveau
+- **Administrateurs** : compatibilité de Jellyfin et réglages conseillés dans la vue d'ensemble
+
+### EN
+- **Your statistics**: time spent, genres, favorites, records, "Dub or original?", shareable through a revocable link
+- **Watch Together: Affinity mode** — swipe together, and a match offers to watch the title as a group
+- **A movie's saga** on its page, in order
+- **Clearer cards**: a discreet "Play", the same hover everywhere, a single "watched" marker
+- **Much faster seasons and episodes**, the current season right away
+- **Season trailers**, extras and local trailers on the title page, and a guide in Help
+- **Offline**: the new title page and a redesigned home
+- **Refine**: a "like" hearts the title, dragging down skips it
+- **With Jellyfin 12**: version choice, language filters, original language
+- **The Copy button works** again
+- **Administrators**: Jellyfin compatibility and recommended settings in the overview
+
 ## [1.24.0]
 ### FR
 - **Une fiche média refaite** : le décor occupe tout l'écran, avec le logo du titre, la note en grand et vos marqueurs ; « Lecture » ou « Reprendre » indique le temps restant, les actions sont réunies en une capsule, et les images du titre s'ouvrent en plein écran

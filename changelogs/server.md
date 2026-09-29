@@ -5,6 +5,41 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.22.0]
+### FR
+- ⚠️ **Mettez à jour ce serveur AVANT de passer Jellyfin en 12** : Jellyfin 12 refuse l'ancienne méthode de connexion, et un serveur Tentacle plus ancien n'affiche plus rien. Celui-ci ne parle plus à Jellyfin que par la forme d'authentification que la 12 garde, et traduit au passage les requêtes des clients plus anciens pour qu'ils gardent la lecture
+- **Jellyfin 12.1 pris en charge**, sans rien perdre sur les versions précédentes (testé sur 12.1.0, 10.11.8 et 10.10.7 ; minimum 10.10.0). Ses nouveautés arrivent sur le web, le bureau, le mobile et les téléviseurs LG : le choix de la version d'un film ou d'un épisode, « Fait partie de » sur la fiche, le filtre des bibliothèques par langue audio ou de sous-titres, et la VO parmi les langues audio préférées
+- **Administrateurs : la vue d'ensemble** dit si votre Jellyfin et sa dernière version publiée sont testés, incomplets ou incompatibles ; elle montre l'état réel des réglages Jellyfin conseillés et les applique d'un clic quand c'est sûr ; elle compte les titres qui ont une bande-annonce, et dit pourquoi les autres n'en ont pas. Services dit si chaque greffon de détection des passages est actif, installé ou absent
+- **Bandes-annonces** : celles des saisons, les bonus et les bandes-annonces locales s'affichent enfin sur la fiche, bouton « Bande-annonce » du téléphone compris. Un guide (`/help/trailers`, avec sa partie administrateur) explique comment les obtenir, et un lien discret apparaît sur la fiche quand le serveur n'est pas réglé ; chaque compte peut le masquer pour de bon
+- **Bandes-annonces YouTube réparées sur Apple TV** : l'image Docker embarque un yt-dlp qui suit YouTube, mis à jour au démarrage puis toutes les 24 h (`TENTACLE_YTDLP_AUTOUPDATE=0` le coupe)
+- **Vos statistiques** : une page dit le temps devant l'écran, les genres, les films et acteurs préférés, le rythme et les records, « VF ou VO ? » (la langue de la piste audio réellement lue, relevée à partir de cette version) et l'origine des titres. Un lien public les partage, sans compte ni lecture possible, et se révoque à tout moment
+- **Watch Together : le mode Affinité** — le groupe swipe ensemble les films, séries ou animés de la bibliothèque ; quand tout le monde aime le même titre, « C'est un match ! » propose de le regarder ensemble
+- **La saga d'un film** sur sa fiche, tirée de TMDB : les volets dans l'ordre, ceux qui sont vus et celui qui vient ensuite
+- **Des cartes plus claires** : plus de gros bouton Lecture au milieu des affiches, le même survol partout, un seul marqueur « vu » ; les films trouvés par la recherche portent leur signet Ma liste
+- **Saisons et épisodes bien plus rapides** : la saison en cours d'emblée, une grosse saison six fois plus vite, 77 requêtes ramenées à 31 à l'ouverture d'une série sur le web, 67 à 24 sur les téléviseurs LG
+- **Recommandations** : un « j'aime » d'Affiner met le cœur au titre dans Jellyfin, tout de suite ou à l'arrivée du titre ; au premier démarrage, les « j'aime » déjà donnés reçoivent le leur, une seule fois. Un même « j'aime » ne compte qu'une fois, un titre seulement dans Ma liste ne pèse plus sur les goûts, et un titre ajouté à Ma liste, aimé, vu ou noté quitte « Pour vous » une fois le geste fini
+- **Affiner** : glisser vers le bas passe le titre, et la carte jugée ne tremble plus
+- **Téléviseurs LG** : le focus tient lieu de survol et l'appui long ouvre les actions d'une carte, la saga et les saisons refaites
+- **Le schéma de la base évolue au démarrage** (`share_links.options`, `watchlist_pending.flag`, `taste_profiles.potentials`, `watch_segments.audioLang`)
+- **Les clients 1.25.0 (bureau), 1.10.0 (mobile) et 1.4.0 (TV) demandent ce serveur** : la version minimale exigée passe à 1.22.0
+
+### EN
+- ⚠️ **Update this server BEFORE moving Jellyfin to 12**: Jellyfin 12 rejects the old sign-in method, and an older Tentacle server shows nothing anymore. This one talks to Jellyfin only through the authentication form 12 keeps, and translates older clients' requests on the way so they keep playing
+- **Jellyfin 12.1 supported**, losing nothing on earlier versions (tested on 12.1.0, 10.11.8 and 10.10.7; minimum 10.10.0). Its new features reach the web, desktop, mobile and LG TVs: pick the version of a movie or an episode, "Part of" on the title page, filter libraries by audio or subtitle language, and original language among preferred audio languages
+- **Administrators: the overview** tells whether your Jellyfin and its latest published version are tested, incomplete or incompatible; it shows the real state of the recommended Jellyfin settings and applies them in one click when it is safe; it counts the titles that have a trailer, and says why the others do not. Services tells whether each segment-detection plugin is active, installed or missing
+- **Trailers**: season trailers, extras and local trailers finally show on the title page, the phone's "Trailer" button included. A guide (`/help/trailers`, with its administrator part) explains how to get them, and a discreet link appears on the title page when the server is not set up; each account can hide it for good
+- **YouTube trailers fixed on Apple TV**: the Docker image ships a yt-dlp that keeps up with YouTube, updated at startup then every 24 h (`TENTACLE_YTDLP_AUTOUPDATE=0` turns it off)
+- **Your statistics**: a page shows screen time, genres, favorite movies and actors, pace and records, "Dub or original?" (the language of the audio track actually played, recorded from this version on) and where titles come from. A public link shares them, with no account and nothing playable, and can be revoked at any time
+- **Watch Together: Affinity mode** — the group swipes the library's movies, series or anime together; when everyone likes the same title, "It's a match!" offers to watch it together
+- **A movie's saga** on its page, drawn from TMDB: installments in order, the ones watched and the one that comes next
+- **Clearer cards**: no more big Play button in the middle of posters, the same hover everywhere, a single "watched" marker; movies found by search carry their My list bookmark
+- **Much faster seasons and episodes**: the current season right away, a large season six times faster, 77 requests down to 31 when opening a series on the web, 67 down to 24 on LG TVs
+- **Recommendations**: a "like" in Refine hearts the title in Jellyfin, right away or when the title arrives; on first startup, likes already given receive theirs, once. A single "like" counts only once, a title that is only in My list no longer weighs on taste, and a title added to My list, liked, watched or rated leaves "For you" once the gesture is over
+- **Refine**: dragging down skips the title, and the judged card no longer shakes
+- **LG TVs**: focus stands in for hover and a long press opens a card's actions, the saga and redesigned seasons
+- **The database schema evolves at startup** (`share_links.options`, `watchlist_pending.flag`, `taste_profiles.potentials`, `watch_segments.audioLang`)
+- **Desktop 1.25.0, mobile 1.10.0 and TV 1.4.0 require this server**: the minimum required version moves to 1.22.0
+
 ## [1.21.0]
 ### FR
 - **Affiner vos recommandations** : une pile de titres à juger, de votre bibliothèque et au-delà, dans Recommandations ; j'aime, coup de cœur et pas pour moi pèsent vraiment dans ce que le moteur vous propose, et un « pas pour moi » éloigne aussi ce qui lui ressemble. Il faut une clé TMDB pour proposer des titres hors bibliothèque ; sans elle, la pile s'en tient à la bibliothèque
