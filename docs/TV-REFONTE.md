@@ -10,12 +10,29 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 
 | Étape | État |
 |---|---|
-| 1. Lecture des captures de référence | **En attente** : aucune capture reçue avec la mission. |
-| 2. Inventaire des écrans et composants | **À valider** — ci-dessous. |
-| 3. Banc UI | Socle prêt (relais, pilotage, catalogue, focus figé, verre, langue, planches). Instantané Knaoxtest **en attente d'une session**. |
-| 4. Jetons TV repris du bureau | — |
-| 5. Briques | — |
-| 6. Écrans, un par un | — |
+| 1. Référence | La maquette « Accueil streaming Apple TV » (fournie le 2026-09-30), le CSS du bureau, et **pas de violet**. |
+| 2. Inventaire des écrans et composants | Ci-dessous. |
+| 3. Banc UI | Prêt. Instantané RÉEL du compte Knaoxtest : 1 433 éléments, 2 324 images (catalogues, genres, saisons, sagas, reco…). |
+| 4. Jetons TV repris du bureau | `TV_STAGE`, `TV_TYPE`, `TV_ACCENT` (`packages/theme/src/tokens/tvStage.ts`). |
+| 5. Briques | Faites — planche « Briques » (`bench:ui planche briques --focus`). |
+| 6. Écrans | Accueil fait ; fiche, bibliothèque, recherche, Pour vous, listes, réglages, jumelage, lecteur, feuille, bande-annonce, surimpressions en cours. |
+
+## La direction retenue
+
+- **La maquette** : navigation de verre flottante à gauche (repliée : les
+  pictogrammes ; ouverte : les libellés, sur un fond dense, sous un voile),
+  carte héros arrondie dont la LUMIÈRE déborde (halo aux couleurs de
+  l'image), grandes vignettes 16:9, textes très grands.
+- **Le bureau** : fonds noirs (#000 → #070710), textes blancs translucides,
+  pilule primaire blanche texte noir, verre neutre, élévation en deux
+  calques, Inter.
+- **Sans violet** : la couleur vient des œuvres (BlurHash → trois lumières,
+  `color/artworkPalette.ts`) ; l'ambre `TV_ACCENT` ne sert qu'aux petites
+  touches (surtitre, jauge, cœur, pastille de profil).
+- **Focus Apple TV, sans contour** : agrandissement, soulèvement, reflet ; le
+  verre focalisé devient blanc, texte noir ; les voisines reculent.
+- **La carte qui se redresse** (`MorphCard`) : 16:9 au repos, affiche 2:3 au
+  focus, en fondu, sans recalcul de mise en page.
 
 ## Voir le résultat, sans navigateur
 
