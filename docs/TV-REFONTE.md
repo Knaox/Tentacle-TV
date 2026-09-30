@@ -61,6 +61,11 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   relatif qui sort de `redesign/`.
 - L'état visuel du focus passe par `useFocusVisual(focusKey)`
   (`redesign/focus/focusPreview.tsx`) : focus natif dans l'app, figé au banc.
+- Le focus de l'INTÉGRATION passe par un seul port,
+  `redesign/focus/focusBinding.tsx` : `FocusBindingProvider` répond, clé par
+  clé, par une ref, des props natives (`hasTVPreferredFocus`, `nextFocus*`…),
+  la garde anti-clic fantôme et l'observation du focus. Un besoin nouveau
+  s'y ajoute ; jamais de variante par écran.
 - Le Liquid Glass passe par `LiquidGlassProvider` / `useLiquidGlassEnabled`
   (`redesign/glass/liquidGlassMode.tsx`), clé `tentacle_liquid_glass`,
   activé par défaut.
