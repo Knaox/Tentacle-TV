@@ -20,6 +20,8 @@ import type { BenchScene } from "./types";
  */
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options) as string;
+/** L'appui long ouvre la feuille dans l'app ; au banc, seule son indication compte. */
+const HOLD = () => undefined;
 
 function rowsOf(data: BenchData): HomeRowModel[] {
   const layout = (data.snapshot.extras?.homeLayout as { layout?: { rows?: Array<{ key: string; enabled: boolean }> } } | undefined)
@@ -76,6 +78,8 @@ function HomeScene({ data, variant }: { data: BenchData; variant: "default" | "n
     rows,
     palette: forcedCard?.palette ?? focusedPalette ?? hero?.palette ?? rows[0]?.cards[0]?.palette ?? { glows: ["#3a3f5c", "#5c4a2e", "#6b4a3a"], deep: "#0d0b0f" },
     onFocusCard,
+    // L'appui long ouvre la feuille dans l'app : les vignettes le disent au focus.
+    onLongPressCard: HOLD,
   };
   if (variant === "loading") return <HomeView {...base} status={{ kind: "loading", title: t("common:loading", { defaultValue: "Chargement…" }) }} />;
   if (variant === "error") {

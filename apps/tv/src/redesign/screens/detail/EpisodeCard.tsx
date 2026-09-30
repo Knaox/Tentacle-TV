@@ -6,6 +6,7 @@ import type { CardMarkers } from "@tentacle-tv/shared";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
 import { CardFrame } from "../../cards/CardFrame";
+import { CardHoldHint } from "../../cards/CardHoldHint";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
@@ -18,7 +19,9 @@ import type { EpisodeBadge, EpisodeModel } from "./detailTypes";
  * Reprendre / À suivre / Épisode actuel en haut à gauche ; dessous, le
  * surtitre (« ÉPISODE 3 · 24MIN »), le titre et le résumé. Au focus : la
  * carte grandit et se soulève, sa lumière déborde (halo monté à la demande,
- * jamais gardé caché), la légende descend avec elle.
+ * jamais gardé caché), la légende descend avec elle — et, quand l'appui long
+ * ouvre la feuille, dit sous elle « Maintenir OK : plus d'options »
+ * (`CardHoldHint`, comme toute carte horizontale : OK y lit).
  */
 
 export const EPISODE_CARD = { width: 460, height: 259, radius: TV_STAGE.card.landscape.radius } as const;
@@ -35,7 +38,7 @@ const BADGE_KEY: Record<EpisodeBadge, string> = {
 /** Ce que la carte descend au focus : l'agrandissement de son image, vu du pied. */
 const CAPTION_SHIFT = EPISODE_CARD.height * (TV_STAGE.focus.cardScale - 1);
 
-function Caption({ episode, focused }: { episode: EpisodeModel; focused: boolean }) {
+function Caption({ episode, focused, holdHint }: { episode: EpisodeModel; focused: boolean; holdHint: boolean }) {
   const { t } = useTranslation();
   const p = useFocusProgress(focused);
   const shift = useAnimatedStyle(() => ({ transform: [{ translateY: CAPTION_SHIFT * p.value }] }));
@@ -47,6 +50,7 @@ function Caption({ episode, focused }: { episode: EpisodeModel; focused: boolean
       {kicker ? <Text style={styles.kicker} numberOfLines={1}>{kicker}</Text> : null}
       <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={2}>{episode.title}</Text>
       {episode.overview ? <Text style={styles.overview} numberOfLines={3}>{episode.overview}</Text> : null}
+      {holdHint ? <CardHoldHint /> : null}
     </Animated.View>
   );
 }
@@ -97,7 +101,7 @@ export const EpisodeCard = memo(function EpisodeCard({
               </View>
             ) : null}
           </CardFrame>
-          <Caption episode={episode} focused={focused} />
+          <Caption episode={episode} focused={focused} holdHint={focused && onLongPress !== undefined} />
         </View>
       )}
     </FocusTarget>

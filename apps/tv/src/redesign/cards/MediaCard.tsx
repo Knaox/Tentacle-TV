@@ -8,6 +8,7 @@ import { useFocusProgress } from "../focus/useFocusProgress";
 import { colors, fonts, scrim } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
 import { CardFrame } from "./CardFrame";
+import { CardHoldHint } from "./CardHoldHint";
 import { CardLiftLayer } from "./CardLiftLayer";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import type { CardModel } from "./cardTypes";
@@ -25,10 +26,13 @@ import { TRAY_REVEAL_MS, useCardHover } from "./tray/useCardHover";
  * ouvre la feuille.
  *
  * Au focus, la carte grandit et, quand l'intégration lui donne un plateau
- * (`card.tray`), montre le SURVOL du bureau : voile, étoiles et capsule
+ * (`card.tray`), montre le SURVOL du bureau : voile, note perso et capsule
  * d'actions (`tray/CardTray` — son en-tête dit le parcours à la télécommande
- * et les clés). La note et les états du repos s'effacent, la progression
- * reste ; sur une vignette, le logo cède la place au plateau.
+ * et les clés). La note globale du repos s'efface ; l'épingle des états et la
+ * progression restent ; sur une vignette, le logo cède la place au plateau.
+ * Une vignette qui s'ouvre par l'appui long (`onLongPress`) le dit sous sa
+ * légende, au focus de la carte même : « Maintenir OK : plus d'options »
+ * (`CardHoldHint`) — OK y lit, rien d'autre ne l'apprendrait.
  *
  * La carte et les boutons de son plateau sont des focalisables FRÈRES : tvOS
  * ne focalise jamais un élément posé dans un autre, ni un élément RECOUVERT
@@ -104,6 +108,8 @@ export const MediaCard = memo(function MediaCard({
   const tray = hover.mounted ? card.tray : undefined;
   const hovered = hover.open && card.tray !== undefined;
   const reach = hovered && card.tray ? trayReach(variant, width, card.tray.actions.length) : 0;
+  // La carte elle-même a le focus (pas son plateau) : maintenir OK y ouvre la feuille.
+  const holdHint = landscape && onLongPress !== undefined && hover.open && hover.trayFocus === null;
   return (
     <View style={[{ width }, hover.open && styles.front]}>
       <CardFrame width={width} height={height} radius={radius} focused={hover.open} dimmed={dimmed} origin={origin} progress={lift}>
@@ -147,6 +153,7 @@ export const MediaCard = memo(function MediaCard({
         <Caption focused={hover.open} shift={captionShift(height, origin)}>
           <Text style={[styles.title, hover.open && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
           {card.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{card.subtitle}</Text> : null}
+          {holdHint ? <CardHoldHint /> : null}
         </Caption>
       )}
     </View>

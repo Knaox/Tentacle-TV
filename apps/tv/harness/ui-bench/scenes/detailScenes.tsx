@@ -89,12 +89,15 @@ function imagesOf(props: DetailViewProps): string[] {
   ].filter((uri): uri is string => !!uri);
 }
 
+/** L'appui long d'un épisode ouvre la feuille dans l'app ; au banc, seule son indication compte. */
+const HOLD = () => undefined;
+
 /** La fiche vivante : un onglet de saison choisi au simulateur change la saison. */
 function DetailScene({ data, build }: { data: BenchData; build: (data: BenchData, seasonId?: string) => DetailViewProps }) {
   const { i18n: live } = useTranslation();
   const [seasonId, setSeasonId] = useState<string | undefined>(undefined);
   const props = useMemo(() => build(data, seasonId), [build, data, seasonId, live.language]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <DetailView {...props} onSelectSeason={setSeasonId} />;
+  return <DetailView {...props} onSelectSeason={setSeasonId} onLongPressEpisode={HOLD} />;
 }
 
 type Build = (data: BenchData, seasonId?: string) => DetailViewProps;

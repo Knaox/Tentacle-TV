@@ -12,13 +12,16 @@ import type { BenchScene } from "./types";
 
 /**
  * Le plateau du focus — le survol du bureau, sur les cartes de la TV : la
- * carte focalisée, chacun de ses boutons et de ses étoiles, les états posés,
- * la recommandation (cinq boutons sur l'affiche la plus étroite) et le titre
- * hors bibliothèque. Les notes et les états posés sont des EXEMPLES : le
- * compte de test n'en a presque pas.
+ * carte focalisée, chacun de ses boutons, la note posée (un affichage), les
+ * états posés, la recommandation (cinq boutons sur l'affiche la plus étroite)
+ * et le titre hors bibliothèque. Les notes et les états posés sont des
+ * EXEMPLES : le compte de test n'en a presque pas. Les vignettes s'ouvrent
+ * par l'appui long, comme dans l'app : leur carte focalisée le dit.
  */
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options) as string;
+/** L'appui long ouvre la feuille dans l'app ; au banc, seule son indication compte. */
+const HOLD = () => undefined;
 
 type Variant = "poster" | "landscape" | "reco";
 
@@ -56,8 +59,8 @@ function LandscapeScene({ data }: { data: BenchData }) {
   const next = trayed(data, data.list("nextUp", 6), "landscape", (it) => episodeLabel(it, true), () => ({ pendingRating: true }));
   return (
     <Page lead={resume[0]}>
-      <MediaRow rowKey="vignette" title={t("common:resumeWatching")} variant="landscape" inset={96} cards={resume} />
-      <MediaRow rowKey="suivant" title={t("common:nextEpisodes")} variant="landscape" inset={96} cards={next} />
+      <MediaRow rowKey="vignette" title={t("common:resumeWatching")} variant="landscape" inset={96} cards={resume} onLongPressCard={HOLD} />
+      <MediaRow rowKey="suivant" title={t("common:nextEpisodes")} variant="landscape" inset={96} cards={next} onLongPressCard={HOLD} />
     </Page>
   );
 }
@@ -130,7 +133,7 @@ export const TRAY_SCENES: BenchScene[] = [
   {
     id: "briques/plateau-vignette",
     group: "Briques",
-    label: "Plateau — vignette 16:9 (OK lit : pas de « Lire »)",
+    label: "Plateau — vignette 16:9 (OK lit : pas de « Lire » ; maintenir OK, dit la carte)",
     focusKeys: ["vignette:0", ...tray("vignette:0", "watchlist", "watched", "details"), "suivant:1"],
     settleMs: SETTLE,
     render: (data) => <LandscapeScene data={data} />,

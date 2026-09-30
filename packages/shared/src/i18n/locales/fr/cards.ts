@@ -29,6 +29,9 @@ export default {
   markUnwatched: "Marquer comme non vu",
   // Le « ⋯ » d'une ligne tactile : la feuille des actions de la carte.
   moreActions: "Plus d'actions",
+  // La télécommande : sur une carte horizontale (où OK lit), maintenir OK
+  // ouvre la feuille d'actions — l'indication du focus (Apple TV).
+  holdForOptions: "Maintenir OK : plus d'options",
 
   // Notation (fiche mobile, feuille d'appui long).
   rateTitle: "Noter ce titre",
