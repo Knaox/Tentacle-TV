@@ -18,5 +18,6 @@ export type RootStackParamList = {
   SearchBrowse: { kind: "person" | "genre" | "studio"; id?: string; name: string };
   Watchlist: undefined;
   Favorites: undefined;
-  Settings: undefined;
+  /** `tab` : l'onglet à l'ouverture (« Réglages de la navigation », Apple TV). */
+  Settings: { tab?: "navigation" } | undefined;
 };

@@ -2,7 +2,8 @@ import { useCallback, useMemo } from "react";
 import type { NavRailProps } from "../../redesign/nav/NavRail";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
 import { useNavEntries } from "../nav/useNavEntries";
-import { navKeyOf, useRailActions, useRailFocused } from "../nav/useRailState";
+import { useRailArrange, type RailArrange } from "../nav/useRailArrange";
+import { navKeyOf, openNavigationSettings, useRailActions, useRailFocused } from "../nav/useRailState";
 import { useEntryFocus } from "./useEntryFocus";
 
 /**
@@ -54,12 +55,15 @@ export interface RedesignScreenModel {
   /** La clé de contenu que viserait `focusContent`. */
   contentKey: () => string | null;
   onBack?: () => boolean;
+  /** L'organisation de la navigation : menu d'appui long, déplacement. */
+  arrange: RailArrange;
 }
 
 export function useRedesignScreen({ railKey, entryKey = null, onBack, onReselect, focus: given }: RedesignScreenOptions): RedesignScreenModel {
   const own = useFocusStore();
   const focus = given ?? own;
-  const entries = useNavEntries();
+  const arrange = useRailArrange(focus, openNavigationSettings);
+  const entries = useNavEntries({ previewOrder: arrange.previewOrder, moving: arrange.movingKey !== null });
   const railFocused = useRailFocused(focus);
   const { contentKey } = useEntryFocus(focus, entryKey);
 
@@ -73,12 +77,15 @@ export function useRedesignScreen({ railKey, entryKey = null, onBack, onReselect
     focus.claim(focus.node(active) ? active : navKeyOf("Home"));
   }, [focus, railKey]);
 
-  const { onSelect, onLongPress } = useRailActions(railKey, focus, focusContent, onReselect);
+  const { onSelect, onLongPress } = useRailActions(railKey, focus, focusContent, arrange, onReselect);
 
+  // Le menu d'une entrée ou un déplacement gardent la navigation ouverte.
+  const { heldKey, movingKey } = arrange;
+  const expanded = railFocused || heldKey !== null || movingKey !== null;
   const nav = useMemo<NavRailProps>(
-    () => ({ ...entries, activeKey: railKey, expanded: railFocused, onSelect, onLongPress }),
-    [entries, railKey, railFocused, onSelect, onLongPress],
+    () => ({ ...entries, activeKey: railKey, expanded, heldKey, movingKey, onSelect, onLongPress }),
+    [entries, railKey, expanded, heldKey, movingKey, onSelect, onLongPress],
   );
 
-  return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, onBack };
+  return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, onBack, arrange };
 }

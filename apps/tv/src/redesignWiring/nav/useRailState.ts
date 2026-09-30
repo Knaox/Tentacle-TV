@@ -4,11 +4,13 @@ import type { FocusStore } from "../focus/focusStore";
 import { useRailPinning } from "../../components/nav/railPinning";
 import { returnToSearchBar } from "../../components/search/searchBarReturn";
 import { railNavigate } from "../../navigation/railNavigate";
-import { SHOW_ALL_KEY, isHideableEntry } from "./useNavEntries";
+import type { RailArrange } from "./useRailArrange";
+import { SHOW_ALL_KEY } from "./useNavEntries";
 
 /**
  * L'état de la navigation refondue d'un écran : ouverte quand l'une de ses
- * entrées a le focus, repliée sinon ; ce que font l'appui et l'appui long.
+ * entrées a le focus, repliée sinon ; ce que font l'appui et l'appui long
+ * (le menu d'organisation, `useRailArrange`).
  *
  * La clé de focus d'une entrée est `nav:<clé>` (`NavItem`). Passer d'une
  * entrée à l'autre ne replie pas la barre : le repli attend un court instant
@@ -70,6 +72,11 @@ function navigateTo(key: string, libraries: readonly Library[] | undefined): voi
   }
 }
 
+/** « Réglages de la navigation » (menu d'une entrée) : l'onglet Navigation des réglages. */
+export function openNavigationSettings(): void {
+  railNavigate("Settings", { tab: "navigation" });
+}
+
 export interface RailActions {
   onSelect: (key: string) => void;
   onLongPress: (key: string) => void;
@@ -78,11 +85,13 @@ export interface RailActions {
 /**
  * `focusContent` rend le focus au contenu (choisir l'entrée de la page où
  * l'on est) ; `onReselect` le remplace quand l'écran veut autre chose.
+ * Pendant un déplacement, OK pose l'entrée (`arrange`).
  */
 export function useRailActions(
   railKey: string,
   focus: FocusStore,
   focusContent: () => void,
+  arrange: Pick<RailArrange, "openMenu" | "dropIfMoving">,
   onReselect?: () => void,
 ): RailActions {
   const { data: libraries } = useLibraries();
@@ -91,18 +100,11 @@ export function useRailActions(
   librariesRef.current = libraries;
   const reselectRef = useRef(onReselect);
   reselectRef.current = onReselect;
-
-  /** L'entrée active si elle est à l'écran, sinon l'accueil (jamais masqué). */
-  const activeOrHome = useCallback(
-    (exclude?: string) => {
-      const active = navKeyOf(railKey);
-      return railKey !== exclude && focus.node(active) ? active : navKeyOf("Home");
-    },
-    [focus, railKey],
-  );
+  const { openMenu, dropIfMoving } = arrange;
 
   const onSelect = useCallback(
     (key: string) => {
+      if (dropIfMoving()) return;
       if (key === SHOW_ALL_KEY) {
         // L'entrée choisie disparaît avec ce qu'elle rend : le focus va à l'entrée active.
         pinning.showAll();
@@ -116,18 +118,8 @@ export function useRailActions(
       }
       navigateTo(key, librariesRef.current);
     },
-    [focus, focusContent, pinning, railKey],
+    [focus, focusContent, pinning, railKey, dropIfMoving],
   );
 
-  const onLongPress = useCallback(
-    (key: string) => {
-      if (!isHideableEntry(key)) return;
-      pinning.toggle(key);
-      // L'entrée masquée quitte l'écran sous le focus : il va à l'entrée active.
-      focus.claim(activeOrHome(key));
-    },
-    [focus, pinning, activeOrHome],
-  );
-
-  return { onSelect, onLongPress };
+  return { onSelect, onLongPress: openMenu };
 }

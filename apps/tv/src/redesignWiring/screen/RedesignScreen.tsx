@@ -3,6 +3,7 @@ import { StyleSheet } from "react-native";
 import { useNavigation, usePreventRemove } from "@react-navigation/native";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { MenuPressInterceptor } from "../../components/focus/MenuPressInterceptor";
+import { NavMenuModal } from "../nav/NavMenuModal";
 import { RailBridges } from "./RailBridges";
 import type { RedesignScreenModel } from "./useRedesignScreen";
 
@@ -16,7 +17,11 @@ import type { RedesignScreenModel } from "./useRedesignScreen";
  *   sauf si l'écran le prend (`onBack` : un panneau à fermer) ; depuis la
  *   navigation, il recule d'un écran, et à la racine il est laissé à UIKit,
  *   qui quitte l'application — la règle tvOS ;
- * - les PONTS entre navigation et contenu (`RailBridges`).
+ * - les PONTS entre navigation et contenu (`RailBridges`) ;
+ * - l'ORGANISATION de la navigation : le menu d'appui long d'une entrée
+ *   (`NavMenuModal`) et, pendant un déplacement, Menu qui l'annule — sur la
+ *   racine comme sur une page poussée, où il ne doit ni quitter l'app ni
+ *   dépiler l'écran.
  *
  * Une page POUSSÉE — toutes celles du rail s'empilent sur l'accueil : Menu
  * n'y atteint jamais l'intercepteur. UIKit dépile l'écran d'abord (le patch
@@ -31,28 +36,34 @@ import type { RedesignScreenModel } from "./useRedesignScreen";
  */
 export function RedesignScreen({ screen, children }: { screen: RedesignScreenModel; children: ReactNode }) {
   const navigation = useNavigation();
-  const { railFocused, onBack, focusRail } = screen;
+  const { railFocused, onBack, focusRail, arrange } = screen;
   const canGoBack = navigation.canGoBack();
+  const moving = arrange.movingKey !== null;
+  const { cancelIfMoving } = arrange;
 
   const onMenuPress = useCallback(() => {
+    if (cancelIfMoving()) return;
     if (railFocused) {
       if (navigation.canGoBack()) navigation.goBack();
       return;
     }
     if (onBack?.()) return;
     focusRail();
-  }, [navigation, railFocused, onBack, focusRail]);
+  }, [navigation, railFocused, onBack, focusRail, cancelIfMoving]);
 
   // Le dépilage natif empêché revient en `POP` (native-stack) : c'est Menu.
   // L'action relancée porte la marque de ce retrait : elle n'est plus retenue.
-  usePreventRemove(canGoBack && !railFocused, ({ data }) => {
+  usePreventRemove(canGoBack && (!railFocused || moving), ({ data }) => {
     if (data.action.type === "POP" && navigation.isFocused()) onMenuPress();
     else navigation.dispatch(data.action);
   });
 
   return (
-    <MenuPressInterceptor enabled={railFocused ? canGoBack : true} onMenuPress={onMenuPress} style={styles.fill}>
-      <FocusBindingProvider bind={screen.focus.binder}>{children}</FocusBindingProvider>
+    <MenuPressInterceptor enabled={railFocused && !moving ? canGoBack : true} onMenuPress={onMenuPress} style={styles.fill}>
+      <FocusBindingProvider bind={screen.focus.binder}>
+        {children}
+        <NavMenuModal arrange={arrange} focus={screen.focus} />
+      </FocusBindingProvider>
       <RailBridges screen={screen} />
     </MenuPressInterceptor>
   );
