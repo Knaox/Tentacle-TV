@@ -22,7 +22,7 @@ import { useCardModelFactory, useCardModels, type CardModelOptions } from "../ca
  *   n'ayant pas d'extension : un cadre, un titre, une année, jamais une
  *   fausse affiche ;
  * - les titres similaires (`useSimilarItems`) — ceux de la SÉRIE pour un
- *   épisode, dans sa bibliothèque.
+ *   épisode, dans sa bibliothèque ; aucun pour une collection.
  */
 
 const yearOf = (item: MediaItem) => (item.ProductionYear ? String(item.ProductionYear) : undefined);
@@ -65,8 +65,10 @@ export function useDetailCards(item: MediaItem | undefined, series: MediaItem | 
   const isEpisode = item?.Type === "Episode";
   const isMovie = item?.Type === "Movie";
 
-  const { data: collectionItems } = useCollectionItems(item?.Type === "BoxSet" ? item.Id : undefined);
-  const similarId = isEpisode ? item?.SeriesId ?? item?.Id : item?.Id;
+  const isCollection = item?.Type === "BoxSet";
+  const { data: collectionItems } = useCollectionItems(isCollection ? item.Id : undefined);
+  // Une collection montre son contenu, pas des « similaires » à elle-même.
+  const similarId = isCollection ? undefined : isEpisode ? item?.SeriesId ?? item?.Id : item?.Id;
   const { data: similarItems } = useSimilarItems(similarId, isEpisode ? series?.ParentId : item?.ParentId);
   const external = useSagaParts(isMovie ? item : undefined, lang);
   const { view } = useSagaView(isMovie ? item : undefined, { lang, external });
