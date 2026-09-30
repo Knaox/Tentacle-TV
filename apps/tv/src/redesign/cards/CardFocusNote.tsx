@@ -1,6 +1,5 @@
 import { memo } from "react";
-import { StyleSheet, Text } from "react-native";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { StyleSheet, Text, View } from "react-native";
 import { Icon } from "../icons/Icon";
 import { colors, fonts } from "../theme/tokens";
 
@@ -13,12 +12,13 @@ import { colors, fonts } from "../theme/tokens";
  * de l'appui maintenu dessous : elle n'agrandit rien, la rangée ne bouge pas —
  * c'est elle qui garde la place dessous (`CARD_NOTE_SPACE`). Plus large que
  * l'affiche, alignée sur sa légende : deux lignes y disent une raison entière.
- * Montée au focus seulement, un temps APRÈS lui : parcourir une rangée ne fait
- * pas clignoter une phrase sous chaque carte.
+ * Le contenu seul : `CardFocusFooter` la montre au focus, un temps APRÈS lui
+ * (`FOCUS_NOTE_DWELL_MS`) — parcourir une rangée ne fait pas clignoter une
+ * phrase sous chaque carte.
  */
 
 /** Le temps que le focus reste avant que la phrase paraisse. */
-const DWELL_MS = 250;
+export const FOCUS_NOTE_DWELL_MS = 250;
 
 /** La place qu'une rangée garde en plus, dessous, quand ses cartes ont une
  *  phrase de focus (deux lignes sous la légende). */
@@ -26,10 +26,10 @@ export const CARD_NOTE_SPACE = 76;
 
 export const CardFocusNote = memo(function CardFocusNote({ text }: { text: string }) {
   return (
-    <Animated.View entering={FadeIn.delay(DWELL_MS).duration(200)} exiting={FadeOut.duration(120)} style={styles.note}>
+    <View style={styles.note}>
       <Icon name="sparkles" size={20} color={colors.accentLight} />
       <Text style={styles.text} numberOfLines={2}>{text}</Text>
-    </Animated.View>
+    </View>
   );
 });
 

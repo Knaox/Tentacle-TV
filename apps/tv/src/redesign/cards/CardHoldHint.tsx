@@ -1,6 +1,5 @@
 import { memo } from "react";
-import { StyleSheet, Text } from "react-native";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../icons/Icon";
 import { colors, fonts } from "../theme/tokens";
@@ -12,21 +11,22 @@ import { colors, fonts } from "../theme/tokens";
  * existe (noter, Ma liste, j'aime, vu, les infos). Le pictogramme de la
  * télécommande, la voix basse des légendes.
  *
- * Montée au focus seulement, en fondu, un temps APRÈS lui : parcourir une
- * rangée ne fait pas clignoter une ligne sous chaque carte. Placée par
- * `CardFocusFooter`, sous la phrase de focus quand la carte en a une.
+ * Le contenu seul : c'est `CardFocusFooter` qui le montre, au focus, un temps
+ * APRÈS lui (`HOLD_HINT_DWELL_MS`) — parcourir une rangée ne fait pas
+ * clignoter une ligne sous chaque carte —, sous la phrase de focus quand la
+ * carte en a une.
  */
 
 /** Le temps que le focus reste avant que l'indication paraisse. */
-const DWELL_MS = 350;
+export const HOLD_HINT_DWELL_MS = 350;
 
 export const CardHoldHint = memo(function CardHoldHint() {
   const { t } = useTranslation("cards");
   return (
-    <Animated.View entering={FadeIn.delay(DWELL_MS).duration(200)} exiting={FadeOut.duration(120)} style={styles.hint}>
+    <View style={styles.hint}>
       <Icon name="remote" size={22} color={colors.textTertiary} strokeWidth={1.8} />
       <Text style={styles.text} numberOfLines={1}>{t("holdForOptions")}</Text>
-    </Animated.View>
+    </View>
   );
 });
 
