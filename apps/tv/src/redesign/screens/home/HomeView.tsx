@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
@@ -10,6 +10,7 @@ import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MediaRow } from "../../rows/MediaRow";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
+import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 
 /**
  * L'accueil : la carte héros plein format, puis les rangées dans l'ordre de
@@ -20,6 +21,10 @@ import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
  * (ordre des rangées), `useResumeItems` / `useFeaturedItems` (héros),
  * `useNextUp`, `useWatchlist`, `useLatestItems`, `useRecoPage` (cartes),
  * `useCardMarkers` (marqueurs) et `paletteFromBlurHash` (lumière).
+ *
+ * Une carte qui prend le focus amène sa rangée ENTIÈRE à l'écran — sa
+ * légende et l'indication de l'appui long avec elle (`useForcedFocusReveal`) ;
+ * au banc, la rangée de la clé figée.
  *
  * `filter` : la pastille du filtre de plateformes du compte, posée sur la
  * rangée `filterRowKey` — la première rangée recommandée réellement servie
@@ -78,15 +83,31 @@ export const HomeView = memo(function HomeView({
   onLongPressCard,
   onFocusCard,
 }: HomeViewProps) {
+  const { scrollRef, sectionLayout, onViewportLayout, onScroll, revealSection } = useForcedFocusReveal();
+  const onRowFocus = useCallback(
+    (rowKey: string, card: CardModel) => {
+      revealSection(rowKey);
+      onFocusCard?.(rowKey, card);
+    },
+    [revealSection, onFocusCard],
+  );
   return (
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
       {status ? (
         <StatusPanel {...status} />
       ) : (
-        <ScrollView style={styles.fill} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.fill}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          onLayout={onViewportLayout}
+          onScroll={onScroll}
+          scrollEventThrottle={32}
+        >
           {hero ? (
-            <View style={styles.hero}>
+            <View style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
               <HeroBanner
                 hero={hero}
                 width={HERO_WIDTH}
@@ -96,19 +117,19 @@ export const HomeView = memo(function HomeView({
               />
             </View>
           ) : null}
-          <View style={hero ? styles.rowsAfterHero : styles.rowsAlone}>
-            {rows.map((row) => (
-              <HomeRow
-                key={row.key}
-                row={row}
-                filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
-                onRemoveFilter={onRemoveFilter}
-                onPressCard={onPressCard}
-                onLongPressCard={onLongPressCard}
-                onFocusCard={onFocusCard}
-              />
-            ))}
-          </View>
+          {rows.map((row, index) => (
+            <HomeRow
+              key={row.key}
+              row={row}
+              first={index === 0 ? (hero ? "afterHero" : "alone") : undefined}
+              filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
+              onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
+              onRemoveFilter={onRemoveFilter}
+              onPressCard={onPressCard}
+              onLongPressCard={onLongPressCard}
+              onFocusCard={onRowFocus}
+            />
+          ))}
         </ScrollView>
       )}
       <View style={styles.brand} pointerEvents="none">
@@ -128,14 +149,19 @@ type RowHandler = (rowKey: string, card: CardModel) => void;
  */
 const HomeRow = memo(function HomeRow({
   row,
+  first,
   filterLabel,
+  onLayout,
   onRemoveFilter,
   onPressCard,
   onLongPressCard,
   onFocusCard,
 }: {
   row: HomeRowModel;
+  /** La première rangée : son écart au héros, ou au haut de l'écran. */
+  first?: "afterHero" | "alone";
   filterLabel?: string;
+  onLayout: (event: LayoutChangeEvent) => void;
   onRemoveFilter?: () => void;
   onPressCard?: RowHandler;
   onLongPressCard?: RowHandler;
@@ -146,21 +172,23 @@ const HomeRow = memo(function HomeRow({
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
   const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
   return (
-    <MediaRow
-      rowKey={key}
-      title={row.title}
-      cards={row.cards}
-      variant={row.variant}
-      inset={LEFT}
-      accessory={
-        filterLabel ? (
-          <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} />
-        ) : undefined
-      }
-      onPressCard={onPressCard ? press : undefined}
-      onLongPressCard={onLongPressCard ? longPress : undefined}
-      onFocusCard={onFocusCard ? focus : undefined}
-    />
+    <View onLayout={onLayout} style={first === "afterHero" ? styles.firstAfterHero : first === "alone" ? styles.firstAlone : undefined}>
+      <MediaRow
+        rowKey={key}
+        title={row.title}
+        cards={row.cards}
+        variant={row.variant}
+        inset={LEFT}
+        accessory={
+          filterLabel ? (
+            <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} />
+          ) : undefined
+        }
+        onPressCard={onPressCard ? press : undefined}
+        onLongPressCard={onLongPressCard ? longPress : undefined}
+        onFocusCard={onFocusCard ? focus : undefined}
+      />
+    </View>
   );
 });
 
@@ -169,7 +197,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   scroll: { paddingBottom: 160 },
   hero: { marginLeft: LEFT, marginTop: TV_STAGE.hero.top },
-  rowsAfterHero: { marginTop: 56 },
-  rowsAlone: { marginTop: TV_STAGE.safe.y + 40 },
+  firstAfterHero: { marginTop: 56 },
+  firstAlone: { marginTop: TV_STAGE.safe.y + 40 },
   brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

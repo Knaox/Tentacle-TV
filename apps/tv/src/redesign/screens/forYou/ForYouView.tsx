@@ -88,7 +88,16 @@ export const ForYouView = memo(function ForYouView({
   onLongPressCard,
   onFocusCard,
 }: ForYouViewProps) {
-  const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
+  const { scrollRef, sectionLayout, onViewportLayout, onScroll, revealSection } = useForcedFocusReveal();
+  // L'étagère d'une carte focalisée entière à l'écran : sa légende et la raison
+  // de la carte avec elle (tvOS n'amène que la carte).
+  const onShelfFocus = useCallback(
+    (shelfKey: string, card: CardModel) => {
+      revealSection(shelfKey);
+      onFocusCard?.(shelfKey, card);
+    },
+    [revealSection, onFocusCard],
+  );
   return (
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
@@ -101,6 +110,8 @@ export const ForYouView = memo(function ForYouView({
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           onLayout={onViewportLayout}
+          onScroll={onScroll}
+          scrollEventThrottle={32}
         >
           {hero ? (
             <View style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
@@ -128,7 +139,7 @@ export const ForYouView = memo(function ForYouView({
               onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
               onPressCard={onPressCard}
               onLongPressCard={onLongPressCard}
-              onFocusCard={onFocusCard}
+              onFocusCard={onShelfFocus}
             />
           ))}
         </ScrollView>
