@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
-import { useJellyfinClient, useLibraries, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { useLibraries } from "@tentacle-tv/api-client";
 import type { IconName } from "../../redesign/icons/Icon";
 import type { NavEntry, NavRailProps } from "../../redesign/nav/NavRail";
 import { useRailPinning } from "../../components/nav/railPinning";
+import { usePairedAccount } from "../../hooks/usePairedAccount";
+import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 
 /**
  * Ce que la navigation refondue propose, dans l'ordre où on la parcourt — les
@@ -37,43 +38,22 @@ function libraryIcon(collectionType?: string): IconName {
   }
 }
 
-/** Le nom du compte jumelé (`tentacle_user`), ou rien. */
-function storedUserName(raw: string | null): string {
-  try {
-    const name = (JSON.parse(raw ?? "{}") as { Name?: unknown }).Name;
-    return typeof name === "string" ? name : "";
-  } catch {
-    return "";
-  }
-}
-
-/**
- * Le portrait du compte : seulement s'il existe (`PrimaryImageTag`) — une
- * adresse à l'aveugle laisserait un rond vide, là où l'initiale se lit.
- * Une requête par session : le profil ne change pas sous nos pieds.
- */
-function useAccountAvatar(): string | undefined {
-  const client = useJellyfinClient();
-  const userId = useUserId();
-  const { data: tag } = useQuery({
-    queryKey: ["tv-account-avatar", userId],
-    queryFn: () => client.fetch<{ PrimaryImageTag?: string }>(`/Users/${userId}`).then((user) => user.PrimaryImageTag ?? null),
-    enabled: !!userId,
-    staleTime: 30 * 60 * 1000,
-  });
-  if (!userId || !tag) return undefined;
-  return `${client.getBaseUrl()}/Users/${userId}/Images/Primary?tag=${tag}&maxWidth=96&quality=90`;
-}
+/** Le diamètre du portrait dans la navigation (`NavItem`), en points. */
+const AVATAR = 46;
 
 export type NavEntries = Pick<NavRailProps, "search" | "entries" | "account" | "hint">;
 
 export function useNavEntries(): NavEntries {
   const { t } = useTranslation("nav");
-  const { storage } = useTentacleConfig();
   const { data: libraries } = useLibraries();
   const pinning = useRailPinning();
-  const avatarUri = useAccountAvatar();
-  const userName = storedUserName(storage.getItem("tentacle_user"));
+  // Le portrait des réglages, par la même adresse : `Users/{id}/Images/Primary`
+  // passe le proxy du serveur, `GET /Users/{id}` non (hors de sa liste
+  // blanche : la navigation retombait toujours sur l'initiale). Montré
+  // seulement s'il existe — sinon un rond vide, là où l'initiale se lit.
+  const paired = usePairedAccount(AVATAR);
+  const avatarUri = useVerifiedImage(paired.portraitUrl);
+  const userName = paired.name ?? "";
 
   return useMemo(() => {
     const entries: NavEntry[] = [{ key: "Home", label: t("home"), icon: "home" }];
