@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from "react-nati
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
-import { MORPH_NOTE_SPACE } from "../../cards/MorphCard";
+import { CARD_NOTE_SPACE } from "../../cards/CardFocusNote";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
@@ -17,9 +17,9 @@ import { ForYouNotice, type ForYouNoticeModel } from "./ForYouNotice";
 /**
  * « Pour vous » : en tête, notre meilleure suggestion et POURQUOI (le
  * surtitre et sa raison) ; sous elle, la ligne d'état quand il y a lieu ;
- * puis les étagères de la bibliothèque, dans l'ordre du moteur — des cartes
- * qui se redressent en affiche au focus, la raison de la recommandation
- * dessous, « Découverte » sur les titres d'exploration. La première étagère
+ * puis les étagères de la bibliothèque, dans l'ordre du moteur — des
+ * affiches, la raison de la recommandation sous la carte focalisée,
+ * « Découverte » sur les titres d'exploration. La première étagère
  * porte la pastille du filtre de plateformes, qu'un appui retire. Le fond
  * prend la lumière de la carte focalisée.
  *
@@ -184,7 +184,7 @@ const Shelf = memo(function Shelf({
         rowKey={key}
         title={shelf.title}
         cards={shelf.cards}
-        variant="morph"
+        variant="poster"
         inset={LEFT}
         accessory={
           filterLabel ? (
@@ -208,6 +208,6 @@ const styles = StyleSheet.create({
   noticeAlone: { marginLeft: LEFT, marginTop: TV_STAGE.safe.y + 40 },
   firstAfterHead: { marginTop: 72 },
   firstAlone: { marginTop: TV_STAGE.safe.y + 72 },
-  withNotes: { paddingBottom: MORPH_NOTE_SPACE },
+  withNotes: { paddingBottom: CARD_NOTE_SPACE },
   brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

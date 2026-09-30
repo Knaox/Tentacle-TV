@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { i18n, type CardOverlayVariant, type MediaItem } from "@tentacle-tv/shared";
+import { i18n, type MediaItem } from "@tentacle-tv/shared";
 import { cardIndexOf } from "../../../src/redesign/cards/cardFocusKeys";
 import type { CardModel } from "../../../src/redesign/cards/cardTypes";
 import type { ArtworkPalette } from "../../../src/redesign/color/artworkPalette";
@@ -9,15 +9,14 @@ import { HomeView, type HomeRowModel, type HomeViewProps } from "../../../src/re
 import type { BenchData } from "../data/benchData";
 import { cardOf, episodeLabel, resumeSubtitle, yearOf } from "../data/models";
 import { heroOf, navOf } from "../data/screenModels";
-import { libraryTray, withTray } from "../data/trayModels";
 import type { BenchScene } from "./types";
 
 /**
  * L'accueil, sur les vraies données du compte : le héros tourne sur les
  * reprises (sinon sur la mise en avant), les rangées suivent la mise en page
  * du compte (`home-layout`), puis les derniers ajouts de chaque bibliothèque.
- * Chaque carte porte son plateau, dans la variante du modèle que sa rangée
- * lui donne : vignette 16:9 (OK lit), affiche, recommandation.
+ * Comme dans l'app : Reprendre seule en vignettes 16:9 (OK lit), toutes les
+ * autres rangées en affiches.
  */
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options) as string;
@@ -28,21 +27,20 @@ function rowsOf(data: BenchData): HomeRowModel[] {
   const layout = (data.snapshot.extras?.homeLayout as { layout?: { rows?: Array<{ key: string; enabled: boolean }> } } | undefined)
     ?.layout?.rows?.filter((row) => row.enabled).map((row) => row.key) ?? ["resume", "nextUp", "watchlist", "watched"];
   const rows: HomeRowModel[] = [];
-  const cards = (items: MediaItem[], subtitle: (item: MediaItem) => string | undefined, tray: CardOverlayVariant) =>
-    items.map((item) => withTray(cardOf(data, item, subtitle(item)), libraryTray(data, item, tray)));
+  const cards = (items: MediaItem[], subtitle: (item: MediaItem) => string | undefined) => items.map((item) => cardOf(data, item, subtitle(item)));
   for (const key of layout) {
-    if (key === "resume") rows.push({ key, title: t("common:resumeWatching"), variant: "landscape", cards: cards(data.list("resume"), resumeSubtitle, "landscape") });
-    if (key === "nextUp") rows.push({ key, title: t("common:nextEpisodes"), variant: "landscape", cards: cards(data.list("nextUp"), (it) => episodeLabel(it, true), "landscape") });
-    if (key === "watched") rows.push({ key, title: t("common:alreadyWatched"), variant: "landscape", cards: cards(data.list("watched"), (it) => (it.Type === "Episode" ? episodeLabel(it) : yearOf(it)), "landscape") });
-    if (key === "watchlist") rows.push({ key, title: t("common:myList"), variant: "poster", cards: cards(data.list("watchlist"), yearOf, "poster") });
+    if (key === "resume") rows.push({ key, title: t("common:resumeWatching"), variant: "landscape", cards: cards(data.list("resume"), resumeSubtitle) });
+    if (key === "nextUp") rows.push({ key, title: t("common:nextEpisodes"), variant: "poster", cards: cards(data.list("nextUp"), (it) => episodeLabel(it, true)) });
+    if (key === "watched") rows.push({ key, title: t("common:alreadyWatched"), variant: "poster", cards: cards(data.list("watched"), (it) => (it.Type === "Episode" ? episodeLabel(it) : yearOf(it))) });
+    if (key === "watchlist") rows.push({ key, title: t("common:myList"), variant: "poster", cards: cards(data.list("watchlist"), yearOf) });
     if (key.startsWith("reco:")) {
       const shelf = data.snapshot.shelves.find((s) => s.id === key.slice(5));
-      if (shelf) rows.push({ key, title: t(`reco:rows.${shelf.id}`, { defaultValue: t("nav:forYou") }), variant: "morph", cards: cards(data.items(shelf.itemIds), yearOf, "reco") });
+      if (shelf) rows.push({ key, title: t(`reco:rows.${shelf.id}`, { defaultValue: t("nav:forYou") }), variant: "poster", cards: cards(data.items(shelf.itemIds), yearOf) });
     }
   }
   for (const lib of data.snapshot.libraries) {
     const list = data.items(data.snapshot.latestByLibrary?.[lib.id], 12);
-    if (list.length) rows.push({ key: `library:${lib.id}`, title: t("common:latestAdditions", { name: lib.name }), variant: "morph", cards: cards(list, yearOf, "poster") });
+    if (list.length) rows.push({ key: `library:${lib.id}`, title: t("common:latestAdditions", { name: lib.name }), variant: "poster", cards: cards(list, yearOf) });
   }
   return rows;
 }
@@ -80,7 +78,7 @@ function HomeScene({ data, variant }: { data: BenchData; variant: HomeVariant })
   const forced = useForcedFocusKey();
   const forcedCard = useMemo(() => {
     for (const row of rows) {
-      // La carte, ou un bouton de son plateau ; `reco:forYou:1` comme `resume:0`.
+      // `reco:forYou:1` comme `resume:0`.
       const index = cardIndexOf(forced, row.key);
       if (index !== null) return row.cards[index] ?? null;
     }
@@ -119,14 +117,14 @@ function HomeScene({ data, variant }: { data: BenchData; variant: HomeVariant })
   return <HomeView {...base} />;
 }
 
-const HOME_FOCUS = ["hero:primary", "hero:secondary", "hero:list", "resume:0", "resume:0:tray:watchlist", "resume:1"];
+const HOME_FOCUS = ["hero:primary", "hero:secondary", "hero:list", "resume:0", "resume:1", "nextUp:0"];
 
 export const HOME_SCENES: BenchScene[] = [
   { id: "accueil/defaut", group: "Accueil", label: "Héros et rangées", focusKeys: HOME_FOCUS, settleMs: 1600, render: (data) => <HomeScene data={data} variant="default" /> },
   { id: "accueil/heros-sans-logo", group: "Accueil", label: "Héros sans logo (titre écrit, exemple)", focusKeys: ["hero:primary"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="heroNoLogo" /> },
   { id: "accueil/heros-episode", group: "Accueil", label: "Héros d'un épisode (One Piece S1 · E3, exemple)", focusKeys: ["hero:primary"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="heroEpisode" /> },
   { id: "accueil/navigation", group: "Accueil", label: "Navigation ouverte", focusKeys: ["nav:Home", "nav:Recommendations", "nav:Settings"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="nav" /> },
-  { id: "accueil/sans-heros", group: "Accueil", label: "Sans héros (rangées)", focusKeys: ["resume:0", "nextUp:2", "nextUp:2:tray:details", "reco:forYou:1"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="noHero" /> },
+  { id: "accueil/sans-heros", group: "Accueil", label: "Sans héros (rangées)", focusKeys: ["resume:0", "nextUp:2", "reco:forYou:1"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="noHero" /> },
   { id: "accueil/chargement", group: "Accueil", label: "Chargement", render: (data) => <HomeScene data={data} variant="loading" /> },
   { id: "accueil/erreur", group: "Accueil", label: "Erreur de connexion", focusKeys: ["status:primary"], render: (data) => <HomeScene data={data} variant="error" /> },
   { id: "accueil/vide", group: "Accueil", label: "Bibliothèque vide", render: (data) => <HomeScene data={data} variant="empty" /> },

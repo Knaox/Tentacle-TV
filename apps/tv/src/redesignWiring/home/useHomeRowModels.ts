@@ -25,9 +25,10 @@ import { useHomeRecoSource } from "./useHomeRecoSource";
 /**
  * Les rangées de l'accueil refondu, dans l'ordre de la mise en page du COMPTE
  * (`useTVHomeRows` : celle que le web édite, réconciliée avec les
- * bibliothèques) : Reprendre · Prochains épisodes · Déjà vu en vignettes 16:9
- * (OK = lecture) ; Ma liste · Favoris en affiches ; Derniers ajouts par
- * bibliothèque et rangées recommandées en cartes qui se redressent.
+ * bibliothèques). Reprendre seule en vignettes 16:9 (OK = lecture) ; toutes
+ * les autres en AFFICHES (OK = la fiche) : Prochains épisodes, Déjà vu, Ma
+ * liste, Favoris, Derniers ajouts par bibliothèque, rangées recommandées —
+ * voulu ainsi, « comme sur le bureau » (2026-10-01).
  *
  * Chaque carte garde l'item qu'elle montre (`targetOf`) : l'appui, l'appui
  * long et la lumière du fond en partent.
@@ -52,7 +53,8 @@ export interface HomeRowsModel {
   resume: MediaItem[] | undefined;
 }
 
-const LANDSCAPE_ROWS = new Set(["resume", "nextUp", "watched"]);
+/** Les rangées d'épisodes en cours ou vus : leur légende dit l'épisode. */
+const EPISODE_ROWS = new Set(["nextUp", "watched"]);
 
 export function useHomeRowModels(): HomeRowsModel {
   const { t } = useTranslation();
@@ -103,12 +105,17 @@ export function useHomeRowModels(): HomeRowsModel {
     const rows: HomeRowModel[] = [];
 
     for (const { key } of layout) {
-      if (LANDSCAPE_ROWS.has(key)) {
-        const items = (key === "resume" ? resume : key === "nextUp" ? nextUp : watched) ?? [];
-        const title = key === "resume" ? t("common:resumeWatching") : key === "nextUp" ? t("common:nextEpisodes") : t("common:alreadyWatched");
-        const subtitle = key === "resume" ? (item: MediaItem) => resumeSubtitle(item, t) : (item: MediaItem) => itemSubtitle(item, key === "nextUp");
-        rows.push({ key, title, variant: "landscape", cards: lists(key, items, { variant: "landscape", subtitle }) });
+      if (key === "resume") {
+        const items = resume ?? [];
+        const subtitle = (item: MediaItem) => resumeSubtitle(item, t);
+        rows.push({ key, title: t("common:resumeWatching"), variant: "landscape", cards: lists(key, items, { variant: "landscape", subtitle }) });
         register(key, items, { kind: "play", sheet: "landscape" });
+      } else if (EPISODE_ROWS.has(key)) {
+        const items = (key === "nextUp" ? nextUp : watched) ?? [];
+        const title = key === "nextUp" ? t("common:nextEpisodes") : t("common:alreadyWatched");
+        const subtitle = (item: MediaItem) => itemSubtitle(item, key === "nextUp");
+        rows.push({ key, title, variant: "poster", cards: lists(key, items, { variant: "poster", subtitle }) });
+        register(key, items, { kind: "detail", sheet: "poster" });
       } else if (key === "watchlist" || key === "favorites") {
         const items = (key === "watchlist" ? watchlist : favorites) ?? [];
         const title = key === "watchlist" ? t("common:myList") : t("common:myFavorites");
@@ -121,8 +128,8 @@ export function useHomeRowModels(): HomeRowsModel {
         rows.push({
           key,
           title: t("common:latestAdditions", { name }),
-          variant: "morph",
-          cards: lists(key, items, { variant: "morph", subtitle: (item) => latestSubtitle(item, t) }),
+          variant: "poster",
+          cards: lists(key, items, { variant: "poster", subtitle: (item) => latestSubtitle(item, t) }),
         });
         register(key, items, { kind: "detail", sheet: "poster" });
       } else if (key.startsWith("reco:")) {
@@ -131,10 +138,10 @@ export function useHomeRowModels(): HomeRowsModel {
         const title = recoRowTitle(source.row);
         const byItem = new Map(source.entries.map((entry) => [entry.item.Id, entry.reco]));
         const items = source.entries.map((entry) => entry.item);
-        const cards = lists(key, items, { variant: "morph", subtitle: yearOf }, (item, card) =>
+        const cards = lists(key, items, { variant: "poster", subtitle: yearOf }, (item, card) =>
           byItem.get(item.Id)?.exploration ? { ...card, badge: t("reco:explorationBadge") } : card,
         );
-        rows.push({ key, title: t(`reco:${title.key}`, title.params), variant: "morph", cards });
+        rows.push({ key, title: t(`reco:${title.key}`, title.params), variant: "poster", cards });
         targets.set(key, new Map(source.entries.map((entry) => [entry.item.Id, { item: entry.item, reco: entry.reco, kind: "reco", sheet: "reco" }])));
       }
     }

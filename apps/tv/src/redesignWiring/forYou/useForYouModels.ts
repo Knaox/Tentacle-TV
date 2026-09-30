@@ -71,7 +71,7 @@ export function useForYouModels(): ForYouModels {
       return {
         key: shelf.key,
         title: t(title.key, title.params),
-        cards: lists(shelf.key, entries.map((entry) => entry.item), { variant: "morph", subtitle: yearOf }, (item, card) => {
+        cards: lists(shelf.key, entries.map((entry) => entry.item), { variant: "poster", subtitle: yearOf }, (item, card) => {
           const reco = byItem.get(item.Id);
           if (!reco) return card;
           return { ...card, badge: reco.exploration ? t("explorationBadge") : undefined, focusNote: reasonOf(reco) };
