@@ -94,9 +94,10 @@ Jamais de mot de passe : sans session disponible, on s'arrête et on demande.
 - **L'app passe derrière l'accueil de tvOS** quand Simulator.app est réactivé
   sur un appareil déjà démarré : `sim` ne l'ouvre plus qu'au démarrage, et
   une commande sans réponse ramène l'app au premier plan avant de réessayer.
-- **Inter n'est pas embarquée dans l'app tvOS** : ni `.ttf` dans le paquet, ni
-  `UIAppFonts`. Le simulateur rend en San Francisco tant que la police n'est
-  pas ajoutée au projet natif (tâche à part : il faut reconstruire l'app).
+- **Inter vient du paquet natif** (`UIAppFonts`, depuis le commit « Inter
+  embarquée dans l'app tvOS ») : une app de banc installée avant ce commit rend
+  encore en San Francisco. La reconstruire (`pod install`, puis une build Debug
+  `appletvsimulator`) et la réinstaller sur le clone (`xcrun simctl install`).
 - **Le verre natif exige une app reconstruite** : `TentacleGlassView` est du
   code natif, qu'un simulateur cloné avant lui n'a pas — il y retombe, sans
   bruit, sur la simulation (la scène `banc/focus` dit quel verre est rendu).

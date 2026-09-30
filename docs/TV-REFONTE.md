@@ -16,7 +16,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 4. Jetons TV repris du bureau | `TV_STAGE`, `TV_TYPE`, `TV_ACCENT` (`packages/theme/src/tokens/tvStage.ts`). |
 | 5. Briques | Faites — planche « Briques » (`bench:ui planche briques --focus`). |
 | 6. Écrans | **Tous faits** (2026-09-30) : jumelage, accueil, fiche, bibliothèque, Ma liste / Favoris, recherche, parcourir, Pour vous, réglages, lecteur, feuille d'actions, bande-annonce, surimpressions — 184 scènes au banc. |
-| 7. Branchement | En cours, écran par écran : une tâche chacun (voir « Tâches proposées »). Branchés sur Apple TV : jumelage (conditions d'utilisation retirées), réglages, surimpressions (démarrage, hors ligne, jumelage expiré, messages, erreur et chargement d'un écran). |
+| 7. Branchement | En cours, écran par écran. Le socle est posé (`apps/tv/src/redesignWiring/`, ci-dessous) : aiguillage, magasin de focus, cadre des écrans avec navigation, modèles de carte et de héros, Inter dans l'app tvOS. Branchés sur Apple TV : jumelage (conditions d'utilisation retirées), réglages, surimpressions (démarrage, hors ligne, jumelage expiré, messages, erreur et chargement d'un écran), fiche, bande-annonce, feuille d'actions, lecteur, accueil, navigation et « Pour vous ». |
 
 ## La direction retenue
 
@@ -79,6 +79,30 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 - **Un logo noir cède au texte** : `isLogoLegibleOnDark(blurHash)` — un logo
   dont l'empreinte est noire de part en part ne se lit pas sur la scène ; le
   câblage écrit alors le titre (le banc le fait déjà).
+
+## Le socle du branchement (`apps/tv/src/redesignWiring/`)
+
+- **Aiguillage** (`redesignGate.ts`) : `REDESIGN_ACTIVE` vaut vrai sur tvOS,
+  faux sur Android TV. L'écran le lit à son niveau : `REDESIGN_ACTIVE ?
+  <XRedesign /> : <LegacyXScreen />`, l'ancien corps restant dans son fichier.
+  `REDESIGN_ROUTES` liste les routes qui rendent leur propre navigation : le
+  rail actuel (`TVNavChrome`) s'y efface.
+- **Focus** (`focus/focusStore.ts`) : un magasin par écran, branché sur le
+  port (`FocusBindingProvider bind={store.binder}`). Il donne `node`,
+  `handle`, `bind`, `claim` (bascule tvOS, nœud relu à chaque étape),
+  `focusedKey`, `lastFocusedKey`, et deux abonnements : `subscribe` pour le
+  focus, `subscribeNodes` pour les nœuds.
+- **Écran avec navigation** (`screen/`) : `useRedesignScreen({ railKey,
+  entryKey, onBack?, onReselect? })` fournit la `nav` de la vue et son
+  magasin. `<RedesignScreen screen>` pose le port, Menu (du contenu vers la
+  navigation, puis recul, et UIKit quitte à la racine) et les deux ponts
+  tvOS entre navigation et contenu : le moteur de focus ne vise qu'une cible
+  alignée. `useEntryFocus` sert seul aux écrans sans navigation : il pose
+  l'entrée (`hasTVPreferredFocus` dès le premier rendu, lâchée au premier
+  focus de contenu) et le retour sur la dernière clé de contenu.
+- **Cartes et héros** (`cards/`, `hero/`) : `useCardModels` / `useCardLists`
+  (modèles STABLES, marqueurs résolus au niveau de la liste),
+  `paletteOfItem`, `heroModelOf`, `metaOf`, `legibleLogoOf`.
 
 ## Voir le résultat, sans navigateur
 
@@ -414,8 +438,6 @@ Manquant ou non transmis aujourd'hui (le branchement le demandera) :
 
 ## Constats hors UI — tâches proposées
 
-- Inter n'est pas embarquée dans l'app tvOS (ni `.ttf`, ni `UIAppFonts`) :
-  tout s'affiche en San Francisco, banc compris.
 - Android : « Adapter la fréquence d'affichage » n'est pas relu au démarrage.
 - Réglages, « Oublier ce jumelage » : le texte (`pairing:tvOublierTexte`) dit
   que l'application se fermera ; sur la TV, elle rouvre le jumelage.

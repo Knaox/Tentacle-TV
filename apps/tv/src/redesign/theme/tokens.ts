@@ -57,8 +57,9 @@ export const scrim = (alpha: number) => `rgba(${C.onMedia.scrimRgb}, ${alpha})`;
 /** Blanc à l'alpha voulu — reflets, liserés, remplissages du verre. */
 export const white = (alpha: number) => `rgba(255, 255, 255, ${alpha})`;
 
-/** Inter, comme le bureau. Tant que l'app tvOS ne l'embarque pas, la graisse
- *  posée à côté garde le bon poids en police système. */
+/** Inter, comme le bureau — embarquée dans l'app tvOS (`UIAppFonts`) comme
+ *  sur Android. La graisse posée à côté garde le bon poids en police système
+ *  sur une build qui ne l'aurait pas. */
 export const fonts = {
   regular: { fontFamily: "Inter-Regular", fontWeight: "400" },
   medium: { fontFamily: "Inter-Medium", fontWeight: "500" },
