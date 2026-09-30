@@ -9,6 +9,7 @@ import { useFocusStore } from "../focus/focusStore";
 import { useEntryFocus } from "../screen/useEntryFocus";
 import { ActionSheetRedesign } from "../sheet/ActionSheetRedesign";
 import { useDetailActions } from "./useDetailActions";
+import { useDetailGuides } from "./useDetailGuides";
 import { useDetailModel, type DetailModel } from "./useDetailModel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
@@ -22,6 +23,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
  *   « Réessayer » sur une fiche en erreur (`useEntryFocus`) ;
  * - le RETOUR du lecteur, de la bande-annonce ou d'une autre fiche rend le
  *   focus au dernier élément qui l'avait ;
+ * - l'entrée de chaque section par son guide (`useDetailGuides`) ;
  * - une série qui se révèle terminée perd sa pilule de lecture : si elle
  *   avait le focus, il passe à l'action suivante.
  * Menu dépile l'écran (pile native) ; les feuilles le reçoivent elles-mêmes.
@@ -53,6 +55,7 @@ export function MediaDetailRedesign({ route }: Props) {
   const focus = useFocusStore();
   const entryKey = entryKeyOf(model);
   useEntryFocus(focus, entryKey);
+  useDetailGuides(focus, entryKey, model.props.episodes);
 
   // La pilule de lecture qui disparaît sous le focus (série terminée, apprise
   // après l'arrivée) ne laisse pas l'écran sans focus.
