@@ -11,7 +11,7 @@ import { colors, fonts } from "../theme/tokens";
 /**
  * Le bouton rond de verre : Ma liste, favori, vu, note. Son libellé s'écrit
  * DESSOUS, et ne paraît qu'au focus — un rond ne dit pas ce qu'il fait.
- * `active` : l'état est posé (pictogramme ambre plein).
+ * `active` : l'état est posé (pictogramme rose plein).
  */
 
 export interface RoundButtonProps {

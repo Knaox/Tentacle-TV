@@ -12,7 +12,7 @@ import type { FilterSheetHandlers, RatingSheetModel, RatingStop } from "./librar
  * La note minimum : une échelle de PALIERS (0 à 10, par demi-point), la
  * valeur retenue écrite en grand au-dessus. Ce qui passe le filtre — du
  * palier retenu jusqu'à 10 — reste allumé sur la piste ; le palier retenu
- * porte la touche ambre. Au focus, un palier devient une pastille blanche qui
+ * porte la touche rose. Au focus, un palier devient une pastille blanche qui
  * dit sa valeur.
  *
  * Clés de focus : `sheet:stop:<index>`.

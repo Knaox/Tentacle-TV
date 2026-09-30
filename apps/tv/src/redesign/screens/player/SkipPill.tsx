@@ -14,7 +14,7 @@ import { SOFT_BASE } from "./surfaces";
  * La pilule de saut, en bas à droite : un passage à sauter (intro, résumé,
  * aperçu, générique, post-générique), la fin d'un film, ou « Aller à
  * l'épisode suivant ». Manuelle, elle se contente de se proposer ; quand elle
- * part toute seule, son anneau ambre décompte et « Masquer » l'accompagne
+ * part toute seule, son anneau rose décompte et « Masquer » l'accompagne
  * (c'est lui que l'intégration focalise). Mise en sourdine, elle ne reparaît
  * qu'avec l'habillage, sans « Masquer ».
  *

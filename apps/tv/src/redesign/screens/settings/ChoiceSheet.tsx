@@ -14,7 +14,7 @@ import type { ChoiceListModel } from "./settingsTypes";
  * sous-titres), en surimpression : un voile sur tout l'écran, et à droite
  * une feuille de verre posée sur un fond DENSE — sans flou natif, le contenu
  * derrière brouillerait les libellés. La valeur retenue porte la coche
- * ambre ; celle qui a le focus devient blanche.
+ * rose de la marque ; celle qui a le focus devient blanche.
  *
  * Aucune décision de focus : l'intégration pose l'entrée sur la valeur
  * retenue, garde le focus dans la feuille, et la ferme au Retour (elle

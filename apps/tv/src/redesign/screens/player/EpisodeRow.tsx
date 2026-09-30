@@ -10,10 +10,10 @@ import { DualTone, TONES } from "./DualTone";
 import type { EpisodeRowModel } from "./playerTypes";
 
 /**
- * Une grande ligne d'épisode : la vignette (jauge ambre s'il est entamé,
+ * Une grande ligne d'épisode : la vignette (jauge de la marque s'il est entamé,
  * pastille « vu » du modèle des cartes), « Épisode 3 · 59 min · date », le
  * titre sur deux lignes, le début du résumé. L'épisode EN COURS porte sa
- * pastille ambre. Au focus, la ligne devient blanche, texte noir, et grandit
+ * pastille rose. Au focus, la ligne devient blanche, texte noir, et grandit
  * un peu — jamais d'anneau.
  *
  * Hauteur FIXE (`EPISODE_ROW_HEIGHT`) : le panneau calcule son défilement

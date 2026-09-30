@@ -10,7 +10,7 @@ import { KEYBOARD_WIDTH } from "./searchViewModel";
 
 /**
  * Le champ de la recherche : ce qui est tapé en blanc, la suite du meilleur
- * résultat en gris, un curseur ambre. Il dit toujours où l'on en est, même
+ * résultat en gris, un curseur rose. Il dit toujours où l'on en est, même
  * quand le focus est trois rangées plus bas.
  *
  * tvOS : le champ est un BOUTON (OK ouvre le clavier système, et avec lui la

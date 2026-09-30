@@ -44,7 +44,7 @@ function useEntrance() {
   return useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateX: -28 * (1 - progress.value) }] }));
 }
 
-/** La note perso, à la manière des cartes : la pastille ambre à l'étoile sombre. */
+/** La note perso, à la manière des cartes : la pastille rose à l'étoile blanche. */
 function UserScorePill({ score }: { score: number }) {
   const { t } = useTranslation();
   return (

@@ -68,7 +68,7 @@ export const SeasonTabs = memo(function SeasonTabs({
                   if (focused) onFocusSeason?.(season.id);
                 }}
               />
-              {/* La saison affichée se souligne d'ambre : l'onglet actif se lit de loin. */}
+              {/* La saison affichée se souligne de rose : l'onglet actif se lit de loin. */}
               {selected ? <View style={styles.indicator} /> : null}
             </View>
           );

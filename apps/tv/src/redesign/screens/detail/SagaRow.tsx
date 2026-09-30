@@ -21,7 +21,7 @@ import type { SagaEntryModel } from "./detailTypes";
  * bibliothèque (leurs marqueurs), et à leur rang ceux qui manquent — un
  * cadre sans image, leur titre et leur année écrits dedans. Sous chaque
  * carte, le titre puis « Volet 2 · Cette fiche », la mention (Cette fiche,
- * Reprendre, À suivre) en ambre. Le film ouvert reste focalisable, inerte.
+ * Reprendre, À suivre) en rose. Le film ouvert reste focalisable, inerte.
  *
  * Contrat : `useSagaView` → `buildSagaView` (ordre, rangs, mentions),
  * `sagaTitle` / `sagaSummary` / `sagaLabel`. Les volets absents viennent des

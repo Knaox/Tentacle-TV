@@ -3,9 +3,9 @@ import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts } from "../theme/tokens";
 
 /**
- * L'étiquette en haut à gauche d'une carte : « Découverte », « +3 ». La même
- * pastille ambre que `MediaCard`, pour les cartes qui la composent à part
- * (`MorphCard`). Jamais au centre de l'image.
+ * L'étiquette en haut à gauche d'une carte : « Découverte », « +3 » — la
+ * pastille au rose de la marque, posée par `MediaCard` comme par `MorphCard`.
+ * Jamais au centre de l'image.
  */
 export const CardBadge = memo(function CardBadge({ label, compact = false }: { label: string; compact?: boolean }) {
   return (

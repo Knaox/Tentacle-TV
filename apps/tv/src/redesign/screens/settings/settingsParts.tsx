@@ -44,7 +44,7 @@ export const InfoRow = memo(function InfoRow({ label, value, icon, labelWidth = 
   );
 });
 
-/** Le portrait du compte ; l'initiale sur l'ambre quand il n'y en a pas. */
+/** Le portrait du compte ; l'initiale sur le rose de la marque quand il n'y en a pas. */
 export const Avatar = memo(function Avatar({ uri, name, size }: { uri?: string; name: string; size: number }) {
   const round = { width: size, height: size, borderRadius: size / 2 };
   return (

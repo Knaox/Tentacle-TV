@@ -12,8 +12,8 @@ import { colors, fonts, text, white } from "../../theme/tokens";
  * Les messages que l'administrateur envoie à ce téléviseur (tableau de bord
  * de Jellyfin ou de Tentacle) — deux au plus, en haut à droite, par-dessus
  * tout, film compris. Rien ne se ferme d'un geste : un bandeau focalisable
- * volerait le focus. Chacun s'efface seul, et sa barre ambre qui se vide le
- * dit (sur `transform` seulement).
+ * volerait le focus. Chacun s'efface seul, et sa barre au dégradé de la
+ * marque qui se vide le dit (sur `transform` seulement).
  *
  * Contrat : `onSessionMessage` alimente la liste (l'hôte borne le délai à
  * 3–60 s, 15 s par défaut, et retire le message à échéance). `remaining` est

@@ -1,6 +1,6 @@
 /**
  * Une couleur des jetons (#rrggbb) à l'alpha voulu : les teintes des
- * surimpressions (l'ambre de l'accent, le rouge d'erreur) se dérivent des
+ * surimpressions (le rose de l'accent, le rouge d'erreur) se dérivent des
  * jetons au lieu d'être recopiées.
  */
 export function withAlpha(hex: string, alpha: number): string {

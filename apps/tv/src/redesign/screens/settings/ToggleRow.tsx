@@ -14,7 +14,7 @@ import { colors, fonts, scrim, white } from "../../theme/tokens";
  * position d'un pouce ne suffit pas à dire où on en est.
  *
  * Au focus, la ligne devient blanche (texte noir) et s'avance à peine — elle
- * est large. Activé, la piste prend l'ambre de l'accent.
+ * est large. Activé, la piste prend le rose de l'accent.
  */
 
 export interface ToggleRowProps {
