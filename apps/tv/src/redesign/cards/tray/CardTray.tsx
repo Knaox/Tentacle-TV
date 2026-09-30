@@ -35,11 +35,12 @@ import { TRAY_REVEAL_MS } from "./useCardHover";
  * carte voisine. OK sur la carte garde l'action principale (la fiche d'une
  * affiche, la lecture d'une vignette 16:9), l'appui long la feuille
  * d'actions — noter, les infos, Ma liste, j'aime, vu. Le CÂBLAGE n'ajoute,
- * par le port du focus (`focus/focusBinding.tsx`), que :
+ * par le port du focus (`focus/focusBinding.tsx` ; `useCardTrayFocus`), que :
  *   • l'entrée sur l'action PRIMAIRE — seule, BAS atterrit sur le bouton le
- *     plus proche : un guide `autoFocus` lié au groupe `<carte>:tray`, dont la
- *     capsule vient la PREMIÈRE dans l'arbre (affichée en bas :
- *     `column-reverse`) ;
+ *     plus proche : un guide d'entrée lié au groupe `<carte>:tray`, dont la
+ *     destination est le premier bouton de la capsule (tvOS entre dans un
+ *     guide `autoFocus` par l'élément le plus en haut à gauche, pas par
+ *     l'ordre de l'arbre) ;
  *   • s'il le veut, des pièges GAUCHE / DROITE aux bouts de la capsule ;
  *   • Menu, d'où qu'on soit dans le plateau, rend le focus à la carte.
  * Changer de rangée coûte deux BAS quand la carte a un plateau : à éprouver.
@@ -113,8 +114,8 @@ export const CardTray = memo(function CardTray({ tray, face, width, cardKey, tit
 
 const styles = StyleSheet.create({
   group: { position: "absolute" },
-  // La capsule d'abord dans l'arbre, en bas à l'écran : un guide `autoFocus`
-  // entre ainsi dans le plateau par son action primaire.
+  // La capsule d'abord dans l'arbre, en bas à l'écran ; la note et la bulle,
+  // au-dessus, ne se focalisent pas.
   column: { flexDirection: "column-reverse", gap: TRAY.rowGap },
   center: { alignItems: "center" },
   end: { alignItems: "flex-end" },
