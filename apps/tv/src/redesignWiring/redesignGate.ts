@@ -31,6 +31,7 @@ const ROUTES: readonly RouteName[] = [
   "Settings",
   "Home",
   "Recommendations",
+  "Library",
   "Watchlist",
   "Favorites",
   "SearchBrowse",

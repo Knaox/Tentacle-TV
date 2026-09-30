@@ -25,10 +25,17 @@ import { useLibraryFilters } from "../hooks/useLibraryFilters";
 import { hasPlatformFilter } from "../hooks/libraryCatalogParams";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 import { useTVCardActions } from "../components/cards/actions/useTVCardActions";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { LibraryRedesign } from "../redesignWiring/library/LibraryRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 
 export function LibraryScreen(props: Props) {
+  // Apple TV : la refonte (`redesignWiring/library`) ; Android TV : l'écran d'avant.
+  return REDESIGN_ACTIVE ? <LibraryRedesign {...props.route.params} /> : <LegacyLibraryScreen {...props} />;
+}
+
+function LegacyLibraryScreen(props: Props) {
   return (
     <AmbientFocusProvider>
       <LibraryScreenInner {...props} />

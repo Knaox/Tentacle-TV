@@ -15,6 +15,8 @@ export interface LibraryCatalogState {
   loading: boolean;
   /** La page suivante est en route. */
   loadingMore: boolean;
+  /** Le serveur a encore des pages. */
+  hasMore: boolean;
   /** Échec SANS rien à montrer : l'écran le dit, au lieu d'une grille vide. */
   failed: boolean;
   loadMore: () => void;
@@ -45,6 +47,7 @@ export function useLibraryCatalogState(libraryId: string, filters: LibraryFilter
     total: platforms ? filteredItems.length : data?.pages[0]?.TotalRecordCount,
     loading: isLoading && !data,
     loadingMore: isFetchingNextPage,
+    hasMore: hasNextPage === true,
     failed: isError && !data,
     loadMore,
     retry,
