@@ -17,6 +17,8 @@ import { useTVNavActions } from "../context/TVNavContext";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 import { Colors, Spacing, Typography } from "../theme/colors";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { BrowseRedesign } from "../redesignWiring/browse/BrowseRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "SearchBrowse">;
 
@@ -30,7 +32,12 @@ type Props = NativeStackScreenProps<RootStackParamList, "SearchBrowse">;
  * recherche, qui rend alors sa barre (`SearchScreen`). Le rail reste là, et
  * « Rechercher » y est l'entrée active (`deriveRailKey`).
  */
-export function SearchBrowseScreen({ navigation, route }: Props) {
+export function SearchBrowseScreen(props: Props) {
+  // Apple TV : la refonte (`redesignWiring/browse`) ; Android TV : l'écran d'avant.
+  return REDESIGN_ACTIVE ? <BrowseRedesign {...props.route.params} /> : <LegacySearchBrowseScreen {...props} />;
+}
+
+function LegacySearchBrowseScreen({ navigation, route }: Props) {
   const { t } = useTranslation("search");
   const { kind, id, name } = route.params;
   const { width: windowW } = useWindowDimensions();
