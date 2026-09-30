@@ -2,6 +2,7 @@ import { memo } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, white } from "../../theme/tokens";
 import { DENSE_BASE, SOFT_BASE } from "./surfaces";
@@ -17,9 +18,10 @@ import { DENSE_BASE, SOFT_BASE } from "./surfaces";
 const SAFE = TV_STAGE.safe;
 
 export const BufferingBadge = memo(function BufferingBadge() {
+  const backing = useNativeGlassBacking("regular");
   return (
     <View pointerEvents="none" style={styles.center}>
-      <GlassSurface radius={70} tone="regular" elevated style={styles.buffering}>
+      <GlassSurface radius={70} tone="regular" elevated style={[styles.buffering, backing]}>
         <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
       </GlassSurface>
     </View>
@@ -27,9 +29,10 @@ export const BufferingBadge = memo(function BufferingBadge() {
 });
 
 export const QualityNotice = memo(function QualityNotice({ text }: { text: string }) {
+  const backing = useNativeGlassBacking("regular");
   return (
     <View pointerEvents="none" style={styles.top}>
-      <GlassSurface radius={32} tone="regular" elevated style={styles.notice}>
+      <GlassSurface radius={32} tone="regular" elevated style={[styles.notice, backing]}>
         <Icon name="gauge" size={28} color={colors.accentLight} strokeWidth={2.2} />
         <Text style={styles.noticeText} numberOfLines={1}>{text}</Text>
       </GlassSurface>
@@ -38,9 +41,10 @@ export const QualityNotice = memo(function QualityNotice({ text }: { text: strin
 });
 
 export const ErrorBanner = memo(function ErrorBanner({ title, message }: { title: string; message?: string }) {
+  const backing = useNativeGlassBacking("strong");
   return (
     <View pointerEvents="none" style={styles.top}>
-      <GlassSurface radius={32} tone="strong" elevated style={styles.error}>
+      <GlassSurface radius={32} tone="strong" elevated style={[styles.error, backing]}>
         <View style={styles.errorIcon}>
           <Icon name="alert" size={30} color={colors.text} strokeWidth={2.2} />
         </View>

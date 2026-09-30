@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts } from "../../theme/tokens";
 import { SOFT_BASE } from "./surfaces";
@@ -70,13 +71,14 @@ function Body({ label, icon, seconds, size = 80, primary = false, caption = true
   const whiteLayer = useAnimatedStyle(() => ({ opacity: primary ? 1 : p.value }));
   const captionStyle = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ translateY: 8 * (1 - p.value) }] }));
   const radius = size / 2;
+  const backing = useNativeGlassBacking("clear");
   return (
     <View style={{ width: size, height: size }}>
       <Animated.View style={[StyleSheet.absoluteFill, lift]}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, { borderRadius: radius }, shadow]} />
         {primary ? null : (
           <>
-            <GlassSurface radius={radius} tone="clear" style={[StyleSheet.absoluteFill, styles.base]} />
+            <GlassSurface radius={radius} tone="clear" style={[StyleSheet.absoluteFill, styles.base, backing]} />
             <View style={[StyleSheet.absoluteFill, styles.center]}>
               <Glyph icon={icon} seconds={seconds} size={size} color={colors.text} />
             </View>

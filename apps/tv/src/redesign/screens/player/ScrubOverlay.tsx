@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim } from "../../theme/tokens";
 import { formatClock, formatDelta } from "./formatClock";
@@ -22,8 +23,9 @@ import { SOFT_BASE } from "./surfaces";
 const SAFE = TV_STAGE.safe;
 
 function Hint({ text }: { text: string }) {
+  const backing = useNativeGlassBacking("regular");
   return (
-    <GlassSurface radius={26} tone="regular" style={styles.hint}>
+    <GlassSurface radius={26} tone="regular" style={[styles.hint, backing]}>
       <Text style={styles.hintText}>{text}</Text>
     </GlassSurface>
   );
@@ -41,6 +43,8 @@ export const ScrubOverlay = memo(function ScrubOverlay({
   cancelLabel: string;
 }) {
   const delta = scrub.target - timeline.position;
+  const regularBacking = useNativeGlassBacking("regular");
+  const clearBacking = useNativeGlassBacking("clear");
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <View style={[StyleSheet.absoluteFill, styles.black]} />
@@ -52,7 +56,7 @@ export const ScrubOverlay = memo(function ScrubOverlay({
       <LinearGradient colors={[scrim(0), scrim(0.68), scrim(0.95)]} locations={[0.4, 0.68, 1]} style={StyleSheet.absoluteFill} />
       {scrub.speed ? (
         <View style={styles.speedBox}>
-          <GlassSurface radius={36} tone="regular" style={styles.speed}>
+          <GlassSurface radius={36} tone="regular" style={[styles.speed, regularBacking]}>
             <View style={scrub.speed.backward ? styles.mirror : null}>
               <Icon name="fastForward" size={30} color={colors.text} strokeWidth={2.4} />
             </View>
@@ -64,7 +68,7 @@ export const ScrubOverlay = memo(function ScrubOverlay({
         <View style={styles.aim}>
           <Text style={styles.target}>{formatClock(scrub.target)}</Text>
           {Math.abs(delta) >= 1 ? (
-            <GlassSurface radius={26} tone="clear" style={styles.delta}>
+            <GlassSurface radius={26} tone="clear" style={[styles.delta, clearBacking]}>
               <Text style={styles.deltaText}>{formatDelta(delta)}</Text>
             </GlassSurface>
           ) : null}

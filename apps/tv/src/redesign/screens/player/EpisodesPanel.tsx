@@ -4,6 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { CircleButton } from "./CircleButton";
 import { EpisodeList } from "./EpisodeList";
@@ -59,6 +60,7 @@ export const EpisodesPanel = memo(function EpisodesPanel({
   onSelectEpisode?: (id: string) => void;
   onClose?: () => void;
 }) {
+  const backing = useNativeGlassBacking("strong");
   return (
     <View style={StyleSheet.absoluteFill}>
       <LinearGradient
@@ -70,7 +72,7 @@ export const EpisodesPanel = memo(function EpisodesPanel({
         style={StyleSheet.absoluteFill}
       />
       <FocusGroup focusKey="episodes:panel" style={styles.panel}>
-        <GlassSurface radius={44} tone="strong" elevated style={styles.glass} />
+        <GlassSurface radius={44} tone="strong" elevated style={[styles.glass, backing]} />
         <FocusGroup focusKey="episodes:header" style={styles.header}>
           <View style={styles.headings}>
             <Text style={styles.title}>{labels.episodes}</Text>

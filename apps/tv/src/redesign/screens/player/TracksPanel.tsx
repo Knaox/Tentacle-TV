@@ -4,6 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { CircleButton } from "./CircleButton";
@@ -91,11 +92,12 @@ export const TracksPanel = memo(function TracksPanel({
   onSelectQuality?: (key: string) => void;
   onClose?: () => void;
 }) {
+  const backing = useNativeGlassBacking("strong");
   return (
     <View style={StyleSheet.absoluteFill}>
       <LinearGradient pointerEvents="none" colors={[scrim(0.15), scrim(0.55), scrim(0.85)]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
       <FocusGroup focusKey="tracks:panel" style={styles.sheet}>
-        <GlassSurface radius={44} tone="strong" elevated style={styles.glass} />
+        <GlassSurface radius={44} tone="strong" elevated style={[styles.glass, backing]} />
         <View style={styles.columns}>
           <Column title={labels.audio} icon="audio" options={model.audio} prefix="audio" autoLabel={labels.auto} onSelect={onSelectAudio} />
           <View style={styles.divider} />

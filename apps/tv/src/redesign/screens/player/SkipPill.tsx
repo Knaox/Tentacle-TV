@@ -5,6 +5,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { useFocusProgress } from "../../focus/useFocusProgress";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import type { IconName } from "../../icons/Icon";
 import { CountdownPill } from "./CountdownPill";
 import type { SkipPillModel } from "./playerTypes";
@@ -48,12 +49,13 @@ export const SkipPill = memo(function SkipPill({
 }) {
   const lift = useFocusProgress(raised, 200);
   const style = useAnimatedStyle(() => ({ transform: [{ translateY: -RAISE * lift.value }] }));
+  const backing = useNativeGlassBacking("clear");
   return (
     <Animated.View style={[styles.anchor, style]} pointerEvents="box-none">
       <FocusGroup focusKey="player:skip-island" style={styles.island} pointerEvents="box-none">
         <CountdownPill label={model.label} icon={ICON[model.kind]} countdown={model.countdown} base={SOFT_BASE} focusKey="player:skip" onPress={onSkip} />
         {model.refusable ? (
-          <View style={styles.base}>
+          <View style={[styles.base, backing]}>
             <PillButton variant="glass" label={dismissLabel} focusKey="player:skip-dismiss" onPress={onDismiss} />
           </View>
         ) : null}

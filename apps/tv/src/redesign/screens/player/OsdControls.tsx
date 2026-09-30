@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { PillButton } from "../../controls/PillButton";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { white } from "../../theme/tokens";
 import { SOFT_BASE } from "./surfaces";
 import { CircleButton } from "./CircleButton";
@@ -44,6 +45,7 @@ export const OsdControls = memo(function OsdControls({
   onOpenEpisodes,
   onOpenTracks,
 }: OsdControlsProps) {
+  const backing = useNativeGlassBacking("clear");
   return (
     <View style={styles.row} pointerEvents="box-none">
       {transport.hasPrevious ? (
@@ -73,11 +75,11 @@ export const OsdControls = memo(function OsdControls({
       {transport.hasNext ? <CircleButton icon="skipNext" label={labels.next} focusKey="player:next" onPress={onNext} /> : null}
       <View style={styles.rule} />
       {transport.hasEpisodes ? (
-        <View style={styles.base}>
+        <View style={[styles.base, backing]}>
           <PillButton variant="glass" icon="layers" label={labels.episodes} focusKey="player:episodes" onPress={onOpenEpisodes} />
         </View>
       ) : null}
-      <View style={styles.base}>
+      <View style={[styles.base, backing]}>
         <PillButton variant="glass" icon="subtitles" label={labels.tracks} focusKey="player:tracks" onPress={onOpenTracks} />
       </View>
     </View>

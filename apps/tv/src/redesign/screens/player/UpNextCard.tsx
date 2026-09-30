@@ -4,6 +4,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { colors, fonts, white } from "../../theme/tokens";
 import { CountdownPill } from "./CountdownPill";
 import type { PlayerLabels, UpNextModel } from "./playerTypes";
@@ -32,9 +33,10 @@ export const UpNextCard = memo(function UpNextCard({
   onPlayNext?: () => void;
   onDismiss?: () => void;
 }) {
+  const backing = useNativeGlassBacking("strong");
   return (
     <View style={styles.anchor} pointerEvents="box-none">
-      <GlassSurface radius={36} tone="strong" elevated style={styles.card}>
+      <GlassSurface radius={36} tone="strong" elevated style={[styles.card, backing]}>
         <View style={styles.top}>
           <View style={styles.image}>
             {model.imageUri ? <Image source={{ uri: model.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}

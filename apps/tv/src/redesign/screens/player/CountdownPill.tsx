@@ -7,6 +7,7 @@ import { BrandPill } from "../../brand/BrandPill";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import type { Countdown } from "./playerTypes";
@@ -24,7 +25,8 @@ export interface CountdownPillProps {
   icon: IconName;
   variant?: "brand" | "primary" | "glass";
   countdown?: Countdown | null;
-  /** Un fond sous le verre, quand la pilule flotte sur l'image. */
+  /** Un fond sous le verre dessiné, quand la pilule flotte sur l'image ; le
+   *  verre natif prend le sien (`useNativeGlassBacking`). */
   base?: string;
   focusKey?: string;
   onPress?: () => void;
@@ -110,6 +112,7 @@ function Body({ focused, label, icon, variant, countdown, base }: {
   const shadow = useAnimatedStyle(() => ({ opacity: p.value }));
   const whiteLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 1 : p.value }));
   const glassLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 0 : 1 - p.value }));
+  const nativeBacking = useNativeGlassBacking("clear");
   if (variant === "brand") {
     return (
       <Animated.View style={lift}>
@@ -123,7 +126,7 @@ function Body({ focused, label, icon, variant, countdown, base }: {
     <Animated.View style={lift}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, shadow]} />
       <Animated.View style={[StyleSheet.absoluteFill, glassLayer]}>
-        <GlassSurface radius={HEIGHT / 2} tone="clear" style={[StyleSheet.absoluteFill, base ? { backgroundColor: base } : null]} />
+        <GlassSurface radius={HEIGHT / 2} tone="clear" style={[StyleSheet.absoluteFill, base ? { backgroundColor: base } : null, base ? nativeBacking : null]} />
         <Content label={label} icon={icon} countdown={countdown} dark={false} />
       </Animated.View>
       <Animated.View style={[styles.white, whiteLayer]}>
