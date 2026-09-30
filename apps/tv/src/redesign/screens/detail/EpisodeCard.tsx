@@ -84,7 +84,7 @@ export const EpisodeCard = memo(function EpisodeCard({
       {(focused) => (
         <View>
           {focused && episode.palette ? (
-            <ArtworkHalo width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} palette={episode.palette} spread={14} blur={30} opacity={0.6} />
+            <ArtworkHalo width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} palette={episode.palette} spread={14} blur={30} opacity={0.4} />
           ) : null}
           <CardFrame width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} focused={focused} dimmed={dimmed}>
             {episode.imageUri ? (

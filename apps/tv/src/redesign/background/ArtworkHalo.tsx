@@ -23,9 +23,11 @@ export interface ArtworkHaloProps {
   radius: number;
   palette: ArtworkPalette;
   spread?: number;
-  /** Force du halo, 0 à 1. Défaut : celui du héros, 0,42 avec un flou large
-   *  (58) et un débord court — une lumière qui se répand, pas un cadre néon ;
-   *  à 0,7 il était « presque un peu trop agressif » (retour du 2026-09-30). */
+  /** Force du halo, 0 à 1. Défaut : celui du héros, 0,28 (flou 44, débord
+   *  court) — « plus discret, vraiment » (retour du 2026-10-01) : 0,3 est un
+   *  PLAFOND, et à 0,7 il était « presque un peu trop agressif ». Les petits
+   *  halos (portrait, disque, carte) montent un peu plus, jamais au-delà de
+   *  0,45 : sur une petite surface, la même force se voit moins. */
   opacity?: number;
   blur?: number;
   style?: StyleProp<ViewStyle>;
@@ -37,8 +39,8 @@ export const ArtworkHalo = memo(function ArtworkHalo({
   radius,
   palette,
   spread = 26,
-  opacity = 0.42,
-  blur = 58,
+  opacity = 0.28,
+  blur = 44,
   style,
 }: ArtworkHaloProps) {
   // Le flou a besoin de place : trois écarts-types de chaque côté.

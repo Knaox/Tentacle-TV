@@ -72,7 +72,7 @@ export const CodeStep = memo(function CodeStep({ source, code, serverUrl, palett
         </View>
       </FocusGroup>
       <FocusGroup focusKey="pairing:card">
-        <ArtworkHalo width={CARD_WIDTH} height={CARD_HEIGHT} radius={CARD_RADIUS} palette={palette} opacity={0.42} spread={18} />
+        <ArtworkHalo width={CARD_WIDTH} height={CARD_HEIGHT} radius={CARD_RADIUS} palette={palette} opacity={0.3} spread={18} />
         <CodeCard
           code={code}
           onRetry={onRetry}

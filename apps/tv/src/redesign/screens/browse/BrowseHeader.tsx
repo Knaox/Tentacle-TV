@@ -38,7 +38,7 @@ const PORTRAIT = TV_STAGE.card.person.size;
 function Portrait({ kind, portraitUri, initials, palette }: Pick<BrowseHeaderProps, "kind" | "portraitUri" | "initials" | "palette">) {
   return (
     <View style={styles.portrait}>
-      <ArtworkHalo width={PORTRAIT} height={PORTRAIT} radius={PORTRAIT / 2} palette={palette} spread={14} blur={34} opacity={0.75} />
+      <ArtworkHalo width={PORTRAIT} height={PORTRAIT} radius={PORTRAIT / 2} palette={palette} spread={14} blur={34} opacity={0.45} />
       {kind === "person" && portraitUri ? (
         <View style={styles.photoFrame}>
           <Image source={{ uri: portraitUri }} style={styles.photo} resizeMode="cover" fadeDuration={0} />

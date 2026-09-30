@@ -40,7 +40,7 @@ export const EmptyState = memo(function EmptyState({ icon, title, message, prima
   return (
     <View style={styles.root}>
       <View style={styles.disc}>
-        {palette ? <ArtworkHalo width={DISC} height={DISC} radius={DISC / 2} palette={palette} spread={10} blur={30} opacity={0.55} /> : null}
+        {palette ? <ArtworkHalo width={DISC} height={DISC} radius={DISC / 2} palette={palette} spread={10} blur={30} opacity={0.4} /> : null}
         <GlassSurface radius={DISC / 2} tone="clear" style={styles.discGlass} elevated>
           <Icon name={icon} size={64} color={colors.text} strokeWidth={1.8} />
         </GlassSurface>

@@ -62,7 +62,7 @@ export const EndScreen = memo(function EndScreen({
         </FocusGroup>
       </View>
       <View style={styles.still} pointerEvents="none">
-        {model.palette ? <ArtworkHalo width={STILL.width} height={STILL.height} radius={STILL.radius} palette={model.palette} opacity={0.45} /> : null}
+        {model.palette ? <ArtworkHalo width={STILL.width} height={STILL.height} radius={STILL.radius} palette={model.palette} opacity={0.3} /> : null}
         <View style={styles.frame}>
           {model.imageUri ? <Image source={{ uri: model.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
           <View style={[StyleSheet.absoluteFill, styles.ring]} />
