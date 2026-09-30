@@ -35,6 +35,16 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 - **La carte qui se redresse** (`MorphCard`) : 16:9 au repos, affiche 2:3 au
   focus, en fondu, sans recalcul de mise en page. L'affiche DESCEND (sur la
   légende, qui s'efface) : elle ne monte jamais sur le titre de la rangée.
+- **Le survol des cartes, gardé** (demandé le 2026-09-30) : au focus, une
+  carte montre le plateau du bureau, posé sur elle (`cards/tray/`) — voile,
+  étoiles ENTIÈRES, capsule du modèle partagé (`cardTrayEntries` ;
+  `externalCardActionEntries` hors bibliothèque, « Demander » à l'ambre),
+  bulle de ce que fera OK. Centré sur une affiche (et sur l'affiche de la
+  carte qui se redresse), dans le coin bas-droit d'une vignette 16:9 ; rien
+  au centre. Télécommande proposée (posée par le câblage, port du focus) :
+  BAS entre par l'action primaire, GAUCHE/DROITE parcourent, HAUT remonte
+  aux étoiles puis à la carte, Menu revient à la carte ; OK sur la carte et
+  l'appui long (la feuille) ne changent pas. Au banc : « Briques · Plateau ».
 - **Un halo n'est jamais violet** : une lumière d'œuvre qui tombe dans les
   violets et magentas est ramenée vers le neutre (`artworkPalette.ts`).
 - **Un logo noir cède au texte** : `isLogoLegibleOnDark(blurHash)` — un logo
@@ -240,7 +250,8 @@ les plateformes ; note en 5 étoiles entières (aperçu, retrait) ;
 ## Inventaire — les briques communes
 
 Carte (affiche 2:3, vignette 16:9, carte horizontale → verticale au focus,
-reco, personne, extra, lot « +N », volet de saga) · marqueurs (note globale,
+reco, personne, extra, lot « +N », volet de saga) · plateau du focus (étoiles,
+capsule, bulle) · marqueurs (note globale,
 note perso, pastille Ma liste · favori · vu, progression, « Découverte »,
 puces qualité/langues — pastilles, pas de drapeaux) · bouton (primaire,
 secondaire, rond, pilule) · pastille · rangée (titre ≥ 34 + accessoire) ·
@@ -308,6 +319,10 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
    (pastilles de filtre, étoiles) ?
 2. « Demander » de Vigie sur TV : montrer les titres hors bibliothèque
    (reco, recherche) avec leur « Demander », ou garder la TV sur la
-   bibliothèque seule ?
+   bibliothèque seule ? Le plateau sait déjà le rendre (scène « Plateau —
+   hors bibliothèque ») ; c'est le câblage qui filtre.
 3. Libellé du bouton de lecture : « Lire » (cartes, feuille) ou « Lecture »
    (fiche, héros) — un seul partout ?
+4. Le plateau entré par BAS : changer de rangée coûte alors deux BAS (carte →
+   plateau → rangée suivante). À éprouver à la télécommande, au simulateur ;
+   si c'est trop, une autre entrée se choisit au câblage, la vue ne bouge pas.

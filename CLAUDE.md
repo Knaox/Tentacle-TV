@@ -217,7 +217,8 @@ MÊME modèle, dans `packages/shared/src/utils/` :
 - **au repos**, les marqueurs (`cardMarkers.ts` → `useCardMarkers`) : note
   globale et note perso en bas à gauche, pastille Ma liste · favori · vu en
   haut à droite, barre de progression commune ;
-- **au survol**, `cardOverlay.ts` (`resolveCardOverlay`, `cardActionEntries`) :
+- **au survol**, `cardOverlay.ts` (`resolveCardOverlay` ; `cardActionEntries`
+  pour une feuille, `cardTrayEntries` pour un plateau rendu depuis une liste) :
   Lire / Reprendre, la note, puis Ma liste → favori → vu (l'ordre de la
   pastille), puis les extras — hors ligne, fiche, « Ne plus me proposer ».
   Trois variantes, pas une de plus : `poster` (2:3, le clic ouvre la fiche),
@@ -231,18 +232,29 @@ MÊME modèle, dans `packages/shared/src/utils/` :
   reco ; jamais la vignette 16:9, qui EST la lecture), « Demander » (ton
   `brand`) sur une carte Vigie. Une feuille (appui long, télécommande)
   remplace la carte : elle garde « Lire » en tête dans tous les cas. Le
-  plateau se resserre sur une affiche étroite (`TRAY_SIZE`) sans jamais
-  déborder, et garde des centres à 24 px au moins (espacement WCAG 2.5.8) :
-  cinq boutons au plus sur une affiche — une reco n'offre donc pas « garder
-  hors ligne ».
+  plateau se resserre sur une affiche étroite (`TRAY_SIZE` ; `trayButtonSize`
+  sur TV) sans jamais déborder, et garde des centres à 24 px au moins
+  (espacement WCAG 2.5.8) : cinq boutons au plus sur une affiche — une reco
+  n'offre donc pas « garder hors ligne ».
 
 Seule l'ENTRÉE change : la souris sur le web et le bureau (`CardHoverOverlay`,
 monté au survol), l'appui long sur le mobile et le miroir (`CardSheetScope` /
-`CardSheetProvider` → la feuille), le focus sur TV — les marqueurs restent,
-l'appui long ouvre la feuille (`TVCardActionSheet`, `CardActionSheetTv` sur
-webOS, notation en étoiles entières). État et gestes : `useCardToggles`,
-`useCardRatingTarget`, `useCardFace` (api-client). Une feuille qui garde un
-instantané de sa carte lit la fiche `["item", id]`, que les mutations patchent.
+`CardSheetProvider` → la feuille), le focus sur TV. **Sur TV, le focus MONTRE
+le plateau**, posé sur la carte comme au bureau (refonte Apple TV,
+`apps/tv/src/redesign/cards/tray/`) : étoiles ENTIÈRES au-dessus de la
+capsule, bulle qui dit ce que fera OK, plateau résolu par l'intégration pour
+la seule carte focalisée (`card.tray`). OK sur la carte garde l'action
+principale ; BAS entre dans le plateau par l'action primaire, GAUCHE/DROITE le
+parcourent, HAUT remonte aux étoiles puis à la carte, Menu y revient d'un coup
+— posé par le câblage à travers le port du focus (clés `<carte>:tray…`),
+jamais dans la vue ; l'appui long ouvre
+toujours la feuille (`TVCardActionSheet`, `CardActionSheetTv` sur webOS).
+Android TV et webOS, pas encore portés, gardent les marqueurs au focus. La
+carte et les boutons de son plateau sont des focalisables FRÈRES : tvOS ne
+focalise jamais un élément posé dans un autre. État et gestes :
+`useCardToggles`, `useCardRatingTarget`, `useCardFace` (api-client). Une
+feuille qui garde un instantané de sa carte lit la fiche `["item", id]`, que
+les mutations patchent.
 
 Jamais une lecture directe de `UserData` dans une carte, jamais un plateau, une
 coche ou une barre recopiés : une nouvelle carte ou une nouvelle action passe
