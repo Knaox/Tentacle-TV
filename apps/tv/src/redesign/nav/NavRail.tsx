@@ -91,6 +91,9 @@ export const NavRail = memo(function NavRail({
           <GlassSurface radius={N.radius} style={[styles.glass, { width: N.collapsedWidth }]} elevated />
         </Animated.View>
         <Animated.View style={[StyleSheet.absoluteFill, wide]}>
+          {/* Ouverte, la barre passe SUR le texte de l'écran : sans flou natif,
+              un fond dense sous le verre garde les libellés lisibles. */}
+          <View style={[styles.glass, styles.openBase, { width: N.expandedWidth }]} />
           <GlassSurface radius={N.radius} tone="strong" style={[styles.glass, { width: N.expandedWidth }]} elevated />
         </Animated.View>
         <View style={styles.items}>
@@ -115,6 +118,7 @@ const styles = StyleSheet.create({
   veil: { ...StyleSheet.absoluteFillObject },
   rail: { position: "absolute", left: N.left, top: N.top, height: HEIGHT },
   glass: { position: "absolute", left: 0, top: 0, height: HEIGHT },
+  openBase: { borderRadius: N.radius, backgroundColor: "rgba(10, 10, 14, 0.84)" },
   items: { flex: 1, paddingVertical: 22, paddingHorizontal: 16, gap: 8, alignItems: "flex-start", paddingLeft: 20 },
   separator: { height: 1, marginVertical: 8, marginLeft: 10, backgroundColor: white(0.12) },
   spacer: { flex: 1 },

@@ -73,6 +73,11 @@ Jamais de mot de passe : sans session disponible, on s'arrête et on demande.
 ## Pièges
 
 - **Menu au catalogue quitte l'application** (racine de la pile) : `launch`.
+- **Une retouche qui ne se voit pas** : le rechargement à chaud ne reprend pas
+  toujours un composant mémoïsé profond — `launch` recharge tout.
+- **L'app passe derrière l'accueil de tvOS** quand Simulator.app est réactivé
+  sur un appareil déjà démarré : `sim` ne l'ouvre plus qu'au démarrage, et
+  une commande sans réponse ramène l'app au premier plan avant de réessayer.
 - **Inter n'est pas embarquée dans l'app tvOS** : ni `.ttf` dans le paquet, ni
   `UIAppFonts`. Le simulateur rend en San Francisco tant que la police n'est
   pas ajoutée au projet natif (tâche à part : il faut reconstruire l'app).
