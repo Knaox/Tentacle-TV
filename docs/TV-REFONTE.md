@@ -310,7 +310,22 @@ Sur de faux états au banc, moteur jamais chargé :
 - panneau des épisodes ; réglages (pistes audio, sous-titres, qualité :
   Original — 4K, paliers, puces DV/HDR/Atmos/Mb/s, Auto) ;
 - rechargement doux (image figée), badge « qualité réduite », bandeau
-  d'erreur, sous-titres en calque.
+  d'erreur, sous-titres en calque ; passages connus (intro, résumé, générique)
+  qui COUPENT la frise, comme des chapitres.
+
+**Branché sur Apple TV** (`redesignWiring/player/`, branche
+`refonte/tv-lecteur`). `PlayerScreen` garde UNE orchestration et aiguille son
+seul rendu : `LegacyPlayerStage` (Android TV, inchangé) ou
+`PlayerRedesignStage` — même moteur (`TVPlayerEngine`), même fond, et
+`PlayerChromeView` par-dessus. Le focus passe par le port : la mémoire
+partagée de l'habillage (`useOverlayFocus`), la pilule (`useSkipPillFocus`),
+les guides de l'habillage actuel posés sur les groupes des vues
+(`player:osd`, `player:timeline`, `player:skip-island`, `upnext:actions`,
+`end:actions`, `tracks:panel`, `episodes:panel|header|seasons`). Choix
+propres à tvOS : le panneau des pistes s'ouvre DANS l'habillage (plus de
+route modale ; Menu le referme par `usePreventRemove`) ; les pastilles de la
+source ne se montrent qu'en lecture directe ; la liste des épisodes est
+virtualisée.
 
 ### 12. Feuille d'actions (appui long)
 
@@ -357,9 +372,10 @@ Manquant ou non transmis aujourd'hui (le branchement le demandera) :
 - la note sur la fiche (la donnée existe, `useCardRatingTarget`, jamais montée) ;
 - les titres hors bibliothèque sur TV (reco, recherche) : filtrés — d'où
   aucun « Demander » ;
-- lecteur : la durée réelle des décomptes (`countdownTotals`, figée à 10 s),
-  le réglage « lecture auto » (le décompte s'affiche même quand rien ne suit),
-  les segments pour marquer la barre.
+- ~~lecteur : durée des décomptes, réglage « lecture auto », segments de la
+  barre~~ — réglés au branchement : `countdownTotals` mesure les anneaux, la
+  suite n'annonce d'échéance que si la lecture auto la lancera, et les
+  segments du serveur coupent la frise.
 
 ## Constats hors UI — tâches proposées
 
