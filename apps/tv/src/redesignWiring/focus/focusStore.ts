@@ -19,6 +19,7 @@ import { claimTvFocus } from "../../hooks/useTvFocusClaim";
  */
 
 export type FocusListener = (focusKey: string, focused: boolean) => void;
+export type NodeListener = (focusKey: string, node: View | null) => void;
 
 /** Ce que l'intégration peut ajouter à une clé : props natives, garde anti-clic
  *  fantôme, conteneur d'un groupe (`FocusGroup`). */
@@ -50,6 +51,9 @@ export interface FocusStore {
   lastFocusedKey(): string | null;
   /** Prise et perte du focus, clé par clé. Rend le désabonnement. */
   subscribe(listener: FocusListener): () => void;
+  /** Montage et démontage des nœuds, clé par clé (un guide qui vise une
+   *  cible se redessine quand elle arrive). Rend le désabonnement. */
+  subscribeNodes(listener: NodeListener): () => void;
 }
 
 type Settable = { setNativeProps?: (props: object) => void };
@@ -59,18 +63,17 @@ export function createFocusStore(): FocusStore {
   const extras = new Map<string, FocusExtras>();
   const bindings = new Map<string, FocusBinding>();
   const listeners = new Set<FocusListener>();
+  const nodeListeners = new Set<NodeListener>();
   /** Réclamations en attente du montage de leur cible. */
   const pending = new Map<string, Set<() => void>>();
   let current: string | null = null;
   let last: string | null = null;
 
   const attach = (key: string, node: View | null) => {
-    if (!node) {
-      nodes.delete(key);
-      return;
-    }
-    nodes.set(key, node);
-    const waiting = pending.get(key);
+    if (node) nodes.set(key, node);
+    else nodes.delete(key);
+    for (const listener of [...nodeListeners]) listener(key, node);
+    const waiting = node ? pending.get(key) : undefined;
     if (waiting) {
       pending.delete(key);
       for (const run of waiting) run();
@@ -140,6 +143,12 @@ export function createFocusStore(): FocusStore {
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
+      };
+    },
+    subscribeNodes: (listener) => {
+      nodeListeners.add(listener);
+      return () => {
+        nodeListeners.delete(listener);
       };
     },
   };
