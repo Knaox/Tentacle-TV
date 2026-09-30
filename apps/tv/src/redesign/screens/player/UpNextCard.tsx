@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { PillButton } from "../../controls/PillButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { colors, fonts, white } from "../../theme/tokens";
 import { CountdownPill } from "./CountdownPill";
@@ -13,7 +14,8 @@ import { DENSE_BASE } from "./surfaces";
  * l'épisode suivant, son code et son titre, son résumé, et deux gestes —
  * « Lire maintenant » (la pilule blanche, avec l'anneau du décompte) et
  * « Masquer ». Lecture auto éteinte : ni décompte ni anneau, une simple
- * proposition. Clés : `upnext:play`, `upnext:dismiss`.
+ * proposition. Clés : `upnext:play`, `upnext:dismiss` ; groupe
+ * `upnext:actions` — les deux gestes, où l'intégration retient le focus.
  */
 
 const SAFE = TV_STAGE.safe;
@@ -47,10 +49,10 @@ export const UpNextCard = memo(function UpNextCard({
           </View>
         </View>
         {model.overview ? <Text style={styles.overview} numberOfLines={2}>{model.overview}</Text> : null}
-        <View style={styles.actions}>
+        <FocusGroup focusKey="upnext:actions" style={styles.actions}>
           <CountdownPill variant="primary" icon="play" label={labels.playNow} countdown={model.countdown} focusKey="upnext:play" onPress={onPlayNext} />
           <PillButton variant="glass" label={labels.dismiss} focusKey="upnext:dismiss" onPress={onDismiss} />
-        </View>
+        </FocusGroup>
       </GlassSurface>
     </View>
   );

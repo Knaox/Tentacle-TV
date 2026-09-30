@@ -4,6 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
 import { PillButton } from "../../controls/PillButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { TitleArt } from "../../hero/TitleArt";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { CountdownPill } from "./CountdownPill";
@@ -15,7 +16,8 @@ import type { EndScreenModel, PlayerLabels } from "./playerTypes";
  * et le titre de l'épisode, son résumé) et deux gestes — « Lire maintenant »
  * (anneau du décompte) et « Retour à la fiche », puisque la refuser sort du
  * lecteur ; à droite, l'image de l'épisode suivant dans sa lumière.
- * Clés : `end:play`, `end:leave`.
+ * Clés : `end:play`, `end:leave` ; groupe `end:actions` — les deux gestes,
+ * où l'intégration retient le focus.
  */
 
 const SAFE = TV_STAGE.safe;
@@ -54,10 +56,10 @@ export const EndScreen = memo(function EndScreen({
           <Text style={styles.title} numberOfLines={2}>{model.title}</Text>
         </View>
         {model.overview ? <Text style={styles.overview} numberOfLines={3}>{model.overview}</Text> : null}
-        <View style={styles.actions}>
+        <FocusGroup focusKey="end:actions" style={styles.actions}>
           <CountdownPill variant="primary" icon="play" label={labels.playNow} countdown={model.countdown} focusKey="end:play" onPress={onPlayNext} />
           <PillButton variant="glass" icon="chevronLeft" label={labels.backToDetails} focusKey="end:leave" onPress={onLeave} />
-        </View>
+        </FocusGroup>
       </View>
       <View style={styles.still} pointerEvents="none">
         {model.palette ? <ArtworkHalo width={STILL.width} height={STILL.height} radius={STILL.radius} palette={model.palette} opacity={0.55} /> : null}

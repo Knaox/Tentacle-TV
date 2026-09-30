@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { scrim } from "../../theme/tokens";
 import { EndScreen } from "./EndScreen";
@@ -45,6 +46,11 @@ import { UpNextCard } from "./UpNextCard";
  *   `useTVAutoQualityCap` : `notice`.
  * Les clés de focus sont listées dans chaque sous-vue ; aucune décision de
  * focus ici (entrée, Retour, restauration : l'intégration).
+ *
+ * Groupes (`FocusGroup`) : `player:osd` — tout l'habillage (Retour, frise,
+ * commandes), là où l'intégration pose sa mémoire du dernier bouton ;
+ * `player:timeline` — la frise, passive, que le focus TRAVERSE en montant des
+ * commandes vers la pilule de saut.
  */
 
 export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport" | "paused" | "labels"> {
@@ -106,26 +112,28 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.pauseDim, dimStyle]} />
       {props.subtitle && playing && !scrub && !endScreen ? <SubtitleLayer cue={props.subtitle} raised={chrome} /> : null}
       <Animated.View style={[StyleSheet.absoluteFill, chromeStyle]} pointerEvents={chrome ? "box-none" : "none"}>
-        <LinearGradient pointerEvents="none" colors={[scrim(0), scrim(0.66), scrim(0.94)]} locations={[0, 0.48, 1]} style={styles.bottomScrim} />
-        <OsdTopBar media={media} backLabel={labels.back} onBack={props.onBack} />
-        <View style={styles.timeline} pointerEvents="none">
-          <OsdTimeline position={timeline.position} duration={timeline.duration} buffered={timeline.buffered} />
-        </View>
-        <View style={styles.controls} pointerEvents="box-none">
-          <OsdControls
-            transport={props.transport}
-            paused={paused}
-            labels={labels}
-            onPlayPause={props.onPlayPause}
-            onSeekBack={props.onSeekBack}
-            onSeekForward={props.onSeekForward}
-            onScrub={props.onScrub}
-            onPrevious={props.onPrevious}
-            onNext={props.onNext}
-            onOpenEpisodes={props.onOpenEpisodes}
-            onOpenTracks={props.onOpenTracks}
-          />
-        </View>
+        <FocusGroup focusKey="player:osd" style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          <LinearGradient pointerEvents="none" colors={[scrim(0), scrim(0.66), scrim(0.94)]} locations={[0, 0.48, 1]} style={styles.bottomScrim} />
+          <OsdTopBar media={media} backLabel={labels.back} onBack={props.onBack} />
+          <FocusGroup focusKey="player:timeline" style={styles.timeline} pointerEvents="none">
+            <OsdTimeline position={timeline.position} duration={timeline.duration} buffered={timeline.buffered} />
+          </FocusGroup>
+          <View style={styles.controls} pointerEvents="box-none">
+            <OsdControls
+              transport={props.transport}
+              paused={paused}
+              labels={labels}
+              onPlayPause={props.onPlayPause}
+              onSeekBack={props.onSeekBack}
+              onSeekForward={props.onSeekForward}
+              onScrub={props.onScrub}
+              onPrevious={props.onPrevious}
+              onNext={props.onNext}
+              onOpenEpisodes={props.onOpenEpisodes}
+              onOpenTracks={props.onOpenTracks}
+            />
+          </View>
+        </FocusGroup>
       </Animated.View>
       {props.buffering || props.reloadFrame ? <BufferingBadge /> : null}
       {props.seekFlash && !scrub ? <SeekFlash forward={props.seekFlash.forward} label={props.seekFlash.label} /> : null}

@@ -1,11 +1,13 @@
 import { memo } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { CircleButton } from "./CircleButton";
-import { EPISODE_ROW_HEIGHT, EpisodeRow } from "./EpisodeRow";
+import { EpisodeList } from "./EpisodeList";
+import { EPISODE_ROW_HEIGHT } from "./EpisodeRow";
 import type { EpisodesPanelModel } from "./playerTypes";
 import { SeasonTabs } from "./SeasonTabs";
 import { DENSE_BASE } from "./surfaces";
@@ -14,9 +16,13 @@ import { DENSE_BASE } from "./surfaces";
  * Le panneau « Épisodes » du lecteur : un grand panneau de verre à droite —
  * la vidéo reste visible à gauche, sous un voile —, l'en-tête (Épisodes, la
  * série, Fermer), les onglets de saisons, puis les grandes lignes d'épisode,
- * ouvertes sur l'épisode en cours. Chargement : des lignes fantômes, fixes.
+ * ouvertes sur l'épisode en cours (liste virtualisée, `EpisodeList`).
+ * Chargement : des lignes fantômes, fixes.
  * Clés : `episodes:close`, `episodes:season:<n>`, `episodes:episode:<n>` (rang
- * dans la bande, rang dans la saison).
+ * dans la bande, rang dans la saison). Groupes : `episodes:panel` — tout le
+ * panneau, où l'intégration retient le focus ; `episodes:header` — l'en-tête,
+ * qui peut renvoyer toute montée vers Fermer ; `episodes:seasons` — la bande
+ * des saisons (`SeasonTabs`).
  */
 
 const SAFE = TV_STAGE.safe;
@@ -53,8 +59,6 @@ export const EpisodesPanel = memo(function EpisodesPanel({
   onSelectEpisode?: (id: string) => void;
   onClose?: () => void;
 }) {
-  const current = model.episodes.findIndex((episode) => episode.current);
-  const offset = Math.max(0, current - 1) * (EPISODE_ROW_HEIGHT + ROW_GAP);
   return (
     <View style={StyleSheet.absoluteFill}>
       <LinearGradient
@@ -65,33 +69,30 @@ export const EpisodesPanel = memo(function EpisodesPanel({
         end={{ x: 1, y: 0.5 }}
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.panel}>
+      <FocusGroup focusKey="episodes:panel" style={styles.panel}>
         <GlassSurface radius={44} tone="strong" elevated style={styles.glass} />
-        <View style={styles.header}>
+        <FocusGroup focusKey="episodes:header" style={styles.header}>
           <View style={styles.headings}>
             <Text style={styles.title}>{labels.episodes}</Text>
             <Text style={styles.series} numberOfLines={1}>{model.seriesTitle}</Text>
           </View>
           <CircleButton icon="close" label={labels.close} size={64} caption={false} focusKey="episodes:close" onPress={onClose} />
-        </View>
+        </FocusGroup>
         <SeasonTabs seasons={model.seasons} activeId={model.activeSeasonId} onSelect={onSelectSeason} />
         <View style={styles.rule} />
         {model.loading ? (
           <GhostRows />
         ) : (
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.list} contentOffset={{ x: 0, y: offset }} showsVerticalScrollIndicator={false}>
-            {model.episodes.map((episode, index) => (
-              <EpisodeRow
-                key={episode.id}
-                episode={episode}
-                nowPlayingLabel={labels.nowPlaying}
-                focusKey={`episodes:episode:${index}`}
-                onPress={onSelectEpisode ? () => onSelectEpisode(episode.id) : undefined}
-              />
-            ))}
-          </ScrollView>
+          // Une liste par saison (clé) : l'ouverture sur l'épisode en cours se
+          // recalcule à chaque changement, sans reste de la précédente.
+          <EpisodeList
+            key={model.activeSeasonId}
+            episodes={model.episodes}
+            nowPlayingLabel={labels.nowPlaying}
+            onSelectEpisode={onSelectEpisode}
+          />
         )}
-      </View>
+      </FocusGroup>
     </View>
   );
 });
@@ -104,7 +105,6 @@ const styles = StyleSheet.create({
   title: { ...fonts.extrabold, fontSize: 44, letterSpacing: -0.6, color: colors.text },
   series: { ...fonts.semibold, fontSize: 26, color: colors.textSecondary },
   rule: { height: 1, marginHorizontal: 40, marginTop: 10, backgroundColor: white(0.1) },
-  scroll: { flex: 1 },
   list: { gap: ROW_GAP, paddingHorizontal: 28, paddingTop: 22, paddingBottom: 40 },
   ghostRow: { height: EPISODE_ROW_HEIGHT, flexDirection: "row", alignItems: "center", gap: 24, padding: 16, borderRadius: 26, backgroundColor: white(0.04) },
   ghostThumb: { width: 256, height: 144, borderRadius: 16, backgroundColor: white(0.07) },

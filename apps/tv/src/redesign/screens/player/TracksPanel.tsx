@@ -2,6 +2,7 @@ import { memo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
@@ -17,7 +18,8 @@ import { TrackOptionRow } from "./TrackOptionRow";
  * reste visible au-dessus. Chaque colonne défile seule ; ouverte sur son
  * choix retenu.
  * Clés : `tracks:close`, `tracks:audio:<clé>`, `tracks:subtitle:<clé>`,
- * `tracks:quality:<clé>`.
+ * `tracks:quality:<clé>` ; groupe `tracks:panel` — la feuille, où
+ * l'intégration retient le focus tant qu'elle est ouverte.
  */
 
 const SAFE = TV_STAGE.safe;
@@ -92,7 +94,7 @@ export const TracksPanel = memo(function TracksPanel({
   return (
     <View style={StyleSheet.absoluteFill}>
       <LinearGradient pointerEvents="none" colors={[scrim(0.15), scrim(0.55), scrim(0.85)]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
-      <View style={styles.sheet}>
+      <FocusGroup focusKey="tracks:panel" style={styles.sheet}>
         <GlassSurface radius={44} tone="strong" elevated style={styles.glass} />
         <View style={styles.columns}>
           <Column title={labels.audio} icon="audio" options={model.audio} prefix="audio" autoLabel={labels.auto} onSelect={onSelectAudio} />
@@ -108,7 +110,7 @@ export const TracksPanel = memo(function TracksPanel({
         <View style={styles.close}>
           <CircleButton icon="close" label={labels.close} size={64} caption={false} focusKey="tracks:close" onPress={onClose} />
         </View>
-      </View>
+      </FocusGroup>
     </View>
   );
 });

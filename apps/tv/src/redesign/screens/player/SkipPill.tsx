@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { PillButton } from "../../controls/PillButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import type { IconName } from "../../icons/Icon";
 import { CountdownPill } from "./CountdownPill";
@@ -18,7 +19,9 @@ import { SOFT_BASE } from "./surfaces";
  * qu'avec l'habillage, sans « Masquer ».
  *
  * Habillage visible : elle MONTE au-dessus de la frise (en `transform`,
- * jamais en position). Clés : `player:skip`, `player:skip-dismiss`.
+ * jamais en position). Clés : `player:skip`, `player:skip-dismiss` ; groupe
+ * `player:skip-island` — les deux boutons, que l'intégration peut tenir
+ * ensemble pendant un décompte et d'où elle ressort vers les commandes.
  */
 
 const ICON: Record<SkipPillModel["kind"], IconName> = {
@@ -47,12 +50,14 @@ export const SkipPill = memo(function SkipPill({
   const style = useAnimatedStyle(() => ({ transform: [{ translateY: -RAISE * lift.value }] }));
   return (
     <Animated.View style={[styles.anchor, style]} pointerEvents="box-none">
-      <CountdownPill label={model.label} icon={ICON[model.kind]} countdown={model.countdown} base={SOFT_BASE} focusKey="player:skip" onPress={onSkip} />
-      {model.refusable ? (
-        <View style={styles.base}>
-          <PillButton variant="glass" label={dismissLabel} focusKey="player:skip-dismiss" onPress={onDismiss} />
-        </View>
-      ) : null}
+      <FocusGroup focusKey="player:skip-island" style={styles.island} pointerEvents="box-none">
+        <CountdownPill label={model.label} icon={ICON[model.kind]} countdown={model.countdown} base={SOFT_BASE} focusKey="player:skip" onPress={onSkip} />
+        {model.refusable ? (
+          <View style={styles.base}>
+            <PillButton variant="glass" label={dismissLabel} focusKey="player:skip-dismiss" onPress={onDismiss} />
+          </View>
+        ) : null}
+      </FocusGroup>
     </Animated.View>
   );
 });
@@ -62,9 +67,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: TV_STAGE.safe.x,
     bottom: TV_STAGE.safe.y + 54,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 18,
   },
+  island: { flexDirection: "row", alignItems: "center", gap: 18 },
   base: { borderRadius: 34, backgroundColor: SOFT_BASE },
 });
