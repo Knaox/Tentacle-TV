@@ -3,6 +3,7 @@
 // télécommande ni navigateur. Voir README.md pour le déroulé complet.
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { bootedBench, ensureSimulator, foreground, launchApp, screenshot } from "./tools/simulator.mjs";
@@ -153,9 +154,48 @@ const commands = {
     const r = await measureGpu(bootedBench(), Number(args[0] ?? 10));
     console.log(`GPU ${r.gpuMsPerS} ms/s · CPU backboardd ${r.backboarddCpuMsPerS} ms/s · CPU app ${r.appCpuMsPerS} ms/s (sur ${r.seconds} s)`);
   },
+  fps: () => fps(args),
   snapshot: () => captureSnapshot(path.join(HERE, "snapshot")),
   help: () => console.log(fs.readFileSync(path.join(HERE, "README.md"), "utf8").split("\n## ")[1] ?? ""),
 };
+
+/** Les images par seconde du fil d'interface (et du fil JS) pendant
+ *  `secondes`, pendant qu'un balayage du focus NATIF parcourt les cartes
+ *  `<préfixe>:<n>` si on le demande — et, sur la même fenêtre, le CPU de
+ *  l'app et le GPU du simulateur (`gpuCost.mjs`). Le Mac rend l'Apple TV
+ *  simulée : sous charge (une compilation ailleurs), des images se perdent
+ *  sans que l'app travaille plus. Le CPU de l'app, lui, ne dépend pas de la
+ *  charge : c'est lui qui départage deux versions ; les images perdues se
+ *  comparent à charge basse. Chaque mesure s'ajoute à `out/fps.jsonl`. */
+async function fps(args) {
+  const seconds = Number(args.find((a) => /^\d+(\.\d+)?$/.test(a)) ?? 8);
+  const prefix = args.find((a) => a.startsWith("--sweep="))?.slice(8);
+  const everyMs = Number(args.find((a) => a.startsWith("--every="))?.slice(8) ?? 150);
+  const label = args.find((a) => a.startsWith("--label="))?.slice(8) ?? "";
+  const id = Date.now();
+  const state = await post("/bench/control", {
+    focus: null,
+    meter: { id, seconds },
+    sweep: prefix ? { id, prefix, everyMs, seconds } : null,
+  });
+  // Le coût sur la fenêtre de la mesure : elle commence après le temps de
+  // pose du banc (`METER_SETTLE_MS`, 800 ms).
+  const cost = new Promise((resolve) => setTimeout(resolve, 800)).then(() => measureGpu(bootedBench(), seconds)).catch(() => null);
+  const r = await call(`/bench/meter?id=${id}&timeout=${Math.round((seconds + 20) * 1000)}`);
+  if (r.error) throw new Error(`pas de mesure rendue (${r.error}) — l'app du banc tourne-t-elle ?`);
+  const load = os.loadavg()[0].toFixed(1);
+  const spent = await cost;
+  const line = (name, m) =>
+    `${name} : ${m.fps} i/s sur ${m.seconds} s · ${m.dropped} image(s) perdue(s) en ${m.hitches} accroc(s) · pires ${m.worst.map((w) => `${w.ms} ms@${(w.atMs / 1000).toFixed(1)} s`).join(", ") || "—"}`;
+  console.log(`${state.scene ?? "catalogue"}${prefix ? ` · balayage ${prefix} toutes les ${everyMs} ms` : " · au repos"}${label ? ` · ${label}` : ""}`);
+  console.log(line("fil d'interface", r.ui));
+  console.log(line("fil JS", r.js));
+  console.log(`histogramme (<20 · 20–34 · 34–50 · 50–100 · ≥100 ms) : ${r.ui.histogram.join(" · ")}`);
+  if (spent) console.log(`coût : CPU app ${spent.appCpuMsPerS} ms/s · GPU ${spent.gpuMsPerS} ms/s · CPU backboardd ${spent.backboarddCpuMsPerS} ms/s · charge du Mac ${load}`);
+  fs.mkdirSync(OUT, { recursive: true });
+  const record = { at: new Date().toISOString(), scene: state.scene, glass: glassOf(state), sweep: prefix ?? null, everyMs: prefix ? everyMs : null, label, load: Number(load), cost: spent, ui: r.ui, js: r.js };
+  fs.appendFileSync(path.join(OUT, "fps.jsonl"), `${JSON.stringify(record)}\n`);
+}
 
 async function step(delta) {
   const list = await scenes();

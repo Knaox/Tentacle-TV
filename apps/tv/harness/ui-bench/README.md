@@ -56,6 +56,7 @@ Depuis `apps/tv` (`pnpm bench:ui <commande>` ou `node harness/ui-bench/bench.mjs
 | `shot [nom]` | Capture 1920×1080 de l'écran courant dans `out/`. |
 | `planche [préfixe] [--focus] [--lang=fr,en] [--glass=on,sim,off]` | Toutes les scènes du préfixe, dans chaque variante demandée, capturées puis assemblées dans `out/<date>-<préfixe>/planche-NN.png`. |
 | `gpu [secondes]` | Coût de rendu du simulateur du banc sur la fenêtre (10 s par défaut) : GPU et CPU en ms par seconde (voir « Mesurer le coût GPU »). |
+| `fps [secondes] [--sweep=<préfixe>] [--every=<ms>] [--label=…]` | Images par seconde du fil d'interface et du fil JS (8 s par défaut), images perdues, pires écarts — pendant un balayage du focus NATIF si on le demande — plus le CPU de l'app et le GPU sur la même fenêtre (voir « Mesurer le mouvement »). |
 | `snapshot` | Tire l'instantané Knaoxtest (voir plus bas). |
 
 Chaque commande attend que le banc ait AFFICHÉ l'état demandé (images
@@ -88,6 +89,30 @@ fin sous six verres, sous les mêmes verres masqués, sans verre) et le coût de
 fonds posés sous le verre (`mesure/fonds-dessines` contre `mesure/fonds`) ; le
 groupe « Verre » donne le verre à juger à l'œil (sur une image, sous un fondu)
 et le texte blanc sous chaque ton, sur du blanc pur (`verre/lisibilite`).
+
+## Mesurer le mouvement
+
+`fps` compte les images sur le FIL D'INTERFACE : un `useFrameCallback` de
+Reanimated (`chrome/FrameMeter.tsx`), battu par le CADisplayLink du fil
+principal, relève chaque intervalle sans un aller-retour JS pendant la mesure ;
+un intervalle de plus d'une image et demie est un accroc, et un intervalle de
+trois images en perd deux. La même chose côté JS (`requestAnimationFrame`)
+dit si le fil JS traîne — ce qui retarde le DÉPART d'une animation, jamais
+son déroulé.
+
+`--sweep=<préfixe>` fait bouger le focus NATIF (`chrome/BenchFocus.tsx`) :
+les éléments `<préfixe>:<n>` (une rangée, `resume`) ou `<préfixe>:<nom>`
+(`hero`) sont réclamés l'un après l'autre par `requestTVFocus`, en
+aller-retour, toutes les `--every` ms — le moteur de focus de tvOS, ses
+animations coordonnées, le défilement des rangées, les vrais `onFocus` /
+`onBlur`, comme à la télécommande. Le focus figé est levé d'office.
+
+Lire une mesure : le Mac rend l'Apple TV simulée, et une compilation dans une
+autre session fait perdre des images sans que l'app travaille davantage (la
+charge du Mac est rappelée à chaque mesure). Le **CPU de l'app** ne dépend
+presque pas de cette charge : c'est lui qui départage deux versions ; les
+images perdues se comparent à charge basse, en alternant les cas. Chaque
+mesure s'ajoute à `out/fps.jsonl`.
 
 ## Ajouter une scène
 

@@ -4,6 +4,7 @@ import { TEXT } from "@tentacle-tv/shared/theme";
 import { patchBench, signalReady, type BenchState } from "../control/benchRemote";
 import type { BenchData } from "../data/benchData";
 import { SCENE_BY_ID } from "../scenes";
+import { BenchFocus } from "./BenchFocus";
 
 // react-native-tvos exporte `useTVEventHandler` sans le typer.
 const { useTVEventHandler } = require("react-native") as {
@@ -62,7 +63,7 @@ export function SceneHost({ state, data }: { state: BenchState; data: BenchData 
   // l'ouverture d'un écran.
   return (
     <View key={scene.id} style={styles.fill}>
-      {scene.render(data)}
+      <BenchFocus sweep={state.sweep}>{scene.render(data)}</BenchFocus>
     </View>
   );
 }

@@ -6,6 +6,7 @@ import { i18n, initI18n } from "@tentacle-tv/shared";
 import { FocusPreviewProvider } from "../../src/redesign/focus/focusPreview";
 import { LiquidGlassProvider } from "../../src/redesign/glass/liquidGlassMode";
 import { Catalogue } from "./chrome/Catalogue";
+import { FrameMeter } from "./chrome/FrameMeter";
 import { SceneHost } from "./chrome/SceneHost";
 import {
   getBenchState,
@@ -77,6 +78,7 @@ export function UiBench() {
 
   return (
     <BenchDataProvider>
+      <FrameMeter request={state.meter} />
       <LiquidGlassProvider enabled={state.glass} allowNative={state.nativeGlass !== false}>
         <FocusPreviewProvider forcedKey={state.focus}>
           <NavigationContainer ref={nav} theme={DarkTheme} onReady={syncStack} onStateChange={onStackChange}>

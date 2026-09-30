@@ -24,11 +24,14 @@ const TYPES = { ".json": "application/json", ".jpg": "image/jpeg", ".jpeg": "ima
 // ligne de commande le modifie, puis attend que le banc dise « prêt » pour
 // cette révision avant de capturer. `nativeGlass` faux : Liquid Glass simulé
 // même là où le verre natif existe (le repli des tvOS < 26).
-const state = { rev: 0, scene: null, focus: null, glass: true, nativeGlass: true, lang: "fr" };
+const state = { rev: 0, scene: null, focus: null, glass: true, nativeGlass: true, lang: "fr", meter: null, sweep: null };
 let readyRev = 0;
 let scenes = [];
 const controlWaiters = new Set();
 const readyWaiters = new Set();
+// Les mesures d'images par seconde rendues par le banc, par numéro.
+const meterResults = new Map();
+const meterWaiters = new Set();
 
 function wake(set, value) {
   for (const w of [...set]) w(value);
@@ -75,7 +78,7 @@ async function bench(req, res, url) {
   }
   if (url.pathname === "/bench/control" && req.method === "POST") {
     const patch = await readBody(req);
-    for (const key of ["scene", "focus", "glass", "nativeGlass", "lang"]) if (key in patch) state[key] = patch[key];
+    for (const key of ["scene", "focus", "glass", "nativeGlass", "lang", "meter", "sweep"]) if (key in patch) state[key] = patch[key];
     state.rev += 1;
     const from = patch.from === "bench" ? "banc" : "commande";
     console.log(`[pilotage] r${state.rev} (${from}) scène=${state.scene ?? "menu"} focus=${state.focus ?? "natif"} verre=${!state.glass ? "enrichi" : state.nativeGlass ? "liquide" : "simulé"} langue=${state.lang}`);
@@ -93,6 +96,18 @@ async function bench(req, res, url) {
     const timeout = Number(url.searchParams.get("timeout") ?? 30_000);
     const ok = await waitFor(readyWaiters, () => readyRev >= rev, timeout);
     return send(res, ok ? 200 : 504, { readyRev, rev });
+  }
+  if (url.pathname === "/bench/meter" && req.method === "POST") {
+    const result = await readBody(req);
+    meterResults.set(Number(result.id), result);
+    wake(meterWaiters);
+    return send(res, 200, { ok: true });
+  }
+  if (url.pathname === "/bench/meter" && req.method === "GET") {
+    const id = Number(url.searchParams.get("id"));
+    const timeout = Number(url.searchParams.get("timeout") ?? 60_000);
+    const ok = await waitFor(meterWaiters, () => meterResults.has(id), timeout);
+    return send(res, ok ? 200 : 504, ok ? meterResults.get(id) : { id, error: "aucun résultat" });
   }
   if (url.pathname === "/bench/scenes" && req.method === "POST") {
     const list = await readBody(req);

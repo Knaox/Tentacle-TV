@@ -8,6 +8,23 @@
 
 export type BenchLang = "fr" | "en";
 
+/** Une mesure d'images par seconde : `seconds` secondes sur le fil
+ *  d'interface, à partir de son arrivée (`chrome/FrameMeter`). */
+export interface MeterRequest {
+  id: number;
+  seconds: number;
+}
+
+/** Un balayage du focus NATIF : les cartes `<prefix>:<n>` réclamées l'une
+ *  après l'autre, toutes les `everyMs`, en aller-retour, pendant `seconds`
+ *  (`chrome/BenchFocus`). */
+export interface SweepRequest {
+  id: number;
+  prefix: string;
+  everyMs: number;
+  seconds: number;
+}
+
 export interface BenchState {
   rev: number;
   /** L'identifiant de la scène affichée ; `null` = le catalogue. */
@@ -20,12 +37,15 @@ export interface BenchState {
    *  des tvOS < 26, montré sur un simulateur tvOS 26. */
   nativeGlass: boolean;
   lang: BenchLang;
+  /** La dernière mesure demandée (`bench.mjs fps`) ; null : aucune. */
+  meter?: MeterRequest | null;
+  sweep?: SweepRequest | null;
 }
 
 /** L'adresse d'où l'app a chargé son code : le relais du banc. */
 export const BENCH_ORIGIN: string = require("react-native/Libraries/Core/Devtools/getDevServer").default().url;
 
-let state: BenchState = { rev: -1, scene: null, focus: null, glass: true, nativeGlass: true, lang: "fr" };
+let state: BenchState = { rev: -1, scene: null, focus: null, glass: true, nativeGlass: true, lang: "fr", meter: null, sweep: null };
 const listeners = new Set<() => void>();
 
 function commit(next: BenchState) {
@@ -63,6 +83,15 @@ export function signalReady(rev: number): void {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ rev }),
+  }).catch(() => undefined);
+}
+
+/** Rend le résultat d'une mesure au relais, où la ligne de commande l'attend. */
+export function postMeterResult(result: { id: number } & Record<string, unknown>): void {
+  fetch(`${BENCH_ORIGIN}bench/meter`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(result),
   }).catch(() => undefined);
 }
 
