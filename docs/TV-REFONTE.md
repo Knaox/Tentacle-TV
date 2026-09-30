@@ -209,9 +209,41 @@ Ce qu'on en tire :
   l'habillage du lecteur sur une vidéo qui DÉFILE (le banc n'a qu'une image
   fixe) — à mesurer sur l'Apple TV lors du branchement du lecteur.
 - **Le rendu** : plus sombre que la simulation sur fond sombre, liseré qui
-  prend la couleur de l'œuvre. Lisible partout (planches comparatives). Les
-  feuilles posées sur un fond fumé presque opaque (filtres, actions) y
-  paraissent presque noires : ce fond date d'avant le flou natif.
+  prend la couleur de l'œuvre. Lisible partout (planches comparatives).
+
+### Les fonds sous le verre natif
+
+Le verre dessiné ne floute rien : les vues posent dessous un fond sombre —
+0,84 à 0,96 sous les feuilles et les panneaux, 0,5 sous les pastilles du
+lecteur. Le verre natif, lui, floute, et fonce déjà ce qu'il couvre : ces
+fonds le cachaient, feuilles et panneaux sortaient presque noirs. Une seule
+règle, `redesign/glass/glassBacking.ts` : sous le verre natif,
+`useNativeGlassBacking(ton)` remplace le fond dessiné d'une vue par celui du
+ton de son verre. Simulé et enrichi ne bougent pas — planches avant/après
+identiques au pixel près sur les huit groupes, hors roues de chargement.
+
+Calibré au pire, sur du blanc pur, et vérifié sur la neige d'Interstellar
+(scène `verre/lisibilite`). Contraste du texte blanc :
+
+| Ton | Sous quoi | Sans fond (blanc pur) | Fond natif | Blanc pur | Neige |
+|---|---|---|---|---|---|
+| `strong` | feuilles, panneaux du lecteur, rail ouvert, « À suivre », erreur, messages, hors-ligne, bande-annonce | 6,7:1 | aucun | 6,7:1 (secondaire 4,8:1) | 7,5:1 |
+| `regular` | badges du lecteur : saut, mémoire tampon, qualité, défilement | 4,1:1 | 0,1 | 4,7:1 | 6,1:1 |
+| `clear` | boutons et pilules posés sur l'image | 1:1 | 0,55 | 3,1:1 | 4,6:1 |
+
+- **Le verre clair ne fonce rien** (blanc sur blanc sans fond) : son fond ne
+  s'allège pas, il passe même de 0,5 à 0,55 pour tenir 3:1 sur du blanc pur
+  — il ne porte que des libellés gras et des pictogrammes.
+- **Hors règle** : la carte du code du jumelage garde son fond dense. Il y
+  empêche le halo de teinter le code — ce que le flou ne change pas (essayé :
+  la carte vire au rose-violet).
+- **Les feuilles restent sombres** : leur voile plein écran (0,58 à 0,86)
+  domine désormais. Le verre s'y voit (teintes floutées de la page, liseré),
+  mais c'est ce voile qu'il faudrait alléger en natif pour en voir plus.
+- **Coût** : rien de plus. `mesure/fonds` (la règle) contre
+  `mesure/fonds-dessines` (les fonds d'avant, sous le verre natif), quatre
+  tours alternés de 8 s : 152 contre 156 ms/s de GPU, écart par tour de
+  −8,5 à +2,5 — dans le bruit.
 
 ## Branchement — fiche, bande-annonce, feuille (Apple TV)
 
