@@ -66,6 +66,10 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   clé, par une ref, des props natives (`hasTVPreferredFocus`, `nextFocus*`…),
   la garde anti-clic fantôme et l'observation du focus. Un besoin nouveau
   s'y ajoute ; jamais de variante par écran.
+- Un GROUPE d'éléments (habillage du lecteur, panneau, rangée) se nomme par
+  `FocusGroup focusKey` (`redesign/focus/FocusGroup.tsx`) : une View simple
+  tant que personne ne lie la clé ; l'intégration peut lui donner un
+  `container` STABLE (guide de focus : mémoire, piège, destinations).
 - Le Liquid Glass passe par `LiquidGlassProvider` / `useLiquidGlassEnabled`
   (`redesign/glass/liquidGlassMode.tsx`), clé `tentacle_liquid_glass`,
   activé par défaut.
