@@ -1,20 +1,19 @@
-import { useEffect } from "react";
-import { Easing, useReducedMotion, useSharedValue, withTiming, type SharedValue } from "react-native-reanimated";
-import { TV_STAGE } from "@tentacle-tv/theme";
-
-/** La courbe du bureau (`--ease-out`). */
-const EASE_OUT = Easing.bezier(0.22, 1, 0.36, 1);
+import type { SharedValue } from "react-native-reanimated";
+import type { Motion } from "../motion/motion";
+import { useMotion } from "../motion/useMotion";
 
 /**
  * Une valeur qui va de 0 à 1 quand `on` devient vrai, et revient : c'est elle
  * qui porte l'agrandissement, le soulèvement et le reflet d'un élément
- * focalisé. Réduire les animations la rend instantanée.
+ * focalisé.
+ *
+ * Par défaut, le mouvement du FOCUS d'Apple TV (`motion/motion.ts`) : un
+ * ressort vif à l'arrivée — 75 % en 100 ms, un dépassement invisible —, un
+ * retour bref et doux ; un focus qui revient en cours de route repart avec sa
+ * vitesse. Un autre préréglage (`recede`, `reveal`…) pour ce qui n'est pas le
+ * focus, ou une durée : une sortie douce dans les deux sens (un interrupteur).
+ * Réduire les animations la rend instantanée ; hors Apple TV aussi.
  */
-export function useFocusProgress(on: boolean, durationMs: number = TV_STAGE.focus.durationMs): SharedValue<number> {
-  const reduced = useReducedMotion();
-  const progress = useSharedValue(on ? 1 : 0);
-  useEffect(() => {
-    progress.value = withTiming(on ? 1 : 0, { duration: reduced ? 0 : durationMs, easing: EASE_OUT });
-  }, [on, reduced, durationMs, progress]);
-  return progress;
+export function useFocusProgress(on: boolean, motion: Motion = "focus"): SharedValue<number> {
+  return useMotion(on, motion);
 }

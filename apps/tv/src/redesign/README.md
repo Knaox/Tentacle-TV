@@ -33,6 +33,11 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
   ombres en fondu), reflet ; les boutons de verre deviennent BLANCS, texte
   noir. Ce qui n'a pas le focus recule un peu.
 - **N'animer que `transform` et `opacity`.** Aucune boucle infinie.
+- **Le mouvement est celui d'Apple TV, et d'Apple TV seulement** (`motion/`,
+  jetons `TV_MOTION`) : le focus arrive sur un ressort vif et repart plus
+  vite qu'il n'est venu, ce qui paraît sort avant de se démonter, un contenu
+  qui change passe en fondu enchaîné. Tout se joue sur le fil d'interface ;
+  hors Apple TV, et animations réduites, tout est instantané.
 
 ## Les briques (à composer, pas à recopier)
 
@@ -41,7 +46,11 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `theme/tokens.ts` | `colors`, `fonts`, `text` (display, title, heading, rowTitle, body, meta, kicker, caption), `scrim()`, `white()`, `stage`, `type` |
 | `focus/FocusTarget` | Le seul Pressable : `focusKey`, `onPress`, `onLongPress`, `onFocusChange`, enfant `(focused) => …` |
 | `focus/FocusGroup` | Un groupe nommé (`focusKey`) : une View tant que l'intégration ne lui donne pas de conteneur (`focusBinding`) |
-| `focus/useFocusProgress` | 0 → 1 au focus (Reanimated), pour les styles animés |
+| `focus/useFocusProgress` | 0 → 1 au focus (Reanimated), pour les styles animés — le mouvement du focus par défaut, un préréglage ou une durée sinon |
+| `motion/motion` | `MOTION_ENABLED` (Apple TV), `EASE`, `motionTo(cible, préréglage)` : `focus`, `recede`, `reveal`, `veil`, `panel`, `unfold`, `press`, `ambient`, `hero` |
+| `motion/useMotion` | `useMotion(on, préréglage)` : 0 → 1 lancé dans la tâche du rendu ; `usePresence(shown, préréglage)` : monté le temps de sa sortie |
+| `motion/useCrossfade` | Fondu enchaîné sur deux calques (`dissolve` : images opaques ; `blend` : lumières), les changements en rafale regroupés |
+| `motion/useSwap` | L'échange d'un contenu unique (sortie, changement invisible, entrée) : le texte du héros |
 | `glass/GlassSurface` | Le verre (`radius`, `tone` regular/strong/clear, `elevated`) ; suit l'interrupteur Liquid Glass — natif (`UIGlassEffect`) sur tvOS 26, simulé ailleurs |
 | `glass/glassBacking` | Le fond sous un verre qui flotte : `useNativeGlassBacking(tone)` remplace, sous le verre natif seulement, le fond qu'une vue dessine (strong : aucun, regular 0,1, clear 0,55) |
 | `background/AmbientBackdrop` | Le fond vivant (`palette`) |
