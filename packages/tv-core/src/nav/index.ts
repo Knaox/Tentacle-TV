@@ -2,4 +2,5 @@
  *  la géométrie que les trois cibles partagent. */
 export * from "./railPinning";
 export * from "./railOrder";
+export * from "./railScroll";
 export * from "./railSpec";
