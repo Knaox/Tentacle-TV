@@ -121,6 +121,104 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   sa section — légende, raison, indication de l'appui long — au plus près, à
   56 points des bords. Au banc, le même geste suit le focus figé.
 
+## Tester la refonte
+
+**Provisoire** — le lanceur (`apps/tv/harness/launcher/`) ne vit que le temps
+de la refonte ; « Retirer le lanceur », plus bas, dit comment l'enlever. Trois
+commandes, depuis la racine du dépôt. Au simulateur seulement : jamais
+l'Apple TV du salon.
+
+**L'app réelle, refondue**, au simulateur « Tentacle TV — refonte » :
+
+```bash
+pnpm tv:refonte
+```
+
+Elle dit ce qu'elle fait, dans cet ordre, et réutilise ce qui tourne déjà :
+
+- **Backend de dev** : réutilisé s'il répond sur 3001, qui que l'ait lancé ;
+  sinon `pnpm dev:backend`, depuis le dossier qui porte la configuration de la
+  base (`apps/backend/data/database.json` — le dossier principal quand on
+  lance d'un worktree).
+- **Metro** : réutilisé s'il sert déjà CE dossier (le sien, ou `pnpm dev:tv`
+  sur 8081) ; sinon lancé sur le premier port libre à partir de 8081.
+- **Le simulateur « Tentacle TV — refonte »** : créé neuf la première fois
+  (Apple TV 4K at 1080p, dernier tvOS d'Xcode) — jamais cloné : ni compte ni
+  app d'un autre simulateur n'y passe.
+- **L'app native** : reconstruite seulement si elle n'y est pas, ou si le
+  NATIF a changé depuis (projet Xcode, dépendances et leurs correctifs,
+  polices — une empreinte le dit) : build Xcode Debug, environ 8 min la
+  première fois, moins d'une minute ensuite (27 s mesurées). Une retouche
+  JavaScript ne reconstruit rien : elle se voit aussitôt.
+- **`pod install`** ne passe que si les Pods manquent ou si leurs entrées ont
+  changé (Podfile, Podfile.lock, dépendances, correctifs) : il régénère tout
+  le projet Pods, et le build suivant recompile tout (7 min au lieu de 27 s).
+  Hors du dossier principal, il retouche trois fichiers suivis sans rien y
+  changer (sommes de contrôle liées au chemin du dossier, ordre de lignes,
+  commentaires) : le lanceur les rétablit ; une vraie différence reste, et il
+  la signale. `pnpm tv:refonte --rebuild` force `pod install` et le build.
+- **Simulator.app au premier plan**, puis l'app, branchée sur ce Metro-là.
+
+**Jumeler** — une fois, avec VOTRE compte ; le lanceur ne pose ni session ni
+jeton, et le jumelage reste ensuite sur ce simulateur :
+
+1. sur la TV, « Français » en bas de l'accueil (sur un simulateur neuf, l'app
+   démarre en anglais : elle ne déclare que l'anglais à tvOS), puis
+   « Configurer manuellement », adresse `http://localhost:3001` (le clavier du
+   Mac tape dans la fenêtre du simulateur) ;
+2. ouvrir `http://localhost:3001/pair-device` (le client web que sert le
+   backend de dev), se connecter, saisir le code affiché par la TV.
+
+Télécommande : flèches = pavé, Entrée = OK, Échap = Menu ; Window › Show
+Apple TV Remote pour le reste.
+
+**Le banc UI**, au simulateur « Tentacle TV — banc UI » : `bench:ui up` en
+arrière-plan, puis `bench:ui sim`, sur des ports libres.
+
+```bash
+pnpm tv:banc
+```
+
+Les commandes du banc (son README) s'y passent telles quelles ; ses ports et
+son simulateur sont retrouvés seuls :
+
+```bash
+pnpm tv:banc planche accueil --focus
+```
+
+**Tout éteindre** — le Metro, le banc et le backend lancés par le lanceur,
+les deux simulateurs dédiés, et Simulator.app s'il ne montre plus aucun
+appareil ; jamais ce qu'il n'a pas lancé lui-même (un backend réutilisé reste
+en marche) :
+
+```bash
+pnpm tv:stop
+```
+
+Journaux (Metro, banc, backend, `pod install`, build) et état :
+`~/Library/Caches/tentacle-tv-lanceur/`.
+
+### Retirer le lanceur (à la fusion dans main)
+
+Rien d'autre ne dépend de lui :
+
+- supprimer le dossier `apps/tv/harness/launcher/` ;
+- retirer du `package.json` racine les trois lignes `tv:refonte`, `tv:banc`
+  et `tv:stop` ;
+- retirer le bloc « En une commande » en tête de
+  `apps/tv/harness/ui-bench/README.md` (jusqu'au trait `---`), et cette
+  section-ci ;
+- sur le Mac, si l'on veut : `~/Library/Caches/tentacle-tv-lanceur/`, et les
+  deux simulateurs :
+
+```bash
+xcrun simctl delete "Tentacle TV — refonte"
+```
+
+```bash
+xcrun simctl delete "Tentacle TV — banc UI"
+```
+
 ## Voir le résultat, sans navigateur
 
 - **Dans Simulator.app** : fenêtre « Banc UI TV (Claude) ». Le catalogue liste

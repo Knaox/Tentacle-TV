@@ -1,5 +1,40 @@
 # Banc UI — la refonte TV, écran par écran, sans compte ni navigateur
 
+<!-- Pas de titre « ## » avant « Commandes » : `bench.mjs help` affiche la
+     première section du README. -->
+**En une commande, depuis la racine du dépôt** — provisoire, à retirer quand
+la refonte remplace l'UI TV (fusion dans main). Mode d'emploi complet,
+jumelage et retrait : `docs/TV-REFONTE.md`, « Tester la refonte ».
+
+L'app réelle, refondue, au simulateur « Tentacle TV — refonte » — backend de
+dev, Metro, et build natif seulement si le natif a changé :
+
+```bash
+pnpm tv:refonte
+```
+
+Ce banc, au simulateur « Tentacle TV — banc UI » — `up` en arrière-plan puis
+`sim`, sur des ports libres :
+
+```bash
+pnpm tv:banc
+```
+
+N'importe quelle commande du tableau ci-dessous, sur ce banc-là (ses ports et
+son simulateur sont retrouvés seuls) :
+
+```bash
+pnpm tv:banc planche accueil --focus
+```
+
+Tout éteindre — ce que ces commandes ont lancé, et rien d'autre :
+
+```bash
+pnpm tv:stop
+```
+
+---
+
 Les VUES de `src/redesign/` montées sur un instantané du compte de test
 Knaoxtest, dans un simulateur Apple TV à soi. Aucune session, aucune
 navigation de l'app, aucun lecteur : une scène = un écran dans un état. On
