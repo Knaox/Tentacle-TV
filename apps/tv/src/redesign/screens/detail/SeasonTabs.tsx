@@ -2,6 +2,7 @@ import { memo, useCallback, useRef } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { Chip } from "../../controls/Chip";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { colors } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import type { SeasonTabModel } from "./detailTypes";
@@ -14,6 +15,7 @@ import type { SeasonTabModel } from "./detailTypes";
  *
  * Contrat : `useSeasonBrowser` — `seasons`, `selectedSeasonId`,
  * `markedSeasonId`, `select`, `prefetch` (au focus d'un onglet).
+ * Groupe de focus : `detail:seasons` ; onglets `season:<i>`.
  */
 
 /** Les onglets qui précèdent la saison affichée restent en vue, à gauche. */
@@ -42,35 +44,37 @@ export const SeasonTabs = memo(function SeasonTabs({
   }, []);
 
   return (
-    <ScrollView
-      ref={scroll}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.track}
-      contentContainerStyle={styles.content}
-    >
-      {seasons.map((season, index) => {
-        const selected = season.id === selectedId;
-        return (
-          <View key={season.id} onLayout={selected ? (event) => place(event.nativeEvent.layout.x) : undefined}>
-            <Chip
-              label={season.label}
-              detail={season.episodeCount ? String(season.episodeCount) : undefined}
-              icon={season.state === "current" ? "dot" : season.state === "watched" ? "check" : undefined}
-              selected={selected}
-              focusKey={`season:${index}`}
-              onPress={onSelect ? () => onSelect(season.id) : undefined}
-              onFocusChange={(focused) => {
-                onFocusChange?.(focused);
-                if (focused) onFocusSeason?.(season.id);
-              }}
-            />
-            {/* La saison affichée se souligne d'ambre : l'onglet actif se lit de loin. */}
-            {selected ? <View style={styles.indicator} /> : null}
-          </View>
-        );
-      })}
-    </ScrollView>
+    <FocusGroup focusKey="detail:seasons">
+      <ScrollView
+        ref={scroll}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.track}
+        contentContainerStyle={styles.content}
+      >
+        {seasons.map((season, index) => {
+          const selected = season.id === selectedId;
+          return (
+            <View key={season.id} onLayout={selected ? (event) => place(event.nativeEvent.layout.x) : undefined}>
+              <Chip
+                label={season.label}
+                detail={season.episodeCount ? String(season.episodeCount) : undefined}
+                icon={season.state === "current" ? "dot" : season.state === "watched" ? "check" : undefined}
+                selected={selected}
+                focusKey={`season:${index}`}
+                onPress={onSelect ? () => onSelect(season.id) : undefined}
+                onFocusChange={(focused) => {
+                  onFocusChange?.(focused);
+                  if (focused) onFocusSeason?.(season.id);
+                }}
+              />
+              {/* La saison affichée se souligne d'ambre : l'onglet actif se lit de loin. */}
+              {selected ? <View style={styles.indicator} /> : null}
+            </View>
+          );
+        })}
+      </ScrollView>
+    </FocusGroup>
   );
 });
 

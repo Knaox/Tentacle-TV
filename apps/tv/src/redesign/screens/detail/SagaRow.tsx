@@ -7,6 +7,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFrame } from "../../cards/CardFrame";
 import { cardIndexOf } from "../../cards/cardFocusKeys";
 import { MediaCard } from "../../cards/MediaCard";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
@@ -25,6 +26,7 @@ import type { SagaEntryModel } from "./detailTypes";
  * Contrat : `useSagaView` → `buildSagaView` (ordre, rangs, mentions),
  * `sagaTitle` / `sagaSummary` / `sagaLabel`. Les volets absents viennent des
  * extensions (`useExternalCollection`) ou, sans elles, des `parts` de TMDB.
+ * Groupe de focus : `detail:saga` ; éléments `saga:<i>`.
  */
 
 const { width: W, radius: R } = TV_STAGE.card.poster;
@@ -85,37 +87,39 @@ export const SagaRow = memo(function SagaRow({
     onFocusChange?.(focused);
   };
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
-      {entries.map((entry, index) => {
-        const dimmed = focusedIndex !== null && focusedIndex !== index;
-        const press = onOpen && !entry.current ? () => onOpen(entry) : undefined;
-        return entry.card ? (
-          <View key={entry.key} style={{ width: W }}>
-            <MediaCard
-              card={entry.card}
-              variant="poster"
-              hideCaption
-              dimmed={dimmed}
-              focusKey={`saga:${index}`}
-              onPress={press}
-              onLongPress={onLongPress ? () => onLongPress(entry) : undefined}
-              onFocusChange={focusChange(index)}
-            />
-            {/* `MediaCard` garde son focus pour elle : la rangée le suit, la légende aussi. */}
-            <Caption entry={entry} focused={focusedIndex === index} />
-          </View>
-        ) : (
-          <FocusTarget key={entry.key} focusKey={`saga:${index}`} onPress={press} onFocusChange={focusChange(index)} accessibilityLabel={entry.missing?.title} style={{ width: W }}>
-            {(focused) => (
-              <View>
-                <MissingPoster title={entry.missing?.title ?? ""} year={entry.missing?.year} focused={focused} dimmed={dimmed} />
-                <Caption entry={entry} focused={focused} />
-              </View>
-            )}
-          </FocusTarget>
-        );
-      })}
-    </ScrollView>
+    <FocusGroup focusKey="detail:saga">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
+        {entries.map((entry, index) => {
+          const dimmed = focusedIndex !== null && focusedIndex !== index;
+          const press = onOpen && !entry.current ? () => onOpen(entry) : undefined;
+          return entry.card ? (
+            <View key={entry.key} style={{ width: W }}>
+              <MediaCard
+                card={entry.card}
+                variant="poster"
+                hideCaption
+                dimmed={dimmed}
+                focusKey={`saga:${index}`}
+                onPress={press}
+                onLongPress={onLongPress ? () => onLongPress(entry) : undefined}
+                onFocusChange={focusChange(index)}
+              />
+              {/* `MediaCard` garde son focus pour elle : la rangée le suit, la légende aussi. */}
+              <Caption entry={entry} focused={focusedIndex === index} />
+            </View>
+          ) : (
+            <FocusTarget key={entry.key} focusKey={`saga:${index}`} onPress={press} onFocusChange={focusChange(index)} accessibilityLabel={entry.missing?.title} style={{ width: W }}>
+              {(focused) => (
+                <View>
+                  <MissingPoster title={entry.missing?.title ?? ""} year={entry.missing?.year} focused={focused} dimmed={dimmed} />
+                  <Caption entry={entry} focused={focused} />
+                </View>
+              )}
+            </FocusTarget>
+          );
+        })}
+      </ScrollView>
+    </FocusGroup>
   );
 });
 

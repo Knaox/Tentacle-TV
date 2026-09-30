@@ -4,6 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFrame } from "../../cards/CardFrame";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
@@ -20,6 +21,7 @@ import type { CrewGroupModel, PersonModel } from "./detailTypes";
  *
  * Contrat : `useMediaItem` (`People`, `Studios` — déjà dans l'item), l'image
  * `Primary` de chaque personne et son BlurHash (`paletteFromBlurHash`).
+ * Groupe de focus : `detail:cast` ; éléments `cast:<i>`.
  */
 
 const SIZE = TV_STAGE.card.person.size;
@@ -68,30 +70,32 @@ export const CastRow = memo(function CastRow({
   const forcedIndex = forced?.startsWith("cast:") ? Number(forced.slice(5)) : null;
   const focusedIndex = forced !== null ? forcedIndex : nativeIndex;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
-      {people.map((person, index) => (
-        <FocusTarget
-          key={`${person.id}-${index}`}
-          focusKey={`cast:${index}`}
-          onPress={onOpen ? () => onOpen(person) : undefined}
-          onFocusChange={(focused) => {
-            setNativeIndex((current) => (focused ? index : current === index ? null : current));
-            onFocusChange?.(focused);
-          }}
-          accessibilityLabel={person.role ? `${person.name}, ${person.role}` : person.name}
-          style={styles.cell}
-        >
-          {(focused) => (
-            <View style={styles.center}>
-              <CardFrame width={SIZE} height={SIZE} radius={SIZE / 2} focused={focused} dimmed={focusedIndex !== null && focusedIndex !== index}>
-                <Portrait person={person} />
-              </CardFrame>
-              <Names person={person} focused={focused} />
-            </View>
-          )}
-        </FocusTarget>
-      ))}
-    </ScrollView>
+    <FocusGroup focusKey="detail:cast">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
+        {people.map((person, index) => (
+          <FocusTarget
+            key={`${person.id}-${index}`}
+            focusKey={`cast:${index}`}
+            onPress={onOpen ? () => onOpen(person) : undefined}
+            onFocusChange={(focused) => {
+              setNativeIndex((current) => (focused ? index : current === index ? null : current));
+              onFocusChange?.(focused);
+            }}
+            accessibilityLabel={person.role ? `${person.name}, ${person.role}` : person.name}
+            style={styles.cell}
+          >
+            {(focused) => (
+              <View style={styles.center}>
+                <CardFrame width={SIZE} height={SIZE} radius={SIZE / 2} focused={focused} dimmed={focusedIndex !== null && focusedIndex !== index}>
+                  <Portrait person={person} />
+                </CardFrame>
+                <Names person={person} focused={focused} />
+              </View>
+            )}
+          </FocusTarget>
+        ))}
+      </ScrollView>
+    </FocusGroup>
   );
 });
 

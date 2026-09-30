@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFrame } from "../../cards/CardFrame";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
@@ -20,6 +21,7 @@ import type { ExtraModel } from "./detailTypes";
  *
  * Contrat : `useItemExtras` (locaux), `useRemoteTrailers` (distants),
  * `buildExtraEntries` (l'ordre, les libellés), `seasonHasExtras` (saisons).
+ * Groupe de focus : `detail:extras` ; éléments `extra:<i>`.
  */
 
 const { width: W, height: H, radius: R } = TV_STAGE.card.landscape;
@@ -53,41 +55,43 @@ export const ExtrasRow = memo(function ExtrasRow({
   const forcedIndex = forced?.startsWith("extra:") ? Number(forced.slice(6)) : null;
   const focusedIndex = forced !== null ? forcedIndex : nativeIndex;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
-      {extras.map((extra, index) => (
-        <FocusTarget
-          key={extra.id}
-          focusKey={`extra:${index}`}
-          onPress={onOpen && !extra.unavailable ? () => onOpen(extra) : undefined}
-          onFocusChange={(focused) => {
-            setNativeIndex((current) => (focused ? index : current === index ? null : current));
-            onFocusChange?.(focused);
-          }}
-          accessibilityLabel={extra.title}
-          style={{ width: W }}
-        >
-          {(focused) => (
-            <View>
-              <CardFrame width={W} height={H} radius={R} focused={focused} dimmed={focusedIndex !== null && focusedIndex !== index}>
-                {extra.imageUri ? (
-                  <Image source={{ uri: extra.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
-                ) : (
-                  <View style={styles.missing}>
-                    <Icon name="trailer" size={44} color={white(0.3)} />
-                  </View>
-                )}
-                {extra.unavailable ? (
-                  <View style={[StyleSheet.absoluteFill, styles.unavailable]}>
-                    <Icon name="eyeOff" size={40} color={white(0.7)} />
-                  </View>
-                ) : null}
-              </CardFrame>
-              <Caption extra={extra} focused={focused} />
-            </View>
-          )}
-        </FocusTarget>
-      ))}
-    </ScrollView>
+    <FocusGroup focusKey="detail:extras">
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
+        {extras.map((extra, index) => (
+          <FocusTarget
+            key={extra.id}
+            focusKey={`extra:${index}`}
+            onPress={onOpen && !extra.unavailable ? () => onOpen(extra) : undefined}
+            onFocusChange={(focused) => {
+              setNativeIndex((current) => (focused ? index : current === index ? null : current));
+              onFocusChange?.(focused);
+            }}
+            accessibilityLabel={extra.title}
+            style={{ width: W }}
+          >
+            {(focused) => (
+              <View>
+                <CardFrame width={W} height={H} radius={R} focused={focused} dimmed={focusedIndex !== null && focusedIndex !== index}>
+                  {extra.imageUri ? (
+                    <Image source={{ uri: extra.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+                  ) : (
+                    <View style={styles.missing}>
+                      <Icon name="trailer" size={44} color={white(0.3)} />
+                    </View>
+                  )}
+                  {extra.unavailable ? (
+                    <View style={[StyleSheet.absoluteFill, styles.unavailable]}>
+                      <Icon name="eyeOff" size={40} color={white(0.7)} />
+                    </View>
+                  ) : null}
+                </CardFrame>
+                <Caption extra={extra} focused={focused} />
+              </View>
+            )}
+          </FocusTarget>
+        ))}
+      </ScrollView>
+    </FocusGroup>
   );
 });
 

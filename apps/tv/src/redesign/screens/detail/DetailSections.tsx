@@ -2,6 +2,7 @@ import { memo, useCallback } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { CardModel } from "../../cards/cardTypes";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { MediaRow } from "../../rows/MediaRow";
 import { colors, fonts } from "../../theme/tokens";
 import { CastRow, CrewColumns } from "./CastRow";
@@ -70,16 +71,18 @@ export const DetailSections = memo(function DetailSections({
     <>
       {collection?.length ? (
         <DetailSection sectionKey="collection" onLayout={onSectionLayout}>
-          <MediaRow
-            rowKey="collection"
-            title={t("common:collectionContent")}
-            cards={collection}
-            variant="poster"
-            inset={DETAIL_LEFT}
-            onPressCard={onOpenCard ? (card) => onOpenCard("collection", card) : undefined}
-            onLongPressCard={onLongPressCard}
-            onFocusCard={() => onSectionFocus("collection")}
-          />
+          <FocusGroup focusKey="detail:collection">
+            <MediaRow
+              rowKey="collection"
+              title={t("common:collectionContent")}
+              cards={collection}
+              variant="poster"
+              inset={DETAIL_LEFT}
+              onPressCard={onOpenCard ? (card) => onOpenCard("collection", card) : undefined}
+              onLongPressCard={onLongPressCard}
+              onFocusCard={() => onSectionFocus("collection")}
+            />
+          </FocusGroup>
         </DetailSection>
       ) : null}
       {episodes ? (
@@ -131,16 +134,18 @@ export const DetailSections = memo(function DetailSections({
       ) : null}
       {similar?.length ? (
         <DetailSection sectionKey="similar" onLayout={onSectionLayout}>
-          <MediaRow
-            rowKey="similar"
-            title={t("common:similarTitles")}
-            cards={similar}
-            variant="poster"
-            inset={DETAIL_LEFT}
-            onPressCard={onOpenCard ? (card) => onOpenCard("similar", card) : undefined}
-            onLongPressCard={onLongPressCard}
-            onFocusCard={() => onSectionFocus("similar")}
-          />
+          <FocusGroup focusKey="detail:similar">
+            <MediaRow
+              rowKey="similar"
+              title={t("common:similarTitles")}
+              cards={similar}
+              variant="poster"
+              inset={DETAIL_LEFT}
+              onPressCard={onOpenCard ? (card) => onOpenCard("similar", card) : undefined}
+              onLongPressCard={onLongPressCard}
+              onFocusCard={() => onSectionFocus("similar")}
+            />
+          </FocusGroup>
         </DetailSection>
       ) : null}
     </>

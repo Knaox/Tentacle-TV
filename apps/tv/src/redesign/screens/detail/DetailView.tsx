@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
+import { FocusGroup } from "../../focus/FocusGroup";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { StatusPanel } from "../shared/StatusPanel";
 import { DetailBackdrop, DetailTopFade } from "./DetailBackdrop";
@@ -39,6 +40,13 @@ import { useSectionAnchors } from "./useSectionAnchors";
  * - `saga` : `useSagaView` → `sagaTitle` / `sagaSummary` / `sagaLabel` ;
  * - `similar` : `useSimilarItems` ; `collection` : `useCollectionItems` —
  *   cartes par `resolveCardMarkers`.
+ *
+ * Groupes de focus (`FocusGroup`, liés par le câblage) : `detail:header` (le
+ * premier écran, pleine largeur), `detail:seasons`, `detail:episodes`,
+ * `detail:cast`, `detail:extras`, `detail:saga`, `detail:collection`,
+ * `detail:similar`. Éléments : `detail:*` (en-tête), `season:<i>`,
+ * `episode:<i>`, `cast:<i>`, `extra:<i>`, `saga:<i>`, `collection:<i>`,
+ * `similar:<i>`, `status:primary` / `status:secondary` (erreur).
  */
 
 export interface DetailViewProps extends Omit<DetailSectionsProps, "onSectionFocus" | "onSectionLayout"> {
@@ -115,7 +123,7 @@ export const DetailView = memo(function DetailView({
           style={styles.fill}
           contentContainerStyle={{ paddingBottom: tail }}
         >
-          <View style={styles.hero}>
+          <FocusGroup focusKey="detail:header" style={styles.hero}>
             <DetailHeader
               header={header}
               actions={actions}
@@ -129,7 +137,7 @@ export const DetailView = memo(function DetailView({
               onRate={onRate}
               onOpenSeries={onOpenSeries}
             />
-          </View>
+          </FocusGroup>
           <DetailSections {...sections} onSectionFocus={onSectionFocus} onSectionLayout={onSectionLayout} />
         </Animated.ScrollView>
         <DetailTopFade scrollY={scrollY} />

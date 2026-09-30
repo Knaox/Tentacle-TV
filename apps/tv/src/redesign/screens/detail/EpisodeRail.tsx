@@ -1,6 +1,7 @@
 import { memo, useCallback, useState } from "react";
 import { FlatList, StyleSheet, View, type ListRenderItemInfo } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { white } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
@@ -16,6 +17,7 @@ import type { EpisodeModel } from "./detailTypes";
  *
  * Contrat : `useSeasonBrowser().episodes` (liste légère, puis sources),
  * `useSeriesWatchState` (le badge), `resolveCardMarkers` (vu, jauge).
+ * Groupe de focus : `detail:episodes` ; vignettes `episode:<i>`.
  */
 
 const STEP = EPISODE_CARD.width + TV_STAGE.row.gap;
@@ -75,22 +77,24 @@ export const EpisodeRail = memo(function EpisodeRail({
   if (episodes === null) return <Ghosts />;
   const initial = Math.min(Math.max(0, anchorIndex), Math.max(0, episodes.length - 1));
   return (
-    <FlatList
-      horizontal
-      data={episodes}
-      keyExtractor={(episode) => episode.id}
-      renderItem={renderItem}
-      extraData={focusedIndex}
-      // Le décalage ne compte pas la marge de gauche : l'épisode d'ouverture
-      // arrive calé sur la colonne de contenu, pas contre le bord.
-      getItemLayout={(_, index) => ({ length: STEP, offset: STEP * index, index })}
-      initialScrollIndex={initial > 0 ? initial : undefined}
-      initialNumToRender={6}
-      windowSize={5}
-      showsHorizontalScrollIndicator={false}
-      style={styles.track}
-      contentContainerStyle={styles.content}
-    />
+    <FocusGroup focusKey="detail:episodes">
+      <FlatList
+        horizontal
+        data={episodes}
+        keyExtractor={(episode) => episode.id}
+        renderItem={renderItem}
+        extraData={focusedIndex}
+        // Le décalage ne compte pas la marge de gauche : l'épisode d'ouverture
+        // arrive calé sur la colonne de contenu, pas contre le bord.
+        getItemLayout={(_, index) => ({ length: STEP, offset: STEP * index, index })}
+        initialScrollIndex={initial > 0 ? initial : undefined}
+        initialNumToRender={6}
+        windowSize={5}
+        showsHorizontalScrollIndicator={false}
+        style={styles.track}
+        contentContainerStyle={styles.content}
+      />
+    </FocusGroup>
   );
 });
 
