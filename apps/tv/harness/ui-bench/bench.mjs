@@ -69,7 +69,8 @@ async function planche(args) {
   const glasses = (args.find((a) => a.startsWith("--glass="))?.slice(8) ?? "").split(",").filter(Boolean);
   const list = await scenes(prefix);
   const initial = await call("/bench/state");
-  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  // Heure locale : c'est elle qu'on lit dans le nom du dossier.
+  const stamp = new Date().toLocaleString("sv-SE").replace(/[: ]/g, "-");
   const dir = path.join(OUT, `${stamp}${prefix ? `-${prefix.replace(/[^a-z0-9]+/gi, "-")}` : ""}`);
   fs.mkdirSync(dir, { recursive: true });
   const shots = [];
