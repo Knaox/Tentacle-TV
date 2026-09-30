@@ -24,7 +24,7 @@ const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, option
 /** L'appui long ouvre la feuille dans l'app ; au banc, seule son indication compte. */
 const HOLD = () => undefined;
 
-function rowsOf(data: BenchData): HomeRowModel[] {
+export function rowsOf(data: BenchData): HomeRowModel[] {
   const layout = (data.snapshot.extras?.homeLayout as { layout?: { rows?: Array<{ key: string; enabled: boolean }> } } | undefined)
     ?.layout?.rows?.filter((row) => row.enabled).map((row) => row.key) ?? ["resume", "nextUp", "watchlist", "watched"];
   const rows: HomeRowModel[] = [];
@@ -46,7 +46,7 @@ function rowsOf(data: BenchData): HomeRowModel[] {
   return rows;
 }
 
-function heroItems(data: BenchData): MediaItem[] {
+export function heroItems(data: BenchData): MediaItem[] {
   const resume = data.list("resume");
   return (resume.length ? resume : data.list("movies")).slice(0, 5);
 }

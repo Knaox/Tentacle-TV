@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
 import type { IconName } from "../../redesign/icons/Icon";
-import type { NavEntry, NavRailProps } from "../../redesign/nav/NavRail";
+import type { NavEntry, NavHint, NavRailProps } from "../../redesign/nav/NavRail";
 import { useRailPinning } from "../../components/nav/railPinning";
 import { usePairedAccount } from "../../hooks/usePairedAccount";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
@@ -12,7 +12,8 @@ import { useVerifiedImage } from "../../hooks/useVerifiedImage";
  * MÊMES entrées que le rail actuel (`railEntries.tsx`), sur le même magasin
  * d'épinglage (partagé avec la LG) : Rechercher à part, en tête ; Accueil,
  * Pour vous, Ma liste, Favoris, chaque bibliothèque ; « Tout afficher » dès
- * qu'une entrée est masquée ; en bas, le compte et ses réglages.
+ * qu'une entrée est masquée ; en bas, la capsule du profil — le nom du
+ * compte, « Profil et réglages » dessous — et la légende du rail ouvert.
  *
  * Masquables (appui long) : tout sauf Rechercher, Accueil, Tout afficher et
  * le compte — la navigation ne doit jamais devenir une impasse.
@@ -41,7 +42,7 @@ function libraryIcon(collectionType?: string): IconName {
 /** Le diamètre du portrait dans la navigation (`NavItem`), en points. */
 const AVATAR = 46;
 
-export type NavEntries = Pick<NavRailProps, "search" | "entries" | "account" | "hint">;
+export type NavEntries = Pick<NavRailProps, "search" | "entries" | "account" | "hints">;
 
 export function useNavEntries(): NavEntries {
   const { t } = useTranslation("nav");
@@ -54,6 +55,8 @@ export function useNavEntries(): NavEntries {
   const paired = usePairedAccount(AVATAR);
   const avatarUri = useVerifiedImage(paired.portraitUrl);
   const userName = paired.name ?? "";
+
+  const hints = useMemo<NavHint[]>(() => [{ icon: "circleDot", label: t("railHint") }], [t]);
 
   return useMemo(() => {
     const entries: NavEntry[] = [{ key: "Home", label: t("home"), icon: "home" }];
@@ -74,11 +77,13 @@ export function useNavEntries(): NavEntries {
       entries,
       account: {
         key: "Settings",
-        label: t("preferences"),
+        // Le nom du compte, et ce qu'on trouve derrière ; sans nom, les réglages.
+        label: userName || t("preferences"),
+        caption: userName ? t("railProfile") : undefined,
         avatarUri,
         initial: userName ? userName.charAt(0).toUpperCase() : undefined,
       },
-      hint: t("railHint"),
+      hints,
     };
-  }, [t, libraries, pinning, avatarUri, userName]);
+  }, [t, libraries, pinning, avatarUri, userName, hints]);
 }

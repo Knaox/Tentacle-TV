@@ -76,6 +76,13 @@ export const ICONS = {
   chevronLeft: { paths: ["m15 18-6-6 6-6"] },
   chevronRight: { paths: ["m9 18 6-6-6-6"] },
   chevronDown: { paths: ["m6 9 6 6 6-6"] },
+  chevronUp: { paths: ["m18 15-6-6-6 6"] },
+  /** Déplacer une entrée de la navigation (HAUT / BAS). */
+  moveVertical: { paths: ["M12 2v20", "m8 18 4 4 4-4", "m8 6 4-4 4 4"] },
+  /** Le bouton central du pavé (« Maintenir OK »). */
+  circleDot: { circles: [[12, 12, 10], [12, 12, 1]] },
+  /** La navigation à gauche (réglage « Navigation »). */
+  panelLeft: { rects: [[3, 3, 18, 18, 2]], paths: ["M9 3v18"] },
   trailer: {
     paths: [
       "M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z",

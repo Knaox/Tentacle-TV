@@ -1,8 +1,9 @@
 import { extractMediaQuality, formatCommunityRating, formatDuration, i18n, type MediaItem } from "@tentacle-tv/shared";
 import type { HeroModel } from "../../../src/redesign/hero/HeroBanner";
 import type { MetaItem } from "../../../src/redesign/hero/MetaLine";
-import type { NavEntry, NavRailProps } from "../../../src/redesign/nav/NavRail";
+import type { NavRailProps } from "../../../src/redesign/nav/NavRail";
 import type { BenchData } from "./benchData";
+import { benchNav } from "./navModels";
 import { paletteOf, progressOf } from "./models";
 
 /**
@@ -13,31 +14,7 @@ import { paletteOf, progressOf } from "./models";
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options) as string;
 
 export function navOf(data: BenchData, activeKey: string, expanded = false): NavRailProps {
-  const libraries: NavEntry[] = data.snapshot.libraries.map((lib) => ({
-    key: `Library_${lib.id}`,
-    label: lib.name,
-    icon: lib.collectionType === "movies" ? "film" : "tv",
-  }));
-  const profile = data.snapshot.profile;
-  return {
-    search: { key: "Search", label: t("nav:search"), icon: "search" },
-    entries: [
-      { key: "Home", label: t("nav:home"), icon: "home" },
-      { key: "Recommendations", label: t("nav:forYou"), icon: "sparkles" },
-      { key: "Watchlist", label: t("nav:myList"), icon: "bookmark" },
-      { key: "Favorites", label: t("common:myFavorites"), icon: "heart" },
-      ...libraries,
-    ],
-    account: {
-      key: "Settings",
-      label: t("nav:preferences"),
-      avatarUri: profile?.image ? data.imageFile(profile.image) : undefined,
-      initial: profile?.name?.[0]?.toUpperCase(),
-    },
-    activeKey,
-    expanded,
-    hint: t("nav:railHint"),
-  };
+  return benchNav(data, activeKey, { expanded });
 }
 
 /** « 2024 · 16+ · 2 h 12 · Thriller, Drame · ★ 7,4 · 4K HDR Atmos VF » */

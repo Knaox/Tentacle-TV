@@ -1,24 +1,53 @@
-import { memo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { memo, type ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import Animated, { FadeIn, FadeOut, useAnimatedStyle } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { GlassSurface } from "../glass/GlassSurface";
 import { useNativeGlassBacking } from "../glass/glassBacking";
 import type { IconName } from "../icons/Icon";
-import { colors, fonts, scrim, white } from "../theme/tokens";
+import { scrim, white } from "../theme/tokens";
 import { NavItem } from "./NavItem";
+import { NavLegend, type NavHint } from "./NavLegend";
+import { NavList } from "./NavList";
+import {
+  ITEM_LEFT,
+  LEGEND_TOP,
+  LIST_HEIGHT,
+  LIST_TOP,
+  PROFILE_HEIGHT,
+  PROFILE_PAD,
+  PROFILE_TOP,
+  RAIL_HEIGHT,
+  RAIL_TOP,
+  SEARCH_TOP,
+  SEPARATOR_TOP,
+} from "./navGeometry";
+
+export type { NavHint } from "./NavLegend";
 
 /**
- * La navigation : une barre de verre qui flotte à gauche, décollée des bords.
- * Repliée, elle ne montre que les pictogrammes ; ouverte (elle a le focus),
- * elle s'élargit PAR-DESSUS le contenu, sous un voile, avec ses libellés.
+ * La navigation : DEUX capsules de verre qui flottent à gauche, décollées des
+ * bords, même largeur, un petit écart — le rail principal (Rechercher en tête,
+ * puis Accueil, Pour vous, Ma liste, Favoris, chaque bibliothèque, « Tout
+ * afficher » quand une entrée est masquée) et, dessous, la capsule du PROFIL
+ * (le compte et ses réglages), fixe. Repliées, elles ne montrent que les
+ * pictogrammes ; ouvertes (le focus y est), elles s'élargissent PAR-DESSUS le
+ * contenu, sous un voile, avec leurs libellés et, en bas du rail, la légende
+ * de ses touches.
  *
- * Toutes les entrées de l'app y sont : Rechercher, Accueil, Pour vous, Ma
- * liste, Favoris, chaque bibliothèque, « Tout afficher » (quand une entrée
- * est masquée) — et, en bas, le compte et ses réglages. L'appui long masque
- * une entrée masquable : l'intégration décide, la vue le rend possible.
+ * Le rail tient BEAUCOUP de bibliothèques : sa liste défile entre Rechercher
+ * et la légende en suivant le focus (`NavList`), avec un fondu du côté où il
+ * y a plus et un indicateur de position.
+ *
+ * L'organisation se voit ici, se décide à l'intégration : `heldKey` (le menu
+ * d'appui long de cette entrée est ouvert), `movingKey` (on la déplace).
+ *
+ * Clés de focus : `nav:<entrée>` — `nav:Search`, `nav:Home`,
+ * `nav:Library_<id>`, `nav:RailShowAll`, `nav:Settings` (le profil)…
+ * La géométrie des capsules est dans `navGeometry.ts` : les ponts de focus
+ * de l'intégration s'y posent.
  */
 
 export interface NavEntry {
@@ -27,23 +56,34 @@ export interface NavEntry {
   icon: IconName;
 }
 
+/** L'entrée du profil : le portrait (sinon l'initiale), le nom, et dessous ce qu'on y trouve. */
+export interface NavAccount {
+  key: string;
+  label: string;
+  caption?: string;
+  avatarUri?: string;
+  initial?: string;
+}
+
 export interface NavRailProps {
-  /** Rechercher : à part, en tête, séparé du reste. */
+  /** Rechercher : à part, en tête, fixe. */
   search: NavEntry;
+  /** Ce qui défile : Accueil… les bibliothèques, « Tout afficher ». */
   entries: NavEntry[];
-  /** L'entrée du bas : le compte (portrait) et les réglages. */
-  account: { key: string; label: string; avatarUri?: string; initial?: string };
+  /** La capsule du profil, en bas. */
+  account: NavAccount;
   activeKey: string;
   expanded: boolean;
-  /** L'aide de l'appui long, affichée barre ouverte. */
-  hint?: string;
+  /** La légende du rail ouvert : deux lignes courtes. */
+  hints?: NavHint[];
+  heldKey?: string | null;
+  movingKey?: string | null;
   onSelect?: (key: string) => void;
   onLongPress?: (key: string) => void;
   onFocusChange?: (key: string, focused: boolean) => void;
 }
 
 const N = TV_STAGE.nav;
-const HEIGHT = 1080 - N.top - N.bottom;
 
 export const NavRail = memo(function NavRail({
   search,
@@ -51,31 +91,16 @@ export const NavRail = memo(function NavRail({
   account,
   activeKey,
   expanded,
-  hint,
+  hints,
+  heldKey,
+  movingKey,
   onSelect,
   onLongPress,
   onFocusChange,
 }: NavRailProps) {
   const openness = useFocusProgress(expanded, 240);
-  const wide = useAnimatedStyle(() => ({ opacity: openness.value }));
-  const narrow = useAnimatedStyle(() => ({ opacity: 1 - openness.value }));
-  const openBacking = useNativeGlassBacking("strong");
-  const item = (entry: { key: string; label: string; icon?: IconName; avatarUri?: string; initial?: string }) => (
-    <NavItem
-      key={entry.key}
-      itemKey={entry.key}
-      label={entry.label}
-      icon={entry.icon}
-      avatarUri={entry.avatarUri}
-      initial={entry.initial}
-      active={entry.key === activeKey}
-      expanded={expanded}
-      openness={openness}
-      onPress={onSelect ? () => onSelect(entry.key) : undefined}
-      onLongPress={onLongPress ? () => onLongPress(entry.key) : undefined}
-      onFocusChange={onFocusChange ? (focused) => onFocusChange(entry.key, focused) : undefined}
-    />
-  );
+  const width = expanded ? N.expandedWidth : N.collapsedWidth;
+  const shared = { expanded, openness, onSelect, onLongPress, onFocusChange };
   return (
     <>
       {/* Une vue plein écran posée sur le contenu — la couche de la barre
@@ -93,45 +118,72 @@ export const NavRail = memo(function NavRail({
           />
         </Animated.View>
       ) : null}
-      <View pointerEvents="box-none" style={[styles.layer, { width: N.left + (expanded ? N.expandedWidth : N.collapsedWidth) }]}>
-        <View style={[styles.rail, { width: expanded ? N.expandedWidth : N.collapsedWidth }]}>
-          <Animated.View style={[StyleSheet.absoluteFill, narrow]}>
-            <GlassSurface radius={N.radius} style={[styles.glass, { width: N.collapsedWidth }]} elevated />
-          </Animated.View>
-          <Animated.View style={[StyleSheet.absoluteFill, wide]}>
-            {/* Ouverte, la barre passe SUR le texte de l'écran : le verre
-                dessiné ne floute rien, un fond dense garde les libellés
-                lisibles. Le verre natif floute : il prend le fond commun. */}
-            <View style={[styles.glass, styles.openBase, openBacking, { width: N.expandedWidth }]} />
-            <GlassSurface radius={N.radius} tone="strong" style={[styles.glass, { width: N.expandedWidth }]} elevated />
-          </Animated.View>
-          <View style={styles.items}>
-            {item(search)}
-            <View style={[styles.separator, { width: expanded ? N.expandedWidth - 60 : 44 }]} />
-            {entries.map(item)}
-            <View style={styles.spacer} />
-            {expanded && hint ? (
-              <Animated.View style={wide}>
-                <Text style={styles.hint}>{hint}</Text>
-              </Animated.View>
-            ) : null}
-            {item(account)}
+      <View pointerEvents="box-none" style={[styles.layer, { width: N.left + width }]}>
+        <Capsule top={RAIL_TOP} height={RAIL_HEIGHT} width={width} openness={openness}>
+          <View style={styles.search}>
+            <NavItem itemKey={search.key} label={search.label} icon={search.icon} active={search.key === activeKey} {...shared} />
           </View>
-        </View>
+          <View style={[styles.separator, { width: expanded ? N.expandedWidth - 60 : 44 }]} />
+          <View style={styles.list}>
+            <NavList entries={entries} activeKey={activeKey} heldKey={heldKey} movingKey={movingKey} {...shared} />
+          </View>
+          {expanded && hints?.length ? <NavLegend hints={hints} openness={openness} top={LEGEND_TOP} /> : null}
+        </Capsule>
+        <Capsule top={PROFILE_TOP} height={PROFILE_HEIGHT} width={width} openness={openness}>
+          <View style={styles.profile}>
+            <NavItem
+              itemKey={account.key}
+              label={account.label}
+              caption={account.caption}
+              avatarUri={account.avatarUri}
+              initial={account.initial}
+              active={account.key === activeKey}
+              {...shared}
+            />
+          </View>
+        </Capsule>
       </View>
     </>
   );
 });
 
+/** Une capsule : le verre replié et le verre ouvert, en fondu l'un sur l'autre. */
+function Capsule({ top, height, width, openness, children }: {
+  top: number;
+  height: number;
+  width: number;
+  openness: SharedValue<number>;
+  children: ReactNode;
+}) {
+  const wide = useAnimatedStyle(() => ({ opacity: openness.value }));
+  const narrow = useAnimatedStyle(() => ({ opacity: 1 - openness.value }));
+  const openBacking = useNativeGlassBacking("strong");
+  return (
+    <View style={[styles.capsule, { top, height, width }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, narrow]}>
+        <GlassSurface radius={N.radius} style={[styles.glass, { width: N.collapsedWidth, height }]} elevated />
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, wide]}>
+        {/* Ouverte, la barre passe SUR le texte de l'écran : le verre
+            dessiné ne floute rien, un fond dense garde les libellés
+            lisibles. Le verre natif floute : il prend le fond commun. */}
+        <View style={[styles.glass, styles.openBase, openBacking, { width: N.expandedWidth, height }]} />
+        <GlassSurface radius={N.radius} tone="strong" style={[styles.glass, { width: N.expandedWidth, height }]} elevated />
+      </Animated.View>
+      {children}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  // La région de la barre seulement (voir le voile, plus haut).
+  // La région des capsules seulement (voir le voile, plus haut).
   layer: { position: "absolute", left: 0, top: 0, height: 1080 },
   veil: { position: "absolute", left: 0, top: 0, width: 1920, height: 1080 },
-  rail: { position: "absolute", left: N.left, top: N.top, height: HEIGHT },
-  glass: { position: "absolute", left: 0, top: 0, height: HEIGHT },
+  capsule: { position: "absolute", left: N.left },
+  glass: { position: "absolute", left: 0, top: 0 },
   openBase: { borderRadius: N.radius, backgroundColor: "rgba(10, 10, 14, 0.84)" },
-  items: { flex: 1, paddingVertical: 22, paddingHorizontal: 16, gap: 8, alignItems: "flex-start", paddingLeft: 20 },
-  separator: { height: 1, marginVertical: 8, marginLeft: 10, backgroundColor: white(0.12) },
-  spacer: { flex: 1 },
-  hint: { ...fonts.medium, fontSize: 22, lineHeight: 30, color: colors.textTertiary, width: N.expandedWidth - 56, marginBottom: 12, marginLeft: 6 },
+  search: { position: "absolute", top: SEARCH_TOP, left: ITEM_LEFT },
+  separator: { position: "absolute", top: SEPARATOR_TOP, left: ITEM_LEFT + 10, height: 1, backgroundColor: white(0.12) },
+  list: { position: "absolute", top: LIST_TOP, left: 0, right: 0, height: LIST_HEIGHT },
+  profile: { position: "absolute", top: PROFILE_PAD, left: ITEM_LEFT },
 });
