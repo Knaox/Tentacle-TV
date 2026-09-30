@@ -199,3 +199,17 @@ export function cardActionEntries(overlay: CardOverlay, states: CardToggleStates
   for (const extra of overlay.extras) entries.push({ kind: extra, labelKey: cardExtraLabelKey(extra) });
   return entries;
 }
+
+/**
+ * Les actions du PLATEAU du survol, à plat, dans son ordre : la lecture en
+ * tête là SEULEMENT où le clic de la carte ne la lance pas (`playInTray`),
+ * puis les bascules, puis les extras. Le pendant de `cardActionEntries` pour
+ * une plateforme qui rend le plateau depuis une liste — la télévision, dont
+ * le focus montre le survol : une vignette 16:9 n'y répète pas la lecture
+ * qu'OK lance déjà. La note n'y figure pas : elle se rend en étoiles, au-dessus
+ * du plateau (`overlay.rate`).
+ */
+export function cardTrayEntries(overlay: CardOverlay, states: CardToggleStates): CardActionEntry[] {
+  const entries = cardActionEntries(overlay, states);
+  return overlay.playInTray ? entries : entries.filter((entry) => entry.kind !== "play");
+}

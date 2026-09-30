@@ -3,6 +3,7 @@ import { CARD_STATUS_ORDER } from "./cardMarkers";
 import {
   CARD_TOGGLE_ORDER,
   cardActionEntries,
+  cardTrayEntries,
   cardExtraLabelKey,
   cardToggleLabelKey,
   resolveCardOverlay,
@@ -133,5 +134,45 @@ describe("cardActionEntries", () => {
   it("n'offre rien à basculer hors bibliothèque", () => {
     const overlay = resolveCardOverlay({ variant: "reco", inLibrary: false, playable: false, rateable: false });
     expect(cardActionEntries(overlay, NONE).map((e) => e.kind)).toEqual(["dismiss"]);
+  });
+});
+
+describe("cardTrayEntries", () => {
+  it("met « Lire » en tête du plateau d'une affiche et d'une recommandation", () => {
+    for (const variant of ["poster", "reco"] as const) {
+      const overlay = resolveCardOverlay({ variant, ...LIBRARY, resume: true });
+      expect(cardTrayEntries(overlay, NONE)[0]).toEqual({ kind: "play", labelKey: "resume" });
+    }
+  });
+
+  it("ne répète pas au plateau d'une vignette 16:9 la lecture que son clic lance", () => {
+    const overlay = resolveCardOverlay({ variant: "landscape", ...LIBRARY, resume: true });
+    expect(cardTrayEntries(overlay, { ...NONE, watched: true }).map((e) => e.kind)).toEqual([
+      "watchlist",
+      "favorite",
+      "watched",
+      "details",
+    ]);
+    // La feuille, elle, la garde en tête : elle remplace la carte.
+    expect(cardActionEntries(overlay, NONE)[0]?.kind).toBe("play");
+  });
+
+  it("garde l'état des bascules et l'ordre de la pastille", () => {
+    const overlay = resolveCardOverlay({ variant: "poster", ...LIBRARY });
+    const entries = cardTrayEntries(overlay, { watchlist: true, favorite: false, watched: true });
+    expect(entries.map((e) => [e.kind, e.active])).toEqual([
+      ["play", undefined],
+      ["watchlist", true],
+      ["favorite", false],
+      ["watched", true],
+    ]);
+    expect(entries[1]?.labelKey).toBe("removeFromWatchlist");
+  });
+
+  it("ne dépasse jamais cinq boutons, sur aucune variante", () => {
+    for (const variant of ["poster", "landscape", "reco"] as const) {
+      const overlay = resolveCardOverlay({ variant, ...LIBRARY, offline: true });
+      expect(cardTrayEntries(overlay, NONE).length).toBeLessThanOrEqual(5);
+    }
   });
 });
