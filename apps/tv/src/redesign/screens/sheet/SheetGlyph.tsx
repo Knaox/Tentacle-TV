@@ -13,6 +13,7 @@ import type { SheetActionKind } from "./sheetTypes";
 const ICON_OF: Record<Exclude<SheetActionKind, "watchlist" | "favorite" | "watched">, IconName> = {
   play: "play",
   request: "plus",
+  rate: "starOutline",
   details: "info",
   dismiss: "eyeOff",
   offline: "layers",
@@ -30,6 +31,10 @@ export const SheetGlyph = memo(function SheetGlyph({
   color: string;
   size?: number;
 }) {
+  if (kind === "rate") {
+    // Une note posée : l'étoile pleine, comme une bascule posée.
+    return <Icon name={active ? "star" : "starOutline"} size={size} color={color} strokeWidth={2.2} />;
+  }
   if (kind !== "watchlist" && kind !== "favorite" && kind !== "watched") {
     return <Icon name={ICON_OF[kind]} size={size} color={color} strokeWidth={2.2} />;
   }

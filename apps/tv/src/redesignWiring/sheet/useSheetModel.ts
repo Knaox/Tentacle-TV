@@ -51,6 +51,7 @@ export function useSheetModel({ target, mode, providerFilterActive, onClose }: S
           playDetail: card.play?.detail,
           inLibrary: sheetLibraryId(target) !== null,
           providerFilterActive,
+          rating: card.rating,
         },
         t,
       )

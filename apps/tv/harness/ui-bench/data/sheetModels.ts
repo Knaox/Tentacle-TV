@@ -10,7 +10,7 @@ import {
   type CardToggleStates,
   type MediaItem,
 } from "@tentacle-tv/shared";
-import type { SheetActionModel, SheetHeaderModel } from "../../../src/redesign/screens/sheet/ActionSheetView";
+import type { SheetActionModel, SheetHeaderModel, SheetRatingModel } from "../../../src/redesign/screens/sheet/ActionSheetView";
 import { sheetRows } from "../../../src/redesignWiring/sheet/sheetRows";
 import type { BenchData } from "./benchData";
 import { episodeLabel, seriesOf, yearOf } from "./models";
@@ -28,7 +28,14 @@ const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, option
 export interface SheetSceneModel {
   header: SheetHeaderModel;
   actions: SheetActionModel[];
-  rate: boolean;
+  /** La note, quand le titre se note : la ligne « Noter » et l'échelle. */
+  rating: SheetRatingModel | null;
+}
+
+/** Une note d'exemple (le compte de test n'en a posé aucune), et sa cible en résolution. */
+export interface SheetRatingOptions {
+  rating?: number | null;
+  pending?: boolean;
 }
 
 /** L'état des bascules, lu comme `useCardToggles` (Ma liste = `Likes` hors série). */
@@ -76,7 +83,7 @@ export function librarySheet(
   data: BenchData,
   item: MediaItem,
   variant: CardOverlayVariant,
-  options: { force?: Partial<CardToggleStates>; providerFilter?: boolean } = {},
+  options: { force?: Partial<CardToggleStates>; providerFilter?: boolean } & SheetRatingOptions = {},
 ): SheetSceneModel {
   const play = playOf(data, item);
   const overlay = resolveCardOverlay({
@@ -88,12 +95,13 @@ export function librarySheet(
     // Rien ne se garde hors ligne sur un téléviseur.
     offline: false,
   });
+  const rating = overlay.rate ? { current: options.rating ?? null, pending: options.pending } : null;
   // Les lignes du branchement lui-même (`sheetRows`) : aucune copie au banc.
   const actions = sheetRows(
-    { overlay, states: statesOf(item, options.force), playDetail: play?.detail, inLibrary: true, providerFilterActive: options.providerFilter },
+    { overlay, states: statesOf(item, options.force), playDetail: play?.detail, inLibrary: true, providerFilterActive: options.providerFilter, rating },
     t,
   );
-  return { header: headerOf(data, item, variant === "landscape" ? "landscape" : "poster"), actions, rate: overlay.rate };
+  return { header: headerOf(data, item, variant === "landscape" ? "landscape" : "poster"), actions, rating };
 }
 
 /** La feuille d'un titre ABSENT de la bibliothèque (Vigie) : « Demander » en tête. */
@@ -108,5 +116,7 @@ export function externalSheet(data: BenchData, item: MediaItem, requestLabel: st
     label: entry.label ?? t(`cards:${entry.labelKey}`),
     active: entry.active,
   }));
-  return { header: headerOf(data, item, "poster"), actions, rate: overlay.rate };
+  // « Noter » suit l'action primaire, comme sur un titre de la bibliothèque.
+  if (overlay.rate) actions.splice(overlay.request ? 1 : 0, 0, { kind: "rate", label: t("cards:rateTitle"), active: false });
+  return { header: headerOf(data, item, "poster"), actions, rating: overlay.rate ? { current: null } : null };
 }

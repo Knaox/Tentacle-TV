@@ -16,18 +16,12 @@ const requestLabel = () => (i18n.language.startsWith("fr") ? "Demander" : "Reque
 
 const pick = (items: MediaItem[], test: (item: MediaItem) => boolean) => items.find(test) ?? items[0];
 
-function Sheet({ data, model, current = null, pending = false }: { data: BenchData; model: SheetSceneModel | null; current?: number | null; pending?: boolean }) {
+function Sheet({ data, model, ratingOpen = false }: { data: BenchData; model: SheetSceneModel | null; ratingOpen?: boolean }) {
   const home = HOME_SCENES[0].render(data);
   return (
     <>
       {home}
-      {model ? (
-        <ActionSheetView
-          header={model.header}
-          actions={model.actions}
-          rating={model.rate ? { current, pending } : null}
-        />
-      ) : null}
+      {model ? <ActionSheetView header={model.header} actions={model.actions} rating={model.rating} ratingOpen={ratingOpen} /> : null}
     </>
   );
 }
@@ -45,7 +39,7 @@ const model = (data: BenchData, build: (data: BenchData) => SheetSceneModel | nu
   }
 };
 
-const ACTIONS = ["sheet:action:play", "sheet:action:watchlist", "sheet:action:favorite", "sheet:close"];
+const ACTIONS = ["sheet:action:play", "sheet:action:rate", "sheet:action:watchlist", "sheet:action:details", "sheet:close"];
 const SETTLE = 1800;
 
 export const SHEET_SCENES: BenchScene[] = [
@@ -77,13 +71,12 @@ export const SHEET_SCENES: BenchScene[] = [
     id: "feuille/etats-poses",
     group: "Feuille d'actions",
     label: "Ma liste, favori et vu posés (exemple)",
-    focusKeys: ["sheet:action:favorite"],
+    focusKeys: ["sheet:action:favorite", "sheet:action:rate"],
     settleMs: SETTLE,
     render: (data) => (
       <Sheet
         data={data}
-        current={8}
-        model={model(data, (d) => { const it = movieOf(d); return it ? librarySheet(d, it, "poster", { force: { watchlist: true, favorite: true, watched: true } }) : null; })}
+        model={model(data, (d) => { const it = movieOf(d); return it ? librarySheet(d, it, "poster", { force: { watchlist: true, favorite: true, watched: true }, rating: 8 }) : null; })}
       />
     ),
   },
@@ -91,7 +84,7 @@ export const SHEET_SCENES: BenchScene[] = [
     id: "feuille/reco",
     group: "Feuille d'actions",
     label: "Recommandation, filtre de plateformes actif",
-    focusKeys: ["sheet:action:dismiss", "sheet:action:providersAll"],
+    focusKeys: ["sheet:action:details", "sheet:action:dismiss", "sheet:action:providersAll"],
     settleMs: SETTLE,
     render: (data) => <Sheet data={data} model={model(data, (d) => { const it = recoOf(d); return it ? librarySheet(d, it, "reco", { providerFilter: true }) : null; })} />,
   },
@@ -104,27 +97,27 @@ export const SHEET_SCENES: BenchScene[] = [
     render: (data) => <Sheet data={data} model={model(data, (d) => { const it = recoOf(d); return it ? externalSheet(d, it, requestLabel()) : null; })} />,
   },
   {
-    id: "feuille/note-apercu",
+    id: "feuille/echelle",
     group: "Feuille d'actions",
-    label: "Note — aperçu d'une étoile (exemple)",
-    focusKeys: ["sheet:star:4", "sheet:star:5"],
+    label: "Noter — l'échelle verticale, note 7 posée (exemple)",
+    focusKeys: ["sheet:scale:7", "sheet:scale:9", "sheet:scale:3", "sheet:scale:remove"],
     settleMs: SETTLE,
-    render: (data) => <Sheet data={data} current={6} model={model(data, (d) => { const it = movieOf(d); return it ? librarySheet(d, it, "poster") : null; })} />,
+    render: (data) => <Sheet data={data} ratingOpen model={model(data, (d) => { const it = movieOf(d); return it ? librarySheet(d, it, "poster", { rating: 7 }) : null; })} />,
   },
   {
-    id: "feuille/note-retrait",
+    id: "feuille/echelle-sans-note",
     group: "Feuille d'actions",
-    label: "Note — retirer la note actuelle (exemple)",
-    focusKeys: ["sheet:star:3"],
+    label: "Noter — l'échelle, pas encore de note",
+    focusKeys: ["sheet:scale:6", "sheet:scale:10", "sheet:scale:1"],
     settleMs: SETTLE,
-    render: (data) => <Sheet data={data} current={6} model={model(data, (d) => { const it = movieOf(d); return it ? librarySheet(d, it, "poster") : null; })} />,
+    render: (data) => <Sheet data={data} ratingOpen model={model(data, (d) => { const it = episodeOf(d); return it ? librarySheet(d, it, "landscape") : null; })} />,
   },
   {
     id: "feuille/note-en-attente",
     group: "Feuille d'actions",
-    label: "Note en résolution (la place est gardée)",
-    focusKeys: ["sheet:action:play"],
+    label: "Note en résolution (« Noter » attend sa cible)",
+    focusKeys: ["sheet:action:rate"],
     settleMs: SETTLE,
-    render: (data) => <Sheet data={data} pending model={model(data, (d) => { const it = episodeOf(d); return it ? librarySheet(d, it, "landscape") : null; })} />,
+    render: (data) => <Sheet data={data} model={model(data, (d) => { const it = episodeOf(d); return it ? librarySheet(d, it, "landscape", { pending: true }) : null; })} />,
   },
 ];

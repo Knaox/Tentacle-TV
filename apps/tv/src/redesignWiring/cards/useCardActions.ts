@@ -56,8 +56,8 @@ export interface CardActions {
   /** La note posée (sur 10) et sa cible encore en résolution ; null : rien à noter. */
   rating: { current: number | null; pending: boolean } | null;
   onAction: (kind: SheetActionKind) => void;
-  /** Note = étoiles × 2 ; la note actuelle, visée de nouveau, se retire. */
-  onRate: (stars: number) => void;
+  /** Pose la note (1 à 10, demi-étoiles comprises) ; `null` la retire. */
+  onRate: (score: number | null) => void;
 }
 
 /** Le visage d'aucune carte : les crochets tournent à vide, dans le même ordre. */
@@ -136,6 +136,9 @@ export function useCardActions(target: CardSheetTarget | null, { withActions = t
           onLeave?.();
           saveFilter([]);
           return;
+        case "rate":
+          // L'échelle s'ouvre DANS la feuille : c'est son câblage qui la montre.
+          return;
         default:
           // « Garder hors ligne », « Demander » : rien de tel sur un téléviseur.
           return;
@@ -146,15 +149,17 @@ export function useCardActions(target: CardSheetTarget | null, { withActions = t
 
   const { identity, jellyfinItemId } = rating;
   const onRate = useCallback(
-    (stars: number) => {
+    (next: number | null) => {
       if (!identity) return;
-      const next = stars * 2;
-      if (score === next) removeRating(identity);
+      if (next === null) {
+        removeRating(identity);
+        return;
+      }
       // Hors bibliothèque, la note vit sur le tmdb : un visage `reco:…` n'est
       // pas un item Jellyfin à qui la rattacher.
-      else rateItem({ ...identity, jellyfinItemId: inLibrary ? jellyfinItemId ?? undefined : undefined, score: next });
+      rateItem({ ...identity, jellyfinItemId: inLibrary ? jellyfinItemId ?? undefined : undefined, score: next });
     },
-    [identity, jellyfinItemId, inLibrary, score, rateItem, removeRating],
+    [identity, jellyfinItemId, inLibrary, rateItem, removeRating],
   );
 
   if (!target) return null;

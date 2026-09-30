@@ -3,11 +3,13 @@ import type { CardStatusKind } from "@tentacle-tv/shared";
 /**
  * Ce que fait une ligne de la feuille : les actions du modèle partagé
  * (`cardActionEntries`, `externalCardActionEntries`), dans leur ordre, plus
- * celle propre au salon — « Toutes les plateformes » sous un filtre actif.
+ * celles propres au salon — « Noter », qui ouvre l'échelle de la note, et
+ * « Toutes les plateformes » sous un filtre actif.
  */
 export type SheetActionKind =
   | "play"
   | "request"
+  | "rate"
   | CardStatusKind
   | "details"
   | "dismiss"
@@ -35,7 +37,7 @@ export interface SheetHeaderModel {
 export interface SheetRatingModel {
   /** La note posée, sur 10 ; `null` : aucune. */
   current: number | null;
-  /** Ce que notent les étoiles se résout encore (la série d'un épisode) :
-   *  la place est gardée, rien ne saute. */
+  /** Ce que note l'échelle se résout encore (la série d'un épisode) : la
+   *  valeur s'affiche « … », OK ne note rien. */
   pending?: boolean;
 }

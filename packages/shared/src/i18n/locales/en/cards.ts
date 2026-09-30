@@ -32,6 +32,11 @@ export default {
   rateHint: "Tap a star — its left half counts as half a star.",
   ratedHint: "Tap your rating again to remove it.",
   ratingUnavailable: "This title can't be rated: it has no TMDB identifier.",
+  // L'échelle verticale de la télécommande (feuille d'appui long, « Noter » de la fiche).
+  currentRating: "Your current rating",
+  notRatedYet: "Not rated yet",
+  removeRating: "Remove rating",
+  ratingScaleHint: "OK: rate\nMenu: back",
 
   // Unified hover (`cardOverlay.ts`): tray extras, and action sheets.
   dismiss: "Not for me",
