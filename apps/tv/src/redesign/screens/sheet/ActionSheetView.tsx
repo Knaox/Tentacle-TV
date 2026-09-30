@@ -1,9 +1,10 @@
 import { memo, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, { Easing, FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
-import { TV_STAGE } from "@tentacle-tv/theme";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
+import { usePresence } from "../../motion/useMotion";
 import { scrim } from "../../theme/tokens";
 import { RatingPanel } from "./RatingPanel";
 import { SheetHeader } from "./SheetHeader";
@@ -37,6 +38,13 @@ export { RATING_ENTRY, SCALE_FOCUS_KEYS, scaleFocusKey } from "./ratingScaleKeys
  *   et glyphes basculent sous les yeux), la fiche, le refus, la demande ;
  *   `onRate(note | null)` : 1 à 10, ou retirer la note.
  *
+ * Mouvement (Apple TV) : le voile entre en fondu, le panneau SURGIT — il part
+ * de 0,94 et se pose sur un ressort (préréglage `panel`) ; `closing` joue la
+ * sortie, plus brève (le panneau se retire en accélérant, le voile s'efface),
+ * puis `onClosed` : c'est alors seulement que le câblage retire la `Modal`,
+ * présentée sans animation système — un seul fondu, le nôtre, à l'entrée
+ * comme à la sortie.
+ *
  * Focus (câblage) : ENTRÉE sur l'échelle, à la note posée, sinon à 5/10
  * (`RATING_ENTRY`) — sans échelle, sur le premier picto ; le focus est piégé
  * dans le panneau ; Menu ferme. Le panneau s'ouvre sous un OK encore enfoncé :
@@ -53,6 +61,9 @@ export interface ActionSheetViewProps {
   /** 1 à 10, ou `null` : retirer la note. */
   onRate?: (score: number | null) => void;
   onClose?: () => void;
+  /** Le panneau se retire : sa sortie se joue, puis `onClosed`. */
+  closing?: boolean;
+  onClosed?: () => void;
 }
 
 const WIDTH = 1200;
@@ -65,12 +76,14 @@ export const ActionSheetView = memo(function ActionSheetView({
   onAction,
   onRate,
   onClose,
+  closing = false,
+  onClosed,
 }: ActionSheetViewProps) {
-  const rise = usePanelEntrance();
+  const { rise, veil } = usePanelMotion(closing, onClosed);
   const backing = useNativeGlassBacking("strong");
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Animated.View entering={FadeIn.duration(200)} pointerEvents="none" style={[StyleSheet.absoluteFill, styles.veil]} />
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.veil, veil]} />
       {/* `box-none`, jamais `none` : sur tvOS, un parent qui refuse les
           interactions rend ses enfants infocalisables. */}
       <View pointerEvents="box-none" style={styles.center}>
@@ -87,14 +100,22 @@ export const ActionSheetView = memo(function ActionSheetView({
   );
 });
 
-/** Le panneau surgit : un fondu et un léger agrandissement (opacité et transform seulement). */
-function usePanelEntrance() {
-  const reduced = useReducedMotion();
-  const p = useSharedValue(reduced ? 1 : 0);
+/** Le panneau surgit puis se retire, le voile avec lui (opacité et transform
+ *  seulement) ; la fin de la sortie du voile — la plus longue — appelle
+ *  `onClosed`. */
+function usePanelMotion(closing: boolean, onClosed?: () => void) {
+  const panel = usePresence(!closing, "panel");
+  const veil = usePresence(!closing, "veil");
   useEffect(() => {
-    p.value = withTiming(1, { duration: reduced ? 0 : 240, easing: Easing.out(Easing.cubic) });
-  }, [p, reduced]);
-  return useAnimatedStyle(() => ({ opacity: p.value, transform: [{ scale: 0.96 + 0.04 * p.value }] }));
+    if (!veil.mounted) onClosed?.();
+  }, [veil.mounted, onClosed]);
+  const from = TV_MOTION.overlay.panelScale;
+  const p = panel.progress;
+  const v = veil.progress;
+  return {
+    rise: useAnimatedStyle(() => ({ opacity: Math.min(1, p.value), transform: [{ scale: from + (1 - from) * p.value }] })),
+    veil: useAnimatedStyle(() => ({ opacity: v.value })),
+  };
 }
 
 const styles = StyleSheet.create({

@@ -42,6 +42,10 @@ import { useSheetModel, type SheetMode } from "./useSheetModel";
  *   relâchement ne doit rien valider — surtout pas une note.
  * - Le mode `rate` (le bouton « Noter » de la fiche) : l'échelle seule ; OK
  *   note et ferme.
+ * - La SORTIE : fermer (Menu, la croix, une action qui quitte) joue d'abord
+ *   la sortie du panneau (`closing`), et la `Modal` — présentée sans
+ *   animation système, le panneau ayant la sienne — ne se retire qu'au bout
+ *   (`onClosed`). Une action qui navigue pousse son écran pendant ce temps.
  */
 
 interface Props {
@@ -91,7 +95,10 @@ function useElapsed(ms: number): boolean {
 }
 
 function SheetBody({ target, mode, providerFilterActive, onClose }: Required<Props> & { providerFilterActive: boolean }) {
-  const model = useSheetModel({ target, mode, providerFilterActive, onClose });
+  // Fermer, c'est d'abord jouer la sortie ; `onClose` ne part qu'à sa fin.
+  const [closing, setClosing] = useState(false);
+  const requestClose = useCallback(() => setClosing(true), []);
+  const model = useSheetModel({ target, mode, providerFilterActive, onClose: requestClose });
   const focus = useFocusStore();
   const rateOnly = mode === "rate";
   const { rating, actions } = model;
@@ -117,15 +124,15 @@ function SheetBody({ target, mode, providerFilterActive, onClose }: Required<Pro
   const rate = useCallback(
     (score: number | null) => {
       onRate?.(score);
-      if (rateOnly) onClose();
+      if (rateOnly) requestClose();
     },
-    [onRate, rateOnly, onClose],
+    [onRate, rateOnly, requestClose],
   );
 
   return (
-    <Modal visible={entry.current !== null} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={entry.current !== null} transparent animationType="none" onRequestClose={requestClose}>
       <FocusBindingProvider bind={bind}>
-        <ActionSheetView {...model} onRate={rate} />
+        <ActionSheetView {...model} onRate={rate} closing={closing} onClosed={onClose} />
       </FocusBindingProvider>
     </Modal>
   );
