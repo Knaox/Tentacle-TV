@@ -4,7 +4,9 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
+import { Icon } from "../icons/Icon";
 import { colors, fonts } from "../theme/tokens";
+import { CardBadge } from "./CardBadge";
 import { CardFrame } from "./CardFrame";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import type { CardModel } from "./cardTypes";
@@ -16,16 +18,32 @@ import type { CardModel } from "./cardTypes";
  * centrée, plus haute — entre en fondu pendant que la vignette s'efface.
  * Seuls `opacity` et `transform` s'animent.
  *
- * L'affiche déborde de sa place en haut et en bas : la rangée garde le
- * dégagement nécessaire (`MORPH_OVERFLOW`), et la carte focalisée passe
- * devant ses voisines.
+ * L'affiche déborde de sa place, un peu en haut (`MORPH_OVERFLOW`, que la
+ * rangée garde dégagé), surtout en bas, sur la légende qui s'efface ; la
+ * carte focalisée passe devant ses voisines.
+ *
+ * `badge` (« Découverte ») se pose sur les deux faces ; `focusNote` — la
+ * raison d'une recommandation — paraît sous l'affiche au focus, et la rangée
+ * qui en porte garde `MORPH_NOTE_SPACE` de plus dessous.
  */
 
 const L = TV_STAGE.card.landscape;
 const POSTER_H = 330;
 const POSTER_W = 220;
-/** Ce que l'affiche dépasse de la vignette, en haut. */
-export const MORPH_OVERFLOW = Math.round((POSTER_H - L.height) / 2);
+/** Ce que l'agrandissement du focus ajoute à l'affiche, en haut comme en bas. */
+const GROWTH = Math.round((POSTER_H * (TV_STAGE.focus.cardScale - 1)) / 2);
+/**
+ * Ce que l'affiche agrandie dépasse de la vignette, EN HAUT : moins que
+ * l'écart sous le titre de la rangée. L'affiche descend — elle prend la place
+ * de la légende, qui s'efface —, elle ne monte jamais sur le titre.
+ */
+export const MORPH_OVERFLOW = 22;
+const POSTER_TOP = GROWTH - MORPH_OVERFLOW;
+/** La phrase du focus (`focusNote`) : sous l'affiche agrandie. */
+const NOTE_TOP = POSTER_TOP + POSTER_H + GROWTH + 12;
+/** La place qu'une rangée garde en plus, dessous, quand ses cartes ont une
+ *  phrase de focus (deux lignes sous l'affiche). */
+export const MORPH_NOTE_SPACE = 76;
 
 export interface MorphCardProps {
   card: CardModel;
@@ -56,6 +74,7 @@ function Body({ card, dimmed, focused }: { card: CardModel; dimmed?: boolean; fo
   const landscapeFade = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   const posterIn = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ scale: 0.86 + 0.14 * p.value }] }));
   const captionFade = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
+  const noteIn = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ translateY: 8 * (1 - p.value) }] }));
   const landscapeUri = card.landscapeUri ?? card.posterUri;
   return (
     <View style={[styles.cell, focused && styles.front]}>
@@ -63,6 +82,7 @@ function Body({ card, dimmed, focused }: { card: CardModel; dimmed?: boolean; fo
         <CardFrame width={L.width} height={L.height} radius={L.radius} focused={false} dimmed={dimmed}>
           {landscapeUri ? <Image source={{ uri: landscapeUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
           {card.logoUri ? <Image source={{ uri: card.logoUri }} style={styles.logo} resizeMode="contain" fadeDuration={0} /> : null}
+          {card.badge ? <CardBadge label={card.badge} /> : null}
           <CardMarkerLayer markers={card.markers} progress={card.progress} />
         </CardFrame>
       </Animated.View>
@@ -73,6 +93,7 @@ function Body({ card, dimmed, focused }: { card: CardModel; dimmed?: boolean; fo
           ) : landscapeUri ? (
             <Image source={{ uri: landscapeUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
           ) : null}
+          {card.badge ? <CardBadge label={card.badge} compact /> : null}
           <CardMarkerLayer markers={card.markers} progress={card.progress} compact />
         </CardFrame>
       </Animated.View>
@@ -80,6 +101,14 @@ function Body({ card, dimmed, focused }: { card: CardModel; dimmed?: boolean; fo
         <Text style={styles.title} numberOfLines={1}>{card.title}</Text>
         {card.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{card.subtitle}</Text> : null}
       </Animated.View>
+      {card.focusNote ? (
+        <Animated.View pointerEvents="none" style={[styles.note, noteIn]}>
+          <View style={styles.noteRow}>
+            <Icon name="sparkles" size={20} color={colors.accentLight} />
+            <Text style={styles.noteText} numberOfLines={2}>{card.focusNote}</Text>
+          </View>
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
@@ -89,7 +118,7 @@ const styles = StyleSheet.create({
   front: { zIndex: 10 },
   poster: {
     position: "absolute",
-    top: -MORPH_OVERFLOW,
+    top: POSTER_TOP,
     left: (L.width - POSTER_W) / 2,
     width: POSTER_W,
     height: POSTER_H,
@@ -98,4 +127,7 @@ const styles = StyleSheet.create({
   caption: { marginTop: 14, gap: 2 },
   title: { ...fonts.semibold, fontSize: 24, color: colors.textSecondary },
   subtitle: { ...fonts.medium, fontSize: 22, color: colors.textTertiary },
+  note: { position: "absolute", top: NOTE_TOP, left: -10, right: -10, alignItems: "center" },
+  noteRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  noteText: { ...fonts.semibold, fontSize: 22, lineHeight: 28, color: colors.text, flexShrink: 1 },
 });

@@ -26,6 +26,16 @@ export const ICONS = {
   heart: {
     paths: ["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"],
   },
+  /** Le cœur posé : un filtre Favoris actif. */
+  heartFilled: {
+    filled: true,
+    paths: ["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"],
+  },
+  /** Un genre (Parcourir). */
+  tag: {
+    circles: [[7.5, 7.5, 1.5]],
+    paths: ["M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"],
+  },
   eye: { circles: [[12, 12, 3]], paths: ["M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"] },
   eyeOff: {
     paths: [
@@ -45,6 +55,16 @@ export const ICONS = {
   pause: { filled: true, rects: [[6, 4, 4, 16, 1], [14, 4, 4, 16, 1]] },
   plus: { paths: ["M12 5v14M5 12h14"] },
   check: { paths: ["M20 6 9 17l-5-5"] },
+  /** « Vu » (fiche) : la coche dans son cercle, au dessin des marqueurs de carte. */
+  watched: { circles: [[12, 12, 9]], paths: ["M8.25 12.25l2.5 2.5 5-5"] },
+  /** La pastille d'une saison en cours (onglets de saisons). */
+  dot: { filled: true, circles: [[12, 12, 4.5]] },
+  /** Noter (fiche) : l'étoile au trait ; pleine (`star`) une fois la note posée. */
+  starOutline: {
+    paths: [
+      "M11.53 2.3a.53.53 0 0 1 .95 0l2.31 4.68a2.12 2.12 0 0 0 1.6 1.16l5.16.76a.53.53 0 0 1 .3.9l-3.74 3.64a2.12 2.12 0 0 0-.61 1.88l.88 5.14a.53.53 0 0 1-.77.56l-4.62-2.43a2.12 2.12 0 0 0-1.97 0L6.4 21.01a.53.53 0 0 1-.77-.56l.88-5.14a2.12 2.12 0 0 0-.61-1.88L2.16 9.8a.53.53 0 0 1 .3-.91l5.16-.75a2.12 2.12 0 0 0 1.6-1.16z",
+    ],
+  },
   star: {
     filled: true,
     paths: [
@@ -111,6 +131,34 @@ export const ICONS = {
       "m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65",
     ],
   },
+  /** Le téléphone (étapes du jumelage). */
+  phone: { rects: [[5, 2, 14, 20, 2]], paths: ["M12 18h.01"] },
+  /** La télécommande (indice de saisie au jumelage). */
+  remote: { rects: [[7, 2, 10, 20, 5]], circles: [[12, 8, 2.5]], paths: ["M12 14.5h.01", "M12 18h.01"] },
+  /** L'alerte (jumelage expiré, erreur de serveur). */
+  alert: {
+    paths: [
+      "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3",
+      "M12 9v4",
+      "M12 17h.01",
+    ],
+  },
+  /** Le message de l'administrateur. */
+  message: { paths: ["M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"] },
+  /** La goutte du Liquid Glass (comme le mobile). */
+  droplet: { paths: ["M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"] },
+  /** La lecture, au trait (onglet Lecture des réglages). */
+  playCircle: { circles: [[12, 12, 10]], paths: ["M10 8.5v7l6-3.5z"] },
+  /** Le temps qui reste (code de jumelage). */
+  clock: { circles: [[12, 12, 10]], paths: ["M12 6v6l4 2"] },
+  /** « Toutes les plateformes » : l'entonnoir barré (feuille d'actions, reco). */
+  filterOff: { paths: ["M13.013 3H2l8 9.46V19l4 2v-8.54l.9-1.055", "m22 3-5 5", "m17 3 5 5"] },
+  /** Le débit mesuré (lecteur : qualité réduite). */
+  gauge: { paths: ["m12 14 4-4", "M3.34 19a10 10 0 1 1 17.32 0"] },
+  /** Une recherche récente (l'horloge qui revient en arrière). */
+  history: { paths: ["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M12 7v5l4 2"] },
+  /** Vider un champ (la croix cerclée des champs de saisie). */
+  xCircle: { circles: [[12, 12, 10]], paths: ["m15 9-6 6", "m9 9 6 6"] },
 } as const satisfies Record<string, IconShape>;
 
 export type IconName = keyof typeof ICONS;

@@ -10,15 +10,20 @@ export const Icon = memo(function Icon({
   size = 28,
   color,
   strokeWidth = 2,
+  filled,
 }: {
   name: IconName;
   size?: number;
   color: string;
   strokeWidth?: number;
+  /** Remplit un pictogramme au trait (cœur, signet) : l'état « posé ». */
+  filled?: boolean;
 }) {
   const shape: IconShape = ICONS[name];
   const paint = shape.filled
     ? { fill: color, stroke: "none" }
+    : filled
+      ? { fill: color, stroke: color, strokeWidth, strokeLinejoin: "round" as const }
     : { fill: "none", stroke: color, strokeWidth, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">

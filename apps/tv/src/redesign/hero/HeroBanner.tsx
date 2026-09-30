@@ -6,8 +6,8 @@ import { ArtworkHalo } from "../background/ArtworkHalo";
 import type { ArtworkPalette } from "../color/artworkPalette";
 import { PillButton } from "../controls/PillButton";
 import { RoundButton } from "../controls/RoundButton";
-import type { IconName } from "../icons/Icon";
-import { colors, scrim, text, white } from "../theme/tokens";
+import { Icon, type IconName } from "../icons/Icon";
+import { colors, fonts, scrim, text, white } from "../theme/tokens";
 import { MetaLine, type MetaItem } from "./MetaLine";
 import { TitleArt } from "./TitleArt";
 
@@ -27,6 +27,9 @@ export interface HeroAction {
 export interface HeroModel {
   id: string;
   kicker?: string;
+  /** La suite du surtitre, sur sa propre ligne : pourquoi ce titre est là
+   *  (« Parce que vous avez aimé … »). Le logo et le synopsis se resserrent. */
+  reason?: string;
   title: string;
   logoUri?: string;
   backdropUri?: string;
@@ -77,10 +80,20 @@ export const HeroBanner = memo(function HeroBanner({
         <LinearGradient colors={[scrim(0), scrim(0.7)]} locations={[0.6, 1]} style={StyleSheet.absoluteFill} />
         <View style={[StyleSheet.absoluteFill, styles.ring, { borderRadius: H.radius }]} pointerEvents="none" />
         <View style={styles.content}>
-          {hero.kicker ? <Text style={text.kicker} numberOfLines={1}>{hero.kicker}</Text> : null}
-          <TitleArt title={hero.title} logoUri={hero.logoUri} maxWidth={680} maxHeight={170} />
+          {hero.kicker && hero.reason ? (
+            <View style={styles.kickerBlock}>
+              <Text style={text.kicker} numberOfLines={1}>{hero.kicker}</Text>
+              <View style={styles.reason}>
+                <Icon name="sparkles" size={26} color={colors.accentLight} />
+                <Text style={styles.reasonText} numberOfLines={1}>{hero.reason}</Text>
+              </View>
+            </View>
+          ) : hero.kicker ? (
+            <Text style={text.kicker} numberOfLines={1}>{hero.kicker}</Text>
+          ) : null}
+          <TitleArt title={hero.title} logoUri={hero.logoUri} maxWidth={680} maxHeight={hero.reason ? 140 : 170} />
           <MetaLine items={hero.meta} />
-          {hero.synopsis ? <Text style={[text.body, styles.synopsis]} numberOfLines={3}>{hero.synopsis}</Text> : null}
+          {hero.synopsis ? <Text style={[text.body, styles.synopsis]} numberOfLines={hero.reason ? 2 : 3}>{hero.synopsis}</Text> : null}
           <View style={styles.actions}>
             <PillButton variant="primary" {...hero.primary} onPress={onPrimary} onFocusChange={onFocusChange} />
             {hero.secondary ? <PillButton variant="glass" {...hero.secondary} onPress={onSecondary} onFocusChange={onFocusChange} /> : null}
@@ -113,6 +126,9 @@ const styles = StyleSheet.create({
   frame: { overflow: "hidden", backgroundColor: colors.surface2 },
   ring: { borderWidth: 1, borderColor: white(0.14) },
   content: { position: "absolute", left: 72, top: 84, width: 820, gap: 20 },
+  kickerBlock: { gap: 12 },
+  reason: { flexDirection: "row", alignItems: "center", gap: 10 },
+  reasonText: { ...fonts.semibold, fontSize: 27, color: white(0.92), flexShrink: 1 },
   synopsis: { maxWidth: 760, color: white(0.86) },
   actions: { flexDirection: "row", gap: 18, marginTop: 10 },
   dots: { position: "absolute", right: 56, bottom: 44, flexDirection: "row", gap: 10 },

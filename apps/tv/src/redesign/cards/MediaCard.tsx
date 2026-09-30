@@ -1,8 +1,10 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
+import { useFocusProgress } from "../focus/useFocusProgress";
 import { colors, fonts, scrim } from "../theme/tokens";
 import { CardFrame } from "./CardFrame";
 import { CardMarkerLayer } from "./CardMarkerLayer";
@@ -33,6 +35,19 @@ export interface MediaCardProps {
 }
 
 const DEFAULT_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STAGE.card.poster.width };
+
+/** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
+ *  la légende descend d'autant, l'image ne la recouvre jamais. */
+function captionShift(height: number, origin: "top" | "center" = "top"): number {
+  const growth = height * (TV_STAGE.focus.cardScale - 1);
+  return origin === "center" ? growth / 2 : growth - 4;
+}
+
+function Caption({ focused, shift, children }: { focused: boolean; shift: number; children: ReactNode }) {
+  const p = useFocusProgress(focused);
+  const follow = useAnimatedStyle(() => ({ transform: [{ translateY: shift * p.value }] }));
+  return <Animated.View style={[styles.caption, follow]}>{children}</Animated.View>;
+}
 
 export const MediaCard = memo(function MediaCard({
   card,
@@ -83,10 +98,10 @@ export const MediaCard = memo(function MediaCard({
             <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
           </CardFrame>
           {hideCaption ? null : (
-            <View style={styles.caption}>
+            <Caption focused={focused} shift={captionShift(height, origin)}>
               <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
               {card.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{card.subtitle}</Text> : null}
-            </View>
+            </Caption>
           )}
         </View>
       )}

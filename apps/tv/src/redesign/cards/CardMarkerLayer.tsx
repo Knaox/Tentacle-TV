@@ -54,7 +54,14 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
         <View style={[styles.pill, styles.statuses, compact && styles.pillCompact]}>
           {markers.statuses.map((kind) => (
             <Svg key={kind} width={glyph} height={glyph} viewBox="0 0 24 24">
-              <Path d={GLYPH[kind]} fill={kind === "favorite" ? colors.accentLight : colors.onMedia} />
+              {/* « vu » est un disque à la coche ÉVIDÉE : sans `evenodd`, la coche se
+                  remplit et la pastille ne montre qu'un rond blanc. */}
+              <Path
+                key={kind}
+                d={GLYPH[kind]}
+                fill={kind === "favorite" ? colors.accentLight : colors.onMedia}
+                fillRule={kind === "watched" ? "evenodd" : "nonzero"}
+              />
             </Svg>
           ))}
         </View>

@@ -19,11 +19,21 @@ export interface StatusPanelProps {
   message?: string;
   primary?: { label: string; icon?: IconName; onPress?: () => void };
   secondary?: { label: string; icon?: IconName; onPress?: () => void };
+  /** Le retrait à gauche : la place de la navigation, qu'un écran sans
+   *  navigation (la fiche) ramène à 0 pour centrer le panneau. */
+  inset?: number;
 }
 
-export const StatusPanel = memo(function StatusPanel({ kind, title, message, primary, secondary }: StatusPanelProps) {
+export const StatusPanel = memo(function StatusPanel({
+  kind,
+  title,
+  message,
+  primary,
+  secondary,
+  inset = TV_STAGE.contentLeft,
+}: StatusPanelProps) {
   return (
-    <View style={styles.center}>
+    <View style={[styles.center, { paddingLeft: inset }]}>
       <GlassSurface radius={TV_STAGE.radius.panel} tone="strong" style={styles.panel} elevated>
         {kind === "loading" ? (
           <ActivityIndicator size="large" color={colors.text} style={styles.spinner} />
@@ -44,7 +54,7 @@ export const StatusPanel = memo(function StatusPanel({ kind, title, message, pri
 });
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", paddingLeft: TV_STAGE.contentLeft },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
   panel: { width: 880, paddingHorizontal: 64, paddingVertical: 56, alignItems: "center", gap: 22 },
   spinner: { transform: [{ scale: 1.6 }], marginVertical: 20 },
   title: { textAlign: "center" },
