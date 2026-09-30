@@ -3,8 +3,9 @@ import { StyleSheet, TVFocusGuideView, type View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import type { FocusGroupContainerProps } from "../../redesign/focus/focusBinding";
 import type { SettingsTab } from "../../redesign/screens/settings/settingsTypes";
-import type { FocusExtras, FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../focus/focusStore";
 import { AutoFocusGuide } from "../focus/focusGuides";
+import { setFocusLocked } from "../focus/focusLocks";
 
 /**
  * Le focus des réglages, que la vue ne décide pas :
@@ -60,21 +61,8 @@ export function useActiveTabDestination(focus: FocusStore, tab: SettingsTab): Vi
   return useMemo(() => (node ? [node] : []), [node]);
 }
 
-/** Une ligne de la liste qui attend son tour : pas encore focalisable. Sur
- *  tvOS, c'est `isTVSelectable` qui en décide (`RCTTVView.canBecomeFocused`). */
-const LOCKED: FocusExtras = { native: { isTVSelectable: false } };
 /** Filet : si le premier focus tarde, les lignes se libèrent quand même. */
 const RELEASE_AFTER_MS = 800;
-
-type Settable = { setNativeProps?: (props: object) => void };
-
-/** Verrouille ou libère une clé : sa liaison, lue au prochain rendu de la
- *  cible, ET son nœud déjà monté — une cible mémoïsée (un bouton aux props
- *  stables) ne se redessine pas, et gardait son verrou. */
-function setLocked(focus: FocusStore, key: string, locked: boolean): void {
-  focus.bind(key, locked ? LOCKED : null);
-  (focus.node(key) as Settable | null)?.setNativeProps?.({ isTVSelectable: !locked });
-}
 
 /**
  * L'entrée de la liste de choix : la valeur retenue. Dans une `Modal`, aucune
@@ -95,9 +83,9 @@ export function useChoiceEntry(focus: FocusStore, keys: readonly string[], entry
   const opened = useRef<string | null>(null);
   const locked = useRef<string[]>([]);
   if (opened.current !== entryKey) {
-    for (const key of locked.current) setLocked(focus, key, false);
+    for (const key of locked.current) setFocusLocked(focus, key, false);
     locked.current = entryKey ? keys.filter((key) => key !== entryKey) : [];
-    for (const key of locked.current) setLocked(focus, key, true);
+    for (const key of locked.current) setFocusLocked(focus, key, true);
     opened.current = entryKey;
   }
   useEffect(() => {
@@ -106,7 +94,7 @@ export function useChoiceEntry(focus: FocusStore, keys: readonly string[], entry
     const release = () => {
       if (done) return;
       done = true;
-      for (const key of locked.current) setLocked(focus, key, false);
+      for (const key of locked.current) setFocusLocked(focus, key, false);
       locked.current = [];
       setReleases((count) => count + 1);
     };
