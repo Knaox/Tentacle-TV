@@ -60,8 +60,10 @@ function Controls({ data }: { data: BenchData }) {
       <View style={[styles.page, styles.gapped]}>
         <Text style={text.title}>{t("common:play")} · {t("common:resume")}</Text>
         <View style={styles.row}>
-          <PillButton variant="primary" label={t("common:play")} icon="play" focusKey="btn:play" />
-          <PillButton variant="primary" label={t("common:resume")} icon="play" progress={0.62} focusKey="btn:resume" />
+          {/* La lecture porte la marque (`brand`) ; la pilule blanche reste celle d'un écran qui ne lit rien. */}
+          <PillButton variant="brand" label={t("common:play")} icon="play" focusKey="btn:play" />
+          <PillButton variant="brand" label={t("common:resume")} icon="play" progress={0.62} focusKey="btn:resume" />
+          <PillButton variant="primary" label={t("common:retry")} icon="refresh" focusKey="btn:retry" />
           <PillButton variant="glass" label={t("common:trailer")} icon="trailer" focusKey="btn:trailer" />
           <PillButton variant="glass" label={t("common:moreInfo")} icon="info" size="md" focusKey="btn:info" />
         </View>
@@ -94,7 +96,7 @@ export const BRICK_SCENES: BenchScene[] = [
     id: "briques/controles",
     group: "Briques",
     label: "Boutons, ronds, pastilles, verre",
-    focusKeys: ["btn:play", "btn:resume", "btn:trailer", "round:list", "round:fav", "chip:genres", "chip:drama"],
+    focusKeys: ["btn:play", "btn:resume", "btn:retry", "btn:trailer", "round:list", "round:fav", "chip:genres", "chip:drama"],
     render: (data) => <Controls data={data} />,
   },
 ];
