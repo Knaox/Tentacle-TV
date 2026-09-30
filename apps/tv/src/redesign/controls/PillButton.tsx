@@ -2,7 +2,7 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { BrandGradient } from "../brand/BrandGradient";
+import { BrandPill } from "../brand/BrandPill";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { GlassSurface } from "../glass/GlassSurface";
@@ -14,7 +14,7 @@ import { colors, fonts, scrim, white } from "../theme/tokens";
  *
  * - `brand` : la pilule de LECTURE — le dégradé de marque violet → rose, texte
  *   blanc, comme le bouton Lire du bureau (`DetailPlayButton`). Au focus elle
- *   garde sa couleur : elle s'éclaircit, sa lueur rose monte.
+ *   garde sa couleur et s'allume (`BrandPill`).
  * - `primary` : la pilule BLANCHE, texte noir (`--cta-primary-*`) — l'action
  *   principale d'un écran qui ne lit rien (Réessayer, Voir les titres).
  * - `glass` : la pilule de verre ; au focus elle devient blanche, texte noir,
@@ -95,19 +95,13 @@ function Body({ focused, variant, s, label, icon, progress }: {
   const shadow = useAnimatedStyle(() => ({ opacity: p.value }));
   const whiteLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 1 : p.value }));
   const glassLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 0 : 1 - p.value }));
-  const glow = useAnimatedStyle(() => ({ opacity: 0.35 + 0.65 * p.value }));
-  const brighten = useAnimatedStyle(() => ({ opacity: 0.16 * p.value }));
   const radius = s.height / 2;
   if (variant === "brand") {
     return (
       <Animated.View style={lift}>
-        <Animated.View style={[StyleSheet.absoluteFill, styles.glow, { borderRadius: radius }, glow]} />
-        <View style={[styles.brand, { borderRadius: radius }]}>
-          <BrandGradient diagonal />
-          <View style={[StyleSheet.absoluteFill, styles.rim, { borderRadius: radius }]} />
-          <Animated.View style={[StyleSheet.absoluteFill, styles.brighten, brighten]} />
+        <BrandPill progress={p} radius={radius}>
           <Content label={label} icon={icon} color={colors.onAccent} size={s} progress={progress} track={white(0.32)} fill={colors.onAccent} />
-        </View>
+        </BrandPill>
       </Animated.View>
     );
   }
@@ -137,16 +131,4 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.55,
     shadowRadius: 22,
   },
-  brand: { overflow: "hidden" },
-  // La lueur rose de la pilule de lecture : l'ombre d'un calque caché derrière
-  // elle (une ombre iOS a besoin d'un fond pour se dessiner).
-  glow: {
-    backgroundColor: colors.accent,
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-  },
-  rim: { borderWidth: 1, borderColor: white(0.25) },
-  brighten: { backgroundColor: "#FFFFFF" },
 });

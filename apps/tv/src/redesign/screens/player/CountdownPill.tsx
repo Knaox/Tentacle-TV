@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { BrandGradient } from "../../brand/BrandGradient";
+import { BrandPill } from "../../brand/BrandPill";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
@@ -14,7 +14,7 @@ import type { Countdown } from "./playerTypes";
 /**
  * La pilule d'une action qui peut partir toute seule : « Passer l'intro dans
  * 5 s », « Lire maintenant ». Même matière que `PillButton` : verre → blanc au
- * focus, ou le dégradé de marque d'une LECTURE (`brand`) ; plus l'ANNEAU du
+ * focus, ou le dégradé de marque d'une LECTURE (`brand`, `BrandPill`) ; plus l'ANNEAU du
  * décompte autour de son pictogramme, qui se remplit à mesure que le temps
  * passe. Le décompte est une valeur reçue : rien ne tourne ici.
  */
@@ -110,18 +110,12 @@ function Body({ focused, label, icon, variant, countdown, base }: {
   const shadow = useAnimatedStyle(() => ({ opacity: p.value }));
   const whiteLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 1 : p.value }));
   const glassLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 0 : 1 - p.value }));
-  const glow = useAnimatedStyle(() => ({ opacity: 0.35 + 0.65 * p.value }));
-  const brighten = useAnimatedStyle(() => ({ opacity: 0.16 * p.value }));
   if (variant === "brand") {
     return (
       <Animated.View style={lift}>
-        <Animated.View style={[StyleSheet.absoluteFill, styles.glow, glow]} />
-        <View style={styles.brand}>
-          <BrandGradient diagonal />
-          <View style={[StyleSheet.absoluteFill, styles.rim]} />
-          <Animated.View style={[StyleSheet.absoluteFill, styles.brighten, brighten]} />
+        <BrandPill progress={p} radius={HEIGHT / 2}>
           <Content label={label} icon={icon} countdown={countdown} dark={false} onBrand />
-        </View>
+        </BrandPill>
       </Animated.View>
     );
   }
@@ -145,18 +139,6 @@ const styles = StyleSheet.create({
   ring: { position: "absolute", transform: [{ rotate: "-90deg" }] },
   label: { ...fonts.bold, fontSize: 26 },
   white: { borderRadius: HEIGHT / 2, backgroundColor: colors.ctaBg },
-  brand: { borderRadius: HEIGHT / 2, overflow: "hidden" },
-  // La lueur rose de la pilule de lecture (ombre d'un calque caché derrière).
-  glow: {
-    borderRadius: HEIGHT / 2,
-    backgroundColor: colors.accent,
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-  },
-  rim: { borderRadius: HEIGHT / 2, borderWidth: 1, borderColor: white(0.25) },
-  brighten: { backgroundColor: "#FFFFFF" },
   shadow: {
     borderRadius: HEIGHT / 2,
     backgroundColor: "#000",
