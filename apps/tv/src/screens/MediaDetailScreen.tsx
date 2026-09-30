@@ -20,6 +20,8 @@ import { TVSagaRow } from "../components/detail/TVSagaRow";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { Colors, Spacing, CardConfig } from "../theme/colors";
 import { SHOWS_VERTICAL_SCROLL_INDICATOR } from "../theme/focus";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { MediaDetailRedesign } from "../redesignWiring/detail/MediaDetailRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
 
@@ -29,7 +31,12 @@ const renderPoster = (s: MediaItem, _i: number, focused: boolean) => (
 );
 const renderPosterMeta = (s: MediaItem) => <TVPosterMeta item={s} width={CardConfig.portrait.width} />;
 
-export function MediaDetailScreen({ route, navigation }: Props) {
+/** Apple TV : la fiche refondue ; Android TV : la fiche actuelle, ci-dessous. */
+export function MediaDetailScreen(props: Props) {
+  return REDESIGN_ACTIVE ? <MediaDetailRedesign {...props} /> : <LegacyMediaDetailScreen {...props} />;
+}
+
+function LegacyMediaDetailScreen({ route, navigation }: Props) {
   const { t, i18n } = useTranslation("common");
   const { itemId } = route.params;
   const queryClient = useQueryClient();
