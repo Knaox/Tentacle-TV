@@ -83,8 +83,13 @@ export function foreground() {
   if (device?.state === "Booted") simctl("launch", device.udid, BUNDLE);
 }
 
-export function screenshot(file) {
+/** L'identifiant du simulateur du banc, démarré — sinon une erreur. */
+export function bootedBench() {
   const device = findBench();
   if (!device || device.state !== "Booted") throw new Error("simulateur du banc éteint — « bench.mjs sim »");
-  execFileSync("xcrun", ["simctl", "io", device.udid, "screenshot", "--type=png", file], { stdio: "ignore" });
+  return device.udid;
+}
+
+export function screenshot(file) {
+  execFileSync("xcrun", ["simctl", "io", bootedBench(), "screenshot", "--type=png", file], { stdio: "ignore" });
 }

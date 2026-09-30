@@ -20,6 +20,7 @@ Depuis `apps/tv` (`pnpm bench:ui <commande>` ou `node harness/ui-bench/bench.mjs
 | `glass on\|sim\|off` · `lang fr\|en` | Liquid Glass demandé — natif sur tvOS 26 (`on`), ou sa simulation, le repli des tvOS < 26 (`sim`) — ou coupé (`off`, verre enrichi) ; langue. |
 | `shot [nom]` | Capture 1920×1080 de l'écran courant dans `out/`. |
 | `planche [préfixe] [--focus] [--lang=fr,en] [--glass=on,sim,off]` | Toutes les scènes du préfixe, dans chaque variante demandée, capturées puis assemblées dans `out/<date>-<préfixe>/planche-NN.png`. |
+| `gpu [secondes]` | Coût de rendu du simulateur du banc sur la fenêtre (10 s par défaut) : GPU et CPU en ms par seconde (voir « Mesurer le coût GPU »). |
 | `snapshot` | Tire l'instantané Knaoxtest (voir plus bas). |
 
 Chaque commande attend que le banc ait AFFICHÉ l'état demandé (images
@@ -35,6 +36,21 @@ focus sur l'élément suivant, puis rend la main au focus natif après le
 dernier. L'enregistrement d'un fichier se voit aussitôt (Fast Refresh à
 travers le relais) ; un rechargement complet rouvre la scène en cours, dont
 l'état vit dans le relais.
+
+## Mesurer le coût GPU
+
+`gpu [secondes]` relève, sans sudo, le temps GPU que le pilote AGX compte aux
+services de rendu HÔTES du simulateur du banc (SimRenderServer, SimMetalHost —
+`accumulatedGPUTime` dans l'IORegistry), plus le CPU de son `backboardd` et de
+l'app. Les autres simulateurs démarrés et le reste du Mac sont hors du compte :
+la mesure tient même quand le GPU du Mac est saturé par d'autres sessions.
+
+C'est le GPU du Mac qui rend l'Apple TV simulée : on compare des RAPPORTS entre
+deux états, jamais une valeur d'appareil. Protocole : chaque cas plusieurs
+fois, en alternance (`scene …`, `glass …`, `gpu 8`), pour répartir la dérive.
+Le groupe « Mesure » du catalogue donne le pire cas (une image qui glisse sans
+fin sous six verres, sous les mêmes verres masqués, sans verre) ; le groupe
+« Verre » donne le verre à juger à l'œil (sur une image, sous un fondu).
 
 ## Ajouter une scène
 
@@ -88,6 +104,9 @@ Jamais de mot de passe : sans session disponible, on s'arrête et on demande.
   TentacleTV -configuration Debug -sdk appletvsimulator -derivedDataPath …`,
   après `pod install` avec `LANG=en_US.UTF-8`), puis `xcrun simctl install
   <udid> …/TentacleTV.app` et `launch`.
+- `simctl io … recordVideo` n'écrit rien sur un simulateur tvOS (même limite
+  que le panneau du simulateur de Claude) : pour juger une transition, une
+  scène qui en fige les états (cf. `verre/fondu`).
 - Le simulateur du banc est un clone : les autres sessions gardent les leurs.
   Pour repartir de zéro : `xcrun simctl delete "Banc UI TV (Claude)"` puis `sim`.
 - Le relais écoute sur 127.0.0.1 seulement ; ports par `BENCH_PORT` et

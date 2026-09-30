@@ -5,9 +5,10 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ensureSimulator, foreground, launchApp, screenshot } from "./tools/simulator.mjs";
+import { bootedBench, ensureSimulator, foreground, launchApp, screenshot } from "./tools/simulator.mjs";
 import { buildPlanches } from "./tools/planche.mjs";
 import { captureSnapshot } from "./tools/captureSnapshot.mjs";
+import { measureGpu } from "./tools/gpuCost.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP_DIR = path.resolve(HERE, "../..");
@@ -148,6 +149,10 @@ const commands = {
     console.log(file);
   },
   planche: () => planche(args),
+  gpu: async () => {
+    const r = await measureGpu(bootedBench(), Number(args[0] ?? 10));
+    console.log(`GPU ${r.gpuMsPerS} ms/s · CPU backboardd ${r.backboarddCpuMsPerS} ms/s · CPU app ${r.appCpuMsPerS} ms/s (sur ${r.seconds} s)`);
+  },
   snapshot: () => captureSnapshot(path.join(HERE, "snapshot")),
   help: () => console.log(fs.readFileSync(path.join(HERE, "README.md"), "utf8").split("\n## ")[1] ?? ""),
 };
