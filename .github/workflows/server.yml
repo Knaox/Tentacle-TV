@@ -16,6 +16,14 @@
 #
 # L'image Docker EST le serveur : une seule cible, `docker`.
 #
+# ⚠️ LE CLIENT LG N'EN FAIT PLUS PARTIE. L'image sert aussi, sous /tv, le client
+# des téléviseurs LG ; il était jusqu'ici reconstruit depuis le commit à chaque
+# livraison serveur, qui changeait donc l'interface de la TV sans le dire. Ce
+# workflow le REPREND désormais de l'image en service (`:latest`) : seul
+# webos.yml livre un nouveau client LG — il reconstruit alors l'image, avec ce
+# même serveur. La construction et la publication vivent dans le workflow
+# commun server-image.yml (mode « server »).
+#
 # La version vient de versions.json → `server` (SOURCE UNIQUE). L'entrée
 # `version` du dispatch la BUMPE : prepare écrit versions.json, aligne
 # apps/backend/package.json, commite et pousse — `minServer` reste à la main,
@@ -43,10 +51,6 @@ on:
 concurrency:
   group: release-server
   cancel-in-progress: false
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: knaox/tentacle-tv
 
 jobs:
   # ── Ce qui rend tout le reste reproductible (voir mobile.yml, même forme) ──
@@ -108,176 +112,22 @@ jobs:
             --changelog changelogs/server.md --version "${{ steps.plan.outputs.version }}" \
             --check github
 
-  build:
+  # ── L'image : construite, étiquetée et publiée par le workflow COMMUN ─────
+  # Même workflow que la reconstruction webOS (webos.yml) : une seule façon de
+  # pousser l'image, et une seule bascule de `:latest`, protégée par un
+  # compare-and-swap. Le client LG y est repris de l'image en service, jamais
+  # construit depuis ce commit ; la Release server-vX.Y.Z (cran store) dit
+  # lequel elle embarque.
+  image:
+    name: Image
     needs: prepare
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux/amd64
-            runner: ubuntu-latest
-            arch: amd64
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm
-            arch: arm64
-
-    runs-on: ${{ matrix.runner }}
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.sha }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push by digest
-        id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: ${{ matrix.platform }}
-          # Clé Klipy niveau application (GIFs du chat WT) — secret facultatif :
-          # absent, les GIFs sont simplement désactivés dans l'image produite.
-          build-args: |
-            KLIPY_API_KEY=${{ secrets.KLIPY_API_KEY }}
-          cache-from: type=gha,scope=${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
-          # Au cran « build » l'image reste sur le runner : rien n'est poussé
-          # dans le registre, on vérifie seulement que ça compile.
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=${{ needs.prepare.outputs.channel != 'build' }}
-
-      - name: Export digest
-        run: |
-          mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
-
-      - name: Upload digest
-        uses: actions/upload-artifact@v4
-        with:
-          name: digests-${{ matrix.arch }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-          retention-days: 1
-
-  merge:
-    name: Manifeste multi-arch
-    runs-on: ubuntu-latest
-    needs: [prepare, build]
-    if: needs.prepare.outputs.channel != 'build'
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository (versions.json)
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.sha }}
-
-      - name: Download digests
-        uses: actions/download-artifact@v4
-        with:
-          path: /tmp/digests
-          pattern: digests-*
-          merge-multiple: true
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # `:latest` N'EST POSÉ QU'AU CRAN STORE : c'est lui que suit la
-      # production, et le cran test doit pouvoir livrer une version à éprouver
-      # sans la mettre en service.
-      - name: Créer le manifeste multi-arch et le pousser
-        working-directory: /tmp/digests
-        env:
-          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          VERSION: ${{ needs.prepare.outputs.version }}
-          CHANNEL: ${{ needs.prepare.outputs.channel }}
-        run: |
-          TAGS="-t ${IMAGE}:v${VERSION}"
-          [ "$CHANNEL" = "store" ] && TAGS="$TAGS -t ${IMAGE}:latest"
-          echo "Étiquettes posées : ${TAGS}"
-          # shellcheck disable=SC2086
-          docker buildx imagetools create $TAGS \
-            $(printf "${IMAGE}@sha256:%s " *)
-
-      - name: Inspecter le manifeste
-        env:
-          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          VERSION: ${{ needs.prepare.outputs.version }}
-        run: docker buildx imagetools inspect "${IMAGE}:v${VERSION}"
-
-  # ── Release GitHub server-vX.Y.Z — UNIQUEMENT quand le push change la
-  #    version `server` de versions.json (notes : changelogs/server.md). ──
-  # ── Release GitHub server-vX.Y.Z — au cran STORE seulement ────────────────
-  # La détection « est-ce que versions.json → server a changé dans ce push ? »
-  # disparaît avec le déclencheur qui la portait. Elle était fragile de toute
-  # façon : elle retombait silencieusement sur « non » après une réécriture
-  # d'historique ou sur une branche neuve, et comptait un RETOUR EN ARRIÈRE de
-  # version comme un changement. C'est le cran choisi qui décide, désormais.
-  release:
-    name: Release GitHub
-    runs-on: ubuntu-latest
-    needs: [prepare, merge]
-    if: needs.prepare.outputs.channel == 'store'
-    timeout-minutes: 10
+    uses: ./.github/workflows/server-image.yml
     permissions:
       contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.sha }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Corps de release
-        env:
-          V: ${{ needs.prepare.outputs.version }}
-        run: |
-          {
-            echo "Image Docker : \`ghcr.io/knaox/tentacle-tv:v${V}\` (et \`:latest\`)."
-            echo ""
-          } > release-body.md
-          # Plus de « || true » : le pré-vol a déjà garanti que le bloc existe,
-          # et une Release au corps vide n'a jamais rendu service à personne.
-          node .github/scripts/release-notes.mjs \
-            --changelog changelogs/server.md --version "$V" \
-            --format github --out notes.md
-          cat notes.md >> release-body.md
-          cat release-body.md
-
-      - name: Créer la Release server-vX.Y.Z
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          V: ${{ needs.prepare.outputs.version }}
-          SHA: ${{ needs.prepare.outputs.sha }}
-        run: |
-          if gh release view "server-v${V}" >/dev/null 2>&1; then
-            echo "::warning::la Release server-v${V} existe déjà — on la laisse en place."
-            exit 0
-          fi
-          gh release create "server-v${V}" \
-            --title "Tentacle TV Server v${V}" \
-            --notes-file release-body.md \
-            --target "$SHA"
+      packages: write
+    with:
+      mode: server
+      channel: ${{ needs.prepare.outputs.channel }}
+      sha: ${{ needs.prepare.outputs.sha }}
+    secrets:
+      KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}

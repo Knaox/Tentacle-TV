@@ -1,0 +1,363 @@
+# Tentacle TV — L'IMAGE DU SERVEUR, construite et publiée à UN SEUL endroit
+#
+# Workflow RÉUTILISABLE (workflow_call). Il ne se lance pas seul : il est
+# appelé par les deux livraisons qui touchent l'image Docker.
+#
+#   • server.yml, mode « server » — LE SERVEUR change (backend + client web,
+#     construits depuis le commit figé). Le client LG servi sous /tv est REPRIS
+#     de l'image en service (`:latest`), jamais celui du commit : une livraison
+#     serveur ne change plus ce que voient les téléviseurs.
+#   • webos.yml, mode « webos » — LE CLIENT LG change (construit par webos.yml,
+#     reçu en artefact). Le serveur est l'image déjà publiée de sa version
+#     (`:vX.Y.Z`, versions.json → server), reprise à l'octet près : elle n'est
+#     pas reconstruite.
+#
+# Le Dockerfile rend cela possible : ses étapes « tv-client-build », « tv-client »
+# et « server » se remplacent par des contextes nommés (voir son en-tête).
+#
+# RIEN DE CE QUI DÉCIDE N'EST ÉCRIT ICI. `.github/scripts/server-image-plan.mjs`
+# lit le registre et rend étiquettes, contextes, labels et Release ; la décision
+# vit dans lib/server-image.mjs, testée hors ligne (test/server-image.test.mjs).
+# Ce fichier se contente d'exécuter le plan :
+#
+#   | mode   | test                | store                          | Release (store)           |
+#   |--------|---------------------|--------------------------------|---------------------------|
+#   | server | :vS                 | :vS + :latest                  | server-vS (server.md)     |
+#   | webos  | :vS-webos-W         | :vS-webos-W + :latest          | server-vS-webos-W         |
+#   |        |                     |                                | (server-webos.md, [W])    |
+#
+# Au cran build, l'image est construite et rien n'est poussé.
+#
+# LA BASCULE DE `:latest` EST UN COMPARE-AND-SWAP. Le plan note l'empreinte de
+# `:latest` ; le job qui la bascule la relit juste avant d'écrire et refuse si
+# elle a changé — une livraison serveur et une livraison webOS lancées en même
+# temps ne s'écrasent plus l'une l'autre en silence. Son groupe de concurrence
+# est commun aux deux workflows : les deux bascules ne se croisent jamais.
+
+name: Image serveur (commune)
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: "server (server.yml) ou webos (webos.yml)"
+        type: string
+        required: true
+      channel:
+        description: "build | test | store"
+        type: string
+        required: true
+      sha:
+        description: "Le commit figé par le job prepare de l'appelant"
+        type: string
+        required: true
+      tv-client-artifact:
+        description: "Mode webos : l'artefact du run qui porte le client LG construit (client/dist)"
+        type: string
+        default: ""
+    secrets:
+      KLIPY_API_KEY:
+        required: false
+    outputs:
+      tags:
+        description: "Étiquettes posées, séparées par des virgules (vide au cran build)"
+        value: ${{ jobs.plan.outputs.tags }}
+      server-version:
+        value: ${{ jobs.plan.outputs.server-version }}
+      client-version:
+        description: "Version webOS du client LG embarqué (vide si non étiqueté)"
+        value: ${{ jobs.plan.outputs.client-version }}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: knaox/tentacle-tv
+  # Là où le mode webos dépose le client reçu : le contexte nommé « tv-client »
+  # du plan le désigne par ce chemin.
+  CLIENT_DIR: tv-client-dist
+
+jobs:
+  plan:
+    name: Plan de l'image
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      push: ${{ steps.plan.outputs.push }}
+      tags: ${{ steps.plan.outputs.tags }}
+      contexts: ${{ steps.plan.outputs.contexts }}
+      labels: ${{ steps.plan.outputs.labels }}
+      expect-latest: ${{ steps.plan.outputs.expect-latest }}
+      server-version: ${{ steps.plan.outputs.server-version }}
+      client-version: ${{ steps.plan.outputs.client-version }}
+      release: ${{ steps.plan.outputs.release }}
+      release-tag: ${{ steps.plan.outputs.release-tag }}
+      release-title: ${{ steps.plan.outputs.release-title }}
+      release-changelog: ${{ steps.plan.outputs.release-changelog }}
+      release-version: ${{ steps.plan.outputs.release-version }}
+      release-latest: ${{ steps.plan.outputs.release-latest }}
+      release-header: ${{ steps.plan.outputs.release-header }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # versions.json est lu au commit figé : c'est lui qui dit quel serveur
+      # et quel client sont en jeu, pas la tête de main.
+      - name: Lire le registre et décider
+        id: plan
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODE: ${{ inputs.mode }}
+          CHANNEL: ${{ inputs.channel }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          node .github/scripts/server-image-plan.mjs plan \
+            --mode "$MODE" --channel "$CHANNEL" --sha "$SHA" \
+            --image "${REGISTRY}/${IMAGE_NAME}" --client-dir "$CLIENT_DIR"
+
+  build:
+    name: Construire (${{ matrix.arch }})
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    # Chaque architecture sur sa propre machine : l'étape finale du Dockerfile
+    # contient des RUN, qu'aucune émulation ne ralentit ainsi.
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+
+      - name: Récupérer le client LG construit par webos.yml
+        if: inputs.mode == 'webos'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.tv-client-artifact }}
+          path: ${{ env.CLIENT_DIR }}
+
+      # Le Dockerfile le vérifie aussi ; ici l'échec dit tout de suite que
+      # c'est l'artefact, et non l'image, qui est en cause.
+      - name: Vérifier le client LG reçu
+        if: inputs.mode == 'webos'
+        run: |
+          if [ ! -f "${CLIENT_DIR}/index.html" ]; then
+            echo "::error::L'artefact « ${{ inputs.tv-client-artifact }} » ne porte pas de index.html : rien ne part."
+            exit 1
+          fi
+          du -sh "$CLIENT_DIR"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          # Ce qui remplace une étape du Dockerfile : l'image en service pour
+          # le client (mode server), l'image publiée du serveur et le client
+          # reçu (mode webos). Chaque image y est épinglée par son empreinte.
+          build-contexts: ${{ needs.plan.outputs.contexts }}
+          labels: ${{ needs.plan.outputs.labels }}
+          # Clé Klipy niveau application (GIFs du chat WT) — secret facultatif :
+          # absent, les GIFs sont simplement désactivés dans l'image produite.
+          # Le mode webos ne reconstruit pas le serveur : la clé n'y sert pas.
+          build-args: ${{ inputs.mode == 'server' && format('KLIPY_API_KEY={0}', secrets.KLIPY_API_KEY) || '' }}
+          # Le cache ne sert qu'au build du serveur. Le mode webos ne l'écrit
+          # pas : sous la même portée, il remplacerait celui du serveur.
+          cache-from: ${{ inputs.mode == 'server' && format('type=gha,scope={0}', matrix.arch) || '' }}
+          cache-to: ${{ inputs.mode == 'server' && format('type=gha,mode=max,scope={0}', matrix.arch) || '' }}
+          # Au cran « build » l'image reste sur le runner : rien n'est poussé
+          # dans le registre, on vérifie seulement que ça compile.
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=${{ needs.plan.outputs.push }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
+  merge:
+    name: Publier les étiquettes
+    runs-on: ubuntu-latest
+    needs: [plan, build]
+    if: needs.plan.outputs.push == 'true'
+    timeout-minutes: 15
+    # COMMUN à server.yml et webos.yml (même workflow appelé) : deux bascules
+    # de `:latest` s'attendent au lieu de se croiser.
+    concurrency:
+      group: server-image-latest
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository (le script de relecture)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Le compare-and-swap. `:latest` doit être EXACTEMENT l'image lue par le
+      # plan : c'est d'elle que la moitié reprise a été tirée (le client en
+      # mode server, le serveur en service en mode webos). Si une autre
+      # livraison l'a basculée entre-temps, publier ici effacerait la sienne.
+      - name: Vérifier que « :latest » n'a pas bougé depuis le plan
+        if: needs.plan.outputs.expect-latest != ''
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          EXPECTED: ${{ needs.plan.outputs.expect-latest }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          CODE=0
+          CURRENT=$(node .github/scripts/server-image-plan.mjs digest "${IMAGE}:latest") || CODE=$?
+          if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 3 ]; then
+            echo "::error::Relecture de :latest impossible — rien n'est basculé."
+            exit 1
+          fi
+          if [ "$CURRENT" != "$EXPECTED" ]; then
+            echo "::error::« :latest » a changé pendant ce run (${EXPECTED} → ${CURRENT:-absente}) : une autre livraison est passée. Rien n'est basculé ; relance cette livraison, elle repartira de la nouvelle image."
+            exit 1
+          fi
+          echo "✓ :latest est toujours ${EXPECTED}."
+
+      - name: Créer le manifeste multi-arch et le pousser
+        working-directory: /tmp/digests
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          TAGS: ${{ needs.plan.outputs.tags }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra LIST <<< "$TAGS"
+          ARGS=()
+          for tag in "${LIST[@]}"; do ARGS+=(-t "${IMAGE}:${tag}"); done
+          echo "Étiquettes posées : ${LIST[*]}"
+          # shellcheck disable=SC2046
+          docker buildx imagetools create "${ARGS[@]}" \
+            $(printf "${IMAGE}@sha256:%s " *)
+
+      - name: Inspecter le manifeste
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          TAGS: ${{ needs.plan.outputs.tags }}
+        run: docker buildx imagetools inspect "${IMAGE}:${TAGS%%,*}"
+
+  # ── Release GitHub — au cran STORE seulement ────────────────────────────────
+  # server-vS pour le serveur (notes : changelogs/server.md [S]) ;
+  # server-vS-webos-W pour une reconstruction webOS (notes DÉDIÉES :
+  # changelogs/server-webos.md [W]). Les deux blocs sont exigés par le pré-vol
+  # du job prepare de l'appelant, avant le moindre build.
+  release:
+    name: Release GitHub
+    runs-on: ubuntu-latest
+    needs: [plan, merge]
+    if: needs.plan.outputs.release == 'true'
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Corps de release
+        env:
+          HEADER: ${{ needs.plan.outputs.release-header }}
+          CHANGELOG: ${{ needs.plan.outputs.release-changelog }}
+          VERSION: ${{ needs.plan.outputs.release-version }}
+        run: |
+          set -euo pipefail
+          printf '%s\n\n' "$HEADER" > release-body.md
+          # Pas de « || true » : le pré-vol a garanti que le bloc existe, et une
+          # Release au corps vide n'a jamais rendu service à personne.
+          node .github/scripts/release-notes.mjs \
+            --changelog "$CHANGELOG" --version "$VERSION" \
+            --format github --out notes.md
+          cat notes.md >> release-body.md
+          cat release-body.md
+
+      - name: Créer la Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.plan.outputs.release-tag }}
+          TITLE: ${{ needs.plan.outputs.release-title }}
+          LATEST: ${{ needs.plan.outputs.release-latest }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::warning::la Release ${TAG} existe déjà — on la laisse en place."
+            exit 0
+          fi
+          # Une reconstruction webOS ne prend pas « Latest » à une vraie
+          # version ; le serveur garde le choix automatique d'avant.
+          LATEST_FLAG=()
+          [ "$LATEST" = "false" ] && LATEST_FLAG=(--latest=false)
+          gh release create "$TAG" \
+            --title "$TITLE" \
+            --notes-file release-body.md \
+            --target "$SHA" \
+            "${LATEST_FLAG[@]}"
