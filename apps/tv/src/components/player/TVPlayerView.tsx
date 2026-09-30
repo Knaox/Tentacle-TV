@@ -2,7 +2,7 @@ import type { ElementRef } from "react";
 import { View, Text, TouchableOpacity, Platform, type ViewStyle } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { MediaItem, PlayerOverlay, QualityKey, SourceQuality } from "@tentacle-tv/shared";
-import { MemoizedPlayer } from "./MemoizedPlayer";
+import { TVPlayerEngine } from "./TVPlayerEngine";
 import { TVPlayerOverlay } from "../TVPlayerOverlay";
 import type { TransportKey } from "./focus/overlayFocusCore";
 import { TVPlaybackOverlay } from "../TVPlaybackOverlay";
@@ -169,12 +169,9 @@ export function TVPlayerView({
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
-      <MemoizedPlayer
-        useExoPlayer={useExoPlayer} exoRef={exoRef} mpvRef={mpvRef}
-        source={streamUrl} paused={playerPaused ?? paused} playerStyle={playerStyle}
-        // Mute de transition (filet secondaire) : tant que l'image figée masque la vidéo, couper l'audio de
-        // la session sortante. Le vrai blocage du son vient du « hold » (playerPaused) côté PlayerScreen.
-        muted={reloadFrameSec != null && hasStarted}
+      <TVPlayerEngine
+        streamUrl={streamUrl} paused={paused} playerPaused={playerPaused} hasStarted={hasStarted} reloadFrameSec={reloadFrameSec}
+        useExoPlayer={useExoPlayer} exoRef={exoRef} mpvRef={mpvRef} playerStyle={playerStyle}
         textTracks={textTracks} subtitleIndex={subtitleIndex} isDirectPlay={isDirectPlay} prismTextTrackIndex={prismTextTrackIndex}
         frameRate={frameRate}
         onLoad={onLoad} onProgress={onProgress} onEnd={onEnd}

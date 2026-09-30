@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ElementRef } from "react";
-import { View, TouchableOpacity } from "react-native";
+import type { TouchableOpacity } from "react-native";
 import { useMediaItem, useItemAncestors } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
 import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
-import { TVPlayerView } from "../components/player/TVPlayerView";
 import { usePlayerMediaState } from "../hooks/usePlayerMediaState";
 import { usePlayerStreamPipeline } from "../hooks/usePlayerStreamPipeline";
 import { useTVPlaybackLifecycle } from "../hooks/useTVPlaybackLifecycle";
@@ -28,7 +27,9 @@ import { useTVTrackLists } from "../hooks/useTVTrackLists";
 import { useTVSessionRemote } from "../hooks/useTVSessionRemote";
 import { useEpisodePanelPrefetch } from "../hooks/useSeasonEpisodes";
 import { findCachedMediaItem } from "../utils/findCachedMediaItem";
-import { TVPlayerLoadingScreen } from "../components/player/TVPlayerLoadingScreen";
+import { useTVOsdEntryFocus } from "../hooks/useTVOsdEntryFocus";
+import type { PlayerRedesignStageProps } from "../redesignWiring/player/playerStageTypes";
+import { LegacyPlayerStage } from "./player/LegacyPlayerStage";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Player">;
 
@@ -183,31 +184,8 @@ export function PlayerScreen({ route, navigation }: Props) {
   });
   routeBackRef.current = back.routeBack;
 
-  // L'OSD réapparaît → focus sur le dernier bouton de transport utilisé.
-  const prevOverlayVisibleRef = useRef(true);
-  useEffect(() => {
-    if (controls.overlayVisible && !prevOverlayVisibleRef.current) bumpOsdFocus();
-    prevOverlayVisibleRef.current = controls.overlayVisible;
-  }, [controls.overlayVisible, bumpOsdFocus]);
-
-  /**
-   * L'ENTRÉE dans la vidéo : le focus va à lecture/pause.
-   *
-   * Personne ne le réclamait — l'effet ci-dessus ne se déclenche qu'à une
-   * RÉAPPARITION de l'habillage, et il est déjà visible au premier rendu. Le
-   * guide de l'habillage prenait donc son premier enfant focusable, qui est
-   * « quitter la vidéo » : un appui sur OK au lancement sortait du lecteur.
-   *
-   * À la première image, pas au montage : avant elle, l'écran de chargement
-   * occupe la dalle et tait l'habillage, dont les boutons ne sont pas
-   * focusables.
-   */
-  const entryClaimedRef = useRef(false);
-  useEffect(() => {
-    if (!hasStarted || entryClaimedRef.current) return;
-    entryClaimedRef.current = true;
-    bumpOsdFocus("playpause");
-  }, [hasStarted, bumpOsdFocus]);
+  // L'habillage reprend le focus à sa réapparition et à l'entrée dans la vidéo.
+  useTVOsdEntryFocus({ overlayVisible: controls.overlayVisible, hasStarted, bumpOsdFocus });
 
   // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
   const trickplay = useTVTrickplay(item, p.mediaSource?.Id);
@@ -276,61 +254,41 @@ export function PlayerScreen({ route, navigation }: Props) {
   // elle qui neutralise l'habillage du lecteur, pas le chiffre.
   const autoPlayActive = autoPlay.source !== null;
   eofActiveRef.current = autoPlay.source === "eof";
-  // Item/URL pas encore résolus : écran de chargement contextualisé — avec issue de
-  // secours si la résolution du flux a échoué (erreur + « Réessayer »).
-  if (!item || !streamUrl) {
-    return (
-      <View style={{ flex: 1, backgroundColor: "#000" }}>
-        <TVPlayerLoadingScreen
-          item={item ?? placeholderItem}
-          failed={p.failed} progressLabel={prismProgress.label}
-          onRetry={() => p.setReloadNonce((n) => n + 1)}
-        />
-      </View>
-    );
-  }
-
-  return (
-    <TVPlayerView
-      item={item} streamUrl={streamUrl} paused={paused} playerPaused={paused || reloadHold} isLoading={isLoading}
-      hasStarted={hasStarted}
-      videoError={videoError} displayTime={displayTime} bufferedTime={bufferedTime}
-      displayDuration={displayDuration} showSettings={showSettings}
-      autoPlayActive={autoPlayActive} hasPreviousEpisode={!!previousEpisode}
-      useExoPlayer={p.useExoPlayer} isDirectPlay={isDirectPlay} prismTextTrackIndex={p.prismTextTrackIndex} frameRate={p.frameRate} exoRef={exoRef} mpvRef={mpvRef}
-      backgroundRef={backgroundRef} playerStyle={playerStyle}
-      audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
-      audioIndex={p.audioIndex} subtitleIndex={p.subtitleIndex}
-      qualityKey={quality.qualityKey} sourceQuality={p.sourceQuality} autoCapActive={p.autoCapActive} autoCapReason={p.autoCapReason}
-      overlay={playback.overlay} onSkipSegment={playback.skipNow}
-      onDismissSegment={playback.dismissOverlay}
-      onPlayNextNow={playback.playNow}
-      autoPlay={autoPlay} controls={controls}
-      onLoad={handleLoad} onProgress={handleProgress} onEnd={handleEnd}
-      onError={handleError} onTracks={p.mpvTracks.handleTracks} onVideoSize={handleVideoSize}
-      onPlayPause={handlePlayPause}
-      // Bouton Retour de l'OSD : MÊME routage que le bouton physique (avant : sortie
-      // brute qui bypassait overlay auto-play/scrub — quittait même bannière ouverte).
-      onBack={() => { if (!routeBackRef.current()) void lifecycle.leavePlayer(); }}
-      onToggleSettings={() => {
-        // Ouvre la MODALE Réglages/Qualité (cf. PlayerSettingsScreen).
-        setShowSettings(true);
-        showSettingsRef.current = true;
-        controls.showOverlay();
-        navigation.navigate("PlayerSettings");
-      }}
-      onSelectAudio={p.handleAudioChange} onSelectSubtitle={p.handleSubtitleChange}
-      onSelectQuality={handleQualityChange}
-      onCloseSettings={handleCloseSettings}
-      onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
-      trickplay={trickplay} reloadFrameSec={p.reloadFrameSec} osdFocusSignal={osdFocusSignal}
-      osdFocusTargetRef={osdFocusTargetRef}
-      subtitleCue={subtitleCue} textTracks={textTracks}
-      showEpisodes={showEpisodes}
-      onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}
-      onCloseEpisodes={() => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus("episodes"); }}
-      onSelectEpisode={(ep) => { setShowEpisodes(false); navigateToEpisode(ep.Id); }}
-      onEofDismiss={() => { dismissAutoPlay(); }}
-    />
-  );
+  // Les props de l'habillage, en un seul objet : un second habillage (la
+  // refonte Apple TV) recevra les MÊMES — l'orchestration reste une.
+  const stage: PlayerRedesignStageProps = {
+    item: item ?? placeholderItem, streamUrl, failed: p.failed, prismStep: prismProgress.step,
+    onRetry: () => p.setReloadNonce((n) => n + 1),
+    countdownTotals: playback.countdownTotals, qualityPresets: quality.qualityPresets,
+    paused, playerPaused: paused || reloadHold, isLoading, hasStarted,
+    videoError, displayTime, bufferedTime, displayDuration, showSettings,
+    autoPlayActive, hasPreviousEpisode: !!previousEpisode,
+    useExoPlayer: p.useExoPlayer, isDirectPlay, prismTextTrackIndex: p.prismTextTrackIndex, frameRate: p.frameRate, exoRef, mpvRef,
+    backgroundRef, playerStyle, audioTracksList, subtitleTracksList, audioIndex: p.audioIndex, subtitleIndex: p.subtitleIndex,
+    qualityKey: quality.qualityKey, sourceQuality: p.sourceQuality, autoCapActive: p.autoCapActive, autoCapReason: p.autoCapReason,
+    overlay: playback.overlay, onSkipSegment: playback.skipNow, onDismissSegment: playback.dismissOverlay,
+    onPlayNextNow: playback.playNow, autoPlay, controls,
+    onLoad: handleLoad, onProgress: handleProgress, onEnd: handleEnd,
+    onError: handleError, onTracks: p.mpvTracks.handleTracks, onVideoSize: handleVideoSize,
+    onPlayPause: handlePlayPause,
+    // Bouton Retour de l'OSD : MÊME routage que le bouton physique (avant : sortie
+    // brute qui bypassait overlay auto-play/scrub — quittait même bannière ouverte).
+    onBack: () => { if (!routeBackRef.current()) void lifecycle.leavePlayer(); },
+    onToggleSettings: () => {
+      setShowSettings(true);
+      showSettingsRef.current = true;
+      controls.showOverlay();
+      // Ouvre la MODALE Réglages/Qualité (cf. PlayerSettingsScreen).
+      navigation.navigate("PlayerSettings");
+    },
+    onSelectAudio: p.handleAudioChange, onSelectSubtitle: p.handleSubtitleChange,
+    onSelectQuality: handleQualityChange, onCloseSettings: handleCloseSettings,
+    onPrevEpisode: handlePrevEpisode, onNextEpisode: handleNextEpisode,
+    trickplay, reloadFrameSec: p.reloadFrameSec, osdFocusSignal, osdFocusTargetRef, subtitleCue, textTracks, showEpisodes,
+    onToggleEpisodes: () => { setShowEpisodes((v) => !v); controls.showOverlay(); },
+    onCloseEpisodes: () => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus("episodes"); },
+    onSelectEpisode: (ep) => { setShowEpisodes(false); navigateToEpisode(ep.Id); },
+    onEofDismiss: () => { dismissAutoPlay(); },
+  };
+  return <LegacyPlayerStage {...stage} />;
 }
