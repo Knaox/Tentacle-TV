@@ -11,8 +11,8 @@ import { NATIVE_GLASS_SUPPORTED } from "./nativeGlass";
  * opaque nue.
  *
  * Les vues ne lisent pas le stockage : elles reçoivent la valeur de ce
- * fournisseur. L'app le branchera sur la clé persistée (tâche à part) ; le banc
- * le branche sur son interrupteur.
+ * fournisseur. L'app le branche sur la clé persistée (`lib/liquidGlass.ts`,
+ * monté dans `App.tsx`) ; le banc, sur son interrupteur.
  */
 
 export const LIQUID_GLASS_STORAGE_KEY = "tentacle_liquid_glass";

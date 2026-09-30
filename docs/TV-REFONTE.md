@@ -107,9 +107,10 @@ rendus, décidés par `useGlassRendering()` :
   `glass off` ; `planche … --glass=on,sim,off`. La scène `banc/focus` dit quel
   verre est rendu. Groupes « Verre » (à l'œil) et « Mesure » (au compteur).
 - **Dans l'app** (simulateur tvOS 26.2) : la vue est enregistrée
-  (`getViewManagerConfig` → `supported: true`) ; un `GlassSurface` posé à
-  l'essai sur l'écran de jumelage le floute et le réfracte. Les écrans de la
-  refonte l'auront dès leur branchement, sans rien d'autre à faire.
+  (`getViewManagerConfig` → `supported: true`) ; le jumelage et les réglages
+  refondus rendent leur verre en natif. L'interrupteur de Réglages ›
+  Apparence (`liquidGlassStore`, clé `tentacle_liquid_glass`) le fait passer
+  natif ↔ enrichi à chaud, et le choix survit à la relance.
 
 ### Mesuré (`bench:ui gpu`, simulateur tvOS 26.2)
 
