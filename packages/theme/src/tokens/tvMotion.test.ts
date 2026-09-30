@@ -19,11 +19,12 @@ describe("TV_MOTION", () => {
     expect(TV_MOTION.crossfade.heroTextOutMs).toBeLessThan(TV_MOTION.crossfade.heroTextInMs);
   });
 
-  it("aucune transition d'interface ne dépasse une demi-seconde, sauf les fondus d'image", () => {
-    const { crossfade, ...ui } = TV_MOTION;
+  it("aucune transition d'interface ne dépasse une demi-seconde, sauf celles des images", () => {
+    const { crossfade, image, ...ui } = TV_MOTION;
     const durations = JSON.stringify(ui).match(/"\w+Ms":(\d+)/g) ?? [];
     for (const entry of durations) expect(Number(entry.split(":")[1])).toBeLessThanOrEqual(500);
-    expect(crossfade.heroMs).toBeLessThanOrEqual(900);
+    // Une image qui change ou se pose prend son temps — jamais une seconde.
+    for (const ms of [crossfade.heroMs, crossfade.ambientMs, image.settleMs, image.fadeInMs]) expect(ms).toBeLessThan(1000);
   });
 
   it("les ressorts du focus et des panneaux ne rebondissent pas à l'œil", () => {

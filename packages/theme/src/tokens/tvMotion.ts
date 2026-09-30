@@ -75,9 +75,18 @@ export const TV_MOTION = {
   page: {
     /** Le fondu enchaîné de la pile native d'un écran à l'autre. */
     fadeMs: 320,
-    /** L'arrivée du contenu d'un écran poussé : un léger rapprochement. */
+    /** L'arrivée du contenu d'un écran poussé (l'en-tête d'une fiche). */
     enterMs: 420,
-    enterScale: 0.97,
+    /** Ce que ce contenu attend : l'image le précède. */
+    enterDelayMs: 80,
+  },
+  image: {
+    /** Une grande image qui arrive se POSE : elle part un peu plus près… */
+    settleScale: 1.04,
+    /** …et recule à sa place, lentement (sortie douce). */
+    settleMs: 900,
+    /** Une image chargée entre en fondu, au lieu d'apparaître d'un coup. */
+    fadeInMs: 300,
   },
   crossfade: {
     /** Le héros qui tourne : l'image. Le texte part vite, arrive après. */
