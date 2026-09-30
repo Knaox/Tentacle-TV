@@ -34,8 +34,9 @@ export const CodeCard = memo(function CodeCard({ code, fallback, onRetry }: {
   const { t } = useTranslation(["pairing", "common"]);
   return (
     <View style={styles.card}>
-      {/* Un fond dense sous le verre : la lumière qui déborde de la carte ne
-          doit pas teinter le code. */}
+      {/* Un fond dense sous le verre, natif compris : la lumière qui déborde
+          de la carte ne doit pas teinter le code. Ce fond ne sert pas la
+          lisibilité (`glass/glassBacking`) : le flou natif n'y change rien. */}
       <View style={[StyleSheet.absoluteFill, styles.base]} />
       <GlassSurface radius={RADIUS} tone="regular" style={StyleSheet.absoluteFill} elevated />
       {code.status === "loading" ? (

@@ -4,6 +4,7 @@ import Animated, { Easing, FadeInRight, FadeOutRight, useAnimatedStyle, useShare
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
 import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, text, white } from "../../theme/tokens";
@@ -59,8 +60,9 @@ function MessageCard({ message, label }: { message: SessionMessageModel; label: 
     remaining.value = withTiming(0, { duration: message.durationMs * message.remaining, easing: Easing.linear });
   }, [message.durationMs, message.remaining, remaining]);
   const bar = useAnimatedStyle(() => ({ transform: [{ scaleX: remaining.value }] }));
+  const backing = useNativeGlassBacking("strong");
   return (
-    <View style={styles.shadow}>
+    <View style={[styles.shadow, backing]}>
       <View style={styles.card}>
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} />
         <View style={styles.body}>

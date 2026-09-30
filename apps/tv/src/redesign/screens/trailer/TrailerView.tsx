@@ -7,6 +7,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { PillButton } from "../../controls/PillButton";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim, text } from "../../theme/tokens";
 
@@ -48,6 +49,7 @@ export const TrailerView = memo(function TrailerView({ state, title, backdropUri
   const lit = useFocusProgress(state !== "playing" || !chromeDimmed, 420);
   const chrome = useAnimatedStyle(() => ({ opacity: 0.15 + 0.85 * lit.value }));
   const caption = useAnimatedStyle(() => ({ opacity: lit.value }));
+  const backing = useNativeGlassBacking("strong");
 
   return (
     <View style={styles.root}>
@@ -81,7 +83,7 @@ export const TrailerView = memo(function TrailerView({ state, title, backdropUri
 
       {state === "unavailable" ? (
         <View style={styles.center}>
-          <GlassSurface radius={TV_STAGE.radius.panel} tone="strong" elevated style={styles.panel}>
+          <GlassSurface radius={TV_STAGE.radius.panel} tone="strong" elevated style={[styles.panel, backing]}>
             <View style={styles.badge}>
               <Icon name="trailer" size={40} color={colors.text} />
             </View>

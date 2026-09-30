@@ -6,6 +6,7 @@ import { BrandMark } from "../../brand/BrandMark";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim, text } from "../../theme/tokens";
 import { ConfirmPill } from "../settings/ConfirmPill";
@@ -36,11 +37,12 @@ export interface OfflineOverlayProps {
 
 export const OfflineOverlay = memo(function OfflineOverlay({ serverUrl, retrying = false, onRetry, onLogout }: OfflineOverlayProps) {
   const { t } = useTranslation("common");
+  const backing = useNativeGlassBacking("strong");
   return (
     <Animated.View entering={FadeIn.duration(300)} style={styles.layer}>
       <View style={styles.veil} />
       <FocusGroup focusKey="offline:panel" style={styles.panel}>
-        <View style={[StyleSheet.absoluteFill, styles.base]} />
+        <View style={[StyleSheet.absoluteFill, styles.base, backing]} />
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} elevated />
         <BrandMark size={176} crying />
         <Text style={styles.title}>{t("offlineTitle")}</Text>
