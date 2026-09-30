@@ -14,6 +14,9 @@ export const FIRST_KEY = "key:A";
 /** tvOS rend d'abord à l'écran sa dernière cible quand le focus est dans la
  *  navigation : une seconde réclamation atteint la barre. */
 const SECOND_CLAIM_MS = 400;
+/** Le retour d'une étagère peut ARRIVER deux fois (voir `markBrowsing`) : la
+ *  seconde, mesurée à 0,7 s de la première, réclame encore la barre. */
+const BROWSE_RETURN_MS = 1500;
 
 /**
  * Le champ de la recherche sur tvOS : un BOUTON (`search:field`), dont l'appui
@@ -71,12 +74,27 @@ export function useSystemKeyboard(focus: FocusStore, answer: SearchSubmitAnswer,
   }, [focus]);
   useEffect(() => registerSearchBar(focusBar), [focusBar]);
 
+  // Menu depuis l'étagère : le dépilage natif, retenu, montre la recherche un
+  // instant avant que l'étagère ne soit réempilée, puis la navigation la
+  // dépile pour de bon — deux arrivées, et tvOS rend la carte quittée entre
+  // les deux. Chaque arrivée réclame la barre, le temps que le retour se pose.
   const browsing = useRef(false);
-  useEffect(() => navigation.addListener("transitionEnd", (event) => {
-    if (event.data.closing || !browsing.current) return;
-    browsing.current = false;
-    focusBar();
-  }), [navigation, focusBar]);
+  useEffect(() => {
+    let settle: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = navigation.addListener("transitionEnd", (event) => {
+      if (event.data.closing || !browsing.current) return;
+      focusBar();
+      if (settle) clearTimeout(settle);
+      settle = setTimeout(() => {
+        browsing.current = false;
+        settle = null;
+      }, BROWSE_RETURN_MS);
+    });
+    return () => {
+      unsubscribe();
+      if (settle) clearTimeout(settle);
+    };
+  }, [navigation, focusBar]);
   /** On part vers une étagère : au retour, la barre. */
   const markBrowsing = useCallback(() => {
     browsing.current = true;
