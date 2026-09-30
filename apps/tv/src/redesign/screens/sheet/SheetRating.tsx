@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import Svg, { ClipPath, Defs, Path, Rect } from "react-native-svg";
 import { useTranslation } from "react-i18next";
 import { STAR_PATH, STAR_VIEWBOX } from "@tentacle-tv/shared";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
@@ -16,6 +17,7 @@ import type { SheetRatingModel } from "./sheetTypes";
  * ailleurs s'affiche telle quelle. L'étoile visée prévisualise la note, la
  * ligne d'aide, face au titre, dit ce que fera OK : « Noter 8 sur 10 », ou « Retirer votre
  * note (8/10) » sur la note actuelle, dont les étoiles pâlissent.
+ * Groupe de focus : `sheet:stars` ; étoiles `sheet:star:<n>`.
  */
 
 const STARS = [1, 2, 3, 4, 5] as const;
@@ -62,7 +64,7 @@ export const SheetRating = memo(function SheetRating({
         <Text style={styles.title}>{t("yourRating")}</Text>
         <Text style={[styles.hint, removing && styles.hintRemoving]} numberOfLines={1}>{hint}</Text>
       </View>
-      <View style={styles.stars}>
+      <FocusGroup focusKey="sheet:stars" style={styles.stars}>
         {STARS.map((n) => (
           <FocusTarget
             key={n}
@@ -74,7 +76,7 @@ export const SheetRating = memo(function SheetRating({
             {(focused) => <StarCell id={n} fraction={fractionOf(shown, n)} dim={removing} focused={focused} />}
           </FocusTarget>
         ))}
-      </View>
+      </FocusGroup>
     </View>
   );
 });
