@@ -15,6 +15,8 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { BookmarkIcon } from "../components/icons/TVIcons";
 import { Colors, Spacing, Typography } from "../theme/colors";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { WatchlistRedesign } from "../redesignWiring/collection/CollectionRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Watchlist">;
 
@@ -25,6 +27,11 @@ type Props = NativeStackScreenProps<RootStackParamList, "Watchlist">;
  * D-pad, retirés du portage téléviseur).
  */
 export function WatchlistScreen(props: Props) {
+  // Apple TV : la refonte (`redesignWiring/collection`) ; Android TV : l'écran d'avant.
+  return REDESIGN_ACTIVE ? <WatchlistRedesign /> : <LegacyWatchlistScreen {...props} />;
+}
+
+function LegacyWatchlistScreen(props: Props) {
   return (
     <AmbientFocusProvider>
       <WatchlistScreenInner {...props} />

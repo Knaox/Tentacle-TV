@@ -15,6 +15,8 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { HeartIcon } from "../components/icons/TVActionIcons";
 import { Colors, Spacing, Typography } from "../theme/colors";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { FavoritesRedesign } from "../redesignWiring/collection/CollectionRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
 
@@ -23,6 +25,11 @@ type Props = NativeStackScreenProps<RootStackParamList, "Favorites">;
  * comme la LG : ni sélection multiple ni partage sur téléviseur.
  */
 export function FavoritesScreen(props: Props) {
+  // Apple TV : la refonte (`redesignWiring/collection`) ; Android TV : l'écran d'avant.
+  return REDESIGN_ACTIVE ? <FavoritesRedesign /> : <LegacyFavoritesScreen {...props} />;
+}
+
+function LegacyFavoritesScreen(props: Props) {
   return (
     <AmbientFocusProvider>
       <FavoritesScreenInner {...props} />
