@@ -4,6 +4,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { SearchDiscover } from "./SearchDiscover";
 import { SearchField } from "./SearchField";
@@ -48,6 +49,11 @@ import {
  * `onMic`, `onPressField`), le choix d'une suggestion ou d'une recherche
  * récente (remplace la saisie), l'ouverture d'un résultat — la
  * mémorisation (`pushRecentSearch`) et la navigation restent à l'écran.
+ *
+ * Clés de groupe : `search:input` (champ, clavier, suggestions) et
+ * `search:results` (la colonne de droite) — chacune peut garder le dernier
+ * élément visité, pour qu'aller et venir de l'une à l'autre ne perde pas sa
+ * place.
  */
 
 export interface SearchViewProps {
@@ -84,7 +90,7 @@ export const SearchView = memo(function SearchView(props: SearchViewProps) {
   return (
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
-      <View style={styles.input}>
+      <FocusGroup focusKey="search:input" style={styles.input}>
         <SearchField
           query={query}
           completion={completion}
@@ -106,8 +112,8 @@ export const SearchView = memo(function SearchView(props: SearchViewProps) {
           />
         </View>
         <SearchSuggestions title={labels.suggestions} typed={query} suggestions={suggestions} onPick={props.onPickSuggestion} />
-      </View>
-      <View style={styles.results}>
+      </FocusGroup>
+      <FocusGroup focusKey="search:results" style={styles.results}>
         {content.kind === "results" ? (
           <SearchResults
             notice={content.notice}
@@ -131,7 +137,7 @@ export const SearchView = memo(function SearchView(props: SearchViewProps) {
             onPickGenre={props.onPickGenre}
           />
         )}
-      </View>
+      </FocusGroup>
       <NavRail {...nav} />
     </View>
   );

@@ -4,6 +4,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { PillButton } from "../../controls/PillButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, text, white } from "../../theme/tokens";
@@ -15,7 +16,9 @@ import { colors, fonts, text, white } from "../../theme/tokens";
  * STUDIO), le nom en grand et « N titres · ordre ». La lumière de l'œuvre la
  * plus en vue déborde autour du portrait.
  *
- * Clé de focus : `browse:back`.
+ * Clé de focus : `browse:back`. Clé de groupe : `browse:header` — l'en-tête
+ * entier, sur toute la largeur : « haut » depuis n'importe quelle affiche de la
+ * première rangée y trouve Retour, même loin sous la pilule.
  */
 
 export type BrowseKind = "person" | "genre" | "studio";
@@ -60,7 +63,7 @@ function Portrait({ kind, portraitUri, initials, palette }: Pick<BrowseHeaderPro
 export const BrowseHeader = memo(function BrowseHeader(props: BrowseHeaderProps) {
   const { kicker, name, meta, backLabel, onBack } = props;
   return (
-    <View style={styles.header}>
+    <FocusGroup focusKey="browse:header" style={styles.header}>
       <View style={styles.back}>
         <PillButton variant="glass" size="md" icon="chevronLeft" label={backLabel} focusKey="browse:back" onPress={onBack} />
       </View>
@@ -72,7 +75,7 @@ export const BrowseHeader = memo(function BrowseHeader(props: BrowseHeaderProps)
           {meta ? <Text style={[text.body, styles.meta]} numberOfLines={1}>{meta}</Text> : null}
         </View>
       </View>
-    </View>
+    </FocusGroup>
   );
 });
 

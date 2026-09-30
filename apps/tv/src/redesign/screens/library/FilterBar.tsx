@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Chip } from "../../controls/Chip";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { colors, fonts } from "../../theme/tokens";
 import { FilterPill } from "./FilterPill";
 import type { ActiveFilterModel, FilterPillModel, LibraryFilterKey } from "./libraryTypes";
@@ -12,7 +13,10 @@ import type { ActiveFilterModel, FilterPillModel, LibraryFilterKey } from "./lib
  * « Tout effacer » les retire tous. Le tri n'y figure pas : il ordonne, il
  * ne retire rien.
  *
- * Clés de focus : `pill:<critère>`, `active:<index>`, `active:clear`.
+ * Clés de focus : `pill:<critère>`, `active:<index>`, `active:clear`. Clé de
+ * groupe : `filters` — la barre entière, sur toute la largeur de la page : de
+ * n'importe quelle affiche, « haut » y trouve une cible, même sous une colonne
+ * qu'aucune pastille ne couvre.
  */
 
 export interface FilterBarProps {
@@ -26,7 +30,7 @@ export interface FilterBarProps {
 
 export const FilterBar = memo(function FilterBar({ pills, active, labels, onPressPill, onRemoveFilter, onClearAll }: FilterBarProps) {
   return (
-    <View style={styles.bar}>
+    <FocusGroup focusKey="filters" style={styles.bar}>
       <View style={styles.pills}>
         {pills.map((pill) => (
           <FilterPill
@@ -55,7 +59,7 @@ export const FilterBar = memo(function FilterBar({ pills, active, labels, onPres
           <Chip label={labels.clearAll} icon="refresh" size="md" focusKey="active:clear" onPress={onClearAll} />
         </View>
       ) : null}
-    </View>
+    </FocusGroup>
   );
 });
 
