@@ -64,11 +64,17 @@ export function SearchRedesign() {
 
   const { remember, setQuery } = input;
   const { markBrowsing } = keyboard;
-  const openBrowse = useCallback((params: Browse) => {
-    remember();
+  // Une étagère : au retour, la barre (`markBrowsing`).
+  const browse = useCallback((params: Browse) => {
     markBrowsing();
     navigation.navigate("SearchBrowse", params);
-  }, [remember, markBrowsing, navigation]);
+  }, [markBrowsing, navigation]);
+  // Un RÉSULTAT choisi (personne, genre ou studio trouvés) : la requête est
+  // mémorisée, comme sur Android TV.
+  const openBrowse = useCallback((params: Browse) => {
+    remember();
+    browse(params);
+  }, [remember, browse]);
 
   const content = results.content;
   const top = content.kind === "results" ? content.sections.find((section) => section.key === "top") : undefined;
@@ -98,7 +104,8 @@ export function SearchRedesign() {
 
   const onOpenPerson = useCallback((person: SearchPersonModel) => openBrowse({ kind: "person", id: person.id, name: person.name }), [openBrowse]);
   const onOpenFacet = useCallback((facet: SearchFacetModel) => openBrowse({ kind: facet.kind, name: facet.name }), [openBrowse]);
-  const onPickGenre = useCallback((name: string) => openBrowse({ kind: "genre", name }), [openBrowse]);
+  // Un genre de la page de découverte n'est pas un résultat : rien à mémoriser.
+  const onPickGenre = useCallback((name: string) => browse({ kind: "genre", name }), [browse]);
 
   return (
     <RedesignScreen screen={screen}>
