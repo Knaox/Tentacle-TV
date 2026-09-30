@@ -7,6 +7,7 @@ import { STAR_PATH, STAR_VIEWBOX, formatUserScore } from "@tentacle-tv/shared";
 import { Chip } from "../../controls/Chip";
 import { MetaLine } from "../../hero/MetaLine";
 import { TitleArt } from "../../hero/TitleArt";
+import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, text, white } from "../../theme/tokens";
 import { DetailActions } from "./DetailActions";
 import type { DetailActionsModel, DetailCallbacks, DetailHeaderModel } from "./detailTypes";
@@ -44,11 +45,12 @@ function useEntrance() {
   return useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateX: -28 * (1 - progress.value) }] }));
 }
 
-/** La note perso, à la manière des cartes : la pastille rose à l'étoile blanche. */
+/** La note perso, à la manière des cartes : la pastille au dégradé de la marque, étoile blanche. */
 function UserScorePill({ score }: { score: number }) {
   const { t } = useTranslation();
   return (
     <View style={styles.userScore} accessibilityLabel={t("media:detailYourScoreValue", { score })}>
+      <BrandGradient />
       <Svg width={20} height={20} viewBox={STAR_VIEWBOX}>
         <Path d={STAR_PATH} fill={colors.onAccent} />
       </Svg>
@@ -118,7 +120,7 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: 12,
     borderRadius: 18,
-    backgroundColor: colors.accent,
+    overflow: "hidden",
   },
   userScoreText: { ...fonts.extrabold, fontSize: 23, color: colors.onAccent },
   // Les ronds disent leur nom SOUS eux, au focus : la place est gardée.

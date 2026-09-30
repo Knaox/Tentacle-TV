@@ -55,6 +55,8 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
           ) : null}
           {markers.userScore !== null ? (
             <View style={styles.userScore}>
+              {/* Le dégradé de la marque, comme la note perso du bureau (`CardRatingBadge`). */}
+              <BrandGradient />
               <Star size={glyph - 6} color={colors.onAccent} />
               <Text style={[styles.userValue, compact && styles.valueCompact]}>{formatUserScore(markers.userScore)}</Text>
             </View>
@@ -96,7 +98,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.accent,
+    overflow: "hidden",
   },
   userValue: { ...fonts.extrabold, fontSize: 22, color: colors.onAccent },
   track: { position: "absolute", left: 0, right: 0, bottom: 0, height: 6, backgroundColor: "rgba(255, 255, 255, 0.22)" },
