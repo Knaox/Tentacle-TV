@@ -1,6 +1,7 @@
 import type { JellyfinClient } from "@tentacle-tv/api-client";
 import { resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
 import { isLogoLegibleOnDark } from "../../redesign/color/artworkPalette";
+import { blurHashOf } from "../cards/cardArtwork";
 
 /**
  * Les images de la fiche refondue. Les tailles sont en PIXELS : l'Apple TV 4K
@@ -19,15 +20,6 @@ const STILL_WIDTH = 920;
 const PORTRAIT_WIDTH = 352;
 /** La vignette d'un extra : 380 points de large. */
 const EXTRA_WIDTH = 760;
-
-type BlurHashes = Partial<Record<string, Record<string, string>>>;
-
-/** L'empreinte BlurHash d'une image (`ImageBlurHashes`, que le type partagé ne déclare pas). */
-export function blurHashOf(item: object | undefined, type: string, tag?: string): string | undefined {
-  const hashes = (item as { ImageBlurHashes?: BlurHashes } | undefined)?.ImageBlurHashes?.[type];
-  if (!hashes) return undefined;
-  return (tag ? hashes[tag] : undefined) ?? Object.values(hashes)[0];
-}
 
 const withTag = (tag: string | undefined) => (tag ? { tag } : {});
 
@@ -63,7 +55,7 @@ export function detailLogoUri(client: JellyfinClient, item: MediaItem): string |
   const id = own ? item.Id : inherited.ParentLogoItemId;
   const tag = own ?? inherited.ParentLogoImageTag;
   if (!id || !tag) return undefined;
-  if (!isLogoLegibleOnDark(blurHashOf(item, "Logo", tag))) return undefined;
+  if (!isLogoLegibleOnDark(blurHashOf(item, "Logo"))) return undefined;
   return client.getImageUrl(id, "Logo", { height: LOGO_HEIGHT, tag });
 }
 

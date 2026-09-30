@@ -2,7 +2,8 @@ import type { JellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { paletteFromBlurHash } from "../../redesign/color/artworkPalette";
 import type { CrewGroupModel, PersonModel } from "../../redesign/screens/detail/detailTypes";
-import { blurHashOf, portraitUri } from "./detailImages";
+import { blurHashOf } from "../cards/cardArtwork";
+import { portraitUri } from "./detailImages";
 import type { Translate } from "./detailModels";
 
 /**
@@ -33,7 +34,7 @@ export function castOf(client: JellyfinClient, item: MediaItem): PersonModel[] {
       role: person.Role || undefined,
       imageUri: portraitUri(client, person),
       // Sans portrait, le disque garde la lumière de la personne.
-      palette: paletteFromBlurHash(blurHashOf(person, "Primary", person.PrimaryImageTag)) ?? undefined,
+      palette: paletteFromBlurHash(blurHashOf(person as MediaItem, "Primary")) ?? undefined,
     });
     if (cast.length >= CAST_LIMIT) break;
   }
