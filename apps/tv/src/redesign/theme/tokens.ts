@@ -3,9 +3,9 @@ import { DEFAULT_COLOR_TOKENS, TV_ACCENT, TV_STAGE, TV_TYPE } from "@tentacle-tv
 
 /**
  * Les jetons des vues de la refonte : les couleurs du BUREAU
- * (`DEFAULT_COLOR_TOKENS`), la scène TV (`TV_STAGE`, `TV_TYPE`) et l'accent
- * ambre (`TV_ACCENT`). Aucune valeur de couleur n'est recopiée ici : on
- * nomme, on ne redéfinit pas.
+ * (`DEFAULT_COLOR_TOKENS`), la scène TV (`TV_STAGE`, `TV_TYPE`) et l'accent,
+ * la marque violet → rose (`TV_ACCENT`). Aucune valeur de couleur n'est
+ * recopiée ici : on nomme, on ne redéfinit pas.
  */
 
 const C = DEFAULT_COLOR_TOKENS;
@@ -44,7 +44,12 @@ export const colors = {
   accentLight: TV_ACCENT.light,
   accentDeep: TV_ACCENT.deep,
   onAccent: TV_ACCENT.onAccent,
+  /** La lueur rose d'un élément de marque. */
+  brandGlow: TV_ACCENT.glow,
 } as const;
+
+/** Le dégradé de marque, violet → rose (`BrandGradient` le pose). */
+export const brandGradient: string[] = [...TV_ACCENT.gradient];
 
 /** Voile noir à l'alpha voulu — les dégradés de lisibilité sur une image. */
 export const scrim = (alpha: number) => `rgba(${C.onMedia.scrimRgb}, ${alpha})`;
@@ -73,7 +78,7 @@ export const text = StyleSheet.create({
   rowTitle: { ...fonts.bold, fontSize: TV_TYPE.rowTitle, lineHeight: TV_TYPE.rowTitle * 1.2, letterSpacing: -0.3, color: colors.text },
   body: { ...fonts.regular, fontSize: TV_TYPE.body, lineHeight: TV_TYPE.bodyLineHeight, color: colors.textSecondary },
   meta: { ...fonts.medium, fontSize: TV_TYPE.meta, lineHeight: TV_TYPE.meta * 1.3, color: colors.textSecondary },
-  kicker: { ...fonts.bold, fontSize: TV_TYPE.kicker, letterSpacing: 4.4, textTransform: "uppercase", color: colors.accent },
+  kicker: { ...fonts.bold, fontSize: TV_TYPE.kicker, letterSpacing: 4.4, textTransform: "uppercase", color: colors.accentLight },
   caption: { ...fonts.medium, fontSize: TV_TYPE.caption, lineHeight: TV_TYPE.caption * 1.3, color: colors.textTertiary },
   button: { ...fonts.bold, fontSize: TV_TYPE.button },
 });

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { BrandGradient } from "../../brand/BrandGradient";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
@@ -12,16 +13,16 @@ import type { Countdown } from "./playerTypes";
 
 /**
  * La pilule d'une action qui peut partir toute seule : « Passer l'intro dans
- * 5 s », « Lire maintenant ». Même matière que `PillButton` (verre → blanc au
- * focus, ou blanche d'emblée), plus l'ANNEAU ambre du décompte autour de son
- * pictogramme — la seule touche de couleur, qui se remplit à mesure que le
- * temps passe. Le décompte est une valeur reçue : rien ne tourne ici.
+ * 5 s », « Lire maintenant ». Même matière que `PillButton` : verre → blanc au
+ * focus, ou le dégradé de marque d'une LECTURE (`brand`) ; plus l'ANNEAU du
+ * décompte autour de son pictogramme, qui se remplit à mesure que le temps
+ * passe. Le décompte est une valeur reçue : rien ne tourne ici.
  */
 
 export interface CountdownPillProps {
   label: string;
   icon: IconName;
-  variant?: "primary" | "glass";
+  variant?: "brand" | "primary" | "glass";
   countdown?: Countdown | null;
   /** Un fond sous le verre, quand la pilule flotte sur l'image. */
   base?: string;
@@ -57,13 +58,20 @@ export function CountdownRing({ countdown, track, fill, size = RING }: { countdo
   );
 }
 
-function Content({ label, icon, countdown, dark }: { label: string; icon: IconName; countdown?: Countdown | null; dark: boolean }) {
+function Content({ label, icon, countdown, dark, onBrand = false }: {
+  label: string;
+  icon: IconName;
+  countdown?: Countdown | null;
+  dark: boolean;
+  onBrand?: boolean;
+}) {
   const color = dark ? colors.ctaFg : colors.text;
+  const ringFill = onBrand ? colors.onAccent : dark ? colors.accentDeep : colors.accent;
   return (
     <View style={styles.row}>
       <View style={styles.lead}>
         {countdown ? (
-          <CountdownRing countdown={countdown} track={dark ? scrim(0.14) : white(0.28)} fill={dark ? colors.accentDeep : colors.accent} />
+          <CountdownRing countdown={countdown} track={dark ? scrim(0.14) : white(0.28)} fill={ringFill} />
         ) : null}
         <Icon name={icon} size={countdown ? 18 : 26} color={color} strokeWidth={2.4} />
       </View>
@@ -93,7 +101,7 @@ function Body({ focused, label, icon, variant, countdown, base }: {
   focused: boolean;
   label: string;
   icon: IconName;
-  variant: "primary" | "glass";
+  variant: "brand" | "primary" | "glass";
   countdown?: Countdown | null;
   base?: string;
 }) {
@@ -102,6 +110,21 @@ function Body({ focused, label, icon, variant, countdown, base }: {
   const shadow = useAnimatedStyle(() => ({ opacity: p.value }));
   const whiteLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 1 : p.value }));
   const glassLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 0 : 1 - p.value }));
+  const glow = useAnimatedStyle(() => ({ opacity: 0.35 + 0.65 * p.value }));
+  const brighten = useAnimatedStyle(() => ({ opacity: 0.16 * p.value }));
+  if (variant === "brand") {
+    return (
+      <Animated.View style={lift}>
+        <Animated.View style={[StyleSheet.absoluteFill, styles.glow, glow]} />
+        <View style={styles.brand}>
+          <BrandGradient diagonal />
+          <View style={[StyleSheet.absoluteFill, styles.rim]} />
+          <Animated.View style={[StyleSheet.absoluteFill, styles.brighten, brighten]} />
+          <Content label={label} icon={icon} countdown={countdown} dark={false} onBrand />
+        </View>
+      </Animated.View>
+    );
+  }
   return (
     <Animated.View style={lift}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, shadow]} />
@@ -122,6 +145,18 @@ const styles = StyleSheet.create({
   ring: { position: "absolute", transform: [{ rotate: "-90deg" }] },
   label: { ...fonts.bold, fontSize: 26 },
   white: { borderRadius: HEIGHT / 2, backgroundColor: colors.ctaBg },
+  brand: { borderRadius: HEIGHT / 2, overflow: "hidden" },
+  // La lueur rose de la pilule de lecture (ombre d'un calque caché derrière).
+  glow: {
+    borderRadius: HEIGHT / 2,
+    backgroundColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+  },
+  rim: { borderRadius: HEIGHT / 2, borderWidth: 1, borderColor: white(0.25) },
+  brighten: { backgroundColor: "#FFFFFF" },
   shadow: {
     borderRadius: HEIGHT / 2,
     backgroundColor: "#000",

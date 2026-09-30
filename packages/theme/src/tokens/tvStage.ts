@@ -7,17 +7,30 @@
  * l'échelle des textes, les gabarits, le focus, et l'accent. Valeurs natives
  * (nombres en points), pas de CSS : webOS les reprendra à part.
  *
- * L'accent n'est PAS le violet de marque : sur la dalle, la lumière vient de
- * l'œuvre (halos teintés par son image), et l'ambre ne sert qu'aux petites
- * touches — surtitre, barre de progression, pastille de profil.
+ * L'accent EST la marque du bureau, violet → rose (`brand.base` →
+ * `brand.accent`), en TOUCHES : le bouton de lecture, les barres de
+ * progression, les étoiles, les états posés, les surtitres — et la lumière
+ * des halos. Jamais un fond plein cadre : « pas trop violet, mais qu'on
+ * remarque l'identité » (retour de l'utilisateur, 2026-09-30).
  */
 
+import { DEFAULT_COLOR_TOKENS } from "./colors";
+
+const BRAND = DEFAULT_COLOR_TOKENS.brand;
+
 export const TV_ACCENT = {
-  base: "#e8a33d",
-  light: "#f6c06a",
-  deep: "#c9694a",
-  /** Texte posé sur l'accent. */
-  onAccent: "#1a1208",
+  /** Le rose de marque : les touches pleines (pastilles, étoiles, points). */
+  base: BRAND.accent,
+  /** Rose clair : textes et pictogrammes posés sur le sombre. */
+  light: BRAND.accentLight,
+  /** Le violet de marque : départ du dégradé, accent posé sur du blanc. */
+  deep: BRAND.base,
+  /** Texte posé sur l'accent (et sur le dégradé). */
+  onAccent: "#FFFFFF",
+  /** Le dégradé de marque, violet → rose : lecture, progression, « Demander ». */
+  gradient: [BRAND.base, BRAND.accent] as readonly [string, string],
+  /** La lueur d'un élément de marque (rose, comme `--progress-glow`). */
+  glow: `rgba(${BRAND.accentRgb}, 0.55)`,
 } as const;
 
 /** Échelle des textes, en points 1080p. Plancher : 22. */

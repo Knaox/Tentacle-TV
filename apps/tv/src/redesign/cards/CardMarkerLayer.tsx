@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 import { STAR_PATH, STAR_VIEWBOX, formatCommunityRating, formatUserScore, type CardMarkers } from "@tentacle-tv/shared";
 import { useFocusProgress } from "../focus/useFocusProgress";
+import { BrandGradient } from "../brand/BrandGradient";
 import { colors, fonts, scrim } from "../theme/tokens";
 import { ToggleGlyph } from "./ToggleGlyph";
 import { TRAY_REVEAL_MS } from "./tray/useCardHover";
@@ -72,7 +73,9 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
       ) : null}
       {progress !== undefined && progress > 0.01 ? (
         <View style={styles.track}>
-          <View style={[styles.fill, { width: `${Math.round(Math.min(1, progress) * 100)}%` }]} />
+          <View style={[styles.fill, { width: `${Math.round(Math.min(1, progress) * 100)}%` }]}>
+            <BrandGradient />
+          </View>
         </View>
       ) : null}
     </View>
@@ -103,9 +106,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.accentLight,
+    backgroundColor: colors.accent,
   },
   userValue: { ...fonts.extrabold, fontSize: 22, color: colors.onAccent },
   track: { position: "absolute", left: 0, right: 0, bottom: 0, height: 6, backgroundColor: "rgba(255, 255, 255, 0.22)" },
-  fill: { height: 6, backgroundColor: colors.accent },
+  fill: { height: 6, overflow: "hidden" },
 });

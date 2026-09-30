@@ -84,17 +84,12 @@ function toHex([h, s, l]: [number, number, number]): string {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-/** Violets et magentas (≈ 250° à 335°) : la lumière d'une œuvre qui y tombe
- *  est ramenée vers le neutre. L'interface n'a plus d'accent violet, et un
- *  halo néon de cette famille le lui rendrait par la bande. */
-const isVioletHue = (h: number) => h > 0.69 && h < 0.93;
-
 /** Une couleur de lumière : assez saturée pour teinter, jamais criarde, jamais
  *  assez claire pour lutter avec le texte blanc. */
 function glow(rgb: Rgb): string {
   const [h, s, l] = toHsl(rgb);
   const sat = s < 0.08 ? s : Math.min(0.82, Math.max(0.38, s * 1.3));
-  return toHex([h, isVioletHue(h) ? Math.min(sat, 0.16) : sat, Math.min(0.5, Math.max(0.28, l))]);
+  return toHex([h, sat, Math.min(0.5, Math.max(0.28, l))]);
 }
 
 export interface ArtworkPalette {
@@ -114,7 +109,40 @@ export function paletteFromBlurHash(hash: string | null | undefined): ArtworkPal
   const [h, s] = toHsl(sample(c, 0.5, 0.5));
   return {
     glows: [glow(left), glow(middle), glow(right)],
-    deep: toHex([h, Math.min(isVioletHue(h) ? 0.16 : 0.5, s), 0.07]),
+    deep: toHex([h, Math.min(0.5, s), 0.07]),
+  };
+}
+
+/** Les trois lumières de la MARQUE, de gauche à droite : violet, entre-deux,
+ *  rose (`brand.base` → `brand.accent`), tenues dans la clarté des halos. */
+const BRAND_LIGHTS: [Rgb, Rgb, Rgb] = [
+  [124, 82, 222],
+  [170, 74, 196],
+  [214, 64, 138],
+];
+
+function parseHex(hex: string): Rgb {
+  const v = parseInt(hex.slice(1, 7), 16);
+  return [v >> 16, (v >> 8) & 255, v & 255];
+}
+
+function mixHex(hex: string, toward: Rgb, weight: number): string {
+  const from = parseHex(hex);
+  const channel = (i: number) => Math.round(from[i] + (toward[i] - from[i]) * weight);
+  return `#${[0, 1, 2].map((i) => channel(i).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/**
+ * La lumière de la scène aux couleurs de la MARQUE, violet → rose, nuancée
+ * par l'œuvre : `weight` (0 à 1) dit la part de la marque. Le retour de
+ * l'utilisateur (2026-09-30) : un halo souvent orange ne dit pas l'app ; la
+ * marque doit se voir, sans que tout vire au violet.
+ */
+export function brandLight(palette: ArtworkPalette, weight: number): ArtworkPalette {
+  const [a, b, c] = palette.glows;
+  return {
+    glows: [mixHex(a, BRAND_LIGHTS[0], weight), mixHex(b, BRAND_LIGHTS[1], weight), mixHex(c, BRAND_LIGHTS[2], weight)],
+    deep: palette.deep,
   };
 }
 

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, white } from "../../theme/tokens";
 import { formatClock, fractionOf } from "./formatClock";
 import type { TimelineSegment } from "./playerTypes";
@@ -62,7 +63,10 @@ function Piece({ from, to, loaded, played, span }: {
   return (
     <View style={[styles.piece, { left, width }]}>
       <View style={[styles.fill, styles.buffer, { width: extent(loaded) }]} />
-      <View style={[styles.fill, styles.played, { width: extent(played) }]} />
+      <View style={[styles.fill, styles.played, { width: extent(played) }]}>
+        {/* Le dégradé court sur toute la frise : chaque morceau n'en montre que sa part. */}
+        <BrandGradient style={{ left: -left, width: TRACK_WIDTH, right: undefined }} />
+      </View>
       {spanEnd > spanStart ? <View style={[styles.fill, styles.span, { left: spanStart, width: spanEnd - spanStart }]} /> : null}
     </View>
   );
@@ -114,7 +118,7 @@ const styles = StyleSheet.create({
   piece: { position: "absolute", top: 0, height: BAR, borderRadius: BAR / 2, backgroundColor: white(0.28) },
   fill: { position: "absolute", left: 0, top: 0, height: BAR, borderRadius: BAR / 2 },
   buffer: { backgroundColor: white(0.4) },
-  played: { backgroundColor: colors.accent },
+  played: { overflow: "hidden" },
   span: { backgroundColor: white(0.78) },
   knob: {
     position: "absolute",

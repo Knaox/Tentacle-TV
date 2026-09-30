@@ -27,9 +27,12 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 - **Le bureau** : fonds noirs (#000 → #070710), textes blancs translucides,
   pilule primaire blanche texte noir, verre neutre, élévation en deux
   calques, Inter.
-- **Sans violet** : la couleur vient des œuvres (BlurHash → trois lumières,
-  `color/artworkPalette.ts`) ; l'ambre `TV_ACCENT` ne sert qu'aux petites
-  touches (surtitre, jauge, cœur, pastille de profil).
+- **La marque, violet → rose, en touches** (retour du 2026-09-30, qui
+  remplace le « sans violet » du départ) : le bouton de lecture, les barres de
+  progression et « Demander » prennent le dégradé du bureau (`BrandGradient`,
+  `TV_ACCENT.gradient`) ; étoiles, pastilles et surtitres le rose ; les halos
+  et le fond vivant la lumière de la marque nuancée par l'œuvre
+  (`brandLight`), plus douce qu'avant. Jamais un fond plein cadre violet.
 - **Focus Apple TV, sans contour** : agrandissement, soulèvement, reflet ; le
   verre focalisé devient blanc, texte noir ; les voisines reculent.
 - **La carte qui se redresse** (`MorphCard`) : 16:9 au repos, affiche 2:3 au
@@ -45,8 +48,6 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   BAS entre par l'action primaire, GAUCHE/DROITE parcourent, HAUT remonte
   aux étoiles puis à la carte, Menu revient à la carte ; OK sur la carte et
   l'appui long (la feuille) ne changent pas. Au banc : « Briques · Plateau ».
-- **Un halo n'est jamais violet** : une lumière d'œuvre qui tombe dans les
-  violets et magentas est ramenée vers le neutre (`artworkPalette.ts`).
 - **Un logo noir cède au texte** : `isLogoLegibleOnDark(blurHash)` — un logo
   dont l'empreinte est noire de part en part ne se lit pas sur la scène ; le
   câblage écrit alors le titre (le banc le fait déjà).

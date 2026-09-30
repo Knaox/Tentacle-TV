@@ -50,7 +50,7 @@ export const UpNextCard = memo(function UpNextCard({
         </View>
         {model.overview ? <Text style={styles.overview} numberOfLines={2}>{model.overview}</Text> : null}
         <FocusGroup focusKey="upnext:actions" style={styles.actions}>
-          <CountdownPill variant="primary" icon="play" label={labels.playNow} countdown={model.countdown} focusKey="upnext:play" onPress={onPlayNext} />
+          <CountdownPill variant="brand" icon="play" label={labels.playNow} countdown={model.countdown} focusKey="upnext:play" onPress={onPlayNext} />
           <PillButton variant="glass" label={labels.dismiss} focusKey="upnext:dismiss" onPress={onDismiss} />
         </FocusGroup>
       </GlassSurface>

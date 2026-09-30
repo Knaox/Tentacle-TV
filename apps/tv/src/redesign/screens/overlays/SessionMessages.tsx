@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
+import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, text, white } from "../../theme/tokens";
 
 /**
@@ -71,7 +72,9 @@ function MessageCard({ message, label }: { message: SessionMessageModel; label: 
           {message.text ? <Text style={styles.text} numberOfLines={6}>{message.text}</Text> : null}
         </View>
         <View style={styles.track}>
-          <Animated.View style={[styles.fill, bar]} />
+          <Animated.View style={[styles.fill, bar]}>
+            <BrandGradient />
+          </Animated.View>
         </View>
       </View>
     </View>
@@ -99,5 +102,5 @@ const styles = StyleSheet.create({
   header: { ...fonts.bold, fontSize: 32, lineHeight: 40, color: colors.text },
   text: { ...fonts.regular, fontSize: 26, lineHeight: 36, color: colors.textSecondary },
   track: { height: 6, backgroundColor: white(0.1) },
-  fill: { flex: 1, backgroundColor: colors.accent, transformOrigin: "left" },
+  fill: { flex: 1, overflow: "hidden", transformOrigin: "left" },
 });

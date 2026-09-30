@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: 12,
     borderRadius: 18,
-    backgroundColor: colors.accentLight,
+    backgroundColor: colors.accent,
   },
   userScoreText: { ...fonts.extrabold, fontSize: 23, color: colors.onAccent },
   // Les ronds disent leur nom SOUS eux, au focus : la place est gardée.

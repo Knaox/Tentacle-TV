@@ -6,6 +6,7 @@ import { BrandMark } from "../../brand/BrandMark";
 import { PillButton } from "../../controls/PillButton";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
+import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, white } from "../../theme/tokens";
 import type { CodeState } from "./pairingTypes";
 
@@ -103,7 +104,9 @@ function Countdown({ remaining, total, width }: { remaining: number; total: numb
         <Text style={styles.timer}>{t("expiresIn", { time: `${minutes}:${seconds}` })}</Text>
       </View>
       <View style={styles.track}>
-        <Animated.View style={[styles.fill, fill]} />
+        <Animated.View style={[styles.fill, fill]}>
+          <BrandGradient />
+        </Animated.View>
       </View>
     </View>
   );
@@ -139,7 +142,7 @@ const styles = StyleSheet.create({
   timerRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
   timer: { ...fonts.semibold, fontSize: 28, lineHeight: 36, color: colors.textSecondary, fontVariant: ["tabular-nums"] },
   track: { height: 8, borderRadius: 4, backgroundColor: white(0.12), overflow: "hidden" },
-  fill: { flex: 1, borderRadius: 4, backgroundColor: colors.accent, transformOrigin: "left" },
+  fill: { flex: 1, borderRadius: 4, overflow: "hidden", transformOrigin: "left" },
   expiredRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   expired: { ...fonts.bold, fontSize: 36, lineHeight: 44, color: colors.errorFg },
 });

@@ -45,7 +45,7 @@ export const DetailActions = memo(function DetailActions({
       <View style={styles.row}>
         {actions.play ? (
           <PillButton
-            variant="primary"
+            variant="brand"
             icon="play"
             label={actions.play.label}
             progress={actions.play.progress}

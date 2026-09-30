@@ -57,7 +57,7 @@ export const EndScreen = memo(function EndScreen({
         </View>
         {model.overview ? <Text style={styles.overview} numberOfLines={3}>{model.overview}</Text> : null}
         <FocusGroup focusKey="end:actions" style={styles.actions}>
-          <CountdownPill variant="primary" icon="play" label={labels.playNow} countdown={model.countdown} focusKey="end:play" onPress={onPlayNext} />
+          <CountdownPill variant="brand" icon="play" label={labels.playNow} countdown={model.countdown} focusKey="end:play" onPress={onPlayNext} />
           <PillButton variant="glass" icon="chevronLeft" label={labels.backToDetails} focusKey="end:leave" onPress={onLeave} />
         </FocusGroup>
       </View>

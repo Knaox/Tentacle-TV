@@ -2,11 +2,12 @@ import { memo } from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import Svg, { Defs, FeGaussianBlur, Filter, LinearGradient, Rect, Stop } from "react-native-svg";
-import type { ArtworkPalette } from "../color/artworkPalette";
+import { brandLight, type ArtworkPalette } from "../color/artworkPalette";
 
 /**
  * Le halo d'une œuvre : sa lumière qui déborde tout autour de son cadre, aux
- * couleurs de son image. Un rectangle arrondi dégradé, flouté UNE fois par
+ * couleurs de la MARQUE (violet → rose) nuancées par son image — un halo
+ * orange ne disait pas l'app. Un rectangle arrondi dégradé, flouté UNE fois par
  * le SVG (le bitmap est ensuite réutilisé tel quel) ; rien ne s'anime dans le
  * flou — seule l'opacité entre en fondu quand l'œuvre change.
  *
@@ -20,8 +21,8 @@ export interface ArtworkHaloProps {
   radius: number;
   palette: ArtworkPalette;
   spread?: number;
-  /** Force du halo, 0 à 1 (défaut 0,7 — un cran sous la maquette : sur la
-   *  dalle, le haut de l'écran brillait plus que l'œuvre). */
+  /** Force du halo, 0 à 1 (défaut 0,5 — celui du héros était « presque un
+   *  peu trop agressif » à 0,7). */
   opacity?: number;
   blur?: number;
   style?: StyleProp<ViewStyle>;
@@ -33,16 +34,17 @@ export const ArtworkHalo = memo(function ArtworkHalo({
   radius,
   palette,
   spread = 26,
-  opacity = 0.7,
-  blur = 38,
+  opacity = 0.5,
+  blur = 44,
   style,
 }: ArtworkHaloProps) {
   // Le flou a besoin de place : trois écarts-types de chaque côté.
   const margin = spread + blur * 3;
   const w = width + margin * 2;
   const h = height + margin * 2;
-  const [a, b, c] = palette.glows;
-  const key = palette.glows.join("-");
+  const light = brandLight(palette, 0.75);
+  const [a, b, c] = light.glows;
+  const key = light.glows.join("-");
   return (
     <View pointerEvents="none" style={[{ position: "absolute", left: -margin, top: -margin, width: w, height: h }, style]}>
       <Animated.View key={key} entering={FadeIn.duration(700)} style={{ width: w, height: h, opacity }}>

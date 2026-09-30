@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon, type IconName } from "../../icons/Icon";
+import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, white } from "../../theme/tokens";
 import { ToggleGlyph } from "../ToggleGlyph";
 import type { CardTrayAction, CardTrayActionKind } from "../cardTypes";
@@ -12,10 +13,10 @@ import { trayGlyphSize } from "./trayLayout";
 /**
  * Un bouton du plateau — le `CardTrayButton` du bureau, à trois mètres :
  * - au repos, un rond sans fond, glyphe blanc ; une bascule POSÉE prend un
- *   voile blanc et son glyphe se remplit (le cœur à l'ambre) ;
+ *   voile blanc et son glyphe se remplit (le cœur au rose de marque) ;
  * - l'action primaire, en tête, a son TON : « Lire » discret (`quiet` — un
- *   verre plus dense, cerclé, sans couleur), « Demander » à l'ambre (le
- *   `brand` du bureau, la seule couleur du plateau — jamais de violet) ;
+ *   verre plus dense, cerclé, sans couleur), « Demander » au dégradé de marque
+ *   violet → rose (le `brand` du bureau, la seule couleur du plateau) ;
  * - au focus, le rond devient BLANC, glyphe noir, et grandit : pas d'anneau.
  *
  * Aucune taille propre : `size` vient du plateau, qui resserre ses boutons
@@ -65,6 +66,7 @@ function Round({ action, size, focused }: { action: CardTrayAction; size: number
   const heart = action.kind === "favorite" && action.active === true;
   return (
     <Animated.View style={[round, toneOf(action), lift]}>
+      {action.kind === "request" ? <BrandGradient diagonal /> : null}
       <View style={styles.center}>
         <Glyph action={action} size={glyph} color={idleInk(action)} />
       </View>
@@ -100,5 +102,5 @@ const styles = StyleSheet.create({
   lit: { backgroundColor: colors.ctaBg },
   active: { backgroundColor: white(0.15) },
   quiet: { backgroundColor: white(0.2), borderWidth: 1, borderColor: white(0.3) },
-  brand: { backgroundColor: colors.accent, borderWidth: 1, borderColor: white(0.25) },
+  brand: { overflow: "hidden", borderWidth: 1, borderColor: white(0.25) },
 });

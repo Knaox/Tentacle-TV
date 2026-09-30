@@ -95,7 +95,7 @@ export const HeroBanner = memo(function HeroBanner({
           <MetaLine items={hero.meta} />
           {hero.synopsis ? <Text style={[text.body, styles.synopsis]} numberOfLines={hero.reason ? 2 : 3}>{hero.synopsis}</Text> : null}
           <View style={styles.actions}>
-            <PillButton variant="primary" {...hero.primary} onPress={onPrimary} onFocusChange={onFocusChange} />
+            <PillButton variant="brand" {...hero.primary} onPress={onPrimary} onFocusChange={onFocusChange} />
             {hero.secondary ? <PillButton variant="glass" {...hero.secondary} onPress={onSecondary} onFocusChange={onFocusChange} /> : null}
             {hero.listToggle ? (
               <RoundButton

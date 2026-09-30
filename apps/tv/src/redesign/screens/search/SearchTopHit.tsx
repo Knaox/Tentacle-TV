@@ -9,6 +9,7 @@ import { useFocusProgress } from "../../focus/useFocusProgress";
 import { MetaLine } from "../../hero/MetaLine";
 import { TitleArt } from "../../hero/TitleArt";
 import { Icon } from "../../icons/Icon";
+import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, scrim, text, white } from "../../theme/tokens";
 import { PersonPortrait } from "./PersonPortrait";
 import type { SearchTopModel, SearchTopPersonModel, SearchTopTitleModel } from "./searchViewModel";
@@ -57,7 +58,9 @@ function TitleFace({ top, label, tall }: { top: SearchTopTitleModel; label: stri
       </View>
       {top.progress !== undefined && top.progress > 0.01 ? (
         <View style={styles.track}>
-          <View style={[styles.fill, { width: `${Math.round(Math.min(1, top.progress) * 100)}%` }]} />
+          <View style={[styles.fill, { width: `${Math.round(Math.min(1, top.progress) * 100)}%` }]}>
+            <BrandGradient />
+          </View>
         </View>
       ) : null}
     </>
@@ -160,7 +163,7 @@ const styles = StyleSheet.create({
   reason: { flexDirection: "row", alignItems: "center", gap: 10 },
   reasonText: { ...fonts.semibold, fontSize: 26, color: colors.accentLight, flexShrink: 1 },
   track: { position: "absolute", left: 0, right: 0, bottom: 0, height: 6, backgroundColor: white(0.22) },
-  fill: { height: 6, backgroundColor: colors.accent },
+  fill: { height: 6, overflow: "hidden" },
   personContent: { flex: 1, flexDirection: "row", alignItems: "center", gap: 44, paddingHorizontal: 52 },
   personText: { flex: 1, gap: 10 },
   personDetail: { color: white(0.8) },
