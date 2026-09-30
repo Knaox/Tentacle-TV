@@ -1,0 +1,103 @@
+import { memo, useState } from "react";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { useTranslation } from "react-i18next";
+import { TV_STAGE } from "@tentacle-tv/theme";
+import { CardFrame } from "../../cards/CardFrame";
+import { FocusTarget } from "../../focus/FocusTarget";
+import { useForcedFocusKey } from "../../focus/focusPreview";
+import { useFocusProgress } from "../../focus/useFocusProgress";
+import { Icon } from "../../icons/Icon";
+import { colors, fonts, scrim, white } from "../../theme/tokens";
+import { DETAIL_LEFT } from "./DetailSection";
+import type { ExtraModel } from "./detailTypes";
+
+/**
+ * Les extras : bandes-annonces locales, bonus, vidéos distantes — dans
+ * l'ordre de toutes les plateformes (`buildExtraEntries`). Vignettes 16:9,
+ * le titre et le genre dessous. Une vidéo retirée reste à sa place, grisée,
+ * « Indisponible ».
+ *
+ * Contrat : `useItemExtras` (locaux), `useRemoteTrailers` (distants),
+ * `buildExtraEntries` (l'ordre, les libellés), `seasonHasExtras` (saisons).
+ */
+
+const { width: W, height: H, radius: R } = TV_STAGE.card.landscape;
+const SHIFT = H * (TV_STAGE.focus.cardScale - 1);
+
+function Caption({ extra, focused }: { extra: ExtraModel; focused: boolean }) {
+  const { t } = useTranslation();
+  const p = useFocusProgress(focused);
+  const shift = useAnimatedStyle(() => ({ transform: [{ translateY: SHIFT * p.value }] }));
+  return (
+    <Animated.View style={[styles.caption, shift]}>
+      <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{extra.title}</Text>
+      <Text style={styles.subtitle} numberOfLines={1}>
+        {extra.unavailable ? t("common:trailerUnavailableShort") : extra.subtitle ?? ""}
+      </Text>
+    </Animated.View>
+  );
+}
+
+export const ExtrasRow = memo(function ExtrasRow({
+  extras,
+  onOpen,
+  onFocusChange,
+}: {
+  extras: ExtraModel[];
+  onOpen?: (extra: ExtraModel) => void;
+  onFocusChange?: (focused: boolean) => void;
+}) {
+  const [nativeIndex, setNativeIndex] = useState<number | null>(null);
+  const forced = useForcedFocusKey();
+  const forcedIndex = forced?.startsWith("extra:") ? Number(forced.slice(6)) : null;
+  const focusedIndex = forced !== null ? forcedIndex : nativeIndex;
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
+      {extras.map((extra, index) => (
+        <FocusTarget
+          key={extra.id}
+          focusKey={`extra:${index}`}
+          onPress={onOpen && !extra.unavailable ? () => onOpen(extra) : undefined}
+          onFocusChange={(focused) => {
+            setNativeIndex((current) => (focused ? index : current === index ? null : current));
+            onFocusChange?.(focused);
+          }}
+          accessibilityLabel={extra.title}
+          style={{ width: W }}
+        >
+          {(focused) => (
+            <View>
+              <CardFrame width={W} height={H} radius={R} focused={focused} dimmed={focusedIndex !== null && focusedIndex !== index}>
+                {extra.imageUri ? (
+                  <Image source={{ uri: extra.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+                ) : (
+                  <View style={styles.missing}>
+                    <Icon name="trailer" size={44} color={white(0.3)} />
+                  </View>
+                )}
+                {extra.unavailable ? (
+                  <View style={[StyleSheet.absoluteFill, styles.unavailable]}>
+                    <Icon name="eyeOff" size={40} color={white(0.7)} />
+                  </View>
+                ) : null}
+              </CardFrame>
+              <Caption extra={extra} focused={focused} />
+            </View>
+          )}
+        </FocusTarget>
+      ))}
+    </ScrollView>
+  );
+});
+
+const styles = StyleSheet.create({
+  track: { overflow: "visible" },
+  content: { gap: TV_STAGE.row.gap, paddingLeft: DETAIL_LEFT, paddingRight: TV_STAGE.safe.x, paddingTop: 12, paddingBottom: 24 },
+  missing: { flex: 1, justifyContent: "flex-end", padding: 20, backgroundColor: colors.surface3 },
+  unavailable: { alignItems: "flex-end", justifyContent: "flex-start", padding: 16, backgroundColor: scrim(0.62) },
+  caption: { marginTop: 16, gap: 2 },
+  title: { ...fonts.semibold, fontSize: 24, color: colors.textSecondary },
+  titleFocused: { color: colors.text },
+  subtitle: { ...fonts.medium, fontSize: 22, color: colors.textTertiary },
+});
