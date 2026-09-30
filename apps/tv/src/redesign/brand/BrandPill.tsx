@@ -12,7 +12,10 @@ import { BrandGradient } from "./BrandGradient";
  *
  * Au focus, elle S'ALLUME : au repos, un voile noir tient le dégradé un cran
  * plus profond ; focalisée, le voile s'efface, un reflet naît en haut, le
- * liseré s'éclaircit et la lueur de marque monte dessous. Jamais de voile
+ * liseré s'éclaircit et une lueur de marque monte dessous — COURTE : au repos
+ * aucune, pour que la pilule garde le gabarit exact des autres (« Reprendre
+ * paraissait plus gros que Plus d'infos », retour du 2026-10-01), et au focus
+ * une ombre serrée qui reste dans la bannière. Jamais de voile
  * blanc sur toute la pilule : il la rendait pastel — éteinte au moment où
  * elle doit briller — et ramenait le blanc sur le rose sous 3:1 (2,96:1).
  * Ainsi le texte reste au moins à 3,3:1 sur le bout rose, focalisé ou non.
@@ -45,8 +48,8 @@ export const BrandPill = memo(function BrandPill({ progress, radius, children }:
   );
 });
 
-/** La lueur au repos : l'identité se devine, le focus la fait monter. */
-const GLOW_AT_REST = 0.2;
+/** Pas de lueur au repos : le dégradé suffit à dire la marque. */
+const GLOW_AT_REST = 0;
 
 /** Le reflet du focus : fort en haut, presque nul à mi-hauteur (le texte). */
 const SHEEN = [white(0.24), white(0.05), white(0)];
@@ -59,9 +62,9 @@ const styles = StyleSheet.create({
   glow: {
     backgroundColor: colors.accent,
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.7,
-    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
   },
   veil: { backgroundColor: scrim(0.05) },
   rim: { borderWidth: 1, borderColor: white(0.22) },
