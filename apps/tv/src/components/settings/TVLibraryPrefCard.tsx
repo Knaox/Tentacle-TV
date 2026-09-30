@@ -4,14 +4,7 @@ import { TV_RADIUS } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
-
-export interface TvSetting {
-  key: "audio" | "mode" | "sousTitres";
-  label: string;
-  value: string;
-  choices: Array<{ value: string; label: string }>;
-  selection: string | null;
-}
+import type { LibraryTrackSetting } from "../../hooks/useLibraryTrackPrefs";
 
 /**
  * Les trois réglages de piste d'une bibliothèque — parité `LibraryCardTv`
@@ -28,9 +21,9 @@ export function TVLibraryPrefCard({
   onReset,
 }: {
   name: string;
-  settings: TvSetting[];
+  settings: LibraryTrackSetting[];
   customized: boolean;
-  onOpen: (setting: TvSetting) => void;
+  onOpen: (setting: LibraryTrackSetting) => void;
   onReset: () => void;
 }) {
   const { t } = useTranslation("preferences");

@@ -1,9 +1,9 @@
 import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { TV_PLATFORM_LABEL } from "../../lib/platformLabel";
 import { Colors } from "../../theme/colors";
+import { usePairedAccount } from "../../hooks/usePairedAccount";
 
 // Source unique des versions : versions.json à la racine du monorepo (champ tv).
 const APP_VERSION: string = require("../../../../../versions.json").tv ?? "0.9.2";
@@ -18,17 +18,9 @@ const APP_VERSION: string = require("../../../../../versions.json").tv ?? "0.9.2
  */
 export function TVSettingsAboutSection() {
   const { t } = useTranslation(["about", "pairing"]);
-  const { storage } = useTentacleConfig();
-
-  const serverUrl = storage.getItem("tentacle_server_url") || "—";
-  const userRaw = storage.getItem("tentacle_user");
-  let username = "—";
-  if (userRaw) {
-    try {
-      const parsed = JSON.parse(userRaw) as { Name?: string; username?: string; name?: string };
-      username = parsed.Name || parsed.username || parsed.name || "—";
-    } catch { username = "—"; }
-  }
+  const account = usePairedAccount();
+  const serverUrl = account.serverUrl;
+  const username = account.name ?? "—";
 
   const features = [
     t("about:featurePlayer"),

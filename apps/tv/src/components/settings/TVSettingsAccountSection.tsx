@@ -1,17 +1,9 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Image, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
 import LinearGradient from "react-native-linear-gradient";
-import {
-  setPreferencesToken,
-  useAuth,
-  useJellyfinClient,
-  useTentacleConfig,
-  useUserId,
-} from "@tentacle-tv/api-client";
-import { navigationRef } from "../../navigation/navigationRef";
-import { doLogout } from "../../auth/sessionFlow";
+import { useAccountActions } from "../../hooks/useAccountActions";
+import { usePairedAccount } from "../../hooks/usePairedAccount";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
@@ -33,29 +25,13 @@ const PORTRAIT_SIZE = 132;
  *
  * La déconnexion passe par `doLogout` — qui porte le verrou « lecture en
  * cours » — et non par une purge locale recopiée (l'ancienne modale du rail
- * dupliquait la purge SANS le verrou).
+ * dupliquait la purge SANS le verrou) : `useAccountActions`, commun aux deux
+ * téléviseurs.
  */
 export function TVSettingsAccountSection() {
   const { t } = useTranslation(["pairing", "nav", "common"]);
-  const { storage } = useTentacleConfig();
-  const queryClient = useQueryClient();
-  const jfClient = useJellyfinClient();
-  const { changeServer } = useAuth();
-
-  const serverUrl = storage.getItem("tentacle_server_url") || "—";
-
-  const handleLogout = useCallback(() => {
-    doLogout(jfClient, storage, queryClient);
-  }, [jfClient, storage, queryClient]);
-
-  const handleChangeServer = useCallback(() => {
-    changeServer.mutate(undefined, {
-      onSettled: () => {
-        setPreferencesToken(null);
-        navigationRef.reset({ index: 0, routes: [{ name: "PairCode" }] });
-      },
-    });
-  }, [changeServer]);
+  const { serverUrl } = usePairedAccount(PORTRAIT_SIZE);
+  const { logout: handleLogout, changeServer: handleChangeServer } = useAccountActions();
 
   return (
     <View>
@@ -86,24 +62,10 @@ export function TVSettingsAccountSection() {
  *  traitent pareil, sans clignoter. */
 function Profile() {
   const { t } = useTranslation("pairing");
-  const { storage } = useTentacleConfig();
-  const client = useJellyfinClient();
-  const userId = useUserId();
+  const { name, portraitUrl } = usePairedAccount(PORTRAIT_SIZE);
   const [failed, setFailed] = useState(false);
 
-  let name: string | null = null;
-  try {
-    const raw = storage.getItem("tentacle_user");
-    if (raw) {
-      const parsed = JSON.parse(raw) as { Name?: unknown };
-      if (typeof parsed.Name === "string" && parsed.Name.length > 0) name = parsed.Name;
-    }
-  } catch { /* nom absent : l'initiale de repli suffit */ }
-
-  const url =
-    userId && !failed
-      ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${PORTRAIT_SIZE * 2}&quality=90`
-      : null;
+  const url = portraitUrl && !failed ? portraitUrl : null;
   const initial = (name ?? "?").charAt(0).toUpperCase();
 
   return (
