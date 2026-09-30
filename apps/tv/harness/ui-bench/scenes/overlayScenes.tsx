@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { BootView } from "../../../src/redesign/screens/overlays/BootView";
-import { ExpiredPairingBanner } from "../../../src/redesign/screens/overlays/ExpiredPairingBanner";
+import { EXPIRED_BANNER_BOTTOM, ExpiredPairingBanner } from "../../../src/redesign/screens/overlays/ExpiredPairingBanner";
 import { OfflineOverlay } from "../../../src/redesign/screens/overlays/OfflineOverlay";
 import { ScreenErrorView } from "../../../src/redesign/screens/overlays/ScreenErrorView";
 import { ScreenSkeleton } from "../../../src/redesign/screens/overlays/ScreenSkeleton";
@@ -67,6 +67,21 @@ export const OVERLAY_SCENES: BenchScene[] = [
     render: (data) => (
       <OverHome data={data}>
         <SessionMessages messages={ADMIN_MESSAGES} />
+      </OverHome>
+    ),
+  },
+  {
+    // Les deux en même temps : les messages se posent SOUS le bandeau (écart
+    // de 18, comme l'intégration), sans quoi ils en couvraient la fin.
+    id: "surimpressions/bandeau-et-messages",
+    group: "Surimpressions",
+    label: "Bandeau et messages ensemble",
+    focusKeys: ["hero:primary"],
+    settleMs: 1700,
+    render: (data) => (
+      <OverHome data={data}>
+        <ExpiredPairingBanner />
+        <SessionMessages messages={ADMIN_MESSAGES} top={EXPIRED_BANNER_BOTTOM + 18} />
       </OverHome>
     ),
   },
