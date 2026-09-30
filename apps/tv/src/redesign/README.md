@@ -39,7 +39,7 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `focus/FocusTarget` | Le seul Pressable : `focusKey`, `onPress`, `onLongPress`, `onFocusChange`, enfant `(focused) => …` |
 | `focus/FocusGroup` | Un groupe nommé (`focusKey`) : une View tant que l'intégration ne lui donne pas de conteneur (`focusBinding`) |
 | `focus/useFocusProgress` | 0 → 1 au focus (Reanimated), pour les styles animés |
-| `glass/GlassSurface` | Le verre (`radius`, `tone` regular/strong/clear, `elevated`) ; suit l'interrupteur Liquid Glass |
+| `glass/GlassSurface` | Le verre (`radius`, `tone` regular/strong/clear, `elevated`) ; suit l'interrupteur Liquid Glass — natif (`UIGlassEffect`) sur tvOS 26, simulé ailleurs |
 | `background/AmbientBackdrop` | Le fond vivant (`palette`) |
 | `background/ArtworkHalo` | La lumière autour d'un cadre (`width`, `height`, `radius`, `palette`) |
 | `controls/PillButton` | Pilule `primary` (blanche) ou `glass`, `progress` pour « Reprendre » |
