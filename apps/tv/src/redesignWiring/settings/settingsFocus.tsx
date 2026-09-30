@@ -66,6 +66,16 @@ const LOCKED: FocusExtras = { native: { isTVSelectable: false } };
 /** Filet : si le premier focus tarde, les lignes se libèrent quand même. */
 const RELEASE_AFTER_MS = 800;
 
+type Settable = { setNativeProps?: (props: object) => void };
+
+/** Verrouille ou libère une clé : sa liaison, lue au prochain rendu de la
+ *  cible, ET son nœud déjà monté — une cible mémoïsée (un bouton aux props
+ *  stables) ne se redessine pas, et gardait son verrou. */
+function setLocked(focus: FocusStore, key: string, locked: boolean): void {
+  focus.bind(key, locked ? LOCKED : null);
+  (focus.node(key) as Settable | null)?.setNativeProps?.({ isTVSelectable: !locked });
+}
+
 /**
  * L'entrée de la liste de choix : la valeur retenue. Dans une `Modal`, aucune
  * préférence de focus n'est honorée — le contenu vit dans le contrôleur de la
@@ -74,16 +84,20 @@ const RELEASE_AFTER_MS = 800;
  * l'élément du haut. À l'ouverture, seule la valeur retenue est donc
  * focalisable (posé AVANT que la liste ne se rende) ; au premier focus posé,
  * les autres lignes le redeviennent. Rend un compteur qui change à la
- * libération : la liste se redessine pour la lire.
+ * libération : la liste se redessine pour la lire (les nœuds déjà montés
+ * reçoivent aussi leur verrou directement). Une nouvelle entrée, liste
+ * ouverte (l'élément focalisé a disparu), verrouille de nouveau : tvOS, qui
+ * cherche un nouveau focus, n'en trouve qu'un. Commun aux listes en Modal
+ * (réglages, feuille d'actions, filtres de la bibliothèque).
  */
 export function useChoiceEntry(focus: FocusStore, keys: readonly string[], entryKey: string | null): number {
   const [releases, setReleases] = useState(0);
   const opened = useRef<string | null>(null);
   const locked = useRef<string[]>([]);
   if (opened.current !== entryKey) {
-    for (const key of locked.current) focus.bind(key, null);
+    for (const key of locked.current) setLocked(focus, key, false);
     locked.current = entryKey ? keys.filter((key) => key !== entryKey) : [];
-    for (const key of locked.current) focus.bind(key, LOCKED);
+    for (const key of locked.current) setLocked(focus, key, true);
     opened.current = entryKey;
   }
   useEffect(() => {
@@ -92,7 +106,7 @@ export function useChoiceEntry(focus: FocusStore, keys: readonly string[], entry
     const release = () => {
       if (done) return;
       done = true;
-      for (const key of locked.current) focus.bind(key, null);
+      for (const key of locked.current) setLocked(focus, key, false);
       locked.current = [];
       setReleases((count) => count + 1);
     };
