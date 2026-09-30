@@ -1,33 +1,63 @@
 import { PLATFORMS } from "@tentacle-tv/shared";
 import type { TFunction } from "i18next";
-import type { FilterSheetModel, LibraryFilterKey, RatingStop } from "../../../src/redesign/screens/library/libraryTypes";
-import { DEFAULT_FILTERS, SORTS, ratingLabel, type LibraryFilterState } from "./libraryModels";
+import { DEFAULT_FILTERS, SORT_OPTIONS, type LibraryFilterState } from "../../hooks/libraryCatalogParams";
+import type { FilterSheetModel, LibraryFilterKey, RatingStop } from "../../redesign/screens/library/libraryTypes";
+import { ratingLabel, statusLabel, type GenreOption } from "./libraryFilterModel";
 
 /**
  * Les grandes listes en surimpression de la bibliothèque, tirées de l'état
  * des filtres : options cochées, valeurs en mots, « Voir N titres ». Et leur
- * effet sur l'état — ce que feront les setters de `useLibraryFilters` — pour
- * que le banc se manipule à la télécommande.
+ * effet sur cet état — ce que l'écran passe à `useLibraryFilters().update`.
+ * Pur, comme `libraryFilterModel` : le banc UI en tire ses scènes.
  */
 
 export interface SheetContext {
-  genres: Array<{ id: string; name: string }>;
+  genres: GenreOption[];
   /** Le nombre de titres que donnent les filtres courants. */
   resultCount: number;
-  /** Les années extrêmes du catalogue. */
+  /** Les années extrêmes connues du catalogue : les décennies proposées, et
+   *  le point de départ d'une borne libre. */
   span: [number, number];
 }
 
+/** Jusqu'où vont les flèches d'une borne (l'ancien menu acceptait 1900–2100 ;
+ *  au-delà de l'an prochain, rien n'est encore sorti). */
+export const YEAR_LIMITS: readonly [number, number] = [1900, new Date().getFullYear() + 1];
+
+/** Sans titre daté : les quatre dernières décennies. */
+const FALLBACK_SPAN_YEARS = 40;
+
+/**
+ * Les années extrêmes des titres connus. Jellyfin ne dit pas celles d'une
+ * bibliothèque (son `/Years` n'est pas proxyfié) : on les lit sur ce qui est
+ * chargé — un échantillon A→Z sans lien avec les années, qui s'élargit page
+ * après page.
+ */
+export function yearSpanOf(items: ReadonlyArray<{ ProductionYear?: number | null }>): [number, number] {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const item of items) {
+    const year = item.ProductionYear;
+    if (!year) continue;
+    if (year < min) min = year;
+    if (year > max) max = year;
+  }
+  const now = new Date().getFullYear();
+  return min <= max ? [min, max] : [now - FALLBACK_SPAN_YEARS, now];
+}
+
+const MAX_DECADES = 5;
+
 const STATUSES = [
-  { id: "all", value: null, key: "allFilter" },
-  { id: "IsUnplayed", value: "IsUnplayed", key: "unwatched" },
-  { id: "IsResumable", value: "IsResumable", key: "inProgress" },
+  { id: "all", value: null },
+  { id: "IsUnplayed", value: "IsUnplayed" },
+  { id: "IsResumable", value: "IsResumable" },
 ] as const;
 
 /** Les décennies du catalogue, de la plus récente à la plus ancienne. */
 function decades(span: [number, number]): number[] {
   const out: number[] = [];
-  for (let d = Math.floor(span[1] / 10) * 10; d >= Math.floor(span[0] / 10) * 10 && out.length < 5; d -= 10) out.push(d);
+  for (let d = Math.floor(span[1] / 10) * 10; d >= Math.floor(span[0] / 10) * 10 && out.length < MAX_DECADES; d -= 10) out.push(d);
   return out;
 }
 
@@ -69,7 +99,7 @@ export function sheetOf(t: TFunction, kind: LibraryFilterKey, f: LibraryFilterSt
         title: t("library:watchStatus"),
         multiple: false,
         columns: 1,
-        options: STATUSES.map((s) => ({ id: s.id, label: t(`common:${s.key}`), selected: f.statusFilter === s.value })),
+        options: STATUSES.map((s) => ({ id: s.id, label: statusLabel(t, s.value), selected: f.statusFilter === s.value })),
       };
     case "sort":
       return {
@@ -77,7 +107,7 @@ export function sheetOf(t: TFunction, kind: LibraryFilterKey, f: LibraryFilterSt
         kind: "sort",
         title: t("common:sortBy"),
         criteriaTitle: t("library:sortCriterion"),
-        criteria: SORTS.map((s) => ({ id: s.value, label: t(`common:${s.key}`), selected: f.sortBy === s.value })),
+        criteria: SORT_OPTIONS.map((s) => ({ id: s.value, label: t(`common:${s.key}`), selected: f.sortBy === s.value })),
         orderTitle: t("common:sortOrder"),
         orders: [
           { id: "order:Descending", label: t("common:sortOrderDesc"), selected: f.sortOrder === "Descending" },
@@ -132,10 +162,12 @@ const toggle = <T,>(list: T[], value: T) => (list.includes(value) ? list.filter(
 export function applyOption(f: LibraryFilterState, filter: LibraryFilterKey, id: string): LibraryFilterState {
   if (filter === "genres") return { ...f, genreIds: toggle(f.genreIds, id) };
   if (filter === "platforms") return { ...f, platformIds: toggle(f.platformIds, Number(id)) };
+  // Statut et Favoris s'excluent (parité `useLibraryFilters`).
   if (filter === "status") return { ...f, statusFilter: id === "all" ? null : id, isFavorite: false };
   if (filter === "sort") {
     if (id.startsWith("order:")) return { ...f, sortOrder: id.slice(6) };
-    const sort = SORTS.find((s) => s.value === id);
+    // Un critère pose son ordre naturel.
+    const sort = SORT_OPTIONS.find((s) => s.value === id);
     return sort ? { ...f, sortBy: sort.value, sortOrder: sort.order } : f;
   }
   if (filter === "years") {
@@ -157,9 +189,21 @@ export function clearCriterion(f: LibraryFilterState, filter: LibraryFilterKey):
   return f;
 }
 
-/** Une flèche d'une borne : un an de plus ou de moins, dans les années du catalogue. */
+/**
+ * Une flèche d'une borne d'années. Une borne libre prend d'abord son point de
+ * départ — l'année la plus ancienne connue pour « De », la plus récente pour
+ * « À » — ; les appuis suivants la déplacent d'un an. L'intervalle reste
+ * dans l'ordre : pousser « De » au-delà de « À » emmène « À » avec lui.
+ */
 export function stepYear(f: LibraryFilterState, bound: "from" | "to", delta: -1 | 1, span: [number, number]): LibraryFilterState {
-  const current = bound === "from" ? f.yearFrom ?? span[0] : f.yearTo ?? span[1];
-  const next = Math.min(span[1], Math.max(span[0], current + delta));
-  return bound === "from" ? { ...f, yearFrom: next } : { ...f, yearTo: next };
+  const current = bound === "from" ? f.yearFrom : f.yearTo;
+  const start = bound === "from" ? span[0] : span[1];
+  const next = current == null ? start : Math.min(YEAR_LIMITS[1], Math.max(YEAR_LIMITS[0], current + delta));
+  if (bound === "from") return { ...f, yearFrom: next, yearTo: f.yearTo != null && f.yearTo < next ? next : f.yearTo };
+  return { ...f, yearTo: next, yearFrom: f.yearFrom != null && f.yearFrom > next ? next : f.yearFrom };
+}
+
+/** Un palier de note choisi : zéro, c'est « toutes ». */
+export function selectRating(f: LibraryFilterState, value: number): LibraryFilterState {
+  return { ...f, ratingMin: value > 0 ? value : null };
 }

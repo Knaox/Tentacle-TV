@@ -7,19 +7,10 @@ import type { LibraryFilterKey } from "../../../src/redesign/screens/library/lib
 import { LibraryView } from "../../../src/redesign/screens/library/LibraryView";
 import type { StatusPanelProps } from "../../../src/redesign/screens/shared/StatusPanel";
 import type { BenchData } from "../data/benchData";
-import {
-  DEFAULT_FILTERS,
-  activeFiltersOf,
-  filterCatalog,
-  genresOf,
-  libraryOf,
-  pillsOf,
-  removeFilter,
-  yearSpan,
-  type LibraryFilterState,
-  type LibraryKind,
-} from "../data/libraryModels";
-import { applyOption, clearCriterion, sheetOf, stepYear } from "../data/librarySheets";
+import { DEFAULT_FILTERS, type LibraryFilterState } from "../../../src/hooks/libraryCatalogParams";
+import { activeFiltersOf, pillsOf, removeFilter, toggleFavorites } from "../../../src/redesignWiring/library/libraryFilterModel";
+import { applyOption, clearCriterion, selectRating, sheetOf, stepYear } from "../../../src/redesignWiring/library/libraryFilterSheets";
+import { filterCatalog, genresOf, libraryOf, yearSpan, type LibraryKind } from "../data/libraryModels";
 import { cardOf, yearOf } from "../data/models";
 import { navOf } from "../data/screenModels";
 import type { BenchScene } from "./types";
@@ -62,7 +53,7 @@ function LibraryScene({ data, setup }: { data: BenchData; setup: Setup }) {
 
   const onFocusCard = useCallback((card: CardModel) => card.palette && setFocusedPalette(card.palette), []);
   const onPressPill = useCallback((key: LibraryFilterKey) => {
-    if (key === "favorites") setFilters((f) => ({ ...f, isFavorite: !f.isFavorite, statusFilter: f.isFavorite ? f.statusFilter : null }));
+    if (key === "favorites") setFilters(toggleFavorites);
     else setSheetKey(key);
   }, []);
 
@@ -108,7 +99,7 @@ function LibraryScene({ data, setup }: { data: BenchData; setup: Setup }) {
       onSheetClear={(filter) => setFilters((f) => clearCriterion(f, filter))}
       onSheetApply={() => setSheetKey(null)}
       onYearStep={(bound, delta) => setFilters((f) => stepYear(f, bound, delta, span))}
-      onRatingSelect={(value) => setFilters((f) => ({ ...f, ratingMin: value > 0 ? value : null }))}
+      onRatingSelect={(value) => setFilters((f) => selectRating(f, value))}
     />
   );
 }
