@@ -27,6 +27,8 @@ import { recoAmbientTarget } from "../components/reco/recoAmbientTarget";
 import { useHomeFocusRestore } from "../hooks/useHomeFocusRestore";
 import { useHomeLifecycle } from "../hooks/useHomeLifecycle";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { HomeRedesign } from "../redesignWiring/home/HomeRedesign";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { Spacing } from "../theme/colors";
 import { SHOWS_VERTICAL_SCROLL_INDICATOR } from "../theme/focus";
@@ -36,7 +38,12 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 const SCREEN_H = require("react-native").Dimensions.get("window").height;
 const HERO_H = Math.round((SCREEN_H * TV_BANNER_CARD.homeHeightVh) / 100);
 
+/** L'accueil : la refonte sur Apple TV, l'UI actuelle sur Android TV (`redesignGate.ts`). */
 export function HomeScreen(props: Props) {
+  return REDESIGN_ACTIVE ? <HomeRedesign {...props} /> : <LegacyHomeScreen {...props} />;
+}
+
+function LegacyHomeScreen(props: Props) {
   return (
     <AmbientFocusProvider>
       <HomeScreenInner {...props} />

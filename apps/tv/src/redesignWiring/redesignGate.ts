@@ -29,6 +29,7 @@ type RouteName = keyof RootStackParamList;
  */
 const ROUTES: readonly RouteName[] = [
   "Settings",
+  "Home",
 ];
 
 export const REDESIGN_ROUTES: ReadonlySet<string> = new Set<string>(REDESIGN_ACTIVE ? ROUTES : []);

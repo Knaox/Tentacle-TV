@@ -1,10 +1,11 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
+import { Chip } from "../../controls/Chip";
 import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MediaRow } from "../../rows/MediaRow";
@@ -19,6 +20,14 @@ import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
  * (ordre des rangées), `useResumeItems` / `useFeaturedItems` (héros),
  * `useNextUp`, `useWatchlist`, `useLatestItems`, `useRecoPage` (cartes),
  * `useCardMarkers` (marqueurs) et `paletteFromBlurHash` (lumière).
+ *
+ * `filter` : la pastille du filtre de plateformes du compte, posée sur la
+ * rangée `filterRowKey` — la première rangée recommandée réellement servie
+ * (`useRecoFilterChipRow`). Un appui la retire (`onRemoveFilter`).
+ *
+ * Clés de focus : `hero:primary`, `hero:secondary`, `hero:list`,
+ * `<rangée>:<index>` pour les cartes, `filter:remove`, `status:primary`,
+ * `status:secondary`, et `nav:<entrée>` pour la navigation.
  */
 
 export interface HomeRowModel {
@@ -36,8 +45,15 @@ export interface HomeViewProps {
   palette: ArtworkPalette;
   /** Chargement, erreur, accueil vide : le panneau remplace le contenu. */
   status?: StatusPanelProps | null;
+  /** La pastille du filtre de plateformes (« Netflix · Disney+ »). */
+  filter?: { label: string } | null;
+  /** La rangée qui la porte. */
+  filterRowKey?: string | null;
+  onRemoveFilter?: () => void;
   onHeroPrimary?: () => void;
   onHeroSecondary?: () => void;
+  /** Le rond « Ma liste » du héros. */
+  onHeroToggleList?: () => void;
   onPressCard?: (rowKey: string, card: CardModel) => void;
   onLongPressCard?: (rowKey: string, card: CardModel) => void;
   onFocusCard?: (rowKey: string, card: CardModel) => void;
@@ -52,8 +68,12 @@ export const HomeView = memo(function HomeView({
   rows,
   palette,
   status,
+  filter,
+  filterRowKey,
+  onRemoveFilter,
   onHeroPrimary,
   onHeroSecondary,
+  onHeroToggleList,
   onPressCard,
   onLongPressCard,
   onFocusCard,
@@ -67,21 +87,25 @@ export const HomeView = memo(function HomeView({
         <ScrollView style={styles.fill} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {hero ? (
             <View style={styles.hero}>
-              <HeroBanner hero={hero} width={HERO_WIDTH} onPrimary={onHeroPrimary} onSecondary={onHeroSecondary} />
+              <HeroBanner
+                hero={hero}
+                width={HERO_WIDTH}
+                onPrimary={onHeroPrimary}
+                onSecondary={onHeroSecondary}
+                onToggleList={onHeroToggleList}
+              />
             </View>
           ) : null}
           <View style={hero ? styles.rowsAfterHero : styles.rowsAlone}>
             {rows.map((row) => (
-              <MediaRow
+              <HomeRow
                 key={row.key}
-                rowKey={row.key}
-                title={row.title}
-                cards={row.cards}
-                variant={row.variant}
-                inset={LEFT}
-                onPressCard={onPressCard ? (card) => onPressCard(row.key, card) : undefined}
-                onLongPressCard={onLongPressCard ? (card) => onLongPressCard(row.key, card) : undefined}
-                onFocusCard={onFocusCard ? (card) => onFocusCard(row.key, card) : undefined}
+                row={row}
+                filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
+                onRemoveFilter={onRemoveFilter}
+                onPressCard={onPressCard}
+                onLongPressCard={onLongPressCard}
+                onFocusCard={onFocusCard}
               />
             ))}
           </View>
@@ -92,6 +116,51 @@ export const HomeView = memo(function HomeView({
       </View>
       <NavRail {...nav} />
     </View>
+  );
+});
+
+type RowHandler = (rowKey: string, card: CardModel) => void;
+
+/**
+ * Une rangée, mémoïsée sur son modèle : quand seule la lumière du fond change
+ * (une carte prend le focus), l'accueil se redessine sans redessiner ses
+ * rangées — leurs rappels restent les mêmes d'un rendu à l'autre.
+ */
+const HomeRow = memo(function HomeRow({
+  row,
+  filterLabel,
+  onRemoveFilter,
+  onPressCard,
+  onLongPressCard,
+  onFocusCard,
+}: {
+  row: HomeRowModel;
+  filterLabel?: string;
+  onRemoveFilter?: () => void;
+  onPressCard?: RowHandler;
+  onLongPressCard?: RowHandler;
+  onFocusCard?: RowHandler;
+}) {
+  const key = row.key;
+  const press = useCallback((card: CardModel) => onPressCard?.(key, card), [onPressCard, key]);
+  const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
+  const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
+  return (
+    <MediaRow
+      rowKey={key}
+      title={row.title}
+      cards={row.cards}
+      variant={row.variant}
+      inset={LEFT}
+      accessory={
+        filterLabel ? (
+          <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} />
+        ) : undefined
+      }
+      onPressCard={onPressCard ? press : undefined}
+      onLongPressCard={onLongPressCard ? longPress : undefined}
+      onFocusCard={onFocusCard ? focus : undefined}
+    />
   );
 });
 
