@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { GlassSurface } from "../glass/GlassSurface";
@@ -56,7 +56,6 @@ export const NavRail = memo(function NavRail({
   onFocusChange,
 }: NavRailProps) {
   const openness = useFocusProgress(expanded, 240);
-  const veil = useAnimatedStyle(() => ({ opacity: openness.value }));
   const wide = useAnimatedStyle(() => ({ opacity: openness.value }));
   const narrow = useAnimatedStyle(() => ({ opacity: 1 - openness.value }));
   const item = (entry: { key: string; label: string; icon?: IconName; avatarUri?: string; initial?: string }) => (
@@ -76,46 +75,55 @@ export const NavRail = memo(function NavRail({
     />
   );
   return (
-    <View pointerEvents="box-none" style={styles.layer}>
-      <Animated.View pointerEvents="none" style={[styles.veil, veil]}>
-        <LinearGradient
-          colors={[scrim(0.82), scrim(0.55), scrim(0)]}
-          locations={[0, 0.3, 0.62]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-      <View style={[styles.rail, { width: expanded ? N.expandedWidth : N.collapsedWidth }]}>
-        <Animated.View style={[StyleSheet.absoluteFill, narrow]}>
-          <GlassSurface radius={N.radius} style={[styles.glass, { width: N.collapsedWidth }]} elevated />
+    <>
+      {/* Une vue plein écran posée sur le contenu — la couche de la barre
+          comme ce voile, même transparents — empêche le moteur de focus de
+          tvOS d'y entrer (mesuré au simulateur). Le voile n'existe donc que
+          barre ouverte ; l'intégration mène alors du rail au contenu. */}
+      {expanded ? (
+        <Animated.View pointerEvents="none" entering={FadeIn.duration(240)} exiting={FadeOut.duration(240)} style={styles.veil}>
+          <LinearGradient
+            colors={[scrim(0.82), scrim(0.55), scrim(0)]}
+            locations={[0, 0.3, 0.62]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
         </Animated.View>
-        <Animated.View style={[StyleSheet.absoluteFill, wide]}>
-          {/* Ouverte, la barre passe SUR le texte de l'écran : sans flou natif,
-              un fond dense sous le verre garde les libellés lisibles. */}
-          <View style={[styles.glass, styles.openBase, { width: N.expandedWidth }]} />
-          <GlassSurface radius={N.radius} tone="strong" style={[styles.glass, { width: N.expandedWidth }]} elevated />
-        </Animated.View>
-        <View style={styles.items}>
-          {item(search)}
-          <View style={[styles.separator, { width: expanded ? N.expandedWidth - 60 : 44 }]} />
-          {entries.map(item)}
-          <View style={styles.spacer} />
-          {expanded && hint ? (
-            <Animated.View style={wide}>
-              <Text style={styles.hint}>{hint}</Text>
-            </Animated.View>
-          ) : null}
-          {item(account)}
+      ) : null}
+      <View pointerEvents="box-none" style={[styles.layer, { width: N.left + (expanded ? N.expandedWidth : N.collapsedWidth) }]}>
+        <View style={[styles.rail, { width: expanded ? N.expandedWidth : N.collapsedWidth }]}>
+          <Animated.View style={[StyleSheet.absoluteFill, narrow]}>
+            <GlassSurface radius={N.radius} style={[styles.glass, { width: N.collapsedWidth }]} elevated />
+          </Animated.View>
+          <Animated.View style={[StyleSheet.absoluteFill, wide]}>
+            {/* Ouverte, la barre passe SUR le texte de l'écran : sans flou natif,
+                un fond dense sous le verre garde les libellés lisibles. */}
+            <View style={[styles.glass, styles.openBase, { width: N.expandedWidth }]} />
+            <GlassSurface radius={N.radius} tone="strong" style={[styles.glass, { width: N.expandedWidth }]} elevated />
+          </Animated.View>
+          <View style={styles.items}>
+            {item(search)}
+            <View style={[styles.separator, { width: expanded ? N.expandedWidth - 60 : 44 }]} />
+            {entries.map(item)}
+            <View style={styles.spacer} />
+            {expanded && hint ? (
+              <Animated.View style={wide}>
+                <Text style={styles.hint}>{hint}</Text>
+              </Animated.View>
+            ) : null}
+            {item(account)}
+          </View>
         </View>
       </View>
-    </View>
+    </>
   );
 });
 
 const styles = StyleSheet.create({
-  layer: { position: "absolute", left: 0, top: 0, width: 1920, height: 1080 },
-  veil: { ...StyleSheet.absoluteFillObject },
+  // La région de la barre seulement (voir le voile, plus haut).
+  layer: { position: "absolute", left: 0, top: 0, height: 1080 },
+  veil: { position: "absolute", left: 0, top: 0, width: 1920, height: 1080 },
   rail: { position: "absolute", left: N.left, top: N.top, height: HEIGHT },
   glass: { position: "absolute", left: 0, top: 0, height: HEIGHT },
   openBase: { borderRadius: N.radius, backgroundColor: "rgba(10, 10, 14, 0.84)" },
