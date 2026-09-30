@@ -28,6 +28,10 @@ export function rowItems(prefix: string): (focusKey: string) => boolean {
  *
  * `destinations` est TOUJOURS un tableau : sans lui, tvOS tient le guide pour
  * non sélectionnable et coupe l'accès à tout son contenu (cf. `RowEntryGuide`).
+ * Et un guide sans destination se DÉCLARE non focalisable : react-native-tvos
+ * marque sélectionnable tout guide dont `destinations` est un tableau, même
+ * vide, et le guide retombé en simple vue devenait une cible invisible (le
+ * pont du lecteur l'a payé : `BridgeGuide`).
  */
 
 export interface EntryGuideOptions {
@@ -75,6 +79,7 @@ export function createEntryGuide(store: FocusStore, options: EntryGuideOptions):
         style={style}
         pointerEvents={pointerEvents}
         destinations={target}
+        focusable={target.length > 0 ? undefined : false}
         trapFocusLeft={trapLeft}
         trapFocusRight={trapRight}
       >
