@@ -87,7 +87,9 @@ function HomeScene({ data, variant }: { data: BenchData; variant: HomeVariant })
   }, [forced, rows]);
   const onFocusCard = useCallback((_row: string, card: CardModel) => card.palette && setFocusedPalette(card.palette), []);
 
-  const nav = navOf(data, "Home", variant === "nav");
+  // Mémoïsée comme dans l'app (`useRedesignScreen`) : la lumière qui suit le
+  // focus ne redessine pas la navigation.
+  const nav = useMemo(() => navOf(data, "Home", variant === "nav"), [data, variant]);
   const base: HomeViewProps = {
     nav,
     hero: variant === "noHero" ? null : hero,

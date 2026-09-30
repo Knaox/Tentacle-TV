@@ -136,7 +136,14 @@ function serveData(res, relative) {
 
 // ─── Le relais vers Metro ────────────────────────────────────────────────────
 
-const rewrite = (url) => url.replace(/^\/index\.(bundle|map)/, `/${ENTRY}.$1`);
+// `BENCH_JS=prod` : le paquet de PRODUCTION (sans vérifications de dev,
+// minifié) — le coût JS d'une mesure (`fps`) s'approche alors de l'appareil.
+// Sans rechargement à chaud : `launch` après chaque retouche.
+const PROD_JS = process.env.BENCH_JS === "prod";
+const rewrite = (url) => {
+  const target = url.replace(/^\/index\.(bundle|map)/, `/${ENTRY}.$1`);
+  return PROD_JS ? target.replace("dev=true", "dev=false").replace("minify=false", "minify=true") : target;
+};
 
 const server = http.createServer((req, res) => {
   if (req.url.startsWith("/bench/")) {
@@ -170,4 +177,4 @@ server.on("upgrade", (req, socket, head) => {
   socket.on("error", () => up.destroy());
 });
 
-server.listen(PORT, "127.0.0.1", () => console.log(`[relais] banc UI sur ${PORT} → Metro ${METRO.port} (entrée ${ENTRY})`));
+server.listen(PORT, "127.0.0.1", () => console.log(`[relais] banc UI sur ${PORT} → Metro ${METRO.port} (entrée ${ENTRY}${PROD_JS ? ", JS de production" : ""})`));
