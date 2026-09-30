@@ -84,12 +84,18 @@ function toHex([h, s, l]: [number, number, number]): string {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
+/** Violets et magentas (≈ 250° à 335°) : la lumière d'une œuvre qui y tombe
+ *  est ramenée vers le neutre. Le fond vivant est la lumière de l'ŒUVRE ; le
+ *  violet appartient à la marque, posée en touches — un fond violet (« moche »,
+ *  retour de l'utilisateur du 2026-10-01) la noierait. */
+const isVioletHue = (h: number) => h > 0.69 && h < 0.93;
+
 /** Une couleur de lumière : assez saturée pour teinter, jamais criarde, jamais
  *  assez claire pour lutter avec le texte blanc. */
 function glow(rgb: Rgb): string {
   const [h, s, l] = toHsl(rgb);
   const sat = s < 0.08 ? s : Math.min(0.82, Math.max(0.38, s * 1.3));
-  return toHex([h, sat, Math.min(0.5, Math.max(0.28, l))]);
+  return toHex([h, isVioletHue(h) ? Math.min(sat, 0.16) : sat, Math.min(0.5, Math.max(0.28, l))]);
 }
 
 export interface ArtworkPalette {
@@ -109,7 +115,7 @@ export function paletteFromBlurHash(hash: string | null | undefined): ArtworkPal
   const [h, s] = toHsl(sample(c, 0.5, 0.5));
   return {
     glows: [glow(left), glow(middle), glow(right)],
-    deep: toHex([h, Math.min(0.5, s), 0.07]),
+    deep: toHex([h, Math.min(isVioletHue(h) ? 0.16 : 0.5, s), 0.07]),
   };
 }
 
@@ -134,10 +140,11 @@ function parseHex(hex: string): Rgb {
 }
 
 /**
- * La lumière de la scène aux couleurs de la MARQUE — violet à gauche, rose à
+ * La lumière d'un HALO aux couleurs de la MARQUE — violet à gauche, rose à
  * droite —, nuancée par l'œuvre (retour de l'utilisateur, 2026-09-30 : un halo
  * souvent orange ne dit pas l'app ; la marque doit se voir, sans que tout vire
- * au violet).
+ * au violet). Le halo est la seule lumière qui porte la marque : le fond
+ * vivant garde celle de l'œuvre (`AmbientBackdrop`).
  *
  * Chaque teinte reste TOUJOURS dans sa part de l'arc de la marque : l'œuvre
  * ne fait que la tirer de quelques degrés vers la sienne (une œuvre chaude

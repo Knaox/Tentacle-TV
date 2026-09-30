@@ -3,13 +3,14 @@ import { StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from "react-native-svg";
-import { brandLight, type ArtworkPalette } from "../color/artworkPalette";
+import type { ArtworkPalette } from "../color/artworkPalette";
 import { colors } from "../theme/tokens";
 
 /**
  * Le fond vivant : le noir cinéma du bureau (#000 → #070710), et trois
- * lumières douces aux couleurs de la marque, nuancées par l'œuvre qui a le
- * focus — jamais un noir pur, jamais une photo. Les lumières sont des dégradés radiaux (aucun flou
+ * lumières douces aux couleurs de l'œuvre qui a le focus (ses violets ramenés
+ * vers le neutre — la marque se pose en touches, jamais en fond) — jamais un
+ * noir pur, jamais une photo. Les lumières sont des dégradés radiaux (aucun flou
  * à calculer) ; quand l'œuvre change, les nouvelles apparaissent en fondu
  * par-dessus les anciennes.
  *
@@ -27,11 +28,11 @@ const W = 1920;
 const H = 1080;
 
 function Lights({ palette, intensity }: { palette: ArtworkPalette; intensity: number }) {
-  const [a, b, c] = brandLight(palette).glows;
+  const [a, b, c] = palette.glows;
   const blobs = [
-    { id: "l", cx: 180, cy: 470, rx: 760, ry: 640, color: a, alpha: 0.24 },
-    { id: "r", cx: 1700, cy: 980, rx: 700, ry: 460, color: c, alpha: 0.24 },
-    { id: "t", cx: 1080, cy: 60, rx: 820, ry: 360, color: b, alpha: 0.12 },
+    { id: "l", cx: 180, cy: 470, rx: 760, ry: 640, color: a, alpha: 0.34 },
+    { id: "r", cx: 1700, cy: 980, rx: 700, ry: 460, color: c, alpha: 0.2 },
+    { id: "t", cx: 1080, cy: 60, rx: 820, ry: 360, color: b, alpha: 0.13 },
   ];
   return (
     <Svg width={W} height={H} style={StyleSheet.absoluteFill}>
