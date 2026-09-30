@@ -62,8 +62,12 @@ export function ensureSimulator(port, { quiet = false } = {}) {
     // Hygiène : aucune session n'a rien à faire sur le simulateur du banc.
     for (const key of ["tentacle_token", "tentacle_user", "tentacle_server_url"]) buddy(plist, `Delete :${key}`);
   }
-  if (stateOf(udid) !== "Booted") simctl("boot", udid);
-  execFileSync("open", ["-a", "Simulator", "--args", "-CurrentDeviceUDID", udid]);
+  if (stateOf(udid) !== "Booted") {
+    simctl("boot", udid);
+    // Seulement au démarrage : réactiver Simulator.app renvoie l'app de
+    // l'appareil DÉJÀ affiché à l'accueil de tvOS (constaté le 2026-09-30).
+    execFileSync("open", ["-a", "Simulator", "--args", "-CurrentDeviceUDID", udid]);
+  }
   if (!quiet) console.log(`simulateur « ${NAME} » (${udid}) → relais ${wanted}`);
   return udid;
 }
@@ -71,6 +75,12 @@ export function ensureSimulator(port, { quiet = false } = {}) {
 export function launchApp(udid) {
   simctl("launch", "--terminate-running-process", udid, BUNDLE);
   console.log("app du banc lancée");
+}
+
+/** Ramène l'app du banc au premier plan (sans la relancer si elle tourne). */
+export function foreground() {
+  const device = findBench();
+  if (device?.state === "Booted") simctl("launch", device.udid, BUNDLE);
 }
 
 export function screenshot(file) {

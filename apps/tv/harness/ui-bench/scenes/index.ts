@@ -1,4 +1,5 @@
 import { BENCH_SCENES } from "./benchScenes";
+import { BRICK_SCENES } from "./brickScenes";
 import { BROWSE_SCENES } from "./browseScenes";
 import { COLLECTION_SCENES } from "./collectionScenes";
 import { DETAIL_SCENES } from "./detailScenes";
@@ -33,6 +34,7 @@ export const SCENES: BenchScene[] = [
   ...SHEET_SCENES,
   ...TRAILER_SCENES,
   ...OVERLAY_SCENES,
+  ...BRICK_SCENES,
   ...BENCH_SCENES,
 ];
 

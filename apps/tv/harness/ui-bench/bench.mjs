@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ensureSimulator, launchApp, screenshot } from "./tools/simulator.mjs";
+import { ensureSimulator, foreground, launchApp, screenshot } from "./tools/simulator.mjs";
 import { buildPlanches } from "./tools/planche.mjs";
 import { captureSnapshot } from "./tools/captureSnapshot.mjs";
 
@@ -25,10 +25,16 @@ async function call(pathname, init) {
 const post = (pathname, body) =>
   call(pathname, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
-/** Pose un état et attend que le banc l'affiche (images comprises). */
+/** Pose un état et attend que le banc l'affiche (images comprises). Sans
+ *  réponse, l'app a pu passer derrière l'accueil de tvOS : on la ramène au
+ *  premier plan et on attend encore une fois. */
 async function apply(patch) {
   const state = await post("/bench/control", patch);
-  const ready = await call(`/bench/ready?rev=${state.rev}&timeout=30000`);
+  let ready = await call(`/bench/ready?rev=${state.rev}&timeout=15000`);
+  if (ready.readyRev < state.rev) {
+    foreground();
+    ready = await call(`/bench/ready?rev=${state.rev}&timeout=30000`);
+  }
   if (ready.readyRev < state.rev) throw new Error(`le banc n'a pas affiché la révision ${state.rev} (app lancée ?)`);
   return state;
 }

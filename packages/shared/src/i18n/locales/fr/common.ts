@@ -76,6 +76,7 @@ export default {
   recommendations: "Recommandations",
   searchInLibrary: "Rechercher dans {{name}}...",
   emptyLibrary: "Aucun média dans cette bibliothèque",
+  emptyHomeHint: "Ajoutez des films ou des séries à votre serveur Jellyfin : ils apparaîtront ici.",
   seasonsCount_one: "{{count}} saison",
   seasonsCount_other: "{{count}} saisons",
   offlineTitle: "Oups, le serveur fait une pause !",

@@ -59,12 +59,13 @@ export const GlassSurface = memo(function GlassSurface({
           styles.clip,
         ]}
       >
-        {/* Le reflet : une lumière venue d'en haut à gauche, éteinte à mi-hauteur. */}
+        {/* Le reflet : une lumière venue d'en haut, éteinte avant la mi-hauteur —
+            verticale, pour ne pas tracer de diagonale sur un grand panneau. */}
         <LinearGradient
-          colors={[white(liquid ? 0.2 : 0.1), white(0)]}
-          locations={[0, 0.7]}
-          start={{ x: 0.25, y: 0 }}
-          end={{ x: 0.45, y: 0.62 }}
+          colors={[white(liquid ? 0.16 : 0.08), white(0)]}
+          locations={[0, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.42 }}
           style={StyleSheet.absoluteFill}
         />
         {/* Le bord : allumé en haut, discret ailleurs. */}

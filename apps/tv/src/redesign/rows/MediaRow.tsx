@@ -2,6 +2,7 @@ import { memo, useCallback, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { MediaCard } from "../cards/MediaCard";
+import { MORPH_OVERFLOW, MorphCard } from "../cards/MorphCard";
 import type { CardModel } from "../cards/cardTypes";
 import { useForcedFocusKey } from "../focus/focusPreview";
 import { text } from "../theme/tokens";
@@ -16,7 +17,8 @@ export interface MediaRowProps {
   rowKey: string;
   title: string;
   cards: CardModel[];
-  variant: "landscape" | "poster";
+  /** `morph` : 16:9 au repos, affiche 2:3 au focus (`MorphCard`). */
+  variant: "landscape" | "poster" | "morph";
   cardWidth?: number;
   /** Retrait gauche du titre et de la première carte (la colonne de contenu). */
   inset: number;
@@ -62,21 +64,27 @@ export const MediaRow = memo(function MediaRow({
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.track}
-        contentContainerStyle={[styles.content, { paddingLeft: inset, paddingRight: TV_STAGE.safe.x }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingLeft: inset, paddingRight: TV_STAGE.safe.x },
+          variant === "morph" && styles.morphContent,
+        ]}
       >
-        {cards.map((card, index) => (
-          <MediaCard
-            key={card.id}
-            card={card}
-            variant={variant}
-            width={cardWidth}
-            focusKey={`${rowKey}:${index}`}
-            dimmed={focusedIndex !== null && focusedIndex !== index}
-            onPress={onPressCard ? () => onPressCard(card) : undefined}
-            onLongPress={onLongPressCard ? () => onLongPressCard(card) : undefined}
-            onFocusChange={(focused) => onFocusChange(index, focused)}
-          />
-        ))}
+        {cards.map((card, index) => {
+          const common = {
+            card,
+            focusKey: `${rowKey}:${index}`,
+            dimmed: focusedIndex !== null && focusedIndex !== index,
+            onPress: onPressCard ? () => onPressCard(card) : undefined,
+            onLongPress: onLongPressCard ? () => onLongPressCard(card) : undefined,
+            onFocusChange: (focused: boolean) => onFocusChange(index, focused),
+          };
+          return variant === "morph" ? (
+            <MorphCard key={card.id} {...common} />
+          ) : (
+            <MediaCard key={card.id} {...common} variant={variant} width={cardWidth} />
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -88,4 +96,6 @@ const styles = StyleSheet.create({
   // Le débord laisse la place à l'agrandissement et à l'ombre des cartes.
   track: { overflow: "visible" },
   content: { gap: TV_STAGE.row.gap, paddingTop: 12, paddingBottom: 24 },
+  // La place que l'affiche d'une carte qui se redresse prend au-dessus.
+  morphContent: { paddingTop: MORPH_OVERFLOW, marginTop: -MORPH_OVERFLOW + 12 },
 });

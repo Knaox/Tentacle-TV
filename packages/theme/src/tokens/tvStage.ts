@@ -45,7 +45,7 @@ export const TV_STAGE = {
     top: 40,
     bottom: 40,
     collapsedWidth: 104,
-    expandedWidth: 320,
+    expandedWidth: 380,
     radius: 46,
     itemHeight: 64,
     itemRadius: 24,

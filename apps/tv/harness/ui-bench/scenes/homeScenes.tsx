@@ -30,12 +30,12 @@ function rowsOf(data: BenchData): HomeRowModel[] {
     if (key === "watchlist") rows.push({ key, title: t("common:myList"), variant: "poster", cards: cards(data.list("watchlist"), yearOf) });
     if (key.startsWith("reco:")) {
       const shelf = data.snapshot.shelves.find((s) => s.id === key.slice(5));
-      if (shelf) rows.push({ key, title: t(`reco:rows.${shelf.id}`, { defaultValue: t("nav:forYou") }), variant: "poster", cards: cards(data.items(shelf.itemIds), yearOf) });
+      if (shelf) rows.push({ key, title: t(`reco:rows.${shelf.id}`, { defaultValue: t("nav:forYou") }), variant: "morph", cards: cards(data.items(shelf.itemIds), yearOf) });
     }
   }
   for (const lib of data.snapshot.libraries) {
     const list = data.items(data.snapshot.latestByLibrary?.[lib.id], 12);
-    if (list.length) rows.push({ key: `library:${lib.id}`, title: t("common:latestAdditions", { name: lib.name }), variant: "poster", cards: cards(list, yearOf) });
+    if (list.length) rows.push({ key: `library:${lib.id}`, title: t("common:latestAdditions", { name: lib.name }), variant: "morph", cards: cards(list, yearOf) });
   }
   return rows;
 }
@@ -86,17 +86,17 @@ function HomeScene({ data, variant }: { data: BenchData; variant: "default" | "n
     );
   }
   if (variant === "empty") {
-    return <HomeView {...base} hero={null} rows={[]} status={{ kind: "empty", title: t("common:emptyLibrary"), message: t("search:emptyHint", { defaultValue: "" }) }} />;
+    return <HomeView {...base} hero={null} rows={[]} status={{ kind: "empty", title: t("common:emptyLibrary"), message: t("common:emptyHomeHint") }} />;
   }
   return <HomeView {...base} />;
 }
 
-const HOME_FOCUS = ["hero:primary", "hero:secondary", "hero:list", "resume:0", "resume:1", "nextUp:0"];
+const HOME_FOCUS = ["hero:primary", "hero:secondary", "hero:list", "resume:0", "resume:1"];
 
 export const HOME_SCENES: BenchScene[] = [
   { id: "accueil/defaut", group: "Accueil", label: "Héros et rangées", focusKeys: HOME_FOCUS, settleMs: 1600, render: (data) => <HomeScene data={data} variant="default" /> },
   { id: "accueil/navigation", group: "Accueil", label: "Navigation ouverte", focusKeys: ["nav:Home", "nav:Recommendations", "nav:Settings"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="nav" /> },
-  { id: "accueil/sans-heros", group: "Accueil", label: "Sans héros (rangées)", focusKeys: ["resume:0", "nextUp:2"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="noHero" /> },
+  { id: "accueil/sans-heros", group: "Accueil", label: "Sans héros (rangées)", focusKeys: ["resume:0", "nextUp:2", "reco:forYou:1"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="noHero" /> },
   { id: "accueil/chargement", group: "Accueil", label: "Chargement", render: (data) => <HomeScene data={data} variant="loading" /> },
   { id: "accueil/erreur", group: "Accueil", label: "Erreur de connexion", focusKeys: ["status:primary"], render: (data) => <HomeScene data={data} variant="error" /> },
   { id: "accueil/vide", group: "Accueil", label: "Bibliothèque vide", render: (data) => <HomeScene data={data} variant="empty" /> },

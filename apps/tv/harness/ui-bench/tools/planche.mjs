@@ -19,7 +19,9 @@ export function buildPlanches(shots, dir, title) {
     const out = path.join(dir, `planche-${String(sheets.length + 1).padStart(2, "0")}.png`);
     const args = ["montage", "-background", "#0b0b12", "-fill", "#ECECF4", "-font", FONT, "-pointsize", "24"];
     for (const shot of shots.slice(i, i + PER_SHEET)) args.push("-label", safe(shot.label), shot.file);
-    args.push("-tile", "2x", "-geometry", "960x540+20+20", "-title", safe(`${title} — ${sheets.length + 1}/${total}`), out);
+    // PNG24 : sans lui, montage réduit la palette et les dégradés sombres
+    // prennent des paliers qui n'existent pas à l'écran.
+    args.push("-tile", "2x", "-geometry", "960x540+20+20", "-title", safe(`${title} — ${sheets.length + 1}/${total}`), `PNG24:${out}`);
     execFileSync("magick", args);
     sheets.push(out);
   }

@@ -24,7 +24,7 @@ import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 export interface HomeRowModel {
   key: string;
   title: string;
-  variant: "landscape" | "poster";
+  variant: "landscape" | "poster" | "morph";
   cards: CardModel[];
 }
 
