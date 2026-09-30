@@ -11,7 +11,8 @@ export type RootStackParamList = {
    *  Player : sur tvOS, le Menu ferme proprement la modale (révèle l'épisode
    *  dessous) sans le flash du pop d'écran poussé. */
   PlayerSettings: undefined;
-  Trailer: { url: string; name?: string };
+  /** `itemId` : l'œuvre de la bande-annonce — son image et son titre pendant le chargement. */
+  Trailer: { url: string; name?: string; itemId?: string };
   Search: undefined;
   /** Recherche approfondie : filmographie d'une personne, genre ou studio. */
   SearchBrowse: { kind: "person" | "genre" | "studio"; id?: string; name: string };

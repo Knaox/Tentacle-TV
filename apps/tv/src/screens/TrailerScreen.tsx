@@ -10,10 +10,17 @@ import { Focusable } from "../components/focus/Focusable";
 import { CloseIcon } from "../components/icons/TVIcons";
 import { parseYouTubeId } from "@tentacle-tv/shared";
 import { TrailerWebView, TRAILER_WEBVIEW_SUPPORTED } from "./trailer/TrailerWebView";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { TrailerRedesign } from "../redesignWiring/trailer/TrailerRedesign";
 import { Colors, Typography, Radius } from "../theme/colors";
 import { Durations, Easings } from "../theme/motion";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
+
+/** Apple TV : la bande-annonce refondue ; Android TV : l'écran actuel, ci-dessous. */
+export function TrailerScreen(props: Props) {
+  return REDESIGN_ACTIVE ? <TrailerRedesign {...props} /> : <LegacyTrailerScreen {...props} />;
+}
 
 /**
  * Lecture d'une bande-annonce YouTube dans l'app (plein écran).
@@ -26,7 +33,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
  *   bouton « Fermer » React Native (discret, s'estompe après 3 s) →
  *   BACK et SELECT fonctionnent toujours.
  */
-export function TrailerScreen({ route, navigation }: Props) {
+function LegacyTrailerScreen({ route, navigation }: Props) {
   const { url, name } = route.params;
   const { t, i18n } = useTranslation("common");
   const { storage } = useTentacleConfig();
