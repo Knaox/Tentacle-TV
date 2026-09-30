@@ -4,6 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { PillButton } from "../../controls/PillButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { colors, scrim, text } from "../../theme/tokens";
@@ -16,7 +17,8 @@ import { useAppear } from "./useAppear";
  * « Voir N titres » qui referme. Menu (Retour) referme aussi : c'est
  * l'intégration qui l'écoute.
  *
- * Clés de focus : `sheet:clear`, `sheet:apply` (le contenu pose les siennes).
+ * Clés de focus : `sheet:clear`, `sheet:apply` (le contenu pose les siennes) ;
+ * le groupe `sheet:footer` les réunit, sur toute la largeur du panneau.
  */
 
 export interface FilterSheetProps {
@@ -68,14 +70,14 @@ export const FilterSheet = memo(function FilterSheet({
               {subtitle ? <Text style={[text.meta, styles.subtitle]} numberOfLines={1}>{subtitle}</Text> : null}
             </View>
             {children}
-            <View style={styles.footer}>
+            <FocusGroup focusKey="sheet:footer" style={styles.footer}>
               {clearLabel ? (
                 <PillButton variant="glass" size="md" icon="close" label={clearLabel} focusKey="sheet:clear" onPress={onClear} />
               ) : (
                 <View />
               )}
               <PillButton variant="primary" size="md" icon="check" label={applyLabel} focusKey="sheet:apply" onPress={onApply} />
-            </View>
+            </FocusGroup>
           </GlassSurface>
         </Animated.View>
       </View>
