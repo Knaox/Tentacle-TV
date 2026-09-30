@@ -34,6 +34,9 @@ export interface RedesignScreenOptions {
   onBack?: () => boolean;
   /** Choisir l'entrée de la page où l'on est ; défaut : rendre le focus au contenu. */
   onReselect?: () => void;
+  /** Le magasin de focus de l'écran, quand l'écran en a besoin AVANT ce hook
+   *  (sinon il en crée un). */
+  focus?: FocusStore;
 }
 
 export interface RedesignScreenModel {
@@ -51,8 +54,9 @@ export interface RedesignScreenModel {
   onBack?: () => boolean;
 }
 
-export function useRedesignScreen({ railKey, entryKey = null, onBack, onReselect }: RedesignScreenOptions): RedesignScreenModel {
-  const focus = useFocusStore();
+export function useRedesignScreen({ railKey, entryKey = null, onBack, onReselect, focus: given }: RedesignScreenOptions): RedesignScreenModel {
+  const own = useFocusStore();
+  const focus = given ?? own;
   const entries = useNavEntries();
   const railFocused = useRailFocused(focus);
   const { contentKey } = useEntryFocus(focus, entryKey);

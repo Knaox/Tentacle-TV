@@ -36,12 +36,14 @@ export function ForYouRedesign({ navigation }: Props) {
 
   const models = useForYouModels();
   const { filter, removeFilter } = useRecoFilter();
-  const { data: heroItem } = useMediaItem(models.heroReco?.jellyfinItemId ?? undefined);
+  const heroId = models.heroReco?.jellyfinItemId ?? undefined;
+  const { data: heroData, isError: heroFailed } = useMediaItem(heroId);
+  const heroItem = heroData && heroData.Id === heroId ? heroData : undefined;
   const toggles = useCardToggles(heroItem ?? ({ Id: "" } as MediaItem));
   const isSeries = heroItem?.Type === "Series";
   const { data: watchState } = useSeriesWatchState(isSeries ? heroItem?.Id : undefined);
 
-  const hero = useMemo(
+  const fresh = useMemo(
     () =>
       heroItem
         ? heroModelOf(client, t, {
@@ -54,6 +56,13 @@ export function ForYouRedesign({ navigation }: Props) {
         : null,
     [client, t, heroItem, models.heroReason, toggles.watchlist],
   );
+  // La tête attend sa fiche (logo, fond, métadonnées) : au premier affichage,
+  // la page se dit en chargement plutôt que de s'afficher sans elle — ensuite,
+  // la tête précédente reste le temps que la nouvelle arrive.
+  const shownHero = useRef<typeof fresh>(null);
+  if (fresh || !heroId || heroFailed) shownHero.current = fresh;
+  const hero = shownHero.current;
+  const heroPending = !!heroId && !hero && !heroFailed;
 
   const status = useMemo<StatusPanelProps | null>(() => {
     if (models.isError) {
@@ -64,11 +73,11 @@ export function ForYouRedesign({ navigation }: Props) {
         primary: { label: t("common:retry"), icon: "refresh", onPress: models.refetch },
       };
     }
-    if (models.loading) return { kind: "loading", title: t("common:loading") };
+    if (models.loading || heroPending) return { kind: "loading", title: t("common:loading") };
     if (models.notice === "preparing") return { kind: "loading", title: t("reco:tvPreparingTitle"), message: t("reco:generatingHint") };
     if (models.empty) return { kind: "empty", title: t("reco:tvEmptyTitle"), message: t("reco:tvEmpty") };
     return null;
-  }, [models.isError, models.loading, models.notice, models.empty, models.refetch, t]);
+  }, [models.isError, models.loading, heroPending, models.notice, models.empty, models.refetch, t]);
 
   const notice = useMemo(
     () =>

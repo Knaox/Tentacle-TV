@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
-import { useCardToggles, useFeaturedItems, useJellyfinClient, useMediaItem, useSeriesWatchState } from "@tentacle-tv/api-client";
+import { useCardToggles, useFeaturedItems, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { HeroModel } from "../../redesign/hero/HeroBanner";
 import { backdropUriOf } from "../cards/cardArtwork";
 import type { FocusStore } from "../focus/focusStore";
 import { heroModelOf } from "../hero/heroModel";
+import { HERO_MAX_ITEMS, useHeroArts } from "./useHeroArts";
 
 /**
  * Le héros de l'accueil : les visionnages à REPRENDRE d'abord (cinq au plus),
@@ -21,14 +22,13 @@ import { heroModelOf } from "../hero/heroModel";
  */
 
 const ROTATE_MS = 8_000;
-const MAX_ITEMS = 5;
-
-const artIdOf = (item: MediaItem | undefined) => (item?.Type === "Episode" && item.SeriesId ? item.SeriesId : item?.Id);
 
 export interface HomeHero {
   hero: HeroModel | null;
   /** L'item du héros affiché (lecture, fiche). */
   current: MediaItem | null;
+  /** Des titres attendent le premier art : l'écran se dit « en chargement ». */
+  pending: boolean;
   onPrimary: () => void;
   onSecondary: () => void;
   onToggleList: () => void;
@@ -56,7 +56,7 @@ export function useHomeHero(
   const client = useJellyfinClient();
   const featured = useFeaturedItems().data;
   const fromResume = !!resume && resume.length > 0;
-  const items = useMemo(() => (fromResume ? resume!.slice(0, MAX_ITEMS) : (featured ?? []).slice(0, MAX_ITEMS)), [fromResume, resume, featured]);
+  const items = useMemo(() => (fromResume ? resume!.slice(0, HERO_MAX_ITEMS) : (featured ?? []).slice(0, HERO_MAX_ITEMS)), [fromResume, resume, featured]);
 
   const [index, setIndex] = useState(0);
   const safeIndex = items.length > 0 ? index % items.length : 0;
@@ -76,23 +76,31 @@ export function useHomeHero(
     }
   }, [items, client]);
 
-  const current = items[safeIndex] ?? null;
-  const { data: art } = useMediaItem(artIdOf(current ?? undefined));
-  const face = art && art.Id === artIdOf(current ?? undefined) ? art : current;
+  const arts = useHeroArts(items);
+  // Le titre AFFICHÉ : celui de la rotation dès que son art est là ; sinon le
+  // précédent reste. Le titre ne s'écrit jamais en lettres pour céder ensuite
+  // la place à son logo — et les boutons visent toujours ce qui est affiché.
+  const candidate = items[safeIndex] ?? null;
+  const shown = useRef<MediaItem | null>(null);
+  if (items.length === 0) shown.current = null;
+  else if (candidate && arts.settled(candidate)) shown.current = candidate;
+  const current = shown.current;
+  const face = current ? arts.artOf(current) ?? current : null;
   const toggles = useCardToggles(face ?? ({ Id: "" } as MediaItem));
   const isSeries = current?.Type === "Series";
   const { data: watchState } = useSeriesWatchState(isSeries ? current?.Id : undefined);
 
   const hero = useMemo(() => {
     if (!current || !face) return null;
+    const position = items.findIndex((item) => item.Id === current.Id);
     return heroModelOf(client, t, {
       item: current,
       art: face,
       kicker: fromResume ? t("common:resumeWatching") : undefined,
-      page: { index: safeIndex, count: items.length },
+      page: { index: position >= 0 ? position : safeIndex, count: items.length },
       inWatchlist: toggles.watchlist,
     });
-  }, [client, t, current, face, fromResume, safeIndex, items.length, toggles.watchlist]);
+  }, [client, t, current, face, fromResume, items, safeIndex, toggles.watchlist]);
 
   // Des gestes STABLES, qui lisent l'état du moment : le héros ne se
   // redessine pas quand seule la lumière du fond change.
@@ -115,5 +123,5 @@ export function useHomeHero(
     if (live.current.face) live.current.toggles.toggleList();
   }, []);
 
-  return { hero, current, onPrimary, onSecondary, onToggleList };
+  return { hero, current, pending: items.length > 0 && !hero, onPrimary, onSecondary, onToggleList };
 }

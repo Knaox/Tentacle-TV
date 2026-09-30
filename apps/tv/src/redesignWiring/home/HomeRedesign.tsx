@@ -15,6 +15,7 @@ import { useRecoFilterChipRow } from "../../components/reco/useRecoFilterChipRow
 import { useHomeLifecycle } from "../../hooks/useHomeLifecycle";
 import type { RootStackParamList } from "../../navigation/types";
 import { useRecoFilter } from "../reco/useRecoFilter";
+import { useFocusStore } from "../focus/focusStore";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useAmbientPalette } from "../screen/useAmbientPalette";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
@@ -50,17 +51,21 @@ export function HomeRedesign({ navigation }: Props) {
   const play = useCallback((item: MediaItem) => navigation.navigate("Player", { itemId: item.Id }), [navigation]);
   const detail = useCallback((item: MediaItem) => navigation.navigate("MediaDetail", { itemId: item.Id }), [navigation]);
 
-  // L'état de l'écran d'abord : il décide de l'entrée du focus.
-  const failed = featuredQuery.isError && librariesQuery.isError;
-  const loading = !failed && (featuredQuery.isLoading || librariesQuery.isLoading) && !featuredQuery.data && !librariesQuery.data;
-  const empty = !loading && !failed && featuredQuery.data?.length === 0 && home.rows.length === 0 && !home.resume?.length;
-  const hasHero = !!(home.resume?.length || featuredQuery.data?.length);
-  const firstCard = home.rows[0] ? `${home.rows[0].key}:0` : null;
-  const entryKey = failed ? "status:primary" : loading || empty ? null : hasHero ? "hero:primary" : firstCard;
+  const focus = useFocusStore();
+  const hero = useHomeHero(focus, home.resume, { play, detail });
 
-  const screen = useRedesignScreen({ railKey: "Home", entryKey });
-  const hero = useHomeHero(screen.focus, home.resume, { play, detail });
-  const { focusedPalette, onFocusCard } = useAmbientPalette(screen.focus);
+  // L'état de l'écran d'abord : il décide de l'entrée du focus. Le premier
+  // héros attend l'art de son titre (logo, fond) : l'écran se dit en
+  // chargement plutôt que de s'afficher sans lui.
+  const failed = featuredQuery.isError && librariesQuery.isError;
+  const loading =
+    !failed && (((featuredQuery.isLoading || librariesQuery.isLoading) && !featuredQuery.data && !librariesQuery.data) || hero.pending);
+  const empty = !loading && !failed && featuredQuery.data?.length === 0 && home.rows.length === 0 && !home.resume?.length;
+  const firstCard = home.rows[0] ? `${home.rows[0].key}:0` : null;
+  const entryKey = failed ? "status:primary" : loading || empty ? null : hero.hero ? "hero:primary" : firstCard;
+
+  const screen = useRedesignScreen({ railKey: "Home", entryKey, focus });
+  const { focusedPalette, onFocusCard } = useAmbientPalette(focus);
   const cardActions = useTVCardActions();
 
   const retry = useCallback(() => {
