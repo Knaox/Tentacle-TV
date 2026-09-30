@@ -19,6 +19,11 @@ import { NativeGlassView } from "./nativeGlass";
  *
  * `tone` règle la densité : `regular` (navigation, panneaux), `strong`
  * (feuilles, menus lus longtemps), `clear` (boutons posés sur une image).
+ *
+ * Le verre natif, mesuré au banc (`docs/TV-REFONTE.md`, « Le verre natif ») :
+ * rien à l'arrêt, rien sous une opacité 0, un fondu de parent qui passe sans
+ * saut ; il se paie quand ce qu'il couvre BOUGE — environ deux fois et demie la
+ * simulation au pire cas (une image qui glisse sous six verres).
  */
 
 export type GlassTone = "regular" | "strong" | "clear";

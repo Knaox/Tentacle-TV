@@ -12,6 +12,12 @@
 //  monter la vue — fausse avant tvOS 26, il garde la simulation, et la vue
 //  n'est jamais créée.
 //
+//  L'en-tête de `UIVisualEffectView` met en garde contre une opacité < 1 et un
+//  masque sur un parent. L'opacité est éprouvée au banc (scène `verre/fondu`,
+//  tvOS 26.2) : sous un parent à 0,75 ou 0,5, le verre garde son flou et se
+//  mélange au fond — les fondus des vues passent. Le masque ne l'est pas :
+//  `GlassSurface` n'en pose aucun.
+//
 
 #import <React/RCTViewManager.h>
 #import <UIKit/UIKit.h>

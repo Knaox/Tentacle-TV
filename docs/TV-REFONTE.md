@@ -82,7 +82,65 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   `container` STABLE (guide de focus : mémoire, piège, destinations).
 - Le Liquid Glass passe par `LiquidGlassProvider` / `useLiquidGlassEnabled`
   (`redesign/glass/liquidGlassMode.tsx`), clé `tentacle_liquid_glass`,
-  activé par défaut.
+  activé par défaut. Le verre lui-même ne se dessine qu'à un endroit,
+  `GlassSurface` : natif sur tvOS 26, simulé ailleurs (ci-dessous).
+
+## Le verre natif (tvOS 26)
+
+`GlassSurface` monte en couche de fond la vue native `TentacleGlassView`
+(`ios/TentacleTV/TentacleGlassView.m`) : un `UIVisualEffectView` porteur d'un
+`UIGlassEffect`, sous les enfants, sans rien changer à son contrat. Trois
+rendus, décidés par `useGlassRendering()` :
+
+| Rendu | Quand | Ce qu'on voit |
+|---|---|---|
+| `native` | Liquid Glass activé, tvOS 26 | Le verre du système : flou, réfraction, liseré spéculaire. `regular` → style régulier, `strong` → régulier assombri (teinte noire 0,3), `clear` → style clair. |
+| `simulated` | Liquid Glass activé, tvOS 17–18 | Le voile blanc, le reflet et le liseré dessinés — le repli. |
+| `enriched` | Liquid Glass coupé | Le verre enrichi du bureau. |
+
+- **Disponibilité** : la constante `supported` de la vue (tvOS 26 et la classe
+  présente), lue une fois par `redesign/glass/nativeGlass.ts`. Android TV et un
+  binaire plus ancien n'ont pas la vue : simulation, sans bruit. Les classes
+  tvOS 26 sont liées en faible (`nm -m` : `weak external`) — un tvOS 17–18
+  charge l'app sans elles.
+- **Au banc** : `glass on` (natif), `glass sim` (le repli, montré sur tvOS 26),
+  `glass off` ; `planche … --glass=on,sim,off`. La scène `banc/focus` dit quel
+  verre est rendu. Groupes « Verre » (à l'œil) et « Mesure » (au compteur).
+- **Dans l'app** (simulateur tvOS 26.2) : la vue est enregistrée
+  (`getViewManagerConfig` → `supported: true`) ; un `GlassSurface` posé à
+  l'essai sur l'écran de jumelage le floute et le réfracte. Les écrans de la
+  refonte l'auront dès leur branchement, sans rien d'autre à faire.
+
+### Mesuré (`bench:ui gpu`, simulateur tvOS 26.2)
+
+Temps GPU des services de rendu du simulateur, en ms par seconde ; deux tours
+de 8 à 10 s par cas, en alternance.
+
+| Cas | Sans verre | Natif | Simulé | Enrichi |
+|---|---|---|---|---|
+| Écran fixe (`verre/image`) | — | 0 | 0 | — |
+| Image qui glisse sous six verres (`mesure/verre`) | 51 | 208 | 85 | 83 |
+| Les mêmes, sous une opacité 0 (`mesure/cache`) | 51 | 60 | 45 | 57 |
+| Accueil, focus qui parcourt « Reprendre » | — | 47,6 | 41,5 | 41,3 |
+| Lecteur, focus sur les boutons du transport | — | 11,5 | 9,4 | 9,1 |
+
+Ce qu'on en tire :
+- **À l'arrêt, rien** : le verre natif ne s'anime pas seul.
+- **Masqué, rien** : sous une opacité 0, Core Animation l'écarte (dans le
+  bruit). Contrairement au `backdrop-filter` du web, un fondu à 0 suffit — les
+  pilules et la navigation, qui fondent leur verre au focus, n'ont rien à
+  démonter.
+- **Un fondu passe** : sous un parent à 0,75 ou 0,5, le verre garde son flou
+  et se mélange au fond (`verre/fondu`) — l'avertissement d'UIKit sur
+  l'opacité ne se vérifie pas ici.
+- **Il se paie quand ce qu'il couvre BOUGE** : +15 à +22 % sur les parcours
+  réels, deux fois et demie la simulation au pire cas. Le cas à surveiller :
+  l'habillage du lecteur sur une vidéo qui DÉFILE (le banc n'a qu'une image
+  fixe) — à mesurer sur l'Apple TV lors du branchement du lecteur.
+- **Le rendu** : plus sombre que la simulation sur fond sombre, liseré qui
+  prend la couleur de l'œuvre. Lisible partout (planches comparatives). Les
+  feuilles posées sur un fond fumé presque opaque (filtres, actions) y
+  paraissent presque noires : ce fond date d'avant le flou natif.
 
 ---
 
