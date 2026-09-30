@@ -1,0 +1,141 @@
+#!/usr/bin/env node
+// Le banc UI en ligne de commande : lancer, piloter, capturer — sans
+// télécommande ni navigateur. Voir README.md pour le déroulé complet.
+import { spawn } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { ensureSimulator, launchApp, screenshot } from "./tools/simulator.mjs";
+import { buildPlanches } from "./tools/planche.mjs";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const APP_DIR = path.resolve(HERE, "../..");
+const OUT = path.join(HERE, "out");
+const BENCH_PORT = Number(process.env.BENCH_PORT ?? 8093);
+const METRO_PORT = Number(process.env.METRO_PORT ?? 8094);
+const RELAY = `http://127.0.0.1:${BENCH_PORT}`;
+
+async function call(pathname, init) {
+  const res = await fetch(`${RELAY}${pathname}`, init).catch(() => null);
+  if (!res) throw new Error(`relais injoignable sur ${BENCH_PORT} — lancer d'abord « bench.mjs up »`);
+  return res.json();
+}
+
+const post = (pathname, body) =>
+  call(pathname, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+
+/** Pose un état et attend que le banc l'affiche (images comprises). */
+async function apply(patch) {
+  const state = await post("/bench/control", patch);
+  const ready = await call(`/bench/ready?rev=${state.rev}&timeout=30000`);
+  if (ready.readyRev < state.rev) throw new Error(`le banc n'a pas affiché la révision ${state.rev} (app lancée ?)`);
+  return state;
+}
+
+async function scenes(prefix = "") {
+  const list = await call("/bench/scenes");
+  if (!list.length) throw new Error("aucune scène publiée — l'app du banc tourne-t-elle ?");
+  return list.filter((scene) => scene.id.startsWith(prefix));
+}
+
+function up() {
+  const children = [
+    ["metro", spawn("npx", ["react-native", "start", "--port", String(METRO_PORT)], { cwd: APP_DIR, env: process.env })],
+    ["relais", spawn(process.execPath, [path.join(HERE, "relay.mjs")], { env: { ...process.env, BENCH_PORT: String(BENCH_PORT), METRO_PORT: String(METRO_PORT) } })],
+  ];
+  for (const [name, child] of children) {
+    for (const stream of [child.stdout, child.stderr]) {
+      stream.on("data", (chunk) => {
+        for (const line of String(chunk).split("\n")) if (line.trim()) console.log(name === "metro" ? `[metro] ${line}` : line);
+      });
+    }
+    child.on("exit", (code) => console.log(`[${name}] terminé (${code})`));
+  }
+  const stop = () => {
+    for (const [, child] of children) child.kill("SIGTERM");
+    process.exit(0);
+  };
+  process.on("SIGINT", stop);
+  process.on("SIGTERM", stop);
+}
+
+/** Toutes les scènes d'un préfixe, chacune dans chaque variante demandée,
+ *  capturées puis assemblées en planches. */
+async function planche(args) {
+  const prefix = args.find((a) => !a.startsWith("--")) ?? "";
+  const withFocus = args.includes("--focus");
+  const langs = (args.find((a) => a.startsWith("--lang="))?.slice(7) ?? "").split(",").filter(Boolean);
+  const glasses = (args.find((a) => a.startsWith("--glass="))?.slice(8) ?? "").split(",").filter(Boolean);
+  const list = await scenes(prefix);
+  const initial = await call("/bench/state");
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  const dir = path.join(OUT, `${stamp}${prefix ? `-${prefix.replace(/[^a-z0-9]+/gi, "-")}` : ""}`);
+  fs.mkdirSync(dir, { recursive: true });
+  const shots = [];
+  for (const lang of langs.length ? langs : [initial.lang]) {
+    for (const glass of glasses.length ? glasses : [initial.glass ? "on" : "off"]) {
+      for (const scene of list) {
+        const focusKeys = withFocus && scene.focusKeys.length ? scene.focusKeys : [null];
+        for (const focus of focusKeys) {
+          await apply({ scene: scene.id, focus, lang, glass: glass === "on" });
+          const variant = [langs.length > 1 && lang, glasses.length > 1 && (glass === "on" ? "verre" : "enrichi"), focus && `focus ${focus}`].filter(Boolean).join(" · ");
+          const file = path.join(dir, `${String(shots.length).padStart(3, "0")}-${scene.id.replace(/\//g, "_")}${focus ? `__${focus.replace(/[^a-z0-9]+/gi, "-")}` : ""}.png`);
+          screenshot(file);
+          shots.push({ file, label: `${scene.group} · ${scene.label}${variant ? ` · ${variant}` : ""}` });
+          console.log(`capturé ${path.basename(file)}`);
+        }
+      }
+    }
+  }
+  await apply({ scene: initial.scene, focus: initial.focus, lang: initial.lang, glass: initial.glass });
+  const sheets = buildPlanches(shots, dir, prefix || "toutes les scènes");
+  for (const sheet of sheets) console.log(`planche ${sheet}`);
+}
+
+const [command = "help", ...args] = process.argv.slice(2);
+
+const commands = {
+  up,
+  sim: () => {
+    const udid = ensureSimulator(BENCH_PORT);
+    launchApp(udid);
+  },
+  launch: () => launchApp(ensureSimulator(BENCH_PORT, { quiet: true })),
+  list: async () => {
+    for (const scene of await scenes(args[0])) console.log(`${scene.id.padEnd(36)} ${scene.group} · ${scene.label}${scene.focusKeys.length ? ` (${scene.focusKeys.length} focus)` : ""}`);
+  },
+  scene: () => apply({ scene: args[0], focus: null }),
+  menu: () => apply({ scene: null, focus: null }),
+  next: async () => step(1),
+  prev: async () => step(-1),
+  focus: () => apply({ focus: !args[0] || args[0] === "off" ? null : args[0] }),
+  glass: () => apply({ glass: args[0] !== "off" }),
+  lang: () => apply({ lang: args[0] === "en" ? "en" : "fr" }),
+  shot: async () => {
+    fs.mkdirSync(OUT, { recursive: true });
+    const file = path.join(OUT, `${args[0] ?? `capture-${Date.now()}`}.png`);
+    screenshot(file);
+    console.log(file);
+  },
+  planche: () => planche(args),
+  help: () => console.log(fs.readFileSync(path.join(HERE, "README.md"), "utf8").split("\n## ")[1] ?? ""),
+};
+
+async function step(delta) {
+  const list = await scenes();
+  const state = await call("/bench/state");
+  const index = list.findIndex((scene) => scene.id === state.scene);
+  const next = list[(index + delta + list.length) % list.length];
+  await apply({ scene: next.id, focus: null });
+  console.log(`${next.id} — ${next.group} · ${next.label}`);
+}
+
+const run = commands[command];
+if (!run) {
+  console.error(`commande inconnue : ${command}`);
+  process.exit(1);
+}
+Promise.resolve(run()).catch((error) => {
+  console.error(`✗ ${error.message}`);
+  process.exit(1);
+});

@@ -91,6 +91,42 @@ export default tseslint.config(
     rules: { "@typescript-eslint/no-require-imports": "off" },
   },
 
+  // La refonte de l'UI TV : des VUES, rien que des vues. Une vue reçoit des
+  // props et rend des callbacks ; les données, la navigation, le lecteur, le
+  // stockage et la logique de focus restent dans l'app, qui la branchera. La
+  // règle tient ici plutôt qu'en relecture : une seule importation fautive
+  // suffirait à rendre la vue inmontable au banc, qui n'a ni compte ni pile.
+  //
+  // Un import relatif ne sort pas de `redesign/` : la refonte ne s'appuie que
+  // sur les paquets partagés (`shared`, `theme`, `tv-core`) et sur elle-même.
+  // ESLint ne résout pas les chemins — on compte donc les `../` selon la
+  // profondeur du fichier, un bloc par étage.
+  ...[0, 1, 2, 3, 4].map((depth) => ({
+    files: [`apps/tv/src/redesign/${"*/".repeat(depth)}*.{ts,tsx}`],
+    rules: {
+      "no-restricted-imports": ["error", {
+        paths: [
+          { name: "@react-native-async-storage/async-storage", message: "Refonte TV : une vue ne lit pas le stockage — la valeur arrive en prop." },
+          { name: "react-native-video", message: "Refonte TV : le lecteur n'entre pas dans une vue — l'habillage reçoit un état." },
+        ],
+        patterns: [
+          { group: ["@tentacle-tv/api-client", "@tentacle-tv/api-client/*"], message: "Refonte TV : une vue reçoit ses données en props — le branchement est une tâche à part." },
+          { group: ["@react-navigation/*"], message: "Refonte TV : une vue rend des callbacks, elle ne navigue pas." },
+          { regex: `^(\\.\\./){${depth + 1}}`, message: "Refonte TV : rien de l'app actuelle (données, focus, lecteur, stockage) — seulement redesign/ et les paquets partagés." },
+        ],
+      }],
+    },
+  })),
+  {
+    files: ["apps/tv/src/redesign/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": ["error",
+        { selector: "ImportSpecifier[imported.name=/^(TVFocusGuideView|useTVEventHandler|TVEventHandler|BackHandler|TVEventControl)$/]", message: "Refonte TV : aucune logique de focus ni de Retour dans une vue." },
+        { selector: "JSXAttribute[name.name=/^(nextFocus(Up|Down|Left|Right|Forward)|hasTVPreferredFocus|autoFocus|trapFocus(Up|Down|Left|Right)|destinations)$/]", message: "Refonte TV : aucune logique de focus dans une vue — elle se pose à l'intégration." },
+      ],
+    },
+  },
+
   // Gabarits qui portent du HTML dans une chaîne JavaScript : `<\/script>` y est
   // OBLIGATOIRE. Sans l'échappement, l'analyseur du document hôte referme la
   // balise au milieu de la chaîne et la page casse. La règle croit à une
