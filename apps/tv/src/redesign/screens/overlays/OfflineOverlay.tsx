@@ -4,6 +4,7 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { BrandMark } from "../../brand/BrandMark";
 import { PillButton } from "../../controls/PillButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim, text } from "../../theme/tokens";
@@ -20,6 +21,9 @@ import { ConfirmPill } from "../settings/ConfirmPill";
  * `onRetry` relance le test (`retrying` pendant qu'il court), `onLogout`
  * purge la session et revient au jumelage. Le focus reste DANS le panneau
  * et Retour quitte l'application : c'est l'intégration qui le tient.
+ *
+ * Clés de focus : `offline:retry`, `offline:logout` ; groupe
+ * `offline:panel` (le panneau, où l'intégration retient le focus).
  */
 
 export interface OfflineOverlayProps {
@@ -35,7 +39,7 @@ export const OfflineOverlay = memo(function OfflineOverlay({ serverUrl, retrying
   return (
     <Animated.View entering={FadeIn.duration(300)} style={styles.layer}>
       <View style={styles.veil} />
-      <View style={styles.panel}>
+      <FocusGroup focusKey="offline:panel" style={styles.panel}>
         <View style={[StyleSheet.absoluteFill, styles.base]} />
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} elevated />
         <BrandMark size={176} crying />
@@ -58,7 +62,7 @@ export const OfflineOverlay = memo(function OfflineOverlay({ serverUrl, retrying
             <Text style={styles.serverText} numberOfLines={1}>{serverUrl}</Text>
           </View>
         ) : null}
-      </View>
+      </FocusGroup>
     </Animated.View>
   );
 });

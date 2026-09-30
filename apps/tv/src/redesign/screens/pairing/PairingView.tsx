@@ -28,6 +28,12 @@ export type { CodeState, PairingLanguage, PairingStep, PairingViewProps, ServerE
  * `onSubmitUrl`, `onBack` ; code du serveur → `useDevicePairGenerate` +
  * `useDevicePairStatus`, `onChangeServer` ; succès → nom (et portrait) du
  * compte, puis `navigation.replace("Home")`.
+ *
+ * Clés de focus : accueil `pairing:showCode`, `pairing:manual`,
+ * `pairing:lang:<fr|en>` ; code `pairing:cancel` (relais) ou
+ * `pairing:changeServer` (serveur), `pairing:retry`, `pairing:manual`,
+ * `pairing:regenerate` ; serveur `pairing:url`, `pairing:check`,
+ * `pairing:back`. Groupes : `pairing:side` et `pairing:card` (`CodeStep`).
  */
 
 /** Une lumière chaude, sans violet : l'ambre de l'accent et un bleu-vert

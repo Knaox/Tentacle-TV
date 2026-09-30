@@ -6,6 +6,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../color/artworkPalette";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useLiquidGlassEnabled } from "../../glass/liquidGlassMode";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
@@ -51,6 +52,15 @@ import type {
  * - Liquid Glass : lu sur `LiquidGlassProvider` (clé `tentacle_liquid_glass`),
  *   `onToggleLiquidGlass` écrit la clé ;
  * - `about` : `versions.json` (`tv`), serveur, compte, appareil, année.
+ *
+ * Clés de focus : `settings:tab:<onglet>`, `settings:changeServer`,
+ * `settings:logout`, `settings:preset:<mode>`, `settings:lang:<fr|en>`,
+ * `settings:lib:<i>:<réglage|reset>`, `settings:tunneling`,
+ * `settings:matchFrameRate`, `settings:liquidGlass`,
+ * `settings:choice:<i>` (liste de choix). Groupes : `settings:tabs` (la
+ * colonne des onglets) et `settings:panel` (le panneau) — GAUCHE depuis le
+ * panneau revient à l'onglet affiché, DROITE depuis un onglet entre dans le
+ * panneau là où on l'avait laissé.
  */
 
 export interface SettingsViewProps {
@@ -113,11 +123,11 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
       <Text style={[text.title, styles.title]}>{t("preferences:settingsTitle")}</Text>
-      <View style={styles.tabs}>
+      <FocusGroup focusKey="settings:tabs" style={styles.tabs}>
         <SettingsTabs items={tabs} active={tab} onSelect={props.onSelectTab} />
-      </View>
+      </FocusGroup>
       <GlassSurface radius={PANEL_RADIUS} style={styles.panel} elevated>
-        <View style={styles.clip}>
+        <FocusGroup focusKey="settings:panel" style={styles.clip}>
           <ScrollView
             key={tab}
             contentOffset={{ x: 0, y: props.panelScrollY ?? 0 }}
@@ -148,7 +158,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
             ) : null}
             {tab === "about" ? <AboutPanel about={about} /> : null}
           </ScrollView>
-        </View>
+        </FocusGroup>
       </GlassSurface>
       <View style={styles.brand} pointerEvents="none">
         <BrandMark size={52} />

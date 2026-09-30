@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
+import { FocusGroup } from "../../focus/FocusGroup";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { PillButton } from "../../controls/PillButton";
 import { GlassSurface } from "../../glass/GlassSurface";
@@ -19,6 +20,11 @@ import type { CodeState } from "./pairingTypes";
  * Branchement : relais → `useRelayGenerate` / `useRelayStatus` ; serveur →
  * `useDevicePairGenerate` / `useDevicePairStatus`. Le compte à rebours
  * (5 min) est tenu par l'intégration, qui passe `remainingSeconds`.
+ *
+ * Groupes de focus : `pairing:side` (la colonne de gauche et sa sortie) et
+ * `pairing:card` (la carte du code). Leurs boutons ne sont pas alignés :
+ * l'intégration y pose des guides pour que GAUCHE et DROITE passent de l'un
+ * à l'autre.
  */
 
 const STEPS = ["pairing:tvStepOpenApp", "pairing:tvStepPairTv", "pairing:tvStepEnterCode"];
@@ -38,7 +44,7 @@ export const CodeStep = memo(function CodeStep({ source, code, serverUrl, palett
   const relay = source === "relay";
   return (
     <View style={styles.row}>
-      <View style={styles.left}>
+      <FocusGroup focusKey="pairing:side" style={styles.left}>
         <Text style={styles.title}>{t("pairing:tvPairTitle")}</Text>
         {serverUrl ? (
           <View style={styles.server}>
@@ -64,15 +70,15 @@ export const CodeStep = memo(function CodeStep({ source, code, serverUrl, palett
             <PillButton icon="server" label={t("pairing:changeServer")} focusKey="pairing:changeServer" onPress={onChangeServer} />
           )}
         </View>
-      </View>
-      <View>
+      </FocusGroup>
+      <FocusGroup focusKey="pairing:card">
         <ArtworkHalo width={CARD_WIDTH} height={CARD_HEIGHT} radius={CARD_RADIUS} palette={palette} opacity={0.42} spread={18} />
         <CodeCard
           code={code}
           onRetry={onRetry}
           fallback={relay ? { label: t("pairing:configureManually"), onPress: onManualSetup } : undefined}
         />
-      </View>
+      </FocusGroup>
     </View>
   );
 });
