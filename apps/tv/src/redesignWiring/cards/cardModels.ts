@@ -112,6 +112,23 @@ export function useCardModelFactory(): CardModelFactory {
   );
 }
 
+/** Les cartes d'une liste, en reprenant l'objet précédent de chaque titre
+ *  qui n'a pas changé. Un titre en double ne garde que sa première carte. */
+function stableCards(
+  previous: ReadonlyMap<string, CardModel>,
+  items: readonly MediaItem[] | null | undefined,
+  build: (item: MediaItem) => CardModel,
+): Map<string, CardModel> {
+  const next = new Map<string, CardModel>();
+  for (const item of items ?? []) {
+    if (!item?.Id || next.has(item.Id)) continue;
+    const fresh = build(item);
+    const old = previous.get(item.Id);
+    next.set(item.Id, old && sameCard(old, fresh) ? old : fresh);
+  }
+  return next;
+}
+
 /**
  * Les cartes d'une liste, stables d'un rendu à l'autre. Un titre présent deux
  * fois (deux lots de la même série dans les derniers ajouts) ne garde que sa
@@ -124,16 +141,42 @@ export function useCardModels(items: readonly MediaItem[] | null | undefined, op
   const previous = useRef(new Map<string, CardModel>());
   const { variant, subtitle, scope, badge } = options;
   return useMemo(() => {
-    const next = new Map<string, CardModel>();
-    for (const item of items ?? []) {
-      if (!item?.Id || next.has(item.Id)) continue;
-      const fresh = factory(item, { variant, subtitle, scope, badge }, seriesRatings);
-      const old = previous.current.get(item.Id);
-      next.set(item.Id, old && sameCard(old, fresh) ? old : fresh);
-    }
+    const next = stableCards(previous.current, items, (item) => factory(item, { variant, subtitle, scope, badge }, seriesRatings));
     previous.current = next;
     return [...next.values()];
   }, [items, factory, seriesRatings, variant, subtitle, scope, badge]);
+}
+
+/** Construit les cartes d'une liste nommée ; `decorate` complète un modèle
+ *  (raison d'une recommandation, étiquette « Découverte »…). */
+export type CardListBuilder = (
+  listKey: string,
+  items: readonly MediaItem[] | null | undefined,
+  options: CardModelOptions,
+  decorate?: (item: MediaItem, card: CardModel) => CardModel,
+) => CardModel[];
+
+/**
+ * Plusieurs listes de cartes stables, une par clé — pour un écran qui rend
+ * toutes ses rangées d'un coup (l'accueil, « Pour vous ») et ne peut donc pas
+ * appeler `useCardModels` rangée par rangée. À appeler pendant le rendu, dans
+ * un `useMemo` qui dépend du constructeur rendu ici.
+ */
+export function useCardLists(seriesRatings?: ReadonlyMap<string, number> | null): CardListBuilder {
+  const factory = useCardModelFactory();
+  const lists = useRef(new Map<string, Map<string, CardModel>>());
+  return useCallback<CardListBuilder>(
+    (listKey, items, options, decorate) => {
+      const build = (item: MediaItem) => {
+        const card = factory(item, options, seriesRatings);
+        return decorate ? decorate(item, card) : card;
+      };
+      const next = stableCards(lists.current.get(listKey) ?? new Map(), items, build);
+      lists.current.set(listKey, next);
+      return [...next.values()];
+    },
+    [factory, seriesRatings],
+  );
 }
 
 export { paletteOfItem } from "./cardArtwork";

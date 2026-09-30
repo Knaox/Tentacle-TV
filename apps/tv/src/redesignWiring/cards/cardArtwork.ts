@@ -74,6 +74,9 @@ export function landscapeOf(client: ImageClient, item: MediaItem): { uri?: strin
   const thumb = item.ImageTags?.Thumb;
   if (thumb) return { uri: at(item.Id, "Thumb", thumb) };
   const backdrop = item.BackdropImageTags?.[0];
+  // Une tuile de lot (« +3 épisodes ») est fabriquée côté client et ne dit
+  // rien de ses images : le fond de la série se demande sans tag.
+  if (!backdrop && item.ImageTags === undefined && item.Type === "Series") return { uri: at(item.Id, "Backdrop") };
   if (!backdrop) {
     const primary = resolvePosterImage(item, "series");
     return { uri: primary ? at(primary.id, primary.type, primary.tag) : undefined };
