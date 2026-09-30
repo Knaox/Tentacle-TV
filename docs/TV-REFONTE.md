@@ -22,17 +22,32 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 
 - **La maquette** : navigation de verre flottante à gauche (repliée : les
   pictogrammes ; ouverte : les libellés, sur un fond dense, sous un voile),
-  carte héros arrondie dont la LUMIÈRE déborde (halo aux couleurs de
-  l'image), grandes vignettes 16:9, textes très grands.
+  carte héros arrondie dont la LUMIÈRE déborde (halo à la marque, nuancée
+  par l'image), grandes vignettes 16:9, textes très grands. Le contenu du
+  héros est calé en BAS, à 72 du bord comme de la gauche : calé en haut, sa
+  hauteur variable poussait les boutons contre le bord.
 - **Le bureau** : fonds noirs (#000 → #070710), textes blancs translucides,
   pilule primaire blanche texte noir, verre neutre, élévation en deux
   calques, Inter.
-- **La marque, violet → rose, en touches** (retour du 2026-09-30, qui
-  remplace le « sans violet » du départ) : le bouton de lecture, les barres de
-  progression et « Demander » prennent le dégradé du bureau (`BrandGradient`,
-  `TV_ACCENT.gradient`) ; étoiles, pastilles et surtitres le rose ; les halos
-  et le fond vivant la lumière de la marque nuancée par l'œuvre
-  (`brandLight`), plus douce qu'avant. Jamais un fond plein cadre violet.
+- **La marque, violet → rose, en touches** (retours des 2026-09-30 et
+  2026-10-01, qui remplacent le « sans violet » du départ) :
+  - toute action de lecture ÉCRITE (héros, fiche, « Lire maintenant »,
+    ligne de la feuille) et « Demander » prennent le dégradé du bureau
+    (`BrandGradient`, `TV_ACCENT.gradient`) ; la pilule s'ALLUME au focus
+    (`BrandPill` : liseré, reflet, lueur serrée), sans lueur au repos — même
+    gabarit que « Plus d'infos », et jamais de voile blanc (il la rendait
+    pastel et le texte tombait sous 3:1) ; le rond « Lire » du plateau reste
+    discret, comme au bureau ;
+  - les barres de progression portent le dégradé sur le LU : le rose arrive
+    à la tête de lecture, comme au bureau (`--progress-fill`) ;
+  - étoiles, échelle de note, pastilles et surtitres : le rose ;
+  - le HALO est la seule lumière qui porte la marque (`brandLight` : teintes
+    bornées dans l'arc violet → rose, l'œuvre ne fait que les nuancer) — et
+    discret : 0,28 sur le héros, 0,3 est un plafond (« plus discret,
+    vraiment ») ;
+  - le FOND VIVANT garde la lumière de l'œuvre, ses violets ramenés au neutre
+    (« le violet moche en fond, c'est très dommage… c'était très beau
+    avant »). Jamais un fond violet.
 - **Focus Apple TV, sans contour** : agrandissement, soulèvement, reflet ; le
   verre focalisé devient blanc, texte noir ; les voisines reculent.
 - **La carte qui se redresse** (`MorphCard`) : 16:9 au repos, affiche 2:3 au
@@ -357,7 +372,8 @@ hors bibliothèque (voir questions).
 
 - **Hors ligne** : plein écran bloquant (pieuvre qui pleure, titre, message,
   Réessayer, Se déconnecter).
-- **Jumelage expiré** : bandeau ambre non focalisable, en haut.
+- **Jumelage expiré** : bandeau non focalisable, en haut, au rose de la
+  marque.
 - **Messages de session** (administrateur) : 2 au plus, en haut à droite,
   barre qui se vide.
 - **Erreur d'écran** (ErrorBoundary) : aujourd'hui en anglais en dur → clés
@@ -374,7 +390,7 @@ de la note · marqueurs (note globale,
 note perso, pastille Ma liste · favori · vu, progression, « Découverte »,
 puces qualité/langues — pastilles, pas de drapeaux) · bouton (primaire,
 secondaire, rond, pilule) · pastille · rangée (titre ≥ 34 + accessoire) ·
-héros · fond vivant (halos aux couleurs de l'œuvre, jamais violets) · navigation à
+héros (halo à la marque) · fond vivant (lumière de l'œuvre, violets ramenés au neutre) · navigation à
 gauche (repliée : icônes ; ouverte : libellés sous voile ; toutes les entrées :
 Rechercher, Accueil, Pour vous, Ma liste, Favoris, chaque bibliothèque, Tout
 afficher, Réglages ; masquage par appui long) · logo en haut à droite ·

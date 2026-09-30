@@ -18,11 +18,14 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 - **Le bureau, à 3 m** : fonds noirs (#000 → #070710), textes blancs et gris
   translucides, pilule primaire BLANCHE texte noir, verre neutre, rayons
   généreux, ombres en deux calques. Police Inter.
-- **Pas de violet.** La lumière vient de l'œuvre : halos et fond teintés par
-  son BlurHash (`color/artworkPalette.ts`). L'accent ambre (`TV_ACCENT`) ne
-  sert qu'aux petites touches : surtitre, jauge, cœur, pastille de profil.
+- **La marque en touches.** La lumière du FOND vient de l'œuvre, teintée par
+  son BlurHash (`color/artworkPalette.ts`), ses violets ramenés au neutre. La
+  marque, violet → rose (`TV_ACCENT`, `brand/`), se pose en touches : lecture
+  écrite (`BrandPill`), progression, étoiles, échelle de note, surtitres — et
+  le halo, seule lumière à la porter (`brandLight`), discret.
 - **Très grand** : rien sous 22 pt, texte courant 26–30, titres de rangée 36,
-  titre d'écran 56, titre du héros 96 (ou le LOGO de l'œuvre).
+  titre d'écran 56, titre du héros 58 à 76 selon sa longueur (ou le LOGO de
+  l'œuvre).
 - **Plein cadre** : fonds et lumières bord à bord ; texte et focalisables
   dans la marge de sécurité (`TV_STAGE.safe` : 96 × 54). Le contenu commence
   à `TV_STAGE.contentLeft` (176), après la navigation repliée.
