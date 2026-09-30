@@ -7,6 +7,7 @@ import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { colors, fonts, scrim } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
+import { CardFocusNote } from "./CardFocusNote";
 import { CardFrame } from "./CardFrame";
 import { CardHoldHint } from "./CardHoldHint";
 import { CardLiftLayer } from "./CardLiftLayer";
@@ -32,7 +33,9 @@ import { TRAY_REVEAL_MS, useCardHover } from "./tray/useCardHover";
  * progression restent ; sur une vignette, le logo cède la place au plateau.
  * Une vignette qui s'ouvre par l'appui long (`onLongPress`) le dit sous sa
  * légende, au focus de la carte même : « Maintenir OK : plus d'options »
- * (`CardHoldHint`) — OK y lit, rien d'autre ne l'apprendrait.
+ * (`CardHoldHint`) — OK y lit, rien d'autre ne l'apprendrait. Une affiche
+ * qui a une phrase de focus (`card.focusNote`, la raison d'une
+ * recommandation) la montre au même endroit (`CardFocusNote`).
  *
  * La carte et les boutons de son plateau sont des focalisables FRÈRES : tvOS
  * ne focalise jamais un élément posé dans un autre, ni un élément RECOUVERT
@@ -110,6 +113,7 @@ export const MediaCard = memo(function MediaCard({
   const reach = hovered && card.tray ? trayReach(variant, width, card.tray.actions.length) : 0;
   // La carte elle-même a le focus (pas son plateau) : maintenir OK y ouvre la feuille.
   const holdHint = landscape && onLongPress !== undefined && hover.open && hover.trayFocus === null;
+  const note = !holdHint && hover.open ? card.focusNote : undefined;
   return (
     <View style={[{ width }, hover.open && styles.front]}>
       <CardFrame width={width} height={height} radius={radius} focused={hover.open} dimmed={dimmed} origin={origin} progress={lift}>
@@ -154,6 +158,7 @@ export const MediaCard = memo(function MediaCard({
           <Text style={[styles.title, hover.open && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
           {card.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{card.subtitle}</Text> : null}
           {holdHint ? <CardHoldHint /> : null}
+          {note ? <CardFocusNote text={note} width={Math.round(width * 1.6)} /> : null}
         </Caption>
       )}
     </View>

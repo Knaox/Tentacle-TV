@@ -26,7 +26,8 @@ export interface CardModel {
   /** Étiquette en haut à gauche : « +3 », « Découverte ». */
   badge?: string;
   /** La phrase dite sous la carte quand elle a le focus — la raison d'une
-   *  recommandation (« Parce que vous avez aimé … »). Rendue par `MorphCard`. */
+   *  recommandation (« Parce que vous avez aimé … »). Rendue sous la légende
+   *  d'une affiche (`MediaCard`, `CardFocusNote`) et par `MorphCard`. */
   focusNote?: string;
   /** La lumière de l'œuvre, pour le fond quand la carte a le focus. */
   palette?: ArtworkPalette;
