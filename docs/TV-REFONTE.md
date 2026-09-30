@@ -16,7 +16,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 4. Jetons TV repris du bureau | `TV_STAGE`, `TV_TYPE`, `TV_ACCENT` (`packages/theme/src/tokens/tvStage.ts`). |
 | 5. Briques | Faites — planche « Briques » (`bench:ui planche briques --focus`). |
 | 6. Écrans | **Tous faits** (2026-09-30) : jumelage, accueil, fiche, bibliothèque, Ma liste / Favoris, recherche, parcourir, Pour vous, réglages, lecteur, feuille d'actions, bande-annonce, surimpressions — 184 scènes au banc. |
-| 7. Branchement | À faire, écran par écran : une tâche chacun (voir « Tâches proposées »). |
+| 7. Branchement | En cours, écran par écran : une tâche chacun (voir « Tâches proposées »). Branchés sur Apple TV : jumelage (conditions d'utilisation retirées), réglages, surimpressions (démarrage, hors ligne, jumelage expiré, messages, erreur et chargement d'un écran). |
 
 ## La direction retenue
 
@@ -85,8 +85,8 @@ sera une tâche.
 ### 0. Conditions d'utilisation — SUPPRIMÉ
 
 `DisclaimerScreen` : aucune vue. Son choix de langue FR/EN passe sur le
-jumelage. Retrait du flux (`AppNavigator`, clé `disclaimer_accepted`) : tâche
-proposée.
+jumelage. Retiré du flux d'Apple TV (`AppNavigator`) ; Android TV le garde,
+avec sa clé `disclaimer_accepted`.
 
 ### 1. Jumelage (`PairCode`)
 
@@ -269,10 +269,9 @@ Manquant ou non transmis aujourd'hui (le branchement le demandera) :
 
 - Inter n'est pas embarquée dans l'app tvOS (ni `.ttf`, ni `UIAppFonts`) :
   tout s'affiche en San Francisco, banc compris.
-- Retirer les conditions d'utilisation du flux.
-- Le jumelage ne repose ni l'URL de la config de lecture directe ni celle du
-  canal temps réel : localhost jusqu'à la relance.
 - Android : « Adapter la fréquence d'affichage » n'est pas relu au démarrage.
+- Réglages, « Oublier ce jumelage » : le texte (`pairing:tvOublierTexte`) dit
+  que l'application se fermera ; sur la TV, elle rouvre le jumelage.
 - Filtre de plateformes de la TV : le catalogue est chargé sans studios ni
   identifiants TMDB, le filtre ne peut rien trouver.
 
@@ -281,6 +280,26 @@ du banc bord à bord), l'écran de lancement existe et aucune marge de zone sûr
 n'est lue. Les bandes viennent de la mise en page actuelle (fond #000,
 marges du cadre et de la bannière) ; la refonte va bord à bord. Reste à
 confirmer sur l'Apple TV (tâche d'appareil, de jour).
+
+## Pièges payés au branchement
+
+- **Une vue plein écran posée SUR le contenu bloque le focus tvOS**, même
+  transparente, même en `pointerEvents="box-none"` : le moteur n'entre plus
+  dans ce qui est dessous (hors listes défilantes). `NavRail` en posait une
+  (sa couche et son voile) : la couche se réduit à la barre, le voile n'existe
+  que barre ouverte. À ne pas refaire dans une vue.
+- **Aucune préférence de focus ne traverse une `Modal`** :
+  `hasTVPreferredFocus`, `requestTVFocus` et les réclamations visent la racine
+  React (`RCTTVView.rootView`), introuvable depuis le contrôleur d'une modale
+  — tvOS y focalise l'élément du haut. Pour entrer ailleurs, ne laisser
+  focalisable QUE la cible à l'ouverture (`isTVSelectable: false` sur les
+  autres, par le port), puis tout libérer au premier focus
+  (`redesignWiring/settings/settingsFocus.tsx`, `useChoiceEntry`).
+- Sur tvOS, c'est `isTVSelectable` qui rend une vue focalisable
+  (`RCTTVView.canBecomeFocused`), pas `focusable`.
+- Menu depuis le contenu d'un écran POUSSÉ (les réglages) dépile l'écran : le
+  geste natif de la pile passe avant l'intercepteur de `RedesignScreen`, qui
+  n'ouvre la navigation qu'à la racine.
 
 ## Questions ouvertes
 
