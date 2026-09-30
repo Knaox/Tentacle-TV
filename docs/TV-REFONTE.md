@@ -50,9 +50,14 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
     avant »). Jamais un fond violet.
 - **Focus Apple TV, sans contour** : agrandissement, soulèvement, reflet ; le
   verre focalisé devient blanc, texte noir ; les voisines reculent.
+- **Des affiches, sauf la reprise** (retour du 2026-10-01, « comme sur le
+  bureau ») : seule « Reprendre la lecture » est en vignettes 16:9 ; toutes les
+  autres rangées et étagères sont en affiches 2:3, la raison d'une
+  recommandation sous la légende de l'affiche focalisée (`CardFocusNote`).
 - **La carte qui se redresse** (`MorphCard`) : 16:9 au repos, affiche 2:3 au
   focus, en fondu, sans recalcul de mise en page. L'affiche DESCEND (sur la
   légende, qui s'efface) : elle ne monte jamais sur le titre de la rangée.
+  Plus montée par l'accueil ni « Pour vous » depuis le 2026-10-01.
 - **Le survol des cartes, gardé** (demandé le 2026-09-30) : au focus, une
   carte montre le plateau du bureau, posé sur elle (`cards/tray/`) — voile,
   la note perso AFFICHÉE (demi-étoiles comprises), capsule du modèle partagé
@@ -72,7 +77,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   validerait). Le plateau n'en montre que la valeur. Au banc : « Feuille ·
   Échelle… », « Fiche · « Noter » ».
 - **Maintenir OK, dit la carte** : une carte horizontale (OK y lit :
-  Reprendre, Prochains épisodes, épisodes de la fiche…) qui s'ouvre par
+  Reprendre, épisodes de la fiche…) qui s'ouvre par
   l'appui long le dit à son focus, sous sa légende — « Maintenir OK : plus
   d'options » (`CardHoldHint`), 350 ms après le focus, jamais quand le focus
   est dans le plateau.
@@ -103,6 +108,16 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 - **Cartes et héros** (`cards/`, `hero/`) : `useCardModels` / `useCardLists`
   (modèles STABLES, marqueurs résolus au niveau de la liste),
   `paletteOfItem`, `heroModelOf`, `metaOf`, `legibleLogoOf`.
+- **Menu d'une page poussée** : toutes les pages du rail s'empilent sur
+  l'accueil, et Menu n'y atteint pas l'intercepteur. `RedesignScreen` retient
+  donc le retrait (`usePreventRemove`) tant que le focus est dans le contenu :
+  Menu y fait ce qu'il fait à la racine (`onBack`, sinon la navigation) ;
+  depuis la navigation, la page se dépile. `onBack` est rappelé APRÈS le
+  dépilage natif, qui a déjà ôté le focus : il lit `lastFocusedKey`.
+- **La rangée focalisée entière à l'écran** : tvOS n'amène que la carte ;
+  `revealSection` (`redesign/screens/shared/useForcedFocusReveal.ts`) amène
+  sa section — légende, raison, indication de l'appui long — au plus près, à
+  56 points des bords. Au banc, le même geste suit le focus figé.
 
 ## Voir le résultat, sans navigateur
 
@@ -259,11 +274,12 @@ Automate en 5 étapes, toutes gardées :
   rotation ; logo sinon titre ; « S01E02 · Nom » pour un épisode ; année ·
   note · durée · genres ; puces qualité/langues ; barre de reprise ; accroche
   sinon synopsis ; Lecture/Reprendre, Plus d'infos ; indicateurs.
-- **Rangées**, dans l'ordre de la mise en page du compte : Reprendre ·
-  Prochains épisodes · Déjà vu (vignettes 16:9, OK = lecture) · Ma liste ·
-  Favoris · Derniers ajouts par bibliothèque (lots « +N épisodes ») ·
-  rangées reco (`reco:forYou`, `inLibrary`, `anime`, `trending`…), dont la
-  première porte la pastille du filtre de plateformes.
+- **Rangées**, dans l'ordre de la mise en page du compte : Reprendre
+  (vignettes 16:9, OK = lecture — la seule) · puis en affiches (OK = la
+  fiche) : Prochains épisodes · Déjà vu · Ma liste · Favoris · Derniers ajouts
+  par bibliothèque (lots « +N épisodes ») · rangées reco (`reco:forYou`,
+  `inLibrary`, `anime`, `trending`…), dont la première porte la pastille du
+  filtre de plateformes.
 - **États** : chargement · erreur de connexion (Réessayer, Rejumeler) ·
   partiel (sans héros, rangées vides absentes) · **vide (à créer)** · fond
   ambiant teinté par l'œuvre focalisée.
@@ -474,9 +490,22 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   modifications** (2026-09-30, pas de watchman sur ce Mac) : ni `launch` ni
   un nouveau bundle ne les prenaient. Relancer `bench:ui up`, puis `launch` ;
   `list` montre le catalogue réellement servi.
-- Menu depuis le contenu d'un écran POUSSÉ (les réglages) dépile l'écran : le
-  geste natif de la pile passe avant l'intercepteur de `RedesignScreen`, qui
-  n'ouvre la navigation qu'à la racine.
+- **Menu depuis le contenu d'un écran POUSSÉ dépilait l'écran** : UIKit dépile
+  avant l'intercepteur de `RedesignScreen`, et le patch de react-native-screens
+  ne voit pas l'appui (tvOS 26.2). Seul `usePreventRemove` le rattrape (écran
+  réempilé après coup) : c'est ce que fait désormais `RedesignScreen`. UNE
+  seule retenue par écran — deux font partir deux gestes sur le même Menu.
+- **Un élément démonté sous le focus ne reçoit jamais son flou** : tvOS
+  l'envoie à une vue que React a déjà retirée. Le plateau d'une carte se
+  démontait ainsi sous le focus parti vers la voisine, et la carte restait
+  « ouverte ». `FocusTarget` annonce la perte à son démontage.
+- **`GET /Users/{id}` est refusé par le proxy du serveur** (403, hors de sa
+  liste blanche) : le portrait du compte passe par
+  `Users/{id}/Images/Primary` (`usePairedAccount` + `useVerifiedImage`).
+- **Un `select` de TanStack Query défini dans le rendu** est rejoué à chaque
+  rendu ; une `Map` n'a pas de partage structurel : valeur neuve à chaque
+  rendu, et tout l'accueil se redessinait (`useSeriesRatings`). Un `select`
+  vit au niveau du module.
 
 ## Recette de A à Z — ce que l'utilisateur veut éprouver (2026-09-30)
 
@@ -490,8 +519,8 @@ fusionnés :
   bureau), voir les infos, Ma liste, j'aime, vu ;
 - au focus, le plateau de la carte montre aussi l'ÉPINGLE des états (Ma liste
   · j'aime · vu) ;
-- les cartes horizontales (Reprendre, Prochains épisodes…) disent qu'un appui
-  maintenu permet de les gérer ;
+- les cartes horizontales (Reprendre, la seule rangée en 16:9 depuis le
+  2026-10-01) disent qu'un appui maintenu permet de les gérer ;
 - la navigation se DÉPLIE au focus et montre ses libellés ;
 - la marque se voit sans crier : boutons de lecture, barres de progression et
   étoiles au violet → rose, halos doux aux couleurs de la marque.
