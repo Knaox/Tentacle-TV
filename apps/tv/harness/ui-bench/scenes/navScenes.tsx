@@ -66,8 +66,9 @@ function NavSettingsScene({ data, moving }: { data: BenchData; moving?: boolean 
     order: moving ? placeAt(custom, lib(data, 2), 2) : custom,
     movingKey: moving ? lib(data, 2) : null,
   };
+  // Le rail ne voit que l'ordre ENREGISTRÉ : le déplacement ne vit que dans le réglage.
   const props = settingsPropsOf(data, {
-    nav: benchNav(data, "Settings", options),
+    nav: benchNav(data, "Settings", { libraries: MANY, hidden: options.hidden, order: custom }),
     tab: "navigation",
     navigation: benchNavigationSettings(data, options),
   });
