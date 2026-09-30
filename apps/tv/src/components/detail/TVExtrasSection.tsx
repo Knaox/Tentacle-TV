@@ -1,16 +1,10 @@
 import { useCallback, useMemo, useRef, type ComponentProps } from "react";
 import { View, type LayoutChangeEvent } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useItemExtras, useRemoteTrailers, useSeasons, type ExtrasOwner } from "@tentacle-tv/api-client";
-import {
-  buildExtraEntries,
-  seasonHasExtras,
-  sortTrailersByLang,
-  type ExtraEntry,
-  type MediaItem,
-  type RichTrailer,
-} from "@tentacle-tv/shared";
+import { useRemoteTrailers, useSeasons } from "@tentacle-tv/api-client";
+import { seasonHasExtras, type ExtraEntry, type MediaItem, type RichTrailer } from "@tentacle-tv/shared";
 import { TVExtrasRow } from "./TVExtrasRow";
+import { useExtraEntries } from "./useExtraEntries";
 import { Spacing } from "../../theme/colors";
 
 interface TVExtrasSectionProps {
@@ -25,16 +19,6 @@ interface TVExtrasSectionProps {
 }
 
 const NO_TRAILERS: RichTrailer[] = [];
-
-/** Les tuiles d'une rangée : extras locaux du titre, puis vidéos distantes triées par langue. */
-function useExtraEntries(owner: ExtrasOwner | undefined, remote: RichTrailer[]): ExtraEntry[] {
-  const { t, i18n } = useTranslation("common");
-  const { local } = useItemExtras(owner);
-  return useMemo(
-    () => (owner ? buildExtraEntries(t, local, sortTrailersByLang(remote, i18n.language)) : []),
-    [owner, t, local, remote, i18n.language],
-  );
-}
 
 /**
  * Les extras de la fiche TV — même découpage que le web et le mobile : la
