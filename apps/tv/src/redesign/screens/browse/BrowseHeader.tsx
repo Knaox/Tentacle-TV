@@ -81,7 +81,10 @@ export const BrowseHeader = memo(function BrowseHeader(props: BrowseHeaderProps)
 
 const styles = StyleSheet.create({
   header: { marginBottom: 48 },
-  back: { alignSelf: "flex-start", marginBottom: 34 },
+  // Au-dessus du halo du portrait, qui déborde de 116 points autour de lui et
+  // recouvrait la pilule : sur tvOS, un focalisable recouvert n'est plus proposé
+  // au focus (« haut » depuis la première colonne ne trouvait pas Retour).
+  back: { alignSelf: "flex-start", marginBottom: 34, zIndex: 1 },
   identity: { flexDirection: "row", alignItems: "center", gap: 44 },
   portrait: { width: PORTRAIT, height: PORTRAIT },
   photoFrame: { width: PORTRAIT, height: PORTRAIT, borderRadius: PORTRAIT / 2, overflow: "hidden", backgroundColor: colors.surface3 },
