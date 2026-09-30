@@ -110,6 +110,18 @@ test('identifiants : servent au seul guichet des jetons, en Basic', async () => 
   assert.ok(calls.filter((c) => c.url.includes('/v2/')).every((c) => !String(c.auth).startsWith('Basic')));
 });
 
+test('identifiants refusés : l\'image publique se lit quand même, sans eux', async () => {
+  const { fetch: ghcr, calls } = fakeGhcr();
+  const fetch = async (input, init = {}) => {
+    const url = new URL(String(input));
+    if (url.pathname === '/token' && init.headers?.Authorization) return new Response('', { status: 403 });
+    return ghcr(input, init);
+  };
+  const client = createRegistryClient({ fetch, username: 'bot', password: 'sans-droit' });
+  assert.equal(await client.resolve('ghcr.io/knaox/tentacle-tv:latest'), INDEX);
+  assert.equal(calls.filter((c) => c.url.startsWith('https://ghcr.io/token')).length, 1, 'un seul appel anonyme');
+});
+
 test('une panne du registre est une erreur, jamais « image absente »', async () => {
   const fetch = async () => new Response('', { status: 503 });
   await assert.rejects(createRegistryClient({ fetch }).inspect('ghcr.io/knaox/tentacle-tv:latest'), /503/);

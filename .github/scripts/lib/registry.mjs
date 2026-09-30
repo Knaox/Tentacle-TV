@@ -53,11 +53,13 @@ export function createRegistryClient({ fetch = globalThis.fetch, username, passw
     const url = new URL(challenge.realm);
     if (challenge.service) url.searchParams.set('service', challenge.service);
     if (challenge.scope) url.searchParams.set('scope', challenge.scope);
-    const headers = {};
-    if (username && password) {
-      headers.Authorization = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
-    }
-    const res = await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const ask = (headers) => fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    let res = username && password
+      ? await ask({ Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}` })
+      : await ask({});
+    // Des identifiants refusés ne doivent pas bloquer une image PUBLIQUE : on
+    // retente sans eux. Si l'image est privée, le refus tombera plus loin.
+    if (!res.ok && username && password) res = await ask({});
     if (!res.ok) throw new Error(`jeton du registre refusé (${res.status})`);
     const body = await res.json();
     const token = body.token ?? body.access_token;
