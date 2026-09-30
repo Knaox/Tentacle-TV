@@ -9,6 +9,22 @@ export const SERIES_RATINGS_KEY = "series-ratings";
 const EMPTY: ReadonlyMap<string, number> = new Map();
 
 /**
+ * Au niveau du MODULE, jamais dans le rendu : TanStack Query ne mémorise un
+ * `select` que s'il garde la même identité. Défini dans le hook, il était
+ * rejoué à chaque rendu et rendait une `Map` neuve — le partage structurel ne
+ * s'applique pas aux `Map` —, si bien que tout ce qui en dépend (les cartes de
+ * l'accueil TV) se recalculait à chaque rendu de l'écran.
+ */
+function ratingsById(r: { Items: MediaItem[] }): ReadonlyMap<string, number> {
+  const map = new Map<string, number>();
+  for (const item of r.Items ?? []) {
+    const rating = item.CommunityRating;
+    if (item.Id && typeof rating === "number" && rating > 0) map.set(item.Id, rating);
+  }
+  return map;
+}
+
+/**
  * Les notes globales d'une poignée de séries, en UN SEUL appel.
  *
  * Pourquoi une requête à part plutôt qu'un champ de plus sur ce qui est déjà
@@ -53,14 +69,7 @@ export function useSeriesRatings(seriesIds: readonly string[]): ReadonlyMap<stri
     enabled: !!userId && ids.length > 0,
     // Une note globale ne bouge pas dans une session.
     staleTime: 10 * 60 * 1000,
-    select: (r: { Items: MediaItem[] }) => {
-      const map = new Map<string, number>();
-      for (const item of r.Items ?? []) {
-        const rating = item.CommunityRating;
-        if (item.Id && typeof rating === "number" && rating > 0) map.set(item.Id, rating);
-      }
-      return map as ReadonlyMap<string, number>;
-    },
+    select: ratingsById,
   });
 
   // Une carte vide GELÉE au niveau module : les rangées qui n'ont rien à
