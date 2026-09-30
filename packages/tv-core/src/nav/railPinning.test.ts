@@ -128,3 +128,82 @@ describe("rehydrate — le stockage s'hydrate après la création du magasin", (
     expect(listener).not.toHaveBeenCalled();
   });
 });
+
+describe("l'ordre choisi — un champ ajouté, sans rien casser", () => {
+  it("lit l'ancienne forme sans ordre : l'ordre par défaut", () => {
+    const m = createRailPinningStore(fakeStorage('{"masquees":["lib-3"]}'));
+    expect(m.readSnapshot().order).toEqual([]);
+    expect(m.isHidden("lib-3")).toBe(true);
+  });
+
+  it("n'écrit pas d'ordre tant qu'on n'a rien déplacé : la forme d'avant, à l'octet près", () => {
+    const storage = fakeStorage('{"masquees":["lib-3"]}');
+    const m = createRailPinningStore(storage);
+    m.toggle("lib-4");
+    expect(storage.content.get(RAIL_STORAGE_KEY)).toBe('{"masquees":["lib-3","lib-4"]}');
+  });
+
+  it("retient l'ordre à côté des masquées", () => {
+    const storage = fakeStorage('{"masquees":["lib-3"]}');
+    const m = createRailPinningStore(storage);
+    m.setOrder(["lib-2", "lib-1", "lib-3"]);
+    expect(JSON.parse(storage.content.get(RAIL_STORAGE_KEY)!)).toEqual({
+      masquees: ["lib-3"],
+      order: ["lib-2", "lib-1", "lib-3"],
+    });
+  });
+
+  it("masquer, rétablir et « Tout afficher » gardent l'ordre", () => {
+    const m = createRailPinningStore(fakeStorage());
+    m.setOrder(["b", "a"]);
+    m.toggle("a");
+    m.showAll();
+    expect(m.readSnapshot()).toEqual({ masquees: [], order: ["b", "a"] });
+  });
+
+  it("l'ordre par défaut retire le champ du stockage", () => {
+    const storage = fakeStorage('{"masquees":["x"],"order":["b","a"]}');
+    const m = createRailPinningStore(storage);
+    m.resetOrder();
+    expect(storage.content.get(RAIL_STORAGE_KEY)).toBe('{"masquees":["x"]}');
+  });
+
+  it("ne prévient personne pour un ordre inchangé", () => {
+    const m = createRailPinningStore(fakeStorage('{"masquees":[],"order":["b","a"]}'));
+    const listener = vi.fn();
+    m.subscribe(listener);
+    m.setOrder(["b", "a"]);
+    m.resetOrder();
+    m.resetOrder();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("un ordre abîmé vaut l'ordre par défaut, les masquées restent lues", () => {
+    expect(createRailPinningStore(fakeStorage('{"masquees":["a"],"order":"b"}')).readSnapshot()).toEqual({
+      masquees: ["a"],
+      order: [],
+    });
+    expect(createRailPinningStore(fakeStorage('{"masquees":["a"],"order":["b",3,null]}')).readSnapshot().order).toEqual(["b"]);
+  });
+
+  it("un lecteur d'avant (la LG, Android TV) retrouve ses masquées dans le JSON nouveau", () => {
+    // Le lecteur d'avant ne connaît que `masquees` : il le lit tel quel.
+    const storage = fakeStorage();
+    const m = createRailPinningStore(storage);
+    m.toggle("lib-9");
+    m.setOrder(["lib-9", "lib-1"]);
+    const legacy = JSON.parse(storage.content.get(RAIL_STORAGE_KEY)!) as { masquees: unknown };
+    expect(Array.isArray(legacy.masquees) ? legacy.masquees : []).toEqual(["lib-9"]);
+  });
+
+  it("rehydrate voit un ordre arrivé après coup", () => {
+    const storage = fakeStorage();
+    const m = createRailPinningStore(storage);
+    storage.content.set(RAIL_STORAGE_KEY, '{"masquees":[],"order":["b","a"]}');
+    const listener = vi.fn();
+    m.subscribe(listener);
+    m.rehydrate();
+    expect(m.readSnapshot().order).toEqual(["b", "a"]);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+});

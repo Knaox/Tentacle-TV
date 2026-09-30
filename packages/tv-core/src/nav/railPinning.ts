@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { sameRailOrder } from "./railOrder";
 
 /**
  * Ce que le rail n'affiche pas.
@@ -16,6 +17,11 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
  *
  * Le stockage est local à l'appareil, volontairement : le salon et la chambre
  * ne regardent pas les mêmes choses.
+ *
+ * Il retient aussi un ORDRE choisi (`railOrder.ts`), que seul l'Apple TV sait
+ * régler aujourd'hui : un champ AJOUTÉ, facultatif. Tant qu'on n'a rien
+ * déplacé, le JSON stocké garde exactement sa forme d'avant, et la LG comme
+ * Android TV, qui ne le lisent pas, n'en voient rien.
  *
  * Module pur : le stockage est injecté. `localStorage` le satisfait tel quel
  * côté LG ; `RNStorageAdapter` aussi côté natif, qui est synchrone une fois
@@ -38,18 +44,31 @@ export interface RailStorage {
  * `masquees` garde son nom français : c'est une clé du JSON stocké, pas un
  * simple identifiant. La renommer ferait écrire `hidden` et relire `hidden`,
  * donc perdre en silence les entrées que l'utilisateur avait masquées.
+ *
+ * `order` est l'ordre choisi — vide en mémoire tant qu'on n'a rien déplacé,
+ * et alors ABSENT du JSON (`serialize`) : la forme d'avant, à l'octet près.
  */
 interface RailState {
   masquees: string[];
+  order: string[];
 }
 
-const EMPTY: RailState = { masquees: [] };
+const EMPTY: RailState = { masquees: [], order: [] };
+
+/** Le JSON stocké : `order` n'y paraît que s'il dit quelque chose. */
+function serialize(state: RailState): string {
+  return JSON.stringify(state.order.length > 0 ? { masquees: state.masquees, order: state.order } : { masquees: state.masquees });
+}
 
 export interface RailPinning {
   masquees: string[];
+  /** L'ordre choisi ; vide = l'ordre par défaut (`applyRailOrder`). */
+  order: string[];
   isHidden: (key: string) => boolean;
   toggle: (key: string) => void;
   showAll: () => void;
+  setOrder: (order: readonly string[]) => void;
+  resetOrder: () => void;
 }
 
 export interface RailPinningStore {
@@ -58,6 +77,10 @@ export interface RailPinningStore {
   toggle: (key: string) => void;
   showAll: () => void;
   isHidden: (key: string) => boolean;
+  /** Retient l'ordre choisi (toutes les clés déplaçables, masquées comprises). */
+  setOrder: (order: readonly string[]) => void;
+  /** Revient à l'ordre par défaut. */
+  resetOrder: () => void;
   /**
    * Relit le stockage et notifie si l'état a changé. Nécessaire quand le
    * stockage s'hydrate APRÈS la création du magasin (RNStorageAdapter sur
@@ -82,8 +105,12 @@ export function createRailPinningStore(
     try {
       const raw = storage.getItem(key);
       if (!raw) return EMPTY;
-      const loaded = JSON.parse(raw) as Partial<RailState>;
-      return { masquees: Array.isArray(loaded.masquees) ? loaded.masquees : [] };
+      const loaded = JSON.parse(raw) as { masquees?: unknown; order?: unknown };
+      return {
+        masquees: Array.isArray(loaded.masquees) ? loaded.masquees : [],
+        // Un ordre abîmé vaut « l'ordre par défaut », jamais un rail vide.
+        order: Array.isArray(loaded.order) ? loaded.order.filter((key): key is string => typeof key === "string") : [],
+      };
     } catch {
       // Stockage illisible ou JSON corrompu : le rail montre tout, ce qui est
       // le pire cas acceptable. Un rail vide, lui, ne le serait pas.
@@ -96,7 +123,7 @@ export function createRailPinningStore(
   const write = (next: RailState): void => {
     snapshot = next;
     try {
-      storage.setItem(key, JSON.stringify(next));
+      storage.setItem(key, serialize(next));
     } catch {
       // Stockage indisponible : le rail vaut pour cette session, et c'est tout.
     }
@@ -115,18 +142,24 @@ export function createRailPinningStore(
       const masquees = snapshot.masquees.includes(entryKey)
         ? snapshot.masquees.filter((other) => other !== entryKey)
         : snapshot.masquees.concat(entryKey);
-      write({ masquees });
+      write({ ...snapshot, masquees });
     },
     showAll() {
       if (snapshot.masquees.length === 0) return;
-      write({ masquees: [] });
+      write({ ...snapshot, masquees: [] });
     },
     isHidden: (entryKey) => snapshot.masquees.includes(entryKey),
+    setOrder(order) {
+      if (sameRailOrder(order, snapshot.order)) return;
+      write({ ...snapshot, order: [...order] });
+    },
+    resetOrder() {
+      if (snapshot.order.length === 0) return;
+      write({ ...snapshot, order: [] });
+    },
     rehydrate() {
       const loaded = readStorage();
-      const same =
-        loaded.masquees.length === snapshot.masquees.length &&
-        loaded.masquees.every((key, i) => key === snapshot.masquees[i]);
+      const same = sameRailOrder(loaded.masquees, snapshot.masquees) && sameRailOrder(loaded.order, snapshot.order);
       if (same) return;
       snapshot = loaded;
       listeners.forEach((listener) => listener());
@@ -141,14 +174,16 @@ export function createUseRailPinning(store: RailPinningStore) {
 
     const toggle = useCallback((key: string) => store.toggle(key), []);
     const showAll = useCallback(() => store.showAll(), []);
+    const setOrder = useCallback((order: readonly string[]) => store.setOrder(order), []);
+    const resetOrder = useCallback(() => store.resetOrder(), []);
     const isHidden = useCallback(
       (key: string) => state.masquees.includes(key),
       [state.masquees],
     );
 
     return useMemo(
-      () => ({ masquees: state.masquees, isHidden, toggle, showAll }),
-      [state.masquees, isHidden, toggle, showAll],
+      () => ({ masquees: state.masquees, order: state.order, isHidden, toggle, showAll, setOrder, resetOrder }),
+      [state.masquees, state.order, isHidden, toggle, showAll, setOrder, resetOrder],
     );
   };
 }
