@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ensureSimulator, launchApp, screenshot } from "./tools/simulator.mjs";
 import { buildPlanches } from "./tools/planche.mjs";
+import { captureSnapshot } from "./tools/captureSnapshot.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP_DIR = path.resolve(HERE, "../..");
@@ -118,6 +119,7 @@ const commands = {
     console.log(file);
   },
   planche: () => planche(args),
+  snapshot: () => captureSnapshot(path.join(HERE, "snapshot")),
   help: () => console.log(fs.readFileSync(path.join(HERE, "README.md"), "utf8").split("\n## ")[1] ?? ""),
 };
 

@@ -40,6 +40,7 @@ export interface Snapshot {
     latest: string[];
     favorites: string[];
     watchlist: string[];
+    watched: string[];
     people: string[];
     collections: string[];
   };
@@ -54,6 +55,12 @@ export interface Snapshot {
   shelves: SnapshotShelf[];
   /** Les bibliothèques du compte. */
   libraries: Array<{ id: string; name: string; collectionType: string | null }>;
+  /** Le compte : nom et portrait (chemin relatif, ou null). */
+  profile?: { name: string; image: string | null };
+  /** Les réponses brutes du backend dont certaines scènes tirent leurs états
+   *  (mise en page de l'accueil, état « Pour vous », bandes-annonces,
+   *  recherche) — telles quelles, sans type : la scène les lit prudemment. */
+  extras?: Record<string, unknown>;
 }
 
 export const EMPTY_SNAPSHOT: Snapshot = {
@@ -63,7 +70,7 @@ export const EMPTY_SNAPSHOT: Snapshot = {
   items: {},
   lists: {
     movies: [], series: [], anime: [], episodes: [], resume: [], nextUp: [], latest: [],
-    favorites: [], watchlist: [], people: [], collections: [],
+    favorites: [], watchlist: [], watched: [], people: [], collections: [],
   },
   seasons: {},
   episodes: {},

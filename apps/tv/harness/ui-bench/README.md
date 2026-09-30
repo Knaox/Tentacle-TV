@@ -53,10 +53,22 @@ lint le refuse (`eslint.config.js`, bloc « refonte de l'UI TV »).
 `snapshot/` (ignoré par git) : `snapshot.json` + les images Primary, Thumb,
 Backdrop et Logo de ~80 titres — films, séries à plusieurs saisons, animés,
 épisodes, personnes, sagas — avec leurs états réels (reprise, vu, favori, Ma
-liste, notes). Format : `data/snapshotFormat.ts`. Compte **Knaoxtest**, et lui
-seul, par une session à jeton d'appareil sur le backend de DÉVELOPPEMENT ;
-jamais un mot de passe. Sans instantané, le banc tourne quand même : les
-scènes montrent leurs états vides.
+liste, notes), plus la mise en page de l'accueil, l'état « Pour vous », une
+recherche et les genres. Format : `data/snapshotFormat.ts`. Sans instantané,
+le banc tourne quand même : les scènes montrent leurs états vides.
+
+Le tirer :
+
+1. Backend de DÉVELOPPEMENT lancé (`pnpm dev:backend`, port 3001).
+2. Un jeton d'appareil (`paired_device`) du compte **Knaoxtest** sur ce
+   backend, dans `snapshot/session.json` : `{ "server": "http://localhost:3001",
+   "token": "…" }` — ou `TENTACLE_BENCH_SERVER` / `TENTACLE_BENCH_TOKEN`.
+3. `pnpm bench:ui snapshot`, puis `pnpm bench:ui launch` pour recharger.
+
+Gardes (`tools/snapshot/session.mjs`), avant le moindre appel : un autre
+compte que Knaoxtest, un jeton qui n'est pas d'appareil, un serveur hors du
+réseau local → refus. Lecture seule (GET) ; le jeton n'est jamais affiché.
+Jamais de mot de passe : sans session disponible, on s'arrête et on demande.
 
 ## Pièges
 

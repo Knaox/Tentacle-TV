@@ -1,2 +1,3 @@
-snapshot/
-out/
+# Ancrés au dossier du banc : `tools/snapshot/` est du code, pas des données.
+/snapshot/
+/out/
