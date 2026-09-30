@@ -16,7 +16,8 @@ export const TRAY = {
   /** Plancher : avec l'écart de 4, deux centres restent à 24 au moins. */
   minButton: 20,
   gap: 4,
-  /** Le liseré intérieur de la capsule (son `padding`), et son bord. */
+  /** La marge intérieure de la capsule, et le bord de son verre (dessiné
+   *  par-dessus : la marge lui garde sa place). */
   pad: 4,
   border: 1,
   /** De la capsule au bord de la carte — 4 px sur une affiche du bureau. */

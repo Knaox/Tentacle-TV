@@ -4,7 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { useFocusProgress } from "../../focus/useFocusProgress";
-import { white } from "../../theme/tokens";
+import { GlassSurface } from "../../glass/GlassSurface";
 import { starOf, trayFocusKey, trayGroupKey } from "../cardFocusKeys";
 import type { CardTrayAction, CardTrayModel } from "../cardTypes";
 import { TRAY, trayButtonSize, trayStarSize, type TrayFace } from "./trayLayout";
@@ -89,18 +89,20 @@ export const CardTray = memo(function CardTray({ tray, face, width, cardKey, tit
   const content: ReactNode = (
     <>
       {tray.actions.length > 0 ? (
-        <View accessibilityRole="toolbar" accessibilityLabel={title} style={[styles.capsule, stretch && styles.stretch]}>
-          {tray.actions.map((action) => (
-            <TrayButton
-              key={action.kind}
-              action={action}
-              size={button}
-              title={title}
-              focusKey={trayFocusKey(cardKey, action.kind)}
-              onPress={tray.onAction ? () => tray.onAction?.(action.kind) : undefined}
-              onFocusChange={(focused) => onTrayFocusChange(action.kind, focused)}
-            />
-          ))}
+        <View accessibilityRole="toolbar" accessibilityLabel={title} style={stretch ? styles.stretch : undefined}>
+          <GlassSurface radius={button / 2 + TRAY.pad + TRAY.border} tone="clear" style={[styles.capsule, stretch && styles.spread]}>
+            {tray.actions.map((action) => (
+              <TrayButton
+                key={action.kind}
+                action={action}
+                size={button}
+                title={title}
+                focusKey={trayFocusKey(cardKey, action.kind)}
+                onPress={tray.onAction ? () => tray.onAction?.(action.kind) : undefined}
+                onFocusChange={(focused) => onTrayFocusChange(action.kind, focused)}
+              />
+            ))}
+          </GlassSurface>
         </View>
       ) : null}
       {tray.rating ? (
@@ -136,17 +138,12 @@ const styles = StyleSheet.create({
   column: { flexDirection: "column-reverse", gap: TRAY.rowGap },
   center: { alignItems: "center" },
   end: { alignItems: "flex-end" },
-  // Posée sur le voile (0,9 en bas) : pas de flou, un blanc à 12 % et un
-  // liseré suffisent à dessiner le verre — le `CardTrayCapsule` du bureau.
-  capsule: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: TRAY.gap,
-    padding: TRAY.pad,
-    borderRadius: 999,
-    borderWidth: TRAY.border,
-    borderColor: white(0.15),
-    backgroundColor: white(0.12),
-  },
-  stretch: { alignSelf: "stretch", justifyContent: "space-between" },
+  // Le verre de la refonte, ton `clear` (`GlassSurface`) : natif sur tvOS 26,
+  // simulé ailleurs, enrichi quand le Liquid Glass est coupé — le
+  // `CardTrayCapsule` du bureau, qui n'a qu'une entrée pour tout le verre. Son
+  // bord se dessine PAR-DESSUS : la marge intérieure lui garde sa place, les
+  // boutons ne bougent pas (`trayButtonSize`).
+  capsule: { flexDirection: "row", alignItems: "center", gap: TRAY.gap, padding: TRAY.pad + TRAY.border },
+  stretch: { alignSelf: "stretch" },
+  spread: { justifyContent: "space-between" },
 });
