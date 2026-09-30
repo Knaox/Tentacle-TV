@@ -50,10 +50,11 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `controls/Chip` | Pastille (filtres, genres, choix), `selected`, `detail`, `trailingIcon` |
 | `cards/MediaCard` | Carte `landscape` (16:9) ou `poster` (2:3), marqueurs du modèle partagé ; aucune action sur la carte : l'appui maintenu ouvre le grand panneau |
 | `cards/MorphCard` | La carte qui se redresse (16:9 → affiche), ses marqueurs sur les deux faces |
-| `cards/CardHoldHint` | « Maintenir OK : plus d'options » sous la légende d'une carte HORIZONTALE focalisée qui s'ouvre par l'appui long (OK y lit) — posée en absolu, montée au focus, un temps après lui |
-| `cards/ToggleGlyph` | Le glyphe d'un état (Ma liste, favori, vu), plein ou au trait : pastille, feuille |
+| `cards/CardFocusFooter` | Sous la légende d'une carte focalisée, en absolu : la raison d'une reco (`CardFocusNote`) puis « Maintenir OK : plus d'options » (`CardHoldHint`) — sur toute carte qui s'ouvre par l'appui maintenu, un temps après le focus |
+| `cards/ToggleGlyph` | Le glyphe d'un état (Ma liste, favori, vu), plein ou au trait : pastille, grand panneau |
 | `rating/RatingStars` | Une note en cinq étoiles, demi-étoiles comprises, au rose de la marque — affichage seul |
-| `screens/sheet/RatingScale` | L'échelle VERTICALE de la note (HAUT / BAS, ½ à 5 étoiles, « Retirer la note ») : la seule saisie de note sur Apple TV |
+| `screens/sheet/RatingRuler` | L'échelle HORIZONTALE de la note (GAUCHE / DROITE, ½ à 5 étoiles, la valeur visée au centre, « Retirer la note » au bout) : la seule saisie de note sur Apple TV — sous les étoiles en grand (`RatingPanel`) |
+| `screens/sheet/SheetPictos` | Les pictos du grand panneau, dans l'ordre du modèle partagé, chacun son geste écrit dessous ; la lecture et « Demander » au dégradé (`BrandPill`) |
 | `cards/CardFrame` | Le cadre et son focus, pour une carte sur mesure |
 | `rows/MediaRow` | Titre + cartes horizontales, les voisines reculent |
 | `hero/HeroBanner`, `MetaLine`, `TitleArt` | Le héros, la ligne de métadonnées, le logo-titre |

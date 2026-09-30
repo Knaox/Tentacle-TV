@@ -218,7 +218,7 @@ MÊME modèle, dans `packages/shared/src/utils/` :
   globale et note perso en bas à gauche, pastille Ma liste · favori · vu en
   haut à droite, barre de progression commune ;
 - **au survol**, `cardOverlay.ts` (`resolveCardOverlay` ; `cardActionEntries`
-  pour une feuille, `cardTrayEntries` pour un plateau rendu depuis une liste) :
+  pour une feuille ou un panneau rendus depuis une liste) :
   Lire / Reprendre, la note, puis Ma liste → favori → vu (l'ordre de la
   pastille), puis les extras — hors ligne, fiche, « Ne plus me proposer ».
   Trois variantes, pas une de plus : `poster` (2:3, le clic ouvre la fiche),
@@ -232,43 +232,42 @@ MÊME modèle, dans `packages/shared/src/utils/` :
   reco ; jamais la vignette 16:9, qui EST la lecture), « Demander » (ton
   `brand`) sur une carte Vigie. Une feuille (appui long, télécommande)
   remplace la carte : elle garde « Lire » en tête dans tous les cas. Le
-  plateau se resserre sur une affiche étroite (`TRAY_SIZE` ; `trayButtonSize`
-  sur TV) sans jamais déborder, et garde des centres à 24 px au moins
+  plateau se resserre sur une affiche étroite (`TRAY_SIZE`) sans jamais
+  déborder, et garde des centres à 24 px au moins
   (espacement WCAG 2.5.8) : cinq boutons au plus sur une affiche — une reco
   n'offre donc pas « garder hors ligne ».
 
 Seule l'ENTRÉE change : la souris sur le web et le bureau (`CardHoverOverlay`,
 monté au survol), l'appui long sur le mobile et le miroir (`CardSheetScope` /
-`CardSheetProvider` → la feuille), le focus sur TV. **Sur TV, le focus MONTRE le
-plateau**, posé sur la carte comme au bureau (refonte Apple TV,
-`apps/tv/src/redesign/cards/tray/`) : la note perso AFFICHÉE au-dessus de la
-capsule (demi-étoiles comprises, jamais focalisable), bulle qui dit ce que fera
-OK, l'épingle Ma liste · j'aime · vu qui reste visible (seule la note globale du
-repos s'efface), plateau résolu par l'intégration pour la seule carte
-focalisée (`card.tray`, par `useCardTrayHost` : `focusCard` + `withTray`) —
-avec la feuille, UN crochet d'actions (`useCardActions`,
-`apps/tv/src/redesignWiring/cards/`), jamais une copie. OK sur la carte garde
-l'action principale ; BAS entre dans le plateau par l'action primaire,
-GAUCHE/DROITE le parcourent, HAUT remonte à la carte, Menu y revient d'un coup
-— posé par le câblage à travers le port du focus (clés `<carte>:tray…`),
-jamais dans la vue. L'appui long ouvre toujours la feuille — noter, Ma liste,
-j'aime, vu, et « Plus d'infos » sur TOUTE carte de la bibliothèque, affiche
-comprise (ajout du salon, `sheetRows`, jamais dans le modèle partagé). Une
-carte horizontale (OK y lit : Reprendre, Prochains épisodes, épisodes de la
-fiche…) le dit à son focus, sous sa légende : « Maintenir OK : plus
-d'options » (`CardHoldHint`). **Sur Apple TV, une note se pose sur l'ÉCHELLE
-VERTICALE** (`RatingScale`, feuille comme « Noter » de la fiche) : HAUT/BAS aux
-valeurs du bureau (demi-étoiles, 1 à 10), la valeur visée en grand, « Retirer
-la note » au bout, OK valide, Menu revient. Les étoiles ENTIÈRES ne valent plus
-que pour Android TV et webOS (`TVCardActionSheet`, `CardActionSheetTv`), pas
-encore portés, qui gardent aussi les marqueurs au focus. La carte et les boutons
-de son plateau sont des focalisables FRÈRES : tvOS ne focalise jamais un élément
-posé dans un autre, ni un élément RECOUVERT par ce qui dessine — la recherche
-géométrique ne le propose plus (régression payée : plus une carte atteignable).
-La cible focalisable se pose donc AU-DESSUS de l'image, et s'arrête au-dessus du
-plateau ouvert. État et gestes : `useCardToggles`, `useCardRatingTarget`,
-`useCardFace` (api-client). Une feuille qui garde un instantané de sa carte lit
-la fiche `["item", id]`, que les mutations patchent.
+`CardSheetProvider` → la feuille), l'appui MAINTENU sur TV. **Sur Apple TV, rien
+ne se fait sur la carte** (refonte, `apps/tv/src/redesign/`) : au focus, elle
+grandit et garde ses marqueurs — note, épingle Ma liste · j'aime · vu,
+progression — et dit sous sa légende, discrète, « Maintenir OK : plus
+d'options » (`CardFocusFooter`, sur toute carte qui s'ouvre par l'appui maintenu
+: c'est le seul chemin vers ses actions). L'appui maintenu ouvre le GRAND
+PANNEAU centré (`screens/sheet/ActionSheetView`, câblé par
+`ActionSheetRedesign`) : l'en-tête, les étoiles en grand, l'ÉCHELLE HORIZONTALE
+de la note (`RatingRuler` : GAUCHE / DROITE, les valeurs du bureau —
+demi-étoiles, 1 à 10 — défilent de droite à gauche, la valeur visée au centre,
+« Retirer la note » au bout), puis les pictos dans l'ordre du modèle partagé —
+la lecture ou « Demander » au dégradé de marque, Ma liste → favori → vu, « Plus
+d'infos » sur TOUTE carte de la bibliothèque (ajout du salon, `sheetRows`,
+jamais dans le modèle partagé), « Ne plus me proposer ». Le focus y ENTRE sur
+l'échelle, PRÉ-FOCALISÉE à la note posée, sinon à 5/10 (`RATING_ENTRY`), une
+fois la note connue ; dans la `Modal`, aucune préférence de focus n'est honorée
+: les autres cibles restent infocalisables jusqu'au premier focus
+(`useChoiceEntry`), et la garde anti-clic fantôme couvre l'échelle (le panneau
+s'ouvre sous un OK encore enfoncé). « Noter » de la fiche ouvre le même panneau,
+réduit à la note. Un seul crochet d'actions (`useCardActions`,
+`apps/tv/src/redesignWiring/cards/`), jamais une copie. Les étoiles ENTIÈRES ne
+valent plus que pour Android TV et webOS (`TVCardActionSheet`,
+`CardActionSheetTv`), pas encore portés, qui gardent les marqueurs au focus. Sur
+tvOS, la cible d'une carte est un `FocusTarget` sans rendu posé AU-DESSUS de son
+image et de sa légende : tvOS ne focalise jamais un élément RECOUVERT par ce qui
+dessine — la recherche géométrique ne le propose plus (régression payée : plus
+une carte atteignable). État et gestes : `useCardToggles`,
+`useCardRatingTarget`, `useCardFace` (api-client). Une feuille qui garde un
+instantané de sa carte lit la fiche `["item", id]`, que les mutations patchent.
 
 Jamais une lecture directe de `UserData` dans une carte, jamais un plateau, une
 coche ou une barre recopiés : une nouvelle carte ou une nouvelle action passe

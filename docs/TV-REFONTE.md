@@ -31,16 +31,17 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   calques, Inter.
 - **La marque, violet → rose, en touches** (retours des 2026-09-30 et
   2026-10-01, qui remplacent le « sans violet » du départ) :
-  - toute action de lecture ÉCRITE (héros, fiche, « Lire maintenant »,
-    ligne de la feuille) et « Demander » prennent le dégradé du bureau
+  - toute action de lecture (héros, fiche, « Lire maintenant », picto du
+    grand panneau) et « Demander » prennent le dégradé du bureau
     (`BrandGradient`, `TV_ACCENT.gradient`) ; la pilule s'ALLUME au focus
     (`BrandPill` : liseré, reflet, lueur serrée), sans lueur au repos — même
     gabarit que « Plus d'infos », et jamais de voile blanc (il la rendait
-    pastel et le texte tombait sous 3:1) ; le rond « Lire » du plateau reste
-    discret, comme au bureau ;
+    pastel et le texte tombait sous 3:1) ;
+  - la note perso et la pastille « +N » portent le dégradé aussi, comme au
+    bureau (`CardRatingBadge`, `PosterTile`) ;
   - les barres de progression portent le dégradé sur le LU : le rose arrive
     à la tête de lecture, comme au bureau (`--progress-fill`) ;
-  - étoiles, échelle de note, pastilles et surtitres : le rose ;
+  - étoiles, échelle de note, épingle et surtitres : le rose ;
   - le HALO est la seule lumière qui porte la marque (`brandLight` : teintes
     bornées dans l'arc violet → rose, l'œuvre ne fait que les nuancer) — et
     discret : 0,28 sur le héros, 0,3 est un plafond (« plus discret,
@@ -58,29 +59,30 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   focus, en fondu, sans recalcul de mise en page. L'affiche DESCEND (sur la
   légende, qui s'efface) : elle ne monte jamais sur le titre de la rangée.
   Plus montée par l'accueil ni « Pour vous » depuis le 2026-10-01.
-- **Le survol des cartes, gardé** (demandé le 2026-09-30) : au focus, une
-  carte montre le plateau du bureau, posé sur elle (`cards/tray/`) — voile,
-  la note perso AFFICHÉE (demi-étoiles comprises), capsule du modèle partagé
-  (`cardTrayEntries` ; `externalCardActionEntries` hors bibliothèque,
-  « Demander » au dégradé de la marque), bulle de ce que fera OK ; l'épingle
-  Ma liste · j'aime · vu reste visible. Centré sur une affiche (et sur
-  l'affiche de la carte qui se redresse), dans le coin bas-droit d'une
-  vignette 16:9 ; rien au centre. Télécommande (posée par le câblage, port du
-  focus) : BAS entre par l'action primaire, GAUCHE/DROITE parcourent, HAUT
-  remonte à la carte, Menu revient à la carte ; OK sur la carte et l'appui
-  long (la feuille) ne changent pas. Au banc : « Briques · Plateau ».
-- **Noter : une échelle VERTICALE** (demandé le 2026-09-30, remplace les cinq
-  étoiles entières) : « Noter », dans la feuille comme sur la fiche, ouvre
-  `RatingScale` — HAUT / BAS aux valeurs du bureau (½ à 5 étoiles, 1 à 10), la
-  valeur visée en grand, « Retirer la note » au bout, OK valide, Menu revient ;
-  entrée sur la note posée, sinon 6 (jamais un bout, qu'un OK réflexe
-  validerait). Le plateau n'en montre que la valeur. Au banc : « Feuille ·
-  Échelle… », « Fiche · « Noter » ».
-- **Maintenir OK, dit la carte** : une carte horizontale (OK y lit :
-  Reprendre, épisodes de la fiche…) qui s'ouvre par
-  l'appui long le dit à son focus, sous sa légende — « Maintenir OK : plus
-  d'options » (`CardHoldHint`), 350 ms après le focus, jamais quand le focus
-  est dans le plateau.
+- **Aucune action sur la carte, un GRAND PANNEAU à l'appui maintenu**
+  (direction de l'utilisateur du 2026-10-01 : le plateau posé sur la carte
+  était « trop peu visible », « ça ne se fait pas directement sur la card ») :
+  au focus, la carte grandit et garde ses marqueurs (note, épingle Ma liste ·
+  j'aime · vu, progression) ; l'appui maintenu ouvre un panneau centré
+  (`screens/sheet/ActionSheetView`) — l'en-tête, les étoiles en grand,
+  l'échelle HORIZONTALE de la note, puis les pictos dans l'ordre du modèle
+  partagé : la lecture ou « Demander » au dégradé, Ma liste → favori → vu,
+  « Plus d'infos » sur toute carte de la bibliothèque, « Ne plus me
+  proposer », « Toutes les plateformes ». Chaque picto dit son geste sous son
+  rond. Au banc : « Feuille d'actions ».
+- **Noter : une échelle HORIZONTALE** (`RatingRuler`) : GAUCHE / DROITE aux
+  valeurs du bureau (½ à 5 étoiles, 1 à 10), les valeurs défilent de droite à
+  gauche, la valeur visée au CENTRE, les autres pâlissent avec la distance ;
+  « Retirer la note » au bout. Le focus y entre PRÉ-FOCALISÉ à la note posée,
+  sinon à 5/10 — jamais un bout, qu'un OK réflexe validerait. « Noter » de la
+  fiche : le même panneau, réduit à la note. Mesuré au banc, focus natif
+  (XCUITest) : chaque cran focalisé se centre, DROITE bute sur « Retirer la
+  note », BAS descend aux pictos, HAUT remonte sur la note posée.
+- **Maintenir OK, dit la carte** : sous la légende de TOUTE carte focalisée
+  qui s'ouvre par l'appui maintenu — affiches, vignettes, grilles, épisodes,
+  volets de saga —, « Maintenir OK : plus d'options » (`CardFocusFooter`, sous
+  la raison d'une reco quand la carte en a une), 350 ms après le focus. Les
+  grilles espacent leurs rangées de 52 pour la loger.
 - **Un logo noir cède au texte** : `isLogoLegibleOnDark(blurHash)` — un logo
   dont l'empreinte est noire de part en part ne se lit pas sur la scène ; le
   câblage écrit alors le titre (le banc le fait déjà).
@@ -227,13 +229,16 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
   `detail:header`, le premier écran en pleine largeur). `destinations` doit
   TOUJOURS être un tableau : sans lui tvOS rend le contenu du guide
   inatteignable.
-- **Feuille** : dans une `Modal` (Menu par `onRequestClose`), entrée sur la
-  première action, garde anti-clic fantôme sur ses actions et sa croix (elle
-  s'ouvre sous un OK encore enfoncé). « Noter » y ouvre l'échelle à la place
-  de la liste, entrée sur la note posée sinon 6 par le verrou de
-  `useChoiceEntry` ; OK note et revient sur « Noter » (même verrou), Menu y
-  revient sans rien changer. « Noter » sur la fiche ouvre la même feuille
-  réduite à son échelle : OK note et ferme, Menu ferme.
+- **Panneau** (`ActionSheetRedesign`) : dans une `Modal` (Menu par
+  `onRequestClose` : ferme). Entrée sur l'échelle, à la note posée, sinon à
+  5/10 — décidée une fois la note CONNUE (liste des notes, série d'un épisode :
+  l'échelle attend, « … »), puis figée —, par le verrou de `useChoiceEntry` ;
+  sans note possible, sur le premier picto. Garde anti-clic fantôme sur
+  l'échelle, les pictos et la croix : le panneau s'ouvre sous un OK encore
+  enfoncé. Guides d'entrée des groupes : HAUT depuis les pictos revient à la
+  note posée, BAS depuis l'échelle entre par la lecture. « Noter » de la
+  fiche : OK note et ferme. À éprouver dans l'app réelle : l'entrée de
+  l'échelle et les guides DANS la `Modal`.
 - **Bande-annonce** : le lecteur est monté dès le chargement (la vue ne le
   montait qu'en lecture : il ne pouvait pas charger), et le chrome suit
   `chromeDimmed` seul — « Fermer », seul focalisable, garde le focus : le
@@ -398,15 +403,15 @@ route modale ; Menu le referme par `usePreventRemove`) ; les pastilles de la
 source ne se montrent qu'en lecture directe ; la liste des épisodes est
 virtualisée.
 
-### 12. Feuille d'actions (appui long)
+### 12. Grand panneau (appui maintenu)
 
-Variantes affiche / vignette / reco. En-tête (image, titre, sous-titre,
-fermer) ; actions dans l'ordre du modèle partagé : Lire/Reprendre (+ SxEy ou
-position), Noter (la note posée en complément), Ma liste, favori, vu, Plus
-d'infos (toute carte de la bibliothèque, affiche comprise), Ne plus me
-proposer, Toutes les plateformes ; « Noter » ouvre l'échelle verticale de la
-note (½ à 5 étoiles, retrait au bout) ; « Demander » de Vigie pour un titre
-hors bibliothèque (voir questions).
+Variantes affiche / vignette / reco. Centré sur un voile : en-tête (image,
+titre, sous-titre, fermer) ; la note — étoiles en grand, « 7/10 », l'échelle
+horizontale (½ à 5 étoiles, retrait au bout) ; les pictos dans l'ordre du
+modèle partagé : Lire/Reprendre (+ SxEy ou position), Ma liste, favori, vu,
+Plus d'infos (toute carte de la bibliothèque, affiche comprise), Ne plus me
+proposer, Toutes les plateformes ; « Demander » de Vigie pour un titre hors
+bibliothèque (voir questions).
 
 ## Inventaire — ce qui s'affiche par-dessus
 
@@ -424,9 +429,9 @@ hors bibliothèque (voir questions).
 ## Inventaire — les briques communes
 
 Carte (affiche 2:3, vignette 16:9, carte horizontale → verticale au focus,
-reco, personne, extra, lot « +N », volet de saga) · plateau du focus (note
-affichée, capsule, bulle) · « Maintenir OK » des cartes horizontales · échelle
-de la note · marqueurs (note globale,
+reco, personne, extra, lot « +N », volet de saga) · « Maintenir OK » sous la
+légende (`CardFocusFooter`) · grand panneau (échelle horizontale de la note,
+pictos) · marqueurs (note globale,
 note perso, pastille Ma liste · favori · vu, progression, « Découverte »,
 puces qualité/langues — pastilles, pas de drapeaux) · bouton (primaire,
 secondaire, rond, pilule) · pastille · rangée (titre ≥ 34 + accessoire) ·
@@ -485,7 +490,8 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
 - **Un focalisable RECOUVERT par ce qui dessine n'est plus proposé** par la
   recherche géométrique de tvOS : la cible des cartes posée SOUS leur image
   opaque, et plus une carte n'était atteignable. La cible se pose au-dessus,
-  sans rendu, et s'arrête au-dessus du plateau ouvert (`trayReach`).
+  sans rendu — de l'image ET de la légende : tvOS fait défiler jusqu'à rendre
+  tout son cadre visible.
 - **Le Metro du banc, lancé depuis un worktree de `.claude/`, n'a pas vu les
   modifications** (2026-09-30, pas de watchman sur ce Mac) : ni `launch` ni
   un nouveau bundle ne les prenaient. Relancer `bench:ui up`, puis `launch` ;
@@ -514,13 +520,13 @@ fusionnés :
 
 - naviguer de carte en carte partout : rangées, grilles, affiches qui se
   redressent, BAS / HAUT entre rangées ;
-- sur chaque carte, un appui MAINTENU ouvre la feuille, comme le survol du
-  bureau : noter (échelle VERTICALE parcourue HAUT / BAS, aux valeurs du
-  bureau), voir les infos, Ma liste, j'aime, vu ;
-- au focus, le plateau de la carte montre aussi l'ÉPINGLE des états (Ma liste
-  · j'aime · vu) ;
-- les cartes horizontales (Reprendre, la seule rangée en 16:9 depuis le
-  2026-10-01) disent qu'un appui maintenu permet de les gérer ;
+- sur chaque carte, un appui MAINTENU ouvre un GRAND panneau (2026-10-01 :
+  rien ne se fait plus sur la carte elle-même) : les étoiles, l'échelle de
+  note HORIZONTALE — GAUCHE / DROITE, pré-focalisée à 5/10 ou sur la note
+  posée —, puis les pictos : lire, Ma liste, j'aime, vu, les infos ;
+- au focus, la carte garde l'ÉPINGLE des états (Ma liste · j'aime · vu) ;
+- toutes les cartes disent qu'un appui maintenu ouvre le panneau (« Maintenir
+  OK : plus d'options ») ;
 - la navigation se DÉPLIE au focus et montre ses libellés ;
 - la marque se voit sans crier : boutons de lecture, barres de progression et
   étoiles au violet → rose, halos doux aux couleurs de la marque.
@@ -532,10 +538,9 @@ fusionnés :
    (pastilles de filtre, étoiles) ?
 2. « Demander » de Vigie sur TV : montrer les titres hors bibliothèque
    (reco, recherche) avec leur « Demander », ou garder la TV sur la
-   bibliothèque seule ? Le plateau sait déjà le rendre (scène « Plateau —
-   hors bibliothèque ») ; c'est le câblage qui filtre.
+   bibliothèque seule ? Le panneau sait déjà le rendre (scène « Feuille
+   d'actions · Hors bibliothèque ») ; c'est le câblage qui filtre.
 3. Libellé du bouton de lecture : « Lire » (cartes, feuille) ou « Lecture »
    (fiche, héros) — un seul partout ?
-4. Le plateau entré par BAS : changer de rangée coûte alors deux BAS (carte →
-   plateau → rangée suivante). À éprouver à la télécommande, au simulateur ;
-   si c'est trop, une autre entrée se choisit au câblage, la vue ne bouge pas.
+4. La croix du grand panneau n'est pas atteinte par HAUT depuis l'échelle
+   (mesuré au banc) : Menu ferme le panneau. Faut-il un guide vers elle ?
