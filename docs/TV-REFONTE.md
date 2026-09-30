@@ -414,6 +414,24 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   geste natif de la pile passe avant l'intercepteur de `RedesignScreen`, qui
   n'ouvre la navigation qu'à la racine.
 
+## Recette de A à Z — ce que l'utilisateur veut éprouver (2026-09-30)
+
+Au simulateur Apple TV, dans l'app réelle, une fois tous les branchements
+fusionnés :
+
+- naviguer de carte en carte partout : rangées, grilles, affiches qui se
+  redressent, BAS / HAUT entre rangées ;
+- sur chaque carte, un appui MAINTENU ouvre la feuille, comme le survol du
+  bureau : noter (échelle VERTICALE parcourue HAUT / BAS, aux valeurs du
+  bureau), voir les infos, Ma liste, j'aime, vu ;
+- au focus, le plateau de la carte montre aussi l'ÉPINGLE des états (Ma liste
+  · j'aime · vu) ;
+- les cartes horizontales (Reprendre, Prochains épisodes…) disent qu'un appui
+  maintenu permet de les gérer ;
+- la navigation se DÉPLIE au focus et montre ses libellés ;
+- la marque se voit sans crier : boutons de lecture, barres de progression et
+  étoiles au violet → rose, halos doux aux couleurs de la marque.
+
 ## Questions ouvertes
 
 1. Le focus sans contour (agrandissement, reflet, verre qui blanchit) : le
