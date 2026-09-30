@@ -1,8 +1,8 @@
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { Platform, StyleSheet, TVFocusGuideView } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { PROFILE_HEIGHT, PROFILE_TOP, RAIL_TOP } from "../../redesign/nav/navGeometry";
-import { navKeyOf } from "../nav/useRailState";
+import { isNavKey, navKeyOf } from "../nav/useRailState";
 import type { RedesignScreenModel } from "./useRedesignScreen";
 
 /**
@@ -19,14 +19,22 @@ import type { RedesignScreenModel } from "./useRedesignScreen";
  *   du rail ouvert le dit (« ◀ Profil et réglages »).
  *
  * BAS depuis la dernière entrée rejoint le profil de lui-même (il est
- * dessous). Le guide de gauche ne s'arme qu'après `ARM_AFTER_MS` de focus
- * dans le rail : GAUCHE maintenu pour rejoindre le rail (le pavé répète
- * l'appui) s'arrête sur l'entrée de la page, sans filer jusqu'au profil.
- * Rien pendant l'organisation (menu ouvert, déplacement) : le pavé y a
- * d'autres rôles.
+ * dessous). Le guide de gauche ne s'arme qu'après un temps de focus dans le
+ * rail : GAUCHE MAINTENU pour rejoindre le rail (le pavé répète l'appui)
+ * doit s'arrêter sur l'entrée de la page, sans filer jusqu'au profil. La
+ * Siri Remote n'émet pas la fin d'un appui maintenu sur une flèche
+ * (`longLeft`) : on la devine au rythme du focus. Arrivé dans le rail au
+ * milieu d'une rafale (le contenu avait le focus il y a moins de
+ * `STREAM_MS` : la flèche est maintenue), le guide attend `ARM_AFTER_STREAM_MS`
+ * — le temps de lâcher ; arrivé par un appui isolé, `ARM_AFTER_MS`. Mesuré
+ * au simulateur : la répétition du pavé déplace le focus toutes les 150 à
+ * 250 ms. Rien pendant l'organisation (menu ouvert, déplacement) : le pavé y
+ * a d'autres rôles.
  */
 
 const ARM_AFTER_MS = 450;
+const ARM_AFTER_STREAM_MS = 1100;
+const STREAM_MS = 350;
 const PROFILE = navKeyOf("Settings");
 const SEARCH = navKeyOf("Search");
 const N = TV_STAGE.nav;
@@ -35,10 +43,21 @@ export function RailShortcuts({ screen }: { screen: RedesignScreenModel }) {
   const { focus, railFocused, arrange } = screen;
   const active = railFocused && arrange.heldKey === null && arrange.movingKey === null;
   const [armed, setArmed] = useState(false);
+  // Le dernier focus posé dans le contenu : une arrivée juste après lui
+  // vient d'une flèche maintenue.
+  const lastContentAt = useRef(0);
+  useEffect(
+    () =>
+      focus.subscribe((key, focused) => {
+        if (focused && !isNavKey(key)) lastContentAt.current = Date.now();
+      }),
+    [focus],
+  );
   useEffect(() => {
     setArmed(false);
     if (!active) return undefined;
-    const timer = setTimeout(() => setArmed(true), ARM_AFTER_MS);
+    const inStream = Date.now() - lastContentAt.current < STREAM_MS;
+    const timer = setTimeout(() => setArmed(true), inStream ? ARM_AFTER_STREAM_MS : ARM_AFTER_MS);
     return () => clearTimeout(timer);
   }, [active]);
 
