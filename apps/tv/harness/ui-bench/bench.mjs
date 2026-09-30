@@ -74,6 +74,12 @@ async function planche(args) {
   const langs = (args.find((a) => a.startsWith("--lang="))?.slice(7) ?? "").split(",").filter(Boolean);
   const glasses = (args.find((a) => a.startsWith("--glass="))?.slice(8) ?? "").split(",").filter(Boolean);
   const list = await scenes(prefix);
+  // Juste après un `launch`, le catalogue peut arriver vide : le dire, plutôt
+  // que de rendre un dossier sans planche en silence.
+  if (list.length === 0) {
+    console.error(`aucune scène ne commence par « ${prefix} » — l'app vient-elle d'être relancée ? (bench.mjs list)`);
+    process.exit(1);
+  }
   const initial = await call("/bench/state");
   // Heure locale : c'est elle qu'on lit dans le nom du dossier.
   const stamp = new Date().toLocaleString("sv-SE").replace(/[: ]/g, "-");
