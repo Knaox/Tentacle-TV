@@ -27,7 +27,7 @@ const W = 1920;
 const H = 1080;
 
 function Lights({ palette, intensity }: { palette: ArtworkPalette; intensity: number }) {
-  const [a, b, c] = brandLight(palette, 0.55).glows;
+  const [a, b, c] = brandLight(palette).glows;
   const blobs = [
     { id: "l", cx: 180, cy: 470, rx: 760, ry: 640, color: a, alpha: 0.34 },
     { id: "r", cx: 1700, cy: 980, rx: 700, ry: 460, color: c, alpha: 0.2 },

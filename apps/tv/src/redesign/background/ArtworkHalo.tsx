@@ -6,8 +6,10 @@ import { brandLight, type ArtworkPalette } from "../color/artworkPalette";
 
 /**
  * Le halo d'une œuvre : sa lumière qui déborde tout autour de son cadre, aux
- * couleurs de la MARQUE (violet → rose) nuancées par son image — un halo
- * orange ne disait pas l'app. Un rectangle arrondi dégradé, flouté UNE fois par
+ * couleurs de la MARQUE nuancées par son image (`brandLight`) — un halo
+ * orange ne disait pas l'app. Violet à gauche, rose à droite, sans retour au
+ * violet : le dégradé de la marque, à dominante rose comme les lumières du
+ * bureau (`--progress-glow`). Un rectangle arrondi dégradé, flouté UNE fois par
  * le SVG (le bitmap est ensuite réutilisé tel quel) ; rien ne s'anime dans le
  * flou — seule l'opacité entre en fondu quand l'œuvre change.
  *
@@ -42,7 +44,7 @@ export const ArtworkHalo = memo(function ArtworkHalo({
   const margin = spread + blur * 3;
   const w = width + margin * 2;
   const h = height + margin * 2;
-  const light = brandLight(palette, 0.75);
+  const light = brandLight(palette);
   const [a, b, c] = light.glows;
   const key = light.glows.join("-");
   return (
@@ -52,9 +54,9 @@ export const ArtworkHalo = memo(function ArtworkHalo({
           <Defs>
             <LinearGradient id="halo-fill" x1="0" y1="0" x2="1" y2="0.2">
               <Stop offset="0" stopColor={a} />
-              <Stop offset="0.35" stopColor={b} />
-              <Stop offset="0.7" stopColor={c} />
-              <Stop offset="1" stopColor={a} />
+              <Stop offset="0.3" stopColor={b} />
+              <Stop offset="0.62" stopColor={c} />
+              <Stop offset="1" stopColor={c} />
             </LinearGradient>
             <Filter id="halo-blur" x="-20%" y="-30%" width="140%" height="160%">
               <FeGaussianBlur stdDeviation={blur} />

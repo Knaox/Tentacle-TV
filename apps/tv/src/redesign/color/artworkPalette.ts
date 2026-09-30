@@ -113,37 +113,53 @@ export function paletteFromBlurHash(hash: string | null | undefined): ArtworkPal
   };
 }
 
-/** Les trois lumières de la MARQUE, de gauche à droite : violet, entre-deux,
- *  rose (`brand.base` → `brand.accent`), tenues dans la clarté des halos. */
-const BRAND_LIGHTS: [Rgb, Rgb, Rgb] = [
-  [124, 82, 222],
-  [170, 74, 196],
-  [214, 64, 138],
+/** Les lumières de la MARQUE, de gauche à droite — le violet (`brand.base`,
+ *  258°), l'entre-deux (294°), le rose (`brand.accent`, 330°) — et, en degrés,
+ *  la part de l'arc où l'œuvre peut tirer chacune : le violet reste violet et
+ *  le rose reste rose, quelle que soit l'œuvre (sur une œuvre bleue, un arc
+ *  commun laissait tout le halo virer au violet). */
+const BRAND_LIGHTS: ReadonlyArray<{ hue: number; min: number; max: number }> = [
+  { hue: 258, min: 250, max: 276 },
+  { hue: 294, min: 282, max: 306 },
+  { hue: 330, min: 322, max: 336 },
 ];
+/** Ce qu'une œuvre franche peut déplacer une teinte de la marque, au plus. */
+const DRIFT = 16;
+
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 function parseHex(hex: string): Rgb {
   const v = parseInt(hex.slice(1, 7), 16);
   return [v >> 16, (v >> 8) & 255, v & 255];
 }
 
-function mixHex(hex: string, toward: Rgb, weight: number): string {
-  const from = parseHex(hex);
-  const channel = (i: number) => Math.round(from[i] + (toward[i] - from[i]) * weight);
-  return `#${[0, 1, 2].map((i) => channel(i).toString(16).padStart(2, "0")).join("")}`;
-}
-
 /**
- * La lumière de la scène aux couleurs de la MARQUE, violet → rose, nuancée
- * par l'œuvre : `weight` (0 à 1) dit la part de la marque. Le retour de
- * l'utilisateur (2026-09-30) : un halo souvent orange ne dit pas l'app ; la
- * marque doit se voir, sans que tout vire au violet.
+ * La lumière de la scène aux couleurs de la MARQUE — violet à gauche, rose à
+ * droite —, nuancée par l'œuvre (retour de l'utilisateur, 2026-09-30 : un halo
+ * souvent orange ne dit pas l'app ; la marque doit se voir, sans que tout vire
+ * au violet).
+ *
+ * Chaque teinte reste TOUJOURS dans sa part de l'arc de la marque : l'œuvre
+ * ne fait que la tirer de quelques degrés vers la sienne (une œuvre chaude
+ * penche vers le rose, une froide vers l'indigo), régler sa saturation (une
+ * œuvre grise donne une lumière sourde) et sa clarté (une œuvre sombre, une
+ * lumière plus basse).
+ * Un mélange en RVB vers la marque, essayé d'abord, rendait brique ou saumon
+ * sur une œuvre orange : deux teintes opposées se mêlent en gris coloré.
  */
-export function brandLight(palette: ArtworkPalette, weight: number): ArtworkPalette {
-  const [a, b, c] = palette.glows;
-  return {
-    glows: [mixHex(a, BRAND_LIGHTS[0], weight), mixHex(b, BRAND_LIGHTS[1], weight), mixHex(c, BRAND_LIGHTS[2], weight)],
-    deep: palette.deep,
+export function brandLight(palette: ArtworkPalette): ArtworkPalette {
+  const light = (hex: string, i: number) => {
+    const [h, s, l] = toHsl(parseHex(hex));
+    const brand = BRAND_LIGHTS[i];
+    // L'écart le plus court entre la teinte de l'œuvre et celle de la marque.
+    const delta = ((h * 360 - brand.hue + 540) % 360) - 180;
+    // Une œuvre grise ne tire rien ; une œuvre franche tire jusqu'à DRIFT.
+    const chroma = Math.min(1, s / 0.35);
+    const hue = clamp(brand.hue + clamp(delta * 0.3, -DRIFT, DRIFT) * chroma, brand.min, brand.max);
+    return toHex([hue / 360, 0.4 + 0.12 * chroma, clamp(0.42 + (l - 0.4) * 0.4, 0.36, 0.5)]);
   };
+  const [a, b, c] = palette.glows;
+  return { glows: [light(a, 0), light(b, 1), light(c, 2)], deep: palette.deep };
 }
 
 /**
