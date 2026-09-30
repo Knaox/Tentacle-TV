@@ -22,6 +22,15 @@ async function call(pathname, init) {
   return res.json();
 }
 
+/** Les trois verres du banc : natif là où le système l'offre (`on`), simulé
+ *  même là (`sim` — le repli des tvOS < 26), enrichi (`off`). */
+const GLASS = {
+  on: { patch: { glass: true, nativeGlass: true }, label: "verre" },
+  sim: { patch: { glass: true, nativeGlass: false }, label: "verre simulé" },
+  off: { patch: { glass: false, nativeGlass: true }, label: "enrichi" },
+};
+const glassOf = (state) => (!state.glass ? "off" : state.nativeGlass === false ? "sim" : "on");
+
 const post = (pathname, body) =>
   call(pathname, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
@@ -87,14 +96,15 @@ async function planche(args) {
   fs.mkdirSync(dir, { recursive: true });
   const shots = [];
   for (const lang of langs.length ? langs : [initial.lang]) {
-    for (const glass of glasses.length ? glasses : [initial.glass ? "on" : "off"]) {
+    for (const glass of glasses.length ? glasses : [glassOf(initial)]) {
+      if (!GLASS[glass]) throw new Error(`verre inconnu : ${glass} (on, sim, off)`);
       for (const scene of list) {
         // Sans --focus : le premier élément de la scène, figé — sinon tvOS
         // focalise le premier focalisable venu (souvent la loupe de la navigation).
         const focusKeys = withFocus && scene.focusKeys.length ? scene.focusKeys : [scene.focusKeys[0] ?? null];
         for (const focus of focusKeys) {
-          await apply({ scene: scene.id, focus, lang, glass: glass === "on" });
-          const variant = [langs.length > 1 && lang, glasses.length > 1 && (glass === "on" ? "verre" : "enrichi"), focus && `focus ${focus}`].filter(Boolean).join(" · ");
+          await apply({ scene: scene.id, focus, lang, ...GLASS[glass].patch });
+          const variant = [langs.length > 1 && lang, glasses.length > 1 && GLASS[glass].label, focus && `focus ${focus}`].filter(Boolean).join(" · ");
           const file = path.join(dir, `${String(shots.length).padStart(3, "0")}-${scene.id.replace(/\//g, "_")}${focus ? `__${focus.replace(/[^a-z0-9]+/gi, "-")}` : ""}.png`);
           screenshot(file);
           shots.push({ file, label: `${scene.group} · ${scene.label}${variant ? ` · ${variant}` : ""}` });
@@ -103,7 +113,7 @@ async function planche(args) {
       }
     }
   }
-  await apply({ scene: initial.scene, focus: initial.focus, lang: initial.lang, glass: initial.glass });
+  await apply({ scene: initial.scene, focus: initial.focus, lang: initial.lang, ...GLASS[glassOf(initial)].patch });
   const sheets = buildPlanches(shots, dir, prefix || "toutes les scènes");
   for (const sheet of sheets) console.log(`planche ${sheet}`);
 }
@@ -125,7 +135,11 @@ const commands = {
   next: async () => step(1),
   prev: async () => step(-1),
   focus: () => apply({ focus: !args[0] || args[0] === "off" ? null : args[0] }),
-  glass: () => apply({ glass: args[0] !== "off" }),
+  glass: () => {
+    const mode = GLASS[args[0] ?? "on"];
+    if (!mode) throw new Error(`verre inconnu : ${args[0]} (on, sim, off)`);
+    return apply(mode.patch);
+  },
   lang: () => apply({ lang: args[0] === "en" ? "en" : "fr" }),
   shot: async () => {
     fs.mkdirSync(OUT, { recursive: true });

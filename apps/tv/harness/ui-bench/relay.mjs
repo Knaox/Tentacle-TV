@@ -22,8 +22,9 @@ const TYPES = { ".json": "application/json", ".jpg": "image/jpeg", ".jpeg": "ima
 // ─── Le canal de pilotage ────────────────────────────────────────────────────
 // Un état, un numéro de révision. Le banc l'écoute en attente longue ; la
 // ligne de commande le modifie, puis attend que le banc dise « prêt » pour
-// cette révision avant de capturer.
-const state = { rev: 0, scene: null, focus: null, glass: true, lang: "fr" };
+// cette révision avant de capturer. `nativeGlass` faux : Liquid Glass simulé
+// même là où le verre natif existe (le repli des tvOS < 26).
+const state = { rev: 0, scene: null, focus: null, glass: true, nativeGlass: true, lang: "fr" };
 let readyRev = 0;
 let scenes = [];
 const controlWaiters = new Set();
@@ -74,10 +75,10 @@ async function bench(req, res, url) {
   }
   if (url.pathname === "/bench/control" && req.method === "POST") {
     const patch = await readBody(req);
-    for (const key of ["scene", "focus", "glass", "lang"]) if (key in patch) state[key] = patch[key];
+    for (const key of ["scene", "focus", "glass", "nativeGlass", "lang"]) if (key in patch) state[key] = patch[key];
     state.rev += 1;
     const from = patch.from === "bench" ? "banc" : "commande";
-    console.log(`[pilotage] r${state.rev} (${from}) scène=${state.scene ?? "menu"} focus=${state.focus ?? "natif"} verre=${state.glass ? "liquide" : "enrichi"} langue=${state.lang}`);
+    console.log(`[pilotage] r${state.rev} (${from}) scène=${state.scene ?? "menu"} focus=${state.focus ?? "natif"} verre=${!state.glass ? "enrichi" : state.nativeGlass ? "liquide" : "simulé"} langue=${state.lang}`);
     wake(controlWaiters);
     return send(res, 200, state);
   }

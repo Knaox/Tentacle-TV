@@ -45,9 +45,9 @@ export function Catalogue({ state }: { state: BenchState }) {
         <View style={styles.toggles}>
           <BenchButton
             preferred
-            label={`Liquid Glass : ${state.glass ? "activé" : "coupé"}`}
-            active={!state.glass}
-            onPress={() => patchBench({ glass: !state.glass })}
+            label={`Liquid Glass : ${!state.glass ? "coupé" : state.nativeGlass === false ? "simulé" : "activé"}`}
+            active={!state.glass || state.nativeGlass === false}
+            onPress={() => patchBench(nextGlass(state))}
           />
           <BenchButton
             label={`Langue : ${state.lang === "fr" ? "français" : "anglais"}`}
@@ -78,6 +78,12 @@ export function Catalogue({ state }: { state: BenchState }) {
       </ScrollView>
     </View>
   );
+}
+
+/** activé → simulé (le repli des tvOS < 26) → coupé → activé. */
+function nextGlass(state: BenchState): Pick<BenchState, "glass" | "nativeGlass"> {
+  if (!state.glass) return { glass: true, nativeGlass: true };
+  return state.nativeGlass === false ? { glass: false, nativeGlass: true } : { glass: true, nativeGlass: false };
 }
 
 const styles = StyleSheet.create({

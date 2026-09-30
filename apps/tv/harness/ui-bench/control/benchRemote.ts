@@ -16,13 +16,16 @@ export interface BenchState {
   focus: string | null;
   /** Liquid Glass demandé (défaut), sinon verre enrichi. */
   glass: boolean;
+  /** Faux : Liquid Glass SIMULÉ même là où le verre natif existe — le repli
+   *  des tvOS < 26, montré sur un simulateur tvOS 26. */
+  nativeGlass: boolean;
   lang: BenchLang;
 }
 
 /** L'adresse d'où l'app a chargé son code : le relais du banc. */
 export const BENCH_ORIGIN: string = require("react-native/Libraries/Core/Devtools/getDevServer").default().url;
 
-let state: BenchState = { rev: -1, scene: null, focus: null, glass: true, lang: "fr" };
+let state: BenchState = { rev: -1, scene: null, focus: null, glass: true, nativeGlass: true, lang: "fr" };
 const listeners = new Set<() => void>();
 
 function commit(next: BenchState) {

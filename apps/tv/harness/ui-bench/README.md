@@ -17,9 +17,9 @@ Depuis `apps/tv` (`pnpm bench:ui <commande>` ou `node harness/ui-bench/bench.mjs
 | `list [préfixe]` | Les scènes du catalogue. |
 | `scene <id>` · `menu` · `next` · `prev` | Ouvrir une scène, revenir au catalogue, passer à la suivante. |
 | `focus <clé>` · `focus off` | Figer le focus sur un élément, ou rendre la main au focus natif. |
-| `glass on\|off` · `lang fr\|en` | Liquid Glass demandé ou coupé (verre enrichi) ; langue. |
+| `glass on\|sim\|off` · `lang fr\|en` | Liquid Glass demandé — natif sur tvOS 26 (`on`), ou sa simulation, le repli des tvOS < 26 (`sim`) — ou coupé (`off`, verre enrichi) ; langue. |
 | `shot [nom]` | Capture 1920×1080 de l'écran courant dans `out/`. |
-| `planche [préfixe] [--focus] [--lang=fr,en] [--glass=on,off]` | Toutes les scènes du préfixe, dans chaque variante demandée, capturées puis assemblées dans `out/<date>-<préfixe>/planche-NN.png`. |
+| `planche [préfixe] [--focus] [--lang=fr,en] [--glass=on,sim,off]` | Toutes les scènes du préfixe, dans chaque variante demandée, capturées puis assemblées dans `out/<date>-<préfixe>/planche-NN.png`. |
 | `snapshot` | Tire l'instantané Knaoxtest (voir plus bas). |
 
 Chaque commande attend que le banc ait AFFICHÉ l'état demandé (images
@@ -81,6 +81,13 @@ Jamais de mot de passe : sans session disponible, on s'arrête et on demande.
 - **Inter n'est pas embarquée dans l'app tvOS** : ni `.ttf` dans le paquet, ni
   `UIAppFonts`. Le simulateur rend en San Francisco tant que la police n'est
   pas ajoutée au projet natif (tâche à part : il faut reconstruire l'app).
+- **Le verre natif exige une app reconstruite** : `TentacleGlassView` est du
+  code natif, qu'un simulateur cloné avant lui n'a pas — il y retombe, sans
+  bruit, sur la simulation (la scène `banc/focus` dit quel verre est rendu).
+  Reconstruire (`xcodebuild -workspace ios/TentacleTV.xcworkspace -scheme
+  TentacleTV -configuration Debug -sdk appletvsimulator -derivedDataPath …`,
+  après `pod install` avec `LANG=en_US.UTF-8`), puis `xcrun simctl install
+  <udid> …/TentacleTV.app` et `launch`.
 - Le simulateur du banc est un clone : les autres sessions gardent les leurs.
   Pour repartir de zéro : `xcrun simctl delete "Banc UI TV (Claude)"` puis `sim`.
 - Le relais écoute sur 127.0.0.1 seulement ; ports par `BENCH_PORT` et

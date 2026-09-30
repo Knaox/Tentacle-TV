@@ -5,7 +5,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { BRAND, TEXT } from "@tentacle-tv/shared/theme";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { useFocusVisual } from "../../../src/redesign/focus/focusPreview";
-import { useLiquidGlassEnabled } from "../../../src/redesign/glass/liquidGlassMode";
+import { useGlassRendering, type GlassRendering } from "../../../src/redesign/glass/liquidGlassMode";
 import type { BenchData } from "../data/benchData";
 import type { SnapshotImageType } from "../data/snapshotFormat";
 import type { BenchScene } from "./types";
@@ -87,6 +87,12 @@ function StatesTable({ data }: { data: BenchData }) {
 
 const FOCUS_TILES = ["tile:0", "tile:1", "tile:2", "tile:3"];
 
+const GLASS_LABEL: Record<GlassRendering, string> = {
+  native: "Liquid Glass natif (UIGlassEffect)",
+  simulated: "Liquid Glass simulé (repli des tvOS < 26)",
+  enriched: "verre enrichi (Liquid Glass coupé)",
+};
+
 /** Une tuile de démonstration du focus figé (la vraie carte viendra avec les briques). */
 const DemoTile = memo(function DemoTile({ focusKey, index }: { focusKey: string; index: number }) {
   const { focused, onFocus, onBlur } = useFocusVisual(focusKey);
@@ -100,14 +106,14 @@ const DemoTile = memo(function DemoTile({ focusKey, index }: { focusKey: string;
 
 function FocusAndModes() {
   const { t } = useTranslation(["common", "nav"]);
-  const liquid = useLiquidGlassEnabled();
+  const rendering = useGlassRendering();
   return (
     <View style={styles.page}>
       <Text style={styles.title}>Focus figé · verre · langue</Text>
       <View style={styles.tiles}>
         {FOCUS_TILES.map((key, index) => <DemoTile key={key} focusKey={key} index={index} />)}
       </View>
-      <Text style={styles.body}>{`Verre : ${liquid ? "Liquid Glass demandé" : "verre enrichi (Liquid Glass coupé)"}`}</Text>
+      <Text style={styles.body}>{`Verre : ${GLASS_LABEL[rendering]}`}</Text>
       <Text style={styles.body}>{`i18n : « ${t("common:play")} » · « ${t("nav:home", { defaultValue: "?" })} »`}</Text>
     </View>
   );

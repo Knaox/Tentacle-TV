@@ -77,7 +77,7 @@ export function UiBench() {
 
   return (
     <BenchDataProvider>
-      <LiquidGlassProvider enabled={state.glass}>
+      <LiquidGlassProvider enabled={state.glass} allowNative={state.nativeGlass !== false}>
         <FocusPreviewProvider forcedKey={state.focus}>
           <NavigationContainer ref={nav} theme={DarkTheme} onReady={syncStack} onStateChange={onStackChange}>
             <Stack.Navigator screenOptions={{ headerShown: false, animation: "none", contentStyle: styles.screen }}>
