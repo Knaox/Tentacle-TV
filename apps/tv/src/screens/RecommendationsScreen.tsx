@@ -22,12 +22,19 @@ import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocus
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { Spacing } from "../theme/colors";
 import { SHOWS_VERTICAL_SCROLL_INDICATOR } from "../theme/focus";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { ForYouRedesign } from "../redesignWiring/forYou/ForYouRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Recommendations">;
 
 const EMPTY: number[] = [];
 
+/** « Pour vous » : la refonte sur Apple TV, l'UI actuelle sur Android TV (`redesignGate.ts`). */
 export function RecommendationsScreen(props: Props) {
+  return REDESIGN_ACTIVE ? <ForYouRedesign {...props} /> : <LegacyRecommendationsScreen {...props} />;
+}
+
+function LegacyRecommendationsScreen(props: Props) {
   return (
     <AmbientFocusProvider>
       <RecommendationsInner {...props} />

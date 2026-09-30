@@ -1,5 +1,5 @@
-import { memo } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { memo, useCallback } from "react";
+import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
@@ -119,37 +119,17 @@ export const ForYouView = memo(function ForYouView({
             </View>
           ) : null}
           {shelves.map((shelf, index) => (
-            <View
+            <Shelf
               key={shelf.key}
+              shelf={shelf}
+              first={index === 0 ? (hero || notice ? "afterHead" : "alone") : undefined}
+              filterLabel={index === 0 && filter ? filter.label : undefined}
+              onRemoveFilter={onRemoveFilter}
               onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
-              style={[
-                index === 0 && (hero || notice ? styles.firstAfterHead : styles.firstAlone),
-                shelf.cards.some((card) => card.focusNote) && styles.withNotes,
-              ]}
-            >
-              <MediaRow
-                rowKey={shelf.key}
-                title={shelf.title}
-                cards={shelf.cards}
-                variant="morph"
-                inset={LEFT}
-                accessory={
-                  index === 0 && filter ? (
-                    <Chip
-                      label={filter.label}
-                      trailingIcon="close"
-                      size="md"
-                      selected
-                      focusKey="filter:remove"
-                      onPress={onRemoveFilter}
-                    />
-                  ) : undefined
-                }
-                onPressCard={onPressCard ? (card) => onPressCard(shelf.key, card) : undefined}
-                onLongPressCard={onLongPressCard ? (card) => onLongPressCard(shelf.key, card) : undefined}
-                onFocusCard={onFocusCard ? (card) => onFocusCard(shelf.key, card) : undefined}
-              />
-            </View>
+              onPressCard={onPressCard}
+              onLongPressCard={onLongPressCard}
+              onFocusCard={onFocusCard}
+            />
           ))}
         </ScrollView>
       )}
@@ -157,6 +137,64 @@ export const ForYouView = memo(function ForYouView({
         <BrandMark size={52} />
       </View>
       <NavRail {...nav} />
+    </View>
+  );
+});
+
+type ShelfHandler = (shelfKey: string, card: CardModel) => void;
+
+/**
+ * Une étagère, mémoïsée sur son modèle : quand seule la lumière du fond
+ * change (une carte prend le focus), la page se redessine sans redessiner
+ * ses étagères — leurs rappels restent les mêmes d'un rendu à l'autre.
+ */
+const Shelf = memo(function Shelf({
+  shelf,
+  first,
+  filterLabel,
+  onRemoveFilter,
+  onLayout,
+  onPressCard,
+  onLongPressCard,
+  onFocusCard,
+}: {
+  shelf: ForYouShelfModel;
+  first?: "afterHead" | "alone";
+  filterLabel?: string;
+  onRemoveFilter?: () => void;
+  onLayout: (event: LayoutChangeEvent) => void;
+  onPressCard?: ShelfHandler;
+  onLongPressCard?: ShelfHandler;
+  onFocusCard?: ShelfHandler;
+}) {
+  const key = shelf.key;
+  const press = useCallback((card: CardModel) => onPressCard?.(key, card), [onPressCard, key]);
+  const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
+  const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
+  return (
+    <View
+      onLayout={onLayout}
+      style={[
+        first === "afterHead" && styles.firstAfterHead,
+        first === "alone" && styles.firstAlone,
+        shelf.cards.some((card) => card.focusNote) && styles.withNotes,
+      ]}
+    >
+      <MediaRow
+        rowKey={key}
+        title={shelf.title}
+        cards={shelf.cards}
+        variant="morph"
+        inset={LEFT}
+        accessory={
+          filterLabel ? (
+            <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} />
+          ) : undefined
+        }
+        onPressCard={onPressCard ? press : undefined}
+        onLongPressCard={onLongPressCard ? longPress : undefined}
+        onFocusCard={onFocusCard ? focus : undefined}
+      />
     </View>
   );
 });
