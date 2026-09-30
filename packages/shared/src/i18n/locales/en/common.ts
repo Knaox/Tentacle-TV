@@ -100,6 +100,8 @@ export default {
   trailerUnavailable: "YouTube playback unavailable. Use the external link below.",
   trailerUnavailableShort: "Unavailable",
   trailerOpensYoutube: "Opens YouTube",
+  // Téléviseur : aucun lien externe à proposer, contrairement au web.
+  trailerUnavailableTv: "This trailer can't be played on this TV.",
   extraKindTrailer: "Trailer",
   extraKindTeaser: "Teaser",
   extraKindBehindTheScenes: "Behind the scenes",

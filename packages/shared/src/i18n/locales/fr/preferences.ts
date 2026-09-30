@@ -348,4 +348,10 @@ export default {
   subtitlePositionHigh: "Haut",
   subtitlePositionLow: "Bas",
   subtitleTuningHint: "Taille et position s'appliquent au lecteur avancé.",
+
+  // Réglages du téléviseur (refonte) : la confirmation à double appui, et
+  // l'aperçu des deux verres sous l'interrupteur Liquid Glass.
+  tvPressAgainToConfirm: "Appuyez de nouveau sur OK pour confirmer.",
+  glassClassic: "Verre classique",
+  glassCurrent: "Actuel",
 } as const;

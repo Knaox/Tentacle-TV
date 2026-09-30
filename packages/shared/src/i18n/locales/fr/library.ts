@@ -26,4 +26,12 @@ export default {
   noLibrariesHint: "Ce serveur ne partage encore aucune bibliothèque de films ou de séries avec ce compte.",
   sortShort: "Tri",
   filtersShort: "Filtres",
+  // Refonte TV — la barre de filtres et ses grandes listes en surimpression.
+  clearAll: "Tout effacer",
+  selected_one: "{{count}} sélectionné",
+  selected_other: "{{count}} sélectionnés",
+  multipleChoice: "Plusieurs choix possibles",
+  decades: "Décennies",
+  ratingAndUp: "et plus",
+  sortCriterion: "Critère",
 } as const;

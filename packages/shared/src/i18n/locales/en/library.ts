@@ -19,4 +19,12 @@ export default {
   noLibrariesHint: "This server doesn't share any movie or TV library with this account yet.",
   sortShort: "Sort",
   filtersShort: "Filters",
+  // Refonte TV — la barre de filtres et ses grandes listes en surimpression.
+  clearAll: "Clear all",
+  selected_one: "{{count}} selected",
+  selected_other: "{{count}} selected",
+  multipleChoice: "Pick as many as you like",
+  decades: "Decades",
+  ratingAndUp: "and up",
+  sortCriterion: "Criterion",
 } as const;

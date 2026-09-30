@@ -347,4 +347,10 @@ export default {
   subtitlePositionHigh: "High",
   subtitlePositionLow: "Low",
   subtitleTuningHint: "Size and position apply to the advanced player.",
+
+  // TV settings (redesign): the two-press confirmation, and the preview of
+  // both glasses under the Liquid Glass switch.
+  tvPressAgainToConfirm: "Press OK again to confirm.",
+  glassClassic: "Classic glass",
+  glassCurrent: "Current",
 } as const;

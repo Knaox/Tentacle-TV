@@ -95,4 +95,11 @@ export default {
 
   // Section « À propos » des réglages du téléviseur.
   tvPlateforme: "Appareil",
+
+  // Écran du code (refonte TV) : les trois gestes à faire sur le téléphone,
+  // un par ligne, et l'étiquette du code.
+  tvStepOpenApp: "Sur votre téléphone ou votre ordinateur, ouvrez Tentacle TV.",
+  tvStepPairTv: "Allez dans Paramètres, puis « Jumeler la TV ».",
+  tvStepEnterCode: "Saisissez le code affiché sur cet écran.",
+  tvYourCode: "Votre code",
 } as const;

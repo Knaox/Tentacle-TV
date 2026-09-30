@@ -82,4 +82,8 @@ export default {
   externalSeeAll: "Tout voir dans {{name}}",
   externalSearching: "Recherche hors bibliothèque…",
   noLibraryResults: "Rien dans la bibliothèque pour « {{query}} »",
+  // Téléviseurs : le champ de tvOS ouvre le clavier système, qui porte la
+  // dictée de la télécommande (l'app n'a pas le droit au micro).
+  tvDictationHint: "Sélectionnez le champ pour dicter",
+  tvBackspace: "Effacer une lettre",
 } as const;

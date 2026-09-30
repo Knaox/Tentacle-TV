@@ -104,4 +104,8 @@ export default {
   sagaCurrent: "This title",
   sagaResume: "Resume",
   sagaUpNext: "Up next",
+  // TV media page (redesign) — the « Rate » button once rated, and the kicker
+  // of an episode thumbnail (« EPISODE 3 · 24MIN »).
+  detailYourScoreValue: "Your rating: {{score}}/10",
+  episodeNumber: "Episode {{number}}",
 } as const;

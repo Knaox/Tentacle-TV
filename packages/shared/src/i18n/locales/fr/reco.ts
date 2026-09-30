@@ -130,4 +130,8 @@ export default {
     "Les recommandations personnalisées sont désactivées pour votre compte — activez-les depuis Tentacle sur votre téléphone ou votre ordinateur. En attendant, le meilleur de votre bibliothèque.",
   tvEmpty: "Rien à vous recommander pour l'instant : vos premiers visionnages nourriront cette page.",
   tvReason: "Pourquoi : {{reason}}",
+  // Les états plein écran de la page (refonte TV).
+  tvPreparingTitle: "Vos recommandations se préparent",
+  tvEmptyTitle: "Pas encore de recommandations",
+  tvErrorHint: "Le serveur n'a pas répondu. Vérifiez la connexion, puis réessayez.",
 };

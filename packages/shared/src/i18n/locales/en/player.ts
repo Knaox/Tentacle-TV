@@ -69,7 +69,7 @@ export default {
   playbackError: "Video playback error",
   playbackGiveUp: "This video can't be played on this TV",
   qualityReduced: "Quality lowered to match your network speed",
-  qualityReducedDetail: "Quality lowered: network measured at {{measured}} Mb/s, the file needs {{source}}",
+  qualityReducedDetail: "Quality lowered: network measured at {{measured}} Mb/s, the file needs {{source}} Mb/s",
   qualityAutoBadge: "Auto",
   directSessionExpired: "Jellyfin session expired — confirm pairing again from a signed-in device",
   // Le motif technique d'une erreur de lecture, replié.
@@ -97,4 +97,12 @@ export default {
   prismIndexing: "Indexing (first play)…",
   prismPreparing: "Preparing…",
   prismStarting: "Starting playback…",
+  // Refonte de l'habillage TV : ce qui s'écrivait en dur (« -10s », « +30s »,
+  // « E01 »).
+  seekBackBy: "Back {{seconds}}s",
+  seekForwardBy: "Forward {{seconds}}s",
+  seekFlashBack: "−{{seconds}}s",
+  seekFlashForward: "+{{seconds}}s",
+  previousEpisodeLabel: "Previous episode",
+  episodeNumber: "Episode {{number}}",
 } as const;

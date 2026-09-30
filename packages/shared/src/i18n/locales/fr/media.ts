@@ -104,4 +104,8 @@ export default {
   sagaCurrent: "Cette fiche",
   sagaResume: "Reprendre",
   sagaUpNext: "À suivre",
+  // Fiche du téléviseur (refonte) — le rond « Noter » une fois la note posée,
+  // et le surtitre d'une vignette d'épisode (« ÉPISODE 3 · 24MIN »).
+  detailYourScoreValue: "Votre note\u00a0: {{score}}/10",
+  episodeNumber: "Épisode {{number}}",
 } as const;

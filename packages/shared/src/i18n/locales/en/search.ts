@@ -77,4 +77,8 @@ export default {
   externalSeeAll: "See all in {{name}}",
   externalSearching: "Searching beyond your library…",
   noLibraryResults: "Nothing in your library for “{{query}}”",
+  // TVs: the tvOS field opens the system keyboard, which carries the remote's
+  // dictation (the app may not use the microphone).
+  tvDictationHint: "Select the field to dictate",
+  tvBackspace: "Delete a letter",
 } as const;

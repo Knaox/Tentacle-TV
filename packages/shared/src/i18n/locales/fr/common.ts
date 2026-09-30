@@ -102,6 +102,8 @@ export default {
   trailerUnavailable: "Lecture YouTube indisponible. Ouvrez le lien externe ci-dessous.",
   trailerUnavailableShort: "Indisponible",
   trailerOpensYoutube: "Ouvre YouTube",
+  // Téléviseur : aucun lien externe à proposer, contrairement au web.
+  trailerUnavailableTv: "Cette bande-annonce ne peut pas être lue sur ce téléviseur.",
   // Le genre d'un extra, sous sa tuile — et son titre quand Jellyfin ne lui a
   // donné que son genre (« Trailer 2 ») : cf. `extras/extraLabels.ts`.
   extraKindTrailer: "Bande-annonce",

@@ -97,4 +97,8 @@ export default {
     "Personalized recommendations are turned off for your account — turn them on from Tentacle on your phone or computer. Meanwhile, the best of your library.",
   tvEmpty: "Nothing to recommend yet: your first views will feed this page.",
   tvReason: "Why: {{reason}}",
+  // The page's full-screen states (TV redesign).
+  tvPreparingTitle: "Your recommendations are on their way",
+  tvEmptyTitle: "No recommendations yet",
+  tvErrorHint: "The server didn't answer. Check the connection, then try again.",
 };

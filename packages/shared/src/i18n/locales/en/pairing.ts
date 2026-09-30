@@ -92,4 +92,11 @@ export default {
 
   // "About" section of the TV settings.
   tvPlateforme: "Device",
+
+  // Code screen (TV redesign): the three steps on the phone, one per line,
+  // and the label of the code.
+  tvStepOpenApp: "On your phone or computer, open Tentacle TV.",
+  tvStepPairTv: "Go to Settings, then “Pair TV”.",
+  tvStepEnterCode: "Enter the code shown on this screen.",
+  tvYourCode: "Your code",
 } as const;

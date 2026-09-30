@@ -73,7 +73,7 @@ export default {
   playbackError: "Erreur de lecture vidéo",
   playbackGiveUp: "Impossible de lire cette vidéo sur ce téléviseur",
   qualityReduced: "Qualité réduite pour s'adapter au débit du réseau",
-  qualityReducedDetail: "Qualité réduite : réseau mesuré à {{measured}} Mb/s, le fichier en demande {{source}}",
+  qualityReducedDetail: "Qualité réduite : réseau mesuré à {{measured}} Mb/s, le fichier en demande {{source}} Mb/s",
   qualityAutoBadge: "Auto",
   directSessionExpired: "Session Jellyfin expirée — reconfirmez le jumelage depuis un appareil connecté",
   // Le motif technique d'une erreur de lecture, replié.
@@ -101,4 +101,13 @@ export default {
   prismIndexing: "Indexation (premier visionnage)…",
   prismPreparing: "Préparation…",
   prismStarting: "Démarrage de la lecture…",
+  // Refonte de l'habillage TV : ce qui s'écrivait en dur (« -10s », « +30s »,
+  // « E01 »). La légende d'un bouton de saut, le badge d'un saut OSD caché,
+  // le numéro d'une ligne d'épisode.
+  seekBackBy: "Reculer de {{seconds}} s",
+  seekForwardBy: "Avancer de {{seconds}} s",
+  seekFlashBack: "−{{seconds}} s",
+  seekFlashForward: "+{{seconds}} s",
+  previousEpisodeLabel: "Épisode précédent",
+  episodeNumber: "Épisode {{number}}",
 } as const;
