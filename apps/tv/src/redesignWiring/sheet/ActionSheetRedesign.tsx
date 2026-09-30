@@ -1,13 +1,10 @@
 import { useCallback } from "react";
-import { Modal, TVFocusGuideView } from "react-native";
+import { Modal } from "react-native";
 import { useRecoSettings } from "@tentacle-tv/api-client";
 import type { CardSheetTarget } from "../../components/cards/actions/cardSheetTarget";
-import {
-  FocusBindingProvider,
-  type FocusBinding,
-  type FocusGroupContainerProps,
-} from "../../redesign/focus/focusBinding";
+import { FocusBindingProvider, type FocusBinding } from "../../redesign/focus/focusBinding";
 import { ActionSheetView } from "../../redesign/screens/sheet/ActionSheetView";
+import { AutoFocusGuide } from "../focus/focusGuides";
 import { useSheetModel, type SheetMode } from "./useSheetModel";
 
 /**
@@ -36,15 +33,7 @@ interface Props {
 
 const GUARDED: FocusBinding = { phantomPressGuard: true };
 const ENTRY: FocusBinding = { phantomPressGuard: true, native: { hasTVPreferredFocus: true } };
-
-function StarsGuide({ style, pointerEvents, children }: FocusGroupContainerProps) {
-  return (
-    <TVFocusGuideView autoFocus style={style} pointerEvents={pointerEvents}>
-      {children}
-    </TVFocusGuideView>
-  );
-}
-const STARS: FocusBinding = { container: StarsGuide };
+const STARS: FocusBinding = { container: AutoFocusGuide };
 
 export function ActionSheetRedesign({ target, mode = "actions", onClose }: Props) {
   if (target.kind === "reco") return <RecoSheet target={target} onClose={onClose} />;
