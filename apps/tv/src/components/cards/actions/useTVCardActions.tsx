@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import { useRecoCardHold, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { REDESIGN_ACTIVE } from "../../../redesignWiring/redesignGate";
+import { ActionSheetRedesign } from "../../../redesignWiring/sheet/ActionSheetRedesign";
 import { TVCardActionSheet } from "./TVCardActionSheet";
 import type { CardSheetTarget } from "./cardSheetTarget";
 
@@ -12,6 +14,9 @@ import type { CardSheetTarget } from "./cardSheetTarget";
  * depuis le contrôleur de l'écran, et le focus revient à la carte quand elle
  * se ferme (tvOS). Les ouvertures sont stables : les rangées et les grilles,
  * mémoïsées, ne se re-rendent pas pour elles.
+ *
+ * Apple TV rend la feuille refondue (`ActionSheetRedesign`), Android TV
+ * l'actuelle : même API, les écrans n'en savent rien.
  */
 export function useTVCardActions() {
   const [target, setTarget] = useState<CardSheetTarget | null>(null);
@@ -21,6 +26,7 @@ export function useTVCardActions() {
   const close = useCallback(() => setTarget(null), []);
   // Feuille ouverte = carte tenue : un titre jugé quitte « Pour vous » à la fermeture.
   useRecoCardHold(target ? (target.kind === "reco" ? target.item.key : target.item.Id) : null);
-  const sheet = target ? <TVCardActionSheet target={target} onClose={close} /> : null;
+  const Sheet = REDESIGN_ACTIVE ? ActionSheetRedesign : TVCardActionSheet;
+  const sheet = target ? <Sheet target={target} onClose={close} /> : null;
   return { openPoster, openLandscape, openReco, sheet };
 }
