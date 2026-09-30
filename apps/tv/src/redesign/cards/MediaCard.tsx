@@ -32,9 +32,11 @@ import { useCardFocused } from "./useCardFocused";
  * endroit (`CardFocusNote`).
  *
  * Deux étages, de bas en haut : l'image (`CardFrame`, qui ne fait que
- * dessiner), puis la carte elle-même — un `FocusTarget` sans rendu, à sa
- * place de repos : tvOS ne propose pas au focus un élément RECOUVERT par ce
- * qui dessine. `onFocusChange` dit le focus de la carte (`useCardFocused`).
+ * dessiner) et sa légende, puis la carte elle-même — un `FocusTarget` sans
+ * rendu qui les couvre TOUTES DEUX : tvOS ne propose pas au focus un élément
+ * RECOUVERT par ce qui dessine, et fait défiler jusqu'à rendre visible tout le
+ * cadre de la cible — la légende avec l'image. `onFocusChange` dit le focus
+ * de la carte (`useCardFocused`).
  */
 
 export interface MediaCardProps {
@@ -111,16 +113,6 @@ export const MediaCard = memo(function MediaCard({
         {card.badge ? <CardBadge label={card.badge} /> : null}
         <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
       </CardFrame>
-      <FocusTarget
-        focusKey={focusKey}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        onFocusChange={onTargetFocusChange}
-        accessibilityLabel={card.title}
-        style={[styles.hit, { width, height }]}
-      >
-        {NO_VISUAL}
-      </FocusTarget>
       {hideCaption ? null : (
         <Caption focused={focused} shift={captionShift(height, origin)}>
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
@@ -129,6 +121,18 @@ export const MediaCard = memo(function MediaCard({
           {note ? <CardFocusNote text={note} width={Math.round(width * 1.6)} /> : null}
         </Caption>
       )}
+      {/* En DERNIER, par-dessus l'image ET la légende : rien ne recouvre la
+          cible, et tvOS amène au focus la carte entière à l'écran. */}
+      <FocusTarget
+        focusKey={focusKey}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        onFocusChange={onTargetFocusChange}
+        accessibilityLabel={card.title}
+        style={StyleSheet.absoluteFill}
+      >
+        {NO_VISUAL}
+      </FocusTarget>
     </View>
   );
 });
@@ -137,7 +141,6 @@ const styles = StyleSheet.create({
   // La carte focalisée passe devant ses voisines : son ombre de soulèvement
   // n'est plus recouverte par la suivante.
   front: { zIndex: 10 },
-  hit: { position: "absolute", top: 0, left: 0 },
   missing: { flex: 1, padding: 22, justifyContent: "flex-end", backgroundColor: colors.surface3 },
   missingTitle: { ...fonts.bold, fontSize: 26, lineHeight: 30, color: colors.textSecondary },
   logo: { position: "absolute", left: 22, right: 90, bottom: 22, height: 64 },
