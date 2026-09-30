@@ -30,6 +30,19 @@ export interface LibraryFilterState {
   sortOrder: string;
 }
 
+/**
+ * Les critères de tri, chacun avec son sens NATUREL (parité
+ * `LibraryFilterMenus` web) : choisir « derniers ajouts » pose l'ordre
+ * décroissant, la note aussi. Une seule liste pour le menu d'Android TV et la
+ * liste de la refonte (Apple TV).
+ */
+export const SORT_OPTIONS = [
+  { value: "DateCreated", key: "sortDateDesc", order: "Descending" },
+  { value: "SortName", key: "sortTitleAsc", order: "Ascending" },
+  { value: "ProductionYear", key: "sortYear", order: "Descending" },
+  { value: "CommunityRating", key: "sortRatingDesc", order: "Descending" },
+] as const;
+
 export const DEFAULT_FILTERS: LibraryFilterState = {
   genreIds: [],
   platformIds: [],

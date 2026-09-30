@@ -5,20 +5,16 @@ import Svg, { Path } from "react-native-svg";
 import { Focusable } from "../focus/Focusable";
 import { TVLibraryFilterMenu, TVCheckRow, MENU_ROW_FOCUS_SCALE, type MenuAnchor } from "./TVLibraryFilterMenu";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
+import { SORT_OPTIONS } from "../../hooks/libraryCatalogParams";
 import { Colors } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
 
 /**
- * Chaque critère porte son sens NATUREL (parité `LibraryFilterMenus` web) :
- * choisir « derniers ajouts » pose l'ordre décroissant, la note aussi — le
- * bouton d'inversion reste disponible dessous pour le cas contraire.
+ * Chaque critère porte son sens NATUREL (`SORT_OPTIONS`, partagé avec la
+ * refonte) : choisir « derniers ajouts » pose l'ordre décroissant, la note
+ * aussi — le bouton d'inversion reste disponible dessous pour le cas contraire.
  */
-export const SORT_OPTIONS = [
-  { value: "DateCreated", key: "sortDateDesc", order: "Descending" },
-  { value: "SortName", key: "sortTitleAsc", order: "Ascending" },
-  { value: "ProductionYear", key: "sortYear", order: "Descending" },
-  { value: "CommunityRating", key: "sortRatingDesc", order: "Descending" },
-] as const;
+export { SORT_OPTIONS };
 
 export function TVSortMenu({
   anchor,
