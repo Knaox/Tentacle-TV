@@ -1,12 +1,5 @@
-import { useState, useCallback } from "react";
-import {
-  useTentacleConfig,
-  useJellyfinClient,
-  setPreferencesToken,
-} from "@tentacle-tv/api-client";
-import type { RelayStatusResponse } from "@tentacle-tv/api-client";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { verifyServer } from "@tentacle-tv/shared";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { WelcomeStep } from "../components/pairing/WelcomeStep";
@@ -14,121 +7,26 @@ import { RelayCodeDisplay } from "../components/pairing/RelayCodeDisplay";
 import { ServerInputStep } from "../components/pairing/ServerInputStep";
 import { ServerCodeDisplayStep } from "../components/pairing/ServerCodeDisplayStep";
 import { PairingSuccessStep } from "../components/pairing/PairingSuccessStep";
-import { applyBackendUrl } from "../lib/backendUrls";
+import { usePairingFlow } from "../hooks/usePairingFlow";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
 
-type Step = "welcome" | "relayCode" | "manualServer" | "manualCode" | "success";
-
+/**
+ * Le jumelage : l'automate vit dans `usePairingFlow` (et le code dans
+ * `usePairingCode`), cet écran n'en fait que le rendu.
+ */
 export function PairCodeScreen({ navigation }: Props) {
-  const { i18n } = useTranslation("pairing");
-  const { t } = useTranslation(["auth", "pairing"]);
-  const { storage } = useTentacleConfig();
-  const jellyfinClient = useJellyfinClient();
+  const { t, i18n } = useTranslation(["auth", "pairing"]);
+  const onPaired = useCallback(() => navigation.replace("Home"), [navigation]);
+  const flow = usePairingFlow(onPaired);
 
-  const [step, setStep] = useState<Step>("welcome");
-  const [pairUser, setPairUser] = useState("");
-
-  // Manual flow state
-  const [serverUrl, setServerUrl] = useState("");
-  const [testing, setTesting] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-
-  const switchLang = useCallback((lng: string) => {
-    i18n.changeLanguage(lng);
-    storage.setItem("tentacle_language", lng);
-  }, [i18n, storage]);
-
-  /** Un jumelage NEUF repart d'un état direct-streaming PROPRE : sans cette
-   *  purge, le token Jellyfin d'un ANCIEN jumelage (persistant depuis le
-   *  passage à AsyncStorage) pouvait ressortir → 401 sur le stream alors que
-   *  le jumelage venait d'être fait. DirectStreamingSync re-fournira le token
-   *  frais du backend au prochain poll (~2 s). */
-  const resetDirectStreaming = useCallback(() => {
-    storage.removeItem("tentacle_jellyfin_token");
-    storage.removeItem("tentacle_jellyfin_url");
-    jellyfinClient.setDirectStreaming(null);
-  }, [storage, jellyfinClient]);
-
-  // ── Relay flow: confirmed ──
-  const handleRelayConfirmed = useCallback(async (data: RelayStatusResponse) => {
-    if (!data.serverUrl || !data.token || !data.user) return;
-
-    // Verify the server is reachable
-    try {
-      const res = await fetch(`${data.serverUrl}/api/health`);
-      if (!res.ok) throw new Error("Health check failed");
-    } catch {
-      // Server not reachable — still store the data, user may fix network later
-    }
-
-    resetDirectStreaming();
-    storage.setItem("tentacle_server_url", data.serverUrl);
-    applyBackendUrl(data.serverUrl);
-    jellyfinClient.setBaseUrl(`${data.serverUrl}/api/jellyfin`);
-    jellyfinClient.setAccessToken(data.token);
-    setPreferencesToken(data.token);
-    storage.setItem("tentacle_token", data.token);
-    storage.setItem(
-      "tentacle_user",
-      JSON.stringify({ Id: data.user.id, Name: data.user.name }),
-    );
-    setPairUser(data.user.name);
-    setStep("success");
-    setTimeout(() => navigation.replace("Home"), 2000);
-  }, [storage, jellyfinClient, navigation, resetDirectStreaming]);
-
-  // ── Manual flow: test server ──
-  const handleTestServer = useCallback(async () => {
-    if (!serverUrl.trim()) return;
-    setTesting(true);
-    setServerError(null);
-    try {
-      const result = await verifyServer(serverUrl);
-      if (result.success) {
-        storage.setItem("tentacle_server_url", result.url);
-        applyBackendUrl(result.url);
-        jellyfinClient.setBaseUrl(`${result.url}/api/jellyfin`);
-        setStep("manualCode");
-      } else {
-        const key = result.errorKey ?? "serverNotFoundRetry";
-        setServerError(t(`auth:${key}`, result.errorParams));
-      }
-    } catch {
-      setServerError(t("auth:serverNotFoundRetry"));
-    } finally {
-      setTesting(false);
-    }
-  }, [serverUrl, storage, jellyfinClient, t]);
-
-  // ── Manual flow: la TV affiche un code, confirmé depuis le téléphone/web ──
-  const handleDeviceConfirmed = useCallback((data: { token: string; user: { id: string; name: string } }) => {
-    resetDirectStreaming();
-    jellyfinClient.setAccessToken(data.token);
-    setPreferencesToken(data.token);
-    storage.setItem("tentacle_token", data.token);
-    storage.setItem(
-      "tentacle_user",
-      JSON.stringify({ Id: data.user.id, Name: data.user.name }),
-    );
-    setPairUser(data.user.name);
-    setStep("success");
-    setTimeout(() => navigation.replace("Home"), 2000);
-  }, [jellyfinClient, storage, navigation, resetDirectStreaming]);
-
-  const handleChangeServer = useCallback(() => {
-    storage.removeItem("tentacle_server_url");
-    setStep("manualServer");
-  }, [storage]);
-
-  // ── Render based on step ──
-  switch (step) {
+  switch (flow.step) {
     case "welcome":
       return (
         <WelcomeStep
-          onShowCode={() => setStep("relayCode")}
-          onManualSetup={() => setStep("manualServer")}
-          onSwitchLang={switchLang}
+          onShowCode={flow.showRelayCode}
+          onManualSetup={flow.manualSetup}
+          onSwitchLang={flow.changeLanguage}
           currentLang={i18n.language}
         />
       );
@@ -136,22 +34,22 @@ export function PairCodeScreen({ navigation }: Props) {
     case "relayCode":
       return (
         <RelayCodeDisplay
-          onConfirmed={handleRelayConfirmed}
-          onCancel={() => setStep("welcome")}
-          onManualSetup={() => setStep("manualServer")}
+          onConfirmed={flow.onRelayConfirmed}
+          onCancel={flow.backToWelcome}
+          onManualSetup={flow.manualSetup}
         />
       );
 
     case "manualServer":
       return (
         <ServerInputStep
-          serverUrl={serverUrl}
-          onChangeUrl={(text) => { setServerUrl(text); setServerError(null); }}
-          testing={testing}
-          error={serverError}
-          onSubmit={handleTestServer}
-          onBack={() => { setServerError(null); setStep("welcome"); }}
-          onSwitchLang={switchLang}
+          serverUrl={flow.serverUrl}
+          onChangeUrl={flow.changeUrl}
+          testing={flow.testing}
+          error={flow.serverError ? t(`auth:${flow.serverError.key}`, flow.serverError.params) : null}
+          onSubmit={flow.submitServer}
+          onBack={flow.backToWelcome}
+          onSwitchLang={flow.changeLanguage}
           currentLang={i18n.language}
         />
       );
@@ -159,12 +57,12 @@ export function PairCodeScreen({ navigation }: Props) {
     case "manualCode":
       return (
         <ServerCodeDisplayStep
-          onConfirmed={handleDeviceConfirmed}
-          onChangeServer={handleChangeServer}
+          onConfirmed={flow.onServerConfirmed}
+          onChangeServer={flow.changeServer}
         />
       );
 
     case "success":
-      return <PairingSuccessStep username={pairUser} />;
+      return <PairingSuccessStep username={flow.account?.name ?? ""} />;
   }
 }

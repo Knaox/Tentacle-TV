@@ -1,80 +1,31 @@
-import { useEffect, useState, useCallback } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useDevicePairGenerate, useDevicePairStatus } from "@tentacle-tv/api-client";
-import type { DevicePairStatusResponse } from "@tentacle-tv/api-client";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { Colors, Radius, Typography, brandAlpha } from "../../theme/colors";
-import { TV_PLATFORM_LABEL } from "../../lib/platformLabel";
 import { Button } from "../../theme/buttons";
+import { PAIRING_CODE_TTL, useServerPairingCode, type PairedAccount } from "../../hooks/usePairingCode";
 
 interface ServerCodeDisplayStepProps {
-  onConfirmed: (data: { token: string; user: { id: string; name: string } }) => void;
+  onConfirmed: (data: PairedAccount) => void;
   onChangeServer: () => void;
 }
-
-const CODE_TTL = 300;
 
 /**
  * Flux manuel : la TV AFFICHE un code généré par le serveur configuré, et
  * l'utilisateur le confirme depuis son téléphone/web (Paramètres → Jumeler
- * la TV). Miroir du flux relay, mais via le serveur de l'utilisateur.
+ * la TV). Miroir du flux relay, mais via le serveur de l'utilisateur ; la
+ * logique du code est commune aux deux téléviseurs (`usePairingCode`).
  */
 export function ServerCodeDisplayStep({ onConfirmed, onChangeServer }: ServerCodeDisplayStepProps) {
   const { t } = useTranslation(["pairing", "common"]);
-  const generateMut = useDevicePairGenerate();
-  const [code, setCode] = useState<string | null>(null);
-  const [remaining, setRemaining] = useState(CODE_TTL);
-  const [generatedAt, setGeneratedAt] = useState<number | null>(null);
-
-  const expired = remaining <= 0;
-  const canPoll = !!code && !expired;
-
-  const { data: statusData } = useDevicePairStatus(canPoll ? code : null);
-
-  const generate = useCallback(() => {
-    setCode(null);
-    setRemaining(CODE_TTL);
-    setGeneratedAt(null);
-    generateMut.mutate({ deviceName: TV_PLATFORM_LABEL }, {
-      onSuccess: (data) => {
-        setCode(data.code);
-        setGeneratedAt(Date.now());
-      },
-    });
-  }, [generateMut]);
-
-  useEffect(() => {
-    generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Compte à rebours d'expiration
-  useEffect(() => {
-    if (!generatedAt) return;
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - generatedAt) / 1000);
-      const left = Math.max(0, CODE_TTL - elapsed);
-      setRemaining(left);
-      if (left <= 0) clearInterval(interval);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [generatedAt]);
-
-  // Confirmation reçue → remonte token + user
-  useEffect(() => {
-    const data: DevicePairStatusResponse | undefined = statusData;
-    if (data?.status === "confirmed" && data.token && data.user?.id && data.user?.name) {
-      onConfirmed({ token: data.token, user: { id: data.user.id, name: data.user.name } });
-    }
-  }, [statusData, onConfirmed]);
+  const { code, remaining, expired, loading, failed, regenerate: generate } = useServerPairingCode(true, onConfirmed);
 
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
-  const progress = remaining / CODE_TTL;
+  const progress = remaining / PAIRING_CODE_TTL;
 
-  if (!code && generateMut.isPending) {
+  if (loading) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color={Colors.accentPurple} />
@@ -82,7 +33,7 @@ export function ServerCodeDisplayStep({ onConfirmed, onChangeServer }: ServerCod
     );
   }
 
-  if (!code && generateMut.isError) {
+  if (failed) {
     return (
       <View style={styles.container}>
         <View style={styles.card}>

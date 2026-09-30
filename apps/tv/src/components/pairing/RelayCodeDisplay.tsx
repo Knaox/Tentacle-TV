@@ -1,12 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useRelayGenerate, useRelayStatus } from "@tentacle-tv/api-client";
 import type { RelayStatusResponse } from "@tentacle-tv/api-client";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { Colors, Radius, brandAlpha } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
+import { PAIRING_CODE_TTL, useRelayPairingCode } from "../../hooks/usePairingCode";
 
 interface RelayCodeDisplayProps {
   onConfirmed: (data: RelayStatusResponse) => void;
@@ -14,67 +13,22 @@ interface RelayCodeDisplayProps {
   onManualSetup: () => void;
 }
 
-const CODE_TTL = 300;
-
 export function RelayCodeDisplay({
   onConfirmed,
   onCancel,
   onManualSetup,
 }: RelayCodeDisplayProps) {
   const { t } = useTranslation("pairing");
-  const generateMut = useRelayGenerate();
-  const [code, setCode] = useState<string | null>(null);
-  const [remaining, setRemaining] = useState(CODE_TTL);
-  const [generatedAt, setGeneratedAt] = useState<number | null>(null);
-
-  const expired = remaining <= 0;
-  const canPoll = !!code && !expired;
-
-  const { data: statusData } = useRelayStatus(canPoll ? code : null);
-
-  // Generate code on mount
-  const generate = useCallback(() => {
-    setCode(null);
-    setRemaining(CODE_TTL);
-    setGeneratedAt(null);
-    generateMut.mutate(undefined, {
-      onSuccess: (data) => {
-        setCode(data.code);
-        setGeneratedAt(Date.now());
-      },
-    });
-  }, [generateMut]);
-
-  useEffect(() => {
-    generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Countdown
-  useEffect(() => {
-    if (!generatedAt) return;
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - generatedAt) / 1000);
-      const left = Math.max(0, CODE_TTL - elapsed);
-      setRemaining(left);
-      if (left <= 0) clearInterval(interval);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [generatedAt]);
-
-  // Handle confirmed status
-  useEffect(() => {
-    if (statusData?.status === "confirmed") {
-      onConfirmed(statusData);
-    }
-  }, [statusData, onConfirmed]);
+  // Génération, compte à rebours et attente de la confirmation : la logique
+  // commune aux deux téléviseurs (`usePairingCode`).
+  const { code, remaining, expired, loading, failed, regenerate: generate } = useRelayPairingCode(true, onConfirmed);
 
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
-  const progress = remaining / CODE_TTL;
+  const progress = remaining / PAIRING_CODE_TTL;
 
   // Loading state
-  if (!code && generateMut.isPending) {
+  if (loading) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color={Colors.accentPurple} />
@@ -83,7 +37,7 @@ export function RelayCodeDisplay({
   }
 
   // Network error state
-  if (!code && generateMut.isError) {
+  if (failed) {
     return (
       <View style={styles.container}>
         <View style={styles.card}>
