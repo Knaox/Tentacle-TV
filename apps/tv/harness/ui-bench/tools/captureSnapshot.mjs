@@ -39,6 +39,10 @@ export async function captureSnapshot(snapshotDir) {
     ratings: data.ratings,
     shelves: data.shelves,
     libraries: data.libraries,
+    latestByLibrary: data.latestByLibrary,
+    catalog: data.catalog,
+    genres: data.genres,
+    detail: data.detail,
     profile: { name: session.username, image: avatar },
     extras: data.extras,
   };

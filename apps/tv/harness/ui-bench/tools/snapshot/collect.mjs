@@ -34,9 +34,16 @@ export async function collect(api, userId, log) {
   const favorites = keep((await query("Filters=IsFavorite&Recursive=true&IncludeItemTypes=Movie,Series&SortBy=DateCreated&SortOrder=Descending&Limit=24")).Items);
   const watched = keep((await query("Filters=IsPlayed&Recursive=true&IncludeItemTypes=Movie,Episode&SortBy=DatePlayed&SortOrder=Descending&Limit=16")).Items);
   const latest = [];
+  const latestByLibrary = {};
+  const catalog = {};
+  const genres = {};
   for (const lib of libraries) {
     const type = lib.collectionType === "tvshows" ? "Series" : lib.collectionType === "movies" ? "Movie" : "Movie,Series";
-    latest.push(...keep((await query(`ParentId=${lib.id}&Recursive=true&IncludeItemTypes=${type}&SortBy=DateCreated&SortOrder=Descending&Limit=12`)).Items));
+    latestByLibrary[lib.id] = keep((await query(`ParentId=${lib.id}&Recursive=true&IncludeItemTypes=${type}&SortBy=DateCreated&SortOrder=Descending&Limit=12`)).Items);
+    latest.push(...latestByLibrary[lib.id]);
+    // Le catalogue d'une bibliothèque, tel que la grille le demande (titre A→Z).
+    catalog[lib.id] = keep((await query(`ParentId=${lib.id}&Recursive=true&IncludeItemTypes=Movie,Series&ExcludeLocationTypes=Virtual&IsMissing=false&SortBy=SortName&SortOrder=Ascending&Limit=48`)).Items);
+    genres[lib.id] = ((await api.optional(api.jellyfin(`/Genres?ParentId=${lib.id}&UserId=${U}`), `genres ${lib.name}`))?.Items ?? []).map((g) => ({ id: g.Id, name: g.Name }));
   }
 
   log("titres variés");
@@ -122,6 +129,23 @@ export async function collect(api, userId, log) {
     if (detail) items.set(id, detail);
   }));
 
+  log("fiches : similaires, bonus, sagas");
+  const detail = {};
+  const detailIds = [...movies.slice(0, 8), ...series.slice(0, 4), ...anime.slice(0, 2)];
+  for (const id of detailIds) {
+    const it = items.get(id);
+    if (!it) continue;
+    const entry = {};
+    entry.similar = keep((await api.optional(api.jellyfin(`/Items/${id}/Similar?userId=${U}&Limit=12&Fields=${LIST_FIELDS}&${IMAGES}`), `similaires ${id}`))?.Items);
+    entry.specialFeatures = keep(await api.optional(api.jellyfin(`/Users/${U}/Items/${id}/SpecialFeatures`), `bonus ${id}`) ?? []);
+    entry.localTrailers = keep(await api.optional(api.jellyfin(`/Users/${U}/Items/${id}/LocalTrailers`), `bandes-annonces ${id}`) ?? []);
+    const tmdb = it.ProviderIds?.Tmdb;
+    if (tmdb) entry.remoteTrailers = await api.optional(api.tentacle(`/api/tmdb/trailers?tmdbId=${tmdb}&mediaType=${it.Type === "Series" ? "tv" : "movie"}`), `vidéos ${id}`);
+    const collection = it.ProviderIds?.TmdbCollection;
+    if (collection) entry.saga = await api.optional(api.tentacle(`/api/sagas/${collection}?lang=fr`), `saga ${id}`);
+    detail[id] = entry;
+  }
+
   const extras = {
     homeLayout: await api.optional(api.tentacle("/api/preferences/home-layout"), "mise en page de l'accueil"),
     recoState: recoPage ? { state: recoPage.state, generating: recoPage.generating, rows: recoPage.rows } : null,
@@ -136,6 +160,10 @@ export async function collect(api, userId, log) {
     items,
     libraries,
     lists: { movies, series, anime, episodes: episodeIds, resume, nextUp, latest, favorites, watchlist, people, collections, watched },
+    latestByLibrary,
+    catalog,
+    genres,
+    detail,
     seasons,
     episodes,
     credits,

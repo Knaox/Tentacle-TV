@@ -17,6 +17,16 @@ export interface SnapshotEntry {
   images: Partial<Record<SnapshotImageType, string>>;
 }
 
+export interface SnapshotDetail {
+  similar?: string[];
+  specialFeatures?: string[];
+  localTrailers?: string[];
+  /** Réponse brute de `/api/tmdb/trailers`. */
+  remoteTrailers?: unknown;
+  /** Réponse brute de `/api/sagas/{collection}`. */
+  saga?: unknown;
+}
+
 export interface SnapshotShelf {
   id: string;
   title: string;
@@ -55,6 +65,14 @@ export interface Snapshot {
   shelves: SnapshotShelf[];
   /** Les bibliothèques du compte. */
   libraries: Array<{ id: string; name: string; collectionType: string | null }>;
+  /** Les derniers ajouts de chaque bibliothèque (identifiants, par bibliothèque). */
+  latestByLibrary?: Record<string, string[]>;
+  /** Le début du catalogue de chaque bibliothèque, titre A→Z. */
+  catalog?: Record<string, string[]>;
+  /** Les genres de chaque bibliothèque (options du filtre). */
+  genres?: Record<string, Array<{ id: string; name: string }>>;
+  /** Pour quelques fiches : similaires, bonus, bandes-annonces, saga. */
+  detail?: Record<string, SnapshotDetail>;
   /** Le compte : nom et portrait (chemin relatif, ou null). */
   profile?: { name: string; image: string | null };
   /** Les réponses brutes du backend dont certaines scènes tirent leurs états

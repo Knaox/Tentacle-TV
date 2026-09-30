@@ -21,11 +21,13 @@ export function Catalogue({ state }: { state: BenchState }) {
   }, []);
 
   // Le catalogue est une révision comme une autre : la capture l'attend aussi.
+  // Seulement quand c'est bien lui qu'on demande : pendant qu'une scène
+  // s'ouvre, il reste monté sous elle et ne doit pas répondre à sa place.
   useEffect(() => {
-    if (load.status === "loading") return;
+    if (load.status === "loading" || state.scene !== null) return;
     const timer = setTimeout(() => signalReady(state.rev), 500);
     return () => clearTimeout(timer);
-  }, [state.rev, load.status]);
+  }, [state.rev, state.scene, load.status]);
 
   const snapshot = load.status === "loading" ? null : load.data.snapshot;
   const source = !snapshot

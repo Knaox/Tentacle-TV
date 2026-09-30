@@ -19,10 +19,14 @@ export interface BenchData {
   list: (kind: keyof Snapshot["lists"], count?: number) => MediaItem[];
   /** Les éléments d'une liste d'identifiants quelconque. */
   items: (ids: string[] | undefined, count?: number) => MediaItem[];
+  /** L'adresse d'un fichier de l'instantané (chemin relatif à `snapshot/`). */
+  imageFile: (relative: string) => string;
 }
 
 export function createBenchData(snapshot: Snapshot): BenchData {
   const item = (id: string) => snapshot.items[id]?.item;
+  const imageFile = (relative: string) =>
+    `${BENCH_ORIGIN}bench/snapshot/${relative.split("/").map(encodeURIComponent).join("/")}`;
   const items = (ids: string[] | undefined, count?: number) =>
     (ids ?? []).map(item).filter((it): it is MediaItem => !!it).slice(0, count ?? Infinity);
   return {
@@ -30,10 +34,11 @@ export function createBenchData(snapshot: Snapshot): BenchData {
     item,
     image: (id, type) => {
       const file = snapshot.items[id]?.images[type];
-      return file ? `${BENCH_ORIGIN}bench/snapshot/${file.split("/").map(encodeURIComponent).join("/")}` : undefined;
+      return file ? imageFile(file) : undefined;
     },
     list: (kind, count) => items(snapshot.lists[kind], count),
     items,
+    imageFile,
   };
 }
 

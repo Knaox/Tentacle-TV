@@ -77,7 +77,9 @@ async function planche(args) {
   for (const lang of langs.length ? langs : [initial.lang]) {
     for (const glass of glasses.length ? glasses : [initial.glass ? "on" : "off"]) {
       for (const scene of list) {
-        const focusKeys = withFocus && scene.focusKeys.length ? scene.focusKeys : [null];
+        // Sans --focus : le premier élément de la scène, figé — sinon tvOS
+        // focalise le premier focalisable venu (souvent la loupe de la navigation).
+        const focusKeys = withFocus && scene.focusKeys.length ? scene.focusKeys : [scene.focusKeys[0] ?? null];
         for (const focus of focusKeys) {
           await apply({ scene: scene.id, focus, lang, glass: glass === "on" });
           const variant = [langs.length > 1 && lang, glasses.length > 1 && (glass === "on" ? "verre" : "enrichi"), focus && `focus ${focus}`].filter(Boolean).join(" · ");
