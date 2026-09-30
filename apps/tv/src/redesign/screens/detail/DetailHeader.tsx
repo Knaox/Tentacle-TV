@@ -1,11 +1,13 @@
-import { memo, useEffect } from "react";
+import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { TV_MOTION } from "@tentacle-tv/theme";
 import Svg, { Path } from "react-native-svg";
 import { useTranslation } from "react-i18next";
 import { STAR_PATH, STAR_VIEWBOX, formatUserScore } from "@tentacle-tv/shared";
 import { Chip } from "../../controls/Chip";
 import { MetaLine } from "../../hero/MetaLine";
+import { useEntrance } from "../../motion/useMotion";
 import { TitleArt } from "../../hero/TitleArt";
 import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, text, white } from "../../theme/tokens";
@@ -35,13 +37,10 @@ type Props = Pick<
   onFocusChange?: (focused: boolean) => void;
 };
 
-/** Entrée de l'en-tête : un fondu et un léger glissé, une fois, à l'ouverture. */
-function useEntrance() {
-  const reduced = useReducedMotion();
-  const progress = useSharedValue(reduced ? 1 : 0);
-  useEffect(() => {
-    progress.value = withTiming(1, { duration: reduced ? 0 : 520, easing: Easing.bezier(0.22, 1, 0.36, 1) });
-  }, [progress, reduced]);
+/** Entrée de l'en-tête : un fondu et un léger glissé, une fois, à l'ouverture
+ *  — juste après l'image, qui se pose la première (`DetailBackdrop`). */
+function useHeaderEntrance() {
+  const progress = useEntrance("page", TV_MOTION.page.enterDelayMs);
   return useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateX: -28 * (1 - progress.value) }] }));
 }
 
@@ -68,7 +67,7 @@ export const DetailHeader = memo(function DetailHeader({
   ...callbacks
 }: Props) {
   const { t } = useTranslation();
-  const entrance = useEntrance();
+  const entrance = useHeaderEntrance();
   const episode = header.kind === "episode";
   return (
     <Animated.View style={[styles.block, entrance]}>

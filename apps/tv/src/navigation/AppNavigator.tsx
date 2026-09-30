@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { TV_MOTION } from "@tentacle-tv/theme";
 import { Colors } from "../theme/colors";
 import type { RootStackParamList } from "./types";
 import { SkeletonLoader } from "./ScreenFallback";
@@ -26,6 +27,16 @@ const WatchlistScreen = React.lazy(() => import("../screens/WatchlistScreen").th
 const FavoritesScreen = React.lazy(() => import("../screens/FavoritesScreen").then(m => ({ default: m.FavoritesScreen })));
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+/**
+ * Le fondu enchaîné de la pile native (react-native-screens : un animateur
+ * UIKit, joué par Core Animation, sans JS). Apple TV (refonte) : la durée de
+ * `TV_MOTION` — un écran poussé (la fiche d'une carte) se pose en 320 ms au
+ * lieu de 500, pendant que son image se pose et que son en-tête arrive
+ * (`DetailBackdrop`, `DetailHeader`). Android TV : la durée par défaut, rien
+ * ne change.
+ */
+const FADE_MS: number | undefined = REDESIGN_ACTIVE ? TV_MOTION.page.fadeMs : undefined;
 
 /**
  * Préchauffe les écrans lazy après le premier rendu de l'accueil : le registre
@@ -71,6 +82,7 @@ export function AppNavigator() {
       screenOptions={{
         headerShown: false,
         animation: "fade",
+        animationDuration: FADE_MS,
         contentStyle: { backgroundColor: Colors.bgDeep },
         statusBarHidden: true,
       }}

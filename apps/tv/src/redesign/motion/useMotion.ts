@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { runOnJS, useReducedMotion, useSharedValue, type SharedValue } from "react-native-reanimated";
-import { motionTo, type Motion } from "./motion";
+import { runOnJS, useReducedMotion, useSharedValue, withDelay, type SharedValue } from "react-native-reanimated";
+import { MOTION_ENABLED, motionTo, type Motion } from "./motion";
 
 /**
  * Une valeur de 0 à 1 qui suit `on` selon `motion` (`motion.ts`) : c'est
@@ -74,4 +74,22 @@ export function usePresence(shown: boolean, motion: Motion): Presence {
   }, [shown, mounted, reduced, progress, unmount]);
 
   return { mounted: mounted || shown, progress };
+}
+
+/**
+ * 0 → 1 UNE fois, à l'arrivée (le montage) : le contenu d'un écran poussé,
+ * une image qui se pose. `delayMs` : ce qu'il attend — l'image précède
+ * le texte. Animations réduites, ou hors Apple TV : déjà à 1.
+ */
+export function useEntrance(motion: Motion, delayMs = 0): SharedValue<number> {
+  const reduced = useReducedMotion();
+  const instant = reduced || !MOTION_ENABLED;
+  const progress = useSharedValue(instant ? 1 : 0);
+  useLayoutEffect(() => {
+    if (instant) return;
+    progress.value = delayMs > 0 ? withDelay(delayMs, motionTo(1, motion)) : motionTo(1, motion);
+    // Une seule arrivée : au montage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return progress;
 }

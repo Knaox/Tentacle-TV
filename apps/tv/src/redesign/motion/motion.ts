@@ -66,6 +66,12 @@ const PRESETS = {
   ambient: { enter: timing(TV_MOTION.crossfade.ambientMs, EASE.inOut), exit: timing(TV_MOTION.crossfade.ambientMs, EASE.inOut) },
   /** L'image du héros qui tourne. */
   hero: { enter: timing(TV_MOTION.crossfade.heroMs, EASE.inOut), exit: timing(TV_MOTION.crossfade.heroMs, EASE.inOut) },
+  /** Le contenu d'un écran poussé qui arrive (l'en-tête d'une fiche). */
+  page: { enter: timing(TV_MOTION.page.enterMs, EASE.out), exit: timing(TV_MOTION.reveal.outMs, EASE.in) },
+  /** Une grande image qui se pose : elle recule lentement à sa place. */
+  settle: { enter: timing(TV_MOTION.image.settleMs, EASE.out), exit: timing(TV_MOTION.image.settleMs, EASE.out) },
+  /** Une image chargée qui entre en fondu. */
+  imageIn: { enter: timing(TV_MOTION.image.fadeInMs, EASE.out), exit: timing(TV_MOTION.reveal.outMs, EASE.in) },
 } as const;
 
 export type MotionPreset = keyof typeof PRESETS;

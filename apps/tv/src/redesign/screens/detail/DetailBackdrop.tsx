@@ -1,7 +1,9 @@
-import { memo } from "react";
-import { Image, StyleSheet } from "react-native";
+import { memo, useCallback, useState } from "react";
+import { StyleSheet } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import { TV_MOTION } from "@tentacle-tv/theme";
+import { useMotion } from "../../motion/useMotion";
 import { scrim } from "../../theme/tokens";
 
 /**
@@ -11,7 +13,24 @@ import { scrim } from "../../theme/tokens";
  * (la marque). Quand on descend dans la page, l'image s'efface jusqu'à un
  * souvenir d'elle-même et laisse la place au fond vivant, teinté de ses
  * couleurs : seule son OPACITÉ suit le défilement.
+ *
+ * À l'arrivée, l'image n'apparaît pas d'un coup : une fois chargée, elle
+ * entre en fondu et se POSE — partie un peu plus près, elle recule
+ * lentement à sa place (`settle`, `imageIn` : Apple TV seulement).
  */
+
+/** L'image de l'œuvre : en fondu une fois chargée, et qui se pose. */
+function ArrivingImage({ uri }: { uri: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const onLoad = useCallback(() => setLoaded(true), []);
+  const shown = useMotion(loaded, "imageIn");
+  const settled = useMotion(loaded, "settle");
+  const arrive = useAnimatedStyle(() => ({
+    opacity: shown.value,
+    transform: [{ scale: TV_MOTION.image.settleScale - (TV_MOTION.image.settleScale - 1) * settled.value }],
+  }));
+  return <Animated.Image source={{ uri }} onLoad={onLoad} style={[StyleSheet.absoluteFill, arrive]} resizeMode="cover" fadeDuration={0} />;
+}
 
 /** Le défilement au bout duquel l'image n'est plus qu'un souvenir. */
 const FADE_DISTANCE = 620;
@@ -30,7 +49,7 @@ export const DetailBackdrop = memo(function DetailBackdrop({
   }));
   return (
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, fade]}>
-      {uri ? <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
+      {uri ? <ArrivingImage key={uri} uri={uri} /> : null}
       <LinearGradient
         colors={[scrim(0.94), scrim(0.8), scrim(0.42), scrim(0.08), scrim(0)]}
         locations={[0, 0.28, 0.52, 0.72, 0.86]}
