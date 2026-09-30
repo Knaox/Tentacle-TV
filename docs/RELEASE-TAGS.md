@@ -18,7 +18,8 @@ Avant le clic, elle affiche deux choses qui décident de tout :
   serait refusée ;
 - **la taille des notes de version** par store, avec le nombre de caractères que
   la coupe va jeter. C'est là qu'on voit qu'un bloc manque : le bouton se
-  désactive.
+  désactive. Pour la TV LG au cran store, elle montre aussi les notes serveur
+  dédiées (`changelogs/server-webos.md`), celles de l'image reconstruite.
 
 > ⚠️ Son vocabulaire est celui des entrées de workflow (`targets`, `channel`,
 > `version`, `promote`) ; `webos.yml` et `server.yml` n'ont ni `targets` ni
@@ -33,8 +34,8 @@ Sans jeton, la page affiche la commande `gh workflow run` équivalente.
 | `channel` | Ce qui se passe |
 |-----------|-----------------|
 | `build` | Artefacts du run. **Rien ne part nulle part.** |
-| `test` | Play : piste FERMÉE en `completed` (plus de draft à promouvoir) · Apple : TestFlight distribué au groupe externe + examen bêta demandé · Linux : Release en **pré-version**, manifeste non patché · serveur : `:vX.Y.Z` seul, `:latest` intact · webOS : Release versionnée, `webos-latest` intact · Windows : artefact seulement (le Microsoft Store n'a pas de canal de test). |
-| `store` | Play : **production, 100 %** · Apple : **examen soumis**, `releaseType: AFTER_APPROVAL` — en vente dès l'approbation · Microsoft Store : soumission immédiate · Linux : Release publiée + manifeste d'auto-update · serveur : `:latest` + Release · webOS : `webos-latest` basculé. |
+| `test` | Play : piste FERMÉE en `completed` (plus de draft à promouvoir) · Apple : TestFlight distribué au groupe externe + examen bêta demandé · Linux : Release en **pré-version**, manifeste non patché · serveur : `:vX.Y.Z` seul, `:latest` intact · webOS : Release versionnée + image `:vS-webos-X.Y.Z`, `webos-latest` et `:latest` intacts · Windows : artefact seulement (le Microsoft Store n'a pas de canal de test). |
+| `store` | Play : **production, 100 %** · Apple : **examen soumis**, `releaseType: AFTER_APPROVAL` — en vente dès l'approbation · Microsoft Store : soumission immédiate · Linux : Release publiée + manifeste d'auto-update · serveur : `:latest` + Release · webOS : `webos-latest` basculé, `:latest` aussi (nouveau client `/tv`) + Release `server-vS-webos-X.Y.Z`. |
 
 `promote` (le défaut au cran store) reprend **le binaire déjà testé** : le
 versionCode servi par la piste fermée passe en production, la version App Store
@@ -50,7 +51,7 @@ veut le paquet à chaque soumission.
 | `desktop.yml` | `macos` `windows` `linux` | Mac App Store · Microsoft Store (MSIX) · Release GitHub + auto-update |
 | `mobile.yml` | `android` `ios` | Play `com.tentacletv.mobile` · App Store `com.tentacle.mobile` |
 | `tv.yml` | `androidtv` `appletv` | Play (MÊME fiche que le mobile, form factor TV) · App Store tvOS |
-| `webos.yml` | — (IPK seul, pas d'entrée) | Release GitHub — adresse permanente `webos-latest` |
+| `webos.yml` | — (pas d'entrée) | Release GitHub — adresse permanente `webos-latest` · image serveur reconstruite avec le client LG |
 | `server.yml` | — (image seule, pas d'entrée) | `ghcr.io/knaox/tentacle-tv` + Release `server-vX.Y.Z` |
 
 Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
@@ -61,6 +62,56 @@ Le suffixe `-rN` reste la re-livraison d'une même version marketing.
 ⚠️ **Le serveur ne part plus au push.** `git push origin main` ne déploie rien :
 il faut le cran `store` de `server.yml`. Le cran `test` permet d'éprouver une
 image (`:vX.Y.Z`) sans que la production, qui suit `:latest`, la prenne.
+
+## Le serveur et le client LG : deux moitiés d'une image
+
+L'image `ghcr.io/knaox/tentacle-tv` porte le **serveur** (backend + client web)
+et le **client des téléviseurs LG**, qu'il sert sous `/tv`. Jusqu'au 2026-10-01,
+chaque livraison serveur recompilait ce client depuis son commit : livrer le
+serveur changeait l'interface des téléviseurs sans le dire. Désormais chaque
+moitié n'est livrée que par son workflow, et l'autre est reprise telle quelle.
+
+| Livraison | Le serveur | Le client LG (`/tv`) | Étiquettes | Release (store) |
+|-----------|------------|----------------------|------------|-----------------|
+| `server.yml` | construit depuis le commit | repris de `:latest` (épinglé par empreinte) | test `:vS` · store `:vS` + `:latest` | `server-vS` — notes `changelogs/server.md` [S] |
+| `webos.yml` | l'image publiée `:vS` (versions.json → `server`), reprise à l'octet près | construit depuis le commit, avec l'IPK | test `:vS-webos-W` · store `:vS-webos-W` + `:latest` | `server-vS-webos-W` — notes `changelogs/server-webos.md` [W] |
+
+Les deux passent par **`server-image.yml`**, workflow réutilisable : un plan
+(`server-image-plan.mjs`, décision dans `lib/server-image.mjs`, testée hors
+ligne) lit le registre en lecture seule et rend étiquettes, contextes nommés,
+labels et Release ; le `Dockerfile` remplace ses étapes `tv-client-build`,
+`tv-client` ou `server` par ces contextes. Pour voir ce que ferait une livraison,
+sans rien lancer :
+
+```bash
+node .github/scripts/server-image-plan.mjs plan --mode webos --channel store --sha $(git rev-parse HEAD)
+```
+
+Les gardes de ce couple, toutes posées AVANT le moindre build (et, pour webOS,
+avant le commit de version) :
+
+- **webOS au cran store refuse** si `:latest` n'est pas déjà le serveur de
+  `versions.json` : il mettrait en service, sous couvert du client LG, un serveur
+  qui n'a été que testé. Livrer d'abord le serveur au cran store.
+- **webOS refuse** si `:vS` n'existe pas (serveur jamais publié) ou si
+  `minServer` dépasse ce serveur : le client compilé l'exige, servi par un
+  serveur plus ancien il afficherait l'alerte de compatibilité.
+- **La bascule de `:latest` est un compare-and-swap** : le plan note son
+  empreinte, le job qui bascule la relit juste avant d'écrire et refuse si elle a
+  changé ; leur groupe de concurrence (`server-image-latest`) est commun aux deux
+  workflows. Une livraison serveur et une livraison webOS simultanées ne
+  s'écrasent plus : la seconde échoue et se relance.
+- **Les Releases webOS partent en dernier**, après l'image : pas de coquille
+  annoncée sans le client qui va avec.
+
+Chaque image porte des labels OCI : `org.opencontainers.image.version` (le
+serveur), `org.opencontainers.image.revision`, `app.tentacletv.webos-client` et
+`app.tentacletv.webos-client.revision` (le client LG embarqué — vide sur les
+images d'avant le découplage, reconnues par leur empreinte identique à `:vS`).
+
+Revers assumé : un build `apps/tv-webos` cassé ne bloque plus la livraison du
+serveur, et ne se voit qu'à celle de webOS. Le cran `build` de `webos.yml`
+(image reconstruite, rien de poussé) sert à le vérifier avant.
 
 ## Ce qui garde les livraisons
 
@@ -113,6 +164,14 @@ lieu de couper — d'où l'absence de saut de ligne final.
 pour ces cibles-là. Deux usages : des notes Apple plus génériques, et surtout un
 texte plus court pour le Microsoft Store, dont le bloc nu dépasse régulièrement
 1500 caractères.
+
+**Une livraison webOS demande deux blocs de la MÊME version webOS** :
+`changelogs/webos.md` (Releases webOS — la coquille et le client) et
+`changelogs/server-webos.md` (Release `server-vS-webos-W` du serveur reconstruit
+— ce qui change pour les téléviseurs LG, dit à ceux qui tirent l'image Docker).
+Le second vit dans son propre fichier exprès : un `## [1.1.0]` de
+`changelogs/server.md` serait celui du vieux serveur 1.1.0, et le pré-vol s'en
+contenterait. Le pré-vol l'exige au cran store, le seul qui crée cette Release.
 
 ## Deux fiches partagées, deux pièges
 

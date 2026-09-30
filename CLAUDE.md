@@ -73,8 +73,8 @@ une entrée déclarée que la page n'envoie plus prend son défaut, en silence.
 | `channel` | Ce qui se passe |
 |-----------|-----------------|
 | `build` | Construit et archive les artefacts. **Rien ne part nulle part.** |
-| `test` | Piste Play FERMÉE en `completed` · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`. **Publié, sans aucun geste ensuite.** |
-| `store` | Production Play à 100 % · App Store soumis à l'examen avec mise en vente automatique · Microsoft Store · Release GitHub publiée et manifeste d'auto-update patché · `:latest` basculé. **En ligne, sans un clic de plus.** |
+| `test` | Piste Play FERMÉE en `completed` · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`, image en `:vS-webos-X.Y.Z` sans bouger `:latest`. **Publié, sans aucun geste ensuite.** |
+| `store` | Production Play à 100 % · App Store soumis à l'examen avec mise en vente automatique · Microsoft Store · Release GitHub publiée et manifeste d'auto-update patché · `:latest` basculé (par le serveur OU par webOS). **En ligne, sans un clic de plus.** |
 
 `promote` (le défaut au cran store) reprend **le binaire déjà testé** au lieu
 d'en reconstruire un autre. Windows fait exception : le Microsoft Store exige le
@@ -89,11 +89,47 @@ lieu de laisser la reprise échouer pendant que Windows part seul au Store.
 | `desktop.yml` | `macos` · `windows` · `linux` |
 | `mobile.yml` | `android` · `ios` |
 | `tv.yml` | `androidtv` · `appletv` |
-| `webos.yml` | aucune entrée `targets` — l'IPK seul |
+| `webos.yml` | aucune entrée `targets` — l'IPK ET le client servi sous `/tv` |
 | `server.yml` | aucune entrée `targets` — l'image Docker EST le serveur |
 
 Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
-cran `store` ; c'est la CI qui les pose quand on demande une version.
+cran `store` ; c'est la CI qui les pose quand on demande une version. Un sixième
+fichier, `server-image.yml`, ne se lance pas seul : c'est le workflow
+RÉUTILISABLE qui construit et publie l'image Docker pour les deux derniers.
+
+### Le serveur et le client LG — deux moitiés, deux livraisons
+
+L'image Docker porte le **serveur** (backend + client web) ET le **client des
+téléviseurs LG**, servi sous `/tv` (`staticClients.ts`). Chaque moitié n'est
+livrée que par son workflow, qui reprend l'autre telle quelle :
+
+- **`server.yml`** construit le serveur depuis le commit et **reprend le client
+  LG de l'image en service** (`:latest`, épinglée par empreinte) — jamais celui
+  du commit. Une livraison serveur ne change plus l'interface des téléviseurs ;
+  la Release `server-vX.Y.Z` dit quel client LG elle embarque.
+- **`webos.yml`** construit l'IPK et le client, puis **reconstruit l'image** en
+  posant ce client sur l'image publiée du serveur de `versions.json` → `server`
+  (`:vS`, reprise à l'octet près : pas de nouveau serveur). Cran test : étiquette
+  dédiée `:vS-webos-X.Y.Z` ; cran store : `:latest` + Release
+  `server-vS-webos-X.Y.Z`. Les Releases webOS partent APRÈS l'image.
+
+Le `Dockerfile` le permet par des **contextes nommés** : ses étapes
+`tv-client-build`, `tv-client` et `server` se remplacent ; sans contexte (build
+local, `docker compose build`) tout se construit depuis les sources. La décision
+(étiquettes, contextes, labels OCI `app.tentacletv.webos-client`, Release) vit
+dans `.github/scripts/lib/server-image.mjs`, testée hors ligne, et se rejoue
+contre le registre : `node .github/scripts/server-image-plan.mjs plan --mode
+webos --channel store --sha $(git rev-parse HEAD)`.
+
+Gardes propres à ce couple :
+- webOS au cran store **refuse** si `:latest` n'est pas déjà le serveur de
+  `versions.json` (il mettrait en service un serveur seulement testé) ; aussi si
+  `minServer` dépasse ce serveur, ou si `:vS` n'existe pas. Pré-vol AVANT le bump.
+- **La bascule de `:latest` est un compare-and-swap** (relecture de son empreinte
+  juste avant d'écrire), dans un groupe de concurrence commun
+  (`server-image-latest`) : serveur et webOS lancés ensemble ne s'écrasent plus.
+- Revers : un build `apps/tv-webos` cassé ne bloque plus le serveur, et ne se voit
+  qu'à la livraison webOS — le cran `build` de `webos.yml` le vérifie.
 
 ### Ce qui garde les livraisons
 
@@ -119,6 +155,12 @@ cran `store` ; c'est la CI qui les pose quand on demande une version.
 MS Store 1500, Play 500 **caractères Unicode**. Les blocs par canal
 `## [mac-X.Y.Z]` et `## [win-X.Y.Z]` remplacent le bloc nu pour ces cibles-là.
 `CHANGELOG.md` racine = archive pure.
+
+**Une livraison webOS demande DEUX blocs de la même version webOS** :
+`changelogs/webos.md` (Releases webOS : coquille et client) et
+`changelogs/server-webos.md` (Release du serveur reconstruit : ce qui change pour
+la TV LG, dit à qui tire l'image). Fichier à part exprès : un `## [1.1.0]` de
+`server.md` serait le vieux serveur 1.1.0, et le pré-vol s'en contenterait.
 
 ### Deux fiches partagées, deux pièges
 
