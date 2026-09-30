@@ -64,8 +64,9 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
 
   // La fiche COMPLÈTE, sur la clé de l'écran de détail : un `UserData` que les
   // bascules patchent sous les yeux, les `ProviderIds` de la note. En
-  // attendant, le visage de la carte suffit.
-  const { data: full } = useMediaItem(libraryId ?? undefined);
+  // attendant, le visage de la carte suffit — sauf pour la note : une carte de
+  // grille n'a pas ses `ProviderIds`, et sa cible de note n'est pas encore SUE.
+  const { data: full, isLoading: fullLoading } = useMediaItem(libraryId ?? undefined);
   const face = useMemo<MediaItem>(
     () => full ?? (target.kind === "reco" ? recoMarkerItem(target.item) : target.item),
     [full, target],
@@ -82,7 +83,10 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
   const { mutate: sendFeedback } = useSendRecoFeedback();
   const { mutate: saveFilter } = useSaveRecoProviderFilter();
 
-  const rateable = rating.identity !== null || rating.pending;
+  // « Pas encore su » (la fiche complète en route) n'est pas « non notable » :
+  // la note reste en attente — le panneau n'entre pas avant de savoir.
+  const ratingUnknown = inLibrary && full === undefined && fullLoading;
+  const rateable = rating.identity !== null || rating.pending || ratingUnknown;
   const overlay = resolveCardOverlay({
     variant,
     inLibrary,

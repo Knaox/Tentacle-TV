@@ -28,8 +28,12 @@ import { useSheetModel, type SheetMode } from "./useSheetModel";
  *   (`RATING_ENTRY`) ; sans note à poser, le premier picto. Dans une `Modal`,
  *   aucune préférence de focus n'est honorée : les autres cibles restent
  *   infocalisables jusqu'au premier focus (`useChoiceEntry`). L'entrée se
- *   décide quand la note est CONNUE (la liste des notes, la série d'un
- *   épisode) et ne bouge plus ensuite : noter ne déplace pas le focus.
+ *   décide quand la note est CONNUE (la fiche complète, la liste des notes,
+ *   la série d'un épisode) et ne bouge plus ensuite : noter ne déplace pas le
+ *   focus. Et rien, dans une `Modal` présentée, ne déplace plus le focus : le
+ *   panneau ne se PRÉSENTE qu'une fois son entrée décidée — mesuré en réel,
+ *   décidée trop tôt (note pas encore sue), elle tombait sur « Lire ». Un
+ *   filet (`ENTRY_WAIT_MS`) le présente quand même, sur le premier picto.
  * - Les GROUPES ont un guide d'entrée : HAUT depuis un picto revient sur la
  *   note posée (sinon 5), pas sur le cran qui se trouve au-dessus ; BAS depuis
  *   l'échelle entre dans les pictos par la lecture, puis par le dernier visité.
@@ -49,6 +53,8 @@ interface Props {
 
 const actionKey = (kind: SheetActionModel["kind"]) => `sheet:action:${kind}`;
 const GUARDED = /^sheet:(action|scale):|^sheet:close$/;
+/** Filet : une note qui tarde à se savoir ne retient pas le panneau plus longtemps. */
+const ENTRY_WAIT_MS = 1200;
 
 export function ActionSheetRedesign({ target, mode = "actions", onClose }: Props) {
   if (target.kind === "reco") return <RecoSheet target={target} onClose={onClose} />;
@@ -66,7 +72,22 @@ function RecoSheet({ target, onClose }: { target: CardSheetTarget; onClose: () =
 function entryOf(rating: SheetRatingModel | null | undefined, actions: SheetActionModel[]): string | null {
   if (rating?.pending) return null;
   if (rating) return scaleFocusKey(rating.current ?? RATING_ENTRY);
+  return firstPictoOf(actions);
+}
+
+/** Le premier picto, sinon la croix. */
+function firstPictoOf(actions: SheetActionModel[]): string {
   return actions[0] ? actionKey(actions[0].kind) : "sheet:close";
+}
+
+/** Vrai une fois `ms` écoulées depuis le montage. */
+function useElapsed(ms: number): boolean {
+  const [elapsed, setElapsed] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setElapsed(true), ms);
+    return () => clearTimeout(timer);
+  }, [ms]);
+  return elapsed;
 }
 
 function SheetBody({ target, mode, providerFilterActive, onClose }: Required<Props> & { providerFilterActive: boolean }) {
@@ -75,9 +96,10 @@ function SheetBody({ target, mode, providerFilterActive, onClose }: Required<Pro
   const rateOnly = mode === "rate";
   const { rating, actions } = model;
 
-  // Décidée une fois, figée ensuite.
+  // Décidée une fois, figée ensuite ; le filet écoulé, sur le premier picto.
+  const waited = useElapsed(ENTRY_WAIT_MS);
   const entry = useRef<string | null>(null);
-  if (entry.current === null) entry.current = entryOf(rating, actions);
+  if (entry.current === null) entry.current = entryOf(rating, actions) ?? (waited ? firstPictoOf(actions) : null);
   const releases = useChoiceEntry(focus, [...SCALE_FOCUS_KEYS, ...actions.map((a) => actionKey(a.kind)), "sheet:close"], entry.current);
   useGroupGuides(focus, rating, actions);
 
@@ -101,7 +123,7 @@ function SheetBody({ target, mode, providerFilterActive, onClose }: Required<Pro
   );
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={entry.current !== null} transparent animationType="fade" onRequestClose={onClose}>
       <FocusBindingProvider bind={bind}>
         <ActionSheetView {...model} onRate={rate} />
       </FocusBindingProvider>
