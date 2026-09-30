@@ -7,7 +7,11 @@ import type { TransportKey } from "../components/player/focus/overlayFocusCore";
  * habillages (Android TV, refonte Apple TV) les partagent.
  *
  * 1. L'habillage RÉAPPARAÎT : le focus va au dernier bouton de transport
- *    utilisé.
+ *    utilisé. « Réapparaît » veut dire qu'il SE MONTRE : l'appelant ne le dit
+ *    pas quand une surface le tait (carte « à suivre », affiche de fin) — un
+ *    appui de côté pendant la carte réveillait l'habillage resté caché
+ *    derrière elle, et sa restauration envoyait le focus sur un bouton
+ *    invisible ; la carte ne répondait plus.
  * 2. L'ENTRÉE dans la vidéo : le focus va à lecture/pause. Personne ne le
  *    réclamait — le premier effet ne se déclenche qu'à une réapparition, et
  *    l'habillage est déjà visible au premier rendu. Le guide de l'habillage
