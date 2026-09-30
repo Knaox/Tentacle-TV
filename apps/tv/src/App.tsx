@@ -8,14 +8,7 @@ import {
   JellyfinClientContext,
   TentacleConfigContext,
   useJellyfinClient,
-  setPreferencesBackendUrl,
-  setTicketsBackendUrl,
-  setNotificationsBackendUrl,
-  setConfigBackendUrl,
-  setPairingBackendUrl,
   setPreferencesToken,
-  setStreamingConfigBackendUrl,
-  setWsBackendUrl,
   fetchInterfaceLanguage,
   hydrateQueryClient,
   attachQueryPersister,
@@ -24,6 +17,7 @@ import {
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
 import { rehydrateStores } from "./lib/stores";
+import { applyBackendUrl } from "./lib/backendUrls";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
 import { AppNavigator } from "./navigation/AppNavigator";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -102,14 +96,7 @@ const navFonts = {
 
 function initializeBackend(tentacleUrl: string | null): JellyfinClient {
   const baseUrl = tentacleUrl || "http://localhost";
-
-  setPreferencesBackendUrl(baseUrl);
-  setTicketsBackendUrl(baseUrl);
-  setNotificationsBackendUrl(baseUrl);
-  setConfigBackendUrl(baseUrl);
-  setPairingBackendUrl(baseUrl);
-  setStreamingConfigBackendUrl(baseUrl);
-  setWsBackendUrl(baseUrl);
+  applyBackendUrl(baseUrl);
 
   const jellyfinUrl = `${baseUrl}/api/jellyfin`;
   const TV_VERSION: string = require("../../../versions.json").tv ?? "0.9.2";

@@ -2,11 +2,6 @@ import { useState, useCallback } from "react";
 import {
   useTentacleConfig,
   useJellyfinClient,
-  setPairingBackendUrl,
-  setPreferencesBackendUrl,
-  setTicketsBackendUrl,
-  setNotificationsBackendUrl,
-  setConfigBackendUrl,
   setPreferencesToken,
 } from "@tentacle-tv/api-client";
 import type { RelayStatusResponse } from "@tentacle-tv/api-client";
@@ -19,18 +14,11 @@ import { RelayCodeDisplay } from "../components/pairing/RelayCodeDisplay";
 import { ServerInputStep } from "../components/pairing/ServerInputStep";
 import { ServerCodeDisplayStep } from "../components/pairing/ServerCodeDisplayStep";
 import { PairingSuccessStep } from "../components/pairing/PairingSuccessStep";
+import { applyBackendUrl } from "../lib/backendUrls";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
 
 type Step = "welcome" | "relayCode" | "manualServer" | "manualCode" | "success";
-
-function setAllBackendUrls(url: string) {
-  setPairingBackendUrl(url);
-  setPreferencesBackendUrl(url);
-  setTicketsBackendUrl(url);
-  setNotificationsBackendUrl(url);
-  setConfigBackendUrl(url);
-}
 
 export function PairCodeScreen({ navigation }: Props) {
   const { i18n } = useTranslation("pairing");
@@ -76,7 +64,7 @@ export function PairCodeScreen({ navigation }: Props) {
 
     resetDirectStreaming();
     storage.setItem("tentacle_server_url", data.serverUrl);
-    setAllBackendUrls(data.serverUrl);
+    applyBackendUrl(data.serverUrl);
     jellyfinClient.setBaseUrl(`${data.serverUrl}/api/jellyfin`);
     jellyfinClient.setAccessToken(data.token);
     setPreferencesToken(data.token);
@@ -99,7 +87,7 @@ export function PairCodeScreen({ navigation }: Props) {
       const result = await verifyServer(serverUrl);
       if (result.success) {
         storage.setItem("tentacle_server_url", result.url);
-        setAllBackendUrls(result.url);
+        applyBackendUrl(result.url);
         jellyfinClient.setBaseUrl(`${result.url}/api/jellyfin`);
         setStep("manualCode");
       } else {
