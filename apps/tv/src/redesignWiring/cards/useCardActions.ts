@@ -26,25 +26,20 @@ import { useTVUserScore } from "../../components/cards/actions/useTVUserScore";
 import type { SheetActionKind } from "../../redesign/screens/sheet/ActionSheetView";
 
 /**
- * Les actions d'UNE carte, résolues une seule fois pour ses deux entrées : la
- * feuille de l'appui long (`useSheetModel`) et le plateau du focus
- * (`useCardTrayHost`). Le modèle partagé du survol (`resolveCardOverlay`)
- * décide de ce qui est offert, `useCardToggles` des bascules,
- * `useCardSheetPlay` de la lecture, `useCardRatingTarget` et `useTVUserScore`
- * de la note ; les gestes sont ceux de la feuille. Chaque entrée en tire ses
- * lignes : `cardActionEntries` (la lecture toujours en tête — la feuille
- * remplace la carte), `cardTrayEntries` (la lecture là seulement où OK ne lit
- * pas).
- *
- * `target` nul — aucune carte n'a le focus — : rien n'est rendu (`null`), et
- * rien ne part au serveur ; les crochets restent appelés, dans le même ordre.
+ * Les actions d'UNE carte, pour le grand panneau de l'appui long
+ * (`useSheetModel`) — sur Apple TV, la carte n'en porte aucune. Le modèle
+ * partagé du survol (`resolveCardOverlay`) décide de ce qui est offert,
+ * `useCardToggles` des bascules, `useCardSheetPlay` de la lecture,
+ * `useCardRatingTarget` et `useTVUserScore` de la note. Le panneau en tire
+ * ses pictos par `cardActionEntries` (la lecture toujours en tête : le
+ * panneau remplace la carte).
  */
 
 export interface CardActionsOptions {
   /** Faux : la note seule (« Noter » de la fiche) — la lecture ne se résout pas. */
   withActions?: boolean;
-  /** Un geste qui QUITTE la carte (lire, la fiche, le refus, le filtre) : la
-   *  feuille se ferme d'abord. Le plateau n'a rien à fermer. */
+  /** Un geste qui QUITTE la carte (lire, la fiche, le refus, le filtre) : le
+   *  panneau se ferme d'abord. */
   onLeave?: () => void;
 }
 
@@ -60,15 +55,10 @@ export interface CardActions {
   onRate: (score: number | null) => void;
 }
 
-/** Le visage d'aucune carte : les crochets tournent à vide, dans le même ordre. */
-const NO_FACE = { Id: "", Name: "", Type: "Movie" } as MediaItem;
-
-export function useCardActions(target: CardSheetTarget, options?: CardActionsOptions): CardActions;
-export function useCardActions(target: CardSheetTarget | null, options?: CardActionsOptions): CardActions | null;
-export function useCardActions(target: CardSheetTarget | null, { withActions = true, onLeave }: CardActionsOptions = {}): CardActions | null {
+export function useCardActions(target: CardSheetTarget, { withActions = true, onLeave }: CardActionsOptions = {}): CardActions {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const variant: CardOverlayVariant = target ? sheetVariant(target) : "poster";
-  const libraryId = target ? sheetLibraryId(target) : null;
+  const variant = sheetVariant(target);
+  const libraryId = sheetLibraryId(target);
   const inLibrary = libraryId !== null;
 
   // La fiche COMPLÈTE, sur la clé de l'écran de détail : un `UserData` que les
@@ -76,13 +66,13 @@ export function useCardActions(target: CardSheetTarget | null, { withActions = t
   // attendant, le visage de la carte suffit.
   const { data: full } = useMediaItem(libraryId ?? undefined);
   const face = useMemo<MediaItem>(
-    () => (!target ? NO_FACE : full ?? (target.kind === "reco" ? recoMarkerItem(target.item) : target.item)),
+    () => full ?? (target.kind === "reco" ? recoMarkerItem(target.item) : target.item),
     [full, target],
   );
 
-  const play = useCardSheetPlay(target && inLibrary && withActions ? face : null);
+  const play = useCardSheetPlay(inLibrary && withActions ? face : null);
   const toggles = useCardToggles(face);
-  const rating = useCardRatingTarget(target ? face : null, { scope: variant === "landscape" ? "item" : "series", enabled: target !== null });
+  const rating = useCardRatingTarget(face, { scope: variant === "landscape" ? "item" : "series", enabled: true });
   const score = useTVUserScore(rating.identity) ?? null;
   const { mutate: rateItem } = useRateItem();
   const { mutate: removeRating } = useDeleteRating();
@@ -113,7 +103,6 @@ export function useCardActions(target: CardSheetTarget | null, { withActions = t
   const { toggle } = toggles;
   const onAction = useCallback(
     (kind: SheetActionKind) => {
-      if (!target) return;
       switch (kind) {
         case "play":
           void startPlay();
@@ -162,7 +151,6 @@ export function useCardActions(target: CardSheetTarget | null, { withActions = t
     [identity, jellyfinItemId, inLibrary, rateItem, removeRating],
   );
 
-  if (!target) return null;
   return {
     variant,
     overlay,

@@ -3,7 +3,7 @@ import { TVFocusGuideView, type View } from "react-native";
 import type { FocusGroupContainerProps } from "../../redesign/focus/focusBinding";
 import type { FocusStore } from "./focusStore";
 
-/** Les éléments d'une rangée : `<préfixe>:<index>` — pas les boutons de leur plateau (`…:tray:…`). */
+/** Les éléments d'une rangée : `<préfixe>:<index>`. */
 export function rowItems(prefix: string): (focusKey: string) => boolean {
   const item = new RegExp(`^${prefix}:\\d+$`);
   return (focusKey) => item.test(focusKey);
@@ -35,7 +35,7 @@ export function rowItems(prefix: string): (focusKey: string) => boolean {
  */
 
 export interface EntryGuideOptions {
-  /** Les clés dont le groupe se souvient (`episode:<i>`… — pas le plateau d'une carte). */
+  /** Les clés dont le groupe se souvient (`episode:<i>`…). */
   owns: (focusKey: string) => boolean;
   /** L'entrée par défaut, lue à chaque visée. */
   fallback: () => string | null;

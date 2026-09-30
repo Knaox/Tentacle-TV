@@ -20,13 +20,6 @@ import { isNavKey } from "../nav/useRailState";
 
 const PREFERRED: FocusExtras = { native: { hasTVPreferredFocus: true } };
 
-/**
- * La clé à retenir pour un retour : celle de la CARTE quand le focus était sur
- * un bouton de son plateau de survol (`<carte>:tray:*`), qui ne se monte
- * qu'au focus de la carte — au retour, il n'existe plus.
- */
-export const memorableKey = (focusKey: string): string => focusKey.replace(/:tray:.*$/, "");
-
 /** Un focus dans la navigation plus tard que ça après l'arrivée vient de l'utilisateur. */
 const USER_RAIL_AFTER_MS = 600;
 
@@ -78,7 +71,7 @@ export function useEntryFocus(focus: FocusStore, entryKey: string | null): Entry
       focus.subscribe((key, focused) => {
         if (!focused) return;
         if (!isNavKey(key)) {
-          lastContent.current = memorableKey(key);
+          lastContent.current = key;
           closeArrival();
         } else if (Date.now() - arrival.current.at > USER_RAIL_AFTER_MS) {
           closeArrival();
