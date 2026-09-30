@@ -1,15 +1,15 @@
 import type { CardStatusKind } from "@tentacle-tv/shared";
 
 /**
- * Ce que fait une ligne de la feuille : les actions du modèle partagé
+ * Ce que fait un picto du panneau : les actions du modèle partagé
  * (`cardActionEntries`, `externalCardActionEntries`), dans leur ordre, plus
- * celles propres au salon — « Noter », qui ouvre l'échelle de la note, et
- * « Toutes les plateformes » sous un filtre actif.
+ * celles propres au salon — « Plus d'infos » sur toute carte de la
+ * bibliothèque, « Toutes les plateformes » sous un filtre actif. La note n'en
+ * est pas une : elle a son échelle, au-dessus.
  */
 export type SheetActionKind =
   | "play"
   | "request"
-  | "rate"
   | CardStatusKind
   | "details"
   | "dismiss"
@@ -30,14 +30,14 @@ export interface SheetHeaderModel {
   title: string;
   subtitle?: string | null;
   imageUri?: string;
-  /** La forme de la carte d'où vient la feuille — son image la rappelle. */
+  /** La forme de la carte d'où vient le panneau — son image la rappelle. */
   shape: "poster" | "landscape";
 }
 
 export interface SheetRatingModel {
   /** La note posée, sur 10 ; `null` : aucune. */
   current: number | null;
-  /** Ce que note l'échelle se résout encore (la série d'un épisode) : la
-   *  valeur s'affiche « … », OK ne note rien. */
+  /** La note ou ce qu'elle vise se résout encore (la liste des notes, la
+   *  série d'un épisode) : l'échelle attend, « … », rien ne s'y focalise. */
   pending?: boolean;
 }

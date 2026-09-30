@@ -8,17 +8,16 @@ import { mediaSheetHeader, recoSheetHeader } from "./sheetHeader";
 import { sheetRows } from "./sheetRows";
 
 /**
- * Ce que la feuille refondue reçoit, résolu comme sur toutes les plateformes
- * par le crochet COMMUN à la feuille et au plateau du focus
+ * Ce que le grand panneau reçoit, résolu comme sur toutes les plateformes
  * (`cards/useCardActions`) : le modèle partagé du survol, les bascules, la
- * lecture, la note et les gestes. La feuille en tire ses lignes par
- * `sheetRows` — le modèle partagé, la lecture toujours en tête (elle remplace
+ * lecture, la note et les gestes. Le panneau en tire ses pictos par
+ * `sheetRows` — le modèle partagé, la lecture toujours en tête (il remplace
  * la carte), « Plus d'infos » sur toute carte de la bibliothèque, « Toutes les
- * plateformes » sous un filtre actif. Les bascules et la
- * note la laissent ouverte (les libellés basculent sous les yeux) ; lire, la
- * fiche, le refus et le filtre la ferment (`onLeave`).
+ * plateformes » sous un filtre actif. Les bascules et la note le laissent
+ * ouvert (libellés et glyphes basculent sous les yeux) ; lire, la fiche, le
+ * refus et le filtre le ferment (`onLeave`).
  *
- * `rate` : la même feuille réduite à ses étoiles — le bouton « Noter » de la
+ * `rate` : le même panneau réduit à sa note — le bouton « Noter » de la
  * fiche, qui a déjà ses propres boutons de lecture et de bascule.
  */
 
@@ -51,7 +50,6 @@ export function useSheetModel({ target, mode, providerFilterActive, onClose }: S
           playDetail: card.play?.detail,
           inLibrary: sheetLibraryId(target) !== null,
           providerFilterActive,
-          rating: card.rating,
         },
         t,
       )

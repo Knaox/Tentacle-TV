@@ -12,24 +12,20 @@ export interface SheetRowsInput {
   inLibrary: boolean;
   /** Un filtre de plateformes est actif (recommandation) : « Toutes les plateformes » suit. */
   providerFilterActive?: boolean;
-  /** La note, quand le titre se note (`overlay.rate`) : la ligne « Noter » suit la lecture. */
-  rating?: { current: number | null; pending?: boolean } | null;
 }
 
 /**
- * Les lignes de la feuille d'actions, dans l'ordre du survol du bureau : ce
- * que le modèle partagé offre (`cardActionEntries` — la lecture toujours en
- * tête, la feuille remplace la carte), plus ce que le SALON ajoute, et
- * seulement lui :
- * - « Noter », juste après la lecture (l'ordre du survol du bureau : Lire, la
- *   note, puis les bascules) : elle ouvre l'échelle verticale de la note ; son
- *   complément dit la note posée (« 8/10 ») ;
+ * Les pictos du grand panneau, dans l'ordre du survol du bureau : ce que le
+ * modèle partagé offre (`cardActionEntries` — la lecture toujours en tête,
+ * le panneau remplace la carte), plus ce que le SALON ajoute, et seulement
+ * lui :
  * - « Plus d'infos » sur TOUTE carte de la bibliothèque, affiche comprise : au
- *   bureau, le clic d'une affiche ouvre la fiche ; à la télécommande, la
- *   feuille la propose aussi, à sa place d'extra (avant « Ne plus me
+ *   bureau, le clic d'une affiche ouvre la fiche ; à la télécommande, le
+ *   panneau la propose aussi, à sa place d'extra (avant « Ne plus me
  *   proposer ») ;
  * - « Toutes les plateformes » sous un filtre actif.
- * Pur : le branchement (`useSheetModel`) et le banc en tirent les mêmes lignes.
+ * La note n'en est pas : elle a son échelle, au-dessus des pictos.
+ * Pur : le branchement (`useSheetModel`) et le banc en tirent les mêmes pictos.
  */
 export function sheetRows(input: SheetRowsInput, t: Translate): SheetActionModel[] {
   const rows: SheetActionModel[] = cardActionEntries(input.overlay, input.states).map((entry) => ({
@@ -38,16 +34,6 @@ export function sheetRows(input: SheetRowsInput, t: Translate): SheetActionModel
     active: entry.active,
     detail: entry.kind === "play" ? input.playDetail ?? null : null,
   }));
-  const { rating } = input;
-  if (rating) {
-    const rated = rating.current !== null;
-    rows.splice(rows[0]?.kind === "play" ? 1 : 0, 0, {
-      kind: "rate",
-      label: rated ? t("reco:yourRating") : t("cards:rateTitle"),
-      detail: rating.pending ? "…" : rated ? t("reco:ratingValue", { score: rating.current }) : null,
-      active: rated,
-    });
-  }
   if (input.inLibrary && !rows.some((row) => row.kind === "details")) {
     const dismiss = rows.findIndex((row) => row.kind === "dismiss");
     rows.splice(dismiss === -1 ? rows.length : dismiss, 0, { kind: "details", label: t("cards:moreInfo") });

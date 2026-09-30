@@ -5,15 +5,14 @@ import type { SheetActionKind } from "./sheetTypes";
 
 /**
  * Le glyphe d'une action. Les bascules sont celles de la pastille des cartes
- * et de leur plateau (`ToggleGlyph`) — au trait tant que l'état n'est pas
- * posé, pleines quand il l'est : la feuille dit l'état dans la même forme que
- * la carte qu'elle recouvre.
+ * (`ToggleGlyph`) — au trait tant que l'état n'est pas posé, pleines quand il
+ * l'est : le panneau dit l'état dans la même forme que la carte qu'il
+ * recouvre.
  */
 
 const ICON_OF: Record<Exclude<SheetActionKind, "watchlist" | "favorite" | "watched">, IconName> = {
   play: "play",
   request: "plus",
-  rate: "starOutline",
   details: "info",
   dismiss: "eyeOff",
   offline: "layers",
@@ -31,10 +30,6 @@ export const SheetGlyph = memo(function SheetGlyph({
   color: string;
   size?: number;
 }) {
-  if (kind === "rate") {
-    // Une note posée : l'étoile pleine, comme une bascule posée.
-    return <Icon name={active ? "star" : "starOutline"} size={size} color={color} strokeWidth={2.2} />;
-  }
   if (kind !== "watchlist" && kind !== "favorite" && kind !== "watched") {
     return <Icon name={ICON_OF[kind]} size={size} color={color} strokeWidth={2.2} />;
   }

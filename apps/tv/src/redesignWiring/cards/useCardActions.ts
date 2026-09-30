@@ -48,7 +48,8 @@ export interface CardActions {
   overlay: CardOverlay;
   states: CardToggleStates;
   play: CardSheetPlay | null;
-  /** La note posée (sur 10) et sa cible encore en résolution ; null : rien à noter. */
+  /** La note posée (sur 10) ; `pending` tant que sa cible ou la liste des
+   *  notes se résolvent ; null : rien à noter. */
   rating: { current: number | null; pending: boolean } | null;
   onAction: (kind: SheetActionKind) => void;
   /** Pose la note (1 à 10, demi-étoiles comprises) ; `null` la retire. */
@@ -73,7 +74,8 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
   const play = useCardSheetPlay(inLibrary && withActions ? face : null);
   const toggles = useCardToggles(face);
   const rating = useCardRatingTarget(face, { scope: variant === "landscape" ? "item" : "series", enabled: true });
-  const score = useTVUserScore(rating.identity) ?? null;
+  // `undefined` tant que la liste des notes n'est pas là : l'échelle attend.
+  const score = useTVUserScore(rating.identity);
   const { mutate: rateItem } = useRateItem();
   const { mutate: removeRating } = useDeleteRating();
   const resolvePlay = useResolvePlayTarget();
@@ -125,9 +127,6 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
           onLeave?.();
           saveFilter([]);
           return;
-        case "rate":
-          // L'échelle s'ouvre DANS la feuille : c'est son câblage qui la montre.
-          return;
         default:
           // « Garder hors ligne », « Demander » : rien de tel sur un téléviseur.
           return;
@@ -156,7 +155,7 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
     overlay,
     states: toggles.states,
     play,
-    rating: rateable ? { current: score, pending: identity === null } : null,
+    rating: rateable ? { current: score ?? null, pending: identity === null || score === undefined } : null,
     onAction,
     onRate,
   };

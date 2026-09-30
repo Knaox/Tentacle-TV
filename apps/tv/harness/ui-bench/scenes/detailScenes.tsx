@@ -111,7 +111,7 @@ function RateScene({ data }: { data: BenchData }) {
   return (
     <>
       <DetailScene data={data} build={buildPride} />
-      {sheet ? <ActionSheetView header={sheet.header} actions={[]} rating={{ current: null }} ratingOpen /> : null}
+      {sheet ? <ActionSheetView header={sheet.header} actions={[]} rating={{ current: null }} /> : null}
     </>
   );
 }
@@ -164,8 +164,8 @@ export const DETAIL_SCENES: BenchScene[] = [
   {
     id: "fiche/noter",
     group: "Fiche",
-    label: "« Noter » : l'échelle seule, sur la fiche",
-    focusKeys: ["sheet:scale:6", "sheet:scale:8", "sheet:close"],
+    label: "« Noter » : le panneau réduit à la note, sur la fiche",
+    focusKeys: ["sheet:scale:5", "sheet:scale:8", "sheet:close"],
     settleMs: 1800,
     images: (data) => imagesOf(buildPride(data)),
     render: (data) => <RateScene data={data} />,

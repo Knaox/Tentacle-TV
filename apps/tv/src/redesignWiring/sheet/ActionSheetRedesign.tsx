@@ -1,36 +1,43 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Modal } from "react-native";
 import { useRecoSettings } from "@tentacle-tv/api-client";
 import type { CardSheetTarget } from "../../components/cards/actions/cardSheetTarget";
 import { FocusBindingProvider, type FocusBinding } from "../../redesign/focus/focusBinding";
-import { ActionSheetView, type SheetActionKind } from "../../redesign/screens/sheet/ActionSheetView";
-import { useFocusStore } from "../focus/focusStore";
+import {
+  ActionSheetView,
+  RATING_ENTRY,
+  SCALE_FOCUS_KEYS,
+  scaleFocusKey,
+  type SheetActionModel,
+  type SheetRatingModel,
+} from "../../redesign/screens/sheet/ActionSheetView";
+import { createEntryGuide } from "../focus/entryGuide";
+import { useFocusStore, type FocusStore } from "../focus/focusStore";
 import { useChoiceEntry } from "../settings/settingsFocus";
 import { useSheetModel, type SheetMode } from "./useSheetModel";
 
 /**
- * La feuille d'actions refondue (Apple TV) : `ActionSheetView` dans une
- * `Modal` de React Native, comme l'ancienne.
+ * Le grand panneau de l'appui maintenu (Apple TV) : `ActionSheetView` dans une
+ * `Modal` de React Native.
  *
  * - La `Modal` PIÈGE le focus (contrôleur présenté sur tvOS) et reçoit le
  *   bouton Menu par `onRequestClose` — le seul chemin par lequel il atteint
- *   le JS sans `usePreventRemove` ; à sa fermeture, tvOS rend le focus à la
- *   carte d'où elle vient.
- * - L'ENTRÉE est le choix de tvOS lui-même : dans une `Modal`,
- *   `hasTVPreferredFocus` est sans effet (la racine React est introuvable
- *   depuis le contrôleur présenté — cf. `settingsFocus.tsx`) ; tvOS prend
- *   l'élément le plus proche du coin haut-gauche : la première action (la
- *   croix est à droite).
- * - La NOTE : « Noter » ouvre l'échelle verticale à la place de la liste.
- *   Elle s'entre sur la note posée, sinon sur 6 — jamais sur un bout, qu'un
- *   OK réflexe validerait —, par le verrou des listes de choix
- *   (`useChoiceEntry` : les autres crans ne se focalisent qu'après le premier
- *   focus). OK note et revient à la liste, sur « Noter » (même verrou) ; Menu
- *   y revient sans rien changer. Le mode `rate` (le bouton « Noter » de la
- *   fiche) ouvre directement sur l'échelle : OK note et ferme, Menu ferme.
- * - Le port du focus pose la garde anti-clic fantôme sur les actions et la
- *   croix : la feuille s'ouvre sous un OK encore enfoncé (l'appui long), dont
- *   le relâchement ne doit rien valider.
+ *   le JS sans `usePreventRemove` ; Menu ferme. À la fermeture, tvOS rend le
+ *   focus à la carte d'où il vient.
+ * - L'ENTRÉE : l'échelle de la note, sur la note posée, sinon sur 5/10
+ *   (`RATING_ENTRY`) ; sans note à poser, le premier picto. Dans une `Modal`,
+ *   aucune préférence de focus n'est honorée : les autres cibles restent
+ *   infocalisables jusqu'au premier focus (`useChoiceEntry`). L'entrée se
+ *   décide quand la note est CONNUE (la liste des notes, la série d'un
+ *   épisode) et ne bouge plus ensuite : noter ne déplace pas le focus.
+ * - Les GROUPES ont un guide d'entrée : HAUT depuis un picto revient sur la
+ *   note posée (sinon 5), pas sur le cran qui se trouve au-dessus ; BAS depuis
+ *   l'échelle entre dans les pictos par la lecture, puis par le dernier visité.
+ * - La garde anti-clic fantôme couvre l'échelle, les pictos et la croix : le
+ *   panneau s'ouvre sous un OK encore enfoncé (l'appui long), dont le
+ *   relâchement ne doit rien valider — surtout pas une note.
+ * - Le mode `rate` (le bouton « Noter » de la fiche) : l'échelle seule ; OK
+ *   note et ferme.
  */
 
 interface Props {
@@ -40,10 +47,8 @@ interface Props {
   onClose: () => void;
 }
 
-const SCORES = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
-const SCALE_KEYS = [...SCORES.map((score) => `sheet:scale:${score}`), "sheet:scale:remove"];
-/** Le cran d'entrée sans note posée : trois étoiles, au milieu. */
-const DEFAULT_SCORE = 6;
+const actionKey = (kind: SheetActionModel["kind"]) => `sheet:action:${kind}`;
+const GUARDED = /^sheet:(action|scale):|^sheet:close$/;
 
 export function ActionSheetRedesign({ target, mode = "actions", onClose }: Props) {
   if (target.kind === "reco") return <RecoSheet target={target} onClose={onClose} />;
@@ -57,57 +62,82 @@ function RecoSheet({ target, onClose }: { target: CardSheetTarget; onClose: () =
   return <SheetBody target={target} mode="actions" providerFilterActive={filtered} onClose={onClose} />;
 }
 
+/** L'entrée du panneau, une fois la note connue ; null tant qu'elle se résout. */
+function entryOf(rating: SheetRatingModel | null | undefined, actions: SheetActionModel[]): string | null {
+  if (rating?.pending) return null;
+  if (rating) return scaleFocusKey(rating.current ?? RATING_ENTRY);
+  return actions[0] ? actionKey(actions[0].kind) : "sheet:close";
+}
+
 function SheetBody({ target, mode, providerFilterActive, onClose }: Required<Props> & { providerFilterActive: boolean }) {
   const model = useSheetModel({ target, mode, providerFilterActive, onClose });
   const focus = useFocusStore();
   const rateOnly = mode === "rate";
-  const [ratingOpen, setRatingOpen] = useState(rateOnly);
-  // Revenue de l'échelle, la liste s'entre sur « Noter » ; à l'ouverture, sur la 1re action (tvOS).
-  const [back, setBack] = useState(false);
-  const current = model.rating?.current ?? null;
-  const entryKey = ratingOpen ? `sheet:scale:${current ?? DEFAULT_SCORE}` : back ? "sheet:action:rate" : null;
-  // Tout ce qui pourrait prendre le focus à sa place est verrouillé le temps du premier focus.
-  const actionKeys = model.actions.map((action) => `sheet:action:${action.kind}`);
-  const releases = useChoiceEntry(focus, [...SCALE_KEYS, ...actionKeys, "sheet:close"], entryKey);
+  const { rating, actions } = model;
+
+  // Décidée une fois, figée ensuite.
+  const entry = useRef<string | null>(null);
+  if (entry.current === null) entry.current = entryOf(rating, actions);
+  const releases = useChoiceEntry(focus, [...SCALE_FOCUS_KEYS, ...actions.map((a) => actionKey(a.kind)), "sheet:close"], entry.current);
+  useGroupGuides(focus, rating, actions);
 
   // Une identité neuve à chaque libération du verrou : les éléments relisent leur liaison.
   const bind = useCallback(
     (key: string): FocusBinding | undefined => {
       const binding = focus.binder(key);
-      const guarded = key.startsWith("sheet:action:") || key === "sheet:close";
-      return guarded ? { ...binding, phantomPressGuard: true } : binding;
+      return GUARDED.test(key) ? { ...binding, phantomPressGuard: true } : binding;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [focus, releases],
   );
 
-  const closeScale = useCallback(() => {
-    setRatingOpen(false);
-    setBack(true);
-  }, []);
-  const { onAction, onRate } = model;
-  const act = useCallback(
-    (kind: SheetActionKind) => {
-      if (kind !== "rate") return onAction?.(kind);
-      // Une cible encore en résolution (la série d'un épisode) : rien à noter.
-      if (!model.rating?.pending) setRatingOpen(true);
-    },
-    [onAction, model.rating?.pending],
-  );
+  const { onRate } = model;
   const rate = useCallback(
     (score: number | null) => {
       onRate?.(score);
       if (rateOnly) onClose();
-      else closeScale();
     },
-    [onRate, rateOnly, onClose, closeScale],
+    [onRate, rateOnly, onClose],
   );
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={ratingOpen && !rateOnly ? closeScale : onClose}>
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <FocusBindingProvider bind={bind}>
-        <ActionSheetView {...model} ratingOpen={ratingOpen} onAction={act} onRate={rate} />
+        <ActionSheetView {...model} onRate={rate} />
       </FocusBindingProvider>
     </Modal>
+  );
+}
+
+/**
+ * Les guides d'entrée des deux groupes, liés AVANT leur premier rendu (le port
+ * l'exige) et une seule fois ; ce qui varie — la note posée, le premier
+ * picto — se lit au moment de viser.
+ */
+function useGroupGuides(focus: FocusStore, rating: SheetRatingModel | null | undefined, actions: SheetActionModel[]): void {
+  const latest = useRef({ rating, actions });
+  latest.current = { rating, actions };
+  useState(() => {
+    focus.bind("sheet:scale", {
+      container: createEntryGuide(focus, {
+        owns: (key) => key.startsWith("sheet:scale:"),
+        fallback: () => scaleFocusKey(latest.current.rating?.current ?? RATING_ENTRY),
+        remember: false,
+      }),
+    });
+    focus.bind("sheet:actions", {
+      container: createEntryGuide(focus, {
+        owns: (key) => key.startsWith("sheet:action:"),
+        fallback: () => (latest.current.actions[0] ? actionKey(latest.current.actions[0].kind) : null),
+      }),
+    });
+    return true;
+  });
+  useEffect(
+    () => () => {
+      focus.bind("sheet:scale", null);
+      focus.bind("sheet:actions", null);
+    },
+    [focus],
   );
 }

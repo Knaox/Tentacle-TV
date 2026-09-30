@@ -6,9 +6,11 @@ import { HOME_SCENES } from "./homeScenes";
 import type { BenchScene } from "./types";
 
 /**
- * La feuille d'actions de l'appui long, posée sur l'accueil réel. Les titres
+ * Le grand panneau de l'appui maintenu, posé sur l'accueil réel. Les titres
  * sont ceux du compte ; les notes perso sont des exemples (le compte de test
- * n'en a posé aucune).
+ * n'en a posé aucune). La première clé de chaque scène est l'ENTRÉE du
+ * câblage : l'échelle à la note posée, sinon à 5/10 — sans note possible, le
+ * premier picto.
  */
 
 /** Les mots de l'extension (Vigie), pas une clé du cœur : elle les traduit elle-même. */
@@ -16,12 +18,12 @@ const requestLabel = () => (i18n.language.startsWith("fr") ? "Demander" : "Reque
 
 const pick = (items: MediaItem[], test: (item: MediaItem) => boolean) => items.find(test) ?? items[0];
 
-function Sheet({ data, model, ratingOpen = false }: { data: BenchData; model: SheetSceneModel | null; ratingOpen?: boolean }) {
+function Sheet({ data, model }: { data: BenchData; model: SheetSceneModel | null }) {
   const home = HOME_SCENES[0].render(data);
   return (
     <>
       {home}
-      {model ? <ActionSheetView header={model.header} actions={model.actions} rating={model.rating} ratingOpen={ratingOpen} /> : null}
+      {model ? <ActionSheetView header={model.header} actions={model.actions} rating={model.rating} /> : null}
     </>
   );
 }
@@ -39,23 +41,30 @@ const model = (data: BenchData, build: (data: BenchData) => SheetSceneModel | nu
   }
 };
 
-const ACTIONS = ["sheet:action:play", "sheet:action:rate", "sheet:action:watchlist", "sheet:action:details", "sheet:close"];
 const SETTLE = 1800;
 
 export const SHEET_SCENES: BenchScene[] = [
   {
     id: "feuille/affiche",
     group: "Feuille d'actions",
-    label: "Affiche — film entamé",
-    focusKeys: ACTIONS,
+    label: "Affiche — film entamé, pas encore noté",
+    focusKeys: ["sheet:scale:5", "sheet:scale:8", "sheet:scale:1", "sheet:action:play", "sheet:action:watchlist", "sheet:action:details", "sheet:close"],
     settleMs: SETTLE,
     render: (data) => <Sheet data={data} model={model(data, (d) => { const it = movieOf(d); return it ? librarySheet(d, it, "poster") : null; })} />,
+  },
+  {
+    id: "feuille/note-posee",
+    group: "Feuille d'actions",
+    label: "Note 7 posée (exemple) — l'échelle entre sur elle",
+    focusKeys: ["sheet:scale:7", "sheet:scale:3", "sheet:scale:10", "sheet:scale:remove", "sheet:action:favorite"],
+    settleMs: SETTLE,
+    render: (data) => <Sheet data={data} model={model(data, (d) => { const it = movieOf(d); return it ? librarySheet(d, it, "poster", { rating: 7 }) : null; })} />,
   },
   {
     id: "feuille/serie",
     group: "Feuille d'actions",
     label: "Affiche — série (épisode à suivre)",
-    focusKeys: ["sheet:action:play", "sheet:action:watched"],
+    focusKeys: ["sheet:scale:5", "sheet:action:play", "sheet:action:watched"],
     settleMs: SETTLE,
     render: (data) => <Sheet data={data} model={model(data, (d) => { const it = seriesOfList(d); return it ? librarySheet(d, it, "poster") : null; })} />,
   },
@@ -63,15 +72,15 @@ export const SHEET_SCENES: BenchScene[] = [
     id: "feuille/vignette",
     group: "Feuille d'actions",
     label: "Vignette 16:9 — épisode",
-    focusKeys: ["sheet:action:play", "sheet:action:details"],
+    focusKeys: ["sheet:scale:5", "sheet:action:play", "sheet:action:details"],
     settleMs: SETTLE,
     render: (data) => <Sheet data={data} model={model(data, (d) => { const it = episodeOf(d); return it ? librarySheet(d, it, "landscape") : null; })} />,
   },
   {
     id: "feuille/etats-poses",
     group: "Feuille d'actions",
-    label: "Ma liste, favori et vu posés (exemple)",
-    focusKeys: ["sheet:action:favorite", "sheet:action:rate"],
+    label: "Ma liste, favori et vu posés, note 8 (exemple)",
+    focusKeys: ["sheet:scale:8", "sheet:action:watchlist", "sheet:action:favorite"],
     settleMs: SETTLE,
     render: (data) => (
       <Sheet
@@ -84,7 +93,7 @@ export const SHEET_SCENES: BenchScene[] = [
     id: "feuille/reco",
     group: "Feuille d'actions",
     label: "Recommandation, filtre de plateformes actif",
-    focusKeys: ["sheet:action:details", "sheet:action:dismiss", "sheet:action:providersAll"],
+    focusKeys: ["sheet:scale:5", "sheet:action:dismiss", "sheet:action:providersAll"],
     settleMs: SETTLE,
     render: (data) => <Sheet data={data} model={model(data, (d) => { const it = recoOf(d); return it ? librarySheet(d, it, "reco", { providerFilter: true }) : null; })} />,
   },
@@ -92,31 +101,15 @@ export const SHEET_SCENES: BenchScene[] = [
     id: "feuille/hors-bibliotheque",
     group: "Feuille d'actions",
     label: "Hors bibliothèque — « Demander » (exemple)",
-    focusKeys: ["sheet:action:request", "sheet:action:watchlist"],
+    focusKeys: ["sheet:scale:5", "sheet:action:request", "sheet:action:watchlist"],
     settleMs: SETTLE,
     render: (data) => <Sheet data={data} model={model(data, (d) => { const it = recoOf(d); return it ? externalSheet(d, it, requestLabel()) : null; })} />,
   },
   {
-    id: "feuille/echelle",
-    group: "Feuille d'actions",
-    label: "Noter — l'échelle verticale, note 7 posée (exemple)",
-    focusKeys: ["sheet:scale:7", "sheet:scale:9", "sheet:scale:3", "sheet:scale:remove"],
-    settleMs: SETTLE,
-    render: (data) => <Sheet data={data} ratingOpen model={model(data, (d) => { const it = movieOf(d); return it ? librarySheet(d, it, "poster", { rating: 7 }) : null; })} />,
-  },
-  {
-    id: "feuille/echelle-sans-note",
-    group: "Feuille d'actions",
-    label: "Noter — l'échelle, pas encore de note",
-    focusKeys: ["sheet:scale:6", "sheet:scale:10", "sheet:scale:1"],
-    settleMs: SETTLE,
-    render: (data) => <Sheet data={data} ratingOpen model={model(data, (d) => { const it = episodeOf(d); return it ? librarySheet(d, it, "landscape") : null; })} />,
-  },
-  {
     id: "feuille/note-en-attente",
     group: "Feuille d'actions",
-    label: "Note en résolution (« Noter » attend sa cible)",
-    focusKeys: ["sheet:action:rate"],
+    label: "Note en résolution — l'échelle attend, l'entrée va au premier picto",
+    focusKeys: ["sheet:action:play"],
     settleMs: SETTLE,
     render: (data) => <Sheet data={data} model={model(data, (d) => { const it = episodeOf(d); return it ? librarySheet(d, it, "landscape", { pending: true }) : null; })} />,
   },

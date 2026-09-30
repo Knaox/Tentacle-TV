@@ -16,9 +16,9 @@ import type { BenchData } from "./benchData";
 import { episodeLabel, seriesOf, yearOf } from "./models";
 
 /**
- * Les feuilles d'actions du banc, résolues comme le câblage le fera : le
- * modèle partagé (`resolveCardOverlay` → `sheetRows` du branchement, ou sa version
- * hors bibliothèque) décide des lignes et de leur ordre, les libellés passent
+ * Les grands panneaux du banc, résolus comme le câblage le fera : le modèle
+ * partagé (`resolveCardOverlay` → `sheetRows` du branchement, ou sa version
+ * hors bibliothèque) décide des pictos et de leur ordre, les libellés passent
  * par l'espace `cards`, le complément de la lecture par `useCardSheetPlay`
  * (position d'une reprise, épisode d'une série).
  */
@@ -28,7 +28,7 @@ const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, option
 export interface SheetSceneModel {
   header: SheetHeaderModel;
   actions: SheetActionModel[];
-  /** La note, quand le titre se note : la ligne « Noter » et l'échelle. */
+  /** La note, quand le titre se note : les étoiles et l'échelle. */
   rating: SheetRatingModel | null;
 }
 
@@ -78,7 +78,7 @@ function headerOf(data: BenchData, item: MediaItem, shape: "poster" | "landscape
   return { shape, title: art.Name ?? "", subtitle: yearOf(art), imageUri: data.image(art.Id, "Primary") };
 }
 
-/** La feuille d'un titre de la bibliothèque. */
+/** Le panneau d'un titre de la bibliothèque. */
 export function librarySheet(
   data: BenchData,
   item: MediaItem,
@@ -96,15 +96,15 @@ export function librarySheet(
     offline: false,
   });
   const rating = overlay.rate ? { current: options.rating ?? null, pending: options.pending } : null;
-  // Les lignes du branchement lui-même (`sheetRows`) : aucune copie au banc.
+  // Les pictos du branchement lui-même (`sheetRows`) : aucune copie au banc.
   const actions = sheetRows(
-    { overlay, states: statesOf(item, options.force), playDetail: play?.detail, inLibrary: true, providerFilterActive: options.providerFilter, rating },
+    { overlay, states: statesOf(item, options.force), playDetail: play?.detail, inLibrary: true, providerFilterActive: options.providerFilter },
     t,
   );
   return { header: headerOf(data, item, variant === "landscape" ? "landscape" : "poster"), actions, rating };
 }
 
-/** La feuille d'un titre ABSENT de la bibliothèque (Vigie) : « Demander » en tête. */
+/** Le panneau d'un titre ABSENT de la bibliothèque (Vigie) : « Demander » en tête. */
 export function externalSheet(data: BenchData, item: MediaItem, requestLabel: string): SheetSceneModel {
   const overlay = resolveExternalCardOverlay({
     variant: "reco",
@@ -116,7 +116,5 @@ export function externalSheet(data: BenchData, item: MediaItem, requestLabel: st
     label: entry.label ?? t(`cards:${entry.labelKey}`),
     active: entry.active,
   }));
-  // « Noter » suit l'action primaire, comme sur un titre de la bibliothèque.
-  if (overlay.rate) actions.splice(overlay.request ? 1 : 0, 0, { kind: "rate", label: t("cards:rateTitle"), active: false });
   return { header: headerOf(data, item, "poster"), actions, rating: overlay.rate ? { current: null } : null };
 }

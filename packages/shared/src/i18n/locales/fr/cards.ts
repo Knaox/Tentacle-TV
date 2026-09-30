@@ -38,11 +38,11 @@ export default {
   rateHint: "Touchez une étoile — la moitié gauche vaut une demi-étoile.",
   ratedHint: "Touchez de nouveau votre note pour la retirer.",
   ratingUnavailable: "Ce titre ne peut pas être noté : il n'a pas d'identifiant TMDB.",
-  // L'échelle verticale de la télécommande (feuille d'appui long, « Noter » de la fiche).
+  // L'échelle horizontale de la télécommande (grand panneau de l'appui maintenu, « Noter » de la fiche).
   currentRating: "Votre note actuelle",
   notRatedYet: "Pas encore noté",
   removeRating: "Retirer la note",
-  ratingScaleHint: "OK : noter\nMenu : revenir",
+  ratingRulerHint: "choisir · OK : noter",
 
   // Survol unifié (`cardOverlay.ts`) : extras du plateau, et feuilles d'actions.
   dismiss: "Ne plus me proposer",
