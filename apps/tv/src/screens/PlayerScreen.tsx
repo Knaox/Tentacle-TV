@@ -28,6 +28,8 @@ import { useTVSessionRemote } from "../hooks/useTVSessionRemote";
 import { useEpisodePanelPrefetch } from "../hooks/useSeasonEpisodes";
 import { findCachedMediaItem } from "../utils/findCachedMediaItem";
 import { useTVOsdEntryFocus } from "../hooks/useTVOsdEntryFocus";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { PlayerRedesignStage } from "../redesignWiring/player/PlayerRedesignStage";
 import type { PlayerRedesignStageProps } from "../redesignWiring/player/playerStageTypes";
 import { LegacyPlayerStage } from "./player/LegacyPlayerStage";
 
@@ -254,8 +256,8 @@ export function PlayerScreen({ route, navigation }: Props) {
   // elle qui neutralise l'habillage du lecteur, pas le chiffre.
   const autoPlayActive = autoPlay.source !== null;
   eofActiveRef.current = autoPlay.source === "eof";
-  // Les props de l'habillage, en un seul objet : un second habillage (la
-  // refonte Apple TV) recevra les MÊMES — l'orchestration reste une.
+  // Les MÊMES props aux deux habillages — l'orchestration reste une : Android
+  // TV garde le sien (`LegacyPlayerStage`), Apple TV rend la refonte.
   const stage: PlayerRedesignStageProps = {
     item: item ?? placeholderItem, streamUrl, failed: p.failed, prismStep: prismProgress.step,
     onRetry: () => p.setReloadNonce((n) => n + 1),
@@ -278,8 +280,9 @@ export function PlayerScreen({ route, navigation }: Props) {
       setShowSettings(true);
       showSettingsRef.current = true;
       controls.showOverlay();
-      // Ouvre la MODALE Réglages/Qualité (cf. PlayerSettingsScreen).
-      navigation.navigate("PlayerSettings");
+      // Android : la MODALE Réglages/Qualité (cf. PlayerSettingsScreen). La
+      // refonte ouvre son panneau DANS l'habillage.
+      if (!REDESIGN_ACTIVE) navigation.navigate("PlayerSettings");
     },
     onSelectAudio: p.handleAudioChange, onSelectSubtitle: p.handleSubtitleChange,
     onSelectQuality: handleQualityChange, onCloseSettings: handleCloseSettings,
@@ -290,5 +293,5 @@ export function PlayerScreen({ route, navigation }: Props) {
     onSelectEpisode: (ep) => { setShowEpisodes(false); navigateToEpisode(ep.Id); },
     onEofDismiss: () => { dismissAutoPlay(); },
   };
-  return <LegacyPlayerStage {...stage} />;
+  return REDESIGN_ACTIVE ? <PlayerRedesignStage {...stage} /> : <LegacyPlayerStage {...stage} />;
 }

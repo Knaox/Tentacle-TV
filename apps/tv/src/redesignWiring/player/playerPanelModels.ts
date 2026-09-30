@@ -130,7 +130,8 @@ export function buildEpisodesPanel(args: {
     seasons: (args.seasons ?? []).map((season) => ({
       id: season.Id,
       label: season.Name ?? "",
-      count: season.ChildCount ?? undefined,
+      // Le nombre d'épisodes : `RecursiveItemCount`, que `useSeasons` demande.
+      count: season.RecursiveItemCount ?? season.ChildCount ?? undefined,
       current: season.Id === args.currentSeasonId,
       watched: season.UserData?.Played === true,
     })),
