@@ -2,26 +2,32 @@ import { useEffect, useCallback, useRef } from "react";
 import { View, Text, TVFocusGuideView, StyleSheet, BackHandler, Platform } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { useNavigation, CommonActions } from "@react-navigation/native";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useAuth } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { Colors } from "../theme/colors";
 import { CryingTentacle } from "./CryingTentacle";
 import { Focusable } from "./focus/Focusable";
 import { useKeepTvFocus } from "../hooks/useKeepTvFocus";
+import { useOfflineLogout } from "../hooks/useOfflineLogout";
 import { Button } from "../theme/buttons";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { OfflineRedesign } from "../redesignWiring/overlays/OfflineRedesign";
 
 interface OfflineBannerProps {
   visible: boolean;
-  onRetry: () => void;
+  /** Relance le test du serveur ; la promesse dit quand il a répondu. */
+  onRetry: () => void | Promise<unknown>;
 }
 
-export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
+/** Le voile hors ligne : la refonte sur Apple TV, l'ancien bandeau sur Android TV. */
+export function OfflineBanner(props: OfflineBannerProps) {
+  return REDESIGN_ACTIVE ? <OfflineRedesign {...props} /> : <LegacyOfflineBanner {...props} />;
+}
+
+function LegacyOfflineBanner({ visible, onRetry }: OfflineBannerProps) {
   const { t } = useTranslation("common");
-  const { storage } = useTentacleConfig();
   const { changeServer } = useAuth();
   const navigation = useNavigation();
-  const queryClient = useQueryClient();
   const opacity = useSharedValue(0);
 
   // Le focus reste DANS le bandeau tant qu'il est affiché : ses pièges tiennent
@@ -64,16 +70,7 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
 
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
-  const handleLogout = useCallback(() => {
-    storage.removeItem("tentacle_token");
-    storage.removeItem("tentacle_user");
-    storage.removeItem("tentacle_jellyfin_token");
-    storage.removeItem("tentacle_jellyfin_url");
-    queryClient.clear();
-    navigation.dispatch(
-      CommonActions.reset({ index: 0, routes: [{ name: "PairCode" as never }] }),
-    );
-  }, [storage, navigation, queryClient]);
+  const handleLogout = useOfflineLogout();
 
   // CONSERVÉ VOLONTAIREMENT, bien qu'aucun bouton ne l'appelle plus : le
   // gestionnaire complet est là — mutation, navigation, nettoyage — mais la
@@ -107,7 +104,7 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
         <CryingTentacle size={140} />
         <Text style={styles.title}>{t("offlineTitle")}</Text>
         <Text style={styles.message}>{t("offlineMessage")}</Text>
-        <Focusable ref={retryRef} {...keepFocus(retryRef)} variant="button" focusRadius={Button.large.borderRadius} onPress={onRetry} hasTVPreferredFocus style={styles.retryFocus}>
+        <Focusable ref={retryRef} {...keepFocus(retryRef)} variant="button" focusRadius={Button.large.borderRadius} onPress={() => { void onRetry(); }} hasTVPreferredFocus style={styles.retryFocus}>
           <View style={styles.retryButton}>
             <Text style={styles.retryButtonText}>{t("retryConnection")}</Text>
           </View>

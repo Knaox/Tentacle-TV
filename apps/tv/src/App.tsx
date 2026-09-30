@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { View, ActivityIndicator, AppState, Settings, Platform, type AppStateStatus } from "react-native";
+import { AppState, Settings, Platform, type AppStateStatus } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
-import { DEFAULT_THEME } from "@tentacle-tv/theme";
 import {
   JellyfinClient,
   JellyfinClientContext,
@@ -24,6 +23,7 @@ import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage"
 import { AppNavigator } from "./navigation/AppNavigator";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OfflineBanner } from "./components/OfflineBanner";
+import { BootScreen } from "./components/BootScreen";
 import { useServerReachable } from "./hooks/useServerReachable";
 import { navigationRef } from "./navigation/navigationRef";
 import { runAuthRefreshFlow } from "./auth/sessionFlow";
@@ -272,15 +272,7 @@ export function App() {
     })();
   }, []);
 
-  if (!ready || !client) {
-    // Pre-provider mount: use DEFAULT_THEME static brand color (admin override
-    // not yet fetched). `#0a0a0f` has no matching token — kept as literal.
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0a0a0f" }}>
-        <ActivityIndicator size="large" color={DEFAULT_THEME.tokens.color.brand.base} />
-      </View>
-    );
-  }
+  if (!ready || !client) return <BootScreen />;
 
   return (
     <LiquidGlassProvider enabled={liquidGlass}>

@@ -4,6 +4,8 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "
 import { useTranslation } from "react-i18next";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { useSessionMessages, type ShownSessionMessage } from "../hooks/useSessionMessages";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { SessionMessagesRedesign } from "../redesignWiring/overlays/noticesRedesign";
 import { Colors, Typography } from "../theme/colors";
 
 /**
@@ -19,6 +21,10 @@ import { Colors, Typography } from "../theme/colors";
 const WIDTH = 560;
 
 export function TVSessionMessageHost() {
+  return REDESIGN_ACTIVE ? <SessionMessagesRedesign /> : <LegacySessionMessageHost />;
+}
+
+function LegacySessionMessageHost() {
   const { t } = useTranslation("sessions");
   const messages = useSessionMessages();
 

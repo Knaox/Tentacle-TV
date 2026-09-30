@@ -1,6 +1,8 @@
 import { Text, View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { usePairingExpired } from "../hooks/usePairingExpired";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { ExpiredPairingRedesign } from "../redesignWiring/overlays/noticesRedesign";
 
 /**
  * Bandeau discret « jumelage expiré » : la sauvegarde de progression est en
@@ -10,6 +12,10 @@ import { usePairingExpired } from "../hooks/usePairingExpired";
  * Le signal est commun aux deux téléviseurs : `usePairingExpired`.
  */
 export function PairingExpiredBanner() {
+  return REDESIGN_ACTIVE ? <ExpiredPairingRedesign /> : <LegacyPairingExpiredBanner />;
+}
+
+function LegacyPairingExpiredBanner() {
   const { t } = useTranslation("pairing");
   const expired = usePairingExpired();
 

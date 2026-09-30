@@ -15,6 +15,8 @@ import { withAlpha } from "./withAlpha";
  * lui-même dès qu'un jeton frais revient.
  *
  * Contrat : monté par l'app quand `useStreamingConfig(token).data?.tokenExpired`.
+ * `EXPIRED_BANNER_BOTTOM` dit où il s'arrête : ce qui s'affiche en haut en
+ * même temps que lui (les messages de l'administrateur) se pose dessous.
  */
 
 export const ExpiredPairingBanner = memo(function ExpiredPairingBanner() {
@@ -35,6 +37,12 @@ export const ExpiredPairingBanner = memo(function ExpiredPairingBanner() {
 });
 
 const RADIUS = 36;
+const PAD_Y = 20;
+const LINE = 36;
+
+/** Le bas du bandeau, texte sur deux lignes (sa longueur en français comme en
+ *  anglais sur 1240 de large). */
+export const EXPIRED_BANNER_BOTTOM = TV_STAGE.safe.y + PAD_Y * 2 + LINE * 2;
 
 const styles = StyleSheet.create({
   layer: { position: "absolute", top: TV_STAGE.safe.y, left: 0, right: 0, alignItems: "center" },
@@ -43,7 +51,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 22,
-    paddingVertical: 20,
+    paddingVertical: PAD_Y,
     paddingLeft: 22,
     paddingRight: 36,
     borderRadius: RADIUS,
@@ -58,5 +66,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.accent,
   },
-  text: { ...fonts.semibold, flexShrink: 1, fontSize: 26, lineHeight: 36, color: colors.text },
+  text: { ...fonts.semibold, flexShrink: 1, fontSize: 26, lineHeight: LINE, color: colors.text },
 });

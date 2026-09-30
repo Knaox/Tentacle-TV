@@ -65,7 +65,8 @@ export function useServerReachable(serverUrl: string | null) {
     }
   }, [probeServer, queryClient, isReachable]);
 
-  const retry = useCallback(() => { void evaluate(); }, [evaluate]);
+  // La promesse dit quand le test a répondu (« Nouvelle tentative… »).
+  const retry = useCallback(() => evaluate(), [evaluate]);
 
   // Plus d'URL serveur (déconnexion / changement de serveur) : on n'a plus rien
   // à sonder → on repasse "joignable" pour masquer immédiatement la bannière,

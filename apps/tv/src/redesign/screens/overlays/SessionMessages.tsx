@@ -18,6 +18,8 @@ import { colors, fonts, text, white } from "../../theme/tokens";
  * 3–60 s, 15 s par défaut, et retire le message à échéance). `remaining` est
  * la part du délai qui reste (1 à l'arrivée) ; avec `durationMs`, la barre
  * se vide jusqu'au bout, sans lui, elle reste où elle est (banc).
+ * `top` : le haut de la pile — la marge de sécurité, ou sous le bandeau du
+ * jumelage expiré quand il est affiché (`EXPIRED_BANNER_BOTTOM`).
  */
 
 export interface SessionMessageModel {
@@ -32,11 +34,14 @@ export interface SessionMessageModel {
 
 const WIDTH = 660;
 
-export const SessionMessages = memo(function SessionMessages({ messages }: { messages: SessionMessageModel[] }) {
+export const SessionMessages = memo(function SessionMessages({ messages, top = TV_STAGE.safe.y }: {
+  messages: SessionMessageModel[];
+  top?: number;
+}) {
   const { t } = useTranslation("sessions");
   if (!messages.length) return null;
   return (
-    <View pointerEvents="none" style={styles.layer}>
+    <View pointerEvents="none" style={[styles.layer, { top }]}>
       {messages.slice(-2).map((message) => (
         <Animated.View key={message.id} entering={FadeInRight.duration(360)} exiting={FadeOutRight.duration(300)}>
           <MessageCard message={message} label={t("messageFrom")} />
@@ -76,7 +81,7 @@ function MessageCard({ message, label }: { message: SessionMessageModel; label: 
 const RADIUS = 30;
 
 const styles = StyleSheet.create({
-  layer: { position: "absolute", top: TV_STAGE.safe.y, right: TV_STAGE.safe.x, width: WIDTH, gap: 18 },
+  layer: { position: "absolute", right: TV_STAGE.safe.x, width: WIDTH, gap: 18 },
   // Le fond dense porte l'ombre ; la carte, dessus, rogne la barre aux coins.
   shadow: {
     width: WIDTH,
