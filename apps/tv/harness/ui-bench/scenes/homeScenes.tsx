@@ -4,6 +4,7 @@ import { cardIndexOf } from "../../../src/redesign/cards/cardFocusKeys";
 import type { CardModel } from "../../../src/redesign/cards/cardTypes";
 import type { ArtworkPalette } from "../../../src/redesign/color/artworkPalette";
 import { useForcedFocusKey } from "../../../src/redesign/focus/focusPreview";
+import type { HeroModel } from "../../../src/redesign/hero/HeroBanner";
 import { HomeView, type HomeRowModel, type HomeViewProps } from "../../../src/redesign/screens/home/HomeView";
 import type { BenchData } from "../data/benchData";
 import { cardOf, episodeLabel, resumeSubtitle, yearOf } from "../data/models";
@@ -51,13 +52,29 @@ function heroItems(data: BenchData): MediaItem[] {
   return (resume.length ? resume : data.list("movies")).slice(0, 5);
 }
 
+/** Les héros d'EXEMPLE, pour éprouver la mise en page : un titre sans logo
+ *  (écrit en toutes lettres, le plus long des cas) et un épisode (son repère
+ *  en tête des métadonnées, comme le câblage — `heroModelOf`). */
+const HERO_EXAMPLES = {
+  heroNoLogo: { id: "8691fdd93af7c11da75013ecc6a67ac0", tweak: (hero: HeroModel): HeroModel => ({ ...hero, logoUri: undefined }) },
+  heroEpisode: {
+    id: "b4a8e13e90030bf8c809a8f535da5cd8",
+    tweak: (hero: HeroModel, item: MediaItem): HeroModel => ({ ...hero, meta: [episodeLabel(item, true), ...hero.meta] }),
+  },
+} as const;
+
+type HomeVariant = "default" | "nav" | "noHero" | "loading" | "error" | "empty" | keyof typeof HERO_EXAMPLES;
+
 /** L'accueil vivant : la lumière suit la carte focalisée (natif ou figé). */
-function HomeScene({ data, variant }: { data: BenchData; variant: "default" | "nav" | "noHero" | "loading" | "error" | "empty" }) {
+function HomeScene({ data, variant }: { data: BenchData; variant: HomeVariant }) {
   const items = heroItems(data);
-  const hero = useMemo(
-    () => (items[0] ? heroOf(data, items[0], t("common:resumeWatching"), { index: 0, count: items.length }) : null),
-    [data, items],
-  );
+  const hero = useMemo(() => {
+    const page = { index: 0, count: items.length };
+    const example = variant === "heroNoLogo" || variant === "heroEpisode" ? HERO_EXAMPLES[variant] : null;
+    const exampleItem = example ? data.item(example.id) : undefined;
+    if (example && exampleItem) return example.tweak(heroOf(data, exampleItem, t("common:resumeWatching"), page), exampleItem);
+    return items[0] ? heroOf(data, items[0], t("common:resumeWatching"), page) : null;
+  }, [data, items, variant]);
   const rows = useMemo(() => rowsOf(data), [data]);
   const [focusedPalette, setFocusedPalette] = useState<ArtworkPalette | null>(null);
   const forced = useForcedFocusKey();
@@ -106,6 +123,8 @@ const HOME_FOCUS = ["hero:primary", "hero:secondary", "hero:list", "resume:0", "
 
 export const HOME_SCENES: BenchScene[] = [
   { id: "accueil/defaut", group: "Accueil", label: "Héros et rangées", focusKeys: HOME_FOCUS, settleMs: 1600, render: (data) => <HomeScene data={data} variant="default" /> },
+  { id: "accueil/heros-sans-logo", group: "Accueil", label: "Héros sans logo (titre écrit, exemple)", focusKeys: ["hero:primary"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="heroNoLogo" /> },
+  { id: "accueil/heros-episode", group: "Accueil", label: "Héros d'un épisode (One Piece S1 · E3, exemple)", focusKeys: ["hero:primary"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="heroEpisode" /> },
   { id: "accueil/navigation", group: "Accueil", label: "Navigation ouverte", focusKeys: ["nav:Home", "nav:Recommendations", "nav:Settings"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="nav" /> },
   { id: "accueil/sans-heros", group: "Accueil", label: "Sans héros (rangées)", focusKeys: ["resume:0", "nextUp:2", "nextUp:2:tray:details", "reco:forYou:1"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="noHero" /> },
   { id: "accueil/chargement", group: "Accueil", label: "Chargement", render: (data) => <HomeScene data={data} variant="loading" /> },
