@@ -135,7 +135,6 @@ export function TVPlayerView({
   autoPlay, controls,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
   onPlayPause, onBack, onToggleSettings,
-  
   onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, osdFocusSignal, subtitleCue, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode, onEofDismiss,
   overlay, onSkipSegment, onDismissSegment, onPlayNextNow, osdFocusTargetRef,
