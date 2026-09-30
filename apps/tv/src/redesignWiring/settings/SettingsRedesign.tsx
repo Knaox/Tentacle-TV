@@ -4,6 +4,7 @@ import { useJellyfinClient, useResumeItems } from "@tentacle-tv/api-client";
 import type { RootStackParamList } from "../../navigation/types";
 import { SettingsView } from "../../redesign/screens/settings/SettingsView";
 import type { SettingsTab } from "../../redesign/screens/settings/settingsTypes";
+import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { backdropUriOf, paletteOfItem } from "../cards/cardArtwork";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
@@ -31,9 +32,13 @@ export function SettingsRedesign(_props: Props) {
   const tabDestination = useActiveTabDestination(screen.focus, tab);
 
   // L'œuvre de la première reprise : déjà en cache, l'accueil l'a chargée.
+  // Son fond est préchargé dès l'ouverture et ne passe à l'aperçu du verre
+  // qu'une fois là : une grande image arrivait après l'onglet, sur une case
+  // noire (mesuré avec de vraies données) ; le dégradé tient la place.
   const client = useJellyfinClient();
   const { data: resume } = useResumeItems();
   const artwork = resume?.[0];
+  const preview = useVerifiedImage(artwork ? backdropUriOf(client, artwork) : null);
 
   return (
     <RedesignScreen screen={screen}>
@@ -45,7 +50,7 @@ export function SettingsRedesign(_props: Props) {
           playback={model.playback}
           about={model.about}
           choiceList={null}
-          glassPreviewUri={artwork ? backdropUriOf(client, artwork) : undefined}
+          glassPreviewUri={preview}
           palette={artwork ? paletteOfItem(artwork) : undefined}
           onSelectTab={setTab}
           onChangeServer={model.onChangeServer}
