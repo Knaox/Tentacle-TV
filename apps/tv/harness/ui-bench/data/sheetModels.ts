@@ -32,7 +32,7 @@ export interface SheetSceneModel {
 }
 
 /** L'état des bascules, lu comme `useCardToggles` (Ma liste = `Likes` hors série). */
-function statesOf(item: MediaItem, force?: Partial<CardToggleStates>): CardToggleStates {
+export function statesOf(item: MediaItem, force?: Partial<CardToggleStates>): CardToggleStates {
   const ud = item.UserData;
   return {
     watchlist: ud?.Likes === true,
@@ -43,7 +43,7 @@ function statesOf(item: MediaItem, force?: Partial<CardToggleStates>): CardToggl
 }
 
 /** Ce que la lecture ajoute à son bouton — `useCardSheetPlay`, sur l'instantané. */
-function playOf(data: BenchData, item: MediaItem): { resume: boolean; detail: string | null } | null {
+export function playOf(data: BenchData, item: MediaItem): { resume: boolean; detail: string | null } | null {
   if (item.Type === "Series") {
     const next = data.list("nextUp").find((ep) => ep.SeriesId === item.Id) ?? data.list("resume").find((ep) => ep.SeriesId === item.Id);
     if (!next) return { resume: false, detail: null };

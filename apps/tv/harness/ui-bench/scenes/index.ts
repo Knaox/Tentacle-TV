@@ -13,6 +13,7 @@ import { SEARCH_SCENES } from "./searchScenes";
 import { SETTINGS_SCENES } from "./settingsScenes";
 import { SHEET_SCENES } from "./sheetScenes";
 import { TRAILER_SCENES } from "./trailerScenes";
+import { TRAY_SCENES } from "./trayScenes";
 import type { BenchScene } from "./types";
 
 /**
@@ -35,6 +36,7 @@ export const SCENES: BenchScene[] = [
   ...TRAILER_SCENES,
   ...OVERLAY_SCENES,
   ...BRICK_SCENES,
+  ...TRAY_SCENES,
   ...BENCH_SCENES,
 ];
 
