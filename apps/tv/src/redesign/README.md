@@ -45,7 +45,10 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `controls/PillButton` | Pilule `primary` (blanche) ou `glass`, `progress` pour « Reprendre » |
 | `controls/RoundButton` | Rond de verre (Ma liste, favori, vu, note), libellé au focus |
 | `controls/Chip` | Pastille (filtres, genres, choix), `selected`, `detail`, `trailingIcon` |
-| `cards/MediaCard` | Carte `landscape` (16:9) ou `poster` (2:3), marqueurs du modèle partagé |
+| `cards/MediaCard` | Carte `landscape` (16:9) ou `poster` (2:3), marqueurs du modèle partagé ; au focus, le plateau de `card.tray` |
+| `cards/MorphCard` | La carte qui se redresse (16:9 → affiche) ; son plateau se pose sur l'affiche |
+| `cards/tray/CardTray` | Le plateau du focus — le survol du bureau : étoiles entières, capsule (action primaire, Ma liste, favori, vu, extras), bulle de ce que fera OK ; son en-tête dit le parcours à la télécommande et les clés (`<carte>:tray…`) |
+| `cards/ToggleGlyph` | Le glyphe d'un état (Ma liste, favori, vu), plein ou au trait : pastille, plateau, feuille |
 | `cards/CardFrame` | Le cadre et son focus, pour une carte sur mesure |
 | `rows/MediaRow` | Titre + cartes horizontales, les voisines reculent |
 | `hero/HeroBanner`, `MetaLine`, `TitleArt` | Le héros, la ligne de métadonnées, le logo-titre |

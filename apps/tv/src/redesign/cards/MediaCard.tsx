@@ -6,9 +6,13 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { colors, fonts, scrim } from "../theme/tokens";
+import { CardBadge } from "./CardBadge";
 import { CardFrame } from "./CardFrame";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import type { CardModel } from "./cardTypes";
+import { CardHoverVeil } from "./tray/CardHoverVeil";
+import { CardTray } from "./tray/CardTray";
+import { TRAY_REVEAL_MS, useCardHover } from "./tray/useCardHover";
 
 /**
  * La carte d'un titre — deux formats, un seul modèle :
@@ -17,6 +21,18 @@ import type { CardModel } from "./cardTypes";
  * - `poster` (2:3) : l'affiche ; légende dessous.
  * Rien au centre de l'image : OK fait déjà l'action principale, l'appui long
  * ouvre la feuille.
+ *
+ * Au focus, la carte grandit et, quand l'intégration lui donne un plateau
+ * (`card.tray`), montre le SURVOL du bureau : voile, étoiles et capsule
+ * d'actions (`tray/CardTray` — son en-tête dit le parcours à la télécommande
+ * et les clés). La note et les états du repos s'effacent, la progression
+ * reste ; sur une vignette, le logo cède la place au plateau.
+ *
+ * La carte et les boutons de son plateau sont des focalisables FRÈRES : tvOS
+ * ne focalise jamais un élément posé dans un autre. La carte elle-même est un
+ * `FocusTarget` sans rendu, sous l'image, à sa place de repos ; l'image,
+ * agrandie, porte le plateau. `onFocusChange` dit l'ouverture de la carte,
+ * focus du plateau compris (`useCardHover`).
  */
 
 export interface MediaCardProps {
@@ -35,6 +51,7 @@ export interface MediaCardProps {
 }
 
 const DEFAULT_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STAGE.card.poster.width };
+const NO_VISUAL = () => null;
 
 /** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
  *  la légende descend d'autant, l'image ne la recouvre jamais. */
@@ -47,6 +64,18 @@ function Caption({ focused, shift, children }: { focused: boolean; shift: number
   const p = useFocusProgress(focused);
   const follow = useAnimatedStyle(() => ({ transform: [{ translateY: shift * p.value }] }));
   return <Animated.View style={[styles.caption, follow]}>{children}</Animated.View>;
+}
+
+/** Le logo d'une vignette et son dégradé : ils cèdent la place au plateau. */
+function LogoLayer({ uri, hidden }: { uri: string; hidden: boolean }) {
+  const p = useFocusProgress(hidden, TRAY_REVEAL_MS);
+  const fade = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
+  return (
+    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, fade]}>
+      <LinearGradient colors={[scrim(0), scrim(0.55)]} locations={[0.35, 1]} style={StyleSheet.absoluteFill} />
+      <Image source={{ uri }} style={styles.logo} resizeMode="contain" fadeDuration={0} />
+    </Animated.View>
+  );
 }
 
 export const MediaCard = memo(function MediaCard({
@@ -65,65 +94,64 @@ export const MediaCard = memo(function MediaCard({
   const height = Math.round(landscape ? (width * 9) / 16 : width * 1.5);
   const radius = landscape ? TV_STAGE.card.landscape.radius : TV_STAGE.card.poster.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
+  const hover = useCardHover(focusKey, onFocusChange);
+  const tray = hover.mounted ? card.tray : undefined;
+  const hovered = hover.open && card.tray !== undefined;
   return (
-    <FocusTarget
-      focusKey={focusKey}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      onFocusChange={onFocusChange}
-      accessibilityLabel={card.title}
-      style={{ width }}
-    >
-      {(focused) => (
-        <View>
-          <CardFrame width={width} height={height} radius={radius} focused={focused} dimmed={dimmed} origin={origin}>
-            {uri ? (
-              <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
-            ) : (
-              <View style={styles.missing}>
-                <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
-              </View>
-            )}
-            {landscape && card.logoUri ? (
-              <>
-                <LinearGradient colors={[scrim(0), scrim(0.55)]} locations={[0.35, 1]} style={StyleSheet.absoluteFill} />
-                <Image source={{ uri: card.logoUri }} style={styles.logo} resizeMode="contain" fadeDuration={0} />
-              </>
-            ) : null}
-            {card.badge ? (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{card.badge}</Text>
-              </View>
-            ) : null}
-            <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
-          </CardFrame>
-          {hideCaption ? null : (
-            <Caption focused={focused} shift={captionShift(height, origin)}>
-              <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
-              {card.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{card.subtitle}</Text> : null}
-            </Caption>
-          )}
-        </View>
+    <View style={[{ width }, hover.open && styles.front]}>
+      <FocusTarget
+        focusKey={focusKey}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        onFocusChange={hover.onCardFocusChange}
+        accessibilityLabel={card.title}
+        style={[styles.hit, { width, height }]}
+      >
+        {NO_VISUAL}
+      </FocusTarget>
+      <CardFrame width={width} height={height} radius={radius} focused={hover.open} dimmed={dimmed} origin={origin}>
+        {uri ? (
+          <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+        ) : (
+          <View style={styles.missing}>
+            <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
+          </View>
+        )}
+        {landscape && card.logoUri ? <LogoLayer uri={card.logoUri} hidden={hovered} /> : null}
+        {tray ? <CardHoverVeil shown={hover.open} /> : null}
+        {card.badge ? <CardBadge label={card.badge} /> : null}
+        <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} hovered={hovered} />
+        {tray ? (
+          <CardTray
+            tray={tray}
+            face={variant}
+            width={width}
+            cardKey={focusKey}
+            title={card.title}
+            shown={hover.open}
+            trayFocus={hover.trayFocus}
+            onTrayFocusChange={hover.onTrayFocusChange}
+          />
+        ) : null}
+      </CardFrame>
+      {hideCaption ? null : (
+        <Caption focused={hover.open} shift={captionShift(height, origin)}>
+          <Text style={[styles.title, hover.open && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
+          {card.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{card.subtitle}</Text> : null}
+        </Caption>
       )}
-    </FocusTarget>
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
+  // La carte ouverte passe devant ses voisines : son ombre de soulèvement
+  // n'est plus recouverte par la suivante.
+  front: { zIndex: 10 },
+  hit: { position: "absolute", top: 0, left: 0 },
   missing: { flex: 1, padding: 22, justifyContent: "flex-end", backgroundColor: colors.surface3 },
   missingTitle: { ...fonts.bold, fontSize: 26, lineHeight: 30, color: colors.textSecondary },
   logo: { position: "absolute", left: 22, right: 90, bottom: 22, height: 64 },
-  badge: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    height: 34,
-    paddingHorizontal: 12,
-    borderRadius: 17,
-    justifyContent: "center",
-    backgroundColor: colors.accent,
-  },
-  badgeText: { ...fonts.extrabold, fontSize: 22, color: colors.onAccent },
   caption: { marginTop: 14, gap: 2 },
   title: { ...fonts.semibold, fontSize: 24, color: colors.textSecondary },
   titleFocused: { color: colors.text },

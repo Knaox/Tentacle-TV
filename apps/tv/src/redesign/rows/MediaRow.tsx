@@ -1,6 +1,7 @@
 import { memo, useCallback, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { cardIndexOf } from "../cards/cardFocusKeys";
 import { MediaCard } from "../cards/MediaCard";
 import { MORPH_OVERFLOW, MorphCard } from "../cards/MorphCard";
 import type { CardModel } from "../cards/cardTypes";
@@ -10,7 +11,8 @@ import { text } from "../theme/tokens";
 /**
  * Une rangée : son titre (36 pt), puis ses cartes à l'horizontale, peu
  * nombreuses et grandes. Quand une carte a le focus, ses voisines reculent
- * un peu. La clé de focus d'une carte est `${rowKey}:${index}`.
+ * un peu. La clé de focus d'une carte est `${rowKey}:${index}` ; son plateau,
+ * quand elle en a un, vit sous `${rowKey}:${index}:tray` (`cards/tray/CardTray`).
  */
 
 export interface MediaRowProps {
@@ -42,8 +44,8 @@ export const MediaRow = memo(function MediaRow({
 }: MediaRowProps) {
   const [nativeIndex, setNativeIndex] = useState<number | null>(null);
   const forced = useForcedFocusKey();
-  const forcedIndex = forced?.startsWith(`${rowKey}:`) ? Number(forced.slice(rowKey.length + 1)) : null;
-  const focusedIndex = forced !== null ? forcedIndex : nativeIndex;
+  // La carte, ou un bouton de son plateau (`${rowKey}:${index}:tray:…`).
+  const focusedIndex = forced !== null ? cardIndexOf(forced, rowKey) : nativeIndex;
 
   const onFocusChange = useCallback(
     (index: number, focused: boolean) => {

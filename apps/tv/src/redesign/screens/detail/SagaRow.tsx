@@ -5,6 +5,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFrame } from "../../cards/CardFrame";
+import { cardIndexOf } from "../../cards/cardFocusKeys";
 import { MediaCard } from "../../cards/MediaCard";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
@@ -77,8 +78,8 @@ export const SagaRow = memo(function SagaRow({
 }) {
   const [nativeIndex, setNativeIndex] = useState<number | null>(null);
   const forced = useForcedFocusKey();
-  const forcedIndex = forced?.startsWith("saga:") ? Number(forced.slice(5)) : null;
-  const focusedIndex = forced !== null ? forcedIndex : nativeIndex;
+  // Le volet, ou un bouton de son plateau (`saga:<n>:tray:…`).
+  const focusedIndex = forced !== null ? cardIndexOf(forced, "saga") : nativeIndex;
   const focusChange = (index: number) => (focused: boolean) => {
     setNativeIndex((current) => (focused ? index : current === index ? null : current));
     onFocusChange?.(focused);
