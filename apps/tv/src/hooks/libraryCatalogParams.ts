@@ -68,7 +68,8 @@ export function enumeratedYears(filters: LibraryFilterState): string[] | undefin
 }
 
 /** Le filtre plateforme n'existe pas côté serveur : il se pose après coup, sur
- *  une base plus large. C'est la seule chose qui change la LIMITE demandée. */
+ *  une base plus large. C'est la seule chose qui change la LIMITE demandée —
+ *  et les CHAMPS (cf. `catalogParams`). */
 export function hasPlatformFilter(filters: LibraryFilterState): boolean {
   return filters.platformIds.length > 0;
 }
@@ -78,9 +79,13 @@ export function hasPlatformFilter(filters: LibraryFilterState): boolean {
  * ait le droit de les fabriquer.
  *
  * `fields: "light"` : payload minimum pour la grille. Plateformes actives →
- * limite montée à 500, la base du post-filtre client (parité web).
+ * limite montée à 500, la base du post-filtre client (parité web), et
+ * `fields: "full"` : le post-filtre (`usePlatformFilter`) compare les STUDIOS
+ * et l'identifiant TMDB de chaque titre. « light » ne demande ni l'un ni
+ * l'autre — le filtre ne trouvait donc jamais rien, sur aucune plateforme.
  */
 export function catalogParams(filters: LibraryFilterState): CatalogFilters {
+  const platforms = hasPlatformFilter(filters);
   return {
     sortBy: filters.sortBy,
     sortOrder: filters.sortOrder,
@@ -89,7 +94,7 @@ export function catalogParams(filters: LibraryFilterState): CatalogFilters {
     statusFilter: filters.statusFilter ?? undefined,
     minCommunityRating: filters.ratingMin ?? undefined,
     isFavorite: filters.isFavorite || undefined,
-    limit: hasPlatformFilter(filters) ? 500 : 30,
-    fields: "light",
+    limit: platforms ? 500 : 30,
+    fields: platforms ? "full" : "light",
   };
 }
