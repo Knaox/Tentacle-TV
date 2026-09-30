@@ -404,6 +404,69 @@ siens (`useLibraryFilters`, `catalogParams`).
   dictée — jamais le micro. Seule la sélection d'un résultat mémorise la
   requête (parité Android TV). Au retour d'une étagère (Parcourir), la barre.
 
+## La navigation — beaucoup de bibliothèques (Apple TV)
+
+Branche `refonte/tv-nav-bibliotheques`. La vue vit dans `redesign/nav/`, le
+câblage dans `redesignWiring/nav/` et `screen/RailShortcuts.tsx`, la
+politique partagée dans `packages/tv-core/src/nav/`.
+
+- **Deux capsules** de verre, même largeur, un petit écart : le rail
+  (Rechercher fixe en tête, puis la liste) et, dessous, la capsule du PROFIL
+  (nom du compte, « Profil et réglages »), fixe. Toute la géométrie est
+  constante, repliée comme dépliée (`navGeometry.ts`) : la légende du bas
+  garde sa place même repliée.
+- **La liste défile** (`NavList`, une ScrollView native). Au pavé, c'est tvOS
+  qui la fait défiler, et il tient LUI-MÊME l'entrée focalisée à 180 points
+  des bords, dans les deux sens (mesuré au simulateur : deux entrées et demie
+  visibles au-delà) ; il trouve les entrées hors de l'écran, et la ScrollView
+  de react-native-tvos ne laisse pas le focus sortir de la liste avant son
+  bout — flèche maintenue, on s'arrête sur la dernière entrée, jamais sur le
+  profil. La vue ne défile elle-même que là où tvOS ne fait rien — repliée
+  (l'entrée de la page courante), menu ouvert (l'entrée dont il parle),
+  focus figé du banc — et à la même marge (`railRevealOffset`, tv-core).
+- **Fondu et indicateur** : le fondu du côté où il y a plus estompe le DESSIN
+  des entrées (opacité calculée sur le fil de l'interface), jamais un calque
+  posé dessus — il masquerait les cibles au moteur de focus. L'indicateur de
+  position (`railThumb`) ne fait que glisser. Au repos : 0 ms/s de GPU.
+- **Rendue par POSITION** (`slot:<i>`) : réordonner change ce qu'affiche une
+  case, jamais la vue native qui porte le focus — c'est ce qui permet au
+  mode « déplacer » de suivre le focus sans réclamation.
+- **Organiser** (`useRailArrange`) : l'appui long ouvre le menu d'une entrée
+  (`NavMenuModal`, une Modal, entrée sur « Déplacer », garde anti-clic
+  fantôme) — Déplacer, Monter, Descendre, Masquer, Tout afficher, Réglages
+  de la navigation. Monter / Descendre enregistrent et laissent le menu
+  ouvert (OK, OK, OK). Déplacer soulève l'entrée : HAUT / BAS la déplacent,
+  OK la pose, Retour annule (à la racine par l'intercepteur, sur une page
+  poussée par `usePreventRemove`) ; Rechercher, Accueil, « Tout afficher »
+  et le profil sont verrouillés le temps du déplacement, quitter le rail pose
+  l'entrée, et l'ordre en cours n'est enregistré qu'à la pose.
+- **Réglages › Navigation** (`NavigationPanel`, `useNavigationSettings`) :
+  toutes les entrées organisables, masquées comprises ; OK soulève une ligne
+  (même mécanique), sa pastille l'affiche ou la masque ; « Tout afficher » et
+  « Ordre par défaut » quand ils ont à faire.
+- **Les réglages vite** (`RailShortcuts`, guides du câblage) : la navigation
+  BOUCLE (HAUT depuis Rechercher → profil, BAS depuis le profil →
+  Rechercher) et GAUCHE depuis toute entrée mène au profil — « gauche,
+  gauche » depuis le contenu. La Siri Remote n'émet pas la fin d'un appui
+  maintenu sur une flèche : le guide s'arme après 450 ms, ou 1,1 s si l'on
+  est arrivé dans une rafale (flèche maintenue) — mesuré : maintenu 1,2 s et
+  2 s depuis une rangée, le focus s'arrête sur « Accueil ».
+- **Le magasin partagé** (`railPinning.ts`, clé `tentacle_webos_rail`) gagne
+  un champ `order`, facultatif : absent du JSON tant qu'on n'a rien déplacé
+  (la forme d'avant, à l'octet près), `masquees` inchangé ; la LG et
+  Android TV ne le lisent pas. `applyRailOrder` range, `moveRailKey` déplace
+  d'un cran parmi les VISIBLES ; une bibliothèque nouvelle se range à la
+  suite.
+- **Mesuré dans l'app réelle** (simulateur tvOS 26.2, agent XCUITest, 3 vraies
+  bibliothèques + 21 injectées dans le cache de requêtes par CDP) : 60,2 i/s
+  sur le fil de l'interface en descente flèche maintenue (aucune image
+  perdue), 59,7 en remontée ; 59,8 sur le fil JS. Masquer, déplacer, annuler,
+  « Tout afficher » et l'onglet des réglages éprouvés au pavé ; l'ordre et
+  les masquées survivent à la relance à froid.
+- Au banc : 12 scènes « Navigation » (24 bibliothèques : repliée, dépliée en
+  haut / au milieu / en bas, masquée, menu, déplacer, Réglages ›
+  Navigation) — `bench:ui planche navigation/ --focus`.
+
 ---
 
 ## Inventaire — les écrans
@@ -522,7 +585,9 @@ Automate en 5 étapes, toutes gardées :
   préférences par bibliothèque : audio, mode et langue des sous-titres,
   réinitialiser → liste de choix) · **À propos** (logo, version, serveur,
   compte, appareil, description, fonctionnalités, licence).
-- **Nouveau** : l'interrupteur Liquid Glass (même sens que bureau et mobile).
+- **Nouveau** : l'interrupteur Liquid Glass (même sens que bureau et mobile) ;
+  l'onglet **Navigation** (Apple TV) — les entrées de la barre de gauche,
+  visibles ou masquées, dans leur ordre.
 
 ### 10. Bande-annonce (`Trailer`)
 
@@ -596,9 +661,10 @@ note perso, pastille Ma liste · favori · vu, progression, « Découverte »,
 puces qualité/langues — pastilles, pas de drapeaux) · bouton (primaire,
 secondaire, rond, pilule) · pastille · rangée (titre ≥ 34 + accessoire) ·
 héros (halo à la marque) · fond vivant (lumière de l'œuvre, violets ramenés au neutre) · navigation à
-gauche (repliée : icônes ; ouverte : libellés sous voile ; toutes les entrées :
-Rechercher, Accueil, Pour vous, Ma liste, Favoris, chaque bibliothèque, Tout
-afficher, Réglages ; masquage par appui long) · logo en haut à droite ·
+gauche (deux capsules : le rail qui défile et le profil ; repliée : icônes ;
+ouverte : libellés sous voile, légende ; toutes les entrées : Rechercher,
+Accueil, Pour vous, Ma liste, Favoris, chaque bibliothèque, Tout afficher,
+profil et réglages ; appui long : le menu d'organisation) · logo en haut à droite ·
 onglets · feuille · panneau · clavier · squelettes · états vides et d'erreur ·
 `GlassSurface`.
 
@@ -689,6 +755,17 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   réempilement, puis la navigation dépile pour de bon, et tvOS rend entre
   les deux la carte qu'on y avait quittée. Un focus posé à `transitionEnd`
   se repose à chaque arrivée (`useSystemKeyboard`).
+- **Une Modal refermée rend le focus à la VUE qui l'avait**, pas à l'entrée :
+  dans une liste rendue par position, cette case montre peut-être une autre
+  entrée (le menu du rail a fait monter la sienne). Réclamer au premier focus
+  que tvOS rend (`useRailArrange`, `returnTo`).
+- **Une réclamation faite pendant Menu sur une page poussée est défaite** par
+  la restauration du réempilement, qui arrive après elle : réclamer de
+  nouveau, une fois, si le focus retombe ailleurs dans la foulée
+  (`claimAfterRestore`).
+- **La Siri Remote n'émet pas `longLeft`** (ni la fin d'un appui maintenu sur
+  une flèche) : un raccourci déclenché par une flèche se garde au rythme du
+  focus (`RailShortcuts`).
 
 ## Recette de A à Z — ce que l'utilisateur veut éprouver (2026-09-30)
 
