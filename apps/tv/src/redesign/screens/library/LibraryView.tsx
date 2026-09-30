@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Modal, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
@@ -42,6 +42,10 @@ import { YearSheet } from "./YearSheet";
  * - `useCardMarkers` (marqueurs), `paletteFromBlurHash` (lumière).
  * Retour et focus (entrée sur la grille, retour à la pastille qui a ouvert une
  * liste) restent à l'intégration.
+ *
+ * La liste ouverte vit dans une `Modal` : son propre contrôleur de vue, où le
+ * focus reste, et que Menu (Apple TV) ou Retour (Android) referme
+ * (`onSheetClose`, sinon `onSheetApply`) sans quitter la bibliothèque.
  */
 
 export interface LibraryViewProps extends FilterSheetHandlers {
@@ -66,6 +70,8 @@ export interface LibraryViewProps extends FilterSheetHandlers {
   status?: StatusPanelProps | null;
   /** La liste en surimpression ouverte, ou rien. */
   sheet?: FilterSheetModel | null;
+  /** Menu ou Retour, liste ouverte : la refermer (défaut : `onSheetApply`). */
+  onSheetClose?: () => void;
   onPressPill?: (key: LibraryFilterKey) => void;
   onRemoveFilter?: (id: string) => void;
   onClearAll?: () => void;
@@ -153,14 +159,17 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
       </View>
       <NavRail {...nav} />
       {sheet ? (
-        <Sheet
-          sheet={sheet}
-          onSheetOption={props.onSheetOption}
-          onSheetClear={props.onSheetClear}
-          onSheetApply={props.onSheetApply}
-          onYearStep={props.onYearStep}
-          onRatingSelect={props.onRatingSelect}
-        />
+        // Sans animation de la Modal : la liste a déjà la sienne (voile, panneau).
+        <Modal visible transparent animationType="none" onRequestClose={props.onSheetClose ?? props.onSheetApply}>
+          <Sheet
+            sheet={sheet}
+            onSheetOption={props.onSheetOption}
+            onSheetClear={props.onSheetClear}
+            onSheetApply={props.onSheetApply}
+            onYearStep={props.onYearStep}
+            onRatingSelect={props.onRatingSelect}
+          />
+        </Modal>
       ) : null}
     </View>
   );
