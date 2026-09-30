@@ -17,9 +17,10 @@ import { colors, fonts, white } from "../../theme/tokens";
 
 export const RULER_CELL = { width: 104, height: 96, gap: 10, removeWidth: 240 } as const;
 
-/** L'opacité d'un cran selon sa distance au centre. */
+/** L'opacité d'un cran selon sa distance au centre ; au-delà de quatre crans,
+ *  il s'efface : la règle ne montre jamais un cran coupé par son bord. */
 function fadeOf(distance: number): number {
-  return [1, 0.72, 0.5, 0.36][distance] ?? 0.26;
+  return [1, 0.72, 0.5, 0.34, 0.2][distance] ?? 0;
 }
 
 export const RulerCell = memo(function RulerCell({

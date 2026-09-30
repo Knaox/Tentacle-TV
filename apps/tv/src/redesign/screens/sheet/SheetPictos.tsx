@@ -97,7 +97,8 @@ function Picto({ action, focused }: { action: SheetActionModel; focused: boolean
           </>
         )}
       </Animated.View>
-      <Text style={[styles.label, focused && styles.labelFocused]} numberOfLines={2}>{action.label}</Text>
+      {/* Trois lignes : « Ajouter à ma liste dès son arrivée » (Vigie) y tient entier. */}
+      <Text style={[styles.label, focused && styles.labelFocused]} numberOfLines={3}>{action.label}</Text>
       {action.detail ? <Text style={styles.detail} numberOfLines={1}>{action.detail}</Text> : null}
     </View>
   );
