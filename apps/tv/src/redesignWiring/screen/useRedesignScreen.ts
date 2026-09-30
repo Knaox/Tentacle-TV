@@ -30,7 +30,9 @@ export interface RedesignScreenOptions {
    *  elle suit l'état de l'écran (chargement, erreur, contenu). */
   entryKey?: string | null;
   /** Menu depuis le contenu : rend vrai s'il a été pris (un panneau à fermer).
-   *  Sinon, Menu ouvre la navigation. */
+   *  Sinon, Menu ouvre la navigation. Sur une page poussée, il est rappelé
+   *  APRÈS le dépilage natif, qui a déjà ôté le focus : lire la dernière clé
+   *  focalisée (`lastFocusedKey`), pas seulement la clé focalisée. */
   onBack?: () => boolean;
   /** Choisir l'entrée de la page où l'on est ; défaut : rendre le focus au contenu. */
   onReselect?: () => void;

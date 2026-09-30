@@ -1,6 +1,6 @@
 import { useCallback, type ReactNode } from "react";
 import { StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, usePreventRemove } from "@react-navigation/native";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { MenuPressInterceptor } from "../../components/focus/MenuPressInterceptor";
 import { RailBridges } from "./RailBridges";
@@ -18,6 +18,14 @@ import type { RedesignScreenModel } from "./useRedesignScreen";
  *   qui quitte l'application — la règle tvOS ;
  * - les PONTS entre navigation et contenu (`RailBridges`).
  *
+ * Une page POUSSÉE — toutes celles du rail s'empilent sur l'accueil : Menu
+ * n'y atteint jamais l'intercepteur. UIKit dépile l'écran d'abord (le patch
+ * de react-native-screens ne voit pas l'appui, tvOS 26.2), et seul
+ * `usePreventRemove` le rattrape, l'écran réempilé après coup. Tant que le
+ * focus est dans le contenu, le retrait y est donc empêché, et Menu fait ce
+ * qu'il fait à la racine ; depuis la navigation, la page se dépile. Tout
+ * autre retrait (une entrée du rail, la déconnexion) passe tel quel.
+ *
  * Une Modal (liste de choix, feuille) vit dans son propre contrôleur : son
  * Menu part dans `onRequestClose` sans passer par ici.
  */
@@ -34,6 +42,13 @@ export function RedesignScreen({ screen, children }: { screen: RedesignScreenMod
     if (onBack?.()) return;
     focusRail();
   }, [navigation, railFocused, onBack, focusRail]);
+
+  // Le dépilage natif empêché revient en `POP` (native-stack) : c'est Menu.
+  // L'action relancée porte la marque de ce retrait : elle n'est plus retenue.
+  usePreventRemove(canGoBack && !railFocused, ({ data }) => {
+    if (data.action.type === "POP" && navigation.isFocused()) onMenuPress();
+    else navigation.dispatch(data.action);
+  });
 
   return (
     <MenuPressInterceptor enabled={railFocused ? canGoBack : true} onMenuPress={onMenuPress} style={styles.fill}>

@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigation, usePreventRemove } from "@react-navigation/native";
+import { useCallback, useEffect, useRef } from "react";
 import { trayFocusKey, trayGroupKey } from "../../redesign/cards/cardFocusKeys";
 import type { CardTrayActionKind } from "../../redesign/cards/cardTypes";
 import { createEntryGuide } from "../focus/entryGuide";
@@ -16,7 +15,9 @@ import { memorableKey } from "../screen/useEntryFocus";
  *   Mesuré au simulateur : seule, la géométrie posait le focus sur la
  *   première étoile ; un guide `autoFocus` aussi — tvOS y entre par
  *   l'élément le plus en haut à gauche, pas par l'ordre de l'arbre.
- * - MENU, d'où qu'on soit dans le plateau, rend le focus à la carte.
+ * - MENU, d'où qu'on soit dans le plateau, rend le focus à la carte : le
+ *   rappel `onBack`, à passer à `useRedesignScreen`, qui reçoit Menu sur
+ *   toutes les pages du rail — poussées comprises (`RedesignScreen`).
  *
  * La liaison se pose quand la carte prend le focus : son plateau ne se monte
  * qu'après (`focusCard`, puis un rendu), et le port veut un conteneur lu dès
@@ -39,8 +40,7 @@ function primaryOf(focus: FocusStore, cardKey: string): string | null {
 }
 
 export interface CardTrayFocus {
-  /** Menu reçu par l'intercepteur de l'écran (à la racine de la pile) : vrai
-   *  s'il a rendu le focus à la carte depuis son plateau. */
+  /** Menu : vrai s'il a rendu le focus à la carte depuis son plateau. */
   onBack: () => boolean;
 }
 
@@ -73,52 +73,19 @@ function useTrayGuides(focus: FocusStore, isCardKey: (focusKey: string) => boole
 }
 
 /**
- * Menu depuis un plateau. Toutes les pages du rail sont POUSSÉES sur
- * l'accueil, et sur un écran poussé Menu n'atteint pas l'intercepteur de
- * `RedesignScreen` : le geste de la pile native dépile d'abord — mesuré au
- * simulateur (tvOS 26.2), le patch de react-native-screens n'y voit même pas
- * l'appui. L'écran est donc RETENU (`usePreventRemove`) tant que le focus est
- * dans un plateau : react-native-screens le réempile, et le retrait rejoué
- * rend le focus à la carte. Un simple flou ne lève pas la retenue — le
- * dépilage natif retire le focus avant d'être annulé ; seul un focus pris
- * ailleurs dans l'écran, ou l'écran quitté par la navigation, la lève. Toute
- * autre sortie (la pile refaite par le rail, la déconnexion) passe.
- * À la racine de la pile, l'intercepteur reçoit Menu : le rappel rendu ici.
+ * Menu depuis un plateau : le focus revient à sa carte. `RedesignScreen`
+ * rappelle ce geste sur toutes les pages du rail — par son intercepteur à la
+ * racine de la pile, par `usePreventRemove` sur une page poussée, où le
+ * dépilage natif a déjà ôté le focus quand l'appui arrive (tvOS 26.2) : la
+ * dernière clé focalisée fait alors foi. Une seule retenue par écran, la
+ * sienne : une seconde ici ferait partir deux gestes sur le même Menu.
  */
 function useTrayBack(focus: FocusStore): () => boolean {
-  const navigation = useNavigation();
-  const [trayCard, setTrayCard] = useState<string | null>(null);
-  const trayCardRef = useRef(trayCard);
-  trayCardRef.current = trayCard;
-
-  useEffect(
-    () =>
-      focus.subscribe((key, focused) => {
-        if (!focused) return;
-        const card = memorableKey(key);
-        setTrayCard(card !== key ? card : null);
-      }),
-    [focus],
-  );
-  useEffect(() => navigation.addListener("blur", () => setTrayCard(null)), [navigation]);
-
-  usePreventRemove(trayCard !== null, ({ data }) => {
-    const card = trayCardRef.current;
-    const back = data.action.type === "POP" || data.action.type === "GO_BACK";
-    if (back && card && navigation.isFocused()) {
-      focus.claim(card);
-      return;
-    }
-    // Levée d'abord : un retrait du même tick serait encore retenu.
-    setTrayCard(null);
-    setTimeout(() => navigation.dispatch(data.action), 0);
-  });
-
   return useCallback(() => {
-    const key = focus.focusedKey();
+    const key = focus.focusedKey() ?? focus.lastFocusedKey();
     if (!key) return false;
     const card = memorableKey(key);
-    if (card === key) return false;
+    if (card === key || !focus.node(card)) return false;
     focus.claim(card);
     return true;
   }, [focus]);
