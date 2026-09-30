@@ -55,22 +55,30 @@ export interface NavListProps {
 const G = LIST_GEOMETRY;
 /** Le côté du fondu ne s'allume qu'une fois la liste décollée de ce bord. */
 const EDGE_ON = PITCH / 2;
+/** Une demande de défilement plus récente que ça est encore en route. */
+const IN_FLIGHT_MS = 450;
 
 export const NavList = memo(function NavList(props: NavListProps) {
   const { entries, activeKey, expanded, heldKey, movingKey, onFocusChange } = props;
   const count = entries.length;
   const max = railMaxOffset(count, G);
   const forced = useForcedFocusKey();
+  const forcedEntry = forced?.startsWith("nav:") ? forced.slice(4) : null;
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  // L'entrée active visible dès le premier rendu (repliée, c'est elle qu'on montre).
-  const initial = useMemo(
-    () => railRevealOffset(entries.findIndex((entry) => entry.key === activeKey), 0, count, G),
+  // Dès le premier rendu, ce qu'on doit voir : la clé figée du banc, l'entrée
+  // qu'on déplace ou dont le menu est ouvert, sinon celle de la page courante.
+  // Un défilement demandé avant la mise en page du contenu serait perdu.
+  const initial = useMemo(() => {
+    const shown = forcedEntry ?? movingKey ?? heldKey ?? activeKey;
+    return railRevealOffset(entries.findIndex((entry) => entry.key === shown), 0, count, G);
     // Au montage seulement : la suite passe par `reveal`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  }, []);
   const scrollY = useSharedValue(initial);
+  /** La position RÉELLE, suivie sur le fil de l'interface. */
   const offset = useRef(initial);
+  /** La dernière destination demandée, et quand : tant qu'elle est en route, on raisonne depuis elle. */
+  const requested = useRef<{ y: number; at: number } | null>(null);
   const keys = useRef(entries.map((entry) => entry.key));
   keys.current = entries.map((entry) => entry.key);
 
@@ -79,6 +87,7 @@ export const NavList = memo(function NavList(props: NavListProps) {
   });
   const remember = useCallback((y: number) => {
     offset.current = y;
+    if (requested.current && Math.abs(requested.current.y - y) < 1) requested.current = null;
   }, []);
   useAnimatedReaction(
     () => scrollY.value,
@@ -91,13 +100,20 @@ export const NavList = memo(function NavList(props: NavListProps) {
     (key: string | null | undefined, animated: boolean) => {
       const index = key ? keys.current.indexOf(key) : -1;
       if (index < 0) return;
-      const next = railRevealOffset(index, offset.current, keys.current.length, G);
-      if (Math.abs(next - offset.current) < 1) return;
-      offset.current = next;
+      const pending = requested.current;
+      const base = pending && Date.now() - pending.at < IN_FLIGHT_MS ? pending.y : offset.current;
+      const next = railRevealOffset(index, base, keys.current.length, G);
+      if (Math.abs(next - base) < 1) return;
+      requested.current = { y: next, at: Date.now() };
       scrollRef.current?.scrollTo({ y: next, animated });
     },
     [scrollRef],
   );
+  // Une demande partie avant que le contenu ait sa taille est rejouée.
+  const onContentSizeChange = useCallback(() => {
+    const pending = requested.current;
+    if (pending && Date.now() - pending.at < IN_FLIGHT_MS) scrollRef.current?.scrollTo({ y: pending.y, animated: false });
+  }, [scrollRef]);
 
   const handleFocus = useCallback(
     (key: string, focused: boolean) => {
@@ -108,7 +124,6 @@ export const NavList = memo(function NavList(props: NavListProps) {
   );
 
   // Au banc : la clé figée, montrée sans animation.
-  const forcedEntry = forced?.startsWith("nav:") ? forced.slice(4) : null;
   useEffect(() => {
     if (forcedEntry) reveal(forcedEntry, false);
   }, [forcedEntry, reveal]);
@@ -132,6 +147,7 @@ export const NavList = memo(function NavList(props: NavListProps) {
         contentContainerStyle={styles.content}
         contentOffset={{ x: 0, y: initial }}
         onScroll={onScroll}
+        onContentSizeChange={onContentSizeChange}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
