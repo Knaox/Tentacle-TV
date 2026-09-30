@@ -1,26 +1,26 @@
 import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { useTranslation } from "react-i18next";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
-import { starOf, trayFocusKey, trayGroupKey } from "../cardFocusKeys";
+import { trayFocusKey, trayGroupKey } from "../cardFocusKeys";
 import type { CardTrayAction, CardTrayModel } from "../cardTypes";
-import { TRAY, trayButtonSize, trayStarSize, type TrayFace } from "./trayLayout";
+import { TRAY, trayButtonSize, trayNoteStarSize, type TrayFace } from "./trayLayout";
 import { TrayButton } from "./TrayButton";
 import { TrayHint } from "./TrayHint";
-import { TrayStars } from "./TrayStars";
+import { TrayNote } from "./TrayNote";
 import { TRAY_REVEAL_MS } from "./useCardHover";
 
 /**
  * Le plateau d'une carte au focus — le SURVOL du bureau (`CardHoverOverlay`),
  * posé sur la carte comme lui, dans la même grammaire (`cardOverlay.ts`) :
- *   • en bas, les étoiles (la note, entières), puis la capsule — l'action
- *     primaire en tête (« Lire » discret là seulement où OK ne lit pas,
- *     « Demander » à l'ambre hors bibliothèque), puis Ma liste → favori → vu
- *     (l'ordre de la pastille du repos), puis les extras (fiche, « Ne plus me
- *     proposer ») ;
+ *   • en bas, la note perso (étoiles, demi-étoiles comprises — un
+ *     affichage : elle se pose sur l'échelle de la feuille), puis la capsule —
+ *     l'action primaire en tête (« Lire » discret là seulement où OK ne lit
+ *     pas, « Demander » au dégradé de marque hors bibliothèque), puis Ma liste
+ *     → favori → vu (l'ordre de l'épingle du repos, qui reste visible), puis
+ *     les extras (fiche, « Ne plus me proposer ») ;
  *   • centré sur une affiche — et sur l'affiche de la carte qui se redresse —,
  *     rangé dans le coin bas-droit d'une vignette 16:9 ;
  *   • au-dessus, la bulle de ce que fera OK, quand un élément du plateau a le
@@ -30,13 +30,13 @@ import { TRAY_REVEAL_MS } from "./useCardHover";
  * Télécommande. La carte ouverte s'arrête au-dessus de son plateau
  * (`trayReach`) : rien ne recouvre un focalisable, et la GÉOMÉTRIE seule de
  * tvOS fait déjà le parcours — mesuré au simulateur, focus natif, XCUITest :
- * BAS carte → étoiles → capsule → rangée suivante (le plateau se referme),
- * HAUT capsule → étoiles → carte, GAUCHE / DROITE dans la capsule ; aux bouts,
- * elle sort vers la carte voisine. OK sur la carte garde l'action principale
- * (la fiche d'une affiche, la lecture d'une vignette 16:9), l'appui long la
- * feuille d'actions. Le CÂBLAGE n'ajoute, par le port du focus
- * (`focus/focusBinding.tsx`), que :
- *   • l'entrée sur l'action PRIMAIRE — seule, BAS atterrit sur l'étoile la
+ * BAS carte → capsule → rangée suivante (le plateau se referme), HAUT capsule
+ * → carte, GAUCHE / DROITE dans la capsule ; aux bouts, elle sort vers la
+ * carte voisine. OK sur la carte garde l'action principale (la fiche d'une
+ * affiche, la lecture d'une vignette 16:9), l'appui long la feuille
+ * d'actions — noter, les infos, Ma liste, j'aime, vu. Le CÂBLAGE n'ajoute,
+ * par le port du focus (`focus/focusBinding.tsx`), que :
+ *   • l'entrée sur l'action PRIMAIRE — seule, BAS atterrit sur le bouton le
  *     plus proche : un guide `autoFocus` lié au groupe `<carte>:tray`, dont la
  *     capsule vient la PREMIÈRE dans l'arbre (affichée en bas :
  *     `column-reverse`) ;
@@ -45,7 +45,7 @@ import { TRAY_REVEAL_MS } from "./useCardHover";
  * Changer de rangée coûte deux BAS quand la carte a un plateau : à éprouver.
  * Clés : le groupe `<carte>:tray` ; les boutons `<carte>:tray:<action>`
  * (`play`, `request`, `watchlist`, `favorite`, `watched`, `details`,
- * `dismiss`) ; les étoiles `<carte>:tray:star:<1…5>`.
+ * `dismiss`).
  */
 
 export interface CardTrayProps {
@@ -65,7 +65,6 @@ export interface CardTrayProps {
 const isToggle = (action: CardTrayAction) => action.kind === "watchlist" || action.kind === "favorite" || action.kind === "watched";
 
 export const CardTray = memo(function CardTray({ tray, face, width, cardKey, title, shown, trayFocus, onTrayFocusChange }: CardTrayProps) {
-  const { t } = useTranslation("reco");
   const p = useFocusProgress(shown, TRAY_REVEAL_MS);
   const rise = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ translateY: 10 * (1 - p.value) }] }));
   const corner = face === "landscape";
@@ -73,18 +72,8 @@ export const CardTray = memo(function CardTray({ tray, face, width, cardKey, tit
   // Pleine largeur sur une affiche quand le plateau est complet ; une capsule
   // d'un ou deux boutons épouse son contenu, au centre (comme au bureau).
   const stretch = !corner && tray.actions.filter(isToggle).length >= 3;
-  const focusedStar = starOf(trayFocus);
-
-  let hint: { text: string; danger?: boolean } | null = null;
-  if (focusedStar !== null) {
-    const current = tray.rating?.current ?? null;
-    hint = current === focusedStar * 2
-      ? { text: t("removeRatingAria", { score: current }), danger: true }
-      : { text: t("rateAria", { score: focusedStar * 2 }) };
-  } else if (trayFocus) {
-    const action = tray.actions.find((candidate) => candidate.kind === trayFocus);
-    if (action) hint = { text: action.detail ? `${action.label} · ${action.detail}` : action.label };
-  }
+  const focused = trayFocus ? tray.actions.find((candidate) => candidate.kind === trayFocus) : undefined;
+  const hint = focused ? (focused.detail ? `${focused.label} · ${focused.detail}` : focused.label) : null;
 
   const content: ReactNode = (
     <>
@@ -105,17 +94,8 @@ export const CardTray = memo(function CardTray({ tray, face, width, cardKey, tit
           </GlassSurface>
         </View>
       ) : null}
-      {tray.rating ? (
-        <TrayStars
-          rating={tray.rating}
-          size={trayStarSize(button)}
-          focusedStar={focusedStar}
-          cardKey={cardKey}
-          onRate={tray.onRate}
-          onFocusChange={onTrayFocusChange}
-        />
-      ) : null}
-      {hint ? <TrayHint text={hint.text} danger={hint.danger} align={corner ? "end" : "center"} /> : null}
+      {tray.rating ? <TrayNote rating={tray.rating} size={trayNoteStarSize(button)} /> : null}
+      {hint ? <TrayHint text={hint} align={corner ? "end" : "center"} /> : null}
     </>
   );
   const inset = TRAY.inset[face];

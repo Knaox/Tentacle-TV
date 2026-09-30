@@ -73,7 +73,7 @@ function MorphScene({ data }: { data: BenchData }) {
 
 function StatesScene({ data }: { data: BenchData }) {
   const all = { watchlist: true, favorite: true, watched: true };
-  const cards = trayed(data, posterItems(data), "poster", yearOf, (_, index) => (index === 0 ? { force: all, rating: 8 } : { rating: 6 }));
+  const cards = trayed(data, posterItems(data), "poster", yearOf, (_, index) => (index === 0 ? { force: all, rating: 7 } : { rating: 6 }));
   return (
     <Page lead={cards[0]}>
       <MediaRow rowKey="poses" title={t("common:myList")} variant="poster" inset={96} cards={cards} />
@@ -123,7 +123,7 @@ export const TRAY_SCENES: BenchScene[] = [
     id: "briques/plateau-affiche",
     group: "Briques",
     label: "Plateau — affiche (« Lire » discret en tête)",
-    focusKeys: ["affiche:0", ...tray("affiche:0", "play"), ...tray("affiche:1", "play", "watchlist", "favorite", "watched", "star:4")],
+    focusKeys: ["affiche:0", ...tray("affiche:0", "play"), ...tray("affiche:1", "play", "watchlist", "favorite", "watched")],
     settleMs: SETTLE,
     render: (data) => <PosterScene data={data} />,
   },
@@ -131,7 +131,7 @@ export const TRAY_SCENES: BenchScene[] = [
     id: "briques/plateau-vignette",
     group: "Briques",
     label: "Plateau — vignette 16:9 (OK lit : pas de « Lire »)",
-    focusKeys: ["vignette:0", ...tray("vignette:0", "watchlist", "watched", "details", "star:3"), "suivant:1"],
+    focusKeys: ["vignette:0", ...tray("vignette:0", "watchlist", "watched", "details"), "suivant:1"],
     settleMs: SETTLE,
     render: (data) => <LandscapeScene data={data} />,
   },
@@ -139,15 +139,15 @@ export const TRAY_SCENES: BenchScene[] = [
     id: "briques/plateau-redresse",
     group: "Briques",
     label: "Plateau — carte qui se redresse (sur l'affiche)",
-    focusKeys: ["redresse:1", ...tray("redresse:1", "play", "favorite", "star:5")],
+    focusKeys: ["redresse:1", ...tray("redresse:1", "play", "favorite")],
     settleMs: SETTLE,
     render: (data) => <MorphScene data={data} />,
   },
   {
     id: "briques/plateau-etats",
     group: "Briques",
-    label: "Plateau — états posés, note 8 (exemple)",
-    focusKeys: ["poses:0", ...tray("poses:0", "watchlist", "favorite", "star:4", "star:2")],
+    label: "Plateau — états posés, note 7 (demi-étoile)",
+    focusKeys: ["poses:0", ...tray("poses:0", "watchlist", "favorite", "watched")],
     settleMs: SETTLE,
     render: (data) => <StatesScene data={data} />,
   },
@@ -163,7 +163,7 @@ export const TRAY_SCENES: BenchScene[] = [
     id: "briques/plateau-hors-bibliotheque",
     group: "Briques",
     label: "Plateau — hors bibliothèque, « Demander » (exemple)",
-    focusKeys: ["vigie:0", ...tray("vigie:0", "request", "watchlist", "dismiss", "star:4"), ...tray("vigie:1", "favorite"), ...tray("vigie:2", "request"), "demande:1"],
+    focusKeys: ["vigie:0", ...tray("vigie:0", "request", "watchlist", "dismiss"), ...tray("vigie:1", "favorite"), ...tray("vigie:2", "request"), "demande:1"],
     settleMs: SETTLE,
     render: (data) => <ExternalScene data={data} />,
   },

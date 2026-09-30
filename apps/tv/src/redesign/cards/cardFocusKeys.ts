@@ -5,8 +5,7 @@
  *   • la carte : `<rangée>:<index>`, posée par sa rangée ou sa grille ;
  *   • le plateau, un GROUPE (`FocusGroup`) : `<carte>:tray` ;
  *   • un bouton du plateau : `<carte>:tray:<action>` — `play`, `request`,
- *     `watchlist`, `favorite`, `watched`, `details`, `dismiss` ;
- *   • une étoile : `<carte>:tray:star:<1…5>`.
+ *     `watchlist`, `favorite`, `watched`, `details`, `dismiss`.
  */
 
 const TRAY = ":tray";
@@ -16,23 +15,16 @@ export function trayGroupKey(cardKey: string): string {
   return `${cardKey}${TRAY}`;
 }
 
-/** La clé d'un élément du plateau (`watchlist`, `star:4`) ; rien sans clé de carte. */
+/** La clé d'un élément du plateau (`watchlist`) ; rien sans clé de carte. */
 export function trayFocusKey(cardKey: string | undefined, id: string): string | undefined {
   return cardKey ? `${cardKey}${TRAY}:${id}` : undefined;
 }
 
-/** L'élément du plateau de `cardKey` que désigne `key` (`watchlist`, `star:4`), ou null. */
+/** L'élément du plateau de `cardKey` que désigne `key` (`watchlist`), ou null. */
 export function trayIdOf(key: string | null, cardKey: string | undefined): string | null {
   if (!key || !cardKey) return null;
   const prefix = `${cardKey}${TRAY}:`;
   return key.startsWith(prefix) ? key.slice(prefix.length) : null;
-}
-
-/** L'étoile que désigne un élément du plateau (`star:4` → 4), ou null. */
-export function starOf(id: string | null): number | null {
-  if (!id?.startsWith("star:")) return null;
-  const star = Number(id.slice(5));
-  return Number.isInteger(star) ? star : null;
 }
 
 /**

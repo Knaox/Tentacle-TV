@@ -47,7 +47,7 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `controls/Chip` | Pastille (filtres, genres, choix), `selected`, `detail`, `trailingIcon` |
 | `cards/MediaCard` | Carte `landscape` (16:9) ou `poster` (2:3), marqueurs du modèle partagé ; au focus, le plateau de `card.tray` |
 | `cards/MorphCard` | La carte qui se redresse (16:9 → affiche) ; son plateau se pose sur l'affiche |
-| `cards/tray/CardTray` | Le plateau du focus — le survol du bureau : étoiles entières, capsule (action primaire, Ma liste, favori, vu, extras), bulle de ce que fera OK ; son en-tête dit le parcours à la télécommande et les clés (`<carte>:tray…`) |
+| `cards/tray/CardTray` | Le plateau du focus — le survol du bureau : la note perso affichée (demi-étoiles comprises, elle se pose sur l'échelle de la feuille), capsule (action primaire, Ma liste, favori, vu, extras), bulle de ce que fera OK ; son en-tête dit le parcours à la télécommande et les clés (`<carte>:tray…`) |
 | `cards/ToggleGlyph` | Le glyphe d'un état (Ma liste, favori, vu), plein ou au trait : pastille, plateau, feuille |
 | `rating/RatingStars` | Une note en cinq étoiles, demi-étoiles comprises, au rose de la marque — affichage seul |
 | `screens/sheet/RatingScale` | L'échelle VERTICALE de la note (HAUT / BAS, ½ à 5 étoiles, « Retirer la note ») : la seule saisie de note sur Apple TV |

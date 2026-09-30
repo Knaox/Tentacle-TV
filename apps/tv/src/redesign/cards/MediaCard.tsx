@@ -103,7 +103,7 @@ export const MediaCard = memo(function MediaCard({
   const lift = useFocusProgress(hover.open);
   const tray = hover.mounted ? card.tray : undefined;
   const hovered = hover.open && card.tray !== undefined;
-  const reach = hovered && card.tray ? trayReach(variant, width, card.tray.actions.length, !!card.tray.rating) : 0;
+  const reach = hovered && card.tray ? trayReach(variant, width, card.tray.actions.length) : 0;
   return (
     <View style={[{ width }, hover.open && styles.front]}>
       <CardFrame width={width} height={height} radius={radius} focused={hover.open} dimmed={dimmed} origin={origin} progress={lift}>

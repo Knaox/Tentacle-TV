@@ -49,10 +49,8 @@ export function trayOf(actions: CardActions, t: Translate): CardTrayModel {
       detail: entry.kind === "play" ? actions.play?.detail : null,
     });
   }
-  const { rating, onRate } = actions;
-  // Les étoiles entières du plateau : l'étoile de la note posée la retire.
-  const rateStars = (stars: number) => onRate(rating?.current === stars * 2 ? null : stars * 2);
-  return { actions: list, rating, onAction: actions.onAction, onRate: rateStars };
+  // La note s'affiche au plateau ; elle se pose sur l'échelle de la feuille.
+  return { actions: list, rating: actions.rating, onAction: actions.onAction };
 }
 
 export function useCardTrayHost(): CardTrayHost {

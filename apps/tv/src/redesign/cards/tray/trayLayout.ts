@@ -24,9 +24,9 @@ export const TRAY = {
   inset: { poster: 6, landscape: 12 },
   /** Le pied du groupe, au-dessus de la barre de progression (6). */
   bottom: { poster: 10, landscape: 12 },
-  /** Une étoile : jamais plus grande qu'un bouton. */
-  maxStar: 40,
-  /** Entre la bulle, les étoiles et la capsule. */
+  /** Une étoile de la note affichée. */
+  noteStar: 24,
+  /** Entre la bulle, la note et la capsule. */
   rowGap: 6,
 } as const;
 
@@ -37,23 +37,21 @@ export function trayButtonSize(face: TrayFace, width: number, count: number): nu
   return Math.max(TRAY.minButton, Math.min(TRAY.button, Math.floor(room / n)));
 }
 
-/** La taille d'une étoile, à côté de boutons de `button`. */
-export function trayStarSize(button: number): number {
-  return Math.min(button, TRAY.maxStar);
+/** Les étoiles de la note affichée : un cran sous le glyphe des boutons, jamais plus. */
+export function trayNoteStarSize(button: number): number {
+  return Math.min(TRAY.noteStar, Math.round(button * 0.6));
 }
 
 /**
  * Ce que le plateau occupe de focalisable, depuis le pied de la carte (au
- * repos, avant l'agrandissement) : la capsule et les étoiles — pas la bulle,
- * qui ne se focalise pas. La carte focalisable s'arrête au-dessus : elle ne
+ * repos, avant l'agrandissement) : la capsule — ni la note ni la bulle, qui
+ * ne se focalisent pas. La carte focalisable s'arrête au-dessus : elle ne
  * recouvre jamais un bouton de son plateau (sur tvOS, un focalisable recouvert
  * n'est plus proposé au focus). L'agrandissement ne fait que les descendre.
  */
-export function trayReach(face: TrayFace, width: number, count: number, rated: boolean): number {
-  const button = trayButtonSize(face, width, count);
-  const capsule = count > 0 ? button + 2 * (TRAY.pad + TRAY.border) : 0;
-  const stars = rated ? trayStarSize(button) : 0;
-  return TRAY.bottom[face] + capsule + (capsule > 0 && stars > 0 ? TRAY.rowGap : 0) + stars;
+export function trayReach(face: TrayFace, width: number, count: number): number {
+  if (count === 0) return 0;
+  return TRAY.bottom[face] + trayButtonSize(face, width, count) + 2 * (TRAY.pad + TRAY.border);
 }
 
 /** Le glyphe d'un bouton : la moitié du rond au bureau, un peu plus à trois mètres. */

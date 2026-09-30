@@ -10,7 +10,7 @@ export interface CardHover {
   open: boolean;
   /** Le plateau est monté : pendant `open`, et le temps de son fondu de sortie. */
   mounted: boolean;
-  /** L'élément du plateau qui porte le focus (`watchlist`, `star:4`…) ; null : aucun. */
+  /** L'élément du plateau qui porte le focus (`watchlist`…) ; null : aucun. */
   trayFocus: string | null;
   /** À poser sur le `FocusTarget` de la carte. */
   onCardFocusChange: (focused: boolean) => void;

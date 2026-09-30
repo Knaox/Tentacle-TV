@@ -63,10 +63,9 @@ export interface CardTrayAction {
 }
 
 export interface CardTrayRating {
-  /** La note posée, sur 10 ; `null` : aucune. */
+  /** La note posée, sur 10 ; `null` : aucune — le plateau n'affiche rien. */
   current: number | null;
-  /** Ce que notent les étoiles se résout encore (la série d'un épisode) :
-   *  la place est gardée, le plateau ne saute pas. */
+  /** Ce que note la note se résout encore (la série d'un épisode) : rien d'affiché. */
   pending?: boolean;
 }
 
@@ -80,14 +79,13 @@ export interface CardTrayRating {
  *   en tête) ; libellés par `t("cards:" + labelKey)`, `detail` par
  *   `useCardSheetPlay` ;
  * - `rating` : quand `overlay.rate` — la note par `useTVUserScore`, `pending`
- *   tant que `useCardRatingTarget` résout la série ;
+ *   tant que `useCardRatingTarget` résout la série. Un AFFICHAGE : sur Apple
+ *   TV, la note se pose sur l'échelle verticale de la feuille (l'appui long) ;
  * - `onAction` : lecture, bascules (le plateau reste, ses glyphes basculent
- *   sous les yeux), fiche, refus, demande ; `onRate(étoiles)` : note =
- *   étoiles × 2, l'étoile de la note actuelle la retire.
+ *   sous les yeux), fiche, refus, demande.
  */
 export interface CardTrayModel {
   actions: CardTrayAction[];
   rating?: CardTrayRating | null;
   onAction?: (kind: CardTrayActionKind) => void;
-  onRate?: (stars: number) => void;
 }

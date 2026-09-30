@@ -78,7 +78,7 @@ function trayTop(reach: number): number {
 export const MorphCard = memo(function MorphCard({ card, dimmed, focusKey, onPress, onLongPress, onFocusChange }: MorphCardProps) {
   const hover = useCardHover(focusKey, onFocusChange);
   const tray = hover.open ? card.tray : undefined;
-  const hitHeight = tray ? Math.min(L.height, Math.floor(trayTop(trayReach("poster", POSTER_W, tray.actions.length, !!tray.rating)))) : L.height;
+  const hitHeight = tray ? Math.min(L.height, Math.floor(trayTop(trayReach("poster", POSTER_W, tray.actions.length)))) : L.height;
   return (
     <View style={[styles.cell, hover.open && styles.front]}>
       <Body card={card} dimmed={dimmed} hover={hover} focusKey={focusKey} />
