@@ -1,18 +1,9 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import {
-  BOOKMARK_PATH,
-  HEART_PATH,
-  STAR_PATH,
-  STAR_VIEWBOX,
-  WATCHED_FILLED_PATH,
-  formatCommunityRating,
-  formatUserScore,
-  type CardMarkers,
-  type CardStatusKind,
-} from "@tentacle-tv/shared";
+import { STAR_PATH, STAR_VIEWBOX, formatCommunityRating, formatUserScore, type CardMarkers } from "@tentacle-tv/shared";
 import { colors, fonts, scrim } from "../theme/tokens";
+import { ToggleGlyph } from "./ToggleGlyph";
 
 /**
  * Les marqueurs AU REPOS d'une carte, comme sur toutes les plateformes : note
@@ -20,12 +11,6 @@ import { colors, fonts, scrim } from "../theme/tokens";
  * haut à droite, barre de progression commune. Tracés du modèle partagé
  * (`cardMarkerGlyphs`), voile noir des pastilles du bureau (0,72).
  */
-
-const GLYPH: Record<CardStatusKind, string> = {
-  watchlist: BOOKMARK_PATH,
-  favorite: HEART_PATH,
-  watched: WATCHED_FILLED_PATH,
-};
 
 function Star({ size, color }: { size: number; color: string }) {
   return (
@@ -53,16 +38,7 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
       {markers.statuses.length > 0 ? (
         <View style={[styles.pill, styles.statuses, compact && styles.pillCompact]}>
           {markers.statuses.map((kind) => (
-            <Svg key={kind} width={glyph} height={glyph} viewBox="0 0 24 24">
-              {/* « vu » est un disque à la coche ÉVIDÉE : sans `evenodd`, la coche se
-                  remplit et la pastille ne montre qu'un rond blanc. */}
-              <Path
-                key={kind}
-                d={GLYPH[kind]}
-                fill={kind === "favorite" ? colors.accentLight : colors.onMedia}
-                fillRule={kind === "watched" ? "evenodd" : "nonzero"}
-              />
-            </Svg>
+            <ToggleGlyph key={kind} kind={kind} active color={kind === "favorite" ? colors.accentLight : colors.onMedia} size={glyph} />
           ))}
         </View>
       ) : null}
