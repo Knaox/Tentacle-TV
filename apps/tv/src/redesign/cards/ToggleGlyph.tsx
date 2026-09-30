@@ -13,8 +13,8 @@ import {
 /**
  * Le glyphe d'un état de carte — Ma liste, favori, vu —, tracé du modèle
  * partagé (`cardMarkerGlyphs`) : PLEIN quand l'état est posé, au trait sinon.
- * La pastille du repos, le plateau du focus et la feuille le dessinent ici et
- * nulle part ailleurs : l'état qu'on voyait se retrouve, dans la même forme,
+ * La pastille de la carte et le grand panneau de l'appui maintenu le dessinent
+ * ici et nulle part ailleurs : l'état qu'on voyait se retrouve, dans la même forme,
  * là où on le bascule.
  */
 export const ToggleGlyph = memo(function ToggleGlyph({

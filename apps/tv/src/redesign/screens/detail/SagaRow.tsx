@@ -80,7 +80,6 @@ export const SagaRow = memo(function SagaRow({
 }) {
   const [nativeIndex, setNativeIndex] = useState<number | null>(null);
   const forced = useForcedFocusKey();
-  // Le volet, ou un bouton de son plateau (`saga:<n>:tray:…`).
   const focusedIndex = forced !== null ? cardIndexOf(forced, "saga") : nativeIndex;
   const focusChange = (index: number) => (focused: boolean) => {
     setNativeIndex((current) => (focused ? index : current === index ? null : current));

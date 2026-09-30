@@ -8,13 +8,9 @@ import { Icon } from "../icons/Icon";
 import { colors, fonts } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
 import { CardFrame } from "./CardFrame";
-import { CardLiftLayer } from "./CardLiftLayer";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import type { CardModel } from "./cardTypes";
-import { CardHoverVeil } from "./tray/CardHoverVeil";
-import { CardTray } from "./tray/CardTray";
-import { trayReach } from "./tray/trayLayout";
-import { useCardHover, type CardHover } from "./tray/useCardHover";
+import { useCardFocused } from "./useCardFocused";
 
 /**
  * La carte qui se redresse : 16:9 au repos (l'image large de l'œuvre), son
@@ -27,12 +23,11 @@ import { useCardHover, type CardHover } from "./tray/useCardHover";
  * rangée garde dégagé), surtout en bas, sur la légende qui s'efface ; la
  * carte focalisée passe devant ses voisines.
  *
- * Le plateau du focus (`card.tray`) se pose SUR L'AFFICHE, comme sur toute
- * affiche : voile, étoiles, capsule (`tray/CardTray`). La carte elle-même est
- * un `FocusTarget` sans rendu, à la place de la vignette, posé AU-DESSUS des
- * deux faces : tvOS ne propose pas un focalisable recouvert par ce qui dessine,
- * ni un élément posé dans un autre. Le plateau, dans l'affiche qui descend,
- * lui est frère, et la carte s'arrête au-dessus de ses boutons.
+ * Aucune action sur la carte : l'affiche garde ses marqueurs, l'appui
+ * maintenu ouvre le grand panneau des actions. La carte elle-même est un
+ * `FocusTarget` sans rendu, à la place de la vignette, posé AU-DESSUS des
+ * deux faces : tvOS ne propose pas un focalisable recouvert par ce qui
+ * dessine.
  *
  * `badge` (« Découverte ») se pose sur les deux faces ; `focusNote` — la
  * raison d'une recommandation — paraît sous l'affiche au focus, et la rangée
@@ -67,28 +62,18 @@ export interface MorphCardProps {
   onFocusChange?: (focused: boolean) => void;
 }
 
-/** Le haut des boutons du plateau, agrandis, dans le repère de la carte : la
- *  carte focalisable s'arrête au-dessus (l'affiche grandit depuis son centre,
- *  et se soulève de 4). */
-function trayTop(reach: number): number {
-  const center = POSTER_TOP + POSTER_H / 2;
-  return center + (POSTER_TOP + POSTER_H - reach - center) * TV_STAGE.focus.cardScale - 4;
-}
-
 export const MorphCard = memo(function MorphCard({ card, dimmed, focusKey, onPress, onLongPress, onFocusChange }: MorphCardProps) {
-  const hover = useCardHover(focusKey, onFocusChange);
-  const tray = hover.open ? card.tray : undefined;
-  const hitHeight = tray ? Math.min(L.height, Math.floor(trayTop(trayReach("poster", POSTER_W, tray.actions.length)))) : L.height;
+  const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
   return (
-    <View style={[styles.cell, hover.open && styles.front]}>
-      <Body card={card} dimmed={dimmed} hover={hover} focusKey={focusKey} />
+    <View style={[styles.cell, focused && styles.front]}>
+      <Body card={card} dimmed={dimmed} focused={focused} />
       <FocusTarget
         focusKey={focusKey}
         onPress={onPress}
         onLongPress={onLongPress}
-        onFocusChange={hover.onCardFocusChange}
+        onFocusChange={onTargetFocusChange}
         accessibilityLabel={card.title}
-        style={[styles.hit, { height: hitHeight }]}
+        style={styles.hit}
       >
         {NO_VISUAL}
       </FocusTarget>
@@ -96,20 +81,13 @@ export const MorphCard = memo(function MorphCard({ card, dimmed, focusKey, onPre
   );
 });
 
-function Body({ card, dimmed, hover, focusKey }: { card: CardModel; dimmed?: boolean; hover: CardHover; focusKey?: string }) {
-  const focused = hover.open;
+function Body({ card, dimmed, focused }: { card: CardModel; dimmed?: boolean; focused: boolean }) {
   const p = useFocusProgress(focused, 260);
-  const lift = useFocusProgress(focused);
   const landscapeFade = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   const posterIn = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ scale: 0.86 + 0.14 * p.value }] }));
-  // L'étage du plateau suit l'affiche (son échelle d'entrée), sans son fondu :
-  // le plateau a le sien.
-  const posterScale = useAnimatedStyle(() => ({ transform: [{ scale: 0.86 + 0.14 * p.value }] }));
   const captionFade = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   const noteIn = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ translateY: 8 * (1 - p.value) }] }));
   const landscapeUri = card.landscapeUri ?? card.posterUri;
-  const tray = hover.mounted ? card.tray : undefined;
-  const hovered = focused && card.tray !== undefined;
   return (
     <>
       <Animated.View style={landscapeFade}>
@@ -121,35 +99,16 @@ function Body({ card, dimmed, hover, focusKey }: { card: CardModel; dimmed?: boo
         </CardFrame>
       </Animated.View>
       <Animated.View pointerEvents="none" style={[styles.poster, posterIn]}>
-        <CardFrame width={POSTER_W} height={POSTER_H} radius={TV_STAGE.card.poster.radius} focused={focused} origin="center" progress={lift}>
+        <CardFrame width={POSTER_W} height={POSTER_H} radius={TV_STAGE.card.poster.radius} focused={focused} origin="center">
           {card.posterUri ? (
             <Image source={{ uri: card.posterUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
           ) : landscapeUri ? (
             <Image source={{ uri: landscapeUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
           ) : null}
-          {tray ? <CardHoverVeil shown={focused} /> : null}
           {card.badge ? <CardBadge label={card.badge} compact /> : null}
-          <CardMarkerLayer markers={card.markers} progress={card.progress} compact hovered={hovered} />
+          <CardMarkerLayer markers={card.markers} progress={card.progress} compact />
         </CardFrame>
       </Animated.View>
-      {tray ? (
-        // `box-none`, jamais `none` : sur tvOS, un parent qui refuse les
-        // interactions rend ses enfants — les boutons du plateau — infocalisables.
-        <Animated.View pointerEvents="box-none" style={[styles.poster, posterScale]}>
-          <CardLiftLayer width={POSTER_W} height={POSTER_H} origin="center" progress={lift}>
-            <CardTray
-              tray={tray}
-              face="poster"
-              width={POSTER_W}
-              cardKey={focusKey}
-              title={card.title}
-              shown={focused}
-              trayFocus={hover.trayFocus}
-              onTrayFocusChange={hover.onTrayFocusChange}
-            />
-          </CardLiftLayer>
-        </Animated.View>
-      ) : null}
       <Animated.View style={[styles.caption, captionFade]}>
         <Text style={styles.title} numberOfLines={1}>{card.title}</Text>
         {card.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{card.subtitle}</Text> : null}
@@ -170,7 +129,7 @@ const styles = StyleSheet.create({
   cell: { width: L.width },
   front: { zIndex: 10 },
   // La place de repos de la carte : la vignette — pas l'affiche qui en déborde.
-  hit: { position: "absolute", top: 0, left: 0, width: L.width },
+  hit: { position: "absolute", top: 0, left: 0, width: L.width, height: L.height },
   poster: {
     position: "absolute",
     top: POSTER_TOP,

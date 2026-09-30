@@ -6,9 +6,9 @@ import { colors, white } from "../theme/tokens";
 
 /**
  * Une note en cinq étoiles, DEMI-étoiles comprises — les valeurs du bureau
- * (1 à 10, une étoile = 2). Brique d'affichage, jamais focalisable : l'échelle
- * de la feuille, la note du plateau et tout ce qui montre une note la
- * dessinent ici. Le plein est rogné DANS le SVG (une vue `overflow: hidden`
+ * (1 à 10, une étoile = 2). Brique d'affichage, jamais focalisable : le grand
+ * panneau de l'appui maintenu et tout ce qui montre une note la dessinent
+ * ici. Le plein est rogné DANS le SVG (une vue `overflow: hidden`
  * autour d'un SVG ne le rogne pas partout), au rose de la marque.
  */
 

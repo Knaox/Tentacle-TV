@@ -11,8 +11,7 @@ import { text } from "../theme/tokens";
 /**
  * Une rangée : son titre (36 pt), puis ses cartes à l'horizontale, peu
  * nombreuses et grandes. Quand une carte a le focus, ses voisines reculent
- * un peu. La clé de focus d'une carte est `${rowKey}:${index}` ; son plateau,
- * quand elle en a un, vit sous `${rowKey}:${index}:tray` (`cards/tray/CardTray`).
+ * un peu. La clé de focus d'une carte est `${rowKey}:${index}`.
  */
 
 export interface MediaRowProps {
@@ -44,7 +43,6 @@ export const MediaRow = memo(function MediaRow({
 }: MediaRowProps) {
   const [nativeIndex, setNativeIndex] = useState<number | null>(null);
   const forced = useForcedFocusKey();
-  // La carte, ou un bouton de son plateau (`${rowKey}:${index}:tray:…`).
   const focusedIndex = forced !== null ? cardIndexOf(forced, rowKey) : nativeIndex;
 
   const onFocusChange = useCallback(

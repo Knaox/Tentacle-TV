@@ -15,8 +15,7 @@ import { colors, fonts } from "../theme/tokens";
  * Posée en ABSOLU sous le bloc qui la porte (la légende, qu'elle suit quand la
  * carte grandit) : elle n'agrandit rien, la rangée ne bouge pas. Montée au
  * focus seulement, en fondu, un temps APRÈS lui : parcourir une rangée ne fait
- * pas clignoter une ligne sous chaque carte. À la carte elle-même : quand le
- * focus descend dans le plateau, la bulle du plateau prend la parole.
+ * pas clignoter une ligne sous chaque carte.
  */
 
 /** Le temps que le focus reste avant que l'indication paraisse. */

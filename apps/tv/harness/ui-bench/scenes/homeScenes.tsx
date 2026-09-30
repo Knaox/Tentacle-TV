@@ -17,6 +17,7 @@ import type { BenchScene } from "./types";
  * du compte (`home-layout`), puis les derniers ajouts de chaque bibliothèque.
  * Comme dans l'app : Reprendre seule en vignettes 16:9 (OK lit), toutes les
  * autres rangées en affiches.
+ * Aucune action sur les cartes : l'appui maintenu ouvre le grand panneau.
  */
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options) as string;

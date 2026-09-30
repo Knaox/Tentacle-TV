@@ -48,11 +48,10 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `controls/PillButton` | Pilule `primary` (blanche) ou `glass`, `progress` pour « Reprendre » |
 | `controls/RoundButton` | Rond de verre (Ma liste, favori, vu, note), libellé au focus |
 | `controls/Chip` | Pastille (filtres, genres, choix), `selected`, `detail`, `trailingIcon` |
-| `cards/MediaCard` | Carte `landscape` (16:9) ou `poster` (2:3), marqueurs du modèle partagé ; au focus, le plateau de `card.tray` |
-| `cards/MorphCard` | La carte qui se redresse (16:9 → affiche) ; son plateau se pose sur l'affiche |
-| `cards/tray/CardTray` | Le plateau du focus — le survol du bureau : la note perso affichée (demi-étoiles comprises, elle se pose sur l'échelle de la feuille), capsule (action primaire, Ma liste, favori, vu, extras), bulle de ce que fera OK ; son en-tête dit le parcours à la télécommande et les clés (`<carte>:tray…`) |
+| `cards/MediaCard` | Carte `landscape` (16:9) ou `poster` (2:3), marqueurs du modèle partagé ; aucune action sur la carte : l'appui maintenu ouvre le grand panneau |
+| `cards/MorphCard` | La carte qui se redresse (16:9 → affiche), ses marqueurs sur les deux faces |
 | `cards/CardHoldHint` | « Maintenir OK : plus d'options » sous la légende d'une carte HORIZONTALE focalisée qui s'ouvre par l'appui long (OK y lit) — posée en absolu, montée au focus, un temps après lui |
-| `cards/ToggleGlyph` | Le glyphe d'un état (Ma liste, favori, vu), plein ou au trait : pastille, plateau, feuille |
+| `cards/ToggleGlyph` | Le glyphe d'un état (Ma liste, favori, vu), plein ou au trait : pastille, feuille |
 | `rating/RatingStars` | Une note en cinq étoiles, demi-étoiles comprises, au rose de la marque — affichage seul |
 | `screens/sheet/RatingScale` | L'échelle VERTICALE de la note (HAUT / BAS, ½ à 5 étoiles, « Retirer la note ») : la seule saisie de note sur Apple TV |
 | `cards/CardFrame` | Le cadre et son focus, pour une carte sur mesure |
