@@ -241,19 +241,29 @@ Seule l'ENTRÉE change : la souris sur le web et le bureau (`CardHoverOverlay`,
 monté au survol), l'appui long sur le mobile et le miroir (`CardSheetScope` /
 `CardSheetProvider` → la feuille), le focus sur TV. **Sur TV, le focus MONTRE le
 plateau**, posé sur la carte comme au bureau (refonte Apple TV,
-`apps/tv/src/redesign/cards/tray/`) : étoiles ENTIÈRES au-dessus de la capsule,
-bulle qui dit ce que fera OK, plateau résolu par l'intégration pour la seule
-carte focalisée (`card.tray`, par `useCardTrayHost` : `focusCard` + `withTray`)
-— avec la feuille, UN crochet d'actions (`useCardActions`,
+`apps/tv/src/redesign/cards/tray/`) : la note perso AFFICHÉE au-dessus de la
+capsule (demi-étoiles comprises, jamais focalisable), bulle qui dit ce que fera
+OK, l'épingle Ma liste · j'aime · vu qui reste visible (seule la note globale du
+repos s'efface), plateau résolu par l'intégration pour la seule carte
+focalisée (`card.tray`, par `useCardTrayHost` : `focusCard` + `withTray`) —
+avec la feuille, UN crochet d'actions (`useCardActions`,
 `apps/tv/src/redesignWiring/cards/`), jamais une copie. OK sur la carte garde
 l'action principale ; BAS entre dans le plateau par l'action primaire,
-GAUCHE/DROITE le parcourent, HAUT remonte aux étoiles puis à la carte, Menu y
-revient d'un coup — posé par le câblage à travers le port du focus (clés
-`<carte>:tray…`), jamais dans la vue ; l'appui long ouvre toujours la feuille
-(`TVCardActionSheet`, `CardActionSheetTv` sur webOS). Android TV et webOS, pas
-encore portés, gardent les marqueurs au focus. La carte et les boutons de son
-plateau sont des focalisables FRÈRES : tvOS ne focalise jamais un élément posé
-dans un autre, ni un élément RECOUVERT par ce qui dessine — la recherche
+GAUCHE/DROITE le parcourent, HAUT remonte à la carte, Menu y revient d'un coup
+— posé par le câblage à travers le port du focus (clés `<carte>:tray…`),
+jamais dans la vue. L'appui long ouvre toujours la feuille — noter, Ma liste,
+j'aime, vu, et « Plus d'infos » sur TOUTE carte de la bibliothèque, affiche
+comprise (ajout du salon, `sheetRows`, jamais dans le modèle partagé). Une
+carte horizontale (OK y lit : Reprendre, Prochains épisodes, épisodes de la
+fiche…) le dit à son focus, sous sa légende : « Maintenir OK : plus
+d'options » (`CardHoldHint`). **Sur Apple TV, une note se pose sur l'ÉCHELLE
+VERTICALE** (`RatingScale`, feuille comme « Noter » de la fiche) : HAUT/BAS aux
+valeurs du bureau (demi-étoiles, 1 à 10), la valeur visée en grand, « Retirer
+la note » au bout, OK valide, Menu revient. Les étoiles ENTIÈRES ne valent plus
+que pour Android TV et webOS (`TVCardActionSheet`, `CardActionSheetTv`), pas
+encore portés, qui gardent aussi les marqueurs au focus. La carte et les boutons
+de son plateau sont des focalisables FRÈRES : tvOS ne focalise jamais un élément
+posé dans un autre, ni un élément RECOUVERT par ce qui dessine — la recherche
 géométrique ne le propose plus (régression payée : plus une carte atteignable).
 La cible focalisable se pose donc AU-DESSUS de l'image, et s'arrête au-dessus du
 plateau ouvert. État et gestes : `useCardToggles`, `useCardRatingTarget`,

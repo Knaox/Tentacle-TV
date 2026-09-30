@@ -40,14 +40,27 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   légende, qui s'efface) : elle ne monte jamais sur le titre de la rangée.
 - **Le survol des cartes, gardé** (demandé le 2026-09-30) : au focus, une
   carte montre le plateau du bureau, posé sur elle (`cards/tray/`) — voile,
-  étoiles ENTIÈRES, capsule du modèle partagé (`cardTrayEntries` ;
-  `externalCardActionEntries` hors bibliothèque, « Demander » à l'ambre),
-  bulle de ce que fera OK. Centré sur une affiche (et sur l'affiche de la
-  carte qui se redresse), dans le coin bas-droit d'une vignette 16:9 ; rien
-  au centre. Télécommande proposée (posée par le câblage, port du focus) :
-  BAS entre par l'action primaire, GAUCHE/DROITE parcourent, HAUT remonte
-  aux étoiles puis à la carte, Menu revient à la carte ; OK sur la carte et
-  l'appui long (la feuille) ne changent pas. Au banc : « Briques · Plateau ».
+  la note perso AFFICHÉE (demi-étoiles comprises), capsule du modèle partagé
+  (`cardTrayEntries` ; `externalCardActionEntries` hors bibliothèque,
+  « Demander » au dégradé de la marque), bulle de ce que fera OK ; l'épingle
+  Ma liste · j'aime · vu reste visible. Centré sur une affiche (et sur
+  l'affiche de la carte qui se redresse), dans le coin bas-droit d'une
+  vignette 16:9 ; rien au centre. Télécommande (posée par le câblage, port du
+  focus) : BAS entre par l'action primaire, GAUCHE/DROITE parcourent, HAUT
+  remonte à la carte, Menu revient à la carte ; OK sur la carte et l'appui
+  long (la feuille) ne changent pas. Au banc : « Briques · Plateau ».
+- **Noter : une échelle VERTICALE** (demandé le 2026-09-30, remplace les cinq
+  étoiles entières) : « Noter », dans la feuille comme sur la fiche, ouvre
+  `RatingScale` — HAUT / BAS aux valeurs du bureau (½ à 5 étoiles, 1 à 10), la
+  valeur visée en grand, « Retirer la note » au bout, OK valide, Menu revient ;
+  entrée sur la note posée, sinon 6 (jamais un bout, qu'un OK réflexe
+  validerait). Le plateau n'en montre que la valeur. Au banc : « Feuille ·
+  Échelle… », « Fiche · « Noter » ».
+- **Maintenir OK, dit la carte** : une carte horizontale (OK y lit :
+  Reprendre, Prochains épisodes, épisodes de la fiche…) qui s'ouvre par
+  l'appui long le dit à son focus, sous sa légende — « Maintenir OK : plus
+  d'options » (`CardHoldHint`), 350 ms après le focus, jamais quand le focus
+  est dans le plateau.
 - **Un logo noir cède au texte** : `isLogoLegibleOnDark(blurHash)` — un logo
   dont l'empreinte est noire de part en part ne se lit pas sur la scène ; le
   câblage écrit alors le titre (le banc le fait déjà).
@@ -161,10 +174,12 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
   TOUJOURS être un tableau : sans lui tvOS rend le contenu du guide
   inatteignable.
 - **Feuille** : dans une `Modal` (Menu par `onRequestClose`), entrée sur la
-  première action, garde anti-clic fantôme sur toutes ses clés (elle s'ouvre
-  sous un OK encore enfoncé), étoiles entrées par la première (sinon BAS
-  tombait sur la cinquième : OK notait 10/10). « Noter » sur la fiche ouvre
-  la même feuille réduite à ses étoiles.
+  première action, garde anti-clic fantôme sur ses actions et sa croix (elle
+  s'ouvre sous un OK encore enfoncé). « Noter » y ouvre l'échelle à la place
+  de la liste, entrée sur la note posée sinon 6 par le verrou de
+  `useChoiceEntry` ; OK note et revient sur « Noter » (même verrou), Menu y
+  revient sans rien changer. « Noter » sur la fiche ouvre la même feuille
+  réduite à son échelle : OK note et ferme, Menu ferme.
 - **Bande-annonce** : le lecteur est monté dès le chargement (la vue ne le
   montait qu'en lecture : il ne pouvait pas charger), et le chrome suit
   `chromeDimmed` seul — « Fermer », seul focalisable, garde le focus : le
@@ -332,9 +347,11 @@ virtualisée.
 
 Variantes affiche / vignette / reco. En-tête (image, titre, sous-titre,
 fermer) ; actions dans l'ordre du modèle partagé : Lire/Reprendre (+ SxEy ou
-position), Ma liste, favori, vu, Plus d'infos, Ne plus me proposer, Toutes
-les plateformes ; note en 5 étoiles entières (aperçu, retrait) ;
-« Demander » de Vigie pour un titre hors bibliothèque (voir questions).
+position), Noter (la note posée en complément), Ma liste, favori, vu, Plus
+d'infos (toute carte de la bibliothèque, affiche comprise), Ne plus me
+proposer, Toutes les plateformes ; « Noter » ouvre l'échelle verticale de la
+note (½ à 5 étoiles, retrait au bout) ; « Demander » de Vigie pour un titre
+hors bibliothèque (voir questions).
 
 ## Inventaire — ce qui s'affiche par-dessus
 
@@ -351,8 +368,9 @@ les plateformes ; note en 5 étoiles entières (aperçu, retrait) ;
 ## Inventaire — les briques communes
 
 Carte (affiche 2:3, vignette 16:9, carte horizontale → verticale au focus,
-reco, personne, extra, lot « +N », volet de saga) · plateau du focus (étoiles,
-capsule, bulle) · marqueurs (note globale,
+reco, personne, extra, lot « +N », volet de saga) · plateau du focus (note
+affichée, capsule, bulle) · « Maintenir OK » des cartes horizontales · échelle
+de la note · marqueurs (note globale,
 note perso, pastille Ma liste · favori · vu, progression, « Découverte »,
 puces qualité/langues — pastilles, pas de drapeaux) · bouton (primaire,
 secondaire, rond, pilule) · pastille · rangée (titre ≥ 34 + accessoire) ·
@@ -410,6 +428,14 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   (`redesignWiring/settings/settingsFocus.tsx`, `useChoiceEntry`).
 - Sur tvOS, c'est `isTVSelectable` qui rend une vue focalisable
   (`RCTTVView.canBecomeFocused`), pas `focusable`.
+- **Un focalisable RECOUVERT par ce qui dessine n'est plus proposé** par la
+  recherche géométrique de tvOS : la cible des cartes posée SOUS leur image
+  opaque, et plus une carte n'était atteignable. La cible se pose au-dessus,
+  sans rendu, et s'arrête au-dessus du plateau ouvert (`trayReach`).
+- **Le Metro du banc, lancé depuis un worktree de `.claude/`, n'a pas vu les
+  modifications** (2026-09-30, pas de watchman sur ce Mac) : ni `launch` ni
+  un nouveau bundle ne les prenaient. Relancer `bench:ui up`, puis `launch` ;
+  `list` montre le catalogue réellement servi.
 - Menu depuis le contenu d'un écran POUSSÉ (les réglages) dépile l'écran : le
   geste natif de la pile passe avant l'intercepteur de `RedesignScreen`, qui
   n'ouvre la navigation qu'à la racine.
