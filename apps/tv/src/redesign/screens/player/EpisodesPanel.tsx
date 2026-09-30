@@ -1,0 +1,114 @@
+import { memo } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import LinearGradient from "react-native-linear-gradient";
+import { TV_STAGE } from "@tentacle-tv/theme";
+import { GlassSurface } from "../../glass/GlassSurface";
+import { colors, fonts, scrim, white } from "../../theme/tokens";
+import { CircleButton } from "./CircleButton";
+import { EPISODE_ROW_HEIGHT, EpisodeRow } from "./EpisodeRow";
+import type { EpisodesPanelModel } from "./playerTypes";
+import { SeasonTabs } from "./SeasonTabs";
+import { DENSE_BASE } from "./surfaces";
+
+/**
+ * Le panneau « Épisodes » du lecteur : un grand panneau de verre à droite —
+ * la vidéo reste visible à gauche, sous un voile —, l'en-tête (Épisodes, la
+ * série, Fermer), les onglets de saisons, puis les grandes lignes d'épisode,
+ * ouvertes sur l'épisode en cours. Chargement : des lignes fantômes, fixes.
+ * Clés : `episodes:close`, `episodes:season:<n>`, `episodes:episode:<n>` (rang
+ * dans la bande, rang dans la saison).
+ */
+
+const SAFE = TV_STAGE.safe;
+const WIDTH = 940;
+const ROW_GAP = 14;
+
+function GhostRows() {
+  return (
+    <View style={styles.list}>
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={styles.ghostRow}>
+          <View style={styles.ghostThumb} />
+          <View style={styles.ghostText}>
+            <View style={[styles.ghostLine, { width: 180 }]} />
+            <View style={[styles.ghostLine, styles.ghostTitle]} />
+            <View style={[styles.ghostLine, { width: 420 }]} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+export const EpisodesPanel = memo(function EpisodesPanel({
+  model,
+  labels,
+  onSelectSeason,
+  onSelectEpisode,
+  onClose,
+}: {
+  model: EpisodesPanelModel;
+  labels: { episodes: string; close: string; nowPlaying: string };
+  onSelectSeason?: (id: string) => void;
+  onSelectEpisode?: (id: string) => void;
+  onClose?: () => void;
+}) {
+  const current = model.episodes.findIndex((episode) => episode.current);
+  const offset = Math.max(0, current - 1) * (EPISODE_ROW_HEIGHT + ROW_GAP);
+  return (
+    <View style={StyleSheet.absoluteFill}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={[scrim(0.3), scrim(0.62), scrim(0.8)]}
+        locations={[0, 0.45, 1]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.panel}>
+        <GlassSurface radius={44} tone="strong" elevated style={styles.glass} />
+        <View style={styles.header}>
+          <View style={styles.headings}>
+            <Text style={styles.title}>{labels.episodes}</Text>
+            <Text style={styles.series} numberOfLines={1}>{model.seriesTitle}</Text>
+          </View>
+          <CircleButton icon="close" label={labels.close} size={64} caption={false} focusKey="episodes:close" onPress={onClose} />
+        </View>
+        <SeasonTabs seasons={model.seasons} activeId={model.activeSeasonId} onSelect={onSelectSeason} />
+        <View style={styles.rule} />
+        {model.loading ? (
+          <GhostRows />
+        ) : (
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.list} contentOffset={{ x: 0, y: offset }} showsVerticalScrollIndicator={false}>
+            {model.episodes.map((episode, index) => (
+              <EpisodeRow
+                key={episode.id}
+                episode={episode}
+                nowPlayingLabel={labels.nowPlaying}
+                focusKey={`episodes:episode:${index}`}
+                onPress={onSelectEpisode ? () => onSelectEpisode(episode.id) : undefined}
+              />
+            ))}
+          </ScrollView>
+        )}
+      </View>
+    </View>
+  );
+});
+
+const styles = StyleSheet.create({
+  panel: { position: "absolute", right: SAFE.x - 24, top: SAFE.y - 14, bottom: SAFE.y - 14, width: WIDTH },
+  glass: { ...StyleSheet.absoluteFillObject, backgroundColor: DENSE_BASE },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 40, paddingTop: 36, paddingBottom: 18 },
+  headings: { flexShrink: 1, gap: 4 },
+  title: { ...fonts.extrabold, fontSize: 44, letterSpacing: -0.6, color: colors.text },
+  series: { ...fonts.semibold, fontSize: 26, color: colors.textSecondary },
+  rule: { height: 1, marginHorizontal: 40, marginTop: 10, backgroundColor: white(0.1) },
+  scroll: { flex: 1 },
+  list: { gap: ROW_GAP, paddingHorizontal: 28, paddingTop: 22, paddingBottom: 40 },
+  ghostRow: { height: EPISODE_ROW_HEIGHT, flexDirection: "row", alignItems: "center", gap: 24, padding: 16, borderRadius: 26, backgroundColor: white(0.04) },
+  ghostThumb: { width: 256, height: 144, borderRadius: 16, backgroundColor: white(0.07) },
+  ghostText: { flex: 1, gap: 14 },
+  ghostLine: { height: 20, borderRadius: 10, backgroundColor: white(0.08) },
+  ghostTitle: { width: 360, height: 28, borderRadius: 14 },
+});
