@@ -85,6 +85,9 @@ export function useLibraryFilters(libraryId: string) {
 
   return {
     filters,
+    /** Applique un effet PUR à l'état (les modèles de la refonte :
+     *  `applyOption`, `removeFilter`…), mémoire de session comprise. */
+    update: patch,
     toggleGenre, togglePlatform, setYearFrom, setYearTo, setRatingMin,
     setStatusFilter, setIsFavorite, setSortBy, setSortOrder,
     clearYears, clearRating, resetFilters,
