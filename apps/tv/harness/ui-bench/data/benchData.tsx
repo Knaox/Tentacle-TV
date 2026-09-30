@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { isLogoLegibleOnDark } from "../../../src/redesign/color/artworkPalette";
 import { BENCH_ORIGIN } from "../control/benchRemote";
 import { EMPTY_SNAPSHOT, type Snapshot, type SnapshotImageType } from "./snapshotFormat";
 
@@ -23,6 +24,11 @@ export interface BenchData {
   imageFile: (relative: string) => string;
 }
 
+function logoHash(item: MediaItem | undefined): string | undefined {
+  const hashes = (item as { ImageBlurHashes?: Record<string, Record<string, string>> } | undefined)?.ImageBlurHashes?.Logo;
+  return hashes ? Object.values(hashes)[0] : undefined;
+}
+
 export function createBenchData(snapshot: Snapshot): BenchData {
   const item = (id: string) => snapshot.items[id]?.item;
   const imageFile = (relative: string) =>
@@ -34,6 +40,9 @@ export function createBenchData(snapshot: Snapshot): BenchData {
     item,
     image: (id, type) => {
       const file = snapshot.items[id]?.images[type];
+      // Un logo noir sur transparence noire ne se lit pas sur la scène : le
+      // titre s'écrit alors en texte — la règle que le câblage appliquera.
+      if (type === "Logo" && !isLogoLegibleOnDark(logoHash(item(id)))) return undefined;
       return file ? imageFile(file) : undefined;
     },
     list: (kind, count) => items(snapshot.lists[kind], count),

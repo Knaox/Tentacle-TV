@@ -84,12 +84,17 @@ function toHex([h, s, l]: [number, number, number]): string {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
+/** Violets et magentas (≈ 250° à 335°) : la lumière d'une œuvre qui y tombe
+ *  est ramenée vers le neutre. L'interface n'a plus d'accent violet, et un
+ *  halo néon de cette famille le lui rendrait par la bande. */
+const isVioletHue = (h: number) => h > 0.69 && h < 0.93;
+
 /** Une couleur de lumière : assez saturée pour teinter, jamais criarde, jamais
  *  assez claire pour lutter avec le texte blanc. */
 function glow(rgb: Rgb): string {
   const [h, s, l] = toHsl(rgb);
   const sat = s < 0.08 ? s : Math.min(0.82, Math.max(0.38, s * 1.3));
-  return toHex([h, sat, Math.min(0.5, Math.max(0.28, l))]);
+  return toHex([h, isVioletHue(h) ? Math.min(sat, 0.16) : sat, Math.min(0.5, Math.max(0.28, l))]);
 }
 
 export interface ArtworkPalette {
@@ -109,8 +114,28 @@ export function paletteFromBlurHash(hash: string | null | undefined): ArtworkPal
   const [h, s] = toHsl(sample(c, 0.5, 0.5));
   return {
     glows: [glow(left), glow(middle), glow(right)],
-    deep: toHex([h, Math.min(0.5, s), 0.07]),
+    deep: toHex([h, Math.min(isVioletHue(h) ? 0.16 : 0.5, s), 0.07]),
   };
+}
+
+/**
+ * Un logo se lit-il sur la scène sombre ? Son BlurHash ne le dit sûrement que
+ * dans un cas : NOIR de part en part — un logo noir sur une transparence
+ * noire, aucune lumière nulle part (« Comme des frères »). Tout autre logo
+ * passe : la couleur d'une transparence varie d'un fichier à l'autre, et un
+ * logo rouge sombre reste lisible. Illisible, le titre s'écrit en texte.
+ */
+export function isLogoLegibleOnDark(hash: string | null | undefined): boolean {
+  const c = hash ? components(hash) : null;
+  if (!c) return true;
+  let brightest = 0;
+  for (const u of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+    for (const v of [0.2, 0.5, 0.8]) {
+      const [r, g, b] = sample(c, u, v);
+      brightest = Math.max(brightest, (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255);
+    }
+  }
+  return brightest >= 0.04;
 }
 
 /** Quand l'œuvre n'a pas d'empreinte : une lumière neutre et chaude. */
