@@ -5,6 +5,7 @@ import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { MenuPressInterceptor } from "../../components/focus/MenuPressInterceptor";
 import { NavMenuModal } from "../nav/NavMenuModal";
 import { RailBridges } from "./RailBridges";
+import { RailShortcuts } from "./RailShortcuts";
 import type { RedesignScreenModel } from "./useRedesignScreen";
 
 /**
@@ -17,7 +18,8 @@ import type { RedesignScreenModel } from "./useRedesignScreen";
  *   sauf si l'écran le prend (`onBack` : un panneau à fermer) ; depuis la
  *   navigation, il recule d'un écran, et à la racine il est laissé à UIKit,
  *   qui quitte l'application — la règle tvOS ;
- * - les PONTS entre navigation et contenu (`RailBridges`) ;
+ * - les PONTS entre navigation et contenu (`RailBridges`), et les RACCOURCIS
+ *   de la navigation vers le profil (`RailShortcuts`) ;
  * - l'ORGANISATION de la navigation : le menu d'appui long d'une entrée
  *   (`NavMenuModal`) et, pendant un déplacement, Menu qui l'annule — sur la
  *   racine comme sur une page poussée, où il ne doit ni quitter l'app ni
@@ -65,6 +67,7 @@ export function RedesignScreen({ screen, children }: { screen: RedesignScreenMod
         <NavMenuModal arrange={arrange} focus={screen.focus} />
       </FocusBindingProvider>
       <RailBridges screen={screen} />
+      <RailShortcuts screen={screen} />
     </MenuPressInterceptor>
   );
 }

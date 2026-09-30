@@ -48,7 +48,10 @@ export function useNavEntries({ previewOrder = null, moving = false }: NavEntrie
             { icon: "moveVertical", label: t("railHintMove") },
             { icon: "circleDot", label: t("railHintDrop") },
           ]
-        : [{ icon: "circleDot", label: t("railHintOrganize") }],
+        : [
+            { icon: "chevronLeft", label: t("railProfile") },
+            { icon: "circleDot", label: t("railHintOrganize") },
+          ],
     [t, moving],
   );
 
