@@ -7,6 +7,7 @@ import { TVSideRail } from "./TVSideRail";
 import { useContentFocusNode, useRailFocusSignal } from "../../context/TVNavContext";
 import { useContentFocusCapture } from "../../hooks/useContentFocusCapture";
 import { REDESIGN_ROUTES } from "../../redesignWiring/redesignGate";
+import { routeRailKey } from "../../navigation/routeRailKey";
 
 type NavStateLike =
   | { index: number; routes: Array<{ name: string; params?: object }> }
@@ -20,20 +21,8 @@ export function deriveRailKey(state: NavStateLike): string | null {
   if (!route) return null;
   // Un écran refondu rend sa propre navigation (`redesignGate.ts`).
   if (REDESIGN_ROUTES.has(route.name)) return null;
-  switch (route.name) {
-    case "Home": return "Home";
-    case "Recommendations": return "Recommendations";
-    // L'étagère d'un acteur ou d'un genre est un morceau de la recherche : le
-    // rail y reste, « Rechercher » actif — parité LG.
-    case "Search":
-    case "SearchBrowse": return "Search";
-    case "Watchlist": return "Watchlist";
-    case "Favorites": return "Favorites";
-    case "Settings": return "Settings";
-    case "Library":
-      return `Library_${(route.params as { libraryId?: string } | undefined)?.libraryId ?? ""}`;
-    default: return null; // Player, MediaDetail, Trailer, PairCode, Disclaimer…
-  }
+  // Player, MediaDetail, Trailer, PairCode, Disclaimer… : null (rail masqué).
+  return routeRailKey(route);
 }
 
 /** La pile peut-elle reculer — relu à chaque changement d'état de la navigation. */
