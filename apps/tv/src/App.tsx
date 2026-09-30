@@ -173,13 +173,20 @@ function ForegroundSessionValidator() {
 }
 
 /** Contenu principal — nécessite QueryClientProvider + ThemeProvider comme parents */
-function AppContent({ serverUrl: initialServerUrl }: { serverUrl: string | null }) {
+/** Le serveur à surveiller : celui d'une SESSION. Sans jeton, rien n'est « hors
+ *  ligne » — le jumelage traite lui-même ses erreurs de serveur, et un voile
+ *  bloquant l'empêcherait d'en choisir un autre (on y restait coincé derrière
+ *  « Se déconnecter », sans jeton à effacer). */
+const sessionServerUrl = (): string | null =>
+  storage.getItem("tentacle_token") ? storage.getItem("tentacle_server_url") : null;
+
+function AppContent() {
   // L'URL serveur peut changer en cours de session : déconnexion (supprimée du
   // storage) ou re-jumelage (nouvelle URL). On la relit à chaque changement de
   // navigation pour que la détection offline cible toujours le bon serveur ;
   // sans ça, l'overlay restait bloqué sur l'ancienne URL après un logout et
   // recouvrait l'écran de jumelage (« Se déconnecter » semblait sans effet).
-  const [serverUrl, setServerUrl] = useState<string | null>(initialServerUrl);
+  const [serverUrl, setServerUrl] = useState<string | null>(sessionServerUrl);
   const { isReachable, retry } = useServerReachable(serverUrl);
   const { theme } = useTheme();
   // Route active du rail : suivie via le NavigationContainer (le rail est un
@@ -193,7 +200,7 @@ function AppContent({ serverUrl: initialServerUrl }: { serverUrl: string | null 
     if (navigationRef.isReady()) {
       setRailKey(deriveRailKey(navigationRef.getRootState()));
     }
-    setServerUrl(storage.getItem("tentacle_server_url"));
+    setServerUrl(sessionServerUrl());
   }, []);
   const navTheme = useMemo(
     () => ({
@@ -281,7 +288,7 @@ export function App() {
           <ThemeProvider backendUrl={serverUrl}>
             <TentacleConfigContext.Provider value={{ storage, uuid }}>
               <JellyfinClientContext.Provider value={client}>
-                <AppContent serverUrl={serverUrl} />
+                <AppContent />
               </JellyfinClientContext.Provider>
             </TentacleConfigContext.Provider>
           </ThemeProvider>
