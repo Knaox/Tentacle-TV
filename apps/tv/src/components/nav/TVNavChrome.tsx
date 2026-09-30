@@ -6,6 +6,7 @@ import { returnToSearchBar } from "../search/searchBarReturn";
 import { TVSideRail } from "./TVSideRail";
 import { useContentFocusNode, useRailFocusSignal } from "../../context/TVNavContext";
 import { useContentFocusCapture } from "../../hooks/useContentFocusCapture";
+import { REDESIGN_ROUTES } from "../../redesignWiring/redesignGate";
 
 type NavStateLike =
   | { index: number; routes: Array<{ name: string; params?: object }> }
@@ -17,6 +18,8 @@ type NavStateLike =
 export function deriveRailKey(state: NavStateLike): string | null {
   const route = state?.routes?.[state.index];
   if (!route) return null;
+  // Un écran refondu rend sa propre navigation (`redesignGate.ts`).
+  if (REDESIGN_ROUTES.has(route.name)) return null;
   switch (route.name) {
     case "Home": return "Home";
     case "Recommendations": return "Recommendations";
