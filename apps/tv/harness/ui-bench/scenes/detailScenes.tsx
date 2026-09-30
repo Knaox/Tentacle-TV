@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import { i18n, type MediaItem } from "@tentacle-tv/shared";
 import { NEUTRAL_PALETTE } from "../../../src/redesign/color/artworkPalette";
 import { DetailView, type DetailViewProps } from "../../../src/redesign/screens/detail/DetailView";
+import { ActionSheetView } from "../../../src/redesign/screens/sheet/ActionSheetView";
 import type { BenchData } from "../data/benchData";
 import { actionsOf, backdropOf, episodesOf, headerOf, watchStateOf } from "../data/detailModels";
 import { castOf, crewOf, extrasExample, sagaOf, similarOf } from "../data/detailSectionModels";
 import { cardOf, paletteOf, seriesOf, yearOf } from "../data/models";
+import { librarySheet } from "../data/sheetModels";
 import type { BenchScene } from "./types";
 
 /**
@@ -97,6 +99,20 @@ function DetailScene({ data, build }: { data: BenchData; build: (data: BenchData
 
 type Build = (data: BenchData, seasonId?: string) => DetailViewProps;
 
+const buildPride: Build = (data) => detailOf(data, ID.pride);
+
+/** « Noter » sur la fiche : la feuille réduite à ses étoiles, posée sur la fiche qui l'ouvre. */
+function RateScene({ data }: { data: BenchData }) {
+  const item = data.item(ID.pride);
+  const sheet = item ? librarySheet(data, item, "poster") : null;
+  return (
+    <>
+      <DetailScene data={data} build={buildPride} />
+      {sheet ? <ActionSheetView header={sheet.header} actions={[]} rating={{ current: null }} /> : null}
+    </>
+  );
+}
+
 function scene(id: string, label: string, focusKeys: string[], build: Build): BenchScene {
   return {
     id: `fiche/${id}`,
@@ -142,6 +158,15 @@ export const DETAIL_SCENES: BenchScene[] = [
         actions: props.actions && { ...props.actions, rating: { score: 8 } },
       }),
     })),
+  {
+    id: "fiche/noter",
+    group: "Fiche",
+    label: "« Noter » : la note seule, sur la fiche",
+    focusKeys: ["sheet:star:1", "sheet:star:4", "sheet:close"],
+    settleMs: 1800,
+    images: (data) => imagesOf(buildPride(data)),
+    render: (data) => <RateScene data={data} />,
+  },
   scene("rappel-bandes-annonces", "Rappel « bandes-annonces » (exemple)", ["detail:primary"], (data) =>
     detailOf(data, ID.pride, { tweak: (props) => ({ ...props, showTrailerHint: true }) })),
   scene("bande-annonce", "Avec bande-annonce (exemple)", ["detail:trailer"], (data) =>

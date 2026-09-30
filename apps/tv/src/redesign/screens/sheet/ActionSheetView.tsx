@@ -30,6 +30,8 @@ export type { SheetActionKind, SheetActionModel, SheetHeaderModel, SheetRatingMo
  * - `onAction` : la lecture, les bascules (la feuille reste ouverte, les
  *   libellés basculent sous les yeux), la fiche, le refus, la demande ;
  *   `onRate(étoiles)` : note = étoiles × 2, la note actuelle se retire.
+ * - `actions` vide : la feuille réduite à sa note — le bouton « Noter » de la
+ *   fiche, qui porte déjà la lecture et les bascules.
  *
  * Focus (câblage) : entrée sur la première action ; le focus est piégé dans
  * la feuille ; Retour ferme. Clés du banc : `sheet:action:<kind>`,
@@ -72,16 +74,19 @@ export const ActionSheetView = memo(function ActionSheetView({
           <View style={styles.base} />
           <GlassSurface radius={TV_STAGE.radius.sheet} tone="strong" elevated style={styles.panel}>
             <SheetHeader header={header} onClose={onClose} />
-            <View style={styles.actions}>
-              {actions.map((action) => (
-                <SheetActionRow
-                  key={action.kind}
-                  action={action}
-                  focusKey={`sheet:action:${action.kind}`}
-                  onPress={onAction ? () => onAction(action.kind) : undefined}
-                />
-              ))}
-            </View>
+            {/* Sans action (« Noter » depuis la fiche), la note suit l'en-tête à un seul écart. */}
+            {actions.length ? (
+              <View style={styles.actions}>
+                {actions.map((action) => (
+                  <SheetActionRow
+                    key={action.kind}
+                    action={action}
+                    focusKey={`sheet:action:${action.kind}`}
+                    onPress={onAction ? () => onAction(action.kind) : undefined}
+                  />
+                ))}
+              </View>
+            ) : null}
             {rating ? <SheetRating rating={rating} onRate={onRate} /> : null}
           </GlassSurface>
         </View>
