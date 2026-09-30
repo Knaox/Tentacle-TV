@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ComponentType } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType } from "react";
 import { StyleSheet, TVFocusGuideView, View, type FocusDestination } from "react-native";
 import type { FocusGroupContainerProps } from "../../redesign/focus/focusBinding";
 import { osdPlayPauseNodeRef, useSkipNode } from "../../components/player/focus/osdFocusBus";
@@ -60,11 +60,43 @@ function useStoreDestination(store: FocusStore, key: string): FocusDestination[]
   return destinations;
 }
 
-function TimelineGroup({ style, pointerEvents, children }: FocusGroupContainerProps) {
-  // Sans pilule, le guide est inerte : une liste vide ne redirige rien.
+/**
+ * Un PONT : un guide qui renvoie le focus vers ses destinations — et qui, sans
+ * destination, n'est plus rien. Il faut le dire : react-native-tvos marque
+ * sélectionnable tout guide dont `destinations` est un tableau, même vide ;
+ * le guide retombé en simple vue devient alors FOCALISABLE (mesuré : « haut »
+ * depuis les commandes posait le focus sur la frise elle-même, invisible).
+ */
+function BridgeGuide({ destinations, style, pointerEvents, children }: FocusGroupContainerProps & { destinations: FocusDestination[] }) {
+  return (
+    <TVFocusGuideView
+      destinations={destinations}
+      focusable={destinations.length > 0 ? undefined : false}
+      style={style}
+      pointerEvents={pointerEvents}
+    >
+      {children}
+    </TVFocusGuideView>
+  );
+}
+
+/**
+ * La frise : le pont entre les commandes et ce qui est au-dessus d'elles —
+ * rien d'aligné, donc rien d'atteignable sans lui. Il a un SENS, lu sur le
+ * focus : depuis les commandes, il monte vers la pilule de saut, ou vers
+ * Retour s'il n'y en a pas ; depuis Retour, il redescend vers lecture/pause.
+ * (Un guide ne sait pas d'où l'on vient : un pont vers Retour posé en
+ * permanence y renverrait aussi la descente, et Retour deviendrait un piège.)
+ */
+function TimelineGroup(props: FocusGroupContainerProps) {
+  const { store } = usePlayerFocusState();
+  const subscribe = useCallback((notify: () => void) => store.subscribe(() => notify()), [store]);
+  const focusedKey = useSyncExternalStore(subscribe, store.focusedKey, store.focusedKey);
   const skipNode = useSkipNode();
-  const destinations = useMemo(() => (skipNode ? [skipNode] : []), [skipNode]);
-  return <TVFocusGuideView destinations={destinations} style={style} pointerEvents={pointerEvents}>{children}</TVFocusGuideView>;
+  const back = useStoreDestination(store, "player:back");
+  const playPause = useStoreDestination(store, "player:playpause");
+  const up = useMemo(() => (skipNode ? [skipNode] : back), [skipNode, back]);
+  return <BridgeGuide {...props} destinations={focusedKey === "player:back" ? playPause : up} />;
 }
 
 function IslandGroup({ style, pointerEvents, children }: FocusGroupContainerProps) {
@@ -85,16 +117,14 @@ function IslandGroup({ style, pointerEvents, children }: FocusGroupContainerProp
   );
 }
 
-function EpisodesHeaderGroup({ style, pointerEvents, children }: FocusGroupContainerProps) {
+function EpisodesHeaderGroup(props: FocusGroupContainerProps) {
   const { store } = usePlayerFocusState();
-  const destinations = useStoreDestination(store, "episodes:close");
-  return <TVFocusGuideView destinations={destinations} style={style} pointerEvents={pointerEvents}>{children}</TVFocusGuideView>;
+  return <BridgeGuide {...props} destinations={useStoreDestination(store, "episodes:close")} />;
 }
 
-function SeasonsGroup({ style, pointerEvents, children }: FocusGroupContainerProps) {
+function SeasonsGroup(props: FocusGroupContainerProps) {
   const { store, activeSeasonIndex } = usePlayerFocusState();
-  const destinations = useStoreDestination(store, `episodes:season:${activeSeasonIndex}`);
-  return <TVFocusGuideView destinations={destinations} style={style} pointerEvents={pointerEvents}>{children}</TVFocusGuideView>;
+  return <BridgeGuide {...props} destinations={useStoreDestination(store, `episodes:season:${activeSeasonIndex}`)} />;
 }
 
 /** Les groupes que le lecteur lie, et leur guide. */
