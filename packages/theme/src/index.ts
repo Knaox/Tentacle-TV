@@ -141,3 +141,6 @@ export {
   TV_RAIL_SCRIM_NATIVE,
   TV_SHADOW,
 } from "./native/tvTokens";
+
+// La scène de la refonte TV (échelle, gabarits, focus, accent).
+export { TV_ACCENT, TV_STAGE, TV_TYPE } from "./tokens/tvStage";

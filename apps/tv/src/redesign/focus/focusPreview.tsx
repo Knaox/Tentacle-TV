@@ -57,3 +57,9 @@ export function useFocusVisual(focusKey?: string): FocusVisual {
 export function useIsFocusForced(): boolean {
   return (useContext(FocusPreviewContext)?.forcedKey ?? null) !== null;
 }
+
+/** La clé figée par le banc, ou null (focus natif). Une rangée s'en sert
+ *  pour savoir laquelle de ses cartes a l'air focalisée. */
+export function useForcedFocusKey(): string | null {
+  return useContext(FocusPreviewContext)?.forcedKey ?? null;
+}
