@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type Component
 import { StyleSheet, TVFocusGuideView, View, type FocusDestination } from "react-native";
 import type { FocusGroupContainerProps } from "../../redesign/focus/focusBinding";
 import { osdPlayPauseNodeRef, useSkipNode } from "../../components/player/focus/osdFocusBus";
+import { AutoFocusGuide, TrapFocusGuide } from "../focus/focusGuides";
 import type { FocusStore } from "../focus/focusStore";
 
 /**
@@ -19,7 +20,9 @@ import type { FocusStore } from "../focus/focusStore";
  *   saisons fait entrer par la saison AFFICHÉE.
  *
  * Chaque conteneur est un composant de MODULE (identité stable, exigée par le
- * port) ; ce qui varie se lit dans `PlayerFocusState`.
+ * port) ; ce qui varie se lit dans `PlayerFocusState`. La mémoire et le piège
+ * sont ceux de tous les écrans (`focus/focusGuides`) ; seuls les ponts sont
+ * propres au lecteur.
  */
 
 export interface PlayerFocusState {
@@ -57,10 +60,6 @@ function useStoreDestination(store: FocusStore, key: string): FocusDestination[]
   return destinations;
 }
 
-function OsdGroup({ style, pointerEvents, children }: FocusGroupContainerProps) {
-  return <TVFocusGuideView autoFocus style={style} pointerEvents={pointerEvents}>{children}</TVFocusGuideView>;
-}
-
 function TimelineGroup({ style, pointerEvents, children }: FocusGroupContainerProps) {
   // Sans pilule, le guide est inerte : une liste vide ne redirige rien.
   const skipNode = useSkipNode();
@@ -86,14 +85,6 @@ function IslandGroup({ style, pointerEvents, children }: FocusGroupContainerProp
   );
 }
 
-function TrapGroup({ style, pointerEvents, children }: FocusGroupContainerProps) {
-  return (
-    <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={style} pointerEvents={pointerEvents}>
-      {children}
-    </TVFocusGuideView>
-  );
-}
-
 function EpisodesHeaderGroup({ style, pointerEvents, children }: FocusGroupContainerProps) {
   const { store } = usePlayerFocusState();
   const destinations = useStoreDestination(store, "episodes:close");
@@ -108,13 +99,13 @@ function SeasonsGroup({ style, pointerEvents, children }: FocusGroupContainerPro
 
 /** Les groupes que le lecteur lie, et leur guide. */
 export const PLAYER_GROUP_CONTAINERS: Readonly<Record<string, ComponentType<FocusGroupContainerProps>>> = {
-  "player:osd": OsdGroup,
+  "player:osd": AutoFocusGuide,
   "player:timeline": TimelineGroup,
   "player:skip-island": IslandGroup,
-  "upnext:actions": TrapGroup,
-  "end:actions": TrapGroup,
-  "tracks:panel": TrapGroup,
-  "episodes:panel": TrapGroup,
+  "upnext:actions": TrapFocusGuide,
+  "end:actions": TrapFocusGuide,
+  "tracks:panel": TrapFocusGuide,
+  "episodes:panel": TrapFocusGuide,
   "episodes:header": EpisodesHeaderGroup,
   "episodes:seasons": SeasonsGroup,
 };
