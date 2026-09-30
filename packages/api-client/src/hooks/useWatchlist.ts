@@ -129,7 +129,9 @@ export function useToggleWatchlistForItem(item: MediaItem) {
   return useToggleWatchlist(targetId, { seriesId: isSeriesTarget ? targetId : undefined, listItem });
 }
 
-export function useFavorites() {
+/** Les vingt derniers favoris. `enabled: false` : aucune requête (une rangée
+ *  « Mes favoris » éteinte dans la mise en page de l'accueil). */
+export function useFavorites(options?: { enabled?: boolean }) {
   const client = useJellyfinClient();
   const userId = useUserId();
 
@@ -143,7 +145,7 @@ export function useFavorites() {
             `&Limit=20&Fields=${FIELDS}&${IMAGE_OPTS}&EnableUserData=true`
         )
         .then((r) => r.Items),
-    enabled: !!userId,
+    enabled: !!userId && (options?.enabled ?? true),
     staleTime: 60_000,
   });
 }

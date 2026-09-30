@@ -64,14 +64,23 @@ const EPISODE_FIELDS = "PrimaryImageAspectRatio,SeriesName,SeriesId,ParentIndexN
 // le payload par 2 sans perte visible (la rangée n'affiche qu'une vingtaine de
 // groupes), et le mode économie descend à 40.
 
-export function useLatestItems(parentId: string | undefined, options?: LatestItemsOptions) {
-  const client = useJellyfinClient();
-  const userId = useUserId();
+/**
+ * Les options de la requête des « Derniers ajouts » d'une bibliothèque — la
+ * même clé, la même requête et le même regroupement que `useLatestItems`,
+ * pour qui charge TOUTES les bibliothèques d'un coup (`useQueries`) : le
+ * téléviseur refondu rend l'accueil en une seule vue, pas en une rangée par
+ * composant. Un seul cache pour les deux.
+ */
+export function latestItemsQueryOptions(
+  client: ReturnType<typeof useJellyfinClient>,
+  userId: string | null,
+  parentId: string | undefined,
+  options?: LatestItemsOptions,
+) {
   const episodeMode = options?.collectionType === "tvshows";
-
-  return useQuery({
+  return {
     // Le 3e segment évite qu'un cache "série groupée" serve un consommateur "épisodes".
-    queryKey: ["latest-items", parentId, episodeMode ? "episodes" : "default"],
+    queryKey: ["latest-items", parentId, episodeMode ? "episodes" : "default"] as const,
     queryFn: () => {
       if (!parentId || !userId) return Promise.resolve([]);
       if (episodeMode) {
@@ -98,7 +107,13 @@ export function useLatestItems(parentId: string | undefined, options?: LatestIte
     select: episodeMode ? groupLatestByRuns : undefined,
     enabled: !!userId && !!parentId && (options?.enabled ?? true),
     staleTime: 2 * 60 * 1000 * staleFactor(),
-  });
+  };
+}
+
+export function useLatestItems(parentId: string | undefined, options?: LatestItemsOptions) {
+  const client = useJellyfinClient();
+  const userId = useUserId();
+  return useQuery(latestItemsQueryOptions(client, userId, parentId, options));
 }
 
 /**
