@@ -35,6 +35,7 @@ const ROUTES: readonly RouteName[] = [
   "Watchlist",
   "Favorites",
   "SearchBrowse",
+  "Search",
 ];
 
 export const REDESIGN_ROUTES: ReadonlySet<string> = new Set<string>(REDESIGN_ACTIVE ? ROUTES : []);

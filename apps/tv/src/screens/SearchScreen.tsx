@@ -27,6 +27,8 @@ import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 import { pushRecentSearch, readRecentSearches } from "../storage/recentSearches";
 import { Colors, Typography } from "../theme/colors";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { SearchRedesign } from "../redesignWiring/search/SearchRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
 
@@ -44,7 +46,12 @@ const RESULTS_LIMIT = 12;
  * l'ordre commun aux trois téléviseurs (`tvSearchSections`, tv-core). La
  * bibliothèque seule : rien d'extérieur n'est interrogé ici.
  */
-export function SearchScreen({ navigation }: Props) {
+export function SearchScreen(props: Props) {
+  // Apple TV : la refonte (`redesignWiring/search`) ; Android TV : l'écran d'avant.
+  return REDESIGN_ACTIVE ? <SearchRedesign /> : <LegacySearchScreen {...props} />;
+}
+
+function LegacySearchScreen({ navigation }: Props) {
   const { t } = useTranslation(["search", "nav"]);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
