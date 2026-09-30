@@ -1,5 +1,4 @@
 import {
-  cardActionEntries,
   externalCardActionEntries,
   formatEpisodeCode,
   formatPosition,
@@ -12,12 +11,13 @@ import {
   type MediaItem,
 } from "@tentacle-tv/shared";
 import type { SheetActionModel, SheetHeaderModel } from "../../../src/redesign/screens/sheet/ActionSheetView";
+import { sheetRows } from "../../../src/redesignWiring/sheet/sheetRows";
 import type { BenchData } from "./benchData";
 import { episodeLabel, seriesOf, yearOf } from "./models";
 
 /**
  * Les feuilles d'actions du banc, résolues comme le câblage le fera : le
- * modèle partagé (`resolveCardOverlay` → `cardActionEntries`, ou sa version
+ * modèle partagé (`resolveCardOverlay` → `sheetRows` du branchement, ou sa version
  * hors bibliothèque) décide des lignes et de leur ordre, les libellés passent
  * par l'espace `cards`, le complément de la lecture par `useCardSheetPlay`
  * (position d'une reprise, épisode d'une série).
@@ -88,13 +88,11 @@ export function librarySheet(
     // Rien ne se garde hors ligne sur un téléviseur.
     offline: false,
   });
-  const actions: SheetActionModel[] = cardActionEntries(overlay, statesOf(item, options.force)).map((entry) => ({
-    kind: entry.kind,
-    label: t(`cards:${entry.labelKey}`),
-    active: entry.active,
-    detail: entry.kind === "play" ? play?.detail : null,
-  }));
-  if (variant === "reco" && options.providerFilter) actions.push({ kind: "providersAll", label: t("reco:providersAll") });
+  // Les lignes du branchement lui-même (`sheetRows`) : aucune copie au banc.
+  const actions = sheetRows(
+    { overlay, states: statesOf(item, options.force), playDetail: play?.detail, inLibrary: true, providerFilterActive: options.providerFilter },
+    t,
+  );
   return { header: headerOf(data, item, variant === "landscape" ? "landscape" : "poster"), actions, rate: overlay.rate };
 }
 
