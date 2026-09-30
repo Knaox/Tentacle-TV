@@ -251,7 +251,10 @@ jamais dans la vue ; l'appui long ouvre
 toujours la feuille (`TVCardActionSheet`, `CardActionSheetTv` sur webOS).
 Android TV et webOS, pas encore portés, gardent les marqueurs au focus. La
 carte et les boutons de son plateau sont des focalisables FRÈRES : tvOS ne
-focalise jamais un élément posé dans un autre. État et gestes :
+focalise jamais un élément posé dans un autre, ni un élément RECOUVERT par ce
+qui dessine — la recherche géométrique ne le propose plus (régression payée :
+plus une carte atteignable). La cible focalisable se pose donc AU-DESSUS de
+l'image, et s'arrête au-dessus du plateau ouvert. État et gestes :
 `useCardToggles`, `useCardRatingTarget`, `useCardFace` (api-client). Une
 feuille qui garde un instantané de sa carte lit la fiche `["item", id]`, que
 les mutations patchent.

@@ -27,21 +27,22 @@ import { TRAY_REVEAL_MS } from "./useCardHover";
  *     focus. RIEN au centre de l'image.
  * Le groupe monte de 10 points en fondu (opacité et translation seulement).
  *
- * Télécommande — proposée ici, posée par le CÂBLAGE à travers le port du focus
- * (`focus/focusBinding.tsx`), jamais dans la vue :
- *   • OK sur la carte garde l'action principale (la fiche d'une affiche, la
- *     lecture d'une vignette 16:9) ; l'appui long garde la feuille d'actions ;
- *   • BAS depuis la carte entre dans le plateau par son action PRIMAIRE : un
- *     guide `autoFocus` lié au groupe `<carte>:tray`, dont la capsule vient la
- *     PREMIÈRE dans l'arbre (affichée en bas : `column-reverse`) ;
- *   • GAUCHE / DROITE parcourent la capsule, bornés (pièges du guide) ;
- *   • HAUT remonte d'un rang : de la capsule aux étoiles, des étoiles à la
- *     carte (`nextFocusUp` sur les étoiles, vers la ref de `<carte>`) ; sans
- *     étoiles, la capsule rend le focus à la carte ;
- *   • Menu, d'où qu'on soit dans le plateau, rend le focus à la carte ;
- *   • BAS depuis la capsule quitte la carte vers la rangée suivante — le
- *     plateau se referme. Changer de rangée coûte donc deux BAS : à éprouver
- *     à la télécommande.
+ * Télécommande. La carte ouverte s'arrête au-dessus de son plateau
+ * (`trayReach`) : rien ne recouvre un focalisable, et la GÉOMÉTRIE seule de
+ * tvOS fait déjà le parcours — mesuré au simulateur, focus natif, XCUITest :
+ * BAS carte → étoiles → capsule → rangée suivante (le plateau se referme),
+ * HAUT capsule → étoiles → carte, GAUCHE / DROITE dans la capsule ; aux bouts,
+ * elle sort vers la carte voisine. OK sur la carte garde l'action principale
+ * (la fiche d'une affiche, la lecture d'une vignette 16:9), l'appui long la
+ * feuille d'actions. Le CÂBLAGE n'ajoute, par le port du focus
+ * (`focus/focusBinding.tsx`), que :
+ *   • l'entrée sur l'action PRIMAIRE — seule, BAS atterrit sur l'étoile la
+ *     plus proche : un guide `autoFocus` lié au groupe `<carte>:tray`, dont la
+ *     capsule vient la PREMIÈRE dans l'arbre (affichée en bas :
+ *     `column-reverse`) ;
+ *   • s'il le veut, des pièges GAUCHE / DROITE aux bouts de la capsule ;
+ *   • Menu, d'où qu'on soit dans le plateau, rend le focus à la carte.
+ * Changer de rangée coûte deux BAS quand la carte a un plateau : à éprouver.
  * Clés : le groupe `<carte>:tray` ; les boutons `<carte>:tray:<action>`
  * (`play`, `request`, `watchlist`, `favorite`, `watched`, `details`,
  * `dismiss`) ; les étoiles `<carte>:tray:star:<1…5>`.

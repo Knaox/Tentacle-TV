@@ -41,6 +41,20 @@ export function trayStarSize(button: number): number {
   return Math.min(button, TRAY.maxStar);
 }
 
+/**
+ * Ce que le plateau occupe de focalisable, depuis le pied de la carte (au
+ * repos, avant l'agrandissement) : la capsule et les étoiles — pas la bulle,
+ * qui ne se focalise pas. La carte focalisable s'arrête au-dessus : elle ne
+ * recouvre jamais un bouton de son plateau (sur tvOS, un focalisable recouvert
+ * n'est plus proposé au focus). L'agrandissement ne fait que les descendre.
+ */
+export function trayReach(face: TrayFace, width: number, count: number, rated: boolean): number {
+  const button = trayButtonSize(face, width, count);
+  const capsule = count > 0 ? button + 2 * (TRAY.pad + TRAY.border) : 0;
+  const stars = rated ? trayStarSize(button) : 0;
+  return TRAY.bottom[face] + capsule + (capsule > 0 && stars > 0 ? TRAY.rowGap : 0) + stars;
+}
+
 /** Le glyphe d'un bouton : la moitié du rond au bureau, un peu plus à trois mètres. */
 export function trayGlyphSize(button: number): number {
   return Math.max(18, Math.round(button * 0.54));
