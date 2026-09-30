@@ -23,10 +23,8 @@ const LANGUAGES: Array<{ code: PairingLanguage; label: string }> = [
   { code: "en", label: "English" },
 ];
 
-export const WelcomeStep = memo(function WelcomeStep({ language, glowColor, onShowCode, onManualSetup, onChangeLanguage }: {
+export const WelcomeStep = memo(function WelcomeStep({ language, onShowCode, onManualSetup, onChangeLanguage }: {
   language: PairingLanguage;
-  /** La lumière derrière la mascotte (première couleur de la palette). */
-  glowColor: string;
   onShowCode?: () => void;
   onManualSetup?: () => void;
   onChangeLanguage?: (language: PairingLanguage) => void;
@@ -35,7 +33,9 @@ export const WelcomeStep = memo(function WelcomeStep({ language, glowColor, onSh
   return (
     <View style={styles.center}>
       <Animated.View entering={FadeIn.duration(500)} style={styles.mascot}>
-        <Glow size={MASCOT_GLOW} color={glowColor} opacity={0.55} style={styles.glow} />
+        {/* La mascotte dans la lumière de la marque : le rose, discret — le
+            seul halo de l'écran avec celui du code. */}
+        <Glow size={MASCOT_GLOW} color={colors.accent} opacity={MASCOT_GLOW_OPACITY} style={styles.glow} />
         <BrandMark size={232} />
       </Animated.View>
       <Animated.View entering={FadeInDown.duration(500).delay(80)} style={styles.texts}>
@@ -66,6 +66,7 @@ export const WelcomeStep = memo(function WelcomeStep({ language, glowColor, onSh
 });
 
 const MASCOT_GLOW = 720;
+const MASCOT_GLOW_OPACITY = 0.3;
 
 const styles = StyleSheet.create({
   mascot: { alignItems: "center", justifyContent: "center" },

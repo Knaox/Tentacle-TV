@@ -36,10 +36,11 @@ export type { CodeState, PairingLanguage, PairingStep, PairingViewProps, ServerE
  * `pairing:back`. Groupes : `pairing:side` et `pairing:card` (`CodeStep`).
  */
 
-/** Une lumière chaude, sans violet : l'ambre de l'accent et un bleu-vert
- *  profond. Aucune œuvre n'éclaire encore l'écran. */
+/** Une lumière froide et neutre, ni ambre ni violet : un gris bleuté et un
+ *  bleu-vert profond. Aucune œuvre n'éclaire encore l'écran ; la marque est
+ *  dans la mascotte, sa lumière et le halo du code — jamais dans le fond. */
 const PAIRING_PALETTE: ArtworkPalette = {
-  glows: ["#8a5526", "#1d5566", "#7a4424"],
+  glows: ["#3a3f5c", "#1d5566", "#34384f"],
   deep: "#0b0a0c",
 };
 
@@ -67,7 +68,6 @@ export const PairingView = memo(function PairingView({
         {step.kind === "welcome" ? (
           <WelcomeStep
             language={language}
-            glowColor={palette.glows[0]}
             onShowCode={onShowCode}
             onManualSetup={onManualSetup}
             onChangeLanguage={onChangeLanguage}
