@@ -5,6 +5,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, scrim } from "../../theme/tokens";
 import type { ChoiceListModel } from "./settingsTypes";
@@ -12,9 +13,11 @@ import type { ChoiceListModel } from "./settingsTypes";
 /**
  * La grande liste de choix d'un réglage (langue audio, mode et langue des
  * sous-titres), en surimpression : un voile sur tout l'écran, et à droite
- * une feuille de verre posée sur un fond DENSE — sans flou natif, le contenu
- * derrière brouillerait les libellés. La valeur retenue porte la coche
- * rose de la marque ; celle qui a le focus devient blanche.
+ * une feuille de verre posée sur un fond DENSE — le verre dessiné ne floute
+ * rien, le contenu derrière brouillerait les libellés ; le verre natif
+ * floute, il prend le fond commun (`glass/glassBacking`). La valeur
+ * retenue porte la coche rose de la marque ; celle qui a le focus devient
+ * blanche.
  *
  * Aucune décision de focus : l'intégration pose l'entrée sur la valeur
  * retenue, garde le focus dans la feuille, et la ferme au Retour (elle
@@ -32,11 +35,12 @@ const RADIUS = 40;
 const ROW = 80;
 
 export const ChoiceSheet = memo(function ChoiceSheet({ list, onChoose }: ChoiceSheetProps) {
+  const backing = useNativeGlassBacking("strong");
   return (
     <Animated.View entering={FadeIn.duration(220)} style={styles.layer}>
       <View style={styles.veil} pointerEvents="none" />
       <View style={styles.sheet}>
-        <View style={[StyleSheet.absoluteFill, styles.base]} />
+        <View style={[StyleSheet.absoluteFill, styles.base, backing]} />
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} elevated />
         <View style={styles.header}>
           <Text style={styles.title} numberOfLines={1}>{list.title}</Text>

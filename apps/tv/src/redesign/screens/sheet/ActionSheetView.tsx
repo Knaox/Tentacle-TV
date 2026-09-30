@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import Animated, { Easing, FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { GlassSurface } from "../../glass/GlassSurface";
+import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { scrim } from "../../theme/tokens";
 import { RatingPanel } from "./RatingPanel";
 import { SheetHeader } from "./SheetHeader";
@@ -66,6 +67,7 @@ export const ActionSheetView = memo(function ActionSheetView({
   onClose,
 }: ActionSheetViewProps) {
   const rise = usePanelEntrance();
+  const backing = useNativeGlassBacking("strong");
   return (
     <View style={StyleSheet.absoluteFill}>
       <Animated.View entering={FadeIn.duration(200)} pointerEvents="none" style={[StyleSheet.absoluteFill, styles.veil]} />
@@ -73,7 +75,7 @@ export const ActionSheetView = memo(function ActionSheetView({
           interactions rend ses enfants infocalisables. */}
       <View pointerEvents="box-none" style={styles.center}>
         <Animated.View style={[styles.frame, rise]}>
-          <View style={styles.base} />
+          <View style={[styles.base, backing]} />
           <GlassSurface radius={TV_STAGE.radius.sheet} tone="strong" elevated style={styles.panel}>
             <SheetHeader header={header} onClose={onClose} />
             {rating ? <RatingPanel rating={rating} width={WIDTH - 2 * PAD} onRate={onRate} /> : null}
@@ -99,8 +101,8 @@ const styles = StyleSheet.create({
   veil: { backgroundColor: scrim(0.72) },
   center: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
   frame: { width: WIDTH },
-  // Le fond dense sous le verre : la page qui passerait derrière ne se lirait
-  // pas au travers.
+  // Le fond dense sous le verre dessiné : la page qui passerait derrière se
+  // lirait au travers. Le verre natif floute : il prend le fond commun.
   base: { ...StyleSheet.absoluteFillObject, borderRadius: TV_STAGE.radius.sheet, backgroundColor: "rgba(12, 12, 16, 0.95)" },
   panel: { paddingHorizontal: PAD, paddingVertical: 44, gap: 34 },
 });

@@ -5,6 +5,7 @@ import Animated, { FadeIn, FadeOut, useAnimatedStyle } from "react-native-reanim
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { GlassSurface } from "../glass/GlassSurface";
+import { useNativeGlassBacking } from "../glass/glassBacking";
 import type { IconName } from "../icons/Icon";
 import { colors, fonts, scrim, white } from "../theme/tokens";
 import { NavItem } from "./NavItem";
@@ -58,6 +59,7 @@ export const NavRail = memo(function NavRail({
   const openness = useFocusProgress(expanded, 240);
   const wide = useAnimatedStyle(() => ({ opacity: openness.value }));
   const narrow = useAnimatedStyle(() => ({ opacity: 1 - openness.value }));
+  const openBacking = useNativeGlassBacking("strong");
   const item = (entry: { key: string; label: string; icon?: IconName; avatarUri?: string; initial?: string }) => (
     <NavItem
       key={entry.key}
@@ -97,9 +99,10 @@ export const NavRail = memo(function NavRail({
             <GlassSurface radius={N.radius} style={[styles.glass, { width: N.collapsedWidth }]} elevated />
           </Animated.View>
           <Animated.View style={[StyleSheet.absoluteFill, wide]}>
-            {/* Ouverte, la barre passe SUR le texte de l'écran : sans flou natif,
-                un fond dense sous le verre garde les libellés lisibles. */}
-            <View style={[styles.glass, styles.openBase, { width: N.expandedWidth }]} />
+            {/* Ouverte, la barre passe SUR le texte de l'écran : le verre
+                dessiné ne floute rien, un fond dense garde les libellés
+                lisibles. Le verre natif floute : il prend le fond commun. */}
+            <View style={[styles.glass, styles.openBase, openBacking, { width: N.expandedWidth }]} />
             <GlassSurface radius={N.radius} tone="strong" style={[styles.glass, { width: N.expandedWidth }]} elevated />
           </Animated.View>
           <View style={styles.items}>
