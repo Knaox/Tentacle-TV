@@ -43,6 +43,7 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `focus/FocusGroup` | Un groupe nommé (`focusKey`) : une View tant que l'intégration ne lui donne pas de conteneur (`focusBinding`) |
 | `focus/useFocusProgress` | 0 → 1 au focus (Reanimated), pour les styles animés |
 | `glass/GlassSurface` | Le verre (`radius`, `tone` regular/strong/clear, `elevated`) ; suit l'interrupteur Liquid Glass — natif (`UIGlassEffect`) sur tvOS 26, simulé ailleurs |
+| `glass/glassBacking` | Le fond sous un verre qui flotte : `useNativeGlassBacking(tone)` remplace, sous le verre natif seulement, le fond qu'une vue dessine (strong : aucun, regular 0,1, clear 0,55) |
 | `background/AmbientBackdrop` | Le fond vivant (`palette`) |
 | `background/ArtworkHalo` | La lumière autour d'un cadre (`width`, `height`, `radius`, `palette`) |
 | `controls/PillButton` | Pilule `primary` (blanche) ou `glass`, `progress` pour « Reprendre » |
