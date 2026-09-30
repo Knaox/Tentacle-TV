@@ -46,6 +46,17 @@
 	<!-- Apparence FORCÉE sombre : RCTAppDelegate peint la vue racine en BLANC quand
 	     l'Apparence tvOS est Claire, et elle transparaît dans les fondus de la pile
 	     native et derrière la modale transparente. L'app n'a pas de thème clair. -->
+	<!-- Inter, la police du bureau et de la refonte de l'UI TV (`redesign/theme/tokens.ts`) :
+	     les fichiers vivent dans `apps/tv/assets/fonts`, partagés avec Android. Sans cette
+	     déclaration, tvOS rendait tout en San Francisco. -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>Inter-Regular.ttf</string>
+		<string>Inter-Medium.ttf</string>
+		<string>Inter-SemiBold.ttf</string>
+		<string>Inter-Bold.ttf</string>
+		<string>Inter-ExtraBold.ttf</string>
+	</array>
 	<key>UIUserInterfaceStyle</key>
 	<string>Dark</string>
 	<key>UILaunchStoryboardName</key>

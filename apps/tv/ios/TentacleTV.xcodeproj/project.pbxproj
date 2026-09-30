@@ -12,6 +12,11 @@
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
+		1F0A7E1000C0FFEE0000B100 /* Inter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1F0A7E2000C0FFEE0000F200 /* Inter-Regular.ttf */; };
+		1F0A7E1100C0FFEE0000B101 /* Inter-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1F0A7E2100C0FFEE0000F201 /* Inter-Medium.ttf */; };
+		1F0A7E1200C0FFEE0000B102 /* Inter-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1F0A7E2200C0FFEE0000F202 /* Inter-SemiBold.ttf */; };
+		1F0A7E1300C0FFEE0000B103 /* Inter-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1F0A7E2300C0FFEE0000F203 /* Inter-Bold.ttf */; };
+		1F0A7E1400C0FFEE0000B104 /* Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1F0A7E2400C0FFEE0000F204 /* Inter-ExtraBold.ttf */; };
 		57C010109388BEA9DAC690CB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		7699B88040F8A987B510C191 /* libPods-TentacleTV-TentacleTVTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-TentacleTV-TentacleTVTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -47,6 +52,11 @@
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = TentacleTV/main.m; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = TentacleTV/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		19F6CBCC0A4E27FBF8BF4A61 /* libPods-TentacleTV-TentacleTVTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TentacleTV-TentacleTVTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F0A7E2000C0FFEE0000F200 /* Inter-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-Regular.ttf"; path = "../assets/fonts/Inter-Regular.ttf"; sourceTree = "<group>"; };
+		1F0A7E2100C0FFEE0000F201 /* Inter-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-Medium.ttf"; path = "../assets/fonts/Inter-Medium.ttf"; sourceTree = "<group>"; };
+		1F0A7E2200C0FFEE0000F202 /* Inter-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-SemiBold.ttf"; path = "../assets/fonts/Inter-SemiBold.ttf"; sourceTree = "<group>"; };
+		1F0A7E2300C0FFEE0000F203 /* Inter-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-Bold.ttf"; path = "../assets/fonts/Inter-Bold.ttf"; sourceTree = "<group>"; };
+		1F0A7E2400C0FFEE0000F204 /* Inter-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-ExtraBold.ttf"; path = "../assets/fonts/Inter-ExtraBold.ttf"; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-TentacleTV.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV.debug.xcconfig"; path = "Target Support Files/Pods-TentacleTV/Pods-TentacleTV.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-TentacleTV.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV.release.xcconfig"; path = "Target Support Files/Pods-TentacleTV/Pods-TentacleTV.release.xcconfig"; sourceTree = "<group>"; };
 		5B7EB9410499542E8C5724F5 /* Pods-TentacleTV-TentacleTVTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV-TentacleTVTests.debug.xcconfig"; path = "Target Support Files/Pods-TentacleTV-TentacleTVTests/Pods-TentacleTV-TentacleTVTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -124,6 +134,18 @@
 			name = TentacleTV;
 			sourceTree = "<group>";
 		};
+		1F0A7E3000C0FFEE0000A300 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				1F0A7E2000C0FFEE0000F200 /* Inter-Regular.ttf */,
+				1F0A7E2100C0FFEE0000F201 /* Inter-Medium.ttf */,
+				1F0A7E2200C0FFEE0000F202 /* Inter-SemiBold.ttf */,
+				1F0A7E2300C0FFEE0000F203 /* Inter-Bold.ttf */,
+				1F0A7E2400C0FFEE0000F204 /* Inter-ExtraBold.ttf */,
+			);
+			name = Fonts;
+			sourceTree = "<group>";
+		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -145,6 +167,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07FAE1A68108700A75B9A /* TentacleTV */,
+				1F0A7E3000C0FFEE0000A300 /* Fonts */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				00E356EF1AD99517003FC87E /* TentacleTVTests */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -278,6 +301,11 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				57C010109388BEA9DAC690CB /* PrivacyInfo.xcprivacy in Resources */,
+				1F0A7E1000C0FFEE0000B100 /* Inter-Regular.ttf in Resources */,
+				1F0A7E1100C0FFEE0000B101 /* Inter-Medium.ttf in Resources */,
+				1F0A7E1200C0FFEE0000B102 /* Inter-SemiBold.ttf in Resources */,
+				1F0A7E1300C0FFEE0000B103 /* Inter-Bold.ttf in Resources */,
+				1F0A7E1400C0FFEE0000B104 /* Inter-ExtraBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
