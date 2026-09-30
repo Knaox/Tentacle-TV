@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { moveRailKey, moveRailKeyTo } from "@tentacle-tv/tv-core";
+import { claimAfterRestore } from "../focus/claimAfterRestore";
 import { setFocusLocked } from "../focus/focusLocks";
 import type { FocusStore } from "../focus/focusStore";
 import { isMovableEntry, useNavCatalog } from "./useNavCatalog";
@@ -200,7 +201,7 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
   const cancelIfMoving = useCallback(() => {
     const cancelled = endMove(false);
     // L'entrée revient à sa place : le focus la suit.
-    if (cancelled) focus.claim(`${NAV_PREFIX}${cancelled.key}`);
+    if (cancelled) claimAfterRestore(focus, `${NAV_PREFIX}${cancelled.key}`);
     return cancelled !== null;
   }, [endMove, focus]);
 

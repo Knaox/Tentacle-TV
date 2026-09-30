@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { applyRailOrder, moveRailKeyTo } from "@tentacle-tv/tv-core";
 import type { SettingsNavigation } from "../../redesign/screens/settings/settingsTypes";
+import { claimAfterRestore } from "../focus/claimAfterRestore";
 import { setFocusLocked } from "../focus/focusLocks";
 import type { FocusStore } from "../focus/focusStore";
 import { useNavCatalog } from "../nav/useNavCatalog";
@@ -107,7 +108,7 @@ export function useNavigationSettings(focus: FocusStore) {
   /** Retour pendant un déplacement : l'entrée revient, le focus avec elle. Vrai s'il a été pris. */
   const cancelNavMove = useCallback(() => {
     const cancelled = end(false);
-    if (cancelled && cancelled.from >= 0) focus.claim(`settings:nav:${cancelled.from}`);
+    if (cancelled && cancelled.from >= 0) claimAfterRestore(focus, `settings:nav:${cancelled.from}`);
     return cancelled !== null;
   }, [end, focus]);
 
