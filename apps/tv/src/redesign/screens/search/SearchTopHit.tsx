@@ -98,7 +98,7 @@ function Body({ top, label, width, tall, focused }: { top: SearchTopModel; label
   return (
     <Animated.View style={[{ width, height }, lift]}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, halo]}>
-        <ArtworkHalo width={width} height={height} radius={RADIUS} palette={palette} spread={10} blur={15} opacity={0.85} />
+        <ArtworkHalo width={width} height={height} radius={RADIUS} palette={palette} spread={8} blur={22} opacity={0.6} />
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, styles.shadow, raised]} />
       <View style={[styles.frame, { width, height }]}>

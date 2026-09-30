@@ -66,7 +66,7 @@ export const TV_STAGE = {
   },
   /** Où commence le contenu : après la navigation repliée. */
   contentLeft: 176,
-  hero: { top: 56, height: 640, radius: 40, haloSpread: 26 },
+  hero: { top: 56, height: 640, radius: 40, haloSpread: 10 },
   row: { gap: 36, titleGap: 22, spacing: 64 },
   card: {
     landscape: { width: 380, height: 214, radius: 22 },

@@ -29,9 +29,9 @@ const H = 1080;
 function Lights({ palette, intensity }: { palette: ArtworkPalette; intensity: number }) {
   const [a, b, c] = brandLight(palette).glows;
   const blobs = [
-    { id: "l", cx: 180, cy: 470, rx: 760, ry: 640, color: a, alpha: 0.34 },
-    { id: "r", cx: 1700, cy: 980, rx: 700, ry: 460, color: c, alpha: 0.2 },
-    { id: "t", cx: 1080, cy: 60, rx: 820, ry: 360, color: b, alpha: 0.13 },
+    { id: "l", cx: 180, cy: 470, rx: 760, ry: 640, color: a, alpha: 0.24 },
+    { id: "r", cx: 1700, cy: 980, rx: 700, ry: 460, color: c, alpha: 0.24 },
+    { id: "t", cx: 1080, cy: 60, rx: 820, ry: 360, color: b, alpha: 0.12 },
   ];
   return (
     <Svg width={W} height={H} style={StyleSheet.absoluteFill}>
