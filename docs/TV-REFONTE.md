@@ -15,7 +15,8 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 3. Banc UI | Prêt. Instantané RÉEL du compte Knaoxtest : 1 433 éléments, 2 324 images (catalogues, genres, saisons, sagas, reco…). |
 | 4. Jetons TV repris du bureau | `TV_STAGE`, `TV_TYPE`, `TV_ACCENT` (`packages/theme/src/tokens/tvStage.ts`). |
 | 5. Briques | Faites — planche « Briques » (`bench:ui planche briques --focus`). |
-| 6. Écrans | Accueil fait ; fiche, bibliothèque, recherche, Pour vous, listes, réglages, jumelage, lecteur, feuille, bande-annonce, surimpressions en cours. |
+| 6. Écrans | **Tous faits** (2026-09-30) : jumelage, accueil, fiche, bibliothèque, Ma liste / Favoris, recherche, parcourir, Pour vous, réglages, lecteur, feuille d'actions, bande-annonce, surimpressions — 184 scènes au banc. |
+| 7. Branchement | À faire, écran par écran : une tâche chacun (voir « Tâches proposées »). |
 
 ## La direction retenue
 
@@ -32,7 +33,13 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 - **Focus Apple TV, sans contour** : agrandissement, soulèvement, reflet ; le
   verre focalisé devient blanc, texte noir ; les voisines reculent.
 - **La carte qui se redresse** (`MorphCard`) : 16:9 au repos, affiche 2:3 au
-  focus, en fondu, sans recalcul de mise en page.
+  focus, en fondu, sans recalcul de mise en page. L'affiche DESCEND (sur la
+  légende, qui s'efface) : elle ne monte jamais sur le titre de la rangée.
+- **Un halo n'est jamais violet** : une lumière d'œuvre qui tombe dans les
+  violets et magentas est ramenée vers le neutre (`artworkPalette.ts`).
+- **Un logo noir cède au texte** : `isLogoLegibleOnDark(blurHash)` — un logo
+  dont l'empreinte est noire de part en part ne se lit pas sur la scène ; le
+  câblage écrit alors le titre (le banc le fait déjà).
 
 ## Voir le résultat, sans navigateur
 
@@ -228,7 +235,7 @@ reco, personne, extra, lot « +N », volet de saga) · marqueurs (note globale,
 note perso, pastille Ma liste · favori · vu, progression, « Découverte »,
 puces qualité/langues — pastilles, pas de drapeaux) · bouton (primaire,
 secondaire, rond, pilule) · pastille · rangée (titre ≥ 34 + accessoire) ·
-héros · fond vivant (halos violet → rose teintés par l'œuvre) · navigation à
+héros · fond vivant (halos aux couleurs de l'œuvre, jamais violets) · navigation à
 gauche (repliée : icônes ; ouverte : libellés sous voile ; toutes les entrées :
 Rechercher, Accueil, Pour vous, Ma liste, Favoris, chaque bibliothèque, Tout
 afficher, Réglages ; masquage par appui long) · logo en haut à droite ·
@@ -268,7 +275,9 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
 
 ## Questions ouvertes
 
-1. Les captures de référence (étape 1).
+1. Le focus sans contour (agrandissement, reflet, verre qui blanchit) : le
+   garder partout, ou un anneau discret là où l'agrandissement ne se voit pas
+   (pastilles de filtre, étoiles) ?
 2. « Demander » de Vigie sur TV : montrer les titres hors bibliothèque
    (reco, recherche) avec leur « Demander », ou garder la TV sur la
    bibliothèque seule ?
