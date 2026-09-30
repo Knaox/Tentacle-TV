@@ -5,6 +5,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
+import type { RowPlace } from "../motion/useRowRecede";
 import { colors, fonts, scrim } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
 import { CardFocusFooter } from "./CardFocusFooter";
@@ -42,6 +43,9 @@ export interface MediaCardProps {
   variant: "landscape" | "poster";
   /** Largeur ; la hauteur suit le format. */
   width?: number;
+  /** Sa place dans une rangée : elle recule quand une voisine a le focus. */
+  place?: RowPlace;
+  /** Recule — hors d'une rangée à valeur partagée (`place` l'emporte). */
   dimmed?: boolean;
   focusKey?: string;
   origin?: "top" | "center";
@@ -82,6 +86,7 @@ export const MediaCard = memo(function MediaCard({
   card,
   variant,
   width = DEFAULT_WIDTH[variant],
+  place,
   dimmed,
   focusKey,
   origin,
@@ -97,7 +102,7 @@ export const MediaCard = memo(function MediaCard({
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
   return (
     <View style={[{ width }, focused && styles.front]}>
-      <CardFrame width={width} height={height} radius={radius} focused={focused} dimmed={dimmed} origin={origin}>
+      <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin}>
         {uri ? (
           <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
         ) : (

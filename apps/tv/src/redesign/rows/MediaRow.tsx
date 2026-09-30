@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { cardIndexOf } from "../cards/cardFocusKeys";
@@ -6,12 +6,15 @@ import { MediaCard } from "../cards/MediaCard";
 import { MORPH_OVERFLOW, MorphCard } from "../cards/MorphCard";
 import type { CardModel } from "../cards/cardTypes";
 import { useForcedFocusKey } from "../focus/focusPreview";
+import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
 
 /**
  * Une rangée : son titre (36 pt), puis ses cartes à l'horizontale, peu
  * nombreuses et grandes. Quand une carte a le focus, ses voisines reculent
- * un peu. La clé de focus d'une carte est `${rowKey}:${index}`.
+ * un peu — par une valeur partagée que chaque carte lit sur le fil
+ * d'interface (`useRowFocus`) : un pas du focus ne redessine pas la rangée.
+ * La clé de focus d'une carte est `${rowKey}:${index}`.
  */
 
 export interface MediaRowProps {
@@ -41,16 +44,15 @@ export const MediaRow = memo(function MediaRow({
   onLongPressCard,
   onFocusCard,
 }: MediaRowProps) {
-  const [nativeIndex, setNativeIndex] = useState<number | null>(null);
   const forced = useForcedFocusKey();
-  const focusedIndex = forced !== null ? cardIndexOf(forced, rowKey) : nativeIndex;
+  const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
 
   const onFocusChange = useCallback(
     (index: number, focused: boolean) => {
-      setNativeIndex((current) => (focused ? index : current === index ? null : current));
+      onItemFocusChange(index, focused);
       if (focused) onFocusCard?.(cards[index]);
     },
-    [cards, onFocusCard],
+    [cards, onFocusCard, onItemFocusChange],
   );
 
   if (cards.length === 0) return null;
@@ -74,7 +76,7 @@ export const MediaRow = memo(function MediaRow({
           const common = {
             card,
             focusKey: `${rowKey}:${index}`,
-            dimmed: focusedIndex !== null && focusedIndex !== index,
+            place: { row, index },
             onPress: onPressCard ? () => onPressCard(card) : undefined,
             onLongPress: onLongPressCard ? () => onLongPressCard(card) : undefined,
             onFocusChange: (focused: boolean) => onFocusChange(index, focused),

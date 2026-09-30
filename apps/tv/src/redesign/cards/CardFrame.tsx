@@ -4,6 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { useFocusProgress } from "../focus/useFocusProgress";
+import { useRecede, type RowPlace } from "../motion/useRowRecede";
 import { colors, white } from "../theme/tokens";
 
 /**
@@ -12,7 +13,8 @@ import { colors, white } from "../theme/tokens";
  * - son ombre passe de l'élévation de repos à celle du soulèvement, par DEUX
  *   calques en fondu d'opacité (jamais une ombre animée — cf. `cards.css`) ;
  * - un reflet spéculaire discret glisse en travers de l'image ;
- * - `dimmed` : une voisine a le focus, la carte recule un peu.
+ * - une voisine a le focus, la carte recule un peu : `place` (sa place dans
+ *   une rangée, lue sur le fil d'interface, sans rendu), ou `dimmed`.
  *
  * Le cadre ne fait que DESSINER : sur tvOS, un focalisable recouvert par un
  * frère qui dessine n'est plus proposé par la recherche géométrique du focus.
@@ -35,6 +37,10 @@ export interface CardFrameProps {
   height: number;
   radius: number;
   focused: boolean;
+  /** Sa place dans une rangée (`useRowFocus`) : elle recule quand une
+   *  voisine a le focus, sans que rien ne se redessine. */
+  place?: RowPlace;
+  /** Recule — pour une carte hors d'une rangée à valeur partagée. */
   dimmed?: boolean;
   /** Point fixe de l'agrandissement : le haut pour une rangée (la légende
    *  dessous ne bouge pas), le centre dans une grille. */
@@ -47,14 +53,16 @@ export const CardFrame = memo(function CardFrame({
   height,
   radius,
   focused,
+  place,
   dimmed = false,
   origin = "top",
   children,
 }: CardFrameProps) {
   const p = useFocusProgress(focused);
-  const d = useFocusProgress(dimmed && !focused, 300);
+  const dim = useFocusProgress(dimmed && !focused, "recede");
+  const recede = useRecede(place);
   const lift = useAnimatedStyle(() => ({
-    opacity: 1 - (1 - TV_STAGE.focus.recede) * d.value,
+    opacity: 1 - (1 - TV_STAGE.focus.recede) * (place ? recede.value : dim.value),
     transform: cardLift(p.value),
   }));
   const rest = useAnimatedStyle(() => ({ opacity: 1 - p.value }));

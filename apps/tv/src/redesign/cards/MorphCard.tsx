@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
+import type { RowPlace } from "../motion/useRowRecede";
 import { Icon } from "../icons/Icon";
 import { colors, fonts } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
@@ -55,18 +56,19 @@ const NO_VISUAL = () => null;
 
 export interface MorphCardProps {
   card: CardModel;
-  dimmed?: boolean;
+  /** Sa place dans une rangée : la vignette recule quand une voisine a le focus. */
+  place?: RowPlace;
   focusKey?: string;
   onPress?: () => void;
   onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
 }
 
-export const MorphCard = memo(function MorphCard({ card, dimmed, focusKey, onPress, onLongPress, onFocusChange }: MorphCardProps) {
+export const MorphCard = memo(function MorphCard({ card, place, focusKey, onPress, onLongPress, onFocusChange }: MorphCardProps) {
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
   return (
     <View style={[styles.cell, focused && styles.front]}>
-      <Body card={card} dimmed={dimmed} focused={focused} />
+      <Body card={card} place={place} focused={focused} />
       <FocusTarget
         focusKey={focusKey}
         onPress={onPress}
@@ -81,7 +83,7 @@ export const MorphCard = memo(function MorphCard({ card, dimmed, focusKey, onPre
   );
 });
 
-function Body({ card, dimmed, focused }: { card: CardModel; dimmed?: boolean; focused: boolean }) {
+function Body({ card, place, focused }: { card: CardModel; place?: RowPlace; focused: boolean }) {
   const p = useFocusProgress(focused, 260);
   const landscapeFade = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   const posterIn = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ scale: 0.86 + 0.14 * p.value }] }));
@@ -91,7 +93,7 @@ function Body({ card, dimmed, focused }: { card: CardModel; dimmed?: boolean; fo
   return (
     <>
       <Animated.View style={landscapeFade}>
-        <CardFrame width={L.width} height={L.height} radius={L.radius} focused={false} dimmed={dimmed}>
+        <CardFrame width={L.width} height={L.height} radius={L.radius} focused={false} place={place}>
           {landscapeUri ? <Image source={{ uri: landscapeUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
           {card.logoUri ? <Image source={{ uri: card.logoUri }} style={styles.logo} resizeMode="contain" fadeDuration={0} /> : null}
           {card.badge ? <CardBadge label={card.badge} /> : null}
