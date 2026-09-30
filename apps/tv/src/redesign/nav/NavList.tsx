@@ -22,8 +22,13 @@ import { NavScrollIndicator } from "./NavScrollIndicator";
  * plus — en suivant le focus, taillée pour la télécommande :
  *
  * - l'entrée focalisée est toujours entière et lisible, jamais au ras du
- *   bord : une voisine entière reste visible au-delà (`railRevealOffset`),
- *   que le moteur de focus trouve au prochain appui ;
+ *   bord. Au pavé, c'est tvOS qui fait défiler la ScrollView native : il tient
+ *   l'entrée à 180 points des bords (mesuré), trouve les entrées hors de
+ *   l'écran, et ne laisse pas le focus quitter la liste avant son bout. La
+ *   vue ne défile elle-même que là où tvOS ne fait rien — repliée (l'entrée
+ *   de la page courante), menu ouvert (l'entrée dont il parle, qui bouge
+ *   derrière), focus figé du banc — et le fait à la même marge
+ *   (`railRevealOffset`) ;
  * - un fondu en haut et en bas dit qu'il y a plus — seulement du côté où il
  *   y a plus ; il estompe le DESSIN des entrées (opacité, sur le fil de
  *   l'interface), jamais un calque posé dessus, qui masquerait les cibles au
@@ -115,13 +120,6 @@ export const NavList = memo(function NavList(props: NavListProps) {
     if (pending && Date.now() - pending.at < IN_FLIGHT_MS) scrollRef.current?.scrollTo({ y: pending.y, animated: false });
   }, [scrollRef]);
 
-  const handleFocus = useCallback(
-    (key: string, focused: boolean) => {
-      onFocusChange?.(key, focused);
-      if (focused && forced === null) reveal(key, true);
-    },
-    [onFocusChange, forced, reveal],
-  );
 
   // Au banc : la clé figée, montrée sans animation.
   useEffect(() => {
@@ -131,12 +129,13 @@ export const NavList = memo(function NavList(props: NavListProps) {
   useEffect(() => {
     if (!expanded && forced === null) reveal(activeKey, true);
   }, [expanded, activeKey, forced, reveal]);
-  // Le menu d'une entrée, ou l'entrée qu'on déplace : suivis où qu'ils aillent.
-  const followed = heldKey ?? movingKey ?? null;
-  const followedIndex = followed ? entries.findIndex((entry) => entry.key === followed) : -1;
+  // Le menu d'une entrée : elle bouge derrière lui (Monter, Descendre), le
+  // focus est dans le menu — la liste la suit. L'entrée qu'on déplace, elle,
+  // porte le focus natif : tvOS la suit.
+  const heldIndex = heldKey ? entries.findIndex((entry) => entry.key === heldKey) : -1;
   useEffect(() => {
-    if (followedIndex >= 0) reveal(followed, true);
-  }, [followed, followedIndex, reveal]);
+    if (heldIndex >= 0) reveal(heldKey, true);
+  }, [heldKey, heldIndex, reveal]);
 
   return (
     <>
@@ -164,7 +163,7 @@ export const NavList = memo(function NavList(props: NavListProps) {
             openness={props.openness}
             onSelect={props.onSelect}
             onLongPress={props.onLongPress}
-            onFocusChange={handleFocus}
+            onFocusChange={onFocusChange}
           />
         ))}
       </Animated.ScrollView>
@@ -172,14 +171,13 @@ export const NavList = memo(function NavList(props: NavListProps) {
   );
 });
 
-interface ListItemProps extends Pick<NavListProps, "expanded" | "openness" | "onSelect" | "onLongPress"> {
+interface ListItemProps extends Pick<NavListProps, "expanded" | "openness" | "onSelect" | "onLongPress" | "onFocusChange"> {
   index: number;
   entry: NavEntry;
   max: number;
   scrollY: SharedValue<number>;
   active: boolean;
   mode: NavItemMode | null;
-  onFocusChange: (key: string, focused: boolean) => void;
 }
 
 /** Une case de la liste : son entrée, et son fondu près d'un bord qui cache la suite. */

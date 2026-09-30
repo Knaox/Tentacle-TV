@@ -49,8 +49,12 @@ export const LIST_HEIGHT = RAIL_HEIGHT - LIST_TOP - LEGEND_HEIGHT - BOTTOM_PAD;
 export const LEGEND_TOP = LIST_TOP + LIST_HEIGHT;
 
 /**
- * La liste : l'entrée focalisée reste à `comfort` des bords — une voisine
- * entière au-delà, et un peu d'air (`railRevealOffset`).
+ * La liste : l'entrée focalisée reste à `comfort` des bords
+ * (`railRevealOffset`). C'est la marge que tvOS tient LUI-MÊME quand le focus
+ * natif fait défiler la liste — mesurée au simulateur tvOS 26.2, au pavé,
+ * dans les deux sens : 180 points, deux entrées et demie visibles au-delà.
+ * Les défilements que la vue décide (repliée, menu ouvert, focus figé du
+ * banc) tombent ainsi là où tvOS les aurait posés.
  */
 export const LIST_GEOMETRY: RailScrollGeometry = {
   viewport: LIST_HEIGHT,
@@ -58,7 +62,7 @@ export const LIST_GEOMETRY: RailScrollGeometry = {
   pitch: PITCH,
   padTop: 8,
   padBottom: 8,
-  comfort: PITCH + 12,
+  comfort: 180,
 };
 
 /** Sur quelle hauteur une entrée s'estompe en approchant d'un bord qui cache la suite. */

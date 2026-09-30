@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { railContentHeight, railMaxOffset, railRevealOffset, railThumb, type RailScrollGeometry } from "./railScroll";
 
-// La géométrie du rail d'Apple TV : entrées de 64, pas de 72, 685 visibles.
+// Une géométrie de rail : entrées de 64, pas de 72, 685 visibles, une voisine
+// entière de confort (Apple TV prend la marge que tvOS tient lui-même, 180).
 const G: RailScrollGeometry = { viewport: 685, item: 64, pitch: 72, padTop: 8, padBottom: 8, comfort: 84 };
 
 describe("la hauteur du contenu", () => {
