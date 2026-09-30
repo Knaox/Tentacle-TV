@@ -14,7 +14,15 @@ import { TitleArt } from "./TitleArt";
 /**
  * La carte héros : l'œuvre en grand dans un cadre arrondi, sa lumière qui
  * déborde tout autour (le halo), et à gauche, sur un voile, de quoi la
- * lancer. Une seule action primaire — la pilule blanche.
+ * lancer. Une seule action primaire — la pilule de lecture, au dégradé de la
+ * marque.
+ *
+ * Le contenu est calé en BAS, à la même distance du bord que de la gauche
+ * (`INSET`) : calé en haut, sa hauteur variable (raison, logo ou titre écrit,
+ * métadonnées sur deux rangées, synopsis) poussait les boutons contre le bord
+ * bas — jusqu'à les rogner sous un titre écrit sur deux lignes. D'où aussi un
+ * synopsis sur deux lignes, et un logo ou un titre bornés (moins haut quand la
+ * raison prend une ligne) : le haut du bloc garde toujours de l'air.
  */
 
 export interface HeroAction {
@@ -55,6 +63,19 @@ export interface HeroBannerProps {
 }
 
 const H = TV_STAGE.hero;
+/** La marge du contenu, à gauche comme en bas. */
+const INSET = 72;
+const ACTIONS_HEIGHT = 68;
+const DOT = 8;
+const TITLE_WIDTH = 760;
+
+/** Le titre écrit (faute de logo) : assez petit pour tenir en deux lignes
+ *  sans que iOS le rétrécisse — rétréci, il garde son interligne et ses deux
+ *  lignes se décollent. Un cran plus bas quand la raison prend une ligne. */
+function titleSize(title: string, withReason: boolean): number {
+  const size = title.length <= 14 ? 76 : title.length <= 24 ? 68 : 58;
+  return withReason ? size - 8 : size;
+}
 
 export const HeroBanner = memo(function HeroBanner({
   hero,
@@ -91,9 +112,15 @@ export const HeroBanner = memo(function HeroBanner({
           ) : hero.kicker ? (
             <Text style={text.kicker} numberOfLines={1}>{hero.kicker}</Text>
           ) : null}
-          <TitleArt title={hero.title} logoUri={hero.logoUri} maxWidth={680} maxHeight={hero.reason ? 140 : 170} />
+          <TitleArt
+            title={hero.title}
+            logoUri={hero.logoUri}
+            maxWidth={hero.logoUri ? 680 : TITLE_WIDTH}
+            maxHeight={hero.reason ? 120 : 150}
+            fontSize={titleSize(hero.title, Boolean(hero.reason))}
+          />
           <MetaLine items={hero.meta} />
-          {hero.synopsis ? <Text style={[text.body, styles.synopsis]} numberOfLines={hero.reason ? 2 : 3}>{hero.synopsis}</Text> : null}
+          {hero.synopsis ? <Text style={[text.body, styles.synopsis]} numberOfLines={2}>{hero.synopsis}</Text> : null}
           <View style={styles.actions}>
             <PillButton variant="brand" {...hero.primary} onPress={onPrimary} onFocusChange={onFocusChange} />
             {hero.secondary ? <PillButton variant="glass" {...hero.secondary} onPress={onSecondary} onFocusChange={onFocusChange} /> : null}
@@ -125,13 +152,14 @@ export const HeroBanner = memo(function HeroBanner({
 const styles = StyleSheet.create({
   frame: { overflow: "hidden", backgroundColor: colors.surface2 },
   ring: { borderWidth: 1, borderColor: white(0.14) },
-  content: { position: "absolute", left: 72, top: 84, width: 820, gap: 20 },
+  content: { position: "absolute", left: INSET, bottom: INSET, width: 820, gap: 18 },
   kickerBlock: { gap: 12 },
   reason: { flexDirection: "row", alignItems: "center", gap: 10 },
   reasonText: { ...fonts.semibold, fontSize: 27, color: white(0.92), flexShrink: 1 },
   synopsis: { maxWidth: 760, color: white(0.86) },
   actions: { flexDirection: "row", gap: 18, marginTop: 10 },
-  dots: { position: "absolute", right: 56, bottom: 44, flexDirection: "row", gap: 10 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: white(0.4) },
+  // Les points de la rotation, sur la ligne des boutons.
+  dots: { position: "absolute", right: 56, bottom: INSET + (ACTIONS_HEIGHT - DOT) / 2, flexDirection: "row", gap: 10 },
+  dot: { width: DOT, height: DOT, borderRadius: DOT / 2, backgroundColor: white(0.4) },
   dotActive: { width: 34, backgroundColor: colors.text },
 });
