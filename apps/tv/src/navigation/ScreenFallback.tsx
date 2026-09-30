@@ -1,9 +1,17 @@
 import { View } from "react-native";
 import { Skeleton } from "../components/SkeletonLoader";
 import { Colors, Spacing } from "../theme/colors";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { ScreenSkeletonRedesign } from "../redesignWiring/overlays/ScreenSkeletonRedesign";
+import type { RouteLike } from "./routeRailKey";
 
-/** Full-screen skeleton shown while lazy screens load */
-export function SkeletonLoader() {
+/** Ce qu'un écran paresseux montre en se chargeant : la silhouette de la
+ *  refonte sur Apple TV (navigation gardée), l'ancien squelette ailleurs. */
+export function SkeletonLoader({ route }: { route?: RouteLike }) {
+  return REDESIGN_ACTIVE ? <ScreenSkeletonRedesign route={route} /> : <LegacySkeletonLoader />;
+}
+
+function LegacySkeletonLoader() {
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep, padding: Spacing.screenPadding }}>
       <Skeleton width={200} height={28} borderRadius={6} style={{ marginTop: 40 }} />

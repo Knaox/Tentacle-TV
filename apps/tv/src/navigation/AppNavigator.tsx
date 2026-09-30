@@ -80,9 +80,9 @@ export function AppNavigator() {
       // react-freeze) → squelette plein écran et focus natif perdu. Ici
       // l'écran courant reste affiché pendant le chargement, et un crash ne
       // remplace que l'écran fautif — le rail (sibling du Navigator) survit.
-      screenLayout={({ children }) => (
-        <ErrorBoundary>
-          <Suspense fallback={<SkeletonLoader />}>{children}</Suspense>
+      screenLayout={({ children, route }) => (
+        <ErrorBoundary route={route}>
+          <Suspense fallback={<SkeletonLoader route={route} />}>{children}</Suspense>
         </ErrorBoundary>
       )}
     >

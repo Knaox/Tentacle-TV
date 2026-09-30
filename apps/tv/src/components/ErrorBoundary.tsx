@@ -3,16 +3,29 @@ import { View, Text } from "react-native";
 import { Colors } from "../theme/colors";
 import { Focusable } from "./focus/Focusable";
 import { Button } from "../theme/buttons";
+import type { RouteLike } from "../navigation/routeRailKey";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { ScreenErrorRedesign } from "../redesignWiring/overlays/ScreenErrorRedesign";
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
 }
 
-export class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  ErrorBoundaryState
-> {
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  /** La route de l'écran enveloppé (frontière par écran) ; absente à la
+   *  racine de l'app, hors de toute navigation. */
+  route?: RouteLike;
+}
+
+/**
+ * La frontière d'erreur — autour de l'app et de chaque écran. Sur Apple TV,
+ * ce qui remplace l'écran tombé est celui de la refonte
+ * (`ScreenErrorRedesign`, textes traduits, navigation gardée) ; Android TV
+ * garde l'ancien.
+ */
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -24,6 +37,9 @@ export class ErrorBoundary extends React.Component<
   };
 
   render() {
+    if (this.state.hasError && REDESIGN_ACTIVE) {
+      return <ScreenErrorRedesign error={this.state.error} route={this.props.route} onRetry={this.handleRetry} />;
+    }
     if (this.state.hasError) {
       return (
         <View style={{
