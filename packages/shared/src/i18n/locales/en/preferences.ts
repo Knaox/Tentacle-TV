@@ -353,4 +353,17 @@ export default {
   tvPressAgainToConfirm: "Press OK again to confirm.",
   glassClassic: "Classic glass",
   glassCurrent: "Current",
+
+  // Apple TV "Navigation" setting: what the left bar shows, and in which order.
+  sectionNavigation: "Navigation",
+  navigationTitle: "The navigation bar",
+  navigationCaption:
+    "Choose what appears in the left bar, and in which order. Search, Home and your profile always stay there.",
+  navigationShown: "Shown",
+  navigationHidden: "Hidden",
+  navigationMoveHint: "OK: move",
+  navigationMovingHint: "Up, down: move · OK: drop",
+  navigationResetOrder: "Default order",
+  navigationCount: "{{shown}} of {{total}} shown",
+  navigationAllShown: "Everything is shown",
 } as const;

@@ -1,4 +1,5 @@
 import type { PlaybackPreset } from "@tentacle-tv/shared";
+import type { IconName } from "../../icons/Icon";
 
 /**
  * Le contrat des réglages : ce que l'intégration résout avant de monter la
@@ -6,7 +7,7 @@ import type { PlaybackPreset } from "@tentacle-tv/shared";
  * tout ce qui dépend du compte, du serveur ou de l'appareil arrive résolu.
  */
 
-export type SettingsTab = "account" | "playback" | "appearance" | "about";
+export type SettingsTab = "account" | "playback" | "appearance" | "navigation" | "about";
 
 export type InterfaceLanguage = "fr" | "en";
 
@@ -70,4 +71,24 @@ export interface SettingsAbout {
   userName: string;
   deviceLabel: string;
   year: number;
+}
+
+/** Une entrée de la navigation, au réglage « Navigation ». */
+export interface NavigationSettingsEntry {
+  key: string;
+  label: string;
+  icon: IconName;
+  hidden: boolean;
+}
+
+/** Le réglage « Navigation » : les entrées organisables de la barre de gauche. */
+export interface SettingsNavigation {
+  /** Dans l'ordre choisi, masquées comprises. */
+  entries: NavigationSettingsEntry[];
+  /** L'entrée soulevée : HAUT / BAS la déplacent, OK la pose. */
+  movingKey: string | null;
+  /** Une entrée est masquée : « Tout afficher » paraît. */
+  canShowAll: boolean;
+  /** L'ordre a été changé : « Ordre par défaut » paraît. */
+  canResetOrder: boolean;
 }

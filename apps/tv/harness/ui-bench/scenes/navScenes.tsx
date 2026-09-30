@@ -3,9 +3,11 @@ import { StyleSheet, View } from "react-native";
 import { i18n } from "@tentacle-tv/shared";
 import { NavEntryMenu } from "../../../src/redesign/nav/NavEntryMenu";
 import { HomeView } from "../../../src/redesign/screens/home/HomeView";
+import { SettingsView } from "../../../src/redesign/screens/settings/SettingsView";
 import type { BenchData } from "../data/benchData";
-import { benchLibraries, benchMenu, benchMovable, benchNav, type BenchNavOptions } from "../data/navModels";
+import { benchLibraries, benchMenu, benchMovable, benchNav, benchNavigationSettings, type BenchNavOptions } from "../data/navModels";
 import { heroOf } from "../data/screenModels";
+import { settingsImages, settingsPropsOf } from "../data/settingsModels";
 import { heroItems, rowsOf } from "./homeScenes";
 import type { BenchScene } from "./types";
 
@@ -13,7 +15,8 @@ import type { BenchScene } from "./types";
  * La navigation qui tient BEAUCOUP de bibliothèques (24 ici : les trois du
  * compte, puis de quoi remplir) : repliée, dépliée et défilée en haut, au
  * milieu, en bas ; une bibliothèque masquée ; le menu d'appui long ; le mode
- * « déplacer ». Posée sur l'accueil, pour juger le voile et le verre.
+ * « déplacer » ; et le réglage « Navigation » des réglages, au repos et en
+ * plein déplacement. Posée sur l'accueil, pour juger le voile et le verre.
  *
  * Au banc, la clé figée est amenée dans la zone de confort de la liste comme
  * le ferait le focus natif — sans animation. La planche `--focus` passe les
@@ -51,6 +54,31 @@ function NavScene({ data, activeKey = "Home", options = {}, menu }: {
       {shown ? <NavEntryMenu title={shown.title} caption={shown.caption} items={shown.items} /> : null}
     </View>
   );
+}
+
+/** Le réglage « Navigation » : 24 bibliothèques, une masquée, Ma liste descendue d'un cran. */
+function NavSettingsScene({ data, moving }: { data: BenchData; moving?: boolean }) {
+  const custom = movedOrder(data, "Watchlist", 1);
+  // En plein déplacement : « Séries » soulevée, montée en troisième place.
+  const options: BenchNavOptions = {
+    libraries: MANY,
+    hidden: [lib(data, 5)],
+    order: moving ? placeAt(custom, lib(data, 2), 2) : custom,
+    movingKey: moving ? lib(data, 2) : null,
+  };
+  const props = settingsPropsOf(data, {
+    nav: benchNav(data, "Settings", options),
+    tab: "navigation",
+    navigation: benchNavigationSettings(data, options),
+  });
+  return <SettingsView {...props} />;
+}
+
+/** `key` posée à la place `index` de l'ordre. */
+function placeAt(keys: string[], key: string, index: number): string[] {
+  const rest = keys.filter((other) => other !== key);
+  rest.splice(index, 0, key);
+  return rest;
 }
 
 /** Déplacée de deux crans vers le bas : l'ordre qu'aurait laissé le mode « déplacer ». */
@@ -147,6 +175,27 @@ export const NAV_SCENES: BenchScene[] = [
     ),
   },
 ];
+
+NAV_SCENES.push(
+  {
+    id: "navigation/reglages",
+    group: "Navigation",
+    label: "Réglages › Navigation",
+    focusKeys: ["settings:tab:navigation", "settings:nav:3", "settings:nav:3:visibility", "settings:nav:showAll", "settings:nav:resetOrder"],
+    settleMs: 1400,
+    images: settingsImages,
+    render: (data) => <NavSettingsScene data={data} />,
+  },
+  {
+    id: "navigation/reglages-deplacer",
+    group: "Navigation",
+    label: "Réglages › Navigation — une ligne soulevée",
+    focusKeys: ["settings:nav:2"],
+    settleMs: 1400,
+    images: settingsImages,
+    render: (data) => <NavSettingsScene data={data} moving />,
+  },
+);
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },

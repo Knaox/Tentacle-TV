@@ -354,4 +354,18 @@ export default {
   tvPressAgainToConfirm: "Appuyez de nouveau sur OK pour confirmer.",
   glassClassic: "Verre classique",
   glassCurrent: "Actuel",
+
+  // Réglage « Navigation » d'Apple TV : ce que montre la barre de gauche, et
+  // dans quel ordre. Les entrées sont féminines (« une entrée masquée »).
+  sectionNavigation: "Navigation",
+  navigationTitle: "La barre de navigation",
+  navigationCaption:
+    "Choisissez ce qui paraît dans la barre de gauche, et dans quel ordre. Rechercher, l'accueil et votre profil y restent toujours.",
+  navigationShown: "Affichée",
+  navigationHidden: "Masquée",
+  navigationMoveHint: "OK : déplacer",
+  navigationMovingHint: "Haut, bas : déplacer · OK : poser",
+  navigationResetOrder: "Ordre par défaut",
+  navigationCount: "{{shown}} sur {{total}} affichées",
+  navigationAllShown: "Tout est affiché",
 } as const;

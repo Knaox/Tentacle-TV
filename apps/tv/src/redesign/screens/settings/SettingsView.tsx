@@ -15,6 +15,7 @@ import { AboutPanel } from "./AboutPanel";
 import { AccountPanel } from "./AccountPanel";
 import { AppearancePanel } from "./AppearancePanel";
 import { ChoiceSheet } from "./ChoiceSheet";
+import { NavigationPanel } from "./NavigationPanel";
 import { PlaybackPanel } from "./PlaybackPanel";
 import { SettingsTabs, TAB_WIDTH, type SettingsTabItem } from "./SettingsTabs";
 import type {
@@ -24,14 +25,16 @@ import type {
   LibrarySettingKey,
   SettingsAbout,
   SettingsAccount,
+  SettingsNavigation,
   SettingsPlayback,
   SettingsTab,
 } from "./settingsTypes";
 
 /**
  * Les réglages : la navigation (Réglages actif), le titre, les onglets en
- * colonne — Compte · Lecture · Apparence · À propos — et à droite un grand
- * panneau de verre. La liste de choix d'un réglage s'ouvre par-dessus tout.
+ * colonne — Compte · Lecture · Apparence · Navigation · À propos — et à droite
+ * un grand panneau de verre. La liste de choix d'un réglage s'ouvre
+ * par-dessus tout.
  *
  * Contrat (tout arrive résolu ; les libellés fixes sont traduits ici) :
  * - `tab` / `onSelectTab` : l'onglet est un état de l'ÉCRAN (Retour quitte
@@ -51,12 +54,15 @@ import type {
  *   `useSetLibraryPreference` (trio complet) ; Retour la remet à `null` ;
  * - Liquid Glass : lu sur `LiquidGlassProvider` (clé `tentacle_liquid_glass`),
  *   `onToggleLiquidGlass` écrit la clé ;
+ * - `navigation` (Apple TV) : les entrées organisables de la barre de gauche
+ *   (`NavigationPanel`) ; absent, l'onglet ne paraît pas ;
  * - `about` : `versions.json` (`tv`), serveur, compte, appareil, année.
  *
  * Clés de focus : `settings:tab:<onglet>`, `settings:changeServer`,
  * `settings:logout`, `settings:preset:<mode>`, `settings:lang:<fr|en>`,
  * `settings:lib:<i>:<réglage|reset>`, `settings:tunneling`,
  * `settings:matchFrameRate`, `settings:liquidGlass`,
+ * `settings:nav:<i>[:visibility]`, `settings:nav:showAll|resetOrder`,
  * `settings:choice:<i>` (liste de choix). Groupes : `settings:tabs` (la
  * colonne des onglets) et `settings:panel` (le panneau) — GAUCHE depuis le
  * panneau revient à l'onglet affiché, DROITE depuis un onglet entre dans le
@@ -69,6 +75,7 @@ export interface SettingsViewProps {
   account: SettingsAccount;
   playback: SettingsPlayback;
   about: SettingsAbout;
+  navigation?: SettingsNavigation | null;
   choiceList?: ChoiceListModel | null;
   /** Un fond d'œuvre pour l'aperçu du verre ; absent → un dégradé. */
   glassPreviewUri?: string;
@@ -88,6 +95,10 @@ export interface SettingsViewProps {
   onToggleTunneling?: (next: boolean) => void;
   onToggleMatchFrameRate?: (next: boolean) => void;
   onToggleLiquidGlass?: (next: boolean) => void;
+  onMoveNavEntry?: (key: string) => void;
+  onToggleNavEntry?: (key: string) => void;
+  onShowAllNav?: () => void;
+  onResetNavOrder?: () => void;
   onChoose?: (value: string) => void;
 }
 
@@ -102,9 +113,11 @@ const PANEL_RADIUS = TV_STAGE.hero.radius;
 const PANEL_INNER = PANEL_WIDTH - PANEL_PAD_X * 2;
 
 export const SettingsView = memo(function SettingsView(props: SettingsViewProps) {
-  const { nav, tab, account, playback, about, choiceList, palette = NEUTRAL_PALETTE } = props;
+  const { nav, tab, account, playback, about, navigation, choiceList, palette = NEUTRAL_PALETTE } = props;
   const { t } = useTranslation(["preferences", "nav", "about"]);
   const liquid = useLiquidGlassEnabled();
+  const navTotal = navigation?.entries.length ?? 0;
+  const navShown = navigation?.entries.filter((entry) => !entry.hidden).length ?? 0;
 
   const tabs = useMemo<SettingsTabItem[]>(() => [
     { key: "account", label: t("preferences:sectionAccount"), caption: account.name, icon: "user" },
@@ -116,8 +129,15 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
       caption: t(liquid ? "preferences:liquidGlassTitle" : "preferences:glassClassic"),
       icon: "sparkles",
     },
+    ...(navigation ? [{
+      key: "navigation" as const,
+      label: t("preferences:sectionNavigation"),
+      // Ce qu'il règle en ce moment : « 24 sur 27 affichées ».
+      caption: navShown === navTotal ? t("preferences:navigationAllShown") : t("preferences:navigationCount", { shown: navShown, total: navTotal }),
+      icon: "panelLeft" as const,
+    }] : []),
     { key: "about", label: t("nav:about"), caption: t("about:version", { version: about.version }), icon: "info" },
-  ], [t, account.name, playback.preset, liquid, about.version]);
+  ], [t, account.name, playback.preset, liquid, navigation, navShown, navTotal, about.version]);
 
   return (
     <View style={styles.root}>
@@ -155,6 +175,15 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
             ) : null}
             {tab === "appearance" ? (
               <AppearancePanel width={PANEL_INNER} previewImageUri={props.glassPreviewUri} onToggleLiquidGlass={props.onToggleLiquidGlass} />
+            ) : null}
+            {tab === "navigation" && navigation ? (
+              <NavigationPanel
+                navigation={navigation}
+                onMoveEntry={props.onMoveNavEntry}
+                onToggleEntry={props.onToggleNavEntry}
+                onShowAll={props.onShowAllNav}
+                onResetOrder={props.onResetNavOrder}
+              />
             ) : null}
             {tab === "about" ? <AboutPanel about={about} /> : null}
           </ScrollView>

@@ -3,6 +3,7 @@ import { applyRailOrder } from "@tentacle-tv/tv-core";
 import type { IconName } from "../../../src/redesign/icons/Icon";
 import type { NavMenuItem } from "../../../src/redesign/nav/NavEntryMenu";
 import type { NavEntry, NavRailProps } from "../../../src/redesign/nav/NavRail";
+import type { SettingsNavigation } from "../../../src/redesign/screens/settings/settingsTypes";
 import type { BenchData } from "./benchData";
 
 /**
@@ -133,3 +134,15 @@ export function benchMenu(nav: NavRailProps, heldKey: string, canShowAll: boolea
   };
 }
 
+/** Le réglage « Navigation » des réglages, sur les mêmes entrées. */
+export function benchNavigationSettings(data: BenchData, options: BenchNavOptions = {}): SettingsNavigation {
+  const hidden = new Set(options.hidden ?? []);
+  const entries = benchMovable(data, options).map(({ key, label, icon }) => ({ key, label, icon, hidden: hidden.has(key) }));
+  const defaults = benchMovable(data, { ...options, order: [] }).map((entry) => entry.key);
+  return {
+    entries,
+    movingKey: options.movingKey ?? null,
+    canShowAll: hidden.size > 0,
+    canResetOrder: entries.some((entry, index) => entry.key !== defaults[index]),
+  };
+}

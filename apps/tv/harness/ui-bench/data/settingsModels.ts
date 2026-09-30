@@ -14,6 +14,7 @@ import type { SettingsViewProps } from "../../../src/redesign/screens/settings/S
 import { LANGUAGE_CODES, LANGUAGE_KEYS, SUBTITLE_MODES } from "../../../src/utils/languageKeys";
 import type { BenchData } from "./benchData";
 import { paletteOf } from "./models";
+import { benchNavigationSettings } from "./navModels";
 import { navOf } from "./screenModels";
 
 /**
@@ -144,6 +145,7 @@ export function settingsPropsOf(data: BenchData, overrides: Partial<SettingsView
     account: accountOf(data),
     playback: playbackOf(data),
     about: aboutOf(data),
+    navigation: benchNavigationSettings(data),
     glassPreviewUri: glassPreviewOf(data),
     palette: heroPaletteOf(data),
     ...overrides,

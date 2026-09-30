@@ -6,10 +6,12 @@ import { SettingsView } from "../../redesign/screens/settings/SettingsView";
 import type { SettingsTab } from "../../redesign/screens/settings/settingsTypes";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { backdropUriOf, paletteOfItem } from "../cards/cardArtwork";
+import { useFocusStore } from "../focus/focusStore";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { ChoiceModal } from "./ChoiceModal";
 import { TabDestinationProvider, tabFocusKey, useActiveTabDestination, useSettingsGroups } from "./settingsFocus";
+import { useNavigationSettings } from "./useNavigationSettings";
 import { useSettingsModel } from "./useSettingsModel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
@@ -19,15 +21,19 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
  * (navigation, Menu, focus d'entrée et de retour), sur la logique partagée
  * avec les réglages d'Android TV (`useSettingsModel`).
  *
- * L'onglet est un état de l'ÉCRAN : l'arrivée focalise l'onglet affiché, et
- * Retour ne remonte pas les onglets parcourus. La liste de choix s'ouvre dans
+ * L'onglet est un état de l'ÉCRAN : l'arrivée focalise l'onglet affiché
+ * (`tab` de la route : « Réglages de la navigation », depuis le menu d'une
+ * entrée du rail), et Retour ne remonte pas les onglets parcourus — il annule
+ * d'abord un déplacement en cours dans l'onglet Navigation. La liste de choix s'ouvre dans
  * une `Modal` (`ChoiceModal`), pas dans la vue. Le fond et l'aperçu du verre
  * prennent l'œuvre en cours de lecture, quand il y en a une.
  */
-export function SettingsRedesign(_props: Props) {
+export function SettingsRedesign({ route }: Props) {
   const model = useSettingsModel();
-  const [tab, setTab] = useState<SettingsTab>("account");
-  const screen = useRedesignScreen({ railKey: "Settings", entryKey: tabFocusKey(tab) });
+  const [tab, setTab] = useState<SettingsTab>(route.params?.tab ?? "account");
+  const focus = useFocusStore();
+  const nav = useNavigationSettings(focus);
+  const screen = useRedesignScreen({ railKey: "Settings", entryKey: tabFocusKey(tab), onBack: nav.cancelNavMove, focus });
   useSettingsGroups(screen.focus);
   const tabDestination = useActiveTabDestination(screen.focus, tab);
 
@@ -49,6 +55,7 @@ export function SettingsRedesign(_props: Props) {
           account={model.account}
           playback={model.playback}
           about={model.about}
+          navigation={nav.navigation}
           choiceList={null}
           glassPreviewUri={preview}
           palette={artwork ? paletteOfItem(artwork) : undefined}
@@ -62,6 +69,10 @@ export function SettingsRedesign(_props: Props) {
           onToggleTunneling={model.onToggleTunneling}
           onToggleMatchFrameRate={model.onToggleMatchFrameRate}
           onToggleLiquidGlass={model.onToggleLiquidGlass}
+          onMoveNavEntry={nav.onMoveNavEntry}
+          onToggleNavEntry={nav.onToggleNavEntry}
+          onShowAllNav={nav.onShowAllNav}
+          onResetNavOrder={nav.onResetNavOrder}
         />
       </TabDestinationProvider>
       <ChoiceModal list={model.choiceList} focus={screen.focus} onChoose={model.onChoose} onClose={model.closeChoices} />
