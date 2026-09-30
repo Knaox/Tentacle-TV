@@ -143,6 +143,32 @@ Ce qu'on en tire :
   feuilles posées sur un fond fumé presque opaque (filtres, actions) y
   paraissent presque noires : ce fond date d'avant le flou natif.
 
+## Branchement — fiche, bande-annonce, feuille (Apple TV)
+
+Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
+`redesignWiring/trailer/`, `redesignWiring/sheet/` ; Android TV garde ses
+écrans (`LegacyMediaDetailScreen`, `LegacyTrailerScreen`, `TVCardActionSheet`).
+
+- **Guides d'entrée** (`redesignWiring/focus/entryGuide.tsx`) : le conteneur
+  d'un `FocusGroup` qui renvoie le focus ARRIVANT d'ailleurs vers le dernier
+  élément visité du groupe, sinon vers son entrée. Sans eux, mesuré au banc
+  par XCUITest : BAS depuis « Reprendre » visait l'onglet SOUS le bouton
+  (« Saison 8 ») au lieu de la saison affichée, puis l'épisode sous l'onglet
+  au lieu de celui à reprendre ; HAUT depuis la droite de l'écran ne
+  rejoignait jamais l'en-tête (rien au-dessus ne chevauche — d'où le groupe
+  `detail:header`, le premier écran en pleine largeur). `destinations` doit
+  TOUJOURS être un tableau : sans lui tvOS rend le contenu du guide
+  inatteignable.
+- **Feuille** : dans une `Modal` (Menu par `onRequestClose`), entrée sur la
+  première action, garde anti-clic fantôme sur toutes ses clés (elle s'ouvre
+  sous un OK encore enfoncé), étoiles entrées par la première (sinon BAS
+  tombait sur la cinquième : OK notait 10/10). « Noter » sur la fiche ouvre
+  la même feuille réduite à ses étoiles.
+- **Bande-annonce** : le lecteur est monté dès le chargement (la vue ne le
+  montait qu'en lecture : il ne pouvait pas charger), et le chrome suit
+  `chromeDimmed` seul — « Fermer », seul focalisable, garde le focus : le
+  câblage rallume au moindre geste.
+
 ---
 
 ## Inventaire — les écrans
