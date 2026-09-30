@@ -12,6 +12,10 @@ import { SHOW_ALL_KEY } from "./useNavEntries";
  *
  * - Monter / Descendre enregistrent tout de suite et LAISSENT le menu ouvert :
  *   OK, OK, OK fait monter l'entrée de trois crans, qu'on voit bouger derrière.
+ *   À la fermeture, tvOS rend le focus à la CASE qui l'avait — elle montre
+ *   désormais une autre entrée : dès qu'il est rendu, on le réclame pour
+ *   l'entrée dont parlait le menu. Sauf après « Masquer » : la suivante prend
+ *   sa case et le focus, on enchaîne.
  * - Déplacer referme le menu et SOULÈVE l'entrée : HAUT / BAS la déplacent, OK
  *   la pose, Retour annule. La liste de la vue est rendue par position : le
  *   focus natif passe à la case voisine, et l'ordre en cours y amène
@@ -54,6 +58,8 @@ export interface RailArrange {
 }
 
 const NAV_PREFIX = "nav:";
+/** Le focus rendu au rail après la fermeture du menu arrive dans ce délai. */
+const RETURN_WITHIN_MS = 1500;
 /** Ce qui ne bouge jamais : verrouillé pendant un déplacement. */
 const FIXED_KEYS = ["Search", "Home", SHOW_ALL_KEY, "Settings"].map((key) => `${NAV_PREFIX}${key}`);
 
@@ -77,6 +83,8 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
   }, []);
   const settingsRef = useRef(onOpenSettings);
   settingsRef.current = onOpenSettings;
+  /** L'entrée que le focus doit retrouver quand tvOS le rend au rail, menu fermé. */
+  const returnTo = useRef<{ key: string; at: number } | null>(null);
 
   const menu = useMemo<NavMenuModel | null>(() => {
     if (!heldKey) return null;
@@ -97,7 +105,11 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
   const openMenu = useCallback((key: string) => {
     if (isMovableEntry(key) && !movingRef.current) setHeldKey(key);
   }, []);
-  const closeMenu = useCallback(() => setHeldKey(null), []);
+  const closeMenu = useCallback(() => {
+    const key = heldRef.current;
+    returnTo.current = key ? { key, at: Date.now() } : null;
+    setHeldKey(null);
+  }, []);
 
   const lockFixed = useCallback(
     (locked: boolean) => {
@@ -133,6 +145,7 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
           break;
         case "showAll":
           pinning.showAll();
+          returnTo.current = { key, at: Date.now() };
           break;
         case "move":
           lockFixed(true);
@@ -145,6 +158,20 @@ export function useRailArrange(focus: FocusStore, onOpenSettings: () => void): R
       setHeldKey(null);
     },
     [lockFixed, setMoving],
+  );
+
+  // Menu fermé : le premier focus que tvOS rend au rail va à l'entrée du menu.
+  useEffect(
+    () =>
+      focus.subscribe((key, focused) => {
+        const target = returnTo.current;
+        if (!focused || !target || !key.startsWith(NAV_PREFIX) || key.startsWith(`${NAV_PREFIX}menu:`)) return;
+        returnTo.current = null;
+        // Rendu tard (le focus était parti ailleurs) : plus rien à retrouver.
+        if (Date.now() - target.at > RETURN_WITHIN_MS) return;
+        if (key !== `${NAV_PREFIX}${target.key}`) focus.claim(`${NAV_PREFIX}${target.key}`);
+      }),
+    [focus],
   );
 
   // Le déplacement : la case voisine prend le focus, l'entrée soulevée y va.
