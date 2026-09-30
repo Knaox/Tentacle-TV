@@ -49,8 +49,10 @@ C'est le GPU du Mac qui rend l'Apple TV simulée : on compare des RAPPORTS entre
 deux états, jamais une valeur d'appareil. Protocole : chaque cas plusieurs
 fois, en alternance (`scene …`, `glass …`, `gpu 8`), pour répartir la dérive.
 Le groupe « Mesure » du catalogue donne le pire cas (une image qui glisse sans
-fin sous six verres, sous les mêmes verres masqués, sans verre) ; le groupe
-« Verre » donne le verre à juger à l'œil (sur une image, sous un fondu).
+fin sous six verres, sous les mêmes verres masqués, sans verre) et le coût des
+fonds posés sous le verre (`mesure/fonds-dessines` contre `mesure/fonds`) ; le
+groupe « Verre » donne le verre à juger à l'œil (sur une image, sous un fondu)
+et le texte blanc sous chaque ton, sur du blanc pur (`verre/lisibilite`).
 
 ## Ajouter une scène
 
