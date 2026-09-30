@@ -1,11 +1,10 @@
-import { memo, useState, type ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { PillButton } from "../../controls/PillButton";
-import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
@@ -15,12 +14,15 @@ import { colors, fonts, scrim, text } from "../../theme/tokens";
  * La bande-annonce, plein écran. La vidéo occupe tout ; par-dessus, rien que
  * « Fermer » en haut à gauche — la seule chose focalisable (la vidéo, sourde,
  * ne doit pas prendre les touches) — et le titre, qui s'effacent ensemble
- * quand le câblage le dit (`chromeDimmed`, 3 s après le début). Le focus sur
- * « Fermer » les rallume.
+ * quand le câblage le dit (`chromeDimmed`, 3 s après le début). « Fermer »
+ * garde le focus pendant toute la lecture : c'est le câblage qui rallume le
+ * chrome, au moindre geste de la télécommande.
  *
  * Vue pure. Contrat :
  * - `video` : le lecteur (WebView relais sur Android, flux MP4 sur tvOS),
- *   rendu par le câblage ; absent, l'image de l'œuvre en tient lieu ;
+ *   rendu par le câblage ; absent, l'image de l'œuvre en tient lieu. Il est
+ *   monté DÈS le chargement (sans quoi il ne chargerait jamais), sous un
+ *   voile opaque qui ne se lève qu'en lecture ;
  * - `state` : `loading` tant que l'embed charge, `playing`, `unavailable`
  *   (pas d'identifiant YouTube, pas de serveur, erreur) ;
  * - `onClose` : « Fermer » ; Retour ferme aussi (câblage).
@@ -43,21 +45,22 @@ const CLOSE_KEY = "trailer:close";
 
 export const TrailerView = memo(function TrailerView({ state, title, backdropUri, video, chromeDimmed = false, onClose }: TrailerViewProps) {
   const { t } = useTranslation("common");
-  const forced = useForcedFocusKey();
-  const [closeFocusedNative, setCloseFocused] = useState(false);
-  const closeFocused = forced !== null ? forced === CLOSE_KEY : closeFocusedNative;
-  const lit = useFocusProgress(state !== "playing" || !chromeDimmed || closeFocused, 420);
+  const lit = useFocusProgress(state !== "playing" || !chromeDimmed, 420);
   const chrome = useAnimatedStyle(() => ({ opacity: 0.15 + 0.85 * lit.value }));
   const caption = useAnimatedStyle(() => ({ opacity: lit.value }));
 
   return (
     <View style={styles.root}>
-      {state === "playing" ? (
-        <View style={StyleSheet.absoluteFill}>
-          {video ?? (backdropUri ? <Image source={{ uri: backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null)}
+      {state !== "unavailable" && video ? <View style={StyleSheet.absoluteFill}>{video}</View> : null}
+      {state === "playing" && !video && backdropUri ? (
+        <Image source={{ uri: backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      ) : null}
+      {state !== "playing" ? (
+        <View style={[StyleSheet.absoluteFill, styles.cover]}>
+          {backdropUri ? (
+            <Image source={{ uri: backdropUri }} style={[StyleSheet.absoluteFill, styles.dimArt]} resizeMode="cover" blurRadius={state === "unavailable" ? 18 : 0} />
+          ) : null}
         </View>
-      ) : backdropUri ? (
-        <Image source={{ uri: backdropUri }} style={[StyleSheet.absoluteFill, styles.dimArt]} resizeMode="cover" blurRadius={state === "unavailable" ? 18 : 0} />
       ) : null}
 
       {state === "playing" ? (
@@ -85,13 +88,13 @@ export const TrailerView = memo(function TrailerView({ state, title, backdropUri
             <Text style={[styles.title, styles.centered]} numberOfLines={2}>{title}</Text>
             <Text style={[text.body, styles.centered]}>{t("trailerUnavailableTv")}</Text>
             <View style={styles.action}>
-              <PillButton label={t("close")} icon="close" focusKey={CLOSE_KEY} onPress={onClose} onFocusChange={setCloseFocused} />
+              <PillButton label={t("close")} icon="close" focusKey={CLOSE_KEY} onPress={onClose} />
             </View>
           </GlassSurface>
         </View>
       ) : (
         <Animated.View style={[styles.close, chrome]}>
-          <PillButton label={t("close")} icon="close" variant="glass" size="md" focusKey={CLOSE_KEY} onPress={onClose} onFocusChange={setCloseFocused} />
+          <PillButton label={t("close")} icon="close" variant="glass" size="md" focusKey={CLOSE_KEY} onPress={onClose} />
         </Animated.View>
       )}
     </View>
@@ -100,6 +103,8 @@ export const TrailerView = memo(function TrailerView({ state, title, backdropUri
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
+  // Le voile du chargement : opaque, il cache le lecteur qui se prépare dessous.
+  cover: { backgroundColor: "#000" },
   dimArt: { opacity: 0.32 },
   center: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", paddingHorizontal: 240 },
   spinner: { transform: [{ scale: 1.6 }], marginBottom: 44 },

@@ -30,13 +30,10 @@ function Trailer({ data, state, dimmed = false }: { data: BenchData; state: "loa
   );
 }
 
-/** Une clé qui ne désigne rien : le focus « ailleurs », pour figer le chrome
- *  effacé (sur l'appareil, « Fermer » garde le focus mais s'estompe). */
-const IDLE = "trailer:idle";
-
 export const TRAILER_SCENES: BenchScene[] = [
   { id: "bande-annonce/lecture", group: "Bande-annonce", label: "Lecture, « Fermer » visible", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="playing" /> },
-  { id: "bande-annonce/estompee", group: "Bande-annonce", label: "Lecture, chrome estompé", focusKeys: [IDLE], settleMs: 1400, render: (data) => <Trailer data={data} state="playing" dimmed /> },
+  // Comme sur l'appareil : « Fermer » garde le focus pendant que le chrome s'estompe.
+  { id: "bande-annonce/estompee", group: "Bande-annonce", label: "Lecture, chrome estompé", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="playing" dimmed /> },
   { id: "bande-annonce/chargement", group: "Bande-annonce", label: "Chargement", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="loading" /> },
   { id: "bande-annonce/indisponible", group: "Bande-annonce", label: "Indisponible sur ce téléviseur", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="unavailable" /> },
 ];
