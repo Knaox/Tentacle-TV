@@ -9,8 +9,9 @@ import type { TimelineSegment } from "./playerTypes";
 /**
  * La frise : le temps écoulé, la barre (en mémoire, lu, la pastille) et la
  * durée. Passive — jamais focalisable : le déplacement se pilote au pavé et
- * se montre en plein écran (`ScrubOverlay`). Le lu est la jauge AMBRE, la
- * petite touche d'accent du lecteur.
+ * se montre en plein écran (`ScrubOverlay`). Le lu porte le dégradé de la
+ * marque, violet → rose, comme la barre du lecteur du bureau
+ * (`--progress-fill`) : le rose arrive TOUJOURS à la tête de lecture.
  *
  * `ghost` : où l'on vise pendant un déplacement (curseur blanc cerclé), à
  * côté de la position réelle.
@@ -64,8 +65,10 @@ function Piece({ from, to, loaded, played, span }: {
     <View style={[styles.piece, { left, width }]}>
       <View style={[styles.fill, styles.buffer, { width: extent(loaded) }]} />
       <View style={[styles.fill, styles.played, { width: extent(played) }]}>
-        {/* Le dégradé court sur toute la frise : chaque morceau n'en montre que sa part. */}
-        <BrandGradient style={{ left: -left, width: TRACK_WIDTH, right: undefined }} />
+        {/* Le dégradé court sur tout le LU (et non sur toute la frise, qui
+            restait violette sur la première moitié d'un film) : chaque morceau
+            n'en montre que sa part. */}
+        <BrandGradient style={{ left: -left, width: Math.max(1, played * TRACK_WIDTH), right: undefined }} />
       </View>
       {spanEnd > spanStart ? <View style={[styles.fill, styles.span, { left: spanStart, width: spanEnd - spanStart }]} /> : null}
     </View>
