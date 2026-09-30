@@ -20,6 +20,10 @@ const SCRUB_TWIN_PRESS_MS = 400;
  *  maintien (« ça clique tout seul sur OK »). Un vrai OK de confirmation
  *  n'arrive qu'après relâchement, donc au-delà de cette fenêtre. */
 const MEDIA_KEY_ECHO_MS = 300;
+/** Les sauts du transport : l'habillage les AFFICHE (« 30 » dans sa flèche),
+ *  il doit donc lire les mêmes valeurs que celles qu'on applique. */
+export const SKIP_FORWARD_SECONDS = 30;
+export const SKIP_BACK_SECONDS = 10;
 
 interface TVPlayerControlsOptions {
   paused: boolean;
@@ -145,8 +149,8 @@ export function useTVPlayerControls({
     skipFlashTimerRef.current = setTimeout(() => { skipAccumRef.current = 0; setSkipFlash(null); }, SKIP_BADGE_MS);
   }, []);
 
-  const handleSkipForward = useCallback(() => skipBy(30), [skipBy]);
-  const handleSkipBack = useCallback(() => skipBy(-10), [skipBy]);
+  const handleSkipForward = useCallback(() => skipBy(SKIP_FORWARD_SECONDS), [skipBy]);
+  const handleSkipBack = useCallback(() => skipBy(-SKIP_BACK_SECONDS), [skipBy]);
   /** Bouton ⏩ de l'OSD : appui simple → mode scrub (fantôme + plein écran).
    *  En scrub, guardScrub transforme le même appui en confirmation. */
   const enterScrub = useCallback(() => scrub.startScrubbing(), [scrub]);
