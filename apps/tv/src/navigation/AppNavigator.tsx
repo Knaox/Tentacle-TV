@@ -5,6 +5,7 @@ import { Colors } from "../theme/colors";
 import type { RootStackParamList } from "./types";
 import { SkeletonLoader } from "./ScreenFallback";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 
 // Direct imports — initial screens, must load immediately
 import { DisclaimerScreen } from "../screens/DisclaimerScreen";
@@ -52,9 +53,13 @@ export function AppNavigator() {
   const hasServerUrl = !!storage.getItem("tentacle_server_url");
   const hasToken = !!storage.getItem("tentacle_token");
 
-  // Disclaimer only on first launch (no server URL yet and never accepted).
-  // Sur TV, pas de page de login : sans token actif → toujours le jumellage.
-  const initialRouteName = !hasServerUrl && !disclaimerAccepted
+  // Les conditions d'utilisation, au premier lancement seulement (aucun serveur
+  // ni acceptation) — Android TV seulement : la refonte (Apple TV) les a
+  // retirées, sa langue se choisit sur l'accueil du jumelage. La clé
+  // `disclaimer_accepted` reste celle d'Android TV : ne jamais la renommer.
+  // Sur TV, pas de page de login : sans token actif → toujours le jumelage.
+  const showDisclaimer = !REDESIGN_ACTIVE && !hasServerUrl && !disclaimerAccepted;
+  const initialRouteName = showDisclaimer
     ? "Disclaimer"
     : hasToken
       ? "Home"
@@ -81,7 +86,7 @@ export function AppNavigator() {
         </ErrorBoundary>
       )}
     >
-      <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
+      {REDESIGN_ACTIVE ? null : <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />}
       <Stack.Screen name="PairCode" component={PairCodeScreen} />
       {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon
           onglets) → nav snappy ET pas de course animation/focus qui empêchait
