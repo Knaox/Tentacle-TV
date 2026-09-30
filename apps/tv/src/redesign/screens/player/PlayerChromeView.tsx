@@ -116,7 +116,7 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
           <LinearGradient pointerEvents="none" colors={[scrim(0), scrim(0.66), scrim(0.94)]} locations={[0, 0.48, 1]} style={styles.bottomScrim} />
           <OsdTopBar media={media} backLabel={labels.back} onBack={props.onBack} />
           <FocusGroup focusKey="player:timeline" style={styles.timeline} pointerEvents="none">
-            <OsdTimeline position={timeline.position} duration={timeline.duration} buffered={timeline.buffered} />
+            <OsdTimeline position={timeline.position} duration={timeline.duration} buffered={timeline.buffered} segments={timeline.segments} />
           </FocusGroup>
           <View style={styles.controls} pointerEvents="box-none">
             <OsdControls

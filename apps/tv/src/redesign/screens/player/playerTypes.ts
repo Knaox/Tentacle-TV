@@ -39,11 +39,19 @@ export type PlayerPhase =
   | { kind: "failed"; message: string }
   | { kind: "playing" };
 
+/** Un passage connu du média (intro, résumé, générique…), en secondes. */
+export interface TimelineSegment {
+  start: number;
+  end: number;
+}
+
 export interface PlayerTimeline {
   position: number;
   duration: number;
   /** Jusqu'où le flux est en mémoire. */
   buffered: number;
+  /** Les passages que la frise marque d'une coupure (`OsdTimeline`). */
+  segments?: TimelineSegment[];
 }
 
 export interface PlayerTransport {

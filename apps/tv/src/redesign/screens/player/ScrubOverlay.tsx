@@ -69,7 +69,13 @@ export const ScrubOverlay = memo(function ScrubOverlay({
             </GlassSurface>
           ) : null}
         </View>
-        <OsdTimeline position={timeline.position} duration={timeline.duration} buffered={timeline.buffered} ghost={scrub.target} />
+        <OsdTimeline
+          position={timeline.position}
+          duration={timeline.duration}
+          buffered={timeline.buffered}
+          ghost={scrub.target}
+          segments={timeline.segments}
+        />
         <View style={styles.hints}>
           <Hint text={confirmLabel} />
           <Hint text={cancelLabel} />

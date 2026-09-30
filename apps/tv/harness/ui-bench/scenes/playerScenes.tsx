@@ -67,6 +67,21 @@ const skip = (labelKey: Parameters<typeof skipPillLabel>[1], kind: "segment" | "
   },
 });
 
+/**
+ * Des passages posés À LA MAIN — l'instantané n'a pas les segments du serveur :
+ * résumé et intro en ouverture, générique en fin, en fractions de la durée.
+ */
+const PASSAGES: Array<[number, number]> = [[0, 0.03], [0.03, 0.075], [0.92, 0.985]];
+const passages: Patch = (_data, stage) => {
+  const { duration } = stage.props.timeline;
+  return {
+    timeline: {
+      ...stage.props.timeline,
+      segments: PASSAGES.map(([from, to]) => ({ start: from * duration, end: to * duration })),
+    },
+  };
+};
+
 function PlayerStage({ stage }: { stage: Stage | null }) {
   return (
     <View style={styles.stage}>
@@ -111,6 +126,7 @@ export const PLAYER_SCENES: BenchScene[] = [
   })), ["loading:retry", "loading:back"]),
   scene("osd-film", "Habillage · film", film, TRANSPORT),
   scene("osd-episode", "Habillage · épisode", episode, ["player:playpause", "player:prev", "player:next", "player:episodes", "player:tracks"]),
+  scene("osd-passages", "Habillage · passages marqués (posés à la main)", patch(episode, passages), ["player:playpause"]),
   scene("pause", "En pause", patch(film, () => ({ paused: true })), ["player:playpause", "player:seekforward"]),
   scene("tampon", "Mémoire tampon", patch(episode, () => ({ osdVisible: false, buffering: true }))),
   scene("sous-titres", "Sous-titres, habillage caché", patch(film, () => ({ osdVisible: false, subtitle: subtitleCue() }))),
@@ -120,6 +136,9 @@ export const PLAYER_SCENES: BenchScene[] = [
   }))),
   scene("defilement-recul", "Défilement arrière ×2", patch(episode, (_data, stage) => ({
     scrub: { target: stage.props.timeline.position - 95, speed: { factor: 2, backward: true }, frame: stage.frame ? { uri: stage.frame } : null },
+  }))),
+  scene("defilement-passages", "Défilement · passages marqués (posés à la main)", patch(patch(episode, passages), (_data, stage) => ({
+    scrub: { target: stage.props.timeline.duration * 0.06, speed: { factor: 2, backward: true }, frame: stage.frame ? { uri: stage.frame } : null },
   }))),
   scene("saut-avant", "Saut +30 s (habillage caché)", patch(film, () => ({ osdVisible: false, seekFlash: { forward: true, label: seekFlashLabel(t, 30) } }))),
   scene("saut-arriere", "Saut −20 s cumulé", patch(film, () => ({ osdVisible: false, seekFlash: { forward: false, label: seekFlashLabel(t, -20) } }))),
