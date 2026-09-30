@@ -3,6 +3,12 @@ import { TVFocusGuideView, type View } from "react-native";
 import type { FocusGroupContainerProps } from "../../redesign/focus/focusBinding";
 import type { FocusStore } from "./focusStore";
 
+/** Les éléments d'une rangée : `<préfixe>:<index>` — pas les boutons de leur plateau (`…:tray:…`). */
+export function rowItems(prefix: string): (focusKey: string) => boolean {
+  const item = new RegExp(`^${prefix}:\\d+$`);
+  return (focusKey) => item.test(focusKey);
+}
+
 /**
  * Le guide d'ENTRÉE d'un groupe (`FocusGroup`) : quand le focus y arrive
  * d'ailleurs, il atterrit sur la dernière clé du groupe qui l'a eu — ou,
@@ -25,8 +31,8 @@ import type { FocusStore } from "./focusStore";
  */
 
 export interface EntryGuideOptions {
-  /** Les préfixes des clés du groupe (`episode:`, `season:`…). */
-  prefixes: readonly string[];
+  /** Les clés dont le groupe se souvient (`episode:<i>`… — pas le plateau d'une carte). */
+  owns: (focusKey: string) => boolean;
   /** L'entrée par défaut, lue à chaque visée. */
   fallback: () => string | null;
   /** Revenir au dernier élément visité (défaut : oui). */
@@ -39,8 +45,7 @@ export interface EntryGuideOptions {
 const NONE: View[] = [];
 
 export function createEntryGuide(store: FocusStore, options: EntryGuideOptions): ComponentType<FocusGroupContainerProps> {
-  const { prefixes, fallback, remember = true, trapLeft = false, trapRight = false } = options;
-  const owns = (key: string) => prefixes.some((prefix) => key.startsWith(prefix));
+  const { owns, fallback, remember = true, trapLeft = false, trapRight = false } = options;
 
   return function EntryGuide({ style, pointerEvents, children }: FocusGroupContainerProps) {
     const [target, setTarget] = useState<View[]>(NONE);

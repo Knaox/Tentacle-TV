@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import type { EpisodesModel } from "../../redesign/screens/detail/detailTypes";
-import { createEntryGuide } from "../focus/entryGuide";
+import { createEntryGuide, rowItems } from "../focus/entryGuide";
 import type { FocusStore } from "../focus/focusStore";
 
 /**
@@ -47,16 +47,16 @@ export function useDetailGuides(focus: FocusStore, entryKey: string | null, epis
     bound.current = true;
     const sides = { trapLeft: true, trapRight: true };
     focus.bind("detail:header", {
-      container: createEntryGuide(focus, { prefixes: ["detail:"], fallback: () => live.current.entryKey }),
+      container: createEntryGuide(focus, { owns: (key) => key.startsWith("detail:"), fallback: () => live.current.entryKey }),
     });
     focus.bind("detail:seasons", {
-      container: createEntryGuide(focus, { prefixes: ["season:"], fallback: () => live.current.season, remember: false, ...sides }),
+      container: createEntryGuide(focus, { owns: rowItems("season"), fallback: () => live.current.season, remember: false, ...sides }),
     });
     focus.bind("detail:episodes", {
-      container: createEntryGuide(focus, { prefixes: ["episode:"], fallback: () => live.current.episode, ...sides }),
+      container: createEntryGuide(focus, { owns: rowItems("episode"), fallback: () => live.current.episode, ...sides }),
     });
     for (const [group, prefix] of ROWS) {
-      focus.bind(group, { container: createEntryGuide(focus, { prefixes: [`${prefix}:`], fallback: () => `${prefix}:0`, ...sides }) });
+      focus.bind(group, { container: createEntryGuide(focus, { owns: rowItems(prefix), fallback: () => `${prefix}:0`, ...sides }) });
     }
   }
 }
