@@ -10,9 +10,11 @@ import { withAlpha } from "./withAlpha";
 
 /**
  * « Jumelage expiré » : la sauvegarde de la progression est en pause (le
- * jeton Jellyfin de l'appareil est mort côté serveur). Un bandeau ambre, en
- * haut, NON focalisable — il informe sans voler le focus — qui disparaît de
- * lui-même dès qu'un jeton frais revient.
+ * jeton Jellyfin de l'appareil est mort côté serveur). Un bandeau en haut, NON
+ * focalisable — il informe sans voler le focus — qui disparaît de lui-même dès
+ * qu'un jeton frais revient. Le fond dense des autres surimpressions (neutre :
+ * le brun chaud de l'accent ambre n'avait plus de raison d'être), un liseré
+ * et un voile au rose de la marque, l'alerte sur un disque rose.
  *
  * Contrat : monté par l'app quand `useStreamingConfig(token).data?.tokenExpired`.
  * `EXPIRED_BANNER_BOTTOM` dit où il s'arrête : ce qui s'affiche en haut en
@@ -56,7 +58,7 @@ const styles = StyleSheet.create({
     paddingRight: 36,
     borderRadius: RADIUS,
   },
-  base: { borderRadius: RADIUS, backgroundColor: "rgba(18, 14, 8, 0.96)" },
+  base: { borderRadius: RADIUS, backgroundColor: "rgba(10, 10, 14, 0.96)" },
   tint: { borderRadius: RADIUS, borderWidth: 1, borderColor: withAlpha(colors.accent, 0.55), backgroundColor: withAlpha(colors.accent, 0.1) },
   icon: {
     width: 56,
