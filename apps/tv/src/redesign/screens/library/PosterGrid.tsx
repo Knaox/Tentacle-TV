@@ -34,7 +34,10 @@ export interface PosterGridProps {
 /** La colonne de contenu : après la navigation repliée, jusqu'à la marge sûre. */
 export const GRID_WIDTH = 1920 - TV_STAGE.contentLeft - TV_STAGE.safe.x;
 export const GRID_GAP = 36;
-export const GRID_ROW_GAP = 40;
+/** Entre deux rangées : la place de « Maintenir OK : plus d'options » sous la
+ *  légende de l'affiche focalisée, qui descend de la moitié de son
+ *  agrandissement (~15) — sans quoi la rangée suivante mord la ligne. */
+export const GRID_ROW_GAP = 52;
 
 /** La largeur d'une affiche pour `columns` colonnes. */
 export function posterWidth(columns: number): number {

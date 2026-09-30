@@ -1,11 +1,13 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { i18n } from "@tentacle-tv/shared";
 import { AmbientBackdrop } from "../../../src/redesign/background/AmbientBackdrop";
+import { CARD_NOTE_SPACE } from "../../../src/redesign/cards/CardFocusNote";
 import { Chip } from "../../../src/redesign/controls/Chip";
 import { PillButton } from "../../../src/redesign/controls/PillButton";
 import { RoundButton } from "../../../src/redesign/controls/RoundButton";
 import { GlassSurface } from "../../../src/redesign/glass/GlassSurface";
 import { MediaRow } from "../../../src/redesign/rows/MediaRow";
+import { PosterGrid } from "../../../src/redesign/screens/library/PosterGrid";
 import { text } from "../../../src/redesign/theme/tokens";
 import type { BenchData } from "../data/benchData";
 import { cardOf, episodeLabel, resumeSubtitle, yearOf } from "../data/models";
@@ -13,11 +15,16 @@ import type { BenchScene } from "./types";
 
 /**
  * Les briques seules, sur les vraies images : cartes 16:9, affiches, cartes
- * qui se redressent, boutons, pastilles et verre — chacune figée au focus
- * tour à tour. C'est la planche « Briques » de la refonte.
+ * qui se redressent, grille, boutons, pastilles et verre — chacune figée au
+ * focus tour à tour. C'est la planche « Briques » de la refonte. Les cartes
+ * s'ouvrent par l'appui maintenu, comme dans l'app : leur focus le dit.
  */
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options) as string;
+/** L'appui maintenu ouvre le grand panneau dans l'app ; au banc, seule son indication compte. */
+const HOLD = () => undefined;
+/** La raison d'une recommandation, pour l'exemple (le compte de test n'en a pas sous la main). */
+const REASON = "Parce que vous avez aimé Arcane";
 
 function Cards({ data }: { data: BenchData }) {
   const movies = data.list("movies", 8);
@@ -26,11 +33,11 @@ function Cards({ data }: { data: BenchData }) {
     <View style={styles.fill}>
       <AmbientBackdrop palette={palette} />
       <ScrollView contentContainerStyle={styles.page}>
-        <MediaRow rowKey="land" title={t("common:resumeWatching")} variant="landscape" inset={96}
+        <MediaRow rowKey="land" title={t("common:resumeWatching")} variant="landscape" inset={96} onLongPressCard={HOLD}
           cards={data.list("resume", 6).map((it) => cardOf(data, it, resumeSubtitle(it)))} />
         <MediaRow rowKey="morph" title={t("common:latestAdditionsShort")} variant="morph" inset={96}
           cards={movies.map((it) => cardOf(data, it, yearOf(it)))} />
-        <MediaRow rowKey="ep" title={t("common:nextEpisodes")} variant="landscape" inset={96}
+        <MediaRow rowKey="ep" title={t("common:nextEpisodes")} variant="landscape" inset={96} onLongPressCard={HOLD}
           cards={data.list("nextUp", 6).map((it) => cardOf(data, it, episodeLabel(it, true)))} />
       </ScrollView>
     </View>
@@ -43,11 +50,24 @@ function Posters({ data }: { data: BenchData }) {
     <View style={styles.fill}>
       <AmbientBackdrop palette={cardOf(data, series[0]).palette!} />
       <View style={styles.page}>
-        <MediaRow rowKey="poster" title={t("common:myList")} variant="poster" inset={96}
+        {/* Une raison de recommandation (exemple) : elle passe avant l'indication. */}
+        <View style={styles.withNotes}>
+          <MediaRow rowKey="anime" title={t("nav:forYou")} variant="poster" inset={96} onLongPressCard={HOLD}
+            cards={data.list("anime", 8).map((it) => ({ ...cardOf(data, it, yearOf(it)), focusNote: REASON }))} />
+        </View>
+        <MediaRow rowKey="poster" title={t("common:myList")} variant="poster" inset={96} onLongPressCard={HOLD}
           cards={series.map((it) => cardOf(data, it, yearOf(it)))} />
-        <MediaRow rowKey="anime" title="Animés" variant="poster" inset={96}
-          cards={data.list("anime", 8).map((it) => cardOf(data, it, yearOf(it)))} />
       </View>
+    </View>
+  );
+}
+
+function Grid({ data }: { data: BenchData }) {
+  const cards = data.list("movies", 18).map((it) => cardOf(data, it, yearOf(it)));
+  return (
+    <View style={styles.fill}>
+      <AmbientBackdrop palette={cards[1]?.palette ?? cards[0].palette!} />
+      <PosterGrid cards={cards} columns={6} focusPrefix="grille" onLongPressCard={HOLD} />
     </View>
   );
 }
@@ -91,7 +111,8 @@ function Controls({ data }: { data: BenchData }) {
 
 export const BRICK_SCENES: BenchScene[] = [
   { id: "briques/cartes", group: "Briques", label: "Cartes 16:9 et redressées", focusKeys: ["land:1", "morph:1", "morph:3", "ep:0"], settleMs: 1400, render: (data) => <Cards data={data} /> },
-  { id: "briques/affiches", group: "Briques", label: "Affiches", focusKeys: ["poster:2", "anime:0"], settleMs: 1400, render: (data) => <Posters data={data} /> },
+  { id: "briques/affiches", group: "Briques", label: "Affiches, une raison de reco (exemple)", focusKeys: ["poster:2", "anime:0"], settleMs: 1400, render: (data) => <Posters data={data} /> },
+  { id: "briques/grille", group: "Briques", label: "Grille d'affiches (6 colonnes)", focusKeys: ["grille:1", "grille:8"], settleMs: 1400, render: (data) => <Grid data={data} /> },
   {
     id: "briques/controles",
     group: "Briques",
@@ -104,6 +125,8 @@ export const BRICK_SCENES: BenchScene[] = [
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   page: { paddingTop: 70, paddingBottom: 120 },
+  // La place de la raison sous la rangée (`CARD_NOTE_SPACE`, comme « Pour vous »).
+  withNotes: { marginBottom: CARD_NOTE_SPACE },
   gapped: { paddingHorizontal: 96, gap: 44 },
   row: { flexDirection: "row", alignItems: "center", gap: 28 },
   glassDemo: { width: 300, height: 150, alignItems: "center", justifyContent: "center" },

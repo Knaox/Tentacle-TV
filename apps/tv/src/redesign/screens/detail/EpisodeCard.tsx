@@ -6,7 +6,7 @@ import type { CardMarkers } from "@tentacle-tv/shared";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
 import { CardFrame } from "../../cards/CardFrame";
-import { CardHoldHint } from "../../cards/CardHoldHint";
+import { CardFocusFooter } from "../../cards/CardFocusFooter";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
@@ -21,7 +21,7 @@ import type { EpisodeBadge, EpisodeModel } from "./detailTypes";
  * carte grandit et se soulève, sa lumière déborde (halo monté à la demande,
  * jamais gardé caché), la légende descend avec elle — et, quand l'appui long
  * ouvre la feuille, dit sous elle « Maintenir OK : plus d'options »
- * (`CardHoldHint`, comme toute carte horizontale : OK y lit).
+ * (`CardFocusFooter`, comme toute carte qui s'ouvre par l'appui maintenu).
  */
 
 export const EPISODE_CARD = { width: 460, height: 259, radius: TV_STAGE.card.landscape.radius } as const;
@@ -50,7 +50,7 @@ function Caption({ episode, focused, holdHint }: { episode: EpisodeModel; focuse
       {kicker ? <Text style={styles.kicker} numberOfLines={1}>{kicker}</Text> : null}
       <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={2}>{episode.title}</Text>
       {episode.overview ? <Text style={styles.overview} numberOfLines={3}>{episode.overview}</Text> : null}
-      {holdHint ? <CardHoldHint /> : null}
+      <CardFocusFooter hold={holdHint} width={EPISODE_CARD.width} />
     </Animated.View>
   );
 }

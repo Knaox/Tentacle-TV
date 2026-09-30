@@ -4,6 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { CardFocusFooter } from "../../cards/CardFocusFooter";
 import { CardFrame } from "../../cards/CardFrame";
 import { cardIndexOf } from "../../cards/cardFocusKeys";
 import { MediaCard } from "../../cards/MediaCard";
@@ -49,7 +50,7 @@ function MissingPoster({ title, year, focused, dimmed }: { title: string; year?:
   );
 }
 
-function Caption({ entry, focused }: { entry: SagaEntryModel; focused: boolean }) {
+function Caption({ entry, focused, hold = false }: { entry: SagaEntryModel; focused: boolean; hold?: boolean }) {
   const p = useFocusProgress(focused);
   const shift = useAnimatedStyle(() => ({ transform: [{ translateY: SHIFT * p.value }] }));
   const title = entry.card?.title ?? entry.missing?.title ?? "";
@@ -63,6 +64,7 @@ function Caption({ entry, focused }: { entry: SagaEntryModel; focused: boolean }
         {rank && cue ? " · " : ""}
         {cue ? <Text style={styles.cue}>{cue}</Text> : null}
       </Text>
+      <CardFocusFooter hold={hold} width={Math.round(W * 1.6)} />
     </Animated.View>
   );
 }
@@ -104,7 +106,7 @@ export const SagaRow = memo(function SagaRow({
                 onFocusChange={focusChange(index)}
               />
               {/* `MediaCard` garde son focus pour elle : la rangée le suit, la légende aussi. */}
-              <Caption entry={entry} focused={focusedIndex === index} />
+              <Caption entry={entry} focused={focusedIndex === index} hold={focusedIndex === index && onLongPress !== undefined} />
             </View>
           ) : (
             <FocusTarget key={entry.key} focusKey={`saga:${index}`} onPress={press} onFocusChange={focusChange(index)} accessibilityLabel={entry.missing?.title} style={{ width: W }}>

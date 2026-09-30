@@ -7,9 +7,8 @@ import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { colors, fonts, scrim } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
-import { CardFocusNote } from "./CardFocusNote";
+import { CardFocusFooter } from "./CardFocusFooter";
 import { CardFrame } from "./CardFrame";
-import { CardHoldHint } from "./CardHoldHint";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused } from "./useCardFocused";
@@ -25,11 +24,10 @@ import { useCardFocused } from "./useCardFocused";
  * garde ses marqueurs — la note, l'épingle Ma liste · j'aime · vu, la
  * progression.
  *
- * Une vignette qui s'ouvre par l'appui maintenu (`onLongPress`) le dit sous
- * sa légende, au focus : « Maintenir OK : plus d'options » (`CardHoldHint`) —
- * OK y lit, rien d'autre ne l'apprendrait. Une affiche qui a une phrase de
- * focus (`card.focusNote`, la raison d'une recommandation) la montre au même
- * endroit (`CardFocusNote`).
+ * Sous la légende, au focus (`CardFocusFooter`) : la phrase de focus d'une
+ * carte qui en a une (`card.focusNote`, la raison d'une recommandation), puis
+ * — toute carte qui s'ouvre par l'appui maintenu (`onLongPress`) —
+ * « Maintenir OK : plus d'options » : rien d'autre ne l'apprendrait.
  *
  * Deux étages, de bas en haut : l'image (`CardFrame`, qui ne fait que
  * dessiner) et sa légende, puis la carte elle-même — un `FocusTarget` sans
@@ -97,8 +95,6 @@ export const MediaCard = memo(function MediaCard({
   const radius = landscape ? TV_STAGE.card.landscape.radius : TV_STAGE.card.poster.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
-  const holdHint = landscape && onLongPress !== undefined && focused;
-  const note = !holdHint && focused ? card.focusNote : undefined;
   return (
     <View style={[{ width }, focused && styles.front]}>
       <CardFrame width={width} height={height} radius={radius} focused={focused} dimmed={dimmed} origin={origin}>
@@ -117,8 +113,11 @@ export const MediaCard = memo(function MediaCard({
         <Caption focused={focused} shift={captionShift(height, origin)}>
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
           {card.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{card.subtitle}</Text> : null}
-          {holdHint ? <CardHoldHint /> : null}
-          {note ? <CardFocusNote text={note} width={Math.round(width * 1.6)} /> : null}
+          <CardFocusFooter
+            note={focused ? card.focusNote : undefined}
+            hold={focused && onLongPress !== undefined}
+            width={Math.round(width * 1.6)}
+          />
         </Caption>
       )}
       {/* En DERNIER, par-dessus l'image ET la légende : rien ne recouvre la
