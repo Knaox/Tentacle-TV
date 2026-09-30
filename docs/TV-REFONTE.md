@@ -16,7 +16,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 4. Jetons TV repris du bureau | `TV_STAGE`, `TV_TYPE`, `TV_ACCENT` (`packages/theme/src/tokens/tvStage.ts`). |
 | 5. Briques | Faites — planche « Briques » (`bench:ui planche briques --focus`). |
 | 6. Écrans | **Tous faits** (2026-09-30) : jumelage, accueil, fiche, bibliothèque, Ma liste / Favoris, recherche, parcourir, Pour vous, réglages, lecteur, feuille d'actions, bande-annonce, surimpressions — 184 scènes au banc. |
-| 7. Branchement | En cours, écran par écran. Le socle est posé (`apps/tv/src/redesignWiring/`, ci-dessous) : aiguillage, magasin de focus, cadre des écrans avec navigation, modèles de carte et de héros, Inter dans l'app tvOS. Branchés sur Apple TV : jumelage (conditions d'utilisation retirées), réglages, surimpressions (démarrage, hors ligne, jumelage expiré, messages, erreur et chargement d'un écran), fiche, bande-annonce, feuille d'actions, lecteur, accueil, navigation et « Pour vous ». |
+| 7. Branchement | En cours, écran par écran. Le socle est posé (`apps/tv/src/redesignWiring/`, ci-dessous) : aiguillage, magasin de focus, cadre des écrans avec navigation, modèles de carte et de héros, Inter dans l'app tvOS. Branchés sur Apple TV : jumelage (conditions d'utilisation retirées), réglages, surimpressions (démarrage, hors ligne, jumelage expiré, messages, erreur et chargement d'un écran), fiche, bande-annonce, feuille d'actions, lecteur, accueil, navigation, « Pour vous », bibliothèques, Ma liste, Favoris, Parcourir et recherche. |
 
 ## La direction retenue
 
@@ -375,6 +375,35 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
   `chromeDimmed` seul — « Fermer », seul focalisable, garde le focus : le
   câblage rallume au moindre geste.
 
+## Branchement — bibliothèques, Ma liste, Favoris, Parcourir, recherche (Apple TV)
+
+Branche `refonte/tv-grilles-suite`. Le câblage vit dans
+`redesignWiring/library/`, `collection/`, `browse/`, `search/` et
+`grid/usePosterGrid.tsx` (la grille d'affiches commune : cartes du socle,
+légende = année, fiche à l'appui, feuille à l'appui long). Android TV garde
+ses écrans ; les requêtes, les filtres et leur mémoire de session sont les
+siens (`useLibraryFilters`, `catalogParams`).
+
+- **Nouveaux états** : l'erreur de chargement (Réessayer, Retour à l'accueil)
+  là où l'ancienne grille affichait une bibliothèque ou une collection vide ;
+  le vide d'une collection offre une sortie (« Parcourir les
+  bibliothèques »), celui des filtres trop serrés « Tout effacer ».
+- **Filtre de plateformes** : posé, le catalogue se charge en une page aux
+  champs complets (studios, identifiant TMDB) ; la vérification TMDB arrive
+  ensuite — mesuré sur Films, Netflix : 2 titres, puis 77.
+- **Listes de filtres** (dans une Modal, Menu les referme) : on y entre par ce
+  qui est retenu, par le verrou de `useChoiceEntry` ; « Effacer », qui
+  disparaît sous le doigt, rend le premier choix par le même verrou ; le pied
+  (`sheet:footer`, pleine largeur) s'atteint par BAS depuis n'importe quelle
+  colonne, entrée sur « Voir N titres ».
+- **Groupes** : `filters` (la barre, pleine largeur : HAUT depuis toute la
+  grille), `library:empty` (BAS depuis la barre jusqu'au bouton du vide),
+  `browse:header` (HAUT depuis toute la première rangée jusqu'à Retour),
+  `search:input` et `search:results` (chaque colonne garde sa place).
+- **Recherche** : le champ est un bouton qui monte le clavier SYSTÈME, et sa
+  dictée — jamais le micro. Seule la sélection d'un résultat mémorise la
+  requête (parité Android TV). Au retour d'une étagère (Parcourir), la barre.
+
 ---
 
 ## Inventaire — les écrans
@@ -593,8 +622,9 @@ Manquant ou non transmis aujourd'hui (le branchement le demandera) :
 - Android : « Adapter la fréquence d'affichage » n'est pas relu au démarrage.
 - Réglages, « Oublier ce jumelage » : le texte (`pairing:tvOublierTexte`) dit
   que l'application se fermera ; sur la TV, elle rouvre le jumelage.
-- Filtre de plateformes de la TV : le catalogue est chargé sans studios ni
-  identifiants TMDB, le filtre ne peut rien trouver.
+- ~~Filtre de plateformes de la TV : le catalogue est chargé sans studios ni
+  identifiants TMDB, le filtre ne peut rien trouver.~~ — réglé au branchement
+  des bibliothèques (champs complets, pages suivantes vérifiées).
 
 Bandes noires : au simulateur, la vue racine couvre bien 1920×1080 (captures
 du banc bord à bord), l'écran de lancement existe et aucune marge de zone sûre
@@ -643,6 +673,22 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   rendu ; une `Map` n'a pas de partage structurel : valeur neuve à chaque
   rendu, et tout l'accueil se redessinait (`useSeriesRatings`). Un `select`
   vit au niveau du module.
+- **Un guide `autoFocus` entre par l'élément le plus en haut à gauche**, pas
+  par le premier de l'arbre : pour imposer l'entrée, une DESTINATION
+  (`createEntryGuide`). Et un guide sans destination se déclare
+  `focusable={false}`, sinon il devient lui-même une cible invisible.
+- **Une cible mémoïsée garde ses props natives** : libérée par la liaison du
+  port, un bouton aux props stables restait `isTVSelectable: false`, jamais
+  redessiné. Un verrou s'écrit aussi sur le nœud monté (`setNativeProps`).
+- **Un calque décoratif qui DÉBORDE recouvre aussi** : le halo du portrait de
+  Parcourir (116 points autour de lui) recouvrait la pilule Retour, et HAUT
+  ne la trouvait plus. Un focalisable voisin d'un halo passe au-dessus
+  (`zIndex`).
+- **Menu depuis une page poussée fait ARRIVER deux fois l'écran d'en
+  dessous** : le dépilage natif, retenu, le montre un instant avant le
+  réempilement, puis la navigation dépile pour de bon, et tvOS rend entre
+  les deux la carte qu'on y avait quittée. Un focus posé à `transitionEnd`
+  se repose à chaque arrivée (`useSystemKeyboard`).
 
 ## Recette de A à Z — ce que l'utilisateur veut éprouver (2026-09-30)
 
