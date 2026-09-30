@@ -1,12 +1,5 @@
-import {
-  extractMediaQuality,
-  formatEpisodeCode,
-  i18n,
-  type MediaItem,
-  type SubtitleCue,
-} from "@tentacle-tv/shared";
-import type { MetaItem } from "../../../src/redesign/hero/MetaLine";
-import { nextCountdownLabel, playerChromeLabels } from "../../../src/redesign/screens/player/playerLabels";
+import { i18n, type MediaItem, type SubtitleCue } from "@tentacle-tv/shared";
+import { playerChromeLabels } from "../../../src/redesign/screens/player/playerLabels";
 import type {
   EndScreenModel,
   PlayerLabels,
@@ -15,14 +8,16 @@ import type {
   PlayerTransport,
   UpNextModel,
 } from "../../../src/redesign/screens/player/playerTypes";
+// Les MÊMES projections que le lecteur Apple TV (`redesignWiring/player`) :
+// le banc montre ce que l'app montrera, pas une copie qui divergerait.
+import { buildEndScreen, buildPlayerMedia, buildUpNext } from "../../../src/redesignWiring/player/playerChromeModels";
 import type { BenchData } from "./benchData";
 import { paletteOf, seriesOf } from "./models";
 
 /**
- * Les props de l'habillage du lecteur, tirées de l'instantané — ce que fera
- * l'intégration avec `usePlayerMediaState`, `useNextEpisodeMedia`,
- * `useTVPlaybackOverlay`… Au banc, la « vidéo » est une image fixe : le fond
- * du film, ou l'image de l'épisode.
+ * Les props de l'habillage du lecteur, tirées de l'instantané par les
+ * fonctions du branchement (`redesignWiring/player`). Au banc, la « vidéo »
+ * est une image fixe : le fond du film, ou l'image de l'épisode.
  */
 
 export const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options) as string;
@@ -55,49 +50,19 @@ export function neighbours(data: BenchData, episode: MediaItem): { previous?: Me
 
 export const durationOf = (item: MediaItem) => (item.RunTimeTicks ?? 0) / TICKS_PER_SECOND;
 
-/**
- * Un résumé Jellyfin en texte : certains portent du HTML (« <br>Source:
- * crunchyroll »). L'app l'affiche brut aujourd'hui — l'intégration devra
- * nettoyer de même (donnée signalée).
- */
-export function plainText(value: string | null | undefined): string | undefined {
-  if (!value) return undefined;
-  const text = value.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-  return text || undefined;
-}
-
 /** L'image qui tient lieu de vidéo : l'épisode lui-même, sinon le fond. */
 export function videoFrameOf(data: BenchData, item: MediaItem): string | undefined {
   if (item.Type === "Episode") return data.image(item.Id, "Primary") ?? (item.SeriesId ? data.image(item.SeriesId, "Backdrop") : undefined);
   return data.image(item.Id, "Backdrop") ?? data.image(item.Id, "Thumb");
 }
 
-/** Les pastilles de la source, comme la ligne de métadonnées du héros. */
-function sourceBadges(item: MediaItem): MetaItem[] {
-  const q = extractMediaQuality(item);
-  const badges: MetaItem[] = [];
-  if (q.resolution === "4K") badges.push({ badge: "4K", strong: true });
-  if (q.isDolbyVision) badges.push({ badge: "Dolby Vision" });
-  else if (q.isHDR) badges.push({ badge: "HDR" });
-  if (q.isDolbyAtmos) badges.push({ badge: "Atmos" });
-  else if (q.surroundLabel) badges.push({ badge: q.surroundLabel });
-  return badges;
-}
-
-export function episodeCode(item: MediaItem): string {
-  return formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber);
-}
-
 export function mediaOf(data: BenchData, item: MediaItem): PlayerMedia {
-  const series = seriesOf(data, item);
-  const art = series ?? item;
-  return {
-    title: art.Name ?? "",
-    logoUri: data.image(art.Id, "Logo"),
-    subtitle: item.Type === "Episode" ? `${episodeCode(item)} · ${item.Name ?? ""}` : undefined,
-    backdropUri: data.image(art.Id, "Backdrop") ?? data.image(item.Id, "Backdrop"),
-    badges: sourceBadges(item),
-  };
+  const art = seriesOf(data, item) ?? item;
+  return buildPlayerMedia(
+    item,
+    { logoUri: data.image(art.Id, "Logo"), backdropUri: data.image(art.Id, "Backdrop") ?? data.image(item.Id, "Backdrop") },
+    true,
+  );
 }
 
 export function timelineOf(item: MediaItem, fraction: number): PlayerTimeline {
@@ -117,27 +82,19 @@ export function transportOf(data: BenchData, item: MediaItem): PlayerTransport {
   };
 }
 
-/** La carte « À suivre » d'un épisode ; `remaining` : le décompte (sur 10 s). */
+/** La carte « À suivre » d'un épisode ; `remaining` : le décompte (sur 10 s, la durée livrée). */
 export function upNextOf(data: BenchData, next: MediaItem, remaining: number | null): UpNextModel {
-  return {
-    imageUri: data.image(next.Id, "Primary"),
-    code: episodeCode(next),
-    title: next.Name ?? "",
-    overview: plainText(next.Overview),
-    countdownLabel: remaining !== null ? nextCountdownLabel(t, remaining) : undefined,
-    countdown: remaining !== null ? { remaining, total: 10 } : null,
-  };
+  return buildUpNext({ next, imageUri: data.image(next.Id, "Primary"), countdownSeconds: remaining, autoPlay: true, nextTotalMs: 10_000, t });
 }
 
 export function endScreenOf(data: BenchData, next: MediaItem, remaining: number | null): EndScreenModel {
   const series = seriesOf(data, next);
-  return {
-    ...upNextOf(data, next, remaining),
-    seriesTitle: series?.Name ?? next.SeriesName ?? "",
+  return buildEndScreen(upNextOf(data, next, remaining), {
+    title: series?.Name ?? next.SeriesName ?? "",
     logoUri: series ? data.image(series.Id, "Logo") : undefined,
     backdropUri: series ? data.image(series.Id, "Backdrop") : undefined,
     palette: paletteOf(data, series ?? next),
-  };
+  });
 }
 
 /** Deux lignes de sous-titres, dont une en italique — le rendu, pas le texte. */

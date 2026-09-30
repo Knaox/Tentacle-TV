@@ -14,7 +14,8 @@ import {
  */
 
 export type ImageKind = "Primary" | "Backdrop" | "Logo" | "Thumb";
-export type ImageUrl = (itemId: string, type: ImageKind, options?: { width?: number; quality?: number }) => string;
+/** L'URL d'une image : le client Jellyfin dans l'app, l'instantané au banc (qui peut ne pas l'avoir). */
+export type ImageUrl = (itemId: string, type: ImageKind, options?: { width?: number; quality?: number }) => string | undefined;
 
 type WithHashes = { ImageBlurHashes?: Partial<Record<string, Record<string, string>>> };
 
