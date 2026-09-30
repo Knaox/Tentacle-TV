@@ -44,8 +44,9 @@ export interface SearchModelSources {
   t: TFunction;
   /** Le titre complet quand on l'a ; sinon le résultat du moteur, qui en est un sous-ensemble. */
   full: (item: SearchMediaItem) => MediaItem;
-  /** La carte d'un titre : images, marqueurs, lumière — et sa légende. */
-  card: (item: MediaItem, subtitle?: string) => CardModel;
+  /** La carte d'un titre : images, marqueurs, lumière — et sa légende. Une
+   *  vignette (épisode) note l'épisode, une affiche sa série. */
+  card: (item: MediaItem, subtitle: string | undefined, variant: "poster" | "landscape") => CardModel;
   palette: (item: MediaItem) => ArtworkPalette;
   /** La ligne d'identité du meilleur résultat : année, durée, genre, note. */
   meta: (item: MediaItem) => MetaItem[];
@@ -136,7 +137,7 @@ function titleCard(src: SearchModelSources, hit: SearchItemHit): CardModel {
   if (hit.item.Type === "BoxSet") {
     // Une collection : ni état de lecture ni marqueurs, le nombre de ses titres.
     return {
-      ...src.card(item),
+      ...src.card(item, undefined, "poster"),
       id: hit.item.Id,
       title: hit.item.Name,
       subtitle: src.t("search:titles", { count: hit.item.ChildCount ?? 0 }),
@@ -145,7 +146,7 @@ function titleCard(src: SearchModelSources, hit: SearchItemHit): CardModel {
     };
   }
   const year = item.ProductionYear ? String(item.ProductionYear) : undefined;
-  return src.card(item, matchReason(src.t, hit.match) ?? year);
+  return src.card(item, matchReason(src.t, hit.match) ?? year, "poster");
 }
 
 const personOf = (src: SearchModelSources, person: SearchPersonHit): SearchPersonModel => ({
@@ -177,7 +178,7 @@ export function searchSections(src: SearchModelSources, response: SearchResponse
           title: t("search:episodes"),
           cards: section.episodes.map((episode) => {
             const item = src.full(episode);
-            return src.card(item, episodeLabel(item));
+            return src.card(item, episodeLabel(item), "landscape");
           }),
         };
       case "facets":
