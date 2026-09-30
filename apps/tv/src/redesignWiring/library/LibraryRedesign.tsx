@@ -7,6 +7,7 @@ import { railNavigate } from "../../navigation/railNavigate";
 import type { RootStackParamList } from "../../navigation/types";
 import { LibraryView } from "../../redesign/screens/library/LibraryView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
+import { createEntryGuide } from "../focus/entryGuide";
 import { AutoFocusGuide } from "../focus/focusGuides";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { isNavKey } from "../nav/useRailState";
@@ -26,6 +27,7 @@ type Params = RootStackParamList["Library"];
 const PLATFORM_SCAN_BELOW = 18;
 
 const LOADING_ENTRY = "pill:status";
+const isEmptyKey = (key: string) => key.startsWith("empty:");
 const goHome = () => railNavigate("Home");
 
 /**
@@ -77,6 +79,9 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
   const bound = useRef(false);
   if (!bound.current) {
     focus.bind("filters", { container: AutoFocusGuide });
+    // Le vide des filtres trop serrés : « bas » depuis n'importe quelle puce
+    // entre par son bouton, « Tout effacer », même loin sous la barre.
+    focus.bind("library:empty", { container: createEntryGuide(focus, { owns: isEmptyKey, fallback: () => "empty:primary" }) });
     bound.current = true;
   }
 

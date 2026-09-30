@@ -5,6 +5,7 @@ import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { text } from "../../theme/tokens";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
@@ -41,7 +42,9 @@ import { YearSheet } from "./YearSheet";
  *   `usePlatformFilter` (options et filtrage de Plateformes) ;
  * - `useCardMarkers` (marqueurs), `paletteFromBlurHash` (lumière).
  * Retour et focus (entrée sur la grille, retour à la pastille qui a ouvert une
- * liste) restent à l'intégration.
+ * liste) restent à l'intégration. Clé de groupe : `library:empty` — le vide
+ * des filtres trop serrés, sur toute la largeur : « bas » depuis la barre y
+ * trouve une cible, même loin de son bouton.
  *
  * La liste ouverte vit dans une `Modal` : son propre contrôleur de vue, où le
  * focus reste, et que Menu (Apple TV) ou Retour (Android) referme
@@ -121,7 +124,7 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
   const empty = loading ? (
     <GridSkeleton columns={columns} rows={2} />
   ) : noResults ? (
-    <View style={styles.noResults}>
+    <FocusGroup focusKey="library:empty" style={styles.noResults}>
       <EmptyState
         icon="sliders"
         title={noResults.title}
@@ -129,7 +132,7 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
         palette={palette}
         primary={{ label: noResults.actionLabel, icon: "refresh", onPress: props.onClearAll }}
       />
-    </View>
+    </FocusGroup>
   ) : null;
   return (
     <View style={styles.root}>
