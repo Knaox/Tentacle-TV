@@ -17,6 +17,8 @@ import {
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
 import { rehydrateStores } from "./lib/stores";
+import { useLiquidGlass } from "./lib/liquidGlass";
+import { LiquidGlassProvider } from "./redesign/glass/liquidGlassMode";
 import { applyBackendUrl } from "./lib/backendUrls";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
 import { AppNavigator } from "./navigation/AppNavigator";
@@ -234,6 +236,9 @@ function AppContent({ serverUrl: initialServerUrl }: { serverUrl: string | null 
 }
 
 export function App() {
+  // Le verre de la refonte suit le réglage de l'appareil (onglet Apparence) :
+  // un seul fournisseur, au-dessus de tout, frontière d'erreur comprise.
+  const liquidGlass = useLiquidGlass();
   const [ready, setReady] = useState(false);
   const [client, setClient] = useState<JellyfinClient | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
@@ -278,16 +283,18 @@ export function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider backendUrl={serverUrl}>
-          <TentacleConfigContext.Provider value={{ storage, uuid }}>
-            <JellyfinClientContext.Provider value={client}>
-              <AppContent serverUrl={serverUrl} />
-            </JellyfinClientContext.Provider>
-          </TentacleConfigContext.Provider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <LiquidGlassProvider enabled={liquidGlass}>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider backendUrl={serverUrl}>
+            <TentacleConfigContext.Provider value={{ storage, uuid }}>
+              <JellyfinClientContext.Provider value={client}>
+                <AppContent serverUrl={serverUrl} />
+              </JellyfinClientContext.Provider>
+            </TentacleConfigContext.Provider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </LiquidGlassProvider>
   );
 }

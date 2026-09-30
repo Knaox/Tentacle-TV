@@ -1,6 +1,7 @@
 import { initPlaybackSettingsStore, rehydratePlaybackSettings } from "@tentacle-tv/api-client";
 import { railPinningStore } from "../components/nav/railPinning";
 import { exoTunnelingStore } from "./exoSettings";
+import { liquidGlassStore } from "./liquidGlass";
 import { tvStorage } from "../storage/RNStorageAdapter";
 
 /**
@@ -20,6 +21,7 @@ import { tvStorage } from "../storage/RNStorageAdapter";
 export function rehydrateStores(): void {
   railPinningStore.rehydrate();
   exoTunnelingStore.rehydrate();
+  liquidGlassStore.rehydrate();
   initPlaybackSettingsStore(tvStorage);
   rehydratePlaybackSettings();
 }
