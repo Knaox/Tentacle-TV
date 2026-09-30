@@ -11,6 +11,8 @@ import { TVSettingsAccountSection } from "../components/settings/TVSettingsAccou
 import { TVSettingsPlaybackSection } from "../components/settings/TVSettingsPlaybackSection";
 import { TVSettingsAboutSection } from "../components/settings/TVSettingsAboutSection";
 import { Colors, Typography } from "../theme/colors";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { SettingsRedesign } from "../redesignWiring/settings/SettingsRedesign";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
@@ -22,8 +24,15 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
  * QUITTE les réglages d'un seul appui, il ne remonte pas les sections qu'on
  * vient de parcourir. Le panneau de réglages DANS le lecteur reste séparé :
  * il est par-lecture.
+ *
+ * Sur Apple TV, la refonte (`redesignWiring/settings/SettingsRedesign`) :
+ * même logique, partagée par les hooks des sections.
  */
-export function SettingsScreen({ navigation }: Props) {
+export function SettingsScreen(props: Props) {
+  return REDESIGN_ACTIVE ? <SettingsRedesign {...props} /> : <LegacySettingsScreen {...props} />;
+}
+
+function LegacySettingsScreen({ navigation }: Props) {
   const { t } = useTranslation("preferences");
   const [section, setSection] = useState<SettingsSection>("account");
 

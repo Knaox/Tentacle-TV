@@ -27,6 +27,8 @@ type RouteName = keyof RootStackParamList;
  * Un écran branché ajoute sa route ici, une ligne chacun. Vide tant qu'aucun
  * écran n'est branché : l'app reste alors exactement celle d'avant.
  */
-const ROUTES: readonly RouteName[] = [];
+const ROUTES: readonly RouteName[] = [
+  "Settings",
+];
 
 export const REDESIGN_ROUTES: ReadonlySet<string> = new Set<string>(REDESIGN_ACTIVE ? ROUTES : []);
