@@ -173,7 +173,8 @@ Télécommande : flèches = pavé, Entrée = OK, Échap = Menu ; Window › Show
 Apple TV Remote pour le reste.
 
 **Le banc UI**, au simulateur « Tentacle TV — banc UI » : `bench:ui up` en
-arrière-plan, puis `bench:ui sim`, sur des ports libres.
+arrière-plan, puis `bench:ui sim`, sur des ports libres. La commande rend la
+main quand l'app du banc a publié son catalogue : le banc est alors pilotable.
 
 ```bash
 pnpm tv:banc

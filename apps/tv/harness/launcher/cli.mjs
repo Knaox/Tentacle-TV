@@ -14,7 +14,9 @@ import {
   APP_DIR, LauncherError, REPO, STATE_DIR, capture, isAlive, loadState, note, sameDir, say, shortPath, step, stopProcess,
   updateState, warn,
 } from "./runtime.mjs";
-import { BACKEND_URL, awaitFirstBundle, ensureBackend, ensureBench, ensureMetro, logSize, pairingPageServed } from "./services.mjs";
+import {
+  BACKEND_URL, awaitBenchCatalogue, awaitFirstBundle, ensureBackend, ensureBench, ensureMetro, logSize, pairingPageServed,
+} from "./services.mjs";
 import {
   BANC_SIM, REFONTE_SIM, boot, bringToFront, ensureDevice, launchOnMetro, pointAppAt, quitSimulatorIfIdle, shutdownDedicated,
 } from "./simulator.mjs";
@@ -104,6 +106,9 @@ async function banc(args) {
   const sim = spawnSync(process.execPath, [BENCH_SCRIPT, "sim"], { cwd: APP_DIR, env, encoding: "utf8" });
   for (const line of `${sim.stdout}${sim.stderr}`.trim().split("\n").filter(Boolean)) note(line);
   if (sim.status !== 0) throw new LauncherError(`« bench:ui sim » a échoué — journal du banc : ${shortPath(bench.log)}`);
+  const scenes = await awaitBenchCatalogue(bench);
+  if (scenes) note(`catalogue publié au relais : ${scenes} scènes — le banc est pilotable`);
+  else warn(`l'app du banc n'a pas publié son catalogue en 4 min — journal : ${shortPath(bench.log)}`);
 
   say();
   if (!fs.existsSync(path.join(APP_DIR, "harness/ui-bench/snapshot/snapshot.json"))) {

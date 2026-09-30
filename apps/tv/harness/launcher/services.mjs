@@ -188,3 +188,17 @@ export async function ensureBench() {
   step("Banc UI", `« bench:ui up » lancé en arrière-plan — relais ${benchPort}, Metro ${metroPort}, journal : ${shortPath(record.log)}`);
   return record;
 }
+
+/** Attend que l'app du banc ait publié son catalogue au relais — elle est
+ *  alors pilotable (`pnpm tv:banc <commande>`). Rend le nombre de scènes. */
+export function awaitBenchCatalogue(bench) {
+  return waitFor(async () => {
+    const res = await httpGet(`http://127.0.0.1:${bench.benchPort}/bench/scenes`);
+    try {
+      const scenes = JSON.parse(res?.text ?? "[]");
+      return Array.isArray(scenes) && scenes.length > 0 ? scenes.length : null;
+    } catch {
+      return null;
+    }
+  }, { timeoutMs: 240_000, everyMs: 1000 });
+}
