@@ -239,25 +239,26 @@ MÊME modèle, dans `packages/shared/src/utils/` :
 
 Seule l'ENTRÉE change : la souris sur le web et le bureau (`CardHoverOverlay`,
 monté au survol), l'appui long sur le mobile et le miroir (`CardSheetScope` /
-`CardSheetProvider` → la feuille), le focus sur TV. **Sur TV, le focus MONTRE
-le plateau**, posé sur la carte comme au bureau (refonte Apple TV,
-`apps/tv/src/redesign/cards/tray/`) : étoiles ENTIÈRES au-dessus de la
-capsule, bulle qui dit ce que fera OK, plateau résolu par l'intégration pour
-la seule carte focalisée (`card.tray`). OK sur la carte garde l'action
-principale ; BAS entre dans le plateau par l'action primaire, GAUCHE/DROITE le
-parcourent, HAUT remonte aux étoiles puis à la carte, Menu y revient d'un coup
-— posé par le câblage à travers le port du focus (clés `<carte>:tray…`),
-jamais dans la vue ; l'appui long ouvre
-toujours la feuille (`TVCardActionSheet`, `CardActionSheetTv` sur webOS).
-Android TV et webOS, pas encore portés, gardent les marqueurs au focus. La
-carte et les boutons de son plateau sont des focalisables FRÈRES : tvOS ne
-focalise jamais un élément posé dans un autre, ni un élément RECOUVERT par ce
-qui dessine — la recherche géométrique ne le propose plus (régression payée :
-plus une carte atteignable). La cible focalisable se pose donc AU-DESSUS de
-l'image, et s'arrête au-dessus du plateau ouvert. État et gestes :
-`useCardToggles`, `useCardRatingTarget`, `useCardFace` (api-client). Une
-feuille qui garde un instantané de sa carte lit la fiche `["item", id]`, que
-les mutations patchent.
+`CardSheetProvider` → la feuille), le focus sur TV. **Sur TV, le focus MONTRE le
+plateau**, posé sur la carte comme au bureau (refonte Apple TV,
+`apps/tv/src/redesign/cards/tray/`) : étoiles ENTIÈRES au-dessus de la capsule,
+bulle qui dit ce que fera OK, plateau résolu par l'intégration pour la seule
+carte focalisée (`card.tray`, par `useCardTrayHost` : `focusCard` + `withTray`)
+— avec la feuille, UN crochet d'actions (`useCardActions`,
+`apps/tv/src/redesignWiring/cards/`), jamais une copie. OK sur la carte garde
+l'action principale ; BAS entre dans le plateau par l'action primaire,
+GAUCHE/DROITE le parcourent, HAUT remonte aux étoiles puis à la carte, Menu y
+revient d'un coup — posé par le câblage à travers le port du focus (clés
+`<carte>:tray…`), jamais dans la vue ; l'appui long ouvre toujours la feuille
+(`TVCardActionSheet`, `CardActionSheetTv` sur webOS). Android TV et webOS, pas
+encore portés, gardent les marqueurs au focus. La carte et les boutons de son
+plateau sont des focalisables FRÈRES : tvOS ne focalise jamais un élément posé
+dans un autre, ni un élément RECOUVERT par ce qui dessine — la recherche
+géométrique ne le propose plus (régression payée : plus une carte atteignable).
+La cible focalisable se pose donc AU-DESSUS de l'image, et s'arrête au-dessus du
+plateau ouvert. État et gestes : `useCardToggles`, `useCardRatingTarget`,
+`useCardFace` (api-client). Une feuille qui garde un instantané de sa carte lit
+la fiche `["item", id]`, que les mutations patchent.
 
 Jamais une lecture directe de `UserData` dans une carte, jamais un plateau, une
 coche ou une barre recopiés : une nouvelle carte ou une nouvelle action passe
