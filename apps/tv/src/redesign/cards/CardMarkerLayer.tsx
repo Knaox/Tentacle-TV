@@ -15,10 +15,11 @@ import { TRAY_REVEAL_MS } from "./tray/useCardHover";
  * haut à droite, barre de progression commune. Tracés du modèle partagé
  * (`cardMarkerGlyphs`), voile noir des pastilles du bureau (0,72).
  *
- * `hovered` : le plateau du focus est sur la carte. Les deux pastilles
- * s'effacent — la note laisse la place aux étoiles, les états au plateau qui
- * les reprend à l'identique —, la progression reste, par-dessus le voile :
- * c'est au focus qu'on décide de reprendre.
+ * `hovered` : le plateau du focus est sur la carte. La pastille de la note
+ * s'efface — le plateau affiche la note perso à sa place ; l'ÉPINGLE des
+ * états (Ma liste · j'aime · vu) reste, comme au repos : on voit ce qui est
+ * posé pendant qu'on le bascule. La progression reste aussi, par-dessus le
+ * voile : c'est au focus qu'on décide de reprendre.
  */
 
 function Star({ size, color }: { size: number; color: string }) {
@@ -49,11 +50,11 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {markers.statuses.length > 0 ? (
-        <Animated.View style={[styles.pill, styles.statuses, compact && styles.pillCompact, recede]}>
+        <View style={[styles.pill, styles.statuses, compact && styles.pillCompact]}>
           {markers.statuses.map((kind) => (
             <ToggleGlyph key={kind} kind={kind} active color={kind === "favorite" ? colors.accentLight : colors.onMedia} size={glyph} />
           ))}
-        </Animated.View>
+        </View>
       ) : null}
       {showRating ? (
         <Animated.View style={[styles.pill, styles.rating, compact && styles.pillCompact, progress !== undefined && styles.ratingAboveBar, recede]}>
