@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { ScrollView, TVFocusGuideView, InteractionManager } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useMemo, useRef } from "react";
+import { ScrollView, TVFocusGuideView } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useWatchlist, useWatchedItems,
-  useTentacleConfig, useHomeWebSocket, useJellyfinClient, usePreferencesLive, useRecoLive,
+  useTentacleConfig, useJellyfinClient,
 } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { doLogout } from "../auth/sessionFlow";
@@ -26,7 +25,7 @@ import { useTVHomeRows } from "../components/home/useTVHomeRows";
 import { useRecoFilterChipRow } from "../components/reco/useRecoFilterChipRow";
 import { recoAmbientTarget } from "../components/reco/recoAmbientTarget";
 import { useHomeFocusRestore } from "../hooks/useHomeFocusRestore";
-import { preloadCoreScreens } from "../navigation/AppNavigator";
+import { useHomeLifecycle } from "../hooks/useHomeLifecycle";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { Spacing } from "../theme/colors";
@@ -49,42 +48,13 @@ function HomeScreenInner({ navigation }: Props) {
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
-  // Le serveur pousse `session:revoked` quand l'admin supprime ce jumelage :
-  // on se déconfigure et on repart sur l'écran de jumelage (doLogout purge
-  // aussi le token Jellyfin caché du direct streaming). Respecte le garde
-  // « lecture en cours » de doLogout.
-  const token = storage.getItem("tentacle_token");
-  useHomeWebSocket({
-    token,
-    onSessionRevoked: () => doLogout(jfClient, storage, queryClient),
-  });
-  // Les recommandations reconstruites en fond arrivent en silence (reco:update).
-  useRecoLive({ token });
-  // La mise en page de l'accueil et les réglages changés ailleurs arrivent en direct.
-  usePreferencesLive({ token });
+  // Session révoquée, données en direct, rafraîchissement au retour,
+  // préchauffage des écrans : la vie de l'accueil, commune aux deux UI.
+  useHomeLifecycle();
   const setFocusedItem = useAmbientSetter();
   const { requestRailFocus, lastContentNodeRef, railFocusedRef } = useTVNavActions();
   // Appui long sur une carte → la feuille d'actions du modèle partagé.
   const cardActions = useTVCardActions();
-
-  // Invalidate volatile queries when screen regains focus (e.g. after Player).
-  // - Skip du premier mount (les queries démarrent déjà → évite le double-fetch).
-  // - `exact` sur next-up : le préfixe matchait aussi les 2 requêtes supplément
-  //   (Limit 500) → rafale réseau + jank à chaque retour sur l'accueil.
-  // - Différé après les interactions pour ne pas concurrencer la transition.
-  const firstFocusRef = useRef(true);
-  useFocusEffect(
-    useCallback(() => {
-      if (firstFocusRef.current) { firstFocusRef.current = false; return; }
-      const task = InteractionManager.runAfterInteractions(() => {
-        queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-        queryClient.invalidateQueries({ queryKey: ["next-up"], exact: true });
-        queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-        queryClient.invalidateQueries({ queryKey: ["favorites"] });
-      });
-      return () => task.cancel();
-    }, [queryClient])
-  );
 
   // Retour sur l'accueil : le focus revient sur la dernière carte focalisée.
   useHomeFocusRestore(lastContentNodeRef);
@@ -92,13 +62,6 @@ function HomeScreenInner({ navigation }: Props) {
   // Retour ouvre le rail (le geste de Netflix) ; depuis le rail, il rend la main au système — sur
   // Android, c'est quitter l'application (tvOS le fait seul à la racine).
   useTVRemote({ onBack: () => (railFocusedRef.current ? false : requestRailFocus()) });
-
-  // Préchauffe les écrans lazy (Library/MediaDetail/Player) une fois l'accueil
-  // interactif — le premier accès n'attend plus le parse/exec du module.
-  useEffect(() => {
-    const task = InteractionManager.runAfterInteractions(preloadCoreScreens);
-    return () => task.cancel();
-  }, []);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const rowYMap = useRef<Map<string, number>>(new Map());
