@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { Pressable, type StyleProp, type ViewStyle } from "react-native";
 import { LONG_PRESS_THRESHOLD_MS } from "@tentacle-tv/tv-core";
 import { useFocusBinding } from "./focusBinding";
@@ -25,6 +25,12 @@ export interface FocusTargetProps {
  * focus ici — ni entrée, ni destination, ni Retour : l'intégration les pose
  * par le port du focus (`useFocusBinding(focusKey)` : ref, props natives,
  * garde anti-clic fantôme, observation).
+ *
+ * Démonté pendant qu'il porte le focus, il annonce sa perte : tvOS n'envoie
+ * le flou qu'après coup, à une vue que React a déjà retirée — l'événement se
+ * perd. Le plateau d'une carte se démonte ainsi quand le focus part de l'un
+ * de ses boutons vers la carte voisine : sans cet avis, la carte restait
+ * « ouverte » et ne se rouvrait plus.
  */
 export const FocusTarget = memo(function FocusTarget({
   focusKey,
@@ -42,19 +48,33 @@ export const FocusTarget = memo(function FocusTarget({
   const bindingBlur = binding?.onBlur;
   const guarded = binding?.phantomPressGuard === true;
   const pressedIn = useRef(false);
+  const holding = useRef(false);
+  const blurred = useRef({ bindingBlur, onFocusChange });
+  blurred.current = { bindingBlur, onFocusChange };
 
   const handleFocus = useCallback(() => {
+    holding.current = true;
     onFocus();
     bindingFocus?.();
     onFocusChange?.(true);
   }, [onFocus, bindingFocus, onFocusChange]);
   const handleBlur = useCallback(() => {
+    holding.current = false;
     onBlur();
     // Un appui commencé ici puis emporté ailleurs ne doit pas valider plus tard.
     pressedIn.current = false;
     bindingBlur?.();
     onFocusChange?.(false);
   }, [onBlur, bindingBlur, onFocusChange]);
+  useEffect(
+    () => () => {
+      if (!holding.current) return;
+      holding.current = false;
+      blurred.current.bindingBlur?.();
+      blurred.current.onFocusChange?.(false);
+    },
+    [],
+  );
   const handlePressIn = useCallback(() => {
     pressedIn.current = true;
   }, []);
