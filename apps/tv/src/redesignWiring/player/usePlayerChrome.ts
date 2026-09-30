@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useMediaItem, usePlaybackSettings } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useMediaItem, usePlaybackSegments, usePlaybackSettings } from "@tentacle-tv/api-client";
 import type { PlayerChromeViewProps } from "../../redesign/screens/player/PlayerChromeView";
 import { playerChromeLabels, seekFlashLabel, type Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlayerMedia, PlayerPanel, ScrubModel, TracksPanelModel } from "../../redesign/screens/player/playerTypes";
@@ -9,7 +9,7 @@ import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../hooks/useTVPlayer
 import type { FocusStore } from "../focus/focusStore";
 import { backdropUriOf, logoUriOf, paletteOf, type ImageUrl } from "./playerArt";
 import {
-  buildEndScreen, buildPhase, buildPlayerMedia, buildSkipPill, buildUpNext, parseSpeedLabel, trickplayFrame,
+  buildEndScreen, buildPhase, buildPlayerMedia, buildSkipPill, buildUpNext, parseSpeedLabel, timelineSegments, trickplayFrame,
 } from "./playerChromeModels";
 import { buildTracksPanel } from "./playerPanelModels";
 import type { PlayerRedesignStageProps } from "./playerStageTypes";
@@ -73,9 +73,12 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore):
   }), [p.streamUrl, p.failed, p.hasStarted, p.videoError, step, translate]);
   const playing = phase.kind === "playing";
 
+  // Les passages de la frise : le contrat que l'arbitre a déjà demandé (même cache).
+  const resolved = usePlaybackSegments(item?.Id).segments;
+  const segments = useMemo(() => timelineSegments(resolved), [resolved]);
   const timeline = useMemo(
-    () => ({ position: p.displayTime, duration: p.displayDuration, buffered: p.bufferedTime }),
-    [p.displayTime, p.displayDuration, p.bufferedTime],
+    () => ({ position: p.displayTime, duration: p.displayDuration, buffered: p.bufferedTime, segments }),
+    [p.displayTime, p.displayDuration, p.bufferedTime, segments],
   );
   const transport = useMemo(() => ({
     hasPrevious: p.hasPreviousEpisode,

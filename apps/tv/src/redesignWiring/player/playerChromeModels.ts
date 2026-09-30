@@ -1,4 +1,6 @@
-import { extractMediaQuality, formatEpisodeCode, type MediaItem, type PlayerOverlay } from "@tentacle-tv/shared";
+import {
+  extractMediaQuality, formatEpisodeCode, type MediaItem, type PlayerOverlay, type ResolvedSegment,
+} from "@tentacle-tv/shared";
 import type { MetaItem } from "../../redesign/hero/MetaLine";
 import { nextCountdownLabel, skipPillLabel, type Translate } from "../../redesign/screens/player/playerLabels";
 import type {
@@ -8,6 +10,7 @@ import type {
   PlayerPhase,
   ScrubModel,
   SkipPillModel,
+  TimelineSegment,
   UpNextModel,
 } from "../../redesign/screens/player/playerTypes";
 import { plainText } from "./playerArt";
@@ -143,6 +146,17 @@ export function parseSpeedLabel(label: string | null | undefined): ScrubModel["s
   const match = label ? SPEED.exec(label.trim()) : null;
   if (!match) return null;
   return { factor: Number(match[2]), backward: match[1] === "<<" || match[1] === "◀◀" };
+}
+
+/**
+ * Les passages que la frise marque, d'après les segments RÉSOLUS du serveur
+ * (les mêmes que l'arbitre lit). Les publicités n'ont de surface nulle part —
+ * aucun réglage, aucun bouton — : la frise les tait aussi.
+ */
+export function timelineSegments(segments: readonly ResolvedSegment[]): TimelineSegment[] {
+  return segments
+    .filter((segment) => segment.type !== "Commercial")
+    .map((segment) => ({ start: segment.startMs / 1000, end: segment.endMs / 1000 }));
 }
 
 /** Une case de planche trickplay → l'image plein cadre de la vue. */
