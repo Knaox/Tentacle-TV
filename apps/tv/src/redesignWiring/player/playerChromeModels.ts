@@ -76,6 +76,8 @@ export function buildPhase(args: {
   t: Translate;
   /** L'échec dit qui manque quand c'est une panne (cf. usePlaybackRecovery). */
   failedMessage?: string | null;
+  /** Une ouverture qui se fait attendre le dit (cf. useStartupWait). */
+  startHint?: string | null;
 }): PlayerPhase {
   // Échouée : jamais résolue, ou refusée par le lecteur avant la première image.
   if (!args.streamUrl || (args.failed && !args.hasStarted)) {
@@ -84,7 +86,7 @@ export function buildPhase(args: {
   }
   // Une erreur avant la première image n'enferme pas sous l'écran de
   // chargement : le bandeau la dit, par-dessus l'habillage (comme avant).
-  if (!args.hasStarted && !args.videoError) return { kind: "starting" };
+  if (!args.hasStarted && !args.videoError) return { kind: "starting", hint: args.startHint ?? null };
   return { kind: "playing" };
 }
 

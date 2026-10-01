@@ -34,8 +34,9 @@ export interface PlayerMedia {
 export type PlayerPhase =
   /** Résolution du flux ; `step` : le jalon PrismCore (tvOS), « étape 3 sur 4 ». */
   | { kind: "resolving"; step?: { label: string; index: number; count: number } | null }
-  /** Flux trouvé, première image attendue. */
-  | { kind: "starting" }
+  /** Flux trouvé, première image attendue. `hint` : la ligne discrète d'une
+   *  ouverture qui se fait attendre (« Le transcodage peut prendre… »). */
+  | { kind: "starting"; hint?: string | null }
   | { kind: "failed"; message: string }
   | { kind: "playing" };
 

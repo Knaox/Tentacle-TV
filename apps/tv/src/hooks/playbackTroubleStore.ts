@@ -1,5 +1,9 @@
 import { useSyncExternalStore } from "react";
-import type { Culprit, RecoveryPhase } from "@tentacle-tv/tv-core";
+import type { Culprit, RecoveryPhase, StartupWaitHint } from "@tentacle-tv/tv-core";
+
+/** L'ouverture d'un transcodage qui se fait attendre (`useStartupWait`) : ce
+ *  que dit l'écran d'ouverture, ou l'échec par l'attente (`gaveUp`). */
+export type StartWait = StartupWaitHint | { kind: "gaveUp" };
 
 /**
  * L'état de la reprise d'une lecture, lisible par l'HABILLAGE : le crochet de
@@ -17,10 +21,12 @@ export interface PlaybackTroubleState {
   stillDown: boolean;
   /** L'OUVERTURE a échoué serveur à terre : qui manque (sinon `null`). */
   startCulprit: Culprit | null;
+  /** L'ouverture d'un transcodage qui se fait attendre (sinon `null`). */
+  startWait: StartWait | null;
 }
 
 export const IDLE_TROUBLE: PlaybackTroubleState = {
-  phase: { kind: "none" }, nextCheckAt: null, checking: false, stillDown: false, startCulprit: null,
+  phase: { kind: "none" }, nextCheckAt: null, checking: false, stillDown: false, startCulprit: null, startWait: null,
 };
 
 let current: PlaybackTroubleState = IDLE_TROUBLE;
@@ -31,7 +37,7 @@ function same(a: PlaybackTroubleState, b: PlaybackTroubleState): boolean {
   const pa = a.phase as Record<string, unknown>;
   const pb = b.phase as Record<string, unknown>;
   return a.nextCheckAt === b.nextCheckAt && a.checking === b.checking && a.stillDown === b.stillDown
-    && a.startCulprit === b.startCulprit
+    && a.startCulprit === b.startCulprit && a.startWait?.kind === b.startWait?.kind
     && pa.kind === pb.kind && pa.cause === pb.cause && pa.since === pb.since && pa.ahead === pb.ahead
     && pa.streamAffected === pb.streamAffected
     && (pa.network as { measuredBps?: number } | undefined)?.measuredBps === (pb.network as { measuredBps?: number } | undefined)?.measuredBps;

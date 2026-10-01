@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { BACK_TOP, BackButton } from "../../controls/BackButton";
@@ -7,6 +8,7 @@ import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { Icon } from "../../icons/Icon";
 import { TitleArt } from "../../hero/TitleArt";
+import { Presented } from "../../motion/Presented";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import type { PlayerMedia, PlayerPhase } from "./playerTypes";
 
@@ -16,7 +18,8 @@ import type { PlayerMedia, PlayerPhase } from "./playerTypes";
  * gauche, son logo, l'épisode, et ce qui se passe :
  * - résolution : le jalon PrismCore (« Indexation (premier visionnage)… »)
  *   et les étapes franchies — la seule attente longue, qui mérite d'être dite ;
- * - démarrage : l'indicateur seul ;
+ * - démarrage : l'indicateur seul — et, quand l'ouverture se fait attendre
+ *   (un serveur qui transcode lentement), une ligne discrète à côté, en fondu ;
  * - échec : le message et « Réessayer » (pilule blanche).
  * La croix Retour est toujours là, en haut à gauche : une ouverture qui
  * traîne n'enferme personne. Clés : `loading:back`, `loading:retry` ; groupe
@@ -24,6 +27,12 @@ import type { PlayerMedia, PlayerPhase } from "./playerTypes";
  */
 
 const SAFE = TV_STAGE.safe;
+
+/** La ligne discrète d'une ouverture qui se fait attendre : jamais focalisable. */
+function Hint({ text, appear }: { text: string; appear: SharedValue<number> }) {
+  const fade = useAnimatedStyle(() => ({ opacity: appear.value }));
+  return <Animated.Text style={[styles.stepLabel, fade]} numberOfLines={1}>{text}</Animated.Text>;
+}
 
 function Steps({ index, count }: { index: number; count: number }) {
   return (
@@ -51,6 +60,7 @@ export const PlayerLoading = memo(function PlayerLoading({
 }) {
   const failed = phase.kind === "failed";
   const step = phase.kind === "resolving" ? phase.step : null;
+  const hint = phase.kind === "starting" ? phase.hint ?? null : null;
   return (
     <FocusGroup focusKey="loading:screen" style={styles.root}>
       {media.backdropUri ? <Image source={{ uri: media.backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
@@ -87,6 +97,7 @@ export const PlayerLoading = memo(function PlayerLoading({
                 <ActivityIndicator size="large" color={colors.text} />
               </View>
               {step ? <Text style={styles.stepLabel} numberOfLines={1}>{step.label}</Text> : null}
+              <Presented value={hint} motion="reveal">{(text, appear) => <Hint text={text} appear={appear} />}</Presented>
             </View>
             {step ? <Steps index={step.index} count={step.count} /> : null}
           </View>

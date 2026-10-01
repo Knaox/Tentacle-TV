@@ -9,6 +9,7 @@ export * from "./arrowArbiter";
 export * from "./playerState";
 export * from "./playbackRecovery";
 export * from "./networkShortfall";
+export * from "./startupWait";
 export * from "./playerItemFallback";
 export * from "./playerErrors";
 export * from "./producerDeath";

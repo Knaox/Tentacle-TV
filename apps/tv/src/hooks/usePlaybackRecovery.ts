@@ -9,6 +9,7 @@ import { freshRecoveryState as fresh, type RecoveryState } from "./recoveryState
 import { readServerReachability, requestServerProbe } from "./serverReachability";
 import { IDLE_TROUBLE, noteServerFallback, publishPlaybackTrouble, registerTroubleRetry } from "./playbackTroubleStore";
 import { useStartupRecovery } from "./useStartupRecovery";
+import { useStartupWait } from "./useStartupWait";
 import { isFormatError, type RecoverySources } from "./recoverySources";
 import type { RestartReason } from "./streamRestart";
 import { prismStatus } from "../utils/prismCoreStart";
@@ -190,6 +191,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
       checking: st.probing,
       stillDown: st.stillDown,
       startCulprit: null,
+      startWait: null,
     });
     if (decision.probe) void probe();
     if (decision.restart) void restart(st.retryAsked ? "manual" : "network");
@@ -241,6 +243,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
   }, []);
 
   useStartupRecovery(sources);
+  useStartupWait(sources);
 
   /** Confiée en premier par le gestionnaire d'erreurs : `true` = prise en charge. */
   const onSourceLost = useCallback((error: string): boolean => {

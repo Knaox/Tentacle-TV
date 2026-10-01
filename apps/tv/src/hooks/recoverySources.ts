@@ -25,6 +25,8 @@ export interface RecoverySources {
     endedRef: React.MutableRefObject<boolean>;
   };
   p: {
+    /** Le flux émis, `null` tant qu'il n'est pas résolu. */
+    streamUrl: string | null;
     restartStream: (opts?: RestartOptions) => Promise<RestartOutcome>;
     /** L'ouverture du flux a échoué (écran d'échec, « Réessayer »). */
     failed: boolean;

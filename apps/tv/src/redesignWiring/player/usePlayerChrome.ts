@@ -75,14 +75,18 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
   ) : EMPTY_MEDIA), [item, isEpisode, series, image, sourcePlaying]);
 
   const step = p.prismStep;
-  // L'ouverture ratée pendant une panne dit qui manque (cf. usePlaybackRecovery).
-  const startCulprit = usePlaybackTroubleState().startCulprit;
+  // L'ouverture ratée pendant une panne dit qui manque (cf. usePlaybackRecovery) ;
+  // celle d'un transcodage qui se fait attendre le dit, puis son échec (useStartupWait).
+  const { startCulprit, startWait } = usePlaybackTroubleState();
   const failedMessage = startCulprit
-    ? translate(startCulprit === "media" ? "player:troubleStartMedia" : "player:troubleStartTentacle") : null;
+    ? translate(startCulprit === "media" ? "player:troubleStartMedia" : "player:troubleStartTentacle")
+    : startWait?.kind === "gaveUp" ? translate("player:troubleTranscodeDetail") : null;
+  const startHint = startWait?.kind === "transcoding" ? translate("player:transcodeSlowHint")
+    : startWait?.kind === "slowNetwork" ? translate("player:networkSlowHint") : null;
   const phase = useMemo(() => buildPhase({
     streamUrl: p.streamUrl, failed: p.failed, hasStarted: p.hasStarted, videoError: p.videoError, step, t: translate,
-    failedMessage,
-  }), [p.streamUrl, p.failed, p.hasStarted, p.videoError, step, translate, failedMessage]);
+    failedMessage, startHint,
+  }), [p.streamUrl, p.failed, p.hasStarted, p.videoError, step, translate, failedMessage, startHint]);
   const playing = phase.kind === "playing";
 
   // Les passages de la frise : le contrat que l'arbitre a déjà demandé (même cache).
