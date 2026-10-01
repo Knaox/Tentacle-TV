@@ -11,6 +11,10 @@ RCT_EXTERN_METHOD(start:(NSDictionary *)config
 
 RCT_EXTERN_METHOD(stop:(nonnull NSNumber *)gen)
 
+RCT_EXTERN_METHOD(status:(nonnull NSNumber *)gen
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(fallbackMuxed:(nonnull NSNumber *)gen
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)

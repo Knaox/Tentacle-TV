@@ -2,7 +2,7 @@ import Foundation
 import PrismCore
 
 /// Module RN `PrismBridge` (ancienne architecture : `RCT_EXTERN_MODULE` dans
-/// PrismBridge.m). Trois méthodes — `start`, `stop`, `fallbackMuxed` — et un
+/// PrismBridge.m). Quatre méthodes — `start`, `stop`, `status`, `fallbackMuxed` — et un
 /// évènement `prismCheckpoint` qui raconte l'ouverture au fil de l'eau à
 /// l'écran de chargement. PrismCore n'est PAS un lecteur : il rend une URL de
 /// playlist, AVPlayer (react-native-video) et toute l'UI restent les nôtres.
@@ -47,6 +47,26 @@ final class PrismBridge: RCTEventEmitter, @unchecked Sendable {
     @objc func stop(_ gen: NSNumber) {
         let value = gen.intValue
         Task.detached { await PrismSessionRegistry.shared.stop(gen: value) }
+    }
+
+    /// L'état du producteur de la session `gen` → `{gen, known, failed, code?,
+    /// message?}`. `known: false` : la session n'existe plus ; `failed` : le
+    /// producteur est mort, rien ne sera plus produit — un arrêt d'AVPlayer sur
+    /// ce flux ne repartira pas seul.
+    @objc func status(_ gen: NSNumber,
+                      resolver resolve: @escaping RCTPromiseResolveBlock,
+                      rejecter reject: @escaping RCTPromiseRejectBlock) {
+        let value = gen.intValue
+        Task.detached {
+            guard let health = await PrismSessionRegistry.shared.status(gen: value) else {
+                resolve(["gen": value, "known": false, "failed": false])
+                return
+            }
+            var out: [String: Any] = ["gen": value, "known": true, "failed": health.code != nil]
+            if let code = health.code { out["code"] = code }
+            if let message = health.message { out["message"] = message }
+            resolve(out)
+        }
     }
 
     /// Master refusé par AVPlayer : la même session, rejouée en forme muxée.

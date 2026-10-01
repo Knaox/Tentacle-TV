@@ -9,6 +9,13 @@ enum PrismBridgeError: Error {
     case superseded
 }
 
+/// L'état du producteur d'une session vivante (`PrismBridge.status`) : son
+/// erreur terminale, traduite par la même table que les refus de `start()`.
+struct PrismProducerHealth: Sendable {
+    let code: String?
+    let message: String?
+}
+
 /// Le côté AFFICHAGE, sur le MainActor : `DisplayCriteriaController` écrit
 /// `preferredDisplayCriteria` sur la fenêtre clé et lit l'écran, deux choses
 /// qu'UIKit n'accepte que du thread principal.
@@ -115,6 +122,16 @@ actor PrismSessionRegistry {
             )
         }
         return try await bringUp(session, gen: gen, onCheckpoint: onCheckpoint)
+    }
+
+    /// Le producteur de la session `gen` vit-il encore ? AVPlayer ne le dira
+    /// jamais : un producteur mort ne fait pas échouer l'élément, qui relance
+    /// ses segments sans fin — 404 comme connexion refusée (mesuré le
+    /// 2026-10-01). `nil` : la session n'existe plus (stoppée, remplacée).
+    func status(gen: Int) async -> PrismProducerHealth? {
+        guard let session = sessions[gen] else { return nil }
+        guard let failure = await session.remuxError else { return PrismProducerHealth(code: nil, message: nil) }
+        return PrismProducerHealth(code: PrismErrorCode.of(failure), message: String(describing: failure))
     }
 
     func stop(gen: Int) async {

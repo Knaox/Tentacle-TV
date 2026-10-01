@@ -35,6 +35,12 @@ export interface PrismStart {
   panelIsHDR?: boolean;
 }
 
+/** L'état du producteur d'une session (`PrismBridge.status`). `known` faux : la
+ *  session n'existe plus (stoppée, remplacée). `failed` vrai : le producteur est
+ *  mort, rien ne sera plus produit — `code` reprend la table des refus de
+ *  `start()`. AVPlayer, lui, ne le dit jamais : il relance ses segments sans fin. */
+export interface PrismStatus { gen: number; known: boolean; failed: boolean; code?: string; message?: string }
+
 interface PrismBridgeModule {
   start?: (config: {
     url: string;
@@ -43,6 +49,7 @@ interface PrismBridgeModule {
     segmentCacheBytes?: number;
   }) => Promise<PrismStart>;
   stop?: (gen: number) => void;
+  status?: (gen: number) => Promise<PrismStatus>;
   fallbackMuxed?: (gen: number) => Promise<PrismStart>;
 }
 
@@ -131,6 +138,17 @@ export async function startPrismCore(a: {
 
 export function stopPrismCore(gen: number): void {
   if (gen > 0) PrismBridge?.stop?.(gen);
+}
+
+/** L'état du producteur de la session `gen` — à lire quand AVPlayer cale sur le
+ *  flux local. `null` hors tvOS, ou si le pont ne répond pas. */
+export async function prismStatus(gen: number): Promise<PrismStatus | null> {
+  if (!PrismBridge?.status || gen <= 0) return null;
+  try {
+    return await PrismBridge.status(gen);
+  } catch {
+    return null;
+  }
 }
 
 /** Master refusé par AVPlayer (toute erreur sur le flux local — cf.
