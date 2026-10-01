@@ -24,6 +24,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 12. Le Retour (Apple TV) | Fait (2026-10-02) : une pile de couches, menu > surimpression > page > rail > sortie ; plus aucun écran qui paraît quand un menu se ferme ; le rail se referme sur la page choisie — « Le Retour (Apple TV) » ci-dessous. |
 | 13. Rail compact (Apple TV) | Fait (2026-10-02) : le bloc des pages épouse ses entrées et se centre, le profil reste ancré en bas avec la place de l'élément des demandes, largeur ouverte sur l'intitulé le plus long — « Le rail compact (Apple TV) » ci-dessous. |
 | 14. Demandes en cours (Apple TV) | Faites (2026-10-02) : l'aperçu des demandes Vigie dans le bloc du profil, la fenêtre en lecture seule, le camembert — rien sans Vigie à jour et un compte qui a le droit de demander — « Les demandes en cours (Apple TV) » ci-dessous. |
+| 15. Lumière des fonds et marque (Apple TV) | Fait (2026-10-02) : un fond d'encre éclairé par l'œuvre focalisée, la carte focalisée dans sa propre lumière, la marque mono calée et éclairée — « La lumière des fonds et la marque (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -55,7 +56,12 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
     vraiment ») ;
   - le FOND VIVANT garde la lumière de l'œuvre, ses violets ramenés au neutre
     (« le violet moche en fond, c'est très dommage… c'était très beau
-    avant »). Jamais un fond violet.
+    avant »). Jamais un fond violet — mais jamais un grand noir non plus
+    (2026-10-02) : une encre à peine teintée, éclairée par l'œuvre, et la
+    carte focalisée dans sa propre lumière ;
+  - la marque, en haut à droite, est la mascotte MONO, à l'encre de
+    l'interface, dans le halo de la marque (2026-10-02 : en couleurs, elle
+    « faisait PNG qui flotte »).
 - **Focus Apple TV, sans contour** : agrandissement, soulèvement, reflet ; le
   verre focalisé devient blanc, texte noir ; les voisines reculent.
 - **Des affiches, sauf la reprise** (retour du 2026-10-01, « comme sur le
@@ -1552,6 +1558,104 @@ ses demandes Vigie en cours, d'un coup d'œil, en lecture seule.
 2. Fenêtre ouverte, un titre qui arrive : il sort de la liste dans les 30 s.
 3. Compte bloqué dans Vigie, ou Vigie désactivé : rien dans le rail.
 4. Menu et la croix ferment ; « gauche, gauche » mène toujours au profil.
+
+## La lumière des fonds et la marque (Apple TV)
+
+Branche `claude/sleepy-mcnulty-7390fe` (2026-10-02). Deux retours de l'essai
+sur l'Apple TV : « dans une bibliothèque pleine de cartes, la carte focalisée
+donne l'impression d'un grand noir derrière », et le logo « fait PNG qui
+flotte ». Relevé au banc avant d'y toucher (grille des films) : la moitié
+droite de la scène à rgb(3, 3, 6) — du noir —, la lumière de l'œuvre ne
+couvrait que le tiers gauche, et la carte focalisée se soulevait sur une ombre
+noire de 30 points.
+
+- **Les jetons** : `TV_LIGHT` (`packages/theme/src/tokens/tvStage.ts`) —
+  l'encre du fond, la force des lumières, la lueur des cartes, le halo de la
+  marque. Chaque levier se règle en une ligne.
+- **Le fond : une encre, plus le noir** — `#100D17` en haut, `#09080E` en
+  bas : à peine teintée de la marque (un violet très sourd), jamais un fond
+  violet ; plus claire en haut, la scène est éclairée d'en haut. Un voile qui
+  doit se fondre dans le fond (le haut d'une fiche qui défile) prend l'encre
+  (`ink()`), plus le noir : sur le fond éclairé, un voile noir dessinait une
+  bande.
+- **La lumière de l'œuvre, partout** (`AmbientBackdrop`) : trois lumières aux
+  couleurs de l'œuvre focalisée — une large, d'en haut (son cœur au-dessus de
+  l'écran : la scène en reçoit la retombée), une de chaque côté —, à la
+  décroissance douce (cinq paliers : une lumière, pas une tache). Les violets
+  de l'œuvre restent ramenés au neutre. Leur clarté est BORNÉE
+  (`boundedLight`, luminance ≤ 0,4) : un jaune vif n'éblouit plus, et le texte
+  posé dessus garde son contraste.
+- **La carte focalisée jette SA lumière** (`CardFrame` `glow`, `MediaCard`
+  `glowTone`) : le soulèvement n'est plus une grande ombre noire mais une
+  ombre aux couleurs de l'œuvre (rayon 46, 0,7), sur le même calque ; l'ombre
+  de repos reste dessous, en contact. `glowTone="neutral"` : un blanc doux et
+  bas, pour une carte qui doit rester grise (titre hors de la bibliothèque —
+  tâche « Collection et Demander »).
+- **Le contraste tient** — fond le plus clair relevé sous du texte, sept
+  écrans : tertiaire (blanc 0,55) ≥ 4,9:1 (avant : 5,7 à 6,2:1), secondaire
+  ≥ 8,2:1 ; la légende de la carte focalisée, dans sa lueur : ≥ 5,6:1. Pire
+  cas calculé (les trois lumières au jaune le plus vif que sache produire la
+  palette) : 5,0:1 en haut de l'écran grâce à la borne — 4,4:1 sans elle.
+- **Écartés** (planches dans `apps/tv/harness/ui-bench/out/lumiere-et-marque/`)
+  : A, un voile uniforme (assez de lumière, mais il tourne au brun) ; B,
+  seulement d'en haut (le centre reste noir) ; C, en diagonale (inégal d'un
+  écran à l'autre) ; E, la retenue plus forte (le tertiaire passe sous 4,5:1
+  sur certaines œuvres).
+
+**La marque** (`brand/BrandCorner`, `brand/BrandMark` `tone`) :
+
+- la mascotte en MONO, à l'encre blanche de l'interface — celle des
+  pictogrammes du rail : `brand/logo-mono.svg`, composé depuis la géométrie
+  générée par `brand/` comme le `TentacleMonoSvg` du web
+  (`components/icons/TentacleMonoLogo.tsx`) — rien n'est redessiné ;
+- éclairée par la lumière de la MARQUE, la seule qui la porte : le halo des
+  icônes de `brand/` (magenta au cœur, violet au bord), discret
+  (`TV_LIGHT.brandHalo`) ; sur une image (fiche, carte héros), un voile
+  d'ombre à la place — la lumière de la marque y teintait la photo ;
+- calée : son DESSIN (pas son carré) affleure au bord droit de la marge de
+  sécurité, son centre sur la LIGNE DE LA MARQUE — le centre de la croix
+  Retour (`BACK_TOP` + 30 = 98 points), où tombe aussi le titre des
+  réglages : la croix à gauche, la marque à droite, un seul trait — rien du
+  rail, dont le bloc se centre depuis le rail compact. Son corps (dôme et
+  écran) a la hauteur des
+  capitales d'un titre d'écran (carré de 60) ; l'emprise du dessin est
+  mesurée sur `brand/logo-mono.svg` (58 → 182 × 13 → 228 sur 240) : à
+  remesurer si le dessin change d'encombrement ;
+- elle défile avec la page — dans l'en-tête des grilles, dans la page de la
+  fiche, de l'accueil et de « Pour vous » : elle ne passe plus par-dessus les
+  rangées. Sur l'accueil et « Pour vous », elle se pose DANS le coin de la
+  carte héros, sur la colonne de ses points de rotation (56 de ses bords) :
+  au coin de l'écran, son chapeau dépassait du bord du héros. Fixe là où la
+  page ne défile pas : réglages, jumelage, panneaux d'état ;
+- la couleur reste aux ILLUSTRATIONS — accueil du jumelage, démarrage,
+  erreurs, à propos —, déjà posées dans un halo rose ;
+- écartés : la mascotte en couleur, seulement alignée (un autocollant, sur une
+  image surtout) ; le mono au dégradé de la marque (illisible sur une image
+  chaude) ; la couleur avec le halo (un autocollant lumineux).
+
+**Le coût** — mesuré au banc (simulateur tvOS 26.2, JS de production, temps
+GPU des services de rendu du simulateur), cinq tours en alternance avant /
+après, deux relevés de 10 s par scène et par tour. Scènes « Mesure ·
+Lumière » : le focus y change SEUL, toutes les 400 ms — la carte grandit, sa
+lueur paraît, la lumière du fond passe à celle de l'œuvre suivante.
+
+| Cas | Avant | Après |
+|---|---|---|
+| Repos (grille, accueil, réglages — halo de la marque compris) | 0,0 ms/s | 0,0 ms/s |
+| Grille des films, focus toutes les 400 ms | 204 à 233 (moyenne 217) | 200 à 240 (moyenne 217) |
+| « Reprendre », focus toutes les 400 ms | 187 à 233 (moyenne 213) | 188 à 232 (moyenne 210) |
+
+- **À l'arrêt, rien** : lumières, lueur et halo sont des dessins posés une
+  fois ; rien ne s'anime seul.
+- **En mouvement, le même coût** : l'écart avant / après reste sous la dérive
+  d'un tour à l'autre (qui suit la charge du Mac). Les lumières couvrent plus
+  d'écran mais restent trois disques de 128 points agrandis par le GPU ; la
+  lueur réutilise le calque de l'ombre du soulèvement (une ombre colorée au
+  lieu d'une noire) et l'ombre de repos ne s'anime plus.
+- **Piège payé** : sous forte charge (huit bancs démarrés, charge de 45 à 140),
+  un focus piloté depuis le relais (`fps --sweep`, `focus` en boucle)
+  n'arrive pas au même rythme d'un tour à l'autre — le même code a mesuré 14
+  puis 223 ms/s. D'où les scènes « Lumière », au mouvement joué dans l'app.
 
 ---
 

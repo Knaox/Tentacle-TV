@@ -23,6 +23,11 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
   marque, violet → rose (`TV_ACCENT`, `brand/`), se pose en touches : lecture
   écrite (`BrandPill`), progression, étoiles, échelle de note, surtitres — et
   le halo, seule lumière à la porter (`brandLight`), discret.
+- **Jamais un grand noir** (`TV_LIGHT`) : le fond est une ENCRE à peine
+  teintée de la marque, éclairée d'en haut et des côtés par la lumière de
+  l'œuvre focalisée ; la carte focalisée jette sa lumière autour d'elle, pas
+  une ombre noire. La marque, en haut à droite, est la mascotte MONO, à
+  l'encre de l'interface, dans le halo de la marque (`BrandCorner`).
 - **Très grand** : rien sous 22 pt, texte courant 26–30, titres de rangée 36,
   titre d'écran 56, titre du héros 58 à 76 selon sa longueur (ou le LOGO de
   l'œuvre).
@@ -57,7 +62,7 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `motion/useStagedMount` | Ce qui ne se voit pas encore, monté APRÈS l'entrée de la page, un rang par image (sections de la fiche : `SectionStage`) |
 | `glass/GlassSurface` | Le verre (`radius`, `tone` regular/strong/clear, `elevated`) ; suit l'interrupteur Liquid Glass — natif (`UIGlassEffect`) sur tvOS 26, simulé ailleurs |
 | `glass/glassBacking` | Le fond sous un verre qui flotte : `useNativeGlassBacking(tone)` remplace, sous le verre natif seulement, le fond qu'une vue dessine (strong : aucun, regular 0,1, clear 0,55) |
-| `background/AmbientBackdrop` | Le fond vivant (`palette`) |
+| `background/AmbientBackdrop` | Le fond vivant (`palette`) : l'encre de la scène et trois lumières de l'œuvre, à la clarté bornée (`boundedLight`) |
 | `background/ArtworkHalo` | La lumière autour d'un cadre (`width`, `height`, `radius`, `palette`) |
 | `background/SoftGradient` | Un dégradé linéaire dessiné au huitième puis agrandi par le GPU (`width`, `height` connus) — jamais un `LinearGradient` plein cadre ou de la taille d'une carte : il se peint sur le processeur |
 | `controls/PillButton` | Pilule `primary` (blanche) ou `glass`, `progress` pour « Reprendre » |
@@ -70,11 +75,12 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `rating/RatingStars` | Une note en cinq étoiles, demi-étoiles comprises, au rose de la marque — affichage seul |
 | `screens/sheet/RatingRuler` | L'échelle HORIZONTALE de la note (GAUCHE / DROITE, ½ à 5 étoiles, la valeur visée au centre, « Retirer la note » au bout) : la seule saisie de note sur Apple TV — sous les étoiles en grand (`RatingPanel`) |
 | `screens/sheet/SheetPictos` | Les pictos du grand panneau, dans l'ordre du modèle partagé, chacun son geste écrit dessous ; la lecture et « Demander » au dégradé (`BrandPill`) |
-| `cards/CardFrame` | Le cadre et son focus, pour une carte sur mesure |
+| `cards/CardFrame` | Le cadre et son focus, pour une carte sur mesure ; `glow` (`cardGlowOf`) : au focus, la lumière de l'œuvre autour de la carte au lieu d'une ombre noire — `MediaCard` la pose (`glowTone` : `art`, ou `neutral` pour une carte qui doit rester grise) |
 | `rows/MediaRow` | Titre + cartes horizontales, les voisines reculent |
 | `hero/HeroBanner`, `MetaLine`, `TitleArt` | Le héros, la ligne de métadonnées, le logo-titre |
 | `nav/NavRail` | La navigation flottante (repliée / ouverte sous un voile) |
-| `brand/BrandMark` | La mascotte (haut à droite, écrans d'erreur) |
+| `brand/BrandMark` | La mascotte : en couleur pour les illustrations (jumelage, démarrage, erreurs), en mono (`tone="mono"`, `brand/logo-mono.svg`) pour l'interface |
+| `brand/BrandCorner` | La marque en haut à droite : mono, sur la ligne de la croix Retour, au bord de la marge de sécurité, dans le halo de la marque (`backing="veil"` sur une image) ; posée dans ce qui défile (`BRAND_CORNER_IN_SAFE_AREA` dans l'en-tête d'une grille, `brandCornerOnHero` dans la carte héros) |
 | `screens/shared/StatusPanel` | Chargement, erreur, vide |
 | `icons/Icon` | Pictogrammes (`iconPaths.ts`, grille 24, trait 2) |
 
