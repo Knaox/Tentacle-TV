@@ -14,6 +14,7 @@ function playing(over: Partial<RecoveryInput> = {}): RecoveryInput {
     tentacle: "ok", source: "unknown", sourceCulprit: null, sourceCheckedAt: null, probing: false,
     downSince: null, downWhat: null,
     restarting: false, lastRestartAt: null, vainRestarts: 0,
+    transcoding: false, lastProgressAt: null, measuredBps: null, neededBps: null, retryAsked: false,
     ...over,
   };
 }
@@ -101,9 +102,9 @@ describe("decideRecovery — la lecture s'arrête", () => {
     expect(d.phase).toMatchObject({ kind: "waiting", cause: "network" });
   });
 
-  it("un arrêt de débit, serveur joignable : le remplissage d'abord, la relance ensuite", () => {
+  it("un arrêt sans coupable connu, serveur joignable : le remplissage d'abord, la relance ensuite", () => {
     const stalled = (ms: number) => playing({ stalledSince: T - ms, source: "ok", sourceCheckedAt: T - 100 });
-    expect(decideRecovery(stalled(SLOW_RESTART_AFTER_MS - 1))).toMatchObject({ phase: { kind: "waiting", cause: "slow" }, restart: false });
+    expect(decideRecovery(stalled(SLOW_RESTART_AFTER_MS - 1))).toMatchObject({ phase: { kind: "waiting", cause: "stall" }, restart: false });
     expect(decideRecovery(stalled(SLOW_RESTART_AFTER_MS)).restart).toBe(true);
   });
 
@@ -114,9 +115,9 @@ describe("decideRecovery — la lecture s'arrête", () => {
     expect(decideRecovery({ ...back, lastRestartAt: T - RESTART_COOLDOWN_MS }).restart).toBe(true);
   });
 
-  it("une relance garde l'incident ouvert sans le requalifier : un débit reste un débit", () => {
+  it("une relance garde l'incident ouvert sans le requalifier : un arrêt reste un arrêt", () => {
     const d = decideRecovery(playing({ openSince: T - 30_000, source: "ok", sourceCheckedAt: T - 100, lastRestartAt: T - RESTART_COOLDOWN_MS }));
-    expect(d.phase).toMatchObject({ kind: "waiting", cause: "slow", since: T - 30_000 });
+    expect(d.phase).toMatchObject({ kind: "waiting", cause: "stall", since: T - 30_000 });
     expect(d.restart).toBe(true);
   });
 

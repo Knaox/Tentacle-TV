@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
 import { unstable_batchedUpdates } from "react-native";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { cachedBitrate, useJellyfinClient } from "@tentacle-tv/api-client";
 import {
   decideProducerDeath, decideRecovery, MAX_VAIN_RESTARTS, PROBE_EVERY_MS, RESTART_COOLDOWN_MS, shouldCheckProducer,
-  type Culprit, type Health, type ProducerDeath, type RecoveryPhase,
+  type RecoveryPhase,
 } from "@tentacle-tv/tv-core";
+import { freshRecoveryState as fresh, type RecoveryState } from "./recoveryState";
 import { readServerReachability, requestServerProbe } from "./serverReachability";
 import { IDLE_TROUBLE, noteServerFallback, publishPlaybackTrouble, registerTroubleRetry } from "./playbackTroubleStore";
 import { useStartupRecovery } from "./useStartupRecovery";
@@ -24,40 +25,6 @@ const TICK_MS = 1000;
 const STARVING_AHEAD_MAX_S = 20;
 /** La lecture a repris : elle avance de tant depuis l'incident. */
 const PROGRESS_S = 2;
-
-interface RecoveryState {
-  stalledSince: number | null;
-  lostSince: number | null;
-  /** L'incident gardé ouvert par une relance (son rechargement n'est pas un arrêt). */
-  openSince: number | null;
-  /** Position quand l'incident s'est ouvert (perte, relance) — il se clôt quand elle avance. */
-  incidentPos: number | null;
-  buffered: { value: number; at: number };
-  source: Health;
-  culprit: Culprit | null;
-  checkedAt: number | null;
-  probing: boolean;
-  manualProbe: boolean;
-  stillDown: boolean;
-  downSince: number | null;
-  downWhat: Culprit | null;
-  restarting: boolean;
-  lastRestartAt: number | null;
-  /** La relance en cours d'épreuve n'a pas encore fait avancer la lecture. */
-  restartPending: boolean;
-  vain: number;
-  /** Le producteur de PrismCore : dernière lecture de son état, et sa dernière mort. */
-  producerCheckedAt: number | null;
-  producerChecking: boolean;
-  producerDeath: ProducerDeath | null;
-}
-
-const fresh = (): RecoveryState => ({
-  stalledSince: null, lostSince: null, openSince: null, incidentPos: null, buffered: { value: 0, at: Date.now() },
-  source: "unknown", culprit: null, checkedAt: null, probing: false, manualProbe: false, stillDown: false,
-  downSince: null, downWhat: null, restarting: false, lastRestartAt: null, restartPending: false, vain: 0,
-  producerCheckedAt: null, producerChecking: false, producerDeath: null,
-});
 
 /**
  * La reprise d'une lecture quand un serveur tombe : observe le lecteur, sonde
@@ -106,7 +73,10 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     if (st.restartPending) st.vain += 1;
     st.restarting = true;
     st.restartPending = true;
+    st.retryAsked = false;
     st.lastRestartAt = Date.now();
+    // Un flux neuf : l'échéance d'un transcodage qui se fait attendre repart.
+    st.lastProgressAt = st.lastRestartAt;
     // L'incident reste ouvert pendant le rechargement — sans le requalifier :
     // un arrêt de débit relancé reste un arrêt de débit.
     st.openSince ??= Math.min(st.lostSince ?? Infinity, st.stalledSince ?? Infinity, Date.now());
@@ -162,7 +132,11 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     // Ce qui est chargé grossit (ou un saut l'a déplacé) : la source nourrit.
     // Pendant un incident ouvert, c'est la clôture qui oublie la panne : le flux
     // relancé se remplit avant d'avancer, et la cause basculait sur « débit ».
-    if (buffered > st.buffered.value + 0.5 || buffered < st.buffered.value - 1) {
+    const grew = buffered > st.buffered.value + 0.5;
+    // Un signe de vie : la mémoire qui grossit, la position qui avance.
+    if (grew || pos > st.lastPos + 0.5) st.lastProgressAt = now;
+    st.lastPos = pos;
+    if (grew || buffered < st.buffered.value - 1) {
       st.buffered = { value: buffered, at: now };
       const open = st.openSince !== null || st.lostSince !== null;
       if (st.buffered.value > pos && !stalled && !open) { st.downSince = null; st.downWhat = null; }
@@ -172,7 +146,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
       plog("recover", `la lecture a repris à ${Math.round(pos)} s`);
       Object.assign(st, {
         lostSince: null, openSince: null, incidentPos: null, restartPending: false, vain: 0,
-        downSince: null, downWhat: null, stillDown: false,
+        downSince: null, downWhat: null, stillDown: false, retryAsked: false,
       });
     }
     const ahead = Math.max(0, buffered - pos);
@@ -197,6 +171,13 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
       restarting: st.restarting || (st.restartPending && st.lastRestartAt !== null && now - st.lastRestartAt < RESTART_COOLDOWN_MS),
       lastRestartAt: st.lastRestartAt,
       vainRestarts: st.vain,
+      // Un transcodage du serveur qui se fait attendre n'est ni une panne ni
+      // un réseau lent ; le réseau n'est accusé que mesuré sous le besoin du flux.
+      transcoding: !s.p.isDirectPlay && !s.p.isPrismCore,
+      lastProgressAt: st.lastProgressAt,
+      measuredBps: cachedBitrate(),
+      neededBps: s.p.streamBitrate,
+      retryAsked: st.retryAsked,
     });
     if (decision.phase.kind !== phaseRef.current.kind) {
       plog("recover", `${phaseRef.current.kind} → ${decision.phase.kind}${"cause" in decision.phase ? ` (${decision.phase.cause})` : ""}`);
@@ -211,7 +192,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
       startCulprit: null,
     });
     if (decision.probe) void probe();
-    if (decision.restart) void restart();
+    if (decision.restart) void restart(st.retryAsked ? "manual" : "network");
     if (shouldCheckProducer({
       prismCore: s.p.isPrismCore, now, stalledSince: st.stalledSince, lastCheckAt: st.producerCheckedAt,
       restarting: st.restarting || st.producerChecking,
@@ -241,11 +222,14 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
   }, [started]);
 
   // « Réessayer » de l'habillage : une vérification tout de suite, et la
-  // relance si le serveur répond — même après des relances vaines.
+  // relance dès que le serveur répond — même après des relances vaines, et
+  // même pour un transcodage qu'on laissait travailler.
   useEffect(() => {
     registerTroubleRetry(() => {
       const st = state.current;
-      Object.assign(st, { vain: 0, lastRestartAt: null, restartPending: false, checkedAt: null, manualProbe: true, stillDown: false });
+      Object.assign(st, {
+        vain: 0, lastRestartAt: null, restartPending: false, checkedAt: null, manualProbe: true, stillDown: false, retryAsked: true,
+      });
       void requestServerProbe();
       tickRef.current();
     });

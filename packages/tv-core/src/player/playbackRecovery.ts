@@ -14,13 +14,25 @@
  *   même forme — jamais le transcodage forcé d'une erreur de format ;
  * - si les relances restent vaines, serveur joignable, on rend la main à
  *   l'utilisateur (`stuck`) : réessayer, baisser la qualité, revenir.
+ *
+ * Un TRANSCODAGE qui se fait attendre (2026-10-01, serveur peu puissant,
+ * changement de qualité) n'est ni une panne ni une connexion lente : le
+ * serveur travaille. Le relancer tuait ce qu'il avait déjà fait — une session
+ * neuve repart de zéro, l'ancienne tourne encore une minute à côté —, et la
+ * vidéo ne venait jamais. Tant que quelque chose progresse, rien de bloquant
+ * (`transcoding`, une ligne discrète) ; deux minutes sans rien, la main à
+ * l'utilisateur. Le réseau n'est accusé (`slow`) que MESURÉ sous le besoin
+ * du flux (`networkShortfall`).
  */
+
+import { networkShortfall, type NetworkShortfall } from "./networkShortfall";
 
 export type Health = "ok" | "down" | "unknown";
 
 /** Ce qui manque : Jellyfin (la source), Tentacle (proxy ou service), le
- *  réseau sans plus de précision, ou un débit qui ne suit pas. */
-export type TroubleCause = "media" | "tentacle" | "network" | "slow";
+ *  réseau sans plus de précision (source perdue), un réseau MESURÉ trop lent,
+ *  un arrêt sans coupable connu (`stall`), ou un transcodage qui n'avance plus. */
+export type TroubleCause = "media" | "tentacle" | "network" | "slow" | "stall" | "transcode";
 export type Culprit = "media" | "tentacle";
 
 export type RecoveryPhase =
@@ -29,12 +41,17 @@ export type RecoveryPhase =
    *  `streamAffected` : le flux en dépend (chemin du flux à terre) — sinon,
    *  Tentacle seul, sous un flux direct qui n'en dépend pas. */
   | { kind: "degraded"; cause: Culprit; ahead: number; since: number; streamAffected: boolean }
-  /** La lecture est arrêtée ; elle reprendra seule au retour du serveur. */
-  | { kind: "waiting"; cause: TroubleCause; since: number }
+  /** Le serveur transcode lentement : rien de bloquant, ni relance ni panneau. */
+  | { kind: "transcoding"; since: number }
+  /** La lecture est arrêtée ; elle reprendra seule au retour du serveur.
+   *  `network` (ici et plus bas) : la mesure, quand c'est le réseau qui ne suit
+   *  pas (`slow`). */
+  | { kind: "waiting"; cause: TroubleCause; since: number; network?: NetworkShortfall }
   /** Relance du flux en cours. */
-  | { kind: "recovering"; cause: TroubleCause; since: number }
-  /** Serveur joignable, relances vaines : la main à l'utilisateur. */
-  | { kind: "stuck"; cause: TroubleCause; since: number };
+  | { kind: "recovering"; cause: TroubleCause; since: number; network?: NetworkShortfall }
+  /** Serveur joignable, relances vaines — ou un transcodage sans aucune
+   *  progression depuis deux minutes : la main à l'utilisateur. */
+  | { kind: "stuck"; cause: TroubleCause; since: number; network?: NetworkShortfall };
 
 export interface RecoveryInput {
   now: number;
@@ -70,6 +87,15 @@ export interface RecoveryInput {
   lastRestartAt: number | null;
   /** Relances vaines (ratées, ou suivies d'aucune progression) dans l'incident. */
   vainRestarts: number;
+  /** Le flux est un TRANSCODAGE du serveur (ni lecture directe, ni PrismCore). */
+  transcoding: boolean;
+  /** Dernier signe de progression : la position qui avance, la mémoire qui grossit. */
+  lastProgressAt: number | null;
+  /** Le réseau mesuré et ce que le flux demande, en b/s (`networkShortfall`). */
+  measuredBps: number | null;
+  neededBps: number | null;
+  /** « Réessayer » demandé, pas encore servi : la relance part dès que le chemin répond. */
+  retryAsked: boolean;
 }
 
 export interface RecoveryDecision {
@@ -82,7 +108,8 @@ export interface RecoveryDecision {
 export const STALL_GRACE_MS = 4_000;
 /** Cadence des sondes pendant un incident. */
 export const PROBE_EVERY_MS = 5_000;
-/** Un arrêt sans serveur à terre (débit) : on relance après ce délai. */
+/** Un arrêt sans coupable connu (ni serveur à terre, ni réseau mesuré trop
+ *  lent), hors transcodage : on relance après ce délai. */
 export const SLOW_RESTART_AFTER_MS = 12_000;
 /** Entre deux relances : le temps qu'un flux relancé démarre (mesuré :
  *  0,7 s sur PrismCore, 2,1 s en transcodage). */
@@ -93,6 +120,9 @@ export const MAX_VAIN_RESTARTS = 2;
 export const STARVING_PROBE_MS = 10_000;
 /** Sans incident, une vérification au plus toutes les… */
 export const IDLE_PROBE_EVERY_MS = 30_000;
+/** Un transcodage sans AUCUNE progression depuis : la main à l'utilisateur.
+ *  Avant, la patience : un serveur lent finit par livrer. */
+export const NO_PROGRESS_MS = 120_000;
 
 const NONE: RecoveryPhase = { kind: "none" };
 
@@ -130,27 +160,53 @@ export function decideRecovery(input: RecoveryInput): RecoveryDecision {
   }
 
   // Ce qui manque, une fois le chemin du flux vu répondre : le serveur vu à
-  // terre, la source perdue, sinon un débit qui ne suit pas.
-  const cause: TroubleCause = input.downWhat ?? (input.lostSince !== null ? "network" : "slow");
+  // terre, la source perdue, le réseau MESURÉ trop lent — sinon un arrêt sans
+  // coupable connu (un transcodage qui se fait attendre, ou un simple arrêt),
+  // qu'on ne met jamais sur le dos du réseau.
+  const shortfall = networkShortfall(input.measuredBps, input.neededBps);
+  const unexplained: TroubleCause = input.transcoding ? "transcode" : "stall";
+  const cause: TroubleCause = input.downWhat ?? (input.lostSince !== null ? "network" : shortfall ? "slow" : unexplained);
+  const net = cause === "slow" && shortfall ? { network: shortfall } : {};
   if (input.restarting) {
-    return { phase: { kind: "recovering", cause, since }, probe: false, restart: false };
+    return { phase: { kind: "recovering", cause, since, ...net }, probe: false, restart: false };
   }
 
   if (sourceDown) return { phase: { kind: "waiting", cause: sourceDown, since }, probe: due(PROBE_EVERY_MS), restart: false };
 
-  // Pas de sonde du chemin depuis l'arrêt : la faire d'abord.
+  // Un transcodage qui se fait attendre — ni panne vue, ni source perdue, ni
+  // « Réessayer » en attente : le serveur travaille, on attend sans rien
+  // bloquer, la sonde comprise.
+  const patient = input.transcoding && input.lostSince === null && input.downWhat === null && !input.retryAsked;
+
+  // Pas de sonde du chemin depuis l'arrêt : la faire d'abord. Un « Réessayer »
+  // garde ce qu'on savait déjà ; sinon, la connexion est en cause.
   const probedSince = input.sourceCheckedAt !== null && input.sourceCheckedAt >= since;
   if (input.source !== "ok" || !probedSince) {
-    return { phase: { kind: "waiting", cause: input.downWhat ?? "network", since }, probe: due(0), restart: false };
+    const phase: RecoveryPhase = patient
+      ? { kind: "transcoding", since }
+      : { kind: "waiting", cause: input.downWhat ?? (input.retryAsked ? cause : "network"), since };
+    return { phase, probe: due(0), restart: false };
   }
 
   // Le chemin du flux répond.
+  const waiting: RecoveryPhase = { kind: "waiting", cause, since, ...net };
+  // « Réessayer » : la relance, quoi qu'il en soit des relances passées.
+  if (input.retryAsked) return { phase: waiting, probe: false, restart: true };
+  if (patient) {
+    // Deux minutes sans rien — ni image, ni mémoire qui grossit : la main à
+    // l'utilisateur. Une progression d'avant l'arrêt ne compte pas.
+    const quietSince = Math.max(since, input.lastProgressAt ?? since);
+    if (now - quietSince >= NO_PROGRESS_MS) return { phase: { kind: "stuck", cause, since, ...net }, probe: false, restart: false };
+    return { phase: cause === "slow" ? waiting : { kind: "transcoding", since }, probe: false, restart: false };
+  }
+  // Le réseau ne porte pas le flux : une relance n'y changerait rien.
+  if (cause === "slow") return { phase: waiting, probe: false, restart: false };
   if (input.vainRestarts >= MAX_VAIN_RESTARTS) {
     return { phase: { kind: "stuck", cause, since }, probe: false, restart: false };
   }
   // Le serveur revient, ou le lecteur a perdu sa source : relancer tout de
-  // suite. Un simple arrêt (débit) : laisser au remplissage sa chance.
+  // suite. Un simple arrêt : laisser au remplissage sa chance.
   const ripe = input.downSince !== null || input.lostSince !== null || now - since >= SLOW_RESTART_AFTER_MS;
   const cooled = input.lastRestartAt === null || now - input.lastRestartAt >= RESTART_COOLDOWN_MS;
-  return { phase: { kind: "waiting", cause, since }, probe: false, restart: ripe && cooled };
+  return { phase: waiting, probe: false, restart: ripe && cooled };
 }

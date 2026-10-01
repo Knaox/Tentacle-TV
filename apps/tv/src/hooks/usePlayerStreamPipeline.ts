@@ -190,6 +190,9 @@ export function usePlayerStreamPipeline(args: {
   playSessionIdRef.current = playSessionId;
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
+  // Ce que le flux demande au réseau : le palier d'un transcodage, sinon le
+  // débit du fichier (la reprise n'accuse le réseau que mesuré en dessous).
+  const streamBitrate = (isDirectPlay || isPrismCore ? mediaSource?.Bitrate : effectiveMaxBitrate) ?? null;
   // Cadence du flux (Android TV : bascule de fréquence d'affichage dans la vue native).
   const frameRate = useMemo(() => videoFrameRate(streams), [streams]);
 
@@ -265,6 +268,7 @@ export function usePlayerStreamPipeline(args: {
     useExoPlayer, playerRef, isDirectStream,
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
     startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, prismTextTrackIndex, failed, retryMuxed, onMasterRejected,
+    streamBitrate,
     restartStream,
     reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef,
     mpvTracks, handleSeek,

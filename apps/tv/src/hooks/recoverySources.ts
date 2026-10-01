@@ -34,6 +34,11 @@ export interface RecoverySources {
     startSeconds: number;
     /** Lecture directe servie par PrismCore (flux local) ; sa session, `gen`. */
     isPrismCore: boolean;
+    /** Le fichier lu tel quel (sinon : un transcodage du serveur). */
+    isDirectPlay: boolean;
+    /** Ce que le flux demande au réseau (b/s) : le palier d'un transcodage, le
+     *  débit du fichier lu tel quel — `null` s'il est inconnu. */
+    streamBitrate: number | null;
     prism?: { gen: number };
     /** Le chemin serveur à la position courante (transcodage forcé). */
     captureReloadTicks: () => void;

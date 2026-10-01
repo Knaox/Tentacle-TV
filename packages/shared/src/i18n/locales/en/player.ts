@@ -116,11 +116,14 @@ export default {
   troubleMediaTitle: "Jellyfin isn't responding",
   troubleTentacleTitle: "The Tentacle server isn't responding",
   troubleNetworkTitle: "The connection to the server was lost",
-  troubleSlowTitle: "The video is arriving too slowly",
+  // « Trop lent » ne vise que le réseau MESURÉ sous le besoin du flux (tv-core
+  // `networkShortfall`) : un serveur qui transcode lentement n'est pas une
+  // connexion lente.
+  troubleSlowTitle: "The connection is too slow",
   troublePlayingOn: "Playback continues: {{time}} still loaded.",
   troublePlayingUnaffected: "Playback doesn't depend on it: it continues.",
   troubleResumesAt: "Playback will resume on its own at {{position}}, without losing anything, as soon as the server answers.",
-  troubleSlowDetail: "The server answers, but not fast enough. A lower quality asks less of the network.",
+  troubleSlowDetail: "Network measured at {{measured}} Mb/s: this quality needs {{needed}} Mb/s. A lower quality asks less of the network.",
   troubleStuckDetail: "The server answers, but playback won't restart at {{position}}.",
   troubleCheckingIn: "Checking again in {{seconds}}s",
   troubleChecking: "Checking the server…",
@@ -128,7 +131,7 @@ export default {
   troubleResuming: "Resuming playback…",
   troubleBackTitle: "The server is answering again",
   troubleResumingAt: "Playback resumes at {{position}}.",
-  troubleSlowWaiting: "Trying again automatically in a moment",
+  troubleSlowWaiting: "Playback resumes as soon as enough video has loaded",
   troubleStuckStatus: "Automatic retries weren't enough",
   troubleRetryNow: "Try again now",
   troubleLowerQuality: "Lower the quality",
@@ -141,4 +144,22 @@ export default {
   troubleServerTakesOver: "Playback now goes through the server",
   troubleServerTakesOverDetail: "Direct playback kept stalling here: the server is now converting the video.",
   audioOutputLostPlay: "The audio output isn't responding. Check the TV or receiver, then press Play.",
+  // Un arrêt sans coupable connu (lecture directe), et un transcodage qui
+  // n'avance plus depuis deux minutes.
+  troubleStallTitle: "The video is taking a while",
+  troubleStallDetail: "The server answers, but the video has stopped arriving.",
+  troubleStallWaiting: "Trying again automatically in a moment",
+  troubleTranscodeTitle: "Transcoding has stopped moving",
+  troubleTranscodeDetail: "The server answers, but no picture has arrived for two minutes.",
+  troubleTranscodeStatus: "Try again restarts the transcoding, at the same spot",
+  // La ligne discrète d'un transcodage lent (ouverture, changement de qualité,
+  // arrêt en lecture) : rien n'est bloqué, le chargement continue.
+  transcodeSlowHint: "Transcoding may take a little longer",
+  networkSlowHint: "The connection is too slow for this quality",
+  // L'onglet « Réglages » du lecteur Apple TV : la qualité, et tout ce qui
+  // n'est pas un choix de piste (« Pistes » ne garde qu'audio et sous-titres).
+  playbackSettings: "Settings",
+  qualityGuideTitle: "How to choose",
+  qualityGuideOriginal: "“Original” plays the file as is, with no conversion: the best picture, if the network keeps up.",
+  qualityGuideConverted: "The other qualities are converted by the server: lighter on the network, they can take a little longer to start.",
 } as const;

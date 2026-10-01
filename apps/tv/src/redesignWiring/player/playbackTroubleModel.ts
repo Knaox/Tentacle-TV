@@ -1,5 +1,5 @@
 import type { QualityPreset } from "@tentacle-tv/shared";
-import type { RecoveryPhase, TroubleCause } from "@tentacle-tv/tv-core";
+import type { NetworkShortfall, RecoveryPhase, TroubleCause } from "@tentacle-tv/tv-core";
 import type { IconName } from "../../redesign/icons/Icon";
 import { formatClock } from "../../redesign/screens/player/formatClock";
 import type { Translate } from "../../redesign/screens/player/playerLabels";
@@ -18,6 +18,8 @@ const TITLE: Record<TroubleCause, string> = {
   tentacle: "player:troubleTentacleTitle",
   network: "player:troubleNetworkTitle",
   slow: "player:troubleSlowTitle",
+  stall: "player:troubleStallTitle",
+  transcode: "player:troubleTranscodeTitle",
 };
 
 const ICON: Record<TroubleCause, IconName> = {
@@ -25,7 +27,25 @@ const ICON: Record<TroubleCause, IconName> = {
   tentacle: "server",
   network: "wifiOff",
   slow: "gauge",
+  stall: "clock",
+  transcode: "server",
 };
+
+/** Les pannes d'un serveur : leur reprise dit qu'il répond de nouveau. */
+const OUTAGES = new Set<TroubleCause>(["media", "tentacle", "network"]);
+
+/** « 3.1 », « 18 » — des mégabits par seconde, comme le plafond automatique. */
+export function mbpsLabel(bps: number): string {
+  const value = bps / 1e6;
+  return value >= 10 ? String(Math.round(value)) : value.toFixed(1);
+}
+
+/** Le réseau MESURÉ trop lent, chiffres à l'appui (la règle les donne toujours). */
+function slowDetail(t: Translate, network: NetworkShortfall | undefined): string {
+  return network
+    ? t("player:troubleSlowDetail", { measured: mbpsLabel(network.measuredBps), needed: mbpsLabel(network.neededBps) })
+    : t("player:troubleStallDetail");
+}
 
 /** « 34 s », « 2 min » — ce qui reste chargé. */
 export function aheadLabel(t: Translate, seconds: number): string {
@@ -76,24 +96,30 @@ export function panelOf(args: {
   if (phase.kind !== "waiting" && phase.kind !== "recovering" && phase.kind !== "stuck") return null;
   const cause = phase.cause;
   const position = formatClock(args.position);
-  const slowish = cause === "slow" || phase.kind === "stuck";
+  // Ce qu'une qualité plus basse peut soulager : le réseau, le serveur qui
+  // transcode, ou une lecture qui ne repart pas.
+  const slowish = cause === "slow" || cause === "transcode" || phase.kind === "stuck";
   const seconds = args.nextCheckAt !== null ? Math.max(1, Math.ceil((args.nextCheckAt - args.now) / 1000)) : null;
 
   let status: string;
   let busy = false;
   if (phase.kind === "recovering") { status = t("player:troubleResuming"); busy = true; }
-  else if (phase.kind === "stuck") status = t("player:troubleStuckStatus");
+  else if (phase.kind === "stuck") status = t(cause === "transcode" ? "player:troubleTranscodeStatus" : "player:troubleStuckStatus");
   else if (args.checking) { status = t("player:troubleChecking"); busy = true; }
   else if (cause === "slow") status = t("player:troubleSlowWaiting");
+  else if (cause === "stall" || cause === "transcode") status = t("player:troubleStallWaiting");
   else if (seconds !== null) status = t(args.stillDown ? "player:troubleStillDown" : "player:troubleCheckingIn", { seconds });
   else { status = t("player:troubleChecking"); busy = true; }
 
-  // La reprise en cours : le serveur répond — le dire, plutôt que sa panne.
-  const back = phase.kind === "recovering" && cause !== "slow";
-  const detail = phase.kind === "stuck"
-    ? t("player:troubleStuckDetail", { position })
-    : back ? t("player:troubleResumingAt", { position })
-      : cause === "slow" ? t("player:troubleSlowDetail") : t("player:troubleResumesAt", { position });
+  // La reprise après une panne : le serveur répond — le dire, plutôt que sa panne.
+  const back = phase.kind === "recovering" && OUTAGES.has(cause);
+  let detail: string;
+  if (phase.kind === "stuck") {
+    detail = cause === "transcode" ? t("player:troubleTranscodeDetail") : t("player:troubleStuckDetail", { position });
+  } else if (back || phase.kind === "recovering") detail = t("player:troubleResumingAt", { position });
+  else if (cause === "slow") detail = slowDetail(t, phase.network);
+  else if (cause === "stall" || cause === "transcode") detail = t("player:troubleStallDetail");
+  else detail = t("player:troubleResumesAt", { position });
 
   const actions: TroubleAction[] = [{ key: "retry", label: t("player:troubleRetryNow"), icon: "refresh" }];
   if (slowish && args.canLowerQuality) actions.push({ key: "quality", label: t("player:troubleLowerQuality"), icon: "gauge" });

@@ -33,7 +33,8 @@ function same(a: PlaybackTroubleState, b: PlaybackTroubleState): boolean {
   return a.nextCheckAt === b.nextCheckAt && a.checking === b.checking && a.stillDown === b.stillDown
     && a.startCulprit === b.startCulprit
     && pa.kind === pb.kind && pa.cause === pb.cause && pa.since === pb.since && pa.ahead === pb.ahead
-    && pa.streamAffected === pb.streamAffected;
+    && pa.streamAffected === pb.streamAffected
+    && (pa.network as { measuredBps?: number } | undefined)?.measuredBps === (pb.network as { measuredBps?: number } | undefined)?.measuredBps;
 }
 
 /** Réservé au crochet de reprise. */
