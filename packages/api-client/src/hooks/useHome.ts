@@ -13,7 +13,7 @@ import {
   groupLatestByRuns,
 } from "../utils/mediaFilters";
 import { useNextUpSuccessors } from "./useNextUpSuccessors";
-import { EPISODE_FIELDS, FIELDS, IMAGE_OPTS, USER_DATA } from "./homeQueryParams";
+import { EPISODE_FIELDS, FIELDS, HERO_IMAGE_OPTS, IMAGE_OPTS, USER_DATA } from "./homeQueryParams";
 import { homeLimits, staleFactor } from "../net/dataSaver";
 
 export function useResumeItems() {
@@ -29,7 +29,7 @@ export function useResumeItems() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items/Resume?Limit=12&Recursive=true` +
-            `&IncludeItemTypes=Movie,Episode&Fields=${FIELDS},Trickplay&MediaTypes=Video&${IMAGE_OPTS}&${USER_DATA}`
+            `&IncludeItemTypes=Movie,Episode&Fields=${FIELDS},Trickplay&MediaTypes=Video&${HERO_IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
     select: dedupResumeBySeries,
@@ -289,7 +289,7 @@ export function useFeaturedItems() {
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?SortBy=Random&Limit=5&Recursive=true` +
-            `&IncludeItemTypes=Movie,Series&Fields=Overview,Genres,Taglines,MediaSources&HasBackdrop=true&${IMAGE_OPTS}&${USER_DATA}`
+            `&IncludeItemTypes=Movie,Series&Fields=Overview,Genres,Taglines,MediaSources&HasBackdrop=true&${HERO_IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
     enabled: !!userId,
