@@ -64,7 +64,7 @@ export const AccountPanel = memo(function AccountPanel({ account, initialArmed =
       </View>
 
       <View style={styles.forget}>
-        <SectionTitle title={t("pairing:tvOublierTitre")} caption={t("pairing:tvOublierTexte")} />
+        <SectionTitle title={t("pairing:tvOublierTitre")} caption={t("pairing:tvUnpairCaption")} />
         <View style={styles.actions}>
           <ConfirmPill
             label={t("nav:changeServer")}

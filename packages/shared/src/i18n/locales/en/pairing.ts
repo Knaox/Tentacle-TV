@@ -95,6 +95,10 @@ export default {
   tvUnpairDevice: "Unpair this device",
   tvUnpairConfirm: "Confirm unpairing",
   tvUnpairHint: "Press OK again: this TV will forget your account.",
+  // Sa légende : sur la TV, le jumelage rouvre aussitôt — l'app ne se ferme
+  // pas, contrairement à ce que dit `tvOublierTexte` (gardé pour Android TV).
+  tvUnpairCaption:
+    "This TV will no longer be linked to your account and will return to the pairing screen. “Change server” also forgets the server address.",
 
   // "About" section of the TV settings.
   tvPlateforme: "Device",
