@@ -2,7 +2,7 @@
 // catalogue, accueil), la recherche et les personnes.
 export { JellyfinClient, JellyfinError, type DirectStreamingState } from "../jellyfin";
 export { JellyfinClientContext, useJellyfinClient } from "../hooks/useJellyfinClient";
-export { useLibraries, useLibraryItems, useEpisodes, useSeriesEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useGenres, useStudios } from "../hooks/useLibrary";
+export { useLibraries, useLibraryItems, useEpisodes, useSeriesEpisodes, useMediaItem, MEDIA_ITEM_FIELDS, useItemAncestors, useSimilarItems, useCollectionItems, useGenres, useStudios } from "../hooks/useLibrary";
 export { useSeasons, prefetchSeasons, useSeasonEpisodesLite, prefetchSeasonEpisodesLite, getSeasonEpisodesLiteKey, SEASON_FIELDS } from "../hooks/useSeasons";
 export {
   useSeasonEpisodeList, usePrefetchSeasonEpisodes, useAdjacentSeasonsPrefetch, getSeasonEpisodeSourcesKey, mergeSeasonSources,

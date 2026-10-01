@@ -129,6 +129,14 @@ export function useEpisodes(seriesId: string | undefined, seasonId: string | und
   });
 }
 
+/**
+ * Les champs de la fiche complète d'un titre (`useMediaItem`) — repris tels
+ * quels par qui la lit ailleurs (le lecteur TV, en direct chez Jellyfin quand
+ * Tentacle ne répond plus).
+ */
+export const MEDIA_ITEM_FIELDS =
+  "Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId,Trickplay,RemoteTrailers,SeriesId,SeasonId,Status";
+
 export function useMediaItem(itemId: string | undefined, options?: { enabled?: boolean }) {
   const client = useJellyfinClient();
   const userId = useUserId();
@@ -137,7 +145,7 @@ export function useMediaItem(itemId: string | undefined, options?: { enabled?: b
     queryKey: ["item", itemId],
     queryFn: () =>
       client.fetch<MediaItem>(
-        `/Users/${userId}/Items/${itemId}?Fields=Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds,Chapters,ParentId,Trickplay,RemoteTrailers,SeriesId,SeasonId,Status&EnableUserData=true`
+        `/Users/${userId}/Items/${itemId}?Fields=${MEDIA_ITEM_FIELDS}&EnableUserData=true`
       ),
     enabled: !!userId && !!itemId && (options?.enabled ?? true),
     staleTime: 5 * 60 * 1000,
