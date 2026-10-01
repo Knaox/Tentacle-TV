@@ -90,6 +90,12 @@ export default {
   tvOublierTexte:
     "This TV will no longer be linked to your account and the app will close. Relaunch it to show a new code.",
 
+  // Réglages de la refonte (Apple TV) : le bouton qui déjumelle pour de bon,
+  // à double appui comme sur le voile hors ligne.
+  tvUnpairDevice: "Unpair this device",
+  tvUnpairConfirm: "Confirm unpairing",
+  tvUnpairHint: "Press OK again: this TV will forget your account.",
+
   // "About" section of the TV settings.
   tvPlateforme: "Device",
 

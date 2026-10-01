@@ -78,7 +78,7 @@ const scene = (id: string, label: string, variant: Variant, focusKeys: string[],
 
 export const SETTINGS_SCENES: BenchScene[] = [
   scene("compte", "Compte", "account", ["settings:tab:account", "settings:changeServer", "settings:logout"]),
-  scene("deconnexion-armee", "Déconnexion armée", "armed", ["settings:logout"]),
+  scene("deconnexion-armee", "Déjumeler armé", "armed", ["settings:logout"]),
   scene("lecture", "Lecture", "playback", ["settings:tab:playback", "settings:preset:default", "settings:preset:automatic", "settings:lang:en"]),
   scene("lecture-personnalise", "Lecture — mode personnalisé", "custom", ["settings:preset:custom", "settings:preset:manual"]),
   scene("lecture-bibliotheques", "Lecture — bibliothèques", "libraries", ["settings:lib:0:audio", "settings:lib:0:reset", "settings:lib:1:subtitles"]),

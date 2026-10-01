@@ -9,10 +9,12 @@ import type { AccountAction, SettingsAccount } from "./settingsTypes";
 
 /**
  * L'onglet Compte : qui regarde (portrait, nom), où (serveur, appareil), et
- * comment cesser de l'être — « Changer de serveur » et « Déconnexion », à
- * DOUBLE appui : le premier arme (« Confirmer — … »), le second exécute, et
- * quitter le bouton désarme. Pas de boîte de dialogue : à la télécommande,
- * il faudrait y retrouver le bouton d'annulation.
+ * comment cesser de l'être — « Changer de serveur » et « Déjumeler cet
+ * appareil », à DOUBLE appui : le premier arme (« Confirmer — … »,
+ * « Confirmer le déjumelage »), le second exécute, et quitter le bouton
+ * désarme. Pas de boîte de dialogue : à la télécommande, il faudrait y
+ * retrouver le bouton d'annulation. Le déjumelage garde l'action et la clé
+ * de focus `logout` de l'ancienne « Déconnexion ».
  *
  * L'état armé est un état d'AFFICHAGE, local à la vue ; `initialArmed` le
  * pose à l'ouverture (banc). Branchement : `useAccountActions`, deux
@@ -74,11 +76,11 @@ export const AccountPanel = memo(function AccountPanel({ account, initialArmed =
             onFocusChange={leave("changeServer")}
           />
           <ConfirmPill
-            label={t("nav:logout")}
+            label={t("pairing:tvUnpairDevice")}
             icon="logout"
             tone="danger"
             armed={armed === "logout"}
-            armedLabel={confirm(t("nav:logout"))}
+            armedLabel={t("pairing:tvUnpairConfirm")}
             focusKey="settings:logout"
             onPress={() => press("logout")}
             onFocusChange={leave("logout")}
@@ -86,7 +88,9 @@ export const AccountPanel = memo(function AccountPanel({ account, initialArmed =
         </View>
         <View style={[styles.armedHint, { opacity: armed ? 1 : 0 }]}>
           <Icon name="alert" size={26} color={colors.accent} strokeWidth={2.4} />
-          <Text style={[settingsText.hint, styles.armedText]}>{t("preferences:tvPressAgainToConfirm")}</Text>
+          <Text style={[settingsText.hint, styles.armedText]}>
+            {armed === "logout" ? t("pairing:tvUnpairHint") : t("preferences:tvPressAgainToConfirm")}
+          </Text>
         </View>
       </View>
     </View>
