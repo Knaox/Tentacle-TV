@@ -7,9 +7,10 @@ import { PairingView } from "../../redesign/screens/pairing/PairingView";
 import { usePairingFlow } from "../../hooks/usePairingFlow";
 import { useRelayPairingCode, useServerPairingCode } from "../../hooks/usePairingCode";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
+import { useBackFocus } from "../focus/backFocus";
 import { useFocusStore } from "../focus/focusStore";
 import { AutoFocusGuide } from "../focus/focusGuides";
-import { entryKeyOf, toPairingStep } from "./pairingModel";
+import { PAIRING_BACK_KEY, entryKeyOf, toPairingStep } from "./pairingModel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
 
@@ -23,8 +24,11 @@ const PORTRAIT = 64;
  * Le focus, que la vue ne décide pas : à chaque étape — et quand l'état du
  * code change (échec, expiration) — il va à l'action principale
  * (`entryKeyOf`) ; la colonne et la carte de l'écran du code sont des guides,
- * pour que GAUCHE et DROITE passent de l'une à l'autre. Pas de navigation
- * latérale : il n'y a pas encore de compte.
+ * pour que GAUCHE et DROITE passent de l'une à l'autre. La croix Retour
+ * (relais, serveur manuel) n'a l'entrée que seule action — le code du relais
+ * affiché — ; ailleurs, HAUT y mène et BAS en revient (`useBackFocus`, qui la
+ * reverrouille à chaque étape). Pas de navigation latérale : il n'y a pas
+ * encore de compte.
  */
 export function PairingRedesign({ navigation }: Props) {
   const onPaired = useCallback(() => navigation.replace("Home"), [navigation]);
@@ -52,6 +56,7 @@ export function PairingRedesign({ navigation }: Props) {
     store.bind("pairing:card", { container: AutoFocusGuide });
   });
   const entryKey = entryKeyOf(step);
+  useBackFocus(store, { backKey: PAIRING_BACK_KEY, barKey: "pairing:top", entryKey, arrival: step.kind });
   useEffect(() => (entryKey ? store.claim(entryKey) : undefined), [entryKey, store]);
 
   // Réessayer comme Générer un nouveau code : le code de l'étape affichée.

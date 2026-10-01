@@ -14,7 +14,8 @@ import type { ServerError } from "./pairingTypes";
 /**
  * Le serveur saisi à la main : un grand champ d'adresse, l'exemple dessous,
  * l'erreur de la vérification quand il y en a une, « Vérifier le serveur »
- * et « Retour ». OK sur le champ ouvre le clavier système : la saisie passe
+ * (la croix Retour, en haut à gauche, est posée par `PairingView`). OK sur le
+ * champ ouvre le clavier système : la saisie passe
  * par un `TextInput` INVISIBLE (le champ natif de tvOS dessinerait sa propre
  * pastille grise dans la nôtre), le champ affiché n'est qu'un texte. Ce
  * geste ne décide d'aucun focus — à vérifier sur l'appareil : le clavier
@@ -24,15 +25,14 @@ import type { ServerError } from "./pairingTypes";
  * tel quel dans `error`, avec ses `errorParams` (le statut HTTP).
  */
 
-export const ServerStep = memo(function ServerStep({ url, checking, error, onChangeUrl, onSubmit, onBack }: {
+export const ServerStep = memo(function ServerStep({ url, checking, error, onChangeUrl, onSubmit }: {
   url: string;
   checking: boolean;
   error: ServerError | null;
   onChangeUrl?: (url: string) => void;
   onSubmit?: () => void;
-  onBack?: () => void;
 }) {
-  const { t } = useTranslation(["auth", "pairing", "common"]);
+  const { t } = useTranslation(["auth", "pairing"]);
   const input = useRef<TextInput>(null);
   return (
     <View style={styles.center}>
@@ -68,7 +68,6 @@ export const ServerStep = memo(function ServerStep({ url, checking, error, onCha
           focusKey="pairing:check"
           onPress={checking ? undefined : onSubmit}
         />
-        <PillButton icon="chevronLeft" label={t("common:back")} focusKey="pairing:back" onPress={onBack} />
       </View>
       <View style={styles.hint}>
         <Icon name="remote" size={28} color={colors.textTertiary} />

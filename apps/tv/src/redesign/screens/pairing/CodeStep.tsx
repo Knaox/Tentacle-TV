@@ -14,63 +14,71 @@ import type { CodeState } from "./pairingTypes";
 
 /**
  * L'écran du code — celui du relais comme celui du serveur saisi à la main.
- * À gauche, ce qu'il faut faire, en trois gestes numérotés, et la sortie
- * (Annuler, ou Changer de serveur) ; à droite, la carte du code.
+ * À gauche, ce qu'il faut faire, en trois gestes numérotés — et, pour le
+ * serveur, « Changer de serveur » (la sortie du relais est la croix Retour,
+ * posée par `PairingView`) ; à droite, la carte du code.
  *
  * Branchement : relais → `useRelayGenerate` / `useRelayStatus` ; serveur →
  * `useDevicePairGenerate` / `useDevicePairStatus`. Le compte à rebours
  * (5 min) est tenu par l'intégration, qui passe `remainingSeconds`.
  *
- * Groupes de focus : `pairing:side` (la colonne de gauche et sa sortie) et
- * `pairing:card` (la carte du code). Leurs boutons ne sont pas alignés :
- * l'intégration y pose des guides pour que GAUCHE et DROITE passent de l'un
- * à l'autre.
+ * Groupes de focus : `pairing:side` (la colonne de gauche et « Changer de
+ * serveur » — une colonne sans rien de focalisable, celle du relais, n'est
+ * pas un groupe : son guide serait une cible vide) et `pairing:card` (la
+ * carte du code). Leurs boutons ne sont pas alignés : l'intégration y pose
+ * des guides pour que GAUCHE et DROITE passent de l'un à l'autre.
  */
 
 const STEPS = ["pairing:tvStepOpenApp", "pairing:tvStepPairTv", "pairing:tvStepEnterCode"];
 
-export const CodeStep = memo(function CodeStep({ source, code, serverUrl, palette, onRetry, onCancel, onManualSetup, onChangeServer }: {
+export const CodeStep = memo(function CodeStep({ source, code, serverUrl, palette, onRetry, onManualSetup, onChangeServer }: {
   source: "relay" | "server";
   code: CodeState;
   /** La lumière qui déborde de la carte du code. */
   palette: ArtworkPalette;
   serverUrl?: string;
   onRetry?: () => void;
-  onCancel?: () => void;
   onManualSetup?: () => void;
   onChangeServer?: () => void;
 }) {
   const { t } = useTranslation(["pairing", "common"]);
   const relay = source === "relay";
+  const side = (
+    <>
+      <Text style={styles.title}>{t("pairing:tvPairTitle")}</Text>
+      {serverUrl ? (
+        <View style={styles.server}>
+          <Icon name="server" size={26} color={colors.textTertiary} />
+          <Text style={styles.serverLabel}>{t("pairing:tvServeur")}</Text>
+          <Text style={styles.serverUrl} numberOfLines={1}>{serverUrl}</Text>
+        </View>
+      ) : null}
+      <View style={styles.steps}>
+        {STEPS.map((step, index) => (
+          <View key={step} style={styles.step}>
+            <GlassSurface radius={32} tone="clear" style={styles.number}>
+              <Text style={styles.numberText}>{index + 1}</Text>
+            </GlassSurface>
+            <Text style={styles.stepText}>{t(step)}</Text>
+          </View>
+        ))}
+      </View>
+      {relay ? null : (
+        <View style={styles.exit}>
+          <PillButton icon="server" label={t("pairing:changeServer")} focusKey="pairing:changeServer" onPress={onChangeServer} />
+        </View>
+      )}
+    </>
+  );
   return (
     <View style={styles.row}>
-      <FocusGroup focusKey="pairing:side" style={styles.left}>
-        <Text style={styles.title}>{t("pairing:tvPairTitle")}</Text>
-        {serverUrl ? (
-          <View style={styles.server}>
-            <Icon name="server" size={26} color={colors.textTertiary} />
-            <Text style={styles.serverLabel}>{t("pairing:tvServeur")}</Text>
-            <Text style={styles.serverUrl} numberOfLines={1}>{serverUrl}</Text>
-          </View>
-        ) : null}
-        <View style={styles.steps}>
-          {STEPS.map((step, index) => (
-            <View key={step} style={styles.step}>
-              <GlassSurface radius={32} tone="clear" style={styles.number}>
-                <Text style={styles.numberText}>{index + 1}</Text>
-              </GlassSurface>
-              <Text style={styles.stepText}>{t(step)}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={styles.exit}>
-          {relay ? (
-            <PillButton icon="chevronLeft" label={t("pairing:cancel")} focusKey="pairing:cancel" onPress={onCancel} />
-          ) : (
-            <PillButton icon="server" label={t("pairing:changeServer")} focusKey="pairing:changeServer" onPress={onChangeServer} />
-          )}
-        </View>
-      </FocusGroup>
+      {relay ? (
+        <View style={styles.left}>{side}</View>
+      ) : (
+        <FocusGroup focusKey="pairing:side" style={styles.left}>
+          {side}
+        </FocusGroup>
+      )}
       <FocusGroup focusKey="pairing:card">
         <ArtworkHalo width={CARD_WIDTH} height={CARD_HEIGHT} radius={CARD_RADIUS} palette={palette} opacity={0.3} spread={18} />
         <CodeCard

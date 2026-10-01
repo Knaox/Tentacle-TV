@@ -49,12 +49,12 @@ export interface PairingViewProps {
   onManualSetup?: () => void;
   /** Code en erreur ou expiré → en demander un nouveau. */
   onRetryCode?: () => void;
-  /** Code du relais → accueil. */
+  /** Code du relais → accueil (la croix Retour). */
   onCancel?: () => void;
   /** Code du serveur → serveur manuel. */
   onChangeServer?: () => void;
   onChangeUrl?: (url: string) => void;
   onSubmitUrl?: () => void;
-  /** Serveur manuel → accueil. */
+  /** Serveur manuel → accueil (la croix Retour). */
   onBack?: () => void;
 }

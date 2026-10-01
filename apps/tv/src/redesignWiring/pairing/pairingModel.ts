@@ -2,6 +2,9 @@ import type { CodeState, PairingStep } from "../../redesign/screens/pairing/pair
 import { PAIRING_CODE_TTL, type PairingCode } from "../../hooks/usePairingCode";
 import type { PairingFlow } from "../../hooks/usePairingFlow";
 
+/** La croix Retour du jumelage (`PairingView`), relais et serveur manuel. */
+export const PAIRING_BACK_KEY = "pairing:back";
+
 /**
  * Ce que la vue du jumelage reçoit, tiré de l'automate partagé
  * (`usePairingFlow`) et des deux codes (`usePairingCode`).
@@ -39,8 +42,9 @@ export function toPairingStep(
 
 /**
  * L'élément qui prend le focus à l'arrivée sur une étape, ou quand l'état de
- * son code change : l'action principale, sinon la sortie. Le succès n'a rien
- * à focaliser (l'accueil s'ouvre seul).
+ * son code change : l'action principale, sinon la sortie — la croix Retour du
+ * relais, quand le code s'affiche ou se prépare : la seule chose à faire. Le
+ * succès n'a rien à focaliser (l'accueil s'ouvre seul).
  */
 export function entryKeyOf(step: PairingStep): string | null {
   switch (step.kind) {
@@ -52,7 +56,7 @@ export function entryKeyOf(step: PairingStep): string | null {
     case "serverCode": {
       if (step.code.status === "error") return "pairing:retry";
       if (step.code.status === "expired") return "pairing:regenerate";
-      return step.kind === "relayCode" ? "pairing:cancel" : "pairing:changeServer";
+      return step.kind === "relayCode" ? PAIRING_BACK_KEY : "pairing:changeServer";
     }
     case "success":
       return null;

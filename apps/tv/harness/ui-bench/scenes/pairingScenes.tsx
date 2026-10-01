@@ -55,10 +55,10 @@ const serverError = (id: keyof typeof SERVER_ERRORS, label: string) =>
 
 export const PAIRING_SCENES: BenchScene[] = [
   scene("accueil", "Accueil (langue)", { kind: "welcome" }, ["pairing:showCode", "pairing:manual", "pairing:lang:fr", "pairing:lang:en"]),
-  scene("code-chargement", "Code du relais — chargement", { kind: "relayCode", code: { status: "loading" } }, ["pairing:cancel"]),
-  scene("code-actif", "Code du relais — actif", { kind: "relayCode", code: activeCode(RELAY_CODE) }, ["pairing:cancel"]),
-  scene("code-erreur", "Code du relais — erreur", { kind: "relayCode", code: { status: "error" } }, ["pairing:retry", "pairing:manual", "pairing:cancel"]),
-  scene("code-expire", "Code du relais — expiré", { kind: "relayCode", code: { status: "expired", code: RELAY_CODE } }, ["pairing:regenerate", "pairing:cancel"]),
+  scene("code-chargement", "Code du relais — chargement", { kind: "relayCode", code: { status: "loading" } }, ["pairing:back"]),
+  scene("code-actif", "Code du relais — actif", { kind: "relayCode", code: activeCode(RELAY_CODE) }, ["pairing:back"]),
+  scene("code-erreur", "Code du relais — erreur", { kind: "relayCode", code: { status: "error" } }, ["pairing:retry", "pairing:manual", "pairing:back"]),
+  scene("code-expire", "Code du relais — expiré", { kind: "relayCode", code: { status: "expired", code: RELAY_CODE } }, ["pairing:regenerate", "pairing:back"]),
   scene("serveur", "Serveur manuel — vide", manualServer(""), ["pairing:url", "pairing:check", "pairing:back"]),
   scene("serveur-verification", "Serveur manuel — vérification", manualServer(TYPED_SERVER, { checking: true }), ["pairing:check"]),
   serverError("url", "Serveur manuel — URL invalide"),
