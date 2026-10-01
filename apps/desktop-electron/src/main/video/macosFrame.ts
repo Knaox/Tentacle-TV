@@ -43,8 +43,10 @@
  *
  * ⚠️ Ce désarmement-là est PONCTUEL, et il ne suffit pas au plein écran : macOS
  * réapplique la contrainte de lui-même une fraction de seconde plus tard, et la
- * fenêtre se met à osciller. Le plein écran se règle ailleurs, en faisant cesser
- * la contrainte à la source — voir `macosFullscreen.ts`.
+ * fenêtre se met à osciller — la vidéo VIBRAIT sur tout Mac sans encoche. La
+ * contrainte est donc levée à la source, dès l'attache : `macosFrameConstraint.ts`.
+ * Sur arm64 ce détour n'a plus rien à contourner ; il reste le filet du montage
+ * à fenêtre forcé sur Intel, où la source n'est pas touchée.
  */
 
 import type { BrowserWindow } from "electron";

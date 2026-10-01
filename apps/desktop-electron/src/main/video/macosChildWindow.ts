@@ -7,6 +7,7 @@
  * tient en deux gestes.
  */
 
+import { releaseMpvFrameConstraint } from "./macosFrameConstraint";
 import { trace } from "./native";
 import { NSWindowBelow, cls, msg } from "./objc";
 
@@ -75,6 +76,9 @@ function auxiliaryFullscreen(current: number): number {
  * noir. C'est le cas : ils se composent avec ce qui se trouve derrière.
  */
 export function attachBelowPage(parent: unknown, window: unknown): void {
+  // AVANT tout placement : sans cela, la vidéo vibre en plein écran sur tout
+  // Mac sans encoche — voir `macosFrameConstraint.ts`.
+  releaseMpvFrameConstraint(window);
   msg.setFlag(window, "setIgnoresMouseEvents:", true);
   msg.setFlag(window, "setHasShadow:", false);
   const before = msg.count(window, "collectionBehavior");
