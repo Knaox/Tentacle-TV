@@ -17,6 +17,7 @@ import { PAIRING_SCENES } from "./pairingScenes";
 import { PLAYER_LIVE_SCENES } from "./playerLiveScenes";
 import { PLAYER_SCENES } from "./playerScenes";
 import { PLAYER_WIRED_SCENES } from "./playerWiredScenes";
+import { RAIL_SCENES } from "./railScenes";
 import { SEARCH_SCENES } from "./searchScenes";
 import { SETTINGS_SCENES } from "./settingsScenes";
 import { SHEET_SCENES } from "./sheetScenes";
@@ -34,6 +35,7 @@ export const SCENES: BenchScene[] = [
   ...PAIRING_SCENES,
   ...HOME_SCENES,
   ...NAV_SCENES,
+  ...RAIL_SCENES,
   ...DETAIL_SCENES,
   ...LIBRARY_SCENES,
   ...COLLECTION_SCENES,
