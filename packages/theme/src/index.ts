@@ -143,6 +143,6 @@ export {
 } from "./native/tvTokens";
 
 // La scène de la refonte TV (échelle, gabarits, focus, accent).
-export { TV_ACCENT, TV_STAGE, TV_TYPE } from "./tokens/tvStage";
+export { TV_ACCENT, TV_LIGHT, TV_STAGE, TV_TYPE } from "./tokens/tvStage";
 // Son mouvement — Apple TV seulement (courbes, ressorts, durées).
 export { TV_MOTION, type TvSpring } from "./tokens/tvMotion";

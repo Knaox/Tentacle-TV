@@ -94,3 +94,34 @@ export const TV_STAGE = {
   },
   radius: { chip: 999, sheet: 36, panel: 32, button: 999 },
 } as const;
+
+/**
+ * La lumière de la scène (Apple TV) — retour de l'essai sur l'appareil du
+ * 2026-10-01 : « dans une bibliothèque pleine de cartes, la carte focalisée
+ * donne l'impression d'un grand noir derrière ». Trois leviers, dosés au banc
+ * (`docs/TV-REFONTE.md`, « La lumière des fonds ») :
+ * - le fond n'est plus le noir pur du bureau mais une ENCRE à peine teintée
+ *   de la marque, plus claire en haut — jamais un fond violet ;
+ * - la lumière de l'œuvre focalisée couvre toute la scène, d'en haut et des
+ *   deux côtés (`AmbientBackdrop`) ;
+ * - la carte focalisée jette SA lumière autour d'elle, au lieu d'une ombre
+ *   noire (`CardFrame`).
+ *
+ * Le texte garde son contraste : sous la lumière la plus forte, le texte
+ * tertiaire (blanc 0,55) reste au-dessus de 4,5:1 — `maxLuminance` borne la
+ * clarté d'une lumière, quelle que soit l'œuvre (au pire, un jaune vif : 5:1
+ * en haut de l'écran, 4,4:1 sans la borne).
+ */
+export const TV_LIGHT = {
+  /** L'encre du fond, de haut en bas ; `topRgb` pour un voile qui s'y fond. */
+  ink: { top: "#100D17", bottom: "#09080E", topRgb: "16, 13, 23" },
+  /** Les lumières de l'œuvre (opacités) : d'en haut, à gauche, à droite. */
+  ambient: { key: 0.32, left: 0.26, right: 0.24, maxLuminance: 0.4 },
+  /** La lueur de la carte focalisée — une ombre colorée, une seule couche.
+   *  `neutral` : une carte qui doit rester grise (hors bibliothèque) garde
+   *  une lueur blanche, douce et basse. */
+  cardGlow: { opacity: 0.7, radius: 46, offsetY: 18, neutral: "#FFFFFF", neutralOpacity: 0.18 },
+  /** Le halo de la marque derrière le logo, sur l'encre : la recette du halo
+   *  des icônes de `brand/` (magenta au cœur, violet au bord). */
+  brandHalo: { inner: "#C026D3", outer: "#A855F7", opacity: 0.75 },
+} as const;
