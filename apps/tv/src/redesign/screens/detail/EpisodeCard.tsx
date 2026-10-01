@@ -3,13 +3,15 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import type { CardMarkers } from "@tentacle-tv/shared";
-import { TV_STAGE } from "@tentacle-tv/theme";
+import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
 import { CardFrame } from "../../cards/CardFrame";
 import { CardFocusFooter } from "../../cards/CardFocusFooter";
+import { HOLD_HINT_DWELL_MS } from "../../cards/CardHoldHint";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
+import { Reveal } from "../../motion/Reveal";
 import type { RowPlace } from "../../motion/useRowRecede";
 import { colors, fonts, white } from "../../theme/tokens";
 import type { EpisodeBadge, EpisodeModel } from "./detailTypes";
@@ -19,13 +21,24 @@ import type { EpisodeBadge, EpisodeModel } from "./detailTypes";
  * en haut à droite et la jauge au pied (les marqueurs des cartes), le badge
  * Reprendre / À suivre / Épisode actuel en haut à gauche ; dessous, le
  * surtitre (« ÉPISODE 3 · 24MIN »), le titre et le résumé. Au focus : la
- * carte grandit et se soulève, sa lumière déborde (halo monté à la demande,
- * jamais gardé caché), la légende descend avec elle — et, quand l'appui long
- * ouvre la feuille, dit sous elle « Maintenir OK : plus d'options »
- * (`CardFocusFooter`, comme toute carte qui s'ouvre par l'appui maintenu).
+ * carte grandit et se soulève, la légende descend avec elle — et, quand
+ * l'appui long ouvre la feuille, dit sous elle « Maintenir OK : plus
+ * d'options » (`CardFocusFooter`, comme toute carte qui s'ouvre par l'appui
+ * maintenu). Quand le focus s'y POSE, sa lumière déborde (halo monté à la
+ * demande, jamais gardé caché — `HALO_DWELL_MS`).
  */
 
 export const EPISODE_CARD = { width: 460, height: 259, radius: TV_STAGE.card.landscape.radius } as const;
+
+/**
+ * Le temps que le focus doit tenir avant que le halo ne se monte : après
+ * l'apparition de « Maintenir OK » (attente, puis fondu). Son flou se calcule
+ * sur le fil principal (Core Image, relu de façon synchrone : ~40 ms au
+ * simulateur, deux à trois images) ; monté à chaque pas, il en coûtait autant
+ * à chaque pas d'un focus qui parcourt la rangée. Dessiné quand plus rien ne
+ * bouge, il ne se voit pas — et un focus qui balaie n'en dessine aucun.
+ */
+const HALO_DWELL_MS = HOLD_HINT_DWELL_MS + TV_MOTION.reveal.inMs + 50;
 
 const WATCHED: CardMarkers = { communityRating: null, userScore: null, statuses: ["watched"], device: null };
 const NONE: CardMarkers = { communityRating: null, userScore: null, statuses: [], device: null };
@@ -85,8 +98,10 @@ export const EpisodeCard = memo(function EpisodeCard({
     >
       {(focused) => (
         <View>
-          {focused && episode.palette ? (
-            <ArtworkHalo width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} palette={episode.palette} spread={14} blur={30} opacity={0.4} />
+          {episode.palette ? (
+            <Reveal shown={focused} delayMs={HALO_DWELL_MS} style={styles.halo}>
+              <ArtworkHalo width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} palette={episode.palette} spread={14} blur={30} opacity={0.4} />
+            </Reveal>
           ) : null}
           <CardFrame width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} focused={focused} place={place}>
             {episode.imageUri ? (
@@ -112,6 +127,7 @@ export const EpisodeCard = memo(function EpisodeCard({
 
 const styles = StyleSheet.create({
   cell: { width: EPISODE_CARD.width },
+  halo: { position: "absolute", left: 0, top: 0, width: EPISODE_CARD.width, height: EPISODE_CARD.height },
   missing: { flex: 1, justifyContent: "flex-end", padding: 22, backgroundColor: colors.surface3 },
   missingNumber: { ...fonts.extrabold, fontSize: 96, lineHeight: 100, color: white(0.14) },
   badge: {
