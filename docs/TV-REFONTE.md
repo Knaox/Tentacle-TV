@@ -853,6 +853,8 @@ streaming direct actif (vidéo et rapports vont droit à Jellyfin) sauf mention.
 | Les deux coupés, épisode | gel, puis « Impossible de démarrer la lecture » plein écran, transcodage FORCÉ | panneau, reprise seule 6 s après, même forme |
 | Saut de 5 min hors de ce qui est chargé, Jellyfin coupé | gel définitif, aucune erreur | attente dite en 5 s, reprise au point visé 4 s après le retour |
 | Jellyfin coupé AVANT la lecture | « Vérifie le serveur ou réessaie », rien au retour | « Jellyfin ne répond pas. La lecture démarrera d'elle-même dès son retour. » — repart seule, à la bonne reprise |
+| Tentacle coupé AVANT la lecture, flux direct, ouverture depuis l'accueil (Lovely Bones, reprise à 1:23) | 14,7 s d'attente, puis TRANSCODAGE depuis 0:00, sans pistes | lecture DIRECTE (PrismCore) à 1:23 en ~2,5 s — fiche du cache, ou lue en direct chez Jellyfin quand le cache n'a rien de jouable (55 ms) |
+| Même chose en mode proxy (aucun jeton Jellyfin) | 14 s, puis échec | échec dit en ~2 s (« Tentacle ne répond pas »), puis reprise seule à 1:23 au retour de Tentacle |
 
 - **La décision** est pure et commune (`decideRecovery`, tv-core
   `player/playbackRecovery`, 19 tests) : rien à dire tant que tout répond ;
@@ -883,6 +885,23 @@ streaming direct actif (vidéo et rapports vont droit à Jellyfin) sauf mention.
   menait nulle part sans lui. La restauration de l'habillage cède à la
   réclamation (`noteSkipFocusClaim`). Il part sans sortie jouée et rend le
   focus (habillage, sinon le fond).
+- **La fiche du lecteur** (`usePlayerItem`, règles pures dans tv-core
+  `player/playerItemFallback`) : celle du serveur, comme partout. Si elle
+  tarde 1,5 s (tout de suite si Tentacle est déjà tenu pour hors ligne, ou
+  si la requête a échoué) et qu'une sonde dit Tentacle muet
+  (`tentacleAnswers`, n'importe quelle réponse du proxy suffit) : la version
+  JOUABLE la plus fraîche du cache (rangées de l'accueil, épisodes, Ma
+  liste — `findCachedMediaItem` rend la plus récente : le héros de
+  l'accueil gardait une reprise périmée), sinon la fiche lue EN DIRECT chez
+  Jellyfin (`fetchItemDirect`, jeton de l'appareil, forme documentée
+  `/Items/{id}?userId=`, mêmes champs que `useMediaItem` —
+  `MEDIA_ITEM_FIELDS`). Mode proxy : pas de lecture directe possible, le
+  cache seul, sinon le comportement d'avant. Le serveur revenu, sa fiche
+  reprend la main sans rouvrir le flux (même titre, même source). Pendant
+  la panne, les pistes du fichier sont toutes là (menus complets) et le
+  lecteur part sur sa piste PAR DÉFAUT : les préférences de langue (VFF, VO
+  par bibliothèque) se résolvent sur Tentacle — elles ne s'appliquent pas en
+  retard au milieu de la lecture.
 - **Le voile hors ligne** ne se pose plus sur `Player`, `PlayerSettings`,
   `Trailer` (App.tsx) ; la joignabilité confirmée se lit partout
   (`hooks/serverReachability`).
@@ -908,11 +927,11 @@ Pièges payés :
   toute URL `http://127.0.0.1` pour le bouclage de PrismCore. Viser
   `localhost`.
 
-Reste : Tentacle coupé AVANT l'ouverture, flux direct — le titre démarre
-après ~13 s, mais du début et en transcodage (la fiche passe par Tentacle :
-ni reprise ni pistes). Android TV : logique commune, rien d'éprouvé ; son
-habillage garde son indicateur (pas d'outil), mais la reprise seule s'y
-applique.
+Reste : Android TV — logique commune (reprise seule, fiche du lecteur),
+rien d'éprouvé ; son habillage garde son indicateur (pas d'outil). Tentacle
+coupé au démarrage À FROID de l'app : la configuration du direct n'est pas
+persistée (`HOME_PERSIST_WHITELIST`), rien ne peut donc se lire avant son
+retour — lu dans le code, pas éprouvé.
 
 ## La croix Retour (Apple TV)
 
