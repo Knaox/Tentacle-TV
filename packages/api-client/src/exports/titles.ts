@@ -2,6 +2,10 @@
 // `titles` du manifeste), « Ma liste à l'arrivée » et le cœur à l'arrivée, par
 // identité TMDB.
 export { useTitleState, useRequestTitle, titleStateQueryKey } from "../titles/useTitleState";
+// Les saisons d'une série, choisies sur place (route `seasons` du même contrat).
+export {
+  useTitleSeasons, useRequestTitleSeasons, titleSeasonsQueryKey, type TitleSeasonsFeed,
+} from "../titles/useTitleSeasons";
 export { loadTitleState, type TitleFetcher } from "../titles/titleStateBatcher";
 // Ce que le compte attend (routes `access` et `mine` du même contrat) : son
 // droit, et ses titres demandés pas encore arrivés.
