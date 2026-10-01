@@ -272,7 +272,7 @@ simulateur : à confirmer sur iPhone.
   `tls-verify=yes` sans aucun fichier de racines (§1 bis) — tout serveur https
   était refusé par mpv, valide ou non. Le correctif (`setupTlsTrust`) est écrit
   sans compilateur Swift sous la main : à confirmer au simulateur ou sur
-  iPhone face à `https://jellyfin.example.com` (journal mpv : aucun
+  iPhone face à `un Jellyfin de production (HTTPS)` (journal mpv : aucun
   « Peer certificate failed verification », lecture directe sans repli).
 - **Android sur appareil réel** : `hwdec=mediacodec-copy`, taille de l'AAB par
   ABI. Le reste — https compris — est vérifié à l'émulateur (§4 bis). Image
