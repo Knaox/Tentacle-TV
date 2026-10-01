@@ -777,15 +777,22 @@ final class HLSRemuxer: @unchecked Sendable {
         // Demand-driven mode needs a trustworthy upfront segmentation. Only a
         // keyframe-based plan qualifies — uniform-plan boundaries are time
         // targets, and a playlist that promises durations the producer can't
-        // hit at keyframes would drift against what AVPlayer fetched. The one
-        // shape excluded is muxed-with-bridge: re-anchoring would mean
-        // resetting an encoder mid-fragment, and that combination only occurs
-        // when a master was refused anyway.
-        let demandEligible: Bool = {
-            guard demand != nil else { return false }
-            if case .muxed(let audio) = shape, audio?.mode == .bridge { return false }
-            return true
-        }()
+        // hit at keyframes would drift against what AVPlayer fetched.
+        //
+        // Modified for Tentacle TV, 2026-10-01 (LGPL-2.1 §2a notice): the
+        // muxed shape with a bridged track is eligible too. Upstream excluded
+        // it — "re-anchoring would mean resetting an encoder mid-fragment, and
+        // that combination only occurs when a master was refused anyway" —
+        // but the muxed shape is ALSO what every HDR source gets on a display
+        // that is not HDR-ready (`masterVariantPermitted`), and HDR remuxes
+        // carry DTS or TrueHD far more often than not: on an SDR TV (or the
+        // simulator) such a film played sequentially at every play — resume
+        // and relaunch from 0, a seek past the produced window ignored, a
+        // backward one past the retained window a spinner for good, and no
+        // keyframe map ever stored to plan the next play. The re-anchor now
+        // resets the bridge like a rendition's (`AudioBridge.reset`, which
+        // reopens a delay encoder) on the fresh muxer the re-anchor builds.
+        let demandEligible = demand != nil
 
         // The source's identity for the keyframe cache — from the opened
         // context, so the size is the transport's own answer (HTTP and file
@@ -1119,8 +1126,10 @@ final class HLSRemuxer: @unchecked Sendable {
                         audioDeliveryStore.update(index: index, delivery: .bridged, bridge: progress)
                     }
                     audioDeliveryStore.update(index: Int(audio.index), delivery: .bridged)
+                    // Modified for Tentacle TV: the bridge in place when the
+                    // muxer opens — a re-anchor after EOF replaces a drained one.
                     plan.append(.init(inputIndex: audio.index) { outStream in
-                        try bridge.configure(outputStream: outStream)
+                        try (muxedBridge ?? bridge).configure(outputStream: outStream)
                     })
                 } else {
                     plan.append(.init(inputIndex: audio.index))
@@ -1393,6 +1402,24 @@ final class HLSRemuxer: @unchecked Sendable {
             let target = plannedPlan.entries[anchor].startPTS
             // Modified for Tentacle TV: the seek empties libavformat's reorder buffer.
             videoDTS.restart()
+            // Modified for Tentacle TV: the muxed shape's bridge, as a
+            // rendition's — reset (a delay encoder is reopened) before the new
+            // muxer reads its parameters, or rebuilt after an EOF flush.
+            if let bridge = muxedBridge, let index = muxedBridgeIndex {
+                if bridge.isDrained {
+                    let inStream = input.pointee.streams[Int(index)]!
+                    let fresh = try AudioBridge(
+                        codecpar: inStream.pointee.codecpar,
+                        timeBase: inStream.pointee.time_base,
+                        globalHeader: true
+                    )
+                    fresh.onProgress = bridge.onProgress
+                    muxedBridge = fresh
+                    bridge.close()
+                } else {
+                    try bridge.reset()
+                }
+            }
             try FFmpegError.check(
                 av_seek_frame(input, videoIndex, target, AVSEEK_FLAG_BACKWARD),
                 "av_seek_frame"

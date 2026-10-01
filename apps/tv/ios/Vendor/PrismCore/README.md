@@ -121,6 +121,31 @@ audio n'est plus réécrit (premier écrit, comme pour la vidéo). Mesuré : le
 segment 10 ré-ancré a les horodatages de la production continue, à 2 ms
 près (l'arrondi du DTS reconstruit de sa keyframe).
 
+### 5. La forme muxée à audio ponté, planifiée comme les autres (2026-10-01)
+
+`Sources/PrismCore/Remux/HLSRemuxer.swift` (`demandEligible`, le pont de la
+forme muxée, `reanchor`).
+
+Un titre HDR sur un écran qui n'est pas prêt pour le HDR (une TV SDR, le
+simulateur) n'a pas droit au master (`masterVariantPermitted`) : PrismCore le
+sert en forme muxée, une piste audio dans la variante. L'amont excluait la
+forme muxée À AUDIO PONTÉ du mode à la demande — « ré-ancrer reviendrait à
+réinitialiser un encodeur en plein fragment, et la combinaison n'arrive que sur
+un master refusé ». Or c'est le cas de presque tout remux HDR (DTS, TrueHD) sur
+un écran SDR : lecture séquentielle à CHAQUE fois — reprise et relance depuis 0,
+saut au-delà du produit ignoré, retour au-delà de la fenêtre gardée = roue sans
+fin, et aucune carte de keyframes jamais enregistrée (la moisson exige ce
+mode), donc séquentiel à vie.
+
+Mesuré le 2026-10-01 sur un film 4K HDR10 de 46 Go (MKV avec index, première
+piste DTS) au banc, écran non HDR : avant, reprise à 4:20 → départ à 0, saut à
+15:00 → jamais ; après, reprise à 4:20 en 2 s, saut à 15:00 en 1 s, retour à
+0:30 en 1,5 s. Le segment muxé ré-ancré a exactement les horodatages de la
+production continue.
+
+Le pont de la forme muxée est désormais réinitialisé à chaque ré-ancrage comme
+celui d'un rendu (§ 3), et reconstruit s'il a été vidé à la fin du fichier.
+
 ## Ce qui est repris, ce qui ne l'est pas
 
 `Package.swift` (réduit à la bibliothèque), `Sources/PrismCore`, `LICENSE`,
