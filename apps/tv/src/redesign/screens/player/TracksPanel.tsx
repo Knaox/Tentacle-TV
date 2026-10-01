@@ -19,8 +19,8 @@ import { TrackOptionRow } from "./TrackOptionRow";
  * colonnes lues d'un coup d'œil — Audio, Sous-titres, Qualité (Original et sa
  * définition, les paliers et leur débit, DV/HDR/Atmos, « Auto »). La vidéo
  * reste visible au-dessus. Chaque colonne défile seule ; ouverte sur son
- * choix retenu. La croix Retour dans le coin haut-gauche, une marge à elle
- * (son libellé paraît dessous au focus).
+ * choix retenu. La croix Retour en haut à gauche, dans une marge à elle (son
+ * libellé paraît dessous au focus) : GAUCHE depuis la première option.
  * Clés : `tracks:close`, `tracks:audio:<clé>`, `tracks:subtitle:<clé>`,
  * `tracks:quality:<clé>` ; groupe `tracks:panel` — la feuille, où
  * l'intégration retient le focus tant qu'elle est ouverte.
@@ -29,11 +29,17 @@ import { TrackOptionRow } from "./TrackOptionRow";
 const SAFE = TV_STAGE.safe;
 const HEIGHT = 680;
 const ROW_STEP = 76;
-/** Le haut des colonnes, et la ligne de leurs titres (64), où la croix se centre. */
+/** Le haut des colonnes, la ligne de leurs titres, et l'écart qui la sépare de la première option. */
 const COLUMNS_TOP = 34;
 const HEADING_HEIGHT = 64;
-/** La marge de la croix, à gauche des colonnes. */
+const HEADING_GAP = 10;
+/**
+ * La croix, dans sa marge à gauche des colonnes, à cheval sur le haut de la
+ * première ligne d'options : tvOS ne vise que ce qui chevauche — calée sur
+ * les titres, GAUCHE depuis la première option ne la trouvait pas (mesuré).
+ */
 const BACK_LEFT = 36;
+const BACK_TOP_IN_SHEET = COLUMNS_TOP + HEADING_HEIGHT + HEADING_GAP - BACK_BUTTON_SIZE / 2;
 const GUTTER = BACK_LEFT + BACK_BUTTON_SIZE + 12;
 
 export interface TracksPanelLabels {
@@ -138,9 +144,9 @@ const styles = StyleSheet.create({
   columns: { flex: 1, flexDirection: "row", paddingLeft: GUTTER, paddingRight: 24, paddingTop: COLUMNS_TOP, paddingBottom: 28 },
   column: { flex: 1, paddingHorizontal: 20 },
   divider: { width: 1, marginVertical: 12, backgroundColor: white(0.1) },
-  heading: { flexDirection: "row", alignItems: "center", gap: 14, height: HEADING_HEIGHT, paddingLeft: 16, marginBottom: 10 },
+  heading: { flexDirection: "row", alignItems: "center", gap: 14, height: HEADING_HEIGHT, paddingLeft: 16, marginBottom: HEADING_GAP },
   headingText: { ...fonts.bold, fontSize: 34, color: colors.text },
   scroll: { flex: 1 },
   options: { gap: 8, paddingBottom: 24 },
-  back: { position: "absolute", top: COLUMNS_TOP + (HEADING_HEIGHT - BACK_BUTTON_SIZE) / 2, left: BACK_LEFT },
+  back: { position: "absolute", top: BACK_TOP_IN_SHEET, left: BACK_LEFT },
 });
