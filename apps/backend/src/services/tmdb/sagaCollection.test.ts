@@ -59,9 +59,23 @@ describe("normalizeSagaCollection", () => {
       ],
     }, 1565);
     expect(saga?.parts).toEqual([
-      { tmdbId: 170, title: "28 Jours plus tard", releaseDate: "2002-10-31" },
-      { tmdbId: 1273002, title: "28 ans plus tard III", releaseDate: null },
+      { tmdbId: 170, title: "28 Jours plus tard", releaseDate: "2002-10-31", posterPath: null },
+      { tmdbId: 1273002, title: "28 ans plus tard III", releaseDate: null, posterPath: null },
     ]);
+  });
+
+  it("garde l'affiche d'un volet, jamais un chemin qui n'en est pas un", () => {
+    const saga = normalizeSagaCollection({
+      name: "Michael - Saga",
+      parts: [
+        { id: 1, title: "Avec affiche", release_date: "2001-01-01", poster_path: "/aBc-12_x.jpg" },
+        { id: 2, title: "Adresse complète", release_date: "2002-01-01", poster_path: "https://ailleurs.example/x.jpg" },
+        { id: 3, title: "Remontée", release_date: "2003-01-01", poster_path: "/../etc/passwd" },
+        { id: 4, title: "Nombre", release_date: "2004-01-01", poster_path: 42 },
+        { id: 5, title: "Sans affiche", release_date: "2005-01-01", poster_path: null },
+      ],
+    }, 7);
+    expect(saga?.parts.map((p) => p.posterPath)).toEqual(["/aBc-12_x.jpg", null, null, null, null]);
   });
 
   it("sans nom ou sans liste de volets : rien", () => {
@@ -90,6 +104,19 @@ describe("getSagaCollection", () => {
     h.disk.set("tmdbSaga:1241:fr", { saga: normalizeSagaCollection(RAW, 1241), fetchedAt: "2020-01-01T00:00:00.000Z" });
     h.fetch.mockRejectedValue(new Error("réseau"));
     expect((await getSagaCollection(1241, "fr"))?.parts).toHaveLength(3);
+  });
+
+  it("une copie d'avant les affiches est redemandée, et sert encore si TMDB se tait", async () => {
+    const before = { collectionId: 1241, name: "Harry Potter - Saga", parts: [{ tmdbId: 671, title: "Harry Potter", releaseDate: "2001-11-16" }] };
+    h.disk.set("tmdbSaga:1241:fr", { saga: before, fetchedAt: new Date().toISOString() });
+    h.fetch.mockResolvedValue({ ...RAW, parts: [{ ...RAW.parts[0], poster_path: "/hp1.jpg" }] });
+    expect((await getSagaCollection(1241, "fr"))?.parts[0]?.posterPath).toBe("/hp1.jpg");
+    expect(h.fetch).toHaveBeenCalledTimes(1);
+
+    resetSagaCollectionsForTests();
+    h.disk.set("tmdbSaga:1241:fr", { saga: before, fetchedAt: new Date().toISOString() });
+    h.fetch.mockRejectedValue(new Error("réseau"));
+    expect((await getSagaCollection(1241, "fr"))?.parts[0]?.title).toBe("Harry Potter");
   });
 
   it("sans clé TMDB et sans copie : null, sans appel", async () => {

@@ -21,6 +21,12 @@ export interface SagaPart {
   title: string;
   /** « AAAA-MM-JJ » ; null tant que TMDB n'annonce pas de date. */
   releaseDate: string | null;
+  /**
+   * L'affiche du volet chez TMDB (« /abc.jpg », à préfixer d'une taille
+   * d'image) ; null quand TMDB n'en a pas. Absente de la réponse d'un serveur
+   * plus ancien : le client garde alors son cadre titre et année.
+   */
+  posterPath?: string | null;
 }
 
 /** La saga TMDB : son nom dans la langue demandée et ses volets, dans l'ordre de sortie. */

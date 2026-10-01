@@ -37,15 +37,24 @@ function keyOf(collectionId: number, lang: SagaLang): string {
   return `tmdbSaga:${collectionId}:${lang}`;
 }
 
+/*
+ * Une copie d'avant les affiches (volets sans `posterPath`) n'est jamais
+ * fraîche : elle est redemandée à TMDB au premier passage, et ne sert plus
+ * que de repli s'il se tait.
+ */
 function isFresh(entry: CachedSaga, now = Date.now()): boolean {
   const at = Date.parse(entry.fetchedAt);
-  return Number.isFinite(at) && now - at < FRESH_MS;
+  return Number.isFinite(at) && now - at < FRESH_MS && entry.saga.parts.every((part) => part.posterPath !== undefined);
 }
+
+/* Un chemin d'image TMDB (« /abc.jpg ») : rien d'autre ne se préfixe d'une taille. */
+const POSTER_PATH = /^\/[A-Za-z0-9_-]{1,80}\.(jpg|jpeg|png|webp)$/i;
 
 /**
  * Normalise la réponse brute de `/collection/{id}` — tolérante et pure : un
  * volet sans identifiant entier ou sans titre est ignoré, un doublon aussi,
- * une date illisible vaut « annoncé » ; les volets sortent triés.
+ * une date illisible vaut « annoncé », une affiche illisible n'en est pas
+ * une ; les volets sortent triés.
  */
 export function normalizeSagaCollection(raw: unknown, collectionId: number): SagaInfo | null {
   const body = raw as { name?: unknown; parts?: unknown } | null;
@@ -54,13 +63,19 @@ export function normalizeSagaCollection(raw: unknown, collectionId: number): Sag
   const parts: SagaPart[] = [];
   const seen = new Set<number>();
   for (const entry of body.parts) {
-    const part = entry as { id?: unknown; title?: unknown; release_date?: unknown } | null;
+    const part = entry as { id?: unknown; title?: unknown; release_date?: unknown; poster_path?: unknown } | null;
     const tmdbId = Number(part?.id);
     const title = typeof part?.title === "string" ? part.title.trim() : "";
     if (!Number.isInteger(tmdbId) || tmdbId <= 0 || title === "" || seen.has(tmdbId)) continue;
     seen.add(tmdbId);
     const date = part?.release_date;
-    parts.push({ tmdbId, title, releaseDate: typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null });
+    const poster = part?.poster_path;
+    parts.push({
+      tmdbId,
+      title,
+      releaseDate: typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
+      posterPath: typeof poster === "string" && POSTER_PATH.test(poster) ? poster : null,
+    });
   }
   return { collectionId, name, parts: sortSagaParts(parts) };
 }
