@@ -90,6 +90,11 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 - **Un logo noir cède au texte** : `isLogoLegibleOnDark(blurHash)` — un logo
   dont l'empreinte est noire de part en part ne se lit pas sur la scène ; le
   câblage écrit alors le titre (le banc le fait déjà).
+- **Rien ne recouvre le logo d'une vignette** : sur une carte sans Thumb, le
+  logo passe AU-DESSUS de la pastille de note (`cardLogoBottom`, géométrie de
+  `cardMarkerGeometry` : pied 12, ou 20 au-dessus de la barre de « Reprendre »,
+  40 de haut, 12 d'écart) ; sans note, il garde sa place basse. Vignette 16:9
+  et carte qui se redresse — banc « briques/logos » et « briques/logos-redresse ».
 
 ## Le socle du branchement (`apps/tv/src/redesignWiring/`)
 
@@ -1289,6 +1294,15 @@ onglets · feuille · panneau · clavier · squelettes · états vides et d'erre
 Présent : tout ce que listent les écrans ci-dessus (champs Jellyfin via le
 proxy, notes `/api/ratings`, reco `/api/reco/page`, sagas, recherche, mise en
 page de l'accueil). Images : Primary, Thumb, Backdrop, Logo (pas de Banner).
+
+Logos : la reprise et les titres mis en avant (`useResumeItems`,
+`useFeaturedItems`) demandent `Logo` depuis le 2026-10-01 — avant, Jellyfin
+n'annonçait aucun logo aux vignettes « Reprendre » (`logoUriOf` →
+`resolveLogoImage`). Un logo peut être OPAQUE : celui de « Les Chevaliers du
+ciel » (instantané Knaoxtest) est un PNG à fond noir plein (alpha = 1
+partout), d'où un pavé noir sur la vignette et dans les bannières. C'est la
+donnée de Jellyfin, pas la vue : on le laisse — le remplacer dans Jellyfin
+suffit.
 
 Manquant ou non transmis aujourd'hui (le branchement le demandera) :
 - la note sur la fiche (la donnée existe, `useCardRatingTarget`, jamais montée) ;
