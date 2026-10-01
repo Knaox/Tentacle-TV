@@ -171,12 +171,14 @@ export function useTVPlayerControls({
   const enterScrub = useCallback(() => scrub.startScrubbing(), [scrub]);
 
   /** Un simple toucher du pavé réveille l'habillage, comme le lecteur d'Apple —
-   *  sauf celui qui accompagne un clic (le saut de 10 s ne rallume rien) ou un
-   *  défilement en cours. */
+   *  sauf celui qui accompagne un clic (le saut de 10 s ne rallume rien). En
+   *  défilement, c'est un geste : le décompte repart de zéro. */
+  const { endDrag } = scrub;
   const wakeFromTouch = useCallback(() => {
-    if (scrubbingRef.current || Date.now() - lastPressAtRef.current < TOUCH_AFTER_PRESS_MS) return;
+    if (scrubbingRef.current) { endDrag(); return; }
+    if (Date.now() - lastPressAtRef.current < TOUCH_AFTER_PRESS_MS) return;
     showOverlay();
-  }, [showOverlay, scrubbingRef]);
+  }, [showOverlay, scrubbingRef, endDrag]);
 
   /** Le régime d'un glisser qui commence : habillage caché, il attend un
    *  contact tenu avant de défiler (`scrubTouchTuning.ts`). La pause épingle
@@ -195,10 +197,12 @@ export function useTVPlayerControls({
   useScrubGestures({
     enabled: !panelOpen,
     readTouchMode,
-    onStartScrub: scrub.startScrubbing,
+    onTouchStart: scrub.touchStart,
+    onStartScrub: scrub.startDrag,
     onNudgeScrub: scrub.nudgeScrub,
     // Lever du doigt : le scrub reste ouvert — OK/▶︎❙❙ valide le seek, Back
-    // annule, l'inactivité annule seule SANS seek (anti-seek accidentel).
+    // annule ; sans geste, la lecture repart à la cible au bout du décompte
+    // (entré en lecture), sinon l'inactivité annule SANS seek.
     onEndScrub: scrub.endDrag,
     onWake: wakeFromTouch,
     durationRef,   // durée inconnue : le glisser ne défile pas
@@ -272,6 +276,8 @@ export function useTVPlayerControls({
     speedLabel: scrub.speedLabel,
     scrubbing: scrub.scrubbing,
     scrubPosition: scrub.scrubPosition,
+    /** Quand le défilement se fermera seul, et pour quoi (`scrubCountdown.ts`). */
+    scrubCountdown: scrub.scrubCountdown,
     skipFlash,
     confirmScrub: scrub.confirmScrub,
     cancelScrub: scrub.cancelScrub,

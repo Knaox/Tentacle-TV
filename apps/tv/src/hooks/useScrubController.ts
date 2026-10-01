@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { createScrubMachine } from "@tentacle-tv/tv-core";
 import { backgroundHoldsFocus } from "../components/player/focus/osdFocusBus";
+import { reportingActivity } from "./scrubCountdown";
 import { SCRUB_INPUT } from "./scrubInput";
+import { useScrubCountdown } from "./useScrubCountdown";
 import { useScrubHoldMotor } from "./useScrubHoldMotor";
 
 type Dir = "forward" | "backward";
@@ -16,6 +18,10 @@ const signOf = (dir: Dir): 1 | -1 => (dir === "forward" ? 1 : -1);
  * L'accélération est réservée au MAINTIEN.
  */
 export const ARROW_JUMP_SECONDS = 10;
+
+/** Une reprise automatique sur une cible inchangée n'est qu'une annulation :
+ *  aucun seek pour revenir au même endroit. */
+const UNMOVED_SECONDS = 1;
 
 interface ScrubControllerArgs {
   showOverlay: () => void;
@@ -50,7 +56,12 @@ interface ScrubControllerArgs {
  *    lecture de ±10 s habillage caché, le curseur de ±10 s en défilement), un
  *    MAINTIEN défile en accélérant ; la couture `SCRUB_INPUT` dit seulement
  *    comment la plateforme les émet ;
- *  - la TRAPPE du curseur — voir `nudgeScrub`.
+ *  - la TRAPPE du curseur — voir `nudgeScrub` ;
+ *  - le DÉCOMPTE (`scrubCountdown.ts`) : quand le défilement se fermera seul.
+ *    Doigt levé après un glisser au pavé, entré en lecture : la lecture
+ *    repart à la position visée au bout de 3 s ; partout ailleurs, l'abandon
+ *    de la machine, dit pendant ses dernières secondes. Seul le pavé arme la
+ *    reprise : sans pavé (Android TV), rien n'en part.
  *
  * **La trappe.** Le glisser du pavé avance par deltas CONTINUS, l'appui fin
  * de dix secondes : la machine ne connaît que ses pas proportionnels. La
@@ -81,6 +92,12 @@ export function useScrubController({
   // Dernière position CONNUE de la machine — sert à appliquer ses pas en
   // deltas sur l'affichage (trappe).
   const machineLastRef = useRef(0);
+  // L'origine du défilement, et l'état de lecture d'alors — lu par la
+  // machine AVANT sa mise en pause (un rendu synchrone le changerait).
+  const originRef = useRef(0);
+  const enteredPausedRef = useRef(false);
+  const resumeRef = useRef<() => void>(() => {});
+  const { countdown, countdownState } = useScrubCountdown(() => resumeRef.current());
 
   const clampDisplay = useCallback((value: number) => {
     const duration = durationRef.current || 0;
@@ -93,16 +110,18 @@ export function useScrubController({
     setScrubPosition(value);
   }, []);
 
-  const machine = useMemo(() => createScrubMachine({
+  const machine = useMemo(() => reportingActivity(createScrubMachine({
     readPosition: () => currentTimeRef.current,
     readDuration: () => durationRef.current || 0,
-    readPaused: () => pausedRef.current,
+    readPaused: () => { enteredPausedRef.current = pausedRef.current; return pausedRef.current; },
     onEnter: (position) => {
       scrubStartedAtRef.current = Date.now();
       scrubbingRef.current = true;
       setScrubbing(true);
       machineLastRef.current = position;
+      originRef.current = position;
       setDisplay(position);
+      countdown.begin(enteredPausedRef.current);
       // L'OSD se MASQUE pendant le scrub : la vue du défilement est seule, le
       // fond redevient focusable et capte OK/←/→ sans navigation.
       hideOverlay();
@@ -121,6 +140,7 @@ export function useScrubController({
       onSeekRef.current(scrubPositionRef.current);
     },
     onExit: () => {
+      countdown.end();
       stopMotorsRef.current();
       scrubEndedAtRef.current = Date.now();
       scrubbingRef.current = false;
@@ -130,8 +150,17 @@ export function useScrubController({
     },
     // Machine unique : toutes les entrées passent par des refs stables.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), []);
+  }), countdown), []);
   useEffect(() => () => machine.destroy(), [machine]);
+
+  // La reprise échue (doigt levé, décompte au bout) : lire depuis la cible —
+  // ou, cible inchangée, rendre la lecture sans seek.
+  resumeRef.current = () => {
+    if (__DEV__) console.log("[SCRUB] reprise automatique");
+    stopMotorsRef.current();
+    if (Math.abs(scrubPositionRef.current - originRef.current) < UNMOVED_SECONDS) machine.cancel();
+    else machine.confirm();
+  };
 
   // Avance du curseur hors des pas de la machine (glisser du pavé, appui
   // fin) : delta signé en secondes — la TRAPPE (cf. en-tête).
@@ -172,13 +201,29 @@ export function useScrubController({
     machine.cancel();
   }, [machine]);
 
-  // Le doigt se lève : le scrub RESTE ouvert — OK/▶︎❙❙ valident, BACK
-  // annule, l'inactivité annule seule SANS seek.
+  /** Le doigt se pose (ou repart) sur le pavé, défilement ouvert : la reprise attend. */
+  const touchStart = useCallback(() => {
+    if (!scrubbingRef.current) return;
+    machine.touch();
+    countdown.hold();
+  }, [machine, countdown]);
+
+  /** Le glisser engage : le défilement s'ouvre (ou reprend sous le doigt) ;
+   *  entré en lecture, il repartira seul à la cible, le doigt levé. */
+  const startDrag = useCallback(() => {
+    startScrubbing();
+    countdown.hold();
+    countdown.armResume();
+  }, [startScrubbing, countdown]);
+
+  // Le doigt se lève (ou s'immobilise) : le scrub RESTE ouvert — OK/▶︎❙❙
+  // valident, BACK annule ; le décompte dit la suite (reprise, abandon).
   const endDrag = useCallback(() => {
     if (!scrubbingRef.current) return;
     setSpeedLabel(null);
     machine.touch();
-  }, [machine]);
+    countdown.release();
+  }, [machine, countdown]);
 
   /** Un APPUI ←/→ hors défilement, une fois tranché. Il n'appartient à la
    *  vidéo — saut de ±10 s — que habillage caché, fond focalisé : sous la
@@ -190,12 +235,13 @@ export function useScrubController({
     else showOverlay();
   }, [panelOpenRef, overlayVisibleRef, onJumpRef, showOverlay]);
 
-  // --- Maintien ←/→ et touches média : l'adaptateur du moteur tv-core. ---
-  const engage = useCallback(() => startScrubbing(), [startScrubbing]);
+  // --- Maintien ←/→ et touches média : l'adaptateur du moteur tv-core. Le
+  //     maintien tient la reprise ; son relâchement la relance. ---
+  const engage = useCallback(() => { startScrubbing(); countdown.hold(); }, [startScrubbing, countdown]);
   const hold = useScrubHoldMotor({
     scrubbingRef, panelOpenRef, overlayVisibleRef,
     stepScrub, tickScrub, onEngage: engage, onTap: tap,
-    onHoldEnd: () => setSpeedLabel(null),
+    onHoldEnd: () => { setSpeedLabel(null); countdown.release(); },
   });
   stopMotorsRef.current = hold.stopAll;
 
@@ -227,10 +273,17 @@ export function useScrubController({
     startScrubbing(dir);
   }, [startScrubbing, panelOpenRef, skipAnyPressRef, hold]);
 
+  // Le décompte, avec l'origine qu'une annulation rendrait (« Reprise à 12:34 »).
+  const scrubCountdown = useMemo(
+    () => (countdownState ? { ...countdownState, origin: originRef.current } : null),
+    [countdownState],
+  );
+
   return {
-    scrubbing, scrubPosition, speedLabel, scrubbingRef,
+    scrubbing, scrubPosition, speedLabel, scrubbingRef, scrubCountdown,
     scrubEndedAtRef, scrubStartedAtRef, lastMediaKeyAtRef,
-    nudgeScrub, setSpeedLabel, startScrubbing, confirmScrub, cancelScrub, endDrag,
+    nudgeScrub, setSpeedLabel, startScrubbing, confirmScrub, cancelScrub,
+    touchStart, startDrag, endDrag,
     handleDpadDirection,
     handleLongDirection: hold.handleLongDirection,
     onHoldRelease: hold.onHoldRelease,

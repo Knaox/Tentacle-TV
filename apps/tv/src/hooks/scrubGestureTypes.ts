@@ -37,16 +37,20 @@ export interface ScrubGestureHandlers {
    *  habillage affiché (ou pause), habillage caché — ce dernier n'engage
    *  qu'après un contact tenu (`scrubTouchTuning.ts`). */
   readTouchMode: () => TouchMode;
+  /** Le doigt se pose (ou repart après un silence) : en défilement, le
+   *  décompte attend qu'il s'arrête. */
+  onTouchStart: () => void;
   /** Le glisser franchit sa zone morte → entrer en défilement. Idempotent côté
    *  cerveau : ne réinitialise PAS la position si déjà ouvert — un nouveau
    *  glisser reprend d'où le curseur en est. */
   onStartScrub: () => void;
   /** Le doigt emporte le curseur : delta signé, en secondes de vidéo. */
   onNudgeScrub: (deltaSeconds: number) => void;
-  /** Le doigt se lève (le défilement reste ouvert : OK valide, Retour
-   *  annule, comme au relâchement d'un maintien). */
+  /** Le doigt se lève ou s'immobilise (le défilement reste ouvert : OK
+   *  valide, Retour annule, le décompte dit la suite). */
   onEndScrub: () => void;
-  /** Simple toucher, sans glisser → réveiller l'habillage. */
+  /** Simple toucher, sans glisser → réveiller l'habillage (en défilement :
+   *  un geste, le décompte repart). */
   onWake: () => void;
   /** Durée de la vidéo (s) : tant qu'elle est inconnue, rien ne défile. */
   durationRef: MutableRefObject<number>;

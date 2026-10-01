@@ -26,6 +26,10 @@ export const SLOW_SWIPE_PADS_PER_SECOND = 1;
 /** …au-delà de celle-ci, il plafonne ; entre les deux, il monte en douceur. */
 export const FAST_SWIPE_PADS_PER_SECOND = 4;
 
+/** Le doigt levé (ou immobile), la lecture repart à la position visée au
+ *  bout de ce délai — décompté à l'écran (`scrubCountdown.ts`). */
+export const RESUME_COUNTDOWN_MS = 3000;
+
 /** Habillage CACHÉ : un glisser ne défile qu'après ce contact tenu, compté
  *  depuis le début du glisser (tvOS ne signale pas un doigt posé immobile).
  *  Un frôlement, une télécommande qu'on ramasse : la lecture ne bouge pas. */

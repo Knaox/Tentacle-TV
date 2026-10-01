@@ -45,11 +45,11 @@ const FLUSH_MS = 33;
  * a qu'un, que d'autres écrans tiennent aussi.
  */
 export function useScrubGestures({
-  enabled, readTouchMode, onStartScrub, onNudgeScrub, onEndScrub, onWake, durationRef,
+  enabled, readTouchMode, onTouchStart, onStartScrub, onNudgeScrub, onEndScrub, onWake, durationRef,
 }: ScrubGestureHandlers): void {
   // Callbacks à jour sans recréer le handler natif.
-  const cbRef = useRef({ readTouchMode, onStartScrub, onNudgeScrub, onEndScrub, onWake });
-  cbRef.current = { readTouchMode, onStartScrub, onNudgeScrub, onEndScrub, onWake };
+  const cbRef = useRef({ readTouchMode, onTouchStart, onStartScrub, onNudgeScrub, onEndScrub, onWake });
+  cbRef.current = { readTouchMode, onTouchStart, onStartScrub, onNudgeScrub, onEndScrub, onWake };
   usePanGesture(enabled);
 
   const g = useRef({
@@ -104,6 +104,7 @@ export function useScrubGestures({
       active: true, engaged: false, mode: cbRef.current.readTouchMode(),
       beganAt: contactSince, originX: x, originY: y, lastX: x, pending: 0,
     });
+    cbRef.current.onTouchStart();
   };
 
   // Coupé (panneau ouvert, démontage) : le geste en cours n'a plus de suite.
