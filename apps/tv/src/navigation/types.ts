@@ -6,8 +6,7 @@ export type RootStackParamList = {
   Recommendations: undefined;
   Library: { libraryId: string; libraryName: string };
   MediaDetail: { itemId: string };
-  /** `startPaused` : la relance à froid rouvre le lecteur en pause, à la position. */
-  Player: { itemId: string; startPaused?: boolean };
+  Player: { itemId: string };
   /** Panneau Réglages/Qualité présenté en MODALE transparente au-dessus du
    *  Player : sur tvOS, le Menu ferme proprement la modale (révèle l'épisode
    *  dessous) sans le flash du pop d'écran poussé. */
