@@ -38,8 +38,10 @@
 #   • xcodebuild tvOS, signature MANUELLE (profil TVOS_PROVISIONING_PROFILE_BASE64),
 #     upload TestFlight via clé API ASC. Fiche partagée com.tentacle.mobile.
 #
-# Notes de version : changelogs/tv.md (bloc « ## [X.Y.Z] », ### FR / ### EN),
-# EXIGÉ par le pré-vol de `prepare`. Limites : Play 500 car., App Store 4000.
+# Notes de version : changelogs/tv.md (### FR / ### EN). Le pré-vol de `prepare`
+# n'EXIGE que les blocs des cibles livrées : le bloc nu « ## [X.Y.Z] » pour Play
+# (Android TV, 500 car.), « ## [atv-X.Y.Z] » pour App Store Connect (Apple TV,
+# 4000 car. ; à défaut, le bloc nu).
 # (Plus de Release GitHub depuis que la TV passe par Play : l'ancien en-tête
 # annonçait encore « GitHub illimité ».)
 
@@ -205,12 +207,27 @@ jobs:
             echo "play_track=$TRACK"; echo "tag=tv-v$VERSION"
           } >> "$GITHUB_OUTPUT"
 
+      # Le pré-vol ne demande que les notes des cibles LIVRÉES, comme celui de
+      # desktop.yml : le bloc nu pour Play (Android TV), « atv- » pour App Store
+      # Connect (Apple TV). Une Apple TV livrée seule n'exige donc plus de bloc
+      # nu, que Play ne lirait pas.
       - name: Pré-vol des notes de version
         if: steps.plan.outputs.channel != 'build'
+        env:
+          ANDROIDTV: ${{ steps.plan.outputs.androidtv }}
+          APPLETV: ${{ steps.plan.outputs.appletv }}
+          VERSION: ${{ steps.plan.outputs.version }}
         run: |
+          CHECKS=""
+          [ "$ANDROIDTV" != skip ] && CHECKS="$CHECKS --check play"
+          [ "$APPLETV" != skip ] && CHECKS="$CHECKS --check asc:atv"
+          if [ -z "$CHECKS" ]; then
+            echo "::error::Aucune cible reconnue (androidtv, appletv) : rien à livrer."
+            exit 1
+          fi
+          # shellcheck disable=SC2086
           node .github/scripts/check-changelog.mjs \
-            --changelog changelogs/tv.md --version "${{ steps.plan.outputs.version }}" \
-            --check play --check asc:atv
+            --changelog changelogs/tv.md --version "$VERSION" $CHECKS
 
   # ── Android TV : l'AAB seulement, la publication est le job « play ». ──────
   android-tv:
