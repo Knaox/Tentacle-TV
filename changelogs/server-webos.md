@@ -17,15 +17,13 @@ Ces blocs vivent à part de `changelogs/server.md` exprès : un bloc « [1.1.0] 
 y désignerait le VIEUX serveur 1.1.0, et le pré-vol comme la Release le
 prendraient pour les notes de cette reconstruction.
 
-## [1.1.0]
+## [1.0.0]
 ### FR
 - **L'interface des téléviseurs LG se livre désormais à part** : servie sous `/tv` par ce serveur, elle n'est plus reconstruite à chaque mise à jour du serveur, seulement par une livraison de l'application LG comme celle-ci
-- **Le serveur ne change pas** : même moteur, même client web, aucune migration de la base — seule l'interface servie aux téléviseurs LG est remplacée
-- **Téléviseurs LG** : Réglages › À propos annonce la version 1.1.0, celle de l'application (nouvelle icône, nouvel écran de lancement et installateur sans prérequis : voir les notes webOS 1.1.0)
+- **Le serveur ne change pas** : même moteur, même client web, aucune migration de la base — seule l'interface servie aux téléviseurs LG est remplacée, reconstruite sous le même numéro (1.0.0) et sans changement visible
 - Pour la recevoir, il suffit de tirer l'image (`docker compose pull && docker compose up -d`) ; un téléviseur resté allumé se recharge de lui-même en ouvrant son prochain écran
 
 ### EN
 - **The LG TV interface now ships on its own**: served under `/tv` by this server, it is no longer rebuilt with every server update, only by an LG app release like this one
-- **The server does not change**: same engine, same web client, no database migration — only the interface served to LG TVs is replaced
-- **LG TVs**: Settings › About shows version 1.1.0, the app's version (new icon, new launch screen and an installer with no prerequisites: see the webOS 1.1.0 notes)
+- **The server does not change**: same engine, same web client, no database migration — only the interface served to LG TVs is replaced, rebuilt under the same number (1.0.0) with no visible change
 - To get it, just pull the image (`docker compose pull && docker compose up -d`); a TV left on reloads by itself when it opens its next screen
