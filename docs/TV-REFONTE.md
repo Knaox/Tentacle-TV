@@ -468,6 +468,67 @@ siens (`useLibraryFilters`, `catalogParams`).
   dictée — jamais le micro. Seule la sélection d'un résultat mémorise la
   requête (parité Android TV). Au retour d'une étagère (Parcourir), la barre.
 
+## Collection et « Demander » (Apple TV)
+
+Branche `claude/gallant-cannon-80186f` (lot du 2026-10-01 soir, tâche 7), sur
+le socle Vigie de la tâche 8 (`redesignWiring/vigie/useVigieGate`). Décisions
+de l'utilisateur : des titres ABSENTS de la bibliothèque, grisés ; « Demander »
+seulement quand le serveur déclare Vigie installé ET activé, et rien d'autre
+— ni pages Vigie, ni le mot « Vigie », « plugin », « téléchargement ».
+
+- **La carte d'un titre absent** (`card.absent`, `cards/AbsentArtwork`) : son
+  affiche TMDB en niveaux de gris sous un voile qui s'allège au focus, et un
+  badge au pied de l'image, là où les autres cartes portent leur note — « Pas
+  dans la bibliothèque », ou l'état de sa demande. Sans affiche (serveur
+  d'avant `posterPath`) : un cadre qui écrit titre et année. Le gris passe
+  par un filtre SVG (`GreyscaleImage`, `FeColorMatrix` saturation 0) :
+  l'ancienne architecture n'a ni `filter` ni `mixBlendMode` ; dessiné à un
+  pixel par point, puis agrandi par le GPU.
+- **La saga d'un film** : chaque volet montre sa miniature, même absent
+  (`SagaPart.posterPath`, `/api/sagas` → TMDB `poster_path`), dans l'ordre de
+  la saga. Sans Vigie, OK sur un volet absent dit « Ce titre n'est pas
+  disponible dans votre bibliothèque. » (`showNotice`), aucun appui maintenu.
+- **Les avis brefs** (`showNotice`, `NoticeToast`) : en haut à droite, dans le
+  verre des messages de l'administrateur, jamais focalisables, effacés seuls
+  (4 s ; 5,5 s avec une phrase de suite).
+- **Garde Vigie ouverte** — trois entrées, rien ailleurs (`redesignWiring/vigie/`) :
+  - la COLLECTION (`useSagaAbsent`) : l'état de chaque volet absent (sa
+    demande — `mine` du socle, « En attente », le camembert d'« En cours » —,
+    sinon ce que dit l'extension, « Demandé » par un autre), « OK :
+    demander » sous la carte focalisée ;
+  - la RECHERCHE (`useSearchAbsent`) : une rangée « À demander » sous la
+    bibliothèque, les mêmes cartes (route `search` de l'extension, celle qui
+    sait demander) ; sans garde, la recherche reste la bibliothèque seule ;
+  - la FEUILLE DES SAISONS (`SeasonsSheetRedesign`) : la grande liste des
+    filtres, une ligne par saison — à cocher, ou son état (« Demandée ») ;
+    « Fermer » tant que rien n'est coché, puis « Demander N saisons » au
+    dégradé.
+  OK (`useTitleRequests`) : déjà demandé par le compte → son état et « Pour
+  suivre son état, ouvrez Tentacle sur votre téléphone. », jamais une seconde
+  demande ; un film offert → la demande en UN geste, « Demande envoyée. » et
+  la même invite, le titre en tête des demandes du compte (`withMyTitle`) ;
+  une série → la feuille des saisons ; rien d'offert → l'état que dit
+  l'extension, sinon « pas disponible ». L'appui maintenu : le grand panneau
+  des cartes, sans plus (affiche, titre, année, état, « Demander » quand
+  c'est offert). Panneau et feuille : couches « menu » du Retour.
+- **Le contrat** (rétrocompatible, web et mobile inchangés) : `titles.seasons`
+  (`GET seasons?key=tv:ID` → les saisons, leur état, si elles se demandent)
+  et `POST request` avec `seasons: [1, 2]` — Vigie, branche
+  `feat/tv-saisons` ; le cœur les relaie (`readTitlesMeta`,
+  `TitleProvider.seasonsPath`, `useTitleSeasons`, `useRequestTitleSeasons`).
+- **Éprouvé** : au banc, groupe « Demandes » (`bench:ui planche demandes
+  --focus`) ; dans l'app réelle (simulateur, compte Knaoxtest) derrière un
+  relais à soi devant 3001, qui imite Vigie et ne relaie AUCUNE écriture
+  (chaque POST journalisé) : sans Vigie, compte bloqué, Vigie actif — saga
+  (états, demande d'un film, panneau), recherche « marvel » (rangée, demande
+  par le panneau), saisons (deux cochées, Menu ferme, le focus revient à la
+  carte).
+- **Pièges payés** : `readSagaResponse` (api-client) relisait les volets
+  champ par champ et jetait `posterPath` — la TV ne voyait jamais l'affiche ;
+  les écrans paresseux (`React.lazy`) d'une app de développement attendent
+  leur paquet de Metro à la première ouverture (squelette de longues
+  secondes sous charge, pas un gel).
+
 ## La navigation — beaucoup de bibliothèques (Apple TV)
 
 Branche `refonte/tv-nav-bibliotheques`. La vue vit dans `redesign/nav/`, le
@@ -2020,8 +2081,10 @@ suffit.
 
 Manquant ou non transmis aujourd'hui (le branchement le demandera) :
 - la note sur la fiche (la donnée existe, `useCardRatingTarget`, jamais montée) ;
-- les titres hors bibliothèque sur TV (reco, recherche) : filtrés — d'où
-  aucun « Demander » ;
+- ~~les titres hors bibliothèque sur TV (reco, recherche) : filtrés — d'où
+  aucun « Demander »~~ — la recherche et la saga les montrent, grisés, et les
+  demandent quand le serveur déclare Vigie (« Collection et « Demander » »,
+  plus haut) ; les recommandations restent filtrées ;
 - ~~lecteur : durée des décomptes, réglage « lecture auto », segments de la
   barre~~ — réglés au branchement : `countdownTotals` mesure les anneaux, la
   suite n'annonce d'échéance que si la lecture auto la lancera, et les
@@ -2190,10 +2253,11 @@ fusionnés :
 1. Le focus sans contour (agrandissement, reflet, verre qui blanchit) : le
    garder partout, ou un anneau discret là où l'agrandissement ne se voit pas
    (pastilles de filtre, étoiles) ?
-2. « Demander » de Vigie sur TV : montrer les titres hors bibliothèque
+2. ~~« Demander » de Vigie sur TV : montrer les titres hors bibliothèque
    (reco, recherche) avec leur « Demander », ou garder la TV sur la
-   bibliothèque seule ? Le panneau sait déjà le rendre (scène « Feuille
-   d'actions · Hors bibliothèque ») ; c'est le câblage qui filtre.
+   bibliothèque seule ?~~ — tranché le 2026-10-01 : la saga d'un film et la
+   recherche seulement, et seulement quand le serveur déclare Vigie installé
+   et activé (« Collection et « Demander » », plus haut).
 3. Libellé du bouton de lecture : « Lire » (cartes, feuille) ou « Lecture »
    (fiche, héros) — un seul partout ?
 4. ~~La croix du grand panneau n'est pas atteinte par HAUT depuis l'échelle

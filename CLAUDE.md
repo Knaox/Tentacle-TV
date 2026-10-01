@@ -266,7 +266,11 @@ MÊME modèle, dans `packages/shared/src/utils/` :
   Trois variantes, pas une de plus : `poster` (2:3, le clic ouvre la fiche),
   `landscape` (16:9, le clic lance la lecture), `reco`. Un titre lu sur le
   disque passe `local: true` ; un titre hors bibliothèque (Vigie) a son
-  pendant, `externalCardOverlay.ts`.
+  pendant, `externalCardOverlay.ts`. Sur Apple TV, un titre ABSENT (saga d'un
+  film, rangée « À demander » de la recherche) est une carte grisée
+  (`card.absent`, `AbsentArtwork`) ; sa demande ne passe que par
+  `redesignWiring/vigie/`, derrière la garde `useVigieGate` — sans elle,
+  « pas disponible », et aucune trace de demande.
 - **rien au centre de l'image**, sur aucune variante ni plateforme : le clic
   de la carte fait déjà l'action principale. L'action primaire est le PREMIER
   bouton du plateau (`CardTrayPrimaryButton`) — « Lire » discret (ton
