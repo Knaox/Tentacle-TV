@@ -1,52 +1,67 @@
 import { useEffect, useState } from "react";
 import Video from "react-native-video";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { plog } from "../../utils/playerDiag";
+import { resolveTrailerStream, type TrailerStream } from "./resolveTrailerStream";
+import { useTrailerPlaybackWatch } from "./useTrailerPlaybackWatch";
 import type { TrailerPlayerProps } from "./types";
 
 /**
  * Variant Apple TV (tvOS) : `react-native-webview` n'a aucun support tvOS (pas
- * de WebView sur Apple TV). On résout l'ID YouTube en une URL de flux MP4
- * jouable via le backend (`GET /api/trailers/resolve`, yt-dlp), puis on lit
- * avec `react-native-video` (qui, lui, supporte tvOS).
+ * de WebView sur Apple TV). On résout l'ID YouTube en une URL de flux jouable
+ * via le backend (`GET /api/trailers/resolve`, yt-dlp), puis on lit avec
+ * `react-native-video` (qui, lui, supporte tvOS).
+ *
+ * Chaque issue se dit : `onLoadEnd` à la première image à l'écran, `onEnded`
+ * à la fin, `onError` sur tout le reste — résolution refusée ou trop longue
+ * (`resolveTrailerStream`), flux refusé, rien qui démarre ou qui avance
+ * (`useTrailerPlaybackWatch`). YouTube refuse par moments le flux que le
+ * serveur obtient (403 au-delà de son premier mégaoctet, mesuré le
+ * 2026-10-01) : l'écran le dit, il ne reste jamais au chargement.
  *
  * Le `<Video>` n'est pas focusable : la télécommande (BACK / Fermer) reste gérée
- * par `TrailerScreen` (useTVRemote + bouton Fermer), exactement comme avec la
- * WebView Android.
+ * par l'écran (useTVRemote + bouton Fermer), exactement comme avec la WebView
+ * Android.
  */
 export const TRAILER_WEBVIEW_SUPPORTED = true;
 
 export function TrailerWebView({ ytId, onLoadEnd, onError, onEnded }: TrailerPlayerProps) {
   const { storage } = useTentacleConfig();
-  const [stream, setStream] = useState<{ url: string; type?: string } | null>(null);
+  const [stream, setStream] = useState<TrailerStream | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const serverUrl = (storage.getItem("tentacle_server_url") ?? "").replace(/\/$/, "");
     const token = storage.getItem("tentacle_token") ?? "";
-    if (!serverUrl || !ytId) { onError(); return; }
-
-    (async () => {
-      try {
-        const res = await fetch(
-          `${serverUrl}/api/trailers/resolve?ytId=${encodeURIComponent(ytId)}`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        if (!res.ok) throw new Error("unavailable");
-        const data = (await res.json()) as { url?: string; mimeType?: string };
-        if (!data.url) throw new Error("unavailable");
-        // HLS → indiquer le type à AVPlayer (l'URL googlevideo n'a pas
-        // d'extension .m3u8 reconnaissable directement).
-        const type = data.mimeType === "application/vnd.apple.mpegurl" ? "m3u8" : undefined;
-        if (!cancelled) setStream({ url: data.url, type });
-      } catch {
-        if (!cancelled) onError();
+    if (!serverUrl || !ytId) {
+      onError();
+      return;
+    }
+    void resolveTrailerStream(serverUrl, token, ytId).then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        plog("trailer", `flux ${result.stream.type ?? "progressif"} résolu pour ${ytId}`);
+        setStream(result.stream);
+      } else {
+        plog("trailer", `résolution de ${ytId} en échec : ${result.reason}`);
+        onError();
       }
-    })();
-
-    return () => { cancelled = true; };
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [ytId, storage, onError]);
 
-  // Tant que le flux n'est pas résolu, l'écran affiche son spinner (loaded=false).
+  const watch = useTrailerPlaybackWatch(stream?.url ?? null, {
+    onStarted: onLoadEnd,
+    onFailed: (reason) => {
+      plog("trailer", `lecture de ${ytId} en échec : ${reason}`);
+      onError();
+    },
+    onEnded: () => onEnded?.(),
+  });
+
+  // Tant que le flux n'est pas résolu, l'écran affiche son chargement.
   if (!stream) return null;
 
   return (
@@ -57,9 +72,7 @@ export function TrailerWebView({ ytId, onLoadEnd, onError, onEnded }: TrailerPla
       controls={false}
       resizeMode="contain"
       focusable={false}
-      onLoad={() => onLoadEnd()}
-      onError={() => onError()}
-      onEnd={() => onEnded?.()}
+      {...watch}
     />
   );
 }

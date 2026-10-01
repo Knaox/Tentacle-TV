@@ -9,9 +9,9 @@ export interface TrailerPlayerProps {
   ytId: string;
   /** URL de la page relais d'embed YouTube — utilisée par le variant Android. */
   embedUri: string;
-  /** Le flux/embed est chargé (masque le spinner). */
+  /** L'embed est chargé (Android) ; la première image est à l'écran (tvOS). Masque le spinner. */
   onLoadEnd: () => void;
-  /** Échec de chargement → l'écran affiche le fallback « indisponible ». */
+  /** Échec — résolution, flux refusé, lecture qui ne démarre ou n'avance pas (tvOS) → « indisponible ». */
   onError: () => void;
   /** Fin de lecture (tvOS) → l'écran ferme la bande-annonce. */
   onEnded?: () => void;

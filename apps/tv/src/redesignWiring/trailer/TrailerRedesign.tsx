@@ -15,9 +15,11 @@ type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
 
 /**
  * La bande-annonce refondue (Apple TV) : `TrailerView` autour du lecteur
- * actuel — le flux MP4 résolu par le serveur (`TrailerWebView.ios.tsx`), sourd
- * à la télécommande. « Fermer » est le seul élément focalisable et prend le
- * focus d'entrée ; Menu dépile l'écran (pile native), la fin de la vidéo aussi.
+ * actuel — le flux résolu par le serveur (`TrailerWebView.ios.tsx`), sourd à
+ * la télécommande, qui dit chacune de ses issues : la première image
+ * (« lecture »), la fin, ou l'échec (« indisponible » — jamais un chargement
+ * sans fin). « Fermer » est le seul élément focalisable et prend le focus
+ * d'entrée ; Menu dépile l'écran (pile native), la fin de la vidéo aussi.
  *
  * Le chrome s'estompe trois secondes après le début de la lecture, et le
  * moindre geste de la télécommande le rallume (`useIdleChrome`) : « Fermer »
