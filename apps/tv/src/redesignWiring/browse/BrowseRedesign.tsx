@@ -9,7 +9,6 @@ import type { RootStackParamList } from "../../navigation/types";
 import { BrowseView } from "../../redesign/screens/browse/BrowseView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
 import { useBackFocus } from "../focus/backFocus";
-import { AutoFocusGuide } from "../focus/focusGuides";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
@@ -76,13 +75,10 @@ export function BrowseRedesign({ kind, id, name }: Params) {
   const entryKey = status ? "status:primary" : items.length > 0 ? "grid:0" : "browse:back";
   const screen = useRedesignScreen({ railKey: "Search", entryKey, onBack, onReselect: goBack });
   const { focus } = screen;
-  useBackFocus(focus, { backKey: "browse:back", entryKey });
-  // Lié dès le premier rendu, avant que la vue ne monte son groupe.
-  const bound = useRef(false);
-  if (!bound.current) {
-    focus.bind("browse:header", { container: AutoFocusGuide });
-    bound.current = true;
-  }
+  // L'en-tête (ou, sur l'erreur, la bande de la croix) mène à la croix : un
+  // guide à destination — un guide `autoFocus` n'y menait que si elle avait
+  // déjà eu le focus (mesuré : jamais, arrivé sur une page déjà là).
+  useBackFocus(focus, { backKey: "browse:back", barKey: "browse:header", entryKey });
 
   // tvOS pose d'abord le focus en haut à gauche — Retour —, et Retour le
   // garde pendant un chargement : la première affiche le reprend en arrivant,
