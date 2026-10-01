@@ -15,7 +15,9 @@ const PORT = Number(process.env.BENCH_PORT ?? 8093);
 const ENTRY = "harness/ui-bench/entry";
 // `fileURLToPath` et non `.pathname` : le chemin du dépôt a des espaces.
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DATA = path.join(HERE, "snapshot");
+// `BENCH_SNAPSHOT_DIR` : un autre instantané que celui du compte de test —
+// celui de la vitrine (contenu libre, `harness/vitrine`), par exemple.
+const DATA = path.resolve(process.env.BENCH_SNAPSHOT_DIR ?? path.join(HERE, "snapshot"));
 
 const TYPES = { ".json": "application/json", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml" };
 
