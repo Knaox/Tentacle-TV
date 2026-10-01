@@ -50,6 +50,12 @@ export function noticeOf(t: Translate, phase: RecoveryPhase): TroubleNoticeModel
   return { mode: "notice", icon: "server", tone: "warning", title: t(TITLE[phase.cause]), detail };
 }
 
+/** La lecture directe calait au même endroit : le serveur a pris le relais, on le dit. */
+export const SERVER_FALLBACK_NOTICE = (t: Translate): TroubleNoticeModel => ({
+  mode: "notice", icon: "server", tone: "warning",
+  title: t("player:troubleServerTakesOver"), detail: t("player:troubleServerTakesOverDetail"),
+});
+
 export const RESUMED_NOTICE = (t: Translate): TroubleNoticeModel => ({
   mode: "notice", icon: "check", tone: "success", title: t("player:troubleResumed"), detail: t("player:troubleResumedDetail"),
 });

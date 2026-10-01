@@ -137,5 +137,7 @@ export default {
   troubleMinutes: "{{count}} min",
   troubleStartMedia: "Jellyfin ne répond pas. La lecture démarrera d'elle-même dès son retour.",
   troubleStartTentacle: "Le serveur Tentacle ne répond pas. La lecture démarrera d'elle-même dès son retour.",
+  troubleServerTakesOver: "La lecture passe par le serveur",
+  troubleServerTakesOverDetail: "La lecture directe calait à ce passage : le serveur convertit désormais la vidéo.",
   audioOutputLostPlay: "La sortie audio ne répond pas. Vérifie le téléviseur ou l'ampli, puis appuie sur Lecture.",
 } as const;

@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo } from "react-native";
 import type { QualityPreset } from "@tentacle-tv/shared";
 import { noteSkipFocusClaim, returnFocusToOsd } from "../../components/player/focus/osdFocusBus";
-import { retryPlaybackNow, usePlaybackTroubleState } from "../../hooks/playbackTroubleStore";
+import { retryPlaybackNow, usePlaybackTroubleState, useServerFallbackAt } from "../../hooks/playbackTroubleStore";
 import type { Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlaybackTroubleModel, TroubleActionKey } from "../../redesign/screens/player/playbackTroubleTypes";
 import type { FocusStore } from "../focus/focusStore";
-import { lowerQualityKey, noticeOf, panelOf, RESUMED_NOTICE, troubleModelOf } from "./playbackTroubleModel";
+import { lowerQualityKey, noticeOf, panelOf, RESUMED_NOTICE, SERVER_FALLBACK_NOTICE, troubleModelOf } from "./playbackTroubleModel";
 
 // react-native-tvos exporte useTVEventHandler en hook (cf. useTVRemote).
 const { useTVEventHandler } = require("react-native") as {
@@ -17,6 +17,8 @@ const { useTVEventHandler } = require("react-native") as {
 const RESUMED_NOTICE_MS = 4000;
 /** Tentacle seul à terre, flux direct : on le dit, puis seulement avec l'habillage. */
 const TENTACLE_NOTICE_MS = 8000;
+/** Le serveur a pris le relais : le temps d'ouvrir son flux, puis de le lire. */
+const SERVER_FALLBACK_NOTICE_MS = 14000;
 /** Les gestes qui ACTIVENT le panneau : des appuis — pas un pouce posé sur le pavé. */
 const GESTURES = new Set(["select", "playPause", "up", "down", "left", "right", "longSelect"]);
 
@@ -93,6 +95,8 @@ export function usePlaybackTrouble(args: {
     wasPanel.current = panelPhase;
   }, [panelPhase, phase.kind, store, osdVisible]);
   const resumedShown = useUntil(resumedUntil);
+  const fallbackAt = useServerFallbackAt();
+  const fallbackShown = useUntil(fallbackAt !== null ? fallbackAt + SERVER_FALLBACK_NOTICE_MS : null);
 
   // Le décompte « nouvelle vérification dans 4 s » : une seconde à la fois,
   // seulement panneau affiché.
@@ -118,10 +122,11 @@ export function usePlaybackTrouble(args: {
     });
     let notice = noticeOf(t, phase);
     if (notice && tentacleSince !== null && !tentacleFresh && !osdVisible) notice = null;
+    if (!panel && !notice && fallbackShown) notice = SERVER_FALLBACK_NOTICE(t);
     if (!panel && !notice && resumedShown) notice = RESUMED_NOTICE(t);
     return troubleModelOf(panel, notice);
   }, [t, phase, now, position, trouble.nextCheckAt, trouble.checking, trouble.stillDown, lower, onSelectQuality, active,
-    tentacleSince, tentacleFresh, osdVisible, resumedShown]);
+    tentacleSince, tentacleFresh, osdVisible, resumedShown, fallbackShown]);
 
   // Un bouton qui paraît ou part (« Baisser la qualité ») réordonne les vues
   // natives, et UIKit perd le focus de celle qu'il déplace : panneau activé,

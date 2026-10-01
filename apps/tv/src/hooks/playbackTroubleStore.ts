@@ -63,3 +63,26 @@ const subscribe = (listener: () => void) => {
 export function usePlaybackTroubleState(): PlaybackTroubleState {
   return useSyncExternalStore(subscribe, readPlaybackTrouble);
 }
+
+/**
+ * La lecture vient de passer par le SERVEUR : le producteur de PrismCore est
+ * mort deux fois au même endroit (`usePlaybackRecovery`). Hors de l'état de
+ * la reprise, que l'ouverture du flux serveur remet à zéro : l'habillage le
+ * dit quelques secondes après (`usePlaybackTrouble`).
+ */
+let serverFallbackAt: number | null = null;
+const fallbackListeners = new Set<() => void>();
+
+export function noteServerFallback(at: number | null): void {
+  if (serverFallbackAt === at) return;
+  serverFallbackAt = at;
+  fallbackListeners.forEach((listener) => listener());
+}
+
+const subscribeFallback = (listener: () => void) => {
+  fallbackListeners.add(listener);
+  return () => { fallbackListeners.delete(listener); };
+};
+export function useServerFallbackAt(): number | null {
+  return useSyncExternalStore(subscribeFallback, () => serverFallbackAt);
+}

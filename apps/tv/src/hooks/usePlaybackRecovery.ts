@@ -1,47 +1,20 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import {
-  decideRecovery, MAX_VAIN_RESTARTS, PROBE_EVERY_MS, RESTART_COOLDOWN_MS, type Culprit, type Health, type RecoveryPhase,
+  decideProducerDeath, decideRecovery, MAX_VAIN_RESTARTS, PROBE_EVERY_MS, RESTART_COOLDOWN_MS, shouldCheckProducer,
+  type Culprit, type Health, type ProducerDeath, type RecoveryPhase,
 } from "@tentacle-tv/tv-core";
 import { readServerReachability, requestServerProbe } from "./serverReachability";
-import { IDLE_TROUBLE, publishPlaybackTrouble, registerTroubleRetry } from "./playbackTroubleStore";
+import { IDLE_TROUBLE, noteServerFallback, publishPlaybackTrouble, registerTroubleRetry } from "./playbackTroubleStore";
 import { useStartupRecovery } from "./useStartupRecovery";
-import type { RestartOptions, RestartOutcome } from "./streamRestart";
+import { isFormatError, type RecoverySources } from "./recoverySources";
+import type { RestartReason } from "./streamRestart";
+import { prismStatus } from "../utils/prismCoreStart";
 import { probeStreamPath } from "../utils/streamPathProbe";
 import { plog } from "../utils/playerDiag";
 
-/** Ce que la reprise lit du lecteur : le bus d'état et le pipeline de flux. */
-export interface RecoverySources {
-  s: {
-    hasStarted: boolean;
-    paused: boolean;
-    isLoading: boolean;
-    /** Rechargement VOULU en cours (piste, qualité, relance) : pas un arrêt. */
-    reloadHold: boolean;
-    /** Tient le lecteur en rechargement (indicateur, aucun son de la session sortante). */
-    holdForReload: () => void;
-    /** L'intention de lecture de l'utilisateur (Lecture / Pause). */
-    setPaused: (paused: boolean) => void;
-    positionRef: React.MutableRefObject<number>;
-    bufferedTimeRef: React.MutableRefObject<number>;
-    endedRef: React.MutableRefObject<boolean>;
-  };
-  p: {
-    restartStream: (opts?: RestartOptions) => Promise<RestartOutcome>;
-    /** L'ouverture du flux a échoué (écran d'échec, « Réessayer »). */
-    failed: boolean;
-    /** Relance l'ouverture — le « Réessayer » de l'écran d'échec. */
-    setReloadNonce: (next: (n: number) => number) => void;
-    /** Où la lecture démarre (reprise ou position posée), timeline absolue. */
-    startSeconds: number;
-  };
-}
+export { isFormatError, type RecoverySources } from "./recoverySources";
 
-/** Une erreur de FORMAT (codec, conteneur) : la chaîne de repli s'en charge. */
-export function isFormatError(error: string): boolean {
-  return error.includes("DECODING_FAILED") || error.includes("EXCEEDS_CAPABILITIES")
-    || error.includes("codec") || error.includes("Could not open");
-}
 /** Le jeton du flux refusé : `useTVDirectStreamRecovery` le rafraîchit. */
 const AUTH_ERROR = /\bhttp=40[13]\b/;
 
@@ -72,12 +45,17 @@ interface RecoveryState {
   /** La relance en cours d'épreuve n'a pas encore fait avancer la lecture. */
   restartPending: boolean;
   vain: number;
+  /** Le producteur de PrismCore : dernière lecture de son état, et sa dernière mort. */
+  producerCheckedAt: number | null;
+  producerChecking: boolean;
+  producerDeath: ProducerDeath | null;
 }
 
 const fresh = (): RecoveryState => ({
   stalledSince: null, lostSince: null, openSince: null, incidentPos: null, buffered: { value: 0, at: Date.now() },
   source: "unknown", culprit: null, checkedAt: null, probing: false, manualProbe: false, stillDown: false,
   downSince: null, downWhat: null, restarting: false, lastRestartAt: null, restartPending: false, vain: 0,
+  producerCheckedAt: null, producerChecking: false, producerDeath: null,
 });
 
 /**
@@ -119,7 +97,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     tickRef.current();
   }, [client]);
 
-  const restart = useCallback(async () => {
+  const restart = useCallback(async (reason: RestartReason = "network") => {
     const st = state.current;
     const s = src.current;
     if (!s || st.restarting) return;
@@ -133,7 +111,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     st.openSince ??= Math.min(st.lostSince ?? Infinity, st.stalledSince ?? Infinity, Date.now());
     st.incidentPos = s.s.positionRef.current;
     tickRef.current();
-    const outcome = await s.p.restartStream({ reason: "network" });
+    const outcome = await s.p.restartStream({ reason });
     st.restarting = false;
     // Le délai laissé au flux relancé court depuis SON émission : par le proxy,
     // rouvrir PrismCore a pris 5 s, et la relance suivante partait avant que
@@ -145,6 +123,29 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     }
     tickRef.current();
   }, []);
+
+  // Le producteur de PrismCore : AVPlayer ne dit jamais sa mort, il relance ses
+  // segments sans fin. Mort : une relance NEUVE ; remort au même endroit : le
+  // chemin serveur à la position, et l'habillage le dit (`producerDeath`, tv-core).
+  const checkProducer = useCallback(async () => {
+    const s = src.current;
+    const st = state.current;
+    const gen = s?.p.prism?.gen ?? 0;
+    if (!s || gen <= 0) return;
+    st.producerChecking = true;
+    st.producerCheckedAt = Date.now();
+    const status = await prismStatus(gen);
+    st.producerChecking = false;
+    const at = s.s.positionRef.current;
+    const action = decideProducerDeath({ status, position: at, previous: st.producerDeath });
+    if (action === "none") return;
+    plog("recover", `producteur PrismCore mort (${status?.code ?? "?"}) à ${Math.round(at)} s → ${action === "restart" ? "relance neuve" : "chemin serveur"}`);
+    st.producerDeath = { gen, at };
+    if (action === "restart") { void restart("remux"); return; }
+    noteServerFallback(Date.now());
+    s.p.captureReloadTicks();
+    s.p.setForceTranscode(true);
+  }, [restart]);
 
   const tick = useCallback(() => {
     const s = src.current;
@@ -209,7 +210,11 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     });
     if (decision.probe) void probe();
     if (decision.restart) void restart();
-  }, [probe, restart]);
+    if (shouldCheckProducer({
+      prismCore: s.p.isPrismCore, now, stalledSince: st.stalledSince, lastCheckAt: st.producerCheckedAt,
+      restarting: st.restarting || st.producerChecking,
+    })) void checkProducer();
+  }, [probe, restart, checkProducer]);
   tickRef.current = tick;
 
   // L'arrêt : le lecteur attend des données, sans rechargement voulu ni pause.
@@ -245,6 +250,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     return () => {
       registerTroubleRetry(null);
       publishPlaybackTrouble(IDLE_TROUBLE);
+      noteServerFallback(null);
     };
   }, []);
 

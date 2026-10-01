@@ -10,3 +10,4 @@ export * from "./playerState";
 export * from "./playbackRecovery";
 export * from "./playerItemFallback";
 export * from "./playerErrors";
+export * from "./producerDeath";
