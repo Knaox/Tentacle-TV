@@ -5,6 +5,7 @@ import { useRequestTitleSeasons, useTitleSeasons } from "@tentacle-tv/api-client
 import type { TitleRequestOutcome } from "@tentacle-tv/shared";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { SeasonsSheet, seasonFocusKey } from "../../redesign/screens/requests/SeasonsSheet";
+import { useBackLayer } from "../back/BackScope";
 import { createEntryGuide } from "../focus/entryGuide";
 import { useFocusStore } from "../focus/focusStore";
 import { useChoiceEntry } from "../settings/settingsFocus";
@@ -43,6 +44,10 @@ export function SeasonsSheetRedesign({ gate, title, onAnswer, onClose }: Props) 
   const { mutateAsync: requestSeasons } = useRequestTitleSeasons(gate.provider, gate.lang);
   const [checked, setChecked] = useState<ReadonlySet<number>>(() => new Set());
   const sheet = useMemo(() => seasonsSheetModel(t, title.title, answer, failed, checked), [t, title.title, answer, failed, checked]);
+
+  // Une couche « menu » de la pile du Retour : la Modal reçoit Menu elle-même
+  // (`onRequestClose`), mais l'écran sait qu'un menu est ouvert.
+  useBackLayer("menu", true, onClose);
 
   const focus = useFocusStore();
   // Le pied de la liste, lié avant le premier rendu de la vue.

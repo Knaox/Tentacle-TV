@@ -6,6 +6,7 @@ import { loadTitleState, tentacleApiFetch, titleStateQueryKey, useMyTitles } fro
 import type { TitleState } from "@tentacle-tv/shared";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView, type SheetActionKind, type SheetActionModel } from "../../redesign/screens/sheet/ActionSheetView";
+import { useBackLayer } from "../back/BackScope";
 import { tvPosterUri } from "../cards/absentCards";
 import { useFocusStore } from "../focus/focusStore";
 import { sheetEntryOf, useSheetFocus } from "../sheet/sheetFocus";
@@ -69,6 +70,9 @@ export function AbsentSheetRedesign({ gate, title, onRequest, onClose }: Props) 
   const [closing, setClosing] = useState(false);
   const after = useRef<(() => void) | null>(null);
   const requestClose = useCallback(() => setClosing(true), []);
+  // Une couche « menu » de la pile du Retour : la Modal reçoit Menu elle-même
+  // (`onRequestClose`), mais l'écran sait qu'un menu est ouvert.
+  useBackLayer("menu", true, requestClose);
   const closed = useCallback(() => {
     onClose();
     after.current?.();
