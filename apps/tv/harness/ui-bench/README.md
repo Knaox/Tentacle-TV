@@ -114,6 +114,30 @@ presque pas de cette charge : c'est lui qui départage deux versions ; les
 images perdues se comparent à charge basse, en alternant les cas. Chaque
 mesure s'ajoute à `out/fps.jsonl`.
 
+- **Le JS de production** : `BENCH_JS=prod` au lancement du relais
+  (`BENCH_JS=prod bench.mjs up`) lui fait servir le paquet JS sans le mode
+  développement (`dev=false&minify=true`) — celui des builds livrés. Le JS de
+  développement fait perdre des images que l'app livrée ne perd pas : on
+  mesure en production, et on relance l'app (`launch`) après une retouche
+  (pas de Fast Refresh).
+- **Plus de 60 i/s** : Reanimated demande 120 images par seconde à son
+  CADisplayLink ; derrière un écran ProMotion, le simulateur peut les lui
+  donner un moment. Les images perdues, elles, se comptent toujours à 60 Hz
+  — c'est la mesure qui compte.
+- **Juste après `scene`**, la page joue encore son entrée : une première
+  mesure peut compter ses accrocs. Mesurer deux fois, garder la seconde.
+- Le groupe **« Mouvement »** donne ce qui bouge sans télécommande :
+  `mouvement/heros` (le héros qui tourne), `mouvement/navigation` (la capsule
+  qui se déplie), `mouvement/lecteur` (l'habillage, ses panneaux),
+  `mouvement/fiche` (la fiche la plus lourde qui arrive, en boucle).
+
+Pour voir OÙ part le temps : Instruments, attaché à l'app du simulateur
+(`xcrun xctrace record --template "Time Profiler" --device <udid> --attach
+<pid> --time-limit 8s`), pendant un `fps`. Ce que le fil principal fait par
+rafales de plus de 20 ms dit ce qui fait perdre une image ; une rafale
+ABSENTE alors que des images se perdent désigne une attente (relecture GPU,
+serveur d'affichage).
+
 ## Ajouter une scène
 
 Un fichier par écran dans `scenes/` (ex. `scenes/homeScenes.tsx`), ajouté à

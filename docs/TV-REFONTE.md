@@ -17,6 +17,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 5. Briques | Faites — planche « Briques » (`bench:ui planche briques --focus`). |
 | 6. Écrans | **Tous faits** (2026-09-30) : jumelage, accueil, fiche, bibliothèque, Ma liste / Favoris, recherche, parcourir, Pour vous, réglages, lecteur, feuille d'actions, bande-annonce, surimpressions — 184 scènes au banc. |
 | 7. Branchement | En cours, écran par écran. Le socle est posé (`apps/tv/src/redesignWiring/`, ci-dessous) : aiguillage, magasin de focus, cadre des écrans avec navigation, modèles de carte et de héros, Inter dans l'app tvOS. Branchés sur Apple TV : jumelage (conditions d'utilisation retirées), réglages, surimpressions (démarrage, hors ligne, jumelage expiré, messages, erreur et chargement d'un écran), fiche, bande-annonce, feuille d'actions, lecteur, accueil, navigation, « Pour vous », bibliothèques, Ma liste, Favoris, Parcourir et recherche. |
+| 8. Mouvement (Apple TV) | Fait (2026-10-01) : jetons `TV_MOTION`, module `redesign/motion/`, mesuré au banc — « Le mouvement (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -466,6 +467,94 @@ politique partagée dans `packages/tv-core/src/nav/`.
 - Au banc : 12 scènes « Navigation » (24 bibliothèques : repliée, dépliée en
   haut / au milieu / en bas, masquée, menu, déplacer, Réglages ›
   Navigation) — `bench:ui planche navigation/ --focus`.
+
+## Le mouvement (Apple TV)
+
+Branche `refonte/tv-animations`. Les transitions et animations de la
+refonte sont pour Apple TV SEULEMENT : `MOTION_ENABLED`
+(`redesign/motion/motion.ts`) ; ailleurs, et avec « Réduire les
+animations », tout se pose aussitôt à son état final. Tout tourne sur le
+fil d'interface (worklets Reanimated) : aucun aller-retour JS pendant une
+animation, aucune animation de mise en page.
+
+- **Les jetons** : `TV_MOTION` (`packages/theme/src/tokens/tvMotion.ts`) —
+  courbes, ressorts dans le vocabulaire d'Apple (réponse, amortissement →
+  ressort physique par `springOf`), durées. Une sortie est plus brève que
+  son entrée ; rien d'interface au-delà de 500 ms, hors fondus enchaînés et
+  image qui se pose (tests du thème).
+- **Le module** `redesign/motion/` : `motionTo` et ses préréglages (`focus`,
+  `recede`, `press`, `reveal`, `veil`, `panel`, `unfold`, `page`, `hero`,
+  `ambient`, `settle`, `imageIn`, `chrome`) ; `useMotion`, `usePresence`
+  (sortie jouée avant démontage), `useEntrance` ; `useCrossfade` (deux
+  emplacements), `useSwap` (sortie puis entrée), `useLayerPool` (une réserve
+  de calques réutilisés) ; `Reveal` (après un temps d'arrêt), `Presented` ;
+  `useOverlayArrival` (panneaux qui portent du focus) ; `useRowFocus` /
+  `useRecede` ; `pressProgress` ; `useStagedMount`.
+
+| Ce qui bouge | Comment |
+|---|---|
+| Focus des cartes, boutons, portraits | ressort `focus` (réponse 0,28, amortissement 0,8) ; les voisines reculent par une valeur partagée, sans rendu (`useRowFocus`) |
+| Appui (OK enfoncé) | ×0,96, rebond au relâcher (`press`), tenu par `FocusTarget` ; une carte dont l'image est sœur de la cible le reçoit par `pressProgress` |
+| Indications sous une carte | après un temps d'arrêt (`Reveal delayMs`) : un focus qui balaie n'en monte aucune |
+| Halo d'un épisode | une fois le focus posé et « Maintenir OK » paru (`HALO_DWELL_MS`) |
+| Héros qui tourne | image en fondu enchaîné, texte qui sort puis rentre, halo et fond vivant en réserves de calques |
+| Fond vivant | la lumière suit la carte focalisée (`ambient`, réserve de cinq) |
+| Navigation | capsule qui se déplie (`unfold` : une fenêtre et des translations), voile, menu d'entrée |
+| Pages | fondu de la pile (`page.fadeMs`, 320 ms) ; en-tête de fiche qui entre ; image de fond qui se pose (`settle`) ; sections montées après l'entrée (`SectionStage`) |
+| Grand panneau, feuilles | voile et panneau à l'échelle (`panel`), sortie jouée avant démontage |
+| Lecteur | habillage (`chrome`), panneaux qui glissent, saut ±, « À suivre », écran de fin |
+
+Pièges payés :
+
+- Un focalisable à opacité ~0 est CACHÉ pour le moteur de focus de tvOS : il
+  recalcule sa carte du focus et perd des images. Ce qui porte du focus
+  pendant un fondu garde le plancher `SWAP_FLOOR` (0,02).
+- Une animation de mise en page (`entering`) écrase l'opacité de sa vue — le
+  halo s'affichait plein, quelle que soit sa force — et se fige dans un
+  `Modal` : présences et fondus à la main (`usePresence`).
+- Pas de vue plein écran par-dessus des focalisables, pas de focalisable
+  gardé vivant le temps d'une sortie (ses guides retiennent le focus).
+- Ce qui se DESSINE sur le processeur se paie au montage, sur le fil
+  principal — quatre fois plus sur une Apple TV 4K (échelle 2) qu'au
+  simulateur 1080p : `react-native-linear-gradient` peint à la taille de sa
+  vue (`SoftGradient` dessine au huitième, le GPU agrandit) ; un flou SVG
+  passe par Core Image et relit le GPU de façon synchrone (halo différé,
+  réserve, dessin au quart) ; un dégradé radial SVG en grand coûte (disques
+  de 128 pt agrandis).
+- Un pas du focus ne redessine pas une rangée : l'index focalisé vit dans
+  une valeur partagée. Une liste (`FlatList`) ne prend plus d'`extraData`
+  pour un recul.
+- L'arrivée d'une page se coupe : l'en-tête d'abord, le contenu des
+  sections (sous le bord) après l'entrée, une section par image.
+
+Mesuré au banc (JS de production, simulateur Apple TV 4K en 1080p, charge
+du Mac sous 2 ; `bench:ui fps`, focus NATIF balayé) :
+
+| Mouvement | Fil d'interface | Images perdues |
+|---|---|---|
+| Accueil, rangée Reprendre balayée toutes les 150 ms | 60 i/s | 0 |
+| Fiche, épisodes balayés toutes les 300 ms | 60 i/s | 0 (avant : 49 sur 8 s) |
+| Casting, saga, extras, personnes, balayés | 60 i/s | 0 |
+| Héros qui tourne (après le premier tour) | 60 i/s | 0 |
+| Navigation dépliée et repliée toutes les 1,2 s | 60 i/s | 0 |
+| Lecteur : habillage, saut, panneau (toutes les 1,5 s) | 59,5 i/s | 4-5 sur 10,5 s, une à la fois (focus et verre natif à chaque bascule) |
+| Fiche la plus lourde qui arrive (quatre arrivées) | pire à-coup 38-44 ms | 6-7 sur 10 s (avant : 16-19, à-coups de 90-95 ms) |
+
+Le halo d'un épisode, dessiné une fois le focus posé, prend ~45 ms au fil
+principal : rien ne bouge alors, rien ne se voit.
+
+Pistes :
+
+- Les ombres du verre surélevé (`GlassSurface elevated`) sont calculées au
+  pixel : sur un fond translucide, React Native ne pose pas de `shadowPath`
+  (l'avertissement « cannot calculate shadow efficiently » du mode
+  développement). Sans elles, le dépli de la navigation coûte 12 à 20 % de
+  GPU en moins ; une ombre en image étirable les remplacerait.
+- Le halo de la meilleure réponse de la recherche (`SearchTopHit`) se
+  redessine (Core Image) à chaque changement de meilleure réponse.
+- Parallaxe native : une carte pose sa cible focalisable AU-DESSUS de son
+  image (sœur) — `tvParallaxProperties` ne déplacerait que la cible,
+  invisible. Les boutons ont celle d'`RCTTVView` par défaut.
 
 ---
 
