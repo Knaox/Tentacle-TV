@@ -9,6 +9,7 @@ import {
   readMyTitles,
   readTitlesAccess,
   titlesAccessUrl,
+  withMyTitle,
 } from "./pluginTitlesMine";
 
 const vigie = {
@@ -115,5 +116,15 @@ describe("les mots des états", () => {
   it("ont une clé par état, dans l'espace requests", () => {
     expect(Object.keys(MY_TITLE_STATE_KEYS).sort()).toEqual([...MY_TITLE_STATES].sort());
     for (const key of Object.values(MY_TITLE_STATE_KEYS)) expect(key).toMatch(/^requests:state[A-Z]\w+$/);
+  });
+});
+
+describe("un titre qu'on vient de demander", () => {
+  it("passe en tête, sans doublon", () => {
+    const matrix = readMyTitle({ key: "movie:603", title: "Matrix", state: "pending" })!;
+    const got = readMyTitle(arriving)!;
+    expect(withMyTitle([got], matrix).map((t) => t.key)).toEqual(["movie:603", "tv:1399"]);
+    expect(withMyTitle([got, matrix], matrix).map((t) => t.key)).toEqual(["movie:603", "tv:1399"]);
+    expect(withMyTitle([], matrix)).toEqual([matrix]);
   });
 });

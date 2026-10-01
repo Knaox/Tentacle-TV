@@ -148,3 +148,12 @@ export function readMyTitles(raw: unknown): MyTitle[] {
   }
   return out;
 }
+
+/**
+ * Un titre qu'on vient de demander, en tête des titres attendus (ou remis en
+ * tête s'il y était) — le patch du cache après « Demander » : la liste le
+ * montre aussitôt, sans attendre la relecture.
+ */
+export function withMyTitle(list: readonly MyTitle[], title: MyTitle): MyTitle[] {
+  return [title, ...list.filter((t) => t.key !== title.key)].slice(0, MAX_MY_TITLES);
+}
