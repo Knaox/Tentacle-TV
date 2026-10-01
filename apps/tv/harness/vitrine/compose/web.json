@@ -1,0 +1,65 @@
+{
+  "$comment": "Les séries tirées du client WEB de main (build de production, rendu par Electron hors écran) : téléphone et tablette = le miroir de l'app, bureau = la page du bureau. « devices » : appareil de capture, son héros fixe et les stores qu'il nourrit (ordre des écrans par store). « screens » : route ({slug} = identifiant du titre libre), gestes, accroches (une par entrée : touch/mouse si elles diffèrent) et légende Microsoft (200 caractères au plus). Les accroches vivent ICI, jamais dans l'i18n de l'app. Aucun « téléchargement » sur un visuel Apple.",
+  "devices": {
+    "iphone": { "hero": "spring", "stores": { "iphone": ["01_accueil", "02_fiche", "03_serie", "04_pour-vous", "05_recherche", "06_bibliotheque", "07_actions", "08_ma-liste", "10_jumeler"], "playPhone": ["01_accueil", "02_fiche", "03_serie", "04_pour-vous", "05_recherche", "06_bibliotheque", "07_actions", "08_ma-liste"] } },
+    "ipad": { "hero": "sprite-fright", "stores": { "ipad": ["01_accueil", "02_fiche", "03_serie", "04_pour-vous", "05_recherche", "06_bibliotheque", "07_actions", "08_ma-liste", "09_lecteur", "10_jumeler"] } },
+    "ipadLandscape": { "hero": "sprite-fright", "stores": { "ipadLandscape": ["01_accueil", "02_fiche", "03_serie", "04_pour-vous", "05_recherche", "06_bibliotheque", "07_actions", "08_ma-liste", "09_lecteur"] } },
+    "tablet": { "hero": "sprite-fright", "stores": { "playTablet": ["01_accueil", "02_fiche", "03_serie", "04_pour-vous", "05_recherche", "06_bibliotheque", "07_actions", "09_lecteur"] } },
+    "mac": { "hero": "sprite-fright", "stores": { "mac": ["01_accueil", "02_fiche", "03_serie", "04_pour-vous", "05_recherche", "06_bibliotheque", "07_actions", "08_ma-liste", "09_lecteur"] } },
+    "windows": { "hero": "sprite-fright", "stores": { "microsoft": ["01_accueil", "02_fiche", "03_serie", "04_pour-vous", "05_recherche", "06_bibliotheque", "07_actions", "08_ma-liste", "09_lecteur"] } }
+  },
+  "screens": [
+    {
+      "id": "01_accueil", "route": "/",
+      "headline": { "fr": "Votre bibliothèque fait son <em>cinéma</em>.", "en": "Your library, <em>center stage</em>." },
+      "caption": { "fr": "Votre bibliothèque Jellyfin, comme au cinéma : reprise de lecture, nouveautés et suggestions dès l'accueil.", "en": "Your Jellyfin library, cinema-style: continue watching, new arrivals and picks right on the home screen." }
+    },
+    {
+      "id": "02_fiche", "route": "/media/{sintel}",
+      "headline": { "fr": "Tout savoir, d'un seul <em>coup d'œil</em>.", "en": "Every detail <em>at a glance</em>." },
+      "caption": { "fr": "La fiche d'un film : synopsis, qualité, langues audio et sous-titres, votre note, votre liste et vos favoris.", "en": "A movie's page: synopsis, quality, audio and subtitle languages, your rating, your list and your favorites." }
+    },
+    {
+      "id": "03_serie", "route": "/media/{caminandes}", "actions": [{ "scrollToHeading": { "fr": "Saisons & Épisodes", "en": "Seasons & Episodes", "gap": { "touch": 20, "mouse": 392 } } }],
+      "headline": { "fr": "Reprenez <em>pile</em> où vous en étiez.", "en": "Right where you <em>left off</em>." },
+      "caption": { "fr": "Les saisons et les épisodes d'une série, avec l'épisode en cours mis en avant.", "en": "A show's seasons and episodes, with the episode in progress front and center." }
+    },
+    {
+      "id": "04_pour-vous", "route": "/recommendations",
+      "headline": { "fr": "Des idées qui <em>vous ressemblent</em>.", "en": "Picks that <em>get you</em>." },
+      "caption": { "fr": "« Pour vous » : des suggestions tirées de vos goûts, avec la raison de chacune.", "en": "\"For you\": suggestions drawn from your taste, each with its reason." }
+    },
+    {
+      "id": "05_recherche", "route": "/search?q=ani",
+      "headline": { "fr": "Trois lettres, et <em>c'est trouvé</em>.", "en": "Three letters. <em>Found it</em>." },
+      "caption": { "fr": "Une recherche instantanée dans toute la bibliothèque, dès les premières lettres.", "en": "Instant search across the whole library, from the very first letters." }
+    },
+    {
+      "id": "06_bibliotheque", "route": "/library/{library:films}",
+      "headline": { "fr": "Le bon film, en <em>deux filtres</em>.", "en": "The right pick, <em>two filters away</em>." },
+      "caption": { "fr": "Les bibliothèques triées et filtrées à votre façon : genres, années, notes, favoris.", "en": "Libraries sorted and filtered your way: genres, years, ratings, favorites." }
+    },
+    {
+      "id": "07_actions", "route": "/library/{library:films}", "actions": [{ "hoverOrHold": "Coffee Run" }, { "wait": 900 }],
+      "headline": {
+        "touch": { "fr": "Un appui long, <em>tout est là</em>.", "en": "Press and hold. <em>It's all there</em>." },
+        "mouse": { "fr": "Un survol, <em>tout est là</em>.", "en": "Just hover. <em>It's all there</em>." }
+      },
+      "caption": { "fr": "Au survol d'une affiche : lire, ajouter à votre liste, aux favoris, marquer comme vu.", "en": "Hover a poster to play, add it to your list or favorites, or mark it as watched." }
+    },
+    {
+      "id": "08_ma-liste", "route": "/watchlist",
+      "headline": { "fr": "Votre liste <em>vous attend</em>.", "en": "Your list, <em>ready when you are</em>." },
+      "caption": { "fr": "Ma liste : ce que vous voulez voir, ce que vous avez terminé, à partager si vous le souhaitez.", "en": "My List: what you want to watch, what you've finished, and a link to share it if you like." }
+    },
+    {
+      "id": "09_lecteur", "route": "/watch/{tears-of-steel}", "actions": [{ "wait": 1500 }, { "video": 308 }],
+      "headline": { "fr": "Le film, <em>rien que le film</em>.", "en": "Nothing but <em>the movie</em>." },
+      "caption": { "fr": "Un lecteur épuré : avance et retour rapides, pistes audio et sous-titres, plein écran.", "en": "A clean player: skip back and forward, audio and subtitle tracks, full screen." }
+    },
+    {
+      "id": "10_jumeler", "route": "/pair-device", "actions": [{ "type": "B7KX" }],
+      "headline": { "fr": "Votre TV jumelée en <em>quatre caractères</em>.", "en": "Pair your TV with <em>four characters</em>." }
+    }
+  ]
+}
