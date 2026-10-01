@@ -33,6 +33,13 @@ final class FMP4SegmentWriter {
     private let sink = Sink()
     var audioDelaySeconds: Double = 0
     private var ioBuffer: UnsafeMutableRawPointer?
+    /// Modified for Tentacle TV, 2026-10-01: the media timeline of the writer
+    /// this one replaces, set before `open(restart: true)` — see
+    /// `FragmentTimeline`.
+    var inheritedTimeline: FragmentTimeline.Origins?
+    private var timeline = FragmentTimeline(inherited: nil, restart: false, streamCount: 0)
+    /// What the writer replacing this one inherits.
+    var timelineOrigins: FragmentTimeline.Origins { timeline.origins }
 
     /// input stream index → output stream index
     private(set) var streamMap: [Int: Int32] = [:]
@@ -183,6 +190,15 @@ final class FMP4SegmentWriter {
             : "+delay_moov+frag_custom+default_base_moof"
         av_dict_set(&options, "movflags", flags, 0)
         av_dict_set(&options, "avoid_negative_ts", "disabled", 0)
+        // Modified for Tentacle TV: a writer that inherits the session's
+        // timeline re-bases its packets itself; without an edit list,
+        // `frag_discont` makes movenc take `start_dts = 0` (`FragmentTimeline`).
+        timeline = FragmentTimeline(
+            inherited: inheritedTimeline, restart: restart, streamCount: Int(output.pointee.nb_streams)
+        )
+        if timeline.rebases {
+            av_dict_set(&options, "use_editlist", "0", 0)
+        }
         // Without this movenc refuses to write the Dolby Vision configuration
         // box and says so: "Not writing 'dvcC'/'dvvC' box. Requires -strict
         // unofficial." The boxes are Dolby's specification rather than ISO's,
@@ -228,6 +244,8 @@ final class FMP4SegmentWriter {
             if pts != swift_AV_NOPTS_VALUE() { packet.pointee.pts = pts + ticks }
             if dts != swift_AV_NOPTS_VALUE() { packet.pointee.dts = dts + ticks }
         }
+        // Modified for Tentacle TV: on the session's timeline (`FragmentTimeline`).
+        guard timeline.place(packet, stream: Int32(index)) else { return }
         try FFmpegError.check(
             av_interleaved_write_frame(output, packet),
             "av_interleaved_write_frame"

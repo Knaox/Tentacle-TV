@@ -1420,7 +1420,11 @@ final class HLSRemuxer: @unchecked Sendable {
                 // the old verdicts, for the same reason they are.
                 demand?.clearUnproducible()
             }
+            // Modified for Tentacle TV: the new muxer stays on the timeline
+            // the served init describes (`FragmentTimeline`).
+            let timeline = writer.timelineOrigins
             writer = FMP4SegmentWriter()
+            writer.inheritedTimeline = timeline
             writer.audioDelaySeconds = audioDelaySeconds
             _ = try writer.open(input: input, plan: plan, restart: true)
             streamMap = writer.streamMap

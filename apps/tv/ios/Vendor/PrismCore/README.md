@@ -83,6 +83,41 @@ Le correctif rouvre l'encodeur, mêmes paramètres, quand il garde des trames et
 ne sait pas se vider : un `avcodec_open2` par ré-ancrage ; décodeur,
 rééchantillonneur et FIFO restent.
 
+### 4. Une seule ligne de temps par piste, quel que soit le muxeur (2026-10-01)
+
+`Sources/PrismCore/Remux/FragmentTimeline.swift` (nouveau), branché dans
+`FMP4SegmentWriter.swift`, `HLSRemuxer.swift` (`reanchor`) et
+`AudioRenditionWriter.swift` (`reanchor`, `writeInitSegment`).
+
+movenc place un fragment à `tfdt = dts − start_dts`. Le premier muxeur d'une
+session prend `start_dts` de son premier paquet, et le segment d'init qu'il
+écrit porte la liste d'édition assortie (la vidéo qui démarre deux images dans
+son décalage de composition : `media_time` 83 ms ; une piste Opus qui démarre à
+153 ms : une édition vide de 138 ms). C'est cet init qu'AVPlayer garde. Un
+muxeur ré-ancré, lui, est ouvert en `frag_discont`, et movenc prend alors
+`start_dts = dts − pts` de SON premier paquet : ses fragments ne sont plus là
+où le premier muxeur les aurait mis, et la liste d'édition servie ne compense
+plus.
+
+Mesuré le 2026-10-01 sur un épisode x265 à piste Opus : après chaque saut,
+l'audio jouait 138 ms en retard, et la vidéo encore 0 à 84 ms selon le
+décalage de composition de la keyframe d'ancrage. Le segment d'init d'un rendu
+audio était en outre réécrit à chaque ré-ancrage, si bien que la synchro
+dépendait de l'instant où AVPlayer l'avait chargé.
+
+**Titres touchés** : tout titre dont une piste ne démarre pas à 0 (l'audio Opus
+des animés, avec son pré-saut) ou dont la keyframe d'ancrage a un décalage de
+composition différent de celui du début (GOP ouvert), après tout saut lointain
+ou toute reprise. La plupart des titres (pistes à 0, GOP fermés) n'avaient pas
+d'écart mesurable.
+
+Le correctif fait hériter chaque muxeur ré-ancré de l'origine du précédent :
+il recale ses paquets dessus (`dts − origine`) sans liste d'édition, et movenc
+écrit exactement le `tfdt` du premier muxeur. Le segment d'init d'un rendu
+audio n'est plus réécrit (premier écrit, comme pour la vidéo). Mesuré : le
+segment 10 ré-ancré a les horodatages de la production continue, à 2 ms
+près (l'arrondi du DTS reconstruit de sa keyframe).
+
 ## Ce qui est repris, ce qui ne l'est pas
 
 `Package.swift` (réduit à la bibliothèque), `Sources/PrismCore`, `LICENSE`,

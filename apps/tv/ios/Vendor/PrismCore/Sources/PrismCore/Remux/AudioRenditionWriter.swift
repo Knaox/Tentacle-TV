@@ -222,7 +222,11 @@ final class AudioRenditionWriter {
     /// `segmentIndex`. The old muxer's partial fragment is abandoned — that
     /// segment gets reproduced if anything ever asks for it.
     func reanchor(input: UnsafeMutablePointer<AVFormatContext>, segmentIndex: Int) throws {
+        // Modified for Tentacle TV, 2026-10-01: the new muxer stays on the
+        // timeline the served init describes (`FragmentTimeline`).
+        let timeline = writer.timelineOrigins
         writer = FMP4SegmentWriter()
+        writer.inheritedTimeline = timeline
         if isProducing {
             if let bridge, bridge.isDrained {
                 // Flushed at EOF: the encoder is in its terminal state and
@@ -282,6 +286,12 @@ final class AudioRenditionWriter {
     /// stream-copied Atmos track, and that omission is the difference between
     /// Atmos and plain DD+ at the speaker.
     private func writeInitSegment(_ initSegment: Data) throws {
+        // Modified for Tentacle TV, 2026-10-01: first write wins, as for the
+        // variant (`HLSRemuxer.writeInitSegmentIfAbsent`). A re-anchored
+        // muxer mints its moov again, and AVPlayer keeps the one it fetched:
+        // its edit list is the timeline every fragment is placed on.
+        let initURL = directory.appendingPathComponent(Self.initFileName)
+        guard !FileManager.default.fileExists(atPath: initURL.path) else { return }
         let bytes = atmosComplexityIndex.flatMap {
             EAC3Configuration.patch(initSegment: initSegment, atmosComplexityIndex: $0)
         } ?? initSegment
