@@ -13,6 +13,60 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.25.3]
+<!-- Bloc nu : la Release Linux, qui part de la 1.25.1. macOS et Windows en sont restés à la 1.25.0 dans leurs boutiques (la 1.25.1 n'est sortie que sous Linux, la 1.25.2 qu'en TestFlight) : ils ont leurs blocs mac- et win-. -->
+### FR
+- **La fiche montre la position quittée dès la sortie du lecteur**, même quand Jellyfin 12.1 l'écrit en retard ou la perd : « Reprendre » repart du bon endroit, avec une seule réécriture si la position manque encore 20 s plus tard
+- **La lecture directe tient pendant une panne** : une coupure passagère du serveur Tentacle ou de Jellyfin la coupait jusqu'au redémarrage de l'application ; elle reprend désormais dès que le serveur répond
+- **La bannière d'accueil montre le logo des films et des séries**, et celui de la série sur un épisode ; une série sans logo affiche son titre au lieu d'une image cassée
+- La fiche d'une série d'une seule saison dit « 1 saison », et non plus « 1 saisons »
+- Un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture », même quand la lecture passe par le serveur Tentacle
+
+### EN
+- **The title page shows the position you left as soon as you leave the player**, even when Jellyfin 12.1 writes it late or loses it: "Resume" starts from the right spot, with a single rewrite if the position is still missing 20 s later
+- **Direct streaming holds through an outage**: a brief Tentacle server or Jellyfin outage turned it off until the app was restarted; it now comes back as soon as the server answers
+- **The home banner shows the logo of movies and series**, and the series' logo on an episode; a series without a logo shows its title instead of a broken image
+- A series with a single season says "1 season", no longer "1 seasons"
+- A title already watched, played again then left partway, comes back in "Continue watching", even when playback goes through the Tentacle server
+
+## [mac-1.25.3]
+<!-- App Store Connect (4000 caractères) : le Mac App Store part de la 1.25.0. -->
+### FR
+- **L'image ne vibre plus en plein écran** sur les écrans sans encoche — MacBook Air, MacBook Pro 13 pouces, Mac mini, iMac et écrans externes. La vidéo sautait de la hauteur de la barre de menus plusieurs fois par seconde ; elle reste désormais immobile
+- **Un titre que le serveur n'a jamais lu démarre presque aussi vite qu'un autre** : dès que sa fiche est ouverte, ou qu'une carte est survolée un instant, le serveur lit d'avance le début et la fin du fichier. Mesuré du clic à la première image : 0,25 à 0,38 s au lieu de 0,55 à 1 s
+- **La fiche montre la position quittée dès la sortie du lecteur**, même quand Jellyfin 12.1 l'écrit en retard ou la perd : « Reprendre » repart du bon endroit, avec une seule réécriture si la position manque encore 20 s plus tard
+- **La lecture directe tient pendant une panne** : une coupure passagère du serveur Tentacle ou de Jellyfin la coupait jusqu'au redémarrage de l'application ; elle reprend désormais dès que le serveur répond
+- **La bannière d'accueil montre le logo des films et des séries**, et celui de la série sur un épisode ; une série sans logo affiche son titre au lieu d'une image cassée
+- La fiche d'une série d'une seule saison dit « 1 saison », et non plus « 1 saisons »
+- Un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture », même quand la lecture passe par le serveur Tentacle
+
+### EN
+- **The picture no longer shakes in full screen** on displays without a notch — MacBook Air, 13-inch MacBook Pro, Mac mini, iMac and external displays. The video jumped by the height of the menu bar several times per second; it now stays still
+- **A title the server has never read starts almost as fast as any other**: as soon as its page is open, or a card is hovered for a moment, the server reads the start and the end of the file ahead of time. Measured from the click to the first frame: 0.25 to 0.38 s instead of 0.55 to 1 s
+- **The title page shows the position you left as soon as you leave the player**, even when Jellyfin 12.1 writes it late or loses it: "Resume" starts from the right spot, with a single rewrite if the position is still missing 20 s later
+- **Direct streaming holds through an outage**: a brief Tentacle server or Jellyfin outage turned it off until the app was restarted; it now comes back as soon as the server answers
+- **The home banner shows the logo of movies and series**, and the series' logo on an episode; a series without a logo shows its title instead of a broken image
+- A series with a single season says "1 season", no longer "1 seasons"
+- A title already watched, played again then left partway, comes back in "Continue watching", even when playback goes through the Tentacle server
+
+## [win-1.25.3]
+<!-- Microsoft Store : 1500 caractères. Il part de la 1.25.0, comme macOS. -->
+### FR
+- **Un titre jamais lu démarre presque aussi vite qu'un autre** : le serveur lit d'avance le début et la fin du fichier dès que sa fiche s'ouvre ou qu'une carte est survolée — 0,25 à 0,38 s du clic à l'image, au lieu de 0,55 à 1 s
+- **La reprise au bon endroit** : la fiche montre la position quittée dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard ou la perd
+- **La lecture directe tient pendant une panne** du serveur Tentacle ou de Jellyfin, au lieu de se couper jusqu'au redémarrage
+- **La bannière d'accueil montre le logo des films et des séries** ; une série sans logo affiche son titre
+- « 1 saison », et non plus « 1 saisons »
+- Un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture »
+
+### EN
+- **A title never read before starts almost as fast as any other**: the server reads the start and the end of the file ahead of time as soon as its page opens or a card is hovered — 0.25 to 0.38 s from the click to the picture, instead of 0.55 to 1 s
+- **Resume at the right spot**: the title page shows the position you left as soon as you leave the player, even when Jellyfin 12.1 writes it late or loses it
+- **Direct streaming holds through an outage** of the Tentacle server or Jellyfin, instead of turning off until a restart
+- **The home banner shows the logo of movies and series**; a series without a logo shows its title
+- "1 season", no longer "1 seasons"
+- A title already watched, played again then left partway, comes back in "Continue watching"
+
 ## [1.25.2]
 ### FR
 - **macOS : l'image ne vibre plus en plein écran** sur les écrans sans encoche — MacBook Air, MacBook Pro 13 pouces, Mac mini, iMac et écrans externes. La vidéo sautait de la hauteur de la barre de menus plusieurs fois par seconde ; elle reste désormais immobile
