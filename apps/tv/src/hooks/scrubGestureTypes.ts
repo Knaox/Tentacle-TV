@@ -23,29 +23,26 @@ export interface ScrubInputProfile {
 }
 
 /**
- * Contrat d'entrée du scrub gestuel — IDENTIQUE sur les deux plateformes.
- * Le COMPORTEMENT (scrub, paliers, seek) reste 100 % dans useTVPlayerControls ;
- * ces callbacks ne font que le DÉCLENCHER. Android n'en a pas besoin (events
- * télécommande natifs longLeft/rewind) → implémentation no-op. tvOS les alimente
- * depuis les gestes pan de la Siri Remote (useScrubGestures.ios.ts).
+ * Contrat d'entrée du défilement au pavé tactile — IDENTIQUE sur les deux
+ * plateformes. Le COMPORTEMENT (scrub, seek, annulation) reste dans le cerveau
+ * (useTVPlayerControls) ; ces callbacks ne font que le DÉCLENCHER. Android TV
+ * n'a pas de pavé → implémentation no-op. tvOS les alimente depuis le pan de
+ * la Siri Remote (useScrubGestures.ios.ts), en manipulation directe.
  */
 export interface ScrubGestureHandlers {
-  /** Pan actif uniquement quand on PEUT scrubber (OSD caché ou déjà en scrub). */
+  /** Le pavé défile : partout où la vidéo est le sujet (pas dans un panneau). */
   enabled: boolean;
-  /** Franchissement de la dead-zone → entrer en scrub. Idempotent côté cerveau
-   *  (garde sur startScrubbing) : ne réinitialise PAS la position si déjà ouvert
-   *  → reprise propre après un lever/reposer de doigt (modèle shuttle). */
+  /** Le glisser franchit sa zone morte → entrer en défilement. Idempotent côté
+   *  cerveau : ne réinitialise PAS la position si déjà ouvert — un nouveau
+   *  glisser reprend d'où le curseur en est. */
   onStartScrub: () => void;
-  /** Loop d'avance CONTINUE : déplace la position fantôme d'un delta signé
-   *  (secondes vidéo). La vitesse est pilotée par la translation du doigt. */
+  /** Le doigt emporte le curseur : delta signé, en secondes de vidéo. */
   onNudgeScrub: (deltaSeconds: number) => void;
-  /** Badge de vitesse façon DVD (« ▶▶ 4x » / « ◀◀ 2x ») ou null pour masquer. */
-  onSpeedLabel: (label: string | null) => void;
-  /** Fin du geste → stopper la vitesse (le scrub reste ouvert : OK valide,
-   *  BACK annule, comme au relâchement d'un maintien Android). */
+  /** Le doigt se lève (le défilement reste ouvert : OK valide, Retour
+   *  annule, comme au relâchement d'un maintien). */
   onEndScrub: () => void;
-  /** Effleurement léger (pas de scrub) → réveiller l'OSD, parité appui ←/→. */
+  /** Simple toucher, sans glisser → réveiller l'habillage. */
   onWake: () => void;
-  /** Durée de la vidéo (s) → la vitesse de scrub s'y adapte (court = lent, long = rapide). */
+  /** Durée de la vidéo (s) → la finesse du glisser s'y adapte. */
   durationRef: MutableRefObject<number>;
 }

@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
+import { usePanGesture } from "../lib/tvPanGesture";
 import type { ScrubGestureHandlers } from "./scrubGestureTypes";
 
 export type { ScrubGestureHandlers, ScrubDir } from "./scrubGestureTypes";
 
-// react-native-tvos expose useTVEventHandler / TVEventControl ; on passe par
-// require (comme useTVRemote) pour éviter les frictions de typage du module.
-const { useTVEventHandler, TVEventControl } = require("react-native") as {
+// react-native-tvos expose useTVEventHandler ; on passe par require (comme
+// useTVRemote) pour éviter les frictions de typage du module.
+const { useTVEventHandler } = require("react-native") as {
   useTVEventHandler: (cb: (e: HWEvent) => void) => void;
-  TVEventControl: { enableTVPanGesture: () => void; disableTVPanGesture: () => void };
 };
 
 interface HWEvent {
@@ -15,137 +15,139 @@ interface HWEvent {
   body?: { state: "Began" | "Changed" | "Ended"; x: number; y: number; velocityX: number; velocityY: number };
 }
 
-/** Translation horizontale (pts) sous laquelle on ne scrub pas (centre mort).
- *  Large : saisir la télécommande fait souvent glisser le pouce de 30-40 pts. */
-const DEAD_ZONE_PX = 55;
-/** À pleine vitesse (shuttle au max), on traverse TOUTE la vidéo en ~ce temps → la vitesse de
- *  scrub s'ADAPTE à la durée (vidéo de 2 min = lent/contrôlable, 1 h 40 = rapide).
- *  Recalibré (retour device « Chambre ») : 30 s donnait 240 s/s sur un film de 2 h et ~14 s/s
- *  au moindre effleurement — incontrôlable. 110 s ⇒ ~65 s/s max sur 2 h. */
-const T_FULL_SECONDS = 110;
-/** Cadence du loop d'avance continue (~30 fps). */
-const LOOP_MS = 33;
-/** Délai mini d'un geste avant d'engager le scrub : évite l'avance rapide
- *  accidentelle en SAISISSANT la télécommande (effleurement bref du trackpad).
- *  Le geste doit être actif depuis ce délai ET avoir franchi la dead-zone.
- *  Et même engagé par accident : le seek n'est validé QUE par OK/▶︎❙❙ (cf.
- *  useScrubController — l'inactivité annule sans seek). */
-const ENGAGE_DELAY_MS = 450;
-/**
- * Courbe shuttle : translation |x| (pts depuis le début du geste) → vitesse de
- * scrub (secondes vidéo par seconde réelle) + label de palier façon DVD. Lookup
- * par palier (plus loin = plus vite), parité avec les labels 2x/4x/8x affichés.
- */
-// Paliers = FRACTION de la vitesse MAX (= durée / T_FULL_SECONDS) → vitesse adaptée à la durée.
-// Paliers ÉLARGIS et ADOUCIS (retour device) : un glissement franc est requis pour accélérer,
-// l'effleurement reste au palier fin (~3 s/s sur 2 h au lieu de 14).
-const SPEED_CURVE: { px: number; frac: number; label: string | null }[] = [
-  { px: DEAD_ZONE_PX, frac: 0, label: null },
-  { px: 90, frac: 0.05, label: null },
-  { px: 130, frac: 0.15, label: "2x" },
-  { px: 190, frac: 0.4, label: "4x" },
-  { px: 260, frac: 1.0, label: "8x" },
-];
+/** Le glisser n'engage qu'au-delà de cette course HORIZONTALE (points du
+ *  pavé) : saisir la télécommande fait souvent glisser le pouce de 30-40 pts. */
+const ENGAGE_PX = 60;
+/** …et s'il est franchement horizontal : un glisser vertical ne défile pas. */
+const HORIZONTAL_RATIO = 1.4;
+/** …et après ce délai depuis la pose du doigt — sauf geste franc
+ *  (`FLICK_PX`) : un effleurement en prenant la télécommande ne défile pas. */
+const ENGAGE_DELAY_MS = 180;
+const FLICK_PX = 180;
+/** Un pan que tvOS ANNULE n'émet aucune fin : sans nouvelle depuis ce délai,
+ *  le geste est clos (le défilement, lui, reste ouvert). */
+const SILENT_END_MS = 450;
+/** Le curseur suit le doigt, mais l'affichage ne se redessine qu'à ce rythme
+ *  (~30 i/s) : chaque position redessine l'écran du lecteur. */
+const FLUSH_MS = 33;
 
-function rateFor(translationX: number, durationSec: number): { rate: number; label: string | null } {
-  const mag = Math.abs(translationX);
-  if (mag < DEAD_ZONE_PX) return { rate: 0, label: null };
-  const dir = translationX > 0 ? 1 : -1;
-  // Vitesse MAX ∝ durée (bornée 5–150 s/s) : traverse la vidéo en ~T_FULL_SECONDS à fond.
-  const maxRate = Math.min(150, Math.max(5, (durationSec || 0) / T_FULL_SECONDS));
-  let chosen = SPEED_CURVE[0];
-  for (const t of SPEED_CURVE) if (mag >= t.px) chosen = t;
-  const label = chosen.label ? `${dir > 0 ? "▶▶" : "◀◀"} ${chosen.label}` : null;
-  return { rate: chosen.frac * maxRate * dir, label };
+/**
+ * Secondes par point de pavé — l'accélération d'un pointeur, appliquée au
+ * temps : FINE quand le doigt est lent (viser une scène, à la seconde près
+ * sur un épisode), LARGE quand il est vif (traverser). Bornes proportionnelles
+ * à la durée : vif, un glisser de toute la surface traverse la vidéo ; lent,
+ * il en parcourt quelques minutes. Réglage d'appareil : les constantes se
+ * reprennent à la Siri Remote réelle.
+ */
+export function scrubGainFor(speed: number, duration: number): number {
+  const fine = Math.min(0.5, Math.max(0.05, duration / 6000));
+  const coarse = Math.max(fine, duration / 1500);
+  const t = Math.min(1, Math.max(0, (speed - 300) / 1700));
+  return fine + (coarse - fine) * t * t * (3 - 2 * t);
 }
 
 /**
- * Scrub gestuel — variante **Apple TV (tvOS)**, modèle **SHUTTLE**.
+ * Le défilement au pavé tactile — variante **Apple TV (tvOS)**, en
+ * MANIPULATION DIRECTE, comme le lecteur d'Apple : le doigt qui glisse emporte
+ * le curseur fantôme (un glisser à droite avance), finement si l'on est lent,
+ * largement si l'on est vif. Le doigt levé, le défilement reste ouvert : OK lit
+ * depuis la position visée, Retour revient où l'on était, un nouveau glisser
+ * reprend d'où le curseur en est. Un simple toucher réveille l'habillage.
  *
- * La Siri Remote n'émet ni `longLeft`/`longRight` ni `rewind`/`fastForward`. On
- * active le pan gesture et on traduit la TRANSLATION du doigt (depuis le début
- * du geste, donc relative → repart de 0 à chaque pose) en une VITESSE de scrub
- * continue : plus le doigt est loin du centre, plus c'est rapide (paliers
- * 2x/4x/8x). Un loop avance la position fantôme par vitesse×dt.
- *
- * Avantage vs l'ancien modèle « déplacement → pas » : la surface finie du
- * trackpad ne pose plus problème. Lever puis reposer le doigt repart proprement
- * (translation = 0) SANS reculer — le scrub reste ouvert côté cerveau (OK valide,
- * BACK annule), startScrubbing étant idempotent.
+ * Remplace la « navette » (la DISTANCE du doigt réglait une vitesse, que le
+ * curseur gardait tant qu'on ne bougeait plus) : déroutante, elle ne laissait
+ * pas viser. Le pan se prend au compteur (`usePanGesture`) : la vue racine n'en
+ * a qu'un, que d'autres écrans tiennent aussi.
  */
 export function useScrubGestures({
-  enabled, onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake, durationRef,
+  enabled, onStartScrub, onNudgeScrub, onEndScrub, onWake, durationRef,
 }: ScrubGestureHandlers): void {
   // Callbacks à jour sans recréer le handler natif.
-  const cbRef = useRef({ onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake });
-  cbRef.current = { onStartScrub, onNudgeScrub, onSpeedLabel, onEndScrub, onWake };
+  const cbRef = useRef({ onStartScrub, onNudgeScrub, onEndScrub, onWake });
+  cbRef.current = { onStartScrub, onNudgeScrub, onEndScrub, onWake };
+  usePanGesture(enabled);
 
-  const startXRef = useRef(0);        // origine du geste (x au Began)
-  const beganAtRef = useRef(0);       // timestamp du Began (délai d'engagement)
-  const gestureScrubRef = useRef(false); // ce geste a-t-il franchi la dead-zone
-  const rateRef = useRef(0);          // vitesse courante (s vidéo / s réelle)
-  const lastLabelRef = useRef<string | null>(null);
-  const loopRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastTickRef = useRef(0);
+  const g = useRef({
+    active: false,
+    engaged: false,
+    beganAt: 0,
+    lastX: 0,
+    pending: 0,
+    flush: null as ReturnType<typeof setTimeout> | null,
+    silence: null as ReturnType<typeof setTimeout> | null,
+  });
 
-  const stopLoop = () => {
-    if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
-    rateRef.current = 0;
-  };
-  const startLoop = () => {
-    if (loopRef.current) return;
-    lastTickRef.current = Date.now();
-    loopRef.current = setInterval(() => {
-      const now = Date.now();
-      // Cap du dt : si le thread JS a été bloqué (jank trickplay/progress), ne
-      // PAS rattraper tout le temps perdu d'un coup — l'avance suit ce que
-      // l'utilisateur perçoit et l'overshoot au relâchement disparaît.
-      const dt = Math.min((now - lastTickRef.current) / 1000, 0.1);
-      lastTickRef.current = now;
-      if (rateRef.current !== 0) cbRef.current.onNudgeScrub(rateRef.current * dt);
-    }, LOOP_MS);
+  const flushNow = () => {
+    const s = g.current;
+    if (s.flush) { clearTimeout(s.flush); s.flush = null; }
+    if (s.pending !== 0) {
+      const delta = s.pending;
+      s.pending = 0;
+      cbRef.current.onNudgeScrub(delta);
+    }
   };
 
+  /** La fin du geste — relâchement, ou silence d'un pan annulé. */
+  const finish = () => {
+    const s = g.current;
+    if (s.silence) { clearTimeout(s.silence); s.silence = null; }
+    if (!s.active) return;
+    flushNow();
+    s.active = false;
+    if (s.engaged) cbRef.current.onEndScrub();
+    else cbRef.current.onWake();
+    s.engaged = false;
+  };
+
+  const armSilence = () => {
+    const s = g.current;
+    if (s.silence) clearTimeout(s.silence);
+    s.silence = setTimeout(finish, SILENT_END_MS);
+  };
+
+  // Coupé (panneau ouvert, démontage) : le geste en cours n'a plus de suite.
   useEffect(() => {
-    if (!enabled) return;
-    TVEventControl.enableTVPanGesture();
-    return () => { TVEventControl.disableTVPanGesture(); stopLoop(); };
+    if (enabled) return undefined;
+    const s = g.current;
+    if (s.silence) clearTimeout(s.silence);
+    if (s.flush) clearTimeout(s.flush);
+    Object.assign(s, { active: false, engaged: false, pending: 0, flush: null, silence: null });
+    return undefined;
   }, [enabled]);
+  useEffect(() => () => {
+    const s = g.current;
+    if (s.silence) clearTimeout(s.silence);
+    if (s.flush) clearTimeout(s.flush);
+  }, []);
 
   useTVEventHandler((evt: HWEvent) => {
     if (!enabled || evt.eventType !== "pan" || !evt.body) return;
-    const { state, x } = evt.body;
-
+    const { state, x, y, velocityX } = evt.body;
+    const s = g.current;
     if (state === "Began") {
-      startXRef.current = x;          // repère relatif → reprise propre au reposer
-      beganAtRef.current = Date.now();
-      gestureScrubRef.current = false;
+      finish(); // un geste précédent annulé sans fin
+      Object.assign(s, { active: true, engaged: false, beganAt: Date.now(), lastX: x, pending: 0 });
+      armSilence();
       return;
     }
-
-    if (state === "Changed") {
-      const tx = x - startXRef.current;
-      if (!gestureScrubRef.current) {
-        if (Math.abs(tx) < DEAD_ZONE_PX) return; // pas encore franchi la dead-zone
-        if (Date.now() - beganAtRef.current < ENGAGE_DELAY_MS) return; // délai anti-saisie accidentelle
-        gestureScrubRef.current = true;
-        cbRef.current.onStartScrub();  // idempotent côté cerveau (garde)
-        startLoop();
-      }
-      const { rate, label } = rateFor(tx, durationRef?.current ?? 0);
-      rateRef.current = rate;
-      if (label !== lastLabelRef.current) { lastLabelRef.current = label; cbRef.current.onSpeedLabel(label); }
+    if (!s.active) return; // pan déjà en cours quand on l'a pris : ignoré
+    if (state === "Ended") { finish(); return; }
+    armSilence();
+    const duration = durationRef.current || 0;
+    if (!s.engaged) {
+      const dx = Math.abs(x);
+      const elapsed = Date.now() - s.beganAt;
+      if (!(duration > 0) || dx < ENGAGE_PX || dx < HORIZONTAL_RATIO * Math.abs(y)) return;
+      if (elapsed < ENGAGE_DELAY_MS && dx < FLICK_PX) return;
+      s.engaged = true;
+      s.lastX = x; // le curseur part d'ici : la zone morte ne déplace rien
+      cbRef.current.onStartScrub();
       return;
     }
-
-    // Ended : stop la vitesse, le scrub reste ouvert (OK valide / BACK annule).
-    stopLoop();
-    if (lastLabelRef.current !== null) { lastLabelRef.current = null; cbRef.current.onSpeedLabel(null); }
-    if (gestureScrubRef.current) {
-      gestureScrubRef.current = false;
-      cbRef.current.onEndScrub();
-    } else {
-      cbRef.current.onWake();          // simple effleurement → réveiller l'OSD
-    }
+    const step = x - s.lastX;
+    s.lastX = x;
+    if (step === 0) return;
+    s.pending += step * scrubGainFor(Math.abs(velocityX), duration);
+    if (!s.flush) s.flush = setTimeout(flushNow, FLUSH_MS);
   });
 }

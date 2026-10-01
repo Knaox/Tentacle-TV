@@ -160,24 +160,25 @@ export function useTVPlayerControls({
 
   const handleSkipForward = useCallback(() => skipBy(SKIP_FORWARD_SECONDS), [skipBy]);
   const handleSkipBack = useCallback(() => skipBy(-SKIP_BACK_SECONDS), [skipBy]);
-  /** Bouton ⏩ de l'OSD : appui simple → mode scrub (fantôme + plein écran).
+  /** Bouton ⏩ de l'OSD : appui simple → mode scrub (curseur fantôme).
    *  En scrub, guardScrub transforme le même appui en confirmation. */
   const enterScrub = useCallback(() => scrub.startScrubbing(), [scrub]);
 
-  // --- Scrub gestuel (tvOS) : la Siri Remote n'a ni longLeft/longRight ni
-  //     rewind/fastForward → on alimente le MÊME mécanisme de scrub depuis les
-  //     gestes pan. No-op sur Android. Pan actif seulement quand on peut
-  //     scrubber : OSD caché ou scrub en cours (sinon masquerait la nav focus). ---
+  // --- Défilement au pavé tactile (Apple TV ; rien sur Android TV, sans pavé) :
+  //     le doigt emporte le curseur fantôme, partout où la vidéo est le sujet —
+  //     en lecture comme en pause, habillage visible ou non. Glisser = défiler,
+  //     comme le lecteur d'Apple ; les boutons de l'habillage se parcourent au
+  //     clic. Les panneaux (épisodes, pistes, fin) gardent le pavé pour leurs
+  //     listes. ---
   useScrubGestures({
-    enabled: !panelOpen && (scrub.scrubbing || !overlayVisible),
+    enabled: !panelOpen,
     onStartScrub: scrub.startScrubbing,
     onNudgeScrub: scrub.nudgeScrub,
-    onSpeedLabel: scrub.setSpeedLabel,
     // Lever du doigt : le scrub reste ouvert — OK/▶︎❙❙ valide le seek, Back
     // annule, l'inactivité annule seule SANS seek (anti-seek accidentel).
     onEndScrub: scrub.endDrag,
     onWake: showOverlay,
-    durationRef,   // vitesse de scrub adaptée à la durée de la vidéo
+    durationRef,   // finesse du glisser adaptée à la durée de la vidéo
   });
 
   // --- TV Remote binding ---
