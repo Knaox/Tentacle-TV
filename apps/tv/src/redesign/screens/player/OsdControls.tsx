@@ -10,12 +10,13 @@ import type { PlayerLabels, PlayerTransport } from "./playerTypes";
 /**
  * La rangée de commandes, centrée : précédent, −10 s, LECTURE/PAUSE (le
  * disque blanc, seule action principale), +30 s, déplacement, suivant — puis,
- * après un filet, les pilules de verre « Épisodes » (série) et « Pistes »
- * (audio, sous-titres, qualité), dont le libellé se lit sans focus.
+ * après un filet, les pilules de verre « Épisodes » (série), « Pistes »
+ * (audio, sous-titres) et, juste après, « Réglages » (la qualité et tout ce
+ * qui n'est pas un choix de piste), dont le libellé se lit sans focus.
  *
  * Clés de focus : `player:prev`, `player:seekback`, `player:playpause`,
  * `player:seekforward`, `player:scrub`, `player:next`, `player:episodes`,
- * `player:tracks`.
+ * `player:tracks`, `player:settings`.
  */
 
 export interface OsdControlsProps {
@@ -30,6 +31,7 @@ export interface OsdControlsProps {
   onNext?: () => void;
   onOpenEpisodes?: () => void;
   onOpenTracks?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const OsdControls = memo(function OsdControls({
@@ -44,6 +46,7 @@ export const OsdControls = memo(function OsdControls({
   onNext,
   onOpenEpisodes,
   onOpenTracks,
+  onOpenSettings,
 }: OsdControlsProps) {
   const backing = useNativeGlassBacking("clear");
   return (
@@ -81,6 +84,9 @@ export const OsdControls = memo(function OsdControls({
       ) : null}
       <View style={[styles.base, backing]}>
         <PillButton variant="glass" icon="subtitles" label={labels.tracks} focusKey="player:tracks" onPress={onOpenTracks} />
+      </View>
+      <View style={[styles.base, backing]}>
+        <PillButton variant="glass" icon="settings" label={labels.settings} focusKey="player:settings" onPress={onOpenSettings} />
       </View>
     </View>
   );

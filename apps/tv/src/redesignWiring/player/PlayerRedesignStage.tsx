@@ -21,8 +21,8 @@ const NO_TARGET: { readonly current: TransportKey | undefined } = { current: und
  * (`PlayerChromeView`), et le focus s'y pose par le port (`usePlayerFocus`).
  *
  * Trois écarts assumés avec l'habillage d'Android TV, propres à tvOS :
- * - le panneau des pistes s'ouvre DANS l'habillage (comme celui des épisodes)
- *   au lieu d'une route modale ;
+ * - la feuille des pistes et des réglages s'ouvre DANS l'habillage (comme le
+ *   panneau des épisodes) au lieu d'une route modale ;
  * - Retour suit la pile de couches (`usePlayerBackLayers`) : un menu se
  *   ferme, puis l'habillage se masque, puis la lecture se quitte ;
  * - le fond ne réclame jamais le focus sous l'écran de chargement : c'est la
@@ -59,7 +59,8 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
     upNextShown: chrome.upNextShown,
     endShown: chrome.endShown,
     troubleActive: chrome.troubleCovers,
-    tracksEntryKey: chrome.tracksEntryKey,
+    sheetEntryKey: chrome.sheetEntryKey,
+    sheetOpener: chrome.sheetOpener,
     activeSeasonIndex: chrome.activeSeasonIndex,
   });
 

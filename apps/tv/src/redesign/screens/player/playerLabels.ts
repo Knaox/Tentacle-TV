@@ -21,6 +21,7 @@ export function playerChromeLabels(t: Translate, seek: { back: number; forward: 
     next: t("player:nextEpisodeLabel"),
     episodes: t("player:episodes"),
     tracks: t("player:tracks"),
+    settings: t("player:playbackSettings"),
     dismiss: t("player:dismiss"),
     playNow: t("player:playNow"),
     upNext: t("player:upNext"),
@@ -30,6 +31,9 @@ export function playerChromeLabels(t: Translate, seek: { back: number; forward: 
     subtitles: t("player:subtitles"),
     quality: t("player:quality"),
     auto: t("player:qualityAutoBadge"),
+    qualityGuideTitle: t("player:qualityGuideTitle"),
+    qualityGuideOriginal: t("player:qualityGuideOriginal"),
+    qualityGuideConverted: t("player:qualityGuideConverted"),
     scrubConfirm: t("player:scrubConfirmHint"),
     scrubCancel: t("player:scrubCancelHint"),
   };

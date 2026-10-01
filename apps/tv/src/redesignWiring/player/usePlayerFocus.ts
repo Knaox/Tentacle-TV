@@ -21,7 +21,7 @@ import { usePanelReturnFocus } from "./usePanelReturnFocus";
  *   relais quand elle s'en va), son nœud publié sur le bus pour le pont de la
  *   frise, sa préférence d'origine (« Masquer » quand ça part tout seul).
  * - Les entrées : l'écran de chargement (Retour, ou Réessayer), la carte
- *   « À suivre », l'affiche de fin et le panneau des pistes RÉCLAMENT le focus
+ *   « À suivre », l'affiche de fin et la feuille (Pistes, Réglages) RÉCLAMENT le focus
  *   à leur apparition — `hasTVPreferredFocus` seul n'est honoré qu'au montage,
  *   et ignoré quand le moteur tient déjà un élément ailleurs. Les croix de
  *   l'affiche de fin et du message-outil restent infocalisables tant que leur
@@ -39,6 +39,7 @@ const OSD_KEYS: Readonly<Record<string, TransportKey>> = {
   "player:next": "next",
   "player:episodes": "episodes",
   "player:tracks": "settings",
+  "player:settings": "options",
 };
 
 export interface PlayerFocusArgs {
@@ -61,8 +62,10 @@ export interface PlayerFocusArgs {
   endShown: boolean;
   /** Le panneau du message-outil tient le focus (activé par un appui). */
   troubleActive: boolean;
-  /** L'option du panneau des pistes qui prend le focus à l'ouverture, ou null (fermé). */
-  tracksEntryKey: string | null;
+  /** L'option de la feuille (Pistes, Réglages) qui prend le focus à l'ouverture, ou null (fermée). */
+  sheetEntryKey: string | null;
+  /** La pilule qui a ouvert la feuille (`player:tracks`, `player:settings`) : le focus y revient. */
+  sheetOpener: string;
   activeSeasonIndex: number;
 }
 
@@ -144,7 +147,7 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
     return binding;
   }, [store, stable]);
 
-  const { failed, tracksEntryKey } = args;
+  const { failed, sheetEntryKey } = args;
   const endExitLocked = useEndExitLocked(store, args.endShown);
   // Le message-outil réclame lui-même « Réessayer maintenant » (usePlaybackTrouble).
   const troubleExitLocked = useExitLocked(store, args.troubleActive, "trouble:retry");
@@ -155,16 +158,16 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
     if ((key === "end:leave" && endExitLocked) || (key === "trouble:back" && troubleExitLocked)) {
       return { ...binding, ...END_EXIT_LOCK };
     }
-    const preferred = preferredFocus(key, { grabs, refusable, failed, tracksEntryKey });
+    const preferred = preferredFocus(key, { grabs, refusable, failed, sheetEntryKey });
     return preferred === undefined ? binding : { ...binding, native: { hasTVPreferredFocus: preferred } };
-  }, [stableBinding, grabs, refusable, failed, tracksEntryKey, endExitLocked, troubleExitLocked]);
+  }, [stableBinding, grabs, refusable, failed, sheetEntryKey, endExitLocked, troubleExitLocked]);
 
   useClaimOnRise(store, failed ? "loading:retry" : "loading:back", args.loading);
   useClaimOnRise(store, "upnext:play", args.upNextShown);
   useClaimOnRise(store, "end:play", args.endShown);
-  useClaimOnRise(store, tracksEntryKey, tracksEntryKey !== null);
+  useClaimOnRise(store, sheetEntryKey, sheetEntryKey !== null);
   // Un panneau refermé rend le focus à son bouton, sans attendre la restauration.
-  usePanelReturnFocus(store, showSettings, showEpisodes);
+  usePanelReturnFocus(store, showSettings, showEpisodes, args.sheetOpener);
 
   const state = useMemo<PlayerFocusState>(() => ({
     store,
@@ -183,7 +186,7 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
  */
 function preferredFocus(
   key: string,
-  s: { grabs: boolean; refusable: boolean; failed: boolean; tracksEntryKey: string | null },
+  s: { grabs: boolean; refusable: boolean; failed: boolean; sheetEntryKey: string | null },
 ): boolean | undefined {
   switch (key) {
     case "player:skip": return s.grabs && !s.refusable;
@@ -192,6 +195,6 @@ function preferredFocus(
     case "loading:retry": return s.failed;
     case "upnext:play":
     case "end:play": return true;
-    default: return key === s.tracksEntryKey ? true : undefined;
+    default: return key === s.sheetEntryKey ? true : undefined;
   }
 }

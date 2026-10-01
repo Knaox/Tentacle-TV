@@ -23,6 +23,7 @@ import type {
 } from "./playerTypes";
 import { ScrubOverlay } from "./ScrubOverlay";
 import { SeekFlash } from "./SeekFlash";
+import { SettingsPanel } from "./SettingsPanel";
 import { SkipPill } from "./SkipPill";
 import { SubtitleLayer } from "./SubtitleLayer";
 import { TracksPanel } from "./TracksPanel";
@@ -44,7 +45,7 @@ import { UpNextCard } from "./UpNextCard";
  *   générique), `endScreen` (nextCard final) — images et titres par
  *   `useNextEpisodeMedia` ;
  * - `useTVPrismProgress` : `phase.step` ; `useTVTrackLists` + qualité
- *   (`buildQualityLadder`, `extractSourceQuality`) : `panel` pistes ;
+ *   (`buildQualityLadder`, `extractSourceQuality`) : `panel` pistes et réglages ;
  *   `useSeasonBrowser` : `panel` épisodes ; `useTVSubtitleSync` : `subtitle` ;
  *   `useTVAutoQualityCap` : `notice`.
  * Les clés de focus sont listées dans chaque sous-vue ; aucune décision de
@@ -158,6 +159,7 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
                 onNext={props.onNext}
                 onOpenEpisodes={props.onOpenEpisodes}
                 onOpenTracks={props.onOpenTracks}
+                onOpenSettings={props.onOpenSettings}
               />
             </View>
           </Animated.View>
@@ -196,9 +198,11 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
           labels={labels}
           onSelectAudio={props.onSelectAudio}
           onSelectSubtitle={props.onSelectSubtitle}
-          onSelectQuality={props.onSelectQuality}
           onClose={props.onClosePanel}
         />
+      ) : null}
+      {panel?.kind === "settings" ? (
+        <SettingsPanel model={panel.settings} labels={labels} onSelectQuality={props.onSelectQuality} onClose={props.onClosePanel} />
       ) : null}
       {endScreen ? <EndScreen model={endScreen} labels={labels} onPlayNext={props.onPlayNext} onLeave={props.onLeaveEnd} /> : null}
       {phase.kind !== "playing" ? <PlayerLoading media={media} phase={phase} labels={labels} onBack={props.onBack} onRetry={props.onRetry} /> : null}

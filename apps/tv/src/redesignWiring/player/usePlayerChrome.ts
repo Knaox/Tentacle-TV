@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { AccessibilityInfo } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useMediaItem, usePlaybackSegments, usePlaybackSettings } from "@tentacle-tv/api-client";
 import type { PlayerChromeViewProps } from "../../redesign/screens/player/PlayerChromeView";
 import { playerChromeLabels, seekFlashLabel, type Translate } from "../../redesign/screens/player/playerLabels";
-import type { PlayerMedia, PlayerPanel, ScrubModel, TracksPanelModel } from "../../redesign/screens/player/playerTypes";
+import type { PlayerMedia, PlayerPanel, ScrubModel } from "../../redesign/screens/player/playerTypes";
 import { useAutoCapNotice } from "../../hooks/useAutoCapNotice";
 import { usePlaybackTroubleState } from "../../hooks/playbackTroubleStore";
 import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../hooks/useTVPlayerControls";
@@ -14,20 +14,13 @@ import {
   buildEndScreen, buildPhase, buildPlayerMedia, buildScrubCountdown, buildSkipPill, buildUpNext, parseSpeedLabel,
   timelineSegments, trickplayFrame,
 } from "./playerChromeModels";
-import { buildTracksPanel } from "./playerPanelModels";
 import type { PlayerRedesignStageProps } from "./playerStageTypes";
 import { usePlayerChromeActions } from "./usePlayerChromeActions";
 import { usePlayerEpisodesPanel } from "./usePlayerEpisodesPanel";
 import { usePlaybackTrouble } from "./usePlaybackTrouble";
+import { usePlayerSheet } from "./usePlayerSheet";
 
 const EMPTY_MEDIA: PlayerMedia = { title: "" };
-
-/** L'option du panneau des pistes qui prend le focus à l'ouverture : l'audio
- *  retenu, comme le panneau actuel. */
-function tracksEntryKeyOf(tracks: TracksPanelModel): string {
-  const audio = tracks.audio.find((option) => option.selected) ?? tracks.audio[0];
-  return audio ? `tracks:audio:${audio.key}` : "tracks:close";
-}
 
 export interface PlayerChrome {
   view: PlayerChromeViewProps;
@@ -40,7 +33,10 @@ export interface PlayerChrome {
   pillShown: boolean;
   upNextShown: boolean;
   endShown: boolean;
-  tracksEntryKey: string | null;
+  /** L'option de la feuille (Pistes, Réglages) qui prend le focus à l'ouverture, ou null (fermée). */
+  sheetEntryKey: string | null;
+  /** La pilule qui a ouvert la feuille : le focus y revient à la fermeture. */
+  sheetOpener: string;
   activeSeasonIndex: number;
 }
 
@@ -148,22 +144,12 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
   const episodes = usePlayerEpisodesPanel({
     item, open: !!p.showEpisodes, store, image, t: translate, locale: i18n.language,
   });
-  const tracks = useMemo(() => (p.showSettings ? buildTracksPanel({
-    audio: p.audioTracksList, subtitles: p.subtitleTracksList, audioIndex: p.audioIndex, subtitleIndex: p.subtitleIndex,
-    qualityKey: p.qualityKey, qualityPresets: p.qualityPresets, source: p.sourceQuality, autoCap: !!p.autoCapActive,
-    t: translate,
-  }) : null), [p.showSettings, p.audioTracksList, p.subtitleTracksList, p.audioIndex, p.subtitleIndex, p.qualityKey,
-    p.qualityPresets, p.sourceQuality, p.autoCapActive, translate]);
+  // La feuille : « Pistes » ou « Réglages », selon la pilule pressée.
+  const sheet = usePlayerSheet(p, translate);
   const panel = useMemo<PlayerPanel | null>(() => {
     if (p.showEpisodes && episodes.model) return { kind: "episodes", episodes: episodes.model };
-    return tracks ? { kind: "tracks", tracks } : null;
-  }, [p.showEpisodes, episodes.model, tracks]);
-
-  // L'entrée du panneau des pistes, figée à son ouverture : choisir une piste
-  // ne doit pas déplacer la préférence sous le doigt.
-  const tracksEntry = useRef<string | null>(null);
-  if (!tracks) tracksEntry.current = null;
-  else if (tracksEntry.current === null) tracksEntry.current = tracksEntryKeyOf(tracks);
+    return sheet.panel;
+  }, [p.showEpisodes, episodes.model, sheet.panel]);
 
   const flash = controls.skipFlash;
   const seekFlash = useMemo(
@@ -183,7 +169,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
   );
 
   const actions = usePlayerChromeActions({
-    ...p, onSelectSeason: episodes.selectSeason, episodeById: episodes.episodeById,
+    ...p, onSelectSeason: episodes.selectSeason, episodeById: episodes.episodeById, onOpenSheet: sheet.open,
   });
 
   // L'habillage : affiché, ou épinglé par la pause hors défilement (tant que
@@ -212,7 +198,8 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     pillShown: skip !== null && !covered,
     upNextShown: upNext !== null && !covered,
     endShown: endScreen !== null,
-    tracksEntryKey: tracksEntry.current,
+    sheetEntryKey: sheet.entryKey,
+    sheetOpener: sheet.opener,
     activeSeasonIndex: episodes.activeSeasonIndex,
   };
 }

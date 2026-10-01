@@ -17,6 +17,7 @@ import { NAV_SCENES } from "./navScenes";
 import { OVERLAY_SCENES } from "./overlayScenes";
 import { PAIRING_SCENES } from "./pairingScenes";
 import { PLAYER_LIVE_SCENES } from "./playerLiveScenes";
+import { PLAYER_QUALITY_SCENES } from "./playerQualityScenes";
 import { PLAYER_SCENES } from "./playerScenes";
 import { PLAYER_WIRED_SCENES } from "./playerWiredScenes";
 import { RAIL_SCENES } from "./railScenes";
@@ -49,6 +50,7 @@ export const SCENES: BenchScene[] = [
   ...FOR_YOU_SCENES,
   ...SETTINGS_SCENES,
   ...PLAYER_SCENES,
+  ...PLAYER_QUALITY_SCENES,
   ...SHEET_SCENES,
   ...SHEET_WIRED_SCENES,
   ...REQUEST_SCENES,

@@ -7,10 +7,13 @@ import { osdPlayPauseNodeRef, setOsdFocusReturn, skipClaimedSince, skipHoldsFocu
  *  geste, à un rendu d'écart, dans un ordre qui n'est pas garanti. */
 const SKIP_CLAIM_LEAD_MS = 200;
 
-/** Boutons de transport de l'OSD du lecteur, dans l'ordre de la rangée. */
+/** Boutons de transport de l'OSD du lecteur, dans l'ordre de la rangée.
+ *  `settings` est le bouton des PISTES (le nom d'Android TV, où il ouvre la
+ *  route modale Réglages/Qualité) ; `options`, l'onglet « Réglages » de la
+ *  refonte Apple TV — Android TV ne le monte pas. */
 export type TransportKey =
   | "back" | "prev" | "skipback" | "playpause"
-  | "skipforward" | "scrub" | "next" | "episodes" | "settings";
+  | "skipforward" | "scrub" | "next" | "episodes" | "settings" | "options";
 
 export type FocusNode = { setNativeProps?: (p: Record<string, unknown>) => void } | null;
 
@@ -60,7 +63,7 @@ interface CoreArgs {
  */
 /** Rangée transport HORIZONTALE (sans `back`, qui est sur la rangée du haut). */
 const TRANSPORT_ROW: TransportKey[] = [
-  "prev", "skipback", "playpause", "skipforward", "scrub", "next", "episodes", "settings",
+  "prev", "skipback", "playpause", "skipforward", "scrub", "next", "episodes", "settings", "options",
 ];
 
 export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef }: CoreArgs): OverlayFocusControl {

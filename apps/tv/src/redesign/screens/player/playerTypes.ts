@@ -169,16 +169,21 @@ export interface TrackOptionModel {
   auto?: boolean;
 }
 
+/** « Pistes » : les choix de piste, et rien d'autre. */
 export interface TracksPanelModel {
   audio: TrackOptionModel[];
   subtitles: TrackOptionModel[];
-  /** Vide : pas de choix de qualité (colonne absente). */
+}
+
+/** « Réglages » : la qualité de lecture, et ce qui n'est pas un choix de piste. */
+export interface SettingsPanelModel {
   quality: TrackOptionModel[];
 }
 
 export type PlayerPanel =
   | { kind: "episodes"; episodes: EpisodesPanelModel }
-  | { kind: "tracks"; tracks: TracksPanelModel };
+  | { kind: "tracks"; tracks: TracksPanelModel }
+  | { kind: "settings"; settings: SettingsPanelModel };
 
 /** Les textes fixes de l'habillage (`playerChromeLabels`). */
 export interface PlayerLabels {
@@ -191,6 +196,8 @@ export interface PlayerLabels {
   next: string;
   episodes: string;
   tracks: string;
+  /** L'onglet « Réglages » (qualité et le reste). */
+  settings: string;
   dismiss: string;
   playNow: string;
   upNext: string;
@@ -200,6 +207,9 @@ export interface PlayerLabels {
   subtitles: string;
   quality: string;
   auto: string;
+  qualityGuideTitle: string;
+  qualityGuideOriginal: string;
+  qualityGuideConverted: string;
   scrubConfirm: string;
   scrubCancel: string;
 }

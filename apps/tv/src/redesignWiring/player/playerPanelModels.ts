@@ -10,6 +10,7 @@ import type { Translate } from "../../redesign/screens/player/playerLabels";
 import type {
   EpisodeRowModel,
   EpisodesPanelModel,
+  SettingsPanelModel,
   TrackOptionModel,
   TracksPanelModel,
 } from "../../redesign/screens/player/playerTypes";
@@ -17,8 +18,8 @@ import { splitTrackLabel } from "../../redesign/screens/player/trackLabel";
 import { plainText, type ImageUrl } from "./playerArt";
 
 /**
- * Les deux panneaux du lecteur, projetés dans le contrat de la vue : les
- * pistes (celles que `useTVTrackLists` propose, les paliers de
+ * Les panneaux du lecteur, projetés dans le contrat de la vue : les pistes
+ * (celles que `useTVTrackLists` propose), les réglages (les paliers de
  * `buildQualityLadder`) et les épisodes d'une saison (`useSeasonBrowser`).
  */
 
@@ -35,19 +36,33 @@ export function buildTracksPanel(args: {
   subtitles: readonly Track[];
   audioIndex: number;
   subtitleIndex: number;
+  t: Translate;
+}): TracksPanelModel {
+  const { t } = args;
+  const option = (track: Track, selected: boolean): TrackOptionModel => ({
+    key: String(track.index),
+    ...splitTrackLabel(track.label),
+    selected,
+  });
+  return {
+    audio: args.audio.map((track) => option(track, track.index === args.audioIndex)),
+    subtitles: [
+      { key: SUBTITLES_OFF_KEY, label: t("player:subtitlesDisabled"), selected: args.subtitleIndex === -1 },
+      ...args.subtitles.map((track) => option(track, track.index === args.subtitleIndex)),
+    ],
+  };
+}
+
+/** « Réglages » : les paliers de qualité — l'original et ses pastilles, le débit des autres. */
+export function buildSettingsPanel(args: {
   qualityKey: QualityKey;
   qualityPresets: readonly QualityPreset[];
   source: SourceQuality | undefined;
   /** Le palier retenu vient du plafond automatique de débit : « Auto ». */
   autoCap: boolean;
   t: Translate;
-}): TracksPanelModel {
+}): SettingsPanelModel {
   const { source, t } = args;
-  const option = (track: Track, selected: boolean): TrackOptionModel => ({
-    key: String(track.index),
-    ...splitTrackLabel(track.label),
-    selected,
-  });
   const quality = args.qualityPresets.map((preset): TrackOptionModel => {
     const original = preset.key === "original";
     const selected = preset.key === args.qualityKey;
@@ -64,14 +79,7 @@ export function buildTracksPanel(args: {
       auto: selected && args.autoCap,
     };
   });
-  return {
-    audio: args.audio.map((track) => option(track, track.index === args.audioIndex)),
-    subtitles: [
-      { key: SUBTITLES_OFF_KEY, label: t("player:subtitlesDisabled"), selected: args.subtitleIndex === -1 },
-      ...args.subtitles.map((track) => option(track, track.index === args.subtitleIndex)),
-    ],
-    quality,
-  };
+  return { quality };
 }
 
 function premiereOf(item: MediaItem, locale: string): string | null {

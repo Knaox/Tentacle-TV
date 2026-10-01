@@ -26,8 +26,9 @@ export function useOsdPin(paused: boolean, overlayVisible: boolean): { pinned: b
  *
  * - menu : un état passager — le défilement (Retour revient où l'on était,
  *   comme avant), la carte « à suivre », un passage automatique à refuser,
- *   la grâce d'un double appui (`useTVPlayerBack`) —, le panneau des pistes,
- *   celui des épisodes : Retour ferme le menu, la lecture continue ;
+ *   la grâce d'un double appui (`useTVPlayerBack`) —, la feuille des pistes
+ *   et des réglages (un seul état, `showSettings`, pour ses deux onglets),
+ *   le panneau des épisodes : Retour ferme le menu, la lecture continue ;
  * - surimpression : l'habillage AFFICHÉ (`osdShown`, la règle de la vue) se
  *   masque, la lecture continue ;
  * - page : rien d'affiché — Retour quitte la lecture, comme la croix.

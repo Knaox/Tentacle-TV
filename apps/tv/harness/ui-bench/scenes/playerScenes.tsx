@@ -19,12 +19,12 @@ import type { BenchScene } from "./types";
  * une image fixe sous l'habillage ; le moteur n'est jamais chargé.
  */
 
-interface Stage {
+export interface Stage {
   frame?: string;
   props: PlayerChromeViewProps;
 }
-type Build = (data: BenchData) => Stage | null;
-type Patch = (data: BenchData, stage: Stage) => Partial<PlayerChromeViewProps> & { frame?: string };
+export type Build = (data: BenchData) => Stage | null;
+export type Patch = (data: BenchData, stage: Stage) => Partial<PlayerChromeViewProps> & { frame?: string };
 
 function base(data: BenchData, item: MediaItem | undefined, fraction: number): Stage | null {
   if (!item) return null;
@@ -42,17 +42,17 @@ function base(data: BenchData, item: MediaItem | undefined, fraction: number): S
   };
 }
 
-const film: Build = (data) => base(data, byName(data, "Interstellar"), 0.42);
+export const film: Build = (data) => base(data, byName(data, "Interstellar"), 0.42);
 const darkKnight: Build = (data) => base(data, byName(data, "The Dark Knight : Le Chevalier noir"), 0.18);
-const hailMary: Build = (data) => base(data, byName(data, "Projet Dernière Chance"), 0.3);
+export const hailMary: Build = (data) => base(data, byName(data, "Projet Dernière Chance"), 0.3);
 const onePieceE3 = (data: BenchData) => episodeAt(data, "One Piece", 1, 2);
-const episode: Build = (data) => base(data, onePieceE3(data), 0.3);
+export const episode: Build = (data) => base(data, onePieceE3(data), 0.3);
 const next = (data: BenchData) => {
   const current = onePieceE3(data);
   return current ? neighbours(data, current).next : undefined;
 };
 
-const patch = (build: Build, change: Patch): Build => (data) => {
+export const patch = (build: Build, change: Patch): Build => (data) => {
   const stage = build(data);
   if (!stage) return null;
   const { frame, ...props } = change(data, stage);
@@ -120,7 +120,7 @@ function imagesOf(stage: Stage | null): string[] {
   );
 }
 
-const scene = (id: string, label: string, build: Build, focusKeys?: string[], settleMs = 1100): BenchScene => ({
+export const scene = (id: string, label: string, build: Build, focusKeys?: string[], settleMs = 1100): BenchScene => ({
   id: `lecteur/${id}`,
   group: "Lecteur",
   label,
@@ -224,14 +224,10 @@ export const PLAYER_SCENES: BenchScene[] = [
     const series = byName(data, "One Piece");
     return { panel: series ? { kind: "episodes", episodes: { ...episodesPanelOf(data, series, 1), loading: true } } : null };
   }), ["episodes:close"]),
-  scene("pistes", "Pistes · audio, sous-titres, qualité", patch(darkKnight, (data) => {
+  scene("pistes", "Pistes · audio, sous-titres", patch(darkKnight, (data) => {
     const item = byName(data, "The Dark Knight : Le Chevalier noir");
     return { panel: item ? { kind: "tracks", tracks: tracksOf(item, { subtitle: 4 }) } : null };
-  }), ["tracks:audio:2", "tracks:subtitle:5", "tracks:quality:original", "tracks:close"], 1400),
-  scene("pistes-auto", "Pistes · qualité réduite (Auto)", patch(hailMary, (data) => {
-    const item = byName(data, "Projet Dernière Chance");
-    return { panel: item ? { kind: "tracks", tracks: tracksOf(item, { quality: "quality1080p", auto: true }) } : null };
-  }), ["tracks:quality:quality1080p"], 1400),
+  }), ["tracks:audio:2", "tracks:subtitle:5", "tracks:close"], 1400),
   scene("rechargement", "Rechargement doux (image figée)", patch(film, (_data, stage) => ({
     osdVisible: false,
     reloadFrame: stage.frame ? { uri: stage.frame } : null,
@@ -259,7 +255,7 @@ export const PLAYER_SCENES: BenchScene[] = [
   })), ["trouble:retry", "trouble:back"]),
   scene("panne-debit", "Serveur joignable, lecture qui ne suit pas", patch(film, (_data, stage) => ({
     osdVisible: false, troubleCovers: true,
-    trouble: troublePanel({ kind: "stuck", cause: "slow", since: 0 }, stage, { active: true, lower: true }),
+    trouble: troublePanel({ kind: "stuck", cause: "stall", since: 0 }, stage, { active: true, lower: true }),
   })), ["trouble:retry", "trouble:quality", "trouble:back"]),
   scene("panne-reprise", "Le serveur revient · reprise en cours", patch(episode, (_data, stage) => ({
     osdVisible: false, trouble: troublePanel({ kind: "recovering", cause: "media", since: 0 }, stage, {}),
@@ -271,7 +267,7 @@ export const PLAYER_SCENES: BenchScene[] = [
 ];
 
 /** Le panneau du message-outil sur une scène : la position est celle de la frise. */
-function troublePanel(
+export function troublePanel(
   phase: Parameters<typeof panelOf>[0]["phase"],
   stage: Stage,
   o: { nextIn?: number; stillDown?: boolean; active?: boolean; lower?: boolean },

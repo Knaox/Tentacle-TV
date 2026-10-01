@@ -2,6 +2,7 @@ import { useMemo, useRef } from "react";
 import type { MediaItem, PlayerOverlay, QualityKey } from "@tentacle-tv/shared";
 import type { PlayerChromeViewProps } from "../../redesign/screens/player/PlayerChromeView";
 import type { AutoPlayCtx } from "../../components/player/TVAutoPlaySwitch";
+import type { SheetTab } from "./usePlayerSheet";
 
 /** Ce que les gestes de l'habillage appellent — les mêmes que l'habillage actuel. */
 export interface PlayerActionSources {
@@ -34,12 +35,14 @@ export interface PlayerActionSources {
   onSelectEpisode?: (episode: MediaItem) => void;
   onSelectSeason: (seasonId: string) => void;
   episodeById: (id: string) => MediaItem | undefined;
+  /** Ouvre la feuille sur l'onglet de la pilule pressée (`usePlayerSheet`). */
+  onOpenSheet: (tab: SheetTab) => void;
 }
 
 type Actions = Pick<
   PlayerChromeViewProps,
   | "onBack" | "onRetry" | "onPlayPause" | "onSeekBack" | "onSeekForward" | "onScrub" | "onPrevious" | "onNext"
-  | "onOpenEpisodes" | "onOpenTracks" | "onSkip" | "onDismissSkip" | "onPlayNext" | "onDismissNext" | "onLeaveEnd"
+  | "onOpenEpisodes" | "onOpenTracks" | "onOpenSettings" | "onSkip" | "onDismissSkip" | "onPlayNext" | "onDismissNext" | "onLeaveEnd"
   | "onSelectSeason" | "onSelectEpisode" | "onSelectAudio" | "onSelectSubtitle" | "onSelectQuality" | "onClosePanel"
 >;
 
@@ -72,7 +75,8 @@ export function usePlayerChromeActions(sources: PlayerActionSources): Actions {
       onPrevious: guarded(() => now().onPrevEpisode()),
       onNext: guarded(() => now().onNextEpisode()),
       onOpenEpisodes: guarded(() => now().onToggleEpisodes?.()),
-      onOpenTracks: guarded(() => now().onToggleSettings()),
+      onOpenTracks: guarded(() => now().onOpenSheet("tracks")),
+      onOpenSettings: guarded(() => now().onOpenSheet("settings")),
       // Un seul bouton pour deux objets : sauter le passage, ou rejoindre la
       // suite (`nextButton`).
       onSkip: guarded(() => (now().overlay.kind === "nextButton" ? now().onPlayNextNow() : now().onSkipSegment())),

@@ -5,19 +5,19 @@ import {
   type MediaItem,
   type QualityKey,
 } from "@tentacle-tv/shared";
-import type { EpisodesPanelModel, TracksPanelModel } from "../../../src/redesign/screens/player/playerTypes";
+import type { EpisodesPanelModel, SettingsPanelModel, TracksPanelModel } from "../../../src/redesign/screens/player/playerTypes";
 // Le libellé d'une piste tel que l'app le calcule (`useTVTrackLists`), et les
 // MÊMES projections que le lecteur Apple TV (`redesignWiring/player`) : le
 // banc montre exactement ce que l'app montrera.
 import { formatTrackLabel } from "../../../src/utils/playerHelpers";
 import type { ImageUrl } from "../../../src/redesignWiring/player/playerArt";
-import { buildEpisodesPanel, buildTracksPanel } from "../../../src/redesignWiring/player/playerPanelModels";
+import { buildEpisodesPanel, buildSettingsPanel, buildTracksPanel } from "../../../src/redesignWiring/player/playerPanelModels";
 import type { BenchData } from "./benchData";
 import { seasonEpisodes, t } from "./playerModels";
 
 /**
- * Les deux panneaux du lecteur, sur les vraies données : les pistes d'un
- * élément (`MediaSources[0].MediaStreams`, `buildQualityLadder`,
+ * Les panneaux du lecteur, sur les vraies données : les pistes d'un élément
+ * (`MediaSources[0].MediaStreams`), ses réglages (`buildQualityLadder`,
  * `extractSourceQuality`) et les saisons/épisodes d'une série.
  */
 
@@ -26,6 +26,9 @@ export interface TrackChoice {
   audio?: number;
   /** Index Jellyfin des sous-titres ; -1 : désactivés (défaut). */
   subtitle?: number;
+}
+
+export interface QualityChoice {
   quality?: QualityKey;
   /** Le palier retenu vient du plafond automatique de débit. */
   auto?: boolean;
@@ -43,8 +46,14 @@ export function tracksOf(item: MediaItem, choice: TrackChoice = {}): TracksPanel
     subtitles: tracks("Subtitle"),
     audioIndex,
     subtitleIndex: choice.subtitle ?? -1,
+    t,
+  });
+}
+
+export function settingsOf(item: MediaItem, choice: QualityChoice = {}): SettingsPanelModel {
+  return buildSettingsPanel({
     qualityKey: choice.quality ?? "original",
-    qualityPresets: buildQualityLadder(source),
+    qualityPresets: buildQualityLadder(item.MediaSources?.[0]),
     source: extractSourceQuality(item),
     autoCap: choice.auto === true,
     t,
