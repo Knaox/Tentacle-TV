@@ -547,7 +547,7 @@ animation, aucune animation de mise en page.
 | Navigation | capsule qui se déplie (`unfold` : une fenêtre et des translations), voile, menu d'entrée |
 | Pages | fondu de la pile (`page.fadeMs`, 320 ms) ; en-tête de fiche qui entre ; image de fond qui se pose (`settle`) ; sections montées après l'entrée (`SectionStage`) |
 | Grand panneau, feuilles | voile et panneau à l'échelle (`panel`), sortie jouée avant démontage |
-| Lecteur | habillage (`chrome`), panneaux qui glissent, saut ±, « À suivre », écran de fin |
+| Lecteur | habillage (`chrome`), panneaux qui glissent, saut ±, défilement en fondu (la bulle monte en paraissant), « À suivre », écran de fin |
 
 Pièges payés :
 
@@ -693,6 +693,64 @@ un glisser, et le pan du lecteur qui couperait les glissers directionnels.
 À la main au simulateur : Window › Show Apple TV Remote, glisser sur sa
 surface.
 
+## Le lecteur — avance rapide et pilule de saut (Apple TV)
+
+Branche `refonte/tv-lecteur-avance`. Retours de l'utilisateur sur l'app
+réelle (2026-10-01) : l'avance rapide « pas super intuitive, copie Netflix » ;
+« Passer l'intro » qui bloquait la remontée vers Retour.
+
+**La référence.** Netflix sur Apple TV a utilisé le lecteur d'Apple
+(`AVPlayerViewController`) jusqu'en mars 2026, puis un lecteur maison très
+critiqué (un appui met en pause et ouvre un sélecteur d'images). On reproduit
+le comportement historique, celui du lecteur d'Apple :
+
+| Geste | Habillage caché, en lecture | En défilement |
+|---|---|---|
+| Appui ←/→ | saut de ±10 s, la lecture continue, la pastille cumule (+10, +20…) | le curseur bouge de 10 s |
+| Maintien ←/→ | le défilement s'ouvre aussitôt (0,5 s) et accélère, ×1 → ×2 → ×4 → ×8 (une marche par seconde), jusqu'au relâcher | idem, depuis le curseur |
+| Glisser sur le pavé | le doigt EMPORTE le curseur (en lecture comme en pause, habillage visible ou non) : fin s'il est lent, large s'il est vif | idem ; doigt levé, le défilement reste ouvert |
+| Simple toucher | réveille l'habillage (pas celui qui accompagne un clic) | — |
+| OK, ▶︎❙❙ | — | lit depuis la position visée |
+| Menu | — | revient où l'on était, en pause si on y était |
+
+Habillage visible, les flèches parcourent ses boutons ; le pavé, lui, défile
+(les panneaux — épisodes, pistes, fin — le gardent pour leurs listes).
+L'inactivité (7 s) annule toujours un défilement oublié.
+
+- **La vue** (`ScrubOverlay`) : la vidéo reste figée où l'on était ; la frise
+  est à sa place de l'habillage ; au-dessus du curseur visé, qui le suit, une
+  bulle — la vignette trickplay cerclée de blanc, le temps visé en 60 pt et
+  l'écart ; la vitesse sur la vignette. Fondu d'entrée et de sortie.
+- **Le cerveau reste partagé** (Android TV le reçoit), sans `Platform.OS` : la
+  couture `SCRUB_INPUT` (`hooks/scrubInput.ts`, `scrubInput.ios.ts`) dit
+  seulement comment la plateforme émet les flèches. tvOS tranche lui-même
+  entre appui (`left`, au relâchement) et maintien (`longLeft`, début à
+  0,5 s, fin au relâcher, RIEN entre les deux : `holdMotor.hold`). Le saut
+  n'appartient à la vidéo que fond focalisé (`BACKGROUND_FOCUS`, bus du
+  lecteur) : sous la pilule ou la carte « À suivre », la flèche sert leur
+  focus.
+- **Le pavé** (`useScrubGestures.ios.ts`) : pan au compteur
+  (`lib/tvPanGesture.ts`), zone morte de 60 pts horizontaux, gain en secondes
+  par point selon la vitesse du doigt (`scrubGainFor`) — à reprendre à la
+  Siri Remote réelle, le simulateur ne glisse pas (mesures faites par des
+  pans injectés dans le runtime). Un pan annulé par tvOS n'émet aucune fin :
+  450 ms de silence le closent.
+- **La pilule de saut** (« Passer l'intro / le résumé / l'aperçu », « Aller à
+  l'épisode suivant ») : habillage visible et focus dans l'îlot, HAUT et
+  GAUCHE mènent à Retour, BAS à lecture/pause (`playerFocusContainers`).
+  L'habillage qui reparaît laisse le focus à la pilule qui le tient
+  (`skipHoldsFocus`) : HAUT depuis la pilule réveille l'habillage, HAUT de
+  nouveau mène à Retour. Éprouvé au pavé (agent XCUITest) sur Dark et One
+  Piece, pilules manuelles et automatiques.
+- **Android TV** (non éprouvé ici) : un appui ←/→ habillage caché saute de
+  ±10 s au lieu de rallumer l'habillage ; un appui en défilement vaut 10 s ;
+  Menu rend la pause d'avant ; la pilule garde le focus quand l'habillage
+  reparaît.
+
+Mesuré au simulateur, dans l'app réelle : maintien de 2,5 s → +19:00 sur un
+épisode de 51 min (tics ×1, ×2, ×4), arrêt net au relâcher ; glisser lent de
+150 pts → −60 s, vif de 500 pts → +12 min.
+
 ---
 
 ## Inventaire — les écrans
@@ -832,8 +890,9 @@ Sur de faux états au banc, moteur jamais chargé :
 - OSD : haut (Retour, titre, SxEy · nom), barre (temps, tampon, lu,
   pastille, durée), transport (précédent, −10 s, lecture/pause, +30 s,
   défilement, suivant, épisodes, réglages) ; pause ; mise en mémoire tampon ;
-- défilement plein écran (vignette, temps visé, écart, vitesse ×2/×4/×8,
-  « OK · Lire ici », « Retour · Annuler ») ; badge de saut ±N s ;
+- défilement sur la frise (vignette au-dessus du curseur, temps visé en
+  grand, écart, vitesse ×2/×4/×8, « OK · Lire ici », « Retour · Annuler ») ;
+  badge de saut ±N s ;
 - pilule de saut (intro, résumé, aperçu, post-générique, fin : manuelle, auto
   avec décompte + Masquer, en sourdine) et « Épisode suivant » ;
 - carte « À suivre » du générique (décompte, lecture auto) et affiche de fin
@@ -1002,8 +1061,12 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   nouveau, une fois, si le focus retombe ailleurs dans la foulée
   (`claimAfterRestore`).
 - **La Siri Remote n'émet pas `longLeft`** (ni la fin d'un appui maintenu sur
-  une flèche) : un raccourci déclenché par une flèche se garde au rythme du
-  focus (`RailShortcuts`).
+  une flèche) quand la flèche DÉPLACE le focus : un raccourci déclenché par
+  une flèche se garde au rythme du focus (`RailShortcuts`). Là où le focus ne
+  bouge pas (le fond du lecteur), elle l'émet bien : début à 0,5 s, fin au
+  relâcher, rien entre les deux (mesuré au simulateur, télécommande à
+  l'agent). Et un appui simple n'émet QUE son relâchement : `useTVRemote`
+  jetait ceux de haut et bas, qui n'atteignaient jamais le lecteur.
 - **Un appui MAINTENU sur OK d'un bouton sans `onLongPress`** déclenche son
   `onPress` au relâchement (React Native tvOS) : « Reprendre » du héros
   lançait la lecture. Le héros ouvre désormais le grand panneau ; tout
