@@ -10,6 +10,35 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.22.1]
+### FR
+- **Un téléviseur déjumelé est refusé partout** : un appareil révoqué gardait l'accès aux fiches, aux images et aux flux de son compte, et pour toujours, par le proxy Jellyfin et les vignettes de la frise. Chaque porte le refuse désormais — proxy, images, flux, vignettes, connexion en direct —, une TV éteinte pendant qu'on la déjumelait l'apprend dès sa reconnexion, et chaque requête d'une TV ne coûte plus un aller-retour chez Jellyfin
+- **Chaque téléviseur a son propre jeton Jellyfin** : une TV jumelée recevait la copie du jeton du téléphone qui confirmait le jumelage, ou celui d'un autre appareil du compte — impossible à révoquer sans déconnecter cet appareil, et toujours valide après le déjumelage. Le serveur obtient désormais un jeton propre à chaque TV, par Quick Connect ; les TV déjà jumelées l'adoptent d'elles-mêmes. Si Quick Connect est désactivé dans Jellyfin (il est actif par défaut), la TV lit par le serveur Tentacle
+- **Le déjumelage est complet** — depuis la TV elle-même, les appareils du compte, l'administration ou la suppression du compte : la session Jellyfin de la TV se ferme, sa position de lecture gardée, son appareil disparaît de Jellyfin et elle est prévenue sur-le-champ. Une étape interrompue par un redémarrage du serveur reprend au démarrage suivant
+- **Bandes-annonces YouTube sur Apple TV** : un flux qui se coupe après son premier mégaoctet est reconnu, et la bande-annonce se dit indisponible tout de suite, au lieu d'une lecture vouée à l'échec et relancée à chaque appui
+- **La fiche montre la position quittée dès la sortie du lecteur**, même quand Jellyfin 12.1 l'écrit en retard ou la perd, avec une seule réécriture si elle manque encore 20 s plus tard (web, bureau, mobile, TV)
+- **La lecture directe tient pendant une panne** : une coupure passagère du serveur Tentacle l'éteignait, et Jellyfin injoignable un instant la verrouillait — tout passait ensuite par le serveur Tentacle, rapports de lecture compris, jusqu'au redémarrage de l'application. Elle reprend désormais dès que le serveur répond
+- **Safari lit les MP4 HEVC « hev1 »** (Mac, iPhone, iPad) : la lecture n'y démarrait pas, sans message ni repli. Jellyfin les lui remuxe désormais, l'image copiée, jamais réencodée
+- **La bannière d'accueil montre le logo des films et des séries**, et celui de la série sur un épisode ; une série sans logo affiche son titre au lieu d'une image cassée
+- La fiche d'une série d'une seule saison dit « 1 saison », et non plus « 1 saisons »
+- Un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture », même quand la lecture passe par le serveur Tentacle
+- **Le schéma de la base évolue au démarrage** (`paired_devices.jellyfinDeviceId`, table `paired_device_cleanups`)
+- **Les clients 1.25.3 (bureau), 1.10.1 (mobile) et 1.10.0 (Apple TV) demandent ce serveur** : la version minimale exigée passe à 1.22.1
+
+### EN
+- **An unpaired TV is refused everywhere**: a revoked device kept access to its account's titles, images and streams, forever, through the Jellyfin proxy and the timeline thumbnails. Every door now refuses it — proxy, images, streams, thumbnails, live connection —, a TV that was off while being unpaired learns it as soon as it reconnects, and each request from a TV no longer costs a round trip to Jellyfin
+- **Each TV gets its own Jellyfin token**: a paired TV received a copy of the token of the phone that confirmed the pairing, or the token of another device on the account — impossible to revoke without signing that device out, and still valid after unpairing. The server now obtains a token of its own for each TV, through Quick Connect; TVs already paired adopt it by themselves. If Quick Connect is turned off in Jellyfin (it is on by default), the TV plays through the Tentacle server
+- **Unpairing is complete** — from the TV itself, the account's devices, the administration or account deletion: the TV's Jellyfin session closes, its playback position kept, its device disappears from Jellyfin and the TV is told right away. A step interrupted by a server restart resumes at the next startup
+- **YouTube trailers on Apple TV**: a stream that cuts off after its first megabyte is recognised, and the trailer reports itself unavailable right away, instead of a playback doomed to fail and retried at every press
+- **The title page shows the position you left as soon as you leave the player**, even when Jellyfin 12.1 writes it late or loses it, with a single rewrite if it is still missing 20 s later (web, desktop, mobile, TV)
+- **Direct streaming holds through an outage**: a brief Tentacle server outage turned it off, and Jellyfin being unreachable for a moment locked it — everything then went through the Tentacle server, playback reports included, until the app was restarted. It now comes back as soon as the server answers
+- **Safari plays "hev1" HEVC MP4 files** (Mac, iPhone, iPad): playback did not start, with no message and no fallback. Jellyfin now remuxes them for it, the picture copied, never re-encoded
+- **The home banner shows the logo of movies and series**, and the series' logo on an episode; a series without a logo shows its title instead of a broken image
+- A series with a single season says "1 season", no longer "1 seasons"
+- A title already watched, played again then left partway, comes back in "Continue watching", even when playback goes through the Tentacle server
+- **The database schema evolves at startup** (`paired_devices.jellyfinDeviceId`, `paired_device_cleanups` table)
+- **Desktop 1.25.3, mobile 1.10.1 and Apple TV 1.10.0 require this server**: the minimum required version moves to 1.22.1
+
 ## [1.22.0]
 ### FR
 - ⚠️ **Mettez à jour ce serveur AVANT de passer Jellyfin en 12** : Jellyfin 12 refuse l'ancienne méthode de connexion, et un serveur Tentacle plus ancien n'affiche plus rien. Celui-ci ne parle plus à Jellyfin que par la forme d'authentification que la 12 garde, et traduit au passage les requêtes des clients plus anciens pour qu'ils gardent la lecture
