@@ -130,15 +130,17 @@ export function useTVRemote(options: TVRemoteOptions) {
         sawDownRef.current.delete(eventType);
         return;
       }
-      // Android : "select" agit TOUJOURS au down (enableKeyDownEvents garantit
-      // le key-down). Un up ORPHELIN (rafale déséquilibrée, down consommé côté
-      // natif pendant un maintien) ne doit jamais exécuter l'action — c'est lui
-      // qui « confirmait tout seul » le scrub au relâchement.
-      if (Platform.OS === "android" && eventType === "select") return;
-      // Block up/down/menu/back on key-up — these should NOT fire on action=1
-      // (otherwise key-up "down" triggers onDown → scrubbing mode, breaking DPAD seek)
-      if (eventType === "up" || eventType === "down" || eventType === "menu" || eventType === "back") return;
-      // Only let directional seeks and playback controls fall through on key-up
+      // Android : "select", haut et bas agissent TOUJOURS au down
+      // (enableKeyDownEvents garantit le key-down). Un up ORPHELIN (rafale
+      // déséquilibrée, down consommé côté natif pendant un maintien) ne doit
+      // jamais exécuter l'action — c'est lui qui « confirmait tout seul » le
+      // scrub au relâchement.
+      if (Platform.OS === "android" && (eventType === "select" || eventType === "up" || eventType === "down")) return;
+      // tvOS n'émet QU'un relâchement par appui simple : haut et bas passent,
+      // sans quoi ils n'atteignaient jamais le JS — l'habillage du lecteur ne
+      // se réveillait pas, et s'éteignait sous une navigation verticale.
+      // Menu et Retour restent bloqués au relâchement, comme avant.
+      if (eventType === "menu" || eventType === "back") return;
     }
 
     switch (eventType) {
