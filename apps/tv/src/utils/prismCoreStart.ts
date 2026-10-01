@@ -1,6 +1,5 @@
 import { NativeModules } from "react-native";
-import { avPlayerReadsHevcTag } from "@tentacle-tv/tv-core";
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import { hevcTagUnreadable, type MediaStream as JfStream } from "@tentacle-tv/shared";
 import { nativePlayerHeaders } from "./nativePlayerHeaders";
 import { plog } from "./playerDiag";
 
@@ -68,7 +67,7 @@ export const PrismBridge = (NativeModules as { PrismBridge?: PrismBridgeModule }
  *      converti en 8.1 par libdovi — ce n'est plus un mur ;
  *  (4) HEVC étiqueté autrement que `hvc1` / `dvh1` (`hev1`, ou étiquette
  *      inconnue) : AVPlayer l'affiche NOIR, sans erreur ni repli possible
- *      (`avPlayerReadsHevcTag`, tv-core) ; PrismCore réécrit l'entrée en `hvc1`.
+ *      (`hevcTagUnreadable`, shared) ; PrismCore réécrit l'entrée en `hvc1`.
  * Un sous-titre image sélectionné ne force plus le transcode par principe : les
  * renditions OCR de PrismCore servent quand elles existent (cf.
  * prismSubtitleMatch), le burn-in serveur reste le repli.
@@ -94,8 +93,7 @@ export function prismEligible(a: {
   const range = (typeof plage === "string" ? plage : "").toUpperCase();
   const isHdrOrDv = (vstream?.DvProfile ?? 0) > 0 || /HDR|PQ|HLG|DOVI|DOLBY/.test(range);
   const isHevc = a.vcodec === "hevc" || a.vcodec === "h265";
-  const hevcTagUnreadable = isHevc && !avPlayerReadsHevcTag(vstream?.CodecTag);
-  const needsPrism = !nativeContainer || !audioOk || isHdrOrDv || hevcTagUnreadable;
+  const needsPrism = !nativeContainer || !audioOk || isHdrOrDv || hevcTagUnreadable(vstream);
   return !a.forceTranscode && !a.isTranscodingQuality
     && !!PrismBridge?.start && needsPrism
     && (isHevc || a.vcodec === "h264");
