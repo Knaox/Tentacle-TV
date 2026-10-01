@@ -3,13 +3,13 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
+import { BACK_BUTTON_SIZE, BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon, type IconName } from "../../icons/Icon";
 import { useOverlayArrival } from "../../motion/useOverlayArrival";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
-import { CircleButton } from "./CircleButton";
 import type { TrackOptionModel, TracksPanelModel } from "./playerTypes";
 import { DENSE_BASE } from "./surfaces";
 import { TrackOptionRow } from "./TrackOptionRow";
@@ -19,7 +19,8 @@ import { TrackOptionRow } from "./TrackOptionRow";
  * colonnes lues d'un coup d'œil — Audio, Sous-titres, Qualité (Original et sa
  * définition, les paliers et leur débit, DV/HDR/Atmos, « Auto »). La vidéo
  * reste visible au-dessus. Chaque colonne défile seule ; ouverte sur son
- * choix retenu.
+ * choix retenu. La croix Retour dans le coin haut-gauche, une marge à elle
+ * (son libellé paraît dessous au focus).
  * Clés : `tracks:close`, `tracks:audio:<clé>`, `tracks:subtitle:<clé>`,
  * `tracks:quality:<clé>` ; groupe `tracks:panel` — la feuille, où
  * l'intégration retient le focus tant qu'elle est ouverte.
@@ -28,13 +29,18 @@ import { TrackOptionRow } from "./TrackOptionRow";
 const SAFE = TV_STAGE.safe;
 const HEIGHT = 680;
 const ROW_STEP = 76;
+/** Le haut des colonnes, et la ligne de leurs titres (64), où la croix se centre. */
+const COLUMNS_TOP = 34;
+const HEADING_HEIGHT = 64;
+/** La marge de la croix, à gauche des colonnes. */
+const BACK_LEFT = 36;
+const GUTTER = BACK_LEFT + BACK_BUTTON_SIZE + 12;
 
 export interface TracksPanelLabels {
   audio: string;
   subtitles: string;
   quality: string;
   auto: string;
-  close: string;
 }
 
 function Column({
@@ -116,8 +122,8 @@ export const TracksPanel = memo(function TracksPanel({
               </>
             ) : null}
           </View>
-          <View style={styles.close}>
-            <CircleButton icon="close" label={labels.close} size={64} caption={false} focusKey="tracks:close" onPress={onClose} />
+          <View style={styles.back}>
+            <BackButton focusKey="tracks:close" onPress={onClose} />
           </View>
         </FocusGroup>
       </Animated.View>
@@ -129,12 +135,12 @@ const styles = StyleSheet.create({
   sheet: { position: "absolute", left: SAFE.x - 24, right: SAFE.x - 24, bottom: SAFE.y - 14, height: HEIGHT },
   glass: { ...StyleSheet.absoluteFillObject, backgroundColor: DENSE_BASE },
   // La liste qui continue se lit à sa dernière ligne coupée, dans le verre.
-  columns: { flex: 1, flexDirection: "row", paddingHorizontal: 24, paddingTop: 34, paddingBottom: 28 },
+  columns: { flex: 1, flexDirection: "row", paddingLeft: GUTTER, paddingRight: 24, paddingTop: COLUMNS_TOP, paddingBottom: 28 },
   column: { flex: 1, paddingHorizontal: 20 },
   divider: { width: 1, marginVertical: 12, backgroundColor: white(0.1) },
-  heading: { flexDirection: "row", alignItems: "center", gap: 14, height: 64, paddingLeft: 16, marginBottom: 10 },
+  heading: { flexDirection: "row", alignItems: "center", gap: 14, height: HEADING_HEIGHT, paddingLeft: 16, marginBottom: 10 },
   headingText: { ...fonts.bold, fontSize: 34, color: colors.text },
   scroll: { flex: 1 },
   options: { gap: 8, paddingBottom: 24 },
-  close: { position: "absolute", top: 34, right: 44 },
+  back: { position: "absolute", top: COLUMNS_TOP + (HEADING_HEIGHT - BACK_BUTTON_SIZE) / 2, left: BACK_LEFT },
 });

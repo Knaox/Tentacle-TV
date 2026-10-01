@@ -2,6 +2,7 @@ import { memo } from "react";
 import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
+import { BACK_TOP, BackButton } from "../../controls/BackButton";
 import { PillButton } from "../../controls/PillButton";
 import { Icon } from "../../icons/Icon";
 import { TitleArt } from "../../hero/TitleArt";
@@ -15,9 +16,9 @@ import type { PlayerMedia, PlayerPhase } from "./playerTypes";
  * - résolution : le jalon PrismCore (« Indexation (premier visionnage)… »)
  *   et les étapes franchies — la seule attente longue, qui mérite d'être dite ;
  * - démarrage : l'indicateur seul ;
- * - échec : le message, « Réessayer » (pilule blanche) et « Retour ».
- * « Retour » est toujours là : une ouverture qui traîne n'enferme personne.
- * Clés : `loading:back`, `loading:retry`.
+ * - échec : le message et « Réessayer » (pilule blanche).
+ * La croix Retour est toujours là, en haut à gauche : une ouverture qui
+ * traîne n'enferme personne. Clés : `loading:back`, `loading:retry`.
  */
 
 const SAFE = TV_STAGE.safe;
@@ -41,7 +42,8 @@ export const PlayerLoading = memo(function PlayerLoading({
 }: {
   media: PlayerMedia;
   phase: Exclude<PlayerPhase, { kind: "playing" }>;
-  labels: { back: string; retry: string };
+  /** « Retour » est dit par la croix elle-même. */
+  labels: { retry: string };
   onBack?: () => void;
   onRetry?: () => void;
 }) {
@@ -58,11 +60,9 @@ export const PlayerLoading = memo(function PlayerLoading({
         end={{ x: 1, y: 0.2 }}
       />
       <SoftGradient {...STAGE_SIZE} colors={[scrim(0.45), scrim(0), scrim(0.9)]} locations={[0, 0.36, 1]} />
-      {failed ? null : (
-        <View style={styles.back}>
-          <PillButton variant="glass" size="md" icon="chevronLeft" label={labels.back} focusKey="loading:back" onPress={onBack} />
-        </View>
-      )}
+      <View style={styles.back}>
+        <BackButton focusKey="loading:back" onPress={onBack} />
+      </View>
       <View style={styles.block}>
         <TitleArt title={media.title} logoUri={media.logoUri} maxWidth={620} maxHeight={140} fontSize={72} />
         {media.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{media.subtitle}</Text> : null}
@@ -76,7 +76,6 @@ export const PlayerLoading = memo(function PlayerLoading({
             </View>
             <View style={styles.actions}>
               <PillButton variant="primary" icon="refresh" label={labels.retry} focusKey="loading:retry" onPress={onRetry} />
-              <PillButton variant="glass" icon="chevronLeft" label={labels.back} focusKey="loading:back" onPress={onBack} />
             </View>
           </View>
         ) : (
@@ -97,7 +96,7 @@ export const PlayerLoading = memo(function PlayerLoading({
 
 const styles = StyleSheet.create({
   root: { ...StyleSheet.absoluteFillObject, backgroundColor: "#000" },
-  back: { position: "absolute", top: SAFE.y, left: SAFE.x },
+  back: { position: "absolute", top: BACK_TOP, left: SAFE.x },
   block: { position: "absolute", left: SAFE.x, bottom: SAFE.y + 40, width: 1100, gap: 18 },
   subtitle: { ...fonts.semibold, fontSize: 30, lineHeight: 38, color: white(0.86) },
   progress: { gap: 18, marginTop: 18 },
