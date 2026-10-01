@@ -105,11 +105,11 @@ export function useTVPlaybackLifecycle(args: {
     // poste. `stopPromiseRef` porte dans tous les cas le dernier Stopped réel :
     // on enchaîne dessus, pour que Jellyfin ait écrit `Played` avant de décider.
     void reportStopRef.current();
-    const run = () => runStopRef.current({
+    void runStopRef.current({
       itemId, seriesId: snap?.SeriesId, itemType: snap?.Type,
       stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
+      stoppedAt: Date.now(), stopped: stopPromiseRef.current,
     });
-    stopPromiseRef.current.then(run, run);
     // Hors de la règle partagée : « Ajouts récents » (badge vu).
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
   }, [itemId, stopPromiseRef, positionRef, queryClient]);

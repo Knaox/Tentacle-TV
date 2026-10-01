@@ -216,11 +216,11 @@ export function usePlayerHandlers({
     // Hors ligne (lecture locale, serveur injoignable), le rangement partagé
     // n'a rien à invalider : il attendrait des requêtes qui ne partiront pas.
     if (!invalidateRef.current()) return;
-    const run = () => runStopRef.current({
+    void runStopRef.current({
       itemId, seriesId: snap?.SeriesId, itemType: snap?.Type,
       stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
+      stoppedAt: Date.now(), stopped: reporting.lastStopPromiseRef.current,
     });
-    reporting.lastStopPromiseRef.current.then(run, run);
     // Hors de la règle partagée : « Ajouts récents » (badge vu). `["item"]`, les
     // hubs et la fiche série sont invalidés par elle — ne pas doubler. Sous la
     // garde, comme le reste : hors ligne, rien à invalider.

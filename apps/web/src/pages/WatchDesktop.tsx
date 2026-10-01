@@ -146,6 +146,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
       // Lue MAINTENANT : l'effet [itemId] de useWatchSession remet la position
       // à zéro juste après ces cleanups — dans le microtask, elle vaudrait 0.
       const stopPositionSeconds = positionRef.current;
+      const stoppedAt = Date.now();
       queryClient.removeQueries({ queryKey: ["item", id] });
       // Cleanups React s'exécutent en ordre inverse d'enregistrement : ce
       // cleanup tourne AVANT celui de usePlaybackReporting qui assigne le vrai
@@ -153,12 +154,11 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
       // chaîner l'invalidation APRÈS le /Sessions/Playing/Stopped (Jellyfin a
       // alors mis à jour Played/DatePlayed → décision « 100% vu » fiable).
       queueMicrotask(() => {
-        const run = () =>
-          runStopInvalidation({
-            itemId: id, seriesId: snap?.SeriesId, itemType: snap?.Type,
-            stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
-          });
-        lastStopPromiseRef.current.then(run, run);
+        void runStopInvalidation({
+          itemId: id, seriesId: snap?.SeriesId, itemType: snap?.Type,
+          stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
+          stoppedAt, stopped: lastStopPromiseRef.current,
+        });
       });
     };
   }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation, positionRef]);

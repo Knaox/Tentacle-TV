@@ -10,6 +10,9 @@ import {
   retireSeriesFromWatchlistIfFullyWatched, stoppedPastHalf, WATCHLIST_SERIES_IDS_KEY,
 } from "./watchlistEffects";
 import { clearPlayedWhenResumable } from "./resumeOverPlayed";
+import { projectionPatch, projectStop, stopWorthDefending } from "./stopProjection";
+import { rememberStop } from "./recentStopGuard";
+import type { AutoplayConfig } from "./useConfig";
 
 /**
  * Hubs de la home à rafraîchir à l'arrêt. « resume-items » est traité à part :
@@ -29,6 +32,12 @@ interface StopArgs {
   stopPositionSeconds?: number;
   /** Durée du média (`RunTimeTicks`), pour situer la position d'arrêt. */
   runtimeTicks?: number;
+  /** L'instant de l'arrêt (ms, horloge de l'appareil) — la garde le compare à
+   *  `LastPlayedDate` ; à défaut, l'instant de l'appel. */
+  stoppedAt?: number;
+  /** L'envoi de l'arrêt en cours : le patch local part AUSSITÔT, le réseau
+   *  attend qu'il soit posté. Absent : l'appelant a déjà attendu. */
+  stopped?: Promise<unknown>;
 }
 
 /**
@@ -51,13 +60,29 @@ export function useWatchStopInvalidation() {
   const userId = useUserId();
 
   return useCallback(
-    async ({ itemId, seriesId, itemType, stopPositionSeconds, runtimeTicks }: StopArgs) => {
+    async ({ itemId, seriesId, itemType, stopPositionSeconds, runtimeTicks, stoppedAt, stopped }: StopArgs) => {
       if (!itemId || !userId) return;
 
-      // AVANT tout réseau : « Reprendre la lecture » se réordonne à l'instant.
-      // Ce qu'on vient de lire est le plus récent, on n'a personne à qui le
-      // demander (cf. `hoistResumeItem`).
+      // AVANT tout réseau, à l'instant de la sortie : la fiche et les listes
+      // montrent l'arrêt (Jellyfin 12.1 l'écrit parfois des secondes plus tard,
+      // ou jamais — cf. `stopProjection.ts`), et une relecture plus ancienne
+      // ne les fait plus reculer (`recentStopGuard.ts`).
+      const maxResumePct = qc.getQueryData<AutoplayConfig>(["autoplay-config"])?.maxResumePct;
+      const projection = stopPositionSeconds === undefined
+        ? null
+        : projectStop({ positionSeconds: stopPositionSeconds, runtimeTicks, maxResumePct });
+      if (projection && runtimeTicks) {
+        updateItemUserDataInCache(qc, itemId, () => projectionPatch(projection, runtimeTicks));
+        if (stopWorthDefending(projection, runtimeTicks, maxResumePct)) {
+          rememberStop(qc, client, userId, { ...projection, itemId, runtimeTicks, stoppedAt: stoppedAt ?? Date.now() });
+        }
+      }
+
+      // « Reprendre la lecture » se réordonne à l'instant. Ce qu'on vient de
+      // lire est le plus récent, on n'a personne à qui le demander (cf.
+      // `hoistResumeItem`).
       hoistResumeItem(qc, itemId);
+      if (stopped) await stopped.catch(() => {});
 
       // AVANT les invalidations, et c'est tout l'ordre qui compte : les hubs
       // repartent chercher leur vérité juste après, et ils doivent la trouver
