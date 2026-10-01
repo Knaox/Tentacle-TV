@@ -132,6 +132,14 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
 const sessionServerUrl = (): string | null =>
   storage.getItem("tentacle_token") ? storage.getItem("tentacle_server_url") : null;
 
+/** Les écrans où une vidéo JOUE : le voile hors ligne ne s'y pose pas. La
+ *  lecture d'abord — un film en streaming direct continue sans Tentacle, et le
+ *  voile le cachait, piégeait le focus, et son Menu quittait l'application.
+ *  Le lecteur dit lui-même ce qui manque ; à la sortie, le voile paraît si la
+ *  panne dure. `PlayerSettings` : la modale des réglages d'Android TV, posée
+ *  sur un lecteur qui joue encore. */
+const PLAYBACK_ROUTES = new Set(["Player", "PlayerSettings", "Trailer"]);
+
 function AppContent() {
   // L'URL serveur peut changer en cours de session : déconnexion (supprimée du
   // storage) ou re-jumelage (nouvelle URL). On la relit à chaque changement de
@@ -144,13 +152,17 @@ function AppContent() {
   // Route active du rail : suivie via le NavigationContainer (le rail est un
   // sibling du Navigator, sans accès aux hooks de navigation).
   const [railKey, setRailKey] = useState<string | null>(null);
+  const [playbackShown, setPlaybackShown] = useState(false);
   const syncRailKey = useCallback(() => {
     // Ne mettre à jour railKey QUE quand la nav est prête : sinon une synchro
     // transitoire (isReady=false) effaçait le rail (null) → side bar qui
     // disparaît. deriveRailKey renvoie déjà null légitimement pour les écrans
     // plein écran (Player/MediaDetail), donc on n'affiche jamais le rail à tort.
     if (navigationRef.isReady()) {
-      setRailKey(deriveRailKey(navigationRef.getRootState()));
+      const state = navigationRef.getRootState();
+      setRailKey(deriveRailKey(state));
+      const route = state?.routes?.[state.index];
+      setPlaybackShown(!!route && PLAYBACK_ROUTES.has(route.name));
     }
     setServerUrl(sessionServerUrl());
   }, []);
@@ -186,7 +198,7 @@ function AppContent() {
             <AppNavigator />
             {/* Rail persistant monté une seule fois (overlay sibling du Navigator) */}
             <TVNavChrome railKey={railKey} />
-            <OfflineBanner visible={!isReachable} onRetry={retry} />
+            <OfflineBanner visible={!isReachable && !playbackShown} onRetry={retry} />
             <PairingExpiredBanner />
             <TVSessionMessageHost />
           </NavigationContainer>
