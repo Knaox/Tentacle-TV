@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import type { TouchMode } from "./scrubTouchTuning";
 import { useScrubGestures } from "./useScrubGestures";
 import { ARROW_JUMP_SECONDS, useScrubController } from "./useScrubController";
 
@@ -177,6 +178,14 @@ export function useTVPlayerControls({
     showOverlay();
   }, [showOverlay, scrubbingRef]);
 
+  /** Le régime d'un glisser qui commence : habillage caché, il attend un
+   *  contact tenu avant de défiler (`scrubTouchTuning.ts`). La pause épingle
+   *  l'habillage : elle compte pour affichée. */
+  const readTouchMode = useCallback((): TouchMode => {
+    if (scrubbingRef.current) return "open";
+    return overlayVisibleRef.current || pausedRef.current ? "shown" : "hidden";
+  }, [scrubbingRef]);
+
   // --- Défilement au pavé tactile (Apple TV ; rien sur Android TV, sans pavé) :
   //     le doigt emporte le curseur fantôme, partout où la vidéo est le sujet —
   //     en lecture comme en pause, habillage visible ou non. Glisser = défiler,
@@ -185,6 +194,7 @@ export function useTVPlayerControls({
   //     listes. ---
   useScrubGestures({
     enabled: !panelOpen,
+    readTouchMode,
     onStartScrub: scrub.startScrubbing,
     onNudgeScrub: scrub.nudgeScrub,
     // Lever du doigt : le scrub reste ouvert — OK/▶︎❙❙ valide le seek, Back

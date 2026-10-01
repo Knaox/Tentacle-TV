@@ -26,6 +26,38 @@ export const SLOW_SWIPE_PADS_PER_SECOND = 1;
 /** …au-delà de celle-ci, il plafonne ; entre les deux, il monte en douceur. */
 export const FAST_SWIPE_PADS_PER_SECOND = 4;
 
+/** Habillage CACHÉ : un glisser ne défile qu'après ce contact tenu, compté
+ *  depuis le début du glisser (tvOS ne signale pas un doigt posé immobile).
+ *  Un frôlement, une télécommande qu'on ramasse : la lecture ne bouge pas. */
+export const HIDDEN_ENGAGE_HOLD_MS = 600;
+
+/** Le glisser n'engage qu'au-delà de cette course HORIZONTALE (points) :
+ *  saisir la télécommande fait souvent glisser le pouce… */
+export const ENGAGE_PX = 60;
+/** …et s'il est franchement horizontal : un glisser vertical ne défile pas. */
+export const HORIZONTAL_RATIO = 1.4;
+/** Habillage affiché : après ce délai depuis le début du glisser, sauf geste
+ *  franc (`FLICK_PX`). */
+export const ENGAGE_DELAY_MS = 180;
+export const FLICK_PX = 180;
+/** Défilement déjà ouvert : le doigt revient VISER, il reprend dès ce pas. */
+export const OPEN_ENGAGE_PX = 12;
+
+/** Le régime d'un glisser, lu quand le doigt se pose : défilement déjà
+ *  ouvert, habillage affiché (ou pause), habillage caché. */
+export type TouchMode = "open" | "shown" | "hidden";
+
+/** Le glisser engage-t-il le défilement ? `dx`, `dy` : sa course depuis la
+ *  pose du doigt ; `elapsedMs` : le contact tenu depuis. */
+export function canEngage(mode: TouchMode, dx: number, dy: number, elapsedMs: number): boolean {
+  const ax = Math.abs(dx);
+  if (ax < HORIZONTAL_RATIO * Math.abs(dy)) return false;
+  if (mode === "open") return ax >= OPEN_ENGAGE_PX;
+  if (ax < ENGAGE_PX) return false;
+  if (mode === "hidden") return elapsedMs >= HIDDEN_ENGAGE_HOLD_MS;
+  return elapsedMs >= ENGAGE_DELAY_MS || ax >= FLICK_PX;
+}
+
 /**
  * Secondes de vidéo par point de pavé, selon la vitesse du doigt (points/s) —
  * l'accélération d'un pointeur, appliquée au temps : FINE quand le doigt est

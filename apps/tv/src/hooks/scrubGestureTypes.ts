@@ -1,4 +1,5 @@
 import type { MutableRefObject } from "react";
+import type { TouchMode } from "./scrubTouchTuning";
 
 export type ScrubDir = "forward" | "backward";
 
@@ -32,6 +33,10 @@ export interface ScrubInputProfile {
 export interface ScrubGestureHandlers {
   /** Le pavé défile : partout où la vidéo est le sujet (pas dans un panneau). */
   enabled: boolean;
+  /** Le régime du geste, lu quand le doigt se pose : défilement déjà ouvert,
+   *  habillage affiché (ou pause), habillage caché — ce dernier n'engage
+   *  qu'après un contact tenu (`scrubTouchTuning.ts`). */
+  readTouchMode: () => TouchMode;
   /** Le glisser franchit sa zone morte → entrer en défilement. Idempotent côté
    *  cerveau : ne réinitialise PAS la position si déjà ouvert — un nouveau
    *  glisser reprend d'où le curseur en est. */

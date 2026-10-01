@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { usePanGesture } from "../lib/tvPanGesture";
 import type { ScrubGestureHandlers } from "./scrubGestureTypes";
-import { scrubGainFor } from "./scrubTouchTuning";
+import { canEngage, scrubGainFor, type TouchMode } from "./scrubTouchTuning";
 
 export type { ScrubGestureHandlers, ScrubDir } from "./scrubGestureTypes";
 
@@ -16,17 +16,9 @@ interface HWEvent {
   body?: { state: "Began" | "Changed" | "Ended"; x: number; y: number; velocityX: number; velocityY: number };
 }
 
-/** Le glisser n'engage qu'au-delà de cette course HORIZONTALE (points du
- *  pavé) : saisir la télécommande fait souvent glisser le pouce de 30-40 pts. */
-const ENGAGE_PX = 60;
-/** …et s'il est franchement horizontal : un glisser vertical ne défile pas. */
-const HORIZONTAL_RATIO = 1.4;
-/** …et après ce délai depuis la pose du doigt — sauf geste franc
- *  (`FLICK_PX`) : un effleurement en prenant la télécommande ne défile pas. */
-const ENGAGE_DELAY_MS = 180;
-const FLICK_PX = 180;
 /** Un pan que tvOS ANNULE n'émet aucune fin : sans nouvelle depuis ce délai,
- *  le geste est clos (le défilement, lui, reste ouvert). */
+ *  le geste est clos (le défilement, lui, reste ouvert). Un doigt resté posé
+ *  qui repart ensuite reprend un geste là où il en est. */
 const SILENT_END_MS = 450;
 /** Le curseur suit le doigt, mais l'affichage ne se redessine qu'à ce rythme
  *  (~30 i/s) : chaque position redessine l'écran du lecteur. */
@@ -41,23 +33,36 @@ const FLUSH_MS = 33;
  * depuis la position visée, Retour revient où l'on était, un nouveau glisser
  * reprend d'où le curseur en est. Un simple toucher réveille l'habillage.
  *
+ * Trois régimes, lus quand le doigt se pose (`readTouchMode`, `canEngage`) :
+ * habillage CACHÉ, le glisser ne défile qu'après un contact tenu — un
+ * frôlement ne bouge jamais la lecture ; habillage AFFICHÉ (ou pause),
+ * aussitôt passée la zone morte ; défilement déjà OUVERT, le doigt revient
+ * viser et reprend au premier pas.
+ *
  * Remplace la « navette » (la DISTANCE du doigt réglait une vitesse, que le
  * curseur gardait tant qu'on ne bougeait plus) : déroutante, elle ne laissait
  * pas viser. Le pan se prend au compteur (`usePanGesture`) : la vue racine n'en
  * a qu'un, que d'autres écrans tiennent aussi.
  */
 export function useScrubGestures({
-  enabled, onStartScrub, onNudgeScrub, onEndScrub, onWake, durationRef,
+  enabled, readTouchMode, onStartScrub, onNudgeScrub, onEndScrub, onWake, durationRef,
 }: ScrubGestureHandlers): void {
   // Callbacks à jour sans recréer le handler natif.
-  const cbRef = useRef({ onStartScrub, onNudgeScrub, onEndScrub, onWake });
-  cbRef.current = { onStartScrub, onNudgeScrub, onEndScrub, onWake };
+  const cbRef = useRef({ readTouchMode, onStartScrub, onNudgeScrub, onEndScrub, onWake });
+  cbRef.current = { readTouchMode, onStartScrub, onNudgeScrub, onEndScrub, onWake };
   usePanGesture(enabled);
 
   const g = useRef({
+    /** Un geste suivi (posé, ou repris après un silence). */
     active: false,
     engaged: false,
+    /** Le doigt touche : un « Began » sans « Ended » — le silence n'y change rien. */
+    touching: false,
+    mode: "shown" as TouchMode,
+    /** La pose du doigt : le contact tenu se compte d'ici. */
     beganAt: 0,
+    originX: 0,
+    originY: 0,
     lastX: 0,
     pending: 0,
     flush: null as ReturnType<typeof setTimeout> | null,
@@ -74,7 +79,7 @@ export function useScrubGestures({
     }
   };
 
-  /** La fin du geste — relâchement, ou silence d'un pan annulé. */
+  /** La fin du geste — relâchement, ou silence d'un pan annulé (ou d'un doigt immobile). */
   const finish = () => {
     const s = g.current;
     if (s.silence) { clearTimeout(s.silence); s.silence = null; }
@@ -92,13 +97,22 @@ export function useScrubGestures({
     s.silence = setTimeout(finish, SILENT_END_MS);
   };
 
+  /** Un geste commence ici : le doigt se pose, ou repart après un silence —
+   *  sans rattraper la course d'avant. Le contact, lui, court depuis la pose. */
+  const track = (x: number, y: number, contactSince: number) => {
+    Object.assign(g.current, {
+      active: true, engaged: false, mode: cbRef.current.readTouchMode(),
+      beganAt: contactSince, originX: x, originY: y, lastX: x, pending: 0,
+    });
+  };
+
   // Coupé (panneau ouvert, démontage) : le geste en cours n'a plus de suite.
   useEffect(() => {
     if (enabled) return undefined;
     const s = g.current;
     if (s.silence) clearTimeout(s.silence);
     if (s.flush) clearTimeout(s.flush);
-    Object.assign(s, { active: false, engaged: false, pending: 0, flush: null, silence: null });
+    Object.assign(s, { active: false, engaged: false, touching: false, pending: 0, flush: null, silence: null });
     return undefined;
   }, [enabled]);
   useEffect(() => () => {
@@ -113,19 +127,23 @@ export function useScrubGestures({
     const s = g.current;
     if (state === "Began") {
       finish(); // un geste précédent annulé sans fin
-      Object.assign(s, { active: true, engaged: false, beganAt: Date.now(), lastX: x, pending: 0 });
+      s.touching = true;
+      track(x, y, Date.now());
       armSilence();
       return;
     }
-    if (!s.active) return; // pan déjà en cours quand on l'a pris : ignoré
-    if (state === "Ended") { finish(); return; }
+    if (state === "Ended") {
+      finish();
+      s.touching = false;
+      return;
+    }
+    // Un mouvement hors geste : le doigt repart après un silence, ou glissait
+    // déjà quand on a pris le pan (son contact se compte alors d'ici).
+    if (!s.active) track(x, y, s.touching ? s.beganAt : Date.now());
     armSilence();
-    const duration = durationRef.current || 0;
     if (!s.engaged) {
-      const dx = Math.abs(x);
-      const elapsed = Date.now() - s.beganAt;
-      if (!(duration > 0) || dx < ENGAGE_PX || dx < HORIZONTAL_RATIO * Math.abs(y)) return;
-      if (elapsed < ENGAGE_DELAY_MS && dx < FLICK_PX) return;
+      if (!((durationRef.current || 0) > 0)) return;
+      if (!canEngage(s.mode, x - s.originX, y - s.originY, Date.now() - s.beganAt)) return;
       s.engaged = true;
       s.lastX = x; // le curseur part d'ici : la zone morte ne déplace rien
       cbRef.current.onStartScrub();
