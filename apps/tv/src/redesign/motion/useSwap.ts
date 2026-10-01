@@ -10,7 +10,15 @@ import { EASE, MOTION_ENABLED } from "./motion";
  * sortie la rejoint ; pendant l'entrée, il repart d'où elle en est. Rien
  * d'autre ne bouge : `progress` (1 = affiché) se lit dans un
  * `useAnimatedStyle`, sur le fil d'interface.
+ *
+ * La sortie s'arrête à `SWAP_FLOOR`, invisible mais pas nulle : à une opacité
+ * nulle, tvOS tient pour caché un élément focalisé qu'elle contiendrait, et
+ * recalcule tout son focus (mesuré au banc : un tiers du fil principal
+ * pendant la rotation du héros).
  */
+
+/** L'opacité de fin de sortie : à l'œil, rien ; pour tvOS, encore là. */
+export const SWAP_FLOOR = 0.02;
 export function useSwap<T>(key: string, item: T, outMs: number, inMs: number): { shown: T; progress: SharedValue<number> } {
   const reduced = useReducedMotion();
   const instant = reduced || !MOTION_ENABLED;
@@ -37,7 +45,7 @@ export function useSwap<T>(key: string, item: T, outMs: number, inMs: number): {
       return;
     }
     leaving.current = true;
-    progress.value = withTiming(0, { duration: outMs, easing: EASE.in }, (finished) => {
+    progress.value = withTiming(SWAP_FLOOR, { duration: outMs, easing: EASE.in }, (finished) => {
       "worklet";
       if (finished) runOnJS(swap)();
     });

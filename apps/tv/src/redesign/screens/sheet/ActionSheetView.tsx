@@ -5,6 +5,7 @@ import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { usePresence } from "../../motion/useMotion";
+import { SWAP_FLOOR } from "../../motion/useSwap";
 import { scrim } from "../../theme/tokens";
 import { RatingPanel } from "./RatingPanel";
 import { SheetHeader } from "./SheetHeader";
@@ -113,7 +114,9 @@ function usePanelMotion(closing: boolean, onClosed?: () => void) {
   const p = panel.progress;
   const v = veil.progress;
   return {
-    rise: useAnimatedStyle(() => ({ opacity: Math.min(1, p.value), transform: [{ scale: from + (1 - from) * p.value }] })),
+    // Jamais tout à fait 0 : tvOS tiendrait pour cachés ses focalisables
+    // (`SWAP_FLOOR`) et chercherait le focus ailleurs pendant l'entrée.
+    rise: useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(SWAP_FLOOR, p.value)), transform: [{ scale: from + (1 - from) * p.value }] })),
     veil: useAnimatedStyle(() => ({ opacity: v.value })),
   };
 }
