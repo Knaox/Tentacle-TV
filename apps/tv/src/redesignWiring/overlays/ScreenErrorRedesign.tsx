@@ -4,6 +4,7 @@ import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ScreenErrorView } from "../../redesign/screens/overlays/ScreenErrorView";
 import { routeRailKey, type RouteLike } from "../../navigation/routeRailKey";
 import { REDESIGN_ROUTES } from "../redesignGate";
+import { useBackFocus } from "../focus/backFocus";
 import { useFocusStore } from "../focus/focusStore";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
@@ -11,18 +12,20 @@ import { useRedesignScreen } from "../screen/useRedesignScreen";
 /**
  * Ce que la frontière d'erreur montre à la place d'un écran tombé (Apple TV) :
  * `ScreenErrorView` — la pieuvre triste, des textes traduits (fini l'anglais
- * en dur), Réessayer (l'écran est remonté), Retour quand la pile peut
- * reculer, et le détail technique en petit.
+ * en dur), Réessayer (l'écran est remonté), la croix Retour quand la pile
+ * peut reculer, et le détail technique en petit.
  *
  * Trois cadres, selon où la frontière est posée :
  * - un écran refondu AVEC navigation : la navigation survit à l'écran fautif
  *   (`useRedesignScreen`, sa route donne l'entrée active) ;
  * - un autre écran (fiche, lecteur…) : Retour recule d'un écran ;
  * - la racine de l'app, hors de toute navigation : Réessayer seulement.
- * Le focus entre sur Réessayer.
+ * Le focus entre sur Réessayer, jamais sur la croix ; HAUT y mène, BAS en
+ * revient (`useBackFocus`).
  */
 
 const ENTRY = "screenError:retry";
+const BACK = { backKey: "screenError:back", barKey: "screenError:top", entryKey: ENTRY };
 
 interface Props {
   error: Error | null;
@@ -53,6 +56,7 @@ function DetachedError({ error, onRetry }: Omit<Props, "route">) {
 function PlainScreenError({ error, onRetry }: Omit<Props, "route">) {
   const navigation = useNavigation();
   const store = useFocusStore();
+  useBackFocus(store, BACK);
   useEffect(() => store.claim(ENTRY), [store]);
   const back = useCallback(() => navigation.goBack(), [navigation]);
   return (
@@ -65,6 +69,7 @@ function PlainScreenError({ error, onRetry }: Omit<Props, "route">) {
 function RailScreenError({ error, railKey, onRetry }: Omit<Props, "route"> & { railKey: string }) {
   const navigation = useNavigation();
   const screen = useRedesignScreen({ railKey, entryKey: ENTRY });
+  useBackFocus(screen.focus, BACK);
   const back = useCallback(() => navigation.goBack(), [navigation]);
   return (
     <RedesignScreen screen={screen}>
