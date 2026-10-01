@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { AccessibilityInfo } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useMediaItem, usePlaybackSegments, usePlaybackSettings } from "@tentacle-tv/api-client";
 import type { PlayerChromeViewProps } from "../../redesign/screens/player/PlayerChromeView";
@@ -77,7 +78,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
   const step = p.prismStep;
   // L'ouverture ratée pendant une panne dit qui manque (cf. usePlaybackRecovery) ;
   // celle d'un transcodage qui se fait attendre le dit, puis son échec (useStartupWait).
-  const { startCulprit, startWait } = usePlaybackTroubleState();
+  const { startCulprit, startWait, phase: recovery } = usePlaybackTroubleState();
   const failedMessage = startCulprit
     ? translate(startCulprit === "media" ? "player:troubleStartMedia" : "player:troubleStartTentacle")
     : startWait?.kind === "gaveUp" ? translate("player:troubleTranscodeDetail") : null;
@@ -170,6 +171,12 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     [flash, translate],
   );
   const notice = useAutoCapNotice(!!p.autoCapActive, p.hasStarted, p.autoCapReason);
+  // Un transcodage qui se fait attendre en pleine lecture (changement de
+  // qualité, serveur lent) : rien ne bloque, une ligne sous l'indicateur.
+  const bufferingHint = recovery.kind === "transcoding" ? translate("player:transcodeSlowHint") : null;
+  // VoiceOver la dit, comme celle de l'ouverture — sans prendre le focus.
+  const waitHint = bufferingHint ?? startHint;
+  useEffect(() => { if (waitHint) AccessibilityInfo.announceForAccessibility(waitHint); }, [waitHint]);
   const error = useMemo(
     () => (p.videoError ? { title: translate("player:playbackError"), message: p.videoError } : null),
     [p.videoError, translate],
@@ -195,7 +202,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     view: {
       ...actions,
       media, labels, phase, timeline, transport, paused: p.paused, osdVisible,
-      buffering: p.isLoading && p.hasStarted, scrub, seekFlash, skip, upNext, endScreen, panel, reloadFrame,
+      buffering: p.isLoading && p.hasStarted, bufferingHint, scrub, seekFlash, skip, upNext, endScreen, panel, reloadFrame,
       notice, error, subtitle: p.subtitleCue ?? null,
       trouble: trouble.model, troubleCovers: trouble.covers, onTroubleAction: trouble.onAction,
     },

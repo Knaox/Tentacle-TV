@@ -80,6 +80,8 @@ export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport
   panel?: PlayerPanel | null;
   /** Rechargement doux (piste, qualité) : l'image figée à la position. */
   reloadFrame?: FrameImage | null;
+  /** Sous l'indicateur de chargement : pourquoi l'attente (un transcodage lent). */
+  bufferingHint?: string | null;
   /** « Qualité réduite… » — le plafond automatique de débit. */
   notice?: string | null;
   error?: { title: string; message?: string } | null;
@@ -161,7 +163,7 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
           </Animated.View>
         </FocusGroup>
       </Animated.View>
-      {(props.buffering || props.reloadFrame) && !troublePanel ? <BufferingBadge /> : null}
+      {(props.buffering || props.reloadFrame) && !troublePanel ? <BufferingBadge hint={props.bufferingHint} /> : null}
       <PlaybackTrouble model={trouble} onAction={props.onTroubleAction} />
       <Presented value={props.seekFlash && !scrub ? props.seekFlash : null} motion="reveal">
         {(flash, appear) => <SeekFlash forward={flash.forward} label={flash.label} appear={appear} />}
