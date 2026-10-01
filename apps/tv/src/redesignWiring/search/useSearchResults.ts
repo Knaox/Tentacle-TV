@@ -5,6 +5,9 @@ import { searchSubmitAnswer, type SearchSubmitAnswer } from "@tentacle-tv/tv-cor
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../redesign/color/artworkPalette";
 import type { SearchContentModel, SearchSectionModel, SearchSuggestionModel } from "../../redesign/screens/search/searchViewModel";
 import { searchDiscover, searchNotice, searchPalette, searchSections, searchSuggestions, type SearchModelSources } from "./searchModels";
+import type { AbsentTitle } from "../vigie/absentTitle";
+import { useSearchAbsent } from "../vigie/useSearchAbsent";
+import type { VigieGate } from "../vigie/useVigieGate";
 import type { SearchInput } from "./useSearchInput";
 
 const RESULTS_LIMIT = 12;
@@ -21,7 +24,11 @@ export interface SearchResults {
   firstKey: string | null;
   /** Le titre derrière une carte ou le meilleur résultat : navigation, feuille d'actions. */
   itemOf: (id: string) => MediaItem | undefined;
+  /** Le titre absent derrière une carte de la rangée « À demander ». */
+  absentOf: (id: string) => AbsentTitle | undefined;
 }
+
+const NO_ABSENT = () => undefined;
 
 function firstKeyOf(sections: SearchSectionModel[]): string | null {
   const first = sections[0];
@@ -45,7 +52,7 @@ function titlesOf(data: SearchResponse | undefined, episodes: SearchMediaItem[])
  * réponse → les rangées (atténuées tant qu'elles répondent à une frappe
  * précédente) ; rien trouvé → la même page que le repos, qui le dit.
  */
-export function useSearchResults(src: SearchModelSources, input: SearchInput): SearchResults {
+export function useSearchResults(src: SearchModelSources, input: SearchInput, gate: VigieGate | null): SearchResults {
   const { query, debounced, recents } = input;
   const search = useTentacleSearch(debounced, { limit: RESULTS_LIMIT });
   const episodes = useSearchEpisodes(debounced, { limit: RESULTS_LIMIT });
@@ -57,7 +64,17 @@ export function useSearchResults(src: SearchModelSources, input: SearchInput): S
   // la requête suivante) : lisible, atténuée.
   const current = data !== undefined && foldForSearch(data.query) === foldForSearch(debounced);
 
-  const sections = useMemo(() => searchSections(src, data, episodeItems ?? []), [src, data, episodeItems]);
+  // Hors bibliothèque, ce qu'on peut demander (l'entrée « recherche » des
+  // demandes) — rien tant que la garde Vigie est fermée.
+  const owned = useMemo(() => libraryTitlesOf(data), [data]);
+  const absent = useSearchAbsent(gate, debounced, owned);
+  const sections = useMemo(() => {
+    const found = searchSections(src, data, episodeItems ?? []);
+    const cards = absent?.cards ?? [];
+    if (cards.length === 0) return found;
+    const { t } = src;
+    return [...found, { key: "absent" as const, title: t("requests:searchRow"), count: t("search:countTitles", { count: cards.length }), cards }];
+  }, [src, data, episodeItems, absent]);
   const { completion, suggestions } = useMemo(() => searchSuggestions(query, data), [query, data]);
 
   const idle = debounced.length === 0;
@@ -89,5 +106,11 @@ export function useSearchResults(src: SearchModelSources, input: SearchInput): S
     }),
     firstKey: firstKeyOf(sections),
     itemOf,
+    absentOf: absent?.titleOf ?? NO_ABSENT,
   };
+}
+
+/** Ce que la bibliothèque a déjà répondu : la rangée « À demander » ne le propose pas une seconde fois. */
+function libraryTitlesOf(data: SearchResponse | undefined): Array<{ name: string; year: number | null }> {
+  return [...(data?.movies ?? []), ...(data?.series ?? [])].map((hit) => ({ name: hit.item.Name, year: hit.item.ProductionYear ?? null }));
 }

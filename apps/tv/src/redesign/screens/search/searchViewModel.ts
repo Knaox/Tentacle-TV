@@ -65,10 +65,12 @@ export interface SearchFacetModel {
   detail: string;
 }
 
-/** Une rangée de résultats. Les clés de focus : `top`, puis `${key}:${index}`. */
+/** Une rangée de résultats. Les clés de focus : `top`, puis `${key}:${index}`.
+ *  `absent` : les titres hors bibliothèque qu'on peut demander (« À demander »),
+ *  des cartes grisées (`card.absent`) — seulement quand le serveur sait en demander. */
 export type SearchSectionModel =
   | { key: "top"; label: string; top: SearchTopModel }
-  | { key: "movies" | "series" | "collections" | "episodes"; title: string; count?: string; cards: CardModel[] }
+  | { key: "movies" | "series" | "collections" | "episodes" | "absent"; title: string; count?: string; cards: CardModel[] }
   | { key: "people"; title: string; people: SearchPersonModel[] }
   | { key: "facets"; title: string; facets: SearchFacetModel[] };
 

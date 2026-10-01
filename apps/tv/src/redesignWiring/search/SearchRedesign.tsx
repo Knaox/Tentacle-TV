@@ -11,6 +11,7 @@ import type { SearchFacetModel, SearchPersonModel } from "../../redesign/screens
 import { AutoFocusGuide } from "../focus/focusGuides";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
+import { useTitleRequests } from "../vigie/useTitleRequests";
 import { HiddenSearchInput } from "./HiddenSearchInput";
 import { searchInputLabels } from "./searchModels";
 import { useSearchInput } from "./useSearchInput";
@@ -26,7 +27,8 @@ const isInputKey = (key: string) => key === FIELD_KEY || key.startsWith("key:") 
 /**
  * La recherche, refondue (Apple TV), façon Netflix : à gauche le champ, le
  * clavier en grille et les suggestions ; à droite les résultats en rangées,
- * sur le moteur de Tentacle — la bibliothèque seule. Dictée : celle du
+ * sur le moteur de Tentacle — la bibliothèque, et, quand le serveur sait
+ * demander des titres, la rangée « À demander » (`useSearchAbsent`). Dictée : celle du
  * clavier système, qu'ouvre le champ (`useSystemKeyboard`) — jamais le micro,
  * que tvOS refuse aux apps.
  *
@@ -39,7 +41,9 @@ export function SearchRedesign() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const input = useSearchInput();
   const sources = useSearchSources(t);
-  const results = useSearchResults(sources, input);
+  // Demander un titre hors bibliothèque — rien tant que la garde Vigie est fermée.
+  const requests = useTitleRequests();
+  const results = useSearchResults(sources, input, requests?.gate ?? null);
   const screen = useRedesignScreen({ railKey: "Search", entryKey: FIRST_KEY });
   const { focus } = screen;
   // Liés dès le premier rendu, avant que la vue ne monte ses groupes.
@@ -88,19 +92,30 @@ export function SearchRedesign() {
     navigation.navigate("MediaDetail", { itemId: top.top.id });
   }, [top, openBrowse, remember, navigation]);
 
-  // Une vignette d'épisode LIT, une affiche ouvre sa fiche (le modèle des cartes).
+  // Une vignette d'épisode LIT, une affiche ouvre sa fiche (le modèle des
+  // cartes) ; un titre « À demander » se demande.
+  const { itemOf, absentOf } = results;
+  const open = requests?.open;
+  const hold = requests?.hold;
   const onPressCard = useCallback((section: string, card: CardModel) => {
     remember();
-    if (section === "episodes") navigation.navigate("Player", { itemId: card.id });
+    if (section === "absent") {
+      const title = absentOf(card.id);
+      if (title) open?.(title);
+    } else if (section === "episodes") navigation.navigate("Player", { itemId: card.id });
     else navigation.navigate("MediaDetail", { itemId: card.id });
-  }, [remember, navigation]);
-  const { itemOf } = results;
+  }, [remember, navigation, absentOf, open]);
   const onLongPressCard = useCallback((section: string, card: CardModel) => {
+    if (section === "absent") {
+      const title = absentOf(card.id);
+      if (title) hold?.(title);
+      return;
+    }
     const item = itemOf(card.id);
     if (!item) return;
     if (section === "episodes") openLandscape(item);
     else openPoster(item);
-  }, [itemOf, openLandscape, openPoster]);
+  }, [itemOf, absentOf, hold, openLandscape, openPoster]);
 
   const onOpenPerson = useCallback((person: SearchPersonModel) => openBrowse({ kind: "person", id: person.id, name: person.name }), [openBrowse]);
   const onOpenFacet = useCallback((facet: SearchFacetModel) => openBrowse({ kind: facet.kind, name: facet.name }), [openBrowse]);
@@ -141,6 +156,7 @@ export function SearchRedesign() {
         onEndEditing={keyboard.input.onEndEditing}
       />
       {sheet}
+      {requests?.overlay}
     </RedesignScreen>
   );
 }

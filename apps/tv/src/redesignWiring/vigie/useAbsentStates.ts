@@ -23,7 +23,8 @@ import type { VigieGate } from "./useVigieGate";
  */
 
 export interface AbsentResolver {
-  absentOf: (key: TitleKey) => AbsentModel;
+  /** `fallback` : la pastille qu'une réponse de recherche portait déjà, le temps que l'état se lise. */
+  absentOf: (key: TitleKey, fallback?: TitleState["badge"]) => AbsentModel;
   /** L'indication du geste sous la carte focalisée ; rien quand OK ne demanderait rien. */
   hintOf: (key: TitleKey) => string | undefined;
 }
@@ -59,7 +60,7 @@ export function useAbsentStates(gate: VigieGate | null, keys: readonly TitleKey[
     const stateOf = new Map<TitleKey, TitleState | null>(keys.map((key, i) => [key, stable[i] ?? null]));
     const mineOf = new Map((mine ?? []).map((m) => [m.key, m]));
     return {
-      absentOf: (key) => absentOf(t, mineOf.get(key), stateOf.get(key)),
+      absentOf: (key, fallback) => absentOf(t, mineOf.get(key), stateOf.get(key) ?? (fallback ? { badge: fallback, request: null } : null)),
       hintOf: (key) => {
         if (mineOf.has(key)) return undefined;
         const offer = stateOf.get(key)?.request;
