@@ -10,6 +10,7 @@ import { useResponsive, useTheme, useThemedStyles } from "@/theme";
 import { WatchedGlyph } from "./cards/cardGlyphs";
 import { CascadeGroup } from "./hero/CascadeGroup";
 import { makeHeroCtaStyles } from "./hero/heroCtaStyles";
+import { heroLogoUrl } from "./hero/heroImages";
 import { makeHeroTextStyles } from "./hero/heroTextStyles";
 
 function formatRuntime(ticks: number): string {
@@ -40,9 +41,9 @@ export function HeroContent({ item, active = true, onPlay, onInfo }: HeroContent
   const client = useJellyfinClient();
   const { isTablet } = useResponsive();
   const isEpisode = item.Type === "Episode";
-  const logoId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const hasLogo = item.ImageTags?.Logo != null;
-  const logoUrl = hasLogo ? client.getImageUrl(logoId, "Logo", { width: 500, quality: 90 }) : null;
+  // Le logo que la donnée annonce (celui de la série pour un épisode, avec SON
+  // tag), sinon le titre écrit.
+  const logoUrl = heroLogoUrl(client, item);
   const displayName = isEpisode ? (item.SeriesName ?? item.Name) : item.Name;
   const episodeLabel = isEpisode
     ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber ?? 1).padStart(2, "0")} · ${item.Name}`
