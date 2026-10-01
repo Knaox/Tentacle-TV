@@ -20,6 +20,9 @@ const SCRUB_TWIN_PRESS_MS = 400;
  *  maintien (« ça clique tout seul sur OK »). Un vrai OK de confirmation
  *  n'arrive qu'après relâchement, donc au-delà de cette fenêtre. */
 const MEDIA_KEY_ECHO_MS = 300;
+/** Un toucher du pavé qui suit un appui de si près l'ACCOMPAGNE (le pouce
+ *  frôle la surface en cliquant le bord de l'anneau) : ce n'est pas un geste. */
+const TOUCH_AFTER_PRESS_MS = 600;
 /** Les sauts du transport : l'habillage les AFFICHE (« 30 » dans sa flèche),
  *  il doit donc lire les mêmes valeurs que celles qu'on applique. */
 export const SKIP_FORWARD_SECONDS = 30;
@@ -71,6 +74,8 @@ export function useTVPlayerControls({
   onScrubPauseRef.current = onScrubPause;
   /** Évite que onAnyPress ré-affiche l'OSD sur les events ←/→. */
   const skipAnyPressRef = useRef(false);
+  /** Le dernier appui ou relâchement d'une touche (cf. `TOUCH_AFTER_PRESS_MS`). */
+  const lastPressAtRef = useRef(0);
 
   // --- Overlay visibility ---
   const [overlayVisible, setOverlayVisible] = useState(true);
@@ -164,6 +169,14 @@ export function useTVPlayerControls({
    *  En scrub, guardScrub transforme le même appui en confirmation. */
   const enterScrub = useCallback(() => scrub.startScrubbing(), [scrub]);
 
+  /** Un simple toucher du pavé réveille l'habillage, comme le lecteur d'Apple —
+   *  sauf celui qui accompagne un clic (le saut de 10 s ne rallume rien) ou un
+   *  défilement en cours. */
+  const wakeFromTouch = useCallback(() => {
+    if (scrubbingRef.current || Date.now() - lastPressAtRef.current < TOUCH_AFTER_PRESS_MS) return;
+    showOverlay();
+  }, [showOverlay, scrubbingRef]);
+
   // --- Défilement au pavé tactile (Apple TV ; rien sur Android TV, sans pavé) :
   //     le doigt emporte le curseur fantôme, partout où la vidéo est le sujet —
   //     en lecture comme en pause, habillage visible ou non. Glisser = défiler,
@@ -177,7 +190,7 @@ export function useTVPlayerControls({
     // Lever du doigt : le scrub reste ouvert — OK/▶︎❙❙ valide le seek, Back
     // annule, l'inactivité annule seule SANS seek (anti-seek accidentel).
     onEndScrub: scrub.endDrag,
-    onWake: showOverlay,
+    onWake: wakeFromTouch,
     durationRef,   // finesse du glisser adaptée à la durée de la vidéo
   });
 
@@ -217,7 +230,7 @@ export function useTVPlayerControls({
     onLongRight: () => scrub.handleLongDirection("forward"),
     onRewind: () => scrub.handleMediaSeekKey("backward"),
     onFastForward: () => scrub.handleMediaSeekKey("forward"),
-    onKeyUp: scrub.onHoldRelease,
+    onKeyUp: () => { lastPressAtRef.current = Date.now(); scrub.onHoldRelease(); },
     onDown: () => { if (!scrubbingRef.current && !panelOpenRef.current) showOverlay(); },
     onUp: () => { if (!scrubbingRef.current && !panelOpenRef.current) showOverlay(); },
     // OK (SELECT) pendant le scrub : valide le seek où que soit le focus — le scrub
@@ -234,6 +247,7 @@ export function useTVPlayerControls({
       }
     },
     onAnyPress: () => {
+      lastPressAtRef.current = Date.now();
       if (skipAnyPressRef.current) { skipAnyPressRef.current = false; return; }
       if (scrubbingRef.current || panelOpenRef.current) return;
       showOverlay();
