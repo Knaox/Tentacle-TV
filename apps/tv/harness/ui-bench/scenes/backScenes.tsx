@@ -38,6 +38,7 @@ export const BACK_SCENES: BenchScene[] = [
   from("lecteur/osd-film", "lecteur-habillage", "Lecteur — habillage", ["player:playpause", "player:back"]),
   from("lecteur/pistes", "lecteur-pistes", "Lecteur — pistes", ["tracks:audio:2", "tracks:close"]),
   from("lecteur/episodes", "lecteur-episodes", "Lecteur — épisodes", ["episodes:episode:2", "episodes:close"]),
+  from("lecteur/fin", "lecteur-fin", "Lecteur — affiche de fin", ["end:play", "end:leave"]),
   from("surimpressions/erreur-ecran", "erreur-ecran", "Erreur d'écran", ["screenError:retry", "screenError:back"]),
   from("jumelage/serveur", "jumelage-serveur", "Jumelage — serveur manuel", ["pairing:url", "pairing:back"]),
   from("jumelage/code-actif", "jumelage-relais", "Jumelage — code du relais : seule action", ["pairing:back"]),
