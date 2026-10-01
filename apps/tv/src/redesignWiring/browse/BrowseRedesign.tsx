@@ -8,6 +8,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import type { RootStackParamList } from "../../navigation/types";
 import { BrowseView } from "../../redesign/screens/browse/BrowseView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
+import { useBackFocus } from "../focus/backFocus";
 import { AutoFocusGuide } from "../focus/focusGuides";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
@@ -25,10 +26,12 @@ const PORTRAIT_HEIGHT = TV_STAGE.card.person.size * 2;
  * actif dans la navigation, et Menu, Retour comme « Rechercher » y ramènent
  * (la recherche rend alors sa barre).
  *
- * L'arrivée vise la première affiche (parité LG). Pendant un chargement,
- * Retour tient le focus : la première affiche le reprend à son arrivée, tant
- * qu'aucune affiche ne l'a eu — et « haut », depuis n'importe quelle affiche
- * de la première rangée, rend Retour (groupe `browse:header`).
+ * L'arrivée vise la première affiche (parité LG). Pendant un chargement, la
+ * croix Retour — seule action — tient le focus : la première affiche le
+ * reprend à son arrivée, tant qu'aucune affiche ne l'a eu ; « Réessayer »
+ * aussi, si l'erreur arrive. Arrivée sur une page déjà là, la croix ne le
+ * prend jamais (`useBackFocus`) ; « haut », depuis n'importe quelle affiche
+ * de la première rangée, la rend (groupe `browse:header`).
  */
 export function BrowseRedesign({ kind, id, name }: Params) {
   const { t } = useTranslation();
@@ -59,7 +62,6 @@ export function BrowseRedesign({ kind, id, name }: Params) {
         title: person ? t("media:personLoadError") : t("common:contentErrorTitle"),
         message: t("common:contentErrorMessage"),
         primary: { label: t("common:retry"), icon: "refresh", onPress: retry },
-        secondary: { label: t("common:back"), icon: "chevronLeft", onPress: goBack },
       }
     : null;
   const empty = !loading && !status && items.length === 0
@@ -71,13 +73,10 @@ export function BrowseRedesign({ kind, id, name }: Params) {
     ? client.getImageUrl(data.person.id, "Primary", { height: PORTRAIT_HEIGHT, tag: data.person.imageTag, quality: 85 })
     : undefined;
 
-  const screen = useRedesignScreen({
-    railKey: "Search",
-    entryKey: status ? "status:primary" : items.length > 0 ? "grid:0" : "browse:back",
-    onBack,
-    onReselect: goBack,
-  });
+  const entryKey = status ? "status:primary" : items.length > 0 ? "grid:0" : "browse:back";
+  const screen = useRedesignScreen({ railKey: "Search", entryKey, onBack, onReselect: goBack });
   const { focus } = screen;
+  useBackFocus(focus, { backKey: "browse:back", entryKey });
   // Lié dès le premier rendu, avant que la vue ne monte son groupe.
   const bound = useRef(false);
   if (!bound.current) {
@@ -96,6 +95,11 @@ export function BrowseRedesign({ kind, id, name }: Params) {
     if (items.length === 0 || posterSeen.current || focus.focusedKey() !== "browse:back") return;
     return focus.claim("grid:0");
   }, [items.length, focus]);
+  // L'erreur après un chargement : la croix avait le focus (seule action), « Réessayer » le reprend.
+  useEffect(() => {
+    if (!failed || posterSeen.current || focus.focusedKey() !== "browse:back") return;
+    return focus.claim("status:primary");
+  }, [failed, focus]);
 
   return (
     <RedesignScreen screen={screen}>
@@ -107,7 +111,6 @@ export function BrowseRedesign({ kind, id, name }: Params) {
         meta={meta}
         portraitUri={portraitUri}
         initials={person ? initials(name) : undefined}
-        backLabel={t("common:back")}
         cards={grid.cards}
         palette={grid.palette}
         loading={loading}

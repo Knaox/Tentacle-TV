@@ -5,6 +5,8 @@ import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
+import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { EmptyState } from "../library/EmptyState";
 import { GridSkeleton } from "../library/GridSkeleton";
@@ -14,7 +16,7 @@ import { BrowseHeader, type BrowseKind } from "./BrowseHeader";
 
 /**
  * Parcourir : la filmographie d'une personne, un genre ou un studio, DANS la
- * bibliothèque — une étagère, pas un catalogue. En tête, Retour, le portrait
+ * bibliothèque — une étagère, pas un catalogue. En tête, la croix Retour, le portrait
  * (ou le pictogramme du genre, du studio), le nom en grand et « N titres ·
  * ordre » ; puis la grille d'affiches. Le fond prend la lumière de l'affiche
  * focalisée ; la navigation garde « Rechercher » allumé (on vient de là).
@@ -41,15 +43,15 @@ export interface BrowseViewProps {
   meta?: string;
   portraitUri?: string;
   initials?: string;
-  backLabel: string;
   cards: CardModel[];
   palette: ArtworkPalette;
   columns?: 5 | 6;
   loading?: boolean;
   /** Rien de cette personne, ce genre, ce studio dans la bibliothèque — la
-   *  pilule Retour reste la sortie, le vide n'en ajoute pas une deuxième. */
+   *  croix Retour reste la sortie, le vide n'en ajoute pas une deuxième. */
   empty?: { title: string; message?: string } | null;
-  /** Erreur de chargement : le panneau remplace l'en-tête et la grille. */
+  /** Erreur de chargement : le panneau remplace l'en-tête et la grille ; la
+   *  croix reste à sa place, dans une bande à elle (groupe `browse:header`). */
   status?: StatusPanelProps | null;
   onBack?: () => void;
   onPressCard?: (card: CardModel) => void;
@@ -67,7 +69,6 @@ export const BrowseView = memo(function BrowseView(props: BrowseViewProps) {
       meta={loading || empty ? undefined : props.meta}
       portraitUri={props.portraitUri}
       initials={props.initials}
-      backLabel={props.backLabel}
       palette={palette}
       onBack={props.onBack}
     />
@@ -88,7 +89,12 @@ export const BrowseView = memo(function BrowseView(props: BrowseViewProps) {
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
       {status ? (
-        <StatusPanel {...status} />
+        <>
+          <StatusPanel {...status} />
+          <FocusGroup focusKey="browse:header" style={styles.backBar}>
+            <BackButton focusKey="browse:back" onPress={props.onBack} />
+          </FocusGroup>
+        </>
       ) : (
         <PosterGrid
           cards={loading ? [] : cards}
@@ -111,5 +117,17 @@ export const BrowseView = memo(function BrowseView(props: BrowseViewProps) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   empty: { paddingTop: 20 },
+  // La place de la croix dans l'en-tête, sur toute la largeur du contenu : HAUT
+  // depuis le panneau y monte.
+  backBar: {
+    position: "absolute",
+    top: 0,
+    left: TV_STAGE.contentLeft,
+    right: 0,
+    height: BACK_TOP + BACK_BUTTON_SIZE,
+    paddingTop: BACK_TOP,
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
   brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

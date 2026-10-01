@@ -39,7 +39,6 @@ function BrowseScene({ data, build, variant }: { data: BenchData; build: Build; 
       meta={model.meta}
       portraitUri={model.portraitUri}
       initials={model.initials}
-      backLabel={t("common:back")}
       cards={variant === "ready" ? cards : []}
       palette={forcedCard?.palette ?? focusedPalette ?? cards[0]?.palette ?? NEUTRAL_PALETTE}
       loading={variant === "loading"}
@@ -55,7 +54,6 @@ function BrowseScene({ data, build, variant }: { data: BenchData; build: Build; 
               title: person ? t("media:personLoadError") : t("common:contentErrorTitle"),
               message: t("common:contentErrorMessage"),
               primary: { label: t("common:retry"), icon: "refresh" },
-              secondary: { label: t("common:back"), icon: "chevronLeft" },
             }
           : null
       }
@@ -97,5 +95,5 @@ export const BROWSE_SCENES: BenchScene[] = [
   scene("studio", "Studio (HBO, Séries)", hbo, "ready", ["grid:2"]),
   scene("chargement", "Chargement (filmographie)", keira, "loading", ["browse:back"]),
   scene("vide", "Vide (exemple : Western, Films)", western, "empty", ["browse:back"]),
-  scene("erreur", "Erreur (filmographie)", keira, "error", ["status:primary", "status:secondary"]),
+  scene("erreur", "Erreur (filmographie)", keira, "error", ["status:primary", "browse:back"]),
 ];

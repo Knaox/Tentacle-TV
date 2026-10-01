@@ -3,22 +3,23 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
 import type { ArtworkPalette } from "../../color/artworkPalette";
-import { PillButton } from "../../controls/PillButton";
+import { BACK_TOP, BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon } from "../../icons/Icon";
 import { colors, fonts, text, white } from "../../theme/tokens";
 
 /**
- * L'en-tête de Parcourir : la pilule Retour (la sortie se VOIT, parité LG),
- * puis le portrait rond de la personne — ou, pour un genre et un studio, un
+ * L'en-tête de Parcourir : la croix Retour en haut à gauche (la sortie se
+ * VOIT, parité LG — `BackButton`, la même partout), puis le portrait rond de
+ * la personne — ou, pour un genre et un studio, un
  * disque de verre et son pictogramme —, le surtitre (FILMOGRAPHIE, GENRE,
  * STUDIO), le nom en grand et « N titres · ordre ». La lumière de l'œuvre la
  * plus en vue déborde autour du portrait.
  *
  * Clé de focus : `browse:back`. Clé de groupe : `browse:header` — l'en-tête
  * entier, sur toute la largeur : « haut » depuis n'importe quelle affiche de la
- * première rangée y trouve Retour, même loin sous la pilule.
+ * première rangée y trouve la croix, même loin d'elle.
  */
 
 export type BrowseKind = "person" | "genre" | "studio";
@@ -31,7 +32,6 @@ export interface BrowseHeaderProps {
   portraitUri?: string;
   /** Initiales quand la personne n'a pas de portrait. */
   initials?: string;
-  backLabel: string;
   palette: ArtworkPalette;
   onBack?: () => void;
 }
@@ -61,11 +61,11 @@ function Portrait({ kind, portraitUri, initials, palette }: Pick<BrowseHeaderPro
 }
 
 export const BrowseHeader = memo(function BrowseHeader(props: BrowseHeaderProps) {
-  const { kicker, name, meta, backLabel, onBack } = props;
+  const { kicker, name, meta, onBack } = props;
   return (
     <FocusGroup focusKey="browse:header" style={styles.header}>
       <View style={styles.back}>
-        <PillButton variant="glass" size="md" icon="chevronLeft" label={backLabel} focusKey="browse:back" onPress={onBack} />
+        <BackButton focusKey="browse:back" onPress={onBack} />
       </View>
       <View style={styles.identity}>
         <Portrait kind={props.kind} portraitUri={props.portraitUri} initials={props.initials} palette={props.palette} />
@@ -83,8 +83,9 @@ const styles = StyleSheet.create({
   header: { marginBottom: 48 },
   // Au-dessus du halo du portrait, qui déborde de 116 points autour de lui et
   // recouvrait la pilule : sur tvOS, un focalisable recouvert n'est plus proposé
-  // au focus (« haut » depuis la première colonne ne trouvait pas Retour).
-  back: { alignSelf: "flex-start", marginBottom: 34, zIndex: 1 },
+  // au focus (« haut » depuis la première colonne ne trouvait pas Retour). La
+  // grille commence à la marge du haut : la croix descend à sa place commune.
+  back: { alignSelf: "flex-start", marginTop: BACK_TOP - TV_STAGE.safe.y, marginBottom: 34, zIndex: 1 },
   identity: { flexDirection: "row", alignItems: "center", gap: 44 },
   portrait: { width: PORTRAIT, height: PORTRAIT },
   photoFrame: { width: PORTRAIT, height: PORTRAIT, borderRadius: PORTRAIT / 2, overflow: "hidden", backgroundColor: colors.surface3 },
