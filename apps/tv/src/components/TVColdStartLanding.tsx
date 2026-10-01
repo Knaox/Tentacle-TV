@@ -35,7 +35,8 @@ const NAV_RETRIES = 25;
  * déjumelage prend la main ; muet (serveur ou Jellyfin coupé), la fiche quand
  * même, d'après le marqueur. Un déjumelage interrompu, lui, s'est rejoué avant
  * (`resumeUnpair`, au démarrage) et a purgé le marqueur avec le compte.
- * « Reprendre » part de l'arrêt du marqueur quand Jellyfin n'a rien vu de plus
+ * « Reprendre » : la position que la file a rejouée ; l'app tuée pendant son
+ * absence, l'arrêt du marqueur, exact, quand Jellyfin n'a rien vu de plus
  * récent (`markerStopToAdopt`) — la garde le défend ensuite ; pour un épisode,
  * jusque dans l'état de visionnage de la série (`settleSeriesResume`), avant
  * d'ouvrir sa fiche.

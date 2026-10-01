@@ -10,6 +10,10 @@ import { seriesResumeAfterStop, type PlaybackMarker } from "@tentacle-tv/tv-core
  * l'instantané du dernier début) — la fiche rouverte proposait de reprendre en arrière.
  *
  * Seulement si, à la fois :
+ * - le marqueur a été écrit au passage en ARRIÈRE-PLAN : le lecteur s'est mis
+ *   en pause, sa position est exacte. Mort À L'ÉCRAN, il peut retarder de 30 s
+ *   (son rythme) sur la file des rapports, qui rejoue la sienne (≤ 2 s) avant
+ *   la relecture : c'est elle qui fait foi ;
  * - LA DATE GAGNE : aucune lecture du titre n'a commencé depuis le marqueur
  *   (`LastPlayedDate` du serveur antérieure) — sinon le serveur a raison ;
  * - la position diffère de plus de 3 s ;
@@ -20,7 +24,7 @@ import { seriesResumeAfterStop, type PlaybackMarker } from "@tentacle-tv/tv-core
  */
 export function markerStopToAdopt(marker: PlaybackMarker, item: MediaItem): number | null {
   const position = marker.positionSeconds;
-  if (position === undefined || !item.UserData) return null;
+  if (marker.phase !== "background" || position === undefined || !item.UserData) return null;
   const projection = projectStop({ positionSeconds: position, runtimeTicks: item.RunTimeTicks });
   if (!projection || projection.played !== false) return null;
   return judgeServerUserData({ ...projection, stoppedAt: marker.at }, item.UserData) === "older" ? position : null;
