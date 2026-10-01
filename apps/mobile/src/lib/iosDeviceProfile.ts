@@ -1,8 +1,9 @@
-import type {
-  DeviceProfile,
-  DirectPlayProfile,
-  CodecProfile,
-  SubtitleProfile,
+import {
+  avPlayerHevcTagCondition,
+  type DeviceProfile,
+  type DirectPlayProfile,
+  type CodecProfile,
+  type SubtitleProfile,
 } from "@tentacle-tv/shared";
 import { IOS_NATIVE_SUPPORT, supportList } from "@tentacle-tv/offline-core";
 import type { PlayerEngineKind } from "@/player/engine/types";
@@ -58,13 +59,18 @@ export function buildIosDeviceProfile(
         { Condition: "LessThanEqual", Property: "RefFrames", Value: "16", IsRequired: false },
       ],
     },
-    // HEVC : max level 6.1 (A12+), ref frames 16
+    // HEVC : max level 6.1 (A12+), ref frames 16, et seulement sous l'étiquette
+    // qu'AVPlayer lit (`hvc1` / `dvh1`). Un `hev1` lu tel quel s'affiche NOIR,
+    // sans erreur : le serveur le remuxe en HLS fMP4, vidéo copiée et
+    // ré-étiquetée `hvc1`. Le routeur l'envoie d'abord au lecteur avancé ; ceci
+    // tient quand le système lit quand même (AirPlay, réglage, mpv absent).
     {
       Type: "Video",
       Codec: "hevc",
       Conditions: [
         { Condition: "LessThanEqual", Property: "VideoLevel", Value: "183", IsRequired: false },
         { Condition: "LessThanEqual", Property: "RefFrames", Value: "16", IsRequired: false },
+        avPlayerHevcTagCondition(),
       ],
     },
     // Audio : max 6 channels (5.1) — AVPlayer gère 7.1 mais passthrough seulement
