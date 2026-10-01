@@ -22,10 +22,17 @@ export function usePasswordLogin(onPaired: (account: PairedAccount) => void) {
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<LoginError | null>(null);
 
-  // Un seul envoi à la fois, et rien après le départ de l'écran.
+  // Un seul envoi à la fois, et rien après le départ de l'écran. Reposé à
+  // chaque montage : un effet rejoué (rechargement à chaud) ne le laisse pas
+  // à faux, ce qui figerait « Connexion… ».
   const sending = useRef(false);
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const changeUsername = useCallback((next: string) => {
     setUsername(next);
