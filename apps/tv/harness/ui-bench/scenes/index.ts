@@ -9,6 +9,7 @@ import { HOME_SCENES } from "./homeScenes";
 import { LEGIBILITY_SCENES } from "./legibilityScenes";
 import { LIBRARY_SCENES } from "./libraryScenes";
 import { MEASURE_SCENES } from "./measureScenes";
+import { MOTION_SCENES } from "./motionScenes";
 import { NAV_SCENES } from "./navScenes";
 import { OVERLAY_SCENES } from "./overlayScenes";
 import { PAIRING_SCENES } from "./pairingScenes";
@@ -43,6 +44,7 @@ export const SCENES: BenchScene[] = [
   ...GLASS_SCENES,
   ...LEGIBILITY_SCENES,
   ...MEASURE_SCENES,
+  ...MOTION_SCENES,
   ...BENCH_SCENES,
 ];
 
