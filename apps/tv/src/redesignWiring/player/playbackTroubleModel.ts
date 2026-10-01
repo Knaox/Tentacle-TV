@@ -42,13 +42,12 @@ export function lowerQualityKey(presets: readonly QualityPreset[], current: stri
 
 export function noticeOf(t: Translate, phase: RecoveryPhase): TroubleNoticeModel | null {
   if (phase.kind !== "degraded") return null;
-  if (phase.cause === "tentacle") {
-    return { mode: "notice", icon: "server", tone: "warning", title: t(TITLE.tentacle), detail: t("player:troublePlayingUnaffected") };
-  }
-  return {
-    mode: "notice", icon: "server", tone: "warning", title: t(TITLE.media),
-    detail: t("player:troublePlayingOn", { time: aheadLabel(t, phase.ahead) }),
-  };
+  // Tentacle seul, sous un flux direct : la lecture n'en dépend pas. Sinon (le
+  // flux passe par le serveur à terre), elle vit sur ce qui est chargé.
+  const detail = phase.streamAffected
+    ? t("player:troublePlayingOn", { time: aheadLabel(t, phase.ahead) })
+    : t("player:troublePlayingUnaffected");
+  return { mode: "notice", icon: "server", tone: "warning", title: t(TITLE[phase.cause]), detail };
 }
 
 export const RESUMED_NOTICE = (t: Translate): TroubleNoticeModel => ({
@@ -83,15 +82,19 @@ export function panelOf(args: {
   else if (seconds !== null) status = t(args.stillDown ? "player:troubleStillDown" : "player:troubleCheckingIn", { seconds });
   else { status = t("player:troubleChecking"); busy = true; }
 
+  // La reprise en cours : le serveur répond — le dire, plutôt que sa panne.
+  const back = phase.kind === "recovering" && cause !== "slow";
   const detail = phase.kind === "stuck"
     ? t("player:troubleStuckDetail", { position })
-    : cause === "slow" ? t("player:troubleSlowDetail") : t("player:troubleResumesAt", { position });
+    : back ? t("player:troubleResumingAt", { position })
+      : cause === "slow" ? t("player:troubleSlowDetail") : t("player:troubleResumesAt", { position });
 
   const actions: TroubleAction[] = [{ key: "retry", label: t("player:troubleRetryNow"), icon: "refresh" }];
   if (slowish && args.canLowerQuality) actions.push({ key: "quality", label: t("player:troubleLowerQuality"), icon: "gauge" });
   actions.push({ key: "back", label: t("player:backToDetails"), icon: "chevronLeft" });
 
-  return { mode: "panel", icon: ICON[cause], title: t(TITLE[cause]), detail, status, busy, actions, active: args.active };
+  const title = back ? t("player:troubleBackTitle") : t(TITLE[cause]);
+  return { mode: "panel", icon: back ? "refresh" : ICON[cause], title, detail, status, busy, actions, active: args.active };
 }
 
 /** Le bandeau ou le panneau — un seul à la fois, le panneau d'abord. */

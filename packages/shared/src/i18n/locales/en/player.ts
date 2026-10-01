@@ -120,6 +120,8 @@ export default {
   troubleChecking: "Checking the server…",
   troubleStillDown: "Still unreachable — checking again in {{seconds}}s",
   troubleResuming: "Resuming playback…",
+  troubleBackTitle: "The server is answering again",
+  troubleResumingAt: "Playback resumes at {{position}}.",
   troubleSlowWaiting: "Trying again automatically in a moment",
   troubleStuckStatus: "Automatic retries weren't enough",
   troubleRetryNow: "Try again now",

@@ -125,6 +125,8 @@ export default {
   troubleChecking: "Vérification du serveur…",
   troubleStillDown: "Toujours injoignable — nouvelle vérification dans {{seconds}} s",
   troubleResuming: "Reprise de la lecture…",
+  troubleBackTitle: "Le serveur répond de nouveau",
+  troubleResumingAt: "La lecture reprend à {{position}}.",
   troubleSlowWaiting: "Nouvel essai automatique dans un instant",
   troubleStuckStatus: "Les essais automatiques n'ont pas suffi",
   troubleRetryNow: "Réessayer maintenant",

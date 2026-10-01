@@ -25,8 +25,10 @@ export type Culprit = "media" | "tentacle";
 
 export type RecoveryPhase =
   | { kind: "none" }
-  /** Un serveur ne répond plus, la lecture continue. `ahead` : secondes chargées. */
-  | { kind: "degraded"; cause: Culprit; ahead: number; since: number }
+  /** Un serveur ne répond plus, la lecture continue. `ahead` : secondes chargées ;
+   *  `streamAffected` : le flux en dépend (chemin du flux à terre) — sinon,
+   *  Tentacle seul, sous un flux direct qui n'en dépend pas. */
+  | { kind: "degraded"; cause: Culprit; ahead: number; since: number; streamAffected: boolean }
   /** La lecture est arrêtée ; elle reprendra seule au retour du serveur. */
   | { kind: "waiting"; cause: TroubleCause; since: number }
   /** Relance du flux en cours. */
@@ -116,7 +118,7 @@ export function decideRecovery(input: RecoveryInput): RecoveryDecision {
     const cause = sourceDown ?? (input.tentacle === "down" ? "tentacle" : null);
     if (cause) {
       return {
-        phase: { kind: "degraded", cause, ahead: input.ahead, since: input.downSince ?? now },
+        phase: { kind: "degraded", cause, ahead: input.ahead, since: input.downSince ?? now, streamAffected: sourceDown !== null },
         probe: sourceDown !== null && due(PROBE_EVERY_MS),
         restart: false,
       };

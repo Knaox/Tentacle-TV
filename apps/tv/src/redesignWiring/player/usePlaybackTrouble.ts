@@ -104,7 +104,9 @@ export function usePlaybackTrouble(args: {
     return () => clearInterval(timer);
   }, [panelPhase]);
 
-  const tentacleSince = phase.kind === "degraded" && phase.cause === "tentacle" ? phase.since : null;
+  // Le rappel bref ne vaut que pour Tentacle seul, sous un flux qui n'en
+  // dépend pas ; un flux qui passe par lui garde son compte à rebours.
+  const tentacleSince = phase.kind === "degraded" && phase.cause === "tentacle" && !phase.streamAffected ? phase.since : null;
   const tentacleFresh = useUntil(tentacleSince !== null ? tentacleSince + TENTACLE_NOTICE_MS : null);
 
   const lower = lowerQualityKey(qualityPresets, qualityKey);

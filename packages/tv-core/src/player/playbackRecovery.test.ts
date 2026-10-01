@@ -35,15 +35,20 @@ describe("decideRecovery — la lecture avance", () => {
 
   it("Jellyfin à terre : la lecture continue sur ce qui est chargé, on le dit", () => {
     const d = decideRecovery(playing({ source: "down", sourceCulprit: "media", sourceCheckedAt: T - PROBE_EVERY_MS, ahead: 34, downSince: T - 9000 }));
-    expect(d.phase).toEqual({ kind: "degraded", cause: "media", ahead: 34, since: T - 9000 });
+    expect(d.phase).toEqual({ kind: "degraded", cause: "media", ahead: 34, since: T - 9000, streamAffected: true });
     expect(d.probe).toBe(true);
     expect(d.restart).toBe(false);
   });
 
   it("Tentacle seul à terre, flux direct : on le dit, sans sonder la source", () => {
     const d = decideRecovery(playing({ tentacle: "down", source: "ok", sourceCheckedAt: T - 60_000 }));
-    expect(d.phase).toMatchObject({ kind: "degraded", cause: "tentacle" });
+    expect(d.phase).toMatchObject({ kind: "degraded", cause: "tentacle", streamAffected: false });
     expect(d.probe).toBe(false);
+  });
+
+  it("Tentacle à terre derrière un flux par le proxy : le flux en dépend, on le dit", () => {
+    const d = decideRecovery(playing({ tentacle: "down", source: "down", sourceCulprit: "tentacle", sourceCheckedAt: T - 100, ahead: 22 }));
+    expect(d.phase).toMatchObject({ kind: "degraded", cause: "tentacle", ahead: 22, streamAffected: true });
   });
 });
 
