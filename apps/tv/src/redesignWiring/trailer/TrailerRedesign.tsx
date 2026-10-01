@@ -48,7 +48,8 @@ export function TrailerRedesign({ route, navigation }: Props) {
   const ytId = parseYouTubeId(url);
   const lang = (i18n.language ?? "en").slice(0, 2);
   const serverUrl = (storage.getItem("tentacle_server_url") ?? "").replace(/\/$/, "");
-  // Sans identifiant YouTube ni serveur, rien à lire : l'écran le dit.
+  // Sans identifiant YouTube ni serveur, rien à lire : l'écran le dit — et,
+  // pour une vidéo hors YouTube, que c'est le téléviseur qui ne sait pas la lire.
   const canPlay = TRAILER_WEBVIEW_SUPPORTED && !!ytId && !!serverUrl;
   const state = !canPlay || failed ? "unavailable" : loaded ? "playing" : "loading";
   const { dimmed, wake } = useIdleChrome(state === "playing");
@@ -80,6 +81,7 @@ export function TrailerRedesign({ route, navigation }: Props) {
         video={video}
         chromeDimmed={dimmed}
         waiting={waiting}
+        unavailableReason={ytId ? "youtube" : "unsupported"}
         onClose={close}
       />
     </FocusBindingProvider>

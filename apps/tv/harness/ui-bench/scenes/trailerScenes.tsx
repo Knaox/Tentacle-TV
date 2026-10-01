@@ -16,7 +16,7 @@ function trailerItem(data: BenchData): MediaItem | undefined {
   return data.list("movies").find(withTrailer) ?? data.list("resume").find(withTrailer);
 }
 
-function Trailer({ data, state, dimmed = false, waiting = false }: { data: BenchData; state: "loading" | "playing" | "unavailable"; dimmed?: boolean; waiting?: boolean }) {
+function Trailer({ data, state, dimmed = false, waiting = false, reason }: { data: BenchData; state: "loading" | "playing" | "unavailable"; dimmed?: boolean; waiting?: boolean; reason?: "youtube" | "unsupported" }) {
   const item = trailerItem(data);
   const backdrop = item ? data.image(item.Id, "Backdrop") : undefined;
   return (
@@ -26,6 +26,7 @@ function Trailer({ data, state, dimmed = false, waiting = false }: { data: Bench
       backdropUri={backdrop}
       chromeDimmed={dimmed}
       waiting={waiting}
+      unavailableReason={reason}
       video={backdrop ? <Image source={{ uri: backdrop }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : undefined}
     />
   );
@@ -38,5 +39,6 @@ export const TRAILER_SCENES: BenchScene[] = [
   // Le flux ne suit plus : la roue sur la dernière image, le chrome toujours estompé.
   { id: "bande-annonce/attente", group: "Bande-annonce", label: "Lecture qui attend le réseau", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="playing" dimmed waiting /> },
   { id: "bande-annonce/chargement", group: "Bande-annonce", label: "Chargement", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="loading" /> },
-  { id: "bande-annonce/indisponible", group: "Bande-annonce", label: "Indisponible sur ce téléviseur", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="unavailable" /> },
+  { id: "bande-annonce/indisponible", group: "Bande-annonce", label: "YouTube ne la fournit pas", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="unavailable" /> },
+  { id: "bande-annonce/illisible", group: "Bande-annonce", label: "Vidéo hors YouTube, illisible sur ce téléviseur", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="unavailable" reason="unsupported" /> },
 ];

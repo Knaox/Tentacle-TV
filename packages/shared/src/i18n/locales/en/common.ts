@@ -107,6 +107,9 @@ export default {
   trailerOpensYoutube: "Opens YouTube",
   // Téléviseur : aucun lien externe à proposer, contrairement au web.
   trailerUnavailableTv: "This trailer can't be played on this TV.",
+  // Téléviseur, vidéo YouTube : c'est YouTube qui refuse le flux, par moments
+  // — pas le téléviseur (Apple TV refondue).
+  trailerUnavailableYoutube: "YouTube isn't providing this trailer right now. Try again later.",
   extraKindTrailer: "Trailer",
   extraKindTeaser: "Teaser",
   extraKindBehindTheScenes: "Behind the scenes",

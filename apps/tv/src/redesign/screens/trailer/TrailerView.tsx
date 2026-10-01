@@ -26,6 +26,10 @@ import { colors, fonts, scrim, text } from "../../theme/tokens";
  *   voile opaque qui ne se lève qu'en lecture ;
  * - `state` : `loading` tant que l'embed charge, `playing`, `unavailable`
  *   (pas d'identifiant YouTube, pas de serveur, erreur) ;
+ * - `unavailableReason` : ce que dit l'indisponible — `youtube` (le
+ *   défaut : YouTube ne fournit pas le flux pour l'instant, réessayer plus
+ *   tard) ou `unsupported` (une vidéo hors YouTube, que le téléviseur ne
+ *   sait pas lire) ;
  * - `waiting` : la lecture lancée attend le réseau — une roue au centre, sur
  *   la dernière image, pour qu'elle ne paraisse jamais figée ;
  * - `onClose` : « Fermer » ; Retour ferme aussi (câblage).
@@ -43,12 +47,14 @@ export interface TrailerViewProps {
   chromeDimmed?: boolean;
   /** La lecture lancée attend le réseau (le temps n'avance plus). */
   waiting?: boolean;
+  /** Pourquoi rien ne se lit : YouTube qui refuse (défaut), ou une vidéo que le téléviseur ne sait pas lire. */
+  unavailableReason?: "youtube" | "unsupported";
   onClose?: () => void;
 }
 
 const CLOSE_KEY = "trailer:close";
 
-export const TrailerView = memo(function TrailerView({ state, title, backdropUri, video, chromeDimmed = false, waiting = false, onClose }: TrailerViewProps) {
+export const TrailerView = memo(function TrailerView({ state, title, backdropUri, video, chromeDimmed = false, waiting = false, unavailableReason = "youtube", onClose }: TrailerViewProps) {
   const { t } = useTranslation("common");
   const lit = useFocusProgress(state !== "playing" || !chromeDimmed, 420);
   const chrome = useAnimatedStyle(() => ({ opacity: 0.15 + 0.85 * lit.value }));
@@ -100,7 +106,7 @@ export const TrailerView = memo(function TrailerView({ state, title, backdropUri
               <Icon name="trailer" size={40} color={colors.text} />
             </View>
             <Text style={[styles.title, styles.centered]} numberOfLines={2}>{title}</Text>
-            <Text style={[text.body, styles.centered]}>{t("trailerUnavailableTv")}</Text>
+            <Text style={[text.body, styles.centered]}>{t(unavailableReason === "unsupported" ? "trailerUnavailableTv" : "trailerUnavailableYoutube")}</Text>
             <View style={styles.action}>
               <PillButton label={t("close")} icon="close" focusKey={CLOSE_KEY} onPress={onClose} />
             </View>

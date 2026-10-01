@@ -416,7 +416,9 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
   premier mégaoctet — yt-dlp lui-même ne peut pas le télécharger. Quand la
   HLS vient (une fois sur plusieurs), la vraie bande-annonce se lit,
   s'estompe et se ferme. Le serveur ne déclare plus lisible ce MP4 coupé : il
-  sonde comme AVPlayer, par une plage ouverte (`isReadable`).
+  sonde comme AVPlayer, par une plage ouverte (`isReadable`). Et l'écran dit
+  ce qui se passe : « YouTube ne fournit pas cette bande-annonce pour
+  l'instant » (question 5, plus bas).
 
 ## Branchement — bibliothèques, Ma liste, Favoris, Parcourir, recherche (Apple TV)
 
@@ -722,9 +724,10 @@ Automate en 5 étapes, toutes gardées :
 
 ### 10. Bande-annonce (`Trailer`)
 
-Lecture, chargement (nom), indisponible, attente du réseau (une roue sur la
-dernière image), bouton Fermer (s'estompe après 3 s, revient au moindre
-geste).
+Lecture, chargement (nom), indisponible — YouTube ne la fournit pas
+(réessayer plus tard), ou vidéo hors YouTube, illisible —, attente du réseau
+(une roue sur la dernière image), bouton Fermer (s'estompe après 3 s, revient
+au moindre geste).
 
 ### 11. Lecteur — l'habillage seulement
 
@@ -950,7 +953,11 @@ fusionnés :
    (mesuré au banc) : Menu ferme le panneau. Faut-il un guide vers elle ?~~
    — oui, posé (groupe `sheet:header`, « Branchement — fiche, bande-annonce,
    feuille » ci-dessus).
-5. « Cette bande-annonce ne peut pas être lue sur ce téléviseur » accuse le
+5. ~~« Cette bande-annonce ne peut pas être lue sur ce téléviseur » accuse le
    téléviseur, alors que c'est YouTube qui refuse le flux (et que le serveur
    retient l'échec dix minutes). Le reformuler — « YouTube ne la fournit pas
-   pour l'instant, réessayez plus tard » ?
+   pour l'instant, réessayez plus tard » ?~~ — oui (tranché le 2026-10-01) :
+   la voie YouTube dit « YouTube ne fournit pas cette bande-annonce pour
+   l'instant. Réessayez plus tard. » (clé nouvelle `trailerUnavailableYoutube`,
+   `TrailerView` `unavailableReason`) ; une vidéo hors YouTube garde
+   `trailerUnavailableTv`. Android TV et webOS n'en changent rien.
