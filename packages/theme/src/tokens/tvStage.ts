@@ -66,7 +66,15 @@ export const TV_STAGE = {
   },
   /** Où commence le contenu : après la navigation repliée. */
   contentLeft: 176,
-  hero: { top: 56, height: 640, radius: 40, haloSpread: 10 },
+  hero: {
+    top: 56,
+    height: 640,
+    radius: 40,
+    haloSpread: 10,
+    /** La force du halo du héros : discret, « plus discret, vraiment » —
+     *  0,3 est un plafond (retours du 2026-10-01). Une ligne pour le régler. */
+    haloOpacity: 0.28,
+  },
   row: { gap: 36, titleGap: 22, spacing: 64 },
   card: {
     landscape: { width: 380, height: 214, radius: 22 },
