@@ -1,9 +1,14 @@
 # Changelog — Serveur (backend + web, image Docker)
 
-Blocs `## [X.Y.Z]` avec `### FR` / `### EN`. Lu par `.github/workflows/server.yml` :
-quand `versions.json` → `server` change dans un push sur `main`, une Release
-GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
-`ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
+Blocs `## [X.Y.Z]` avec `### FR` / `### EN`. Lu par `.github/workflows/server.yml`
+au cran store, le seul qui publie : la Release GitHub `server-vX.Y.Z` porte le
+bloc de la version, exigé par le pré-vol avant le moindre build. Un push ne
+publie plus rien.
+
+Le client des téléviseurs LG, servi sous `/tv` par la même image, n'est PLUS
+livré par ce workflow : une livraison serveur reprend celui de l'image en
+service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
+notes vont dans `changelogs/server-webos.md`, pas ici.
 
 ## [1.22.0]
 ### FR

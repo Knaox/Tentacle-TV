@@ -1,3 +1,21 @@
+# syntax=docker/dockerfile:1
+# La ligne ci-dessus garantit un frontal qui connaît les contextes nommés
+# (`--build-context`), quel que soit le moteur Docker qui construit.
+#
+# DEUX MOITIÉS, DEUX LIVRAISONS. L'image porte le SERVEUR (backend + client
+# web) et le CLIENT LG webOS servi sous /tv. Chacune est livrée par son propre
+# workflow, et chacun ne reconstruit que la sienne :
+#
+#   • server.yml construit le serveur depuis les sources et REPREND le client
+#     LG de l'image en service — il remplace l'étape « tv-client-build » par
+#     cette image (contexte nommé) ;
+#   • webos.yml construit le client LG et le pose sur l'image déjà livrée du
+#     serveur — il remplace l'étape « server » par cette image, et l'étape
+#     « tv-client » par le client qu'il vient de construire.
+#
+# Sans contexte nommé (docker compose build, docker build .), tout se
+# construit depuis les sources, comme avant. Voir
+# .github/workflows/server-image.yml.
 FROM node:20-alpine AS base
 
 # Enable corepack for pnpm
@@ -62,12 +80,6 @@ COPY compat/jellyfin.json compat/jellyfin.json
 WORKDIR /app/apps/web
 RUN pnpm build
 
-# Build du client téléviseur. Il compile les sources d'apps/web avec sa propre
-# table de substitutions ; `config/postcss/gardeCompat.ts` fait échouer le build
-# si une primitive postérieure à Chrome 53 survit dans la feuille produite.
-WORKDIR /app/apps/tv-webos
-RUN pnpm build
-
 # Build backend — la clé Klipy (GIFs du chat WT) est GRAVÉE dans le code
 # compilé avant tsc (secret GitHub KLIPY_API_KEY → build-arg) : elle ne passe
 # ni par l'ENV de l'image finale ni par docker-compose, et n'est pas
@@ -80,8 +92,26 @@ RUN npx prisma generate && pnpm build
 # Build shared-deps.js for plugin sandbox
 RUN node scripts/build-shared-deps.js
 
-# Production image
-FROM node:20-alpine AS production
+# ── Le client LG webOS, construit depuis les sources ────────────────────────
+# Il compile les sources d'apps/web avec sa propre table de substitutions ;
+# `config/postcss/gardeCompat.ts` fait échouer le build si une primitive
+# postérieure à Chrome 53 survit dans la feuille produite.
+#
+# La CI ne construit JAMAIS cette étape : server.yml la remplace par l'image en
+# service (le client que lisent déjà les téléviseurs), webos.yml remplace
+# l'étape suivante par le client qu'il a construit lui-même. Elle ne sert
+# qu'aux builds locaux.
+FROM base AS tv-client-build
+WORKDIR /app/apps/tv-webos
+RUN pnpm build
+
+# Le client seul, à la racine : la forme exacte d'un contexte nommé
+# `tv-client`, qui peut donc la remplacer telle quelle.
+FROM scratch AS tv-client
+COPY --from=tv-client-build /app/apps/tv-webos/client/dist /
+
+# ── Le serveur : backend + client web, SANS le client LG ────────────────────
+FROM node:20-alpine AS server
 
 # NODE_ENV n'était posé NULLE PART — ni ici, ni dans docker-compose, ni dans
 # l'entrypoint. Trois conséquences, toutes silencieuses :
@@ -139,9 +169,6 @@ COPY --from=base /app/apps/backend/data/shared-deps ./apps/backend/data/shared-d
 # so that image updates bring new shared-deps even when volume already exists
 COPY --from=base /app/apps/backend/data/shared-deps /app/shared-deps-seed
 COPY --from=base /app/apps/web/dist ./apps/web/dist
-# Le client téléviseur, à l'emplacement exact que `clientsStatiques.ts` résout
-# depuis `apps/backend/dist/static` : ../../../tv-webos/client/dist
-COPY --from=base /app/apps/tv-webos/client/dist ./apps/tv-webos/client/dist
 # versions.json à /app : lu par BACKEND_VERSION (dist/services → ../../../../)
 COPY --from=base /app/versions.json ./versions.json
 # compat/jellyfin.json à /app : cherché en remontant depuis dist/services/jellyfinCompat
@@ -156,3 +183,23 @@ EXPOSE 3000
 WORKDIR /app/apps/backend
 
 CMD ["sh", "docker-entrypoint.sh"]
+
+# ── L'image livrée : le serveur, puis le client LG par-dessus ───────────────
+# DERNIÈRE étape, donc la cible par défaut. Chemins absolus : le WORKDIR hérité
+# est celui du backend.
+FROM server AS production
+
+# Quand « server » est une image déjà publiée (webos.yml), elle porte le client
+# d'avant : on l'efface avant de poser le nouveau. Sans cela ses fichiers
+# resteraient à côté — et un téléviseur resté allumé continuerait de charger
+# d'anciens morceaux au lieu de se recharger (lib/staleBuildReload.ts).
+RUN rm -rf /app/apps/tv-webos/client/dist
+
+# Le client téléviseur, à l'emplacement exact que `staticClients.ts` résout
+# depuis `apps/backend/dist/static` : ../../../tv-webos/client/dist
+COPY --from=tv-client / /app/apps/tv-webos/client/dist
+
+# Sans `index.html`, `staticClients.ts` retomberait sur `client/public` — absent
+# de l'image — et /tv servirait en silence l'index du client WEB : un
+# téléviseur chargerait l'application de bureau. Mieux vaut ne pas livrer.
+RUN test -f /app/apps/tv-webos/client/dist/index.html

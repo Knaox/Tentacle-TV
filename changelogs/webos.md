@@ -5,11 +5,13 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Renommer `[Unreleased]` en `[X.Y.Z]` au moment d'envoyer (la version vient de
 `versions.json` → `webos`).
 
-**Le paquet ne contient que la coquille** : le client React est servi par le
-serveur Tentacle sur `/tv`. La plupart des corrections partent donc avec une
-mise à jour du SERVEUR, sans nouvel IPK — n'ajouter ici que ce qui touche
-réellement la coquille (icône, titre, splash, identifiant, comportement de
-lancement), ou une version de référence.
+**Une livraison webOS livre la coquille ET le client.** Le paquet ne contient
+que la coquille ; le client React est servi par le serveur Tentacle sur `/tv`,
+et c'est `webos.yml` — lui seul — qui le livre, en reconstruisant l'image du
+serveur (le serveur, lui, ne change pas). Une mise à jour du serveur ne change
+plus l'interface du téléviseur. Les notes de ce fichier couvrent donc la
+coquille et le client ; celles de l'image reconstruite, pour ceux qui tirent
+l'image Docker, vont dans `changelogs/server-webos.md`, sous la MÊME version.
 
 ## [Unreleased]
 ### FR

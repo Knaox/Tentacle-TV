@@ -51,8 +51,8 @@ Le détail des crans, des gardes et des pièges par store :
 | `desktop.yml` | `macos` `windows` `linux` | Mac App Store · Microsoft Store · Release GitHub + auto-update |
 | `mobile.yml` | `android` `ios` | Play (test fermé « alpha » ou production) · App Store |
 | `tv.yml` | `androidtv` `appletv` | Play (piste TV `tv:Alpha` ou production) · App Store tvOS |
-| `webos.yml` | `ipk` | Release GitHub (`webos-latest` au cran store) |
-| `server.yml` | `docker` | `ghcr.io/knaox/tentacle-tv` + Release GitHub |
+| `webos.yml` | — | Release GitHub (`webos-latest` au cran store) + image serveur reconstruite avec le client LG (`:vS-webos-X.Y.Z`, `:latest` au cran store) |
+| `server.yml` | — | `ghcr.io/knaox/tentacle-tv` + Release GitHub — le client LG de l'image est repris de `:latest` |
 
 Trois crans partout : `build` (artefacts seuls), `test` (publié aux testeurs,
 sans geste ensuite), `store` (en ligne, sans un clic de plus). Les tags
@@ -179,6 +179,11 @@ node scripts/package-macos.mjs --lib ./lib/mpv --arch arm64
 
 ### Serveur (image Docker)
 
+- **Le client LG (`/tv`) n'est pas livré par `server.yml`** : il est repris de
+  l'image en service. C'est `webos.yml` qui le livre, en reconstruisant l'image
+  sur `:vS` avec son client (notes `changelogs/server-webos.md`). Le détail,
+  les gardes et le plan rejouable : `docs/RELEASE-TAGS.md`, « Le serveur et le
+  client LG ».
 - **yt-dlp** (bandes-annonces YouTube de l'Apple TV) : l'image épingle le zipapp
   officiel. Monter de version = `YTDLP_VERSION` et `YTDLP_SHA256` du `Dockerfile`
   (la ligne `yt-dlp` du `SHA2-256SUMS` de la release) ; entre deux images, le

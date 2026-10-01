@@ -8,10 +8,19 @@
 # les deux ne puissent pas diverger ; le job `version` vérifie en plus que le tag
 # correspond (garde-fou CI, comme les autres cibles).
 #
-# LE PAQUET NE CONTIENT QUE LA COQUILLE. Le client React est servi par le serveur
-# Tentacle sur `/tv` : corriger le client ne demande AUCUNE réinstallation. On ne
-# republie un IPK que pour l'icône, le titre, le splash, l'identifiant, ou le
-# comportement de la coquille elle-même.
+# CE WORKFLOW LIVRE LES DEUX MOITIÉS DE LA TV LG. Le paquet IPK ne contient que
+# la coquille ; le client React est servi par le serveur Tentacle sous `/tv`,
+# depuis l'image Docker. Livrer webOS, c'est donc :
+#   • construire la coquille (IPK) et le client, au même commit figé ;
+#   • RECONSTRUIRE L'IMAGE DU SERVEUR avec ce client — le serveur, lui, ne
+#     change pas : c'est l'image déjà publiée de versions.json → server,
+#     reprise à l'octet près (workflow commun server-image.yml, mode « webos ») ;
+#   • publier les Releases webOS, en DERNIER : si l'image échoue, rien ne part.
+#
+# server.yml, de son côté, ne livre plus aucun client LG : il reprend celui de
+# l'image en service. Un téléviseur ne change d'interface que par ce workflow.
+# Corriger le client ne demande toujours AUCUNE réinstallation : les
+# téléviseurs le reçoivent dès que le serveur tire la nouvelle image.
 #
 # DEUX RELEASES, ET C'EST VOULU :
 #   • `webos-vX.Y.Z` — l'historique, une par version, avec ses notes.
@@ -25,7 +34,11 @@
 #     dernière release du DÉPÔT, toutes cibles confondues — une livraison desktop
 #     ou serveur la ferait pointer ailleurs.
 #
-# Notes de version : changelogs/webos.md (bloc « ## [X.Y.Z] », ### FR / ### EN).
+# Notes de version : changelogs/webos.md (bloc « ## [X.Y.Z] », ### FR / ### EN)
+# pour les Releases webOS, et changelogs/server-webos.md (bloc « ## [X.Y.Z] » de
+# la MÊME version webOS) pour la Release du serveur reconstruit — ce qui change
+# pour la TV LG, dit à ceux qui tirent l'image Docker. Les deux sont exigées par
+# le pré-vol avant le moindre build.
 
 name: Release webOS
 
@@ -45,12 +58,16 @@ on:
         default: ""
 
 # TROIS CRANS, comme les autres workflows :
-#   • build — l'IPK en artefact du run. Aucune Release.
-#   • test  — Release VERSIONNÉE « webos-vX.Y.Z » seule. L'adresse permanente
-#             « webos-latest » NE BOUGE PAS : ce que les téléviseurs installés
-#             tirent reste l'ancienne version.
-#   • store — l'adresse permanente bascule elle aussi. C'est ce cran, et lui
-#             seul, qui met la nouvelle coquille en service.
+#   • build — l'IPK et le client en artefacts du run ; l'image serveur est
+#             reconstruite pour vérifier, rien n'est poussé. Aucune Release.
+#   • test  — Release VERSIONNÉE « webos-vX.Y.Z » seule, et l'image serveur
+#             sous une étiquette DÉDIÉE `:vS-webos-X.Y.Z`. L'adresse permanente
+#             « webos-latest » et `:latest` NE BOUGENT PAS : les téléviseurs
+#             gardent la coquille et le client en service.
+#   • store — l'adresse permanente bascule, `:latest` aussi (nouveau client
+#             servi sous /tv), et la Release « server-vS-webos-X.Y.Z » porte les
+#             notes serveur dédiées. C'est ce cran, et lui seul, qui met la
+#             nouvelle TV LG en service.
 
 concurrency:
   # Pas de cancel-in-progress : deux runs écriraient la MÊME release
@@ -77,6 +94,7 @@ jobs:
     permissions:
       contents: write
       actions: read
+      packages: read
     outputs:
       version: ${{ steps.lire.outputs.version }}
       sha: ${{ steps.lire.outputs.sha }}
@@ -94,6 +112,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # AVANT le bump : si l'image serveur ne peut pas être reconstruite
+      # (serveur de versions.json jamais publié, production sur un autre
+      # serveur au cran store, client qui exige un serveur plus récent), rien
+      # ne doit partir — pas même le commit de version. Aucune de ces gardes
+      # ne dépend du numéro webOS demandé. Le workflow commun rejoue ce plan
+      # juste avant de construire, sur l'état du registre d'alors.
+      - name: Pré-vol de l'image serveur
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WANTED_CHANNEL: ${{ inputs.channel }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then CHANNEL=store; else CHANNEL="$WANTED_CHANNEL"; fi
+          node .github/scripts/server-image-plan.mjs plan \
+            --mode webos --channel "$CHANNEL" --sha "$GITHUB_SHA" > /dev/null
 
       - name: Bump versions.json (si une version est demandée)
         id: bump
@@ -149,10 +184,23 @@ jobs:
             --changelog changelogs/webos.md --version "${{ steps.lire.outputs.version }}" \
             --check github
 
+      # Les notes DÉDIÉES de la Release du serveur reconstruit : au cran store,
+      # le seul qui la crée. Rangées sous la version webOS, dans leur propre
+      # fichier — un bloc « ## [1.1.0] » de changelogs/server.md serait celui
+      # d'un VIEUX serveur 1.1.0.
+      - name: Pré-vol des notes serveur dédiées
+        if: steps.lire.outputs.channel == 'store'
+        run: |
+          node .github/scripts/check-changelog.mjs \
+            --changelog changelogs/server-webos.md --version "${{ steps.lire.outputs.version }}" \
+            --check github
+
   paquet:
-    name: Construire l'IPK
+    name: Construire l'IPK et le client
     needs: prepare
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -180,9 +228,9 @@ jobs:
           pnpm typecheck
           pnpm --filter @tentacle-tv/tv-webos test
 
-      # Le client n'est pas dans l'IPK, mais on le construit quand même : une
-      # coquille livrée alors que le client ne compile pas ne servirait à rien,
-      # et l'échec doit tomber ici plutôt que sur la dalle.
+      # Le client n'est pas dans l'IPK : il part dans l'image du serveur,
+      # reconstruite par le job « image » à partir de cet artefact-ci. C'est le
+      # SEUL endroit où il se construit — server.yml ne le fait plus.
       - name: Construire le client servi sur /tv
         run: pnpm --filter @tentacle-tv/tv-webos build
 
@@ -236,23 +284,88 @@ jobs:
             livraison/${{ env.INSTALLATEUR }}
           if-no-files-found: error
 
+      # Le client, tel quel : le contenu de client/dist à la racine de
+      # l'artefact, la forme qu'attend le contexte nommé « tv-client ».
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webos-client-${{ needs.prepare.outputs.version }}
+          path: apps/tv-webos/client/dist
+          if-no-files-found: error
+
+  # ── L'image du serveur, reconstruite avec ce client ─────────────────────────
+  # Workflow COMMUN avec server.yml. Le serveur n'y est pas reconstruit : c'est
+  # l'image publiée de versions.json → server, épinglée ; seul le client LG
+  # change. Cran test : étiquette dédiée `:vS-webos-X.Y.Z` ; cran store :
+  # `:latest` en plus, et la Release server-vS-webos-X.Y.Z (notes dédiées).
+  image:
+    name: Image serveur
+    needs: [prepare, paquet]
+    uses: ./.github/workflows/server-image.yml
+    permissions:
+      contents: write
+      packages: write
+    with:
+      mode: webos
+      channel: ${{ needs.prepare.outputs.channel }}
+      sha: ${{ needs.prepare.outputs.sha }}
+      tv-client-artifact: webos-client-${{ needs.prepare.outputs.version }}
+
+  # ── Les Releases webOS, en DERNIER ──────────────────────────────────────────
+  # Après l'image : une coquille annoncée alors que le client qui va avec n'a
+  # pas pu partir serait une livraison à moitié faite.
+  publier:
+    name: Publier les Releases webOS
+    needs: [prepare, paquet, image]
+    if: needs.prepare.outputs.channel != 'build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: webos-ipk-${{ needs.prepare.outputs.version }}
+          path: livraison
+
       # Le awk maison qui extrayait le bloc cède la place à la bibliothèque
       # partagée : lui ne s'arrêtait pas au séparateur « --- » du pied de page
       # et embarquait les titres « ### FR » / « ### EN » tels quels.
       - name: Extraire les notes de version
-        if: needs.prepare.outputs.channel != 'build'
+        env:
+          IMAGE_TAGS: ${{ needs.image.outputs.tags }}
+          SERVER: ${{ needs.image.outputs.server-version }}
         run: |
+          set -euo pipefail
           node .github/scripts/release-notes.mjs \
             --changelog changelogs/webos.md --version "${{ needs.prepare.outputs.version }}" \
             --format github --out notes.md
+          # Où vit le client de cette version : l'image du serveur reconstruite.
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "Le client de cette version (l'interface servie sous \`/tv\`) est livré dans l'image du serveur ${SERVER} :"
+            IFS=',' read -ra LIST <<< "$IMAGE_TAGS"
+            for tag in "${LIST[@]}"; do echo "\`ghcr.io/knaox/tentacle-tv:${tag}\`"; done | paste -sd ' ' - | sed 's/ / et /g'
+          } >> notes.md
           cat notes.md
 
       # L'historique : une release par version, jamais réécrite.
       - name: Release versionnée
-        if: needs.prepare.outputs.channel != 'build' 
         uses: softprops/action-gh-release@v2
         with:
           tag_name: webos-v${{ needs.prepare.outputs.version }}
+          # Le tag naît au commit FIGÉ, pas à la tête de la branche par
+          # défaut (le défaut de l'action) qui a pu avancer entre-temps.
+          target_commitish: ${{ needs.prepare.outputs.sha }}
           name: webOS ${{ needs.prepare.outputs.version }}
           body_path: notes.md
           files: |
@@ -262,7 +375,7 @@ jobs:
 
       # L'adresse permanente : même tag, réécrit à chaque fois.
       - name: Release à adresse fixe
-        if: needs.prepare.outputs.channel == 'store' 
+        if: needs.prepare.outputs.channel == 'store'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: webos-latest
@@ -326,8 +439,8 @@ jobs:
             ```
 
             L'IPK ne contient que la coquille — le client est servi par le
-            serveur Tentacle sur `/tv`, donc une mise à jour du serveur suffit à
-            corriger l'application.
+            serveur Tentacle sur `/tv`, donc mettre à jour le serveur (son image
+            Docker) suffit à corriger l'application.
           files: |
             livraison/${{ env.IPK_STABLE }}
             livraison/${{ env.INSTALLATEUR }}
