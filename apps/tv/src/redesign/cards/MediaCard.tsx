@@ -3,13 +3,13 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient } from "../background/SoftGradient";
-import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import type { RowPlace } from "../motion/useRowRecede";
 import { colors, fonts, scrim } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
 import { CardFocusFooter } from "./CardFocusFooter";
 import { CardFrame } from "./CardFrame";
+import { CardShell } from "./CardShell";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused } from "./useCardFocused";
@@ -30,13 +30,9 @@ import { useCardFocused } from "./useCardFocused";
  * — toute carte qui s'ouvre par l'appui maintenu (`onLongPress`) —
  * « Maintenir OK : plus d'options » : rien d'autre ne l'apprendrait.
  *
- * Deux étages, de bas en haut : la légende, puis la carte elle-même — un
- * `FocusTarget` qui couvre l'image ET la légende, et ne porte que l'image
- * (`CardFrame`). Rien ne le recouvre : tvOS ne propose pas au focus un
- * élément recouvert par ce qui dessine, et fait défiler jusqu'à rendre
- * visible tout le cadre de la cible — la légende avec l'image. Et seule
- * l'image suit le pouce : la parallaxe d'Apple TV (`form="card"`) se joue
- * sur la vue focalisée, la légende — hors de la cible — ne s'incline pas.
+ * L'ossature est celle de toute carte (`CardShell`) : la légende dessous,
+ * puis la cible qui couvre image ET légende et ne porte que l'image — rien
+ * ne la recouvre, et seule l'image suit le pouce (la parallaxe d'Apple TV).
  * `onFocusChange` dit le focus de la carte (`useCardFocused`).
  */
 
@@ -102,9 +98,30 @@ export const MediaCard = memo(function MediaCard({
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
   return (
-    <View style={[{ width }, focused && styles.front]}>
-      {/* La place de l'image : son cadre se dessine dans la cible. */}
-      <View style={{ height }} />
+    <CardShell
+      focusKey={focusKey}
+      width={width}
+      frameHeight={height}
+      front={focused}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onTargetFocusChange={onTargetFocusChange}
+      accessibilityLabel={card.title}
+      frame={
+        <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin}>
+          {uri ? (
+            <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+          ) : (
+            <View style={styles.missing}>
+              <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
+            </View>
+          )}
+          {landscape && card.logoUri ? <LogoLayer uri={card.logoUri} width={width} height={height} /> : null}
+          {card.badge ? <CardBadge label={card.badge} /> : null}
+          <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
+        </CardFrame>
+      }
+    >
       {hideCaption ? null : (
         <Caption focused={focused} shift={captionShift(height, origin)}>
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
@@ -116,41 +133,11 @@ export const MediaCard = memo(function MediaCard({
           />
         </Caption>
       )}
-      {/* En DERNIER, par-dessus la légende : rien ne recouvre la cible, et
-          tvOS amène au focus la carte entière à l'écran. L'appui (OK enfoncé)
-          qu'elle tient, le cadre le lit (`usePressProgress`). */}
-      <FocusTarget
-        focusKey={focusKey}
-        form="card"
-        onPress={onPress}
-        onLongPress={onLongPress}
-        onFocusChange={onTargetFocusChange}
-        accessibilityLabel={card.title}
-        style={StyleSheet.absoluteFill}
-      >
-        {() => (
-          <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin}>
-            {uri ? (
-              <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
-            ) : (
-              <View style={styles.missing}>
-                <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
-              </View>
-            )}
-            {landscape && card.logoUri ? <LogoLayer uri={card.logoUri} width={width} height={height} /> : null}
-            {card.badge ? <CardBadge label={card.badge} /> : null}
-            <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
-          </CardFrame>
-        )}
-      </FocusTarget>
-    </View>
+    </CardShell>
   );
 });
 
 const styles = StyleSheet.create({
-  // La carte focalisée passe devant ses voisines : son ombre de soulèvement
-  // n'est plus recouverte par la suivante.
-  front: { zIndex: 10 },
   missing: { flex: 1, padding: 22, justifyContent: "flex-end", backgroundColor: colors.surface3 },
   missingTitle: { ...fonts.bold, fontSize: 26, lineHeight: 30, color: colors.textSecondary },
   logo: { position: "absolute", left: 22, right: 90, bottom: 22, height: 64 },

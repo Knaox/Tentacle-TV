@@ -9,7 +9,8 @@ import { CardFrame } from "../../cards/CardFrame";
 import { CardFocusFooter } from "../../cards/CardFocusFooter";
 import { HOLD_HINT_DWELL_MS } from "../../cards/CardHoldHint";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
-import { FocusTarget } from "../../focus/FocusTarget";
+import { CardShell } from "../../cards/CardShell";
+import { useCardFocused } from "../../cards/useCardFocused";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Reveal } from "../../motion/Reveal";
 import type { RowPlace } from "../../motion/useRowRecede";
@@ -25,7 +26,8 @@ import type { EpisodeBadge, EpisodeModel } from "./detailTypes";
  * l'appui long ouvre la feuille, dit sous elle « Maintenir OK : plus
  * d'options » (`CardFocusFooter`, comme toute carte qui s'ouvre par l'appui
  * maintenu). Quand le focus s'y POSE, sa lumière déborde (halo monté à la
- * demande, jamais gardé caché — `HALO_DWELL_MS`).
+ * demande, jamais gardé caché — `HALO_DWELL_MS`). L'image et son halo
+ * suivent le pouce, la légende reste droite (`CardShell`).
  */
 
 export const EPISODE_CARD = { width: 460, height: 259, radius: TV_STAGE.card.landscape.radius } as const;
@@ -87,16 +89,17 @@ export const EpisodeCard = memo(function EpisodeCard({
 }) {
   const { t } = useTranslation();
   const badge = episode.badge ?? null;
+  const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
   return (
-    <FocusTarget
+    <CardShell
       focusKey={focusKey}
+      width={EPISODE_CARD.width}
+      frameHeight={EPISODE_CARD.height}
       onPress={onPress}
       onLongPress={onLongPress}
-      onFocusChange={onFocusChange}
+      onTargetFocusChange={onTargetFocusChange}
       accessibilityLabel={episode.title}
-      style={styles.cell}
-    >
-      {(focused) => (
+      frame={
         <View>
           {episode.palette ? (
             <Reveal shown={focused} delayMs={HALO_DWELL_MS} style={styles.halo}>
@@ -118,15 +121,15 @@ export const EpisodeCard = memo(function EpisodeCard({
               </View>
             ) : null}
           </CardFrame>
-          <Caption episode={episode} focused={focused} holdHint={focused && onLongPress !== undefined} />
         </View>
-      )}
-    </FocusTarget>
+      }
+    >
+      <Caption episode={episode} focused={focused} holdHint={focused && onLongPress !== undefined} />
+    </CardShell>
   );
 });
 
 const styles = StyleSheet.create({
-  cell: { width: EPISODE_CARD.width },
   halo: { position: "absolute", left: 0, top: 0, width: EPISODE_CARD.width, height: EPISODE_CARD.height },
   missing: { flex: 1, justifyContent: "flex-end", padding: 22, backgroundColor: colors.surface3 },
   missingNumber: { ...fonts.extrabold, fontSize: 96, lineHeight: 100, color: white(0.14) },

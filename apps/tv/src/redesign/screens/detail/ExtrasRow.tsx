@@ -1,11 +1,12 @@
-import { memo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFrame } from "../../cards/CardFrame";
+import { CardShell } from "../../cards/CardShell";
+import { useCardFocused } from "../../cards/useCardFocused";
 import { FocusGroup } from "../../focus/FocusGroup";
-import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
@@ -42,6 +43,62 @@ function Caption({ extra, focused }: { extra: ExtraModel; focused: boolean }) {
   );
 }
 
+/** Un extra : la vignette suit le pouce, sa légende reste droite (`CardShell`). */
+const ExtraCell = memo(function ExtraCell({
+  extra,
+  index,
+  row,
+  onOpen,
+  onItemFocusChange,
+  onFocusChange,
+}: {
+  extra: ExtraModel;
+  index: number;
+  row: SharedValue<number>;
+  onOpen?: (extra: ExtraModel) => void;
+  onItemFocusChange: (index: number, focused: boolean) => void;
+  onFocusChange?: (focused: boolean) => void;
+}) {
+  const focusKey = `extra:${index}`;
+  const report = useCallback(
+    (focused: boolean) => {
+      onItemFocusChange(index, focused);
+      onFocusChange?.(focused);
+    },
+    [index, onItemFocusChange, onFocusChange],
+  );
+  const { focused, onTargetFocusChange } = useCardFocused(focusKey, report);
+  const place = useMemo(() => ({ row, index }), [row, index]);
+  return (
+    <CardShell
+      focusKey={focusKey}
+      width={W}
+      frameHeight={H}
+      onPress={onOpen && !extra.unavailable ? () => onOpen(extra) : undefined}
+      onTargetFocusChange={onTargetFocusChange}
+      accessibilityLabel={extra.title}
+      frame={
+        <CardFrame width={W} height={H} radius={R} focused={focused} place={place}>
+          {extra.imageUri ? (
+            <Image source={{ uri: extra.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+          ) : (
+            <View style={styles.missing}>
+              <Icon name="trailer" size={44} color={white(0.3)} />
+            </View>
+          )}
+          {extra.unavailable ? (
+            <View style={[StyleSheet.absoluteFill, styles.unavailable]}>
+              <Icon name="eyeOff" size={40} color={white(0.7)} />
+            </View>
+          ) : null}
+        </CardFrame>
+      }
+    >
+      <Caption extra={extra} focused={focused} />
+    </CardShell>
+  );
+});
+
 export const ExtrasRow = memo(function ExtrasRow({
   extras,
   onOpen,
@@ -58,37 +115,15 @@ export const ExtrasRow = memo(function ExtrasRow({
     <FocusGroup focusKey="detail:extras">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
         {extras.map((extra, index) => (
-          <FocusTarget
+          <ExtraCell
             key={extra.id}
-            focusKey={`extra:${index}`}
-            onPress={onOpen && !extra.unavailable ? () => onOpen(extra) : undefined}
-            onFocusChange={(focused) => {
-              onItemFocusChange(index, focused);
-              onFocusChange?.(focused);
-            }}
-            accessibilityLabel={extra.title}
-            style={{ width: W }}
-          >
-            {(focused) => (
-              <View>
-                <CardFrame width={W} height={H} radius={R} focused={focused} place={{ row, index }}>
-                  {extra.imageUri ? (
-                    <Image source={{ uri: extra.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
-                  ) : (
-                    <View style={styles.missing}>
-                      <Icon name="trailer" size={44} color={white(0.3)} />
-                    </View>
-                  )}
-                  {extra.unavailable ? (
-                    <View style={[StyleSheet.absoluteFill, styles.unavailable]}>
-                      <Icon name="eyeOff" size={40} color={white(0.7)} />
-                    </View>
-                  ) : null}
-                </CardFrame>
-                <Caption extra={extra} focused={focused} />
-              </View>
-            )}
-          </FocusTarget>
+            extra={extra}
+            index={index}
+            row={row}
+            onOpen={onOpen}
+            onItemFocusChange={onItemFocusChange}
+            onFocusChange={onFocusChange}
+          />
         ))}
       </ScrollView>
     </FocusGroup>

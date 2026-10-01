@@ -1,11 +1,12 @@
-import { memo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFrame } from "../../cards/CardFrame";
+import { CardShell } from "../../cards/CardShell";
+import { useCardFocused } from "../../cards/useCardFocused";
 import { FocusGroup } from "../../focus/FocusGroup";
-import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { useRowFocus } from "../../motion/useRowRecede";
@@ -57,6 +58,52 @@ function Names({ person, focused }: { person: PersonModel; focused: boolean }) {
   );
 }
 
+/** Un portrait : le disque suit le pouce, le nom et le rôle restent droits (`CardShell`). */
+const CastCell = memo(function CastCell({
+  person,
+  index,
+  row,
+  onOpen,
+  onItemFocusChange,
+  onFocusChange,
+}: {
+  person: PersonModel;
+  index: number;
+  row: SharedValue<number>;
+  onOpen?: (person: PersonModel) => void;
+  onItemFocusChange: (index: number, focused: boolean) => void;
+  onFocusChange?: (focused: boolean) => void;
+}) {
+  const focusKey = `cast:${index}`;
+  const report = useCallback(
+    (focused: boolean) => {
+      onItemFocusChange(index, focused);
+      onFocusChange?.(focused);
+    },
+    [index, onItemFocusChange, onFocusChange],
+  );
+  const { focused, onTargetFocusChange } = useCardFocused(focusKey, report);
+  const place = useMemo(() => ({ row, index }), [row, index]);
+  return (
+    <CardShell
+      focusKey={focusKey}
+      width={CELL}
+      frameHeight={SIZE}
+      centerFrame
+      onPress={onOpen ? () => onOpen(person) : undefined}
+      onTargetFocusChange={onTargetFocusChange}
+      accessibilityLabel={person.role ? `${person.name}, ${person.role}` : person.name}
+      frame={
+        <CardFrame width={SIZE} height={SIZE} radius={SIZE / 2} focused={focused} place={place}>
+          <Portrait person={person} />
+        </CardFrame>
+      }
+    >
+      <Names person={person} focused={focused} />
+    </CardShell>
+  );
+});
+
 export const CastRow = memo(function CastRow({
   people,
   onOpen,
@@ -73,26 +120,15 @@ export const CastRow = memo(function CastRow({
     <FocusGroup focusKey="detail:cast">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
         {people.map((person, index) => (
-          <FocusTarget
+          <CastCell
             key={`${person.id}-${index}`}
-            focusKey={`cast:${index}`}
-            onPress={onOpen ? () => onOpen(person) : undefined}
-            onFocusChange={(focused) => {
-              onItemFocusChange(index, focused);
-              onFocusChange?.(focused);
-            }}
-            accessibilityLabel={person.role ? `${person.name}, ${person.role}` : person.name}
-            style={styles.cell}
-          >
-            {(focused) => (
-              <View style={styles.center}>
-                <CardFrame width={SIZE} height={SIZE} radius={SIZE / 2} focused={focused} place={{ row, index }}>
-                  <Portrait person={person} />
-                </CardFrame>
-                <Names person={person} focused={focused} />
-              </View>
-            )}
-          </FocusTarget>
+            person={person}
+            index={index}
+            row={row}
+            onOpen={onOpen}
+            onItemFocusChange={onItemFocusChange}
+            onFocusChange={onFocusChange}
+          />
         ))}
       </ScrollView>
     </FocusGroup>
@@ -118,7 +154,6 @@ export const CrewColumns = memo(function CrewColumns({ groups }: { groups: CrewG
 const styles = StyleSheet.create({
   track: { overflow: "visible" },
   content: { gap: 28, paddingLeft: DETAIL_LEFT - 18, paddingRight: TV_STAGE.safe.x, paddingTop: 14, paddingBottom: 16 },
-  cell: { width: CELL },
   center: { alignItems: "center", justifyContent: "center" },
   initials: { ...fonts.extrabold, fontSize: 52, letterSpacing: 1, color: white(0.92) },
   names: { marginTop: 18, alignItems: "center", gap: 4 },

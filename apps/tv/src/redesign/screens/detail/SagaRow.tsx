@@ -6,10 +6,10 @@ import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFocusFooter } from "../../cards/CardFocusFooter";
 import { CardFrame } from "../../cards/CardFrame";
+import { CardShell } from "../../cards/CardShell";
 import { cardIndexOf } from "../../cards/cardFocusKeys";
 import { MediaCard } from "../../cards/MediaCard";
 import { FocusGroup } from "../../focus/FocusGroup";
-import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
@@ -81,8 +81,9 @@ interface SagaEntryProps {
 }
 
 /**
- * Un volet. L'affiche d'un volet de la bibliothèque (`MediaCard`) garde son
- * focus pour elle : le volet le suit dans SON état, pour sa légende — un pas
+ * Un volet. L'affiche d'un volet de la bibliothèque (`MediaCard`) ou le
+ * cadre d'un volet absent (`CardShell`) garde son focus pour lui : le volet
+ * le suit dans SON état, pour sa légende — un pas
  * du focus ne redessine que les deux volets qu'il quitte et qu'il atteint,
  * jamais la rangée (le recul des voisins passe par `row`).
  */
@@ -91,14 +92,13 @@ const SagaEntry = memo(function SagaEntry({ entry, index, row, onItemFocusChange
   const forced = useForcedFocusKey();
   const focused = forced !== null ? cardIndexOf(forced, "saga") === index : native;
   const place = useMemo(() => ({ row, index }), [row, index]);
-  const tracksFocus = entry.card !== undefined;
   const focusChange = useCallback(
     (next: boolean) => {
-      if (tracksFocus) setNative(next);
+      setNative(next);
       onItemFocusChange(index, next);
       onFocusChange?.(next);
     },
-    [tracksFocus, index, onItemFocusChange, onFocusChange],
+    [index, onItemFocusChange, onFocusChange],
   );
   const press = onOpen && !entry.current ? () => onOpen(entry) : undefined;
   if (entry.card) {
@@ -118,15 +118,19 @@ const SagaEntry = memo(function SagaEntry({ entry, index, row, onItemFocusChange
       </View>
     );
   }
+  // Un volet absent : son cadre suit le pouce, sa légende reste droite (`CardShell`).
   return (
-    <FocusTarget focusKey={`saga:${index}`} onPress={press} onFocusChange={focusChange} accessibilityLabel={entry.missing?.title} style={{ width: W }}>
-      {(targetFocused) => (
-        <View>
-          <MissingPoster title={entry.missing?.title ?? ""} year={entry.missing?.year} focused={targetFocused} place={place} />
-          <Caption entry={entry} focused={targetFocused} />
-        </View>
-      )}
-    </FocusTarget>
+    <CardShell
+      focusKey={`saga:${index}`}
+      width={W}
+      frameHeight={H}
+      onPress={press}
+      onTargetFocusChange={focusChange}
+      accessibilityLabel={entry.missing?.title}
+      frame={<MissingPoster title={entry.missing?.title ?? ""} year={entry.missing?.year} focused={focused} place={place} />}
+    >
+      <Caption entry={entry} focused={focused} />
+    </CardShell>
   );
 });
 
