@@ -254,10 +254,14 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         resizeMode="contain"
         paused={paused}
         muted={muted}
-        // Pré-buffer (iOS/tvOS) : attendre de quoi jouer sans caler avant de démarrer (« son avant vidéo »)
-        // + garder ~10 s d'avance (moins de stalls). @ts-expect-error : props iOS de react-native-video.
+        // Pré-buffer (iOS/tvOS) : attendre de quoi jouer sans caler avant de démarrer (« son avant vidéo »).
+        // Avance : 30 s sur une source DISTANTE — mesuré au simulateur (transcodage 720p) : une
+        // coupure de Jellyfin se traverse 34 s au lieu de 8, un encodage tué à la sortie a le
+        // temps de repartir, et la mémoire ne bouge pas (≤ 50 Mo jusqu'à 20 Mb/s). Le BOUCLAGE
+        // PrismCore garde 10 s : sur un remux 4K à 60-80 Mb/s, +20 s coûteraient 150 à 200 Mo,
+        // à mesurer sur l'Apple TV avant d'étendre.
         automaticallyWaitsToMinimizeStalling={true}
-        preferredForwardBufferDuration={10}
+        preferredForwardBufferDuration={isLoopback ? 10 : 30}
         // Anti-veille : défaut de la lib déjà true (RCTVideo) — gravé ici pour que la
         // politique soit lisible. AVPlayer ne bloque QUE la lecture active ; la pause
         // rend la main à la veille système (protection OLED), c'est l'arbitrage voulu.
