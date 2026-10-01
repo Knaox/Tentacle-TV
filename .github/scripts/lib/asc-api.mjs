@@ -2,7 +2,7 @@
 // les ~8 min (les tokens ASC expirent à 600 s — indispensable pour les scripts
 // qui pollent longtemps, ex. asc-attach-build). Zéro dépendance npm.
 import crypto from 'node:crypto';
-import { maxVersion } from './versions.mjs';
+import { compareVersions, isVersion, maxVersion } from './versions.mjs';
 
 const b64url = (b) => Buffer.from(b).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
@@ -47,21 +47,45 @@ export async function findApp(api, bundleId) {
   return app;
 }
 
-/** Version App Store (versionString, platform) — créée si absente. */
-export async function ensureAppStoreVersion(api, appId, { version, platform }) {
+/**
+ * Version App Store (versionString, platform) : celle qui porte ce numéro ;
+ * sinon la version EN PRÉPARATION de la plateforme, renommée ; sinon une neuve.
+ *
+ * POURQUOI RENOMMER. App Store Connect n'admet qu'UNE version modifiable par
+ * plateforme : en créer une seconde renvoie 409 « You cannot create a new
+ * version of the App in the current state ». Constaté le 2026-10-01 : la 1.25.2
+ * macOS, ouverte par son run TestFlight et jamais soumise, a fait échouer le
+ * rattachement de la 1.25.3. Le build qu'elle portait est remplacé au
+ * rattachement suivant. Une version soumise ou en vente n'est jamais touchée,
+ * ni une version en préparation PLUS RÉCENTE que celle demandée : ce serait
+ * défaire le travail d'un run plus récent.
+ */
+export async function ensureAppStoreVersion(api, appId, { version, platform }, log = console.log) {
   const vers = await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[versionString]=${version}&filter[platform]=${platform}&limit=1`);
-  let ver = vers.data?.[0];
-  if (!ver) {
-    console.log(`[asc] création de la version App Store ${version} (${platform})`);
-    ver = (await api('POST', '/v1/appStoreVersions', {
-      data: {
-        type: 'appStoreVersions',
-        attributes: { platform, versionString: version },
-        relationships: { app: { data: { type: 'apps', id: appId } } },
-      },
+  if (vers.data?.[0]) return vers.data[0];
+
+  const editable = await editableVersion(api, appId, platform);
+  if (editable) {
+    const from = editable.attributes?.versionString;
+    if (from === version) return editable;
+    if (isVersion(from) && compareVersions(from, version) > 0) {
+      throw new Error(`la version ${from} (${platform}) est en préparation, plus récente que ${version} : rien renommé ni créé — regarde App Store Connect.`);
+    }
+    const renamed = (await api('PATCH', `/v1/appStoreVersions/${editable.id}`, {
+      data: { type: 'appStoreVersions', id: editable.id, attributes: { versionString: version } },
     })).data;
+    log(`[asc] version ${from} renommée ${version} (${platform}) — encore en « ${versionState(editable)} », jamais soumise : ASC n'admet qu'une version modifiable par plateforme`);
+    return renamed ?? { ...editable, attributes: { ...editable.attributes, versionString: version } };
   }
-  return ver;
+
+  log(`[asc] création de la version App Store ${version} (${platform})`);
+  return (await api('POST', '/v1/appStoreVersions', {
+    data: {
+      type: 'appStoreVersions',
+      attributes: { platform, versionString: version },
+      relationships: { app: { data: { type: 'apps', id: appId } } },
+    },
+  })).data;
 }
 
 // ── Ce que trois scripts ASC refaisaient chacun de leur côté ────────────────
@@ -161,6 +185,22 @@ export const SUBMITTED_VERSION_STATES = new Set([
 
 /** L'état d'une version : `appVersionState` fait foi, `appStoreState` est déprécié. */
 export const versionState = (ver) => ver?.attributes?.appVersionState ?? ver?.attributes?.appStoreState ?? null;
+
+/**
+ * La version modifiable d'une plateforme, ou null. Tri côté client : le nom du
+ * filtre d'état a changé d'une génération d'API à l'autre (même choix que
+ * `liveVersion`). ASC n'en admet qu'une ; s'il en rendait deux, on refuse de
+ * choisir plutôt que de renommer la mauvaise.
+ */
+async function editableVersion(api, appId, platform) {
+  const r = await api('GET', `/v1/apps/${appId}/appStoreVersions?filter[platform]=${platform}&limit=200`);
+  const found = (r.data ?? []).filter((v) => EDITABLE_VERSION_STATES.has(versionState(v)));
+  if (found.length > 1) {
+    const list = found.map((v) => v.attributes?.versionString).join(', ');
+    throw new Error(`${found.length} versions modifiables (${platform}) : ${list} — regarde App Store Connect.`);
+  }
+  return found[0] ?? null;
+}
 
 /** États où une version est EN VENTE, dans les deux vocabulaires d'Apple. */
 export const LIVE_VERSION_STATES = new Set(['READY_FOR_DISTRIBUTION', 'READY_FOR_SALE']);
