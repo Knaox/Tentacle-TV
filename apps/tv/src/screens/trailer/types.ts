@@ -15,4 +15,6 @@ export interface TrailerPlayerProps {
   onError: () => void;
   /** Fin de lecture (tvOS) → l'écran ferme la bande-annonce. */
   onEnded?: () => void;
+  /** La lecture lancée attend le réseau, ou repart (tvOS) → l'écran le montre. */
+  onWaitingChange?: (waiting: boolean) => void;
 }

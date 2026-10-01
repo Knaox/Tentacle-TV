@@ -16,7 +16,7 @@ function trailerItem(data: BenchData): MediaItem | undefined {
   return data.list("movies").find(withTrailer) ?? data.list("resume").find(withTrailer);
 }
 
-function Trailer({ data, state, dimmed = false }: { data: BenchData; state: "loading" | "playing" | "unavailable"; dimmed?: boolean }) {
+function Trailer({ data, state, dimmed = false, waiting = false }: { data: BenchData; state: "loading" | "playing" | "unavailable"; dimmed?: boolean; waiting?: boolean }) {
   const item = trailerItem(data);
   const backdrop = item ? data.image(item.Id, "Backdrop") : undefined;
   return (
@@ -25,6 +25,7 @@ function Trailer({ data, state, dimmed = false }: { data: BenchData; state: "loa
       title={item?.Name ?? ""}
       backdropUri={backdrop}
       chromeDimmed={dimmed}
+      waiting={waiting}
       video={backdrop ? <Image source={{ uri: backdrop }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : undefined}
     />
   );
@@ -34,6 +35,8 @@ export const TRAILER_SCENES: BenchScene[] = [
   { id: "bande-annonce/lecture", group: "Bande-annonce", label: "Lecture, « Fermer » visible", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="playing" /> },
   // Comme sur l'appareil : « Fermer » garde le focus pendant que le chrome s'estompe.
   { id: "bande-annonce/estompee", group: "Bande-annonce", label: "Lecture, chrome estompé", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="playing" dimmed /> },
+  // Le flux ne suit plus : la roue sur la dernière image, le chrome toujours estompé.
+  { id: "bande-annonce/attente", group: "Bande-annonce", label: "Lecture qui attend le réseau", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="playing" dimmed waiting /> },
   { id: "bande-annonce/chargement", group: "Bande-annonce", label: "Chargement", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="loading" /> },
   { id: "bande-annonce/indisponible", group: "Bande-annonce", label: "Indisponible sur ce téléviseur", focusKeys: ["trailer:close"], settleMs: 1400, render: (data) => <Trailer data={data} state="unavailable" /> },
 ];

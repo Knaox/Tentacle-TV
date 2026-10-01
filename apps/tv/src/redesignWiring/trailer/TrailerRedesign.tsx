@@ -39,6 +39,7 @@ export function TrailerRedesign({ route, navigation }: Props) {
   const { data: item } = useMediaItem(itemId);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [waiting, setWaiting] = useState(false);
 
   const ytId = parseYouTubeId(url);
   const lang = (i18n.language ?? "en").slice(0, 2);
@@ -61,6 +62,7 @@ export function TrailerRedesign({ route, navigation }: Props) {
       onLoadEnd={onLoadEnd}
       onError={onError}
       onEnded={close}
+      onWaitingChange={setWaiting}
     />
   ) : undefined;
 
@@ -72,6 +74,7 @@ export function TrailerRedesign({ route, navigation }: Props) {
         backdropUri={item ? detailBackdropUri(client, item) : undefined}
         video={video}
         chromeDimmed={dimmed}
+        waiting={waiting}
         onClose={close}
       />
     </FocusBindingProvider>

@@ -25,7 +25,7 @@ import type { TrailerPlayerProps } from "./types";
  */
 export const TRAILER_WEBVIEW_SUPPORTED = true;
 
-export function TrailerWebView({ ytId, onLoadEnd, onError, onEnded }: TrailerPlayerProps) {
+export function TrailerWebView({ ytId, onLoadEnd, onError, onEnded, onWaitingChange }: TrailerPlayerProps) {
   const { storage } = useTentacleConfig();
   const [stream, setStream] = useState<TrailerStream | null>(null);
 
@@ -59,6 +59,7 @@ export function TrailerWebView({ ytId, onLoadEnd, onError, onEnded }: TrailerPla
       onError();
     },
     onEnded: () => onEnded?.(),
+    onWaitingChange,
   });
 
   // Tant que le flux n'est pas résolu, l'écran affiche son chargement.

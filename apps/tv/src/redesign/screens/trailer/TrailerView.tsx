@@ -26,6 +26,8 @@ import { colors, fonts, scrim, text } from "../../theme/tokens";
  *   voile opaque qui ne se lève qu'en lecture ;
  * - `state` : `loading` tant que l'embed charge, `playing`, `unavailable`
  *   (pas d'identifiant YouTube, pas de serveur, erreur) ;
+ * - `waiting` : la lecture lancée attend le réseau — une roue au centre, sur
+ *   la dernière image, pour qu'elle ne paraisse jamais figée ;
  * - `onClose` : « Fermer » ; Retour ferme aussi (câblage).
  * Clé du banc : `trailer:close`.
  */
@@ -39,12 +41,14 @@ export interface TrailerViewProps {
   video?: ReactNode;
   /** Le chrome s'est effacé (lecture en cours, 3 s sans geste). */
   chromeDimmed?: boolean;
+  /** La lecture lancée attend le réseau (le temps n'avance plus). */
+  waiting?: boolean;
   onClose?: () => void;
 }
 
 const CLOSE_KEY = "trailer:close";
 
-export const TrailerView = memo(function TrailerView({ state, title, backdropUri, video, chromeDimmed = false, onClose }: TrailerViewProps) {
+export const TrailerView = memo(function TrailerView({ state, title, backdropUri, video, chromeDimmed = false, waiting = false, onClose }: TrailerViewProps) {
   const { t } = useTranslation("common");
   const lit = useFocusProgress(state !== "playing" || !chromeDimmed, 420);
   const chrome = useAnimatedStyle(() => ({ opacity: 0.15 + 0.85 * lit.value }));
@@ -71,6 +75,14 @@ export const TrailerView = memo(function TrailerView({ state, title, backdropUri
           <Text style={styles.kicker}>{t("trailer")}</Text>
           <Text style={styles.title} numberOfLines={2}>{title}</Text>
         </Animated.View>
+      ) : null}
+
+      {state === "playing" && waiting ? (
+        <View pointerEvents="none" style={styles.center}>
+          <View style={styles.waitBadge}>
+            <ActivityIndicator size="large" color={colors.text} style={styles.waitSpinner} />
+          </View>
+        </View>
       ) : null}
 
       {state === "loading" ? (
@@ -110,6 +122,9 @@ const styles = StyleSheet.create({
   dimArt: { opacity: 0.32 },
   center: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", paddingHorizontal: 240 },
   spinner: { transform: [{ scale: 1.6 }], marginBottom: 44 },
+  // La roue de l'attente, sur un disque sombre : lisible sur une image claire.
+  waitBadge: { width: 128, height: 128, borderRadius: 64, alignItems: "center", justifyContent: "center", backgroundColor: scrim(0.55) },
+  waitSpinner: { transform: [{ scale: 1.6 }] },
   bottom: {
     position: "absolute",
     left: 0,
