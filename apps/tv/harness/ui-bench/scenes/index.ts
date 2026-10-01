@@ -1,3 +1,4 @@
+import { BACK_SCENES } from "./backScenes";
 import { BENCH_SCENES } from "./benchScenes";
 import { BRICK_SCENES } from "./brickScenes";
 import { BROWSE_SCENES } from "./browseScenes";
@@ -42,6 +43,7 @@ export const SCENES: BenchScene[] = [
   ...SHEET_WIRED_SCENES,
   ...TRAILER_SCENES,
   ...OVERLAY_SCENES,
+  ...BACK_SCENES,
   ...BRICK_SCENES,
   ...GLASS_SCENES,
   ...LEGIBILITY_SCENES,
