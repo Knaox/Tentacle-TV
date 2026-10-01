@@ -5,6 +5,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { BrandPill } from "../brand/BrandPill";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
+import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { GlassSurface } from "../glass/GlassSurface";
 import { Icon, type IconName } from "../icons/Icon";
 import { colors, fonts, scrim, white } from "../theme/tokens";
@@ -91,7 +92,10 @@ function Body({ focused, variant, s, label, icon, progress }: {
   progress?: number;
 }) {
   const p = useFocusProgress(focused);
-  const lift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (TV_STAGE.focus.buttonScale - 1) * p.value }] }));
+  const press = usePressProgress();
+  const lift = useAnimatedStyle(() => ({
+    transform: [{ scale: (1 + (TV_STAGE.focus.buttonScale - 1) * p.value) * pressScale(press ? press.value : 0) }],
+  }));
   const shadow = useAnimatedStyle(() => ({ opacity: p.value }));
   const whiteLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 1 : p.value }));
   const glassLayer = useAnimatedStyle(() => ({ opacity: variant === "primary" ? 0 : 1 - p.value }));

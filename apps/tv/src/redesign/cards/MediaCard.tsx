@@ -1,7 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
@@ -100,9 +100,11 @@ export const MediaCard = memo(function MediaCard({
   const radius = landscape ? TV_STAGE.card.landscape.radius : TV_STAGE.card.poster.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
+  // L'appui, tenu par la cible (posée au-dessus de l'image), lu par le cadre.
+  const press = useSharedValue(0);
   return (
     <View style={[{ width }, focused && styles.front]}>
-      <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin}>
+      <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} press={press} origin={origin}>
         {uri ? (
           <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
         ) : (
@@ -134,6 +136,7 @@ export const MediaCard = memo(function MediaCard({
         onFocusChange={onTargetFocusChange}
         accessibilityLabel={card.title}
         style={StyleSheet.absoluteFill}
+        pressProgress={press}
       >
         {NO_VISUAL}
       </FocusTarget>

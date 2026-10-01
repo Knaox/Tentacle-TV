@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
+import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { GlassSurface } from "../glass/GlassSurface";
 import { Icon, type IconName } from "../icons/Icon";
 import { colors, fonts } from "../theme/tokens";
@@ -47,7 +48,10 @@ export const RoundButton = memo(function RoundButton({
 
 function Round({ focused, icon, active, size, label }: { focused: boolean; icon: IconName; active: boolean; size: number; label: string }) {
   const p = useFocusProgress(focused);
-  const lift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (TV_STAGE.focus.buttonScale + 0.04 - 1) * p.value }] }));
+  const press = usePressProgress();
+  const lift = useAnimatedStyle(() => ({
+    transform: [{ scale: (1 + (TV_STAGE.focus.buttonScale + 0.04 - 1) * p.value) * pressScale(press ? press.value : 0) }],
+  }));
   const whiteLayer = useAnimatedStyle(() => ({ opacity: p.value }));
   const caption = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ translateY: 6 * (1 - p.value) }] }));
   const idle = active ? colors.accent : colors.text;

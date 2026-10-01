@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
+import { pressScale, usePressProgress } from "../../motion/pressProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon, type IconName } from "../../icons/Icon";
@@ -64,8 +65,9 @@ function Glyph({ icon, seconds, size, color }: { icon?: IconName; seconds?: Circ
 
 function Body({ label, icon, seconds, size = 80, primary = false, caption = true, focused }: CircleButtonProps & { focused: boolean }) {
   const p = useFocusProgress(focused);
+  const press = usePressProgress();
   const lift = useAnimatedStyle(() => ({
-    transform: [{ translateY: -3 * p.value }, { scale: 1 + (primary ? 0.08 : 0.12) * p.value }],
+    transform: [{ translateY: -3 * p.value }, { scale: (1 + (primary ? 0.08 : 0.12) * p.value) * pressScale(press ? press.value : 0) }],
   }));
   const shadow = useAnimatedStyle(() => ({ opacity: p.value }));
   const whiteLayer = useAnimatedStyle(() => ({ opacity: primary ? 1 : p.value }));

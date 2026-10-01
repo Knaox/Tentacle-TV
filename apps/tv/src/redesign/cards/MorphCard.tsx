@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
@@ -66,9 +66,11 @@ export interface MorphCardProps {
 
 export const MorphCard = memo(function MorphCard({ card, place, focusKey, onPress, onLongPress, onFocusChange }: MorphCardProps) {
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
+  // L'appui, tenu par la cible, lu par l'affiche.
+  const press = useSharedValue(0);
   return (
     <View style={[styles.cell, focused && styles.front]}>
-      <Body card={card} place={place} focused={focused} />
+      <Body card={card} place={place} focused={focused} press={press} />
       <FocusTarget
         focusKey={focusKey}
         onPress={onPress}
@@ -76,6 +78,7 @@ export const MorphCard = memo(function MorphCard({ card, place, focusKey, onPres
         onFocusChange={onTargetFocusChange}
         accessibilityLabel={card.title}
         style={styles.hit}
+        pressProgress={press}
       >
         {NO_VISUAL}
       </FocusTarget>
@@ -83,7 +86,7 @@ export const MorphCard = memo(function MorphCard({ card, place, focusKey, onPres
   );
 });
 
-function Body({ card, place, focused }: { card: CardModel; place?: RowPlace; focused: boolean }) {
+function Body({ card, place, focused, press }: { card: CardModel; place?: RowPlace; focused: boolean; press: SharedValue<number> }) {
   const p = useFocusProgress(focused, 260);
   const landscapeFade = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   const posterIn = useAnimatedStyle(() => ({ opacity: p.value, transform: [{ scale: 0.86 + 0.14 * p.value }] }));
@@ -101,7 +104,7 @@ function Body({ card, place, focused }: { card: CardModel; place?: RowPlace; foc
         </CardFrame>
       </Animated.View>
       <Animated.View pointerEvents="none" style={[styles.poster, posterIn]}>
-        <CardFrame width={POSTER_W} height={POSTER_H} radius={TV_STAGE.card.poster.radius} focused={focused} origin="center">
+        <CardFrame width={POSTER_W} height={POSTER_H} radius={TV_STAGE.card.poster.radius} focused={focused} press={press} origin="center">
           {card.posterUri ? (
             <Image source={{ uri: card.posterUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
           ) : landscapeUri ? (

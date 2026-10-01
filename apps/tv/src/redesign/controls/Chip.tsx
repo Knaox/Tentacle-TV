@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
+import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { GlassSurface } from "../glass/GlassSurface";
 import { Icon, type IconName } from "../icons/Icon";
 import { colors, fonts, white } from "../theme/tokens";
@@ -61,7 +62,8 @@ function Row({ label, detail, icon, trailingIcon, color, detailColor, height, bo
 
 function ChipBody({ label, detail, icon, trailingIcon, selected = false, size = "lg", focused }: ChipProps & { focused: boolean }) {
   const p = useFocusProgress(focused);
-  const lift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.05 * p.value }] }));
+  const press = usePressProgress();
+  const lift = useAnimatedStyle(() => ({ transform: [{ scale: (1 + 0.05 * p.value) * pressScale(press ? press.value : 0) }] }));
   const whiteLayer = useAnimatedStyle(() => ({ opacity: p.value }));
   const height = HEIGHT[size];
   const radius = height / 2;

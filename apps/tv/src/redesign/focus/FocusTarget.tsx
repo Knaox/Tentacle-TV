@@ -1,6 +1,9 @@
 import { memo, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { Pressable, type StyleProp, type ViewStyle } from "react-native";
+import { useReducedMotion, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { LONG_PRESS_THRESHOLD_MS } from "@tentacle-tv/tv-core";
+import { motionTo } from "../motion/motion";
+import { PressProgressContext } from "../motion/pressProgress";
 import { useFocusBinding } from "./focusBinding";
 import { useFocusVisual } from "./focusPreview";
 
@@ -16,6 +19,10 @@ export interface FocusTargetProps {
   accessibilityLabel?: string;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** L'appui (0 → 1, OK enfoncé), quand il se lit HORS de la cible — l'image
+   *  d'une carte, sœur de sa cible. Ce que la cible rend le lit, lui, par
+   *  `usePressProgress`. */
+  pressProgress?: SharedValue<number>;
   children: (focused: boolean) => ReactNode;
 }
 
@@ -31,6 +38,10 @@ export interface FocusTargetProps {
  * perd. Le plateau d'une carte se démonte ainsi quand le focus part de l'un
  * de ses boutons vers la carte voisine : sans cet avis, la carte restait
  * « ouverte » et ne se rouvrait plus.
+ *
+ * Il tient aussi l'APPUI (Apple TV) : OK enfoncé, la valeur va vers 1 ;
+ * relâché, elle revient sur un ressort (préréglage `press`) —
+ * `motion/pressProgress`. Sur le fil d'interface : aucun rendu n'en dépend.
  */
 export const FocusTarget = memo(function FocusTarget({
   focusKey,
@@ -40,8 +51,12 @@ export const FocusTarget = memo(function FocusTarget({
   accessibilityLabel,
   disabled,
   style,
+  pressProgress,
   children,
 }: FocusTargetProps) {
+  const reduced = useReducedMotion();
+  const ownPress = useSharedValue(0);
+  const press = pressProgress ?? ownPress;
   const { focused, onFocus, onBlur } = useFocusVisual(focusKey);
   const binding = useFocusBinding(focusKey);
   const bindingFocus = binding?.onFocus;
@@ -61,11 +76,13 @@ export const FocusTarget = memo(function FocusTarget({
   const handleBlur = useCallback(() => {
     holding.current = false;
     onBlur();
-    // Un appui commencé ici puis emporté ailleurs ne doit pas valider plus tard.
+    // Un appui commencé ici puis emporté ailleurs ne doit pas valider plus
+    // tard — et l'élément ne reste pas enfoncé.
+    if (pressedIn.current) press.value = motionTo(0, "press", reduced);
     pressedIn.current = false;
     bindingBlur?.();
     onFocusChange?.(false);
-  }, [onBlur, bindingBlur, onFocusChange]);
+  }, [onBlur, bindingBlur, onFocusChange, press, reduced]);
   useEffect(
     () => () => {
       if (!holding.current) return;
@@ -77,7 +94,11 @@ export const FocusTarget = memo(function FocusTarget({
   );
   const handlePressIn = useCallback(() => {
     pressedIn.current = true;
-  }, []);
+    press.value = motionTo(1, "press", reduced);
+  }, [press, reduced]);
+  const handlePressOut = useCallback(() => {
+    press.value = motionTo(0, "press", reduced);
+  }, [press, reduced]);
   const handlePress = useCallback(() => {
     if (guarded && !pressedIn.current) return; // clic fantôme : ignoré
     pressedIn.current = false;
@@ -91,6 +112,7 @@ export const FocusTarget = memo(function FocusTarget({
       {...binding?.native}
       ref={binding?.ref}
       onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       onPress={onPress ? handlePress : undefined}
       onLongPress={onLongPress}
       delayLongPress={LONG_PRESS_THRESHOLD_MS}
@@ -101,7 +123,7 @@ export const FocusTarget = memo(function FocusTarget({
       accessibilityLabel={accessibilityLabel}
       style={style}
     >
-      {children(focused)}
+      <PressProgressContext.Provider value={press}>{children(focused)}</PressProgressContext.Provider>
     </Pressable>
   );
 });

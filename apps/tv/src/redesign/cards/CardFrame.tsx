@@ -1,9 +1,10 @@
 import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { useFocusProgress } from "../focus/useFocusProgress";
+import { pressScale } from "../motion/pressProgress";
 import { useRecede, type RowPlace } from "../motion/useRowRecede";
 import { colors, white } from "../theme/tokens";
 
@@ -21,10 +22,11 @@ import { colors, white } from "../theme/tokens";
  * Une carte pose donc sa cible focalisable AU-DESSUS du cadre.
  */
 
-/** L'agrandissement et le soulèvement du focus, pour une valeur de 0 à 1. */
-function cardLift(progress: number): [{ translateY: number }, { scale: number }] {
+/** L'agrandissement et le soulèvement du focus, pour une valeur de 0 à 1 —
+ *  et l'appui (OK enfoncé), qui l'enfonce d'un cran. */
+function cardLift(progress: number, press: number): [{ translateY: number }, { scale: number }] {
   "worklet";
-  return [{ translateY: -4 * progress }, { scale: 1 + (TV_STAGE.focus.cardScale - 1) * progress }];
+  return [{ translateY: -4 * progress }, { scale: (1 + (TV_STAGE.focus.cardScale - 1) * progress) * pressScale(press) }];
 }
 
 /** Le point fixe de l'agrandissement : le haut dans une rangée, le centre dans une grille. */
@@ -42,6 +44,8 @@ export interface CardFrameProps {
   place?: RowPlace;
   /** Recule — pour une carte hors d'une rangée à valeur partagée. */
   dimmed?: boolean;
+  /** L'appui sur la carte (OK enfoncé), tenu par sa cible (`FocusTarget`). */
+  press?: SharedValue<number>;
   /** Point fixe de l'agrandissement : le haut pour une rangée (la légende
    *  dessous ne bouge pas), le centre dans une grille. */
   origin?: "top" | "center";
@@ -55,6 +59,7 @@ export const CardFrame = memo(function CardFrame({
   focused,
   place,
   dimmed = false,
+  press,
   origin = "top",
   children,
 }: CardFrameProps) {
@@ -63,7 +68,7 @@ export const CardFrame = memo(function CardFrame({
   const recede = useRecede(place);
   const lift = useAnimatedStyle(() => ({
     opacity: 1 - (1 - TV_STAGE.focus.recede) * (place ? recede.value : dim.value),
-    transform: cardLift(p.value),
+    transform: cardLift(p.value, press ? press.value : 0),
   }));
   const rest = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   const raised = useAnimatedStyle(() => ({ opacity: p.value }));
