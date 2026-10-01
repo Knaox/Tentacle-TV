@@ -920,10 +920,11 @@ la possibilité de cliquer sur retour ».
   fiche (nouvelle), Parcourir, erreurs d'écran et de fiche (le panneau ne
   garde que « Réessayer »), jumelage (« Annuler » du relais, « Retour » du
   serveur manuel), bande-annonce, grand panneau, lecteur (ouverture,
-  habillage, pistes, épisodes). Les clés que d'autres guides visent ne
-  changent pas (`sheet:close`, `player:back`, `loading:back`,
-  `tracks:close`, `episodes:close`, `trailer:close`, `browse:back`) ;
-  nouvelles : `detail:back`, `screenError:back`, `pairing:back`.
+  habillage, pistes, épisodes, affiche de fin). Les clés que d'autres guides
+  visent ne changent pas (`sheet:close`, `player:back`, `loading:back`,
+  `tracks:close`, `episodes:close`, `end:leave`, `trailer:close`,
+  `browse:back`) ; nouvelles : `detail:back`, `screenError:back`,
+  `pairing:back`.
 - **La règle de position** (planche validée par l'utilisateur) : EN HAUT À
   GAUCHE de ce qu'elle referme. Sur un écran, à `BACK_TOP` (son centre sur la
   ligne de la marque, en haut à droite), sur le bord gauche du contenu — la
@@ -933,6 +934,14 @@ la possibilité de cliquer sur retour ».
   posent dans leur marge, à cheval sur la première ligne d'options — calée
   sur les titres, rien ne la chevauchait et GAUCHE depuis la première option
   ne la trouvait pas (mesuré).
+- **Le lecteur** (ses guides, `playerFocusContainers`) : l'écran d'ouverture
+  et l'affiche de fin sont des pièges d'écran (`loading:screen`,
+  `end:screen`, `ScreenTrap`) — le focus n'en sort par aucune direction,
+  croix comprise ; une destination vers leur entrée, jamais d'`autoFocus`
+  (il entrerait par la croix). La croix de fin reste infocalisable tant que
+  « Lire maintenant » n'a pas eu le focus (`useEndExitLocked`) ; HAUT y mène
+  ensuite (alignées). La marge des pistes est un pont (`tracks:back`) :
+  GAUCHE depuis toute la colonne Audio mène à leur croix.
 - **Le focus** (`redesignWiring/focus/backFocus.tsx`, `useBackFocus`), hors
   lecteur et grand panneau, qui ont leurs guides :
   - JAMAIS l'entrée d'une fiche : à l'arrivée — et à chaque étape d'un
@@ -962,21 +971,23 @@ la possibilité de cliquer sur retour ».
   BAS, OK) ; bande-annonce (la croix en entrée, OK, Menu) ; lecteur :
   ouverture (la croix en entrée), habillage (HAUT, BAS, OK quitte), épisodes
   (HAUT depuis les saisons, OK ferme), pistes (GAUCHE depuis la première
-  option, OK ferme) ; erreur d'écran provoquée par CDP (`setState` de la
+  comme depuis la deuxième piste audio, OK ferme), ouverture TENUE
+  (`PrismBridge.start` suspendu par CDP, le temps de l'essai) : HAUT, BAS,
+  GAUCHE, DROITE gardent la croix, OK sort ; erreur d'écran provoquée par CDP (`setState` de la
   frontière d'erreur), sur la fiche et sur une page à navigation (entrée sur
   Réessayer, HAUT, BAS, GAUCHE vers la navigation, OK) ; jumelage ouvert par
   la navigation, session intacte (serveur manuel : entrée sur le champ, HAUT,
   BAS, OK vers l'accueil, Menu). Au banc seulement : le code du relais (il
-  aurait fallu demander un code au relais) et la fiche d'une collection
-  (aucune dans la bibliothèque de test).
+  aurait fallu demander un code au relais), la fiche d'une collection
+  (aucune dans la bibliothèque de test) et l'affiche de fin (scène câblée,
+  focus natif : la regarder pour de vrai marquerait l'épisode vu).
 - **Au banc** : groupe « Retour », dix-huit scènes — l'entrée puis la croix,
   ou la croix seule là où elle est la seule action
-  (`bench:ui planche retour --focus`).
-- **Restes** : « Retour à la fiche » de l'affiche de fin (`end:leave`, un
-  geste nommé face à « Lire maintenant », retenu dans le piège `end:actions`
-  du lecteur) ; les listes de filtres et de choix n'ont pas de croix (Menu
-  les ferme) ; `OsdTopBar` garde `backLabel`, plus lu, tant que
-  `PlayerChromeView` le passe.
+  (`bench:ui planche retour --focus`) — et deux scènes « Câblée » du lecteur
+  (affiche de fin, ouverture), en focus natif sous ses guides.
+- **Restes** : les listes de filtres et de choix n'ont pas de croix (Menu les
+  ferme) ; « Retour à la fiche » du message-outil du lecteur passe à la croix
+  dans sa propre branche (même motif que l'affiche de fin).
 
 ---
 
@@ -1284,6 +1295,11 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   Retour parce qu'elle prenait le focus pendant le chargement ; arrivé sur
   une page déjà là — ou croix verrouillée —, HAUT restait sur l'affiche. Pour
   mener à une cible précise : une DESTINATION.
+- **Un habillage tu ne « réapparaît » pas** : HAUT sur l'écran d'ouverture
+  rallumait l'habillage caché dessous, et sa restauration de focus
+  (`useTVOsdEntryFocus`) visait un bouton infocalisable — l'app restait SANS
+  focus. Un piège n'y peut rien : il ne retient que les gestes, pas une
+  réclamation. Ne dire « réapparu » que si rien ne le couvre (`PlayerScreen`).
 - **Deux apps sur le même Metro se disputent l'inspecteur** : deux clones du
   même modèle s'y présentent sous le même identifiant d'appareil et se
   délogent l'un l'autre chaque seconde (CDP inutilisable). Un Metro par app
