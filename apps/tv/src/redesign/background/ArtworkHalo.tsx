@@ -44,6 +44,8 @@ export interface ArtworkHaloProps {
 
 /** L'échelle du dessin, avant agrandissement. */
 const DRAW = 0.25;
+/** Les halos gardés dessinés : les cinq titres d'un héros, plus celui qui part. */
+const POOL = 6;
 
 
 interface Geometry {
@@ -112,7 +114,10 @@ export const ArtworkHalo = memo(function ArtworkHalo({
   const w = width + margin * 2;
   const h = height + margin * 2;
   const glows = useMemo(() => brandLight(palette).glows, [palette]);
-  const layers = useLayerPool(glows.join("-"), glows, 3);
+  // Un emplacement par lumière d'un héros qui tourne (cinq titres au plus) :
+  // au tour suivant, chaque halo revient déjà dessiné — aucun flou n'est
+  // recalculé (quelques centaines de Kio, éteints quand ils ne servent pas).
+  const layers = useLayerPool(glows.join("-"), glows, POOL);
   const g = useMemo<Geometry>(() => ({ w, h, width, height, radius, spread, margin, blur }), [w, h, width, height, radius, spread, margin, blur]);
   return (
     <View pointerEvents="none" style={[{ position: "absolute", left: -margin, top: -margin, width: w, height: h }, style]}>

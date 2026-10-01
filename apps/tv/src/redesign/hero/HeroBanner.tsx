@@ -1,12 +1,15 @@
 import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import { TV_STAGE } from "@tentacle-tv/theme";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../background/ArtworkHalo";
 import type { ArtworkPalette } from "../color/artworkPalette";
 import { PillButton } from "../controls/PillButton";
 import { RoundButton } from "../controls/RoundButton";
 import { Icon, type IconName } from "../icons/Icon";
+import { useCrossfade } from "../motion/useCrossfade";
+import { useSwap } from "../motion/useSwap";
 import { colors, fonts, scrim, text, white } from "../theme/tokens";
 import { MetaLine, type MetaItem } from "./MetaLine";
 import { TitleArt } from "./TitleArt";
@@ -23,6 +26,13 @@ import { TitleArt } from "./TitleArt";
  * bas — jusqu'à les rogner sous un titre écrit sur deux lignes. D'où aussi un
  * synopsis sur deux lignes, et un logo ou un titre bornés (moins haut quand la
  * raison prend une ligne) : le haut du bloc garde toujours de l'air.
+ *
+ * Quand le héros TOURNE (Apple TV) : la nouvelle image entre en fondu
+ * par-dessus l'ancienne, qui reste pleine dessous (`useCrossfade`,
+ * `dissolve`) ; le halo passe d'une lumière à l'autre ; le bloc du texte et
+ * des boutons — un seul exemplaire, il est focalisable — sort en fondu,
+ * change pendant qu'il est invisible, et rentre en montant de quelques
+ * points (`useSwap`). Les points de la rotation suivent tout de suite.
  */
 
 export interface HeroAction {
@@ -68,6 +78,8 @@ const INSET = 72;
 const ACTIONS_HEIGHT = 68;
 const DOT = 8;
 const TITLE_WIDTH = 760;
+/** Ce que le texte d'un héros qui arrive monte, en points. */
+const TEXT_RISE = 10;
 
 /** Le titre écrit (faute de logo) : assez petit pour tenir en deux lignes
  *  sans que iOS le rétrécisse — rétréci, il garde son interligne et ses deux
@@ -86,11 +98,20 @@ export const HeroBanner = memo(function HeroBanner({
   onToggleList,
   onFocusChange,
 }: HeroBannerProps) {
+  const backdrops = useCrossfade(`${hero.id}|${hero.backdropUri ?? ""}`, hero.backdropUri, "hero", "dissolve");
+  const { shown, progress } = useSwap(hero.id, hero, TV_MOTION.crossfade.heroTextOutMs, TV_MOTION.crossfade.heroTextInMs);
+  const arrive = useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateY: TEXT_RISE * (1 - progress.value) }] }));
   return (
     <View style={{ width, height }}>
       <ArtworkHalo width={width} height={height} radius={H.radius} palette={hero.palette} spread={H.haloSpread} opacity={H.haloOpacity} />
       <View style={[styles.frame, { width, height, borderRadius: H.radius }]}>
-        {hero.backdropUri ? <Image source={{ uri: hero.backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
+        {backdrops.map(({ entry, style }) =>
+          entry.item ? (
+            <Animated.View key={entry.key} pointerEvents="none" style={[StyleSheet.absoluteFill, style]}>
+              <Image source={{ uri: entry.item }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+            </Animated.View>
+          ) : null,
+        )}
         <LinearGradient
           colors={[scrim(0.9), scrim(0.62), scrim(0.05), scrim(0)]}
           locations={[0, 0.34, 0.64, 1]}
@@ -100,43 +121,43 @@ export const HeroBanner = memo(function HeroBanner({
         />
         <LinearGradient colors={[scrim(0), scrim(0.7)]} locations={[0.6, 1]} style={StyleSheet.absoluteFill} />
         <View style={[StyleSheet.absoluteFill, styles.ring, { borderRadius: H.radius }]} pointerEvents="none" />
-        <View style={styles.content}>
-          {hero.kicker && hero.reason ? (
+        <Animated.View style={[styles.content, arrive]}>
+          {shown.kicker && shown.reason ? (
             <View style={styles.kickerBlock}>
-              <Text style={text.kicker} numberOfLines={1}>{hero.kicker}</Text>
+              <Text style={text.kicker} numberOfLines={1}>{shown.kicker}</Text>
               <View style={styles.reason}>
                 <Icon name="sparkles" size={26} color={colors.accentLight} />
-                <Text style={styles.reasonText} numberOfLines={1}>{hero.reason}</Text>
+                <Text style={styles.reasonText} numberOfLines={1}>{shown.reason}</Text>
               </View>
             </View>
-          ) : hero.kicker ? (
-            <Text style={text.kicker} numberOfLines={1}>{hero.kicker}</Text>
+          ) : shown.kicker ? (
+            <Text style={text.kicker} numberOfLines={1}>{shown.kicker}</Text>
           ) : null}
           <TitleArt
-            title={hero.title}
-            logoUri={hero.logoUri}
-            maxWidth={hero.logoUri ? 680 : TITLE_WIDTH}
-            maxHeight={hero.reason ? 120 : 150}
-            fontSize={titleSize(hero.title, Boolean(hero.reason))}
+            title={shown.title}
+            logoUri={shown.logoUri}
+            maxWidth={shown.logoUri ? 680 : TITLE_WIDTH}
+            maxHeight={shown.reason ? 120 : 150}
+            fontSize={titleSize(shown.title, Boolean(shown.reason))}
           />
-          <MetaLine items={hero.meta} />
-          {hero.synopsis ? <Text style={[text.body, styles.synopsis]} numberOfLines={2}>{hero.synopsis}</Text> : null}
+          <MetaLine items={shown.meta} />
+          {shown.synopsis ? <Text style={[text.body, styles.synopsis]} numberOfLines={2}>{shown.synopsis}</Text> : null}
           <View style={styles.actions}>
-            <PillButton variant="brand" {...hero.primary} onPress={onPrimary} onFocusChange={onFocusChange} />
-            {hero.secondary ? <PillButton variant="glass" {...hero.secondary} onPress={onSecondary} onFocusChange={onFocusChange} /> : null}
-            {hero.listToggle ? (
+            <PillButton variant="brand" {...shown.primary} onPress={onPrimary} onFocusChange={onFocusChange} />
+            {shown.secondary ? <PillButton variant="glass" {...shown.secondary} onPress={onSecondary} onFocusChange={onFocusChange} /> : null}
+            {shown.listToggle ? (
               <RoundButton
                 icon="plus"
                 activeIcon="check"
-                label={hero.listToggle.label}
-                active={hero.listToggle.active}
-                focusKey={hero.listToggle.focusKey}
+                label={shown.listToggle.label}
+                active={shown.listToggle.active}
+                focusKey={shown.listToggle.focusKey}
                 onPress={onToggleList}
                 onFocusChange={onFocusChange}
               />
             ) : null}
           </View>
-        </View>
+        </Animated.View>
         {hero.page && hero.page.count > 1 ? (
           <View style={styles.dots}>
             {Array.from({ length: hero.page.count }, (_, i) => (
