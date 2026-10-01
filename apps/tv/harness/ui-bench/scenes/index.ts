@@ -21,6 +21,7 @@ import { SETTINGS_SCENES } from "./settingsScenes";
 import { SHEET_SCENES } from "./sheetScenes";
 import { SHEET_WIRED_SCENES } from "./sheetWiredScenes";
 import { TRAILER_SCENES } from "./trailerScenes";
+import { VITRINE_SCENES } from "./vitrineScenes";
 import type { BenchScene } from "./types";
 
 /**
@@ -52,6 +53,8 @@ export const SCENES: BenchScene[] = [
   ...MEASURE_SCENES,
   ...MOTION_SCENES,
   ...BENCH_SCENES,
+  // Les écrans de la fiche App Store et du site (instantané vitrine, contenu libre).
+  ...VITRINE_SCENES,
 ];
 
 export const SCENE_BY_ID = new Map(SCENES.map((scene) => [scene.id, scene]));
