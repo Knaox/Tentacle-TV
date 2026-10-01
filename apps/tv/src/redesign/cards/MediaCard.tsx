@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
@@ -8,7 +8,7 @@ import type { RowPlace } from "../motion/useRowRecede";
 import { colors, fonts, scrim } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
 import { CardFocusFooter } from "./CardFocusFooter";
-import { CardFrame } from "./CardFrame";
+import { CardFrame, cardGlowOf } from "./CardFrame";
 import { CardShell } from "./CardShell";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import { cardLogoBottom } from "./cardMarkerGeometry";
@@ -50,6 +50,9 @@ export interface MediaCardProps {
   origin?: "top" | "center";
   /** Cacher la légende (grilles denses, rangées d'épisodes qui portent la leur). */
   hideCaption?: boolean;
+  /** La lueur du focus : la lumière de l'œuvre (`art`, défaut), ou un blanc
+   *  doux et bas pour une carte qui doit rester grise (`neutral`). */
+  glowTone?: "art" | "neutral";
   onPress?: () => void;
   onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
@@ -90,6 +93,7 @@ export const MediaCard = memo(function MediaCard({
   focusKey,
   origin,
   hideCaption = false,
+  glowTone = "art",
   onPress,
   onLongPress,
   onFocusChange,
@@ -99,6 +103,7 @@ export const MediaCard = memo(function MediaCard({
   const radius = landscape ? TV_STAGE.card.landscape.radius : TV_STAGE.card.poster.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
+  const glow = useMemo(() => cardGlowOf(card.palette, glowTone), [card.palette, glowTone]);
   return (
     <CardShell
       focusKey={focusKey}
@@ -110,7 +115,7 @@ export const MediaCard = memo(function MediaCard({
       onTargetFocusChange={onTargetFocusChange}
       accessibilityLabel={card.title}
       frame={
-        <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin}>
+        <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin} glow={glow}>
           {uri ? (
             <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
           ) : (

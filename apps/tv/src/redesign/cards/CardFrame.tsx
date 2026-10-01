@@ -1,8 +1,9 @@
 import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
-import { TV_STAGE } from "@tentacle-tv/theme";
+import { TV_LIGHT, TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient } from "../background/SoftGradient";
+import { boundedLight, type ArtworkPalette } from "../color/artworkPalette";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { useRecede, type RowPlace } from "../motion/useRowRecede";
@@ -13,6 +14,11 @@ import { colors, white } from "../theme/tokens";
  * - la carte grandit (× 1,08) et se soulève ;
  * - son ombre passe de l'élévation de repos à celle du soulèvement, par DEUX
  *   calques en fondu d'opacité (jamais une ombre animée — cf. `cards.css`) ;
+ *   avec `glow`, le soulèvement n'est plus une grande ombre noire mais la
+ *   LUMIÈRE de l'œuvre que la carte jette autour d'elle — une ombre de sa
+ *   couleur, même calque, même coût : dans une grille pleine de cartes, la
+ *   carte focalisée ne flotte plus sur un « grand noir » (essai sur l'Apple
+ *   TV, 2026-10-01). L'ombre de repos reste alors dessous, comme un contact ;
  * - un reflet spéculaire discret glisse en travers de l'image ;
  * - une voisine a le focus, la carte recule un peu : `place` (sa place dans
  *   une rangée, lue sur le fil d'interface, sans rendu), ou `dimmed`.
@@ -53,7 +59,30 @@ export interface CardFrameProps {
   /** Point fixe de l'agrandissement : le haut pour une rangée (la légende
    *  dessous ne bouge pas), le centre dans une grille. */
   origin?: "top" | "center";
+  /** La lueur du focus (`cardGlowOf`) ; sans elle, l'ombre noire. */
+  glow?: CardGlow;
   children: ReactNode;
+}
+
+/** La lueur d'une carte focalisée : sa couleur et sa force. */
+export interface CardGlow {
+  color: string;
+  opacity: number;
+}
+
+const G = TV_LIGHT.cardGlow;
+const NEUTRAL_GLOW: CardGlow = { color: G.neutral, opacity: G.neutralOpacity };
+
+/**
+ * La lueur d'une carte : `art`, la lumière de son œuvre (clarté bornée comme
+ * celle du fond vivant) ; `neutral`, un blanc doux et bas — une carte qui doit
+ * rester grise (titre hors de la bibliothèque) garde un focus lisible sans
+ * prendre de couleur. Sans palette, rien : l'ombre noire.
+ */
+export function cardGlowOf(palette: ArtworkPalette | undefined, tone: "art" | "neutral"): CardGlow | undefined {
+  if (tone === "neutral") return NEUTRAL_GLOW;
+  if (!palette) return undefined;
+  return { color: boundedLight(palette.glows[1], TV_LIGHT.ambient.maxLuminance), opacity: G.opacity };
 }
 
 export const CardFrame = memo(function CardFrame({
@@ -65,6 +94,7 @@ export const CardFrame = memo(function CardFrame({
   dimmed = false,
   press,
   origin = "top",
+  glow,
   children,
 }: CardFrameProps) {
   const p = useFocusProgress(focused);
@@ -82,8 +112,15 @@ export const CardFrame = memo(function CardFrame({
   const shape = { width, height, borderRadius: radius };
   return (
     <Animated.View style={[shape, cardOrigin(origin), lift]}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadowRest, { borderRadius: radius }, rest]} />
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadowRaised, { borderRadius: radius }, raised]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.shadowRest, { borderRadius: radius }, glow ? null : rest]} />
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          glow ? [styles.glowRaised, { shadowColor: glow.color, shadowOpacity: glow.opacity }] : styles.shadowRaised,
+          { borderRadius: radius },
+          raised,
+        ]}
+      />
       <View style={[shape, styles.clip]}>
         {children}
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, sheen]}>
@@ -111,6 +148,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
+  },
+  glowRaised: {
+    backgroundColor: "#000",
+    shadowOffset: { width: 0, height: G.offsetY },
+    shadowRadius: G.radius,
   },
   shadowRaised: {
     backgroundColor: "#000",
