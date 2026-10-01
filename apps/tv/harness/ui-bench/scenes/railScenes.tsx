@@ -42,12 +42,20 @@ function RequestsStandIn() {
 
 const ACCESSORY: NavAccessory = { height: 64, node: <RequestsStandIn /> };
 
-function RailScene({ data, libraries, expanded, requests }: {
+interface RailSceneProps {
   data: BenchData;
   libraries?: number;
   expanded: boolean;
   requests?: boolean;
-}) {
+}
+
+/** Remontée à chaque langue : une planche passe d'une langue à l'autre sans
+ *  changer de scène, et l'accueil garde ses textes en mémoire. */
+function RailScene(props: RailSceneProps) {
+  return <RailSceneBody key={i18n.language} {...props} />;
+}
+
+function RailSceneBody({ data, libraries, expanded, requests }: RailSceneProps) {
   const nav = { ...benchNav(data, "Home", { libraries, expanded }), accessory: requests ? ACCESSORY : null };
   const rows = useMemo(() => rowsOf(data), [data]);
   const hero = useMemo(() => {
