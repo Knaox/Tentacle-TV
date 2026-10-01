@@ -23,7 +23,6 @@ export function playerChromeLabels(t: Translate, seek: { back: number; forward: 
     tracks: t("player:tracks"),
     dismiss: t("player:dismiss"),
     playNow: t("player:playNow"),
-    backToDetails: t("player:backToDetails"),
     upNext: t("player:upNext"),
     nowPlaying: t("player:nowPlaying"),
     retry: t("player:retry"),

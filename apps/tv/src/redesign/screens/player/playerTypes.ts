@@ -177,7 +177,6 @@ export interface PlayerLabels {
   tracks: string;
   dismiss: string;
   playNow: string;
-  backToDetails: string;
   upNext: string;
   nowPlaying: string;
   retry: string;

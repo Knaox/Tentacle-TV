@@ -17,8 +17,9 @@ import type { FocusStore } from "../focus/focusStore";
  *   décompte ; quand l'habillage est là, elle en ressort vers lecture/pause
  *   (BAS) et vers Retour (HAUT, GAUCHE) ;
  * - cartes, affiche, panneaux et message-outil le retiennent tant qu'ils sont
- *   ouverts ; l'écran d'ouverture aussi, croix Retour comprise, sans
- *   choisir par où l'on y entre (`ScreenTrap`) ;
+ *   ouverts ; les écrans qui couvrent la vidéo (ouverture, affiche de fin)
+ *   aussi, croix Retour comprise, sans choisir par où l'on y entre
+ *   (`ScreenTrap`) ;
  * - l'en-tête des épisodes renvoie toute montée vers la croix, la bande des
  *   saisons fait entrer par la saison AFFICHÉE.
  *
@@ -113,6 +114,13 @@ function LoadingScreenGroup(props: FocusGroupContainerProps) {
   return <ScreenTrap {...props} destinations={useLiveDestination(store, LOADING_ENTRIES)} />;
 }
 
+/** L'affiche de fin : « Lire maintenant » ; la croix s'atteint par HAUT. */
+const END_ENTRIES = ["end:play"] as const;
+function EndScreenGroup(props: FocusGroupContainerProps) {
+  const { store } = usePlayerFocusState();
+  return <ScreenTrap {...props} destinations={useLiveDestination(store, END_ENTRIES)} />;
+}
+
 /**
  * Un PONT : un guide qui renvoie le focus vers ses destinations — et qui, sans
  * destination, n'est plus rien. Il faut le dire : react-native-tvos marque
@@ -198,8 +206,8 @@ export const PLAYER_GROUP_CONTAINERS: Readonly<Record<string, ComponentType<Focu
   "player:timeline": TimelineGroup,
   "player:skip-island": IslandGroup,
   "upnext:actions": TrapFocusGuide,
-  "end:actions": TrapFocusGuide,
   "loading:screen": LoadingScreenGroup,
+  "end:screen": EndScreenGroup,
   "trouble:actions": TrapFocusGuide,
   "tracks:panel": TrapFocusGuide,
   "episodes:panel": TrapFocusGuide,
