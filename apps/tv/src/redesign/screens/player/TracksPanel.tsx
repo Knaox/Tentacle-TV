@@ -21,9 +21,10 @@ import { TrackOptionRow } from "./TrackOptionRow";
  * reste visible au-dessus. Chaque colonne défile seule ; ouverte sur son
  * choix retenu. La croix Retour en haut à gauche, dans une marge à elle (son
  * libellé paraît dessous au focus) : GAUCHE depuis la première option.
- * Clés : `tracks:close`, `tracks:audio:<clé>`, `tracks:subtitle:<clé>`,
- * `tracks:quality:<clé>` ; groupe `tracks:panel` — la feuille, où
- * l'intégration retient le focus tant qu'elle est ouverte.
+ * Clés : `tracks:close` (la croix), `tracks:audio:<clé>`,
+ * `tracks:subtitle:<clé>`, `tracks:quality:<clé>` ; groupes `tracks:panel` —
+ * la feuille, où l'intégration retient le focus tant qu'elle est ouverte — et
+ * `tracks:back`, la marge de la croix.
  */
 
 const SAFE = TV_STAGE.safe;
@@ -36,7 +37,10 @@ const HEADING_GAP = 10;
 /**
  * La croix, dans sa marge à gauche des colonnes, à cheval sur le haut de la
  * première ligne d'options : tvOS ne vise que ce qui chevauche — calée sur
- * les titres, GAUCHE depuis la première option ne la trouvait pas (mesuré).
+ * les titres, GAUCHE depuis la première option ne la trouvait pas (mesuré),
+ * et DROITE depuis elle rejoint cette première option. La marge entière est
+ * un groupe (`tracks:back`) : l'intégration y mène GAUCHE depuis toute la
+ * colonne Audio.
  */
 const BACK_LEFT = 36;
 const BACK_TOP_IN_SHEET = COLUMNS_TOP + HEADING_HEIGHT + HEADING_GAP - BACK_BUTTON_SIZE / 2;
@@ -128,9 +132,11 @@ export const TracksPanel = memo(function TracksPanel({
               </>
             ) : null}
           </View>
-          <View style={styles.back}>
-            <BackButton focusKey="tracks:close" onPress={onClose} />
-          </View>
+          <FocusGroup focusKey="tracks:back" style={styles.gutter}>
+            <View style={styles.back}>
+              <BackButton focusKey="tracks:close" onPress={onClose} />
+            </View>
+          </FocusGroup>
         </FocusGroup>
       </Animated.View>
     </View>
@@ -148,5 +154,7 @@ const styles = StyleSheet.create({
   headingText: { ...fonts.bold, fontSize: 34, color: colors.text },
   scroll: { flex: 1 },
   options: { gap: 8, paddingBottom: 24 },
+  // La marge, sur toute la hauteur de la feuille ; la croix y est posée à sa place.
+  gutter: { position: "absolute", top: 0, bottom: 0, left: 0, width: GUTTER },
   back: { position: "absolute", top: BACK_TOP_IN_SHEET, left: BACK_LEFT },
 });

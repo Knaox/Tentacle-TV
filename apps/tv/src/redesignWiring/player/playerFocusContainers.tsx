@@ -21,7 +21,8 @@ import type { FocusStore } from "../focus/focusStore";
  *   aussi, croix Retour comprise, sans choisir par où l'on y entre
  *   (`ScreenTrap`) ;
  * - l'en-tête des épisodes renvoie toute montée vers la croix, la bande des
- *   saisons fait entrer par la saison AFFICHÉE.
+ *   saisons fait entrer par la saison AFFICHÉE ; la marge des pistes mène à
+ *   leur croix depuis toute la colonne Audio.
  *
  * Chaque conteneur est un composant de MODULE (identité stable, exigée par le
  * port) ; ce qui varie se lit dans `PlayerFocusState`. La mémoire et le piège
@@ -195,6 +196,12 @@ function EpisodesHeaderGroup(props: FocusGroupContainerProps) {
   return <BridgeGuide {...props} destinations={useStoreDestination(store, "episodes:close")} />;
 }
 
+/** La marge des pistes : GAUCHE depuis toute la colonne Audio y entre et rejoint la croix. */
+function TracksBackGroup(props: FocusGroupContainerProps) {
+  const { store } = usePlayerFocusState();
+  return <BridgeGuide {...props} destinations={useStoreDestination(store, "tracks:close")} />;
+}
+
 function SeasonsGroup(props: FocusGroupContainerProps) {
   const { store, activeSeasonIndex } = usePlayerFocusState();
   return <BridgeGuide {...props} destinations={useStoreDestination(store, `episodes:season:${activeSeasonIndex}`)} />;
@@ -210,6 +217,7 @@ export const PLAYER_GROUP_CONTAINERS: Readonly<Record<string, ComponentType<Focu
   "end:screen": EndScreenGroup,
   "trouble:actions": TrapFocusGuide,
   "tracks:panel": TrapFocusGuide,
+  "tracks:back": TracksBackGroup,
   "episodes:panel": TrapFocusGuide,
   "episodes:header": EpisodesHeaderGroup,
   "episodes:seasons": SeasonsGroup,
