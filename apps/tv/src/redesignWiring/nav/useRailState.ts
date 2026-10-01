@@ -82,24 +82,33 @@ export interface RailActions {
   onLongPress: (key: string) => void;
 }
 
+export interface RailActionHooks {
+  /** Choisir l'entrée de la page où l'on est ; défaut : `focusContent`. */
+  onReselect?: () => void;
+  /** Juste avant de naviguer vers une autre page, dans le même geste. */
+  beforeLeave?: () => void;
+}
+
 /**
  * `focusContent` rend le focus au contenu (choisir l'entrée de la page où
  * l'on est) ; `onReselect` le remplace quand l'écran veut autre chose.
- * Pendant un déplacement, OK pose l'entrée (`arrange`).
+ * Pendant un déplacement, OK pose l'entrée (`arrange`). Choisir une autre
+ * page y mène ; la page d'arrivée prend le focus dans son contenu, rail
+ * replié (`useEntryFocus`).
  */
 export function useRailActions(
   railKey: string,
   focus: FocusStore,
   focusContent: () => void,
   arrange: Pick<RailArrange, "openMenu" | "dropIfMoving">,
-  onReselect?: () => void,
+  hooks: RailActionHooks = {},
 ): RailActions {
   const { data: libraries } = useLibraries();
   const pinning = useRailPinning();
   const librariesRef = useRef(libraries);
   librariesRef.current = libraries;
-  const reselectRef = useRef(onReselect);
-  reselectRef.current = onReselect;
+  const hooksRef = useRef(hooks);
+  hooksRef.current = hooks;
   const { openMenu, dropIfMoving } = arrange;
 
   const onSelect = useCallback(
@@ -113,9 +122,10 @@ export function useRailActions(
       }
       if (key === "Search" && returnToSearchBar()) return;
       if (key === railKey) {
-        (reselectRef.current ?? focusContent)();
+        (hooksRef.current.onReselect ?? focusContent)();
         return;
       }
+      hooksRef.current.beforeLeave?.();
       navigateTo(key, librariesRef.current);
     },
     [focus, focusContent, pinning, railKey, dropIfMoving],

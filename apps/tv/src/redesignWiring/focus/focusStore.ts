@@ -50,6 +50,12 @@ export interface FocusStore {
    * capturé : une cible démontée en route ne reçoit rien.
    */
   claim(focusKey: string): () => void;
+  /**
+   * Pose le focus natif sur la clé TOUT DE SUITE (`requestTVFocus` : la
+   * commande part avant ce que le même geste fera ensuite, une navigation par
+   * exemple). Faux si la cible n'est pas montée. Hors d'une `Modal` seulement.
+   */
+  focusNow(focusKey: string): boolean;
   /** La clé qui porte le focus natif, ou null. */
   focusedKey(): string | null;
   /** La dernière clé focalisée — elle reste après la perte du focus. */
@@ -62,6 +68,7 @@ export interface FocusStore {
 }
 
 type Settable = { setNativeProps?: (props: object) => void };
+type Requestable = { requestTVFocus?: () => void };
 
 export function createFocusStore(): FocusStore {
   const nodes = new Map<string, View>();
@@ -147,6 +154,12 @@ export function createFocusStore(): FocusStore {
       bindings.delete(key); // la prochaine lecture reconstruit la liaison
     },
     claim,
+    focusNow: (key) => {
+      const node = nodes.get(key) as Requestable | undefined;
+      if (!node?.requestTVFocus) return false;
+      node.requestTVFocus();
+      return true;
+    },
     focusedKey: () => current,
     lastFocusedKey: () => last,
     subscribe: (listener) => {

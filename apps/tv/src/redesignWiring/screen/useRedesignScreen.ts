@@ -71,7 +71,18 @@ export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus:
     focus.claim(focus.node(active) ? active : navKeyOf("Home"));
   }, [focus, railKey]);
 
-  const { onSelect, onLongPress } = useRailActions(railKey, focus, focusContent, arrange, onReselect);
+  // Quitter l'accueil par le rail : son instance reste montée sous la page
+  // choisie, et UIKit lui rendra le focus qu'elle avait en partant — une
+  // entrée du rail, qui rouvrait le rail au retour sur l'accueil, sur
+  // l'ancienne page. Le focus repasse donc d'abord dans son contenu, DANS le
+  // même geste (`focusNow`) : UIKit retient le contenu.
+  const beforeLeave = useCallback(() => {
+    if (railKey !== "Home") return;
+    const key = contentKey();
+    if (key) focus.focusNow(key);
+  }, [railKey, focus, contentKey]);
+
+  const { onSelect, onLongPress } = useRailActions(railKey, focus, focusContent, arrange, { onReselect, beforeLeave });
 
   // Le menu d'une entrée ou un déplacement gardent la navigation ouverte.
   const { heldKey, movingKey } = arrange;
