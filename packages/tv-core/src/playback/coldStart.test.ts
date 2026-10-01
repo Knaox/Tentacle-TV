@@ -68,6 +68,22 @@ describe("le marqueur persistant", () => {
     expect(content.has(PLAYBACK_MARKER_KEY)).toBe(false);
   });
 
+  it("porte la position de l'arrêt d'arrière-plan, et la relit", () => {
+    writePlaybackMarker(storage, marker({ positionSeconds: 106.4 }));
+    expect(readPlaybackMarker(storage)?.positionSeconds).toBe(106.4);
+  });
+
+  it("un marqueur d'avant la position (version précédente) reste valable", () => {
+    const { positionSeconds: _absent, ...older } = marker({ positionSeconds: 1 });
+    content.set(PLAYBACK_MARKER_KEY, JSON.stringify(older));
+    expect(readPlaybackMarker(storage)?.positionSeconds).toBeUndefined();
+  });
+
+  it("une position illisible rend le marqueur illisible", () => {
+    content.set(PLAYBACK_MARKER_KEY, JSON.stringify({ ...marker(), positionSeconds: "106" }));
+    expect(readPlaybackMarker(storage)).toBeNull();
+  });
+
   it("ignore un contenu illisible ou incomplet", () => {
     content.set(PLAYBACK_MARKER_KEY, "{pas du json");
     expect(readPlaybackMarker(storage)).toBeNull();

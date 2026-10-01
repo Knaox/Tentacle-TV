@@ -40,6 +40,10 @@ export interface PlaybackMarker {
   /** L'instance de lecteur qui l'a écrit : un lecteur ne retire que le sien
    *  (l'épisode suivant monte avant que le précédent ne parte). */
   playerId: string;
+  /** La position à la dernière écriture (s) — exacte au passage en arrière-plan.
+   *  Jellyfin 12.1 accuse parfois un arrêt sans l'écrire : à la relance, elle
+   *  l'emporte sur une reprise relue plus ancienne (la date gagne). */
+  positionSeconds?: number;
 }
 
 export type ColdStartLanding =
@@ -73,6 +77,7 @@ function isMarker(value: unknown): value is PlaybackMarker {
   if (!value || typeof value !== "object") return false;
   const m = value as Partial<PlaybackMarker>;
   return typeof m.itemId === "string" && typeof m.at === "number" && typeof m.playerId === "string"
+    && (m.positionSeconds === undefined || (typeof m.positionSeconds === "number" && Number.isFinite(m.positionSeconds)))
     && (m.phase === "playing" || m.phase === "background")
     && typeof m.owner?.userId === "string" && typeof m.owner?.deviceId === "string";
 }
