@@ -22,7 +22,7 @@ import type { BenchScene } from "./types";
 
 const t = (key: string, options?: Record<string, unknown>) => i18n.t(key, options) as string;
 
-const ID = {
+export const ID = {
   michael: "ebcad8f8c68e52fd24bd0eb19cfae136",
   pride: "e86346a08c2bb2900795777307b0a32d",
   avatar: "8691fdd93af7c11da75013ecc6a67ac0",
@@ -44,7 +44,7 @@ interface Options {
 }
 
 /** Tout ce que l'intégration tirera des hooks, tiré de l'instantané. */
-function detailOf(data: BenchData, id: string, options: Options = {}): DetailViewProps {
+export function detailOf(data: BenchData, id: string, options: Options = {}): DetailViewProps {
   const found = data.item(id);
   if (!found) return { header: null, palette: NEUTRAL_PALETTE, error: { title: `${id} : absent de l'instantané` } };
   const item = options.patch ? options.patch(found) : found;
@@ -75,7 +75,7 @@ function detailOf(data: BenchData, id: string, options: Options = {}): DetailVie
 }
 
 /** Les images à précharger : ce que le premier écran et la section ancrée montrent. */
-function imagesOf(props: DetailViewProps): string[] {
+export function imagesOf(props: DetailViewProps): string[] {
   const anchor = props.episodes?.anchorIndex ?? 0;
   return [
     props.backdropUri,
