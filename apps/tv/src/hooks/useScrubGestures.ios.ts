@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { usePanGesture } from "../lib/tvPanGesture";
 import type { ScrubGestureHandlers } from "./scrubGestureTypes";
+import { scrubGainFor } from "./scrubTouchTuning";
 
 export type { ScrubGestureHandlers, ScrubDir } from "./scrubGestureTypes";
 
@@ -32,25 +33,11 @@ const SILENT_END_MS = 450;
 const FLUSH_MS = 33;
 
 /**
- * Secondes par point de pavé — l'accélération d'un pointeur, appliquée au
- * temps : FINE quand le doigt est lent (viser une scène, à la seconde près
- * sur un épisode), LARGE quand il est vif (traverser). Bornes proportionnelles
- * à la durée : vif, un glisser de toute la surface traverse la vidéo ; lent,
- * il en parcourt quelques minutes. Réglage d'appareil : les constantes se
- * reprennent à la Siri Remote réelle.
- */
-export function scrubGainFor(speed: number, duration: number): number {
-  const fine = Math.min(0.5, Math.max(0.05, duration / 6000));
-  const coarse = Math.max(fine, duration / 1500);
-  const t = Math.min(1, Math.max(0, (speed - 300) / 1700));
-  return fine + (coarse - fine) * t * t * (3 - 2 * t);
-}
-
-/**
  * Le défilement au pavé tactile — variante **Apple TV (tvOS)**, en
  * MANIPULATION DIRECTE, comme le lecteur d'Apple : le doigt qui glisse emporte
  * le curseur fantôme (un glisser à droite avance), finement si l'on est lent,
- * largement si l'on est vif. Le doigt levé, le défilement reste ouvert : OK lit
+ * plus largement si l'on est vif, sans jamais dépasser le plafond
+ * (`scrubTouchTuning.ts`, les gains). Le doigt levé, le défilement reste ouvert : OK lit
  * depuis la position visée, Retour revient où l'on était, un nouveau glisser
  * reprend d'où le curseur en est. Un simple toucher réveille l'habillage.
  *
@@ -147,7 +134,7 @@ export function useScrubGestures({
     const step = x - s.lastX;
     s.lastX = x;
     if (step === 0) return;
-    s.pending += step * scrubGainFor(Math.abs(velocityX), duration);
+    s.pending += step * scrubGainFor(Math.abs(velocityX));
     if (!s.flush) s.flush = setTimeout(flushNow, FLUSH_MS);
   });
 }

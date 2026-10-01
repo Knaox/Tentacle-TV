@@ -43,6 +43,6 @@ export interface ScrubGestureHandlers {
   onEndScrub: () => void;
   /** Simple toucher, sans glisser → réveiller l'habillage. */
   onWake: () => void;
-  /** Durée de la vidéo (s) → la finesse du glisser s'y adapte. */
+  /** Durée de la vidéo (s) : tant qu'elle est inconnue, rien ne défile. */
   durationRef: MutableRefObject<number>;
 }

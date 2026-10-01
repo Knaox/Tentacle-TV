@@ -191,7 +191,7 @@ export function useTVPlayerControls({
     // annule, l'inactivité annule seule SANS seek (anti-seek accidentel).
     onEndScrub: scrub.endDrag,
     onWake: wakeFromTouch,
-    durationRef,   // finesse du glisser adaptée à la durée de la vidéo
+    durationRef,   // durée inconnue : le glisser ne défile pas
   });
 
   // --- TV Remote binding ---
