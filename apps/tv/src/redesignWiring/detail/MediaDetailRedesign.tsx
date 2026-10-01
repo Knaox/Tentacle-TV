@@ -9,6 +9,7 @@ import { useBackFocus } from "../focus/backFocus";
 import { useFocusStore } from "../focus/focusStore";
 import { useEntryFocus } from "../screen/useEntryFocus";
 import { ActionSheetRedesign } from "../sheet/ActionSheetRedesign";
+import { useTitleRequests } from "../vigie/useTitleRequests";
 import { useDetailActions } from "./useDetailActions";
 import { useDetailGuides } from "./useDetailGuides";
 import { useDetailModel, type DetailModel } from "./useDetailModel";
@@ -45,7 +46,9 @@ function entryKeyOf({ props }: DetailModel): string | null {
 }
 
 export function MediaDetailRedesign({ route }: Props) {
-  const model = useDetailModel(route.params.itemId);
+  // Demander un volet absent de la saga — rien tant que la garde Vigie est fermée.
+  const requests = useTitleRequests();
+  const model = useDetailModel(route.params.itemId, requests?.gate ?? null);
   const { item } = model;
   const cardActions = useTVCardActions();
   const [rating, setRating] = useState(false);
@@ -57,6 +60,7 @@ export function MediaDetailRedesign({ route }: Props) {
     openPosterSheet: cardActions.openPoster,
     openRating,
     cardItemOf: model.cards.itemOf,
+    requests,
   });
 
   const focus = useFocusStore();
@@ -88,6 +92,7 @@ export function MediaDetailRedesign({ route }: Props) {
       <DetailView {...model.props} {...callbacks} />
       {model.extras.probes}
       {cardActions.sheet}
+      {requests?.overlay}
       {rating && ratingTarget ? <ActionSheetRedesign target={ratingTarget} mode="rate" onClose={closeRating} /> : null}
     </FocusBindingProvider>
   );

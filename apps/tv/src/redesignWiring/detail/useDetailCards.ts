@@ -11,8 +11,11 @@ import {
 } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import type { SagaModel } from "../../redesign/screens/detail/detailTypes";
-import { absentCard, notInLibrary, tmdbPosterUri } from "../cards/absentCards";
+import { absentCard, tmdbPosterUri } from "../cards/absentCards";
 import { useCardModelFactory, useCardModels, type CardModelOptions } from "../cards/cardModels";
+import type { AbsentTitle } from "../vigie/absentTitle";
+import { useSagaAbsent } from "../vigie/useSagaAbsent";
+import type { VigieGate } from "../vigie/useVigieGate";
 
 /**
  * Les rangées d'affiches de la fiche, sur l'adaptateur des cartes
@@ -22,6 +25,7 @@ import { useCardModelFactory, useCardModels, type CardModelOptions } from "../ca
  *   leur rang ceux qui manquent — tirés des `parts` de TMDB : leur affiche
  *   TMDB grisée et le badge « Pas dans la bibliothèque » (`absentCard`), ou,
  *   sans affiche (serveur plus ancien), un cadre qui écrit titre et année ;
+ *   garde Vigie ouverte, leur état et le geste « demander » (`useSagaAbsent`) ;
  * - les titres similaires (`useSimilarItems`) — ceux de la SÉRIE pour un
  *   épisode, dans sa bibliothèque ; aucun pour une collection.
  */
@@ -58,9 +62,11 @@ export interface DetailCards {
   saga: SagaModel | null;
   /** L'item Jellyfin d'une carte : sa feuille d'actions. */
   itemOf: (cardId: string) => MediaItem | undefined;
+  /** Le titre absent derrière la carte d'un volet de la saga : le geste « demander ». */
+  absentOf: (cardId: string) => AbsentTitle | undefined;
 }
 
-export function useDetailCards(item: MediaItem | undefined, series: MediaItem | undefined): DetailCards {
+export function useDetailCards(item: MediaItem | undefined, series: MediaItem | undefined, gate: VigieGate | null): DetailCards {
   const { t, i18n } = useTranslation();
   const lang = (i18n.language || "fr").slice(0, 2);
   const isEpisode = item?.Type === "Episode";
@@ -73,6 +79,8 @@ export function useDetailCards(item: MediaItem | undefined, series: MediaItem | 
   const { data: similarItems } = useSimilarItems(similarId, isEpisode ? series?.ParentId : item?.ParentId);
   const external = useSagaParts(isMovie ? item : undefined, lang);
   const { view } = useSagaView(isMovie ? item : undefined, { lang, external });
+  // Les volets absents : ce que la garde Vigie y change (l'entrée « collection » des demandes).
+  const absent = useSagaAbsent(view ?? null, gate);
 
   const collection = useCardModels(collectionItems, POSTER);
   const similar = useCardModels(similarItems, POSTER);
@@ -88,12 +96,12 @@ export function useDetailCards(item: MediaItem | undefined, series: MediaItem | 
           return { key: entry.key, card: factory(entry.item, POSTER), rank, cue, current: entry.cue === "current" };
         }
         const { title, year, imageUrl } = entry.item;
-        const card = absentCard({ id: entry.key, title, year, posterUri: imageUrl ?? undefined, absent: notInLibrary(t) });
-        // Rien à montrer de plus d'un titre qu'on ne peut pas obtenir : pas d'appui maintenu.
-        return { key: entry.key, card, rank, cue, holdable: false };
+        const face = absent.faceOf(entry);
+        const card = { ...absentCard({ id: entry.key, title, year, posterUri: imageUrl ?? undefined, absent: face.absent }), focusNote: face.focusNote };
+        return { key: entry.key, card, rank, cue, holdable: face.holdable };
       }),
     };
-  }, [view, t, factory]);
+  }, [view, t, factory, absent]);
 
   const byId = useMemo(() => {
     const map = new Map<string, MediaItem>();
@@ -103,5 +111,5 @@ export function useDetailCards(item: MediaItem | undefined, series: MediaItem | 
   }, [collectionItems, similarItems, view]);
   const itemOf = useCallback((cardId: string) => byId.get(cardId), [byId]);
 
-  return { collection, similar, saga, itemOf };
+  return { collection, similar, saga, itemOf, absentOf: absent.titleOf };
 }

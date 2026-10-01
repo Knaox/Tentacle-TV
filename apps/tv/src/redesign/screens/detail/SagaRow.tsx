@@ -45,7 +45,7 @@ function Caption({ entry, focused, hold = false }: { entry: SagaEntryModel; focu
         {rank && cue ? " · " : ""}
         {cue ? <Text style={styles.cue}>{cue}</Text> : null}
       </Text>
-      <CardFocusFooter hold={hold} width={Math.round(W * 1.6)} />
+      <CardFocusFooter note={focused ? entry.card.focusNote : undefined} hold={hold} width={Math.round(W * 1.6)} />
     </Animated.View>
   );
 }

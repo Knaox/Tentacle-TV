@@ -20,6 +20,7 @@ import { paletteOfItem } from "../cards/cardModels";
 import { detailBackdropUri, detailLogoUri } from "./detailImages";
 import { headerModelOf, playModelOf } from "./detailModels";
 import { castOf, crewOf } from "./detailPeople";
+import type { VigieGate } from "../vigie/useVigieGate";
 import { useDetailCards, type DetailCards } from "./useDetailCards";
 import { useDetailEpisodes, type DetailEpisodes } from "./useDetailEpisodes";
 import { useDetailExtras, type DetailExtras } from "./useDetailExtras";
@@ -72,7 +73,7 @@ export interface DetailModel {
   refetch: () => void;
 }
 
-export function useDetailModel(itemId: string): DetailModel {
+export function useDetailModel(itemId: string, gate: VigieGate | null): DetailModel {
   const { t, i18n } = useTranslation();
   const client = useJellyfinClient();
   const lang = i18n.language;
@@ -92,7 +93,7 @@ export function useDetailModel(itemId: string): DetailModel {
   const score = useTVUserScore(rating.identity) ?? null;
   const episodes = useDetailEpisodes(item, watch);
   const extras = useDetailExtras(item, series, lang);
-  const cards = useDetailCards(item, series);
+  const cards = useDetailCards(item, series, gate);
   // Une collection compte ses titres par son contenu, dès qu'il est là.
   const collectionCount = cards.collection.length || undefined;
 

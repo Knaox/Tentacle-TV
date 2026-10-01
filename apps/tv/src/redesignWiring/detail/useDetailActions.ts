@@ -7,6 +7,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import type { RootStackParamList } from "../../navigation/types";
 import type { DetailCallbacks } from "../../redesign/screens/detail/detailTypes";
 import { showNotice } from "../overlays/transientNotice";
+import type { TitleRequests } from "../vigie/useTitleRequests";
 import type { DetailModel } from "./useDetailModel";
 
 /**
@@ -33,6 +34,8 @@ export interface DetailActionsInput {
   openRating: () => void;
   /** L'item Jellyfin d'une carte de la fiche (collection, similaires, saga). */
   cardItemOf: (cardId: string) => MediaItem | undefined;
+  /** Le geste « demander » d'un volet absent ; `null` : garde Vigie fermée. */
+  requests: TitleRequests | null;
 }
 
 export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
@@ -95,13 +98,20 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
       },
       onOpenSagaEntry: (entry) => {
         if (entry.current) return;
-        // Un volet absent n'a pas de fiche : on dit pourquoi rien ne s'ouvre.
-        if (entry.card.absent) showNotice({ kind: "info", title: latest.current.t("cards:notInLibraryNotice") });
-        else nav().push("MediaDetail", { itemId: entry.card.id });
+        if (!entry.card.absent) return nav().push("MediaDetail", { itemId: entry.card.id });
+        // Un volet absent n'a pas de fiche : le demander quand le serveur le
+        // permet, sinon dire pourquoi rien ne s'ouvre.
+        const { requests, model: current, t } = latest.current;
+        const title = current.cards.absentOf(entry.key);
+        if (requests && title) requests.open(title);
+        else showNotice({ kind: "info", title: t("cards:notInLibraryNotice") });
       },
       onLongPressSagaEntry: (entry) => {
-        const found = latest.current.cardItemOf(entry.card.id);
-        if (found) latest.current.openPosterSheet(found);
+        const { requests, model: current, cardItemOf, openPosterSheet } = latest.current;
+        const title = entry.card.absent ? current.cards.absentOf(entry.key) : undefined;
+        if (title) return requests?.hold(title);
+        const found = cardItemOf(entry.card.id);
+        if (found) openPosterSheet(found);
       },
       onOpenCard: (_section, card) => nav().push("MediaDetail", { itemId: card.id }),
       onLongPressCard: (card) => {
