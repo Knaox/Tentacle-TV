@@ -88,7 +88,7 @@ export const HeroBanner = memo(function HeroBanner({
 }: HeroBannerProps) {
   return (
     <View style={{ width, height }}>
-      <ArtworkHalo width={width} height={height} radius={H.radius} palette={hero.palette} spread={H.haloSpread} />
+      <ArtworkHalo width={width} height={height} radius={H.radius} palette={hero.palette} spread={H.haloSpread} opacity={H.haloOpacity} />
       <View style={[styles.frame, { width, height, borderRadius: H.radius }]}>
         {hero.backdropUri ? <Image source={{ uri: hero.backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
         <LinearGradient
