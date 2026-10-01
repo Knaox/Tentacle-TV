@@ -13,6 +13,12 @@ import { parseStart } from "../utils/playerHelpers";
  * Le reload DOUX (piste, qualité — même contenu) est l'exception : il garde la
  * dernière image et son spinner discret, sans repasser par l'écran de
  * chargement.
+ *
+ * Une source NEUVE part de sa position de départ, avant même la première
+ * progression : le rapport de départ et un arrêt précoce la portent. À 0, une
+ * ouverture ratée ou quittée avant la première image rapportait un arrêt à
+ * 0 s — et Jellyfin effaçait la reprise (mesuré : 35:39 perdues sur un
+ * transcodage dont le premier segment n'est jamais venu).
  */
 export function useTVSourceReset(args: {
   streamUrl: string | null;
@@ -20,12 +26,13 @@ export function useTVSourceReset(args: {
   endedRef: React.MutableRefObject<boolean>;
   resetLoadedRef: React.MutableRefObject<() => void>;
   notifySeekRef: React.MutableRefObject<(target: number, windowMs?: number, afterReload?: boolean) => void>;
+  positionRef: React.MutableRefObject<number>;
   setEnded: (v: boolean) => void;
   setHasStarted: (v: boolean) => void;
   setIsLoading: (v: boolean) => void;
 }): void {
   const {
-    streamUrl, softReloadRef, endedRef, resetLoadedRef, notifySeekRef,
+    streamUrl, softReloadRef, endedRef, resetLoadedRef, notifySeekRef, positionRef,
     setEnded, setHasStarted, setIsLoading,
   } = args;
 
@@ -34,13 +41,14 @@ export function useTVSourceReset(args: {
     resetLoadedRef.current();
     endedRef.current = false;
     setEnded(false);
+    const armAt = parseStart(streamUrl).startSec;
     if (softReloadRef.current) {
       softReloadRef.current = false;
     } else {
       setHasStarted(false);
+      positionRef.current = armAt;
     }
     setIsLoading(true);
-    const armAt = parseStart(streamUrl).startSec;
     if (armAt > 1) notifySeekRef.current(armAt, 8000, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);

@@ -216,7 +216,7 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   // Remise à zéro de la source — voir `useTVSourceReset`.
   useTVSourceReset({
-    streamUrl, softReloadRef: p.softReloadRef, endedRef, resetLoadedRef, notifySeekRef,
+    streamUrl, softReloadRef: p.softReloadRef, endedRef, resetLoadedRef, notifySeekRef, positionRef,
     setEnded, setHasStarted, setIsLoading,
   });
 

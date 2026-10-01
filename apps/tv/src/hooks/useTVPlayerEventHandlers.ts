@@ -26,7 +26,7 @@ export function useTVPlayerEventHandlers(args: {
   setDisplayTime: (n: number) => void;
   setBufferedTime: (n: number) => void;
   setIsLoading: (b: boolean) => void;
-  reportStart: () => void;
+  reportStart: (initialPositionSeconds?: number) => void;
   updatePosition: (pos: number, paused: boolean) => void;
   /** Premier progress ACCEPTÉ (position réelle validée) — la lecture est
    *  effectivement visible : masquer l'écran de chargement. */
@@ -91,8 +91,9 @@ export function useTVPlayerEventHandlers(args: {
   const handleLoad = useCallback((_duration: number) => {
     loadedRef.current = true;
     setIsLoading(false);
-    reportStartRef.current();
-  }, [setIsLoading]);
+    // La position de départ (cf. useTVSourceReset) tant qu'aucune progression n'est venue.
+    reportStartRef.current(positionRef.current);
+  }, [setIsLoading, positionRef]);
 
   const handleProgress = useCallback((currentTime: number, buffered: number) => {
     const t = Math.max(0, currentTime);
