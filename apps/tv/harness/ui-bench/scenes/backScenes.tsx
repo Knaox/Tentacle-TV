@@ -41,6 +41,8 @@ export const BACK_SCENES: BenchScene[] = [
   from("lecteur/fin", "lecteur-fin", "Lecteur — affiche de fin", ["end:play", "end:leave"]),
   from("surimpressions/erreur-ecran", "erreur-ecran", "Erreur d'écran", ["screenError:retry", "screenError:back"]),
   from("jumelage/serveur", "jumelage-serveur", "Jumelage — serveur manuel", ["pairing:url", "pairing:back"]),
+  from("jumelage/identifiants", "jumelage-identifiants", "Jumelage — identifiants", ["pairing:username", "pairing:back"]),
+  from("jumelage/code-serveur-croix", "jumelage-code-serveur", "Jumelage — code du serveur", ["pairing:changeServer", "pairing:back"]),
   from("jumelage/code-actif", "jumelage-relais", "Jumelage — code du relais : seule action", ["pairing:back"]),
   from("bande-annonce/lecture", "bande-annonce", "Bande-annonce — seule action", ["trailer:close"]),
   from("bande-annonce/indisponible", "bande-annonce-indisponible", "Bande-annonce indisponible — seule action", ["trailer:close"]),

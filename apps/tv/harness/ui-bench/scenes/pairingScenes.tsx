@@ -4,11 +4,14 @@ import { PairingView, type PairingStep } from "../../../src/redesign/screens/pai
 import { patchBench } from "../control/benchRemote";
 import type { BenchData } from "../data/benchData";
 import {
+  BENCH_PASSWORD,
+  LOGIN_ERRORS,
   RELAY_CODE,
   SERVER_CODE,
   SERVER_ERRORS,
   TYPED_SERVER,
   activeCode,
+  manualLogin,
   manualServer,
   successOf,
 } from "../data/pairingModels";
@@ -18,17 +21,22 @@ import type { BenchScene } from "./types";
 /**
  * Le jumelage, étape par étape et état par état : accueil (avec la langue),
  * code du relais (chargement, actif, erreur, expiré), serveur saisi à la main
- * (vide, vérification, les cinq erreurs), code du serveur, succès. Au banc,
- * choisir une langue sur l'accueil bascule la langue du banc.
+ * (vide, vérification, les cinq erreurs), identifiant et mot de passe (vides,
+ * remplis, connexion en cours, chaque refus), code du serveur (avec sa croix
+ * quand il suit les identifiants), succès. Au banc, choisir une langue sur
+ * l'accueil bascule la langue du banc.
  */
 
-function PairingScene({ step }: { step: PairingStep }) {
+const noop = () => {};
+
+function PairingScene({ step, codeBack = false }: { step: PairingStep; codeBack?: boolean }) {
   const { i18n } = useTranslation();
   return (
     <PairingView
       step={step}
       language={uiLanguage(i18n.language)}
       onChangeLanguage={(lang) => patchBench({ lang })}
+      onServerCodeBack={codeBack ? noop : undefined}
     />
   );
 }
@@ -53,6 +61,25 @@ const scene = (
 const serverError = (id: keyof typeof SERVER_ERRORS, label: string) =>
   scene(`serveur-erreur-${id}`, label, manualServer(SERVER_ERRORS[id].url, { error: SERVER_ERRORS[id].error }), ["pairing:url", "pairing:check"]);
 
+/** Un refus de la connexion : l'identifiant reste, le mot de passe est vidé. */
+const loginError = (id: string) =>
+  scene(
+    `identifiants-erreur-${id}`,
+    `Identifiants — ${LOGIN_ERRORS[id].label}`,
+    (data) => manualLogin(DEV_SERVER, { username: data.snapshot.account, error: LOGIN_ERRORS[id].error }),
+    ["pairing:password", "pairing:signIn"],
+  );
+
+/** Le code du serveur atteint depuis les identifiants : la croix y ramène. */
+const serverCodeFromLogin: BenchScene = {
+  id: "jumelage/code-serveur-croix",
+  group: "Jumelage",
+  label: "Code du serveur — depuis les identifiants",
+  focusKeys: ["pairing:changeServer", "pairing:back"],
+  settleMs: 1100,
+  render: () => <PairingScene step={{ kind: "serverCode", code: activeCode(SERVER_CODE, 187), serverUrl: DEV_SERVER }} codeBack />,
+};
+
 export const PAIRING_SCENES: BenchScene[] = [
   scene("accueil", "Accueil (langue)", { kind: "welcome" }, ["pairing:showCode", "pairing:manual", "pairing:lang:fr", "pairing:lang:en"]),
   scene("code-chargement", "Code du relais — chargement", { kind: "relayCode", code: { status: "loading" } }, ["pairing:back"]),
@@ -66,6 +93,21 @@ export const PAIRING_SCENES: BenchScene[] = [
   serverError("api", "Serveur manuel — API introuvable"),
   serverError("http", "Serveur manuel — erreur HTTP"),
   serverError("injoignable", "Serveur manuel — injoignable"),
+  scene("identifiants", "Identifiants — vides", manualLogin(DEV_SERVER), ["pairing:username", "pairing:password", "pairing:signIn", "pairing:useCode", "pairing:back"]),
+  scene(
+    "identifiants-remplis",
+    "Identifiants — remplis",
+    (data) => manualLogin(DEV_SERVER, { username: data.snapshot.account, password: BENCH_PASSWORD }),
+    ["pairing:password", "pairing:signIn"],
+  ),
+  scene(
+    "identifiants-connexion",
+    "Identifiants — connexion en cours",
+    (data) => manualLogin(DEV_SERVER, { username: data.snapshot.account, signingIn: true }),
+    ["pairing:signIn"],
+  ),
+  ...Object.keys(LOGIN_ERRORS).map(loginError),
+  serverCodeFromLogin,
   scene("code-serveur", "Code du serveur — actif", { kind: "serverCode", code: activeCode(SERVER_CODE, 187), serverUrl: DEV_SERVER }, ["pairing:changeServer"]),
   scene("code-serveur-erreur", "Code du serveur — erreur", { kind: "serverCode", code: { status: "error" }, serverUrl: DEV_SERVER }, ["pairing:retry", "pairing:changeServer"]),
   scene("code-serveur-expire", "Code du serveur — expiré", { kind: "serverCode", code: { status: "expired", code: SERVER_CODE }, serverUrl: DEV_SERVER }, ["pairing:regenerate"]),

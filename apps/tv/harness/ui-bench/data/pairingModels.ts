@@ -1,4 +1,4 @@
-import type { CodeState, PairingStep, ServerError } from "../../../src/redesign/screens/pairing/PairingView";
+import type { CodeState, LoginError, PairingStep, ServerError } from "../../../src/redesign/screens/pairing/PairingView";
 import type { BenchData } from "./benchData";
 
 /**
@@ -36,6 +36,32 @@ export const manualServer = (url: string, extra: Partial<Extract<PairingStep, { 
   error: null,
   ...extra,
 });
+
+/** Un mot de passe de banc — jamais un vrai : il ne paraît qu'en points. */
+export const BENCH_PASSWORD = "banc-banc-banc";
+
+export const manualLogin = (serverUrl: string, extra: Partial<Extract<PairingStep, { kind: "manualLogin" }>> = {}): PairingStep => ({
+  kind: "manualLogin",
+  serverUrl,
+  username: "",
+  password: "",
+  signingIn: false,
+  error: null,
+  ...extra,
+});
+
+/** Les refus de la connexion (`pairWithPassword`), un par message. */
+export const LOGIN_ERRORS: Record<string, { label: string; error: LoginError }> = {
+  identifiants: { label: "identifiants faux", error: { key: "invalidCredentials", status: 401 } },
+  compte: { label: "compte refusé par Jellyfin", error: { key: "accountRefused", status: 400 } },
+  essais: { label: "trop de tentatives", error: { key: "tooManyAttempts", status: 429 } },
+  jumelages: { label: "trop de jumelages", error: { key: "tooManyPairings", status: 429 } },
+  jellyfin: { label: "Jellyfin injoignable", error: { key: "jellyfinUnreachable", status: 502 } },
+  delai: { label: "délai dépassé", error: { key: "connectionTimeout" } },
+  injoignable: { label: "serveur injoignable", error: { key: "cannotReachServer" } },
+  serveur: { label: "erreur du serveur", error: { key: "serverError", status: 500 } },
+  illisible: { label: "réponse illisible", error: { key: "serverError" } },
+};
 
 /** Le succès, sur le vrai compte : son nom et son portrait. */
 export function successOf(data: BenchData): PairingStep {
