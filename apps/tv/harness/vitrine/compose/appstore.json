@@ -1,0 +1,45 @@
+{
+  "$comment": "La série App Store Apple TV : un écran de la refonte par image, une accroche écrite dans chaque langue (pas traduite). Les accroches marketing vivent ICI, jamais dans l'i18n de l'app. <em>…</em> = le mot au dégradé de la marque. « scene » : une scène du banc UI (ui-bench), nourrie par l'instantané vitrine.",
+  "screens": [
+    {
+      "id": "01_accueil", "scene": "accueil/defaut", "focus": "hero:primary",
+      "headline": { "fr": "Votre bibliothèque fait son <em>cinéma</em>.", "en": "Your library, <em>center stage</em>." }
+    },
+    {
+      "id": "02_fiche", "scene": "vitrine/fiche-film", "focus": "detail:primary",
+      "headline": { "fr": "Tout savoir, d'un seul <em>coup d'œil</em>.", "en": "Every detail <em>at a glance</em>." }
+    },
+    {
+      "id": "03_lecteur", "scene": "vitrine/lecteur", "focus": "player:playpause",
+      "headline": { "fr": "Le film, <em>rien que le film</em>.", "en": "Nothing but <em>the movie</em>." }
+    },
+    {
+      "id": "04_serie", "scene": "vitrine/serie", "focus": "episode:1",
+      "headline": { "fr": "Reprenez <em>pile</em> où vous en étiez.", "en": "Right where you <em>left off</em>." }
+    },
+    {
+      "id": "05_panneau", "scene": "feuille/note-posee", "focus": "sheet:scale:7",
+      "headline": { "fr": "Maintenez OK : <em>tout est là</em>.", "en": "Hold OK. <em>It's all there</em>." }
+    },
+    {
+      "id": "06_pour-vous", "scene": "pour-vous/defaut", "focus": "hero:primary",
+      "headline": { "fr": "Des idées qui <em>vous ressemblent</em>.", "en": "Picks that <em>get you</em>." }
+    },
+    {
+      "id": "07_recherche", "scene": "vitrine/recherche", "focus": "top",
+      "headline": { "fr": "Trois lettres, et <em>c'est trouvé</em>.", "en": "Three letters. <em>Found it</em>." }
+    },
+    {
+      "id": "08_bibliotheque", "scene": "bibliotheque/films", "focus": "grid:0",
+      "headline": { "fr": "Le bon film, en <em>deux filtres</em>.", "en": "The right pick, <em>two filters away</em>." }
+    },
+    {
+      "id": "09_ma-liste", "scene": "collection/ma-liste", "focus": "grid:0",
+      "headline": { "fr": "Votre liste <em>vous attend</em>.", "en": "Your list, <em>ready when you are</em>." }
+    },
+    {
+      "id": "10_navigation", "scene": "accueil/navigation", "focus": "nav:Home",
+      "headline": { "fr": "Tout est à <em>portée de pouce</em>.", "en": "Everything, <em>one swipe away</em>." }
+    }
+  ]
+}

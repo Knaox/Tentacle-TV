@@ -1,0 +1,6 @@
+{
+  "$comment": "Les visuels du site tentacletv.app tirés de la refonte Apple TV. « stage » : composition mise en scène (captures de la série App Store, désignées par leur id). Ils vont dans le dossier d'attente ; les sources du site ne bougent qu'après validation.",
+  "visuals": [
+    { "id": "appletv-stage", "type": "stage", "screens": { "front": "01_accueil", "left": "02_fiche", "right": "03_lecteur" } }
+  ]
+}
