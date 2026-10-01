@@ -15,6 +15,7 @@ import { NAV_SCENES } from "./navScenes";
 import { OVERLAY_SCENES } from "./overlayScenes";
 import { PAIRING_SCENES } from "./pairingScenes";
 import { PLAYER_SCENES } from "./playerScenes";
+import { PLAYER_WIRED_SCENES } from "./playerWiredScenes";
 import { SEARCH_SCENES } from "./searchScenes";
 import { SETTINGS_SCENES } from "./settingsScenes";
 import { SHEET_SCENES } from "./sheetScenes";
@@ -44,6 +45,7 @@ export const SCENES: BenchScene[] = [
   ...TRAILER_SCENES,
   ...OVERLAY_SCENES,
   ...BACK_SCENES,
+  ...PLAYER_WIRED_SCENES,
   ...BRICK_SCENES,
   ...GLASS_SCENES,
   ...LEGIBILITY_SCENES,
