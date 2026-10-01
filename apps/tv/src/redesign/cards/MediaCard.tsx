@@ -6,6 +6,7 @@ import { SoftGradient } from "../background/SoftGradient";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import type { RowPlace } from "../motion/useRowRecede";
 import { colors, fonts, scrim } from "../theme/tokens";
+import { AbsentArtwork } from "./AbsentArtwork";
 import { CardBadge } from "./CardBadge";
 import { CardFocusFooter } from "./CardFocusFooter";
 import { CardFrame, cardGlowOf } from "./CardFrame";
@@ -30,6 +31,9 @@ import { useCardFocused } from "./useCardFocused";
  * carte qui en a une (`card.focusNote`, la raison d'une recommandation), puis
  * — toute carte qui s'ouvre par l'appui maintenu (`onLongPress`) —
  * « Maintenir OK : plus d'options » : rien d'autre ne l'apprendrait.
+ *
+ * Un titre ABSENT de la bibliothèque (`card.absent`) garde la même carte : son
+ * affiche grisée et son badge (`AbsentArtwork`) remplacent image et marqueurs.
  *
  * L'ossature est celle de toute carte (`CardShell`) : la légende dessous,
  * puis la cible qui couvre image ET légende et ne porte que l'image — rien
@@ -116,18 +120,24 @@ export const MediaCard = memo(function MediaCard({
       accessibilityLabel={card.title}
       frame={
         <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin} glow={glow}>
-          {uri ? (
-            <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+          {card.absent ? (
+            <AbsentArtwork absent={card.absent} uri={uri} title={card.title} year={card.subtitle} width={width} height={height} focused={focused} />
           ) : (
-            <View style={styles.missing}>
-              <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
-            </View>
+            <>
+              {uri ? (
+                <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+              ) : (
+                <View style={styles.missing}>
+                  <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
+                </View>
+              )}
+              {landscape && card.logoUri ? (
+                <LogoLayer uri={card.logoUri} width={width} height={height} bottom={cardLogoBottom(card.markers, card.progress)} />
+              ) : null}
+              {card.badge ? <CardBadge label={card.badge} /> : null}
+              <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
+            </>
           )}
-          {landscape && card.logoUri ? (
-            <LogoLayer uri={card.logoUri} width={width} height={height} bottom={cardLogoBottom(card.markers, card.progress)} />
-          ) : null}
-          {card.badge ? <CardBadge label={card.badge} /> : null}
-          <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
         </CardFrame>
       }
     >

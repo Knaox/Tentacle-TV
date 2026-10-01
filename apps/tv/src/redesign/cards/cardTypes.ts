@@ -31,6 +31,23 @@ export interface CardModel {
   focusNote?: string;
   /** La lumière de l'œuvre, pour le fond quand la carte a le focus. */
   palette?: ArtworkPalette;
+  /** Un titre ABSENT de la bibliothèque : son affiche (TMDB) grisée, et son
+   *  badge. Ni marqueurs ni progression : rien de lui n'est dans Jellyfin. */
+  absent?: AbsentModel;
+}
+
+/**
+ * Ce que dit le badge d'un titre absent : « Pas dans la bibliothèque », ou —
+ * quand le serveur sait demander des titres — l'état de sa demande. Le ton
+ * choisit la couleur du texte et le glyphe, jamais le seul porteur du sens.
+ */
+export type AbsentTone = "neutral" | "pending" | "active" | "ready" | "blocked";
+
+export interface AbsentModel {
+  label: string;
+  tone: AbsentTone;
+  /** 0 à 1 : une demande en cours, sa progression. */
+  progress?: number;
 }
 
 export const EMPTY_MARKERS: CardMarkers = { communityRating: null, userScore: null, statuses: [], device: null };
