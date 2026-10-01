@@ -51,7 +51,7 @@ export const OfflineOverlay = memo(function OfflineOverlay({
   onRetry,
   onUnpair,
 }: OfflineOverlayProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "pairing"]);
   const backing = useNativeGlassBacking("strong");
   const [armed, setArmed] = useState(initialArmed);
 
@@ -87,11 +87,11 @@ export const OfflineOverlay = memo(function OfflineOverlay({
             onPress={retrying ? undefined : onRetry}
           />
           <ConfirmPill
-            label={t("offlineUnpair")}
+            label={t("pairing:tvUnpairDevice")}
             icon="logout"
             tone="danger"
             armed={armed}
-            armedLabel={t("offlineUnpairConfirm")}
+            armedLabel={t("pairing:tvUnpairConfirm")}
             focusKey="offline:unpair"
             onPress={pressUnpair}
             onFocusChange={leaveUnpair}
@@ -100,7 +100,7 @@ export const OfflineOverlay = memo(function OfflineOverlay({
         {/* Toujours là, invisible au repos : armer ne décale rien. */}
         <View style={[styles.armedHint, { opacity: armed ? 1 : 0 }]}>
           <Icon name="alert" size={26} color={colors.accent} strokeWidth={2.4} />
-          <Text style={styles.armedText} numberOfLines={1}>{t("offlineUnpairHint")}</Text>
+          <Text style={styles.armedText} numberOfLines={1}>{t("pairing:tvUnpairHint")}</Text>
         </View>
         {serverUrl ? (
           <View style={styles.server}>

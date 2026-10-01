@@ -93,8 +93,8 @@ export default {
   tvOublierTexte:
     "Ce téléviseur cessera d'être associé à votre compte et l'application se fermera. Relancez-la pour afficher un nouveau code.",
 
-  // Réglages de la refonte (Apple TV) : le bouton qui déjumelle pour de bon,
-  // à double appui comme sur le voile hors ligne.
+  // « Déjumeler cet appareil » de la refonte (Apple TV), à double appui :
+  // réglages (onglet Compte) et voile hors ligne — une seule source.
   tvUnpairDevice: "Déjumeler cet appareil",
   tvUnpairConfirm: "Confirmer le déjumelage",
   tvUnpairHint: "Appuyez de nouveau sur OK : cette TV oubliera votre compte.",
