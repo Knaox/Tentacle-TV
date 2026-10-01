@@ -1,9 +1,10 @@
-import type {
-  DeviceProfile,
-  DirectPlayProfile,
-  TranscodingProfile,
-  CodecProfile,
-  SubtitleProfile,
+import {
+  avPlayerHevcTagCondition,
+  type DeviceProfile,
+  type DirectPlayProfile,
+  type TranscodingProfile,
+  type CodecProfile,
+  type SubtitleProfile,
 } from "@tentacle-tv/shared";
 import type { HdrCapabilities } from "./hdrCapabilities.types";
 
@@ -141,12 +142,12 @@ export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = fal
         // préservé) au lieu de tone-mapper en SDR. `IsRequired:false` : si la
         // plage n'est pas gérée, Jellyfin transcode (jamais d'écran noir).
         { Condition: "EqualsAny", Property: "VideoRangeType", Value: videoRangeValues(hdr), IsRequired: false },
-        // Un MP4 `hev1` lu tel quel s'affiche NOIR, sans erreur (cf.
-        // `avPlayerReadsHevcTag`, tv-core) : le serveur ne le donne plus en
-        // lecture directe. `IsRequired:false` : une étiquette inconnue (MKV,
-        // scan ancien) ne retire rien — sans quoi la copie du flux, HDR
-        // compris, tomberait elle aussi.
-        { Condition: "EqualsAny", Property: "VideoCodecTag", Value: "hvc1|dvh1", IsRequired: false },
+        // Un MP4 `hev1` lu tel quel s'affiche NOIR, sans erreur : le serveur
+        // ne le donne plus en lecture directe, il le REMUXE — vidéo copiée,
+        // ré-étiquetée `hvc1`, jamais réencodée (`avPlayerHevcTagCondition`,
+        // shared). Une étiquette inconnue non plus (`IsRequired: true`) ; un
+        // MKV, sans étiquette, garde sa vidéo copiée (mesuré, 10.11).
+        avPlayerHevcTagCondition(),
       ],
     },
     {
