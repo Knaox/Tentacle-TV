@@ -25,7 +25,7 @@ export function useStartupRecovery(sources: RecoverySources | undefined): void {
   const queryClient = useQueryClient();
   const src = useRef(sources);
   src.current = sources;
-  const startFailed = !!sources && sources.p.failed && !sources.s.hasStarted;
+  const startFailed = !!sources && (sources.p.failed || sources.s.openFailed) && !sources.s.hasStarted;
 
   useEffect(() => {
     if (!startFailed) return undefined;
@@ -44,7 +44,11 @@ export function useStartupRecovery(sources: RecoverySources | undefined): void {
       if (!culprit) return;
       plog("recover", `ouverture ratée pendant la panne (${culprit}) : le serveur répond, nouvelle ouverture`);
       await queryClient.refetchQueries({ queryKey: ["item"], type: "active" }).catch(() => undefined);
-      if (!cancelled && src.current?.p.failed) src.current.p.setReloadNonce((n) => n + 1);
+      const current = src.current;
+      if (cancelled || !current) return;
+      // Flux jamais résolu : on le résout ; résolu mais refusé à l'ouverture : on le relance.
+      if (current.p.failed) current.p.setReloadNonce((n) => n + 1);
+      else if (current.s.openFailed) void current.p.restartStream({ reason: "network" });
     };
     void check();
     return () => {

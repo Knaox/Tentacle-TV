@@ -30,10 +30,12 @@ export function useTVSourceReset(args: {
   setEnded: (v: boolean) => void;
   setHasStarted: (v: boolean) => void;
   setIsLoading: (v: boolean) => void;
+  /** Une source neuve efface l'échec de la précédente. */
+  setOpenFailed: (v: boolean) => void;
 }): void {
   const {
     streamUrl, softReloadRef, endedRef, resetLoadedRef, notifySeekRef, positionRef,
-    setEnded, setHasStarted, setIsLoading,
+    setEnded, setHasStarted, setIsLoading, setOpenFailed,
   } = args;
 
   useEffect(() => {
@@ -41,6 +43,7 @@ export function useTVSourceReset(args: {
     resetLoadedRef.current();
     endedRef.current = false;
     setEnded(false);
+    setOpenFailed(false);
     const armAt = parseStart(streamUrl).startSec;
     if (softReloadRef.current) {
       softReloadRef.current = false;

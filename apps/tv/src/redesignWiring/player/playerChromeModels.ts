@@ -72,7 +72,8 @@ export function buildPhase(args: {
   /** L'échec dit qui manque quand c'est une panne (cf. usePlaybackRecovery). */
   failedMessage?: string | null;
 }): PlayerPhase {
-  if (!args.streamUrl) {
+  // Échouée : jamais résolue, ou refusée par le lecteur avant la première image.
+  if (!args.streamUrl || (args.failed && !args.hasStarted)) {
     if (!args.failed) return { kind: "resolving", step: args.step };
     return { kind: "failed", message: args.failedMessage ?? args.t("player:loadFailed") };
   }

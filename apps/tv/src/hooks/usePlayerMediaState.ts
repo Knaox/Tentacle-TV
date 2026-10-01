@@ -54,6 +54,9 @@ export function usePlayerMediaState(startPaused = false) {
   // Premier onLoad reçu → les isLoading suivants sont du rebuffering (spinner
   // discret) et non plus le chargement initial (écran contextualisé).
   const [hasStarted, setHasStarted] = useState(false);
+  // L'OUVERTURE a échoué (erreur du lecteur avant la première image) : rien ne
+  // viendra plus — l'écran d'ouverture le dit, avec « Réessayer ».
+  const [openFailed, setOpenFailed] = useState(false);
   const lastProgressTime = useRef(Date.now());
 
   // « Hold » de reload : lecteur gardé en pause pendant un reload de piste ou de
@@ -87,7 +90,7 @@ export function usePlayerMediaState(startPaused = false) {
     paused, setPaused, displayTime, setDisplayTime, bufferedTime, setBufferedTime,
     displayTimeRef, bufferedTimeRef, lastDisplayUpdate, positionRef, controlsCurrentTimeRef,
     pausedStateRef, endedRef, handleEndRef,
-    videoError, setVideoError, isLoading, setIsLoading, hasStarted, setHasStarted, lastProgressTime,
+    videoError, setVideoError, isLoading, setIsLoading, hasStarted, setHasStarted, openFailed, setOpenFailed, lastProgressTime,
     reloadHold, reloadHoldRef, holdForReload,
     isDirectPlayRef, isPrismCoreRef, mpvTrackMapRef, subtitleTrackMapRef,
     notifySeekRef, setAudioIndexRef, setSubtitleIndexRef,

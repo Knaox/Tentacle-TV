@@ -217,7 +217,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Remise à zéro de la source — voir `useTVSourceReset`.
   useTVSourceReset({
     streamUrl, softReloadRef: p.softReloadRef, endedRef, resetLoadedRef, notifySeekRef, positionRef,
-    setEnded, setHasStarted, setIsLoading,
+    setEnded, setHasStarted, setIsLoading, setOpenFailed: s.setOpenFailed,
   });
 
   const { handleQualityChange } = useTVQualityChange({
@@ -256,8 +256,8 @@ export function PlayerScreen({ route, navigation }: Props) {
   // Les MÊMES props aux deux habillages — l'orchestration reste une : Android
   // TV garde le sien (`LegacyPlayerStage`), Apple TV rend la refonte.
   const stage: PlayerRedesignStageProps = {
-    item: item ?? placeholderItem, streamUrl, failed: p.failed, prismStep: prismProgress.step,
-    onRetry: () => p.setReloadNonce((n) => n + 1),
+    item: item ?? placeholderItem, streamUrl, failed: p.failed || s.openFailed, prismStep: prismProgress.step,
+    onRetry: () => (s.openFailed && streamUrl ? void p.restartStream({ reason: "manual" }) : p.setReloadNonce((n) => n + 1)),
     countdownTotals: playback.countdownTotals, qualityPresets: quality.qualityPresets,
     paused, playerPaused: paused || reloadHold, isLoading, hasStarted,
     videoError, displayTime, bufferedTime, displayDuration, showSettings,

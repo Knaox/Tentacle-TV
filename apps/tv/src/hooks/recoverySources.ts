@@ -9,6 +9,9 @@ import type { RestartOptions, RestartOutcome } from "./streamRestart";
 export interface RecoverySources {
   s: {
     hasStarted: boolean;
+    /** L'ouverture a échoué : une erreur du lecteur avant la première image. */
+    openFailed: boolean;
+    setOpenFailed: (failed: boolean) => void;
     paused: boolean;
     isLoading: boolean;
     /** Rechargement VOULU en cours (piste, qualité, relance) : pas un arrêt. */

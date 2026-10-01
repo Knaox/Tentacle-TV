@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { isAudioTransientError } from "@tentacle-tv/tv-core";
 import { useAudioErrorRetry } from "./useAudioErrorRetry";
@@ -41,6 +41,8 @@ export function useTVErrorHandler(args: {
   const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, bumpReloadNonce, setIsLoading, onMasterRejected } = args;
   const { t } = useTranslation("player");
   const { onSourceLost } = usePlaybackRecovery(args.recovery);
+  const recoveryRef = useRef(args.recovery);
+  recoveryRef.current = args.recovery;
   const onAudioError = useAudioErrorRetry(args.recovery, {
     setVideoError, setIsLoading, lostMessage: t("audioOutputLostPlay"),
   });
@@ -73,6 +75,10 @@ export function useTVErrorHandler(args: {
     }
     plog("err", `erreur SURFACÉE à l'écran : ${error}`);
     setVideoError(error);
+    // Avant la première image, rien ne viendra plus : l'ouverture a échoué. Le
+    // bandeau s'efface seul, et l'écran d'ouverture tournait ensuite pour toujours.
+    const state = recoveryRef.current?.s;
+    if (state && !state.hasStarted) state.setOpenFailed(true);
   }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery, onMasterRejected, onSourceLost, onAudioError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleError };
