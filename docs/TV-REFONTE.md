@@ -22,6 +22,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 10. La croix Retour (Apple TV) | Faite (2026-10-01) : un seul bouton Retour, une croix, en haut à gauche de ce qu'elle referme, jamais en entrée d'une fiche — « La croix Retour (Apple TV) » ci-dessous. |
 | 11. Jumelage par identifiants (Apple TV) | Fait (2026-10-01) : après le serveur saisi à la main, l'identifiant et le mot de passe — le chemin des relecteurs d'App Store Connect ; Menu recule d'une étape — « Le jumelage par identifiants (Apple TV) » ci-dessous. |
 | 12. Le Retour (Apple TV) | Fait (2026-10-02) : une pile de couches, menu > surimpression > page > rail > sortie ; plus aucun écran qui paraît quand un menu se ferme ; le rail se referme sur la page choisie — « Le Retour (Apple TV) » ci-dessous. |
+| 13. Rail compact (Apple TV) | Fait (2026-10-02) : le bloc des pages épouse ses entrées et se centre, le profil reste ancré en bas avec la place de l'élément des demandes, largeur ouverte sur l'intitulé le plus long — « Le rail compact (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -462,11 +463,11 @@ Branche `refonte/tv-nav-bibliotheques`. La vue vit dans `redesign/nav/`, le
 câblage dans `redesignWiring/nav/` et `screen/RailShortcuts.tsx`, la
 politique partagée dans `packages/tv-core/src/nav/`.
 
-- **Deux capsules** de verre, même largeur, un petit écart : le rail
-  (Rechercher fixe en tête, puis la liste) et, dessous, la capsule du PROFIL
-  (nom du compte, « Profil et réglages »), fixe. Toute la géométrie est
-  constante, repliée comme dépliée (`navGeometry.ts`) : la légende du bas
-  garde sa place même repliée.
+- **Deux capsules** de verre, même largeur : le bloc des pages (Rechercher
+  fixe en tête, puis la liste) et, en bas, le bloc du PROFIL (nom du compte,
+  « Profil et réglages »). Toute la géométrie que lit le moteur de focus est
+  la même repliée comme dépliée (`navGeometry.ts`). Depuis le 2026-10-02, les
+  deux capsules ÉPOUSENT leur contenu : « Le rail compact », plus bas.
 - **La liste défile** (`NavList`, une ScrollView native). Au pavé, c'est tvOS
   qui la fait défiler, et il tient LUI-MÊME l'entrée focalisée à 180 points
   des bords, dans les deux sens (mesuré au simulateur : deux entrées et demie
@@ -518,6 +519,49 @@ politique partagée dans `packages/tv-core/src/nav/`.
 - Au banc : 12 scènes « Navigation » (24 bibliothèques : repliée, dépliée en
   haut / au milieu / en bas, masquée, menu, déplacer, Réglages ›
   Navigation) — `bench:ui planche navigation/ --focus`.
+
+## Le rail compact (Apple TV)
+
+Retour de l'utilisateur après son essai (2026-10-01) : le rail était un grand
+pavé de verre, vide sous trois bibliothèques. Il épouse désormais son contenu.
+La vue reste dans `redesign/nav/`, la règle de colonne dans
+`packages/tv-core/src/nav/railColumn.ts` (pure, testée).
+
+- **Le bloc des pages** est haut comme ses entrées et CENTRÉ sur la hauteur de
+  l'écran. Avec beaucoup de bibliothèques, il ne dépasse jamais la hauteur du
+  rail d'avant (890 points) : sa liste défile, comme avant.
+- **Le bloc du profil** reste ancré en bas, jamais caché ni poussé hors de
+  l'écran. Il tient aussi, AU-DESSUS du profil, l'élément des demandes en
+  cours (Vigie) quand il existe : `NavRailProps.accessory = { height, node }`
+  (hauteur réservée, bornée à 240), qui lit l'état du rail par
+  `useNavFrame()` (`expanded`, `openness`, `itemWidth`…). C'est toujours le
+  bloc des pages qui cède : il remonte, garde l'écart de 14, puis rétrécit.
+- **Replié** : une bande d'icônes en pilule de 88 points (contre 104), à
+  44 du bord — la colonne des pictogrammes ne bouge pas (x = 88) ; le profil
+  seul y est un rond. **Ouvert** : la largeur de l'intitulé le plus long —
+  libellés en Inter gras (celui du focus), nom et seconde ligne du profil —,
+  mesurée hors écran avec les polices exactes (`NavTextMeasure`), bornée de
+  300 à 380 (`TV_STAGE.nav`). Le nom de l'utilisateur, ses bibliothèques et
+  la langue la font varier ; tant que rien n'est mesuré, la plus grande.
+- **La légende devient une bulle** de verre à droite du profil, rail ouvert
+  seulement (`NavLegend`). Dans la colonne, sa ligne la plus longue
+  (« Maintenir OK : organiser », 260 points) imposait 356 de large en
+  français, et sa place réservée sous le bloc des pages le décentrait dès
+  que l'élément des demandes était là. Variante écartée, gardée en planches :
+  `apps/tv/harness/ui-bench/out/variantes/A-legende-dans-le-rail-*`.
+- **Le mouvement** ne change pas de principe : le verre ouvert se révèle par
+  une fenêtre coupée qui glisse (deux `translateX`), les libellés et la bulle
+  paraissent en fondu ; au repli, ils s'effacent AVEC le verre (ils restaient
+  plantés puis disparaissaient d'un coup). Rien d'autre que `transform` et
+  `opacity` n'est animé.
+- **La géométrie est publiée** (`onGeometry` → `RedesignScreenModel.railGeometry`) :
+  les raccourcis (`RailShortcuts` : au-dessus du bloc des pages, sous le
+  profil), le pont de sortie (`RailBridges` : après le rail ouvert, à sa
+  largeur réelle) et le menu d'une entrée (`NavEntryMenu railWidth`) s'y
+  posent. Leur logique ne change pas.
+- Au banc : 8 scènes « Rail compact » — 3 et 15 bibliothèques, replié et
+  ouvert, avec et sans l'élément des demandes (un gabarit du banc) :
+  `bench:ui planche rail/ --focus --lang=fr,en`.
 
 ## Le mouvement (Apple TV)
 
@@ -1658,8 +1702,9 @@ note perso, pastille Ma liste · favori · vu, progression, « Découverte »,
 puces qualité/langues — pastilles, pas de drapeaux) · bouton (primaire,
 secondaire, rond, pilule) · pastille · rangée (titre ≥ 34 + accessoire) ·
 héros (halo à la marque) · fond vivant (lumière de l'œuvre, violets ramenés au neutre) · navigation à
-gauche (deux capsules : le rail qui défile et le profil ; repliée : icônes ;
-ouverte : libellés sous voile, légende ; toutes les entrées : Rechercher,
+gauche (deux capsules qui épousent leur contenu : le bloc des pages, centré,
+qui défile, et le profil, ancré en bas ; repliée : icônes ; ouverte : libellés
+sous voile, légende en bulle ; toutes les entrées : Rechercher,
 Accueil, Pour vous, Ma liste, Favoris, chaque bibliothèque, Tout afficher,
 profil et réglages ; appui long : le menu d'organisation) · logo en haut à droite ·
 onglets · feuille · panneau · clavier · squelettes · états vides et d'erreur ·
