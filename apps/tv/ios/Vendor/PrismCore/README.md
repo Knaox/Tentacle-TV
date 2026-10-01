@@ -47,11 +47,14 @@ Mesuré le 2026-10-01 sur un épisode x265 (MKV, GOP ouvert) : lecture depuis 0,
 chargé jusqu'à 24,3 s, saut à 1:30 → figé à 90 s ; reprise directe à 1:30 →
 figée aussi, relances comprises.
 
-**Titres touchés** : tout HEVC ou H.264 à GOP ouvert (les encodages x265 par
-défaut, beaucoup d'animés), au premier saut hors de la fenêtre produite —
-reprise à une position et relance comprises dès que le producteur n'y était
-pas encore. Les GOP fermés (keyframes IDR) n'étaient pas touchés : la
-devinette de movenc y tombe juste.
+**Titres touchés** : tout HEVC ou H.264 dont une keyframe d'ancrage est suivie
+d'images de tête (GOP ouvert), au premier saut hors de la fenêtre produite
+qui y mène — reprise à une position et relance comprises. Le saut automatique
+de l'intro y mène tout droit : sur un animé à GOP ouvert, la lecture calait
+juste après le générique. Sondé le 2026-10-01 : les animés encodés x265 +
+Opus d'une même source, et un film sur quatorze tirés au hasard (piste EAC3
+copiée — l'audio n'y est pour rien). Les GOP fermés (keyframes IDR) ne
+l'étaient pas : la devinette de movenc y tombe juste.
 
 Le correctif retient ces paquets jusqu'au premier vrai DTS et leur rend celui
 qu'une lecture continue leur aurait donné : un pas d'image en arrière par
