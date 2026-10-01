@@ -78,7 +78,8 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   sinon à 5/10 — jamais un bout, qu'un OK réflexe validerait. « Noter » de la
   fiche : le même panneau, réduit à la note. Mesuré au banc, focus natif
   (XCUITest) : chaque cran focalisé se centre, DROITE bute sur « Retirer la
-  note », BAS descend aux pictos, HAUT remonte sur la note posée.
+  note », BAS descend aux pictos, HAUT remonte sur la note posée ; HAUT
+  depuis l'échelle atteint la croix, BAS l'en ramène au cran retenu.
 - **Maintenir OK, dit la carte** : sous la légende de TOUTE carte focalisée
   qui s'ouvre par l'appui maintenu — affiches, vignettes, grilles, épisodes,
   volets de saga —, « Maintenir OK : plus d'options » (`CardFocusFooter`, sous
@@ -361,16 +362,36 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
   `detail:header`, le premier écran en pleine largeur). `destinations` doit
   TOUJOURS être un tableau : sans lui tvOS rend le contenu du guide
   inatteignable.
-- **Panneau** (`ActionSheetRedesign`) : dans une `Modal` (Menu par
-  `onRequestClose` : ferme). Entrée sur l'échelle, à la note posée, sinon à
-  5/10 — décidée une fois la note CONNUE (liste des notes, série d'un épisode :
-  l'échelle attend, « … »), puis figée —, par le verrou de `useChoiceEntry` ;
-  sans note possible, sur le premier picto. Garde anti-clic fantôme sur
-  l'échelle, les pictos et la croix : le panneau s'ouvre sous un OK encore
-  enfoncé. Guides d'entrée des groupes : HAUT depuis les pictos revient à la
-  note posée, BAS depuis l'échelle entre par la lecture. « Noter » de la
-  fiche : OK note et ferme. À éprouver dans l'app réelle : l'entrée de
-  l'échelle et les guides DANS la `Modal`.
+- **Panneau** (`ActionSheetRedesign`, son focus dans `sheetFocus.ts`) : dans
+  une `Modal` (Menu par `onRequestClose` : ferme). Entrée sur l'échelle, à la
+  note posée, sinon à 5/10 — décidée une fois la note CONNUE (liste des notes,
+  série d'un épisode : l'échelle attend, « … »), puis figée —, par le verrou
+  de `useChoiceEntry` ; sans note possible, sur le premier picto. Garde
+  anti-clic fantôme sur l'échelle, les pictos et la croix : le panneau s'ouvre
+  sous un OK encore enfoncé. Trois groupes PLEINE LARGEUR, chacun son guide
+  d'entrée — rien n'y est aligné d'une rangée à l'autre :
+  - `sheet:header` mène à la croix. Au bout à droite de l'en-tête, elle
+    n'est au-dessus d'aucun cran ni d'aucun picto : HAUT depuis l'échelle ne
+    l'atteignait pas (constat de l'utilisateur, « la croix n'est pas
+    focalisable »). Désormais HAUT depuis l'échelle y va, et depuis les
+    pictos PAR l'échelle (directement, sans échelle). Elle n'est une
+    destination qu'une fois le verrou d'entrée levé ;
+  - `sheet:scale` mène au cran retenu — la note posée, sinon 5 : HAUT depuis
+    les pictos, BAS depuis la croix (même après être allé sur un autre cran,
+    que la règle quitte en se recentrant) ;
+  - `sheet:actions` entre par la lecture, puis par le dernier picto visité.
+
+  OK sur la croix ferme et rend le focus à la carte (à « Noter », depuis la
+  fiche) ; en mode « Noter », OK sur un cran note et ferme. Éprouvé dans
+  l'app réelle (simulateur, compte de test : entrée, HAUT, BAS, OK sur la
+  croix, Menu, sur une carte et sur « Noter ») et au banc, en focus natif, par
+  les scènes « Câblée » de la feuille d'actions (`sheetWiredScenes.tsx` : la
+  vue dans sa `Modal`, sous `useSheetFocus`) — en plus : la note posée, le
+  titre non notable, OK sur un cran. D'une scène câblée à l'autre, passer par
+  le catalogue (`menu`) : la `Modal` présentée dans le même rendu que le
+  retrait de la précédente ne paraît pas. Une note posée en essai part chez
+  TMDB (session invitée, synchronisation du serveur) : ce cas s'éprouve au
+  banc.
 - **Bande-annonce** : le lecteur est monté dès le chargement (la vue ne le
   montait qu'en lecture : il ne pouvait pas charger), et le chrome suit
   `chromeDimmed` seul — « Fermer », seul focalisable, garde le focus : le
@@ -885,5 +906,7 @@ fusionnés :
    d'actions · Hors bibliothèque ») ; c'est le câblage qui filtre.
 3. Libellé du bouton de lecture : « Lire » (cartes, feuille) ou « Lecture »
    (fiche, héros) — un seul partout ?
-4. La croix du grand panneau n'est pas atteinte par HAUT depuis l'échelle
-   (mesuré au banc) : Menu ferme le panneau. Faut-il un guide vers elle ?
+4. ~~La croix du grand panneau n'est pas atteinte par HAUT depuis l'échelle
+   (mesuré au banc) : Menu ferme le panneau. Faut-il un guide vers elle ?~~
+   — oui, posé (groupe `sheet:header`, « Branchement — fiche, bande-annonce,
+   feuille » ci-dessus).
