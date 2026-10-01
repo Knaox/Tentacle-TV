@@ -112,7 +112,7 @@ function Row({ props, width, dark, labelIn }: RowProps) {
 
 function Body(props: NavItemProps & { focused: boolean }) {
   const { active, expanded, openness, mode, fade, focused } = props;
-  const p = useFocusProgress(focused, 180);
+  const p = useFocusProgress(focused);
   const whiteLayer = useAnimatedStyle(() => ({ opacity: p.value }));
   const lift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (mode === "moving" ? 0.06 : 0.04) * p.value }] }));
   const labelIn = useAnimatedStyle(() => ({ opacity: openness.value, transform: [{ translateX: -12 * (1 - openness.value) }] }));

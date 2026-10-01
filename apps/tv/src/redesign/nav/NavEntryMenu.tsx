@@ -1,11 +1,13 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Animated, { FadeIn, useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { GlassSurface } from "../glass/GlassSurface";
 import { Icon, type IconName } from "../icons/Icon";
+import { useEntrance } from "../motion/useMotion";
+import { SWAP_FLOOR } from "../motion/useSwap";
 import { colors, fonts, white } from "../theme/tokens";
 
 /**
@@ -22,7 +24,15 @@ import { colors, fonts, white } from "../theme/tokens";
  *
  * Clés de focus : `nav:menu:<action>` — une clé de la navigation : le rail
  * reste ouvert derrière.
+ *
+ * Il entre en fondu en glissant depuis le rail (`useEntrance`, préréglage
+ * `reveal`) — pas une animation de mise en page, sujette à se figer dans une
+ * Modal ; jamais tout à fait transparent : tvOS y cherche son focus dès
+ * l'ouverture (`SWAP_FLOOR`).
  */
+
+/** Ce dont le menu glisse depuis le rail en entrant, en points. */
+const SLIDE = 16;
 
 export interface NavMenuItem {
   key: string;
@@ -44,8 +54,10 @@ const RADIUS = 36;
 const ROW = 76;
 
 export const NavEntryMenu = memo(function NavEntryMenu({ title, caption, items, onPress }: NavEntryMenuProps) {
+  const p = useEntrance("reveal");
+  const arrive = useAnimatedStyle(() => ({ opacity: Math.max(SWAP_FLOOR, p.value), transform: [{ translateX: -SLIDE * (1 - p.value) }] }));
   return (
-    <Animated.View entering={FadeIn.duration(180)} style={styles.layer} pointerEvents="box-none">
+    <Animated.View style={[styles.layer, arrive]} pointerEvents="box-none">
       <View style={styles.panel}>
         <View style={[StyleSheet.absoluteFill, styles.base]} />
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} elevated />

@@ -1,13 +1,12 @@
-import { memo, type ReactNode } from "react";
+import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import Animated, { FadeIn, FadeOut, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { useFocusProgress } from "../focus/useFocusProgress";
-import { GlassSurface } from "../glass/GlassSurface";
-import { useNativeGlassBacking } from "../glass/glassBacking";
+import { usePresence } from "../motion/useMotion";
 import type { IconName } from "../icons/Icon";
 import { scrim, white } from "../theme/tokens";
+import { Capsule, useUnfold } from "./NavCapsule";
 import { NavItem } from "./NavItem";
 import { NavLegend, type NavHint } from "./NavLegend";
 import { NavList } from "./NavList";
@@ -48,6 +47,13 @@ export type { NavHint } from "./NavLegend";
  * `nav:Library_<id>`, `nav:RailShowAll`, `nav:Settings` (le profil)…
  * La géométrie des capsules est dans `navGeometry.ts` : les ponts de focus
  * de l'intégration s'y posent.
+ *
+ * Le DÉPLIAGE (Apple TV) : la capsule s'élargit vraiment — son bord droit,
+ * arrondi, avance sur le ressort `unfold` pendant que le verre dense remplace
+ * le verre clair et que les libellés glissent en place ; au repli, il revient
+ * plus vite. Sans animer de largeur : une fenêtre coupée glisse, son contenu
+ * glisse en sens inverse (deux `translateX`), et la coupe n'existe que le
+ * temps du mouvement — au repos, aucun masque à composer.
  */
 
 export interface NavEntry {
@@ -98,7 +104,9 @@ export const NavRail = memo(function NavRail({
   onLongPress,
   onFocusChange,
 }: NavRailProps) {
-  const openness = useFocusProgress(expanded, 240);
+  const { openness, moving } = useUnfold(expanded);
+  const veil = usePresence(expanded, "veil");
+  const veilFade = useAnimatedStyle(() => ({ opacity: veil.progress.value }));
   const width = expanded ? N.expandedWidth : N.collapsedWidth;
   const shared = { expanded, openness, onSelect, onLongPress, onFocusChange };
   return (
@@ -107,8 +115,8 @@ export const NavRail = memo(function NavRail({
           comme ce voile, même transparents — empêche le moteur de focus de
           tvOS d'y entrer (mesuré au simulateur). Le voile n'existe donc que
           barre ouverte ; l'intégration mène alors du rail au contenu. */}
-      {expanded ? (
-        <Animated.View pointerEvents="none" entering={FadeIn.duration(240)} exiting={FadeOut.duration(240)} style={styles.veil}>
+      {veil.mounted ? (
+        <Animated.View pointerEvents="none" style={[styles.veil, veilFade]}>
           <LinearGradient
             colors={[scrim(0.82), scrim(0.55), scrim(0)]}
             locations={[0, 0.3, 0.62]}
@@ -119,7 +127,7 @@ export const NavRail = memo(function NavRail({
         </Animated.View>
       ) : null}
       <View pointerEvents="box-none" style={[styles.layer, { width: N.left + width }]}>
-        <Capsule top={RAIL_TOP} height={RAIL_HEIGHT} width={width} openness={openness}>
+        <Capsule top={RAIL_TOP} height={RAIL_HEIGHT} width={width} openness={openness} clip={moving}>
           <View style={styles.search}>
             <NavItem itemKey={search.key} label={search.label} icon={search.icon} active={search.key === activeKey} {...shared} />
           </View>
@@ -129,7 +137,7 @@ export const NavRail = memo(function NavRail({
           </View>
           {expanded && hints?.length ? <NavLegend hints={hints} openness={openness} top={LEGEND_TOP} /> : null}
         </Capsule>
-        <Capsule top={PROFILE_TOP} height={PROFILE_HEIGHT} width={width} openness={openness}>
+        <Capsule top={PROFILE_TOP} height={PROFILE_HEIGHT} width={width} openness={openness} clip={moving}>
           <View style={styles.profile}>
             <NavItem
               itemKey={account.key}
@@ -147,41 +155,10 @@ export const NavRail = memo(function NavRail({
   );
 });
 
-/** Une capsule : le verre replié et le verre ouvert, en fondu l'un sur l'autre. */
-function Capsule({ top, height, width, openness, children }: {
-  top: number;
-  height: number;
-  width: number;
-  openness: SharedValue<number>;
-  children: ReactNode;
-}) {
-  const wide = useAnimatedStyle(() => ({ opacity: openness.value }));
-  const narrow = useAnimatedStyle(() => ({ opacity: 1 - openness.value }));
-  const openBacking = useNativeGlassBacking("strong");
-  return (
-    <View style={[styles.capsule, { top, height, width }]}>
-      <Animated.View style={[StyleSheet.absoluteFill, narrow]}>
-        <GlassSurface radius={N.radius} style={[styles.glass, { width: N.collapsedWidth, height }]} elevated />
-      </Animated.View>
-      <Animated.View style={[StyleSheet.absoluteFill, wide]}>
-        {/* Ouverte, la barre passe SUR le texte de l'écran : le verre
-            dessiné ne floute rien, un fond dense garde les libellés
-            lisibles. Le verre natif floute : il prend le fond commun. */}
-        <View style={[styles.glass, styles.openBase, openBacking, { width: N.expandedWidth, height }]} />
-        <GlassSurface radius={N.radius} tone="strong" style={[styles.glass, { width: N.expandedWidth, height }]} elevated />
-      </Animated.View>
-      {children}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   // La région des capsules seulement (voir le voile, plus haut).
   layer: { position: "absolute", left: 0, top: 0, height: 1080 },
   veil: { position: "absolute", left: 0, top: 0, width: 1920, height: 1080 },
-  capsule: { position: "absolute", left: N.left },
-  glass: { position: "absolute", left: 0, top: 0 },
-  openBase: { borderRadius: N.radius, backgroundColor: "rgba(10, 10, 14, 0.84)" },
   search: { position: "absolute", top: SEARCH_TOP, left: ITEM_LEFT },
   separator: { position: "absolute", top: SEPARATOR_TOP, left: ITEM_LEFT + 10, height: 1, backgroundColor: white(0.12) },
   list: { position: "absolute", top: LIST_TOP, left: 0, right: 0, height: LIST_HEIGHT },
