@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   flushPlaybackOutboxFor, JellyfinError, useAdoptStop, useJellyfinClient, useMediaItem, type StorageAdapter,
 } from "@tentacle-tv/api-client";
@@ -6,9 +7,10 @@ import {
   clearPlaybackMarker, coldStartDetailId, coldStartLanding, readPlaybackMarker,
   type DetailLanding, type PlaybackMarker,
 } from "@tentacle-tv/tv-core/playback";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { sessionOwnerOf } from "../auth/sessionOwner";
 import { navigationRef } from "../navigation/navigationRef";
-import { markerStopToAdopt } from "../utils/coldStartResume";
+import { markerStopToAdopt, settleSeriesResume } from "../utils/coldStartResume";
 import { plog } from "../utils/playerDiag";
 
 /** Le temps laissé à la file des rapports pour corriger la position avant d'ouvrir. */
@@ -34,7 +36,9 @@ const NAV_RETRIES = 25;
  * même, d'après le marqueur. Un déjumelage interrompu, lui, s'est rejoué avant
  * (`resumeUnpair`, au démarrage) et a purgé le marqueur avec le compte.
  * « Reprendre » part de l'arrêt du marqueur quand Jellyfin n'a rien vu de plus
- * récent (`markerStopToAdopt`) — la garde le défend ensuite.
+ * récent (`markerStopToAdopt`) — la garde le défend ensuite ; pour un épisode,
+ * jusque dans l'état de visionnage de la série (`settleSeriesResume`), avant
+ * d'ouvrir sa fiche.
  */
 export function TVColdStartLanding({ storage }: { storage: StorageAdapter }) {
   const client = useJellyfinClient();
@@ -59,10 +63,16 @@ function Landing({ storage, landing, marker, onDone }: {
   storage: StorageAdapter; landing: DetailLanding; marker: PlaybackMarker; onDone: () => void;
 }) {
   const client = useJellyfinClient();
+  const queryClient = useQueryClient();
   const adoptStop = useAdoptStop();
   const [flushed, setFlushed] = useState(false);
   const { data: item, error } = useMediaItem(landing.itemId, { enabled: flushed });
   const doneRef = useRef(false);
+  // L'item relu ne se traite qu'une fois : l'adoption le patche, et la fiche de
+  // la série attend que sa reprise soit posée.
+  const handledRef = useRef(false);
+  // La meilleure fiche connue — celle du marqueur, puis celle de l'item relu.
+  const detailRef = useRef(coldStartDetailId(landing));
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
@@ -91,24 +101,35 @@ function Landing({ storage, landing, marker, onDone }: {
     const wait = new Promise((resolve) => setTimeout(resolve, OUTBOX_WAIT_MS));
     const flush = owner ? flushPlaybackOutboxFor(client, owner.userId) : Promise.resolve();
     void Promise.race([flush, wait]).catch(() => undefined).finally(() => setFlushed(true));
-    const giveUp = setTimeout(() => land(coldStartDetailId(landing)), OUTBOX_WAIT_MS + ITEM_WAIT_MS);
+    const giveUp = setTimeout(() => land(detailRef.current), OUTBOX_WAIT_MS + ITEM_WAIT_MS);
     return () => clearTimeout(giveUp);
     // Une fois.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!flushed) return;
+    if (!flushed || handledRef.current || (!item && !error)) return;
+    handledRef.current = true;
     if (item) {
+      detailRef.current = coldStartDetailId(landing, item);
       const position = markerStopToAdopt(marker, item);
-      if (position !== null) {
-        plog("relance", `arrêt du marqueur (${Math.round(position)} s) préféré à la reprise relue`);
-        adoptStop({ itemId: item.Id, positionSeconds: position, runtimeTicks: item.RunTimeTicks, stoppedAt: marker.at });
+      const stop = position === null
+        ? null
+        : adoptStop({ itemId: item.Id, positionSeconds: position, runtimeTicks: item.RunTimeTicks, stoppedAt: marker.at });
+      if (position !== null) plog("relance", `arrêt du marqueur (${Math.round(position)} s) préféré à la reprise relue`);
+      const owner = sessionOwnerOf(storage, client.getDeviceId());
+      if (stop && stop.positionTicks > 0 && item.Type === "Episode" && item.SeriesId && owner) {
+        // L'épisode tel que l'adoption l'a patché : c'est lui que la fiche de la série reprendra.
+        const episode = queryClient.getQueryData<MediaItem>(["item", item.Id]) ?? item;
+        void settleSeriesResume(queryClient, client, owner.userId, item.SeriesId, {
+          episode, positionTicks: stop.positionTicks, stoppedAt: marker.at,
+        }).finally(() => land(detailRef.current));
+      } else {
+        land(detailRef.current);
       }
-      land(coldStartDetailId(landing, item));
-    } else if (error) {
+    } else {
       const refused = error instanceof JellyfinError && (error.status === 401 || error.status === 403);
-      land(refused ? null : coldStartDetailId(landing));
+      land(refused ? null : detailRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flushed, item, error]);

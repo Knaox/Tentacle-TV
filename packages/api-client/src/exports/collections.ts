@@ -29,4 +29,4 @@ export { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY, FAVO
 export { forgetAutoRetired, recordAutoRetired } from "../hooks/watchlistAutoRetired";
 
 // Watch state & continue watching
-export { useSeriesWatchState, useContinueWatching, type NextEpisodeResult } from "../hooks/useWatchState";
+export { useSeriesWatchState, useContinueWatching, fetchSeriesWatchState, type NextEpisodeResult } from "../hooks/useWatchState";
