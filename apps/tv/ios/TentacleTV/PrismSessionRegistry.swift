@@ -80,11 +80,25 @@ actor PrismSessionRegistry {
     /// remet à zéro, sinon le démontage d'un écran périmé repasserait le
     /// panneau en SDR sous la lecture suivante.
     private var criteriaOwnerGen: Int?
+    /// Le ménage de `tmp/` (`sweepLeftovers`), lancé une fois par processus : au
+    /// démarrage de l'app (`PrismLaunchSweep`), sinon par le premier `start()`.
+    private var leftoverSweep: Task<Void, Never>?
+
+    /// Lance le ménage s'il ne l'est pas encore et rend sa tâche. Tout `start()`
+    /// l'attend : aucun dossier de session ne naît pendant qu'il tourne, il ne
+    /// peut donc effacer que des orphelins.
+    func sweepLeftoversOnce() -> Task<Void, Never> {
+        if let leftoverSweep { return leftoverSweep }
+        let task = Task.detached(priority: .utility) { Self.sweepLeftovers() }
+        leftoverSweep = task
+        return task
+    }
 
     func start(_ config: PrismSessionConfig, onCheckpoint: @escaping CheckpointSink) async throws -> PrismStartResult {
         // Le numéro AVANT tout await : deux start() concurrents ne partagent jamais un gen.
         nextGen += 1
         let gen = nextGen
+        await sweepLeftoversOnce().value
         let cacheDirectory = Self.keyframeCacheDirectory()
         // `readingCurrentDisplay` est MainActor : il lit `AVPlayer.availableHDRModes`
         // et l'écran — c'est ce qui autorise un master HDR / Dolby Vision.
@@ -193,5 +207,38 @@ actor PrismSessionRegistry {
         let directory = base.appendingPathComponent("PrismCoreKeyframes", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory
+    }
+
+    /// Ce qu'une app tuée en pleine lecture laisse dans `tmp/` : PrismCore
+    /// n'efface le dossier d'une session (`PrismCore-<UUID>`, jusqu'à son budget
+    /// de 1 Gio) qu'à son `stop()`, et ses aperçus (`PrismCorePreview-<UUID>.mp4`)
+    /// qu'après leur lecture. S'y ajoutent les restes du remuxeur maison déposé
+    /// le 2026-09-22 (`tvhls/`, `tvpauseframe-*.jpg`, `tvdc.log`), que plus rien
+    /// n'écrit ni ne lit. Avant la première session du processus, tout ce qui
+    /// porte ces noms est orphelin. `tmp/` reste le bon dossier : tvOS le purge.
+    private nonisolated static func sweepLeftovers() {
+        let fileManager = FileManager.default
+        let tmp = fileManager.temporaryDirectory
+        guard let names = try? fileManager.contentsOfDirectory(atPath: tmp.path) else { return }
+        var removed = 0
+        for name in names where isLeftover(name) {
+            if (try? fileManager.removeItem(at: tmp.appendingPathComponent(name))) != nil { removed += 1 }
+        }
+        if removed > 0 { NSLog("[PrismBridge] ménage de tmp/ : %ld reste(s) de lecture supprimé(s)", removed) }
+    }
+
+    private nonisolated static func isLeftover(_ name: String) -> Bool {
+        name.hasPrefix("PrismCore") || name == "tvhls" || name == "tvdc.log"
+            || (name.hasPrefix("tvpauseframe-") && name.hasSuffix(".jpg"))
+    }
+}
+
+/// Le ménage au LANCEMENT de l'app, appelé par l'AppDelegate : le module RN
+/// `PrismBridge` n'est créé qu'à la première lecture, trop tard pour rendre le
+/// disque qu'une lecture interrompue (app tuée, plantage) a laissé derrière elle.
+@objc(PrismLaunchSweep)
+final class PrismLaunchSweep: NSObject {
+    @objc static func start() {
+        Task { _ = await PrismSessionRegistry.shared.sweepLeftoversOnce() }
     }
 }
