@@ -1,13 +1,12 @@
 import type { JellyfinClient } from "@tentacle-tv/api-client";
-import { formatEpisodeCode, type MediaItem } from "@tentacle-tv/shared";
+import { formatEpisodeCode, resolveLogoImage, type MediaItem } from "@tentacle-tv/shared";
 
 /** Largeur demandée pour le fond : nette sur un iPad, sans tirer du 4K sur un téléphone. */
 const BACKDROP_WIDTH = 1600;
 const POSTER_HEIGHT = 1400;
 const LOGO_WIDTH = 600;
 
-/** Champs que Jellyfin renvoie pour un épisode, absents du type partagé. */
-type EpisodeLogoFields = { ParentLogoItemId?: string; ParentLogoImageTag?: string };
+type ImageClient = Pick<JellyfinClient, "getImageUrl">;
 
 export interface LoadingArt {
   /** Le fond paysage (écran large). */
@@ -25,7 +24,7 @@ export interface LoadingArt {
  * parent (épisode), sinon celui de la série. L'affiche et le logo ne sont
  * demandés que si la donnée dit qu'ils existent : aucune requête pour rien.
  */
-export function loadingArt(client: JellyfinClient, item: MediaItem | null | undefined): LoadingArt {
+export function loadingArt(client: ImageClient, item: MediaItem | null | undefined): LoadingArt {
   if (!item) return { backdropUrl: null, posterUrl: null, logoUrl: null, title: "", subtitle: null };
   const isEpisode = item.Type === "Episode";
 
@@ -46,13 +45,10 @@ export function loadingArt(client: JellyfinClient, item: MediaItem | null | unde
     posterUrl = client.getImageUrl(item.SeriesId, "Primary", { height: POSTER_HEIGHT, quality: 85 });
   }
 
-  const episode = item as MediaItem & EpisodeLogoFields;
-  let logoUrl: string | null = null;
-  if (!isEpisode && item.ImageTags?.Logo) {
-    logoUrl = client.getImageUrl(item.Id, "Logo", { width: LOGO_WIDTH, quality: 90 });
-  } else if (isEpisode && episode.ParentLogoItemId && episode.ParentLogoImageTag) {
-    logoUrl = client.getImageUrl(episode.ParentLogoItemId, "Logo", { width: LOGO_WIDTH, quality: 90 });
-  }
+  // Le logo que la donnée annonce (le sien, sinon celui de la série d'un
+  // épisode), adressé par son tag : la règle partagée de la bannière.
+  const logo = resolveLogoImage(item);
+  const logoUrl = logo ? client.getImageUrl(logo.id, "Logo", { width: LOGO_WIDTH, quality: 90, tag: logo.tag }) : null;
 
   const title = isEpisode ? (item.SeriesName ?? item.Name) : item.Name;
   const subtitle = isEpisode
