@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { OfflineOverlay } from "../../redesign/screens/overlays/OfflineOverlay";
-import { useOfflineLogout } from "../../hooks/useOfflineLogout";
+import { useUnpairDevice } from "../../hooks/useUnpairDevice";
 import { useFocusStore } from "../focus/focusStore";
 import { TrapFocusGuide } from "../focus/focusGuides";
 import { useKeepFocusWithin } from "../focus/useKeepFocusWithin";
@@ -20,9 +20,10 @@ const KEYS = ["offline:retry", "offline:unpair"] as const;
  * l'appui remonte jusqu'à l'application et renvoie à l'accueil de tvOS —
  * la règle qu'App Review vérifie.
  *
- * « Déjumeler cet appareil » (double appui, tenu par la vue) passe par
- * `useOfflineLogout`, la sortie hors ligne des deux téléviseurs : rien n'y
- * attend le réseau, et elle passe même pendant une lecture.
+ * « Déjumeler cet appareil » (double appui, tenu par la vue) est le
+ * déjumelage commun (`unpairDevice`, origine `offline`) : rien n'y attend
+ * le réseau, il passe même pendant une lecture, et la révocation part quand
+ * le serveur revient.
  */
 export function OfflineRedesign({ visible, onRetry }: {
   visible: boolean;
@@ -33,7 +34,8 @@ export function OfflineRedesign({ visible, onRetry }: {
 
 function OfflineSurface({ onRetry }: { onRetry: () => void | Promise<unknown> }) {
   const { storage } = useTentacleConfig();
-  const unpair = useOfflineLogout();
+  const unpairDevice = useUnpairDevice();
+  const unpair = useCallback(() => unpairDevice("offline"), [unpairDevice]);
   const [retrying, setRetrying] = useState(false);
 
   const store = useFocusStore();
