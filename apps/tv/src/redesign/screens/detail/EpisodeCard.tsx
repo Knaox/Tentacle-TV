@@ -10,6 +10,7 @@ import { CardFocusFooter } from "../../cards/CardFocusFooter";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useFocusProgress } from "../../focus/useFocusProgress";
+import type { RowPlace } from "../../motion/useRowRecede";
 import { colors, fonts, white } from "../../theme/tokens";
 import type { EpisodeBadge, EpisodeModel } from "./detailTypes";
 
@@ -58,14 +59,15 @@ function Caption({ episode, focused, holdHint }: { episode: EpisodeModel; focuse
 export const EpisodeCard = memo(function EpisodeCard({
   episode,
   focusKey,
-  dimmed,
+  place,
   onPress,
   onLongPress,
   onFocusChange,
 }: {
   episode: EpisodeModel;
   focusKey: string;
-  dimmed?: boolean;
+  /** Sa place dans la rangée : elle recule quand une voisine a le focus. */
+  place?: RowPlace;
   onPress?: () => void;
   onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
@@ -86,7 +88,7 @@ export const EpisodeCard = memo(function EpisodeCard({
           {focused && episode.palette ? (
             <ArtworkHalo width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} palette={episode.palette} spread={14} blur={30} opacity={0.4} />
           ) : null}
-          <CardFrame width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} focused={focused} dimmed={dimmed}>
+          <CardFrame width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} focused={focused} place={place}>
             {episode.imageUri ? (
               <Image source={{ uri: episode.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
             ) : (

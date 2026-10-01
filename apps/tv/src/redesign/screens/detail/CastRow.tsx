@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo } from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
@@ -8,6 +8,7 @@ import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
+import { useRowFocus } from "../../motion/useRowRecede";
 import { colors, fonts, white } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import type { CrewGroupModel, PersonModel } from "./detailTypes";
@@ -65,10 +66,9 @@ export const CastRow = memo(function CastRow({
   onOpen?: (person: PersonModel) => void;
   onFocusChange?: (focused: boolean) => void;
 }) {
-  const [nativeIndex, setNativeIndex] = useState<number | null>(null);
   const forced = useForcedFocusKey();
   const forcedIndex = forced?.startsWith("cast:") ? Number(forced.slice(5)) : null;
-  const focusedIndex = forced !== null ? forcedIndex : nativeIndex;
+  const { row, onItemFocusChange } = useRowFocus(forced !== null, forcedIndex);
   return (
     <FocusGroup focusKey="detail:cast">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
@@ -78,7 +78,7 @@ export const CastRow = memo(function CastRow({
             focusKey={`cast:${index}`}
             onPress={onOpen ? () => onOpen(person) : undefined}
             onFocusChange={(focused) => {
-              setNativeIndex((current) => (focused ? index : current === index ? null : current));
+              onItemFocusChange(index, focused);
               onFocusChange?.(focused);
             }}
             accessibilityLabel={person.role ? `${person.name}, ${person.role}` : person.name}
@@ -86,7 +86,7 @@ export const CastRow = memo(function CastRow({
           >
             {(focused) => (
               <View style={styles.center}>
-                <CardFrame width={SIZE} height={SIZE} radius={SIZE / 2} focused={focused} dimmed={focusedIndex !== null && focusedIndex !== index}>
+                <CardFrame width={SIZE} height={SIZE} radius={SIZE / 2} focused={focused} place={{ row, index }}>
                   <Portrait person={person} />
                 </CardFrame>
                 <Names person={person} focused={focused} />

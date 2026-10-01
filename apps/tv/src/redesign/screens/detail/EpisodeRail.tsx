@@ -1,8 +1,9 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback } from "react";
 import { FlatList, StyleSheet, View, type ListRenderItemInfo } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { useForcedFocusKey } from "../../focus/focusPreview";
+import { useRowFocus } from "../../motion/useRowRecede";
 import { white } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import { EPISODE_CARD, EpisodeCard } from "./EpisodeCard";
@@ -50,10 +51,11 @@ export const EpisodeRail = memo(function EpisodeRail({
   onLongPress?: (episode: EpisodeModel) => void;
   onFocusChange?: (focused: boolean) => void;
 }) {
-  const [nativeIndex, setNativeIndex] = useState<number | null>(null);
   const forced = useForcedFocusKey();
   const forcedIndex = forced?.startsWith("episode:") ? Number(forced.slice(8)) : null;
-  const focusedIndex = forced !== null ? forcedIndex : nativeIndex;
+  // Le recul des voisines passe par une valeur partagée : un pas du focus ne
+  // redessine ni la liste ni ses vignettes.
+  const { row, onItemFocusChange } = useRowFocus(forced !== null, forcedIndex);
 
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<EpisodeModel>) => (
@@ -61,17 +63,17 @@ export const EpisodeRail = memo(function EpisodeRail({
         <EpisodeCard
           episode={item}
           focusKey={`episode:${index}`}
-          dimmed={focusedIndex !== null && focusedIndex !== index}
+          place={{ row, index }}
           onPress={onPlay ? () => onPlay(item) : undefined}
           onLongPress={onLongPress ? () => onLongPress(item) : undefined}
           onFocusChange={(focused) => {
-            setNativeIndex((current) => (focused ? index : current === index ? null : current));
+            onItemFocusChange(index, focused);
             onFocusChange?.(focused);
           }}
         />
       </View>
     ),
-    [focusedIndex, onPlay, onLongPress, onFocusChange],
+    [row, onItemFocusChange, onPlay, onLongPress, onFocusChange],
   );
 
   if (episodes === null) return <Ghosts />;
@@ -83,7 +85,6 @@ export const EpisodeRail = memo(function EpisodeRail({
         data={episodes}
         keyExtractor={(episode) => episode.id}
         renderItem={renderItem}
-        extraData={focusedIndex}
         // Le décalage ne compte pas la marge de gauche : l'épisode d'ouverture
         // arrive calé sur la colonne de contenu, pas contre le bord.
         getItemLayout={(_, index) => ({ length: STEP, offset: STEP * index, index })}

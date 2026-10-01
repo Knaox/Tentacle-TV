@@ -1,7 +1,7 @@
-import { memo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFocusFooter } from "../../cards/CardFocusFooter";
@@ -13,6 +13,7 @@ import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
+import { useRowFocus, type RowPlace } from "../../motion/useRowRecede";
 import { colors, fonts, white } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import type { SagaEntryModel } from "./detailTypes";
@@ -34,10 +35,10 @@ const { width: W, radius: R } = TV_STAGE.card.poster;
 const H = Math.round(W * 1.5);
 const SHIFT = H * (TV_STAGE.focus.cardScale - 1);
 
-function MissingPoster({ title, year, focused, dimmed }: { title: string; year?: string; focused: boolean; dimmed: boolean }) {
+function MissingPoster({ title, year, focused, place }: { title: string; year?: string; focused: boolean; place: RowPlace }) {
   const { t } = useTranslation();
   return (
-    <CardFrame width={W} height={H} radius={R} focused={focused} dimmed={dimmed}>
+    <CardFrame width={W} height={H} radius={R} focused={focused} place={place}>
       <LinearGradient colors={[white(0.1), white(0.03)]} style={[StyleSheet.absoluteFill, styles.missing]}>
         <Icon name="film" size={34} color={white(0.42)} />
         <View style={styles.missingText}>
@@ -69,6 +70,66 @@ function Caption({ entry, focused, hold = false }: { entry: SagaEntryModel; focu
   );
 }
 
+interface SagaEntryProps {
+  entry: SagaEntryModel;
+  index: number;
+  row: SharedValue<number>;
+  onItemFocusChange: (index: number, focused: boolean) => void;
+  onOpen?: (entry: SagaEntryModel) => void;
+  onLongPress?: (entry: SagaEntryModel) => void;
+  onFocusChange?: (focused: boolean) => void;
+}
+
+/**
+ * Un volet. L'affiche d'un volet de la bibliothèque (`MediaCard`) garde son
+ * focus pour elle : le volet le suit dans SON état, pour sa légende — un pas
+ * du focus ne redessine que les deux volets qu'il quitte et qu'il atteint,
+ * jamais la rangée (le recul des voisins passe par `row`).
+ */
+const SagaEntry = memo(function SagaEntry({ entry, index, row, onItemFocusChange, onOpen, onLongPress, onFocusChange }: SagaEntryProps) {
+  const [native, setNative] = useState(false);
+  const forced = useForcedFocusKey();
+  const focused = forced !== null ? cardIndexOf(forced, "saga") === index : native;
+  const place = useMemo(() => ({ row, index }), [row, index]);
+  const tracksFocus = entry.card !== undefined;
+  const focusChange = useCallback(
+    (next: boolean) => {
+      if (tracksFocus) setNative(next);
+      onItemFocusChange(index, next);
+      onFocusChange?.(next);
+    },
+    [tracksFocus, index, onItemFocusChange, onFocusChange],
+  );
+  const press = onOpen && !entry.current ? () => onOpen(entry) : undefined;
+  if (entry.card) {
+    return (
+      <View style={{ width: W }}>
+        <MediaCard
+          card={entry.card}
+          variant="poster"
+          hideCaption
+          place={place}
+          focusKey={`saga:${index}`}
+          onPress={press}
+          onLongPress={onLongPress ? () => onLongPress(entry) : undefined}
+          onFocusChange={focusChange}
+        />
+        <Caption entry={entry} focused={focused} hold={focused && onLongPress !== undefined} />
+      </View>
+    );
+  }
+  return (
+    <FocusTarget focusKey={`saga:${index}`} onPress={press} onFocusChange={focusChange} accessibilityLabel={entry.missing?.title} style={{ width: W }}>
+      {(targetFocused) => (
+        <View>
+          <MissingPoster title={entry.missing?.title ?? ""} year={entry.missing?.year} focused={targetFocused} place={place} />
+          <Caption entry={entry} focused={targetFocused} />
+        </View>
+      )}
+    </FocusTarget>
+  );
+});
+
 export const SagaRow = memo(function SagaRow({
   entries,
   onOpen,
@@ -80,45 +141,23 @@ export const SagaRow = memo(function SagaRow({
   onLongPress?: (entry: SagaEntryModel) => void;
   onFocusChange?: (focused: boolean) => void;
 }) {
-  const [nativeIndex, setNativeIndex] = useState<number | null>(null);
   const forced = useForcedFocusKey();
-  const focusedIndex = forced !== null ? cardIndexOf(forced, "saga") : nativeIndex;
-  const focusChange = (index: number) => (focused: boolean) => {
-    setNativeIndex((current) => (focused ? index : current === index ? null : current));
-    onFocusChange?.(focused);
-  };
+  const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, "saga") : null);
   return (
     <FocusGroup focusKey="detail:saga">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
-        {entries.map((entry, index) => {
-          const dimmed = focusedIndex !== null && focusedIndex !== index;
-          const press = onOpen && !entry.current ? () => onOpen(entry) : undefined;
-          return entry.card ? (
-            <View key={entry.key} style={{ width: W }}>
-              <MediaCard
-                card={entry.card}
-                variant="poster"
-                hideCaption
-                dimmed={dimmed}
-                focusKey={`saga:${index}`}
-                onPress={press}
-                onLongPress={onLongPress ? () => onLongPress(entry) : undefined}
-                onFocusChange={focusChange(index)}
-              />
-              {/* `MediaCard` garde son focus pour elle : la rangée le suit, la légende aussi. */}
-              <Caption entry={entry} focused={focusedIndex === index} hold={focusedIndex === index && onLongPress !== undefined} />
-            </View>
-          ) : (
-            <FocusTarget key={entry.key} focusKey={`saga:${index}`} onPress={press} onFocusChange={focusChange(index)} accessibilityLabel={entry.missing?.title} style={{ width: W }}>
-              {(focused) => (
-                <View>
-                  <MissingPoster title={entry.missing?.title ?? ""} year={entry.missing?.year} focused={focused} dimmed={dimmed} />
-                  <Caption entry={entry} focused={focused} />
-                </View>
-              )}
-            </FocusTarget>
-          );
-        })}
+        {entries.map((entry, index) => (
+          <SagaEntry
+            key={entry.key}
+            entry={entry}
+            index={index}
+            row={row}
+            onItemFocusChange={onItemFocusChange}
+            onOpen={onOpen}
+            onLongPress={onLongPress}
+            onFocusChange={onFocusChange}
+          />
+        ))}
       </ScrollView>
     </FocusGroup>
   );

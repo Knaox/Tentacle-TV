@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo } from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
@@ -9,6 +9,7 @@ import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
+import { useRowFocus } from "../../motion/useRowRecede";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import type { ExtraModel } from "./detailTypes";
@@ -50,10 +51,9 @@ export const ExtrasRow = memo(function ExtrasRow({
   onOpen?: (extra: ExtraModel) => void;
   onFocusChange?: (focused: boolean) => void;
 }) {
-  const [nativeIndex, setNativeIndex] = useState<number | null>(null);
   const forced = useForcedFocusKey();
   const forcedIndex = forced?.startsWith("extra:") ? Number(forced.slice(6)) : null;
-  const focusedIndex = forced !== null ? forcedIndex : nativeIndex;
+  const { row, onItemFocusChange } = useRowFocus(forced !== null, forcedIndex);
   return (
     <FocusGroup focusKey="detail:extras">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
@@ -63,7 +63,7 @@ export const ExtrasRow = memo(function ExtrasRow({
             focusKey={`extra:${index}`}
             onPress={onOpen && !extra.unavailable ? () => onOpen(extra) : undefined}
             onFocusChange={(focused) => {
-              setNativeIndex((current) => (focused ? index : current === index ? null : current));
+              onItemFocusChange(index, focused);
               onFocusChange?.(focused);
             }}
             accessibilityLabel={extra.title}
@@ -71,7 +71,7 @@ export const ExtrasRow = memo(function ExtrasRow({
           >
             {(focused) => (
               <View>
-                <CardFrame width={W} height={H} radius={R} focused={focused} dimmed={focusedIndex !== null && focusedIndex !== index}>
+                <CardFrame width={W} height={H} radius={R} focused={focused} place={{ row, index }}>
                   {extra.imageUri ? (
                     <Image source={{ uri: extra.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
                   ) : (
