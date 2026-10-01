@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import { StyleSheet } from "react-native";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../navigation/types";
+import { MenuPressInterceptor } from "../../components/focus/MenuPressInterceptor";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { PairingView } from "../../redesign/screens/pairing/PairingView";
-import { usePairingFlow, type PairingFlowOptions } from "../../hooks/usePairingFlow";
+import { usePairingFlow, type PairingFlow, type PairingFlowOptions } from "../../hooks/usePairingFlow";
 import { useRelayPairingCode, useServerPairingCode } from "../../hooks/usePairingCode";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { useBackFocus } from "../focus/backFocus";
@@ -21,6 +23,21 @@ const PORTRAIT = 64;
 /** Sur Apple TV, le serveur vérifié mène à l'identifiant et au mot de passe. */
 const FLOW_OPTIONS: PairingFlowOptions = { afterServer: "login" };
 
+/** La sortie d'une étape, que portent la croix Retour ET le bouton Menu. */
+function exitOf(flow: PairingFlow): (() => void) | null {
+  switch (flow.step) {
+    case "relayCode":
+    case "manualServer":
+      return flow.backToWelcome;
+    case "manualLogin":
+      return flow.backToServer;
+    case "manualCode":
+      return flow.backToLogin;
+    default:
+      return null;
+  }
+}
+
 /**
  * Le jumelage de la refonte (Apple TV) : l'automate commun aux deux
  * téléviseurs (`usePairingFlow`, `usePairingCode`) rendu par `PairingView`.
@@ -36,6 +53,10 @@ const FLOW_OPTIONS: PairingFlowOptions = { afterServer: "login" };
  * — ; ailleurs, HAUT y mène et BAS en revient (`useBackFocus`, qui la
  * reverrouille à chaque étape). Pas de navigation latérale : il n'y a pas
  * encore de compte.
+ *
+ * Le bouton Menu recule d'une étape, comme la croix (`MenuPressInterceptor`) ;
+ * sur l'accueil et le succès, il reste à UIKit — qui quitte l'application à
+ * la racine, la règle tvOS.
  */
 export function PairingRedesign({ navigation }: Props) {
   const onPaired = useCallback(() => navigation.replace("Home"), [navigation]);
@@ -75,28 +96,35 @@ export function PairingRedesign({ navigation }: Props) {
 
   // Réessayer comme Générer un nouveau code : le code de l'étape affichée.
   const retryCode = flow.step === "manualCode" ? server.regenerate : relay.regenerate;
+  const exit = exitOf(flow);
 
   return (
-    <FocusBindingProvider bind={store.binder}>
-      <PairingView
-        step={step}
-        language={flow.language}
-        onChangeLanguage={flow.changeLanguage}
-        onShowCode={flow.showRelayCode}
-        onManualSetup={flow.manualSetup}
-        onRetryCode={retryCode}
-        onCancel={flow.backToWelcome}
-        onChangeServer={flow.changeServer}
-        onChangeUrl={flow.changeUrl}
-        onSubmitUrl={flow.submitServer}
-        onBack={flow.backToWelcome}
-        onChangeUsername={flow.login.changeUsername}
-        onChangePassword={flow.login.changePassword}
-        onSubmitLogin={flow.login.submit}
-        onUseCode={flow.showServerCode}
-        onLoginBack={flow.backToServer}
-        onServerCodeBack={flow.backToLogin}
-      />
-    </FocusBindingProvider>
+    <MenuPressInterceptor enabled={exit !== null} onMenuPress={() => exit?.()} style={styles.fill}>
+      <FocusBindingProvider bind={store.binder}>
+        <PairingView
+          step={step}
+          language={flow.language}
+          onChangeLanguage={flow.changeLanguage}
+          onShowCode={flow.showRelayCode}
+          onManualSetup={flow.manualSetup}
+          onRetryCode={retryCode}
+          onCancel={flow.backToWelcome}
+          onChangeServer={flow.changeServer}
+          onChangeUrl={flow.changeUrl}
+          onSubmitUrl={flow.submitServer}
+          onBack={flow.backToWelcome}
+          onChangeUsername={flow.login.changeUsername}
+          onChangePassword={flow.login.changePassword}
+          onSubmitLogin={flow.login.submit}
+          onUseCode={flow.showServerCode}
+          onLoginBack={flow.backToServer}
+          onServerCodeBack={flow.backToLogin}
+        />
+      </FocusBindingProvider>
+    </MenuPressInterceptor>
   );
 }
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+});
