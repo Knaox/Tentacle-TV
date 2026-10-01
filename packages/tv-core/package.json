@@ -12,7 +12,8 @@
     "./hero": "./src/hero/index.ts",
     "./player": "./src/player/index.ts",
     "./search": "./src/search/index.ts",
-    "./reco": "./src/reco/index.ts"
+    "./reco": "./src/reco/index.ts",
+    "./session": "./src/session/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
