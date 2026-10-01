@@ -34,10 +34,10 @@ const ICON: Record<TroubleCause, IconName> = {
 /** Les pannes d'un serveur : leur reprise dit qu'il répond de nouveau. */
 const OUTAGES = new Set<TroubleCause>(["media", "tentacle", "network"]);
 
-/** « 3.1 », « 18 » — des mégabits par seconde, comme le plafond automatique. */
+/** « 3.1 », « 8 », « 18 » — des mégabits par seconde, une décimale sous 10 seulement si elle dit quelque chose. */
 export function mbpsLabel(bps: number): string {
   const value = bps / 1e6;
-  return value >= 10 ? String(Math.round(value)) : value.toFixed(1);
+  return String(value >= 10 ? Math.round(value) : Math.round(value * 10) / 10);
 }
 
 /** Le réseau MESURÉ trop lent, chiffres à l'appui (la règle les donne toujours). */
