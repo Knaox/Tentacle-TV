@@ -714,14 +714,16 @@ le comportement historique, celui du lecteur d'Apple :
 |---|---|---|
 | Appui ←/→ | saut de ±10 s, la lecture continue, la pastille cumule (+10, +20…) | le curseur bouge de 10 s |
 | Maintien ←/→ | le défilement s'ouvre aussitôt (0,5 s) et accélère, ×1 → ×2 → ×4 → ×8 (une marche par seconde), jusqu'au relâcher | idem, depuis le curseur |
-| Glisser sur le pavé | le doigt EMPORTE le curseur (en lecture comme en pause, habillage visible ou non) : fin s'il est lent, large s'il est vif | idem ; doigt levé, le défilement reste ouvert |
-| Simple toucher | réveille l'habillage (pas celui qui accompagne un clic) | — |
+| Glisser sur le pavé | le doigt EMPORTE le curseur (en lecture comme en pause) : fin s'il est lent, plus large s'il est vif, plafonné ; habillage CACHÉ, seulement après 600 ms de contact | idem, dès le premier pas ; doigt levé, la lecture repart à la cible au bout d'un décompte de 3 s |
+| Simple toucher | réveille l'habillage (pas celui qui accompagne un clic) | relance le décompte |
 | OK, ▶︎❙❙ | — | lit depuis la position visée |
 | Menu | — | revient où l'on était, en pause si on y était |
 
 Habillage visible, les flèches parcourent ses boutons ; le pavé, lui, défile
 (les panneaux — épisodes, pistes, fin — le gardent pour leurs listes).
-L'inactivité (7 s) annule toujours un défilement oublié.
+L'inactivité (7 s) annule un défilement oublié — décomptée à l'écran pendant
+ses 3 dernières secondes (« Avance rapide au pavé — plus douce, plus sûre »,
+plus bas).
 
 - **La vue** (`ScrubOverlay`) : la vidéo reste figée où l'on était ; la frise
   est à sa place de l'habillage ; au-dessus du curseur visé, qui le suit, une
@@ -737,10 +739,11 @@ L'inactivité (7 s) annule toujours un défilement oublié.
   focus.
 - **Le pavé** (`useScrubGestures.ios.ts`) : pan au compteur
   (`lib/tvPanGesture.ts`), zone morte de 60 pts horizontaux, gain en secondes
-  par point selon la vitesse du doigt (`scrubGainFor`) — à reprendre à la
-  Siri Remote réelle, le simulateur ne glisse pas (mesures faites par des
-  pans injectés dans le runtime). Un pan annulé par tvOS n'émet aucune fin :
-  450 ms de silence le closent.
+  par point selon la vitesse du doigt (`scrubGainFor`) — réglages dans
+  `hooks/scrubTouchTuning.ts`, à reprendre à la Siri Remote réelle, le
+  simulateur ne glisse pas (mesures faites par des pans injectés dans le
+  runtime). Un pan annulé par tvOS n'émet aucune fin : 450 ms de silence le
+  closent ; un doigt resté posé qui repart reprend un geste.
 - **La pilule de saut** (« Passer l'intro / le résumé / l'aperçu », « Aller à
   l'épisode suivant ») : habillage visible et focus dans l'îlot, HAUT et
   GAUCHE mènent à Retour, BAS à lecture/pause (`playerFocusContainers`).
@@ -755,7 +758,69 @@ L'inactivité (7 s) annule toujours un défilement oublié.
 
 Mesuré au simulateur, dans l'app réelle : maintien de 2,5 s → +19:00 sur un
 épisode de 51 min (tics ×1, ×2, ×4), arrêt net au relâcher ; glisser lent de
-150 pts → −60 s, vif de 500 pts → +12 min.
+150 pts → −60 s, vif de 500 pts → +12 min (gains d'avant le 2026-10-02 :
+« avance beaucoup trop », retour de l'essai sur l'Apple TV).
+
+### Avance rapide au pavé — plus douce, plus sûre (Apple TV)
+
+Branche du lot du 2026-10-01 soir (retours de l'essai sur l'Apple TV) :
+l'avance au pavé allait beaucoup trop loin, un frôlement déplaçait la
+lecture, et l'on ne savait pas quand le défilement se fermerait.
+
+- **Les gains, en largeurs de pavé** (`hooks/scrubTouchTuning.ts`, le seul
+  endroit à retoucher) : le pan de tvOS compte depuis le centre et borne la
+  translation à ±1920 points — toute la largeur du pavé ≈ 1920 points
+  (`PAD_WIDTH_PT`). Glisser LENT de toute la largeur (≤ 1 largeur/s) :
+  1 min 30 (`SLOW_FULL_SWIPE_SECONDS`, 21 points par seconde de vidéo : la
+  précision à la seconde) ; VIF (≥ 4 largeurs/s) : 6 min, le plafond
+  (`FAST_FULL_SWIPE_SECONDS`) ; entre les deux, une montée douce. Plus de
+  dépendance à la durée. Avant : 16 min (lent) et 65 min (vif) pour un
+  glisser complet sur un épisode de 51 min.
+- **Habillage CACHÉ : 600 ms de contact** (`HIDDEN_ENGAGE_HOLD_MS`) avant
+  qu'un glisser défile, comptées depuis le début du glisser (tvOS ne signale
+  pas un doigt posé immobile), sans rattraper la course d'avant ni
+  d'exception pour un geste franc ; un toucher plus bref réveille
+  l'habillage. Habillage AFFICHÉ (ou pause) : inchangé — 60 points, 180 ms ou
+  geste franc. Défilement déjà ouvert : le doigt reprend dès 12 points
+  (`canEngage`, régime lu par `readTouchMode`).
+- **Le décompte** (`hooks/scrubCountdown.ts`, pur ; `useScrubCountdown`) :
+  - glisser au pavé, ENTRÉ EN LECTURE : doigt levé ou immobile 450 ms, la
+    lecture repart à la position VISÉE au bout de 3 s
+    (`RESUME_COUNTDOWN_MS`) — « ▶ Lecture dans 3 s ». Doigt reposé ou
+    maintien : il attend ; tout autre geste le relance ; cible inchangée :
+    reprise sans seek. OK lit tout de suite, Retour annule ;
+  - partout ailleurs (flèches, maintien, bouton, pavé ENTRÉ EN PAUSE) :
+    l'abandon de la machine à 7 s, inchangé, dit pendant ses 3 dernières
+    secondes — « Reprise à 12:34 dans 3 s » (entré en lecture), « Retour à
+    12:34 dans 3 s » (en pause). La machine de tv-core ne change pas : ses
+    réarmements sont rapportés au décompte au même instant
+    (`reportingActivity`). Seul le pavé arme la reprise : Android TV (sans
+    pavé) et la LG gardent leur comportement.
+- **La vue** (`ScrubCountdown`) : pilule de verre « strong » au bas de la
+  vignette visée, juste au-dessus du temps et de l'écart (sans vignette :
+  au-dessus du temps), hors du flux de la bulle ; barre au dégradé de la
+  marque qui se vide en `transform`, posée à la seconde en mouvement réduit.
+  Libellé blanc à 5,3:1 sur la neige d'Interstellar (3,6:1 en « regular »).
+  Clés `player:scrubPlayIn`, `scrubResumeAtIn`, `scrubReturnAtIn`.
+- **Au banc** : `lecteur/decompte-*` (planches, FR/EN) ; `lecteur-vivant/
+  lecture|pause` — les VRAIS contrôles sur une horloge factice, pilotés par
+  CDP (`__livePan`, `__liveKey`, `__live()`, `__liveLog`). Injecter depuis un
+  minuteur du runtime (une évaluation CDP directe passe hors de la boucle de
+  RN : les rendus que React 19 range en microtâche n'arrivent pas) ; pour
+  Retour, émettre `back` (`menu` dépile la scène du banc).
+
+Éprouvé au banc (pans et touches injectés) : frôlement de 300 ms habillage
+caché → rien ne défile, l'habillage se réveille ; glisser lent de 1,6 s →
+engage à 0,6 s, +24,5 s, « Lecture dans 3, 2, 1 s », seek à la cible ;
+habillage affiché → engage à 0,3 s, OK lit aussitôt ; Retour → annule, aucun
+seek ; en pause → aucune reprise, « Retour à … dans 3 s » puis abandon en
+pause ; maintien 2 s (+16:30) puis relâché → « Reprise à … » puis retour à
+l'origine ; doigt reposé → décompte caché, puis 3 s entières.
+
+À essayer sur l'Apple TV (l'utilisateur) : la sensation des gains (lent,
+vif), les 600 ms habillage caché (frôlement, télécommande ramassée, glisser
+voulu), le décompte et sa lisibilité ; retoucher `scrubTouchTuning.ts` si
+besoin.
 
 ## Le lecteur — quitter et reprendre (Apple TV, Android TV)
 
