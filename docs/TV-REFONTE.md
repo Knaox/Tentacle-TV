@@ -994,6 +994,122 @@ Reste : Android TV — logique commune (reprise seule, fiche du lecteur,
 producteur sans objet), rien d'éprouvé ; son habillage garde son indicateur
 (pas d'outil).
 
+## Le lecteur natif — AVPlayer sans PrismCore (Apple TV)
+
+Branche `refonte/tv-lecteur-natif` (2026-10-01). Demande de l'utilisateur :
+avant son essai sur l'Apple TV, vérifier que le lecteur NATIF marche de bout
+en bout — AVPlayer en lecture directe d'un fichier qu'il lit tel quel, et
+AVPlayer sur le HLS préparé par Jellyfin (transcodage ou remux du serveur).
+Banc : clone « Tentacle TV — natif (Claude) », compte Knaoxtest par jeton
+d'appareil, Metro et relais À MOI (devant le backend de dev et devant le
+Jellyfin partagé, jamais les vrais services coupés), CDP Hermes et agent
+XCUITest. Jellyfin réel : 12.1.0.
+
+| Parcours (film ET épisode) | Verdict |
+|---|---|
+| 1. Démarrage depuis la fiche, « Reprendre », la carte 16:9 — position, langues préférées | OK ; image en 1,6 s depuis une reprise (MOV HEVC 1080p) |
+| … un MP4 HEVC étiqueté `hev1` (« On l'appelait Robin des Bois ») | CORRIGÉ — image NOIRE, son seul, aucune erreur ; passe par PrismCore |
+| 2. Avance rapide : ±10 s, maintien, glisser, vignettes, OK, Menu, saut hors du tampon | OK ; saut hors tampon : image en 1,4 s (directe) |
+| 3. Pistes audio et sous-titres en cours de lecture (texte en surimpression), croix des pistes | OK |
+| 4. Passage d'intro et pilule, épisode suivant, affiche de fin et sa croix | OK |
+| 5. Accueil puis retour, centre de contrôle | OK |
+| … app tuée puis relancée | CORRIGÉ — l'écran d'ouverture restait sans fin ; relance en arrière quand Jellyfin perdait l'arrêt d'arrière-plan |
+| 6. Rapports à Jellyfin : début, progression, arrêt, position vue ailleurs | CORRIGÉ — la fiche montrait « Lecture » ou repartait à 0:00 juste après la sortie (écritures de 12.1 en retard ou perdues) ; 400 du proxy sur « vu et à reprendre » |
+| … une ouverture ratée ou quittée avant la première image | CORRIGÉ — elle effaçait la reprise (Lucifer S4E1 : 35:39 perdues) |
+| … la file des rapports, serveur coupé | OK |
+| 7. Flux refusé à l'ouverture | CORRIGÉ — chargement sans fin ; maintenant l'échec en 30 s, avec Réessayer |
+| … erreur audio passagère, coupure du serveur en lecture (message-outil, reprise seule) | OK |
+| 8. Transcodage (AV1) : « Baisser la qualité », reprise après coupure, sous-titres incrustés (PGS de Shelter, `SubtitleMethod=Encode`) | OK |
+| HDR, Dolby Vision, Atmos, passthrough AC3/EAC3 | APPAREIL SEULEMENT |
+
+Correctifs, dans l'ordre de la branche :
+- **`hev1` → PrismCore** : `prismEligible` envoie à PrismCore tout HEVC dont
+  l'étiquette n'est pas `hvc1`/`dvh1` (`hevcTagUnreadable`, shared) ; le
+  profil tvOS exige l'étiquette (`avPlayerHevcTagCondition`, `IsRequired:
+  true` — au pire un remux du serveur, vidéo copiée, jamais un réencodage).
+- **La règle d'arrêt partagée** (web, bureau, mobile, TV — le web part avec
+  le serveur) : `projectStop` calcule ce que Jellyfin écrira (MinResumePct 5,
+  MaxResumePct lu, 300 s minimum) ; la fiche et les listes le montrent dès la
+  sortie ; la garde des arrêts récents (2 min) re-patche toute relecture PLUS
+  ANCIENNE que l'arrêt — LA DATE GAGNE : une lecture commencée depuis, ici ou
+  ailleurs, fait tomber la garde ; une seule réparation à +20 s
+  (lecture-modification-écriture), seulement si le désaccord tient, que sa
+  date reste antérieure et que le titre ne joue pas. Défendu : entre 10 % et
+  MaxResumePct − 5 points, titre ≥ 10 min.
+- **Relance à froid** : le marqueur porte la position de l'arrêt ; adoptée si
+  Jellyfin dit plus ancien (mesuré : arrêt d'arrière-plan accusé à 106 s,
+  reprise restée à 89,8 s).
+- **Avant la première image**, rien ne s'écrit à 0 : début et arrêt partent
+  de la position d'ouverture.
+- **Flux refusé** : l'ouverture ratée tombe en échec (`openFailed`), avec
+  Réessayer focalisé ; Réessayer relance le flux.
+
+### Jellyfin 12.1 et nos arrêts (mesuré)
+
+L'arrêt est accusé (2xx), puis écrit 4 à 60 s plus tard — ou jamais :
+l'état final est alors l'instantané du DERNIER début. Cas relevés : Robin
+2411 s, arrêt d'arrière-plan 106 s (resté à 89,8), Lucifer S1E13 680 s
+(réparé par la garde, sans simulation), Shelter 640 s (écrit une minute plus
+tard ; entre-temps la relecture disait 0:18 — sous la bande défendue, à
+9,9 %). Limite assumée : un titre absent d'une réponse (« Reprendre » au
+premier visionnage, rien encore écrit) n'y est pas inséré.
+
+### Étiquettes HEVC sous 12.1 (mesuré)
+
+Un 12.1.0 neuf ne renseigne plus `CodecTag` (session hev1). Le Jellyfin réel
+le garde pour les fichiers scannés avant la migration : sur 7 857 titres
+(Knaoxtest), 7 813 MKV — PrismCore de toute façon, par le conteneur —,
+28 MP4/MOV dont 16 HEVC : 14 `hvc1`, 1 `hev1`, 1 sans étiquette (Undead
+Unluck S0E1, un VRAI `hvc1` lu dans `stsd`). Sans étiquette, un hvc1 part
+donc en PrismCore. A/B sur Lucifer S1E1 (MOV HEVC 10 bits `hvc1`, reprise à
+1251 s puis saut à 2000 s, deux passes) :
+
+| | Directe | PrismCore |
+|---|---|---|
+| Première image | 1615 / 1645 ms | 1937 / 1638 ms |
+| Image après le saut | 1418 / 1378 ms | 1503 / 1643 ms |
+| CPU de l'app (simulateur, décodage logiciel) | 37,6 / 36,8 % | 34,1 / 35,1 % |
+| Disque (tmp/PrismCore-*) | 0 | 59 Mio au plus, vidé à la sortie (plafond 1 Gio) |
+| Lu chez Jellyfin en 95 s | 95,5 / 93,2 Mio | 107,7 / 102,2 Mio |
+| Avance d'AVPlayer en fin d'essai | ~75 s | ~13 s (le reste sur disque) |
+
+Verdict : acceptable, pas de parade. Piste, le jour où une actualisation
+complète videra la colonne : lire l'étiquette dans `stsd` par requêtes de
+plage — 3 à 5 requêtes, moov en fin de fichier compris (sauter le mdat, lire
+les premiers Ko du moov) ; au moins trois allers-retours de plus à chaque
+ouverture sans étiquette.
+
+### Constats non corrigés
+
+- Changer de piste PENDANT un saut encore en vol relance le flux à la
+  position d'AVANT le saut (`restartStream` lit `positionRef`, pas la cible
+  du saut en attente) — fenêtre de 1 à 3 s en transcodage.
+- Reprendre la qualité déjà choisie recharge le flux pour rien.
+- `getStreamUrl` envoie le DeviceId de la graine, pas l'identité adoptée : le
+  transcodage n'apparaît pas sous la session de la TV au tableau de bord
+  (l'arrêt le tue quand même, par PlaySessionId).
+- Après une relance du flux, `hasStarted` vaut un instant vrai à 0:00 avant
+  le saut à la reprise.
+- Une coupure qui ne fait rien échouer n'affiche aucun bandeau ; le socket
+  rouvre après ~30 s de recul, la file attend jusque-là.
+- Avertissement de dev « Missing queryFn for ['watchlist'] » (invalidation
+  `refetchType: "all"` des clés d'arrêt).
+
+### Essais sur l'Apple TV (tâche d'appareil)
+
+1. HDR10, Dolby Vision (badge, critères d'affichage) et Atmos, en directe et
+   par le serveur.
+2. Passthrough : Cauchemar en cuisine S10E1 (AC3), S16E4 (EAC3).
+3. Robin des Bois (`hev1`) : image par PrismCore, et le CPU de PrismCore sur
+   un `hvc1` sans étiquette (Undead Unluck S0E1) — décodage matériel, seul le
+   remux compte.
+4. Vraie suspension, veille, app tuée par tvOS : relance à froid au lecteur
+   en pause, à la position (marqueur).
+5. Glisser sur le pavé tactile : gains réels.
+6. 4K : tampon de 30 s et mémoire.
+7. En production : arrêts perdus par Jellyfin 12.1 — la fiche, puis
+   `[reprise] arrêt à N s réécrit chez Jellyfin` dans Metro.
+
 ## Le jumelage par identifiants (Apple TV)
 
 Branche `refonte/tv-jumelage-manuel` (2026-10-01). Constat : ni l'app publiée
