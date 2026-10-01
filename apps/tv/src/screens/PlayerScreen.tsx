@@ -235,7 +235,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const { handleError } = useTVErrorHandler({
     forceTranscode: p.forceTranscode, captureReloadTicks: p.captureReloadTicks,
     setVideoError, setForceTranscode: p.setForceTranscode, onMasterRejected: p.onMasterRejected,
-    bumpReloadNonce: () => p.setReloadNonce((n) => n + 1), setIsLoading,
+    bumpReloadNonce: () => p.setReloadNonce((n) => n + 1), setIsLoading, recovery: { s, p },
   });
 
   const { audioTracksList, subtitleTracksList } = useTVTrackLists(p.streams, p.prism?.audioTracks);

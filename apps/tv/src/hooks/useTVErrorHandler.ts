@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useTVDirectStreamRecovery } from "./useTVDirectStreamRecovery";
+import { isFormatError, usePlaybackRecovery, type RecoverySources } from "./usePlaybackRecovery";
 import { plog } from "../utils/playerDiag";
 
 /**
@@ -9,6 +10,11 @@ import { plog } from "../utils/playerDiag";
  * redemande un token frais et recharge (useTVDirectStreamRecovery) ; un master
  * PrismCore refusé par AVPlayer se rejoue en forme muxée (onMasterRejected) ;
  * toute autre erreur (ou un codec déjà en transcode) est surfacée.
+ *
+ * AVANT tout cela, une erreur survenue après le démarrage est confiée à la
+ * reprise (`usePlaybackRecovery`, montée ici) : un serveur coupé n'est pas un
+ * refus de format — elle attend son retour et relance le flux sous la même
+ * forme, au lieu de la forme muxée puis du transcodage forcé.
  */
 export function useTVErrorHandler(args: {
   forceTranscode: boolean;
@@ -21,13 +27,17 @@ export function useTVErrorHandler(args: {
   setIsLoading?: (v: boolean) => void;
   /** tvOS/PrismCore : AVPlayer a refusé le master (`PRISM_MASTER_REJECTED`). */
   onMasterRejected?: () => void;
+  /** Ce que la reprise lit du lecteur (état média et pipeline de flux). */
+  recovery?: RecoverySources;
 }) {
   const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, bumpReloadNonce, setIsLoading, onMasterRejected } = args;
+  const { onSourceLost } = usePlaybackRecovery(args.recovery);
   const { tryDirectAuthRecovery } = useTVDirectStreamRecovery({
     captureReloadTicks, bumpReloadNonce, setVideoError, setIsLoading,
   });
 
   const handleError = useCallback((error: string) => {
+    if (onSourceLost(error)) return;
     if (error === "PRISM_MASTER_REJECTED") {
       plog("err", "master PrismCore refusé par AVPlayer → forme muxée");
       if (onMasterRejected) { onMasterRejected(); return; }
@@ -39,9 +49,7 @@ export function useTVErrorHandler(args: {
     // 401/403 sur le stream en DIRECT streaming : token Jellyfin mort →
     // redemande d'un token frais + reload en direct (jamais de bascule proxy).
     if (tryDirectAuthRecovery(error)) { plog("err", "401/403 direct → refresh token + reload"); return; }
-    const isCodecError = error.includes("DECODING_FAILED") || error.includes("EXCEEDS_CAPABILITIES")
-      || error.includes("codec") || error.includes("Could not open");
-    if (isCodecError && !forceTranscode) {
+    if (isFormatError(error) && !forceTranscode) {
       // Bascule transcode en cours de lecture : reprendre à la position
       // courante (avant : repartait à zéro).
       plog("err", `erreur codec → bascule transcode forcé (${error})`);
@@ -52,7 +60,7 @@ export function useTVErrorHandler(args: {
     }
     plog("err", `erreur SURFACÉE à l'écran : ${error}`);
     setVideoError(error);
-  }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery, onMasterRejected]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery, onMasterRejected, onSourceLost]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleError };
 }
