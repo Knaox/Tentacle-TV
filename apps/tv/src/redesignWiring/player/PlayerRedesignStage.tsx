@@ -37,7 +37,7 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
   // Le fond : focalisable seulement quand l'habillage est caché et que rien
   // ne le recouvre — OK ou une direction le rallume (`TVPlayerView`).
   const overlayShown = controls.overlayVisible || (props.paused && !controls.scrubbing);
-  const panelOpen = props.showSettings || props.autoPlayActive || !!props.showEpisodes;
+  const panelOpen = props.showSettings || props.autoPlayActive || !!props.showEpisodes || chrome.troubleCovers;
   const backgroundFocusable = !chrome.loading && !overlayShown && !panelOpen;
   // Un bouton de saut monté garde le focus, sinon c'est le fond qui le reprend.
   const skipActive = props.overlay.kind === "skip" || props.overlay.kind === "nextButton";

@@ -40,6 +40,11 @@ export const colors = {
   warning: C.status.warning.base,
   error: C.status.error.base,
   errorFg: C.status.error.fg,
+  /** Pour une icône ou un fond d'état sur la scène sombre (message-outil du lecteur). */
+  warningFg: C.status.warning.fg,
+  warningBg: C.status.warning.bg,
+  successFg: C.status.success.fg,
+  successBg: C.status.success.bg,
   accent: TV_ACCENT.base,
   accentLight: TV_ACCENT.light,
   accentDeep: TV_ACCENT.deep,

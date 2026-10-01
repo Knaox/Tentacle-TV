@@ -14,6 +14,8 @@ import { OsdControls, type OsdControlsProps } from "./OsdControls";
 import { OsdTimeline, TIMELINE_TOP } from "./OsdTimeline";
 import { OsdTopBar } from "./OsdTopBar";
 import { BufferingBadge, ErrorBanner, QualityNotice } from "./PlaybackStatus";
+import { PlaybackTrouble } from "./PlaybackTrouble";
+import type { PlaybackTroubleModel, TroubleActionKey } from "./playbackTroubleTypes";
 import { PlayerLoading } from "./PlayerLoading";
 import type {
   EndScreenModel, FrameImage, PlayerLabels, PlayerMedia, PlayerPanel, PlayerPhase, PlayerTimeline, ScrubModel,
@@ -96,6 +98,11 @@ export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport
   onSelectSubtitle?: (key: string) => void;
   onSelectQuality?: (key: string) => void;
   onClosePanel?: () => void;
+  /** Le message-outil quand un serveur ne répond plus (`PlaybackTrouble`). */
+  trouble?: PlaybackTroubleModel | null;
+  /** Son panneau, activé, tient le focus : l'habillage recule devant lui. */
+  troubleCovers?: boolean;
+  onTroubleAction?: (key: TroubleActionKey) => void;
 }
 
 const SAFE = TV_STAGE.safe;
@@ -105,8 +112,12 @@ const BOTTOM_SCRIM = 540;
 export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChromeViewProps) {
   const { media, labels, phase, timeline, paused, osdVisible, scrub, panel, endScreen, upNext, skip } = props;
   const playing = phase.kind === "playing";
-  // L'habillage recule devant ce qui le recouvre : panneau, défilement, fin.
-  const chrome = playing && osdVisible && !panel && !scrub && !endScreen;
+  // L'habillage recule devant ce qui le recouvre : panneau, défilement, fin,
+  // message-outil activé.
+  const covers = !!props.troubleCovers;
+  const chrome = playing && osdVisible && !panel && !scrub && !endScreen && !covers;
+  const trouble = playing ? props.trouble ?? null : null;
+  const troublePanel = trouble?.mode === "panel";
   const shown = useMotion(chrome, "chrome");
   const dim = useMotion(playing && paused && !scrub && !endScreen, "veil");
   const chromeStyle = useAnimatedStyle(() => ({ opacity: shown.value }));
@@ -150,16 +161,17 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
           </Animated.View>
         </FocusGroup>
       </Animated.View>
-      {props.buffering || props.reloadFrame ? <BufferingBadge /> : null}
+      {(props.buffering || props.reloadFrame) && !troublePanel ? <BufferingBadge /> : null}
+      <PlaybackTrouble model={trouble} onAction={props.onTroubleAction} />
       <Presented value={props.seekFlash && !scrub ? props.seekFlash : null} motion="reveal">
         {(flash, appear) => <SeekFlash forward={flash.forward} label={flash.label} appear={appear} />}
       </Presented>
-      {props.notice && playing ? <QualityNotice text={props.notice} /> : null}
-      {props.error ? <ErrorBanner title={props.error.title} message={props.error.message} /> : null}
-      {skip && playing && !scrub && !panel && !endScreen ? (
+      {props.notice && playing && !trouble ? <QualityNotice text={props.notice} /> : null}
+      {props.error && !troublePanel ? <ErrorBanner title={props.error.title} message={props.error.message} /> : null}
+      {skip && playing && !scrub && !panel && !endScreen && !covers ? (
         <SkipPill model={skip} raised={chrome} dismissLabel={labels.dismiss} onSkip={props.onSkip} onDismiss={props.onDismissSkip} />
       ) : null}
-      {upNext && playing && !scrub && !panel && !endScreen ? (
+      {upNext && playing && !scrub && !panel && !endScreen && !covers ? (
         <UpNextCard model={upNext} labels={labels} onPlayNext={props.onPlayNext} onDismiss={props.onDismissNext} />
       ) : null}
       <Presented value={scrub && playing ? scrub : null} motion="reveal">

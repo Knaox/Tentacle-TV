@@ -16,7 +16,8 @@ import type { FocusStore } from "../focus/focusStore";
  * - la pilule retient le focus entre « Passer » et « Masquer » pendant un
  *   décompte ; quand l'habillage est là, elle en ressort vers lecture/pause
  *   (BAS) et vers Retour (HAUT, GAUCHE) ;
- * - cartes, affiche et panneaux le retiennent tant qu'ils sont ouverts ;
+ * - cartes, affiche, panneaux et message-outil le retiennent tant qu'ils sont
+ *   ouverts ;
  * - l'en-tête des épisodes renvoie toute montée vers Fermer, la bande des
  *   saisons fait entrer par la saison AFFICHÉE.
  *
@@ -147,6 +148,7 @@ export const PLAYER_GROUP_CONTAINERS: Readonly<Record<string, ComponentType<Focu
   "player:skip-island": IslandGroup,
   "upnext:actions": TrapFocusGuide,
   "end:actions": TrapFocusGuide,
+  "trouble:actions": TrapFocusGuide,
   "tracks:panel": TrapFocusGuide,
   "episodes:panel": TrapFocusGuide,
   "episodes:header": EpisodesHeaderGroup,

@@ -15,6 +15,7 @@ import { buildTracksPanel } from "./playerPanelModels";
 import type { PlayerRedesignStageProps } from "./playerStageTypes";
 import { usePlayerChromeActions } from "./usePlayerChromeActions";
 import { usePlayerEpisodesPanel } from "./usePlayerEpisodesPanel";
+import { usePlaybackTrouble } from "./usePlaybackTrouble";
 
 const EMPTY_MEDIA: PlayerMedia = { title: "" };
 
@@ -29,6 +30,8 @@ export interface PlayerChrome {
   view: PlayerChromeViewProps;
   /** Ce que la vue montre — la même règle qu'elle, pour le focus. */
   loading: boolean;
+  /** Le panneau du message-outil, activé, tient le focus : le fond se retire. */
+  troubleCovers: boolean;
   pillShown: boolean;
   upNextShown: boolean;
   endShown: boolean;
@@ -163,8 +166,13 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore):
   // L'habillage : affiché, ou épinglé par la pause hors défilement ; il se tait
   // devant une carte « à suivre » (comme l'actuel), la vue devant le reste.
   const osdVisible = (controls.overlayVisible && !p.autoPlayActive) || (p.paused && !scrubbing);
+  // Le message-outil quand un serveur ne répond plus (cf. usePlaybackTrouble).
+  const trouble = usePlaybackTrouble({
+    t: translate, store, position: p.displayTime, osdVisible, qualityKey: p.qualityKey,
+    qualityPresets: p.qualityPresets, onSelectQuality: actions.onSelectQuality, onBack: actions.onBack,
+  });
   // La même règle que `PlayerChromeView` : ce qui recouvre fait taire le reste.
-  const covered = !playing || !!scrub || !!panel || !!endScreen;
+  const covered = !playing || !!scrub || !!panel || !!endScreen || trouble.covers;
 
   return {
     view: {
@@ -172,7 +180,9 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore):
       media, labels, phase, timeline, transport, paused: p.paused, osdVisible,
       buffering: p.isLoading && p.hasStarted, scrub, seekFlash, skip, upNext, endScreen, panel, reloadFrame,
       notice, error, subtitle: p.subtitleCue ?? null,
+      trouble: trouble.model, troubleCovers: trouble.covers, onTroubleAction: trouble.onAction,
     },
+    troubleCovers: trouble.covers,
     loading: !playing,
     pillShown: skip !== null && !covered,
     upNextShown: upNext !== null && !covered,
