@@ -712,7 +712,9 @@ Automate en 5 étapes, toutes gardées :
 ### 9. Réglages
 
 - Onglets : **Compte** (portrait, nom, serveur, « Changer de serveur » et
-  « Déconnexion » à double appui, texte d'oubli) · **Lecture** (mode du
+  « Déjumeler cet appareil » à double appui — deux déjumelages complets,
+  le premier oublie aussi l'adresse —, légende `tvUnpairCaption`) ·
+  **Lecture** (mode du
   lecteur : Par défaut / Me proposer / Faire tout seul (+ Personnalisé) ;
   Android : décodage tunnelisé, fréquence ; langue de l'interface ;
   préférences par bibliothèque : audio, mode et langue des sous-titres,
@@ -777,7 +779,7 @@ bibliothèque (voir questions).
 
 - **Hors ligne** : plein écran bloquant (pieuvre qui pleure, titre, message,
   Réessayer, « Déjumeler cet appareil »). Déjumeler se fait à DOUBLE appui,
-  comme « Déconnexion » dans les réglages (armé : « Confirmer le
+  comme dans les réglages (armé : « Confirmer le
   déjumelage » et une ligne qui dit la suite), et passe par le déjumelage
   commun (`useUnpairDevice`, origine `offline`) : rien n'attend le réseau.
   Éprouvé au simulateur, serveur coupé : retour au jumelage, plus rien du
@@ -829,7 +831,8 @@ Manquant ou non transmis aujourd'hui (le branchement le demandera) :
 
 - Android : « Adapter la fréquence d'affichage » n'est pas relu au démarrage.
 - Réglages, « Oublier ce jumelage » : le texte (`pairing:tvOublierTexte`) dit
-  que l'application se fermera ; sur la TV, elle rouvre le jumelage.
+  que l'application se fermera ; sur la TV, elle rouvre le jumelage. Réglé
+  sur Apple TV (`tvUnpairCaption`) ; Android TV l'affiche encore.
 - ~~Filtre de plateformes de la TV : le catalogue est chargé sans studios ni
   identifiants TMDB, le filtre ne peut rien trouver.~~ — réglé au branchement
   des bibliothèques (champs complets, pages suivantes vérifiées).
