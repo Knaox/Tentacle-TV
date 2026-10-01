@@ -92,11 +92,11 @@ export function PlayerScreen({ route, navigation }: Props) {
   reportStartRef.current = p.reportStart;
 
   const lifecycle = useTVPlaybackLifecycle({
-    itemId, item, navigation,
+    itemId, item, navigation, restartStream: p.restartStream, localStreamUrl: p.isPrismCore ? streamUrl : null,
     reportStop: p.reportStop, stopPromiseRef: p.lastStopPromiseRef, positionRef, pausedStateRef, reportSeekRef, reportStartRef,
     onBackground: () => setPaused(true),
-    // Retour au premier plan : refocus OSD (le focus natif tvOS meurt au background) — sauf panneau ouvert.
-    onForeground: () => { if (!showSettingsRef.current && !showEpisodesRef.current) bumpOsdFocus(); },
+    // Retour : focus sur Lecture, NOMMÉ (le focus natif tvOS meurt au background) — sauf panneau ouvert.
+    onForeground: () => { if (!showSettingsRef.current && !showEpisodesRef.current) bumpOsdFocus("playpause"); },
   });
 
   // Navigation inter-épisodes (aller à un épisode, transport). Le moteur

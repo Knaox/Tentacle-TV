@@ -15,3 +15,4 @@ export * from "./player";
 export * from "./search";
 export * from "./reco";
 export * from "./session";
+export * from "./playback";

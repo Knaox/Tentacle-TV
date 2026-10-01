@@ -13,7 +13,8 @@
     "./player": "./src/player/index.ts",
     "./search": "./src/search/index.ts",
     "./reco": "./src/reco/index.ts",
-    "./session": "./src/session/index.ts"
+    "./session": "./src/session/index.ts",
+    "./playback": "./src/playback/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

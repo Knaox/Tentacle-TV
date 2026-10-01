@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useRef } from "react";
-import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
+import { useTVPlaybackPresence } from "./useTVPlaybackPresence";
+import type { RestartOptions, RestartOutcome } from "./streamRestart";
 
 /**
  * Centralise les effets lifecycle du PlayerScreen TV :
  *  - rangement de sortie au démontage (règle partagée `useWatchStopInvalidation`)
- *  - écoute AppState (pause + rapport position en arrière-plan)
+ *  - présence de l'app (`useTVPlaybackPresence`) : pause et position à
+ *    l'inactivité, arrêt à la sortie, reprise au retour
  *  - helpers `leavePlayer` et `handleFinished`
  *
  * Les refs `pausedStateRef` et `reportSeekRef` sont fournies par le caller pour
- * que le listener AppState reste stable ([] deps) sans capter de closures.
+ * que l'écouteur de présence reste stable ([] deps) sans capter de closures.
  */
 export function useTVPlaybackLifecycle(args: {
   itemId: string;
@@ -28,7 +30,7 @@ export function useTVPlaybackLifecycle(args: {
   reportSeekRef: React.MutableRefObject<(pos: number, paused: boolean) => void>;
   /** Ré-arme une session Jellyfin au retour au premier plan (POST /Sessions/Playing). */
   reportStartRef: React.MutableRefObject<(pos?: number) => void>;
-  /** Appelé lors d'un passage en arrière-plan pour mettre en pause. */
+  /** Met la lecture en pause quand l'app n'est plus regardée (inactive ou quittée). */
   onBackground?: () => void;
   /** Appelé au RETOUR au premier plan (re-signalé à 0,4/1,5/3 s — après une VRAIE
    *  suspension la scène UIKit se réattache lentement, un seul tir part trop tôt) :
@@ -37,16 +39,16 @@ export function useTVPlaybackLifecycle(args: {
    *  aucune transition ne re-déclenche le refocus) → les appuis OK tombent dans
    *  le vide et la lecture est impossible à relancer. Doit être idempotent. */
   onForeground?: () => void;
+  /** La relance du flux (`usePlayerStreamPipeline`) — au retour, si le flux local est mort. */
+  restartStream: (opts?: RestartOptions) => Promise<RestartOutcome>;
+  /** URL du flux LOCAL en cours (PrismCore), sinon null. */
+  localStreamUrl: string | null;
 }) {
   const {
     itemId, item, navigation, reportStop, stopPromiseRef, positionRef,
     pausedStateRef, reportSeekRef, reportStartRef, onBackground, onForeground,
   } = args;
   const seriesId = item?.SeriesId;
-  const onBackgroundRef = useRef(onBackground);
-  onBackgroundRef.current = onBackground;
-  const onForegroundRef = useRef(onForeground);
-  onForegroundRef.current = onForeground;
   const queryClient = useQueryClient();
   const runStopInvalidation = useWatchStopInvalidation();
 
@@ -108,25 +110,11 @@ export function useTVPlaybackLifecycle(args: {
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
   }, [itemId, stopPromiseRef, positionRef, queryClient]);
 
-  // AppState : sortie via bouton Home de la télécommande (l'app passe en
-  // arrière-plan sans BACK). On COMMITTE la position avec un vrai Stopped — un
-  // simple Progress laisse une session « playing » zombie côté Jellyfin et, si
-  // Android gèle/tue le process en arrière-plan, la position de reprise n'est
-  // jamais finalisée. Au retour, on ré-arme une session pour que la reprise de
-  // lecture continue à remonter la progression (onLoad ne refire pas).
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state === "background" || state === "inactive") {
-        onBackgroundRef.current?.();
-        void reportStopRef.current();
-      } else if (state === "active") {
-        reportStartRef.current(positionRef.current);
-        reportSeekRef.current(positionRef.current, pausedStateRef.current);
-        [400, 1500, 3000].forEach((d) => setTimeout(() => onForegroundRef.current?.(), d));
-      }
-    });
-    return () => sub.remove();
-  }, [positionRef, pausedStateRef, reportSeekRef, reportStartRef]);
+  useTVPlaybackPresence({
+    positionRef, pausedStateRef, reportSeekRef, reportStartRef, reportStopRef,
+    onPause: onBackground, onFocusPlay: onForeground,
+    restartStream: args.restartStream, localStreamUrl: args.localStreamUrl,
+  });
 
   return { leavePlayer, handleFinished };
 }

@@ -147,3 +147,23 @@ export async function fallbackMuxedPrismCore(gen: number): Promise<PrismStart | 
     return null;
   }
 }
+
+/**
+ * Le serveur local d'une session répond-il encore ? Une suspension de l'app
+ * peut le tuer (le système récupère les sockets d'écoute d'une app suspendue) ;
+ * AVPlayer ne le découvrirait qu'au segment suivant, en pleine reprise. Une
+ * requête de la playlist, bornée : sur le bouclage, une réponse saine arrive
+ * en quelques millisecondes.
+ */
+export async function prismServing(url: string, timeoutMs = 600): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url.replace(/#.*$/, ""), { signal: controller.signal });
+    return res.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
