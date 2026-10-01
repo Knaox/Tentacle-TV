@@ -23,6 +23,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 11. Jumelage par identifiants (Apple TV) | Fait (2026-10-01) : après le serveur saisi à la main, l'identifiant et le mot de passe — le chemin des relecteurs d'App Store Connect ; Menu recule d'une étape — « Le jumelage par identifiants (Apple TV) » ci-dessous. |
 | 12. Le Retour (Apple TV) | Fait (2026-10-02) : une pile de couches, menu > surimpression > page > rail > sortie ; plus aucun écran qui paraît quand un menu se ferme ; le rail se referme sur la page choisie — « Le Retour (Apple TV) » ci-dessous. |
 | 13. Rail compact (Apple TV) | Fait (2026-10-02) : le bloc des pages épouse ses entrées et se centre, le profil reste ancré en bas avec la place de l'élément des demandes, largeur ouverte sur l'intitulé le plus long — « Le rail compact (Apple TV) » ci-dessous. |
+| 14. Demandes en cours (Apple TV) | Faites (2026-10-02) : l'aperçu des demandes Vigie dans le bloc du profil, la fenêtre en lecture seule, le camembert — rien sans Vigie à jour et un compte qui a le droit de demander — « Les demandes en cours (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -1490,6 +1491,67 @@ Pièges payés :
   `Pods/hermes-engine`. Extraire `hermes-ios-*-debug.tar.gz` à la main dans
   `Pods/hermes-engine` et écrire `Debug` dans
   `Pods/.last_build_configuration`.
+
+## Les demandes en cours (Apple TV)
+
+Branche `claude/epic-borg-c14399` (2026-10-02). Demande de l'utilisateur : voir
+ses demandes Vigie en cours, d'un coup d'œil, en lecture seule.
+
+- **Le contrat** `titles` (manifeste du plugin, relayé par
+  `/api/plugins/active`, `pluginTitlesMeta.ts`) gagne deux routes facultatives :
+  `access` → `{ request }` (le compte peut-il demander) et `mine?lang=` → les
+  titres attendus, un par titre, dans un des quatre états `pending · arriving
+  (percent) · importing · blocked`. Seul l'état voyage : les mots sont ceux du
+  cœur (espace i18n `requests` — En attente · En cours + % · Mise en
+  bibliothèque · Bloquée, jamais « téléchargement »). Lecteurs validés champ
+  par champ : `search/pluginTitlesMine.ts` (shared). Côté Vigie :
+  `server/titles/my-titles.ts`, mêmes verdicts que le hub (Sonarr et Radarr
+  d'abord), cache 10 s invalidé par une demande.
+- **La garde** (`redesignWiring/vigie/useVigieGate`, règle
+  `titlesFeaturesOpen` de tv-core) : tout ou rien — `titles` et
+  `titles.access` déclarés, `request: true`. Serveur ou Vigie d'avant ce
+  contrat, Vigie éteint, compte bloqué (le compte de démonstration de la revue
+  Apple) : aucune trace, aucune requête des demandes. Exception assumée,
+  écrite dans CLAUDE.md : la seule fonction de Vigie intégrée au cœur.
+- **L'aperçu** (`redesign/requests/RequestsDock`) : l'accessoire du rail
+  (contrat de la tâche 9), dans le bloc du profil, au-dessus de lui ; clé
+  `nav:Requests`. Une affiche, ou deux-trois en éventail avec leur nombre au
+  dégradé ; sans demande, le bac vide, discret. Toujours là quand la garde
+  est ouverte ; verrouillé pendant un déplacement du rail.
+- **La fenêtre** (`RequestsPanelView` dans une Modal, `RequestsPanel`) : le
+  grand panneau de l'appui maintenu, 1 320 de large. La croix en entrée (seule
+  action, garde anti-clic fantôme) ; Menu ferme (couche « menu » de la pile du
+  Retour) ; les lignes ne sont focalisables que si la liste dépasse quatre
+  lignes, pour la faire défiler. Centrée à l'ouverture, elle garde ensuite son
+  haut : une demande arrivée s'efface, les suivantes remontent en glissant.
+- **Le camembert** (`redesign/brand/ProgressPie`) : l'avancement façon App
+  Store, statique, repris par « Demander » (tâche 7).
+- **Le rythme** (`MY_TITLES_REFRESH`, tv-core) : fenêtre ouverte, relue en
+  l'ouvrant si elle date de plus de 10 s, puis toutes les 30 s ; sinon toutes
+  les 5 min, par l'écran de devant seulement ; au retour au premier plan si la
+  lecture a plus d'une minute ; rien en arrière-plan. Une demande faite sur la
+  TV patche `myTitlesQueryKey` (`withMyTitle`) : l'aperçu la montre aussitôt.
+- **Éprouvé** dans l'app réelle (simulateur, faux backend et faux Vigie à soi,
+  agent XCUITest) : BAS depuis la dernière entrée du rail → l'aperçu → le
+  profil → Rechercher, HAUT à l'inverse ; OK ouvre, entrée sur la croix, BAS
+  défile une longue liste, HAUT remonte, OK et Menu ferment et rendent le
+  focus à l'aperçu ; garde ouverte (au démarrage : une liste des extensions,
+  un droit, une liste des demandes) ; Vigie d'avant le contrat, compte
+  bloqué, Vigie absent, Vigie éteint → ni aperçu ni requête des demandes ;
+  0 requête en 75 s au repos et en arrière-plan, 1 au retour, 30 s pile
+  fenêtre ouverte ; patch de « Demander » → l'aperçu à jour aussitôt ; sortie
+  d'une demande arrivée. Au banc : 16 scènes, `bench:ui planche demandes
+  --focus --lang=fr,en`.
+- **Livraison** : le serveur (relais de `access` et `mine`) ET Vigie (ses deux
+  routes) doivent être à jour, sinon la TV ne montre rien — voulu.
+
+### Essais sur l'Apple TV (tâche de l'utilisateur)
+
+1. Un compte avec des demandes de chaque état : l'aperçu replié et ouvert, la
+   fenêtre, le camembert et les pour cent lisibles à trois mètres.
+2. Fenêtre ouverte, un titre qui arrive : il sort de la liste dans les 30 s.
+3. Compte bloqué dans Vigie, ou Vigie désactivé : rien dans le rail.
+4. Menu et la croix ferment ; « gauche, gauche » mène toujours au profil.
 
 ---
 
