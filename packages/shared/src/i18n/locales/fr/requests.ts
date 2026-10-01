@@ -17,4 +17,15 @@ export default {
   // N'avance plus pour l'instant — jamais un échec.
   stateBlocked: "Bloquée",
   percent: "{{percent}} %",
+  // La liste des demandes en cours (TV) : l'entrée du rail et sa fenêtre.
+  dockLabel: "Mes demandes",
+  dockEmpty: "Rien en file d'attente",
+  count_one: "{{count}} demande",
+  count_other: "{{count}} demandes",
+  empty: "Vous n'avez rien en file d'attente.",
+  loading: "Chargement…",
+  // « Saisons 1–4 et 6 » : les morceaux viennent de `seasonRuns`.
+  seasons_one: "Saison {{list}}",
+  seasons_other: "Saisons {{list}}",
+  and: "et",
 };

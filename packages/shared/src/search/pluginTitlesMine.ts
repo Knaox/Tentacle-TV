@@ -157,3 +157,21 @@ export function readMyTitles(raw: unknown): MyTitle[] {
 export function withMyTitle(list: readonly MyTitle[], title: MyTitle): MyTitle[] {
   return [title, ...list.filter((t) => t.key !== title.key)].slice(0, MAX_MY_TITLES);
 }
+
+/**
+ * Les saisons demandées, en morceaux lisibles — trois de suite ou plus font un
+ * intervalle : [1, 2, 3, 4, 6] → « 1–4 », « 6 ». À l'appelant de les joindre
+ * dans sa langue (« Saisons 1–4 et 6 »).
+ */
+export function seasonRuns(seasons: readonly number[]): string[] {
+  const sorted = [...new Set(seasons)].sort((a, b) => a - b);
+  const out: string[] = [];
+  for (let i = 0; i < sorted.length; ) {
+    let j = i;
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j++;
+    if (j - i >= 2) out.push(`${sorted[i]}–${sorted[j]}`);
+    else for (let k = i; k <= j; k++) out.push(String(sorted[k]));
+    i = j + 1;
+  }
+  return out;
+}

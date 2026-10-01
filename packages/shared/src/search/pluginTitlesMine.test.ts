@@ -8,6 +8,7 @@ import {
   readMyTitle,
   readMyTitles,
   readTitlesAccess,
+  seasonRuns,
   titlesAccessUrl,
   withMyTitle,
 } from "./pluginTitlesMine";
@@ -126,5 +127,16 @@ describe("un titre qu'on vient de demander", () => {
     expect(withMyTitle([got], matrix).map((t) => t.key)).toEqual(["movie:603", "tv:1399"]);
     expect(withMyTitle([got, matrix], matrix).map((t) => t.key)).toEqual(["movie:603", "tv:1399"]);
     expect(withMyTitle([], matrix)).toEqual([matrix]);
+  });
+});
+
+describe("les saisons demandées, en morceaux", () => {
+  it("font un intervalle à partir de trois de suite", () => {
+    expect(seasonRuns([1, 2, 3, 4, 6])).toEqual(["1–4", "6"]);
+    expect(seasonRuns([2, 3])).toEqual(["2", "3"]);
+    expect(seasonRuns([5, 1, 3, 2])).toEqual(["1–3", "5"]);
+    expect(seasonRuns([0, 1, 2, 7, 8, 9, 11])).toEqual(["0–2", "7–9", "11"]);
+    expect(seasonRuns([4, 4])).toEqual(["4"]);
+    expect(seasonRuns([])).toEqual([]);
   });
 });
