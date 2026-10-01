@@ -8,6 +8,7 @@ import { HomeView } from "../../../src/redesign/screens/home/HomeView";
 import type { BenchData } from "../data/benchData";
 import { heroOf, navOf } from "../data/screenModels";
 import { heroItems, rowsOf } from "./homeScenes";
+import { MOTION_PLAYER_SCENE } from "./motionPlayer";
 import type { BenchScene } from "./types";
 
 /**
@@ -18,7 +19,9 @@ import type { BenchScene } from "./types";
  *   rentre, halo qui passe d'une lumière à l'autre, fond vivant qui suit ;
  * - `mouvement/navigation` : la navigation de l'accueil qui se déplie et se
  *   replie toutes les 1,2 s, sur le vrai contenu (le verre floute ce qui
- *   passe dessous).
+ *   passe dessous) ;
+ * - `mouvement/lecteur` : l'habillage du lecteur, ses sorties et ses panneaux
+ *   (`motionPlayer.tsx`).
  * Le focus figé du banc n'y joue pas : rien n'y est focalisé par défaut.
  */
 
@@ -90,6 +93,7 @@ export const MOTION_SCENES: BenchScene[] = [
     settleMs: 1500,
     render: (data) => <UnfoldingNav data={data} />,
   },
+  MOTION_PLAYER_SCENE,
 ];
 
 const styles = StyleSheet.create({
