@@ -19,7 +19,11 @@ function row(name: string, top: number, count: number, { left = 136, width = 260
 }
 
 const itemOf = (section: SectionGeometry<string>, element: string) => section.items.find((item) => item.element === element)!.box;
-const from = (section: SectionGeometry<string>, element: string) => ({ section: section.box, item: itemOf(section, element) });
+const from = (section: SectionGeometry<string>, element: string) => ({
+  section: section.box,
+  item: itemOf(section, element),
+  siblings: section.items.filter((item) => item.element !== element),
+});
 
 describe("HAUT / BAS vers la section voisine", () => {
   it("au bout d'un carrousel, BAS atteint la rangée plus courte du dessous — sa dernière carte", () => {
@@ -115,6 +119,18 @@ describe("accessoire d'en-tête (la pastille du filtre)", () => {
 
   it("depuis l'aplomb de la pastille, BAS va sur elle", () => {
     expect(pickSectionNeighbor(from(previous, "prev:2"), [previous, filtered], "bas")).toBe("filter:remove");
+  });
+
+  it("HAUT depuis la carte sous la pastille : la pastille, à l'aplomb, dans la section", () => {
+    expect(pickSectionNeighbor(from(filtered, "reco:2"), [previous, filtered], "haut")).toBe("filter:remove");
+  });
+
+  it("HAUT depuis le bout de la rangée filtrée : la rangée d'au-dessus — la pastille n'est pas dans l'axe", () => {
+    expect(pickSectionNeighbor(from(filtered, "reco:5"), [previous, filtered], "haut")).toBe("prev:5");
+  });
+
+  it("BAS depuis la pastille : la carte qui est dessous, dans sa rangée", () => {
+    expect(pickSectionNeighbor(from(filtered, "filter:remove"), [previous, filtered], "bas")).toBe("reco:2");
   });
 
   it("en remontant vers la rangée filtrée, ce sont ses cartes qui font face", () => {

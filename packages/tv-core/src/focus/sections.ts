@@ -13,11 +13,12 @@ import type { Box } from "./geometry";
  * au bout d'un carrousel au-dessus d'une rangée plus courte, sur la dernière
  * ligne incomplète d'une grille, depuis un réglage décalé.
  *
- * DANS une section (le titre d'une rangée et ses cartes), le moteur de la
- * plateforme garde la main : la règle ne joue qu'au passage d'une section à
- * l'autre. C'est ce qui garde atteignable un accessoire d'en-tête — la
- * pastille du filtre de plateformes — par HAUT depuis la carte qui est dessous,
- * sans en faire une étape obligée depuis la rangée d'au-dessus.
+ * DANS une section (le titre d'une rangée et ses cartes), on reste à
+ * l'aplomb : ce qui, de la section, est au-delà de l'élément ET dans son axe
+ * passe d'abord — l'accessoire d'un en-tête (la pastille du filtre de
+ * plateformes) se rejoint par HAUT depuis la carte qui est dessous, sans être
+ * une étape obligée depuis le bout de la rangée, ni depuis la rangée
+ * d'au-dessus.
  *
  * Deux exceptions, tranchées le 2026-10-01 : une section peut déclarer son
  * ENTRÉE (`entry`), qui l'emporte quand elle est focalisable — l'onglet de la
@@ -130,15 +131,30 @@ export function nearestByCenter<T>(from: Box, items: Array<SectionItem<T>>, dire
 }
 
 /**
- * La règle entière : depuis l'élément `item` de la section `section`, HAUT ou
- * BAS. Rend l'élément visé, ou `null` quand aucune section n'est au-delà —
- * la plateforme garde alors son comportement (un guide, un bord).
+ * À l'aplomb, dans la section qu'on quitte : ses éléments au-delà de `from` et
+ * dans son axe ; le plus proche dans la direction, puis au centre.
+ */
+export function inLineWithin<T>(from: Box, siblings: Array<SectionItem<T>>, direction: VerticalDirection): SectionItem<T> | null {
+  const advance = (box: Box) => (direction === "bas" ? box.top - from.bottom : from.top - box.bottom);
+  const beyond = siblings.filter((item) => overlapX(from, item.box) > 0 && advance(item.box) >= -FRONTIER_SLACK);
+  if (beyond.length === 0) return null;
+  const closest = Math.min(...beyond.map((item) => advance(item.box)));
+  return nearestByCenter(from, beyond.filter((item) => advance(item.box) - closest <= SAME_EDGE), direction);
+}
+
+/**
+ * La règle entière : depuis l'élément `item` de la section `section` (dont
+ * `siblings` sont les autres éléments), HAUT ou BAS. Rend l'élément visé, ou
+ * `null` quand rien n'est au-delà — la plateforme garde alors son
+ * comportement (un guide, un bord).
  */
 export function pickSectionNeighbor<T>(
-  from: { section: Box; item: Box },
+  from: { section: Box; item: Box; siblings?: Array<SectionItem<T>> },
   sections: Array<SectionGeometry<T>>,
   direction: VerticalDirection,
 ): T | null {
+  const within = inLineWithin(from.item, from.siblings ?? [], direction);
+  if (within) return within.element;
   let kept: { section: SectionGeometry<T>; item: SectionItem<T> } | null = null;
   for (const section of adjacentSections(from.section, sections, direction)) {
     const item = nearestByCenter(from.item, facingItems(section, direction), direction);
