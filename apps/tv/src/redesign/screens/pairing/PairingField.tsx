@@ -16,11 +16,11 @@ import { colors, fonts, scrim } from "../../theme/tokens";
  * jamais ; le champ affiché n'est qu'un texte. Un mot de passe n'y paraît
  * qu'en points, et son clavier masque la saisie.
  *
- * `open()` ouvre le clavier sans appui : l'identifiant validé passe la main
- * au mot de passe — une fois le premier clavier retiré (`onKeyboardClosed`,
- * puis un temps) : demandé pendant qu'il se retire, le suivant ne s'ouvrait
- * pas (mesuré). Avec `caption`, le libellé se lit AU-DESSUS du champ, toujours
- * visible ; l'invite, elle, titre aussi le clavier système.
+ * `open()` ouvre le clavier depuis un autre bouton (« Se connecter » vers
+ * le premier champ vide) — toujours sur un appui : demandé pendant qu'un
+ * autre clavier se retire, il ne s'ouvre pas (mesuré). Avec `caption`, le
+ * libellé se lit AU-DESSUS du champ, toujours visible ; l'invite, elle,
+ * titre aussi le clavier système.
  *
  * L'ouverture commence par oublier un focus périmé : un clavier qui n'a pas
  * paru laisse React Native croire le champ focalisé, et `focus()` n'y faisait
@@ -46,8 +46,6 @@ export interface PairingFieldProps {
   keyboard: Pick<TextInputProps, "keyboardType" | "textContentType" | "returnKeyType" | "autoComplete">;
   onChangeText?: (value: string) => void;
   onSubmitEditing?: () => void;
-  /** Le clavier système s'est refermé — validé ou abandonné (Menu). */
-  onKeyboardClosed?: () => void;
 }
 
 export const FIELD = { width: 1100, height: 108, radius: 34 };
@@ -57,7 +55,7 @@ const MAX_DOTS = 24;
 
 export const PairingField = memo(
   forwardRef<PairingFieldHandle, PairingFieldProps>(function PairingField(
-    { focusKey, icon, label, caption, value, placeholder, busy = false, secure = false, keyboard, onChangeText, onSubmitEditing, onKeyboardClosed },
+    { focusKey, icon, label, caption, value, placeholder, busy = false, secure = false, keyboard, onChangeText, onSubmitEditing },
     ref,
   ) {
     const input = useRef<TextInput>(null);
@@ -80,7 +78,6 @@ export const PairingField = memo(
           value={value}
           onChangeText={onChangeText}
           onSubmitEditing={onSubmitEditing}
-          onEndEditing={onKeyboardClosed}
           placeholder={placeholder}
           secureTextEntry={secure}
           autoCapitalize="none"

@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -17,10 +17,13 @@ import type { LoginError } from "./pairingTypes";
  * connecter » et le recours, « Jumeler avec un code » (le code du serveur).
  * La croix Retour, en haut à gauche, est posée par `PairingView`.
  *
- * Le clavier système s'enchaîne : l'identifiant validé ouvre le mot de passe
- * s'il manque — une fois le premier clavier refermé —, le mot de passe validé
- * envoie ; « Se connecter » ouvre le premier champ vide au lieu d'envoyer un
- * formulaire incomplet. Un clavier abandonné (Menu) n'enchaîne rien.
+ * Un clavier ne s'ouvre que sur un appui : OK sur un champ, ou « Se
+ * connecter », qui ouvre le premier champ vide au lieu d'envoyer un
+ * formulaire incomplet. Valider un clavier n'envoie que si les DEUX champs
+ * sont remplis ; sinon il se referme, et BAS mène au champ suivant. Pas
+ * d'enchaînement automatique : différé d'une seconde (le temps que le
+ * premier clavier se retire), il rouvrait un clavier que l'utilisateur
+ * venait d'ouvrir lui-même — « il repop » (essai réel).
  *
  * Branchement : `pairWithPassword` (tv-core) ; son verdict arrive dans
  * `error`. L'intégration vide le mot de passe dès l'envoi. Groupe de focus :
@@ -53,30 +56,15 @@ export const LoginStep = memo(function LoginStep({
   const passwordField = useRef<PairingFieldHandle>(null);
   const hasUsername = username.trim().length > 0;
   const hasPassword = password.length > 0;
-  // Le champ à ouvrir quand le clavier validé se sera refermé.
-  const next = useRef<PairingFieldHandle | null>(null);
-  const handoff = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (handoff.current) clearTimeout(handoff.current); }, []);
 
   const submit = () => {
     if (!hasUsername) usernameField.current?.open();
     else if (!hasPassword) passwordField.current?.open();
     else onSubmit?.();
   };
-  const afterUsername = () => {
-    if (hasPassword) onSubmit?.();
-    else next.current = passwordField.current;
-  };
-  const afterPassword = () => {
-    if (!hasUsername) next.current = usernameField.current;
-    else if (hasPassword) onSubmit?.();
-  };
-  const keyboardClosed = () => {
-    const field = next.current;
-    next.current = null;
-    if (!field) return;
-    if (handoff.current) clearTimeout(handoff.current);
-    handoff.current = setTimeout(() => field.open(), KEYBOARD_HANDOFF_MS);
+  // Un clavier validé n'envoie que le formulaire complet.
+  const submitIfComplete = () => {
+    if (hasUsername && hasPassword) onSubmit?.();
   };
 
   return (
@@ -97,10 +85,9 @@ export const LoginStep = memo(function LoginStep({
           label={t("auth:username")}
           value={username}
           placeholder={t("pairing:tvUsernamePlaceholder")}
-          keyboard={{ textContentType: "username", autoComplete: "username", returnKeyType: "next" }}
+          keyboard={{ textContentType: "username", autoComplete: "username", returnKeyType: "done" }}
           onChangeText={onChangeUsername}
-          onSubmitEditing={afterUsername}
-          onKeyboardClosed={keyboardClosed}
+          onSubmitEditing={submitIfComplete}
         />
         <PairingField
           ref={passwordField}
@@ -113,8 +100,7 @@ export const LoginStep = memo(function LoginStep({
           placeholder={t("pairing:tvPasswordPlaceholder")}
           keyboard={{ textContentType: "password", autoComplete: "password", returnKeyType: "done" }}
           onChangeText={onChangePassword}
-          onSubmitEditing={afterPassword}
-          onKeyboardClosed={keyboardClosed}
+          onSubmitEditing={submitIfComplete}
         />
       </View>
       {error ? <PairingError message={loginMessage(t, error)} /> : null}
@@ -135,11 +121,6 @@ export const LoginStep = memo(function LoginStep({
     </View>
   );
 });
-
-/** Le temps que le clavier validé se retire, et que tvOS rende le focus au
- *  champ, avant d'ouvrir le suivant : mesuré au simulateur, rien ne s'ouvre
- *  à 0,6 s, tout s'ouvre à 1 s. Manqué, OK sur le champ l'ouvre toujours. */
-const KEYBOARD_HANDOFF_MS = 1000;
 
 /** Chaque refus a sa phrase, qui dit quoi faire. */
 function loginMessage(t: TFunction, error: LoginError): string {
