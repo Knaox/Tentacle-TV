@@ -86,6 +86,19 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // source (uri) change.
     const didSeekRef = useRef(false);
     useEffect(() => { didSeekRef.current = false; }, [uri]);
+    // Un AVPlayer NEUF quand une nouvelle session PrismCore en remplace une autre
+    // (relance du flux, forme muxée) : react-native-video ne fait que remplacer
+    // l'item, et sur un master à piste audio pontée (Opus → AAC) l'item de
+    // remplacement ne recevait plus aucun segment — mesuré au simulateur, -12889
+    // en boucle, alors que la même session montée sur un AVPlayer neuf joue. Les
+    // autres changements de source (palier, transcodage, lecture directe)
+    // gardent le simple remplacement.
+    const sessionOrigin = isLoopback ? (uri.match(/^http:\/\/127\.0\.0\.1:\d+/)?.[0] ?? null) : null;
+    const lastOriginRef = useRef<string | null>(null);
+    const generationRef = useRef(0);
+    if (sessionOrigin && lastOriginRef.current && sessionOrigin !== lastOriginRef.current) generationRef.current += 1;
+    if (sessionOrigin) lastOriginRef.current = sessionOrigin;
+    const playerGeneration = generationRef.current;
     const audioReappliedRef = useRef(false);
 
     // Pistes texte VTT sideloadées (rendu natif AVPlayer).
@@ -238,6 +251,7 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
 
     return (
       <Video
+        key={playerGeneration}
         ref={videoRef}
         source={{
           uri,
