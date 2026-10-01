@@ -21,10 +21,10 @@ export const AV_PLAYER_HEVC_TAGS = ["hvc1", "dvh1"] as const;
  * pas.
  *
  * Une étiquette INCONNUE (un scan Jellyfin ancien ne la renseigne pas, et
- * Jellyfin 12.1 plus du tout) ne prouve rien : elle ne se lit pas telle quelle
- * non plus. Le relais revient à
- * un lecteur qui lit tout (mpv sur le mobile, PrismCore sur Apple TV, qui
- * réécrit l'entrée en `hvc1`), sinon au remux du serveur.
+ * Jellyfin 12.1 n'en écrit plus) ne prouve rien : elle ne se lit pas telle
+ * quelle non plus. Le relais revient à un lecteur qui lit tout (mpv sur le
+ * mobile, PrismCore sur Apple TV, qui réécrit l'entrée en `hvc1`), sinon au
+ * remux du serveur.
  */
 export function avPlayerReadsHevcTag(tag: string | null | undefined): boolean {
   const normalized = (tag ?? "").trim().toLowerCase();
@@ -61,11 +61,13 @@ export function hevcTagUnreadable(stream: Pick<MediaStream, "Codec" | "CodecTag"
  * prix se borne à un remux : un MKV, sans étiquette, garde sa vidéo copiée
  * (même mesure, `-codec:v:0 copy`).
  *
- * Jellyfin 12.1 ne renseigne plus `CodecTag` du tout (champ vide en base, même
- * après un rafraîchissement complet) : toute étiquette y est inconnue. Avec
- * `false`, le `hev1` y repartait en lecture directe — le noir revenait ; avec
- * `true`, tout HEVC en MP4, `hvc1` compris, y est remuxé, l'image copiée
- * (mesuré : `-codec:v:0 copy -tag:v:0 hvc1`). Jamais de noir.
+ * Jellyfin 12.1 n'écrit plus `CodecTag` (mesuré sur un 12.1.0 neuf : champ
+ * vide en base, même après une actualisation complète) ; seules restent les
+ * étiquettes écrites avant la migration (serveur réel : 15 des 16 MP4 HEVC
+ * étiquetés). Tout fichier scanné depuis y est inconnu. Avec `false`, le
+ * `hev1` y repartait en lecture directe — le noir revenait ; avec `true`, tout
+ * HEVC en MP4 sans étiquette lisible, `hvc1` compris, y est remuxé, l'image
+ * copiée (mesuré : `-codec:v:0 copy -tag:v:0 hvc1`). Jamais de noir.
  */
 export function avPlayerHevcTagCondition(): ProfileCondition {
   return {
