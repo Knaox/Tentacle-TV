@@ -5,6 +5,7 @@ import { useFocusStore, type FocusStore } from "../focus/focusStore";
 import { useNavEntries } from "../nav/useNavEntries";
 import { useRailArrange, type RailArrange } from "../nav/useRailArrange";
 import { navKeyOf, openNavigationSettings, useRailActions, useRailFocused } from "../nav/useRailState";
+import { useRequestsAccessory } from "../vigie/RequestsEntry";
 import { useEntryFocus } from "./useEntryFocus";
 
 /**
@@ -100,9 +101,11 @@ export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus:
   // Le menu d'une entrée ou un déplacement gardent la navigation ouverte.
   const { heldKey, movingKey } = arrange;
   const expanded = railFocused || heldKey !== null || movingKey !== null;
+  // Les demandes en cours (Vigie), dans le bloc du profil — ou rien.
+  const accessory = useRequestsAccessory(focus, movingKey !== null);
   const nav = useMemo<NavRailProps>(
-    () => ({ ...entries, activeKey: railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry }),
-    [entries, railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry],
+    () => ({ ...entries, accessory, activeKey: railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry }),
+    [entries, accessory, railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry],
   );
 
   return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, arrange, railGeometry };

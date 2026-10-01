@@ -1,0 +1,86 @@
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Modal } from "react-native";
+import { useTranslation } from "react-i18next";
+import type { MyTitle } from "@tentacle-tv/shared";
+import { FocusBindingProvider, type FocusBinder } from "../../redesign/focus/focusBinding";
+import { requestRowKey } from "../../redesign/requests/RequestRow";
+import { REQUESTS_CLOSE_KEY, REQUESTS_VISIBLE_ROWS, RequestsPanelView } from "../../redesign/requests/RequestsPanelView";
+import { setFocusLocked } from "../focus/focusLocks";
+import { useFocusStore, type FocusStore } from "../focus/focusStore";
+import { requestItemModel, requestsCountText } from "./requestModels";
+
+/**
+ * La fenêtre « Mes demandes » (Apple TV) : `RequestsPanelView` dans une
+ * `Modal`, comme le grand panneau d'une carte.
+ *
+ * - La `Modal` PIÈGE le focus ; la croix en est la seule action : elle prend
+ *   l'entrée (l'élément du haut, que tvOS choisit dans une Modal), sous la
+ *   garde anti-clic fantôme — la fenêtre s'ouvre sous un OK encore enfoncé.
+ * - LECTURE SEULE : les lignes ne sont focalisables que pour faire défiler une
+ *   liste qui dépasse (`REQUESTS_VISIBLE_ROWS`) ; OK n'y fait rien.
+ * - Menu ferme, par un seul point (`useMenuCloses`) ; la croix aussi. La
+ *   sortie se joue (`closing`) avant que la Modal ne se retire, et tvOS rend
+ *   le focus à l'aperçu du rail.
+ */
+
+export function RequestsPanel({ titles, onClose }: { titles: MyTitle[] | null; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [closing, setClosing] = useState(false);
+  const requestClose = useCallback(() => setClosing(true), []);
+  const onMenu = useMenuCloses(requestClose);
+  const focus = useFocusStore();
+  const items = useMemo(() => titles?.map((title) => requestItemModel(title, t)) ?? null, [titles, t]);
+  useRowLocks(focus, items ? items.map((item) => requestRowKey(item.key)) : []);
+  const bind = useCallback<FocusBinder>(
+    (key, form) => {
+      const binding = focus.binder(key, form);
+      return key === REQUESTS_CLOSE_KEY ? { ...binding, phantomPressGuard: true } : binding;
+    },
+    [focus],
+  );
+  return (
+    <Modal visible transparent animationType="none" onRequestClose={onMenu}>
+      <FocusBindingProvider bind={bind}>
+        <RequestsPanelView
+          title={t("requests:dockLabel")}
+          subtitle={requestsCountText(titles, t)}
+          items={items}
+          emptyText={t("requests:empty")}
+          loadingText={t("requests:loading")}
+          onClose={requestClose}
+          closing={closing}
+          onClosed={onClose}
+        />
+      </FocusBindingProvider>
+    </Modal>
+  );
+}
+
+/**
+ * LE point par lequel la fenêtre s'inscrit au Retour. Aujourd'hui, Menu
+ * atteint la `Modal` par `onRequestClose` ; la pile de couches de la tâche 1
+ * (menu > surimpression > page > rail > sortie) s'y branchera, ici seulement.
+ */
+function useMenuCloses(close: () => void): () => void {
+  return close;
+}
+
+/**
+ * Une liste qui tient se lit sans focus : ses lignes restent infocalisables,
+ * verrouillées AVANT leur rendu ; dès qu'elle dépasse, le focus peut y
+ * descendre pour la faire défiler.
+ */
+function useRowLocks(focus: FocusStore, keys: readonly string[]): void {
+  const locked = useRef(new Set<string>());
+  const wanted = new Set(keys.length > REQUESTS_VISIBLE_ROWS ? [] : keys);
+  for (const key of [...locked.current]) {
+    if (wanted.has(key)) continue;
+    setFocusLocked(focus, key, false);
+    locked.current.delete(key);
+  }
+  for (const key of wanted) {
+    if (locked.current.has(key)) continue;
+    setFocusLocked(focus, key, true);
+    locked.current.add(key);
+  }
+}
