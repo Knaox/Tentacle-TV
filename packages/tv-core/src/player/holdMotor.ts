@@ -34,65 +34,13 @@ import { SCRUB_TIERS } from "./scrubMachine";
  * Module pur : horloge et minuteurs viennent de l'appelant en test.
  */
 
-/** La cadence du tic. Celle d'`apps/tv`, et elle ne dépend de rien. */
-export const HOLD_TICK_MS = 250;
+import {
+  AUTO_REPEAT_MS, HOLD_ANNOUNCED_MAX_MS, HOLD_TICK_MS, MIN_INTERVAL_MS, MS_PER_TIER, REPEAT_INTERVAL_MS,
+  REPEATS_BEFORE_TICK, SILENCE_DEFAULT_MS, SILENCE_FACTOR, SILENCE_MIN_MS,
+} from "./holdTiming";
 
-/** Un palier par seconde de maintien — 1×, 2×, 4×, 8×. */
-export const MS_PER_TIER = 1000;
-
-/** Le silence tant qu'on n'a pas mesuré la dalle. Valeur du reste du portage. */
-export const SILENCE_DEFAULT_MS = 700;
-
-/** Le plancher, repris d'`apps/tv` : en deçà, une répétition normale ferait rupture. */
-export const SILENCE_MIN_MS = 350;
-
-/** De combien d'intervalles un silence doit dépasser pour valoir relâchement. */
-const SILENCE_FACTOR = 2.5;
-
-/** Sous cette valeur, l'intervalle mesuré relève du rebond, pas de la répétition. */
-const MIN_INTERVAL_MS = 60;
-
-/**
- * Au-delà de cet écart, deux appuis sont deux GESTES, pas une répétition.
- *
- * Le seuil de silence (350–700 ms) dit quand un maintien s'ARRÊTE ; il ne dit
- * pas ce qui l'a commencé, et il servait pourtant aux deux. Or on tape
- * volontiers deux fois sur la même flèche en trois cents millisecondes : le
- * second appui tombait sous le seuil, passait pour une auto-répétition, et
- * lançait le tic. Deux sauts demandés, une avance rapide obtenue.
- */
-const REPEAT_INTERVAL_MS = 450;
-
-/**
- * Combien de répétitions consécutives avant que le tic prenne la main.
- *
- * Le seul plafond ne suffisait pas : une dalle dont l'auto-répétition tourne à
- * quatre cents millisecondes — le module rappelle plus haut que cette cadence
- * n'est ni documentée ni constante d'un modèle à l'autre — ne l'aurait jamais
- * franchi, et l'avance rapide y aurait purement disparu. Ce qui distingue
- * vraiment une dalle d'un doigt n'est pas la vitesse, c'est l'INSISTANCE.
- *
- * Deux répétitions suffisent : un doigt qui tape deux fois produit un seul
- * enchaînement et garde ses deux sauts, une touche tenue en produit autant
- * qu'on veut. Taper trois fois de suite déclenchera l'avance rapide — c'est
- * assumé : à ce stade, c'est bien ce qu'on demande.
- */
-export const REPEATS_BEFORE_TICK = 2;
-
-/**
- * En dessous de cet écart, aucun doigt ne peut être en cause : c'est la dalle.
- *
- * Le compteur de répétitions protège des doigts insistants, mais il coûte des
- * sauts : chaque battement avant l'engagement en produit un, et sur une touche
- * réellement tenue on n'en veut aucun de trop avant que le curseur fantôme
- * parte. Une auto-répétition rapide se reconnaît sans hésitation possible, et
- * l'on engage alors dès le premier battement.
- *
- * Une télécommande a de la course : deux appuis séparés par moins de deux
- * cents millisecondes ne s'obtiennent pas au doigt, et la dalle émettrait de
- * toute façon un `keyup` entre les deux — qui remet le compteur à zéro.
- */
-const AUTO_REPEAT_MS = 200;
+/** Les rythmes publics du moteur, à leur adresse d'avant. */
+export { HOLD_ANNOUNCED_MAX_MS, HOLD_TICK_MS, MS_PER_TIER, REPEATS_BEFORE_TICK, SILENCE_DEFAULT_MS, SILENCE_MIN_MS };
 
 export interface HoldMotorOptions {
   /**
@@ -119,6 +67,14 @@ export interface HoldMotor {
    * n'est ni documentée ni constante d'un modèle à l'autre.
    */
   press: (code: number, sign: 1 | -1, repeat?: boolean) => void;
+  /**
+   * Un maintien ANNONCÉ — la télécommande d'Apple TV dit son début (l'appui
+   * long reconnu, à une demi-seconde) et sa fin, mais ne répète RIEN entre les
+   * deux. Le tic part aussitôt, sans le chien de garde de silence, qui coupait
+   * un tel maintien au bout de 0,7 s (+3:00, puis plus rien) ; il s'arrête à
+   * `release(code)`, ou au plafond `HOLD_ANNOUNCED_MAX_MS`.
+   */
+  hold: (code: number, sign: 1 | -1) => void;
   /**
    * Un `keyup`, quand la dalle en émet — et SEULEMENT celui de la touche tenue.
    *
@@ -268,6 +224,18 @@ export function createHoldMotor(options: HoldMotorOptions): HoldMotor {
     armWatchdog();
   }
 
+  function hold(code: number, sign: 1 | -1): void {
+    stopHold();
+    interval = 0;
+    repeats = 0;
+    lastCode = code;
+    currentSign = sign;
+    lastAt = clock();
+    engage(lastAt);
+    // Rien ne répète : pas de veille de silence, le plafond seul.
+    watchdog = setTimeout(stopHold, HOLD_ANNOUNCED_MAX_MS);
+  }
+
   function cancel(): void {
     stopHold();
     lastCode = 0;
@@ -286,6 +254,7 @@ export function createHoldMotor(options: HoldMotorOptions): HoldMotor {
 
   return {
     press,
+    hold,
     release,
     cancel,
     destroy: stopHold,
