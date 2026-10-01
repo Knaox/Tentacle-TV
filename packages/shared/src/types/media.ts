@@ -25,6 +25,10 @@ export interface MediaItem {
   BackdropImageTags?: string[];
   ParentBackdropImageTags?: string[];
   ParentBackdropItemId?: string;
+  // Logo HÉRITÉ — celui de la série (ou de la saison) d'un épisode. Jellyfin ne
+  // le joint que si la requête demande les logos (`EnableImageTypes` avec Logo).
+  ParentLogoItemId?: string;
+  ParentLogoImageTag?: string;
   SeriesPrimaryImageTag?: string;
   PrimaryImageAspectRatio?: number;
 

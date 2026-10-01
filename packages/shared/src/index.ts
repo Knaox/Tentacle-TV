@@ -5,6 +5,8 @@ export * from "./utils/trickplay";
 // vérité pour le web ET le téléviseur : tag porté (URL adressée par contenu),
 // chaîne de repli, et « la donnée prouve l'absence » → zéro requête.
 export * from "./utils/cardImage";
+// Le logo d'une œuvre — le sien, sinon celui de sa série — seulement s'il est annoncé.
+export * from "./utils/logoImage";
 export * from "./utils/cardRating";
 export * from "./utils/cardMarkers";
 export * from "./utils/cardMarkerGlyphs";
