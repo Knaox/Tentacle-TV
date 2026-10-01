@@ -57,15 +57,17 @@ export interface FocusBinding {
 }
 
 /**
- * La FORME d'un élément focalisable, telle que la vue la décrit — une
- * description, pas une décision : `card` (une image : affiche, vignette,
- * épisode, portrait) ou `row` (un élément LARGE : réglage, option, entrée de
- * navigation, champ, bannière) ; sans forme, un contrôle (bouton, pastille,
- * touche).
+ * La FORME de ce que la vue lie, telle qu'elle la décrit — une description,
+ * pas une décision. Pour un élément focalisable : `card` (une image :
+ * affiche, vignette, épisode, portrait) ou `row` (un élément LARGE : réglage,
+ * option, entrée de navigation, champ, bannière) ; sans forme, un contrôle
+ * (bouton, pastille, touche). Pour un groupe : `section` (`FocusSection` —
+ * une rangée, une ligne de grille, un réglage).
  * L'intégration en tire les effets natifs du focus (sur Apple TV, la
- * parallaxe au pouce) ; la vue ne les nomme jamais.
+ * parallaxe au pouce ; la règle de voisinage des sections) ; la vue ne les
+ * nomme jamais.
  */
-export type FocusForm = "card" | "row";
+export type FocusForm = "card" | "row" | "section";
 
 /** La réponse de l'intégration pour une clé ; `undefined` : rien à poser.
  *  `form` est facultatif : un intégrateur peut l'ignorer. */

@@ -45,18 +45,21 @@ function watchReducedMotion(): void {
   });
 }
 
-function presetOf(form: FocusForm): TVParallaxProperties {
+/** Les formes d'un ÉLÉMENT : une section (un groupe) n'a pas de parallaxe. */
+type TargetForm = Exclude<FocusForm, "section">;
+
+function presetOf(form: TargetForm): TVParallaxProperties {
   const { shift, tilt } = TV_MOTION.parallax[form];
   return { enabled: true, shiftDistanceX: shift, shiftDistanceY: shift, tiltAngle: tilt, magnification: 1, pressMagnification: 1 };
 }
 
-const PRESETS: Readonly<Record<FocusForm, TVParallaxProperties>> = { card: presetOf("card"), row: presetOf("row") };
+const PRESETS: Readonly<Record<TargetForm, TVParallaxProperties>> = { card: presetOf("card"), row: presetOf("row") };
 const OFF: TVParallaxProperties = { enabled: false };
 
 /** Les props natives de parallaxe d'un élément de cette forme ; `undefined` :
  *  rien à poser (le défaut de React Native, ou hors Apple TV). */
 export function parallaxOf(form: FocusForm | undefined): { tvParallaxProperties: TVParallaxProperties } | undefined {
-  if (!SUPPORTED) return undefined;
+  if (!SUPPORTED || form === "section") return undefined;
   watchReducedMotion();
   if (reduced) return { tvParallaxProperties: OFF };
   return form ? { tvParallaxProperties: PRESETS[form] } : undefined;

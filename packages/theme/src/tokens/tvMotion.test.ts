@@ -37,6 +37,16 @@ describe("TV_MOTION", () => {
     expect(overshoot(TV_MOTION.spring.press)).toBeLessThan(0.1);
   });
 
+  it("la page qui suit le focus ne dépasse jamais sa cible, et a presque fini en une demi-seconde", () => {
+    const { response, dampingFraction } = TV_MOTION.spring.scroll;
+    expect(overshoot(TV_MOTION.spring.scroll)).toBe(0);
+    // Ressort critique : la part de course restante vaut e^(−ωt)(1 + ωt).
+    const omega = (2 * Math.PI) / response;
+    const remaining = (t: number) => Math.exp(-omega * t) * (1 + omega * t);
+    expect(dampingFraction).toBe(1);
+    expect(remaining(0.5)).toBeLessThan(0.02);
+  });
+
   it("la parallaxe au pouce reste discrète, et une ligne ne s'incline jamais", () => {
     for (const { shift, tilt } of Object.values(TV_MOTION.parallax)) {
       expect(shift).toBeGreaterThan(0);

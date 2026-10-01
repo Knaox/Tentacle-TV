@@ -46,6 +46,10 @@ export const TV_MOTION = {
     panel: { response: 0.42, dampingFraction: 0.86 } as TvSpring,
     /** La navigation qui se déplie. */
     unfold: { response: 0.36, dampingFraction: 0.88 } as TvSpring,
+    /** La page qui suit le focus d'une section à l'autre : UN mouvement, sans
+     *  rebond, même courbe et même durée quelle que soit la distance (joué par
+     *  la section native, `redesign/focus/FocusSection`). */
+    scroll: { response: 0.5, dampingFraction: 1 } as TvSpring,
   },
   focus: {
     /** Le focus qui s'en va : plus bref que l'arrivée, sans rebond. */

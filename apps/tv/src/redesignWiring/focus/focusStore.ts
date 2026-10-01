@@ -3,6 +3,7 @@ import { findNodeHandle, type View } from "react-native";
 import type { FocusBinder, FocusBinding } from "../../redesign/focus/focusBinding";
 import { claimTvFocus } from "../../hooks/useTvFocusClaim";
 import { parallaxOf } from "../remote/parallax";
+import { SECTION_NEIGHBORS } from "./sectionNeighbors";
 
 /**
  * Le magasin de focus d'un écran refondu — la moitié « app » du port du focus
@@ -19,8 +20,9 @@ import { parallaxOf } from "../remote/parallax";
  * montés, et leurs clés se ressemblent.
  *
  * Il traduit aussi la FORME qu'une cible déclare (`FocusTarget form`) en
- * effets natifs du focus — la parallaxe au pouce (`remote/parallax.ts`),
- * figée avec la liaison.
+ * effets natifs du focus — la parallaxe au pouce (`remote/parallax.ts`) —, et
+ * celle d'un groupe (`FocusSection`) en règle de voisinage
+ * (`sectionNeighbors.ts`) : figées avec la liaison.
  */
 
 export type FocusListener = (focusKey: string, focused: boolean) => void;
@@ -106,9 +108,10 @@ export function createFocusStore(): FocusStore {
     let binding = bindings.get(key);
     if (!binding) {
       const extra = extras.get(key);
-      // Les effets natifs de la forme (la parallaxe au pouce) d'abord : les
-      // props d'une clé (verrous, guides) les complètent.
-      const effects = parallaxOf(form);
+      // Les effets natifs de la forme (la parallaxe au pouce, la règle des
+      // sections) d'abord : les props d'une clé (verrous, guides, entrée) les
+      // complètent.
+      const effects = form === "section" ? SECTION_NEIGHBORS : parallaxOf(form);
       binding = {
         ...extra,
         native: effects || extra?.native ? { ...effects, ...extra?.native } : undefined,
