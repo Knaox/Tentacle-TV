@@ -1026,11 +1026,14 @@ relecteurs d'App Store Connect.
   heure), Jellyfin injoignable (502/503), délai (15 s), serveur injoignable,
   erreur du serveur avec ou sans statut (`pairing:tvLogin*`).
 - **Le clavier** : l'invite de chaque champ titre le clavier système
-  (« Votre nom d'utilisateur », « Votre mot de passe ») ; l'identifiant
-  validé (« Suivant ») ouvre le mot de passe UNE SECONDE après la fermeture
-  de son clavier — rien ne s'ouvre à 0,6 s, tout à 1 s (mesuré) ; « Se
-  connecter » ouvre le premier champ vide ; Menu sur un clavier n'enchaîne
-  rien.
+  (« Votre nom d'utilisateur », « Votre mot de passe ») ; un clavier ne
+  s'ouvre que sur un APPUI — OK sur un champ, ou « Se connecter », qui ouvre
+  le premier champ vide ; valider n'envoie que le formulaire complet, sinon
+  BAS mène au champ suivant. Un enchaînement automatique de l'identifiant
+  vers le mot de passe a été essayé puis RETIRÉ : il devait attendre une
+  seconde (rien ne s'ouvre à 0,6 s, tout à 1 s, mesuré), et un geste fait
+  pendant cette seconde était défait — le clavier « réapparaissait » (essai
+  réel de l'utilisateur, reproduit).
 - **Le focus** : entrée sur l'identifiant ; les deux boutons forment un
   guide (`pairing:actions`, BAS depuis le mot de passe entre par « Se
   connecter ») ; après un refus, le mot de passe — repris une fois si tvOS
@@ -1045,9 +1048,17 @@ relecteurs d'App Store Connect.
   (Claude) », backend de dev, agent XCUITest) : FR et EN, adresse
   injoignable (message, OK rouvre le clavier), identifiants faux (« essai »),
   serveur coupé et serveur muet pendant la connexion (relais à soi), code du
-  serveur et sa croix, code du relais intact, Menu à chaque étape. Au banc :
-  groupe « Jumelage » (identifiants, chaque refus, code du serveur avec
-  croix) et « Retour ».
+  serveur et sa croix, code du relais intact, Menu à chaque étape ; puis la
+  connexion RÉUSSIE du compte de test, tapée par l'utilisateur : accueil du
+  compte, jeton d'appareil, réglages « Compte jumelé », déjumelage depuis les
+  réglages — et aucun cookie `tentacle_token` dans le conteneur de l'app. Au
+  banc : groupe « Jumelage » (identifiants, chaque refus, code du serveur
+  avec croix) et « Retour ».
+- **Contre un vrai Jellyfin** (suite de compatibilité, `pairing.compat.ts`,
+  la vraie `pairWithPassword`) : la TV reçoit SON jeton Jellyfin, le jeton
+  de connexion meurt chez Jellyfin, le déjumelage la coupe partout ; un
+  compte désactivé rend `accountRefused`. Verts sur 10.11.11 et 12.1.0
+  (auth héritée coupée).
 - **Pour la revue Apple** : Jellyfin bloque un compte non administrateur
   après trois mots de passe faux — régler le compte de démonstration à « -1 »
   (blocage désactivé), sinon trois fautes d'un relecteur le verrouillent.
@@ -1401,7 +1412,9 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
 - **Un clavier système ne s'ouvre pas pendant qu'un autre se retire**, et
   React Native croit pourtant le champ focalisé : son `focus()` ne fait plus
   RIEN ensuite — OK sur le champ ne rouvrait plus le clavier. Ouvrir par
-  `blur()` puis `focus()`, et laisser une seconde au clavier qui se retire.
+  `blur()` puis `focus()`, et seulement sur un appui : une ouverture
+  différée (le temps que l'autre se retire) se bat avec les gestes de
+  l'utilisateur.
 - **Le serveur lit le cookie AVANT l'en-tête** (`getTokenFromRequest`) :
   `/api/auth/login` en pose un. Tout appel de connexion d'une TV part sans
   cookie (`credentials: "omit"`).
