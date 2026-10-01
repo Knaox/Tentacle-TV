@@ -1,7 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from "react";
-import { Platform, StyleSheet, TVFocusGuideView } from "react-native";
-import { TV_STAGE } from "@tentacle-tv/theme";
-import { PROFILE_HEIGHT, PROFILE_TOP, RAIL_TOP } from "../../redesign/nav/navGeometry";
+import { Platform, TVFocusGuideView, type ViewStyle } from "react-native";
+import type { NavRailGeometry } from "../../redesign/nav/navGeometry";
 import { isNavKey, navKeyOf } from "../nav/useRailState";
 import type { RedesignScreenModel } from "./useRedesignScreen";
 
@@ -37,10 +36,9 @@ const ARM_AFTER_STREAM_MS = 1100;
 const STREAM_MS = 350;
 const PROFILE = navKeyOf("Settings");
 const SEARCH = navKeyOf("Search");
-const N = TV_STAGE.nav;
 
 export function RailShortcuts({ screen }: { screen: RedesignScreenModel }) {
-  const { focus, railFocused, arrange } = screen;
+  const { focus, railFocused, arrange, railGeometry } = screen;
   const active = railFocused && arrange.heldKey === null && arrange.movingKey === null;
   const [armed, setArmed] = useState(false);
   // Le dernier focus posé dans le contenu : une arrivée juste après lui
@@ -71,23 +69,29 @@ export function RailShortcuts({ screen }: { screen: RedesignScreenModel }) {
     [focus],
   );
 
-  if (Platform.OS !== "ios" || !active) return null;
+  if (Platform.OS !== "ios" || !active || !railGeometry) return null;
   const profile = focus.node(PROFILE);
   const search = focus.node(SEARCH);
+  const zones = zonesOf(railGeometry);
   return (
     <>
-      {profile ? <TVFocusGuideView destinations={[profile]} style={styles.above} /> : null}
-      {search ? <TVFocusGuideView destinations={[search]} style={styles.below} /> : null}
-      {armed && profile ? <TVFocusGuideView destinations={[profile]} style={styles.left} /> : null}
+      {profile ? <TVFocusGuideView destinations={[profile]} style={zones.above} /> : null}
+      {search ? <TVFocusGuideView destinations={[search]} style={zones.below} /> : null}
+      {armed && profile ? <TVFocusGuideView destinations={[profile]} style={zones.left} /> : null}
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  // Entre le haut de l'écran et le rail, sur sa largeur ouverte.
-  above: { position: "absolute", left: N.left, width: N.expandedWidth, top: 0, height: RAIL_TOP - 4 },
-  // Entre le profil et le bas de l'écran.
-  below: { position: "absolute", left: N.left, width: N.expandedWidth, top: PROFILE_TOP + PROFILE_HEIGHT + 4, bottom: 0 },
-  // Entre le bord de l'écran et les capsules, sur toute la hauteur.
-  left: { position: "absolute", left: 0, width: N.left - 4, top: 0, bottom: 0 },
-});
+/** Les trois zones, sur la géométrie que la vue publie : le bloc des pages
+ *  est centré, sa hauteur suit ses entrées. */
+function zonesOf(geometry: NavRailGeometry): Record<"above" | "below" | "left", ViewStyle> {
+  const { left, expandedWidth, strip, profile } = geometry;
+  return {
+    // Entre le haut de l'écran et le bloc des pages, sur sa largeur ouverte.
+    above: { position: "absolute", left, width: expandedWidth, top: 0, height: Math.max(0, strip.top - 4) },
+    // Entre le profil et le bas de l'écran.
+    below: { position: "absolute", left, width: expandedWidth, top: profile.bottom + 4, bottom: 0 },
+    // Entre le bord de l'écran et les capsules, sur toute la hauteur.
+    left: { position: "absolute", left: 0, width: left - 4, top: 0, bottom: 0 },
+  };
+}

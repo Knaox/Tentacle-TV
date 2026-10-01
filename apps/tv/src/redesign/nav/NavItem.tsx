@@ -1,18 +1,24 @@
 import { memo, useCallback } from "react";
 import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
-import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { Icon, type IconName } from "../icons/Icon";
 import { colors, fonts, scrim, white } from "../theme/tokens";
-import { EXPANDED_ITEM } from "./navGeometry";
+import { useNavFrame } from "./navFrame";
+import { ITEM, LABEL_GAP } from "./navGeometry";
+import { navText } from "./navText";
 
 /**
  * Une entrée de la navigation : pictogramme seul quand la barre est
  * repliée, pictogramme et libellé quand elle s'ouvre (et, pour le profil, une
  * seconde ligne sous le nom). L'entrée de la page courante porte le verre
  * allumé de la maquette ; celle qui a le focus devient blanche, texte noir.
+ *
+ * Sa largeur, son ouverture et l'apparition de ses libellés viennent du rail
+ * (`useNavFrame`) : ouverte, elle prend la largeur que le texte le plus long
+ * du rail lui donne.
  *
  * Deux états d'organisation :
  * - `held` : son menu d'appui long est ouvert — un liseré de la marque dit de
@@ -36,9 +42,6 @@ export interface NavItemProps {
   avatarUri?: string;
   initial?: string;
   active: boolean;
-  expanded: boolean;
-  /** 0 → 1 à l'ouverture de la barre : l'apparition des libellés. */
-  openness: SharedValue<number>;
   mode?: NavItemMode | null;
   fade?: StyleProp<ViewStyle>;
   onSelect?: (key: string) => void;
@@ -82,12 +85,13 @@ function Glyph({ icon, avatarUri, initial, color }: { icon?: IconName; avatarUri
 interface RowProps {
   props: NavItemProps;
   width: number;
+  expanded: boolean;
   dark: boolean;
   labelIn: StyleProp<ViewStyle>;
 }
 
-function Row({ props, width, dark, labelIn }: RowProps) {
-  const { label, caption, icon, avatarUri, initial, active, expanded, mode } = props;
+function Row({ props, width, expanded, dark, labelIn }: RowProps) {
+  const { label, caption, icon, avatarUri, initial, active, mode } = props;
   const color = dark ? colors.ctaFg : active || mode ? colors.text : colors.textSecondary;
   const bold = dark || active || !!mode;
   return (
@@ -97,11 +101,11 @@ function Row({ props, width, dark, labelIn }: RowProps) {
       </View>
       {expanded ? (
         <Animated.View style={[styles.texts, labelIn]}>
-          <Text style={[bold ? styles.labelBold : styles.label, { color }]} numberOfLines={1}>
+          <Text style={[bold ? navText.labelBold : navText.label, { color }]} numberOfLines={1}>
             {label}
           </Text>
           {caption ? (
-            <Text style={[styles.caption, { color: dark ? scrim(0.6) : colors.textTertiary }]} numberOfLines={1}>
+            <Text style={[navText.caption, { color: dark ? scrim(0.6) : colors.textTertiary }]} numberOfLines={1}>
               {caption}
             </Text>
           ) : null}
@@ -112,19 +116,19 @@ function Row({ props, width, dark, labelIn }: RowProps) {
 }
 
 function Body(props: NavItemProps & { focused: boolean }) {
-  const { active, expanded, openness, mode, fade, focused } = props;
+  const { active, mode, fade, focused } = props;
+  const { expanded, openness, itemWidth } = useNavFrame();
   const p = useFocusProgress(focused);
   const whiteLayer = useAnimatedStyle(() => ({ opacity: p.value }));
   const lift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (mode === "moving" ? 0.06 : 0.04) * p.value }] }));
   const labelIn = useAnimatedStyle(() => ({ opacity: openness.value, transform: [{ translateX: -12 * (1 - openness.value) }] }));
-  const width = expanded ? EXPANDED_ITEM : N.itemHeight;
   return (
-    <Animated.View style={[{ width, height: N.itemHeight }, lift, fade]}>
+    <Animated.View style={[{ width: itemWidth, height: ITEM }, lift, fade]}>
       {active ? <View style={[StyleSheet.absoluteFill, styles.activeGlass]} /> : null}
       {mode === "held" ? <View style={[StyleSheet.absoluteFill, styles.held]} /> : null}
-      <Row props={props} width={width} dark={false} labelIn={labelIn} />
+      <Row props={props} width={itemWidth} expanded={expanded} dark={false} labelIn={labelIn} />
       <Animated.View style={[StyleSheet.absoluteFill, styles.focusFill, whiteLayer]}>
-        <Row props={props} width={width} dark labelIn={labelIn} />
+        <Row props={props} width={itemWidth} expanded={expanded} dark labelIn={labelIn} />
       </Animated.View>
       {mode ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.ring]} /> : null}
     </Animated.View>
@@ -132,12 +136,9 @@ function Body(props: NavItemProps & { focused: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  row: { height: N.itemHeight, flexDirection: "row", alignItems: "center" },
-  glyph: { width: N.itemHeight, height: N.itemHeight, alignItems: "center", justifyContent: "center" },
-  texts: { flex: 1, marginLeft: 4, justifyContent: "center" },
-  label: { ...fonts.semibold, fontSize: 26 },
-  labelBold: { ...fonts.bold, fontSize: 26 },
-  caption: { ...fonts.medium, fontSize: 22, lineHeight: 26, marginTop: -1 },
+  row: { height: ITEM, flexDirection: "row", alignItems: "center" },
+  glyph: { width: ITEM, height: ITEM, alignItems: "center", justifyContent: "center" },
+  texts: { flex: 1, marginLeft: LABEL_GAP, justifyContent: "center" },
   activeGlass: {
     borderRadius: N.itemRadius,
     backgroundColor: white(0.2),

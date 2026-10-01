@@ -26,7 +26,7 @@ export function RedesignScreen({ screen, children }: { screen: RedesignScreenMod
     <View style={styles.fill}>
       <FocusBindingProvider bind={screen.focus.binder}>
         {children}
-        <NavMenuModal arrange={screen.arrange} focus={screen.focus} />
+        <NavMenuModal arrange={screen.arrange} focus={screen.focus} railWidth={screen.railGeometry?.expandedWidth} />
       </FocusBindingProvider>
       <RailBridges screen={screen} />
       <RailShortcuts screen={screen} />

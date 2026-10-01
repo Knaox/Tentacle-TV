@@ -11,15 +11,17 @@ import Animated, {
 } from "react-native-reanimated";
 import { railMaxOffset, railRevealOffset } from "@tentacle-tv/tv-core";
 import { useForcedFocusKey } from "../focus/focusPreview";
-import { FADE_DISTANCE, ITEM_LEFT, LIST_GEOMETRY, LIST_HEIGHT, PITCH } from "./navGeometry";
+import { useNavFrame } from "./navFrame";
+import { FADE_DISTANCE, ITEM_INSET, PITCH, listGeometry } from "./navGeometry";
 import { NavItem, type NavItemMode } from "./NavItem";
 import type { NavEntry } from "./NavRail";
 import { NavScrollIndicator } from "./NavScrollIndicator";
 
 /**
- * La liste de la navigation, entre Rechercher (fixe, en tête) et la légende :
- * elle DÉFILE quand les entrées dépassent la hauteur — vingt bibliothèques et
- * plus — en suivant le focus, taillée pour la télécommande :
+ * La liste de la navigation, sous Rechercher : haute comme ses entrées tant
+ * qu'elles tiennent (le bloc des pages les épouse) ; au-delà — vingt
+ * bibliothèques et plus — elle DÉFILE en suivant le focus, taillée pour la
+ * télécommande :
  *
  * - l'entrée focalisée est toujours entière et lisible, jamais au ras du
  *   bord. Au pavé, c'est tvOS qui fait défiler la ScrollView native : il tient
@@ -47,9 +49,11 @@ import { NavScrollIndicator } from "./NavScrollIndicator";
 
 export interface NavListProps {
   entries: NavEntry[];
+  /** La hauteur visible de la liste (`navLayout`). */
+  viewport: number;
+  /** La largeur du rail ouvert : l'indicateur s'y cale. */
+  expandedWidth: number;
   activeKey: string;
-  expanded: boolean;
-  openness: SharedValue<number>;
   heldKey?: string | null;
   movingKey?: string | null;
   onSelect?: (key: string) => void;
@@ -57,15 +61,16 @@ export interface NavListProps {
   onFocusChange?: (key: string, focused: boolean) => void;
 }
 
-const G = LIST_GEOMETRY;
 /** Le côté du fondu ne s'allume qu'une fois la liste décollée de ce bord. */
 const EDGE_ON = PITCH / 2;
 /** Une demande de défilement plus récente que ça est encore en route. */
 const IN_FLIGHT_MS = 450;
 
 export const NavList = memo(function NavList(props: NavListProps) {
-  const { entries, activeKey, expanded, heldKey, movingKey, onFocusChange } = props;
+  const { entries, viewport, activeKey, heldKey, movingKey, onFocusChange } = props;
+  const { expanded, openness } = useNavFrame();
   const count = entries.length;
+  const G = useMemo(() => listGeometry(viewport), [viewport]);
   const max = railMaxOffset(count, G);
   const forced = useForcedFocusKey();
   const forcedEntry = forced?.startsWith("nav:") ? forced.slice(4) : null;
@@ -86,6 +91,8 @@ export const NavList = memo(function NavList(props: NavListProps) {
   const requested = useRef<{ y: number; at: number } | null>(null);
   const keys = useRef(entries.map((entry) => entry.key));
   keys.current = entries.map((entry) => entry.key);
+  const geometry = useRef(G);
+  geometry.current = G;
 
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
@@ -107,7 +114,7 @@ export const NavList = memo(function NavList(props: NavListProps) {
       if (index < 0) return;
       const pending = requested.current;
       const base = pending && Date.now() - pending.at < IN_FLIGHT_MS ? pending.y : offset.current;
-      const next = railRevealOffset(index, base, keys.current.length, G);
+      const next = railRevealOffset(index, base, keys.current.length, geometry.current);
       if (Math.abs(next - base) < 1) return;
       requested.current = { y: next, at: Date.now() };
       scrollRef.current?.scrollTo({ y: next, animated });
@@ -120,15 +127,15 @@ export const NavList = memo(function NavList(props: NavListProps) {
     if (pending && Date.now() - pending.at < IN_FLIGHT_MS) scrollRef.current?.scrollTo({ y: pending.y, animated: false });
   }, [scrollRef]);
 
-
   // Au banc : la clé figée, montrée sans animation.
   useEffect(() => {
     if (forcedEntry) reveal(forcedEntry, false);
   }, [forcedEntry, reveal]);
-  // Repliée : l'entrée de la page courante reste en vue.
+  // Repliée : l'entrée de la page courante reste en vue — aussi quand la
+  // liste change de hauteur (une bibliothèque arrive, l'élément du profil).
   useEffect(() => {
     if (!expanded && forced === null) reveal(activeKey, true);
-  }, [expanded, activeKey, forced, reveal]);
+  }, [expanded, activeKey, forced, reveal, viewport]);
   // Le menu d'une entrée : elle bouge derrière lui (Monter, Descendre), le
   // focus est dans le menu — la liste la suit. L'entrée qu'on déplace, elle,
   // porte le focus natif : tvOS la suit.
@@ -139,10 +146,10 @@ export const NavList = memo(function NavList(props: NavListProps) {
 
   return (
     <>
-      <NavScrollIndicator count={count} openness={props.openness} scrollY={scrollY} />
+      <NavScrollIndicator count={count} geometry={G} expandedWidth={props.expandedWidth} openness={openness} scrollY={scrollY} />
       <Animated.ScrollView
         ref={scrollRef}
-        style={styles.list}
+        style={[styles.list, { height: viewport }]}
         contentContainerStyle={styles.content}
         contentOffset={{ x: 0, y: initial }}
         onScroll={onScroll}
@@ -156,11 +163,10 @@ export const NavList = memo(function NavList(props: NavListProps) {
             index={index}
             entry={entry}
             max={max}
+            viewport={viewport}
             scrollY={scrollY}
             active={entry.key === activeKey}
             mode={entry.key === movingKey ? "moving" : entry.key === heldKey ? "held" : null}
-            expanded={expanded}
-            openness={props.openness}
             onSelect={props.onSelect}
             onLongPress={props.onLongPress}
             onFocusChange={onFocusChange}
@@ -171,17 +177,19 @@ export const NavList = memo(function NavList(props: NavListProps) {
   );
 });
 
-interface ListItemProps extends Pick<NavListProps, "expanded" | "openness" | "onSelect" | "onLongPress" | "onFocusChange"> {
+interface ListItemProps extends Pick<NavListProps, "onSelect" | "onLongPress" | "onFocusChange"> {
   index: number;
   entry: NavEntry;
   max: number;
+  viewport: number;
   scrollY: SharedValue<number>;
   active: boolean;
   mode: NavItemMode | null;
 }
 
 /** Une case de la liste : son entrée, et son fondu près d'un bord qui cache la suite. */
-const ListItem = memo(function ListItem({ index, entry, max, scrollY, active, mode, onFocusChange, ...item }: ListItemProps) {
+const ListItem = memo(function ListItem({ index, entry, max, viewport, scrollY, active, mode, onFocusChange, ...item }: ListItemProps) {
+  const G = listGeometry(viewport);
   const center = G.padTop + index * PITCH + G.item / 2;
   const fade = useAnimatedStyle(() => {
     const y = scrollY.value;
@@ -190,17 +198,15 @@ const ListItem = memo(function ListItem({ index, entry, max, scrollY, active, mo
     const above = clamp01(y / EDGE_ON);
     const below = clamp01((max - y) / EDGE_ON);
     const top = 1 - above * (1 - clamp01(at / FADE_DISTANCE));
-    const bottom = 1 - below * (1 - clamp01((LIST_HEIGHT - at) / FADE_DISTANCE));
+    const bottom = 1 - below * (1 - clamp01((viewport - at) / FADE_DISTANCE));
     return { opacity: top * bottom };
-  });
+  }, [center, max, viewport]);
   return (
     <NavItem
       itemKey={entry.key}
       label={entry.label}
       icon={entry.icon}
       active={active}
-      expanded={item.expanded}
-      openness={item.openness}
       mode={mode}
       fade={fade}
       onSelect={item.onSelect}
@@ -210,7 +216,9 @@ const ListItem = memo(function ListItem({ index, entry, max, scrollY, active, mo
   );
 });
 
+const PADS = listGeometry(0);
+
 const styles = StyleSheet.create({
-  list: { position: "absolute", left: 0, right: 0, top: 0, height: LIST_HEIGHT },
-  content: { paddingTop: G.padTop, paddingBottom: G.padBottom, paddingLeft: ITEM_LEFT, gap: PITCH - G.item, alignItems: "flex-start" },
+  list: { position: "absolute", left: 0, right: 0, top: 0 },
+  content: { paddingTop: PADS.padTop, paddingBottom: PADS.padBottom, paddingLeft: ITEM_INSET, gap: PITCH - PADS.item, alignItems: "flex-start" },
 });

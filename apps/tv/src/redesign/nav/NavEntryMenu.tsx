@@ -45,6 +45,8 @@ export interface NavEntryMenuProps {
   title: string;
   caption?: string;
   items: NavMenuItem[];
+  /** La largeur du rail ouvert (`NavRailGeometry.expandedWidth`) : le menu se pose à sa droite. */
+  railWidth?: number;
   onPress?: (key: string) => void;
 }
 
@@ -53,12 +55,12 @@ const WIDTH = 560;
 const RADIUS = 36;
 const ROW = 76;
 
-export const NavEntryMenu = memo(function NavEntryMenu({ title, caption, items, onPress }: NavEntryMenuProps) {
+export const NavEntryMenu = memo(function NavEntryMenu({ title, caption, items, railWidth = N.expandedWidth, onPress }: NavEntryMenuProps) {
   const p = useEntrance("reveal");
   const arrive = useAnimatedStyle(() => ({ opacity: Math.max(SWAP_FLOOR, p.value), transform: [{ translateX: -SLIDE * (1 - p.value) }] }));
   return (
     <Animated.View style={[styles.layer, arrive]} pointerEvents="box-none">
-      <View style={styles.panel}>
+      <View style={[styles.panel, { marginLeft: N.left + railWidth + 28 }]}>
         <View style={[StyleSheet.absoluteFill, styles.base]} />
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} elevated />
         <View style={styles.header}>
@@ -115,7 +117,7 @@ function Row({ item, focused }: { item: NavMenuItem; focused: boolean }) {
 
 const styles = StyleSheet.create({
   layer: { ...StyleSheet.absoluteFillObject, justifyContent: "center" },
-  panel: { marginLeft: N.left + N.expandedWidth + 28, width: WIDTH, borderRadius: RADIUS, paddingBottom: 18 },
+  panel: { width: WIDTH, borderRadius: RADIUS, paddingBottom: 18 },
   base: { borderRadius: RADIUS, backgroundColor: "rgba(10, 10, 14, 0.94)" },
   header: { paddingHorizontal: 40, paddingTop: 34, paddingBottom: 22, gap: 4 },
   title: { ...fonts.bold, fontSize: 36, lineHeight: 44, letterSpacing: -0.3, color: colors.text },

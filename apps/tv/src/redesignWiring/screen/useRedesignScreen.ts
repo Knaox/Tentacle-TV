@@ -1,5 +1,6 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { NavRailProps } from "../../redesign/nav/NavRail";
+import { sameRailGeometry, type NavRailGeometry } from "../../redesign/nav/navGeometry";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
 import { useNavEntries } from "../nav/useNavEntries";
 import { useRailArrange, type RailArrange } from "../nav/useRailArrange";
@@ -51,6 +52,10 @@ export interface RedesignScreenModel {
   contentKey: () => string | null;
   /** L'organisation de la navigation : menu d'appui long, déplacement. */
   arrange: RailArrange;
+  /** Où sont les capsules de la navigation et quelle largeur elle prend
+   *  ouverte (publié par la vue) : les ponts et les raccourcis s'y posent.
+   *  `null` tant que la vue ne l'a pas publiée. */
+  railGeometry: NavRailGeometry | null;
 }
 
 export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus: given }: RedesignScreenOptions): RedesignScreenModel {
@@ -84,13 +89,21 @@ export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus:
 
   const { onSelect, onLongPress } = useRailActions(railKey, focus, focusContent, arrange, { onReselect, beforeLeave });
 
+  // La géométrie que la vue publie : elle bouge avec les bibliothèques, la
+  // langue (la largeur suit les libellés) et l'élément au-dessus du profil.
+  const [railGeometry, setRailGeometry] = useState<NavRailGeometry | null>(null);
+  const onGeometry = useCallback(
+    (next: NavRailGeometry) => setRailGeometry((previous) => (sameRailGeometry(previous, next) ? previous : next)),
+    [],
+  );
+
   // Le menu d'une entrée ou un déplacement gardent la navigation ouverte.
   const { heldKey, movingKey } = arrange;
   const expanded = railFocused || heldKey !== null || movingKey !== null;
   const nav = useMemo<NavRailProps>(
-    () => ({ ...entries, activeKey: railKey, expanded, heldKey, movingKey, onSelect, onLongPress }),
-    [entries, railKey, expanded, heldKey, movingKey, onSelect, onLongPress],
+    () => ({ ...entries, activeKey: railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry }),
+    [entries, railKey, expanded, heldKey, movingKey, onSelect, onLongPress, onGeometry],
   );
 
-  return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, arrange };
+  return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, arrange, railGeometry };
 }

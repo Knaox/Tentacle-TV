@@ -26,7 +26,7 @@ import type { RedesignScreenModel } from "./useRedesignScreen";
 const N = TV_STAGE.nav;
 
 export function RailBridges({ screen }: { screen: RedesignScreenModel }) {
-  const { focus, railFocused, railKey, contentKey } = screen;
+  const { focus, railFocused, railKey, contentKey, railGeometry } = screen;
   // Un guide vise un nœud : se redessiner quand l'entrée active arrive ou part.
   const [, refresh] = useReducer((n: number) => n + 1, 0);
   useEffect(() => {
@@ -42,7 +42,10 @@ export function RailBridges({ screen }: { screen: RedesignScreenModel }) {
   if (railFocused) {
     const key = contentKey();
     const target = key ? focus.node(key) : null;
-    return target ? <TVFocusGuideView destinations={[target]} style={styles.exit} /> : null;
+    // Après les entrées de la barre ouverte, à la largeur qu'elle prend
+    // vraiment (celle de ses libellés) : jamais par-dessus elles.
+    const exitLeft = (railGeometry?.left ?? N.left) + (railGeometry?.expandedWidth ?? N.expandedWidth) + 12;
+    return target ? <TVFocusGuideView destinations={[target]} style={[styles.exit, { left: exitLeft }]} /> : null;
   }
   const entry = focus.node(navKeyOf(railKey)) ?? focus.node(navKeyOf("Home"));
   return entry ? <TVFocusGuideView destinations={[entry]} style={styles.enter} /> : null;
@@ -51,6 +54,5 @@ export function RailBridges({ screen }: { screen: RedesignScreenModel }) {
 const styles = StyleSheet.create({
   // Jusqu'au bord du contenu (`contentLeft`), sur toute la hauteur.
   enter: { position: "absolute", left: 0, top: 0, bottom: 0, width: TV_STAGE.contentLeft - 20 },
-  // Après les entrées de la barre ouverte : jamais par-dessus elles.
-  exit: { position: "absolute", left: N.left + N.expandedWidth + 12, right: 0, top: 0, bottom: 0 },
+  exit: { position: "absolute", right: 0, top: 0, bottom: 0 },
 });

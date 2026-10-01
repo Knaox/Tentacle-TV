@@ -53,13 +53,17 @@ export const TV_TYPE = {
 export const TV_STAGE = {
   /** Marge de sécurité : texte et éléments focalisables seulement. */
   safe: { x: 96, y: 54 },
+  /** La navigation (Apple TV) : des capsules qui épousent leur contenu —
+   *  repliée, une bande d'icônes en pilule ; ouverte, la largeur du texte le
+   *  plus long, entre `minExpandedWidth` et `expandedWidth`. */
   nav: {
-    left: 36,
+    left: 44,
     top: 40,
     bottom: 40,
-    collapsedWidth: 104,
+    collapsedWidth: 88,
+    minExpandedWidth: 300,
     expandedWidth: 380,
-    radius: 46,
+    radius: 44,
     itemHeight: 64,
     itemRadius: 24,
     icon: 28,

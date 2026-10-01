@@ -18,7 +18,7 @@ import type { NavMenuAction, RailArrange } from "./useRailArrange";
 
 const ACTIONS: readonly NavMenuAction[] = ["move", "up", "down", "hide", "showAll", "settings"];
 
-export function NavMenuModal({ arrange, focus }: { arrange: RailArrange; focus: FocusStore }) {
+export function NavMenuModal({ arrange, focus, railWidth }: { arrange: RailArrange; focus: FocusStore; railWidth?: number }) {
   const { t } = useTranslation("nav");
   const { menu, closeMenu, runMenuAction } = arrange;
   // Posé avant le premier rendu des actions : la garde est lue au rendu.
@@ -45,6 +45,7 @@ export function NavMenuModal({ arrange, focus }: { arrange: RailArrange; focus: 
           title={menu.label}
           caption={t("railMenuPosition", { position: menu.position, count: menu.count })}
           items={items}
+          railWidth={railWidth}
           onPress={(key) => runMenuAction(key as NavMenuAction)}
         />
       ) : null}
