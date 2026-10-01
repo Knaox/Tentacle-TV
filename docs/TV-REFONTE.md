@@ -20,6 +20,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 8. Mouvement (Apple TV) | Fait (2026-10-01) : jetons `TV_MOTION`, module `redesign/motion/`, mesuré au banc — « Le mouvement (Apple TV) » ci-dessous. |
 | 9. Pavé tactile (Apple TV) | Fait (2026-10-01) : parallaxe au pouce, héros qui tourne seul et à la main — « Le pavé tactile (Apple TV) » ci-dessous. |
 | 10. La croix Retour (Apple TV) | Faite (2026-10-01) : un seul bouton Retour, une croix, en haut à gauche de ce qu'elle referme, jamais en entrée d'une fiche — « La croix Retour (Apple TV) » ci-dessous. |
+| 11. Jumelage par identifiants (Apple TV) | Fait (2026-10-01) : après le serveur saisi à la main, l'identifiant et le mot de passe — le chemin des relecteurs d'App Store Connect ; Menu recule d'une étape — « Le jumelage par identifiants (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -993,6 +994,64 @@ Reste : Android TV — logique commune (reprise seule, fiche du lecteur,
 producteur sans objet), rien d'éprouvé ; son habillage garde son indicateur
 (pas d'outil).
 
+## Le jumelage par identifiants (Apple TV)
+
+Branche `refonte/tv-jumelage-manuel` (2026-10-01). Constat : ni l'app publiée
+ni la refonte n'avaient de champs identifiant et mot de passe — après
+l'adresse du serveur, la TV n'affichait qu'un code à confirmer depuis un
+autre appareil. Fermé à qui n'a qu'un compte de démonstration : les
+relecteurs d'App Store Connect.
+
+- **Le parcours** : accueil → « Configurer manuellement » → adresse →
+  **identifiant et mot de passe** → succès → accueil de l'app. Le code du
+  serveur reste le recours (« Jumeler avec un code »), avec sa croix vers les
+  identifiants. Android TV garde son parcours (`usePairingFlow`, option
+  `afterServer`) : ses étapes historiques n'ont pas de connexion.
+- **Aucune route nouvelle** : `pairWithPassword` (`packages/tv-core/src/session/`)
+  enchaîne `POST /api/auth/login` (le jeton Jellyfin de CONNEXION), `POST
+  /api/pair/tv-token` porté par lui (le geste du web pour le relais), puis
+  `POST /api/auth/logout` qui le rend. La TV sort JUMELÉE comme par un code :
+  `paired_devices`, jeton d'appareil, déjumelage inchangé. Le serveur garde le
+  jeton de connexion s'il est devenu celui de la TV (serveur d'avant le jeton
+  propre, qui le recopie) — la route `logout` le savait déjà.
+- **Sans cookie** (`auth/pairingTransport.ts`, `credentials: "omit"`) : la
+  connexion pose un cookie, que le serveur lit AVANT l'en-tête ; gardé, il
+  aurait authentifié la TV par le jeton de connexion, même déjumelée.
+- **Le mot de passe** : vidé de l'état dès l'envoi, jamais rangé ni
+  journalisé, seulement dans le corps de la connexion. Un refus garde
+  l'identifiant et rend le focus au mot de passe.
+- **Un message par refus** : identifiants faux (401), compte refusé par
+  Jellyfin (400 — son 403 : désactivé, bloqué, accès distant ou horaire),
+  trop de tentatives (429, cinq par minute), trop de jumelages (429, cinq par
+  heure), Jellyfin injoignable (502/503), délai (15 s), serveur injoignable,
+  erreur du serveur avec ou sans statut (`pairing:tvLogin*`).
+- **Le clavier** : l'invite de chaque champ titre le clavier système
+  (« Votre nom d'utilisateur », « Votre mot de passe ») ; l'identifiant
+  validé (« Suivant ») ouvre le mot de passe UNE SECONDE après la fermeture
+  de son clavier — rien ne s'ouvre à 0,6 s, tout à 1 s (mesuré) ; « Se
+  connecter » ouvre le premier champ vide ; Menu sur un clavier n'enchaîne
+  rien.
+- **Le focus** : entrée sur l'identifiant ; les deux boutons forment un
+  guide (`pairing:actions`, BAS depuis le mot de passe entre par « Se
+  connecter ») ; après un refus, le mot de passe — repris une fois si tvOS
+  rend le focus au champ dont le clavier se retire (`loginFocus.ts`).
+- **Menu** recule d'une étape, comme la croix (`MenuPressInterceptor`) : il
+  QUITTAIT l'app depuis toute étape du jumelage (écran racine). Sur l'accueil
+  du jumelage — la racine, sans étape précédente — et sur le succès, il reste
+  à UIKit, qui QUITTE l'app vers l'écran d'accueil de tvOS : la règle que
+  vérifie la revue Apple, rien ne le piège. Prouvé au simulateur :
+  identifiants → serveur → accueil du jumelage → écran d'accueil de tvOS.
+- **Éprouvé dans l'app réelle** (simulateur « Tentacle TV — jumelage
+  (Claude) », backend de dev, agent XCUITest) : FR et EN, adresse
+  injoignable (message, OK rouvre le clavier), identifiants faux (« essai »),
+  serveur coupé et serveur muet pendant la connexion (relais à soi), code du
+  serveur et sa croix, code du relais intact, Menu à chaque étape. Au banc :
+  groupe « Jumelage » (identifiants, chaque refus, code du serveur avec
+  croix) et « Retour ».
+- **Pour la revue Apple** : Jellyfin bloque un compte non administrateur
+  après trois mots de passe faux — régler le compte de démonstration à « -1 »
+  (blocage désactivé), sinon trois fautes d'un relecteur le verrouillent.
+
 ## La croix Retour (Apple TV)
 
 Branche `refonte/tv-retour-croix` (2026-10-01). Demande de l'utilisateur :
@@ -1006,7 +1065,7 @@ la possibilité de cliquer sur retour ».
   Elle remplace toute pilule « Retour » et tout « Fermer » de la refonte :
   fiche (nouvelle), Parcourir, erreurs d'écran et de fiche (le panneau ne
   garde que « Réessayer »), jumelage (« Annuler » du relais, « Retour » du
-  serveur manuel), bande-annonce, grand panneau, lecteur (ouverture,
+  serveur manuel ; depuis, les identifiants et le code du serveur), bande-annonce, grand panneau, lecteur (ouverture,
   habillage, pistes, épisodes, affiche de fin). Les clés que d'autres guides
   visent ne changent pas (`sheet:close`, `player:back`, `loading:back`,
   `tracks:close`, `episodes:close`, `end:leave`, `trailer:close`,
@@ -1092,7 +1151,7 @@ avec sa clé `disclaimer_accepted`.
 
 ### 1. Jumelage (`PairCode`)
 
-Automate en 5 étapes, toutes gardées :
+Automate en 6 étapes, toutes gardées :
 - **Accueil** : logo, titre, sous-titre, « Afficher le code de jumelage »,
   « Configurer manuellement », **choix de langue FR/EN** (repris de l'écran
   supprimé).
@@ -1102,7 +1161,12 @@ Automate en 5 étapes, toutes gardées :
 - **Serveur manuel** : champ URL (clavier système), vérification en cours,
   5 erreurs (URL invalide, délai, API absente, HTTP n, injoignable), la
   croix Retour, indice télécommande.
-- **Code serveur** : mêmes états que le relais + « Changer de serveur ».
+- **Identifiants** (Apple TV) : serveur visé, nom d'utilisateur et mot de
+  passe (libellés au-dessus, clavier système, points), « Se connecter »,
+  « Jumeler avec un code », un message par refus, la croix Retour (vers le
+  serveur).
+- **Code serveur** : mêmes états que le relais + « Changer de serveur » ; la
+  croix Retour vers les identifiants.
 - **Succès** : pastille animée, « Bienvenue, {nom} », ouverture de l'accueil.
 
 ### 2. Accueil (`Home`)
@@ -1330,6 +1394,17 @@ marges du cadre et de la bannière) ; la refonte va bord à bord. Reste à
 confirmer sur l'Apple TV (tâche d'appareil, de jour).
 
 ## Pièges payés au branchement
+
+- **Un `nextFocusDown` posé (`setNativeProps`) sur un champ du jumelage n'a
+  aucun effet** — mesuré, alors que le même geste marche sur la croix. Pour
+  orienter BAS vers un bouton, un groupe-guide (`AutoFocusGuide`).
+- **Un clavier système ne s'ouvre pas pendant qu'un autre se retire**, et
+  React Native croit pourtant le champ focalisé : son `focus()` ne fait plus
+  RIEN ensuite — OK sur le champ ne rouvrait plus le clavier. Ouvrir par
+  `blur()` puis `focus()`, et laisser une seconde au clavier qui se retire.
+- **Le serveur lit le cookie AVANT l'en-tête** (`getTokenFromRequest`) :
+  `/api/auth/login` en pose un. Tout appel de connexion d'une TV part sans
+  cookie (`credentials: "omit"`).
 
 - **Une vue plein écran posée SUR le contenu bloque le focus tvOS**, même
   transparente, même en `pointerEvents="box-none"` : le moteur n'entre plus
