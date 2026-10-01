@@ -1,12 +1,12 @@
 import type { DeviceProfile, DirectPlayProfile, TranscodingProfile, CodecProfile } from "@tentacle-tv/shared";
 import {
-  dynamicRangeCondition, CONDITIONS_HEVC, h264Conditions, MUSIC_BITRATE,
+  hevcConditions, h264Conditions, MUSIC_BITRATE,
   AUDIO_PROFILE_6_CHANNELS, AUDIO_ONLY_PROFILE,
   hlsFmp4Profile, hlsTsProfile, bitmapSubtitles, TEXT_SUBTITLES, type WebProfileOptions,
 } from "./blocks";
 import {
   canPlayAac, canPlayAc3, canPlayAv1, canPlayContainer, canPlayEac3, canPlayFlac,
-  canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, isChromium,
+  canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, decodesWithAvFoundation, isChromium,
   nativeAac, nativeAc3, nativeAv1, nativeEac3, nativeFlac, nativeH264, nativeHevc,
   nativeMp3, nativeOpus, nativeVp9,
   supportedDynamicRanges,
@@ -127,10 +127,12 @@ export function buildBrowserDeviceProfile(
   // Dès que le HEVC est lisible par L'UN des deux chemins : ces conditions
   // gouvernent aussi bien la copie en transcodage que la lecture directe du
   // MKV (Jellyfin les évalue dans les deux cas, cf. `GetCompatibilityVideoCodec`).
+  // Sous AVFoundation (Safari), l'étiquette `hvc1` / `dvh1` en fait partie :
+  // un `hev1` part en remux au lieu d'un refus sans repli (cf. `hevcConditions`).
   if (canPlayHevc() || nativeHevc()) {
     codecProfiles.push({
       Type: "Video", Codec: "hevc",
-      Conditions: [...CONDITIONS_HEVC, dynamicRangeCondition(supportedDynamicRanges())],
+      Conditions: hevcConditions(supportedDynamicRanges(), decodesWithAvFoundation()),
     });
   }
   codecProfiles.push(AUDIO_PROFILE_6_CHANNELS);

@@ -134,6 +134,30 @@ export function supportedDynamicRanges(): string[] {
 }
 
 /**
+ * Le `<video>` de ce moteur est-il AVFoundation ? C'est le cas de Safari, sur
+ * macOS comme sur iOS et iPadOS (qui se présente en Mac), et de TOUT
+ * navigateur iOS : Chrome, Firefox et Edge y sont des WebKit (`CriOS`,
+ * `FxiOS`, `EdgiOS`, sans « Chrome/ » dans l'agent).
+ *
+ * Ce qui en dépend : AVFoundation n'ouvre un HEVC en MP4 que sous
+ * l'étiquette `hvc1` / `dvh1`. Mesuré dans Safari (simulateur iOS 26.3), même
+ * HEVC Main 10 : `canPlayType` répond « » pour `hev1.…` et « probably » pour
+ * `hvc1.…`, et un `hev1` en `<video src>` tombe en
+ * `MEDIA_ERR_SRC_NOT_SUPPORTED` quand le `hvc1` s'affiche. Mais la lecture
+ * directe, c'est Jellyfin qui la décide, sur le seul codec : il faut lui dire
+ * l'étiquette (`hevcConditions`). La règle est partagée avec l'Apple TV et
+ * l'iPhone (`avPlayerReadsHevcTag`, packages/shared) ; jellyfin-web la pose
+ * aussi sous `browser.safari`. Chromium annonce « AppleWebKit » lui aussi, et
+ * lit le `hev1` : sa marque l'écarte, comme Android.
+ */
+export function decodesWithAvFoundation(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  if (/Chrom(e|ium)\//.test(ua) || /Android/.test(ua)) return false;
+  return /AppleWebKit\//.test(ua);
+}
+
+/**
  * Moteur Chromium — la seule marque qu'on ait besoin de reconnaître ici.
  *
  * Le MKV ne se détecte pas : `canPlayType("video/x-matroska")` répond vide

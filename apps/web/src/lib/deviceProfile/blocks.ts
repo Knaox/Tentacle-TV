@@ -1,4 +1,7 @@
-import type { CodecProfile, ProfileCondition, SubtitleProfile, TranscodingProfile } from "@tentacle-tv/shared";
+import {
+  avPlayerHevcTagCondition,
+  type CodecProfile, type ProfileCondition, type SubtitleProfile, type TranscodingProfile,
+} from "@tentacle-tv/shared";
 
 /**
  * Briques communes aux trois profils (navigateur, macOS WKWebView, mpv).
@@ -70,6 +73,22 @@ export function dynamicRangeCondition(ranges: string[]): ProfileCondition {
     Value: ranges.join("|"),
     IsRequired: false,
   };
+}
+
+/**
+ * Les conditions du profil HEVC : niveau, trames de référence, plages
+ * dynamiques — et, sous AVFoundation (Safari), l'étiquette `hvc1` / `dvh1`.
+ * Sans elle, Jellyfin donnait un MP4 `hev1` en lecture directe, Safari le
+ * refusait (`MEDIA_ERR_SRC_NOT_SUPPORTED`) et le lecteur restait sur
+ * « Appuyez pour lire », sans repli. Avec elle, Jellyfin le remuxe : vidéo
+ * copiée, ré-étiquetée `hvc1`. Chromium lit le `hev1` : rien ne change pour lui.
+ */
+export function hevcConditions(ranges: string[], avFoundation: boolean): ProfileCondition[] {
+  return [
+    ...CONDITIONS_HEVC,
+    dynamicRangeCondition(ranges),
+    ...(avFoundation ? [avPlayerHevcTagCondition()] : []),
+  ];
 }
 
 /** Audio : 6 canaux au plus (hors codecs surround spécifiques). */
