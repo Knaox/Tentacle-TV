@@ -3,6 +3,7 @@ import { usePreventRemove } from "@react-navigation/native";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { PlayerChromeView } from "../../redesign/screens/player/PlayerChromeView";
 import { TVPlayerEngine } from "../../components/player/TVPlayerEngine";
+import { BACKGROUND_FOCUS } from "../../components/player/focus/osdFocusBus";
 import type { TransportKey } from "../../components/player/focus/useOverlayFocus";
 import { useTvFocusClaim } from "../../hooks/useTvFocusClaim";
 import { useFocusStore } from "../focus/focusStore";
@@ -68,6 +69,7 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
       {props.streamUrl ? <TVPlayerEngine {...props} streamUrl={props.streamUrl} /> : null}
       <TouchableOpacity
         ref={props.backgroundRef}
+        {...BACKGROUND_FOCUS}
         activeOpacity={1}
         style={StyleSheet.absoluteFill}
         onPress={controls.showOverlay}

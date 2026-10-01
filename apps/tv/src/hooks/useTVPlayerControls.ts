@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useScrubGestures } from "./useScrubGestures";
-import { useScrubController } from "./useScrubController";
+import { ARROW_JUMP_SECONDS, useScrubController } from "./useScrubController";
 
 const OVERLAY_HIDE_MS = 5000;
 /** Fenêtre de cumul des sauts consécutifs (= durée d'affichage du badge). Tant
@@ -44,11 +44,14 @@ interface TVPlayerControlsOptions {
 }
 
 /**
- * Contrôles télécommande du lecteur — modèle « Netflix » : ←/→ ne seekent jamais
- * la lecture (OSD visible → navigation ; OSD caché/maintien → SCRUB avec curseur
- * fantôme, seek seulement à la confirmation). Orchestrateur : visibilité de
- * l'OSD + skip ±10/30, délègue tout le scrub à useScrubController (source unique
- * partagée Android/tvOS) et branche les entrées (télécommande + gestes tvOS).
+ * Contrôles télécommande du lecteur — le modèle du lecteur d'Apple, que
+ * Netflix a longtemps été sur Apple TV : habillage caché, un APPUI ←/→ saute
+ * de ±10 s et la lecture continue ; un MAINTIEN ouvre le défilement (curseur
+ * fantôme qui accélère, seek seulement à la confirmation : OK lit depuis la
+ * position visée, Retour revient où l'on était) ; habillage visible, ←/→
+ * naviguent. Orchestrateur : visibilité de l'OSD + sauts des boutons (−10/+30),
+ * délègue tout le scrub à useScrubController (source unique partagée
+ * Android/tvOS) et branche les entrées (télécommande + gestes tvOS).
  */
 export function useTVPlayerControls({
   paused, jellyfinDuration, onSeek, onBack, onPlayPause, onScrubPause,
@@ -99,30 +102,6 @@ export function useTVPlayerControls({
     setOverlayVisible(false);
   }, []);
 
-  // --- Moteur de scrub (partagé) ---
-  const scrub = useScrubController({
-    showOverlay, hideOverlay, currentTimeRef, durationRef, onSeekRef, onScrubPauseRef,
-    overlayVisibleRef, panelOpenRef, skipAnyPressRef,
-  });
-  const { scrubbingRef } = scrub;
-
-  // Ré-affiche l'OSD aux transitions play/pause — SAUF celle provoquée par le
-  // scrub lui-même (startScrubbing met en pause juste après avoir masqué l'OSD).
-  useEffect(() => {
-    if (!scrubbingRef.current) showOverlay();
-    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
-  }, [paused, showOverlay, scrubbingRef]);
-
-  /** Garde pour les boutons OSD : en scrub, OK valide le scrub au lieu d'agir.
-   *  Absorbe aussi le press JUMEAU du OK qui vient de terminer le scrub (le
-   *  « select » global et le press du bouton focusé partent du même key-up). */
-  const guardScrub = useCallback(<T extends unknown[]>(fn: (...args: T) => void) =>
-    (...args: T) => {
-      if (scrubbingRef.current) { scrub.confirmScrub(); return; }
-      if (Date.now() - scrub.scrubEndedAtRef.current < SCRUB_TWIN_PRESS_MS) return;
-      fn(...args);
-    }, [scrub, scrubbingRef]);
-
   // --- Badge « +30s / −10s » après un skip OSD caché : juste le delta, façon
   // Netflix. OSD visible (boutons ±10/30) : la seekbar montre déjà le saut. ---
   const [skipFlash, setSkipFlash] = useState<{ delta: number; id: number } | null>(null);
@@ -149,6 +128,36 @@ export function useTVPlayerControls({
     skipFlashTimerRef.current = setTimeout(() => { skipAccumRef.current = 0; setSkipFlash(null); }, SKIP_BADGE_MS);
   }, []);
 
+  // Un appui ←/→ qui appartient à la vidéo SAUTE de dix secondes, la lecture
+  // continue (le lecteur d'Apple, Netflix sur Apple TV) — cf. `useScrubController`.
+  const jumpRef = useRef((dir: "forward" | "backward") => {
+    skipBy(dir === "forward" ? ARROW_JUMP_SECONDS : -ARROW_JUMP_SECONDS);
+  });
+
+  // --- Moteur de scrub (partagé) ---
+  const scrub = useScrubController({
+    showOverlay, hideOverlay, currentTimeRef, durationRef, pausedRef, onSeekRef, onScrubPauseRef, onJumpRef: jumpRef,
+    overlayVisibleRef, panelOpenRef, skipAnyPressRef,
+  });
+  const { scrubbingRef } = scrub;
+
+  // Ré-affiche l'OSD aux transitions play/pause — SAUF celle provoquée par le
+  // scrub lui-même (startScrubbing met en pause juste après avoir masqué l'OSD).
+  useEffect(() => {
+    if (!scrubbingRef.current) showOverlay();
+    return () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); };
+  }, [paused, showOverlay, scrubbingRef]);
+
+  /** Garde pour les boutons OSD : en scrub, OK valide le scrub au lieu d'agir.
+   *  Absorbe aussi le press JUMEAU du OK qui vient de terminer le scrub (le
+   *  « select » global et le press du bouton focusé partent du même key-up). */
+  const guardScrub = useCallback(<T extends unknown[]>(fn: (...args: T) => void) =>
+    (...args: T) => {
+      if (scrubbingRef.current) { scrub.confirmScrub(); return; }
+      if (Date.now() - scrub.scrubEndedAtRef.current < SCRUB_TWIN_PRESS_MS) return;
+      fn(...args);
+    }, [scrub, scrubbingRef]);
+
   const handleSkipForward = useCallback(() => skipBy(SKIP_FORWARD_SECONDS), [skipBy]);
   const handleSkipBack = useCallback(() => skipBy(-SKIP_BACK_SECONDS), [skipBy]);
   /** Bouton ⏩ de l'OSD : appui simple → mode scrub (fantôme + plein écran).
@@ -166,7 +175,7 @@ export function useTVPlayerControls({
     onSpeedLabel: scrub.setSpeedLabel,
     // Lever du doigt : le scrub reste ouvert — OK/▶︎❙❙ valide le seek, Back
     // annule, l'inactivité annule seule SANS seek (anti-seek accidentel).
-    onEndScrub: scrub.endShuttleGesture,
+    onEndScrub: scrub.endDrag,
     onWake: showOverlay,
     durationRef,   // vitesse de scrub adaptée à la durée de la vidéo
   });

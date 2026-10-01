@@ -93,6 +93,26 @@ export function skipHoldsFocus(): boolean {
 }
 
 /**
+ * Le FOND du lecteur (sa surface focalisable plein écran) tient-il le focus ?
+ *
+ * Les flèches n'appartiennent à la VIDÉO — un appui saute de dix secondes —
+ * que là : habillage caché, rien d'autre de focalisé. Sous la pilule de saut
+ * ou la carte « À suivre », elles servent leur focus (« Passer » ↔
+ * « Masquer ») et ne déplacent pas la lecture. Les deux habillages étalent
+ * `BACKGROUND_FOCUS` sur leur fond.
+ */
+let backgroundFocused = false;
+
+export const BACKGROUND_FOCUS = {
+  onFocus: (): void => { backgroundFocused = true; },
+  onBlur: (): void => { backgroundFocused = false; },
+} as const;
+
+export function backgroundHoldsFocus(): boolean {
+  return backgroundFocused;
+}
+
+/**
  * Rendre le focus à l'habillage quand le bouton de saut qui le tenait s'en va
  * (passage fini, sauté, refusé). Un bouton démonté ne rend son focus à
  * personne : sur Android, plus rien n'était focalisé, les touches n'arrivaient

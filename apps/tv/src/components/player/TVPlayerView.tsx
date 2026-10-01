@@ -5,6 +5,7 @@ import type { MediaItem, PlayerOverlay, QualityKey, SourceQuality } from "@tenta
 import { TVPlayerEngine } from "./TVPlayerEngine";
 import { TVPlayerOverlay } from "../TVPlayerOverlay";
 import type { TransportKey } from "./focus/overlayFocusCore";
+import { BACKGROUND_FOCUS } from "./focus/osdFocusBus";
 import { TVPlaybackOverlay } from "../TVPlaybackOverlay";
 import { TVAutoPlaySwitch, type AutoPlayCtx } from "./TVAutoPlaySwitch";
 import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
@@ -165,7 +166,6 @@ export function TVPlayerView({
   // Android aussi : `hasTVPreferredFocus` ne s'y rejoue qu'à SA transition, et
   // le bouton qui partait laissait la télécommande sans rien de focalisé.
   useTvFocusClaim(backgroundRef as unknown as React.RefObject<unknown>, backgroundFocusable && !skipActive);
-
   return (
     <View style={{ flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" }}>
       <TVPlayerEngine
@@ -177,7 +177,7 @@ export function TVPlayerView({
         onError={onError} onTracks={onTracks} onVideoSize={onVideoSize}
       />
       <TouchableOpacity
-        ref={backgroundRef} activeOpacity={1}
+        ref={backgroundRef} activeOpacity={1} {...BACKGROUND_FOCUS}
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
         hasTVPreferredFocus={backgroundFocusable}
