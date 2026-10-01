@@ -36,6 +36,7 @@ export const SettingsTabs = memo(function SettingsTabs({ items, active, onSelect
         <FocusTarget
           key={item.key}
           focusKey={`settings:tab:${item.key}`}
+          form="row"
           onPress={onSelect ? () => onSelect(item.key) : undefined}
           accessibilityLabel={item.label}
         >

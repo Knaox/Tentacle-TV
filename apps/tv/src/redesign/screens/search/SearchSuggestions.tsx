@@ -70,6 +70,7 @@ export const SearchSuggestions = memo(function SearchSuggestions({
         <FocusTarget
           key={`${suggestion.kind}:${suggestion.query}`}
           focusKey={`suggestion:${index}`}
+          form="row"
           onPress={onPick ? () => onPick(suggestion.query) : undefined}
           accessibilityLabel={suggestion.query}
         >

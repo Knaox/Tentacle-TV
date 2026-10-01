@@ -73,6 +73,7 @@ export const NavEntryMenu = memo(function NavEntryMenu({ title, caption, items, 
             <FocusTarget
               key={item.key}
               focusKey={`nav:menu:${item.key}`}
+              form="row"
               onPress={onPress && !item.disabled ? () => onPress(item.key) : undefined}
               disabled={item.disabled}
               accessibilityLabel={item.label}

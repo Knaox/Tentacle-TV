@@ -68,7 +68,7 @@ const TILE_RADIUS = 24;
 
 function ValueTile({ label, value, focusKey, onPress }: { label: string; value: string; focusKey: string; onPress?: () => void }) {
   return (
-    <FocusTarget focusKey={focusKey} onPress={onPress} accessibilityLabel={`${label} : ${value}`} style={styles.tileSlot}>
+    <FocusTarget focusKey={focusKey} form="row" onPress={onPress} accessibilityLabel={`${label} : ${value}`} style={styles.tileSlot}>
       {(focused) => <TileBody label={label} value={value} focused={focused} />}
     </FocusTarget>
   );

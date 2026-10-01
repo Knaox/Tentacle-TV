@@ -52,6 +52,7 @@ export const ChoiceSheet = memo(function ChoiceSheet({ list, onChoose }: ChoiceS
             <FocusTarget
               key={option.value || "none"}
               focusKey={`settings:choice:${index}`}
+              form="row"
               onPress={onChoose ? () => onChoose(option.value) : undefined}
               accessibilityLabel={option.label}
             >

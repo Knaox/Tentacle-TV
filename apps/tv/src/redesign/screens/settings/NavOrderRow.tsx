@@ -39,6 +39,7 @@ export const NavOrderRow = memo(function NavOrderRow({ index, entry, moving, onM
     <View style={styles.line}>
       <FocusTarget
         focusKey={`settings:nav:${index}`}
+        form="row"
         onPress={onMove ? () => onMove(entry.key) : undefined}
         accessibilityLabel={`${index + 1}. ${entry.label}, ${state}`}
         style={styles.main}

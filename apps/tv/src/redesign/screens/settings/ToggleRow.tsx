@@ -38,6 +38,7 @@ export const ToggleRow = memo(function ToggleRow(props: ToggleRowProps) {
   return (
     <FocusTarget
       focusKey={props.focusKey}
+      form="row"
       onPress={onToggle ? () => onToggle(!value) : undefined}
       accessibilityLabel={`${props.title} : ${value ? props.onLabel : props.offLabel}`}
     >

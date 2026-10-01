@@ -59,8 +59,9 @@ export interface FocusBinding {
 /**
  * La FORME d'un élément focalisable, telle que la vue la décrit — une
  * description, pas une décision : `card` (une image : affiche, vignette,
- * épisode, portrait) ou `row` (une ligne large : réglage, option, entrée de
- * navigation) ; sans forme, un contrôle (bouton, pastille, touche).
+ * épisode, portrait) ou `row` (un élément LARGE : réglage, option, entrée de
+ * navigation, champ, bannière) ; sans forme, un contrôle (bouton, pastille,
+ * touche).
  * L'intégration en tire les effets natifs du focus (sur Apple TV, la
  * parallaxe au pouce) ; la vue ne les nomme jamais.
  */

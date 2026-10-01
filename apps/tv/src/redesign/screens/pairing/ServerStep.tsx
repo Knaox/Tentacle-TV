@@ -39,7 +39,7 @@ export const ServerStep = memo(function ServerStep({ url, checking, error, onCha
       <BrandMark size={96} />
       <Text style={styles.title}>{t("auth:serverAddress")}</Text>
       <Text style={styles.subtitle}>{t("auth:enterServerUrl")}</Text>
-      <FocusTarget focusKey="pairing:url" onPress={() => input.current?.focus()} accessibilityLabel={t("auth:serverAddress")}>
+      <FocusTarget focusKey="pairing:url" form="row" onPress={() => input.current?.focus()} accessibilityLabel={t("auth:serverAddress")}>
         {(focused) => <Field focused={focused} url={url} checking={checking} placeholder={t("auth:serverUrlPlaceholder")} />}
       </FocusTarget>
       <TextInput

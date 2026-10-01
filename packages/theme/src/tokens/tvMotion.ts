@@ -117,8 +117,9 @@ export const TV_MOTION = {
   parallax: {
     /** Le cadre d'une carte (affiche, vignette, épisode, portrait). */
     card: { shift: 6, tilt: 0.07 },
-    /** Une ligne large (réglage, option, entrée de navigation) : elle glisse,
-     *  sans s'incliner — l'inclinaison en déformerait les bords. */
+    /** Un élément large (réglage, option, entrée de navigation, champ,
+     *  bannière) : il glisse, sans s'incliner — l'inclinaison en déformerait
+     *  les bords. */
     row: { shift: 3, tilt: 0 },
   },
 } as const;

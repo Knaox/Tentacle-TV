@@ -95,7 +95,7 @@ export const SearchField = memo(function SearchField({
   return (
     <View style={styles.column}>
       {systemInput ? (
-        <FocusTarget focusKey="search:field" onPress={onPress} accessibilityLabel={query || placeholder}>
+        <FocusTarget focusKey="search:field" form="row" onPress={onPress} accessibilityLabel={query || placeholder}>
           {(focused) => <Face {...face} focused={focused} />}
         </FocusTarget>
       ) : (

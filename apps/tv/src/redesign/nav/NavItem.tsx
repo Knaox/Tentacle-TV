@@ -56,6 +56,7 @@ export const NavItem = memo(function NavItem(props: NavItemProps) {
   return (
     <FocusTarget
       focusKey={`nav:${itemKey}`}
+      form="row"
       onPress={onSelect ? press : undefined}
       onLongPress={onLongPress ? longPress : undefined}
       onFocusChange={focusChange}

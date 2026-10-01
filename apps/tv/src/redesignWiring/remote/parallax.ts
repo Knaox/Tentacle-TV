@@ -15,8 +15,9 @@ import type { FocusForm } from "../../redesign/focus/focusBinding";
  * - `card` — le cadre d'une carte s'incline et glisse davantage
  *   (`TV_MOTION.parallax.card`). Sa cible ne porte que le cadre : la légende,
  *   dessinée sous la cible, ne bouge pas ;
- * - `row` — une ligne large glisse sans s'incliner : l'inclinaison par
- *   défaut en déformait les bords ;
+ * - `row` — un élément large (réglage, option, entrée de navigation, champ,
+ *   bannière) glisse sans s'incliner : l'inclinaison par défaut en déformait
+ *   les bords (±5 % à 1 000 points de large) ;
  * - sans forme — le défaut de React Native (boutons, pastilles, touches).
  * Jamais d'agrandissement natif (`magnification`, `pressMagnification` à
  * 1) : le focus et l'appui s'animent déjà par Reanimated.

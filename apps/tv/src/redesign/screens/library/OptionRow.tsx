@@ -31,6 +31,7 @@ export const OptionRow = memo(function OptionRow(props: OptionRowProps) {
   return (
     <FocusTarget
       focusKey={props.focusKey}
+      form="row"
       onPress={props.onPress}
       accessibilityLabel={props.label}
       style={{ width: props.width }}

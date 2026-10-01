@@ -138,6 +138,7 @@ export const SearchTopHit = memo(function SearchTopHit({
   return (
     <FocusTarget
       focusKey="top"
+      form="row"
       onPress={onPress}
       onFocusChange={onFocusChange}
       accessibilityLabel={top.kind === "title" ? top.title : top.name}
