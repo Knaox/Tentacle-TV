@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type { TFunction } from "i18next";
 import type { LibraryFilterState } from "../../hooks/libraryCatalogParams";
 import type { FilterSheetHandlers, FilterSheetModel, LibraryFilterKey } from "../../redesign/screens/library/libraryTypes";
+import { useBackLayer } from "../back/BackScope";
 import { createEntryGuide } from "../focus/entryGuide";
 import type { FocusStore } from "../focus/focusStore";
 import { useChoiceEntry } from "../settings/settingsFocus";
@@ -103,6 +104,8 @@ export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, upda
     setOpen(null);
     focus.claim(`pill:${current.filter}`);
   }, [focus]);
+  // Retour, liste ouverte : la refermer (la Modal le reçoit, `onSheetClose`).
+  useBackLayer("menu", open !== null, closeSheet);
 
   const onSheetOption = useCallback((filter: LibraryFilterKey, id: string) => update((f) => applyOption(f, filter, id)), [update]);
   const onSheetClear = useCallback((filter: LibraryFilterKey) => {

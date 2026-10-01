@@ -4,6 +4,7 @@ import { useRecoSettings } from "@tentacle-tv/api-client";
 import type { CardSheetTarget } from "../../components/cards/actions/cardSheetTarget";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView } from "../../redesign/screens/sheet/ActionSheetView";
+import { useBackLayer } from "../back/BackScope";
 import { useFocusStore } from "../focus/focusStore";
 import { firstPictoOf, sheetEntryOf, useSheetFocus } from "./sheetFocus";
 import { useSheetModel, type SheetMode } from "./useSheetModel";
@@ -13,9 +14,10 @@ import { useSheetModel, type SheetMode } from "./useSheetModel";
  * `Modal` de React Native.
  *
  * - La `Modal` PIÈGE le focus (contrôleur présenté sur tvOS) et reçoit le
- *   bouton Menu par `onRequestClose` — le seul chemin par lequel il atteint
- *   le JS sans `usePreventRemove` ; Menu ferme. À la fermeture, tvOS rend le
- *   focus à la carte d'où il vient.
+ *   bouton Menu par `onRequestClose` ; Menu ferme — c'est la couche « menu »
+ *   du Retour (`useBackLayer`), active dès l'appui maintenu : un Retour parti
+ *   avant que le panneau ne paraisse l'annule aussi. À la fermeture, tvOS
+ *   rend le focus à la carte d'où il vient.
  * - Le FOCUS — l'entrée, les guides des groupes, la garde anti-clic
  *   fantôme — est celui de `sheetFocus` (commun avec le banc). L'entrée se
  *   décide quand la note est CONNUE (la fiche complète, la liste des notes,
@@ -68,6 +70,7 @@ function SheetBody({ target, mode, providerFilterActive, onClose }: Required<Pro
   // Fermer, c'est d'abord jouer la sortie ; `onClose` ne part qu'à sa fin.
   const [closing, setClosing] = useState(false);
   const requestClose = useCallback(() => setClosing(true), []);
+  useBackLayer("menu", !closing, requestClose);
   const model = useSheetModel({ target, mode, providerFilterActive, onClose: requestClose });
   const focus = useFocusStore();
   const rateOnly = mode === "rate";

@@ -2,14 +2,15 @@ import { useMemo } from "react";
 import { Modal } from "react-native";
 import { ChoiceSheet } from "../../redesign/screens/settings/ChoiceSheet";
 import type { ChoiceListModel } from "../../redesign/screens/settings/settingsTypes";
+import { useBackLayer } from "../back/BackScope";
 import type { FocusStore } from "../focus/focusStore";
 import { useChoiceEntry } from "./settingsFocus";
 
 /**
  * La liste de choix d'un réglage, dans une `Modal` : sur tvOS elle a son
  * propre contrôleur, le focus ne peut pas en sortir, et Menu la referme
- * (`onRequestClose`) sans passer par l'écran — le focus retrouve alors la
- * tuile qui l'avait ouverte. La feuille garde son voile et son fondu ; elle
+ * (`onRequestClose`, sa couche « menu » du Retour) — le focus retrouve alors
+ * la tuile qui l'avait ouverte. La feuille garde son voile et son fondu ; elle
  * s'ouvre sur la valeur retenue (`useChoiceEntry`).
  */
 export function ChoiceModal({ list, focus, onChoose, onClose }: {
@@ -26,6 +27,7 @@ export function ChoiceModal({ list, focus, onChoose, onClose }: {
   // ses lignes, qui relisent leur liaison. `releases` n'est lu que pour ça.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const shown = useMemo(() => (list ? { ...list } : null), [list, releases]);
+  useBackLayer("menu", list !== null, onClose);
   return (
     <Modal visible={shown !== null} transparent animationType="none" onRequestClose={onClose}>
       {shown ? <ChoiceSheet list={shown} onChoose={onChoose} /> : null}
