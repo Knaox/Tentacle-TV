@@ -41,8 +41,8 @@ import type {
  *   les réglages d'un appui, il ne remonte pas les onglets) ;
  * - `account` : `tentacle_user` (nom), portrait Jellyfin
  *   (`/Users/{id}/Images/Primary`), `tentacle_server_url`, `TV_PLATFORM_LABEL` ;
- *   `onChangeServer` → `useAuth().changeServer` puis `PairCode` ;
- *   `onLogout` → `doLogout` (verrou « lecture en cours ») ;
+ *   `onChangeServer` et `onLogout` → `useAccountActions` (déjumelage commun,
+ *   `unpairDevice`, puis `PairCode`) ;
  * - `playback` : `useOwnPlaybackSettings` + `detectPreset` (`onSelectPreset` →
  *   `setPlaybackSettings(presetSettings(p))`), `i18n.language`
  *   (`onSelectLanguage` → `changeLanguage`, `tentacle_language`,

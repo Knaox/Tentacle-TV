@@ -1,14 +1,13 @@
 import { useCallback, useMemo, useRef } from "react";
 import { ScrollView, TVFocusGuideView } from "react-native";
-import { useQueryClient } from "@tanstack/react-query";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useWatchlist, useWatchedItems,
-  useTentacleConfig, useJellyfinClient,
+  useJellyfinClient,
 } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
-import { doLogout } from "../auth/sessionFlow";
+import { useUnpairDevice } from "../hooks/useUnpairDevice";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TV_BANNER_CARD, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -52,11 +51,9 @@ function LegacyHomeScreen(props: Props) {
 }
 
 function HomeScreenInner({ navigation }: Props) {
-  const { storage } = useTentacleConfig();
-  const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
-  // Session révoquée, données en direct, rafraîchissement au retour,
-  // préchauffage des écrans : la vie de l'accueil, commune aux deux UI.
+  // Données en direct, rafraîchissement au retour, préchauffage des écrans :
+  // la vie de l'accueil, commune aux deux UI.
   useHomeLifecycle();
   const setFocusedItem = useAmbientSetter();
   const { requestRailFocus, lastContentNodeRef, railFocusedRef } = useTVNavActions();
@@ -144,11 +141,9 @@ function HomeScreenInner({ navigation }: Props) {
     openRecoDetail, cardActions.openReco, onRecoFocus, scrollToRow,
   ]);
 
-  // Rejumeler depuis l'état d'erreur : doLogout — la purge locale recopiée
-  // ici oubliait les credentials et le verrou « lecture en cours ».
-  const handleLogout = useCallback(() => {
-    doLogout(jfClient, storage, queryClient);
-  }, [jfClient, storage, queryClient]);
+  // Rejumeler depuis l'état d'erreur : le déjumelage commun.
+  const unpair = useUnpairDevice();
+  const handleLogout = useCallback(() => unpair("home"), [unpair]);
 
   return (
     <TVScreenFrame backdrop={<TVAmbientBackdrop />}>

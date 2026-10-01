@@ -23,10 +23,9 @@ const PORTRAIT_SIZE = 132;
  * de dialogue (patron LG) : sur une télécommande, un dialogue demande de
  * retrouver le bouton d'annulation. L'état se défait au blur.
  *
- * La déconnexion passe par `doLogout` — qui porte le verrou « lecture en
- * cours » — et non par une purge locale recopiée (l'ancienne modale du rail
- * dupliquait la purge SANS le verrou) : `useAccountActions`, commun aux deux
- * téléviseurs.
+ * La déconnexion passe par le déjumelage commun (`unpairDevice`) — purge
+ * complète, révocation côté serveur — et non par une purge locale recopiée :
+ * `useAccountActions`, commun aux deux téléviseurs.
  */
 export function TVSettingsAccountSection() {
   const { t } = useTranslation(["pairing", "nav", "common"]);

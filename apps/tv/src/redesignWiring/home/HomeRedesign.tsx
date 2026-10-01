@@ -2,13 +2,13 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
-import { useFeaturedItems, useJellyfinClient, useLibraries, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useFeaturedItems, useLibraries } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
 import { HomeView } from "../../redesign/screens/home/HomeView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
-import { doLogout } from "../../auth/sessionFlow";
+import { useUnpairDevice } from "../../hooks/useUnpairDevice";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
 import { useTVHomeRows } from "../../components/home/useTVHomeRows";
 import { useRecoFilterChipRow } from "../../components/reco/useRecoFilterChipRow";
@@ -37,9 +37,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
  */
 export function HomeRedesign({ navigation }: Props) {
   const { t } = useTranslation();
-  const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
-  const jfClient = useJellyfinClient();
+  const unpair = useUnpairDevice();
   useHomeLifecycle();
 
   const featuredQuery = useFeaturedItems();
@@ -75,9 +74,8 @@ export function HomeRedesign({ navigation }: Props) {
     void queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     void queryClient.invalidateQueries({ queryKey: ["next-up"], exact: true });
   }, [featuredQuery, librariesQuery, queryClient]);
-  // Rejumeler : `doLogout`, qui oublie aussi les identifiants et respecte le
-  // verrou « lecture en cours ».
-  const reconnect = useCallback(() => doLogout(jfClient, storage, queryClient), [jfClient, storage, queryClient]);
+  // Rejumeler : le déjumelage commun, puis l'écran de jumelage.
+  const reconnect = useCallback(() => unpair("home"), [unpair]);
 
   const status = useMemo<StatusPanelProps | null>(() => {
     if (failed) {

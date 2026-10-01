@@ -5,6 +5,7 @@ import type { RelayStatusResponse } from "@tentacle-tv/api-client";
 import { uiLanguage, verifyServer } from "@tentacle-tv/shared";
 import type { PairingLanguage, ServerError, ServerErrorKey } from "../redesign/screens/pairing/pairingTypes";
 import { applyBackendUrl } from "../lib/backendUrls";
+import { notifySessionChanged } from "../auth/sessionEvents";
 import type { PairedAccount } from "./usePairingCode";
 
 /**
@@ -78,6 +79,7 @@ export function usePairingFlow(onPaired: () => void) {
     setPreferencesToken(confirmed.token);
     storage.setItem("tentacle_token", confirmed.token);
     storage.setItem("tentacle_user", JSON.stringify({ Id: confirmed.user.id, Name: confirmed.user.name }));
+    notifySessionChanged();
     setAccount(confirmed.user);
     setStep("success");
     successTimer.current = setTimeout(onPaired, SUCCESS_DELAY_MS);

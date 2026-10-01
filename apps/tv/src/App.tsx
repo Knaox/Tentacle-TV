@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { AppState, Settings, Platform, type AppStateStatus } from "react-native";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { Settings, Platform } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
 import {
   JellyfinClient,
   JellyfinClientContext,
   TentacleConfigContext,
-  useJellyfinClient,
   setPreferencesToken,
   fetchInterfaceLanguage,
   hydrateQueryClient,
@@ -14,6 +13,7 @@ import {
   HOME_PERSIST_WHITELIST,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
+import { resumeUnpair } from "@tentacle-tv/tv-core";
 import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
 import { rehydrateStores } from "./lib/stores";
 import { useLiquidGlass } from "./lib/liquidGlass";
@@ -27,6 +27,9 @@ import { BootScreen } from "./components/BootScreen";
 import { useServerReachable } from "./hooks/useServerReachable";
 import { navigationRef } from "./navigation/navigationRef";
 import { runAuthRefreshFlow } from "./auth/sessionFlow";
+import { wakeRevocationDrain } from "./auth/revocationQueue";
+import { ForegroundSessionValidator } from "./components/ForegroundSessionValidator";
+import { TVSessionGuard } from "./components/TVSessionGuard";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
 import { TVSessionChannel } from "./components/TVSessionChannel";
 import { TVSessionMessageHost } from "./components/TVSessionMessageHost";
@@ -40,10 +43,6 @@ import { ThemeProvider, useTheme } from "./theme";
 // rail puisse s'y brancher sans dépendre de ce fichier.
 const storage = tvStorage;
 const uuid = new RNUuidGenerator();
-
-/** Mutex global anti-concurrence : empêche que onAuthExpired et le validateur
- *  AppState tentent un refresh en parallèle. */
-let isRefreshing = false;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,12 +76,15 @@ if (IS_TVOS) {
   }
 }
 
-void hydrateQueryClient(queryClient, tvPersistStorage, {
+const cacheHydrated = hydrateQueryClient(queryClient, tvPersistStorage, {
   whitelist: TV_HOME_WHITELIST,
 });
+// Sans session, rien ne s'écrit : le cache d'un compte quitté ne revient pas
+// sur le disque au tic suivant d'un déjumelage.
 attachQueryPersister(queryClient, tvPersistStorage, {
   whitelist: TV_HOME_WHITELIST,
   maxBytes: TV_PERSIST_MAX,
+  canSave: () => storage.getItem("tentacle_token") !== null,
 });
 
 /** React Navigation theme — `#0a0a0f`, `#12121a`, `#1e1e2e` n'ont pas de token
@@ -114,62 +116,12 @@ function initializeBackend(tentacleUrl: string | null): JellyfinClient {
     setPreferencesToken(savedToken);
   }
 
-  jfClient.setOnAuthExpired(async () => {
-    if (isRefreshing) return;
-    isRefreshing = true;
-    try {
-      // setOnAuthExpired = preuve forte que le token actuel est mort (5×401 sur
-      // les requêtes Jellyfin). Si tout échoue : doLogout, c'est légitime.
-      await runAuthRefreshFlow(jfClient, storage, queryClient, { softFail: false });
-    } finally {
-      isRefreshing = false;
-    }
-  });
+  // setOnAuthExpired = preuve forte que le token actuel est mort (5×401 sur
+  // les requêtes Jellyfin) : le verdict du serveur tranche, et seule une
+  // révocation confirmée déjumelle.
+  jfClient.setOnAuthExpired(() => runAuthRefreshFlow(jfClient, storage, queryClient, { softFail: false }));
 
   return jfClient;
-}
-
-/** Validateur de session au retour au premier plan.
- *  Sur Android TV, l'app peut rester en arrière-plan plusieurs heures (utilisateur
- *  qui change de source HDMI). Au retour, on revalide silencieusement le token.
- *
- *  Précautions critiques :
- *  - On ne valide QUE sur une vraie transition `background|inactive → active`,
- *    PAS au tout premier event (qui peut être spurious au cold start sur certaines
- *    builds Android TV) — sinon, force-stop puis relance redirige sur Login.
- *  - On utilise `softFail: true` : si tout échoue on garde la session, on laisse
- *    le seuil 5×401 du JellyfinClient arbitrer si une vraie déconnexion s'impose.
- */
-function ForegroundSessionValidator() {
-  const client = useJellyfinClient();
-  const previousStateRef = useRef<AppStateStatus>(AppState.currentState);
-
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", async (state) => {
-      const previous = previousStateRef.current;
-      previousStateRef.current = state;
-
-      // Ne valide que les transitions background|inactive → active.
-      // Le cold start envoie souvent un event "active" depuis un état initial
-      // déjà "active" ou "unknown" — on ignore.
-      if (state !== "active") return;
-      if (previous === "active" || previous === "unknown") return;
-      if (isRefreshing) return;
-
-      const token = storage.getItem("tentacle_token");
-      const serverUrl = storage.getItem("tentacle_server_url");
-      if (!token || !serverUrl) return;
-
-      isRefreshing = true;
-      try {
-        await runAuthRefreshFlow(client, storage, queryClient, { softFail: true });
-      } finally {
-        isRefreshing = false;
-      }
-    });
-    return () => sub.remove();
-  }, [client]);
-  return null;
 }
 
 /** Contenu principal — nécessite QueryClientProvider + ThemeProvider comme parents */
@@ -220,6 +172,7 @@ function AppContent() {
   return (
     <>
       <ForegroundSessionValidator />
+      <TVSessionGuard />
       <ForegroundDataRefresher />
       <DirectStreamingSync storage={storage} />
       <TVSessionChannel storage={storage} />
@@ -253,6 +206,17 @@ export function App() {
   useEffect(() => {
     (async () => {
       await storage.hydrate();
+      // Un déjumelage interrompu (app tuée en pleine purge) se termine AVANT
+      // que quoi que ce soit lise la session : jamais un état à moitié jumelé.
+      resumeUnpair(storage);
+      // Sans session, le cache persisté n'est à personne : ni en mémoire, ni
+      // sur le disque.
+      await cacheHydrated;
+      if (!storage.getItem("tentacle_token")) {
+        queryClient.clear();
+        storage.removeItem("tentacle_query_cache_v1");
+      }
+      wakeRevocationDrain();
       // Les magasins de réglages naissent avant cette hydratation : les relire
       // maintenant que le cache est rempli (voir `lib/stores.ts`).
       rehydrateStores();

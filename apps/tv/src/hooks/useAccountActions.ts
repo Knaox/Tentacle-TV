@@ -1,34 +1,24 @@
 import { useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { setPreferencesToken, useAuth, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { doLogout } from "../auth/sessionFlow";
-import { navigationRef } from "../navigation/navigationRef";
+import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { useUnpairDevice } from "./useUnpairDevice";
 
 /**
  * Les deux façons de quitter le compte depuis les réglages, sur les deux
- * téléviseurs :
- * - `logout` passe par `doLogout`, qui porte le verrou « lecture en cours » ;
- * - `changeServer` oublie le serveur (`useAuth().changeServer`) puis rouvre
- *   le jumelage.
+ * téléviseurs — toutes deux un déjumelage complet (`unpairDevice`) :
+ * - `logout` garde l'adresse du serveur, pour rejumeler sans la ressaisir ;
+ * - `changeServer` l'oublie aussi. La révocation, mise en file AVANT, garde
+ *   l'adresse du serveur qu'on quitte.
  */
 export function useAccountActions() {
   const { storage } = useTentacleConfig();
-  const queryClient = useQueryClient();
-  const jfClient = useJellyfinClient();
-  const { mutate: forgetServer } = useAuth().changeServer;
+  const unpair = useUnpairDevice();
 
-  const logout = useCallback(() => {
-    doLogout(jfClient, storage, queryClient);
-  }, [jfClient, storage, queryClient]);
+  const logout = useCallback(() => unpair("settings"), [unpair]);
 
   const changeServer = useCallback(() => {
-    forgetServer(undefined, {
-      onSettled: () => {
-        setPreferencesToken(null);
-        navigationRef.reset({ index: 0, routes: [{ name: "PairCode" }] });
-      },
-    });
-  }, [forgetServer]);
+    unpair("settings");
+    storage.removeItem("tentacle_server_url");
+  }, [unpair, storage]);
 
   return { logout, changeServer };
 }

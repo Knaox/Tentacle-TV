@@ -15,8 +15,9 @@ import type { AccountAction, SettingsAccount } from "./settingsTypes";
  * il faudrait y retrouver le bouton d'annulation.
  *
  * L'état armé est un état d'AFFICHAGE, local à la vue ; `initialArmed` le
- * pose à l'ouverture (banc). Branchement : `useAuth().changeServer` puis
- * retour au jumelage, et `doLogout` (qui porte le verrou « lecture en cours »).
+ * pose à l'ouverture (banc). Branchement : `useAccountActions`, deux
+ * déjumelages complets (`unpairDevice`) — le changement de serveur oublie en
+ * plus l'adresse.
  */
 
 export interface AccountPanelProps {

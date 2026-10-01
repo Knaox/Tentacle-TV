@@ -5,11 +5,9 @@ import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { setPlayingMedia } from "../auth/playbackGuard";
 
 /**
  * Centralise les effets lifecycle du PlayerScreen TV :
- *  - playbackGuard (empêche logout intempestif)
  *  - rangement de sortie au démontage (règle partagée `useWatchStopInvalidation`)
  *  - écoute AppState (pause + rapport position en arrière-plan)
  *  - helpers `leavePlayer` et `handleFinished`
@@ -51,11 +49,6 @@ export function useTVPlaybackLifecycle(args: {
   onForegroundRef.current = onForeground;
   const queryClient = useQueryClient();
   const runStopInvalidation = useWatchStopInvalidation();
-
-  useEffect(() => {
-    setPlayingMedia(true);
-    return () => { setPlayingMedia(false); };
-  }, []);
 
   // Garde anti-double sortie : BACK pressé pendant l'await de reportStop (ou
   // fin d'épisode + BACK simultanés) déclenchait deux goBack() → warning
