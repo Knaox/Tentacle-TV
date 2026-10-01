@@ -262,10 +262,13 @@ réduit à la note. Un seul crochet d'actions (`useCardActions`,
 `apps/tv/src/redesignWiring/cards/`), jamais une copie. Les étoiles ENTIÈRES ne
 valent plus que pour Android TV et webOS (`TVCardActionSheet`,
 `CardActionSheetTv`), pas encore portés, qui gardent les marqueurs au focus. Sur
-tvOS, la cible d'une carte est un `FocusTarget` sans rendu posé AU-DESSUS de son
-image et de sa légende : tvOS ne focalise jamais un élément RECOUVERT par ce qui
-dessine — la recherche géométrique ne le propose plus (régression payée : plus
-une carte atteignable). État et gestes : `useCardToggles`,
+tvOS, la cible d'une carte (`CardShell`, `FocusTarget form="card"`) couvre son
+image ET sa légende mais ne porte que l'IMAGE ; la légende est dessinée avant
+elle, dessous, hors de son sous-arbre. Jamais un frère qui dessine PAR-DESSUS la
+cible : tvOS ne focalise jamais un élément RECOUVERT par ce qui dessine — la
+recherche géométrique ne le propose plus (régression payée : plus une carte
+atteignable). Seule l'image suit le pouce (parallaxe native de la vue
+focalisée), la légende ne s'incline jamais. État et gestes : `useCardToggles`,
 `useCardRatingTarget`, `useCardFace` (api-client). Une feuille qui garde un
 instantané de sa carte lit la fiche `["item", id]`, que les mutations patchent.
 
