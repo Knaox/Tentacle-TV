@@ -4,5 +4,6 @@
 export * from "./backLayers";
 export * from "./railPinning";
 export * from "./railOrder";
+export * from "./railColumn";
 export * from "./railScroll";
 export * from "./railSpec";
