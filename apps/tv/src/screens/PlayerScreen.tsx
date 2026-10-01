@@ -186,10 +186,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   });
   routeBackRef.current = back.routeBack;
 
-  // L'habillage reprend le focus à sa réapparition et à l'entrée dans la vidéo.
-  // Réapparaître, c'est SE MONTRER : une carte « suivant » tait l'habillage, et
-  // restaurer son focus y enverrait le focus sur un bouton invisible.
-  useTVOsdEntryFocus({ overlayVisible: controls.overlayVisible && autoPlay.source === null, hasStarted, bumpOsdFocus });
+  // L'habillage reprend le focus à sa réapparition et à l'entrée dans la vidéo. Réapparaître, c'est
+  // SE MONTRER : une carte « suivant » ou l'écran d'ouverture (avant la 1re image) le taisent — restaurer
+  // son focus l'enverrait sur un bouton infocalisable, et l'app restait SANS focus (HAUT à l'ouverture).
+  useTVOsdEntryFocus({ overlayVisible: controls.overlayVisible && autoPlay.source === null && !!streamUrl && (hasStarted || !!videoError), hasStarted, bumpOsdFocus });
 
   // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
   const trickplay = useTVTrickplay(item, p.mediaSource?.Id);

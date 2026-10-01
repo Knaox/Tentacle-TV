@@ -4,6 +4,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { BACK_TOP, BackButton } from "../../controls/BackButton";
 import { PillButton } from "../../controls/PillButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { Icon } from "../../icons/Icon";
 import { TitleArt } from "../../hero/TitleArt";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
@@ -18,7 +19,8 @@ import type { PlayerMedia, PlayerPhase } from "./playerTypes";
  * - démarrage : l'indicateur seul ;
  * - échec : le message et « Réessayer » (pilule blanche).
  * La croix Retour est toujours là, en haut à gauche : une ouverture qui
- * traîne n'enferme personne. Clés : `loading:back`, `loading:retry`.
+ * traîne n'enferme personne. Clés : `loading:back`, `loading:retry` ; groupe
+ * `loading:screen` — l'écran entier, où l'intégration retient le focus.
  */
 
 const SAFE = TV_STAGE.safe;
@@ -50,7 +52,7 @@ export const PlayerLoading = memo(function PlayerLoading({
   const failed = phase.kind === "failed";
   const step = phase.kind === "resolving" ? phase.step : null;
   return (
-    <View style={styles.root}>
+    <FocusGroup focusKey="loading:screen" style={styles.root}>
       {media.backdropUri ? <Image source={{ uri: media.backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
       <SoftGradient
         {...STAGE_SIZE}
@@ -90,7 +92,7 @@ export const PlayerLoading = memo(function PlayerLoading({
           </View>
         )}
       </View>
-    </View>
+    </FocusGroup>
   );
 });
 

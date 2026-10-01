@@ -17,8 +17,9 @@ import type { FocusStore } from "../focus/focusStore";
  *   décompte ; quand l'habillage est là, elle en ressort vers lecture/pause
  *   (BAS) et vers Retour (HAUT, GAUCHE) ;
  * - cartes, affiche, panneaux et message-outil le retiennent tant qu'ils sont
- *   ouverts ;
- * - l'en-tête des épisodes renvoie toute montée vers Fermer, la bande des
+ *   ouverts ; l'écran d'ouverture aussi, croix Retour comprise, sans
+ *   choisir par où l'on y entre (`ScreenTrap`) ;
+ * - l'en-tête des épisodes renvoie toute montée vers la croix, la bande des
  *   saisons fait entrer par la saison AFFICHÉE.
  *
  * Chaque conteneur est un composant de MODULE (identité stable, exigée par le
@@ -60,6 +61,56 @@ function useStoreDestination(store: FocusStore, key: string): FocusDestination[]
     if (node && destinations[0] !== node) setDestinations([node]);
   });
   return destinations;
+}
+
+/**
+ * La destination VIVANTE d'un écran : la première de ses clés dont le nœud est
+ * monté, relue après chaque rendu et à chaque montage — jamais un nœud parti
+ * (« Réessayer » disparaît quand l'ouverture repart).
+ */
+function useLiveDestination(store: FocusStore, keys: readonly string[]): FocusDestination[] {
+  const [destinations, setDestinations] = useState<FocusDestination[]>([]);
+  const aim = useCallback(() => {
+    const key = keys.find((k) => store.node(k));
+    const node = key ? (store.node(key) as FocusDestination | null) : null;
+    setDestinations((prev) => (node ? (prev[0] === node ? prev : [node]) : prev.length ? [] : prev));
+  }, [store, keys]);
+  useEffect(() => store.subscribeNodes((key) => keys.includes(key) && aim()), [store, keys, aim]);
+  // Relu après chaque rendu, voulu : la cible peut naître sans que le magasin le dise à temps.
+  useEffect(aim);
+  return destinations;
+}
+
+/**
+ * Un PIÈGE D'ÉCRAN : le focus ne quitte pas un écran qui couvre la vidéo — ni
+ * par une direction, ni vers l'habillage qu'il cache (infocalisable dessous :
+ * mesuré, un saut y laissait l'app sans aucun focus). Sa destination est
+ * l'entrée de l'écran, pour un focus qui y ARRIVE d'ailleurs ; pas
+ * d'`autoFocus`, qui entrerait par la cible la plus en haut à gauche — la
+ * croix Retour.
+ */
+function ScreenTrap({ destinations, style, pointerEvents, children }: FocusGroupContainerProps & { destinations: FocusDestination[] }) {
+  return (
+    <TVFocusGuideView
+      destinations={destinations}
+      focusable={destinations.length > 0 ? undefined : false}
+      trapFocusUp
+      trapFocusDown
+      trapFocusLeft
+      trapFocusRight
+      style={style}
+      pointerEvents={pointerEvents}
+    >
+      {children}
+    </TVFocusGuideView>
+  );
+}
+
+/** L'ouverture : « Réessayer » quand elle a échoué, sinon la croix — la seule action. */
+const LOADING_ENTRIES = ["loading:retry", "loading:back"] as const;
+function LoadingScreenGroup(props: FocusGroupContainerProps) {
+  const { store } = usePlayerFocusState();
+  return <ScreenTrap {...props} destinations={useLiveDestination(store, LOADING_ENTRIES)} />;
 }
 
 /**
@@ -148,6 +199,7 @@ export const PLAYER_GROUP_CONTAINERS: Readonly<Record<string, ComponentType<Focu
   "player:skip-island": IslandGroup,
   "upnext:actions": TrapFocusGuide,
   "end:actions": TrapFocusGuide,
+  "loading:screen": LoadingScreenGroup,
   "trouble:actions": TrapFocusGuide,
   "tracks:panel": TrapFocusGuide,
   "episodes:panel": TrapFocusGuide,
