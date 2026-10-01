@@ -23,6 +23,8 @@ const audio = (codec: string, index = 1, extra: Partial<MediaStream> = {}) =>
   stream({ Type: "Audio", Codec: codec, Index: index, IsDefault: index === 1, ...extra });
 const sub = (codec: string, index: number, extra: Partial<MediaStream> = {}) =>
   stream({ Type: "Subtitle", Codec: codec, Index: index, ...extra });
+/** Un HEVC en MP4 tel que Jellyfin le décrit : étiqueté `hvc1`, l'entrée qu'AVPlayer lit. */
+const hvc1 = (extra: Partial<MediaStream> = {}) => video("hevc", { CodecTag: "hvc1", ...extra });
 
 const base: EngineRouterInput = {
   platform: "ios",
@@ -61,13 +63,41 @@ describe("decideEngine — iOS, mode Auto", () => {
   });
 
   it("MP4 HEVC + E-AC-3 avec un ASS choisi : le lecteur avancé, pour les styles", () => {
-    expect(ios({ container: "mp4", streams: [video("hevc"), audio("eac3"), sub("ass", 2)], selectedSubtitleIndex: 2 }))
+    expect(ios({ container: "mp4", streams: [hvc1(), audio("eac3"), sub("ass", 2)], selectedSubtitleIndex: 2 }))
       .toEqual({ engine: "mpv", reason: "subtitle-codec" });
   });
 
   it("le même MP4 sans sous-titre choisi reste au lecteur système", () => {
-    expect(ios({ container: "mp4", streams: [video("hevc"), audio("eac3"), sub("ass", 2)], selectedSubtitleIndex: -1 }))
+    expect(ios({ container: "mp4", streams: [hvc1(), audio("eac3"), sub("ass", 2)], selectedSubtitleIndex: -1 }))
       .toEqual({ engine: "native", reason: "native-media" });
+  });
+
+  it("MP4 HEVC 10 bits `hev1` + AAC : le lecteur avancé — AVPlayer l'afficherait NOIR, sans erreur", () => {
+    const streams = [video("hevc", { CodecTag: "hev1", BitDepth: 10 }), audio("aac")];
+    expect(ios({ container: "mov,mp4,m4a,3gp,3g2,mj2", streams })).toEqual({ engine: "mpv", reason: "hevc-tag" });
+  });
+
+  it("le même MP4 étiqueté `hvc1` (ou `dvh1`) reste au lecteur système", () => {
+    expect(ios({ container: "mp4", streams: [hvc1({ BitDepth: 10 }), audio("aac")] }))
+      .toEqual({ engine: "native", reason: "native-media" });
+    expect(ios({ container: "mp4", streams: [video("hevc", { CodecTag: "dvh1", DvProfile: 8 }), audio("aac")] }))
+      .toEqual({ engine: "native", reason: "native-media" });
+  });
+
+  it("MP4 HEVC sans étiquette connue : le lecteur avancé (l'inconnue ne prouve rien)", () => {
+    expect(ios({ container: "mp4", streams: [video("hevc"), audio("aac")] })).toEqual({ engine: "mpv", reason: "hevc-tag" });
+  });
+
+  it("l'étiquette ne regarde que le HEVC : un MP4 H.264 `avc1` reste au système", () => {
+    expect(ios({ container: "mp4", streams: [video("h264", { CodecTag: "avc1" }), audio("aac")] }))
+      .toEqual({ engine: "native", reason: "native-media" });
+  });
+
+  it("un `hev1` sous AirPlay, sous le réglage « système » ou sans module : le système, que le serveur remuxe", () => {
+    const streams = [video("hevc", { CodecTag: "hev1" }), audio("aac")];
+    expect(ios({ container: "mp4", streams, airPlayActive: true })).toEqual({ engine: "native", reason: "airplay" });
+    expect(ios({ container: "mp4", streams, setting: "native" })).toEqual({ engine: "native", reason: "setting" });
+    expect(ios({ container: "mp4", streams, mpvAvailable: false })).toEqual({ engine: "native", reason: "mpv-unavailable" });
   });
 
   it("MP4 + PGS choisi : le lecteur avancé (jamais gravé par le serveur)", () => {
@@ -116,6 +146,11 @@ describe("decideEngine — iOS, mode Auto", () => {
     expect(ios({ streams, preferSystemAtmos: false })).toEqual({ engine: "mpv", reason: "container" });
   });
 
+  it("l'Atmos du système l'emporte même sur un `hev1` : le remux du serveur (« remux accepté ») ré-étiquette l'image", () => {
+    const streams = [video("hevc", { CodecTag: "hev1" }), audio("eac3", 1, { DisplayTitle: "English - Dolby Digital+ Atmos - 5.1" })];
+    expect(ios({ container: "mp4", streams, preferSystemAtmos: true })).toEqual({ engine: "native", reason: "system-atmos" });
+  });
+
   it("AirPlay actif au démarrage : le lecteur système, quel que soit le réglage", () => {
     expect(ios({ airPlayActive: true })).toEqual({ engine: "native", reason: "airplay" });
     expect(ios({ airPlayActive: true, setting: "mpv" })).toEqual({ engine: "native", reason: "airplay" });
@@ -130,6 +165,11 @@ describe("decideEngine — iOS, mode Auto", () => {
 });
 
 describe("decideEngine — Android, mode Auto", () => {
+  it("MP4 HEVC `hev1` : ExoPlayer le lit — la règle d'étiquette est celle d'AVFoundation seul", () => {
+    expect(android({ container: "mp4", streams: [video("hevc", { CodecTag: "hev1" }), audio("aac")] }))
+      .toEqual({ engine: "native", reason: "native-media" });
+  });
+
   it("MKV HEVC + DTS : ExoPlayer avec l'extension FFmpeg (dès que la liste native le dit)", () => {
     // La liste native Android s'étend à l'étape Android ; ici le DTS n'y est pas encore.
     expect(android({ streams: [video("hevc"), audio("eac3")] })).toEqual({ engine: "native", reason: "native-media" });

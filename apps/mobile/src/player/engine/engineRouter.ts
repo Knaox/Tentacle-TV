@@ -1,4 +1,4 @@
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import { hevcTagUnreadable, type MediaStream as JfStream } from "@tentacle-tv/shared";
 import {
   ANDROID_NATIVE_SUPPORT,
   IOS_NATIVE_SUPPORT,
@@ -27,6 +27,7 @@ export type EngineReason =
   | "native-media"
   | "container"
   | "video-codec"
+  | "hevc-tag"
   | "video-bit-depth"
   | "audio-codec"
   | "subtitle-styled"
@@ -129,6 +130,11 @@ function decideIos(input: EngineRouterInput, support: PlatformMediaSupport): Eng
   if (video && videoCodec === "av1" && !input.av1Hardware) return native("av1-software");
   if (!supportsToken(support.containers, input.container)) return mpv("container");
   if (video && !support.videoCodecs.has(videoCodec) && videoCodec !== "av1") return mpv("video-codec");
+  // Un HEVC qui n'est pas étiqueté `hvc1` / `dvh1` (un `hev1`, ce que ffmpeg
+  // pose de lui-même) s'affiche NOIR sous AVPlayer, le son seul, sans la
+  // moindre erreur : aucun repli ne viendrait. Le lecteur avancé le lit tel
+  // quel. La règle est celle de l'Apple TV et de Safari (packages/shared).
+  if (hevcTagUnreadable(video)) return mpv("hevc-tag");
   // AVPlayer ne décode que le H.264 8 bits.
   if (video && videoCodec === "h264" && (video.BitDepth ?? 8) > 8) return mpv("video-bit-depth");
   if (audio && !support.audioCodecs.has(codecOf(audio))) return mpv("audio-codec");
