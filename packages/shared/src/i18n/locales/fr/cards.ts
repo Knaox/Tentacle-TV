@@ -64,4 +64,9 @@ export default {
   favoriteAdded: "Ajouté aux favoris.",
   favoriteOnArrivalAdded: "Aimé — il entrera dans vos favoris dès son arrivée.",
   favoriteFailed: "Les favoris n'ont pas pu être modifiés.",
+
+  // Un titre ABSENT de la bibliothèque (téléviseurs : la saga d'un film) —
+  // son badge, et ce qu'on dit quand on l'ouvre.
+  notInLibrary: "Pas dans la bibliothèque",
+  notInLibraryNotice: "Ce titre n'est pas disponible dans votre bibliothèque.",
 } as const;

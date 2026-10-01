@@ -122,16 +122,18 @@ export interface ExtraModel {
 
 export interface SagaEntryModel {
   key: string;
-  /** Un volet de la bibliothèque : sa carte, marqueurs résolus. */
-  card?: CardModel;
-  /** Un volet absent de la bibliothèque : son titre, son année — jamais une fausse affiche. */
-  missing?: { title: string; year?: string };
+  /** La carte du volet : celle de la bibliothèque, marqueurs résolus — ou, un
+   *  volet ABSENT, son affiche TMDB grisée et son badge (`card.absent`). */
+  card: CardModel;
   /** « Volet 2 ». */
   rank?: string | null;
   /** « Cette fiche », « Reprendre », « À suivre » — mis en valeur. */
   cue?: string | null;
   /** Le film ouvert : la carte reste focalisable, mais inerte. */
   current?: boolean;
+  /** Faux : l'appui maintenu n'ouvre rien — un volet absent, quand le serveur
+   *  ne sait pas demander de titres. */
+  holdable?: boolean;
 }
 
 export interface SagaModel {
@@ -160,6 +162,8 @@ export interface DetailCallbacks {
   onOpenPerson?: (person: PersonModel) => void;
   onOpenExtra?: (extra: ExtraModel) => void;
   onOpenSagaEntry?: (entry: SagaEntryModel) => void;
+  /** L'appui maintenu sur un volet (`holdable`) : le grand panneau. */
+  onLongPressSagaEntry?: (entry: SagaEntryModel) => void;
   /** Une affiche de la collection ou des titres similaires. */
   onOpenCard?: (section: "collection" | "similar", card: CardModel) => void;
   /** L'appui long d'une affiche : la feuille d'actions des cartes. */

@@ -61,4 +61,9 @@ export default {
   favoriteAdded: "Added to favorites.",
   favoriteOnArrivalAdded: "Liked — it will join your favorites as soon as it arrives.",
   favoriteFailed: "Favorites couldn't be updated.",
+
+  // A title MISSING from the library (TVs: a movie's saga) — its badge, and
+  // what we say when it's opened.
+  notInLibrary: "Not in library",
+  notInLibraryNotice: "This title isn't available in your library.",
 } as const;

@@ -9,7 +9,9 @@ import {
   type SagaInfo,
   type SagaMember,
 } from "@tentacle-tv/shared";
+import type { TFunction } from "i18next";
 import type { CardModel } from "../../../src/redesign/cards/cardTypes";
+import { absentCard, notInLibrary, tmdbPosterUri } from "../../../src/redesignWiring/cards/absentCards";
 import { paletteFromBlurHash } from "../../../src/redesign/color/artworkPalette";
 import type { CrewGroupModel, ExtraModel, PersonModel, SagaModel } from "../../../src/redesign/screens/detail/detailTypes";
 import type { BenchData } from "./benchData";
@@ -67,8 +69,10 @@ export function crewOf(item: MediaItem): CrewGroupModel[] {
 
 /**
  * La saga : la réponse RÉELLE de `/api/sagas`, les films de la bibliothèque,
- * et — le téléviseur n'ayant pas d'extension — les volets manquants tirés des
- * `parts` de TMDB (titre et date, sans image).
+ * et les volets manquants tirés des `parts` de TMDB — leur affiche quand la
+ * réponse la porte (`posterPath`, serveurs récents), grisée, sinon un cadre
+ * titre et année ; le badge « Pas dans la bibliothèque », comme dans l'app
+ * (`absentCard`).
  */
 export function sagaOf(data: BenchData, item: MediaItem): SagaModel | null {
   const raw = data.snapshot.detail?.[item.Id]?.saga as { collectionId: number; saga: SagaInfo | null; members: SagaMember[] } | undefined;
@@ -82,7 +86,7 @@ export function sagaOf(data: BenchData, item: MediaItem): SagaModel | null {
       title: part.title,
       year: part.releaseDate ? Number(part.releaseDate.slice(0, 4)) : null,
       subtitle: null,
-      imageUrl: null,
+      imageUrl: tmdbPosterUri(part.posterPath) ?? null,
       href: "",
       badge: null,
       tmdbId: part.tmdbId,
@@ -101,7 +105,13 @@ export function sagaOf(data: BenchData, item: MediaItem): SagaModel | null {
       const label = sagaLabel(i18n.t, entry);
       return entry.kind === "library"
         ? { key: entry.key, card: cardOf(data, entry.item, yearOf(entry.item)), rank: label.rank, cue: label.cue, current: entry.cue === "current" }
-        : { key: entry.key, missing: { title: entry.item.title, year: entry.item.year ? String(entry.item.year) : undefined }, rank: label.rank, cue: label.cue };
+        : {
+            key: entry.key,
+            card: absentCard({ id: entry.key, title: entry.item.title, year: entry.item.year, posterUri: entry.item.imageUrl ?? undefined, absent: notInLibrary(t as TFunction) }),
+            rank: label.rank,
+            cue: label.cue,
+            holdable: false,
+          };
     }),
   };
 }

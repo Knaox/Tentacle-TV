@@ -11,6 +11,7 @@ import {
 } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import type { SagaModel } from "../../redesign/screens/detail/detailTypes";
+import { absentCard, notInLibrary, tmdbPosterUri } from "../cards/absentCards";
 import { useCardModelFactory, useCardModels, type CardModelOptions } from "../cards/cardModels";
 
 /**
@@ -18,9 +19,9 @@ import { useCardModelFactory, useCardModels, type CardModelOptions } from "../ca
  * (`useCardModels` : marqueurs du modèle partagé, résolus pour la liste) :
  * - le contenu d'une collection (`useCollectionItems`) ;
  * - la saga d'un film (`useSagaView`) : ses volets de la bibliothèque, et à
- *   leur rang ceux qui manquent — tirés des `parts` de TMDB, le téléviseur
- *   n'ayant pas d'extension : un cadre, un titre, une année, jamais une
- *   fausse affiche ;
+ *   leur rang ceux qui manquent — tirés des `parts` de TMDB : leur affiche
+ *   TMDB grisée et le badge « Pas dans la bibliothèque » (`absentCard`), ou,
+ *   sans affiche (serveur plus ancien), un cadre qui écrit titre et année ;
  * - les titres similaires (`useSimilarItems`) — ceux de la SÉRIE pour un
  *   épisode, dans sa bibliothèque ; aucun pour une collection.
  */
@@ -41,7 +42,7 @@ function useSagaParts(item: MediaItem | undefined, lang: string) {
       title: part.title,
       year: part.releaseDate ? Number(part.releaseDate.slice(0, 4)) : null,
       subtitle: null,
-      imageUrl: null,
+      imageUrl: tmdbPosterUri(part.posterPath) ?? null,
       href: "",
       badge: null,
       tmdbId: part.tmdbId,
@@ -86,8 +87,10 @@ export function useDetailCards(item: MediaItem | undefined, series: MediaItem | 
         if (entry.kind === "library") {
           return { key: entry.key, card: factory(entry.item, POSTER), rank, cue, current: entry.cue === "current" };
         }
-        const year = entry.item.year ? String(entry.item.year) : undefined;
-        return { key: entry.key, missing: { title: entry.item.title, year }, rank, cue };
+        const { title, year, imageUrl } = entry.item;
+        const card = absentCard({ id: entry.key, title, year, posterUri: imageUrl ?? undefined, absent: notInLibrary(t) });
+        // Rien à montrer de plus d'un titre qu'on ne peut pas obtenir : pas d'appui maintenu.
+        return { key: entry.key, card, rank, cue, holdable: false };
       }),
     };
   }, [view, t, factory]);

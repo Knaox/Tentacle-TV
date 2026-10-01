@@ -57,6 +57,7 @@ export const DetailSections = memo(function DetailSections({
   onOpenPerson,
   onOpenExtra,
   onOpenSagaEntry,
+  onLongPressSagaEntry,
   onOpenCard,
   onLongPressCard,
 }: DetailSectionsProps) {
@@ -118,7 +119,7 @@ export const DetailSections = memo(function DetailSections({
           <SagaRow
             entries={saga.entries}
             onOpen={onOpenSagaEntry}
-            onLongPress={onLongPressCard ? (entry) => entry.card && onLongPressCard(entry.card) : undefined}
+            onLongPress={onLongPressSagaEntry}
           />
         </DetailSection>
       ) : null}

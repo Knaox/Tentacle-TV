@@ -1,10 +1,12 @@
 import { useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useResolvePlayTarget } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { RootStackParamList } from "../../navigation/types";
 import type { DetailCallbacks } from "../../redesign/screens/detail/detailTypes";
+import { showNotice } from "../overlays/transientNotice";
 import type { DetailModel } from "./useDetailModel";
 
 /**
@@ -36,8 +38,9 @@ export interface DetailActionsInput {
 export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
   const navigation = useNavigation<Navigation>();
   const resolvePlay = useResolvePlayTarget();
-  const latest = useRef({ ...input, navigation, resolvePlay });
-  latest.current = { ...input, navigation, resolvePlay };
+  const { t } = useTranslation();
+  const latest = useRef({ ...input, navigation, resolvePlay, t });
+  latest.current = { ...input, navigation, resolvePlay, t };
   const hasSeries = input.model.item?.Type === "Episode" && !!input.model.item.SeriesId;
 
   return useMemo<DetailCallbacks>(() => {
@@ -91,7 +94,14 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         else nav().navigate("Trailer", { url: entry.trailer.Url, name: entry.title, itemId: item?.Id });
       },
       onOpenSagaEntry: (entry) => {
-        if (entry.card && !entry.current) nav().push("MediaDetail", { itemId: entry.card.id });
+        if (entry.current) return;
+        // Un volet absent n'a pas de fiche : on dit pourquoi rien ne s'ouvre.
+        if (entry.card.absent) showNotice({ kind: "info", title: latest.current.t("cards:notInLibraryNotice") });
+        else nav().push("MediaDetail", { itemId: entry.card.id });
+      },
+      onLongPressSagaEntry: (entry) => {
+        const found = latest.current.cardItemOf(entry.card.id);
+        if (found) latest.current.openPosterSheet(found);
       },
       onOpenCard: (_section, card) => nav().push("MediaDetail", { itemId: card.id }),
       onLongPressCard: (card) => {
