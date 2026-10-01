@@ -132,5 +132,5 @@ export default {
   troubleMinutes: "{{count}} min",
   troubleStartMedia: "Jellyfin isn't responding. Playback will start on its own as soon as it's back.",
   troubleStartTentacle: "The Tentacle server isn't responding. Playback will start on its own as soon as it's back.",
-  audioOutputLost: "The audio output isn't responding. Check the TV or receiver, then resume playback from the title page.",
+  audioOutputLostPlay: "The audio output isn't responding. Check the TV or receiver, then press Play.",
 } as const;

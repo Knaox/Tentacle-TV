@@ -21,7 +21,8 @@ import { plog } from "../utils/playerDiag";
  *
  * Et avant encore, à l'ouverture comme en lecture, une sortie AUDIO
  * passagèrement indisponible (`useAudioErrorRetry`) : rejouée à la même forme
- * après un délai, jamais descendue ; dite si elle ne revient pas.
+ * après un délai, jamais descendue ; dite si elle ne revient pas, et Lecture
+ * relance alors le flux.
  */
 export function useTVErrorHandler(args: {
   forceTranscode: boolean;
@@ -40,20 +41,15 @@ export function useTVErrorHandler(args: {
   const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, bumpReloadNonce, setIsLoading, onMasterRejected } = args;
   const { t } = useTranslation("player");
   const { onSourceLost } = usePlaybackRecovery(args.recovery);
-  const onAudioError = useAudioErrorRetry(args.recovery);
+  const onAudioError = useAudioErrorRetry(args.recovery, {
+    setVideoError, setIsLoading, lostMessage: t("audioOutputLostPlay"),
+  });
   const { tryDirectAuthRecovery } = useTVDirectStreamRecovery({
     captureReloadTicks, bumpReloadNonce, setVideoError, setIsLoading,
   });
 
   const handleError = useCallback((error: string) => {
-    if (isAudioTransientError(error)) {
-      if (onAudioError(error)) return;
-      // La sortie ne revient pas : le dire — une autre forme ne la rendrait pas.
-      plog("err", `sortie audio toujours indisponible → erreur dite (${error.slice(0, 60)})`);
-      setIsLoading?.(false);
-      setVideoError(t("audioOutputLost"));
-      return;
-    }
+    if (isAudioTransientError(error)) { onAudioError(error); return; }
     if (onSourceLost(error)) return;
     if (error === "PRISM_MASTER_REJECTED") {
       plog("err", "master PrismCore refusé par AVPlayer → forme muxée");
@@ -77,7 +73,7 @@ export function useTVErrorHandler(args: {
     }
     plog("err", `erreur SURFACÉE à l'écran : ${error}`);
     setVideoError(error);
-  }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery, onMasterRejected, onSourceLost, onAudioError, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery, onMasterRejected, onSourceLost, onAudioError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleError };
 }

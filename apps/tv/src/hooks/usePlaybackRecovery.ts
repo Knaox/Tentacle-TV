@@ -20,6 +20,8 @@ export interface RecoverySources {
     reloadHold: boolean;
     /** Tient le lecteur en rechargement (indicateur, aucun son de la session sortante). */
     holdForReload: () => void;
+    /** L'intention de lecture de l'utilisateur (Lecture / Pause). */
+    setPaused: (paused: boolean) => void;
     positionRef: React.MutableRefObject<number>;
     bufferedTimeRef: React.MutableRefObject<number>;
     endedRef: React.MutableRefObject<boolean>;
