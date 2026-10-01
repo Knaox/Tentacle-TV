@@ -751,6 +751,89 @@ Mesuré au simulateur, dans l'app réelle : maintien de 2,5 s → +19:00 sur un
 épisode de 51 min (tics ×1, ×2, ×4), arrêt net au relâcher ; glisser lent de
 150 pts → −60 s, vif de 500 pts → +12 min.
 
+## Le lecteur — quitter et reprendre (Apple TV, Android TV)
+
+Branche `refonte/tv-lecteur-reprise`. Demande de l'utilisateur (2026-10-01) :
+une lecture se quitte en quittant l'app, et se reprend instantanément au
+retour.
+
+| On quitte… | Ce que fait le lecteur | Au retour (mesuré au simulateur) |
+|---|---|---|
+| Centre de contrôle, Siri, sélecteur d'apps (`inactive`) | pause, position remontée, session GARDÉE (plus d'arrêt ni de transcodage tué) | focus sur Lecture ; OK → lecture |
+| Accueil, veille, autre app (`background`) | pause, arrêt à la position finale — noté dans la file avant l'envoi | lecteur en pause à la position exacte, focus sur Lecture ; OK → image en 100-280 ms (film et épisode PrismCore, épisode MP4, transcodage 720p ; 20 s comme 4 min d'absence) |
+| … et le serveur local de PrismCore est mort pendant la suspension | — | sondé au retour (600 ms), relancé PENDANT la pause : nouvelle session en 0,7-2,8 s, puis OK → image en 140-280 ms, pistes conservées |
+| App tuée pendant son absence | — | relance : le LECTEUR rouvert en pause, à la position d'arrêt, focus sur Lecture |
+| App morte à l'écran, lecteur ouvert | — | relance : la file rejoue la position notée (≤ 2 s avant la mort), puis la FICHE, « Reprendre » focalisé |
+| Lecteur quitté (Retour, Menu, fin) | arrêt en arrière-plan, sortie instantanée | relance : l'accueil |
+
+- **La présence** : une règle partagée, `presenceStep` (tv-core
+  `playback/appPresence`), exécutée par `useTVPlaybackPresence`. Le focus du
+  retour est NOMMÉ (`playpause`) : sans cible, tvOS le posait sur « Reculer de
+  10 s » et OK reculait.
+- **La relance du flux** : `restartStream({ at?, reason })` →
+  "ok" | "failed" | "busy" (`usePlayerStreamPipeline`, contrat
+  `hooks/streamRestart.ts`) — même forme (PrismCore rouvert, jamais le cache ;
+  chemin serveur rejoué, URL marquée en lecture directe), rechargement doux
+  (`holdForReload`, image figée), jamais l'écran de chargement ni le
+  transcodage forcé. Servie au retour (raison « resume ») et à la reprise après
+  coupure (« network », session « serveur ou Jellyfin coupé »).
+- **Un AVPlayer neuf par session PrismCore** (`AVPlayerSurface`) :
+  react-native-video ne fait que remplacer l'item, et sur un master à audio
+  PONTÉ (Opus → AAC) l'item de remplacement ne recevait plus aucun segment.
+- **La file persistée des rapports** (api-client `playbackOutbox`, branchée
+  par `TVPlaybackOutbox`) : la position en cours (`live`, à chaque bord et
+  ≤ 2 s) et l'arrêt (`stop`, noté avant l'envoi). Vidée au démarrage, au retour
+  au premier plan et au socket rouvert ; jamais pour un titre revu depuis, le
+  titre en cours, un autre compte ou un autre appareil. Le Retour et la fin de
+  lecture n'attendent plus l'arrêt (il retenait la sortie jusqu'à ~3 min
+  serveur muet). Éprouvée en vraie panne par « serveur ou Jellyfin coupé ».
+- **La relance à froid** : marqueur `tentacle_playback_marker` tenu par le
+  lecteur (`useTVPlaybackMarker`), règle `coldStartLanding` (tv-core
+  `playback/coldStart`, frais 3 h), atterrissage `TVColdStartLanding` — file
+  d'abord, puis la fiche du titre ; 401/403 → rien (le déjumelage prend la
+  main), serveur muet → la fiche. Marqueur et file sont des données du compte
+  (`ACCOUNT_STORAGE_KEYS`).
+- **Le flux attend la fiche complète** : résolu avant elle, il lançait un
+  transcodage à 0:00 aussitôt jeté (deux sur un AV1, qui calait).
+- **30 s d'avance** AVPlayer sur les sources distantes (bouclage : 10 s).
+
+Pièges payés :
+
+- Le simulateur ne SUSPEND pas l'app en arrière-plan (le JS et le serveur
+  local répondent après 4 min) : la mort du bouclage s'éprouve en arrêtant la
+  session (`PrismBridge.stop`) pendant l'absence.
+- Un simulateur mis en veille (centre de contrôle → Éteindre) ne se réveille
+  plus sans Simulator.app (« System is asleeping - foreground app launch
+  forbidden ») : l'entrée en veille se mesure, le réveil vaut un retour
+  d'arrière-plan.
+- Interstellar est lu par d'autres sessions sur Knaoxtest : ses positions
+  bougent seules. Mesurer sur un titre que personne n'utilise.
+- `holdForReload` n'était plus appelé : l'image figée d'un rechargement doux
+  s'effaçait aussitôt. La relance l'utilise, et fait ignorer la progression du
+  flux sortant.
+
+### Essais sur l'Apple TV (tâche d'appareil, pas « Chambre »)
+
+1. **Bouclage après une vraie suspension (E)** : film PrismCore, Accueil,
+   2 min puis 30 min d'absence, retour. Metro : `[presence] retour : flux local
+   vivant` ou `MORT → relance` ; OK doit reprendre en moins d'une seconde, à la
+   seconde près, pistes intactes. Refaire avec un titre à audio ponté (DTS,
+   TrueHD, Opus).
+2. **Tampon du bouclage à 30 s** : remux 4K à 60-80 Mb/s, mémoire de l'app
+   (Instruments) à 10 s puis 30 s d'avance ; étendre seulement si elle tient.
+3. **Veille réelle** : centre de contrôle → Éteindre en pleine lecture,
+   réveil après 1 min et après 1 h : lecteur en pause à la position (ou
+   relance à froid si tvOS a tué l'app).
+4. **App tuée par tvOS** : lecture, Accueil, ouvrir des apps lourdes jusqu'à
+   ce que Tentacle soit tuée, rouvrir : lecteur en pause, focus Lecture.
+5. **Serveur coupé au démarrage** : couper le backend Tentacle (JAMAIS le
+   Jellyfin partagé avec la prod), tuer l'app pendant une lecture, la rouvrir :
+   la fiche, jamais un lecteur vide ; au retour du serveur, la file se vide.
+6. **Android TV** (rien n'y est éprouvé) : Accueil puis retour (Lecture
+   focalisé, reprise), app tuée puis relancée (lecteur en pause / fiche),
+   Retour instantané, flux résolu après la fiche (plus de double démarrage
+   MPV/ExoPlayer).
+
 ---
 
 ## Inventaire — les écrans
