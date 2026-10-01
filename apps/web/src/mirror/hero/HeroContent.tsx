@@ -1,9 +1,10 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Info, Play, Star } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { WatchedGlyph } from "../../components/cards/cardGlyphs";
+import { heroLogoUrl } from "../../components/hero/heroLogo";
+import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { useIsTablet } from "../useMirrorLayout";
 import { CascadeGroup } from "./CascadeGroup";
 import { HERO_CTA_ROW, HERO_INFO_STYLE, TEXT_SHADOW, TITLE_SHADOW, heroInfoClass, heroPlayClass } from "./heroCta";
@@ -32,11 +33,12 @@ export function HeroContent({ item, active, onPlay, onInfo }: {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const isTablet = useIsTablet();
-  const [logoBroken, setLogoBroken] = useState(false);
   const isEpisode = item.Type === "Episode";
-  const logoId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const logoUrl =
-    item.ImageTags?.Logo != null && !logoBroken ? client.getImageUrl(logoId, "Logo", { width: 500, quality: 90 }) : null;
+  // La règle de la bannière du bureau : le logo que la donnée annonce (celui de
+  // la série pour un épisode, avec SON tag), le titre écrit s'il échoue.
+  const logoUrl = heroLogoUrl(client, item);
+  const { broken: logoBroken, reportFailure: reportLogoFailure } = useBrokenImage(logoUrl);
+  const showLogo = logoUrl !== null && !logoBroken;
   const displayName = isEpisode ? (item.SeriesName ?? item.Name) : item.Name;
   const episodeLabel = isEpisode
     ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber ?? 1).padStart(2, "0")} · ${item.Name}`
@@ -65,12 +67,12 @@ export function HeroContent({ item, active, onPlay, onInfo }: {
             )}
           </div>
         )}
-        {logoUrl ? (
+        {showLogo ? (
           <img
             src={logoUrl}
             alt={displayName}
             draggable={false}
-            onError={() => setLogoBroken(true)}
+            onError={reportLogoFailure}
             className="max-w-[85%] object-contain object-left"
             style={isTablet ? { width: 380, height: 124, marginBottom: 18 } : { width: 280, height: 92, marginBottom: 14 }}
           />
