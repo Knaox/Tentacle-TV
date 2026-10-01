@@ -7,12 +7,13 @@
  *
  *   "titles": {
  *     "state": "/titles/state",
- *     "request": "/titles/request"
+ *     "request": "/titles/request",
+ *     "access": "/titles/access",
+ *     "mine": "/titles/mine"
  *   }
  *
- * Les deux sont des routes du serveur du plugin (servies sous
- * `/api/plugins/<id>`), qui identifient un titre par sa clé TMDB
- * (« movie:603 », « tv:1399 ») :
+ * Ce sont des routes du serveur du plugin (servies sous `/api/plugins/<id>`),
+ * qui identifient un titre par sa clé TMDB (« movie:603 », « tv:1399 ») :
  *
  *   GET  state?keys=movie:603,tv:1399&lang=fr
  *     → { items: { "movie:603": { badge, request } } }
@@ -22,15 +23,31 @@
  *                 « open » ouvre la page du plugin à `href` (un choix à faire).
  *   POST request  { mediaType, tmdbId, lang }
  *     → { ok: true, message } | { ok: false, message } | { href }
+ *   GET  access
+ *     → { request: boolean } — le compte peut-il demander quoi que ce soit
+ *       (faux : compte bloqué, aucun type permis). Un client peut s'en servir
+ *       pour n'offrir AUCUNE fonction du plugin à un compte qui n'y a pas droit.
+ *   GET  mine?lang=fr
+ *     → { items: [{ key, title, year, imageUrl, seasons, state, percent }] }
+ *       les titres que le compte attend — demandés, pas encore dans la
+ *       bibliothèque —, un par titre, les plus récents d'abord ; `state` :
+ *       pending | arriving (`percent` 0-100, ou null) | importing | blocked.
+ *       Seul l'état voyage : les mots sont ceux du client.
  *
  * Tentacle n'en sait pas plus : le plugin décide de ce qu'il offre et de ses
- * mots, le client l'affiche. Comme pour `search`, ce lecteur est la seule
- * garde — un champ mal formé est ignoré, jamais relayé à moitié.
+ * mots (sauf les états de `mine`), le client l'affiche. Comme pour `search`,
+ * ce lecteur est la seule garde — un champ mal formé est ignoré, jamais
+ * relayé à moitié. `access` et `mine` sont venus après : un plugin qui ne les
+ * déclare pas garde exactement le contrat d'avant.
  */
 export interface PluginTitlesMeta {
   state: string;
   /** Route du geste « demander », si le plugin en offre un. */
   request?: string;
+  /** Route du droit du compte (`{ request }`), si le plugin la déclare. */
+  access?: string;
+  /** Route des titres que le compte attend, si le plugin la déclare. */
+  mine?: string;
 }
 
 /* Un chemin simple, sous la racine du plugin : ni schéma, ni remontée, ni requête. */
@@ -44,10 +61,12 @@ export function readTitlesMeta(manifest: unknown): PluginTitlesMeta | undefined 
   if (!manifest || typeof manifest !== "object") return undefined;
   const titles = (manifest as { titles?: unknown }).titles;
   if (!titles || typeof titles !== "object" || Array.isArray(titles)) return undefined;
-  const { state, request } = titles as { state?: unknown; request?: unknown };
+  const { state, request, access, mine } = titles as Record<string, unknown>;
   if (!isSafePath(state)) return undefined;
   const out: PluginTitlesMeta = { state };
-  // Mal formée, la demande est ignorée seule : l'état, lui, reste valable.
+  // Mal formée, une route facultative est ignorée seule : l'état reste valable.
   if (isSafePath(request)) out.request = request;
+  if (isSafePath(access)) out.access = access;
+  if (isSafePath(mine)) out.mine = mine;
   return out;
 }

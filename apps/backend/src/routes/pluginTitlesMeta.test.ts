@@ -26,4 +26,21 @@ describe("readTitlesMeta — le champ titles d'un manifeste de plugin", () => {
       expect(readTitlesMeta({ titles: { state: "/s", request } }), String(request)).toEqual({ state: "/s" });
     }
   });
+
+  it("relaie le droit du compte et les titres attendus quand le plugin les déclare", () => {
+    expect(readTitlesMeta({
+      titles: { state: "/titles/state", request: "/titles/request", access: "/titles/access", mine: "/titles/mine" },
+    })).toEqual({ state: "/titles/state", request: "/titles/request", access: "/titles/access", mine: "/titles/mine" });
+  });
+
+  it("garde le contrat d'avant pour un plugin qui ne déclare ni access ni mine", () => {
+    expect(Object.keys(readTitlesMeta({ titles: { state: "/s", request: "/r" } }) ?? {})).toEqual(["state", "request"]);
+  });
+
+  it("ignore seuls un droit ou une liste mal formés, et jamais sans état", () => {
+    for (const bad of ["//evil.example/x", "/../admin", "https://x.y/z", 3, "", null]) {
+      expect(readTitlesMeta({ titles: { state: "/s", access: bad, mine: bad } }), String(bad)).toEqual({ state: "/s" });
+    }
+    expect(readTitlesMeta({ titles: { access: "/titles/access", mine: "/titles/mine" } })).toBeUndefined();
+  });
 });
