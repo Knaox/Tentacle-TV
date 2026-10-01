@@ -114,7 +114,7 @@ export function useTVPlaybackLifecycle(args: {
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
   }, [itemId, stopPromiseRef, positionRef, queryClient]);
 
-  useTVPlaybackMarker(itemId);
+  useTVPlaybackMarker(itemId, positionRef);
   useTVPlaybackPresence({
     positionRef, pausedStateRef, reportSeekRef, reportStartRef, reportStopRef,
     onPause: onBackground, onFocusPlay: onForeground,

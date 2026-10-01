@@ -18,7 +18,7 @@ const REFRESH_MS = 30_000;
  * Jamais rafraîchi en arrière-plan : une app gardée vivante des heures hors de
  * l'écran (Android TV) ne doit pas paraître quittée à l'instant.
  */
-export function useTVPlaybackMarker(itemId: string): void {
+export function useTVPlaybackMarker(itemId: string, positionRef: React.MutableRefObject<number>): void {
   const { storage } = useTentacleConfig();
   const client = useJellyfinClient();
 
@@ -27,7 +27,12 @@ export function useTVPlaybackMarker(itemId: string): void {
     if (!owner || !itemId) return undefined;
     const playerId = randomSessionId();
     let phase: PlaybackMarker["phase"] = AppState.currentState === "background" ? "background" : "playing";
-    const put = () => writePlaybackMarker(storage, { itemId, owner, phase, at: Date.now(), playerId });
+    // La position voyage avec le marqueur — exacte au passage en arrière-plan, où
+    // l'app peut mourir sans que Jellyfin ait écrit l'arrêt (cf. TVColdStartLanding).
+    const put = () => writePlaybackMarker(storage, {
+      itemId, owner, phase, at: Date.now(), playerId,
+      ...(Number.isFinite(positionRef.current) && { positionSeconds: Math.max(0, positionRef.current) }),
+    });
     put();
     const timer = setInterval(() => { if (phase === "playing") put(); }, REFRESH_MS);
     const sub = AppState.addEventListener("change", (state) => {
@@ -41,5 +46,5 @@ export function useTVPlaybackMarker(itemId: string): void {
       sub.remove();
       clearPlaybackMarker(storage, playerId);
     };
-  }, [itemId, storage, client]);
+  }, [itemId, storage, client, positionRef]);
 }
