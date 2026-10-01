@@ -960,11 +960,33 @@ Pièges payés :
   toute URL `http://127.0.0.1` pour le bouclage de PrismCore. Viser
   `localhost`.
 
-Reste : Android TV — logique commune (reprise seule, fiche du lecteur),
-rien d'éprouvé ; son habillage garde son indicateur (pas d'outil). Tentacle
-coupé au démarrage À FROID de l'app : la configuration du direct n'est pas
-persistée (`HOME_PERSIST_WHITELIST`), rien ne peut donc se lire avant son
-retour — lu dans le code, pas éprouvé.
+- L'app TV tourne en ANCIENNE architecture (racine non concurrente) : deux
+  `setState` après un `await` ne sont PAS groupés. Le repli vers le serveur
+  (`captureReloadTicks` puis `setForceTranscode`) rouvrait d'abord la
+  session PrismCore en cache, morte, avant le transcodage : groupés par
+  `unstable_batchedUpdates`.
+
+**Décision — la config du direct n'est PAS persistée** (démarrage à froid
+avec Tentacle coupé). Mesuré : l'accueil revient du cache persisté, la
+config du direct manque ; ouvrir « Reprendre » donne en 0,5 s « Le serveur
+Tentacle ne répond pas. La lecture démarrera d'elle-même dès son retour. »,
+et la lecture part seule, à la bonne reprise, au retour de Tentacle. Ne pas
+la réintroduire :
+1. elle a existé (`tentacle_jellyfin_token`, `tentacle_jellyfin_url`) et a
+   été retirée pour un jeton ou une URL d'un ANCIEN jumelage qui envoyait la
+   lecture au mauvais serveur, ou avec un jeton mort (`DirectStreamingSync`) ;
+2. « jamais un accès qui survit à une révocation » serait intenable :
+   Tentacle coupé, la TV ne peut pas apprendre sa révocation ; seul le refus
+   de Jellyfin la protège, et seulement si la révocation du jeton Jellyfin a
+   abouti — persister étend la fenêtre à travers les redémarrages ;
+3. le cas est rare (Tentacle coupé ET Jellyfin joignable AU LANCEMENT ; sur
+   un même hôte, les deux tombent ensemble), et le voile hors ligne bloque
+   de toute façon la navigation après une douzaine de secondes — le rendre
+   jouable serait une décision de produit.
+
+Reste : Android TV — logique commune (reprise seule, fiche du lecteur,
+producteur sans objet), rien d'éprouvé ; son habillage garde son indicateur
+(pas d'outil).
 
 ## La croix Retour (Apple TV)
 
