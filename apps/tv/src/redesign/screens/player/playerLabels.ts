@@ -10,8 +10,8 @@ import type { PlayerLabels } from "./playerTypes";
 export type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 export function playerChromeLabels(t: Translate, seek: { back: number; forward: number }): PlayerLabels {
+  // Ni « Retour » ni « Fermer » : la croix (`BackButton`) dit « Retour » elle-même.
   return {
-    back: t("player:back"),
     play: t("player:play"),
     pause: t("player:pause"),
     seekBack: t("player:seekBackBy", { seconds: seek.back }),
@@ -31,7 +31,6 @@ export function playerChromeLabels(t: Translate, seek: { back: number; forward: 
     subtitles: t("player:subtitles"),
     quality: t("player:quality"),
     auto: t("player:qualityAutoBadge"),
-    close: t("player:close"),
     scrubConfirm: t("player:scrubConfirmHint"),
     scrubCancel: t("player:scrubCancelHint"),
   };

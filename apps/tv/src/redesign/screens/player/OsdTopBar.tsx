@@ -25,8 +25,6 @@ export const OsdTopBar = memo(function OsdTopBar({
   onBack,
 }: {
   media: PlayerMedia;
-  /** Plus lu : la croix dit « Retour » elle-même (`common:back`). Gardé tant que l'habillage le passe. */
-  backLabel?: string;
   onBack?: () => void;
 }) {
   return (

@@ -137,7 +137,7 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
         <FocusGroup focusKey="player:osd" style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <SoftGradient width={STAGE_SIZE.width} height={BOTTOM_SCRIM} colors={[scrim(0), scrim(0.66), scrim(0.94)]} locations={[0, 0.48, 1]} style={styles.bottomScrim} />
           <Animated.View style={[StyleSheet.absoluteFill, topStyle]} pointerEvents="box-none">
-            <OsdTopBar media={media} backLabel={labels.back} onBack={props.onBack} />
+            <OsdTopBar media={media} onBack={props.onBack} />
           </Animated.View>
           <Animated.View style={[StyleSheet.absoluteFill, bottomStyle]} pointerEvents="box-none">
             <FocusGroup focusKey="player:timeline" style={styles.timeline} pointerEvents="none">

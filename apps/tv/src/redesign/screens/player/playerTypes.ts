@@ -166,7 +166,6 @@ export type PlayerPanel =
 
 /** Les textes fixes de l'habillage (`playerChromeLabels`). */
 export interface PlayerLabels {
-  back: string;
   play: string;
   pause: string;
   seekBack: string;
@@ -186,7 +185,6 @@ export interface PlayerLabels {
   subtitles: string;
   quality: string;
   auto: string;
-  close: string;
   scrubConfirm: string;
   scrubCancel: string;
 }
