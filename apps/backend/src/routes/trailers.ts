@@ -123,13 +123,17 @@ function resolveOnce(ytId: string): Promise<ResolvedStream | null> {
 }
 
 /**
- * Le flux progressif se laisse-t-il lire ? Les premiers octets suffisent : un
- * itag 18 obtenu sans résoudre les défis YouTube répond 403 — le rendre au
- * téléviseur, c'était lui faire afficher « indisponible » après coup.
+ * Le flux progressif se laisse-t-il lire ? Un itag 18 obtenu sans résoudre
+ * les défis YouTube répond 403 — le rendre au téléviseur, c'était lui faire
+ * afficher « indisponible » après coup. Et pas forcément d'emblée : mesuré le
+ * 2026-10-01 (client ANDROID_VR), seules les plages qui tiennent dans le
+ * PREMIER MÉGAOCTET passent. Une sonde de 1 Ko le croyait lisible ; on
+ * demande donc ce que demande AVPlayer après ses deux premiers octets — le
+ * fichier entier, par une plage ouverte —, et l'on n'en lit que les en-têtes.
  */
-async function isReadable(url: string): Promise<boolean> {
+export async function isReadable(url: string): Promise<boolean> {
   try {
-    const res = await fetch(url, { headers: { Range: "bytes=0-1023" }, signal: AbortSignal.timeout(5_000) });
+    const res = await fetch(url, { headers: { Range: "bytes=0-" }, signal: AbortSignal.timeout(5_000) });
     await res.body?.cancel();
     return res.ok;
   } catch {
