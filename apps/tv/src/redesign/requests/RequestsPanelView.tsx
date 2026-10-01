@@ -1,5 +1,5 @@
-import { memo, useEffect } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { memo, useCallback, useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { BackButton } from "../controls/BackButton";
@@ -22,7 +22,9 @@ import { useLeavingItems } from "./useLeavingItems";
  * Vue pure. Contrat :
  * - `items` : `null` tant qu'ils ne sont pas lus ; vide : « Vous n'avez rien
  *   en file d'attente. » ;
- * - une demande qui disparaît des données (arrivée) sort en douceur ;
+ * - une demande qui disparaît des données (arrivée) sort en douceur, et la
+ *   fenêtre ne saute pas : centrée à l'ouverture, son HAUT reste ensuite où
+ *   il est — seul le bas suit la liste (`usePanelAnchor`) ;
  * - `closing` joue la sortie, puis `onClosed` — c'est alors seulement que le
  *   câblage retire sa `Modal`.
  *
@@ -38,8 +40,8 @@ export const REQUESTS_VISIBLE_ROWS = 4;
 const WIDTH = 1320;
 const PAD = 56;
 const LIST_MAX = ROW_PITCH * (REQUESTS_VISIBLE_ROWS + 0.5);
-/** Une demande arrivée s'efface en ce temps, puis s'en va. */
-const LEAVING_MS = TV_MOTION.overlay.veilOutMs + 220;
+/** Une demande arrivée s'efface en ce temps, puis s'en va : les suivantes remontent aussitôt. */
+const LEAVING_MS = TV_MOTION.overlay.veilOutMs + 60;
 
 export interface RequestsPanelViewProps {
   title: string;
@@ -66,34 +68,37 @@ export const RequestsPanelView = memo(function RequestsPanelView({
   const { rise, veil } = usePanelMotion(closing, onClosed);
   const backing = useNativeGlassBacking("strong");
   const rows = useLeavingItems(items, LEAVING_MS);
+  const { anchored, onLayout } = usePanelAnchor();
   return (
     <View style={StyleSheet.absoluteFill}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.veil, veil]} />
       {/* `box-none`, jamais `none` : sur tvOS, un parent qui refuse les
           interactions rend ses enfants infocalisables. */}
       <View pointerEvents="box-none" style={styles.center}>
-        <Animated.View style={[styles.frame, rise]}>
-          <View style={[styles.base, backing]} />
-          <GlassSurface radius={TV_STAGE.radius.sheet} tone="strong" elevated style={styles.panel}>
-            <View style={styles.header}>
-              <View style={styles.back}>
-                <BackButton focusKey={REQUESTS_CLOSE_KEY} onPress={onClose} />
+        <Animated.View style={[styles.frame, anchored, rise]}>
+          <View onLayout={onLayout}>
+            <View style={[styles.base, backing]} />
+            <GlassSurface radius={TV_STAGE.radius.sheet} tone="strong" elevated style={styles.panel}>
+              <View style={styles.header}>
+                <View style={styles.back}>
+                  <BackButton focusKey={REQUESTS_CLOSE_KEY} onPress={onClose} />
+                </View>
+                <View style={styles.headerText}>
+                  <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                  {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+                </View>
               </View>
-              <View style={styles.headerText}>
-                <Text style={styles.title} numberOfLines={1}>{title}</Text>
-                {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
-              </View>
-            </View>
-            {items === null ? <Message icon={null} text={loadingText} /> : null}
-            {items !== null && rows.length === 0 ? <Message icon="inbox" text={emptyText} /> : null}
-            {rows.length > 0 ? (
-              <ScrollView style={{ maxHeight: LIST_MAX }} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-                {rows.map((row, index) => (
-                  <RequestRow key={row.item.key} item={row.item} index={index} leaving={row.leaving} fresh={row.fresh} />
-                ))}
-              </ScrollView>
-            ) : null}
-          </GlassSurface>
+              {items === null ? <Message icon={null} text={loadingText} /> : null}
+              {items !== null && rows.length === 0 ? <Message icon="inbox" text={emptyText} /> : null}
+              {rows.length > 0 ? (
+                <ScrollView style={{ maxHeight: LIST_MAX }} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+                  {rows.map((row, index) => (
+                    <RequestRow key={row.item.key} item={row.item} index={index} leaving={row.leaving} fresh={row.fresh} />
+                  ))}
+                </ScrollView>
+              ) : null}
+            </GlassSurface>
+          </View>
         </Animated.View>
       </View>
     </View>
@@ -107,6 +112,28 @@ function Message({ icon, text }: { icon: "inbox" | null; text: string }) {
       <Text style={styles.messageText}>{text}</Text>
     </View>
   );
+}
+
+const SCREEN = { width: 1920, height: 1080 };
+const MARGIN = 40;
+
+/**
+ * Centrée à l'ouverture, la fenêtre garde ensuite son haut : une demande qui
+ * part ou arrive ne fait bouger que le bas, jamais l'en-tête ni les lignes qui
+ * restent. Elle ne remonte que pour ne pas sortir de l'écran.
+ */
+function usePanelAnchor() {
+  const [layout, setLayout] = useState<{ top: number; height: number } | null>(null);
+  const onLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setLayout((current) => {
+      const anchor = current ? current.top : (SCREEN.height - height) / 2;
+      const top = Math.max(MARGIN, Math.min(anchor, SCREEN.height - height - MARGIN));
+      return current && current.top === top && current.height === height ? current : { top, height };
+    });
+  }, []);
+  const anchored = layout ? { position: "absolute" as const, top: layout.top, left: (SCREEN.width - WIDTH) / 2 } : null;
+  return { anchored, onLayout };
 }
 
 /** Le même mouvement que le grand panneau : il surgit sur le ressort `panel`,
