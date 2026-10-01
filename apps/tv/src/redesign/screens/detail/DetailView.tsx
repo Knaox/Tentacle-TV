@@ -10,7 +10,7 @@ import type { ArtworkPalette } from "../../color/artworkPalette";
 import { StatusPanel } from "../shared/StatusPanel";
 import { DetailBackdrop, DetailTopFade } from "./DetailBackdrop";
 import { DetailHeader } from "./DetailHeader";
-import { DETAIL_LEFT } from "./DetailSection";
+import { DETAIL_LEFT, SectionStage } from "./DetailSection";
 import { DetailSections, type DetailSectionsProps } from "./DetailSections";
 import { DetailSkeleton } from "./DetailSkeleton";
 import type { DetailActionsModel, DetailHeaderModel } from "./detailTypes";
@@ -138,7 +138,9 @@ export const DetailView = memo(function DetailView({
               onOpenSeries={onOpenSeries}
             />
           </FocusGroup>
-          <DetailSections {...sections} onSectionFocus={onSectionFocus} onSectionLayout={onSectionLayout} />
+          <SectionStage>
+            <DetailSections {...sections} onSectionFocus={onSectionFocus} onSectionLayout={onSectionLayout} />
+          </SectionStage>
         </Animated.ScrollView>
         <DetailTopFade scrollY={scrollY} />
       </>
