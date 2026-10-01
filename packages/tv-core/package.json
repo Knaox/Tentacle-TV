@@ -14,7 +14,8 @@
     "./search": "./src/search/index.ts",
     "./reco": "./src/reco/index.ts",
     "./session": "./src/session/index.ts",
-    "./playback": "./src/playback/index.ts"
+    "./playback": "./src/playback/index.ts",
+    "./titles": "./src/titles/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
