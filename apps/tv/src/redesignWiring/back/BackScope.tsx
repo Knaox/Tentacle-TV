@@ -26,11 +26,12 @@ import { REDESIGN_ACTIVE } from "../redesignGate";
  * Apple TV, patch de react-native-screens). Avant, le geste Retour d'UIKit
  * dépilait avant qu'on ait pu le retenir, `usePreventRemove` réempilait
  * l'écran après coup, et celui du dessous paraissait quelques images.
- * Reculer d'une page est désormais une couche comme une autre : une page
- * POUSSÉE (fiche, personne, bande-annonce, lecteur…) en a une par défaut,
- * `goBack`, qu'une couche « page » de l'écran remplace (la plus récente
- * répond) ; une page du RAIL n'en a pas — `RedesignScreen` y inscrit les
- * siennes (ouvrir le rail, aller sur Réglages), puis la sortie.
+ * Aucune couche active, la portée fait ce que ferait la plateforme : une
+ * page POUSSÉE (fiche, personne, bande-annonce…) recule (`goBack`) ; une
+ * page du RAIL ou la racine laisse l'appui à UIKit, qui quitte. Une page du
+ * rail inscrit ses couches (`RedesignScreen` : ouvrir le rail, aller sur
+ * Réglages) ; un écran qui recule autrement inscrit sa couche « page »
+ * (le lecteur : la sortie de la lecture).
  *
  * Une `Modal` vit dans son propre contrôleur : son Menu va droit à son
  * `onRequestClose`, sans passer par ici. Elle s'inscrit quand même (couche
@@ -49,22 +50,19 @@ interface BackScopeProps {
 
 const BackContext = createContext<BackLayers | null>(null);
 
-/** La couche « page » par défaut d'une page poussée : reculer. */
-const DEFAULT_PAGE = "scope:page";
-
 function AppleTvBackScope({ route, navigation, children }: BackScopeProps) {
   const [layers] = useState(createBackLayers);
-  const taken = useSyncExternalStore(layers.subscribe, () => layers.target() !== null);
+  const layered = useSyncExternalStore(layers.subscribe, () => layers.target() !== null);
   const pushed = !RAIL_ROUTES.has(route.name) && navigation.canGoBack();
-  const navigationRef = useRef(navigation);
-  navigationRef.current = navigation;
-  useLayoutEffect(() => {
-    layers.set(DEFAULT_PAGE, { kind: "page", active: pushed, onBack: () => navigationRef.current.goBack() });
-  }, [layers, pushed]);
-  const onMenuPress = useCallback(() => void layers.back(), [layers]);
+  const latest = useRef({ navigation, pushed });
+  latest.current = { navigation, pushed };
+  const onMenuPress = useCallback(() => {
+    if (layers.back()) return;
+    if (latest.current.pushed) latest.current.navigation.goBack();
+  }, [layers]);
   return (
     <BackContext.Provider value={layers}>
-      <MenuPressInterceptor enabled={taken} onMenuPress={onMenuPress} style={styles.fill}>
+      <MenuPressInterceptor enabled={layered || pushed} onMenuPress={onMenuPress} style={styles.fill}>
         {children}
       </MenuPressInterceptor>
     </BackContext.Provider>
