@@ -902,6 +902,21 @@ streaming direct actif (vidéo et rapports vont droit à Jellyfin) sauf mention.
   lecteur part sur sa piste PAR DÉFAUT : les préférences de langue (VFF, VO
   par bibliothèque) se résolvent sur Tentacle — elles ne s'appliquent pas en
   retard au milieu de la lecture.
+- **La sortie audio passagèrement indisponible** (-66681,
+  `kAudioQueueErr_CannotStart`, et sa famille : sortie changée, serveur
+  audio ou services média redémarrés — HDMI, AirPlay, ampli rallumé) n'est
+  plus prise pour un master refusé. Avant : forme muxée, puis TRANSCODAGE
+  (relevé au simulateur par « Alléger » : la forme muxée ouverte 1 s après
+  l'erreur a échoué à son tour, le périphérique étant encore absent). La
+  règle est pure (`classifyAvPlayerError`, tv-core — code ET texte :
+  AVFoundation enrobe parfois l'OSStatus dans un -11800) ; la surface en
+  fait le marqueur `AUDIO_TRANSIENT`, et `useAudioErrorRetry` rejoue la
+  MÊME forme (`restartStream`, raison `audio`) après 1,5 s, 4 s, 8 s, le
+  lecteur tenu en rechargement pendant l'attente — à la position, ou à la
+  reprise prévue avant la première image. Au-delà, le bandeau le dit
+  (`player:audioOutputLost`) ; une autre forme ne rendrait pas la sortie.
+  Mesuré (erreur injectée dans le vrai lecteur) : relance PrismCore à la
+  même position en 1,5 s ; budget épuisé, lecteur figé → le message.
 - **Le voile hors ligne** ne se pose plus sur `Player`, `PlayerSettings`,
   `Trailer` (App.tsx) ; la joignabilité confirmée se lit partout
   (`hooks/serverReachability`).
