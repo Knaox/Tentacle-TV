@@ -1,8 +1,9 @@
 /**
- * Un téléviseur jumelé, comme le crée le jumelage : une ligne `paired_devices`
- * dans la base JETABLE du passage et son jeton d'appareil signé du secret du
- * serveur. Sans jeton Jellyfin propre — le cas où le proxy lui substitue la
- * clé admin et réécrit ses reports de lecture.
+ * Un téléviseur jumelé : une ligne `paired_devices` dans la base JETABLE du
+ * passage et son jeton d'appareil signé du secret du serveur. Sans jeton
+ * Jellyfin à sa naissance — le serveur lui en frappe un au premier besoin
+ * (Quick Connect), ou, Quick Connect coupé, lui substitue la clé admin et
+ * réécrit ses reports de lecture.
  */
 
 import { createHash } from "node:crypto";

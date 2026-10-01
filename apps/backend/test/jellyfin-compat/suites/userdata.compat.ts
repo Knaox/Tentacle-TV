@@ -89,7 +89,7 @@ feature("userdata.paired-devices", () => {
     expectStatus(await proxy(`Items?userId=${ctx().user2.id}&Recursive=true`, { headers: tvHeaders(jwt) }), 403);
   });
 
-  check("report de lecture sans jeton Jellyfin : la reprise est écrite sur son compte", async () => {
+  check("report de lecture d'un téléviseur : la reprise est écrite sur son compte", async () => {
     const jwt = await pairedDeviceToken();
     const res = await proxy("Sessions/Playing/Progress", {
       method: "POST",
