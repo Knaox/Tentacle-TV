@@ -2,6 +2,7 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { SoftGradient } from "../background/SoftGradient";
+import { ProgressPie } from "../brand/ProgressPie";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { Icon, type IconName } from "../icons/Icon";
 import { colors, fonts, scrim, white } from "../theme/tokens";
@@ -18,7 +19,8 @@ import { GreyscaleImage } from "./GreyscaleImage";
  *
  * Le badge dit « Pas dans la bibliothèque », ou l'état de la demande du titre
  * quand le serveur sait en faire ; le ton choisit la couleur et le glyphe,
- * le texte porte toujours le sens.
+ * le texte porte toujours le sens — sauf « En cours », qui se dit par le
+ * camembert de la marque et son pour cent (`ProgressPie`).
  */
 
 /** Le voile : au repos, l'affiche recule ; au focus, elle se lit. */
@@ -26,6 +28,8 @@ const VEIL_REST = 0.42;
 const VEIL_FOCUSED = 0.16;
 /** Le badge, au pied de l'image : la place de la note sur les autres cartes. */
 const BADGE_INSET = 12;
+/** Le camembert d'une demande en cours : son pour cent à 22 pt, le plancher de la scène. */
+const PIE_SIZE = 34;
 
 const TONE_COLOR: Record<AbsentTone, string> = {
   neutral: white(0.92),
@@ -44,8 +48,18 @@ const TONE_GLYPH: Partial<Record<AbsentTone, IconName>> = {
 const Badge = memo(function Badge({ absent, maxWidth }: { absent: AbsentModel; maxWidth: number }) {
   const color = TONE_COLOR[absent.tone];
   const glyph = TONE_GLYPH[absent.tone];
+  // En cours, avancement su : le camembert de la marque et son pour cent,
+  // façon App Store — le mot reste dit aux lecteurs d'écran.
+  if (absent.tone === "active" && absent.progress !== undefined) {
+    return (
+      <View style={[styles.badge, { maxWidth }]} accessibilityLabel={absent.label}>
+        <ProgressPie percent={absent.progress * 100} size={PIE_SIZE} />
+      </View>
+    );
+  }
   return (
     <View style={[styles.badge, { maxWidth }]}>
+      {absent.tone === "active" ? <ProgressPie percent={null} size={PIE_SIZE} showValue={false} /> : null}
       {glyph ? <Icon name={glyph} size={20} color={color} strokeWidth={2.4} /> : null}
       <Text style={[styles.badgeText, { color }]} numberOfLines={2}>{absent.label}</Text>
     </View>
