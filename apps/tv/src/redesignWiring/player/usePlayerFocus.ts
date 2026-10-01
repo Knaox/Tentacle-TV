@@ -6,6 +6,7 @@ import { setSkipNode } from "../../components/player/focus/osdFocusBus";
 import { useOverlayFocus, type TransportKey } from "../../components/player/focus/useOverlayFocus";
 import { useSkipPillFocus } from "../../components/player/focus/useSkipPillFocus";
 import type { FocusStore } from "../focus/focusStore";
+import { END_EXIT_LOCK, useEndExitLocked } from "./endExitLock";
 import { PLAYER_GROUP_CONTAINERS, type PlayerFocusState } from "./playerFocusContainers";
 
 /**
@@ -21,7 +22,9 @@ import { PLAYER_GROUP_CONTAINERS, type PlayerFocusState } from "./playerFocusCon
  * - Les entrées : l'écran de chargement (Retour, ou Réessayer), la carte
  *   « À suivre », l'affiche de fin et le panneau des pistes RÉCLAMENT le focus
  *   à leur apparition — `hasTVPreferredFocus` seul n'est honoré qu'au montage,
- *   et ignoré quand le moteur tient déjà un élément ailleurs.
+ *   et ignoré quand le moteur tient déjà un élément ailleurs. La croix de
+ *   l'affiche de fin reste infocalisable tant que son entrée n'a pas eu le
+ *   focus (`useEndExitLocked`).
  * Le reste des clés passe par le magasin de l'écran (nœud, focus, réclamation).
  */
 
@@ -139,13 +142,15 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
   }, [store, stable]);
 
   const { failed, tracksEntryKey } = args;
+  const endExitLocked = useEndExitLocked(store, args.endShown);
   const binder = useCallback<FocusBinder>((key) => {
     const group = GROUP_BINDINGS[key];
     if (group) return group;
     const binding = stableBinding(key);
+    if (key === "end:leave" && endExitLocked) return { ...binding, ...END_EXIT_LOCK };
     const preferred = preferredFocus(key, { grabs, refusable, failed, tracksEntryKey });
     return preferred === undefined ? binding : { ...binding, native: { hasTVPreferredFocus: preferred } };
-  }, [stableBinding, grabs, refusable, failed, tracksEntryKey]);
+  }, [stableBinding, grabs, refusable, failed, tracksEntryKey, endExitLocked]);
 
   useClaimOnRise(store, failed ? "loading:retry" : "loading:back", args.loading);
   useClaimOnRise(store, "upnext:play", args.upNextShown);
