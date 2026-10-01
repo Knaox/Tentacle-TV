@@ -170,6 +170,17 @@ export const ICONS = {
   history: { paths: ["M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M12 7v5l4 2"] },
   /** Vider un champ (la croix cerclée des champs de saisie). */
   xCircle: { circles: [[12, 12, 10]], paths: ["m15 9-6 6", "m9 9 6 6"] },
+  /** Les demandes en cours, quand il n'y en a aucune (le bac vide). */
+  inbox: {
+    paths: [
+      "M22 12h-6l-2 3h-4l-2-3H2",
+      "M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z",
+    ],
+  },
+  /** Mis en bibliothèque : la flèche qui entre dans le bac. */
+  inboxIn: {
+    paths: ["M12 3v8", "m8.5 7.5 3.5 3.5 3.5-3.5", "M2 14h5l2 3h6l2-3h5", "M2 14v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4"],
+  },
 } as const satisfies Record<string, IconShape>;
 
 export type IconName = keyof typeof ICONS;
