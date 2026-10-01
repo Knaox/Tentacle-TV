@@ -62,7 +62,14 @@ const HERO_EXAMPLES = {
   },
 } as const;
 
-type HomeVariant = "default" | "nav" | "noHero" | "loading" | "error" | "empty" | keyof typeof HERO_EXAMPLES;
+type HomeVariant = "default" | "nav" | "noHero" | "loading" | "error" | "empty" | "uneven" | keyof typeof HERO_EXAMPLES;
+
+/** Des rangées de longueurs INÉGALES (deux cartes, puis une) et la pastille
+ *  du filtre sur la troisième : la règle de voisinage, au pavé — le bout
+ *  d'un carrousel au-dessus d'une rangée plus courte, l'accessoire d'en-tête. */
+function unevenRows(rows: HomeRowModel[]): HomeRowModel[] {
+  return rows.map((row, index) => (index === 1 ? { ...row, cards: row.cards.slice(0, 2) } : index === 3 ? { ...row, cards: row.cards.slice(0, 1) } : row));
+}
 
 /** L'accueil vivant : la lumière suit la carte focalisée (natif ou figé). */
 function HomeScene({ data, variant }: { data: BenchData; variant: HomeVariant }) {
@@ -74,7 +81,7 @@ function HomeScene({ data, variant }: { data: BenchData; variant: HomeVariant })
     if (example && exampleItem) return example.tweak(heroOf(data, exampleItem, t("common:resumeWatching"), page), exampleItem);
     return items[0] ? heroOf(data, items[0], t("common:resumeWatching"), page) : null;
   }, [data, items, variant]);
-  const rows = useMemo(() => rowsOf(data), [data]);
+  const rows = useMemo(() => (variant === "uneven" ? unevenRows(rowsOf(data)) : rowsOf(data)), [data, variant]);
   const [focusedPalette, setFocusedPalette] = useState<ArtworkPalette | null>(null);
   const forced = useForcedFocusKey();
   const forcedCard = useMemo(() => {
@@ -117,6 +124,7 @@ function HomeScene({ data, variant }: { data: BenchData; variant: HomeVariant })
   if (variant === "empty") {
     return <HomeView {...base} hero={null} rows={[]} status={{ kind: "empty", title: t("common:emptyLibrary"), message: t("common:emptyHomeHint") }} />;
   }
+  if (variant === "uneven") return <HomeView {...base} filter={{ label: "Netflix · Disney+" }} filterRowKey={rows[2]?.key ?? null} />;
   return <HomeView {...base} />;
 }
 
@@ -128,6 +136,7 @@ export const HOME_SCENES: BenchScene[] = [
   { id: "accueil/heros-episode", group: "Accueil", label: "Héros d'un épisode (One Piece S1 · E3, exemple)", focusKeys: ["hero:primary"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="heroEpisode" /> },
   { id: "accueil/navigation", group: "Accueil", label: "Navigation ouverte", focusKeys: ["nav:Home", "nav:Recommendations", "nav:Settings"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="nav" /> },
   { id: "accueil/sans-heros", group: "Accueil", label: "Sans héros (rangées)", focusKeys: ["resume:0", "nextUp:2", "reco:forYou:1"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="noHero" /> },
+  { id: "accueil/rangees-inegales", group: "Accueil", label: "Rangées inégales et pastille du filtre (HAUT / BAS au pavé)", focusKeys: ["resume:4", "nextUp:1", "filter:remove"], settleMs: 1600, render: (data) => <HomeScene data={data} variant="uneven" /> },
   { id: "accueil/chargement", group: "Accueil", label: "Chargement", render: (data) => <HomeScene data={data} variant="loading" /> },
   { id: "accueil/erreur", group: "Accueil", label: "Erreur de connexion", focusKeys: ["status:primary"], render: (data) => <HomeScene data={data} variant="error" /> },
   { id: "accueil/vide", group: "Accueil", label: "Bibliothèque vide", render: (data) => <HomeScene data={data} variant="empty" /> },

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import type { View } from "react-native";
-import { FocusBindingProvider, type FocusBinding } from "../../../src/redesign/focus/focusBinding";
+import { FocusBindingProvider, type FocusBinding, type FocusForm } from "../../../src/redesign/focus/focusBinding";
+import { SECTION_NEIGHBORS } from "../../../src/redesignWiring/focus/sectionNeighbors";
 import type { SweepRequest } from "../control/benchRemote";
 import { METER_SETTLE_MS } from "./FrameMeter";
 
@@ -12,6 +13,10 @@ import { METER_SETTLE_MS } from "./FrameMeter";
  * tvOS, ses animations coordonnées, le défilement des rangées et les vrais
  * `onFocus` / `onBlur`. Le focus figé du banc masquerait tout cela : la
  * ligne de commande le lève avant de balayer.
+ *
+ * Comme le magasin de l'app, il pose sur chaque SECTION (`FocusSection`) la
+ * règle de voisinage (`sectionNeighbors`) : HAUT / BAS se jouent au banc
+ * comme dans l'app.
  */
 
 type TvNode = View & { requestTVFocus?: () => void };
@@ -22,10 +27,11 @@ export function BenchFocus({ sweep, children }: { sweep: SweepRequest | null | u
   const nodes = useRef(new Map<string, TvNode>()).current;
   const bindings = useRef(new Map<string, FocusBinding>()).current;
   const bind = useCallback(
-    (key: string): FocusBinding => {
+    (key: string, form?: FocusForm): FocusBinding => {
       let binding = bindings.get(key);
       if (!binding) {
         binding = {
+          native: form === "section" ? SECTION_NEIGHBORS : undefined,
           ref: (node: View | null) => {
             if (node) nodes.set(key, node as TvNode);
             else nodes.delete(key);
