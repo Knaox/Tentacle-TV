@@ -129,6 +129,10 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     tickRef.current();
     const outcome = await s.p.restartStream({ reason: "network" });
     st.restarting = false;
+    // Le délai laissé au flux relancé court depuis SON émission : par le proxy,
+    // rouvrir PrismCore a pris 5 s, et la relance suivante partait avant que
+    // la première ait pu jouer (mesuré : 21 s au lieu d'une quinzaine).
+    st.lastRestartAt = Date.now();
     if (outcome !== "ok") {
       st.restartPending = false;
       if (outcome === "failed") st.vain += 1;
