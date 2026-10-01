@@ -2,16 +2,17 @@ import { getPrisma, hasPrisma } from "./db";
 import { hashToken } from "./jwt";
 import { getJellyfinUrl } from "./configStore";
 import { jellyfinAuthHeaders } from "./jellyfinAuth";
+import { ensureOwnJellyfinToken } from "./deviceJellyfinToken";
 
 /**
  * Le jeton Jellyfin d'un appareil jumelé : à qui il appartient, et lequel
  * utiliser.
  *
  * Un appareil jumelé (TV, LG, provisioning) ne s'authentifie jamais auprès de
- * Jellyfin : il reçoit, en base, une COPIE du jeton d'un autre appareil du
- * même compte. Tout ce qui parle à Jellyfin en son nom — lecture directe,
- * reports de lecture du proxy, canal de session — passe par ce jeton, et
- * Jellyfin attribue au PORTEUR du jeton, pas à l'utilisateur de l'URL.
+ * Jellyfin : le serveur frappe pour lui un jeton PROPRE (`deviceJellyfinToken`).
+ * Tout ce qui parle à Jellyfin en son nom — lecture directe, reports de
+ * lecture du proxy, canal de session — passe par ce jeton, et Jellyfin
+ * attribue au PORTEUR du jeton, pas à l'utilisateur de l'URL.
  *
  * D'où la règle de ce module : **un jeton n'est rendu que s'il appartient au
  * compte de l'appareil.** « Valide » ne suffisait pas — mesuré sur une Apple
@@ -38,11 +39,6 @@ const inFlight = new Set<string>();
 function sameJellyfinId(a: string, b: string): boolean {
   const fold = (id: string) => id.replace(/-/g, "").toLowerCase();
   return fold(a) === fold(b);
-}
-
-/** Un JWT Tentacle (trois segments) n'est pas un jeton Jellyfin (hexadécimal opaque). */
-export function looksLikeJwt(token: string): boolean {
-  return token.split(".").length === 3;
 }
 
 /**
@@ -95,102 +91,44 @@ async function clearStoredToken(tokenHash: string): Promise<void> {
 }
 
 /**
- * Cherche le token Jellyfin VALIDE le plus récent parmi les appareils jumelés
- * du même utilisateur (« sibling ») — self-healing quand un device n'a pas (ou
- * plus) de token propre : confirmé depuis une session JWT, ou token purgé sur
- * 401. Chaque candidat doit appartenir au compte : un sibling mort ou étranger
- * est purgé au passage. `regraftTokenHash` fourni → le token trouvé est
- * RE-GRAVÉ sur ce device : les appels suivants (config/streaming, routes de
- * session du proxy) le trouvent directement, et la TV qui « redemande un
- * token » repart sans re-jumelage.
- */
-export async function findValidSiblingToken(
-  jellyfinUserId: string,
-  opts: { excludeTokenHash?: string; regraftTokenHash?: string } = {},
-): Promise<string | null> {
-  if (!hasPrisma() || !getJellyfinUrl()) return null;
-  const prisma = getPrisma();
-  try {
-    const siblings = await prisma.pairedDevice.findMany({
-      where: {
-        jellyfinUserId,
-        jellyfinAccessToken: { not: null },
-        ...(opts.excludeTokenHash && { tokenHash: { not: opts.excludeTokenHash } }),
-      },
-      orderBy: { lastSeen: "desc" },
-      select: { tokenHash: true, jellyfinAccessToken: true },
-      take: 5,
-    });
-    for (const sibling of siblings) {
-      const token = sibling.jellyfinAccessToken!;
-      const ownership = await tokenOwnership(token, jellyfinUserId);
-      if (ownership === "own") {
-        if (opts.regraftTokenHash) {
-          await prisma.pairedDevice
-            .update({ where: { tokenHash: opts.regraftTokenHash }, data: { jellyfinAccessToken: token } })
-            .catch(() => {});
-        }
-        return token;
-      }
-      // Jellyfin injoignable → inutile d'insister sur les suivants.
-      if (ownership === "unknown") return null;
-      // Mort (401/403) ou porté par un autre compte : purgé, et suivant.
-      await clearStoredToken(sibling.tokenHash);
-    }
-  } catch { /* DB indisponible → pas de self-healing */ }
-  return null;
-}
-
-/**
  * Le jeton Jellyfin au nom duquel parler pour un appareil jumelé — la seule
  * porte d'entrée : config du direct, proxy de lecture, canal de session.
  *
- * Le jeton stocké s'il appartient au compte (ou si Jellyfin ne répond pas :
- * rien ne permet alors de le condamner) ; sinon il est purgé et un sibling du
- * même compte prend sa place. `purged` dit qu'un jeton a été retiré sans
- * remplaçant — le client doit oublier celui qu'il tenait.
+ * Son jeton PROPRE (`jellyfinDeviceId` renseigné) s'il appartient bien à son
+ * compte — ou si Jellyfin ne répond pas : rien ne permet alors de le
+ * condamner. Sinon, un jeton est frappé pour lui (`deviceJellyfinToken.ts`) :
+ * jumelage d'avant, dont le jeton était la copie de celui d'un autre appareil
+ * du compte (jamais rendu, et retiré de la base au passage), frappe ratée, ou
+ * jeton supprimé chez Jellyfin. `null` : révoqué, ou pas de jeton possible
+ * (Quick Connect coupé, Jellyfin injoignable) — la TV passe par le proxy.
+ *
+ * Plus aucune greffe : le jeton d'un appareil frère n'est jamais rendu à un
+ * autre. Le partager rendait toute révocation impossible sans déconnecter le
+ * frère.
  */
-export async function resolvePairedDeviceToken(
-  deviceJwt: string,
-  jellyfinUserId: string,
-): Promise<{ token: string | null; purged: boolean }> {
-  if (!hasPrisma()) return { token: null, purged: false };
+export async function resolvePairedDeviceToken(deviceJwt: string, jellyfinUserId: string): Promise<string | null> {
+  if (!hasPrisma()) return null;
   const tokenHash = hashToken(deviceJwt);
   const row = await getPrisma()
-    .pairedDevice.findUnique({ where: { tokenHash }, select: { jellyfinAccessToken: true } })
-    .then((found) => ({ found }), () => null);
-  // Base indisponible : rien à rendre, rien à purger.
-  if (!row) return { token: null, purged: false };
-  const stored = row.found?.jellyfinAccessToken ?? null;
-  let purged = false;
-  if (stored) {
-    const ownership = await tokenOwnership(stored, jellyfinUserId);
-    if (ownership === "own" || ownership === "unknown") return { token: stored, purged };
-    await clearStoredToken(tokenHash);
-    purged = true;
+    .pairedDevice.findUnique({
+      where: { tokenHash },
+      select: { name: true, jellyfinAccessToken: true, jellyfinDeviceId: true },
+    })
+    .catch(() => undefined);
+  // Base indisponible, ou jumelage révoqué : rien à rendre.
+  if (!row) return null;
+  if (row.jellyfinDeviceId && row.jellyfinAccessToken) {
+    const ownership = await tokenOwnership(row.jellyfinAccessToken, jellyfinUserId);
+    if (ownership === "own" || ownership === "unknown") return row.jellyfinAccessToken;
   }
-  const sibling = await findValidSiblingToken(jellyfinUserId, {
-    excludeTokenHash: tokenHash,
-    regraftTokenHash: tokenHash,
-  });
-  return { token: sibling, purged: purged && !sibling };
+  if (row.jellyfinAccessToken) await clearStoredToken(tokenHash);
+  return ensureOwnJellyfinToken(tokenHash, { jellyfinUserId, name: row.name });
 }
 
-/**
- * Le jeton Jellyfin à graver sur un appareil qu'on jumelle. Celui de la
- * requête du confirmateur — lu à la MÊME source que son authentification
- * (`getTokenFromRequest`) — s'il est un jeton Jellyfin de son propre compte ;
- * sinon le dernier jeton valide d'un autre appareil du compte.
- */
-export async function confirmJellyfinToken(
-  requestToken: string | null,
-  jellyfinUserId: string,
-): Promise<string | null> {
-  if (requestToken && !looksLikeJwt(requestToken)
-    && (await tokenOwnership(requestToken, jellyfinUserId)) === "own") {
-    return requestToken;
-  }
-  return findValidSiblingToken(jellyfinUserId);
+/** Le jeton Jellyfin d'un appareil révoqué : la réponse en cache de son
+ *  propriétaire n'est plus une preuve. */
+export function forgetJellyfinTokenOwner(token: string): void {
+  ownerCache.delete(hashToken(token));
 }
 
 /**

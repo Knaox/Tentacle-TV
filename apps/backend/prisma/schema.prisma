@@ -297,12 +297,33 @@ model PairedDevice {
   username              String    @db.VarChar(255)
   tokenHash             String    @unique @db.VarChar(64)
   jellyfinAccessToken   String?   @db.Text
+  /// L'appareil Jellyfin dont `jellyfinAccessToken` est le jeton PROPRE, frappé
+  /// pour cette TV (Quick Connect). Nul : jumelage d'avant — jeton copié d'un
+  /// autre appareil du compte, jamais rendu, remplacé au contact suivant.
+  jellyfinDeviceId      String?   @db.VarChar(255)
   lastSeen              DateTime  @default(now())
   createdAt             DateTime  @default(now())
 
   @@index([jellyfinUserId])
   @@index([tokenHash])
   @@map("paired_devices")
+}
+
+/// Les appareils Jellyfin frappés pour des TV, à faire disparaître de Jellyfin
+/// quand leur jumelage n'est plus — journal qui survit au plantage. `reason` :
+/// `minting` (frappe en cours : soldée si la ligne du jumelage le porte) ou
+/// `revoked` (jumelage supprimé : `DELETE /Devices` jusqu'à confirmation).
+model PairedDeviceCleanup {
+  id                    String    @id @default(cuid())
+  jellyfinDeviceId      String    @unique @db.VarChar(255)
+  tokenHash             String    @db.VarChar(64)
+  reason                String    @db.VarChar(20)
+  attempts              Int       @default(0)
+  nextAttemptAt         DateTime  @default(now())
+  createdAt             DateTime  @default(now())
+
+  @@index([nextAttemptAt])
+  @@map("paired_device_cleanups")
 }
 
 // Lien de partage d'une liste — 1 lien actif par (propriétaire, liste).

@@ -1,7 +1,9 @@
 /**
- * Le jeton Jellyfin d'un appareil jumelé n'est rendu que s'il appartient au
- * compte de l'appareil. Prisma en mémoire, Jellyfin bouchonné par le `fetch`
- * global : chaque jeton connaît son propriétaire (`/Users/Me`).
+ * Le jeton Jellyfin rendu pour un appareil jumelé est son jeton PROPRE, s'il
+ * appartient au compte de l'appareil — jamais celui d'un appareil frère.
+ * Prisma en mémoire, Jellyfin bouchonné par le `fetch` global : chaque jeton
+ * connaît son propriétaire (`/Users/Me`) ; la frappe d'un jeton propre est
+ * bouchonnée (testée dans `deviceJellyfinToken.test.ts`).
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,14 +13,23 @@ import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 // premier niveau faisait la même chose, mais le typecheck (tests compris) le
 // refuse avec le `module` du backend (TS1378).
 import {
-  resolvePairedDeviceToken, confirmJellyfinToken, findValidSiblingToken,
-  clearDeviceTokenIfInvalid, resetTokenOwnerCacheForTests,
+  resolvePairedDeviceToken, clearDeviceTokenIfInvalid, resetTokenOwnerCacheForTests,
 } from "./deviceTokenHealth";
+
+const minted = vi.hoisted(() => ({ calls: [] as string[], token: null as string | null }));
+vi.mock("./deviceJellyfinToken", () => ({
+  ensureOwnJellyfinToken: async (tokenHash: string) => {
+    minted.calls.push(tokenHash);
+    return minted.token;
+  },
+}));
 
 interface Row {
   tokenHash: string;
+  name: string;
   jellyfinUserId: string;
   jellyfinAccessToken: string | null;
+  jellyfinDeviceId: string | null;
   lastSeen: Date;
 }
 let rows: Row[] = [];
@@ -34,11 +45,6 @@ vi.mock("./db", () => ({
     pairedDevice: {
       findUnique: async (args: { where: { tokenHash: string } }) =>
         rows.find((r) => r.tokenHash === args.where.tokenHash) ?? null,
-      findMany: async (args: { where: { jellyfinUserId: string; tokenHash?: { not: string } } }) =>
-        rows
-          .filter((r) => r.jellyfinUserId === args.where.jellyfinUserId && r.jellyfinAccessToken !== null)
-          .filter((r) => !args.where.tokenHash || r.tokenHash !== args.where.tokenHash.not)
-          .sort((a, b) => b.lastSeen.getTime() - a.lastSeen.getTime()),
       update: async (args: { where: { tokenHash: string }; data: { jellyfinAccessToken: string | null } }) => {
         const row = rows.find((r) => r.tokenHash === args.where.tokenHash);
         if (!row) throw new Error("absent");
@@ -52,11 +58,14 @@ vi.mock("./db", () => ({
 const KNAOX = "f12b22ea52da40ef8b8bbafcfa1df3dc";
 const TEST = "b52628a704304f06a682f6037183b976";
 
-function device(jwt: string, userId: string, token: string | null, minutesAgo = 0): void {
+/** `own` : le jeton a été frappé pour CET appareil ; sinon, jumelage d'avant. */
+function device(jwt: string, userId: string, token: string | null, own = true, minutesAgo = 0): void {
   rows.push({
     tokenHash: `h:${jwt}`,
+    name: "Apple TV",
     jellyfinUserId: userId,
     jellyfinAccessToken: token,
+    jellyfinDeviceId: own && token ? `jf-device-${jwt}` : null,
     lastSeen: new Date(Date.now() - minutesAgo * 60_000),
   });
 }
@@ -64,6 +73,8 @@ const stored = (jwt: string) => rows.find((r) => r.tokenHash === `h:${jwt}`)?.je
 
 beforeEach(() => {
   rows = [];
+  minted.calls = [];
+  minted.token = null;
   jellyfinDown = false;
   owners.clear();
   owners.set("jf-knaox", KNAOX);
@@ -80,63 +91,46 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("resolvePairedDeviceToken", () => {
-  it("rend le jeton stocké quand il est du compte de l'appareil", async () => {
+  it("rend le jeton propre quand il est du compte de l'appareil", async () => {
     device("tv", TEST, "jf-test");
-    expect(await resolvePairedDeviceToken("tv", TEST)).toEqual({ token: "jf-test", purged: false });
+    expect(await resolvePairedDeviceToken("tv", TEST)).toBe("jf-test");
+    expect(minted.calls).toEqual([]);
   });
 
-  it("retire un jeton d'un autre compte et prend celui d'un appareil frère", async () => {
-    device("tv", TEST, "jf-knaox");
-    device("phone", TEST, "jf-test-2", 5);
-    expect(await resolvePairedDeviceToken("tv", TEST)).toEqual({ token: "jf-test-2", purged: false });
-    // Regreffé : les appels suivants le trouvent directement.
-    expect(stored("tv")).toBe("jf-test-2");
-  });
-
-  it("signale la purge quand aucun frère ne le remplace", async () => {
-    device("tv", TEST, "jf-knaox");
-    expect(await resolvePairedDeviceToken("tv", TEST)).toEqual({ token: null, purged: true });
-    expect(stored("tv")).toBeNull();
-  });
-
-  it("garde le jeton stocké quand Jellyfin ne répond pas", async () => {
-    device("tv", TEST, "jf-knaox");
+  it("garde le jeton propre quand Jellyfin ne répond pas", async () => {
+    device("tv", TEST, "jf-test");
     jellyfinDown = true;
-    expect(await resolvePairedDeviceToken("tv", TEST)).toEqual({ token: "jf-knaox", purged: false });
-    expect(stored("tv")).toBe("jf-knaox");
+    expect(await resolvePairedDeviceToken("tv", TEST)).toBe("jf-test");
+    expect(stored("tv")).toBe("jf-test");
   });
 
-  it("un appareil sans jeton hérite d'un frère valide, jamais d'un frère étranger", async () => {
+  it("ne rend jamais le jeton d'un jumelage d'avant, copié d'un autre appareil", async () => {
+    // Le jeton du téléphone qui avait confirmé : du bon compte, et valide.
+    device("tv", TEST, "jf-test", false);
+    minted.token = "jf-propre";
+    expect(await resolvePairedDeviceToken("tv", TEST)).toBe("jf-propre");
+    expect(stored("tv")).toBeNull(); // la copie quitte la base
+    expect(minted.calls).toEqual(["h:tv"]);
+  });
+
+  it("frappe un jeton neuf quand le propre a été supprimé chez Jellyfin", async () => {
+    device("tv", TEST, "jf-supprime");
+    minted.token = "jf-neuf";
+    expect(await resolvePairedDeviceToken("tv", TEST)).toBe("jf-neuf");
+    expect(minted.calls).toEqual(["h:tv"]);
+  });
+
+  it("ne prend jamais le jeton d'un appareil frère", async () => {
     device("tv", TEST, null);
-    device("old", TEST, "jf-knaox", 1);
-    device("phone", TEST, "jf-test", 9);
-    expect((await resolvePairedDeviceToken("tv", TEST)).token).toBe("jf-test");
-    // Le frère qui portait le jeton de Knaox est nettoyé au passage.
-    expect(stored("old")).toBeNull();
-  });
-});
-
-describe("confirmJellyfinToken", () => {
-  it("prend le jeton de la requête quand il est du compte du confirmateur", async () => {
-    expect(await confirmJellyfinToken("jf-test", TEST)).toBe("jf-test");
+    device("phone", TEST, "jf-test-2", true, 5);
+    expect(await resolvePairedDeviceToken("tv", TEST)).toBeNull();
+    expect(stored("tv")).toBeNull();
+    expect(stored("phone")).toBe("jf-test-2");
   });
 
-  it("refuse le jeton d'un autre compte et se replie sur un frère", async () => {
-    device("phone", TEST, "jf-test-2");
-    expect(await confirmJellyfinToken("jf-knaox", TEST)).toBe("jf-test-2");
-  });
-
-  it("un JWT n'est jamais gravé comme jeton Jellyfin", async () => {
-    expect(await confirmJellyfinToken("a.b.c", TEST)).toBeNull();
-  });
-});
-
-describe("findValidSiblingToken", () => {
-  it("purge les frères morts et s'arrête sur le premier du compte", async () => {
-    device("dead", TEST, "jf-revoked", 1);
-    device("phone", TEST, "jf-test", 2);
-    expect(await findValidSiblingToken(TEST)).toBe("jf-test");
-    expect(stored("dead")).toBeNull();
+  it("ne rend rien, et ne frappe rien, pour un jumelage révoqué", async () => {
+    expect(await resolvePairedDeviceToken("revoquee", TEST)).toBeNull();
+    expect(minted.calls).toEqual([]);
   });
 });
 

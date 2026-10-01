@@ -93,21 +93,14 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
     }
 
     let jellyfinToken: string | null = null;
-    let tokenExpired = false;
 
     if (isPairedDevice && bearerToken) {
-      // Appareil jumelé : son jeton Jellyfin est en base — rendu seulement s'il
-      // appartient à SON compte (cf. `resolvePairedDeviceToken`), sinon un
-      // appareil frère du même compte prend le relais. `purged` sans
-      // remplaçant : la TV doit oublier le jeton qu'elle tenait.
-      if (payload) {
-        const resolved = await resolvePairedDeviceToken(bearerToken, payload.userId);
-        jellyfinToken = resolved.token;
-        tokenExpired = resolved.purged;
-        if (resolved.purged) {
-          request.log.warn("Paired device jellyfinAccessToken invalide ou d'un autre compte — retiré, aucun appareil frère");
-        }
-      }
+      // Appareil jumelé : son jeton Jellyfin PROPRE, frappé pour lui au besoin
+      // (cf. `resolvePairedDeviceToken`). `null` — Quick Connect coupé,
+      // Jellyfin injoignable — est un MODE, pas une panne : la TV lit par le
+      // proxy. Plus de `tokenExpired` : aucun jeton n'est plus attendu d'un
+      // appareil frère.
+      if (payload) jellyfinToken = await resolvePairedDeviceToken(bearerToken, payload.userId);
     } else {
       // Web user: their bearer token IS the Jellyfin token
       jellyfinToken = bearerToken;
@@ -121,7 +114,6 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
         mediaBaseUrl,
         jellyfinToken,
         ...(deviceId && { deviceId }),
-        ...(tokenExpired && { tokenExpired: true }),
       },
     };
   });

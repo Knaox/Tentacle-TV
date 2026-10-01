@@ -1,37 +1,26 @@
 import type { FastifyPluginAsync } from "fastify";
-import { z } from "zod";
 import crypto from "crypto";
 import { getPrisma } from "../services/db";
-import { requireAuth, requireAdmin, getTokenFromRequest } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { signDeviceToken, hashToken } from "../services/jwt";
-import { confirmJellyfinToken } from "../services/deviceTokenHealth";
-import { revokeDeviceByTokenHash } from "../services/wsManager";
+import { provisionOwnJellyfinToken } from "../services/deviceJellyfinToken";
+import { CODE_TTL_MS, claimSchema, freshPairingCode, generateSchema } from "./pairing/codes";
+import { devicePairingRoutes } from "./pairing/deviceFlow";
+import { pairedDevicesRoutes } from "./pairing/devices";
 
-const PAIR_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-const CODE_LENGTH = 4;
-const CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-function generateCode(): string {
-  const bytes = crypto.randomBytes(CODE_LENGTH);
-  return Array.from(bytes)
-    .map((b) => PAIR_CHARS[b % PAIR_CHARS.length])
-    .join("");
-}
-
-const generateSchema = z.object({
-  deviceName: z.string().max(100).optional(),
-});
-
-const claimSchema = z.object({
-  code: z
-    .string()
-    .length(4)
-    .transform((s) => s.toUpperCase()),
-  deviceName: z.string().max(100).optional(),
-});
-
+/**
+ * Le jumelage des téléviseurs. Trois façons de naître — code généré par le
+ * web (`/generate` puis `/claim`), code affiché par la TV
+ * (`pairing/deviceFlow.ts`), relais public (`/tv-token`) — et une seule
+ * forme : une ligne `paired_devices` (l'empreinte d'un jeton d'appareil qui
+ * n'expire pas) et un jeton Jellyfin PROPRE à la TV, frappé pour elle
+ * (`deviceJellyfinToken.ts`) — jamais la copie de celui du confirmateur.
+ */
 export const pairRoutes: FastifyPluginAsync = async (app) => {
+  await app.register(devicePairingRoutes);
+  await app.register(pairedDevicesRoutes);
+
   // ── POST /generate — Web user generates a pairing code (auth required) ──
   app.post(
     "/generate",
@@ -40,28 +29,9 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
       config: { rateLimit: { max: 10, timeWindow: "1 hour" } },
     },
     async (request, reply) => {
-      const user = (request as any).user as JellyfinUser;
+      const user = (request as unknown as { user: JellyfinUser }).user;
       const body = generateSchema.parse(request.body ?? {});
-      const prisma = getPrisma();
-
-      // Clean expired codes opportunistically
-      await prisma.pairingCode.deleteMany({
-        where: { expiresAt: { lt: new Date() } },
-      });
-
-      // Generate unique code (retry on collision)
-      let code = "";
-      for (let i = 0; i < 10; i++) {
-        const candidate = generateCode();
-        const existing = await prisma.pairingCode.findUnique({
-          where: { code: candidate },
-        });
-        if (!existing) {
-          code = candidate;
-          break;
-        }
-      }
-
+      const code = await freshPairingCode();
       if (!code) {
         return reply
           .status(503)
@@ -77,13 +47,8 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId,
       });
 
-      // Le jeton Jellyfin du confirmateur, pour le direct du futur appareil —
-      // lu à la source de son authentification et de SON compte, sinon celui
-      // d'un appareil frère (cf. `confirmJellyfinToken`).
-      const jellyfinAccessToken = await confirmJellyfinToken(getTokenFromRequest(request), user.userId);
-
       const expiresAt = new Date(Date.now() + CODE_TTL_MS);
-      await prisma.pairingCode.create({
+      await getPrisma().pairingCode.create({
         data: {
           code,
           deviceName: body.deviceName ?? "TV",
@@ -92,7 +57,6 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
           jellyfinUserId: user.userId,
           username: user.username,
           token,
-          jellyfinAccessToken,
           status: "pending",
         },
       });
@@ -155,16 +119,17 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(400).send({ message: "Code invalide" });
       }
 
-      // Register the paired device (include Jellyfin token for direct streaming)
+      const name = body.deviceName || record.deviceName || "TV";
       await prisma.pairedDevice.create({
         data: {
-          name: body.deviceName || record.deviceName || "TV",
+          name,
           jellyfinUserId: record.jellyfinUserId!,
           username: record.username!,
           tokenHash: hashToken(record.token),
-          jellyfinAccessToken: record.jellyfinAccessToken,
         },
       });
+      // Son propre jeton Jellyfin, pour le direct et sa session.
+      provisionOwnJellyfinToken(record.token, { jellyfinUserId: record.jellyfinUserId!, name });
 
       // Mark as claimed
       await prisma.pairingCode.update({
@@ -186,141 +151,6 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // ── Flux « appareil » (manuel, sans relay) : la TV AFFICHE un code, ──────
-  // ── l'utilisateur le confirme depuis le téléphone/web connecté.     ──────
-  // Même mécanique que le relay public, mais hébergée par ce serveur.
-
-  // ── POST /device/generate — TV génère un code à afficher (sans auth) ──
-  app.post(
-    "/device/generate",
-    { config: { rateLimit: { max: 10, timeWindow: "1 hour" } } },
-    async (request, reply) => {
-      const body = generateSchema.parse(request.body ?? {});
-      const prisma = getPrisma();
-
-      await prisma.pairingCode.deleteMany({
-        where: { expiresAt: { lt: new Date() } },
-      });
-
-      let code = "";
-      for (let i = 0; i < 10; i++) {
-        const candidate = generateCode();
-        const existing = await prisma.pairingCode.findUnique({
-          where: { code: candidate },
-        });
-        if (!existing) {
-          code = candidate;
-          break;
-        }
-      }
-
-      if (!code) {
-        return reply
-          .status(503)
-          .send({ message: "Impossible de générer un code, réessayez." });
-      }
-
-      const expiresAt = new Date(Date.now() + CODE_TTL_MS);
-      await prisma.pairingCode.create({
-        data: {
-          code,
-          deviceName: body.deviceName ?? "TV",
-          deviceId: crypto.randomUUID(),
-          expiresAt,
-          status: "device_pending",
-        },
-      });
-
-      return { code, expiresIn: CODE_TTL_MS / 1000 };
-    },
-  );
-
-  // ── GET /device/status/:code — TV poll : confirmé ? (sans auth) ──
-  // Le token n'est délivré qu'une fois (l'enregistrement est supprimé après).
-  app.get("/device/status/:code", async (request) => {
-    const { code } = request.params as { code: string };
-    const prisma = getPrisma();
-
-    const record = await prisma.pairingCode.findUnique({
-      where: { code: code.toUpperCase() },
-    });
-
-    // Ne répond que pour les codes initiés par un appareil (pas le flux /claim)
-    if (!record || !record.status.startsWith("device_")) {
-      return { status: "expired" };
-    }
-
-    if (record.expiresAt < new Date()) {
-      await prisma.pairingCode.delete({ where: { id: record.id } }).catch(() => {});
-      return { status: "expired" };
-    }
-
-    if (record.status === "device_confirmed" && record.token) {
-      await prisma.pairingCode.delete({ where: { id: record.id } }).catch(() => {});
-      return {
-        status: "confirmed",
-        token: record.token,
-        user: { id: record.jellyfinUserId, name: record.username },
-      };
-    }
-
-    return { status: "pending" };
-  });
-
-  // ── POST /device/confirm — Le téléphone/web confirme le code affiché par la TV (auth) ──
-  app.post(
-    "/device/confirm",
-    {
-      preHandler: [requireAuth],
-      config: { rateLimit: { max: 20, timeWindow: "1 hour" } },
-    },
-    async (request, reply) => {
-      const user = (request as any).user as JellyfinUser;
-      const body = claimSchema.parse(request.body);
-      const prisma = getPrisma();
-
-      const record = await prisma.pairingCode.findUnique({
-        where: { code: body.code },
-      });
-
-      if (!record || record.status !== "device_pending" || record.expiresAt < new Date()) {
-        return reply.status(404).send({ message: "Code invalide ou expiré" });
-      }
-
-      const token = await signDeviceToken({
-        userId: user.userId,
-        username: user.username,
-        isAdmin: user.isAdmin,
-        deviceId: record.deviceId ?? crypto.randomUUID(),
-      });
-
-      // Jeton Jellyfin du confirmateur pour le streaming direct (comme /generate).
-      const jellyfinAccessToken = await confirmJellyfinToken(getTokenFromRequest(request), user.userId);
-
-      await prisma.pairedDevice.create({
-        data: {
-          name: record.deviceName || "TV",
-          jellyfinUserId: user.userId,
-          username: user.username,
-          tokenHash: hashToken(token),
-          jellyfinAccessToken,
-        },
-      });
-
-      await prisma.pairingCode.update({
-        where: { id: record.id },
-        data: {
-          status: "device_confirmed",
-          token,
-          jellyfinUserId: user.userId,
-          username: user.username,
-        },
-      });
-
-      return { success: true, deviceName: record.deviceName };
-    },
-  );
-
   // ── POST /tv-token — Generate a long-lived TV token (relay flow, auth required) ──
   app.post(
     "/tv-token",
@@ -329,7 +159,7 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
       config: { rateLimit: { max: 5, timeWindow: "1 hour" } },
     },
     async (request) => {
-      const user = (request as any).user as JellyfinUser;
+      const user = (request as unknown as { user: JellyfinUser }).user;
       const deviceId = crypto.randomUUID();
 
       const token = await signDeviceToken({
@@ -339,93 +169,19 @@ export const pairRoutes: FastifyPluginAsync = async (app) => {
         deviceId,
       });
 
-      // Jeton Jellyfin du confirmateur pour le streaming direct (comme /generate).
-      const jellyfinAccessToken = await confirmJellyfinToken(getTokenFromRequest(request), user.userId);
-
-      const prisma = getPrisma();
-      await prisma.pairedDevice.create({
+      await getPrisma().pairedDevice.create({
         data: {
           name: "TV",
           jellyfinUserId: user.userId,
           username: user.username,
           tokenHash: hashToken(token),
-          jellyfinAccessToken,
         },
       });
+      // Le relais ne transporte pas le nom de la TV : « TV », renommée à sa
+      // première requête (`deviceNaming.ts`) — Jellyfin suit à la suivante.
+      provisionOwnJellyfinToken(token, { jellyfinUserId: user.userId, name: "TV" });
 
       return { token };
     },
   );
-
-  // ── GET /my-devices — List current user's paired devices (auth required) ──
-  app.get(
-    "/my-devices",
-    { preHandler: [requireAuth] },
-    async (request) => {
-      const user = (request as any).user as JellyfinUser;
-      const prisma = getPrisma();
-      const devices = await prisma.pairedDevice.findMany({
-        where: { jellyfinUserId: user.userId },
-        orderBy: { createdAt: "desc" },
-      });
-      return devices.map((d: any) => ({
-        id: d.id,
-        name: d.name,
-        username: d.username,
-        jellyfinUserId: d.jellyfinUserId,
-        lastSeen: d.lastSeen,
-        createdAt: d.createdAt,
-      }));
-    },
-  );
-
-  // ── DELETE /my-devices/:id — Revoke own paired device (auth required) ──
-  app.delete(
-    "/my-devices/:id",
-    { preHandler: [requireAuth] },
-    async (request, reply) => {
-      const user = (request as any).user as JellyfinUser;
-      const { id } = request.params as { id: string };
-      const prisma = getPrisma();
-
-      const device = await prisma.pairedDevice.findUnique({ where: { id } });
-      if (!device || device.jellyfinUserId !== user.userId) {
-        return reply.status(404).send({ message: "Appareil introuvable" });
-      }
-
-      await prisma.pairedDevice.delete({ where: { id } });
-      // Déconfigure immédiatement l'appareil s'il a une socket ouverte
-      // (sinon la révocation n'est détectée que passivement, au prochain 401).
-      revokeDeviceByTokenHash(device.tokenHash);
-      return { success: true };
-    },
-  );
-
-  // ── GET /devices — List paired devices (admin only) ──
-  app.get("/devices", { preHandler: [requireAdmin] }, async () => {
-    const prisma = getPrisma();
-    const devices = await prisma.pairedDevice.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    return devices.map((d: any) => ({
-      id: d.id,
-      name: d.name,
-      username: d.username,
-      jellyfinUserId: d.jellyfinUserId,
-      lastSeen: d.lastSeen,
-      createdAt: d.createdAt,
-    }));
-  });
-
-  // ── DELETE /devices/:id — Revoke a paired device (admin only) ──
-  app.delete("/devices/:id", { preHandler: [requireAdmin] }, async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const prisma = getPrisma();
-    const device = await prisma.pairedDevice.findUnique({ where: { id } });
-    if (!device) return reply.status(404).send({ message: "Appareil introuvable" });
-    await prisma.pairedDevice.delete({ where: { id } });
-    // Déconfiguration immédiate de la TV/appareil révoqué par l'admin.
-    revokeDeviceByTokenHash(device.tokenHash);
-    return { success: true };
-  });
 };

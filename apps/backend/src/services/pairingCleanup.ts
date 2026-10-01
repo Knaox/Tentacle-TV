@@ -1,6 +1,7 @@
 import { getPrisma } from "./db";
 import { hashToken } from "./jwt";
 import { deleteProvisioningCode } from "./relayProvision";
+import { sweepJellyfinDevices } from "./jellyfinDeviceCleanup";
 
 const CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -43,6 +44,9 @@ async function cleanup(): Promise<void> {
   } catch (err) {
     console.error("[PairingCleanup] Error:", err);
   }
+  // Au démarrage, c'est la reprise après plantage : les appareils Jellyfin
+  // d'une frappe interrompue ou d'une révocation inachevée disparaissent.
+  await sweepJellyfinDevices().catch((err) => console.error("[PairingCleanup] Jellyfin:", err));
 }
 
 export function startPairingCleanup(): void {

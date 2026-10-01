@@ -9,7 +9,7 @@ import { buildPlaystateRewrite, type PlaystateRewrite } from "./playstate";
  *  - Impersonation JWT (admin "voir en tant que") → admin API key ; les requêtes
  *    user-data ciblent /Users/{userId}/* explicitement, la clé admin suffit.
  *  - Device JWT, route de session :
- *    · si le device a un token Jellyfin stocké → on l'utilise (compte correct) ;
+ *    · si le device a son jeton Jellyfin propre → on l'utilise (compte correct) ;
  *    · sinon → clé admin + RÉÉCRITURE du report de lecture en écriture des
  *      données utilisateur (/UserItems/{itemId}/UserData?userId=), car
  *      /Sessions/Playing* avec la clé admin perdrait la progression.
@@ -42,12 +42,9 @@ export async function resolveSessionRouting(
   // jamais mis à jour côté client jumelé). Seul le vrai token Jellyfin du device
   // attribue correctement → on le PRÉFÈRE désormais.
   //
-  // Le jeton n'est retenu que s'il appartient au compte de l'appareil — un
-  // jeton étranger écrivait la progression sur l'autre compte, en silence
-  // (cf. `resolvePairedDeviceToken`). À défaut, celui d'un appareil frère du
-  // MÊME compte : plusieurs appareils d'un même utilisateur partagent alors ce
-  // token (OK pour l'état de visionnage ; sessions Jellyfin fusionnées).
-  const { token: deviceToken } = await resolvePairedDeviceToken(incomingToken, payload.userId);
+  // Le jeton PROPRE de l'appareil, frappé pour lui au besoin — jamais celui
+  // d'un autre appareil, du même compte ou non (cf. `resolvePairedDeviceToken`).
+  const deviceToken = await resolvePairedDeviceToken(incomingToken, payload.userId);
   if (deviceToken) return { apiKey: deviceToken, usedDeviceToken: true };
 
   // Aucun token Jellyfin pour cet utilisateur : la position s'écrit directement

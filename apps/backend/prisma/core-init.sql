@@ -567,6 +567,34 @@ CREATE TABLE IF NOT EXISTS `user_swipes` (
   KEY `user_swipes_jellyfinUserId_updatedAt_idx` (`jellyfinUserId`, `updatedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Jumelages : le jeton Jellyfin PROPRE de chaque TV et le journal des
+-- appareils Jellyfin à faire disparaître. Voir schema.prisma > PairedDevice et
+-- PairedDeviceCleanup. `paired_devices` naît du setup : sur une base vierge,
+-- ce script s'est déjà arrêté plus haut (ALTER de `notifications`) et le
+-- `prisma db push` du setup pose la colonne ; ailleurs, elle se décide dans
+-- information_schema — rejouable sur MariaDB comme sur MySQL.
+CREATE TABLE IF NOT EXISTS `paired_device_cleanups` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinDeviceId` varchar(255) NOT NULL,
+  `tokenHash` varchar(64) NOT NULL,
+  `reason` varchar(20) NOT NULL,
+  `attempts` int(11) NOT NULL DEFAULT 0,
+  `nextAttemptAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `paired_device_cleanups_jellyfinDeviceId_key` (`jellyfinDeviceId`),
+  KEY `paired_device_cleanups_nextAttemptAt_idx` (`nextAttemptAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET @pd_jf_device_col := (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'paired_devices' AND COLUMN_NAME = 'jellyfinDeviceId');
+SET @pd_jf_device_sql := IF(@pd_jf_device_col = 0,
+  'ALTER TABLE `paired_devices` ADD COLUMN `jellyfinDeviceId` varchar(255) NULL AFTER `jellyfinAccessToken`',
+  'DO 0');
+PREPARE pd_jf_device_stmt FROM @pd_jf_device_sql;
+EXECUTE pd_jf_device_stmt;
+DEALLOCATE PREPARE pd_jf_device_stmt;
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Purge de `server_config` : clés abandonnées par une évolution.
 -- La table n'est pas créée ici — c'est le `prisma db push` du setup qui la

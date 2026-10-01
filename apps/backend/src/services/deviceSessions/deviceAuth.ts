@@ -47,7 +47,12 @@ export interface PairedLabels {
 /** L'identifiant Jellyfin d'un appareil jumelé : stable le temps du jumelage,
  *  unique, et impossible à fabriquer sans la clé du serveur. */
 export function pairedJellyfinDeviceId(pairingJwt: string): Promise<string> {
-  return deviceIdForOpaque("paired", hashToken(pairingJwt));
+  return pairedDeviceIdForHash(hashToken(pairingJwt));
+}
+
+/** Le même, depuis l'empreinte du jeton — ce que la base garde du jumelage. */
+export function pairedDeviceIdForHash(tokenHash: string): Promise<string> {
+  return deviceIdForOpaque("paired", tokenHash);
 }
 
 export async function pairedIdentity(pairingJwt: string, labels: PairedLabels): Promise<DeviceIdentity> {
