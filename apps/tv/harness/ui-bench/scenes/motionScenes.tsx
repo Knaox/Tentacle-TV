@@ -4,8 +4,10 @@ import { i18n } from "@tentacle-tv/shared";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../../src/redesign/background/AmbientBackdrop";
 import { HeroBanner } from "../../../src/redesign/hero/HeroBanner";
+import { HomeView } from "../../../src/redesign/screens/home/HomeView";
 import type { BenchData } from "../data/benchData";
-import { heroOf } from "../data/screenModels";
+import { heroOf, navOf } from "../data/screenModels";
+import { heroItems, rowsOf } from "./homeScenes";
 import type { BenchScene } from "./types";
 
 /**
@@ -13,7 +15,10 @@ import type { BenchScene } from "./types";
  * pas tout seul dans les autres scènes.
  * - `mouvement/heros` : le héros qui tourne toutes les 3,5 s sur les vraies
  *   reprises (8 s dans l'app) — image en fondu enchaîné, texte qui sort et
- *   rentre, halo qui passe d'une lumière à l'autre, fond vivant qui suit.
+ *   rentre, halo qui passe d'une lumière à l'autre, fond vivant qui suit ;
+ * - `mouvement/navigation` : la navigation de l'accueil qui se déplie et se
+ *   replie toutes les 1,2 s, sur le vrai contenu (le verre floute ce qui
+ *   passe dessous).
  * Le focus figé du banc n'y joue pas : rien n'y est focalisé par défaut.
  */
 
@@ -47,6 +52,23 @@ function RotatingHero({ data }: { data: BenchData }) {
   );
 }
 
+const TOGGLE_MS = 1_200;
+
+function UnfoldingNav({ data }: { data: BenchData }) {
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    const timer = setInterval(() => setExpanded((open) => !open), TOGGLE_MS);
+    return () => clearInterval(timer);
+  }, []);
+  const nav = useMemo(() => navOf(data, "Home", expanded), [data, expanded]);
+  const rows = useMemo(() => rowsOf(data), [data]);
+  const hero = useMemo(() => {
+    const items = heroItems(data);
+    return items[0] ? heroOf(data, items[0], t("common:resumeWatching"), { index: 0, count: items.length }) : null;
+  }, [data]);
+  return <HomeView nav={nav} hero={hero} rows={rows} palette={hero?.palette ?? { glows: ["#3a3f5c", "#5c4a2e", "#6b4a3a"], deep: "#0d0b0f" }} />;
+}
+
 export const MOTION_SCENES: BenchScene[] = [
   {
     id: "mouvement/heros",
@@ -60,6 +82,13 @@ export const MOTION_SCENES: BenchScene[] = [
         .map((item) => heroOf(data, item).backdropUri)
         .filter((uri): uri is string => Boolean(uri)),
     render: (data) => <RotatingHero data={data} />,
+  },
+  {
+    id: "mouvement/navigation",
+    group: "Mouvement",
+    label: "La navigation qui se déplie (toutes les 1,2 s)",
+    settleMs: 1500,
+    render: (data) => <UnfoldingNav data={data} />,
   },
 ];
 
