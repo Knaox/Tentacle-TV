@@ -42,6 +42,15 @@ export const IDLE_CANCEL_MS = 7000;
 export interface ScrubMachineOptions {
   readPosition: () => number;
   readDuration: () => number;
+  /**
+   * La lecture est-elle EN PAUSE ? Lu une fois, à l'entrée.
+   *
+   * Annuler rend l'état d'avant : entré en pause, on y reste — « Retour revient
+   * où l'on était ». Sans lui, annuler relance la lecture (le comportement
+   * d'avant, que garde le téléviseur LG). Confirmer relance toujours : OK lit
+   * depuis la position visée.
+   */
+  readPaused?: () => boolean;
   onEnter: (position: number, tier: number) => void;
   onChange: (position: number, tier: number) => void;
   onPause: (pause: boolean) => void;
@@ -70,6 +79,8 @@ export interface ScrubMachine {
 export function createScrubMachine(options: ScrubMachineOptions): ScrubMachine {
   let active = false;
   let position = 0;
+  /** L'état de lecture à l'entrée : ce qu'une annulation rend. */
+  let pausedBefore = false;
   let idle: ReturnType<typeof setTimeout> | null = null;
 
   function armIdle(): void {
@@ -96,6 +107,7 @@ export function createScrubMachine(options: ScrubMachineOptions): ScrubMachine {
   function begin(tier: number): void {
     active = true;
     position = clamp(options.readPosition());
+    pausedBefore = options.readPaused?.() ?? false;
     options.onPause(true);
     options.onEnter(position, tier);
   }
@@ -136,8 +148,9 @@ export function createScrubMachine(options: ScrubMachineOptions): ScrubMachine {
     disarm();
     options.onExit();
     // Aucun `onSeek` : c'est toute la différence avec une confirmation, et
-    // c'est ce qui rend l'abandon sur inactivité inoffensif.
-    options.onPause(false);
+    // c'est ce qui rend l'abandon sur inactivité inoffensif. Et la lecture
+    // retrouve son état d'avant : entré en pause, on y reste.
+    options.onPause(pausedBefore);
   }
 
   return {

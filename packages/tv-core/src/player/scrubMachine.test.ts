@@ -180,3 +180,59 @@ describe("pas proportionnel à la durée", () => {
     machine.destroy();
   });
 });
+
+describe("l'état de lecture d'avant", () => {
+  // Apple TV et Android TV le lisent (`readPaused`) ; le téléviseur LG non.
+  function paused(isPaused: boolean) {
+    const h = harness(100, 500);
+    const options: ScrubMachineOptions = { ...h.options, readPaused: () => isPaused };
+    h.machine.destroy();
+    return { options, machine: createScrubMachine(options) };
+  }
+
+  it("annuler un déplacement commencé en pause laisse la lecture en pause", () => {
+    const { options, machine } = paused(true);
+
+    machine.step(1, 1);
+    machine.cancel();
+
+    expect(options.onSeek).not.toHaveBeenCalled();
+    expect(options.onPause).toHaveBeenLastCalledWith(true);
+    machine.destroy();
+  });
+
+  it("annuler un déplacement commencé en lecture relance la lecture", () => {
+    const { options, machine } = paused(false);
+
+    machine.enter();
+    machine.cancel();
+
+    expect(options.onPause).toHaveBeenLastCalledWith(false);
+    machine.destroy();
+  });
+
+  it("confirmer lit depuis la position visée, même entré en pause", () => {
+    const { options, machine } = paused(true);
+
+    machine.step(1, 1);
+    machine.confirm();
+
+    expect(options.onSeek).toHaveBeenCalledWith(100 + SCRUB_STEP_S);
+    expect(options.onPause).toHaveBeenLastCalledWith(false);
+    machine.destroy();
+  });
+
+  it("l'abandon sur inactivité rend aussi la pause d'avant", () => {
+    vi.useFakeTimers();
+    const { options, machine } = paused(true);
+
+    machine.enter();
+    vi.advanceTimersByTime(7100);
+
+    expect(machine.isActive()).toBe(false);
+    expect(options.onSeek).not.toHaveBeenCalled();
+    expect(options.onPause).toHaveBeenLastCalledWith(true);
+    machine.destroy();
+    vi.useRealTimers();
+  });
+});
