@@ -8,6 +8,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroEyebrow } from "./HeroEyebrow";
 import { HeroMetaLine } from "./HeroMetaLine";
 import { HeroActions } from "./HeroActions";
+import { heroLogoUrl } from "./heroLogo";
+import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { extractMediaQuality } from "../../lib/mediaQuality";
 import { RichOverview } from "../../lib/overviewHtml";
 import { soberMetaText } from "../media/MetaChips";
@@ -41,12 +43,11 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
 
   const isEpisode = item.Type === "Episode";
   const isSeries = item.Type === "Series";
-  const logoId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const logoUrl = item.ImageTags?.Logo
-    ? client.getImageUrl(logoId, "Logo", { width: 500, quality: 90 })
-    : isEpisode && item.SeriesId
-      ? client.getImageUrl(item.SeriesId, "Logo", { width: 500, quality: 90 })
-      : null;
+  // Le logo que la donnée annonce (celui de la série pour un épisode), sinon
+  // le titre écrit ; un logo annoncé qui échoue quand même lui rend la place.
+  const logoUrl = heroLogoUrl(client, item);
+  const { broken: logoBroken, reportFailure: reportLogoFailure } = useBrokenImage(logoUrl);
+  const showLogo = logoUrl !== null && !logoBroken;
 
   const displayName = isEpisode ? (item.SeriesName ?? item.Name) : item.Name;
   const resumeEp = isEpisode
@@ -104,11 +105,12 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
 
         {/* Logo / titre — bornés par le `max-w-xl` du parent pour ne jamais
             déborder vers les flèches du carrousel, à droite. */}
-        {logoUrl ? (
+        {showLogo ? (
           <motion.img
             variants={itemVariants}
             src={logoUrl}
             alt={displayName}
+            onError={reportLogoFailure}
             className="mb-4 h-20 max-w-[440px] object-contain object-left drop-shadow-[0_4px_24px_var(--on-media-shadow)] md:h-28 lg:h-32"
             draggable={false}
           />
