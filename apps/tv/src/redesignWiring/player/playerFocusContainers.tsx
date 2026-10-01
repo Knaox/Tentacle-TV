@@ -12,14 +12,15 @@ import type { FocusStore } from "../focus/focusStore";
  * `TVPlayerEpisodePanel`, `TVSeasonPills`) :
  * - l'habillage MÉMORISE son dernier bouton (`autoFocus`) : c'est là que le
  *   focus revient de la pilule, et là qu'il se pose quand l'habillage revient ;
- * - la frise est le pont MONTANT vers la pilule de saut ;
+ * - la frise est le pont MONTANT vers la pilule de saut ; le message-outil a
+ *   le sien, entre sa croix et son panneau ;
  * - la pilule retient le focus entre « Passer » et « Masquer » pendant un
  *   décompte ; quand l'habillage est là, elle en ressort vers lecture/pause
  *   (BAS) et vers Retour (HAUT, GAUCHE) ;
- * - cartes, affiche, panneaux et message-outil le retiennent tant qu'ils sont
- *   ouverts ; les écrans qui couvrent la vidéo (ouverture, affiche de fin)
- *   aussi, croix Retour comprise, sans choisir par où l'on y entre
- *   (`ScreenTrap`) ;
+ * - cartes, affiche et panneaux le retiennent tant qu'ils sont ouverts ; les
+ *   écrans qui couvrent la vidéo (ouverture, affiche de fin) et le
+ *   message-outil activé aussi, croix Retour comprise, sans choisir par où
+ *   l'on y entre (`ScreenTrap`) ;
  * - l'en-tête des épisodes renvoie toute montée vers la croix, la bande des
  *   saisons fait entrer par la saison AFFICHÉE ; la marge des pistes mène à
  *   leur croix depuis toute la colonne Audio.
@@ -122,6 +123,13 @@ function EndScreenGroup(props: FocusGroupContainerProps) {
   return <ScreenTrap {...props} destinations={useLiveDestination(store, END_ENTRIES)} />;
 }
 
+/** Le message-outil : « Réessayer maintenant » ; la croix s'atteint par HAUT. */
+const TROUBLE_ENTRIES = ["trouble:retry"] as const;
+function TroubleScreenGroup(props: FocusGroupContainerProps) {
+  const { store } = usePlayerFocusState();
+  return <ScreenTrap {...props} destinations={useLiveDestination(store, TROUBLE_ENTRIES)} />;
+}
+
 /**
  * Un PONT : un guide qui renvoie le focus vers ses destinations — et qui, sans
  * destination, n'est plus rien. Il faut le dire : react-native-tvos marque
@@ -191,6 +199,22 @@ function IslandGroup({ style, pointerEvents, children }: FocusGroupContainerProp
   );
 }
 
+/**
+ * Le pont du message-outil, entre la croix (en haut à gauche) et le panneau
+ * (au centre) : rien d'aligné, donc rien d'atteignable sans lui (mesuré :
+ * HAUT depuis « Réessayer maintenant » n'y menait pas). Il a un SENS, lu sur
+ * le focus, comme la frise : depuis la croix, il descend vers l'entrée ;
+ * depuis le panneau, il monte vers la croix.
+ */
+function TroubleBridgeGroup(props: FocusGroupContainerProps) {
+  const { store } = usePlayerFocusState();
+  const subscribe = useCallback((notify: () => void) => store.subscribe(() => notify()), [store]);
+  const focusedKey = useSyncExternalStore(subscribe, store.focusedKey, store.focusedKey);
+  const back = useStoreDestination(store, "trouble:back");
+  const retry = useStoreDestination(store, "trouble:retry");
+  return <BridgeGuide {...props} destinations={focusedKey === "trouble:back" ? retry : back} />;
+}
+
 function EpisodesHeaderGroup(props: FocusGroupContainerProps) {
   const { store } = usePlayerFocusState();
   return <BridgeGuide {...props} destinations={useStoreDestination(store, "episodes:close")} />;
@@ -215,7 +239,8 @@ export const PLAYER_GROUP_CONTAINERS: Readonly<Record<string, ComponentType<Focu
   "upnext:actions": TrapFocusGuide,
   "loading:screen": LoadingScreenGroup,
   "end:screen": EndScreenGroup,
-  "trouble:actions": TrapFocusGuide,
+  "trouble:screen": TroubleScreenGroup,
+  "trouble:bridge": TroubleBridgeGroup,
   "tracks:panel": TrapFocusGuide,
   "tracks:back": TracksBackGroup,
   "episodes:panel": TrapFocusGuide,

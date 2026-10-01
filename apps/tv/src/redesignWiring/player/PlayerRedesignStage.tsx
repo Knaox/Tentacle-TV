@@ -57,6 +57,7 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
     failed: props.failed,
     upNextShown: chrome.upNextShown,
     endShown: chrome.endShown,
+    troubleActive: chrome.troubleCovers,
     tracksEntryKey: chrome.tracksEntryKey,
     activeSeasonIndex: chrome.activeSeasonIndex,
   });

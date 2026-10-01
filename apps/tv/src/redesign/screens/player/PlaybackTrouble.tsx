@@ -2,6 +2,7 @@ import { memo } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
@@ -10,7 +11,9 @@ import { Icon } from "../../icons/Icon";
 import { Presented } from "../../motion/Presented";
 import { useEntrance } from "../../motion/useMotion";
 import { colors, fonts, white } from "../../theme/tokens";
-import type { PlaybackTroubleModel, TroubleActionKey, TroubleNoticeModel, TroublePanelModel } from "./playbackTroubleTypes";
+import type {
+  PlaybackTroubleModel, TroubleActionKey, TroubleNoticeModel, TroublePanelModel, TroublePillKey,
+} from "./playbackTroubleTypes";
 import { DENSE_BASE, SOFT_BASE } from "./surfaces";
 
 /**
@@ -23,8 +26,12 @@ import { DENSE_BASE, SOFT_BASE } from "./surfaces";
  *   elle vient de reprendre. Il ne demande rien.
  * - Le PANNEAU (`panel`), au centre, là où tournait l'indicateur : la lecture
  *   est arrêtée. Il paraît sans prendre le focus ; c'est le premier geste de
- *   l'utilisateur qui l'active (l'intégration). Clés : `trouble:retry`,
- *   `trouble:quality`, `trouble:back` ; groupe `trouble:actions`.
+ *   l'utilisateur qui l'active (l'intégration). Activé, l'habillage recule et
+ *   la croix Retour paraît en haut à gauche, comme partout : elle referme le
+ *   lecteur. Clés : `trouble:retry`, `trouble:quality`, `trouble:back` (la
+ *   croix) ; groupes `trouble:actions`, `trouble:bridge` (le pont entre la
+ *   croix et le panneau) et `trouble:screen` — l'écran entier, croix
+ *   comprise, où l'intégration retient le focus.
  *
  * Aucun des deux ne coupe la lecture ; tous deux se retirent seuls quand elle
  * reprend.
@@ -32,10 +39,9 @@ import { DENSE_BASE, SOFT_BASE } from "./surfaces";
 
 const SAFE = TV_STAGE.safe;
 
-const FOCUS_KEYS: Record<TroubleActionKey, string> = {
+const FOCUS_KEYS: Record<TroublePillKey, string> = {
   retry: "trouble:retry",
   quality: "trouble:quality",
-  back: "trouble:back",
 };
 
 function useAppear(appear: SharedValue<number>, lift: number) {
@@ -72,38 +78,50 @@ const Panel = memo(function Panel({ model, onAction }: {
   const backing = useNativeGlassBacking("strong");
   const style = useAppear(useEntrance("panel"), 18);
   return (
-    <View pointerEvents="box-none" style={styles.center}>
-      <Animated.View style={style} pointerEvents="box-none">
-        <GlassSurface radius={44} tone="strong" elevated style={[styles.panel, backing]}>
-          <View style={styles.header} accessible accessibilityLiveRegion="polite">
-            <View style={styles.panelIcon}>
-              <Icon name={model.icon} size={34} color={colors.warningFg} strokeWidth={2.2} />
+    <FocusGroup focusKey="trouble:screen" style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <View pointerEvents="box-none" style={styles.center}>
+        <Animated.View style={style} pointerEvents="box-none">
+          <GlassSurface radius={44} tone="strong" elevated style={[styles.panel, backing]}>
+            <View style={styles.header} accessible accessibilityLiveRegion="polite">
+              <View style={styles.panelIcon}>
+                <Icon name={model.icon} size={34} color={colors.warningFg} strokeWidth={2.2} />
+              </View>
+              <Text style={styles.title} numberOfLines={2}>{model.title}</Text>
             </View>
-            <Text style={styles.title} numberOfLines={2}>{model.title}</Text>
-          </View>
-          <Text style={styles.detail}>{model.detail}</Text>
-          <View style={styles.status}>
-            <View style={styles.statusMark}>
-              {model.busy ? <ActivityIndicator size="small" color={white(0.72)} style={styles.spinner} /> : <View style={styles.statusDot} />}
+            <Text style={styles.detail}>{model.detail}</Text>
+            <View style={styles.status}>
+              <View style={styles.statusMark}>
+                {model.busy ? <ActivityIndicator size="small" color={white(0.72)} style={styles.spinner} /> : <View style={styles.statusDot} />}
+              </View>
+              <Text style={styles.statusText} numberOfLines={1}>{model.status}</Text>
             </View>
-            <Text style={styles.statusText} numberOfLines={1}>{model.status}</Text>
+            <FocusGroup focusKey="trouble:actions" style={styles.actions}>
+              {model.actions.map((action, index) => (
+                <PillButton
+                  key={action.key}
+                  variant={index === 0 ? "primary" : "glass"}
+                  size="md"
+                  icon={action.icon}
+                  label={action.label}
+                  focusKey={FOCUS_KEYS[action.key]}
+                  onPress={() => onAction?.(action.key)}
+                />
+              ))}
+            </FocusGroup>
+          </GlassSurface>
+        </Animated.View>
+      </View>
+      {/* À la place de celle de l'habillage, qui vient de reculer ; le pont la
+          relie au panneau, rien n'étant aligné entre eux. */}
+      {model.active ? (
+        <>
+          <View style={styles.back}>
+            <BackButton focusKey="trouble:back" onPress={() => onAction?.("back")} />
           </View>
-          <FocusGroup focusKey="trouble:actions" style={styles.actions}>
-            {model.actions.map((action, index) => (
-              <PillButton
-                key={action.key}
-                variant={index === 0 ? "primary" : "glass"}
-                size="md"
-                icon={action.icon}
-                label={action.label}
-                focusKey={FOCUS_KEYS[action.key]}
-                onPress={() => onAction?.(action.key)}
-              />
-            ))}
-          </FocusGroup>
-        </GlassSurface>
-      </Animated.View>
-    </View>
+          <FocusGroup focusKey="trouble:bridge" style={styles.bridge} />
+        </>
+      ) : null}
+    </FocusGroup>
   );
 });
 
@@ -134,6 +152,9 @@ const styles = StyleSheet.create({
   noticeTitle: { ...fonts.semibold, fontSize: 26, color: colors.text },
   noticeDetail: { ...fonts.medium, fontSize: 22, color: white(0.72), fontVariant: ["tabular-nums"] },
   center: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  back: { position: "absolute", top: BACK_TOP, left: SAFE.x },
+  // Toute la largeur, sous la croix et au-dessus du panneau (centré, plus de 320 pt du haut).
+  bridge: { position: "absolute", left: 0, right: 0, top: BACK_TOP + BACK_BUTTON_SIZE + 24, height: 130 },
   panel: { width: 980, padding: 44, gap: 20, backgroundColor: DENSE_BASE },
   header: { flexDirection: "row", alignItems: "center", gap: 22 },
   panelIcon: {

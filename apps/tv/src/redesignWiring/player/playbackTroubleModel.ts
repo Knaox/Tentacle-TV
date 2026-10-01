@@ -91,7 +91,6 @@ export function panelOf(args: {
 
   const actions: TroubleAction[] = [{ key: "retry", label: t("player:troubleRetryNow"), icon: "refresh" }];
   if (slowish && args.canLowerQuality) actions.push({ key: "quality", label: t("player:troubleLowerQuality"), icon: "gauge" });
-  actions.push({ key: "back", label: t("player:backToDetails"), icon: "chevronLeft" });
 
   const title = back ? t("player:troubleBackTitle") : t(TITLE[cause]);
   return { mode: "panel", icon: back ? "refresh" : ICON[cause], title, detail, status, busy, actions, active: args.active };

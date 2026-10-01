@@ -7,16 +7,21 @@ import type { IconName } from "../../icons/Icon";
  *   (« encore 34 s chargées »), ou elle vient de reprendre ;
  * - `panel` : la lecture est arrêtée — ce qui se passe, ce qui va se passer
  *   (« elle reprendra toute seule à 20:32 »), où en est la vérification, et
- *   les gestes : réessayer, baisser la qualité, revenir à la fiche.
+ *   les gestes : réessayer, baisser la qualité ; la croix Retour, une fois
+ *   le panneau activé, referme le lecteur.
  * Les textes arrivent traduits ; la vue ne décide de rien.
  */
 
 export type TroubleTone = "warning" | "success";
 
-export type TroubleActionKey = "retry" | "quality" | "back";
+/** Les pilules du panneau. */
+export type TroublePillKey = "retry" | "quality";
+
+/** Ses gestes : les pilules, et la croix (`back`). */
+export type TroubleActionKey = TroublePillKey | "back";
 
 export interface TroubleAction {
-  key: TroubleActionKey;
+  key: TroublePillKey;
   label: string;
   icon: IconName;
 }
@@ -42,7 +47,8 @@ export interface TroublePanelModel {
   /** Le premier est le geste principal. */
   actions: TroubleAction[];
   /** Le panneau a été ACTIVÉ par un geste de l'utilisateur : ses boutons
-   *  tiennent le focus, l'habillage recule. Avant, il se montre seulement. */
+   *  tiennent le focus, l'habillage recule et la croix Retour paraît. Avant,
+   *  il se montre seulement. */
   active: boolean;
 }
 

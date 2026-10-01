@@ -872,9 +872,17 @@ streaming direct actif (vidéo et rapports vont droit à Jellyfin) sauf mention.
   haut, jamais focalisable ; panneau au centre quand la lecture est arrêtée.
   Le panneau PARAÎT sans prendre le focus ; le premier appui l'ACTIVE
   (focus sur « Réessayer maintenant », sans déclencher d'action), l'habillage
-  recule, le groupe `trouble:actions` retient le focus, la restauration de
-  l'habillage lui cède (`noteSkipFocusClaim`). Il part sans sortie jouée et
-  rend le focus (habillage, sinon le fond).
+  recule et la croix Retour paraît à sa place, en haut à gauche — elle
+  referme le lecteur. Le groupe `trouble:screen` retient le focus sur tout
+  l'écran, croix comprise (`ScreenTrap`, entrée « Réessayer maintenant »,
+  sans `autoFocus`) ; la croix reste infocalisable tant que l'entrée n'a pas
+  eu le focus (`useExitLocked`). Rien n'est aligné entre la croix et le
+  panneau centré : un pont (`trouble:bridge`, toute la largeur entre eux, à
+  sens lu sur le focus comme la frise) fait monter du panneau à la croix et
+  redescendre de la croix à l'entrée — mesuré à l'agent XCUITest, HAUT ne
+  menait nulle part sans lui. La restauration de l'habillage cède à la
+  réclamation (`noteSkipFocusClaim`). Il part sans sortie jouée et rend le
+  focus (habillage, sinon le fond).
 - **Le voile hors ligne** ne se pose plus sur `Player`, `PlayerSettings`,
   `Trailer` (App.tsx) ; la joignabilité confirmée se lit partout
   (`hooks/serverReachability`).
@@ -986,8 +994,8 @@ la possibilité de cliquer sur retour ».
   (`bench:ui planche retour --focus`) — et deux scènes « Câblée » du lecteur
   (affiche de fin, ouverture), en focus natif sous ses guides.
 - **Restes** : les listes de filtres et de choix n'ont pas de croix (Menu les
-  ferme) ; « Retour à la fiche » du message-outil du lecteur passe à la croix
-  dans sa propre branche (même motif que l'affiche de fin).
+  ferme). « Retour à la fiche » du message-outil du lecteur est passé à la
+  croix (même motif que l'affiche de fin, groupe `trouble:screen`).
 
 ---
 
