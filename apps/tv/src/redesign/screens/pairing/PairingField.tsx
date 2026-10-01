@@ -1,4 +1,4 @@
-import { forwardRef, memo, useImperativeHandle, useRef } from "react";
+import { forwardRef, memo, useCallback, useImperativeHandle, useRef } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { FocusTarget } from "../../focus/FocusTarget";
@@ -17,8 +17,14 @@ import { colors, fonts, scrim } from "../../theme/tokens";
  * qu'en points, et son clavier masque la saisie.
  *
  * `open()` ouvre le clavier sans appui : l'identifiant validé passe la main
- * au mot de passe. Avec `caption`, le libellé se lit AU-DESSUS du champ,
- * toujours visible — l'invite, elle, disparaît à la saisie.
+ * au mot de passe — une fois le premier clavier retiré (`onKeyboardClosed`,
+ * puis un temps) : demandé pendant qu'il se retire, le suivant ne s'ouvrait
+ * pas (mesuré). Avec `caption`, le libellé se lit AU-DESSUS du champ, toujours
+ * visible ; l'invite, elle, titre aussi le clavier système.
+ *
+ * L'ouverture commence par oublier un focus périmé : un clavier qui n'a pas
+ * paru laisse React Native croire le champ focalisé, et `focus()` n'y faisait
+ * plus RIEN — OK sur le champ ne rouvrait plus le clavier (mesuré).
  */
 
 export interface PairingFieldHandle {
@@ -40,6 +46,8 @@ export interface PairingFieldProps {
   keyboard: Pick<TextInputProps, "keyboardType" | "textContentType" | "returnKeyType" | "autoComplete">;
   onChangeText?: (value: string) => void;
   onSubmitEditing?: () => void;
+  /** Le clavier système s'est refermé — validé ou abandonné (Menu). */
+  onKeyboardClosed?: () => void;
 }
 
 export const FIELD = { width: 1100, height: 108, radius: 34 };
@@ -49,16 +57,22 @@ const MAX_DOTS = 24;
 
 export const PairingField = memo(
   forwardRef<PairingFieldHandle, PairingFieldProps>(function PairingField(
-    { focusKey, icon, label, caption, value, placeholder, busy = false, secure = false, keyboard, onChangeText, onSubmitEditing },
+    { focusKey, icon, label, caption, value, placeholder, busy = false, secure = false, keyboard, onChangeText, onSubmitEditing, onKeyboardClosed },
     ref,
   ) {
     const input = useRef<TextInput>(null);
-    useImperativeHandle(ref, () => ({ open: () => input.current?.focus() }), []);
+    const open = useCallback(() => {
+      const field = input.current;
+      if (!field) return;
+      if (field.isFocused()) field.blur();
+      field.focus();
+    }, []);
+    useImperativeHandle(ref, () => ({ open }), [open]);
     const shown = secure ? "•".repeat(Math.min(value.length, MAX_DOTS)) : value;
     return (
       <View style={styles.block}>
         {caption ? <Text style={styles.caption}>{label}</Text> : null}
-        <FocusTarget focusKey={focusKey} form="row" onPress={() => input.current?.focus()} accessibilityLabel={label}>
+        <FocusTarget focusKey={focusKey} form="row" onPress={open} accessibilityLabel={label}>
           {(focused) => <Face focused={focused} icon={icon} shown={shown} placeholder={placeholder} busy={busy} />}
         </FocusTarget>
         <TextInput
@@ -66,6 +80,7 @@ export const PairingField = memo(
           value={value}
           onChangeText={onChangeText}
           onSubmitEditing={onSubmitEditing}
+          onEndEditing={onKeyboardClosed}
           placeholder={placeholder}
           secureTextEntry={secure}
           autoCapitalize="none"

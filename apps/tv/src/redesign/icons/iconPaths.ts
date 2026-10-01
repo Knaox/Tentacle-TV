@@ -122,6 +122,10 @@ export const ICONS = {
     ],
   },
   logout: { paths: ["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "m16 17 5-5-5-5", "M21 12H9"] },
+  /** Se connecter (le jumelage par identifiants). */
+  login: { paths: ["M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4", "m10 17 5-5-5-5", "M15 12H3"] },
+  /** Le mot de passe. */
+  lock: { rects: [[3, 11, 18, 11, 2]], paths: ["M7 11V7a5 5 0 0 1 10 0v4"] },
   server: { rects: [[2, 2, 20, 8, 2], [2, 14, 20, 8, 2]], paths: ["M6 6h.01", "M6 18h.01"] },
   refresh: {
     paths: [
