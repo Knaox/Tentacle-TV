@@ -1,0 +1,72 @@
+{
+  "$comment": "Le compte de démonstration de la vitrine : profil, bibliothèques, genres, mise en page de l'accueil, « Pour vous » et titres similaires. Les raisons des recommandations sont celles que le moteur sait dire (titre aimé, réalisateur, genre). Aucune plateforme de streaming : ces films n'y sont pas.",
+  "profile": { "fr": "Camille", "en": "Alex" },
+  "libraries": [
+    { "id": "films", "collectionType": "movies", "name": { "fr": "Films", "en": "Movies" } },
+    { "id": "series", "collectionType": "tvshows", "name": { "fr": "Séries", "en": "TV Shows" } }
+  ],
+  "genres": {
+    "animation": { "fr": "Animation", "en": "Animation" },
+    "comedy": { "fr": "Comédie", "en": "Comedy" },
+    "fantasy": { "fr": "Fantastique", "en": "Fantasy" },
+    "scifi": { "fr": "Science-fiction", "en": "Science Fiction" },
+    "adventure": { "fr": "Aventure", "en": "Adventure" },
+    "action": { "fr": "Action", "en": "Action" },
+    "horror": { "fr": "Horreur", "en": "Horror" },
+    "family": { "fr": "Familial", "en": "Family" }
+  },
+  "lists": {
+    "resume": ["sprite-fright", "cosmos-laundromat", "caminandes-e2", "spring"],
+    "nextUp": ["caminandes-e2"],
+    "latestLibraries": ["films"]
+  },
+  "homeRows": ["resume", "reco:forYou", "watchlist"],
+  "shelves": [
+    { "id": "forYou", "items": ["sintel", "tears-of-steel", "charge", "elephants-dream", "caminandes", "coffee-run", "big-buck-bunny", "spring"] }
+  ],
+  "reco": [
+    {
+      "key": "forYou",
+      "items": [
+        { "slug": "sintel", "reasons": [{ "kind": "seed", "seed": "spring" }] },
+        { "slug": "charge", "reasons": [{ "kind": "facet", "key": "director:hjalti", "label": "Hjalti Hjálmarsson" }] },
+        { "slug": "tears-of-steel", "reasons": [{ "kind": "facet", "key": "genre:878", "label": "Science Fiction" }] },
+        { "slug": "elephants-dream", "reasons": [{ "kind": "seed", "seed": "sintel" }] },
+        { "slug": "caminandes", "reasons": [{ "kind": "seed", "seed": "big-buck-bunny" }] },
+        { "slug": "cosmos-laundromat", "reasons": [{ "kind": "seed", "seed": "sprite-fright" }] },
+        { "slug": "coffee-run", "reasons": [{ "kind": "facet", "key": "director:hjalti", "label": "Hjalti Hjálmarsson" }] }
+      ]
+    },
+    {
+      "key": "becauseYouLiked:movie:spring", "seed": "spring",
+      "items": [
+        { "slug": "sprite-fright", "reasons": [{ "kind": "seed", "seed": "spring" }] },
+        { "slug": "big-buck-bunny", "reasons": [{ "kind": "seed", "seed": "spring" }] },
+        { "slug": "spring", "reasons": [] }
+      ]
+    },
+    {
+      "key": "bestOfLibrary",
+      "items": [
+        { "slug": "big-buck-bunny", "reasons": [] },
+        { "slug": "sprite-fright", "reasons": [] },
+        { "slug": "spring", "reasons": [] },
+        { "slug": "sintel", "reasons": [] },
+        { "slug": "tears-of-steel", "reasons": [] },
+        { "slug": "coffee-run", "reasons": [] }
+      ]
+    }
+  ],
+  "similar": {
+    "sprite-fright": ["coffee-run", "big-buck-bunny", "spring", "cosmos-laundromat", "charge", "caminandes", "elephants-dream"],
+    "cosmos-laundromat": ["elephants-dream", "sprite-fright", "spring", "sintel", "coffee-run", "big-buck-bunny"],
+    "spring": ["sintel", "sprite-fright", "cosmos-laundromat", "big-buck-bunny", "charge", "caminandes"],
+    "sintel": ["spring", "tears-of-steel", "elephants-dream", "charge", "cosmos-laundromat", "sprite-fright"],
+    "tears-of-steel": ["charge", "elephants-dream", "sintel", "cosmos-laundromat", "sprite-fright", "spring"],
+    "charge": ["tears-of-steel", "coffee-run", "sprite-fright", "elephants-dream", "sintel", "spring"],
+    "elephants-dream": ["cosmos-laundromat", "tears-of-steel", "sintel", "charge", "spring", "big-buck-bunny"],
+    "coffee-run": ["sprite-fright", "charge", "spring", "big-buck-bunny", "caminandes", "cosmos-laundromat"],
+    "big-buck-bunny": ["caminandes", "sprite-fright", "coffee-run", "spring", "cosmos-laundromat", "elephants-dream"],
+    "caminandes": ["big-buck-bunny", "sprite-fright", "coffee-run", "spring", "cosmos-laundromat", "charge"]
+  }
+}

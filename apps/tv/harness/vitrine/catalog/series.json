@@ -1,0 +1,58 @@
+{
+  "$comment": "La série LIBRE de la vitrine : Caminandes (Blender, CC BY 3.0 / 4.0), trois épisodes. Les images titrées (couvertures) sont recadrées pour que le logo n'y figure pas.",
+  "series": [
+    {
+      "slug": "caminandes", "type": "Series", "library": "series", "year": 2013, "added": "2026-09-25",
+      "genres": ["animation", "comedy", "family"], "directors": ["Pablo Vazquez"],
+      "name": { "fr": "Caminandes", "en": "Caminandes" },
+      "overview": {
+        "fr": "En Patagonie, Koro le lama ne recule devant rien pour atteindre l'herbe d'en face. Elle est toujours plus verte, évidemment.",
+        "en": "In Patagonia, Koro the llama will stop at nothing to reach the grass on the other side. It's always greener, of course."
+      },
+      "images": {
+        "Primary": { "src": "caminandes/Pablo_Vazquez_-_Caminandes_-_Episode_1_-_Llama_Drama_-_Cover_thumbnail.png", "crop": [1260, 0, 660, 990] },
+        "Backdrop": { "src": "caminandes/Blender_Foundation_-_Caminandes_-_Episode_3_-_Llamigos_-_Koro_and_Oti_share_more_food_to_eat_at_night.png" }
+      },
+      "seasons": [
+        {
+          "index": 1,
+          "episodes": [
+            {
+              "slug": "caminandes-e1", "index": 1, "year": 2013, "seconds": 90,
+              "video": [1920, 1080], "audio": null, "subtitles": [],
+              "name": { "fr": "Llama Drama", "en": "Llama Drama" },
+              "overview": {
+                "fr": "Koro veut traverser la route. Rien de plus simple… en théorie.",
+                "en": "Koro wants to cross the road. How hard can it be?"
+              },
+              "images": { "Primary": { "src": "caminandes/Pablo_Vazquez_-_Caminandes_-_Episode_1_-_Llama_Drama_-_Cover_thumbnail.png", "crop": [1260, 40, 660, 371] } },
+              "state": { "played": true }
+            },
+            {
+              "slug": "caminandes-e2", "index": 2, "year": 2013, "seconds": 146,
+              "video": [1920, 1080], "audio": null, "subtitles": [],
+              "name": { "fr": "Gran Dillama", "en": "Gran Dillama" },
+              "overview": {
+                "fr": "L'herbe est plus verte derrière la clôture. Dommage qu'elle soit électrifiée.",
+                "en": "The grass is greener behind the fence. Shame the fence is electric."
+              },
+              "images": { "Primary": { "src": "caminandes/Blender_Foundation_-_Caminandes_-_Episode_2_-_Gran_Dillama_-_Cover_thumbnail.png", "crop": [820, 0, 1100, 619] } },
+              "state": { "progress": 0.55 }
+            },
+            {
+              "slug": "caminandes-e3", "index": 3, "year": 2016, "seconds": 150,
+              "video": [1920, 1080], "audio": null, "subtitles": [],
+              "name": { "fr": "Llamigos", "en": "Llamigos" },
+              "overview": {
+                "fr": "En plein hiver, Koro croise Oti, un manchot bien décidé à garder ses baies pour lui.",
+                "en": "In the dead of winter, Koro meets Oti, a penguin who has no intention of sharing his berries."
+              },
+              "images": { "Primary": { "src": "caminandes/Blender_Foundation_-_Caminandes_-_Episode_3_-_Llamigos_-_Riding_mine_cart_with_Koro_and_Oti_while_carrying_a_red_grape.png" } },
+              "state": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "$comment": "Les titres LIBRES de la vitrine (films Blender, CC BY). Synopsis écrits pour la vitrine, en FR et en EN. Aucune note communautaire, aucun logo de titre (exclus de la licence CC par Blender Studio), aucune photo de personne. Les images désignent des fichiers de catalog/sources.json ; « crop » : [x, y, largeur, hauteur] dans l'image source.",
+  "titles": [
+    {
+      "slug": "sprite-fright", "type": "Movie", "library": "films", "year": 2021, "seconds": 629, "added": "2026-09-28",
+      "genres": ["animation", "comedy", "horror"], "directors": ["Matthew Luhn", "Hjalti Hjálmarsson"],
+      "video": [1920, 804], "audio": "eng", "subtitles": ["fre", "eng"],
+      "name": { "fr": "Sprite Fright", "en": "Sprite Fright" },
+      "overview": {
+        "fr": "Une bande d'ados bruyants plante sa tente dans une forêt idyllique. Mauvaise idée : les lutins du coin ont horreur des gêneurs.",
+        "en": "A rowdy group of teens camps out in an idyllic forest. Bad idea: the local sprites don't take kindly to troublemakers."
+      },
+      "images": {
+        "Primary": { "src": "sprite-fright/Sprite_Fright-movie_poster.jpg" },
+        "Backdrop": { "src": "sprite-fright/Sprite_Fright-concept_art-group_02.jpg" },
+        "Thumb": { "src": "sprite-fright/Sprite_Fright-concept_art-group_02.jpg", "crop": [0, 0, 2089, 1175] }
+      },
+      "state": { "progress": 0.38 }
+    },
+    {
+      "slug": "cosmos-laundromat", "type": "Movie", "library": "films", "year": 2015, "seconds": 730, "added": "2026-09-20",
+      "genres": ["animation", "comedy", "fantasy"], "directors": ["Mathieu Auvray"],
+      "video": [1920, 818], "audio": "eng", "subtitles": ["fre", "eng"],
+      "name": { "fr": "Cosmos Laundromat", "en": "Cosmos Laundromat" },
+      "overview": {
+        "fr": "Sur une île désolée, Franck, un mouton au bout du rouleau, croise un drôle de vendeur. Son offre : une nouvelle vie… et encore une autre.",
+        "en": "On a desolate island, a suicidal sheep named Franck meets a quirky salesman who offers him the gift of a lifetime — or several."
+      },
+      "images": {
+        "Primary": { "src": "cosmos-laundromat/CosmosLaundromatPoster.jpg" },
+        "Backdrop": { "src": "cosmos-laundromat/Franck_the_caterpillar.jpg" },
+        "Thumb": { "src": "cosmos-laundromat/Tornado_deevad_01.jpg" }
+      },
+      "state": { "progress": 0.62 }
+    },
+    {
+      "slug": "spring", "type": "Movie", "library": "films", "year": 2019, "seconds": 464, "added": "2026-09-24",
+      "genres": ["animation", "fantasy"], "directors": ["Andy Goralczyk"],
+      "video": [1920, 804], "audio": null, "subtitles": [],
+      "name": { "fr": "Spring", "en": "Spring" },
+      "overview": {
+        "fr": "Une jeune bergère et son chien affrontent d'anciens esprits de la montagne pour que le cycle de la vie puisse continuer.",
+        "en": "A shepherd girl and her dog face ancient mountain spirits so that the cycle of life can carry on."
+      },
+      "images": {
+        "Primary": { "src": "spring/Spring2019AlphaPosterBlender.jpg" },
+        "Backdrop": { "src": "spring/Spring-concept_art-house.jpg" }
+      },
+      "state": { "progress": 0.24, "favorite": true }
+    },
+    {
+      "slug": "sintel", "type": "Movie", "library": "films", "year": 2010, "seconds": 888, "added": "2026-09-12",
+      "genres": ["animation", "fantasy", "adventure"], "directors": ["Colin Levy"],
+      "video": [3840, 1636], "audio": "eng", "subtitles": ["fre", "eng", "deu", "spa"],
+      "name": { "fr": "Sintel", "en": "Sintel" },
+      "overview": {
+        "fr": "Une jeune guerrière solitaire a recueilli un bébé dragon. Quand une bête immense le lui enlève, elle part à sa recherche à travers des terres hostiles.",
+        "en": "A lone young warrior befriends a baby dragon. When a giant beast snatches him away, she sets out across hostile lands to bring him home."
+      },
+      "images": {
+        "Primary": { "src": "sintel/Sintel_poster.jpg" },
+        "Backdrop": { "src": "sintel/Durian_-_Sintel-wallpaper-dragon.jpg" },
+        "Thumb": { "src": "sintel/Durian_-_Sintel-wallpaper-sintel.jpg" }
+      },
+      "state": { "favorite": true, "rating": 9 }
+    },
+    {
+      "slug": "tears-of-steel", "type": "Movie", "library": "films", "year": 2012, "seconds": 734, "added": "2026-09-16",
+      "genres": ["scifi", "action"], "directors": ["Ian Hubert"],
+      "video": [3840, 1714], "audio": "eng", "subtitles": ["fre", "eng", "deu", "spa"],
+      "name": { "fr": "Tears of Steel", "en": "Tears of Steel" },
+      "overview": {
+        "fr": "Dans un Amsterdam futuriste envahi par les robots, une poignée de scientifiques tente l'impossible : sauver le monde en rejouant une rupture du passé.",
+        "en": "In a near-future Amsterdam overrun by robots, a ragtag team of scientists makes one last stand — by re-staging a breakup from the past."
+      },
+      "images": {
+        "Primary": { "src": "tears-of-steel/Tos-poster.png" },
+        "Backdrop": { "src": "tears-of-steel/Tears_of_Steel_frame_09_1a.jpg" },
+        "Thumb": { "src": "tears-of-steel/Tears_of_Steel_frame_07_3f.jpg" }
+      },
+      "state": { "list": true }
+    },
+    {
+      "slug": "charge", "type": "Movie", "library": "films", "year": 2022, "seconds": 232, "added": "2026-09-26",
+      "genres": ["animation", "action", "scifi"], "directors": ["Hjalti Hjálmarsson"],
+      "video": [1920, 804], "audio": null, "subtitles": [],
+      "name": { "fr": "Charge", "en": "Charge" },
+      "overview": {
+        "fr": "Dans un monde à court d'énergie, un vieil homme aux abois s'introduit dans une usine gardée par un robot impitoyable.",
+        "en": "In an energy-starved world, a desperate old man breaks into a factory guarded by a relentless robot."
+      },
+      "images": {
+        "Primary": { "src": "charge/Charge-movie_poster.jpg" },
+        "Backdrop": { "src": "charge/Charge-concept_art-robot_01.png" },
+        "Thumb": { "src": "charge/Charge-concept_art-factory.png" }
+      },
+      "state": { "list": true }
+    },
+    {
+      "slug": "elephants-dream", "type": "Movie", "library": "films", "year": 2006, "seconds": 654, "added": "2026-09-08",
+      "genres": ["animation", "scifi"], "directors": ["Bassam Kurdali"],
+      "video": [1920, 1080], "audio": "eng", "subtitles": ["fre", "eng", "deu"],
+      "name": { "fr": "Elephants Dream", "en": "Elephants Dream" },
+      "overview": {
+        "fr": "Dans une machine immense et sans fin, le vieux Proog veut montrer ses merveilles au jeune Emo. Mais l'un y voit un monde, l'autre une prison.",
+        "en": "Deep inside an endless machine, old Proog guides young Emo through its wonders. But what one sees as a world, the other sees as a cage."
+      },
+      "images": {
+        "Primary": { "src": "elephants-dream/ElephantsDreamPoster.jpg" },
+        "Backdrop": { "src": "elephants-dream/Elephants_Dream_s8_emotease.jpg" },
+        "Thumb": { "src": "elephants-dream/Elephants_Dream_-_Emo_and_Proog.png" }
+      },
+      "state": { "list": true }
+    },
+    {
+      "slug": "coffee-run", "type": "Movie", "library": "films", "year": 2020, "seconds": 184, "added": "2026-09-22",
+      "genres": ["animation", "comedy"], "directors": ["Hjalti Hjálmarsson"],
+      "video": [1920, 804], "audio": null, "subtitles": [],
+      "name": { "fr": "Coffee Run", "en": "Coffee Run" },
+      "overview": {
+        "fr": "Portée par la caféine, une jeune femme court à travers les souvenirs doux-amers d'une histoire d'amour passée.",
+        "en": "Fueled by caffeine, a young woman races through the bittersweet memories of a past relationship."
+      },
+      "images": {
+        "Primary": { "src": "coffee-run/Coffee_Run-movie_poster.png" },
+        "Backdrop": { "src": "coffee-run/Coffee_Run_-_screenshot-Location_08_Family-Run_3-skateboard.png" },
+        "Thumb": { "src": "coffee-run/Coffee_Run_-_screenshot-Location_06_Wedding-Run_1.png" }
+      },
+      "state": { "played": true, "list": true, "rating": 7 }
+    },
+    {
+      "slug": "big-buck-bunny", "type": "Movie", "library": "films", "year": 2008, "seconds": 596, "added": "2026-09-04",
+      "genres": ["animation", "comedy", "family"], "directors": ["Sacha Goedegebure"],
+      "video": [3840, 2160], "audio": null, "subtitles": [],
+      "name": { "fr": "Big Buck Bunny", "en": "Big Buck Bunny" },
+      "overview": {
+        "fr": "Un lapin géant au grand cœur savoure une matinée de printemps. Jusqu'à ce que trois rongeurs farceurs s'en prennent à ses amis papillons : l'heure de la revanche a sonné.",
+        "en": "A gentle giant of a rabbit savors a perfect spring morning — until three bullying rodents pick on his butterfly friends. Payback time."
+      },
+      "images": {
+        "Primary": { "src": "big-buck-bunny/Big_buck_bunny_poster_big.jpg" },
+        "Backdrop": { "src": "big-buck-bunny/Big.Buck.Bunny.-.Frank.Rinky.Gimera.png" },
+        "Thumb": { "src": "big-buck-bunny/Big.Buck.Bunny.-.Bunny.with.Bow.png" }
+      },
+      "state": { "played": true, "favorite": true, "rating": 8 }
+    }
+  ]
+}
