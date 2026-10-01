@@ -1,8 +1,8 @@
 import { memo, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { SoftGradient } from "../background/SoftGradient";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import type { RowPlace } from "../motion/useRowRecede";
@@ -73,10 +73,10 @@ function Caption({ focused, shift, children }: { focused: boolean; shift: number
 }
 
 /** Le logo d'une vignette, sur son dégradé. */
-function LogoLayer({ uri }: { uri: string }) {
+function LogoLayer({ uri, width, height }: { uri: string; width: number; height: number }) {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <LinearGradient colors={[scrim(0), scrim(0.55)]} locations={[0.35, 1]} style={StyleSheet.absoluteFill} />
+      <SoftGradient width={width} height={height} colors={[scrim(0), scrim(0.55)]} locations={[0.35, 1]} />
       <Image source={{ uri }} style={styles.logo} resizeMode="contain" fadeDuration={0} />
     </View>
   );
@@ -112,7 +112,7 @@ export const MediaCard = memo(function MediaCard({
             <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
           </View>
         )}
-        {landscape && card.logoUri ? <LogoLayer uri={card.logoUri} /> : null}
+        {landscape && card.logoUri ? <LogoLayer uri={card.logoUri} width={width} height={height} /> : null}
         {card.badge ? <CardBadge label={card.badge} /> : null}
         <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
       </CardFrame>

@@ -1,8 +1,8 @@
 import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { SoftGradient } from "../background/SoftGradient";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { useRecede, type RowPlace } from "../motion/useRowRecede";
@@ -85,12 +85,13 @@ export const CardFrame = memo(function CardFrame({
       <View style={[shape, styles.clip]}>
         {children}
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, sheen]}>
-          <LinearGradient
+          <SoftGradient
+            width={width}
+            height={height}
             colors={[white(0.26), white(0.06), white(0)]}
             locations={[0, 0.35, 0.6]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0.9, y: 1 }}
-            style={StyleSheet.absoluteFill}
           />
         </Animated.View>
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius }, styles.hairline]} />
