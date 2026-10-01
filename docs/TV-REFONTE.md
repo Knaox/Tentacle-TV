@@ -751,7 +751,14 @@ bibliothèque (voir questions).
 ## Inventaire — ce qui s'affiche par-dessus
 
 - **Hors ligne** : plein écran bloquant (pieuvre qui pleure, titre, message,
-  Réessayer, Se déconnecter).
+  Réessayer, « Déjumeler cet appareil »). Déjumeler se fait à DOUBLE appui,
+  comme « Déconnexion » dans les réglages (armé : « Confirmer le
+  déjumelage » et une ligne qui dit la suite), et passe par le déjumelage
+  commun (`useUnpairDevice`, origine `offline`) : rien n'attend le réseau.
+  Éprouvé au simulateur, serveur coupé : retour au jumelage, plus rien du
+  compte (stockage, cache des requêtes, jetons en mémoire), même après une
+  relance. Menu y quitte l'application (décision du 2026-09-26) : mesuré
+  au-dessus d'une fiche, la pile et le voile sont intacts au retour.
 - **Jumelage expiré** : bandeau non focalisable, en haut, au rose de la
   marque.
 - **Messages de session** (administrateur) : 2 au plus, en haut à droite,
