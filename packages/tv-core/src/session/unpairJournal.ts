@@ -54,6 +54,8 @@ export const ACCOUNT_STORAGE_KEYS: readonly string[] = [
   // La file persistée des rapports de lecture (`OUTBOX_KEY`, api-client) : des
   // positions du compte, jamais rejouées avec le jeton d'un autre.
   "tentacle_playback_outbox",
+  // Le marqueur de la relance à froid (`PLAYBACK_MARKER_KEY`, `playback/coldStart`).
+  "tentacle_playback_marker",
 ];
 
 /** Le minimum qu'un stockage doit offrir, synchrone. */
