@@ -19,6 +19,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 7. Branchement | En cours, écran par écran. Le socle est posé (`apps/tv/src/redesignWiring/`, ci-dessous) : aiguillage, magasin de focus, cadre des écrans avec navigation, modèles de carte et de héros, Inter dans l'app tvOS. Branchés sur Apple TV : jumelage (conditions d'utilisation retirées), réglages, surimpressions (démarrage, hors ligne, jumelage expiré, messages, erreur et chargement d'un écran), fiche, bande-annonce, feuille d'actions, lecteur, accueil, navigation, « Pour vous », bibliothèques, Ma liste, Favoris, Parcourir et recherche. |
 | 8. Mouvement (Apple TV) | Fait (2026-10-01) : jetons `TV_MOTION`, module `redesign/motion/`, mesuré au banc — « Le mouvement (Apple TV) » ci-dessous. |
 | 9. Pavé tactile (Apple TV) | Fait (2026-10-01) : parallaxe au pouce, héros qui tourne seul et à la main — « Le pavé tactile (Apple TV) » ci-dessous. |
+| 10. La croix Retour (Apple TV) | Faite (2026-10-01) : un seul bouton Retour, une croix, en haut à gauche de ce qu'elle referme, jamais en entrée d'une fiche — « La croix Retour (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -371,12 +372,12 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
   anti-clic fantôme sur l'échelle, les pictos et la croix : le panneau s'ouvre
   sous un OK encore enfoncé. Trois groupes PLEINE LARGEUR, chacun son guide
   d'entrée — rien n'y est aligné d'une rangée à l'autre :
-  - `sheet:header` mène à la croix. Au bout à droite de l'en-tête, elle
-    n'est au-dessus d'aucun cran ni d'aucun picto : HAUT depuis l'échelle ne
-    l'atteignait pas (constat de l'utilisateur, « la croix n'est pas
-    focalisable »). Désormais HAUT depuis l'échelle y va, et depuis les
-    pictos PAR l'échelle (directement, sans échelle). Elle n'est une
-    destination qu'une fois le verrou d'entrée levé ;
+  - `sheet:header` mène à la croix. Dans le coin haut-gauche du panneau (la
+    règle de la croix Retour, plus bas), elle n'est au-dessus d'aucun cran ni
+    d'aucun picto : HAUT depuis l'échelle ne l'atteignait pas (constat de
+    l'utilisateur, « la croix n'est pas focalisable »). Désormais HAUT depuis
+    l'échelle y va, et depuis les pictos PAR l'échelle (directement, sans
+    échelle). Elle n'est une destination qu'une fois le verrou d'entrée levé ;
   - `sheet:scale` mène au cran retenu — la note posée, sinon 5 : HAUT depuis
     les pictos, BAS depuis la croix (même après être allé sur un autre cran,
     que la règle quitte en se recentrant) ;
@@ -395,8 +396,8 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
   banc.
 - **Bande-annonce** : le lecteur est monté dès le chargement (la vue ne le
   montait qu'en lecture : il ne pouvait pas charger), et le chrome suit
-  `chromeDimmed` seul — « Fermer », seul focalisable, garde le focus : le
-  câblage rallume au moindre geste, appui ou glisser sur le pavé
+  `chromeDimmed` seul — la croix Retour, seule focalisable, garde le focus :
+  le câblage rallume au moindre geste, appui ou glisser sur le pavé
   (`useRemoteEvents`).
 - **La bande-annonce finit toujours** (branche `refonte/tv-bande-annonce`,
   2026-10-01, après « les bandes-annonces ne se lancent pas ») : par sa
@@ -834,6 +835,78 @@ Pièges payés :
    Retour instantané, flux résolu après la fiche (plus de double démarrage
    MPV/ExoPlayer).
 
+## La croix Retour (Apple TV)
+
+Branche `refonte/tv-retour-croix` (2026-10-01). Demande de l'utilisateur :
+un bouton Retour en CROIX, « le même partout », « accessible sur toutes les
+fiches », et jamais focalisé en premier sur une fiche, « SAUF quand y'a que
+la possibilité de cliquer sur retour ».
+
+- **Un seul bouton** : `BackButton` (`redesign/controls/BackButton.tsx`) —
+  une croix sur un rond de verre, blanc au focus, « Retour » dessous
+  (`common:back`), 60 points : la croix du grand panneau, devenue LA croix.
+  Elle remplace toute pilule « Retour » et tout « Fermer » de la refonte :
+  fiche (nouvelle), Parcourir, erreurs d'écran et de fiche (le panneau ne
+  garde que « Réessayer »), jumelage (« Annuler » du relais, « Retour » du
+  serveur manuel), bande-annonce, grand panneau, lecteur (ouverture,
+  habillage, pistes, épisodes). Les clés que d'autres guides visent ne
+  changent pas (`sheet:close`, `player:back`, `loading:back`,
+  `tracks:close`, `episodes:close`, `trailer:close`, `browse:back`) ;
+  nouvelles : `detail:back`, `screenError:back`, `pairing:back`.
+- **La règle de position** (planche validée par l'utilisateur) : EN HAUT À
+  GAUCHE de ce qu'elle referme. Sur un écran, à `BACK_TOP` (son centre sur la
+  ligne de la marque, en haut à droite), sur le bord gauche du contenu — la
+  colonne de la fiche, après la navigation quand elle est là ; dans un
+  panneau, dans son coin. Deux écarts, payés par la géométrie du focus :
+  l'habillage du lecteur la centre sur la ligne du titre ; les pistes la
+  posent dans leur marge, à cheval sur la première ligne d'options — calée
+  sur les titres, rien ne la chevauchait et GAUCHE depuis la première option
+  ne la trouvait pas (mesuré).
+- **Le focus** (`redesignWiring/focus/backFocus.tsx`, `useBackFocus`), hors
+  lecteur et grand panneau, qui ont leurs guides :
+  - JAMAIS l'entrée d'une fiche : à l'arrivée — et à chaque étape d'un
+    automate (le jumelage) —, la croix reste infocalisable tant que le focus
+    ne s'est pas posé ailleurs. Sans ce verrou, tvOS la choisit, cible la plus
+    en haut à gauche, pendant le chargement de la fiche, et le premier focus
+    de contenu clôt l'arrivée (`useEntryFocus`) : elle le gardait ;
+  - SAUF seule action, où elle prend l'entrée : ouverture du lecteur
+    (`loading:back`, logique du lecteur inchangée), code du relais affiché,
+    bande-annonce (toujours), Parcourir en chargement ou vide ;
+  - HAUT depuis n'importe où dessous : sa bande pleine largeur
+    (`detail:top`, `screenError:top`, `pairing:top`, l'en-tête
+    `browse:header`) rend le geste à la croix, une fois libre, et se désarme
+    quand la navigation a le focus (sa capsule ouverte passe au-dessus) ;
+  - BAS depuis la croix : `nextFocusDown` (le guide d'un point que
+    `RCTTVView` pose sous elle), réglé à chaque focus vers la dernière cible
+    de contenu, sinon l'entrée ;
+  - la fiche : la bande précède l'en-tête sans le chevaucher et défile avec
+    la page ; le guide de l'en-tête ne la retient pas — HAUT depuis une
+    section revient sur la dernière action, jamais sur elle.
+- **Éprouvé dans l'app réelle** (simulateur « Tentacle TV — retour (Claude) »,
+  compte de test, agent XCUITest) : fiches film, film à saga (remontée depuis
+  la saga), série (saisons, épisodes), épisode (par la pastille de la série),
+  personne — entrée jamais sur la croix, HAUT y mène depuis l'action la plus
+  à droite comme depuis les sections, BAS revient, OK et Menu reculent (focus
+  rendu à la carte d'origine) ; grand panneau (entrée sur l'échelle, HAUT,
+  BAS, OK) ; bande-annonce (la croix en entrée, OK, Menu) ; lecteur :
+  ouverture (la croix en entrée), habillage (HAUT, BAS, OK quitte), épisodes
+  (HAUT depuis les saisons, OK ferme), pistes (GAUCHE depuis la première
+  option, OK ferme) ; erreur d'écran provoquée par CDP (`setState` de la
+  frontière d'erreur), sur la fiche et sur une page à navigation (entrée sur
+  Réessayer, HAUT, BAS, GAUCHE vers la navigation, OK) ; jumelage ouvert par
+  la navigation, session intacte (serveur manuel : entrée sur le champ, HAUT,
+  BAS, OK vers l'accueil, Menu). Au banc seulement : le code du relais (il
+  aurait fallu demander un code au relais) et la fiche d'une collection
+  (aucune dans la bibliothèque de test).
+- **Au banc** : groupe « Retour », dix-huit scènes — l'entrée puis la croix,
+  ou la croix seule là où elle est la seule action
+  (`bench:ui planche retour --focus`).
+- **Restes** : « Retour à la fiche » de l'affiche de fin (`end:leave`, un
+  geste nommé face à « Lire maintenant », retenu dans le piège `end:actions`
+  du lecteur) ; les listes de filtres et de choix n'ont pas de croix (Menu
+  les ferme) ; `OsdTopBar` garde `backLabel`, plus lu, tant que
+  `PlayerChromeView` le passe.
+
 ---
 
 ## Inventaire — les écrans
@@ -856,10 +929,10 @@ Automate en 5 étapes, toutes gardées :
   supprimé).
 - **Code relais** : chargement · erreur (Réessayer, Configurer manuellement) ·
   code actif (6 cases, instructions, « expire dans m:ss » + barre) · code
-  expiré (Générer un nouveau code) · Annuler.
+  expiré (Générer un nouveau code) · la croix Retour (vers l'accueil).
 - **Serveur manuel** : champ URL (clavier système), vérification en cours,
-  5 erreurs (URL invalide, délai, API absente, HTTP n, injoignable), Retour,
-  indice télécommande.
+  5 erreurs (URL invalide, délai, API absente, HTTP n, injoignable), la
+  croix Retour, indice télécommande.
 - **Code serveur** : mêmes états que le relais + « Changer de serveur ».
 - **Succès** : pastille animée, « Bienvenue, {nom} », ouverture de l'accueil.
 
@@ -962,8 +1035,8 @@ Automate en 5 étapes, toutes gardées :
 
 Lecture, chargement (nom), indisponible — YouTube ne la fournit pas
 (réessayer plus tard), ou vidéo hors YouTube, illisible —, attente du réseau
-(une roue sur la dernière image), bouton Fermer (s'estompe après 3 s, revient
-au moindre geste).
+(une roue sur la dernière image), la croix Retour (s'estompe après 3 s,
+revient au moindre geste).
 
 ### 11. Lecteur — l'habillage seulement
 
@@ -1135,6 +1208,15 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   réempilement, puis la navigation dépile pour de bon, et tvOS rend entre
   les deux la carte qu'on y avait quittée. Un focus posé à `transitionEnd`
   se repose à chaque arrivée (`useSystemKeyboard`).
+- **Un guide `autoFocus` ne ramène qu'à ce qui a DÉJÀ eu le focus**
+  (`previouslyFocusedItem`) : l'en-tête de Parcourir menait à la pilule
+  Retour parce qu'elle prenait le focus pendant le chargement ; arrivé sur
+  une page déjà là — ou croix verrouillée —, HAUT restait sur l'affiche. Pour
+  mener à une cible précise : une DESTINATION.
+- **Deux apps sur le même Metro se disputent l'inspecteur** : deux clones du
+  même modèle s'y présentent sous le même identifiant d'appareil et se
+  délogent l'un l'autre chaque seconde (CDP inutilisable). Un Metro par app
+  — le banc d'un côté, l'app réelle de l'autre.
 - **Une Modal refermée rend le focus à la VUE qui l'avait**, pas à l'entrée :
   dans une liste rendue par position, cette case montre peut-être une autre
   entrée (le menu du rail a fait monter la sienne). Réclamer au premier focus
