@@ -14,7 +14,8 @@ import type { FocusStore } from "../focus/focusStore";
  *   focus revient de la pilule, et là qu'il se pose quand l'habillage revient ;
  * - la frise est le pont MONTANT vers la pilule de saut ;
  * - la pilule retient le focus entre « Passer » et « Masquer » pendant un
- *   décompte, et en ressort vers lecture/pause quand l'habillage est là ;
+ *   décompte ; quand l'habillage est là, elle en ressort vers lecture/pause
+ *   (BAS) et vers Retour (HAUT, GAUCHE) ;
  * - cartes, affiche et panneaux le retiennent tant qu'ils sont ouverts ;
  * - l'en-tête des épisodes renvoie toute montée vers Fermer, la bande des
  *   saisons fait entrer par la saison AFFICHÉE.
@@ -99,20 +100,32 @@ function TimelineGroup(props: FocusGroupContainerProps) {
   return <BridgeGuide {...props} destinations={focusedKey === "player:back" ? playPause : up} />;
 }
 
+/**
+ * La pilule de saut et ses SORTIES, montées seulement tant que l'habillage est
+ * là et que le focus est DANS l'îlot : posées en permanence, leurs zones
+ * recouvriraient ce que le focus traverse ailleurs (la sortie du bas recouvre
+ * la frise, et happait la remontée depuis les commandes).
+ * - BAS mène à lecture/pause ;
+ * - HAUT et GAUCHE mènent à Retour. Rien n'est au-dessus ni à gauche de la
+ *   pilule relevée : sans elles, l'îlot était une impasse — les commandes
+ *   montent vers la pilule, et Retour devenait inatteignable tant qu'elle
+ *   était à l'écran. « Masquer » est à droite de « Passer » : GAUCHE depuis
+ *   lui reste dans l'îlot, la sortie de gauche borde « Passer ».
+ */
 function IslandGroup({ style, pointerEvents, children }: FocusGroupContainerProps) {
-  const { islandTrap, islandExit } = usePlayerFocusState();
+  const { store, islandTrap, islandExit } = usePlayerFocusState();
   const playPause = islandExit ? osdPlayPauseNodeRef.current : null;
   const exit = useMemo(() => (playPause ? [playPause] : null), [playPause]);
+  const back = useStoreDestination(store, "player:back");
+  const toBack = islandExit && back.length > 0 ? back : null;
   return (
     <View pointerEvents="box-none">
       <TVFocusGuideView autoFocus trapFocusLeft={islandTrap} trapFocusRight={islandTrap} style={style} pointerEvents={pointerEvents}>
         {children}
       </TVFocusGuideView>
-      {/* La SORTIE vers lecture/pause, montée seulement tant que le focus est
-          DANS l'îlot : posée en permanence, sa zone recouvre la frise — ce que
-          le focus traverse en remontant des commandes —, et elle happait la
-          remontée. */}
       {exit ? <TVFocusGuideView destinations={exit} style={styles.islandExit} /> : null}
+      {toBack ? <TVFocusGuideView destinations={toBack} style={styles.islandUp} /> : null}
+      {toBack ? <TVFocusGuideView destinations={toBack} style={styles.islandLeft} /> : null}
     </View>
   );
 }
@@ -142,4 +155,6 @@ export const PLAYER_GROUP_CONTAINERS: Readonly<Record<string, ComponentType<Focu
 
 const styles = StyleSheet.create({
   islandExit: { position: "absolute", top: "100%", left: -80, right: 0, height: 140 },
+  islandUp: { position: "absolute", bottom: "100%", left: 0, right: 0, height: 120 },
+  islandLeft: { position: "absolute", right: "100%", top: 0, bottom: 0, width: 160 },
 });
