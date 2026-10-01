@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TitleProvider } from "@tentacle-tv/shared";
 import { loadTitleState } from "./titleStateBatcher";
 
-const provider: TitleProvider = { pluginId: "seer", statePath: "/titles/state", requestPath: "/titles/request" };
+const provider: TitleProvider = {
+  pluginId: "seer", statePath: "/titles/state", requestPath: "/titles/request", accessPath: null, minePath: null,
+};
 
 beforeEach(() => {
   vi.useFakeTimers();

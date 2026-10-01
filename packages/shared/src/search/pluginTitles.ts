@@ -12,6 +12,9 @@
  * Tentacle ne sait RIEN de ce que « demander » veut dire chez le plugin : il
  * valide la forme, affiche les mots du plugin, et relaie le geste. Aucun
  * plugin actif ne déclare `titles` : aucune source, donc aucun bouton.
+ *
+ * Deux routes facultatives sont venues après — le droit du compte (`access`)
+ * et les titres qu'il attend (`mine`) : `pluginTitlesMine.ts`.
  */
 
 import type { ExternalTone } from "./pluginSearch";
@@ -23,7 +26,7 @@ export type TitleKey = `${TitleMediaType}:${number}`;
 export interface TitlesPlugin {
   pluginId: string;
   configEnabled?: boolean;
-  titles?: { state: string; request?: string };
+  titles?: { state: string; request?: string; access?: string; mine?: string };
 }
 
 export interface TitleProvider {
@@ -31,6 +34,10 @@ export interface TitleProvider {
   statePath: string;
   /** `null` : le plugin dit où en sont les titres, sans offrir de les demander. */
   requestPath: string | null;
+  /** Le droit du compte (`{ request }`) ; `null` : le plugin ne le déclare pas. */
+  accessPath: string | null;
+  /** Les titres que le compte attend ; `null` : le plugin ne les déclare pas. */
+  minePath: string | null;
 }
 
 export interface TitleRequestOffer {
@@ -97,6 +104,8 @@ export function titleProvider(plugins: readonly TitlesPlugin[]): TitleProvider |
       pluginId: plugin.pluginId,
       statePath: titles.state,
       requestPath: isSafePath(titles.request) ? titles.request : null,
+      accessPath: isSafePath(titles.access) ? titles.access : null,
+      minePath: isSafePath(titles.mine) ? titles.mine : null,
     };
   }
   return null;

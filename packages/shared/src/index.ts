@@ -36,6 +36,7 @@ export * from "./search/searchTypes";
 export * from "./search/searchLabels";
 export * from "./search/pluginSearch";
 export * from "./search/pluginTitles";
+export * from "./search/pluginTitlesMine";
 export * from "./search/searchSuggestions";
 // La page d'une personne : sa fiche Jellyfin et sa filmographie en bibliothèque.
 export * from "./person/personProfile";
