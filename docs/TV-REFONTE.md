@@ -21,6 +21,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 9. Pavé tactile (Apple TV) | Fait (2026-10-01) : parallaxe au pouce, héros qui tourne seul et à la main — « Le pavé tactile (Apple TV) » ci-dessous. |
 | 10. La croix Retour (Apple TV) | Faite (2026-10-01) : un seul bouton Retour, une croix, en haut à gauche de ce qu'elle referme, jamais en entrée d'une fiche — « La croix Retour (Apple TV) » ci-dessous. |
 | 11. Jumelage par identifiants (Apple TV) | Fait (2026-10-01) : après le serveur saisi à la main, l'identifiant et le mot de passe — le chemin des relecteurs d'App Store Connect ; Menu recule d'une étape — « Le jumelage par identifiants (Apple TV) » ci-dessous. |
+| 12. Le Retour (Apple TV) | Fait (2026-10-02) : une pile de couches, menu > surimpression > page > rail > sortie ; plus aucun écran qui paraît quand un menu se ferme ; le rail se referme sur la page choisie — « Le Retour (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -111,21 +112,19 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   focus, `subscribeNodes` pour les nœuds.
 - **Écran avec navigation** (`screen/`) : `useRedesignScreen({ railKey,
   entryKey, onBack?, onReselect? })` fournit la `nav` de la vue et son
-  magasin. `<RedesignScreen screen>` pose le port, Menu (du contenu vers la
-  navigation, puis recul, et UIKit quitte à la racine) et les deux ponts
-  tvOS entre navigation et contenu : le moteur de focus ne vise qu'une cible
-  alignée. `useEntryFocus` sert seul aux écrans sans navigation : il pose
+  magasin. `<RedesignScreen screen>` pose le port, ses couches du Retour (le
+  rail, puis Réglages, puis la sortie — « Le Retour (Apple TV) ») et les
+  deux ponts tvOS entre navigation et contenu : le moteur de focus ne vise
+  qu'une cible alignée. `useEntryFocus` sert seul aux écrans sans navigation : il pose
   l'entrée (`hasTVPreferredFocus` dès le premier rendu, lâchée au premier
   focus de contenu) et le retour sur la dernière clé de contenu.
 - **Cartes et héros** (`cards/`, `hero/`) : `useCardModels` / `useCardLists`
   (modèles STABLES, marqueurs résolus au niveau de la liste),
   `paletteOfItem`, `heroModelOf`, `metaOf`, `legibleLogoOf`.
-- **Menu d'une page poussée** : toutes les pages du rail s'empilent sur
-  l'accueil, et Menu n'y atteint pas l'intercepteur. `RedesignScreen` retient
-  donc le retrait (`usePreventRemove`) tant que le focus est dans le contenu :
-  Menu y fait ce qu'il fait à la racine (`onBack`, sinon la navigation) ;
-  depuis la navigation, la page se dépile. `onBack` est rappelé APRÈS le
-  dépilage natif, qui a déjà ôté le focus : il lit `lastFocusedKey`.
+- **Le Retour** (`back/BackScope.tsx`) : une portée par écran, posée par le
+  navigateur ; tout ce qui a quelque chose à faire au Retour s'y inscrit
+  (`useBackLayer`). Plus de `usePreventRemove` ni d'intercepteur par écran —
+  « Le Retour (Apple TV) », plus bas.
 - **La rangée focalisée entière à l'écran** : tvOS n'amène que la carte ;
   `revealSection` (`redesign/screens/shared/useForcedFocusReveal.ts`) amène
   sa section — légende, raison, indication de l'appui long — au plus près, à
@@ -489,8 +488,8 @@ politique partagée dans `packages/tv-core/src/nav/`.
   fantôme) — Déplacer, Monter, Descendre, Masquer, Tout afficher, Réglages
   de la navigation. Monter / Descendre enregistrent et laissent le menu
   ouvert (OK, OK, OK). Déplacer soulève l'entrée : HAUT / BAS la déplacent,
-  OK la pose, Retour annule (à la racine par l'intercepteur, sur une page
-  poussée par `usePreventRemove`) ; Rechercher, Accueil, « Tout afficher »
+  OK la pose, Retour annule (une couche « menu » du Retour) ; Rechercher,
+  Accueil, « Tout afficher »
   et le profil sont verrouillés le temps du déplacement, quitter le rail pose
   l'entrée, et l'ordre en cours n'est enregistré qu'à la pose.
 - **Réglages › Navigation** (`NavigationPanel`, `useNavigationSettings`) :
@@ -1286,6 +1285,96 @@ la possibilité de cliquer sur retour ».
   ferme). « Retour à la fiche » du message-outil du lecteur est passé à la
   croix (même motif que l'affiche de fin, groupe `trouble:screen`).
 
+## Le Retour (Apple TV)
+
+Branche `claude/nervous-hopper-bd0124` (2026-10-02). Retours de l'essai de
+l'utilisateur : choisir Accueil rouvrait le rail sur l'ancienne
+bibliothèque ; un Retour qui ne devait fermer qu'un menu faisait paraître
+un autre écran ; Retour changeait de règle d'une page à l'autre.
+
+**La règle, une pile de couches** (`createBackLayers`, tv-core
+`nav/backLayers`) : tout ce qui a quelque chose à faire au Retour est une
+couche, consultée dans l'ordre menu > surimpression > page > rail ; la
+première ACTIVE répond, la plus récemment activée à rang égal. Aucune
+active : la plateforme — une page poussée recule, sinon UIKit quitte
+l'application (la règle d'Apple).
+
+| Où | Retour |
+|---|---|
+| Un menu ouvert : grand panneau, listes de filtres, liste de choix, menu d'une entrée du rail, déplacement, panneaux du lecteur | le ferme, rien d'autre |
+| Page du rail, focus dans la page | le rail s'ouvre, sur l'entrée de la page |
+| Page du rail, rail ouvert | le focus va sur « Profil et réglages » |
+| … déjà sur Réglages | l'application quitte (écran d'accueil de tvOS) |
+| Page poussée : fiche, personne, genre, bande-annonce, jumelage ouvert depuis les réglages | la page précédente, rail ouvert ou non |
+| Lecteur : un menu, puis l'habillage, puis rien | ferme le menu, puis masque l'habillage (la lecture continue ; en pause aussi), puis quitte la lecture |
+| Lecteur, défilement | revient où l'on était (inchangé) |
+
+- **Une portée par écran** (`redesignWiring/back/BackScope.tsx`), posée par
+  le navigateur (`screenLayout`) autour de l'écran, de son erreur et de son
+  chargement. C'est un `MenuPressInterceptor` dont `enabled` dit « une
+  couche est active, ou la page est poussée » : sur tvOS, l'appui est pris ou
+  laissé à UIKit dès qu'il commence — décidé d'AVANCE. S'inscrire :
+  `useBackLayer(kind, active, onBack)`.
+- **Menu ne dépile plus jamais un écran de lui-même** : `gestureEnabled:
+  false` sur tous les écrans (Apple TV), et le patch de react-native-screens
+  (`RNSNavigationController gestureRecognizerShouldBegin:`) refuse le geste
+  Menu d'UIKit quand l'écran du dessus a `gestureEnabled: false` ou
+  `preventNativeDismiss`. C'était la cause du flash : depuis tvOS 26, ce
+  geste (`_backGestureRecognizer`, dont le contrôleur de navigation est le
+  délégué — lu au débogueur) dépilait AVANT tout, `usePreventRemove`
+  réempilait l'écran après coup, et celui du dessous paraissait 40 à 70 ms
+  (filmé : bibliothèque → accueil, lecteur → fiche). Sans preneur, l'appui
+  monte à UIKit, qui quitte — même avec des écrans empilés dessous (vérifié).
+- **Une Modal** vit dans son contrôleur : son Menu va à `onRequestClose`. Elle
+  inscrit quand même sa couche « menu » — le grand panneau dès l'appui
+  maintenu : un Retour parti avant qu'il ne paraisse l'annule.
+- **Choisir une page dans le rail** : la page d'arrivée prend son entrée,
+  rail replié. L'accueil reste monté sous les autres pages du rail, et UIKit
+  lui rendait au retour le focus qu'il avait en partant — l'entrée du rail :
+  choisir Accueil rouvrait le rail sur l'ANCIENNE page. En quittant l'accueil
+  par le rail, le focus repasse d'abord dans son contenu, dans le même geste
+  (`focusNow`, `requestTVFocus` : la commande part avant la navigation) ;
+  UIKit retient le contenu. À la prochaine ouverture (Retour ou GAUCHE), le
+  rail se pose sur la page courante.
+- **Le lecteur** (`player/usePlayerBackLayers.ts`) : les états passagers
+  (`useTVPlayerBack` : défilement, carte « à suivre », passage automatique
+  refusable, grâce de 600 ms), les panneaux des pistes et des épisodes,
+  puis l'habillage À L'ÉCRAN (`osdShown`, la règle de la vue) ; en pause,
+  `useOsdPin` le désépingle jusqu'au prochain geste. Les crochets partagés
+  ne retiennent plus le bouton sur Apple TV (`holdsSystemBack`, vrai sur
+  Android TV, qui ne change pas).
+- **Une vue nouvelle** (onglet Réglages du lecteur, demandes en cours…) :
+  `useBackLayer("menu", ouvert, fermer)` dans le composant qui tient l'état ;
+  une Modal ajoute `onRequestClose={fermer}`. Jamais `usePreventRemove` ni
+  d'intercepteur à soi ; une route poussée recule seule.
+
+Éprouvé dans l'app réelle (clone « Banc UI TV — retour (Claude) », compte de
+test, agent XCUITest, `simctl io recordVideo` image par image) : accueil,
+Retour ×3 (rail sur Accueil, Réglages, sortie) ; Ma liste empilée sur
+l'accueil, Retour ×3 sans une image de l'accueil ; Animés → Accueil par le
+rail (rail replié, « Reprendre ») ; liste de filtres, grand panneau, menu
+d'une entrée du rail, déplacement annulé ; fiche → bibliothèque (fondu
+natif, carte rendue) ; Parcourir, rail ouvert → page précédente ; lecteur :
+pistes et épisodes (aucune image de la fiche), habillage masqué (la lecture
+continue), pause, sortie ; défilement annulé.
+
+Reste : à la fermeture d'un panneau du lecteur, le focus passe ~200 ms par
+« Reculer de 10 s » avant le bouton qui l'avait ouvert — la restauration
+différée de l'habillage (`overlayFocusCore`, 220 ms, partagée avec Android
+TV), antérieure à ce chantier.
+
+Pièges payés :
+
+- `simctl io recordVideo` sur tvOS : `--display=external`, sinon rien n'est
+  écrit et SIGINT ne l'arrête pas. Lancer `simctl` lui-même (pas par
+  `xcrun`) pour l'arrêter par son pid.
+- Construire l'app depuis un worktree dont les Pods ont servi à une Release :
+  le script Hermes « Replace Hermes for the right configuration » appelle
+  `tar` sans guillemets et échoue sur « Projet - local » — après avoir VIDÉ
+  `Pods/hermes-engine`. Extraire `hermes-ios-*-debug.tar.gz` à la main dans
+  `Pods/hermes-engine` et écrire `Debug` dans
+  `Pods/.last_build_configuration`.
+
 ---
 
 ## Inventaire — les écrans
@@ -1582,11 +1671,13 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   modifications** (2026-09-30, pas de watchman sur ce Mac) : ni `launch` ni
   un nouveau bundle ne les prenaient. Relancer `bench:ui up`, puis `launch` ;
   `list` montre le catalogue réellement servi.
-- **Menu depuis le contenu d'un écran POUSSÉ dépilait l'écran** : UIKit dépile
-  avant l'intercepteur de `RedesignScreen`, et le patch de react-native-screens
-  ne voit pas l'appui (tvOS 26.2). Seul `usePreventRemove` le rattrape (écran
-  réempilé après coup) : c'est ce que fait désormais `RedesignScreen`. UNE
-  seule retenue par écran — deux font partir deux gestes sur le même Menu.
+- **Menu depuis le contenu d'un écran POUSSÉ dépilait l'écran** (réglé le
+  2026-10-02) : depuis tvOS 26, `UINavigationController` dépile par un GESTE
+  (`_backGestureRecognizer`, Menu), qui voit l'appui avant la chaîne de
+  répondeurs — ni l'intercepteur ni le patch de `RNSScreen` ne le voyaient.
+  `usePreventRemove` ne faisait que réempiler l'écran après coup, et celui du
+  dessous paraissait 40 à 70 ms. Le patch refuse désormais ce geste
+  (`RNSNavigationController`, « Le Retour (Apple TV) »).
 - **Un élément démonté sous le focus ne reçoit jamais son flou** : tvOS
   l'envoie à une vue que React a déjà retirée. Le plateau d'une carte se
   démontait ainsi sous le focus parti vers la voisine, et la carte restait
@@ -1609,11 +1700,12 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   Parcourir (116 points autour de lui) recouvrait la pilule Retour, et HAUT
   ne la trouvait plus. Un focalisable voisin d'un halo passe au-dessus
   (`zIndex`).
-- **Menu depuis une page poussée fait ARRIVER deux fois l'écran d'en
-  dessous** : le dépilage natif, retenu, le montre un instant avant le
-  réempilement, puis la navigation dépile pour de bon, et tvOS rend entre
-  les deux la carte qu'on y avait quittée. Un focus posé à `transitionEnd`
-  se repose à chaque arrivée (`useSystemKeyboard`).
+- **Menu depuis une page poussée faisait ARRIVER deux fois l'écran d'en
+  dessous** (plus depuis le 2026-10-02 : Menu ne dépile plus de lui-même) :
+  le dépilage natif, retenu, le montrait un instant avant le réempilement,
+  puis la navigation dépilait pour de bon, et tvOS rendait entre les deux la
+  carte qu'on y avait quittée. Un focus posé à `transitionEnd` se repose à
+  chaque arrivée (`useSystemKeyboard`).
 - **Un guide `autoFocus` ne ramène qu'à ce qui a DÉJÀ eu le focus**
   (`previouslyFocusedItem`) : l'en-tête de Parcourir menait à la pilule
   Retour parce qu'elle prenait le focus pendant le chargement ; arrivé sur
@@ -1632,10 +1724,10 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
   dans une liste rendue par position, cette case montre peut-être une autre
   entrée (le menu du rail a fait monter la sienne). Réclamer au premier focus
   que tvOS rend (`useRailArrange`, `returnTo`).
-- **Une réclamation faite pendant Menu sur une page poussée est défaite** par
-  la restauration du réempilement, qui arrive après elle : réclamer de
+- **Une réclamation faite pendant Menu sur une page poussée était défaite**
+  par la restauration du réempilement, qui arrivait après elle : réclamer de
   nouveau, une fois, si le focus retombe ailleurs dans la foulée
-  (`claimAfterRestore`).
+  (`claimAfterRestore`, gardé : sans réempilement, il ne fait plus rien).
 - **La Siri Remote n'émet pas `longLeft`** (ni la fin d'un appui maintenu sur
   une flèche) quand la flèche DÉPLACE le focus : un raccourci déclenché par
   une flèche se garde au rythme du focus (`RailShortcuts`). Là où le focus ne

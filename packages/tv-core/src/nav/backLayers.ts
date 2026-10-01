@@ -11,8 +11,9 @@
  *
  * et la première répond ; à rang égal, la plus récemment activée (un menu
  * ouvert dans un panneau se ferme avant lui). Aucune couche active : la
- * plateforme reprend la main — sur Apple TV, c'est la SORTIE de l'application,
- * que seul UIKit sait faire (la règle d'Apple : Menu finit par quitter).
+ * plateforme reprend la main — une page poussée recule ; sinon, sur Apple TV,
+ * c'est la SORTIE de l'application, que seul UIKit sait faire (la règle
+ * d'Apple : Menu finit par quitter).
  *
  * Une couche se DÉCLARE active d'avance, au lieu de dire « pris / pas pris »
  * au moment de l'appui : sur Apple TV, l'application doit savoir AVANT
