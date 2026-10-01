@@ -88,6 +88,18 @@ export const TV_MOTION = {
     /** Une image chargée entre en fondu, au lieu d'apparaître d'un coup. */
     fadeInMs: 300,
   },
+  player: {
+    /** L'habillage qui paraît au moindre geste : vite, en sortie douce… */
+    chromeInMs: 260,
+    /** …et qui s'efface à l'inactivité : posément, sans hâte devant l'image. */
+    chromeOutMs: 300,
+    /** Ce que la frise et les commandes montent en paraissant, en points. */
+    chromeRise: 24,
+    /** Ce que la barre du haut descend en paraissant. */
+    chromeDrop: 16,
+    /** Ce qu'un panneau (épisodes, pistes) ou une carte glisse en entrant. */
+    panelSlide: 48,
+  },
   crossfade: {
     /** Le héros qui tourne : l'image. Le texte part vite, arrive après. */
     heroMs: 700,
