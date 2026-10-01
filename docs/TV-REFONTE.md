@@ -835,6 +835,77 @@ Pièges payés :
    Retour instantané, flux résolu après la fiche (plus de double démarrage
    MPV/ExoPlayer).
 
+## Le lecteur — serveur ou Jellyfin coupé (Apple TV, Android TV)
+
+Branche `refonte/tv-lecteur-hors-service` (2026-10-01). Demande de
+l'utilisateur : si Tentacle ou Jellyfin ne répond plus, la lecture continue
+sur ce qui est chargé, et le message du lecteur est un OUTIL, pas un
+avertissement. Mesuré au simulateur avec des relais À MOI coupables à volonté
+(devant le backend de dev et devant Jellyfin — jamais les vrais services) ;
+streaming direct actif (vidéo et rapports vont droit à Jellyfin) sauf mention.
+
+| Cas | Avant | Maintenant |
+|---|---|---|
+| Tentacle coupé, flux direct | le film continue, mais le voile « Oups, le serveur fait une pause ! » le RECOUVRE dès qu'une requête échoue (22 s mesurées), focus piégé, Menu quitte l'app | le film continue sans voile ; bandeau « Le serveur Tentacle ne répond plus — la lecture n'en dépend pas » 8 s (puis avec l'habillage) ; voile à la sortie du lecteur si la panne dure |
+| Tentacle coupé, flux par le proxy | gel définitif | ~35 s sur ce qui est chargé, bandeau à compte à rebours, panneau, reprise seule 11 s après le retour |
+| Jellyfin coupé, lecture directe (PrismCore) | ~45 s, puis gel définitif sur un indicateur — même après 70 s de coupure seulement | bandeau « encore 10 s chargées », panneau, reprise seule 4 s après le retour |
+| Jellyfin coupé, transcodage | ~8 s, erreur -1004 en bandeau brut 8 s, gel définitif | ~31 s (30 s d'avance AVPlayer), erreur prise en charge, reprise seule 5 s après |
+| Les deux coupés, épisode | gel, puis « Impossible de démarrer la lecture » plein écran, transcodage FORCÉ | panneau, reprise seule 6 s après, même forme |
+| Saut de 5 min hors de ce qui est chargé, Jellyfin coupé | gel définitif, aucune erreur | attente dite en 5 s, reprise au point visé 4 s après le retour |
+| Jellyfin coupé AVANT la lecture | « Vérifie le serveur ou réessaie », rien au retour | « Jellyfin ne répond pas. La lecture démarrera d'elle-même dès son retour. » — repart seule, à la bonne reprise |
+
+- **La décision** est pure et commune (`decideRecovery`, tv-core
+  `player/playbackRecovery`, 19 tests) : rien à dire tant que tout répond ;
+  `degraded` quand un serveur manque mais que la lecture avance ; `waiting` à
+  l'arrêt (4 s de grâce) ; relance dès que le chemin du flux répond ; `stuck`
+  après deux relances vaines serveur joignable (« Baisser la qualité »).
+- **Le crochet** `usePlaybackRecovery` est monté PAR le gestionnaire
+  d'erreurs (`useTVErrorHandler`, aucune ligne de plus dans PlayerScreen) :
+  toute erreur après le démarrage lui est confiée d'abord
+  (`onSourceLost`) — ni de format, ni d'authentification. Il sonde le chemin
+  du flux (`System/Info/Public`, Jellyfin en direct ou par le proxy : pas de
+  réponse du proxy = Tentacle, 502 = Jellyfin), seulement en incident ou
+  quand ce qui est chargé fond (au plus toutes les 30 s), et relance par
+  `restartStream({ reason: "network" })`. L'ouverture ratée :
+  `useStartupRecovery` (fiche relue, puis ouverture).
+- **L'outil** (`PlaybackTrouble`, câblage `usePlaybackTrouble`) : bandeau en
+  haut, jamais focalisable ; panneau au centre quand la lecture est arrêtée.
+  Le panneau PARAÎT sans prendre le focus ; le premier appui l'ACTIVE
+  (focus sur « Réessayer maintenant », sans déclencher d'action), l'habillage
+  recule, le groupe `trouble:actions` retient le focus, la restauration de
+  l'habillage lui cède (`noteSkipFocusClaim`). Il part sans sortie jouée et
+  rend le focus (habillage, sinon le fond).
+- **Le voile hors ligne** ne se pose plus sur `Player`, `PlayerSettings`,
+  `Trailer` (App.tsx) ; la joignabilité confirmée se lit partout
+  (`hooks/serverReachability`).
+- Au banc : `bench:ui planche lecteur/panne --focus` (huit états).
+
+Pièges payés :
+
+- Le producteur de PrismCore MEURT à la première connexion refusée : FFmpeg
+  ne retente pas un refus (`reconnect_on_network_error` éteint) et rien ne le
+  relance — d'où la relance du flux, seule issue.
+- Une erreur AVPlayer après le démarrage partait en « master refusé » →
+  forme muxée → transcodage FORCÉ pour tout le titre (HDR perdu au retour).
+- `fetchStreamingConfig` rendait « désactivé » sur une panne, et un
+  PlaybackInfo direct en échec réseau verrouillait le direct pour TOUTE la
+  session (`signalDirectBlocked`, pensé pour le CORS) : au retour, tout
+  passait par le proxy jusqu'au redémarrage. Les deux corrigés dans
+  api-client (une panne n'est pas un réglage).
+- `useServerReachable` : un échec isolé laissait la série ouverte à vie ; une
+  sonde de confirmation la conclut désormais.
+- Le délai laissé au flux relancé part de son ÉMISSION : par le proxy,
+  rouvrir PrismCore prend 5 s.
+- Mon relais devant Jellyfin écoutait `127.0.0.1` : `AVPlayerSurface` prend
+  toute URL `http://127.0.0.1` pour le bouclage de PrismCore. Viser
+  `localhost`.
+
+Reste : Tentacle coupé AVANT l'ouverture, flux direct — le titre démarre
+après ~13 s, mais du début et en transcodage (la fiche passe par Tentacle :
+ni reprise ni pistes). Android TV : logique commune, rien d'éprouvé ; son
+habillage garde son indicateur (pas d'outil), mais la reprise seule s'y
+applique.
+
 ## La croix Retour (Apple TV)
 
 Branche `refonte/tv-retour-croix` (2026-10-01). Demande de l'utilisateur :
