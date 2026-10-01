@@ -12,7 +12,7 @@
  * son parent, et la page se compose par-dessus.
  *
  * Voir `surface.ts` pour ce que ce montage coûte et pourquoi il reste le défaut,
- * `macosFrame.ts` et `macosFullscreen.ts` pour ce qu'il faut à mpv pour accepter
+ * `macosFrame.ts` et `macosFrameConstraint.ts` pour ce qu'il faut à mpv pour accepter
  * la géométrie qu'on lui donne.
  */
 
@@ -173,7 +173,7 @@ export class MacosSurface implements VideoSurface {
    *
    * ⚠️ Le calage passe par `poserCadre`, JAMAIS par `setFrame:` : mpv redéfinit
    * `constrainFrameRect:toScreen:` et corrige ce qu'on demande. Toute l'histoire
-   * est dans `macosFrame.ts`, et le plein écran dans `macosFullscreen.ts`.
+   * est dans `macosFrame.ts`, et le plein écran dans `macosFrameConstraint.ts`.
    */
   align(): void {
     if (this.mpvWindow === null) return;

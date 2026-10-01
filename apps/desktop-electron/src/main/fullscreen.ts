@@ -62,10 +62,12 @@ export const WINDOWS_WORKAROUND = process.platform === "win32";
  *
  * # Et ce que l'espace dédié fait gagner au passage
  *
- * La fenêtre y mesure exactement le `visibleFrame` — 1512x949 sur un Mac à
- * encoche — au lieu de déborder sur les 33 points de la barre de menus. La
- * contrainte que mpv impose au cadre de sa fenêtre ne mord donc plus, et tout le
- * détour qui la désarmait a pu être retiré.
+ * Sur un Mac À ENCOCHE seulement, la fenêtre y mesure exactement le
+ * `visibleFrame` — 1512x949 — au lieu de déborder sur les 33 points de la barre
+ * de menus, et la contrainte que mpv impose au cadre de sa fenêtre n'y mord pas.
+ * ⚠️ Partout ailleurs — écran externe, MacBook Air, Mac mini, iMac — la fenêtre
+ * couvre TOUT l'écran : la contrainte mordait, et la vidéo vibrait. Elle est
+ * levée à la source, voir `video/macosFrameConstraint.ts`.
  *
  * # Linux : natif aussi — la parade Windows n'a pas de raison d'être ici
  *
