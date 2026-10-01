@@ -15,12 +15,13 @@ import type { RequestsDockModel } from "./requestTypes";
  */
 
 const N = TV_STAGE.nav;
-const POSTER = { width: 32, height: 48 };
-/** De l'arrière vers l'avant : décalage horizontal et inclinaison de chaque affiche. */
+const POSTER = { width: 30, height: 45 };
+/** De l'arrière vers l'avant : décalage horizontal et inclinaison de chaque affiche —
+ *  l'éventail tient dans les 64 points du pictogramme, sans toucher le bord du focus. */
 const FAN: Record<number, Array<{ x: number; deg: number }>> = {
   1: [{ x: 0, deg: 0 }],
-  2: [{ x: -7, deg: -8 }, { x: 6, deg: 5 }],
-  3: [{ x: -11, deg: -11 }, { x: 0, deg: -2 }, { x: 10, deg: 8 }],
+  2: [{ x: -6, deg: -7 }, { x: 5, deg: 5 }],
+  3: [{ x: -9, deg: -10 }, { x: 0, deg: -2 }, { x: 8, deg: 7 }],
 };
 
 export const RequestsPeek = memo(function RequestsPeek({ model, dark }: { model: RequestsDockModel; dark: boolean }) {
