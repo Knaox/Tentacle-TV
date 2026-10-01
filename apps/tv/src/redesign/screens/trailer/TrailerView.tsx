@@ -4,7 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { PillButton } from "../../controls/PillButton";
+import { BACK_TOP, BackButton } from "../../controls/BackButton";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
@@ -13,11 +13,12 @@ import { colors, fonts, scrim, text } from "../../theme/tokens";
 
 /**
  * La bande-annonce, plein écran. La vidéo occupe tout ; par-dessus, rien que
- * « Fermer » en haut à gauche — la seule chose focalisable (la vidéo, sourde,
- * ne doit pas prendre les touches) — et le titre, qui s'effacent ensemble
- * quand le câblage le dit (`chromeDimmed`, 3 s après le début). « Fermer »
- * garde le focus pendant toute la lecture : c'est le câblage qui rallume le
- * chrome, au moindre geste de la télécommande.
+ * la croix Retour en haut à gauche (`BackButton`, la même partout) — la seule
+ * chose focalisable, dans tous les états (la vidéo, sourde, ne doit pas
+ * prendre les touches) — et le titre, qui s'effacent ensemble quand le
+ * câblage le dit (`chromeDimmed`, 3 s après le début). La croix garde le
+ * focus pendant toute la lecture : c'est le câblage qui rallume le chrome, au
+ * moindre geste de la télécommande.
  *
  * Vue pure. Contrat :
  * - `video` : le lecteur (WebView relais sur Android, flux MP4 sur tvOS),
@@ -32,7 +33,7 @@ import { colors, fonts, scrim, text } from "../../theme/tokens";
  *   sait pas lire) ;
  * - `waiting` : la lecture lancée attend le réseau — une roue au centre, sur
  *   la dernière image, pour qu'elle ne paraisse jamais figée ;
- * - `onClose` : « Fermer » ; Retour ferme aussi (câblage).
+ * - `onClose` : la croix ; Menu ferme aussi (câblage).
  * Clé du banc : `trailer:close`.
  */
 
@@ -107,16 +108,13 @@ export const TrailerView = memo(function TrailerView({ state, title, backdropUri
             </View>
             <Text style={[styles.title, styles.centered]} numberOfLines={2}>{title}</Text>
             <Text style={[text.body, styles.centered]}>{t(unavailableReason === "unsupported" ? "trailerUnavailableTv" : "trailerUnavailableYoutube")}</Text>
-            <View style={styles.action}>
-              <PillButton label={t("close")} icon="close" focusKey={CLOSE_KEY} onPress={onClose} />
-            </View>
           </GlassSurface>
         </View>
-      ) : (
-        <Animated.View style={[styles.close, chrome]}>
-          <PillButton label={t("close")} icon="close" variant="glass" size="md" focusKey={CLOSE_KEY} onPress={onClose} />
-        </Animated.View>
-      )}
+      ) : null}
+
+      <Animated.View style={[styles.back, chrome]}>
+        <BackButton focusKey={CLOSE_KEY} onPress={onClose} />
+      </Animated.View>
     </View>
   );
 });
@@ -145,6 +143,5 @@ const styles = StyleSheet.create({
   centered: { textAlign: "center" },
   panel: { width: 900, alignItems: "center", gap: 18, paddingHorizontal: 64, paddingVertical: 52, backgroundColor: "rgba(12, 12, 16, 0.78)" },
   badge: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 255, 255, 0.1)", marginBottom: 6 },
-  action: { marginTop: 18 },
-  close: { position: "absolute", top: TV_STAGE.safe.y, left: TV_STAGE.safe.x },
+  back: { position: "absolute", top: BACK_TOP, left: TV_STAGE.safe.x },
 });

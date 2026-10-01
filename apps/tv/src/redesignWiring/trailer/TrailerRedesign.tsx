@@ -19,12 +19,13 @@ type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
  * actuel — le flux résolu par le serveur (`TrailerWebView.ios.tsx`), sourd à
  * la télécommande, qui dit chacune de ses issues : la première image
  * (« lecture »), la fin, ou l'échec (« indisponible » — jamais un chargement
- * sans fin). « Fermer » est le seul élément focalisable et prend le focus
- * d'entrée ; Menu dépile l'écran (pile native), la fin de la vidéo aussi.
+ * sans fin). La croix Retour est le seul élément focalisable et prend le
+ * focus d'entrée (seule action) ; Menu dépile l'écran (pile native), la fin
+ * de la vidéo aussi.
  *
  * Le chrome s'estompe trois secondes après le début de la lecture, et le
- * moindre geste de la télécommande le rallume (`useIdleChrome`) : « Fermer »
- * garde le focus tout du long, il ne peut donc pas en être le signal. Tout
+ * moindre geste de la télécommande le rallume (`useIdleChrome`) : la croix
+ * garde le focus tout du long, elle ne peut donc pas en être le signal. Tout
  * geste compte (`useRemoteEvents`) : un appui, ou un glisser sur le pavé
  * tactile — le seul signal qu'il émette ici, le focus n'ayant nulle part où
  * aller.
