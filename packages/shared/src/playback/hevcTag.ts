@@ -11,14 +11,18 @@ export const AV_PLAYER_HEVC_TAGS = ["hvc1", "dvh1"] as const;
  *
  * `hvc1` range les paramètres du flux (VPS/SPS/PPS) dans l'entrée
  * d'échantillon ; `hev1` les laisse dans le flux. AVFoundation ne lit que la
- * première, et `dvh1`, son pendant Dolby Vision : un `hev1` donne une image
- * NOIRE, le son seul, et AUCUNE erreur — rien ne déclenche le moindre repli.
- * Mesuré au simulateur tvOS : un MP4 HEVC 10 bits `hev1` (« On l'appelait
- * Robin des Bois ») reste noir de bout en bout, alors qu'un `hvc1` du même
- * profil (Lucifer S1E1) s'affiche.
+ * première, et `dvh1`, son pendant Dolby Vision : sous AVPlayer, un `hev1`
+ * donne une image NOIRE, le son seul, et AUCUNE erreur — rien ne déclenche le
+ * moindre repli. Mesuré au simulateur tvOS : un MP4 HEVC 10 bits `hev1` (« On
+ * l'appelait Robin des Bois ») reste noir de bout en bout, alors qu'un `hvc1`
+ * du même profil (Lucifer S1E1) s'affiche ; au simulateur iOS 26.3, même noir
+ * pour un `hev1` synthétique, la lecture avançant. Safari, lui, refuse le
+ * `<video>` (`MEDIA_ERR_SRC_NOT_SUPPORTED`), et le lecteur web ne s'en relève
+ * pas.
  *
- * Une étiquette INCONNUE (un scan Jellyfin ancien ne la renseigne pas) ne
- * prouve rien : elle ne se lit pas telle quelle non plus. Le relais revient à
+ * Une étiquette INCONNUE (un scan Jellyfin ancien ne la renseigne pas, et
+ * Jellyfin 12.1 plus du tout) ne prouve rien : elle ne se lit pas telle quelle
+ * non plus. Le relais revient à
  * un lecteur qui lit tout (mpv sur le mobile, PrismCore sur Apple TV, qui
  * réécrit l'entrée en `hvc1`), sinon au remux du serveur.
  */
@@ -56,6 +60,12 @@ export function hevcTagUnreadable(stream: Pick<MediaStream, "Codec" | "CodecTag"
  * dans `avPlayerReadsHevcTag` — et comme jellyfin-web le pose pour Safari. Le
  * prix se borne à un remux : un MKV, sans étiquette, garde sa vidéo copiée
  * (même mesure, `-codec:v:0 copy`).
+ *
+ * Jellyfin 12.1 ne renseigne plus `CodecTag` du tout (champ vide en base, même
+ * après un rafraîchissement complet) : toute étiquette y est inconnue. Avec
+ * `false`, le `hev1` y repartait en lecture directe — le noir revenait ; avec
+ * `true`, tout HEVC en MP4, `hvc1` compris, y est remuxé, l'image copiée
+ * (mesuré : `-codec:v:0 copy -tag:v:0 hvc1`). Jamais de noir.
  */
 export function avPlayerHevcTagCondition(): ProfileCondition {
   return {
