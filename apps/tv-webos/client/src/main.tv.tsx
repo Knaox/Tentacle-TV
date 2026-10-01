@@ -27,6 +27,9 @@ import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { App } from "@/App";
 import { ThemeProvider } from "@/theme";
 import { installTvSessionGuard } from "./auth/sessionGuardTv";
+import { resumeUnpair } from "@tentacle-tv/tv-core";
+import { pageStorage, webosAccountKeys } from "./auth/pageStorage";
+import { wakeRevocationDrainTv } from "./auth/revocationQueueTv";
 import { installPolyfills } from "./bootstrap/polyfills";
 import { readTvCapabilities } from "./bootstrap/webosGlobals";
 import { consumePairing, deviceToken } from "./bootstrap/fragmentToken";
@@ -84,6 +87,13 @@ startConfigCapture();
 // L'écran ne veille jamais pendant une lecture ACTIVE (pause exclue — la dalle
 // OLED garde sa protection) : sentinelle Luna tvpower, cf. antiVeilleTv.
 installWakeLock();
+
+// Un déjumelage interrompu (page rechargée ou tuée en pleine purge) se termine
+// AVANT que quoi que ce soit lise la session — et avant le jumelage que le
+// fragment apporterait, qu'il n'effacerait pas.
+resumeUnpair(pageStorage, webosAccountKeys());
+wakeRevocationDrainTv();
+window.addEventListener("online", wakeRevocationDrainTv);
 
 // Le jumelage arrive de la coquille dans le fragment d'URL, jamais dans la
 // requête : un jeton d'appareil est un JWT sans expiration, donc un secret de
@@ -183,7 +193,7 @@ const queryClient = new QueryClient({
   },
 });
 
-installTvSessionGuard({ client: jellyfinClient, storage, queryClient });
+installTvSessionGuard({ client: jellyfinClient, queryClient });
 
 const persistentStorage = {
   getItem: (key: string) => localStorage.getItem(key),
@@ -212,10 +222,11 @@ void hydrateQueryClient(queryClient, persistentStorage, {
 // maintenue. La sortie de l'application, elle, sauve toujours.
 let lastKeyAt = 0;
 window.addEventListener("keydown", () => { lastKeyAt = Date.now(); }, true);
+// Sans session, rien ne s'écrit : le cache d'un compte quitté ne revient pas.
 attachQueryPersister(queryClient, persistentStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
   owner: cacheOwner,
-  canSave: () => Date.now() - lastKeyAt > 3000,
+  canSave: () => Date.now() - lastKeyAt > 3000 && localStorage.getItem("tentacle_user") !== null,
 });
 
 // Le défilement au retour appartient à l'application — `useScrollMemory` pour

@@ -1,6 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { acquireSocket, notifyUserChange, subscribeSocket } from "@tentacle-tv/api-client";
+import { subscribeSocket } from "@tentacle-tv/api-client";
 import { deviceToken2 } from "../bootstrap/fragmentToken";
+import { holdSocket } from "./guardSocket";
+import { unpairTv } from "./unpairTv";
 
 /**
  * Vitalité de session, version appareil jumelé.
@@ -38,10 +40,8 @@ const PROACTIVE_INTERVAL_MS = 12 * 60 * 60 * 1000;
 interface ClientSession {
   setAccessToken(token: string | null): void;
   setOnAuthExpired(callback: () => void): void;
-}
-
-interface SessionStorage {
-  removeItem(key: string): void;
+  setDirectStreaming(config: null): void;
+  adoptJellyfinDeviceId(id: string | null): void;
 }
 
 export async function revalidateSession(): Promise<VerdictSession> {
@@ -88,20 +88,10 @@ export async function revalidateSession(): Promise<VerdictSession> {
 
 export function installTvSessionGuard(deps: {
   client: ClientSession;
-  storage: SessionStorage;
   queryClient: QueryClient;
 }): void {
-  const endSession = () => {
-    deps.client.setAccessToken(null);
-    deps.storage.removeItem("tentacle_token");
-    deps.storage.removeItem("tentacle_user");
-    localStorage.removeItem("tentacle_token");
-    localStorage.removeItem("tentacle_user");
-    deps.queryClient.clear();
-    // Pas de navigation impérative : la garde de routes redirige d'elle-même
-    // dès que l'utilisateur mémorisé disparaît.
-    notifyUserChange();
-  };
+  // Le déjumelage commun (`unpairTv`) : purge complète, socket relâchée.
+  const endSession = () => unpairTv(deps, "revoked");
 
   // Routine unique des deux déclencheurs (401 accumulés, contrôle proactif) :
   // ne purge qu'après CONFIRMATIONS_REVOCATION verdicts « revoquee » espacés.
@@ -148,11 +138,16 @@ export function installTvSessionGuard(deps: {
   // l'accueil ne suffit pas — il est refcompté et meurt dès qu'on quitte la
   // page (le lecteur n'en tient aucun). La garde prend donc SA référence,
   // jamais relâchée : elle vit aussi longtemps que l'app du téléviseur.
+  //
+  // Un refus « revoked » de la socket — une TV éteinte pendant qu'on la
+  // déjumelait, qui se reconnecte — ne dit pas quel jeton il visait : le
+  // verdict est redemandé au rafraîchissement, comme pour les 401.
   const token = deviceToken2();
   if (token) {
-    acquireSocket(token);
+    holdSocket(token);
     subscribeSocket((message) => {
       if (message.type === "session:revoked") endSession();
+      else if (message.type === "auth_error" && message.reason === "revoked") void purgeIfRevocationConfirmed();
     });
   }
 }

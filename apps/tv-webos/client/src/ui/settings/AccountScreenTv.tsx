@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { notifyUserChange, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
-import { forgetPairing } from "../../auth/returnToShell";
+import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { unpairTv } from "../../auth/unpairTv";
 
 /**
  * Le compte : qui regarde, et comment cesser de l'être.
@@ -24,10 +24,10 @@ import { forgetPairing } from "../../auth/returnToShell";
  * l'application. Deux appuis sur une cible qu'on a déjà sous le doigt disent la
  * même chose et se défont d'un appui sur Retour.
  *
- * Ce que l'écran n'appelle PAS : la révocation côté serveur. Elle existe
- * (`DELETE /api/pair/my-devices/:id`) mais réclame l'identifiant de l'appareil,
- * que le client ne connaît pas — et deux téléviseurs de la même marque y
- * seraient indiscernables. Oublier reste donc local.
+ * Oublier passe par le déjumelage commun (`unpairTv`) : tout ce qui appartient
+ * au compte s'efface aussitôt, et le serveur révoque CE jumelage
+ * (`POST /api/pair/self/revoke`, authentifié par le jeton lui-même — pas
+ * besoin de l'identifiant de l'appareil), tout de suite ou dès qu'il revient.
  */
 
 /** Le portrait, à la taille d'une dalle regardée de loin. */
@@ -47,6 +47,7 @@ function accountName(): string | null {
 export function AccountScreenTv() {
   const { t } = useTranslation("pairing");
   const queryClient = useQueryClient();
+  const client = useJellyfinClient();
   const [confirmed, setConfirmed] = useState(false);
 
   const forget = useCallback(() => {
@@ -54,15 +55,13 @@ export function AccountScreenTv() {
       setConfirmed(true);
       return;
     }
-    forgetPairing();
-    queryClient.clear();
-    notifyUserChange();
+    unpairTv({ client, queryClient }, "settings");
     // La purge suffit : sans session, la garde de routes monte l'écran de
     // jumelage, qui demande lui-même un nouveau code au relais. On ne quitte
     // plus l'application — c'est ce que faisait la version précédente, faute de
     // pouvoir revenir à la coquille, et on voyait la page se fermer après avoir
     // demandé à se rejumeler.
-  }, [confirmed, queryClient]);
+  }, [confirmed, client, queryClient]);
 
   const account = accountName();
 

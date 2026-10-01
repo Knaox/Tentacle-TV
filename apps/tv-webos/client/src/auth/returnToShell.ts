@@ -26,19 +26,10 @@
  * d'être que tant qu'on ignorait où était le serveur, c'est-à-dire au tout
  * premier démarrage.
  *
- * Ne reste ici que la purge, et les deux passerelles de plateforme — dont
- * `focus/back.ts` se sert encore pour rendre la main depuis l'écran d'accueil.
+ * Ne restent ici que les deux passerelles de plateforme — dont `focus/back.ts`
+ * se sert encore pour rendre la main depuis l'écran d'accueil. La purge est le
+ * déjumelage commun (`unpairTv.ts`).
  */
-
-/** Le jumelage mémorisé est effacé. Sans effet sur la navigation. */
-export function forgetPairing(): void {
-  try {
-    localStorage.removeItem("tentacle_token");
-    localStorage.removeItem("tentacle_user");
-  } catch {
-    // Stockage indisponible : la coquille regénérera un code de toute façon.
-  }
-}
 
 interface PlatformBridge {
   webOS?: { platformBack?: () => void };
