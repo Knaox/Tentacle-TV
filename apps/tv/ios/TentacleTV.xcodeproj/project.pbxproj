@@ -29,6 +29,9 @@
 		AB12CD34EF5601234567DD03 /* PrismCore in Frameworks */ = {isa = PBXBuildFile; productRef = AB12CD34EF5601234567DD02 /* PrismCore */; };
 		AB12CD34EF5601234567FF01 /* TentacleGlassView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567FF02 /* TentacleGlassView.m */; };
 		AB12CD34EF5601234567EE01 /* TVMenuPressInterceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567EE02 /* TVMenuPressInterceptor.m */; };
+		AB12CD34EF5601234567A101 /* TentacleFocusSection.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A102 /* TentacleFocusSection.m */; };
+		AB12CD34EF5601234567A103 /* TentacleFocusNeighbors.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A104 /* TentacleFocusNeighbors.m */; };
+		AB12CD34EF5601234567A105 /* TentacleRevealScroller.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +76,10 @@
 		AB12CD34EF5601234567CC0C /* TentacleTV-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "TentacleTV-Bridging-Header.h"; path = "TentacleTV/TentacleTV-Bridging-Header.h"; sourceTree = "<group>"; };
 		AB12CD34EF5601234567FF02 /* TentacleGlassView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleGlassView.m; path = TentacleTV/TentacleGlassView.m; sourceTree = "<group>"; };
 		AB12CD34EF5601234567EE02 /* TVMenuPressInterceptor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TVMenuPressInterceptor.m; path = TentacleTV/TVMenuPressInterceptor.m; sourceTree = "<group>"; };
+		AB12CD34EF5601234567A102 /* TentacleFocusSection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleFocusSection.m; path = TentacleTV/TentacleFocusSection.m; sourceTree = "<group>"; };
+		AB12CD34EF5601234567A104 /* TentacleFocusNeighbors.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleFocusNeighbors.m; path = TentacleTV/TentacleFocusNeighbors.m; sourceTree = "<group>"; };
+		AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleRevealScroller.m; path = TentacleTV/TentacleRevealScroller.m; sourceTree = "<group>"; };
+		AB12CD34EF5601234567A107 /* TentacleFocusSection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TentacleFocusSection.h; path = TentacleTV/TentacleFocusSection.h; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -125,6 +132,10 @@
 				AB12CD34EF5601234567CC06 /* PrismSessionRegistry.swift */,
 				AB12CD34EF5601234567CC08 /* PrismSessionConfig.swift */,
 				AB12CD34EF5601234567CC0A /* PrismErrorCode.swift */,
+				AB12CD34EF5601234567A107 /* TentacleFocusSection.h */,
+				AB12CD34EF5601234567A102 /* TentacleFocusSection.m */,
+				AB12CD34EF5601234567A104 /* TentacleFocusNeighbors.m */,
+				AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */,
 				AB12CD34EF5601234567FF02 /* TentacleGlassView.m */,
 				AB12CD34EF5601234567CC0C /* TentacleTV-Bridging-Header.h */,
 				AB12CD34EF5601234567EE02 /* TVMenuPressInterceptor.m */,
@@ -467,6 +478,9 @@
 				AB12CD34EF5601234567CC09 /* PrismErrorCode.swift in Sources */,
 				AB12CD34EF5601234567EE01 /* TVMenuPressInterceptor.m in Sources */,
 				AB12CD34EF5601234567FF01 /* TentacleGlassView.m in Sources */,
+				AB12CD34EF5601234567A101 /* TentacleFocusSection.m in Sources */,
+				AB12CD34EF5601234567A103 /* TentacleFocusNeighbors.m in Sources */,
+				AB12CD34EF5601234567A105 /* TentacleRevealScroller.m in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
