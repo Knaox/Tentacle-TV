@@ -2,7 +2,7 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandMark } from "../../brand/BrandMark";
+import { BRAND_CORNER_IN_SAFE_AREA, BrandCorner } from "../../brand/BrandCorner";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import type { IconName } from "../../icons/Icon";
@@ -88,7 +88,13 @@ export const CollectionView = memo(function CollectionView({
   onLongPressCard,
   onFocusCard,
 }: CollectionViewProps) {
-  const header = <Header kicker={kicker} title={title} count={loading || empty ? undefined : count} />;
+  // La marque, dans l'en-tête de la grille : elle défile avec lui.
+  const header = (
+    <View>
+      <Header kicker={kicker} title={title} count={loading || empty ? undefined : count} />
+      <BrandCorner anchor={BRAND_CORNER_IN_SAFE_AREA} />
+    </View>
+  );
   const placeholder = loading ? (
     <GridSkeleton columns={columns} rows={2} />
   ) : empty ? (
@@ -111,6 +117,7 @@ export const CollectionView = memo(function CollectionView({
             <Header kicker={kicker} title={title} />
           </View>
           <StatusPanel {...status} />
+          <BrandCorner />
         </>
       ) : (
         <PosterGrid
@@ -123,9 +130,6 @@ export const CollectionView = memo(function CollectionView({
           onFocusCard={onFocusCard}
         />
       )}
-      <View style={styles.brand} pointerEvents="none">
-        <BrandMark size={52} />
-      </View>
       <NavRail {...nav} />
     </View>
   );
@@ -139,5 +143,4 @@ const styles = StyleSheet.create({
   // Le vide occupe la hauteur restante de la scène, centré dedans.
   empty: { height: 1080 - TV_STAGE.safe.y * 2 - 190, justifyContent: "center" },
   statusHeader: { position: "absolute", left: TV_STAGE.contentLeft, top: TV_STAGE.safe.y },
-  brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

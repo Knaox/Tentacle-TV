@@ -4,7 +4,7 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandMark } from "../../brand/BrandMark";
+import { BrandCorner } from "../../brand/BrandCorner";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
@@ -125,11 +125,7 @@ export const PairingView = memo(function PairingView({
           </FocusGroup>
         ) : null}
       </Animated.View>
-      {cornerBrand ? (
-        <View style={styles.brand} pointerEvents="none">
-          <BrandMark size={52} />
-        </View>
-      ) : null}
+      {cornerBrand ? <BrandCorner /> : null}
     </View>
   );
 });
@@ -160,7 +156,6 @@ function backOf(
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },
-  brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
   // En haut à gauche, sur toute la largeur : HAUT depuis le champ ou la carte y monte.
   backBar: {
     position: "absolute",

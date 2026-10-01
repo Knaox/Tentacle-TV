@@ -2,7 +2,7 @@ import { memo, useCallback } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandMark } from "../../brand/BrandMark";
+import { BrandCorner, brandCornerOnHero } from "../../brand/BrandCorner";
 import { CARD_NOTE_SPACE } from "../../cards/CardFocusNote";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
@@ -71,6 +71,7 @@ export interface ForYouViewProps {
 
 const LEFT = TV_STAGE.contentLeft;
 const HERO_WIDTH = 1920 - LEFT - 56;
+const HERO_BRAND = brandCornerOnHero(LEFT, HERO_WIDTH);
 
 export const ForYouView = memo(function ForYouView({
   nav,
@@ -102,7 +103,10 @@ export const ForYouView = memo(function ForYouView({
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
       {status ? (
-        <StatusPanel {...status} />
+        <>
+          <StatusPanel {...status} />
+          <BrandCorner />
+        </>
       ) : (
         <ScrollView
           ref={scrollRef}
@@ -142,11 +146,10 @@ export const ForYouView = memo(function ForYouView({
               onFocusCard={onShelfFocus}
             />
           ))}
+          {/* La marque défile avec la page : sur la carte héros, dans son coin. */}
+          {hero ? <BrandCorner anchor={HERO_BRAND} backing="veil" /> : <BrandCorner />}
         </ScrollView>
       )}
-      <View style={styles.brand} pointerEvents="none">
-        <BrandMark size={52} />
-      </View>
       <NavRail {...nav} />
     </View>
   );
@@ -220,5 +223,4 @@ const styles = StyleSheet.create({
   firstAfterHead: { marginTop: 72 },
   firstAlone: { marginTop: TV_STAGE.safe.y + 72 },
   withNotes: { paddingBottom: CARD_NOTE_SPACE },
-  brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

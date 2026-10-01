@@ -2,7 +2,7 @@ import { memo, useCallback, useRef } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandMark } from "../../brand/BrandMark";
+import { BrandCorner, brandCornerOnHero } from "../../brand/BrandCorner";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
@@ -73,6 +73,7 @@ export interface HomeViewProps {
 
 const LEFT = TV_STAGE.contentLeft;
 const HERO_WIDTH = 1920 - LEFT - 56;
+const HERO_BRAND = brandCornerOnHero(LEFT, HERO_WIDTH);
 /** Au-delà de ce défilement, plus de la moitié du héros est hors de l'écran. */
 const HERO_HIDDEN_AFTER = TV_STAGE.hero.top + TV_STAGE.hero.height / 2;
 
@@ -117,7 +118,10 @@ export const HomeView = memo(function HomeView({
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
       {status ? (
-        <StatusPanel {...status} />
+        <>
+          <StatusPanel {...status} />
+          <BrandCorner />
+        </>
       ) : (
         <ScrollView
           ref={scrollRef}
@@ -153,11 +157,10 @@ export const HomeView = memo(function HomeView({
               onFocusCard={onRowFocus}
             />
           ))}
+          {/* La marque défile avec la page : sur la carte héros, dans son coin. */}
+          {hero ? <BrandCorner anchor={HERO_BRAND} backing="veil" /> : <BrandCorner />}
         </ScrollView>
       )}
-      <View style={styles.brand} pointerEvents="none">
-        <BrandMark size={52} />
-      </View>
       <NavRail {...nav} />
     </View>
   );
@@ -222,5 +225,4 @@ const styles = StyleSheet.create({
   hero: { marginLeft: LEFT, marginTop: TV_STAGE.hero.top },
   firstAfterHero: { marginTop: 56 },
   firstAlone: { marginTop: TV_STAGE.safe.y + 40 },
-  brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

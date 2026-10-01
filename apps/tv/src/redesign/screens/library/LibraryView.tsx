@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Modal, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandMark } from "../../brand/BrandMark";
+import { BRAND_CORNER_IN_SAFE_AREA, BrandCorner } from "../../brand/BrandCorner";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
@@ -111,6 +111,8 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
   const header = (
     <View style={styles.header}>
       <PageTitle title={title} count={count} />
+      {/* La marque, dans l'en-tête : elle défile avec lui. */}
+      <BrandCorner anchor={BRAND_CORNER_IN_SAFE_AREA} />
       <FilterBar
         pills={pills}
         active={activeFilters}
@@ -143,6 +145,7 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
             <PageTitle title={title} />
           </View>
           <StatusPanel {...status} />
+          <BrandCorner />
         </>
       ) : (
         <PosterGrid
@@ -157,9 +160,6 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
           onEndReached={props.onEndReached}
         />
       )}
-      <View style={styles.brand} pointerEvents="none">
-        <BrandMark size={52} />
-      </View>
       <NavRail {...nav} />
       {sheet ? (
         // Sans animation de la Modal : la liste a déjà la sienne (voile, panneau).
@@ -186,5 +186,4 @@ const styles = StyleSheet.create({
   statusTitle: { position: "absolute", left: TV_STAGE.contentLeft, top: TV_STAGE.safe.y },
   noResults: { paddingTop: 40, paddingRight: 0 },
   more: { marginTop: 40 },
-  brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

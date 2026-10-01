@@ -2,7 +2,7 @@ import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandMark } from "../../brand/BrandMark";
+import { BRAND_CORNER_IN_SAFE_AREA, BrandCorner } from "../../brand/BrandCorner";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
@@ -61,8 +61,10 @@ export interface BrowseViewProps {
 
 export const BrowseView = memo(function BrowseView(props: BrowseViewProps) {
   const { nav, cards, palette, columns = 6, loading, empty, status } = props;
+  // La marque, dans l'en-tête de la grille : elle défile avec lui.
   const header = (
-    <BrowseHeader
+    <View>
+      <BrowseHeader
       kind={props.kind}
       kicker={props.kicker}
       name={props.name}
@@ -70,8 +72,10 @@ export const BrowseView = memo(function BrowseView(props: BrowseViewProps) {
       portraitUri={props.portraitUri}
       initials={props.initials}
       palette={palette}
-      onBack={props.onBack}
-    />
+        onBack={props.onBack}
+      />
+      <BrandCorner anchor={BRAND_CORNER_IN_SAFE_AREA} />
+    </View>
   );
   const placeholder = loading ? (
     <GridSkeleton columns={columns} rows={2} />
@@ -91,6 +95,7 @@ export const BrowseView = memo(function BrowseView(props: BrowseViewProps) {
       {status ? (
         <>
           <StatusPanel {...status} />
+          <BrandCorner />
           <FocusGroup focusKey="browse:header" style={styles.backBar}>
             <BackButton focusKey="browse:back" onPress={props.onBack} />
           </FocusGroup>
@@ -106,9 +111,6 @@ export const BrowseView = memo(function BrowseView(props: BrowseViewProps) {
           onFocusCard={props.onFocusCard}
         />
       )}
-      <View style={styles.brand} pointerEvents="none">
-        <BrandMark size={52} />
-      </View>
       <NavRail {...nav} />
     </View>
   );
@@ -129,5 +131,4 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
   },
-  brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

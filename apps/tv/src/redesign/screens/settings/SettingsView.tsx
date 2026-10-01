@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { PRESET_LABEL_KEYS, type PlaybackPreset } from "@tentacle-tv/shared";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandMark } from "../../brand/BrandMark";
+import { BrandCorner } from "../../brand/BrandCorner";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
@@ -189,9 +189,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
           </ScrollView>
         </FocusGroup>
       </GlassSurface>
-      <View style={styles.brand} pointerEvents="none">
-        <BrandMark size={52} />
-      </View>
+      <BrandCorner />
       <NavRail {...nav} />
       {choiceList ? <ChoiceSheet list={choiceList} onChoose={props.onChoose} /> : null}
     </View>
@@ -211,5 +209,4 @@ const styles = StyleSheet.create({
   },
   clip: { flex: 1, borderRadius: PANEL_RADIUS, overflow: "hidden" },
   scroll: { paddingHorizontal: PANEL_PAD_X, paddingTop: 48, paddingBottom: 56 },
-  brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

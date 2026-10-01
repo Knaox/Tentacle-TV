@@ -2,9 +2,8 @@ import { memo, useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedRef, useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
-import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandMark } from "../../brand/BrandMark";
+import { BrandCorner } from "../../brand/BrandCorner";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import type { ArtworkPalette } from "../../color/artworkPalette";
@@ -156,6 +155,8 @@ export const DetailView = memo(function DetailView({
           <SectionStage>
             <DetailSections {...sections} onSectionFocus={onSectionFocus} onSectionLayout={onSectionLayout} />
           </SectionStage>
+          {/* La marque défile avec la page, sur l'image : un voile la porte. */}
+          <BrandCorner backing="veil" />
         </Animated.ScrollView>
         <DetailTopFade scrollY={scrollY} />
       </>
@@ -167,9 +168,7 @@ export const DetailView = memo(function DetailView({
       <AmbientBackdrop palette={palette} />
       {body}
       {header && !error ? null : backBar(true)}
-      <View style={styles.brand} pointerEvents="none">
-        <BrandMark size={52} />
-      </View>
+      {header && !error ? null : <BrandCorner />}
     </View>
   );
 });
@@ -190,5 +189,4 @@ const styles = StyleSheet.create({
   },
   backBar: { height: BAR_HEIGHT, paddingTop: BACK_TOP, paddingLeft: DETAIL_LEFT, flexDirection: "row", alignItems: "flex-start" },
   backBarFixed: { position: "absolute", top: 0, left: 0, right: 0 },
-  brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });
