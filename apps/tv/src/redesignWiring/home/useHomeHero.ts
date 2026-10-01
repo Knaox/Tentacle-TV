@@ -8,6 +8,7 @@ import type { HeroModel } from "../../redesign/hero/HeroBanner";
 import { backdropUriOf } from "../cards/cardArtwork";
 import type { FocusStore } from "../focus/focusStore";
 import { heroModelOf } from "../hero/heroModel";
+import { useBeyondEdge } from "../remote/useBeyondEdge";
 import { HERO_MAX_ITEMS, useHeroArts } from "./useHeroArts";
 
 /**
@@ -15,6 +16,10 @@ import { HERO_MAX_ITEMS, useHeroArts } from "./useHeroArts";
  * sinon une sélection au hasard du serveur. Il tourne toutes les huit
  * secondes — seulement écran affiché, et jamais pendant qu'un de ses boutons
  * a le focus : on ne change pas le titre sous le doigt de celui qui le lit.
+ * C'est alors LUI qui le tourne : DROITE au-delà du dernier bouton — clic
+ * sur le bord du pavé ou glisser, là où le focus ne va nulle part, vers les
+ * points de la rotation — passe au titre suivant, en boucle, un par geste
+ * (`useBeyondEdge`). Les boutons ne bougent pas : le focus reste où il est.
  *
  * Un épisode se montre sous l'art de sa SÉRIE (logo, fond, genres), chargé
  * par sa fiche (`useMediaItem`, le cache de la page de détail : les gestes de
@@ -122,6 +127,14 @@ export function useHomeHero(
   const onToggleList = useCallback(() => {
     if (live.current.face) live.current.toggles.toggleList();
   }, []);
+
+  const lastAction = hero?.listToggle?.focusKey ?? hero?.secondary?.focusKey ?? hero?.primary.focusKey ?? null;
+  useBeyondEdge(focus, {
+    edgeKey: items.length > 1 ? lastAction : null,
+    direction: "right",
+    enabled: screenFocused,
+    onBeyond: () => setIndex((i) => (i + 1) % items.length),
+  });
 
   return { hero, current, pending: items.length > 0 && !hero, onPrimary, onSecondary, onToggleList };
 }
