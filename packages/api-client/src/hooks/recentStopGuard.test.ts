@@ -8,7 +8,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { clearActivePlayback, setActivePlayback } from "../socket/sessionChannel";
-import { findUserData, forgetRecentStops, rememberStop, type UserDataClient } from "./recentStopGuard";
+import { adoptStop, findUserData, forgetRecentStops, rememberStop, type UserDataClient } from "./recentStopGuard";
 
 const T = 10_000_000;
 const ID = "robin";
@@ -105,6 +105,37 @@ describe("la garde : une relecture plus ancienne ne fait plus reculer", () => {
     const other = { ...item(42), Id: "autre" } as MediaItem;
     await qc.fetchQuery({ queryKey: ["item", "autre"], queryFn: async () => other });
     expect((qc.getQueryData(["item", "autre"]) as MediaItem).UserData?.PlaybackPositionTicks).toBe(42 * T);
+  });
+});
+
+describe("adoptStop — l'arrêt de cet appareil devient la vérité locale", () => {
+  beforeEach(() => { forgetRecentStops(); vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(STOPPED_AT + 1_000); });
+  afterEach(() => vi.useRealTimers());
+
+  it("au milieu du titre : la fiche montre l'arrêt, et la garde le défend", async () => {
+    const qc = new QueryClient();
+    qc.setQueryData(["item", ID], item(1826, BEFORE));
+    const projection = adoptStop(qc, fakeClient(null), "u1", { itemId: ID, positionSeconds: 2411, runtimeTicks: RUNTIME, stoppedAt: STOPPED_AT });
+    expect(projection).toEqual({ positionTicks: 2411 * T, played: false });
+    expect(positionIn(qc, ["item", ID])).toBe(2411 * T);
+    await qc.fetchQuery({ queryKey: ["item", ID], queryFn: async () => item(1826, BEFORE) });
+    expect(positionIn(qc, ["item", ID])).toBe(2411 * T);
+  });
+
+  it("près du début : la fiche suit la règle de Jellyfin, sans garde", async () => {
+    const qc = new QueryClient();
+    qc.setQueryData(["item", ID], item(1826, BEFORE));
+    adoptStop(qc, fakeClient(null), "u1", { itemId: ID, positionSeconds: 200, runtimeTicks: RUNTIME, stoppedAt: STOPPED_AT });
+    expect(positionIn(qc, ["item", ID])).toBe(0);
+    await qc.fetchQuery({ queryKey: ["item", ID], queryFn: async () => item(1826, BEFORE) });
+    expect(positionIn(qc, ["item", ID])).toBe(1826 * T);
+  });
+
+  it("durée inconnue : rien ne bouge", () => {
+    const qc = new QueryClient();
+    qc.setQueryData(["item", ID], item(1826, BEFORE));
+    expect(adoptStop(qc, fakeClient(null), "u1", { itemId: ID, positionSeconds: 2411, runtimeTicks: undefined, stoppedAt: STOPPED_AT })).toBeNull();
+    expect(positionIn(qc, ["item", ID])).toBe(1826 * T);
   });
 });
 

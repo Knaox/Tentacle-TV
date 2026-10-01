@@ -12,7 +12,7 @@ export { useResolvePlayTarget } from "../hooks/useResolvePlayTarget";
 export { useRestoreWatchlistItem } from "../hooks/useRestoreWatchlistItem";
 export { favoriteWatchState, summarizeFavorites, groupFavorites, favoritesGroupLabel, isFavoritesGroupMode, FAVORITES_GROUP_MODES, type FavoriteWatchState, type FavoritesSummary, type FavoritesGroup, type FavoritesGroupMode } from "../utils/favoritesOverview";
 export { useWatchedToggle } from "../hooks/useWatchedToggle";
-export { useWatchStopInvalidation } from "../hooks/useWatchStopInvalidation";
+export { useWatchStopInvalidation, useAdoptStop } from "../hooks/useWatchStopInvalidation";
 
 // Batch remove
 export { useBatchRemoveFavorites, useBatchRemoveWatchlist } from "../hooks/useBatchRemove";

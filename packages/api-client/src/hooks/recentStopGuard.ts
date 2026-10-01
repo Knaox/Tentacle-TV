@@ -2,7 +2,9 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { MediaItem, UserItemData } from "@tentacle-tv/shared";
 import { currentPlaybackItemId } from "../socket/sessionChannel";
 import { updateItemUserDataInCache } from "./cacheUtils";
-import { judgeServerUserData, projectionPatch, type StopProjection } from "./stopProjection";
+import {
+  judgeServerUserData, projectionPatch, projectStop, stopWorthDefending, type StopProjection,
+} from "./stopProjection";
 
 /**
  * La garde des arrêts récents : une réponse du serveur PLUS ANCIENNE que notre
@@ -118,6 +120,30 @@ export function rememberStop(qc: QueryClient, client: UserDataClient, userId: st
   stops.set(stop.itemId, stop);
   installGuard(qc);
   setTimeout(() => { void repairStop(client, userId, stop); }, REPAIR_AFTER_MS);
+}
+
+/**
+ * Un arrêt connu de CET appareil devient la vérité locale : la fiche et les
+ * listes le montrent à l'instant, et — au milieu du titre — la garde le défend,
+ * réparation comprise. La règle de sortie partagée l'appelle à chaque sortie ;
+ * la relance à froid de la TV, pour l'arrêt d'arrière-plan noté dans son
+ * marqueur. Rend la projection, `null` sans durée connue.
+ */
+export function adoptStop(qc: QueryClient, client: UserDataClient, userId: string, a: {
+  itemId: string;
+  positionSeconds: number;
+  runtimeTicks: number | undefined;
+  stoppedAt: number;
+  maxResumePct?: number;
+}): StopProjection | null {
+  const { itemId, runtimeTicks, maxResumePct } = a;
+  const projection = projectStop({ positionSeconds: a.positionSeconds, runtimeTicks, maxResumePct });
+  if (!projection || !runtimeTicks) return null;
+  updateItemUserDataInCache(qc, itemId, () => projectionPatch(projection, runtimeTicks));
+  if (stopWorthDefending(projection, runtimeTicks, maxResumePct)) {
+    rememberStop(qc, client, userId, { ...projection, itemId, runtimeTicks, stoppedAt: a.stoppedAt });
+  }
+  return projection;
 }
 
 /** Tests : repart d'un registre vide. */

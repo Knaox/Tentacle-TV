@@ -8,6 +8,9 @@ export {
   type OutboxOwner, type OutboxStorage, type OutboxEntry, type OutboxFlushResult,
 } from "../hooks/playbackOutbox";
 export { flushPlaybackOutboxFor } from "../hooks/playbackOutboxFlush";
+// La reprise après un arrêt, telle que Jellyfin l'écrira — et défendue tant
+// qu'il ne l'a pas écrite (Jellyfin 12.1 accuse parfois un arrêt sans l'écrire).
+export { projectStop, judgeServerUserData, type StopProjection } from "../hooks/stopProjection";
 // Destruction d'un transcode actif, hors du hook de reporting : les filets de
 // lecture renégocient une session sans en tenir un (cf. useWebPlaybackFallbacks).
 export { killActiveEncoding } from "../hooks/playbackTransport";

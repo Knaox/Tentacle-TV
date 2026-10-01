@@ -10,8 +10,7 @@ import {
   retireSeriesFromWatchlistIfFullyWatched, stoppedPastHalf, WATCHLIST_SERIES_IDS_KEY,
 } from "./watchlistEffects";
 import { clearPlayedWhenResumable } from "./resumeOverPlayed";
-import { projectionPatch, projectStop, stopWorthDefending } from "./stopProjection";
-import { rememberStop } from "./recentStopGuard";
+import { adoptStop } from "./recentStopGuard";
 import type { AutoplayConfig } from "./useConfig";
 
 /**
@@ -67,15 +66,11 @@ export function useWatchStopInvalidation() {
       // montrent l'arrêt (Jellyfin 12.1 l'écrit parfois des secondes plus tard,
       // ou jamais — cf. `stopProjection.ts`), et une relecture plus ancienne
       // ne les fait plus reculer (`recentStopGuard.ts`).
-      const maxResumePct = qc.getQueryData<AutoplayConfig>(["autoplay-config"])?.maxResumePct;
-      const projection = stopPositionSeconds === undefined
-        ? null
-        : projectStop({ positionSeconds: stopPositionSeconds, runtimeTicks, maxResumePct });
-      if (projection && runtimeTicks) {
-        updateItemUserDataInCache(qc, itemId, () => projectionPatch(projection, runtimeTicks));
-        if (stopWorthDefending(projection, runtimeTicks, maxResumePct)) {
-          rememberStop(qc, client, userId, { ...projection, itemId, runtimeTicks, stoppedAt: stoppedAt ?? Date.now() });
-        }
+      if (stopPositionSeconds !== undefined) {
+        adoptStop(qc, client, userId, {
+          itemId, positionSeconds: stopPositionSeconds, runtimeTicks, stoppedAt: stoppedAt ?? Date.now(),
+          maxResumePct: qc.getQueryData<AutoplayConfig>(["autoplay-config"])?.maxResumePct,
+        });
       }
 
       // « Reprendre la lecture » se réordonne à l'instant. Ce qu'on vient de
@@ -137,6 +132,21 @@ export function useWatchStopInvalidation() {
       await resumeRefetched.catch(() => {});
       hoistResumeItem(qc, itemId);
     },
+    [qc, client, userId],
+  );
+}
+
+/**
+ * L'adoption d'un arrêt connu de cet appareil HORS de la sortie du lecteur —
+ * la relance à froid de la TV, pour l'arrêt d'arrière-plan de son marqueur
+ * (cf. `adoptStop`). `null` sans session.
+ */
+export function useAdoptStop() {
+  const qc = useQueryClient();
+  const client = useJellyfinClient();
+  const userId = useUserId();
+  return useCallback(
+    (a: Parameters<typeof adoptStop>[3]) => (userId ? adoptStop(qc, client, userId, a) : null),
     [qc, client, userId],
   );
 }
