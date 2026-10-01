@@ -19,8 +19,11 @@ export function useTVPanelControls(args: {
   /** Suppression dynamique du refocus-fond (ex. écran « épisode suivant » eof
    *  actif : lui voler le focus le rendait innavigable sur Android). */
   recoverySuppressedRef?: React.RefObject<boolean>;
+  /** Le bouton physique est retenu ici (défaut) ; faux sur Apple TV refondue,
+   *  où le panneau est une couche de la pile du Retour (`BackScope`). */
+  holdsSystemBack?: boolean;
 }) {
-  const { backgroundRef, recoverySuppressedRef } = args;
+  const { backgroundRef, recoverySuppressedRef, holdsSystemBack = true } = args;
 
   const [showSettings, setShowSettings] = useState(false);
   const showSettingsRef = useRef(false);
@@ -55,8 +58,9 @@ export function useTVPanelControls(args: {
   // No-op de fait sur Android (le BackHandler LIFO consomme déjà l'appui).
   // NB : les Réglages/Qualité passent désormais par une route MODALE (ESC géré
   // nativement par le dismiss de la modale, sans flash) → ici on ne couvre plus
-  // que le panneau Épisodes (encore en overlay).
-  usePreventRemove(showEpisodes, () => {
+  // que le panneau Épisodes (encore en overlay). Apple TV refondue : rien ici,
+  // le panneau est une couche de la pile du Retour (`usePlayerBackLayers`).
+  usePreventRemove(holdsSystemBack && showEpisodes, () => {
     if (showEpisodesRef.current) {
       setShowEpisodes(false);
     }

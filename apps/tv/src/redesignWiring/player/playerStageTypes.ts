@@ -19,4 +19,17 @@ export interface PlayerRedesignStageProps extends Omit<TVPlayerViewProps, "strea
   countdownTotals: { skipMs: number; nextMs: number };
   /** Les paliers de qualité proposés pour ce fichier. */
   qualityPresets: readonly QualityPreset[];
+  /** Ce que la pile de couches du Retour lit de l'orchestration (Apple TV). */
+  back?: PlayerBackSource;
+}
+
+/** Le Retour du lecteur, côté orchestration (`useTVPlayerBack`, `useTVPlayerControls`). */
+export interface PlayerBackSource {
+  /** Un état passager prend le prochain Retour : défilement, carte « à
+   *  suivre », passage automatique refusable, grâce après un Retour pris. */
+  transient: boolean;
+  /** Le routage partagé de ces états passagers. */
+  routeBack: () => boolean;
+  /** Masque l'habillage, la lecture continue. */
+  hideOverlay: () => void;
 }

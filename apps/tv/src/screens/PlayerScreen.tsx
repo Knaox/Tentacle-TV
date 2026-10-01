@@ -63,7 +63,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     showSettings, setShowSettings, showSettingsRef,
     showEpisodes, setShowEpisodes, showEpisodesRef,
     osdFocusSignal, osdFocusTargetRef, bumpOsdFocus,
-  } = useTVPanelControls({ backgroundRef, recoverySuppressedRef: eofActiveRef });
+  } = useTVPanelControls({ backgroundRef, recoverySuppressedRef: eofActiveRef, holdsSystemBack: !REDESIGN_ACTIVE });
 
   // Bus d'état partagé (positions, gates, refs miroir) + pipeline de flux.
   const s = usePlayerMediaState();
@@ -178,6 +178,8 @@ export function PlayerScreen({ route, navigation }: Props) {
       playback.overlay.kind === "skip" && playback.overlay.auto && playback.overlay.dismissible,
     dismissSegment: playback.dismissOverlay,
     dismissAutoPlay,
+    // Apple TV : la pile de couches du Retour (`usePlayerBackLayers`) le reçoit d'abord.
+    holdsSystemBack: !REDESIGN_ACTIVE,
   });
   routeBackRef.current = back.routeBack;
 
@@ -289,6 +291,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     onCloseEpisodes: () => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus("episodes"); },
     onSelectEpisode: (ep) => { setShowEpisodes(false); navigateToEpisode(ep.Id); },
     onEofDismiss: () => { dismissAutoPlay(); },
+    back: { transient: back.holding, routeBack: back.routeBack, hideOverlay: controls.hideOverlay },
   };
   return REDESIGN_ACTIVE ? <PlayerRedesignStage {...stage} /> : <LegacyPlayerStage {...stage} />;
 }

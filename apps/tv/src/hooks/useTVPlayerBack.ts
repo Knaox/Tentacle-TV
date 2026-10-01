@@ -62,10 +62,16 @@ export function useTVPlayerBack(args: {
   /** Ferme l'overlay auto-play ; renvoie true si un départ (navigation) est engagé —
    *  dans ce cas la grâce n'est PAS armée (elle bloquerait le dispatch différé). */
   dismissAutoPlay: () => boolean;
+  /**
+   * Le bouton physique est retenu ICI, par `usePreventRemove` (défaut). Faux
+   * sur Apple TV refondue : sa pile de couches du Retour le reçoit d'abord
+   * (`BackScope`), et lit `holding` pour savoir si `routeBack` le prend.
+   */
+  holdsSystemBack?: boolean;
 }) {
   const {
     scrubbing, cancelScrub, surfaceActive, skipRefusable, dismissSegment,
-    surfaceRef, dismissAutoPlay,
+    surfaceRef, dismissAutoPlay, holdsSystemBack = true,
   } = args;
 
   const scrubbingRef = useRef(scrubbing);
@@ -115,10 +121,9 @@ export function useTVPlayerBack(args: {
     return false;
   }, [armGrace, surfaceRef]);
 
-  usePreventRemove(
-    scrubbing || surfaceActive || skipRefusable || graceActive,
-    () => { routeBack(); },
-  );
+  // Ce que `routeBack` prendrait au prochain Retour — dit d'avance.
+  const holding = scrubbing || surfaceActive || skipRefusable || graceActive;
+  usePreventRemove(holdsSystemBack && holding, () => { routeBack(); });
 
-  return { routeBack };
+  return { routeBack, holding };
 }

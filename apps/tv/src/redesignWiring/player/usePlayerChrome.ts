@@ -33,6 +33,8 @@ export interface PlayerChrome {
   loading: boolean;
   /** Le panneau du message-outil, activé, tient le focus : le fond se retire. */
   troubleCovers: boolean;
+  /** L'habillage est À L'ÉCRAN (la règle de la vue) : Retour le masque. */
+  osdShown: boolean;
   pillShown: boolean;
   upNextShown: boolean;
   endShown: boolean;
@@ -46,7 +48,7 @@ export interface PlayerChrome {
  * visibilités, panneaux, gestes. Aucune décision de lecture ici — l'arbitre
  * partagé, les contrôles et le pipeline de flux décident ; on traduit.
  */
-export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore): PlayerChrome {
+export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, osdPinned: boolean): PlayerChrome {
   const { t, i18n } = useTranslation();
   const translate = useCallback<Translate>((key, options) => t(key, options) as string, [t]);
   const client = useJellyfinClient();
@@ -169,9 +171,10 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore):
     ...p, onSelectSeason: episodes.selectSeason, episodeById: episodes.episodeById,
   });
 
-  // L'habillage : affiché, ou épinglé par la pause hors défilement ; il se tait
-  // devant une carte « à suivre » (comme l'actuel), la vue devant le reste.
-  const osdVisible = (controls.overlayVisible && !p.autoPlayActive) || (p.paused && !scrubbing);
+  // L'habillage : affiché, ou épinglé par la pause hors défilement (tant que
+  // Retour ne l'a pas masqué, `useOsdPin`) ; il se tait devant une carte « à
+  // suivre » (comme l'actuel), la vue devant le reste.
+  const osdVisible = (controls.overlayVisible && !p.autoPlayActive) || (osdPinned && !scrubbing);
   // Le message-outil quand un serveur ne répond plus (cf. usePlaybackTrouble).
   const trouble = usePlaybackTrouble({
     t: translate, store, position: p.displayTime, osdVisible, qualityKey: p.qualityKey,
@@ -189,6 +192,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore):
       trouble: trouble.model, troubleCovers: trouble.covers, onTroubleAction: trouble.onAction,
     },
     troubleCovers: trouble.covers,
+    osdShown: playing && osdVisible && !panel && !scrub && !endScreen && !trouble.covers,
     loading: !playing,
     pillShown: skip !== null && !covered,
     upNextShown: upNext !== null && !covered,

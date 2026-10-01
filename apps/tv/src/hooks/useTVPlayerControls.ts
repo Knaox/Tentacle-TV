@@ -258,6 +258,7 @@ export function useTVPlayerControls({
     currentTimeRef,
     overlayVisible,
     showOverlay,
+    hideOverlay,
     speedLabel: scrub.speedLabel,
     scrubbing: scrub.scrubbing,
     scrubPosition: scrub.scrubPosition,
