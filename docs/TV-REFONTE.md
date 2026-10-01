@@ -1423,10 +1423,17 @@ natif, carte rendue) ; Parcourir, rail ouvert → page précédente ; lecteur :
 pistes et épisodes (aucune image de la fiche), habillage masqué (la lecture
 continue), pause, sortie ; défilement annulé.
 
-Reste : à la fermeture d'un panneau du lecteur, le focus passe ~200 ms par
-« Reculer de 10 s » avant le bouton qui l'avait ouvert — la restauration
-différée de l'habillage (`overlayFocusCore`, 220 ms, partagée avec Android
-TV), antérieure à ce chantier.
+**Un panneau du lecteur qui se ferme rend le focus à son bouton TOUT DE
+SUITE** (`player/usePanelReturnFocus.ts`), comme une fenêtre qu'on referme.
+Sous un panneau, l'habillage est à opacité nulle, et tvOS ne focalise rien
+d'invisible : la restauration partagée (`overlayFocusCore`, 220 ms puis un
+cycle de `hasTVPreferredFocus`) laissait 305 à 330 ms sans focus visible,
+parfois un détour par « Reculer de 10 s ». Deux images après la fermeture,
+le fondu de l'habillage commencé, `requestTVFocus` pose le focus sur
+« Pistes » ou « Épisodes » ; la restauration différée reste le filet
+(Android TV n'en change pas). Mesuré au simulateur (journal du magasin de
+focus) : 40 à 45 ms entre la perte du focus par le panneau et sa reprise par
+le bouton, aucune autre cible entre les deux, en lecture comme en pause.
 
 Pièges payés :
 

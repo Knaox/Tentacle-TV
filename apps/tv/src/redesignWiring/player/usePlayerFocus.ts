@@ -8,6 +8,7 @@ import { useSkipPillFocus } from "../../components/player/focus/useSkipPillFocus
 import type { FocusStore } from "../focus/focusStore";
 import { END_EXIT_LOCK, useEndExitLocked, useExitLocked } from "./endExitLock";
 import { PLAYER_GROUP_CONTAINERS, type PlayerFocusState } from "./playerFocusContainers";
+import { usePanelReturnFocus } from "./usePanelReturnFocus";
 
 /**
  * Le focus du lecteur Apple TV, posé sur l'habillage refondu par le port
@@ -162,6 +163,8 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
   useClaimOnRise(store, "upnext:play", args.upNextShown);
   useClaimOnRise(store, "end:play", args.endShown);
   useClaimOnRise(store, tracksEntryKey, tracksEntryKey !== null);
+  // Un panneau refermé rend le focus à son bouton, sans attendre la restauration.
+  usePanelReturnFocus(store, showSettings, showEpisodes);
 
   const state = useMemo<PlayerFocusState>(() => ({
     store,
