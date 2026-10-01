@@ -12,7 +12,9 @@ import LinearGradient, { type LinearGradientProps } from "react-native-linear-gr
  * Un dégradé est lisse : dessiné au huitième et agrandi (filtrage
  * bilinéaire), il ne se distingue pas de l'original. Sur l'axe où il ne
  * varie pas (un voile vertical ne change pas de gauche à droite), il tient
- * en quatre pixels.
+ * en quatre pixels. Le dessin déborde d'un pixel de chaque côté, rogné :
+ * agrandi, son bord se fondait dans ce qu'il recouvre (la première ligne du
+ * reflet d'une carte, plus terne — mesuré).
  *
  * `width` × `height` : la surface couverte, connue (la scène, le cadre d'une
  * carte) ; posé en absolu dans son parent, comme un `absoluteFill`.
@@ -31,8 +33,15 @@ export const STAGE_SIZE = { width: 1920, height: 1080 } as const;
 
 /** Les pixels d'un axe le long duquel rien ne change. */
 const FLAT = 4;
+/** Le débord du dessin, en pixels, de chaque côté. */
+const MARGIN = 1;
 const DOWN = { x: 0.5, y: 0 };
 const BOTTOM = { x: 0.5, y: 1 };
+
+/** Une coordonnée relative de la surface, dans le dessin qui déborde. */
+function inDrawing(value: number, inner: number): number {
+  return (MARGIN + value * inner) / (inner + 2 * MARGIN);
+}
 
 export const SoftGradient = memo(function SoftGradient({
   width,
@@ -45,17 +54,22 @@ export const SoftGradient = memo(function SoftGradient({
 }: SoftGradientProps) {
   const w = start.x === end.x ? FLAT : Math.max(FLAT, Math.ceil(width * resolution));
   const h = start.y === end.y ? FLAT : Math.max(FLAT, Math.ceil(height * resolution));
+  const drawn = { width: w + 2 * MARGIN, height: h + 2 * MARGIN };
   const drawing = {
     position: "absolute" as const,
-    left: (width - w) / 2,
-    top: (height - h) / 2,
-    width: w,
-    height: h,
+    left: (width - drawn.width) / 2,
+    top: (height - drawn.height) / 2,
+    ...drawn,
     transform: [{ scaleX: width / w }, { scaleY: height / h }],
   };
   return (
-    <View pointerEvents="none" style={[{ position: "absolute", left: 0, top: 0, width, height }, style]}>
-      <LinearGradient {...gradient} start={start} end={end} style={drawing} />
+    <View pointerEvents="none" style={[{ position: "absolute", left: 0, top: 0, width, height, overflow: "hidden" }, style]}>
+      <LinearGradient
+        {...gradient}
+        start={{ x: inDrawing(start.x, w), y: inDrawing(start.y, h) }}
+        end={{ x: inDrawing(end.x, w), y: inDrawing(end.y, h) }}
+        style={drawing}
+      />
     </View>
   );
 });
