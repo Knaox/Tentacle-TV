@@ -31,6 +31,9 @@ const SAGA_STALE_MS = 10 * 60_000;
 const ITEMS_STALE_MS = 5 * 60_000;
 const ITEM_FIELDS = "Overview,PrimaryImageAspectRatio,ProviderIds,ParentId,MediaSources";
 
+/* Un chemin d'image TMDB (« /abc.jpg ») — la même garde que le serveur. */
+const POSTER_PATH = /^\/[A-Za-z0-9_-]{1,80}\.(jpg|jpeg|png|webp)$/i;
+
 /** La réponse du serveur, relue champ par champ : illisible, la rangée se tait. */
 export function readSagaResponse(raw: unknown, collectionId: number): SagaResponse | null {
   const body = raw as { saga?: unknown; members?: unknown } | null;
@@ -46,12 +49,14 @@ export function readSagaResponse(raw: unknown, collectionId: number): SagaRespon
     ? {
         collectionId,
         name: s.name,
-        parts: (s.parts as Array<{ tmdbId?: unknown; title?: unknown; releaseDate?: unknown }>)
+        parts: (s.parts as Array<{ tmdbId?: unknown; title?: unknown; releaseDate?: unknown; posterPath?: unknown }>)
           .filter((p) => typeof p?.tmdbId === "number" && typeof p.title === "string")
           .map((p) => ({
             tmdbId: p.tmdbId as number,
             title: p.title as string,
             releaseDate: typeof p.releaseDate === "string" ? p.releaseDate : null,
+            // L'affiche TMDB d'un volet : un chemin d'image, jamais une adresse.
+            posterPath: typeof p.posterPath === "string" && POSTER_PATH.test(p.posterPath) ? p.posterPath : null,
           })),
       }
     : null;

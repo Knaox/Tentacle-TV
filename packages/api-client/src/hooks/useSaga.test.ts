@@ -21,7 +21,7 @@ describe("readSagaResponse", () => {
     }, 1241);
     expect(res).toEqual({
       collectionId: 1241,
-      saga: { collectionId: 1241, name: "Harry Potter - Saga", parts: [{ tmdbId: 671, title: "HP 1", releaseDate: "2001-11-16" }] },
+      saga: { collectionId: 1241, name: "Harry Potter - Saga", parts: [{ tmdbId: 671, title: "HP 1", releaseDate: "2001-11-16", posterPath: null }] },
       members: [{ itemId: ID_A, tmdbId: 671 }, { itemId: ID_B, tmdbId: null }],
     });
   });
@@ -33,7 +33,23 @@ describe("readSagaResponse", () => {
     }, 7);
     expect(res).toEqual({ collectionId: 7, saga: null, members: [{ itemId: ID_A, tmdbId: null }] });
     const parts = readSagaResponse({ saga: { name: "S", parts: [{ tmdbId: "x", title: "?" }, { tmdbId: 2, title: "B" }] }, members: [] }, 7);
-    expect(parts?.saga?.parts).toEqual([{ tmdbId: 2, title: "B", releaseDate: null }]);
+    expect(parts?.saga?.parts).toEqual([{ tmdbId: 2, title: "B", releaseDate: null, posterPath: null }]);
+  });
+
+  it("garde l'affiche d'un volet, jamais une adresse ou un chemin qui sort", () => {
+    const res = readSagaResponse({
+      saga: {
+        name: "S",
+        parts: [
+          { tmdbId: 1, title: "A", posterPath: "/aBc-1_x.jpg" },
+          { tmdbId: 2, title: "B", posterPath: "https://ailleurs.example/x.jpg" },
+          { tmdbId: 3, title: "C", posterPath: "/../x.jpg" },
+          { tmdbId: 4, title: "D" },
+        ],
+      },
+      members: [],
+    }, 7);
+    expect(res?.saga?.parts.map((p) => p.posterPath)).toEqual(["/aBc-1_x.jpg", null, null, null]);
   });
 
   it("une réponse sans liste de films : rien", () => {
