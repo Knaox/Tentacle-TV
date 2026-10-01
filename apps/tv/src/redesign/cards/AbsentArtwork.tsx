@@ -23,9 +23,9 @@ import { GreyscaleImage } from "./GreyscaleImage";
  * camembert de la marque et son pour cent (`ProgressPie`).
  */
 
-/** Le voile : au repos, l'affiche recule ; au focus, elle se lit. */
-const VEIL_REST = 0.42;
-const VEIL_FOCUSED = 0.16;
+/** Le voile : au repos, l'affiche recule ; au focus, elle se lit. Sur un cadre
+ *  sans affiche, plus léger : le titre écrit doit se lire au repos. */
+const VEIL = { image: { rest: 0.42, focused: 0.16 }, lettered: { rest: 0.22, focused: 0 } };
 /** Le badge, au pied de l'image : la place de la note sur les autres cartes. */
 const BADGE_INSET = 12;
 /** Le camembert d'une demande en cours : son pour cent à 22 pt, le plancher de la scène. */
@@ -100,7 +100,8 @@ export const AbsentArtwork = memo(function AbsentArtwork({
   focused: boolean;
 }) {
   const p = useFocusProgress(focused);
-  const veil = useAnimatedStyle(() => ({ opacity: VEIL_REST + (VEIL_FOCUSED - VEIL_REST) * p.value }));
+  const { rest, focused: lit } = uri ? VEIL.image : VEIL.lettered;
+  const veil = useAnimatedStyle(() => ({ opacity: rest + (lit - rest) * p.value }));
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {uri ? <GreyscaleImage uri={uri} width={width} height={height} /> : <Lettered title={title} year={year} width={width} height={height} />}
@@ -126,7 +127,8 @@ const styles = StyleSheet.create({
     backgroundColor: scrim(0.72),
   },
   badgeText: { ...fonts.bold, fontSize: 22, lineHeight: 27, flexShrink: 1 },
-  lettered: { flex: 1, padding: 22, justifyContent: "space-between", paddingBottom: 64 },
+  // Le titre en haut, sous le pictogramme : le pied appartient au badge.
+  lettered: { flex: 1, padding: 22, gap: 16 },
   letteredText: { gap: 6 },
   letteredTitle: { ...fonts.bold, fontSize: 26, lineHeight: 31, color: white(0.78) },
   letteredYear: { ...fonts.medium, fontSize: 22, color: colors.textSecondary },

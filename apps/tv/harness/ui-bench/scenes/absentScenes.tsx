@@ -49,7 +49,7 @@ function SagaScene({ data, saga, notice }: { data: BenchData; saga: Saga; notice
   );
 }
 
-const SAGA_KEYS = ["saga:0", "saga:1", "saga:2", "saga:4"];
+const SAGA_KEYS = ["saga:0", "saga:1", "saga:2", "saga:3", "saga:4"];
 
 const sagaScene = (id: string, label: string, saga: Saga, focusKeys = SAGA_KEYS, notice?: () => NoticeModel): BenchScene => ({
   id: `absents/${id}`,
