@@ -6,9 +6,10 @@ import { useServerUrl } from "@/providers/ServerUrlContext";
 
 /**
  * Version serveur minimale exigée par cette version de l'app. Embarquée dans
- * `app.json → extra.minServer` (miroir de `versions.json → minServer`, patché
- * par la CI comme le numéro de version natif). Fallback très bas = jamais
- * d'alerte si la valeur manque.
+ * `app.json → extra.minServer`, miroir de `versions.json → minServer` tenu À
+ * LA MAIN : aucun workflow ne le recopie (il était resté à 1.19.0 quand
+ * `versions.json` exigeait déjà 1.22.0). Le changer avec `versions.json`.
+ * Fallback très bas = jamais d'alerte si la valeur manque.
  */
 const MIN_SERVER_VERSION: string =
   (Constants.expoConfig?.extra?.minServer as string | undefined) ?? "0.0.0";
