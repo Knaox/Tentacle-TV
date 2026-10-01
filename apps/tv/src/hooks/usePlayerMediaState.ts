@@ -7,8 +7,10 @@ import { useTVReloadHold } from "./useTVReloadHold";
  * gates, miroirs post-stream et points d'ancrage remplis plus tard (même pattern
  * qu'avant, seuls les propriétaires ont bougé). AUCUNE logique ici : uniquement de l'état.
  */
-export function usePlayerMediaState() {
-  const [paused, setPaused] = useState(false);
+export function usePlayerMediaState(startPaused = false) {
+  // `startPaused` : la relance à froid rouvre le lecteur EN PAUSE — personne
+  // n'est peut-être devant l'écran au démarrage de l'app.
+  const [paused, setPaused] = useState(startPaused);
   const [displayTime, setDisplayTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
   const displayTimeRef = useRef(0);

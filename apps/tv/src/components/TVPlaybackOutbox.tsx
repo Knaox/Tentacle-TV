@@ -1,25 +1,14 @@
 import { useEffect } from "react";
 import { AppState, InteractionManager } from "react-native";
 import {
-  configurePlaybackOutbox, flushPlaybackOutboxFor, onSocketStatus, useJellyfinClient,
-  type OutboxOwner, type StorageAdapter,
+  configurePlaybackOutbox, flushPlaybackOutboxFor, onSocketStatus, useJellyfinClient, type StorageAdapter,
 } from "@tentacle-tv/api-client";
+import { sessionOwnerOf } from "../auth/sessionOwner";
 import { useStoredToken } from "../hooks/useStoredToken";
 import { plog } from "../utils/playerDiag";
 
 /** Au retour au premier plan, le lecteur rouvre d'abord sa session : on la laisse passer. */
 const FOREGROUND_FLUSH_DELAY_MS = 1_500;
-
-/** Le compte et l'appareil de la session courante ; `null` sans session. */
-function ownerOf(storage: StorageAdapter, deviceId: string): OutboxOwner | null {
-  if (!storage.getItem("tentacle_token")) return null;
-  try {
-    const user = JSON.parse(storage.getItem("tentacle_user") ?? "null") as { Id?: string } | null;
-    return user?.Id ? { userId: user.Id, deviceId } : null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * La file PERSISTÉE des rapports de lecture, côté téléviseur (api-client,
@@ -33,14 +22,14 @@ export function TVPlaybackOutbox({ storage }: { storage: StorageAdapter }) {
   const token = useStoredToken(storage);
 
   useEffect(() => {
-    configurePlaybackOutbox(storage, () => ownerOf(storage, client.getDeviceId()));
+    configurePlaybackOutbox(storage, () => sessionOwnerOf(storage, client.getDeviceId()));
     return () => configurePlaybackOutbox(null, () => null);
   }, [storage, client]);
 
   useEffect(() => {
     if (!token) return;
     const flush = (why: string) => {
-      const owner = ownerOf(storage, client.getDeviceId());
+      const owner = sessionOwnerOf(storage, client.getDeviceId());
       if (!owner) return;
       void flushPlaybackOutboxFor(client, owner.userId).then((r) => {
         if (r.sent || r.dropped || r.kept) plog("outbox", `vidage (${why}) : ${r.sent} envoyé(s), ${r.dropped} jeté(s), ${r.kept} gardé(s)`);

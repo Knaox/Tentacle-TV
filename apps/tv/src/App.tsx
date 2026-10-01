@@ -33,6 +33,7 @@ import { TVSessionGuard } from "./components/TVSessionGuard";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
 import { TVSessionChannel } from "./components/TVSessionChannel";
 import { TVPlaybackOutbox } from "./components/TVPlaybackOutbox";
+import { TVColdStartLanding } from "./components/TVColdStartLanding";
 import { TVSessionMessageHost } from "./components/TVSessionMessageHost";
 import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
@@ -190,6 +191,7 @@ function AppContent() {
       <DirectStreamingSync storage={storage} />
       <TVSessionChannel storage={storage} />
       <TVPlaybackOutbox storage={storage} />
+      <TVColdStartLanding storage={storage} />
       <TVNavProvider>
           <NavigationContainer
             ref={navigationRef}

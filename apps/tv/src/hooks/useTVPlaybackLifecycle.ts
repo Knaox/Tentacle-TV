@@ -5,6 +5,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { useTVPlaybackPresence } from "./useTVPlaybackPresence";
+import { useTVPlaybackMarker } from "./useTVPlaybackMarker";
 import type { RestartOptions, RestartOutcome } from "./streamRestart";
 
 /**
@@ -12,6 +13,7 @@ import type { RestartOptions, RestartOutcome } from "./streamRestart";
  *  - rangement de sortie au démontage (règle partagée `useWatchStopInvalidation`)
  *  - présence de l'app (`useTVPlaybackPresence`) : pause et position à
  *    l'inactivité, arrêt à la sortie, reprise au retour
+ *  - marqueur de la relance à froid (`useTVPlaybackMarker`)
  *  - helpers `leavePlayer` et `handleFinished`
  *
  * Les refs `pausedStateRef` et `reportSeekRef` sont fournies par le caller pour
@@ -112,6 +114,7 @@ export function useTVPlaybackLifecycle(args: {
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
   }, [itemId, stopPromiseRef, positionRef, queryClient]);
 
+  useTVPlaybackMarker(itemId);
   useTVPlaybackPresence({
     positionRef, pausedStateRef, reportSeekRef, reportStartRef, reportStopRef,
     onPause: onBackground, onFocusPlay: onForeground,

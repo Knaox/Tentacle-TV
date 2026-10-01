@@ -71,7 +71,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   } = useTVPanelControls({ backgroundRef, recoverySuppressedRef: eofActiveRef });
 
   // Bus d'état partagé (positions, gates, refs miroir) + pipeline de flux.
-  const s = usePlayerMediaState();
+  const s = usePlayerMediaState(route.params.startPaused);
   const p = usePlayerStreamPipeline({ itemId, item, ancestors, refs: { exoRef, mpvRef }, s });
   const {
     paused, setPaused, displayTime, setDisplayTime, bufferedTime, setBufferedTime,
