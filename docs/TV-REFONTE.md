@@ -780,8 +780,8 @@ lecture, et l'on ne savait pas quand le défilement se fermerait.
   qu'un glisser défile, comptées depuis le début du glisser (tvOS ne signale
   pas un doigt posé immobile), sans rattraper la course d'avant ni
   d'exception pour un geste franc ; un toucher plus bref réveille
-  l'habillage. Habillage AFFICHÉ (ou pause) : inchangé — 60 points, 180 ms ou
-  geste franc. Défilement déjà ouvert : le doigt reprend dès 12 points
+  l'habillage. Habillage AFFICHÉ : inchangé — 60 points, 180 ms ou geste
+  franc ; en pause, l'habillage masqué par Retour compte pour caché. Défilement déjà ouvert : le doigt reprend dès 12 points
   (`canEngage`, régime lu par `readTouchMode`).
 - **Le décompte** (`hooks/scrubCountdown.ts`, pur ; `useScrubCountdown`) :
   - glisser au pavé, ENTRÉ EN LECTURE : doigt levé ou immobile 450 ms, la

@@ -181,11 +181,13 @@ export function useTVPlayerControls({
   }, [showOverlay, scrubbingRef, endDrag]);
 
   /** Le régime d'un glisser qui commence : habillage caché, il attend un
-   *  contact tenu avant de défiler (`scrubTouchTuning.ts`). La pause épingle
-   *  l'habillage : elle compte pour affichée. */
+   *  contact tenu avant de défiler (`scrubTouchTuning.ts`). L'habillage tel
+   *  qu'il est À L'ÉCRAN : la pause l'allume (`showOverlay`), mais Retour peut
+   *  le masquer en pause aussi (pile du Retour d'Apple TV) — la pause seule
+   *  ne compte pas pour affichée. */
   const readTouchMode = useCallback((): TouchMode => {
     if (scrubbingRef.current) return "open";
-    return overlayVisibleRef.current || pausedRef.current ? "shown" : "hidden";
+    return overlayVisibleRef.current ? "shown" : "hidden";
   }, [scrubbingRef]);
 
   // --- Défilement au pavé tactile (Apple TV ; rien sur Android TV, sans pavé) :

@@ -48,7 +48,7 @@ export const FLICK_PX = 180;
 export const OPEN_ENGAGE_PX = 12;
 
 /** Le régime d'un glisser, lu quand le doigt se pose : défilement déjà
- *  ouvert, habillage affiché (ou pause), habillage caché. */
+ *  ouvert, habillage affiché (à l'écran, pause ou non), habillage caché. */
 export type TouchMode = "open" | "shown" | "hidden";
 
 /** Le glisser engage-t-il le défilement ? `dx`, `dy` : sa course depuis la

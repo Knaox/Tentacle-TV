@@ -35,7 +35,7 @@ const FLUSH_MS = 33;
  *
  * Trois régimes, lus quand le doigt se pose (`readTouchMode`, `canEngage`) :
  * habillage CACHÉ, le glisser ne défile qu'après un contact tenu — un
- * frôlement ne bouge jamais la lecture ; habillage AFFICHÉ (ou pause),
+ * frôlement ne bouge jamais la lecture ; habillage AFFICHÉ,
  * aussitôt passée la zone morte ; défilement déjà OUVERT, le doigt revient
  * viser et reprend au premier pas.
  *
