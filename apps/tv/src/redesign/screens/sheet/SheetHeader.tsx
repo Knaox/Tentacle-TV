@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { RoundButton } from "../../controls/RoundButton";
+import { FocusGroup } from "../../focus/FocusGroup";
 import { colors, fonts, white } from "../../theme/tokens";
 import type { SheetHeaderModel } from "./sheetTypes";
 
@@ -9,6 +10,10 @@ import type { SheetHeaderModel } from "./sheetTypes";
  * L'en-tête : l'image de la carte — sa forme, affiche ou vignette —, son
  * titre et sa ligne de contexte, ce que le voile vient de recouvrir ; puis la
  * croix, la sortie visible (Retour ferme aussi).
+ *
+ * Focus (câblage) : groupe `sheet:header`, sur TOUTE la largeur du panneau —
+ * la croix, au bout à droite, n'est au-dessus d'aucun cran ni d'aucun picto ;
+ * le groupe, si. Croix : `sheet:close`.
  */
 
 const ART = { poster: { width: 104, height: 156 }, landscape: { width: 224, height: 126 } };
@@ -23,7 +28,7 @@ export const SheetHeader = memo(function SheetHeader({
   const { t } = useTranslation("common");
   const art = ART[header.shape];
   return (
-    <View style={styles.header}>
+    <FocusGroup focusKey="sheet:header" style={styles.header}>
       <View style={[styles.art, art]}>
         {header.imageUri ? (
           <Image source={{ uri: header.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
@@ -34,7 +39,7 @@ export const SheetHeader = memo(function SheetHeader({
         {header.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{header.subtitle}</Text> : null}
       </View>
       <RoundButton icon="close" label={t("close")} size={60} focusKey="sheet:close" onPress={onClose} />
-    </View>
+    </FocusGroup>
   );
 });
 

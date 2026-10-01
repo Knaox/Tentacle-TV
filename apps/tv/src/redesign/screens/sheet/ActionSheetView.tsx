@@ -48,10 +48,12 @@ export { RATING_ENTRY, SCALE_FOCUS_KEYS, scaleFocusKey } from "./ratingScaleKeys
  *
  * Focus (câblage) : ENTRÉE sur l'échelle, à la note posée, sinon à 5/10
  * (`RATING_ENTRY`) — sans échelle, sur le premier picto ; le focus est piégé
- * dans le panneau ; Menu ferme. Le panneau s'ouvre sous un OK encore enfoncé :
+ * dans le panneau ; Menu ferme. HAUT depuis l'échelle atteint la croix, BAS
+ * l'en ramène au cran retenu. Le panneau s'ouvre sous un OK encore enfoncé :
  * la garde anti-clic fantôme couvre l'échelle, les pictos et la croix.
- * Clés : `sheet:scale` et `sheet:scale:<1…10|remove>` ; `sheet:actions` et
- * `sheet:action:<kind>` ; `sheet:close`.
+ * Clés : `sheet:header` et `sheet:close` ; `sheet:scale` et
+ * `sheet:scale:<1…10|remove>` ; `sheet:actions` et `sheet:action:<kind>`.
+ * Les trois groupes couvrent la largeur du panneau.
  */
 
 export interface ActionSheetViewProps {

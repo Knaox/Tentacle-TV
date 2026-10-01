@@ -20,9 +20,23 @@ import { useChoiceEntry } from "../settings/settingsFocus";
  *   sinon sur 5/10 (`RATING_ENTRY`) ; sans note à poser, le premier picto.
  *   Dans une `Modal`, aucune préférence de focus n'est honorée : les autres
  *   cibles restent infocalisables jusqu'au premier focus (`useChoiceEntry`).
- * - Les GROUPES ont un guide d'entrée : HAUT depuis un picto revient sur la
- *   note posée (sinon 5), pas sur le cran qui se trouve au-dessus ; BAS depuis
- *   l'échelle entre dans les pictos par la lecture, puis par le dernier visité.
+ * - Les GROUPES ont un guide d'entrée, sur toute la largeur du panneau :
+ *   rien n'y est aligné d'une rangée à l'autre (la croix au bout à droite, le
+ *   cran visé au milieu, les pictos centrés), et le moteur de focus de tvOS ne
+ *   vise que ce qui CHEVAUCHE l'élément qu'on quitte — mesuré au banc : HAUT
+ *   depuis l'échelle n'atteignait pas la croix. Le guide reçoit le geste et
+ *   le rend à son entrée :
+ *   - `sheet:header` → la croix : HAUT depuis l'échelle, et depuis les pictos
+ *     PAR l'échelle (sans échelle, directement) ;
+ *   - `sheet:scale` → le cran RETENU, la note posée, sinon 5 — HAUT depuis un
+ *     picto, BAS depuis la croix —, jamais le cran qui se trouve sur le
+ *     chemin ;
+ *   - `sheet:actions` → la lecture, puis le dernier picto visité : BAS depuis
+ *     l'échelle (ou depuis la croix, sans échelle).
+ *   La croix n'a de destination qu'une fois l'entrée posée : tant que le
+ *   verrou la tient infocalisable, un guide qui la viserait serait, tout en
+ *   haut du panneau, une cible sans issue — là où tvOS cherche l'entrée d'une
+ *   `Modal`.
  * - La garde anti-clic fantôme couvre l'échelle, les pictos et la croix : le
  *   panneau s'ouvre sous un OK encore enfoncé (l'appui long), dont le
  *   relâchement ne doit rien valider — surtout pas une note.
@@ -54,7 +68,7 @@ export interface SheetFocusInput {
 /** Le port du focus du panneau, à poser par `FocusBindingProvider` autour de la vue. */
 export function useSheetFocus(focus: FocusStore, { rating, actions, entry }: SheetFocusInput): FocusBinder {
   const releases = useChoiceEntry(focus, [...SCALE_FOCUS_KEYS, ...actions.map((a) => sheetActionKey(a.kind)), SHEET_CLOSE_KEY], entry);
-  useGroupGuides(focus, rating, actions);
+  useGroupGuides(focus, { rating, actions, entered: releases > 0 });
 
   // Une identité neuve à chaque libération du verrou : les éléments relisent leur liaison.
   return useCallback(
@@ -67,15 +81,31 @@ export function useSheetFocus(focus: FocusStore, { rating, actions, entry }: She
   );
 }
 
+interface GuideState {
+  rating: SheetRatingModel | null | undefined;
+  actions: SheetActionModel[];
+  /** Le verrou d'entrée est levé : toutes les cibles sont focalisables. */
+  entered: boolean;
+}
+
 /**
  * Les guides d'entrée des groupes, liés AVANT leur premier rendu (le port
  * l'exige) et une seule fois ; ce qui varie — la note posée, le premier
- * picto — se lit au moment de viser.
+ * picto, le verrou levé — se lit au moment de viser. Un guide vise de
+ * nouveau après chaque rendu : la levée du verrou redessine le panneau
+ * (nouveau `bind`), et la croix devient alors une destination.
  */
-function useGroupGuides(focus: FocusStore, rating: SheetRatingModel | null | undefined, actions: SheetActionModel[]): void {
-  const latest = useRef({ rating, actions });
-  latest.current = { rating, actions };
+function useGroupGuides(focus: FocusStore, state: GuideState): void {
+  const latest = useRef(state);
+  latest.current = state;
   useState(() => {
+    focus.bind("sheet:header", {
+      container: createEntryGuide(focus, {
+        owns: (key) => key === SHEET_CLOSE_KEY,
+        fallback: () => (latest.current.entered ? SHEET_CLOSE_KEY : null),
+        remember: false,
+      }),
+    });
     focus.bind("sheet:scale", {
       container: createEntryGuide(focus, {
         owns: (key) => key.startsWith("sheet:scale:"),
@@ -93,6 +123,7 @@ function useGroupGuides(focus: FocusStore, rating: SheetRatingModel | null | und
   });
   useEffect(
     () => () => {
+      focus.bind("sheet:header", null);
       focus.bind("sheet:scale", null);
       focus.bind("sheet:actions", null);
     },
