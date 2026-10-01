@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { useResilientImage } from "@/hooks/useResilientImage";
 import { useResponsive, useTheme, useThemedStyles } from "@/theme";
 import { WatchedGlyph } from "./cards/cardGlyphs";
 import { CascadeGroup } from "./hero/CascadeGroup";
@@ -42,8 +43,10 @@ export function HeroContent({ item, active = true, onPlay, onInfo }: HeroContent
   const { isTablet } = useResponsive();
   const isEpisode = item.Type === "Episode";
   // Le logo que la donnée annonce (celui de la série pour un épisode, avec SON
-  // tag), sinon le titre écrit.
-  const logoUrl = heroLogoUrl(client, item);
+  // tag), sinon le titre écrit — qui reprend aussi la place d'un logo annoncé
+  // en échec : expo-image, lui, ne laisserait qu'un vide. L'échec suit
+  // l'adresse : une autre adresse repart avec ses chances intactes.
+  const logo = useResilientImage(heroLogoUrl(client, item));
   const displayName = isEpisode ? (item.SeriesName ?? item.Name) : item.Name;
   const episodeLabel = isEpisode
     ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber ?? 1).padStart(2, "0")} · ${item.Name}`
@@ -75,8 +78,8 @@ export function HeroContent({ item, active = true, onPlay, onInfo }: HeroContent
         </View>
       )}
 
-      {logoUrl ? (
-        <Image source={{ uri: logoUrl }} style={[st.logo, isTablet && { width: 380, height: 124, marginBottom: 18 }]} contentFit="contain" />
+      {logo.uri ? (
+        <Image source={{ uri: logo.uri }} style={[st.logo, isTablet && { width: 380, height: 124, marginBottom: 18 }]} contentFit="contain" onError={logo.onError} />
       ) : (
         <Text style={[st.title, isTablet && { fontSize: 46, lineHeight: 52, marginBottom: 18 }]} numberOfLines={3} maxFontSizeMultiplier={1.15}>{displayName}</Text>
       )}
