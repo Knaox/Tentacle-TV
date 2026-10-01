@@ -13,6 +13,7 @@ import { useTVStreamUrl } from "./useTVStreamUrl";
 import { useTVTrackResolution } from "./useTVTrackResolution";
 import { useTVMpvTracks } from "./useTVMpvTracks";
 import { useTVSeekControl } from "./useTVSeekControl";
+import { useStreamRestart } from "./useStreamRestart";
 import type { PlayerMediaState } from "./usePlayerMediaState";
 import { prismBitmapRenditionIndex } from "../utils/prismSubtitleMatch";
 import { videoFrameRate } from "../utils/playerHelpers";
@@ -43,7 +44,7 @@ export function usePlayerStreamPipeline(args: {
     setDisplayTime, setVideoError,
     isDirectPlayRef, isPrismCoreRef, mpvTrackMapRef, subtitleTrackMapRef,
     notifySeekRef, setAudioIndexRef, setSubtitleIndexRef,
-    resetPrefsAppliedRef,
+    resetPrefsAppliedRef, holdForReload, setIsLoading, resetLoadedRef,
   } = s;
 
   const mediaSource = item?.MediaSources?.[0];
@@ -128,13 +129,18 @@ export function usePlayerStreamPipeline(args: {
   // fiche — deux pour le même appareil sur un AV1, qui calait. Une fiche en
   // échec relâche la garde : le flux tente sa chance, comme avant.
   const itemFailed = useMediaItem(itemId).isError;
-  const { streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed } = useTVStreamUrl({
+  const { streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed, restart } = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
     forceTranscode, isTranscodingQuality: transcodingQuality,
     maxBitrate: effectiveMaxBitrate, maxHeight: effectiveMaxHeight,
     isDirectPlay: requestedDirectPlay,
     reloadNonce, ready: !!item || itemFailed,
+  });
+  // La relance du flux à une position, même forme, en rechargement doux —
+  // retour au premier plan, reprise après coupure (contrat : `streamRestart.ts`).
+  const restartStream = useStreamRestart({
+    restart, positionRef, softReloadRef, setReloadFrameSec, holdForReload, setIsLoading, resetLoadedRef, notifySeekRef,
   });
 
   // Synchronisation des refs miroir lues par les handlers/callbacks.
@@ -255,6 +261,7 @@ export function usePlayerStreamPipeline(args: {
     useExoPlayer, playerRef, isDirectStream,
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
     startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, prismTextTrackIndex, failed, retryMuxed, onMasterRejected,
+    restartStream,
     reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef,
     mpvTracks, handleSeek,
   };

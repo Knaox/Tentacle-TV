@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
+import { BURN_IN_SUBTITLE_CODECS, TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
 import type { PrismStart } from "../utils/prismCoreStart";
+import { withRestartMark, type RestartOutcome } from "./streamRestart";
 
 /**
  * Construit l'URL Jellyfin selon le mode de lecture :
@@ -59,32 +60,47 @@ export function useTVStreamUrl(args: {
     ? subtitleIndex
     : undefined;
 
+  // Relance (contrat : `streamRestart.ts`) : l'URL se reconstruit aussitôt, à la
+  // position demandée — nouveau playSessionId en transcodage, URL marquée en
+  // lecture directe (le natif ne recharge pas une URL inchangée). Elle vaut tant
+  // que `startTicks` n'a pas bougé : un reload de piste ou de qualité reprend la main.
+  const [restarted, setRestarted] = useState<{ mark: number; at: number; baseTicks: number } | null>(null);
+  const restartAt = restarted && restarted.baseTicks === startTicks ? restarted : null;
+  const restart = (at: number): Promise<RestartOutcome> => {
+    if (!itemId || !ready) return Promise.resolve("failed");
+    setRestarted((r) => ({ mark: (r?.mark ?? 0) + 1, at, baseTicks: startTicks }));
+    return Promise.resolve("ok");
+  };
+
   const playSessionId = useMemo(() => {
     if (isDirectPlay) return undefined;
     return randomSessionId();
-  }, [audioIndex, burnInIndex, startTicks, isDirectPlay, forceTranscode, isTranscodingQuality]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [audioIndex, burnInIndex, startTicks, isDirectPlay, forceTranscode, isTranscodingQuality, restartAt?.mark]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {
     if (!itemId || !ready) return null;
     // Fragment de position de départ — jamais envoyé en HTTP, lu par le natif
-    const startFragment = startSeconds && startSeconds > 1 ? `#tnt-start=${Math.floor(startSeconds)}` : "";
+    const from = restartAt ? restartAt.at : (startSeconds ?? 0);
+    const startFragment = from > 1 ? `#tnt-start=${Math.floor(from)}` : "";
+    const fromTicks = restartAt ? Math.floor(restartAt.at * TICKS_PER_SECOND) : startTicks;
+    const mark = (url: string) => withRestartMark(url, restartAt?.mark ?? 0) + startFragment;
     if (isTranscodingQuality) {
-      return client.getStreamUrl(itemId, {
+      return mark(client.getStreamUrl(itemId, {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false,
         maxBitrate, maxHeight,
-        startTimeTicks: startTicks > 0 ? startTicks : undefined, playSessionId,
-      }) + startFragment;
+        startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
+      }));
     }
     if (forceTranscode) {
-      return client.getStreamUrl(itemId, {
+      return mark(client.getStreamUrl(itemId, {
         mediaSourceId, audioIndex, subtitleStreamIndex: burnInIndex, directPlay: false, maxBitrate: 8_000_000,
-        startTimeTicks: startTicks > 0 ? startTicks : undefined, playSessionId,
-      }) + startFragment;
+        startTimeTicks: fromTicks > 0 ? fromTicks : undefined, playSessionId,
+      }));
     }
-    return client.getStreamUrl(itemId, {
+    return mark(client.getStreamUrl(itemId, {
       mediaSourceId, directPlay: true, playSessionId, sourceVideoCodec,
-    }) + startFragment;
-  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, reloadNonce, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+    }));
+  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, reloadNonce, ready, restartAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // `isDirectPlay` est renvoyé tel quel (décidé côté client sur Android) pour
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
@@ -94,5 +110,5 @@ export function useTVStreamUrl(args: {
   // et le type de retour perdrait les champs de `PrismStart` pour les consommateurs.)
   const prism = undefined as PrismStart | undefined;
   const retryMuxed = async (_positionSec: number): Promise<boolean> => false;
-  return { streamUrl, playSessionId, isDirectPlay, isPrismCore: false, prism, failed: false, retryMuxed };
+  return { streamUrl, playSessionId, isDirectPlay, isPrismCore: false, prism, failed: false, retryMuxed, restart };
 }
