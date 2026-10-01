@@ -27,6 +27,9 @@ export interface FilterSheetProps {
   /** Largeur du panneau ; la hauteur suit le contenu. */
   width: number;
   applyLabel: string;
+  /** La pilule qui valide : blanche (un filtre), ou au dégradé de la marque
+   *  quand elle FAIT quelque chose (« Demander »). */
+  applyVariant?: "primary" | "brand";
   clearLabel?: string;
   onApply?: () => void;
   onClear?: () => void;
@@ -38,6 +41,7 @@ export const FilterSheet = memo(function FilterSheet({
   subtitle,
   width,
   applyLabel,
+  applyVariant = "primary",
   clearLabel,
   onApply,
   onClear,
@@ -76,7 +80,7 @@ export const FilterSheet = memo(function FilterSheet({
               ) : (
                 <View />
               )}
-              <PillButton variant="primary" size="md" icon="check" label={applyLabel} focusKey="sheet:apply" onPress={onApply} />
+              <PillButton variant={applyVariant} size="md" icon="check" label={applyLabel} focusKey="sheet:apply" onPress={onApply} />
             </FocusGroup>
           </GlassSurface>
         </Animated.View>
