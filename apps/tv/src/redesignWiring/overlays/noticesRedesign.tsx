@@ -1,14 +1,16 @@
 import { useMemo } from "react";
 import { EXPIRED_BANNER_BOTTOM, ExpiredPairingBanner } from "../../redesign/screens/overlays/ExpiredPairingBanner";
+import { NoticeToast } from "../../redesign/screens/overlays/NoticeToast";
 import { SessionMessages, type SessionMessageModel } from "../../redesign/screens/overlays/SessionMessages";
 import { usePairingExpired } from "../../hooks/usePairingExpired";
 import { useSessionMessages } from "../../hooks/useSessionMessages";
+import { useTransientNotice } from "./transientNotice";
 
 /**
- * Les deux surimpressions qui informent sans jamais prendre le focus
- * (Apple TV) : le bandeau « jumelage expiré » et les messages de
- * l'administrateur. La logique est commune aux deux téléviseurs
- * (`usePairingExpired`, `useSessionMessages`) ; ici, le rendu de la refonte.
+ * Les surimpressions qui informent sans jamais prendre le focus (Apple TV) :
+ * le bandeau « jumelage expiré », les messages de l'administrateur — logique
+ * commune aux deux téléviseurs (`usePairingExpired`, `useSessionMessages`) —
+ * et les avis brefs de l'app (`showNotice`). Ici, le rendu de la refonte.
  */
 
 export function ExpiredPairingRedesign() {
@@ -36,4 +38,11 @@ export function SessionMessagesRedesign() {
     [messages],
   );
   return <SessionMessages messages={models} top={expired ? EXPIRED_BANNER_BOTTOM + STACK_GAP : undefined} />;
+}
+
+/** L'avis bref du moment (`showNotice`) — sous le bandeau du jumelage expiré s'il est là. */
+export function TransientNoticeRedesign() {
+  const notice = useTransientNotice();
+  const expired = usePairingExpired();
+  return <NoticeToast notice={notice} top={expired ? EXPIRED_BANNER_BOTTOM + STACK_GAP : undefined} />;
 }
