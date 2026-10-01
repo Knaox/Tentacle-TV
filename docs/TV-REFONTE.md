@@ -18,6 +18,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 6. Écrans | **Tous faits** (2026-09-30) : jumelage, accueil, fiche, bibliothèque, Ma liste / Favoris, recherche, parcourir, Pour vous, réglages, lecteur, feuille d'actions, bande-annonce, surimpressions — 184 scènes au banc. |
 | 7. Branchement | En cours, écran par écran. Le socle est posé (`apps/tv/src/redesignWiring/`, ci-dessous) : aiguillage, magasin de focus, cadre des écrans avec navigation, modèles de carte et de héros, Inter dans l'app tvOS. Branchés sur Apple TV : jumelage (conditions d'utilisation retirées), réglages, surimpressions (démarrage, hors ligne, jumelage expiré, messages, erreur et chargement d'un écran), fiche, bande-annonce, feuille d'actions, lecteur, accueil, navigation, « Pour vous », bibliothèques, Ma liste, Favoris, Parcourir et recherche. |
 | 8. Mouvement (Apple TV) | Fait (2026-10-01) : jetons `TV_MOTION`, module `redesign/motion/`, mesuré au banc — « Le mouvement (Apple TV) » ci-dessous. |
+| 9. Pavé tactile (Apple TV) | Fait (2026-10-01) : parallaxe au pouce, héros qui tourne seul et à la main — « Le pavé tactile (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -596,9 +597,96 @@ Pistes :
   GPU en moins ; une ombre en image étirable les remplacerait.
 - Le halo de la meilleure réponse de la recherche (`SearchTopHit`) se
   redessine (Core Image) à chaque changement de meilleure réponse.
-- Parallaxe native : une carte pose sa cible focalisable AU-DESSUS de son
-  image (sœur) — `tvParallaxProperties` ne déplacerait que la cible,
-  invisible. Les boutons ont celle d'`RCTTVView` par défaut.
+- ~~Parallaxe native~~ — faite : « Le pavé tactile (Apple TV) », ci-dessous.
+
+## Le pavé tactile (Apple TV)
+
+Branche `refonte/tv-pave-tactile`. Ce que la Siri Remote fait déjà d'elle-même,
+et ce que la refonte y ajoute — Apple TV seulement.
+
+- **Ce que tvOS fait seul** : le moteur de focus suit les glissers du pavé,
+  avec élan, partout — rangées, grilles, navigation, réglages, clavier,
+  saisons et épisodes, et l'échelle de note (chaque cran est focalisable :
+  glisser y règle déjà la note). Rien n'y est ajouté.
+- **La parallaxe au pouce** : posé ou glissé, le doigt incline et décale
+  l'élément focalisé, comme dans les apps d'Apple. Ce sont des effets de
+  mouvement natifs, que React Native tvOS pose sur la vue FOCALISÉE et que le
+  moteur de focus pilote d'après le doigt : rien ne passe par le JS, rien ne
+  se redessine. La vue décrit la FORME de ses cibles (`FocusTarget form`,
+  facultative) ; le magasin du focus la traduit en `tvParallaxProperties`
+  (`redesignWiring/remote/parallax.ts`, jetons `TV_MOTION.parallax`) :
+
+| Forme | Où | Effet |
+|---|---|---|
+| `card` | affiches, vignettes, épisodes, casting, extras, volets d'une saga, personnes | 6 pt et 0,07 rad au bord du pavé |
+| `row` | navigation, onglets et lignes des réglages, listes de choix, options des filtres, suggestions et champ de la recherche, meilleur résultat, champ du jumelage | 3 pt, sans inclinaison (à 1 000 pt de large, 0,05 rad tordait les bords de ±5 %) |
+| sans forme | boutons, pastilles, ronds, touches, crans | le défaut de React Native : 2 pt, 0,05 rad |
+
+  Jamais d'agrandissement natif (`magnification` à 1 : le focus et l'appui
+  s'animent par Reanimated) ; « Réduire les animations » : aucune parallaxe.
+  **Une carte rend son image DANS sa cible** (`redesign/cards/CardShell`) :
+  la cible couvre image ET légende — rien ne la recouvre, tvOS amène toujours
+  la carte entière à l'écran —, la légende est dessinée avant elle, dessous,
+  hors de son sous-arbre : seule l'image suit le pouce, le texte ne
+  s'incline jamais.
+- **Le héros tourne seul**, en fondu, toutes les 8 s — même focalisé : les
+  boutons ne se remontent pas, le focus ne bouge pas (`useHeroRotation`). Le
+  minuteur repart à zéro à chaque geste (appui, glisser, pan, pas du focus) ;
+  un appui maintenu sur OK le suspend ; rien ne tourne quand le héros n'est
+  pas affiché (page qui n'est pas devant, héros défilé à plus de moitié —
+  `HomeView` le dit —, application inactive) ; mouvement réduit : 16 s, sans
+  fondu. **Et on le tourne à la main** : DROITE au-delà du dernier bouton —
+  clic sur le bord du pavé ou glisser, là où le focus ne va nulle part, vers
+  les points de la rotation — passe au titre suivant, en boucle
+  (`remote/useBeyondEdge`). Le geste qui AMÈNE le focus sur le bord ne compte
+  pas : le moteur de focus déplace le focus à l'enfoncement et l'appui ne
+  s'annonce qu'au relâchement (~60 ms après) ; un glisser, à sa fin. Le focus
+  doit tenir le bord depuis 400 ms.
+- **Le module commun** : `redesignWiring/remote/remoteEvents.ts` — UN
+  abonnement à `TVEventHandler`, traduit en événements typés (`press` avec
+  sa phase, `swipe`, `pan`) ; `lib/tvPanGesture.ts` — le pan continu à
+  compteur (`acquirePanGesture`, `usePanGesture`), pour le lecteur ;
+  `remote/useBeyondEdge.ts`.
+- **Écarté** : le pan continu hors du lecteur — `enableTVPanGesture` pose UN
+  reconnaisseur sur la vue racine, pour toute l'app, et coupe les glissers
+  directionnels tant qu'il est posé (constat du lecteur) ; l'échelle de note
+  au pan (le natif le fait, un pan casserait HAUT et BAS vers les pictos) ;
+  l'index de lettres des très grandes bibliothèques, façon tvOS (une
+  fonctionnalité, proposée à part).
+
+Éprouvé au simulateur (app réelle, compte Knaoxtest, agent XCUITest) :
+
+- toutes les cartes restent atteignables, rendu au repos inchangé : accueil
+  (Reprendre en 16:9, affiches), Ma liste, bibliothèque Films, recherche
+  (meilleur résultat, personnes, films, séries), fiche d'une série (saisons,
+  épisodes, casting, extras, similaires), saga avec un volet hors
+  bibliothèque ;
+- effets natifs relus par LLDB sur la vue focalisée (`[[UIScreen
+  mainScreen] focusedView].motionEffects`) : affiche — centre ±6, inclinaison
+  0,07 ; onglet des réglages — ±3, inclinaison nulle ;
+- l'inclinaison du bord du pavé posée à la main (même transformée) : l'image
+  tourne, la légende reste droite ; un bouton de verre focalisé (blanc) se
+  rend net incliné ;
+- banc UI (la nouvelle ossature des cartes ; le banc n'a pas de port du
+  focus, donc pas de parallaxe), JS de production, focus natif balayé toutes
+  les 150 ms, Mac chargé par d'autres sessions (charge 20 à 40) : accueil et
+  grille Films à 60 i/s sur le fil d'interface, 0 image perdue en quatre
+  mesures (avant, même charge : 59,1 à 59,9 i/s, 1 à 7 perdues) — la
+  parallaxe elle-même se joue dans Core Animation, hors des deux fils ;
+- héros, titres relevés toutes les 200 ms : un titre toutes les 8 s au repos
+  focus sur « Reprendre » ; aucun pendant 15 s de HAUT toutes les 3 s, ni
+  pendant 11 s d'OK maintenu, ni héros défilé hors champ ; DROITE au-delà du
+  bord : le suivant aussitôt, puis 8 s plus tard.
+
+**Ce que le simulateur ne sait pas montrer** : un doigt sur le pavé.
+`XCUIRemote` n'a que des appuis ; un chemin de pointeur synthétisé par XCTest
+(`XCPointerEventPath`, accepté) n'atteint jamais la Siri Remote. La parallaxe
+a donc été relue et posée, pas jouée au doigt. À éprouver sur l'Apple TV
+(tâche de l'utilisateur) : l'amplitude ressentie (6 pt / 0,07 rad), le
+glisser sur l'échelle de note et dans une longue grille, le héros tourné par
+un glisser, et le pan du lecteur qui couperait les glissers directionnels.
+À la main au simulateur : Window › Show Apple TV Remote, glisser sur sa
+surface.
 
 ---
 
@@ -911,6 +999,16 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
 - **La Siri Remote n'émet pas `longLeft`** (ni la fin d'un appui maintenu sur
   une flèche) : un raccourci déclenché par une flèche se garde au rythme du
   focus (`RailShortcuts`).
+- **Un appui MAINTENU sur OK d'un bouton sans `onLongPress`** (les pilules du
+  héros) déclenche son `onPress` au relâchement — « Reprendre » lance la
+  lecture. Comportement de React Native tvOS, constaté en éprouvant la
+  rotation du héros.
+- **Pas de doigt synthétique sur tvOS** : `XCUIRemote` n'a que des appuis, et
+  un chemin de pointeur d'XCTest (`XCPointerEventPath`, via
+  `eventSynthesizer`, complétion `(BOOL, NSError)`) est accepté sans jamais
+  atteindre la Siri Remote. LLDB, lui, s'attache à l'app du simulateur sans
+  mot de passe : `[[UIScreen mainScreen] focusedView]` et ses
+  `motionEffects` se relisent.
 - **AVPlayer attend sans fin un flux qui ne répond pas** : mesuré au
   simulateur, plus d'une minute et demie de chargement, aucune erreur. Toute
   lecture qui n'est pas celle du lecteur principal se borne elle-même (chien
