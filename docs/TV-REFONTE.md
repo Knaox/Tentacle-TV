@@ -395,7 +395,28 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
 - **Bande-annonce** : le lecteur est monté dès le chargement (la vue ne le
   montait qu'en lecture : il ne pouvait pas charger), et le chrome suit
   `chromeDimmed` seul — « Fermer », seul focalisable, garde le focus : le
-  câblage rallume au moindre geste.
+  câblage rallume au moindre geste, appui ou glisser sur le pavé
+  (`useRemoteEvents`).
+- **La bande-annonce finit toujours** (branche `refonte/tv-bande-annonce`,
+  2026-10-01, après « les bandes-annonces ne se lancent pas ») : par sa
+  première image, sa fin, ou « indisponible » — jamais un chargement sans
+  fin ni une image figée sans rien dire. Le lecteur tvOS
+  (`screens/trailer/TrailerWebView.ios.tsx`) borne la résolution à 45 s
+  (`resolveTrailerStream`) ; son chien de garde (`useTrailerPlaybackWatch`)
+  ne dit « lecture » qu'à la première image (`onReadyForDisplay`), conclut à
+  l'échec sans image en 20 s ou sans progrès pendant 15 s (à la fin si l'on
+  est au bout), montre une roue sur la dernière image au bout d'une seconde
+  sans progrès (`waiting`), et se suspend en arrière-plan. La raison d'un
+  échec part dans les traces de dev (`[TVDIAG] [trailer]`).
+- **Pourquoi elles ne se lançaient pas** : YouTube, pas l'app. Mesuré le
+  2026-10-01 avec le yt-dlp du Mac (Homebrew 2026.06.09, hors de la mise à
+  jour automatique qui ne tourne qu'en production) : le client `web_safari`
+  est forcé en « SABR » (aucune HLS) le plus souvent, et le repli MP4 360p
+  (format 18, client `ANDROID_VR`) répond 403 à toute plage qui dépasse son
+  premier mégaoctet — yt-dlp lui-même ne peut pas le télécharger. Quand la
+  HLS vient (une fois sur plusieurs), la vraie bande-annonce se lit,
+  s'estompe et se ferme. Le serveur ne déclare plus lisible ce MP4 coupé : il
+  sonde comme AVPlayer, par une plage ouverte (`isReadable`).
 
 ## Branchement — bibliothèques, Ma liste, Favoris, Parcourir, recherche (Apple TV)
 
@@ -701,8 +722,9 @@ Automate en 5 étapes, toutes gardées :
 
 ### 10. Bande-annonce (`Trailer`)
 
-Lecture, chargement (nom), indisponible, bouton Fermer (s'estompe après
-3 s, revient au focus).
+Lecture, chargement (nom), indisponible, attente du réseau (une roue sur la
+dernière image), bouton Fermer (s'estompe après 3 s, revient au moindre
+geste).
 
 ### 11. Lecteur — l'habillage seulement
 
@@ -883,6 +905,17 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
 - **La Siri Remote n'émet pas `longLeft`** (ni la fin d'un appui maintenu sur
   une flèche) : un raccourci déclenché par une flèche se garde au rythme du
   focus (`RailShortcuts`).
+- **AVPlayer attend sans fin un flux qui ne répond pas** : mesuré au
+  simulateur, plus d'une minute et demie de chargement, aucune erreur. Toute
+  lecture qui n'est pas celle du lecteur principal se borne elle-même (chien
+  de garde de la bande-annonce).
+- **Un glisser du pavé tactile n'émet que `swipeUp/Down/Left/Right`** quand
+  le focus ne peut pas bouger (un seul focalisable) : ni flèche, ni OK —
+  et `useTVRemote` les ignore. Pour réveiller un chrome estompé, la
+  télécommande typée (`useRemoteEvents`, `kind: "swipe"`).
+- **Une sonde de 1 Ko ne prouve pas qu'un flux se lit** : le format 18 de
+  YouTube sert son premier mégaoctet et refuse le reste. Sonder ce que le
+  lecteur demandera (une plage ouverte).
 
 ## Recette de A à Z — ce que l'utilisateur veut éprouver (2026-09-30)
 
@@ -917,3 +950,7 @@ fusionnés :
    (mesuré au banc) : Menu ferme le panneau. Faut-il un guide vers elle ?~~
    — oui, posé (groupe `sheet:header`, « Branchement — fiche, bande-annonce,
    feuille » ci-dessus).
+5. « Cette bande-annonce ne peut pas être lue sur ce téléviseur » accuse le
+   téléviseur, alors que c'est YouTube qui refuse le flux (et que le serveur
+   retient l'échec dix minutes). Le reformuler — « YouTube ne la fournit pas
+   pour l'instant, réessayez plus tard » ?
