@@ -8,6 +8,7 @@ const provider: TitleProvider = {
   requestPath: "/titles/request",
   accessPath: "/titles/access",
   minePath: "/titles/mine",
+  seasonsPath: null,
 };
 
 describe("la garde des fonctions d'une extension de demandes", () => {

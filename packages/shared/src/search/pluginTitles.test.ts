@@ -16,7 +16,7 @@ const vigie = { pluginId: "seer", configEnabled: true, titles: { state: "/titles
 describe("la source des titres hors bibliothèque", () => {
   it("retient le premier plugin configuré qui déclare `titles`", () => {
     expect(titleProvider([{ pluginId: "x", configEnabled: true }, vigie])).toEqual({
-      pluginId: "seer", statePath: "/titles/state", requestPath: "/titles/request", accessPath: null, minePath: null,
+      pluginId: "seer", statePath: "/titles/state", requestPath: "/titles/request", accessPath: null, minePath: null, seasonsPath: null,
     });
   });
 
@@ -27,7 +27,7 @@ describe("la source des titres hors bibliothèque", () => {
 
   it("garde l'état sans la demande quand celle-ci est mal formée", () => {
     const provider = titleProvider([{ ...vigie, titles: { state: "/s", request: "https://x.y" } }]);
-    expect(provider).toEqual({ pluginId: "seer", statePath: "/s", requestPath: null, accessPath: null, minePath: null });
+    expect(provider).toEqual({ pluginId: "seer", statePath: "/s", requestPath: null, accessPath: null, minePath: null, seasonsPath: null });
     expect(titleRequestUrl(provider!)).toBeNull();
   });
 

@@ -9,7 +9,8 @@
  *     "state": "/titles/state",
  *     "request": "/titles/request",
  *     "access": "/titles/access",
- *     "mine": "/titles/mine"
+ *     "mine": "/titles/mine",
+ *     "seasons": "/titles/seasons"
  *   }
  *
  * Ce sont des routes du serveur du plugin (servies sous `/api/plugins/<id>`),
@@ -33,12 +34,16 @@
  *       bibliothèque —, un par titre, les plus récents d'abord ; `state` :
  *       pending | arriving (`percent` 0-100, ou null) | importing | blocked.
  *       Seul l'état voyage : les mots sont ceux du client.
+ *   GET  seasons?key=tv:1399&lang=fr
+ *     → { seasons: [{ number, name, episodeCount, badge, requestable }] } —
+ *       les saisons d'une série, pour un client qui les choisit lui-même ;
+ *       la demande part alors par `request`, avec `seasons: [1, 2]`.
  *
  * Tentacle n'en sait pas plus : le plugin décide de ce qu'il offre et de ses
  * mots (sauf les états de `mine`), le client l'affiche. Comme pour `search`,
  * ce lecteur est la seule garde — un champ mal formé est ignoré, jamais
- * relayé à moitié. `access` et `mine` sont venus après : un plugin qui ne les
- * déclare pas garde exactement le contrat d'avant.
+ * relayé à moitié. `access`, `mine` et `seasons` sont venus après : un plugin
+ * qui ne les déclare pas garde exactement le contrat d'avant.
  */
 export interface PluginTitlesMeta {
   state: string;
@@ -48,6 +53,8 @@ export interface PluginTitlesMeta {
   access?: string;
   /** Route des titres que le compte attend, si le plugin la déclare. */
   mine?: string;
+  /** Route des saisons d'une série, si le plugin la déclare. */
+  seasons?: string;
 }
 
 /* Un chemin simple, sous la racine du plugin : ni schéma, ni remontée, ni requête. */
@@ -61,12 +68,13 @@ export function readTitlesMeta(manifest: unknown): PluginTitlesMeta | undefined 
   if (!manifest || typeof manifest !== "object") return undefined;
   const titles = (manifest as { titles?: unknown }).titles;
   if (!titles || typeof titles !== "object" || Array.isArray(titles)) return undefined;
-  const { state, request, access, mine } = titles as Record<string, unknown>;
+  const { state, request, access, mine, seasons } = titles as Record<string, unknown>;
   if (!isSafePath(state)) return undefined;
   const out: PluginTitlesMeta = { state };
   // Mal formée, une route facultative est ignorée seule : l'état reste valable.
   if (isSafePath(request)) out.request = request;
   if (isSafePath(access)) out.access = access;
   if (isSafePath(mine)) out.mine = mine;
+  if (isSafePath(seasons)) out.seasons = seasons;
   return out;
 }

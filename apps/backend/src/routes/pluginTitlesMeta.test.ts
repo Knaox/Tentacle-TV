@@ -37,6 +37,13 @@ describe("readTitlesMeta — le champ titles d'un manifeste de plugin", () => {
     expect(Object.keys(readTitlesMeta({ titles: { state: "/s", request: "/r" } }) ?? {})).toEqual(["state", "request"]);
   });
 
+  it("relaie les saisons quand le plugin les déclare, ignore seule une route mal formée", () => {
+    expect(readTitlesMeta({ titles: { state: "/s", seasons: "/titles/seasons" } })).toEqual({ state: "/s", seasons: "/titles/seasons" });
+    for (const bad of ["//evil.example/x", "/../admin", "https://x.y/z", 3, "", null]) {
+      expect(readTitlesMeta({ titles: { state: "/s", seasons: bad } }), String(bad)).toEqual({ state: "/s" });
+    }
+  });
+
   it("ignore seuls un droit ou une liste mal formés, et jamais sans état", () => {
     for (const bad of ["//evil.example/x", "/../admin", "https://x.y/z", 3, "", null]) {
       expect(readTitlesMeta({ titles: { state: "/s", access: bad, mine: bad } }), String(bad)).toEqual({ state: "/s" });
