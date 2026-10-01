@@ -140,8 +140,21 @@ export const PLAYER_SCENES: BenchScene[] = [
   scene("defilement-passages", "Défilement · passages marqués (posés à la main)", patch(patch(episode, passages), (_data, stage) => ({
     scrub: { target: stage.props.timeline.duration * 0.06, speed: { factor: 2, backward: true }, frame: stage.frame ? { uri: stage.frame } : null },
   }))),
-  scene("saut-avant", "Saut +30 s (habillage caché)", patch(film, () => ({ osdVisible: false, seekFlash: { forward: true, label: seekFlashLabel(t, 30) } }))),
-  scene("saut-arriere", "Saut −20 s cumulé", patch(film, () => ({ osdVisible: false, seekFlash: { forward: false, label: seekFlashLabel(t, -20) } }))),
+  scene("defilement-glisser", "Défilement · glisser du pavé (sans vitesse)", patch(film, (_data, stage) => ({
+    scrub: { target: stage.props.timeline.position + 212, frame: stage.frame ? { uri: stage.frame } : null },
+  }))),
+  scene("defilement-sans-vignette", "Défilement · serveur sans vignettes", patch(film, (_data, stage) => ({
+    scrub: { target: stage.props.timeline.position + 1800, speed: { factor: 8, backward: false }, frame: null },
+  }))),
+  // La bulle reste dans la zone sûre aux deux bouts de la frise.
+  scene("defilement-debut", "Défilement · tout au début", patch(episode, (_data, stage) => ({
+    scrub: { target: 4, frame: stage.frame ? { uri: stage.frame } : null },
+  }))),
+  scene("defilement-fin", "Défilement · tout à la fin", patch(film, (_data, stage) => ({
+    scrub: { target: stage.props.timeline.duration - 6, speed: { factor: 4, backward: false }, frame: stage.frame ? { uri: stage.frame } : null },
+  }))),
+  scene("saut-avant", "Saut +10 s (un appui, habillage caché)", patch(film, () => ({ osdVisible: false, seekFlash: { forward: true, label: seekFlashLabel(t, 10) } }))),
+  scene("saut-arriere", "Saut −20 s cumulé (deux appuis)", patch(film, () => ({ osdVisible: false, seekFlash: { forward: false, label: seekFlashLabel(t, -20) } }))),
   scene("intro-manuelle", "Passer l'intro · manuel", patch(episode, skip("skipIntro", "segment", null)), ["player:skip"]),
   scene("intro-auto", "Passer l'intro · auto, décompte", patch(episode, skip("skipIntro", "segment", 5)), ["player:skip-dismiss", "player:skip"]),
   scene("intro-sourdine", "Passer l'intro · en sourdine (habillage)", patch(episode, skip("skipIntro", "segment", null, true)), ["player:playpause", "player:skip"]),
