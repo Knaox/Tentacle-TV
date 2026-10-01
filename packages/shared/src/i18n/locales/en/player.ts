@@ -128,4 +128,6 @@ export default {
   troubleResumedDetail: "The server is answering again.",
   troubleSeconds: "{{count}}s",
   troubleMinutes: "{{count}} min",
+  troubleStartMedia: "Jellyfin isn't responding. Playback will start on its own as soon as it's back.",
+  troubleStartTentacle: "The Tentacle server isn't responding. Playback will start on its own as soon as it's back.",
 } as const;

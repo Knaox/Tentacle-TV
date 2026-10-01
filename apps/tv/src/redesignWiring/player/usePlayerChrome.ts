@@ -5,6 +5,7 @@ import type { PlayerChromeViewProps } from "../../redesign/screens/player/Player
 import { playerChromeLabels, seekFlashLabel, type Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlayerMedia, PlayerPanel, ScrubModel, TracksPanelModel } from "../../redesign/screens/player/playerTypes";
 import { useAutoCapNotice } from "../../hooks/useAutoCapNotice";
+import { usePlaybackTroubleState } from "../../hooks/playbackTroubleStore";
 import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../hooks/useTVPlayerControls";
 import type { FocusStore } from "../focus/focusStore";
 import { backdropUriOf, logoUriOf, paletteOf, type ImageUrl } from "./playerArt";
@@ -71,9 +72,14 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore):
   ) : EMPTY_MEDIA), [item, isEpisode, series, image, sourcePlaying]);
 
   const step = p.prismStep;
+  // L'ouverture ratée pendant une panne dit qui manque (cf. usePlaybackRecovery).
+  const startCulprit = usePlaybackTroubleState().startCulprit;
+  const failedMessage = startCulprit
+    ? translate(startCulprit === "media" ? "player:troubleStartMedia" : "player:troubleStartTentacle") : null;
   const phase = useMemo(() => buildPhase({
     streamUrl: p.streamUrl, failed: p.failed, hasStarted: p.hasStarted, videoError: p.videoError, step, t: translate,
-  }), [p.streamUrl, p.failed, p.hasStarted, p.videoError, step, translate]);
+    failedMessage,
+  }), [p.streamUrl, p.failed, p.hasStarted, p.videoError, step, translate, failedMessage]);
   const playing = phase.kind === "playing";
 
   // Les passages de la frise : le contrat que l'arbitre a déjà demandé (même cache).

@@ -69,9 +69,12 @@ export function buildPhase(args: {
   videoError: string | null;
   step: { label: string; index: number; count: number } | null;
   t: Translate;
+  /** L'échec dit qui manque quand c'est une panne (cf. usePlaybackRecovery). */
+  failedMessage?: string | null;
 }): PlayerPhase {
   if (!args.streamUrl) {
-    return args.failed ? { kind: "failed", message: args.t("player:loadFailed") } : { kind: "resolving", step: args.step };
+    if (!args.failed) return { kind: "resolving", step: args.step };
+    return { kind: "failed", message: args.failedMessage ?? args.t("player:loadFailed") };
   }
   // Une erreur avant la première image n'enferme pas sous l'écran de
   // chargement : le bandeau la dit, par-dessus l'habillage (comme avant).

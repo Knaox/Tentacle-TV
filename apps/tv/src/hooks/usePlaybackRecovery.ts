@@ -5,6 +5,7 @@ import {
 } from "@tentacle-tv/tv-core";
 import { readServerReachability, requestServerProbe } from "./serverReachability";
 import { IDLE_TROUBLE, publishPlaybackTrouble, registerTroubleRetry } from "./playbackTroubleStore";
+import { useStartupRecovery } from "./useStartupRecovery";
 import type { RestartOptions, RestartOutcome } from "./streamRestart";
 import { probeStreamPath } from "../utils/streamPathProbe";
 import { plog } from "../utils/playerDiag";
@@ -21,7 +22,13 @@ export interface RecoverySources {
     bufferedTimeRef: React.MutableRefObject<number>;
     endedRef: React.MutableRefObject<boolean>;
   };
-  p: { restartStream: (opts?: RestartOptions) => Promise<RestartOutcome> };
+  p: {
+    restartStream: (opts?: RestartOptions) => Promise<RestartOutcome>;
+    /** L'ouverture du flux a échoué (écran d'échec, « Réessayer »). */
+    failed: boolean;
+    /** Relance l'ouverture — le « Réessayer » de l'écran d'échec. */
+    setReloadNonce: (next: (n: number) => number) => void;
+  };
 }
 
 /** Une erreur de FORMAT (codec, conteneur) : la chaîne de repli s'en charge. */
@@ -188,6 +195,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
       nextCheckAt: incident && st.checkedAt !== null && st.source !== "ok" ? st.checkedAt + PROBE_EVERY_MS : null,
       checking: st.probing,
       stillDown: st.stillDown,
+      startCulprit: null,
     });
     if (decision.probe) void probe();
     if (decision.restart) void restart();
@@ -229,6 +237,8 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
       publishPlaybackTrouble(IDLE_TROUBLE);
     };
   }, []);
+
+  useStartupRecovery(sources);
 
   /** Confiée en premier par le gestionnaire d'erreurs : `true` = prise en charge. */
   const onSourceLost = useCallback((error: string): boolean => {

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import type { RecoveryPhase } from "@tentacle-tv/tv-core";
+import type { Culprit, RecoveryPhase } from "@tentacle-tv/tv-core";
 
 /**
  * L'état de la reprise d'une lecture, lisible par l'HABILLAGE : le crochet de
@@ -15,10 +15,12 @@ export interface PlaybackTroubleState {
   checking: boolean;
   /** La dernière vérification demandée à la main a trouvé le serveur muet. */
   stillDown: boolean;
+  /** L'OUVERTURE a échoué serveur à terre : qui manque (sinon `null`). */
+  startCulprit: Culprit | null;
 }
 
 export const IDLE_TROUBLE: PlaybackTroubleState = {
-  phase: { kind: "none" }, nextCheckAt: null, checking: false, stillDown: false,
+  phase: { kind: "none" }, nextCheckAt: null, checking: false, stillDown: false, startCulprit: null,
 };
 
 let current: PlaybackTroubleState = IDLE_TROUBLE;
@@ -29,6 +31,7 @@ function same(a: PlaybackTroubleState, b: PlaybackTroubleState): boolean {
   const pa = a.phase as Record<string, unknown>;
   const pb = b.phase as Record<string, unknown>;
   return a.nextCheckAt === b.nextCheckAt && a.checking === b.checking && a.stillDown === b.stillDown
+    && a.startCulprit === b.startCulprit
     && pa.kind === pb.kind && pa.cause === pb.cause && pa.since === pb.since && pa.ahead === pb.ahead;
 }
 

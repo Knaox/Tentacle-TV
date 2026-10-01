@@ -133,4 +133,6 @@ export default {
   troubleResumedDetail: "Le serveur répond de nouveau.",
   troubleSeconds: "{{count}} s",
   troubleMinutes: "{{count}} min",
+  troubleStartMedia: "Jellyfin ne répond pas. La lecture démarrera d'elle-même dès son retour.",
+  troubleStartTentacle: "Le serveur Tentacle ne répond pas. La lecture démarrera d'elle-même dès son retour.",
 } as const;
