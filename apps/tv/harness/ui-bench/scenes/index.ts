@@ -18,6 +18,7 @@ import { PLAYER_LIVE_SCENES } from "./playerLiveScenes";
 import { PLAYER_SCENES } from "./playerScenes";
 import { PLAYER_WIRED_SCENES } from "./playerWiredScenes";
 import { RAIL_SCENES } from "./railScenes";
+import { REQUEST_SCENES } from "./requestScenes";
 import { SEARCH_SCENES } from "./searchScenes";
 import { SETTINGS_SCENES } from "./settingsScenes";
 import { SHEET_SCENES } from "./sheetScenes";
@@ -46,6 +47,7 @@ export const SCENES: BenchScene[] = [
   ...PLAYER_SCENES,
   ...SHEET_SCENES,
   ...SHEET_WIRED_SCENES,
+  ...REQUEST_SCENES,
   ...TRAILER_SCENES,
   ...OVERLAY_SCENES,
   ...BACK_SCENES,
