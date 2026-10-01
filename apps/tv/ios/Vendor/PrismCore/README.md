@@ -7,8 +7,12 @@ Xcode référence toujours (`XCRemoteSwiftPackageReference "PrismCore"`).
 
 ## Pourquoi une copie
 
-Une seule modification, dans `Sources/PrismCore/Remux/AudioBridge.swift`
-(`negotiateLayout`, balisée « Modified for Tentacle TV ») :
+Des correctifs que l'amont n'a pas, chacun balisé « Modified for Tentacle TV »
+dans le code.
+
+### 1. La disposition du pont AAC (2026-09-24)
+
+`Sources/PrismCore/Remux/AudioBridge.swift`, `negotiateLayout`.
 
 Le pont audio de PrismCore réencode ce qu'AVPlayer ne lit pas (DTS, DTS-HD MA,
 TrueHD, PCM…). Faute d'encodeur `eac3` dans le FFmpeg de MPVKit, sa cible est
@@ -22,6 +26,37 @@ Apple TV 4K, tvOS 26.6) et finissait en transcodage serveur.
 
 Le correctif ramène l'AAC sur la disposition standard de même largeur
 (5.1 « back »), que le rééchantillonneur remappe.
+
+### 2. Les DTS des images de tête après un ré-ancrage (2026-10-01)
+
+`Sources/PrismCore/Remux/DecodeTimestampRepair.swift` (nouveau), branché dans
+`Sources/PrismCore/Remux/HLSRemuxer.swift`.
+
+Quand AVPlayer demande un segment loin de ce qui est produit — un saut, une
+reprise à une position, une relance —, le producteur se ré-ancre : seek dans
+la source, muxeurs neufs. Après ce seek, libavformat rend les premiers paquets
+vidéo sans DTS (sa file de réordonnancement est vide) et movenc en devine un.
+Sa devinette suppose que les images qui suivent la keyframe s'affichent après
+elle ; un GOP OUVERT dit le contraire : la keyframe (CRA) est suivie d'images
+RASL affichées avant elle. Le DTS deviné dépasse alors le premier vrai DTS,
+`av_interleaved_write_frame` refuse (-22, « non monotonically increasing
+dts »), et le producteur meurt sans un mot : AVPlayer attend à jamais sur la
+cible du saut, la vidéo chargée figée là où elle était.
+
+Mesuré le 2026-10-01 sur un épisode x265 (MKV, GOP ouvert) : lecture depuis 0,
+chargé jusqu'à 24,3 s, saut à 1:30 → figé à 90 s ; reprise directe à 1:30 →
+figée aussi, relances comprises.
+
+**Titres touchés** : tout HEVC ou H.264 à GOP ouvert (les encodages x265 par
+défaut, beaucoup d'animés), au premier saut hors de la fenêtre produite —
+reprise à une position et relance comprises dès que le producteur n'y était
+pas encore. Les GOP fermés (keyframes IDR) n'étaient pas touchés : la
+devinette de movenc y tombe juste.
+
+Le correctif retient ces paquets jusqu'au premier vrai DTS et leur rend celui
+qu'une lecture continue leur aurait donné : un pas d'image en arrière par
+paquet (84 508, 84 550 avant 84 592 sur l'épisode mesuré, les valeurs exactes
+de la lecture continue).
 
 ## Ce qui est repris, ce qui ne l'est pas
 
@@ -38,11 +73,13 @@ dépôt public.
 
 ## Retirer la copie
 
-Quand l'amont corrige la négociation de disposition : supprimer ce dossier et
-la ligne `group:Vendor/PrismCore` de `TentacleTV.xcworkspace/contents.xcworkspacedata`.
-Le projet retombe alors sur le paquet distant (règle « jusqu'à la prochaine
-majeure » depuis 3.2.0).
+Quand l'amont a corrigé tout ce qui est listé plus haut : supprimer ce dossier
+et la ligne `group:Vendor/PrismCore` de
+`TentacleTV.xcworkspace/contents.xcworkspacedata`. Le projet retombe alors sur
+le paquet distant (règle « jusqu'à la prochaine majeure » depuis 3.2.0).
 
 Pour une montée de version en attendant : recopier `Sources/PrismCore` de la
-nouvelle version, réappliquer le bloc balisé, rebâtir, et rejouer un titre en
-DTS seul sur l'Apple TV (banc `apps/tv/harness/atv-remote`).
+nouvelle version, réappliquer les blocs balisés et reprendre les fichiers
+nouveaux, rebâtir, puis rejouer sur l'Apple TV (banc
+`apps/tv/harness/atv-remote`) un titre en DTS seul, et un titre à GOP ouvert
+repris au milieu puis sauté loin en avant et en arrière.

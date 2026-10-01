@@ -1144,6 +1144,14 @@ final class HLSRemuxer: @unchecked Sendable {
         writer.audioDelaySeconds = audioDelaySeconds
         _ = try writer.open(input: input, plan: plan)   // delay_moov: header emits nothing
         var streamMap = writer.streamMap
+        // Modified for Tentacle TV, 2026-10-01: the first video packets of a
+        // run carry no DTS after a seek — see `DecodeTimestampRepair`.
+        let videoDTS = DecodeTimestampRepair(stream: input.pointee.streams[Int(videoIndex)]!)
+        let videoSourceTimeBase = input.pointee.streams[Int(videoIndex)]!.pointee.time_base
+        func writeHeldVideo() throws {
+            guard let mapped = streamMap[Int(videoIndex)] else { return }
+            try videoDTS.flush { try write($0, to: mapped, from: videoSourceTimeBase, writer: writer) }
+        }
         let playlist = MediaPlaylistWriter(directory: outputDirectory)
 
         // Planned VOD: every playlist is complete before the first packet —
@@ -1322,6 +1330,8 @@ final class HLSRemuxer: @unchecked Sendable {
             // renditions — is on disk by the time the defer runs, which is
             // the ordering the signal's contract demands (state, then wake).
             defer { landed?.broadcast() }
+            // Modified for Tentacle TV: held video packets belong to this fragment.
+            try writeHeldVideo()
             let (initSegment, media) = try writer.cutSegment()
             // The first cut also mints the init segment (see cutSegment's
             // doc); write it BEFORE the playlist entry so a reader that saw
@@ -1381,6 +1391,8 @@ final class HLSRemuxer: @unchecked Sendable {
         func reanchor(to anchor: Int) throws {
             guard let plannedPlan else { return }
             let target = plannedPlan.entries[anchor].startPTS
+            // Modified for Tentacle TV: the seek empties libavformat's reorder buffer.
+            videoDTS.restart()
             try FFmpegError.check(
                 av_seek_frame(input, videoIndex, target, AVSEEK_FLAG_BACKWARD),
                 "av_seek_frame"
@@ -1635,7 +1647,10 @@ final class HLSRemuxer: @unchecked Sendable {
                         }
                     }
                     if let mapped = streamMap[streamIndex] {
-                        try write(packet, to: mapped, from: sourceTimeBase, writer: writer)
+                        // Modified for Tentacle TV: through `DecodeTimestampRepair`.
+                        try videoDTS.submit(packet) {
+                            try write($0, to: mapped, from: sourceTimeBase, writer: writer)
+                        }
                     }
                     continue
                 }
@@ -1722,6 +1737,8 @@ final class HLSRemuxer: @unchecked Sendable {
             if tapsClosedCaptions {
                 subtitles.flushClosedCaptions(endSeconds: Double(closingPTS) * tickSeconds)
             }
+            // Modified for Tentacle TV: nothing stays held past the last cut.
+            try writeHeldVideo()
             let (initSegment, media) = try writer.cutSegment()
             if let initSegment, !initSegment.isEmpty {
                 try writeInitSegmentIfAbsent(initSegment)
