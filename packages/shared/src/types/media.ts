@@ -162,6 +162,12 @@ export interface MediaStream {
   /** Profil du codec (« Main 10 », « High »…). */
   Profile?: string;
   /**
+   * Étiquette du codec dans le conteneur (`hvc1`, `hev1`, `avc1`…) — absente
+   * d'un MKV et des scans anciens. AVPlayer ne lit un HEVC tel quel que
+   * `hvc1` / `dvh1` : un `hev1` s'y affiche NOIR, sans erreur.
+   */
+  CodecTag?: string;
+  /**
    * Cadence RÉELLE du flux (24000/1001 = 23,976…), calculée par Jellyfin depuis
    * la durée d'image du conteneur : la seule valeur EXACTE disponible. Les
    * horodatages Matroska sont arrondis à la milliseconde — un estimateur qui
