@@ -109,4 +109,21 @@ export default {
   tvStepPairTv: "Go to Settings, then “Pair TV”.",
   tvStepEnterCode: "Enter the code shown on this screen.",
   tvYourCode: "Your code",
+
+  // "Username and password" step of the pairing (TV redesign, Apple TV):
+  // after the manually entered server. The title, labels and button come
+  // from the `auth` namespace; "Pair with a code" (`pairWithCode`) leads to
+  // the server code.
+  tvLoginSubtitle: "Use the username and password of your account on this server.",
+  tvUsernamePlaceholder: "Your username",
+  tvPasswordPlaceholder: "Your password",
+  tvLoginHint: "Type them with the remote, or with your iPhone when it offers to.",
+  tvLoginInvalid: "Incorrect username or password. Check them, then try again.",
+  tvLoginRefused:
+    "This account can't sign in: it's disabled, locked after too many failed attempts, or restricted. Contact your server administrator.",
+  tvLoginTooMany: "Too many sign-in attempts. Wait a minute, then try again.",
+  tvLoginTooManyPairings: "Too many pairings from this network in a short time. Try again in an hour.",
+  tvLoginJellyfinDown: "The server can't reach Jellyfin. Try again in a moment.",
+  tvLoginServerError: "The server returned an error ({{status}}). Try again in a moment.",
+  tvLoginFailed: "Sign-in failed. Try again in a moment.",
 } as const;

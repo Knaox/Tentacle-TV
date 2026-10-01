@@ -112,4 +112,21 @@ export default {
   tvStepPairTv: "Allez dans Paramètres, puis « Jumeler la TV ».",
   tvStepEnterCode: "Saisissez le code affiché sur cet écran.",
   tvYourCode: "Votre code",
+
+  // Étape « identifiant et mot de passe » du jumelage (refonte TV, Apple TV) :
+  // après le serveur saisi à la main. Le titre, les libellés et le bouton
+  // viennent de l'espace `auth` ; « Jumeler avec un code » (`pairWithCode`)
+  // mène au code du serveur.
+  tvLoginSubtitle: "Avec le nom d'utilisateur et le mot de passe de votre compte sur ce serveur.",
+  tvUsernamePlaceholder: "Votre nom d'utilisateur",
+  tvPasswordPlaceholder: "Votre mot de passe",
+  tvLoginHint: "Saisissez-les avec la télécommande, ou avec votre iPhone quand il vous le propose.",
+  tvLoginInvalid: "Nom d'utilisateur ou mot de passe incorrect. Vérifiez-les, puis réessayez.",
+  tvLoginRefused:
+    "Ce compte ne peut pas se connecter : il est désactivé, bloqué après trop d'erreurs, ou restreint. Contactez l'administrateur du serveur.",
+  tvLoginTooMany: "Trop de tentatives de connexion. Patientez une minute, puis réessayez.",
+  tvLoginTooManyPairings: "Trop de jumelages depuis ce réseau en peu de temps. Réessayez dans une heure.",
+  tvLoginJellyfinDown: "Le serveur ne parvient pas à joindre Jellyfin. Réessayez dans un instant.",
+  tvLoginServerError: "Le serveur a répondu par une erreur ({{status}}). Réessayez dans un instant.",
+  tvLoginFailed: "La connexion a échoué. Réessayez dans un instant.",
 } as const;
