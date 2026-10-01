@@ -6,10 +6,13 @@ import { useQueryClient } from "@tanstack/react-query";
  * Détecte si le serveur Tentacle est joignable, sans alarmer trop vite.
  *
  * Comportement :
- * - Au premier signal d'erreur (réseau ou 5xx d'une query), on lance un check
- *   de confirmation. On ne marque le serveur "offline" qu'après PERSISTENT_KO_MS
- *   d'échecs consécutifs (12 s) — ça absorbe un redémarrage backend de 5-15 s
- *   sans afficher de bannière à l'utilisateur.
+ * - Au premier signal d'erreur (réseau ou 5xx d'une query), on sonde. Un échec
+ *   ouvre une SÉRIE, que la sonde de confirmation, PERSISTENT_KO_MS (12 s) plus
+ *   tard, conclut : encore un échec → "offline" ; un succès → série close. Ça
+ *   absorbe un redémarrage backend de 5-15 s sans afficher de bannière.
+ *   Sans cette conclusion, une série ouverte par un échec isolé le restait à
+ *   vie : le prochain échec, des heures plus tard, basculait aussitôt
+ *   "offline", sans les 12 s de grâce.
  * - Une fois marqué offline, ping toutes les 5 s pour détecter le retour rapide.
  * - Au retour : on invalide les queries actives pour rafraîchir, mais on ne
  *   touche JAMAIS à l'état d'auth (le token reste valide, pas de logout).
@@ -28,7 +31,12 @@ export function useServerReachable(serverUrl: string | null) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Timestamp du premier échec consécutif. Reset dès qu'un check réussit.
   const firstKoAtRef = useRef<number | null>(null);
+  // La sonde de confirmation de la série en cours (cf. en-tête).
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasOfflineRef = useRef(false);
+  const clearConfirm = useCallback(() => {
+    if (confirmTimerRef.current) { clearTimeout(confirmTimerRef.current); confirmTimerRef.current = null; }
+  }, []);
 
   const probeServer = useCallback(async (): Promise<boolean> => {
     if (!serverUrl) return true;
@@ -43,9 +51,14 @@ export function useServerReachable(serverUrl: string | null) {
     }
   }, [serverUrl]);
 
+  // La sonde de confirmation rappelle la DERNIÈRE évaluation, pas celle de
+  // l'échec qui l'a programmée (closure périmée sur `isReachable`).
+  const evaluateRef = useRef<() => Promise<void>>(async () => {});
+
   const evaluate = useCallback(async () => {
     const ok = await probeServer();
     if (ok) {
+      clearConfirm();
       firstKoAtRef.current = null;
       if (!isReachable || wasOfflineRef.current) {
         // Le serveur vient de revenir : rafraîchit les données stale, sans
@@ -56,14 +69,24 @@ export function useServerReachable(serverUrl: string | null) {
       setIsReachable(true);
       return;
     }
-    // Échec : on note la 1ère erreur, on n'alarme qu'au-delà du seuil.
-    if (firstKoAtRef.current == null) firstKoAtRef.current = Date.now();
+    // Échec : on note la 1ère erreur, on n'alarme qu'au-delà du seuil — et la
+    // sonde de confirmation conclura la série, qu'une autre erreur survienne
+    // ou non d'ici là.
+    if (firstKoAtRef.current == null) {
+      firstKoAtRef.current = Date.now();
+      clearConfirm();
+      confirmTimerRef.current = setTimeout(() => {
+        confirmTimerRef.current = null;
+        void evaluateRef.current();
+      }, PERSISTENT_KO_MS);
+    }
     const elapsed = Date.now() - firstKoAtRef.current;
     if (elapsed >= PERSISTENT_KO_MS) {
       wasOfflineRef.current = true;
       setIsReachable(false);
     }
-  }, [probeServer, queryClient, isReachable]);
+  }, [probeServer, queryClient, isReachable, clearConfirm]);
+  evaluateRef.current = evaluate;
 
   // La promesse dit quand le test a répondu (« Nouvelle tentative… »).
   const retry = useCallback(() => evaluate(), [evaluate]);
@@ -73,11 +96,15 @@ export function useServerReachable(serverUrl: string | null) {
   // sinon l'overlay restait collé sur l'écran de jumelage après un logout.
   useEffect(() => {
     if (!serverUrl) {
+      clearConfirm();
       firstKoAtRef.current = null;
       wasOfflineRef.current = false;
       setIsReachable(true);
     }
-  }, [serverUrl]);
+  }, [serverUrl, clearConfirm]);
+
+  // Démontage : plus de sonde de confirmation orpheline.
+  useEffect(() => clearConfirm, [clearConfirm]);
 
   // Ping rapide quand on est marqué offline pour détecter le retour vite
   useEffect(() => {
