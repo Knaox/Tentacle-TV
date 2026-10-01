@@ -13,6 +13,13 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.25.2]
+### FR
+- **macOS : l'image ne vibre plus en plein écran** sur les écrans sans encoche — MacBook Air, MacBook Pro 13 pouces, Mac mini, iMac et écrans externes. La vidéo sautait de la hauteur de la barre de menus plusieurs fois par seconde ; elle reste désormais immobile
+
+### EN
+- **macOS: the picture no longer shakes in full screen** on displays without a notch — MacBook Air, 13-inch MacBook Pro, Mac mini, iMac and external displays. The video jumped by the height of the menu bar several times per second; it now stays still
+
 ## [1.25.1]
 ### FR
 - **Sous Linux, n'importe quel titre démarre sans attendre la carte graphique** (KDE Plasma) : le lecteur est prêt dès l'ouverture de l'application et le reste d'un titre à l'autre. Le premier film d'une séance, ou un autre titre choisi après être revenu à la bibliothèque, ne recréent plus la sortie vidéo de mpv — trois quarts de seconde de pilote graphique à chaque fois. Mesuré de la demande de lecture à la première image : environ 1 s auparavant, 0,15 à 0,3 s désormais. Au repos, le lecteur prêt occupe 91 Mo de mémoire vidéo ; sur batterie, rien n'est gardé
