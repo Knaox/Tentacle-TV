@@ -84,12 +84,19 @@ describe("la garde : une relecture plus ancienne ne fait plus reculer", () => {
     expect(positionIn(qc, ["resume-items"])).toBe(0);
   });
 
-  it("le serveur a écrit l'arrêt : la garde tombe", async () => {
+  it("le serveur a écrit l'arrêt : sa réponse passe telle quelle", async () => {
+    const qc = new QueryClient();
+    rememberStop(qc, fakeClient(null), "u1", stop);
+    await qc.fetchQuery({ queryKey: ["item", ID], queryFn: async () => item(2412, BEFORE) });
+    expect(positionIn(qc, ["item", ID])).toBe(2412 * T);
+  });
+
+  it("un accord passager ne lève pas la garde : l'écriture hors d'ordre qui suit est corrigée", async () => {
     const qc = new QueryClient();
     rememberStop(qc, fakeClient(null), "u1", stop);
     await qc.fetchQuery({ queryKey: ["item", ID], queryFn: async () => item(2411, BEFORE) });
-    await qc.fetchQuery({ queryKey: ["resume-items"], queryFn: async () => [item(0)] });
-    expect(positionIn(qc, ["resume-items"])).toBe(0);
+    await qc.fetchQuery({ queryKey: ["resume-items"], queryFn: async () => [item(1826, BEFORE)] });
+    expect(positionIn(qc, ["resume-items"])).toBe(2411 * T);
   });
 
   it("les autres titres ne sont jamais touchés", async () => {
@@ -132,6 +139,17 @@ describe("la réparation : une seule réécriture, et seulement si le désaccord
     expect(JSON.parse(String(client.calls[1].init?.body))).toEqual({ ...read, PlaybackPositionTicks: 2411 * T, Played: false });
     await vi.advanceTimersByTimeAsync(60_000);
     expect(client.calls).toHaveLength(2);
+  });
+
+  it("après un accord passager, la réparation revérifie : Jellyfin a reculé, elle réécrit", async () => {
+    const client = fakeClient({ PlaybackPositionTicks: 1826 * T, Played: false, LastPlayedDate: BEFORE });
+    const qc = new QueryClient();
+    rememberStop(qc, client, "u1", stop);
+    const fetched = qc.fetchQuery({ queryKey: ["item", ID], queryFn: async () => item(2411, BEFORE) });
+    await vi.advanceTimersByTimeAsync(0);
+    await fetched;
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(client.calls.map((c) => c.init?.method ?? "GET")).toEqual(["GET", "POST"]);
   });
 
   it("une lecture commencée depuis (ailleurs) : aucune écriture", async () => {

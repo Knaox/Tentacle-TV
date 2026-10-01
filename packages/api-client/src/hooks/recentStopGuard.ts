@@ -14,12 +14,13 @@ import { judgeServerUserData, projectionPatch, type StopProjection } from "./sto
  *   d'avant l'écriture de notre arrêt est re-patchée par la projection.
  * - LA DATE GAGNE : une réponse dont `LastPlayedDate` est postérieure à
  *   l'arrêt (une lecture commencée depuis, ici ou ailleurs) fait tomber la
- *   garde — le serveur a raison. Elle tombe aussi dès qu'il a écrit l'arrêt,
- *   et au bout de deux minutes.
+ *   garde — le serveur a raison. Elle tombe aussi au bout de deux minutes, mais
+ *   PAS sur un accord passager : l'écriture hors d'ordre de Jellyfin peut
+ *   défaire, après coup, un arrêt qu'il montrait déjà (simulé au banc).
  * - Une seule RÉPARATION, 20 s après l'arrêt, si le serveur n'a toujours rien
- *   écrit (le cas « jamais ») : lecture-modification-écriture de la reprise,
- *   et seulement si, à cet instant, le désaccord tient encore, sa date reste
- *   antérieure à l'arrêt, et le titre n'est pas relancé sur cet appareil.
+ *   écrit (le cas « jamais ») : relecture, puis lecture-modification-écriture
+ *   de la reprise, et seulement si, à cet instant, le désaccord tient, sa date
+ *   reste antérieure à l'arrêt, et le titre n'est pas relancé sur cet appareil.
  *
  * Limite assumée : un titre absent d'une réponse (« Reprendre » au premier
  * visionnage, Jellyfin n'ayant encore rien écrit) n'y est pas inséré.
@@ -85,18 +86,16 @@ function installGuard(qc: QueryClient): void {
       }
       const found = findUserData(event.query.state.data, stop.itemId);
       if (!found) continue;
-      if (judgeServerUserData(stop, found) !== "older") {
-        stops.delete(stop.itemId);
-        continue;
-      }
-      updateItemUserDataInCache(qc, stop.itemId, () => projectionPatch(stop, stop.runtimeTicks));
+      const verdict = judgeServerUserData(stop, found);
+      if (verdict === "newer") stops.delete(stop.itemId);
+      else if (verdict === "older") updateItemUserDataInCache(qc, stop.itemId, () => projectionPatch(stop, stop.runtimeTicks));
     }
   });
 }
 
 async function repairStop(client: UserDataClient, userId: string, stop: RecentStop): Promise<void> {
-  // Réglée entre-temps (serveur d'accord, ou plus récent), ou remplacée par un
-  // arrêt plus récent du même titre ; titre relancé sur cet appareil.
+  // Réglée entre-temps (une lecture plus récente), ou remplacée par un arrêt
+  // plus récent du même titre ; titre relancé sur cet appareil.
   const settled = () => stops.get(stop.itemId) !== stop || currentPlaybackItemId() === stop.itemId;
   if (settled()) return;
   const path = `/UserItems/${stop.itemId}/UserData?userId=${encodeURIComponent(userId)}`;
