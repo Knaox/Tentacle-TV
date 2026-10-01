@@ -1,5 +1,5 @@
 import type { useJellyfinClient } from "@tentacle-tv/api-client";
-import { resolveBannerImage, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
+import { resolveBannerImage, resolveLogoImage, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import { NEUTRAL_PALETTE, paletteFromBlurHash, type ArtworkPalette } from "../../redesign/color/artworkPalette";
 
 /**
@@ -84,15 +84,11 @@ export function landscapeOf(client: ImageClient, item: MediaItem): { uri?: strin
   return { uri: at(item.Id, "Backdrop", backdrop), logoUri: logoUriOf(client, item) };
 }
 
-/** Le logo d'une œuvre (celui de la série pour un épisode), s'il est connu. */
+/** Le logo d'une œuvre (celui de la série pour un épisode), s'il est annoncé —
+ *  la règle de toutes les bannières et cartes (`resolveLogoImage`). */
 export function logoUriOf(client: ImageClient, item: MediaItem): string | undefined {
-  const own = item.ImageTags?.Logo;
-  if (own) return client.getImageUrl(item.Id, "Logo", { width: LOGO_WIDTH, tag: own });
-  const parent = (item as { ParentLogoItemId?: string; ParentLogoImageTag?: string });
-  if (parent.ParentLogoItemId && parent.ParentLogoImageTag) {
-    return client.getImageUrl(parent.ParentLogoItemId, "Logo", { width: LOGO_WIDTH, tag: parent.ParentLogoImageTag });
-  }
-  return undefined;
+  const logo = resolveLogoImage(item);
+  return logo ? client.getImageUrl(logo.id, "Logo", { width: LOGO_WIDTH, tag: logo.tag }) : undefined;
 }
 
 /** Le grand fond d'une œuvre (héros), le sien sinon celui de sa série. */
