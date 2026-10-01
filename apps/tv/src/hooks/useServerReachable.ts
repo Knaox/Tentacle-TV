@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
+import { publishServerReachability, registerServerProbe } from "./serverReachability";
 
 /**
  * Détecte si le serveur Tentacle est joignable, sans alarmer trop vite.
@@ -90,6 +91,13 @@ export function useServerReachable(serverUrl: string | null) {
 
   // La promesse dit quand le test a répondu (« Nouvelle tentative… »).
   const retry = useCallback(() => evaluate(), [evaluate]);
+
+  // Lisible hors de l'application : le lecteur la lit (cf. serverReachability).
+  useEffect(() => { publishServerReachability(isReachable); }, [isReachable]);
+  useEffect(() => {
+    registerServerProbe(retry);
+    return () => registerServerProbe(null);
+  }, [retry]);
 
   // Plus d'URL serveur (déconnexion / changement de serveur) : on n'a plus rien
   // à sonder → on repasse "joignable" pour masquer immédiatement la bannière,
