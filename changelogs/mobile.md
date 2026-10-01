@@ -5,6 +5,36 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.10.1]
+<!-- Bloc nu : Google Play, 500 caractères. Le bloc ios- ajoute le HEVC « hev1 », qu'Android lisait déjà. -->
+### FR
+- **La reprise au bon endroit** : la fiche montre la position quittée dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard
+- **La lecture directe tient** pendant une panne du serveur
+- **Le logo des films et des séries** dans la bannière d'accueil ; s'il ne se charge pas, le titre reprend sa place
+- Un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture »
+
+### EN
+- **Resume at the right spot**: the title page shows the position you left as soon as you leave the player, even when Jellyfin 12.1 writes it late
+- **Direct streaming holds** through a server outage
+- **The logo of movies and series** in the home banner; if it fails to load, the title takes its place back
+- A title already watched, played again then left partway, comes back in "Continue watching"
+
+## [ios-1.10.1]
+<!-- Bloc iOS (App Store Connect, 4000 caractères) : la version complète. -->
+### FR
+- **Les vidéos HEVC « hev1 » ont une image sur iPhone et iPad** : ces fichiers MP4 s'affichaient en noir, le son seul, sans la moindre erreur. Ils passent désormais par le lecteur avancé ; avec le lecteur système (AirPlay, ou le réglage qui l'impose), le serveur les remuxe, l'image copiée, jamais réencodée
+- **La fiche montre la position quittée dès la sortie du lecteur**, même quand Jellyfin 12.1 l'écrit en retard ou la perd : « Reprendre » repart du bon endroit, avec une seule réécriture si la position manque encore 20 s plus tard
+- **La lecture directe tient pendant une panne** : une coupure passagère du serveur Tentacle ou de Jellyfin la coupait jusqu'au redémarrage de l'app ; elle reprend désormais dès que le serveur répond
+- **Le bon logo dans la bannière d'accueil et à l'ouverture du lecteur** : celui du film ou de la série, celui de la série sur un épisode ; un logo qui ne se charge pas laisse la place au titre
+- Un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture », même quand la lecture passe par le serveur Tentacle
+
+### EN
+- **"hev1" HEVC videos have a picture on iPhone and iPad**: these MP4 files showed black, sound only, without any error. They now go to the Advanced player; with the System player (AirPlay, or the setting that forces it), the server remuxes them, the picture copied, never re-encoded
+- **The title page shows the position you left as soon as you leave the player**, even when Jellyfin 12.1 writes it late or loses it: "Resume" starts from the right spot, with a single rewrite if the position is still missing 20 s later
+- **Direct streaming holds through an outage**: a brief Tentacle server or Jellyfin outage turned it off until the app was restarted; it now comes back as soon as the server answers
+- **The right logo in the home banner and when the player opens**: the movie's or the series', the series' on an episode; a logo that fails to load leaves room for the title
+- A title already watched, played again then left partway, comes back in "Continue watching", even when playback goes through the Tentacle server
+
 ## [1.10.0]
 <!-- Bloc nu : Google Play, 500 caractères. Le bloc ios- porte la version complète. -->
 ### FR
