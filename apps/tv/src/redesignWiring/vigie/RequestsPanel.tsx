@@ -5,6 +5,7 @@ import type { MyTitle } from "@tentacle-tv/shared";
 import { FocusBindingProvider, type FocusBinder } from "../../redesign/focus/focusBinding";
 import { requestRowKey } from "../../redesign/requests/RequestRow";
 import { REQUESTS_CLOSE_KEY, REQUESTS_VISIBLE_ROWS, RequestsPanelView } from "../../redesign/requests/RequestsPanelView";
+import { useBackLayer } from "../back/BackScope";
 import { setFocusLocked } from "../focus/focusLocks";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
 import { requestItemModel, requestsCountText } from "./requestModels";
@@ -18,16 +19,18 @@ import { requestItemModel, requestsCountText } from "./requestModels";
  *   garde anti-clic fantôme — la fenêtre s'ouvre sous un OK encore enfoncé.
  * - LECTURE SEULE : les lignes ne sont focalisables que pour faire défiler une
  *   liste qui dépasse (`REQUESTS_VISIBLE_ROWS`) ; OK n'y fait rien.
- * - Menu ferme, par un seul point (`useMenuCloses`) ; la croix aussi. La
- *   sortie se joue (`closing`) avant que la Modal ne se retire, et tvOS rend
- *   le focus à l'aperçu du rail.
+ * - Menu ferme : la fenêtre est une couche « menu » de la pile du Retour
+ *   (`useBackLayer`), et sa `Modal`, qui reçoit Menu dans son propre
+ *   contrôleur, ferme par la même fonction (`onRequestClose`) ; la croix
+ *   aussi. La sortie se joue (`closing`) avant que la Modal ne se retire, et
+ *   tvOS rend le focus à l'aperçu du rail.
  */
 
 export function RequestsPanel({ titles, onClose }: { titles: MyTitle[] | null; onClose: () => void }) {
   const { t } = useTranslation();
   const [closing, setClosing] = useState(false);
   const requestClose = useCallback(() => setClosing(true), []);
-  const onMenu = useMenuCloses(requestClose);
+  useBackLayer("menu", !closing, requestClose);
   const focus = useFocusStore();
   const items = useMemo(() => titles?.map((title) => requestItemModel(title, t)) ?? null, [titles, t]);
   useRowLocks(focus, items ? items.map((item) => requestRowKey(item.key)) : []);
@@ -39,7 +42,7 @@ export function RequestsPanel({ titles, onClose }: { titles: MyTitle[] | null; o
     [focus],
   );
   return (
-    <Modal visible transparent animationType="none" onRequestClose={onMenu}>
+    <Modal visible transparent animationType="none" onRequestClose={requestClose}>
       <FocusBindingProvider bind={bind}>
         <RequestsPanelView
           title={t("requests:dockLabel")}
@@ -54,15 +57,6 @@ export function RequestsPanel({ titles, onClose }: { titles: MyTitle[] | null; o
       </FocusBindingProvider>
     </Modal>
   );
-}
-
-/**
- * LE point par lequel la fenêtre s'inscrit au Retour. Aujourd'hui, Menu
- * atteint la `Modal` par `onRequestClose` ; la pile de couches de la tâche 1
- * (menu > surimpression > page > rail > sortie) s'y branchera, ici seulement.
- */
-function useMenuCloses(close: () => void): () => void {
-  return close;
 }
 
 /**
