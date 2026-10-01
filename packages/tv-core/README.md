@@ -33,4 +33,7 @@ suivi : ils sont désormais le filet de non-régression des trois plateformes.
 - **La navigation au focus.** Apple TV et Android TV la résolvent nativement ;
   seule la LG doit la calculer, faute de navigation spatiale dans un navigateur.
   Seule la géométrie (`focus/geometry.ts`) est ici, parce qu'elle sert aussi à
-  décider d'un défilement — le reste du moteur reste dans la cible webOS.
+  décider d'un défilement — le reste du moteur reste dans la cible webOS. La
+  règle HAUT / BAS entre sections (`focus/sections.ts` : la section voisine,
+  l'élément au centre le plus proche) est la référence que l'Apple TV traduit
+  nativement, au moment du geste.
