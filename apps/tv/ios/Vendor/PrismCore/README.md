@@ -146,6 +146,21 @@ production continue.
 Le pont de la forme muxée est désormais réinitialisé à chaque ré-ancrage comme
 celui d'un rendu (§ 3), et reconstruit s'il a été vidé à la fin du fichier.
 
+### 6. La carte de keyframes d'un long GOP, enfin gardée (2026-10-01)
+
+`Sources/PrismCore/Remux/HLSRemuxer.swift` (l'enregistrement de la carte lue
+dans la source) et `Sources/PrismCore/Remux/SegmentPlan.swift`
+(`longestGapSeconds`).
+
+PrismCore ne garde la carte lue dans l'index du fichier que si elle couvre
+provablement la fin : sa dernière keyframe dans la dernière fenêtre de
+segment (6 s). Un remux 4K dont les keyframes tombent toutes les 10,4 s peut
+finir 6,7 s après la sienne (mesuré : dernière keyframe à 13 691,7 s pour
+13 698,4 s) — sa carte complète n'était jamais gardée, et chaque lecture
+relisait l'index. La fenêtre vaut désormais le plus long écart entre deux
+keyframes de l'index quand il dépasse la cible ; un index coupé par le budget
+de chargement s'arrête des minutes avant la fin, pas à un GOP près.
+
 ## Ce qui est repris, ce qui ne l'est pas
 
 `Package.swift` (réduit à la bibliothèque), `Sources/PrismCore`, `LICENSE`,

@@ -899,12 +899,24 @@ final class HLSRemuxer: @unchecked Sendable {
             let stream = input.pointee.streams[Int(videoIndex)]!
             let indexed = SegmentPlan.indexedKeyframes(of: stream)
             let durationSeconds = Double(input.pointee.duration) / Double(AV_TIME_BASE)
+            // Modified for Tentacle TV, 2026-10-01: the end-coverage window is
+            // the index's own longest keyframe gap when that exceeds the
+            // segment target. A source keyed every 10.4 s (a 4K HDR remux,
+            // measured) can end up to 10.4 s after its last keyframe: with a
+            // 6 s window its complete index was never stored, and every play
+            // paid the index load again. The gap is already bounded by the
+            // plan's own witness (`maxTrustedGapSeconds`), and an index cut
+            // short by the load budget stops minutes before the end, not
+            // within one GOP of it.
+            let gapWindow = SegmentPlan.longestGapSeconds(
+                keyframes: indexed, tickSeconds: av_q2d(stream.pointee.time_base)
+            )
             if indexed.count >= 2, let last = indexed.max(), durationSeconds > 0,
                SegmentPlan.indexCoversThroughEnd(
                    lastKeyframePTS: last,
                    tickSeconds: av_q2d(stream.pointee.time_base),
                    durationSeconds: durationSeconds,
-                   targetSeconds: segmentSeconds
+                   targetSeconds: max(segmentSeconds, Int(gapWindow.rounded(.up)))
                ) {
                 let timeBase = stream.pointee.time_base
                 keyframeCache.store(.init(

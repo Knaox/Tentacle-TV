@@ -275,6 +275,14 @@ struct SegmentPlan: Equatable {
         Double(lastKeyframePTS) * tickSeconds >= durationSeconds - Double(targetSeconds)
     }
 
+    /// Modified for Tentacle TV, 2026-10-01: the longest gap between two
+    /// consecutive keyframes of `keyframes`, in seconds (0 under two entries).
+    static func longestGapSeconds(keyframes: [Int64], tickSeconds: Double) -> Double {
+        let sorted = keyframes.sorted()
+        let widest = zip(sorted, sorted.dropFirst()).map { $1 - $0 }.max() ?? 0
+        return Double(widest) * tickSeconds
+    }
+
     /// The keyframe-aligned plan, or nil when the index fails its witnesses.
     /// Pure — unit-tested against synthetic keyframe sets.
     ///
