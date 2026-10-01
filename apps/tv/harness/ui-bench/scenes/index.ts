@@ -9,6 +9,7 @@ import { GLASS_SCENES } from "./glassScenes";
 import { HOME_SCENES } from "./homeScenes";
 import { LEGIBILITY_SCENES } from "./legibilityScenes";
 import { LIBRARY_SCENES } from "./libraryScenes";
+import { LIGHT_MEASURE_SCENES } from "./lightMeasureScenes";
 import { MEASURE_SCENES } from "./measureScenes";
 import { MOTION_SCENES } from "./motionScenes";
 import { NAV_SCENES } from "./navScenes";
@@ -57,6 +58,7 @@ export const SCENES: BenchScene[] = [
   ...GLASS_SCENES,
   ...LEGIBILITY_SCENES,
   ...MEASURE_SCENES,
+  ...LIGHT_MEASURE_SCENES,
   ...MOTION_SCENES,
   ...BENCH_SCENES,
   // Les écrans de la fiche App Store et du site (instantané vitrine, contenu libre).

@@ -85,10 +85,20 @@ C'est le GPU du Mac qui rend l'Apple TV simulée : on compare des RAPPORTS entre
 deux états, jamais une valeur d'appareil. Protocole : chaque cas plusieurs
 fois, en alternance (`scene …`, `glass …`, `gpu 8`), pour répartir la dérive.
 Le groupe « Mesure » du catalogue donne le pire cas (une image qui glisse sans
-fin sous six verres, sous les mêmes verres masqués, sans verre) et le coût des
-fonds posés sous le verre (`mesure/fonds-dessines` contre `mesure/fonds`) ; le
+fin sous six verres, sous les mêmes verres masqués, sans verre), le coût des
+fonds posés sous le verre (`mesure/fonds-dessines` contre `mesure/fonds`) et
+celui de la lumière (`mesure/lumiere-grille`, `mesure/lumiere-rangee`) ; le
 groupe « Verre » donne le verre à juger à l'œil (sur une image, sous un fondu)
 et le texte blanc sous chaque ton, sur du blanc pur (`verre/lisibilite`).
+
+Sous une forte charge du Mac (plusieurs bancs, compilations), un focus piloté
+depuis le relais (`fps --sweep`, `focus` en boucle) n'arrive pas au même
+rythme d'un tour à l'autre : le même code a mesuré 14 puis 223 ms/s (le
+2026-10-02, huit bancs démarrés). Les scènes « Lumière » font changer le focus
+SEULES, dans l'app, toutes les 400 ms : un mouvement déterministe, qui se
+compare d'un code à l'autre (écart d'un tour à l'autre : quelques pour cent).
+La lecture du registre elle-même prend alors plusieurs secondes : la fenêtre
+de `gpu` s'allonge d'autant — mesurer un état qui DURE, pas une rafale.
 
 ## Mesurer le mouvement
 
