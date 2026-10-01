@@ -8,8 +8,9 @@ import type { TimelineSegment } from "./playerTypes";
 
 /**
  * La frise : le temps écoulé, la barre (en mémoire, lu, la pastille) et la
- * durée. Passive — jamais focalisable : le déplacement se pilote au pavé et
- * se montre en plein écran (`ScrubOverlay`). Le lu porte le dégradé de la
+ * durée. Passive — jamais focalisable : le déplacement se pilote aux flèches
+ * et au pavé, et se montre sur elle, la vignette visée au-dessus du curseur
+ * (`ScrubOverlay`). Le lu porte le dégradé de la
  * marque, violet → rose, comme la barre du lecteur du bureau
  * (`--progress-fill`) : le rose arrive TOUJOURS à la tête de lecture.
  *
@@ -23,12 +24,20 @@ import type { TimelineSegment } from "./playerTypes";
  */
 
 export const TIMELINE_WIDTH = 1920 - 2 * TV_STAGE.safe.x;
+/** Le haut de la rangée de la frise, à la même place dans l'habillage et dans
+ *  le défilement : elle ne saute pas quand on passe de l'un à l'autre. */
+export const TIMELINE_TOP = 818;
+/** La hauteur de la rangée ; la barre et les curseurs y sont centrés. */
+export const TIMELINE_ROW = 40;
 const TIME_WIDTH = 132;
 const GAP = 26;
 export const TRACK_WIDTH = TIMELINE_WIDTH - 2 * (TIME_WIDTH + GAP);
+/** Le bord gauche de la barre, sur la scène de 1920 : ce que vise un curseur. */
+export const TRACK_LEFT = TV_STAGE.safe.x + TIME_WIDTH + GAP;
 const BAR = 10;
 const KNOB = 26;
-const GHOST = 34;
+/** Le curseur visé du défilement : son diamètre. */
+export const GHOST = 34;
 /** La coupure entre deux morceaux de barre. */
 const CUT = 4;
 /** Un bord à moins de 0,5 % d'une extrémité ne coupe rien (passage qui ouvre ou clôt le média). */
@@ -113,7 +122,7 @@ export const OsdTimeline = memo(function OsdTimeline({
 });
 
 const styles = StyleSheet.create({
-  row: { width: TIMELINE_WIDTH, height: 40, flexDirection: "row", alignItems: "center", gap: GAP },
+  row: { width: TIMELINE_WIDTH, height: TIMELINE_ROW, flexDirection: "row", alignItems: "center", gap: GAP },
   time: { ...fonts.semibold, width: TIME_WIDTH, fontSize: 28, fontVariant: ["tabular-nums"] },
   elapsed: { color: colors.text },
   total: { color: white(0.8), textAlign: "right" },

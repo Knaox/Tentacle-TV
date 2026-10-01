@@ -8,9 +8,9 @@ import { colors, fonts } from "../../theme/tokens";
 import { SOFT_BASE } from "./surfaces";
 
 /**
- * Le badge d'un saut OSD caché (double appui ←/→) : « +30 s » du côté où
- * l'on va, « −10 s » de l'autre — sans rallumer l'habillage. Les appuis
- * rapprochés se cumulent (+60, +90) : c'est l'intégration qui compte.
+ * Le badge d'un saut habillage caché (un appui ←/→, dix secondes) : « +10 s »
+ * du côté où l'on va, « −10 s » de l'autre — sans rallumer l'habillage. Les
+ * appuis rapprochés se cumulent (+20, +30) : c'est l'intégration qui compte.
  */
 export const SeekFlash = memo(function SeekFlash({ forward, label, appear }: {
   forward: boolean;

@@ -11,7 +11,7 @@ import { EndScreen } from "./EndScreen";
 import { EpisodesPanel } from "./EpisodesPanel";
 import { FrameView } from "./FrameView";
 import { OsdControls, type OsdControlsProps } from "./OsdControls";
-import { OsdTimeline } from "./OsdTimeline";
+import { OsdTimeline, TIMELINE_TOP } from "./OsdTimeline";
 import { OsdTopBar } from "./OsdTopBar";
 import { BufferingBadge, ErrorBanner, QualityNotice } from "./PlaybackStatus";
 import { PlayerLoading } from "./PlayerLoading";
@@ -55,9 +55,9 @@ import { UpNextCard } from "./UpNextCard";
  *
  * Mouvement (Apple TV) : l'habillage paraît vite — la frise et les commandes
  * montent de quelques points, la barre du haut descend — et s'efface
- * posément à l'inactivité (préréglage `chrome`) ; le badge de saut entre et
- * sort en fondu ; panneaux, carte « À suivre » et écran de fin entrent en
- * glissant (chacun chez lui).
+ * posément à l'inactivité (préréglage `chrome`) ; le badge de saut et la vue
+ * du défilement entrent et sortent en fondu ; panneaux, carte « À suivre » et
+ * écran de fin entrent en glissant (chacun chez lui).
  */
 
 export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport" | "paused" | "labels"> {
@@ -162,9 +162,11 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
       {upNext && playing && !scrub && !panel && !endScreen ? (
         <UpNextCard model={upNext} labels={labels} onPlayNext={props.onPlayNext} onDismiss={props.onDismissNext} />
       ) : null}
-      {scrub && playing ? (
-        <ScrubOverlay scrub={scrub} timeline={timeline} confirmLabel={labels.scrubConfirm} cancelLabel={labels.scrubCancel} />
-      ) : null}
+      <Presented value={scrub && playing ? scrub : null} motion="reveal">
+        {(value, appear) => (
+          <ScrubOverlay scrub={value} timeline={timeline} confirmLabel={labels.scrubConfirm} cancelLabel={labels.scrubCancel} appear={appear} />
+        )}
+      </Presented>
       {panel?.kind === "episodes" ? (
         <EpisodesPanel
           model={panel.episodes}
@@ -193,6 +195,6 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
 const styles = StyleSheet.create({
   pauseDim: { backgroundColor: scrim(0.28) },
   bottomScrim: { top: STAGE_SIZE.height - BOTTOM_SCRIM },
-  timeline: { position: "absolute", left: SAFE.x, right: SAFE.x, top: 818 },
-  controls: { position: "absolute", left: SAFE.x, right: SAFE.x, top: 888 },
+  timeline: { position: "absolute", left: SAFE.x, right: SAFE.x, top: TIMELINE_TOP },
+  controls: { position: "absolute", left: SAFE.x, right: SAFE.x, top: TIMELINE_TOP + 70 },
 });
