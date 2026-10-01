@@ -70,6 +70,13 @@ export interface ScrubMachine {
    */
   enter: () => void;
   step: (sign: 1 | -1, tier: number) => void;
+  /**
+   * Un geste qui déplace le curseur HORS de `step` — le glisser du pavé, un
+   * appui fin que l'adaptateur applique lui-même : il repousse l'abandon sur
+   * inactivité, sans rien déplacer. Sans lui, l'abandon tombait sept secondes
+   * après le dernier `step`, sous un doigt encore en train de viser.
+   */
+  touch: () => void;
   confirm: () => void;
   cancel: () => void;
   isActive: () => boolean;
@@ -156,6 +163,9 @@ export function createScrubMachine(options: ScrubMachineOptions): ScrubMachine {
   return {
     enter,
     step,
+    touch: () => {
+      if (active) armIdle();
+    },
     confirm,
     cancel,
     isActive: () => active,

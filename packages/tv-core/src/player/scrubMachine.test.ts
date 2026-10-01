@@ -236,3 +236,33 @@ describe("l'état de lecture d'avant", () => {
     vi.useRealTimers();
   });
 });
+
+describe("un geste hors pas repousse l'abandon", () => {
+  it("toucher le déplacement le garde ouvert au-delà de sept secondes", () => {
+    vi.useFakeTimers();
+    const { options, machine } = harness();
+
+    machine.enter();
+    for (let elapsed = 0; elapsed < 12_000; elapsed += 3000) {
+      vi.advanceTimersByTime(3000);
+      machine.touch();
+    }
+
+    expect(machine.isActive()).toBe(true);
+    vi.advanceTimersByTime(7100);
+    expect(machine.isActive()).toBe(false);
+    expect(options.onSeek).not.toHaveBeenCalled();
+    machine.destroy();
+    vi.useRealTimers();
+  });
+
+  it("toucher hors déplacement n'ouvre rien", () => {
+    const { options, machine } = harness();
+
+    machine.touch();
+
+    expect(machine.isActive()).toBe(false);
+    expect(options.onEnter).not.toHaveBeenCalled();
+    machine.destroy();
+  });
+});
