@@ -74,12 +74,61 @@ describe("fetchPlaybackInfo — voie native", () => {
     expect(traces.proxy[0]).toContain("/Items/item1/PlaybackInfo?");
   });
 
+  it("panne des DEUX voies (serveur média à terre) : l'erreur remonte, le direct n'est pas verrouillé", async () => {
+    const { deps, traces, native } = fakeDeps();
+    native.error = new Error("serveur injoignable");
+    deps.viaProxy = () => Promise.reject(new JellyfinError(502, "Bad Gateway", "/Items"));
+    await expect(fetchPlaybackInfo(deps, "item1", OPTIONS)).rejects.toMatchObject({ status: 502 });
+    expect(traces.blocks).toHaveLength(0);
+  });
+
+  it("Tentacle muet aussi (erreur réseau du proxy) : pas de verrou", async () => {
+    const { deps, traces, native } = fakeDeps();
+    native.error = new Error("serveur injoignable");
+    deps.viaProxy = () => Promise.reject(new TypeError("Network request failed"));
+    await expect(fetchPlaybackInfo(deps, "item1", OPTIONS)).rejects.toBeInstanceOf(TypeError);
+    expect(traces.blocks).toHaveLength(0);
+  });
+
+  it("le proxy obtient un refus 4xx de Jellyfin : la voie directe seule est en cause, verrou", async () => {
+    const { deps, traces, native } = fakeDeps();
+    native.error = new Error("serveur injoignable");
+    deps.viaProxy = () => Promise.reject(new JellyfinError(403, "Forbidden", "/Items"));
+    await expect(fetchPlaybackInfo(deps, "item1", OPTIONS)).rejects.toMatchObject({ status: 403 });
+    expect(traces.blocks).toHaveLength(1);
+  });
+
   it("sans direct streaming, la voie native ne se tente même pas", async () => {
     const { deps, traces } = fakeDeps();
     deps.directStreaming = null;
     const r = await fetchPlaybackInfo(deps, "item1", OPTIONS);
     expect(r).toEqual(RESPONSE);
     expect(traces.native).toHaveLength(0);
+    expect(traces.proxy).toHaveLength(1);
+  });
+});
+
+describe("fetchPlaybackInfo — voie fetch (TV, mobile, navigateur)", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("Jellyfin coupé : direct ET proxy en échec — rien n'est verrouillé pour la session", async () => {
+    const { deps, traces } = fakeDeps();
+    deps.nativePlaybackInfo = undefined;
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Network request failed")));
+    deps.viaProxy = () => Promise.reject(new JellyfinError(502, "Bad Gateway", "/Items"));
+    await expect(fetchPlaybackInfo(deps, "item1", OPTIONS)).rejects.toMatchObject({ status: 502 });
+    expect(traces.blocks).toHaveLength(0);
+  });
+
+  it("voie directe fermée, proxy qui répond (CORS) : verrou, puis la réponse du proxy", async () => {
+    const { deps, traces } = fakeDeps();
+    deps.nativePlaybackInfo = undefined;
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    const r = await fetchPlaybackInfo(deps, "item1", OPTIONS);
+    expect(r).toEqual(RESPONSE);
+    expect(traces.blocks).toHaveLength(1);
     expect(traces.proxy).toHaveLength(1);
   });
 });

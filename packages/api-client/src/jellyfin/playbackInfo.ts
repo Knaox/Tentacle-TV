@@ -104,8 +104,7 @@ export async function fetchPlaybackInfo(
         if (e instanceof JellyfinError) throw e;
         // Le serveur média est injoignable DEPUIS LA MACHINE (le natif n'a pas
         // de CORS) : manifeste et segments partiraient au même mur.
-        deps.signalDirectBlocked(`PlaybackInfo natif refuse (${(e as Error)?.message ?? e})`);
-        return deps.viaProxy(path, { method: "POST", body });
+        return proxyAfterDirectFailure(deps, path, body, `PlaybackInfo natif refuse (${(e as Error)?.message ?? e})`);
       }
     }
     try {
@@ -127,9 +126,34 @@ export async function fetchPlaybackInfo(
       // le manifeste HLS et les segments partiront au même mur. On coupe donc
       // le direct tout de suite, pour que l'URL de stream construite juste
       // après parte déjà sur le proxy : un seul chargement au lieu de deux.
-      deps.signalDirectBlocked(`PlaybackInfo direct refuse (${(e as Error)?.message ?? e})`);
+      return proxyAfterDirectFailure(deps, path, body, `PlaybackInfo direct refuse (${(e as Error)?.message ?? e})`);
     }
   }
 
   return deps.viaProxy(path, { method: "POST", body });
+}
+
+/**
+ * La même requête par le proxy, après une panne de TRANSPORT de la voie
+ * directe. Le direct n'est coupé pour la session que si Jellyfin répond par
+ * le proxy (succès, ou refus 4xx) : la preuve que c'est la voie directe qui ne
+ * passe pas (CORS, topologie du réseau). Si le proxy échoue aussi (réseau,
+ * 5xx du proxy), c'est une PANNE — serveur média ou réseau à terre : couper
+ * le direct pour toute la session le perdait au retour du serveur, et tout
+ * repartait par le proxy jusqu'au redémarrage de l'application.
+ */
+async function proxyAfterDirectFailure(
+  deps: PlaybackInfoDeps,
+  path: string,
+  body: string,
+  reason: string,
+): Promise<PlaybackInfoResponse> {
+  try {
+    const response = await deps.viaProxy(path, { method: "POST", body });
+    deps.signalDirectBlocked(reason);
+    return response;
+  } catch (e) {
+    if (e instanceof JellyfinError && e.status < 500) deps.signalDirectBlocked(reason);
+    throw e;
+  }
 }
