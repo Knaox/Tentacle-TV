@@ -11,7 +11,7 @@ import { OPTION_ROW_HEIGHT, OptionRow } from "../library/OptionRow";
  * se demandent encore se cochent (`OptionRow`, le nombre d'épisodes à
  * droite) ; les autres disent où elles en sont (« Disponible », « Demandée »)
  * et ne prennent pas le focus. En bas, « Demander N saisons » au dégradé de la
- * marque — rien tant qu'aucune n'est cochée.
+ * marque dès qu'une saison est cochée — avant, « Fermer », en verre.
  *
  * Vue pure. Clés de focus : `sheet:season:<numéro>`, puis `sheet:apply`
  * (groupe `sheet:footer`).
@@ -39,9 +39,9 @@ export interface SeasonsSheetModel {
   seasons: SeasonRowModel[] | null;
   /** À la place des saisons : leur lecture, un échec, ou rien à demander. */
   message?: string;
-  /** « Demander 2 saisons », ou ce qu'il reste à faire (« Cochez une saison »). */
-  submitLabel: string;
-  canSubmit: boolean;
+  /** La pilule du pied : « Demander 2 saisons » dès qu'une saison est cochée,
+   *  sinon « Fermer » — jamais un bouton qui ne ferait rien. */
+  submit: { label: string; kind: "request" | "close" };
 }
 
 export const seasonFocusKey = (number: number) => `sheet:season:${number}`;
@@ -73,11 +73,14 @@ export const SeasonsSheet = memo(function SeasonsSheet({
   sheet,
   onToggle,
   onSubmit,
+  onClose,
 }: {
   sheet: SeasonsSheetModel;
   onToggle?: (number: number) => void;
   onSubmit?: () => void;
+  onClose?: () => void;
 }) {
+  const request = sheet.submit.kind === "request";
   const seasons = sheet.seasons ?? [];
   const scrolls = seasons.length > VISIBLE_ROWS;
   const height = VISIBLE_ROWS * OPTION_ROW_HEIGHT + (VISIBLE_ROWS - 1) * ROW_GAP;
@@ -106,9 +109,10 @@ export const SeasonsSheet = memo(function SeasonsSheet({
       title={sheet.title}
       subtitle={sheet.subtitle}
       width={WIDTH}
-      applyLabel={sheet.submitLabel}
-      applyVariant="brand"
-      onApply={sheet.canSubmit ? onSubmit : undefined}
+      applyLabel={sheet.submit.label}
+      applyVariant={request ? "brand" : "glass"}
+      applyIcon={request ? "check" : "close"}
+      onApply={request ? onSubmit : onClose}
     >
       {sheet.message ? <Text style={styles.message}>{sheet.message}</Text> : null}
       {seasons.length === 0 ? null : scrolls ? (

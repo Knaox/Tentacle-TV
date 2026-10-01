@@ -38,7 +38,6 @@ export default {
   seasonsSubtitle: "Cochez les saisons à demander.",
   seasonsSubmit_one: "Demander {{count}} saison",
   seasonsSubmit_other: "Demander {{count}} saisons",
-  seasonsSubmitNone: "Cochez une saison",
   seasonFallback: "Saison {{number}}",
   seasonEpisodes_one: "{{count}} épisode",
   seasonEpisodes_other: "{{count}} épisodes",

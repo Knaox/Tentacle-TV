@@ -6,6 +6,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
+import type { IconName } from "../../icons/Icon";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { colors, scrim, text } from "../../theme/tokens";
 import { useAppear } from "./useAppear";
@@ -29,7 +30,9 @@ export interface FilterSheetProps {
   applyLabel: string;
   /** La pilule qui valide : blanche (un filtre), ou au dégradé de la marque
    *  quand elle FAIT quelque chose (« Demander »). */
-  applyVariant?: "primary" | "brand";
+  applyVariant?: "primary" | "brand" | "glass";
+  /** Le pictogramme de cette pilule (une coche par défaut). */
+  applyIcon?: IconName;
   clearLabel?: string;
   onApply?: () => void;
   onClear?: () => void;
@@ -42,6 +45,7 @@ export const FilterSheet = memo(function FilterSheet({
   width,
   applyLabel,
   applyVariant = "primary",
+  applyIcon = "check",
   clearLabel,
   onApply,
   onClear,
@@ -80,7 +84,7 @@ export const FilterSheet = memo(function FilterSheet({
               ) : (
                 <View />
               )}
-              <PillButton variant={applyVariant} size="md" icon="check" label={applyLabel} focusKey="sheet:apply" onPress={onApply} />
+              <PillButton variant={applyVariant} size="md" icon={applyIcon} label={applyLabel} focusKey="sheet:apply" onPress={onApply} />
             </FocusGroup>
           </GlassSurface>
         </Animated.View>

@@ -90,7 +90,7 @@ export function SeasonsSheetRedesign({ gate, title, onAnswer, onClose }: Props) 
   return (
     <Modal visible={entry.current !== null} transparent animationType="none" onRequestClose={onClose}>
       <FocusBindingProvider bind={focus.binder}>
-        <SeasonsSheet sheet={sheet} onToggle={onToggle} onSubmit={onSubmit} />
+        <SeasonsSheet sheet={sheet} onToggle={onToggle} onSubmit={onSubmit} onClose={onClose} />
       </FocusBindingProvider>
     </Modal>
   );

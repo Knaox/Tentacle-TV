@@ -41,8 +41,7 @@ export function seasonsSheetModel(
     subtitle: t("requests:seasonsSubtitle"),
     seasons,
     message,
-    submitLabel: count > 0 ? t("requests:seasonsSubmit", { count }) : t("requests:seasonsSubmitNone"),
-    canSubmit: count > 0,
+    submit: count > 0 ? { label: t("requests:seasonsSubmit", { count }), kind: "request" } : { label: t("common:close"), kind: "close" },
   };
 }
 
