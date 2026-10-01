@@ -2,6 +2,7 @@ import { useState } from "react";
 import { findNodeHandle, type View } from "react-native";
 import type { FocusBinder, FocusBinding } from "../../redesign/focus/focusBinding";
 import { claimTvFocus } from "../../hooks/useTvFocusClaim";
+import { parallaxOf } from "../remote/parallax";
 
 /**
  * Le magasin de focus d'un écran refondu — la moitié « app » du port du focus
@@ -16,6 +17,10 @@ import { claimTvFocus } from "../../hooks/useTvFocusClaim";
  *
  * Un magasin par écran (`useFocusStore`) : la pile garde plusieurs écrans
  * montés, et leurs clés se ressemblent.
+ *
+ * Il traduit aussi la FORME qu'une cible déclare (`FocusTarget form`) en
+ * effets natifs du focus — la parallaxe au pouce (`remote/parallax.ts`),
+ * figée avec la liaison.
  */
 
 export type FocusListener = (focusKey: string, focused: boolean) => void;
@@ -90,11 +95,16 @@ export function createFocusStore(): FocusStore {
     for (const listener of [...listeners]) listener(key, focused);
   };
 
-  const binder: FocusBinder = (key) => {
+  const binder: FocusBinder = (key, form) => {
     let binding = bindings.get(key);
     if (!binding) {
+      const extra = extras.get(key);
+      // Les effets natifs de la forme (la parallaxe au pouce) d'abord : les
+      // props d'une clé (verrous, guides) les complètent.
+      const effects = parallaxOf(form);
       binding = {
-        ...extras.get(key),
+        ...extra,
+        native: effects || extra?.native ? { ...effects, ...extra?.native } : undefined,
         ref: (node: View | null) => attach(key, node),
         onFocus: () => changed(key, true),
         onBlur: () => changed(key, false),

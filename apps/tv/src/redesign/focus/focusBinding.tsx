@@ -56,8 +56,19 @@ export interface FocusBinding {
   container?: ComponentType<FocusGroupContainerProps>;
 }
 
-/** La réponse de l'intégration pour une clé ; `undefined` : rien à poser. */
-export type FocusBinder = (focusKey: string) => FocusBinding | undefined;
+/**
+ * La FORME d'un élément focalisable, telle que la vue la décrit — une
+ * description, pas une décision : `card` (une image : affiche, vignette,
+ * épisode, portrait) ou `row` (une ligne large : réglage, option, entrée de
+ * navigation) ; sans forme, un contrôle (bouton, pastille, touche).
+ * L'intégration en tire les effets natifs du focus (sur Apple TV, la
+ * parallaxe au pouce) ; la vue ne les nomme jamais.
+ */
+export type FocusForm = "card" | "row";
+
+/** La réponse de l'intégration pour une clé ; `undefined` : rien à poser.
+ *  `form` est facultatif : un intégrateur peut l'ignorer. */
+export type FocusBinder = (focusKey: string, form?: FocusForm) => FocusBinding | undefined;
 
 const BinderContext = createContext<FocusBinder | null>(null);
 
@@ -69,12 +80,12 @@ const BinderContext = createContext<FocusBinder | null>(null);
  */
 export function FocusBindingProvider({ bind, children }: { bind: FocusBinder; children: ReactNode }) {
   const outer = useContext(BinderContext);
-  const chained = useCallback<FocusBinder>((key) => bind(key) ?? outer?.(key), [bind, outer]);
+  const chained = useCallback<FocusBinder>((key, form) => bind(key, form) ?? outer?.(key, form), [bind, outer]);
   return <BinderContext.Provider value={chained}>{children}</BinderContext.Provider>;
 }
 
 /** Ce que l'intégration pose sur `focusKey` ; rien sans fournisseur ni clé. */
-export function useFocusBinding(focusKey?: string): FocusBinding | undefined {
+export function useFocusBinding(focusKey?: string, form?: FocusForm): FocusBinding | undefined {
   const bind = useContext(BinderContext);
-  return focusKey && bind ? bind(focusKey) : undefined;
+  return focusKey && bind ? bind(focusKey, form) : undefined;
 }

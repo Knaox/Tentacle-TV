@@ -19,7 +19,9 @@ import { colors, white } from "../theme/tokens";
  *
  * Le cadre ne fait que DESSINER : sur tvOS, un focalisable recouvert par un
  * frère qui dessine n'est plus proposé par la recherche géométrique du focus.
- * Une carte pose donc sa cible focalisable AU-DESSUS du cadre.
+ * Une carte rend donc son cadre DANS sa cible focalisable (`FocusTarget
+ * form="card"`), jamais en frère par-dessus elle — et la parallaxe au pouce
+ * d'Apple TV, jouée sur la vue focalisée, l'emporte avec elle.
  */
 
 /** L'agrandissement et le soulèvement du focus, pour une valeur de 0 à 1 —

@@ -108,4 +108,17 @@ export const TV_MOTION = {
     /** Le fond vivant qui change de lumière. */
     ambientMs: 600,
   },
+  /**
+   * La parallaxe au pouce : ce que le doigt posé sur le pavé tactile fait à
+   * l'élément focalisé — un décalage (`shift`, en points, de chaque côté) et
+   * une inclinaison (`tilt`, en radians), au plus fort quand le doigt est au
+   * bord. C'est tvOS qui la joue, d'après le doigt.
+   */
+  parallax: {
+    /** Le cadre d'une carte (affiche, vignette, épisode, portrait). */
+    card: { shift: 6, tilt: 0.07 },
+    /** Une ligne large (réglage, option, entrée de navigation) : elle glisse,
+     *  sans s'incliner — l'inclinaison en déformerait les bords. */
+    row: { shift: 3, tilt: 0 },
+  },
 } as const;

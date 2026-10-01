@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient } from "../background/SoftGradient";
 import { FocusTarget } from "../focus/FocusTarget";
@@ -30,12 +30,14 @@ import { useCardFocused } from "./useCardFocused";
  * — toute carte qui s'ouvre par l'appui maintenu (`onLongPress`) —
  * « Maintenir OK : plus d'options » : rien d'autre ne l'apprendrait.
  *
- * Deux étages, de bas en haut : l'image (`CardFrame`, qui ne fait que
- * dessiner) et sa légende, puis la carte elle-même — un `FocusTarget` sans
- * rendu qui les couvre TOUTES DEUX : tvOS ne propose pas au focus un élément
- * RECOUVERT par ce qui dessine, et fait défiler jusqu'à rendre visible tout le
- * cadre de la cible — la légende avec l'image. `onFocusChange` dit le focus
- * de la carte (`useCardFocused`).
+ * Deux étages, de bas en haut : la légende, puis la carte elle-même — un
+ * `FocusTarget` qui couvre l'image ET la légende, et ne porte que l'image
+ * (`CardFrame`). Rien ne le recouvre : tvOS ne propose pas au focus un
+ * élément recouvert par ce qui dessine, et fait défiler jusqu'à rendre
+ * visible tout le cadre de la cible — la légende avec l'image. Et seule
+ * l'image suit le pouce : la parallaxe d'Apple TV (`form="card"`) se joue
+ * sur la vue focalisée, la légende — hors de la cible — ne s'incline pas.
+ * `onFocusChange` dit le focus de la carte (`useCardFocused`).
  */
 
 export interface MediaCardProps {
@@ -57,7 +59,6 @@ export interface MediaCardProps {
 }
 
 const DEFAULT_WIDTH = { landscape: TV_STAGE.card.landscape.width, poster: TV_STAGE.card.poster.width };
-const NO_VISUAL = () => null;
 
 /** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
  *  la légende descend d'autant, l'image ne la recouvre jamais. */
@@ -100,22 +101,10 @@ export const MediaCard = memo(function MediaCard({
   const radius = landscape ? TV_STAGE.card.landscape.radius : TV_STAGE.card.poster.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
-  // L'appui, tenu par la cible (posée au-dessus de l'image), lu par le cadre.
-  const press = useSharedValue(0);
   return (
     <View style={[{ width }, focused && styles.front]}>
-      <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} press={press} origin={origin}>
-        {uri ? (
-          <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
-        ) : (
-          <View style={styles.missing}>
-            <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
-          </View>
-        )}
-        {landscape && card.logoUri ? <LogoLayer uri={card.logoUri} width={width} height={height} /> : null}
-        {card.badge ? <CardBadge label={card.badge} /> : null}
-        <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
-      </CardFrame>
+      {/* La place de l'image : son cadre se dessine dans la cible. */}
+      <View style={{ height }} />
       {hideCaption ? null : (
         <Caption focused={focused} shift={captionShift(height, origin)}>
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
@@ -127,18 +116,32 @@ export const MediaCard = memo(function MediaCard({
           />
         </Caption>
       )}
-      {/* En DERNIER, par-dessus l'image ET la légende : rien ne recouvre la
-          cible, et tvOS amène au focus la carte entière à l'écran. */}
+      {/* En DERNIER, par-dessus la légende : rien ne recouvre la cible, et
+          tvOS amène au focus la carte entière à l'écran. L'appui (OK enfoncé)
+          qu'elle tient, le cadre le lit (`usePressProgress`). */}
       <FocusTarget
         focusKey={focusKey}
+        form="card"
         onPress={onPress}
         onLongPress={onLongPress}
         onFocusChange={onTargetFocusChange}
         accessibilityLabel={card.title}
         style={StyleSheet.absoluteFill}
-        pressProgress={press}
       >
-        {NO_VISUAL}
+        {() => (
+          <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin}>
+            {uri ? (
+              <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+            ) : (
+              <View style={styles.missing}>
+                <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
+              </View>
+            )}
+            {landscape && card.logoUri ? <LogoLayer uri={card.logoUri} width={width} height={height} /> : null}
+            {card.badge ? <CardBadge label={card.badge} /> : null}
+            <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
+          </CardFrame>
+        )}
       </FocusTarget>
     </View>
   );

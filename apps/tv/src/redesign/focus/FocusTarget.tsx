@@ -4,7 +4,7 @@ import { useReducedMotion, useSharedValue, type SharedValue } from "react-native
 import { LONG_PRESS_THRESHOLD_MS } from "@tentacle-tv/tv-core";
 import { motionTo } from "../motion/motion";
 import { PressProgressContext } from "../motion/pressProgress";
-import { useFocusBinding } from "./focusBinding";
+import { useFocusBinding, type FocusForm } from "./focusBinding";
 import { useFocusVisual } from "./focusPreview";
 
 export interface FocusTargetProps {
@@ -16,6 +16,11 @@ export interface FocusTargetProps {
   onLongPress?: () => void;
   /** Prévient la vue parente : rangée qui recule, fond qui se teinte. */
   onFocusChange?: (focused: boolean) => void;
+  /** Ce qu'est l'élément — `card` (une image), `row` (une ligne large) ;
+   *  sans forme, un contrôle. L'intégration en tire les effets natifs du
+   *  focus (la parallaxe au pouce sur Apple TV) : la cible ne porte alors
+   *  que ce qui doit bouger avec le doigt (`focusBinding`, `FocusForm`). */
+  form?: FocusForm;
   accessibilityLabel?: string;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -48,6 +53,7 @@ export const FocusTarget = memo(function FocusTarget({
   onPress,
   onLongPress,
   onFocusChange,
+  form,
   accessibilityLabel,
   disabled,
   style,
@@ -58,7 +64,7 @@ export const FocusTarget = memo(function FocusTarget({
   const ownPress = useSharedValue(0);
   const press = pressProgress ?? ownPress;
   const { focused, onFocus, onBlur } = useFocusVisual(focusKey);
-  const binding = useFocusBinding(focusKey);
+  const binding = useFocusBinding(focusKey, form);
   const bindingFocus = binding?.onFocus;
   const bindingBlur = binding?.onBlur;
   const guarded = binding?.phantomPressGuard === true;

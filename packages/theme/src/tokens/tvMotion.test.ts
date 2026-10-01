@@ -37,6 +37,16 @@ describe("TV_MOTION", () => {
     expect(overshoot(TV_MOTION.spring.press)).toBeLessThan(0.1);
   });
 
+  it("la parallaxe au pouce reste discrète, et une ligne ne s'incline jamais", () => {
+    for (const { shift, tilt } of Object.values(TV_MOTION.parallax)) {
+      expect(shift).toBeGreaterThan(0);
+      expect(shift).toBeLessThanOrEqual(10);
+      // 0,1 rad ≈ 6° : au-delà, une affiche de 240 points se tord à l'œil.
+      expect(tilt).toBeLessThanOrEqual(0.1);
+    }
+    expect(TV_MOTION.parallax.row.tilt).toBe(0);
+  });
+
   it("les courbes restent des cubiques valides (abscisses dans [0, 1])", () => {
     for (const [x1, , x2] of Object.values(TV_MOTION.curve)) {
       expect(x1).toBeGreaterThanOrEqual(0);
