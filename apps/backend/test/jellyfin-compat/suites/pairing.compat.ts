@@ -4,6 +4,10 @@
  * elle), et le déjumelage la coupe partout — portes de Tentacle, socket, et
  * Jellyfin lui-même — sans toucher l'autre TV du compte.
  *
+ * Le jumelage par identifiant et mot de passe (Apple TV) y passe aussi, par
+ * la VRAIE fonction de la TV (`pairWithPassword`, tv-core) : la TV en sort
+ * jumelée comme par un code, et le jeton de connexion est rendu.
+ *
  * Sous la fonctionnalité « Téléviseurs jumelés » du catalogue : rien n'est
  * ajouté au manifeste publié, seuls des contrôles.
  */
@@ -13,8 +17,10 @@ import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import WebSocket from "ws";
 import { afterAll, expect } from "vitest";
+import { LOGIN_PATH, pairWithPassword, type PairingCall } from "../../../../../packages/tv-core/src/session/passwordPairing";
 import { check, feature } from "../harness";
 import { waitUntil } from "../jellyfinHttp";
+import { COMPAT_PASSWORD } from "../provision";
 import { backendApi, ctx, expectStatus, jellyfin, okJson, proxy } from "./support";
 
 interface Tv { jwt: string; jellyfinToken: string | null; deviceId: string | null }
@@ -80,6 +86,33 @@ async function setQuickConnect(enabled: boolean): Promise<void> {
 }
 
 afterAll(async () => { await setQuickConnect(true).catch(() => {}); });
+
+/** L'adresse de la TV sur son réseau : le serveur (derrière son proxy) la lit
+ *  dans `X-Forwarded-For`. Comme une vraie TV, ses connexions ne comptent pas
+ *  dans le seau du limiteur de la suite (cinq connexions par minute et par
+ *  adresse) — partagé, il refusait ensuite celles de `auth.compat`. */
+const TV_ADDRESS = "192.168.1.42";
+
+/** Le transport de la TV, en Node (qui ne garde aucun cookie). Il retient le
+ *  jeton de connexion, pour vérifier qu'il est rendu. */
+function tvTransport(seen: { loginToken?: string }): PairingCall {
+  return async (path, init) => {
+    try {
+      const res = await fetch(`${ctx().backend.url}${path}`, {
+        ...init,
+        headers: { ...init.headers, "X-Forwarded-For": TV_ADDRESS },
+        signal: AbortSignal.timeout(15_000),
+      });
+      const body: unknown = await res.json().catch(() => null);
+      if (path === LOGIN_PATH) seen.loginToken = (body as { AccessToken?: string } | null)?.AccessToken;
+      return { status: res.status, body };
+    } catch (error) {
+      return { status: null, failure: (error as Error).name === "TimeoutError" ? "timeout" : "network" };
+    }
+  };
+}
+
+const TV_IDENTITY = { deviceId: "compat-tv-identifiants", client: "Tentacle TV - TV", device: "Apple TV" };
 
 feature("userdata.paired-devices", () => {
   check("chaque TV reçoit SON jeton Jellyfin, sur l'identifiant dérivé pour elle", async () => {
@@ -147,6 +180,51 @@ feature("userdata.paired-devices", () => {
     await waitUntil(async () => (await jellyfinMe(tvs.chambre.jellyfinToken!)) === 401, 15_000, "jeton Jellyfin de la chambre révoqué", 500);
     // Le téléphone du compte n'a rien perdu.
     expect(await jellyfinMe(ctx().user.token)).toBe(200);
+  });
+
+  check("jumelée par identifiant et mot de passe : SON jeton Jellyfin, le jeton de connexion rendu, le déjumelage la coupe", async () => {
+    const before = await okJson<unknown[]>(backendApi("/api/pair/my-devices", ctx().user.token), "appareils du compte");
+    const seen: { loginToken?: string } = {};
+    const paired = await pairWithPassword({ username: ctx().user.name, password: ctx().user.password, identity: TV_IDENTITY }, tvTransport(seen));
+    if (!paired.ok) throw new Error(`jumelage par identifiants refusé : ${paired.error} (${paired.status ?? "sans réponse"})`);
+    expect(paired.user).toEqual({ id: ctx().user.id, name: ctx().user.name });
+    // Un jeton d'appareil, pas un jeton Jellyfin : la TV est une TV jumelée.
+    expect(paired.token.split(".")).toHaveLength(3);
+    const after = await okJson<unknown[]>(backendApi("/api/pair/my-devices", ctx().user.token), "appareils du compte");
+    expect(after).toHaveLength(before.length + 1);
+    // SON jeton Jellyfin, frappé pour elle — jamais le jeton de connexion.
+    const own = await streaming(paired.token);
+    expect(own.jellyfinToken).toBeTruthy();
+    expect(own.jellyfinToken).not.toBe(seen.loginToken);
+    expect(own.deviceId).toMatch(/-paired-/);
+    expect(await jellyfinMe(own.jellyfinToken!)).toBe(200);
+    // Le jeton de connexion, rendu : Jellyfin ne le connaît plus.
+    expect(seen.loginToken).toBeTruthy();
+    await waitUntil(async () => (await jellyfinMe(seen.loginToken!)) === 401, 15_000, "jeton de connexion révoqué", 500);
+    // Déjumelée par elle-même : refusée partout, son jeton Jellyfin mort, le téléphone intact.
+    await okJson(backendApi("/api/pair/self/revoke", paired.token, { method: "POST" }), "auto-révocation");
+    for (const status of await doors(paired.token)) expect(status).toBe(401);
+    await waitUntil(async () => (await jellyfinMe(own.jellyfinToken!)) === 401, 15_000, "jeton Jellyfin de la TV révoqué", 500);
+    expect(await jellyfinMe(ctx().user.token)).toBe(200);
+  });
+
+  check("compte désactivé chez Jellyfin : la connexion de la TV est refusée, avec son propre verdict", async () => {
+    const name = "compat-desactive";
+    const created = await okJson<{ Id: string }>(
+      jellyfin("/Users/New", ctx().apiKey, { method: "POST", body: JSON.stringify({ Name: name, Password: COMPAT_PASSWORD }) }),
+      "compte à désactiver",
+    );
+    try {
+      const user = await okJson<{ Policy: Record<string, unknown> }>(jellyfin(`/Users/${created.Id}`, ctx().apiKey), "compte");
+      const res = await jellyfin(`/Users/${created.Id}/Policy`, ctx().apiKey, {
+        method: "POST", body: JSON.stringify({ ...user.Policy, IsDisabled: true }),
+      });
+      if (!res.ok) throw new Error(`désactivation : HTTP ${res.status}`);
+      const result = await pairWithPassword({ username: name, password: COMPAT_PASSWORD, identity: TV_IDENTITY }, tvTransport({}));
+      expect(result).toEqual({ ok: false, error: "accountRefused", status: 400 });
+    } finally {
+      await jellyfin(`/Users/${created.Id}`, ctx().apiKey, { method: "DELETE" }).catch(() => undefined);
+    }
   });
 
   check("Quick Connect coupé : la TV jumelée lit par le proxy, sans jeton Jellyfin", async () => {
