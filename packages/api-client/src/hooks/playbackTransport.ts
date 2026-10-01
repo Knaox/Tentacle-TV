@@ -96,6 +96,8 @@ async function refreshDirectToken(client: JfClient): Promise<void> {
  * Fire-and-forget POST to Jellyfin session endpoint.
  * Logs errors instead of silently swallowing them.
  * Uses raw fetch as fallback if client.fetch fails (to rule out client issues).
+ * Rend vrai si un serveur a PRIS le report (2xx) : la file persistée des
+ * rapports (`playbackOutbox`) ne retire un arrêt qu'à cette condition.
  *
  * IMPORTANT : un échec ici ne touche JAMAIS reportDirectStreamingError — la
  * télémétrie est un fetch WebView soumis au CORS, qui échoue même quand le
@@ -109,7 +111,7 @@ export async function sessionPost(
   path: string,
   body: Record<string, unknown>,
   label: string,
-): Promise<void> {
+): Promise<boolean> {
   const bodyStr = JSON.stringify(body);
 
   // Direct Jellyfin route: bypass proxy to use the actual user's token
@@ -133,14 +135,14 @@ export async function sessionPost(
               method: "POST", body: bodyStr,
               headers: { "Content-Type": "application/json", ...directJellyfinHeaders(authHeader) },
             });
-      if (res.ok || res.status === 204) return;
+      if (res.ok || res.status === 204) return true;
       if (res.status === 401 || res.status === 403) {
         // Token appareil mort : refresh (bridé) — la route directe RESTE active,
         // le prochain report repartira avec le token frais. Pas de tentative
         // proxy : le playstate y est impossible (clé admin, JF 10.11).
         console.error(DBG, `${label} direct: ${res.status} — refresh du token Jellyfin demandé`);
         void refreshDirectToken(client).catch(() => {});
-        return;
+        return false;
       }
       console.error(DBG, `${label} direct: ${res.status} — télémétrie via proxy désormais`);
       directTelemetryBroken = true;
@@ -162,7 +164,8 @@ export async function sessionPost(
       const status = await client.nativeSessionPost(
         client.getBaseUrl(), path, proxyToken, client.getAuthHeader(), bodyStr,
       );
-      if ((status >= 200 && status < 300) || status === 401 || status === 403) return;
+      if (status >= 200 && status < 300) return true;
+      if (status === 401 || status === 403) return false;
       console.error(DBG, `${label} natif via proxy: ${status}`);
     } catch (err: unknown) {
       console.error(DBG, `${label} natif via proxy FAILED:`, err instanceof Error ? err.message : String(err));
@@ -175,6 +178,7 @@ export async function sessionPost(
   // déconnecter — c'est de la télémétrie fire-and-forget.
   try {
     await client.fetch(path, { method: "POST", body: bodyStr }, { noAuthExpiry: true });
+    return true;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(DBG, `${label} FAILED via client.fetch:`, msg);
@@ -188,8 +192,10 @@ export async function sessionPost(
       }
       const res = await fetch(`${baseUrl}${path}`, { method: "POST", body: bodyStr, headers });
       if (!res.ok) console.error(`[Playback] ${label} fallback fetch:`, res.status);
+      return res.ok;
     } catch (err2: unknown) {
       console.error(DBG, `${label} raw fetch also FAILED:`, err2 instanceof Error ? err2.message : String(err2));
+      return false;
     }
   }
 }

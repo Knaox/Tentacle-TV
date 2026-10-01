@@ -1,6 +1,7 @@
 import type { PlaybackEventDto, PlaybackStateDto, PlayMethodDto } from "@tentacle-tv/shared";
 import { channelProgress, channelStop, isChannelReporting } from "../socket/sessionChannel";
 import { safePositionTicks, sessionPost, type JfClient } from "./playbackTransport";
+import { notePlaybackLive, notePlaybackStop, settlePlayback } from "./playbackOutbox";
 
 /**
  * Le report de lecture PAR LE CANAL de session, quand le backend le porte
@@ -57,15 +58,25 @@ export function channelEdge(refs: PlaybackStateRefs, event: PlaybackEventDto): b
  * Fin de lecture : par le canal (le backend répond une fois Jellyfin servi),
  * sinon — ou sans confirmation — par le `/Sessions/Playing/Stopped` HTTP.
  * `state` est figé par l'appelant AVANT qu'il ne remette ses refs à zéro.
+ *
+ * L'arrêt est noté dans la file persistée AVANT l'envoi (`playbackOutbox`,
+ * si l'hôte l'a configurée) et n'en sort qu'une fois pris : une app suspendue,
+ * tuée, ou un serveur muet ne le perdent plus.
  */
 export async function reportStopped(client: JfClient, state: PlaybackStateDto, label: string): Promise<void> {
-  if (await channelStop(state)) return;
-  await sessionPost(client, "/Sessions/Playing/Stopped", {
+  const mark = notePlaybackStop(state);
+  const taken = (await channelStop(state)) || (await sessionPost(client, "/Sessions/Playing/Stopped", stoppedBody(state), label));
+  if (taken && mark) settlePlayback(state.itemId, mark);
+}
+
+/** Le corps d'un `/Sessions/Playing/Stopped`. */
+export function stoppedBody(state: PlaybackStateDto): Record<string, unknown> {
+  return {
     ItemId: state.itemId,
     MediaSourceId: state.mediaSourceId ?? state.itemId,
     PlaySessionId: state.playSessionId,
     PositionTicks: state.positionTicks,
-  }, label);
+  };
 }
 
 /**
@@ -80,7 +91,8 @@ export function isSeekJump(previousSeconds: number, previousAt: number, wasPause
 /**
  * Nouvelle position du lecteur. Par le canal, pause, reprise et saut sont des
  * BORDS : le backend les relaie aussitôt à Jellyfin. Sans canal, le prochain
- * battement les porte, comme avant.
+ * battement les porte, comme avant. La file persistée, elle, note la position
+ * en cours — à chaque bord, sinon au fil de l'eau.
  */
 export function applyPosition(
   refs: PlaybackStateRefs,
@@ -96,7 +108,11 @@ export function applyPosition(
   refs.position.current = seconds;
   refs.paused.current = isPaused;
   lastUpdateAt.current = now;
-  if (!started || !isChannelReporting()) return;
-  if (isPaused !== wasPaused) channelEdge(refs, isPaused ? "pause" : "unpause");
-  else if (previousAt > 0 && isSeekJump(previousSeconds, previousAt, wasPaused, seconds, now)) channelEdge(refs, "seek");
+  if (!started) return;
+  const edge: PlaybackEventDto | null = isPaused !== wasPaused
+    ? (isPaused ? "pause" : "unpause")
+    : previousAt > 0 && isSeekJump(previousSeconds, previousAt, wasPaused, seconds, now) ? "seek" : null;
+  const state = stateFromRefs(refs);
+  if (state) notePlaybackLive(state, edge !== null);
+  if (edge && isChannelReporting()) channelEdge(refs, edge);
 }

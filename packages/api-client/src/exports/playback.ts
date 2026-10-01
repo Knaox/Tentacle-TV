@@ -2,6 +2,12 @@
 // (intro, génériques) et leur coquille d'overlay, les vignettes et le débit.
 export { useStream, type StreamOptions } from "../hooks/useStream";
 export { usePlaybackReporting, type PlaybackReportingOptions, type PlaybackReporter } from "../hooks/usePlayback";
+// La file PERSISTÉE des rapports (opt-in, la TV) : un arrêt n'est jamais perdu.
+export {
+  configurePlaybackOutbox, readPlaybackOutbox, OUTBOX_KEY,
+  type OutboxOwner, type OutboxStorage, type OutboxEntry, type OutboxFlushResult,
+} from "../hooks/playbackOutbox";
+export { flushPlaybackOutboxFor } from "../hooks/playbackOutboxFlush";
 // Destruction d'un transcode actif, hors du hook de reporting : les filets de
 // lecture renégocient une session sans en tenir un (cf. useWebPlaybackFallbacks).
 export { killActiveEncoding } from "../hooks/playbackTransport";
