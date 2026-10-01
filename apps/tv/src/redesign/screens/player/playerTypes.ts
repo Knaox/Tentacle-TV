@@ -68,12 +68,27 @@ export interface ScrubModel {
   target: number;
   speed?: { factor: number; backward: boolean } | null;
   frame?: FrameImage | null;
+  /** Quand il se fermera seul si l'on ne bouge plus, et pour quoi. */
+  countdown?: ScrubCountdownModel | null;
 }
 
 /** Un décompte : ce qui reste, sur combien. */
 export interface Countdown {
   remaining: number;
   total: number;
+}
+
+/** Le décompte du défilement (`ScrubCountdown`). */
+export interface ScrubCountdownModel {
+  /** « Lecture dans 3 s », « Reprise à 12:34 dans 3 s » (`scrubCountdownLabel`). */
+  label: string;
+  /** `play` : la lecture repart à la position visée ; `back` : on revient
+   *  au point de départ. */
+  kind: "play" | "back";
+  /** En secondes. */
+  countdown: Countdown;
+  /** La barre glisse d'une seconde à la suivante ; sans, elle se pose (banc). */
+  live?: boolean;
 }
 
 /**

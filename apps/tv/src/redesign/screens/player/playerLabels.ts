@@ -48,6 +48,16 @@ export function seekFlashLabel(t: Translate, deltaSeconds: number): string {
   return t(deltaSeconds >= 0 ? "player:seekFlashForward" : "player:seekFlashBack", { seconds });
 }
 
+/** Le décompte du défilement : ce que fera sa fin — lire à la position visée
+ *  (`play`), ou revenir au départ `time`, en lecture (`resume`) ou en pause
+ *  (`return`). */
+export function scrubCountdownLabel(
+  t: Translate, action: "play" | "resume" | "return", seconds: number, time: string,
+): string {
+  if (action === "play") return t("player:scrubPlayIn", { seconds });
+  return t(action === "resume" ? "player:scrubResumeAtIn" : "player:scrubReturnAtIn", { seconds, time });
+}
+
 /** « Épisode suivant dans 8 s » — carte du générique et affiche de fin. */
 export function nextCountdownLabel(t: Translate, seconds: number): string {
   return t("player:autoplayCountdown", { seconds });

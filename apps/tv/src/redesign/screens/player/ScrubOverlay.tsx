@@ -6,11 +6,13 @@ import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
+import { Presented } from "../../motion/Presented";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { formatClock, formatDelta, fractionOf } from "./formatClock";
 import { FrameView } from "./FrameView";
 import { GHOST, OsdTimeline, TIMELINE_ROW, TIMELINE_TOP, TRACK_LEFT, TRACK_WIDTH } from "./OsdTimeline";
 import type { PlayerTimeline, ScrubModel } from "./playerTypes";
+import { ScrubCountdown } from "./ScrubCountdown";
 import { SOFT_BASE } from "./surfaces";
 
 /**
@@ -21,7 +23,8 @@ import { SOFT_BASE } from "./surfaces";
  * puis le temps visé en grand et l'écart (« +12:30 »). La vitesse d'un
  * maintien (×2, ×4, ×8) se lit sur la vignette. En bas, les deux gestes :
  * « OK · Lire ici », « Retour · Annuler ». Sans vignette (serveur sans
- * trickplay), la bulle n'a que le temps.
+ * trickplay), la bulle n'a que le temps. Quand rien ne bouge, le décompte
+ * (`ScrubCountdown`) dit au bas de la vignette ce que fera la suite, et quand.
  *
  * Rien n'y est focalisable : les entrées restent au lecteur. Mouvement : la
  * vue paraît et s'efface en fondu (`appear`, préréglage `reveal`), la bulle
@@ -114,6 +117,13 @@ export const ScrubOverlay = memo(function ScrubOverlay({
             ) : null}
             {scrub.speed && !scrub.frame ? <SpeedChip speed={scrub.speed} /> : null}
           </View>
+          <Presented value={scrub.countdown} motion="reveal">
+            {(countdown, shown) => (
+              <View style={styles.countdown} pointerEvents="none">
+                <ScrubCountdown model={countdown} appear={shown} />
+              </View>
+            )}
+          </Presented>
         </Animated.View>
       </View>
       <View style={styles.timeline}>
@@ -158,6 +168,9 @@ const styles = StyleSheet.create({
   mirror: { transform: [{ scaleX: -1 }] },
   speedText: { ...fonts.extrabold, fontSize: 24, color: colors.text, fontVariant: ["tabular-nums"] },
   timeRow: { height: TIME_ROW, flexDirection: "row", alignItems: "center", gap: 16 },
+  // Le décompte, au bas de la vignette — ou, sans elle, juste au-dessus du
+  // temps visé : hors du flux de la bulle, il ne déplace rien en paraissant.
+  countdown: { position: "absolute", left: 12, right: 12, bottom: TIME_ROW + GAP + 14, alignItems: "center" },
   target: {
     ...fonts.extrabold,
     fontSize: 60,

@@ -1,7 +1,8 @@
 import { Image, StyleSheet, View } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PlayerChromeView, type PlayerChromeViewProps } from "../../../src/redesign/screens/player/PlayerChromeView";
-import { seekFlashLabel, skipPillLabel } from "../../../src/redesign/screens/player/playerLabels";
+import { formatClock } from "../../../src/redesign/screens/player/formatClock";
+import { scrubCountdownLabel, seekFlashLabel, skipPillLabel } from "../../../src/redesign/screens/player/playerLabels";
 import type { BenchData } from "../data/benchData";
 import {
   byName, endScreenOf, episodeAt, imageList, mediaOf, neighbours, playerLabels, subtitleCue, t, timelineOf, transportOf,
@@ -65,6 +66,23 @@ const skip = (labelKey: Parameters<typeof skipPillLabel>[1], kind: "segment" | "
     label: skipPillLabel(t, labelKey, countdown),
     countdown: countdown !== null ? { remaining: countdown, total: 10 } : null,
     refusable: countdown !== null,
+  },
+});
+
+/** Un défilement de `offset` secondes depuis la position, et son décompte
+ *  (`action`, `remaining` secondes sur 3) — l'origine est la position. */
+const aimedWith = (
+  action: "play" | "resume" | "return", remaining: number, offset: number, paused = false, withFrame = true,
+): Patch => (_data, stage) => ({
+  paused,
+  scrub: {
+    target: stage.props.timeline.position + offset,
+    frame: withFrame && stage.frame ? { uri: stage.frame } : null,
+    countdown: {
+      label: scrubCountdownLabel(t, action, remaining, formatClock(stage.props.timeline.position)),
+      kind: action === "play" ? "play" : "back",
+      countdown: { remaining, total: 3 },
+    },
   },
 });
 
@@ -154,6 +172,15 @@ export const PLAYER_SCENES: BenchScene[] = [
   scene("defilement-fin", "Défilement · tout à la fin", patch(film, (_data, stage) => ({
     scrub: { target: stage.props.timeline.duration - 6, speed: { factor: 4, backward: false }, frame: stage.frame ? { uri: stage.frame } : null },
   }))),
+  // Le décompte, figé (la barre ne glisse pas au banc) : doigt levé du pavé,
+  // puis l'abandon des flèches, en lecture et en pause.
+  scene("decompte-lecture", "Défilement · doigt levé, lecture dans 3 s", patch(film, aimedWith("play", 3, 212))),
+  scene("decompte-lecture-1s", "Défilement · doigt levé, lecture dans 1 s", patch(film, aimedWith("play", 1, 212))),
+  scene("decompte-reprise", "Défilement · flèches, reprise au départ dans 2 s", patch(episode, aimedWith("resume", 2, -95))),
+  scene("decompte-retour", "Défilement en pause · retour au départ dans 3 s", patch(film, aimedWith("return", 3, 1800, true))),
+  scene("decompte-sans-vignette", "Défilement · sans vignettes, lecture dans 3 s", patch(film, aimedWith("play", 3, 212, false, false))),
+  scene("decompte-fin", "Défilement · tout à la fin, reprise dans 1 s", patch(film, (data, stage) =>
+    aimedWith("resume", 1, stage.props.timeline.duration - 6 - stage.props.timeline.position)(data, stage))),
   scene("saut-avant", "Saut +10 s (un appui, habillage caché)", patch(film, () => ({ osdVisible: false, seekFlash: { forward: true, label: seekFlashLabel(t, 10) } }))),
   scene("saut-arriere", "Saut −20 s cumulé (deux appuis)", patch(film, () => ({ osdVisible: false, seekFlash: { forward: false, label: seekFlashLabel(t, -20) } }))),
   scene("intro-manuelle", "Passer l'intro · manuel", patch(episode, skip("skipIntro", "segment", null)), ["player:skip"]),
