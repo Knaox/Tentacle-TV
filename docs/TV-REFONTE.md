@@ -914,9 +914,13 @@ streaming direct actif (vidéo et rapports vont droit à Jellyfin) sauf mention.
   MÊME forme (`restartStream`, raison `audio`) après 1,5 s, 4 s, 8 s, le
   lecteur tenu en rechargement pendant l'attente — à la position, ou à la
   reprise prévue avant la première image. Au-delà, le bandeau le dit
-  (`player:audioOutputLost`) ; une autre forme ne rendrait pas la sortie.
-  Mesuré (erreur injectée dans le vrai lecteur) : relance PrismCore à la
-  même position en 1,5 s ; budget épuisé, lecteur figé → le message.
+  (`player:audioOutputLostPlay`) — une autre forme ne rendrait pas la
+  sortie — et propose le bon geste : l'appui sur Lecture (une bascule de
+  `paused`, télécommande ou habillage, l'app au premier plan) relance le
+  flux à la position, budget neuf. Mesuré (erreur injectée dans le vrai
+  lecteur) : relance PrismCore à la même position en 1,5 s ; budget épuisé,
+  lecteur figé → le message ; Lecture → relance à la position, bandeau
+  effacé, la lecture repart.
 - **Le voile hors ligne** ne se pose plus sur `Player`, `PlayerSettings`,
   `Trailer` (App.tsx) ; la joignabilité confirmée se lit partout
   (`hooks/serverReachability`).
