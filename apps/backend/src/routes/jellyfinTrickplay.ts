@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { Readable } from "stream";
 import { z } from "zod";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
-import { verifyDeviceToken } from "../services/jwt";
+import { pairedDeviceStatus, REVOKED_REPLY } from "../services/pairedDeviceStatus";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders, tokenFromQuery } from "../services/jellyfinAuth";
 
 const ParamsSchema = z.object({
@@ -46,9 +46,12 @@ export const jellyfinTrickplayRoutes: FastifyPluginAsync = async (app) => {
     if (!incomingToken) {
       return reply.status(401).send({ message: "Unauthorized" });
     }
-    const payload = await verifyDeviceToken(incomingToken);
+    // Un jeton d'appareil n'obtient la clé admin que si son jumelage existe encore.
+    const device = await pairedDeviceStatus(incomingToken);
+    if (device.status === "revoked") return reply.status(401).send(REVOKED_REPLY);
+    if (device.status === "unreachable") return reply.status(503).send({ message: "Base de données indisponible" });
     const adminKey = getJellyfinApiKey();
-    const jellyfinToken = payload && adminKey ? adminKey : incomingToken;
+    const jellyfinToken = device.status === "paired" && adminKey ? adminKey : incomingToken;
 
     const url = new URL(
       `${jellyfinUrl}/Videos/${params.itemId}/Trickplay/${params.width}/${params.index}.jpg`,

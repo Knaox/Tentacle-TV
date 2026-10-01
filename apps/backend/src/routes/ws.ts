@@ -2,6 +2,7 @@ import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
 import { validateToken, type JellyfinUser } from "../middleware/auth";
 import { addConnection, removeConnection } from "../services/wsManager";
+import { isDeviceRevoked } from "../services/pairedDeviceStatus";
 import { hashToken } from "../services/jwt";
 import { handleSocketClosed, handleWtMessage } from "../services/watchTogether/gateway";
 import {
@@ -98,8 +99,17 @@ async function authenticateAndBind(
   token: string,
 ): Promise<BoundSession | null> {
   const result = await validateToken(token);
-  if (!result.ok) {
-    if (result.reason === "unreachable") {
+  const tokenHash = hashToken(token);
+  // Révoqué pendant la validation : la révocation a poussé AVANT que cette
+  // socket ne soit connue — elle ne l'aurait jamais fermée.
+  const revoked = result.ok ? isDeviceRevoked(tokenHash) : result.revoked === true;
+  if (!result.ok || revoked) {
+    if (revoked) {
+      // Le jumelage n'existe plus — typiquement une TV éteinte pendant qu'on la
+      // déjumelait : elle l'apprend dès qu'elle se reconnecte.
+      ws.send(JSON.stringify({ type: "auth_error", reason: "revoked" }));
+      ws.close(4009, "Device revoked");
+    } else if (!result.ok && result.reason === "unreachable") {
       ws.send(JSON.stringify({ type: "auth_error", reason: "server_unreachable" }));
       ws.close(4003, "Server unreachable");
     } else {
@@ -109,7 +119,6 @@ async function authenticateAndBind(
     return null;
   }
 
-  const tokenHash = hashToken(token);
   ws.send(JSON.stringify({ type: "auth_ok" }));
   addConnection(result.user.userId, ws, tokenHash);
   return { user: result.user, tokenHash, token };

@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getPrisma } from "../services/db";
 import { getJellyfinUrl } from "../services/configStore";
-import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
+import { verifyImpersonationToken } from "../services/jwt";
+import { pairedDeviceStatus, REVOKED_REPLY } from "../services/pairedDeviceStatus";
 import { setSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
@@ -41,27 +41,20 @@ export const authRefreshRoutes: FastifyPluginAsync = async (app) => {
         };
       }
 
-      const payload = await verifyDeviceToken(token);
-      if (payload) {
-        try {
-          const prisma = getPrisma();
-          const device = await prisma.pairedDevice.findUnique({
-            where: { tokenHash: hashToken(token) },
-          });
-          if (!device) {
-            // `revoked: true` = le SEUL feu vert de déjumelage passif des clients :
-            // JWT valide mais ligne paired_devices absente ⇒ révocation réelle
-            // (verdict de DB), à distinguer des 401 « aléatoires » (Jellyfin qui
-            // refuse, secret en avarie) qui ne doivent JAMAIS déjumeler une TV.
-            return reply.status(401).send({ message: "Appareil révoqué", revoked: true });
-          }
-          return {
-            AccessToken: token,
-            User: { Id: payload.userId, Name: payload.username },
-          };
-        } catch {
-          return reply.status(503).send({ message: "Base de données indisponible" });
-        }
+      // `revoked: true` = le SEUL feu vert de déjumelage passif des clients :
+      // JWT valide mais ligne paired_devices absente ⇒ révocation réelle
+      // (verdict de DB), à distinguer des 401 « aléatoires » (Jellyfin qui
+      // refuse, secret en avarie) qui ne doivent JAMAIS déjumeler une TV.
+      const device = await pairedDeviceStatus(token);
+      if (device.status === "revoked") return reply.status(401).send(REVOKED_REPLY);
+      if (device.status === "unreachable") {
+        return reply.status(503).send({ message: "Base de données indisponible" });
+      }
+      if (device.status === "paired") {
+        return {
+          AccessToken: token,
+          User: { Id: device.payload.userId, Name: device.payload.username },
+        };
       }
       // JWT illisible (signature invalide) → on laisse Jellyfin trancher
       // ci-dessous : certains tokens Jellyfin pourraient contenir des points.

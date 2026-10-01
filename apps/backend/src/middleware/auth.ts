@@ -1,8 +1,8 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { getJellyfinUrl } from "../services/configStore";
-import { verifyDeviceToken, verifyImpersonationToken, hashToken } from "../services/jwt";
-import { getPrisma, hasPrisma } from "../services/db";
+import { verifyImpersonationToken } from "../services/jwt";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders } from "../services/jellyfinAuth";
+import { pairedDeviceStatus, REVOKED_REPLY } from "../services/pairedDeviceStatus";
 
 export interface JellyfinUser {
   userId: string;
@@ -12,7 +12,9 @@ export interface JellyfinUser {
 
 type ValidationResult =
   | { ok: true; user: JellyfinUser }
-  | { ok: false; reason: "invalid" | "unreachable" };
+  /** `revoked` : un jeton d'appareil dont le jumelage n'existe plus — le seul
+   *  refus qui autorise un client à se déjumeler. */
+  | { ok: false; reason: "invalid" | "unreachable"; revoked?: true };
 
 // Token validation cache (TTL 5 min) to avoid hammering Jellyfin on every request
 const tokenCache = new Map<string, { user: JellyfinUser; expiresAt: number }>();
@@ -86,34 +88,31 @@ export async function validateToken(token: string): Promise<ValidationResult> {
     };
   }
 
-  // 1. Try Jellyfin token first (most common path)
-  const jfResult = await validateJellyfinToken(token);
-  if (jfResult.ok) return jfResult;
-
-  // 2. Try custom JWT (paired device tokens)
-  const payload = await verifyDeviceToken(token);
-  if (!payload) return jfResult; // Preserve original reason (invalid vs unreachable)
-
-  // 3. Verify device hasn't been revoked
-  if (!hasPrisma()) return { ok: false, reason: "unreachable" };
-  try {
-    const prisma = getPrisma();
-    const hash = hashToken(token);
-    const device = await prisma.pairedDevice.findUnique({ where: { tokenHash: hash } });
-    if (!device) return { ok: false, reason: "invalid" };
-
-    // Update lastSeen (fire and forget)
-    prisma.pairedDevice
-      .update({ where: { id: device.id }, data: { lastSeen: new Date() } })
-      .catch(() => {});
-
-    return {
-      ok: true,
-      user: { userId: payload.userId, username: payload.username, isAdmin: payload.isAdmin },
-    };
-  } catch {
-    return { ok: false, reason: "unreachable" };
+  // 1. JWT d'appareil jumelé : tranché ici, sans Jellyfin qui ne le connaît
+  //    pas — le même verdict que le proxy, la socket et le rafraîchissement.
+  const device = await pairedDeviceStatus(token);
+  if (device.status === "paired") {
+    const { userId, username, isAdmin } = device.payload;
+    return { ok: true, user: { userId, username, isAdmin } };
   }
+  if (device.status === "revoked") return { ok: false, reason: "invalid", revoked: true };
+  if (device.status === "unreachable") return { ok: false, reason: "unreachable" };
+
+  // 2. Jeton Jellyfin (web, bureau, mobile).
+  return validateJellyfinToken(token);
+}
+
+/** Le jeton Jellyfin d'un appareil révoqué n'est plus cru sur parole : ni le
+ *  cache de validation, ni son repli quand Jellyfin ne répond pas. */
+export function forgetValidatedToken(token: string): void {
+  tokenCache.delete(token);
+}
+
+/** Le refus d'une porte : 503 sans verdict, 401 sinon — avec `revoked` quand
+ *  le jumelage n'existe plus. */
+function rejection(result: Extract<ValidationResult, { ok: false }>) {
+  if (result.reason === "unreachable") return { status: 503, body: { message: "Jellyfin unreachable" } };
+  return { status: 401, body: result.revoked ? REVOKED_REPLY : { message: "Invalid token" } };
 }
 
 /** Extract auth token from cookie (web) or Authorization header (mobile/desktop).
@@ -139,9 +138,8 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 
   const result = await validateToken(token);
   if (!result.ok) {
-    const status = result.reason === "unreachable" ? 503 : 401;
-    const message = result.reason === "unreachable" ? "Jellyfin unreachable" : "Invalid token";
-    return reply.status(status).send({ message });
+    const { status, body } = rejection(result);
+    return reply.status(status).send(body);
   }
 
   (request as any).user = result.user;
@@ -155,9 +153,8 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
 
   const result = await validateToken(token);
   if (!result.ok) {
-    const status = result.reason === "unreachable" ? 503 : 401;
-    const message = result.reason === "unreachable" ? "Jellyfin unreachable" : "Invalid token";
-    return reply.status(status).send({ message });
+    const { status, body } = rejection(result);
+    return reply.status(status).send(body);
   }
 
   if (!result.user.isAdmin) {

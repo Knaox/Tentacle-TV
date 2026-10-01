@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { Readable } from "stream";
 import { fetch as undiciFetch, type RequestInit as UndiciRequestInit } from "undici";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
-import { verifyDeviceToken } from "../services/jwt";
+import { pairedDeviceStatus, REVOKED_REPLY } from "../services/pairedDeviceStatus";
 import { getCached, getCacheTtl } from "../services/jellyfinCache";
 import { getJellyfinDispatcher } from "../services/jellyfinHttpAgent";
 import { clearDeviceTokenIfInvalid } from "../services/deviceTokenHealth";
@@ -59,6 +59,13 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // transporte pas son identité. Il l'annonce en revanche ici, à chaque
     // requête, dans l'en-tête qu'il destine à Jellyfin. En oubli volontaire, et
     // une seule fois par appareil.
+    // Un jeton d'appareil n'entre que si son jumelage existe ENCORE — avant le
+    // cache, avant la clé admin qui lui serait substituée. Un JWT signé ne
+    // suffisait pas : révoqué, il gardait l'accès, à vie (il n'expire pas).
+    const device = incomingToken ? await pairedDeviceStatus(incomingToken) : null;
+    if (device?.status === "revoked") return reply.status(401).send(REVOKED_REPLY);
+    if (device?.status === "unreachable") return reply.status(503).send({ message: "Base de données indisponible" });
+
     nameDeviceFromHeader(incomingToken, incoming.identityHeader);
 
     // Un appareil jumelé ne parle que pour SON compte.
@@ -73,9 +80,8 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // sur TOUTES les méthodes et toutes les routes qui nomment un utilisateur.
     // Un jeton Jellyfin natif n'est pas concerné (Jellyfin décide lui-même), ni
     // un jeton d'usurpation, dont c'est justement la raison d'être.
-    if (incomingToken && (userIdFromPath(wildcardPath) !== null || userIdFromQuery(q) !== null)) {
-      const devicePayload = await verifyDeviceToken(incomingToken);
-      if (devicePayload && isOutOfScope(wildcardPath, devicePayload.userId, q)) {
+    if (device?.status === "paired" && (userIdFromPath(wildcardPath) !== null || userIdFromQuery(q) !== null)) {
+      if (isOutOfScope(wildcardPath, device.payload.userId, q)) {
         request.log.warn(
           { path: wildcardPath, method: request.method },
           "acces refuse : appareil hors de son perimetre utilisateur",
