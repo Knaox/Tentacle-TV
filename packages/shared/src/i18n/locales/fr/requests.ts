@@ -28,4 +28,21 @@ export default {
   seasons_one: "Saison {{list}}",
   seasons_other: "Saisons {{list}}",
   and: "et",
+
+  // Apple TV — demander un titre absent de la bibliothèque (collection,
+  // recherche, feuille des saisons).
+  followOnPhone: "Pour suivre son état, ouvrez Tentacle sur votre téléphone.",
+  hintRequest: "OK : demander",
+  hintSeasons: "OK : choisir les saisons",
+  searchRow: "À demander",
+  seasonsSubtitle: "Cochez les saisons à demander.",
+  seasonsSubmit_one: "Demander {{count}} saison",
+  seasonsSubmit_other: "Demander {{count}} saisons",
+  seasonsSubmitNone: "Cochez une saison",
+  seasonFallback: "Saison {{number}}",
+  seasonEpisodes_one: "{{count}} épisode",
+  seasonEpisodes_other: "{{count}} épisodes",
+  seasonsLoading: "Lecture des saisons…",
+  seasonsFailed: "Les saisons ne se lisent pas pour l'instant. Réessayez plus tard.",
+  seasonsNone: "Toutes ses saisons sont déjà là ou demandées.",
 };
