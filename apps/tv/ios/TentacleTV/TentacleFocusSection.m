@@ -3,17 +3,9 @@
 //  TentacleTV (tvOS / Apple TV)
 //
 //  La vue d'une section (voir l'en-tête) : son inscription, le suivi du focus
-//  qui entre et qui sort, et les deux BANDES du voisinage.
-//
-//  Les bandes : deux guides de focus d'un point de haut, de toute la largeur de
-//  la section, posés juste au-dessus et juste au-dessous d'elle tant que le
-//  focus est DEDANS. Le moteur de tvOS cherche dans la direction ; ce qui est
-//  dans la section, sous le doigt, passe avant elles (la pastille d'un en-tête
-//  depuis la carte qui est dessous) — sinon il rencontre la bande, toujours
-//  dans l'axe puisqu'elle couvre la largeur, et la bande résout la cible À CE
-//  MOMENT-LÀ : la rangée a fini (ou non) de défiler, la géométrie est celle de
-//  l'écran. Hors de la section, elles n'existent pas : elles ne détournent
-//  rien d'autre (rail, guides des écrans, entrées de côté).
+//  qui entre, bouge et sort — qui pose les guides du voisinage sur l'élément
+//  focalisé (`TentacleNeighborGuides.m`) et demande à la page de montrer la
+//  section (`TentacleRevealScroller.m`).
 //
 
 #import "TentacleFocusSection.h"
@@ -22,38 +14,6 @@
 #import <React/RCTScrollView.h>
 #import <React/RCTUIManager.h>
 #import <React/RCTViewManager.h>
-
-/// Une bande : ses destinations se calculent quand le moteur la consulte.
-@interface TentacleNeighborGuide : UIFocusGuide
-- (instancetype)initWithSection:(TentacleFocusSection *)section up:(BOOL)up;
-@end
-
-@implementation TentacleNeighborGuide {
-  __weak TentacleFocusSection *_section;
-  BOOL _up;
-}
-
-- (instancetype)initWithSection:(TentacleFocusSection *)section up:(BOOL)up
-{
-  if ((self = [super init])) {
-    _section = section;
-    _up = up;
-  }
-  return self;
-}
-
-- (NSArray<id<UIFocusEnvironment>> *)preferredFocusEnvironments
-{
-  TentacleFocusSection *section = _section;
-  UIView *focused = section ? TentacleFocusedView(section) : nil;
-  if (!focused || ![focused isDescendantOfView:section]) {
-    return @[];
-  }
-  UIView *target = TentacleNeighborTarget(section, focused, _up);
-  return target ? @[ target ] : @[];
-}
-
-@end
 
 static NSHashTable<TentacleFocusSection *> *TentacleSectionRegistry(void)
 {
@@ -92,10 +52,18 @@ UIView *TentacleFocusedView(id<UIFocusEnvironment> environment)
   return [(id)item isKindOfClass:[UIView class]] ? (UIView *)item : nil;
 }
 
-@implementation TentacleFocusSection {
-  TentacleNeighborGuide *_upGuide;
-  TentacleNeighborGuide *_downGuide;
+/// La section de voisinage la plus proche au-dessus de `view` (elle-même comprise).
+static TentacleFocusSection *InnermostNeighborSection(UIView *view)
+{
+  for (UIView *v = view; v != nil; v = v.superview) {
+    if ([v isKindOfClass:[TentacleFocusSection class]] && ((TentacleFocusSection *)v).tvNeighbors) {
+      return (TentacleFocusSection *)v;
+    }
+  }
+  return nil;
 }
+
+@implementation TentacleFocusSection
 
 - (instancetype)initWithBridge:(RCTBridge *)bridge
 {
@@ -106,6 +74,8 @@ UIView *TentacleFocusedView(id<UIFocusEnvironment> environment)
     _revealTop = 72;
     _revealResponse = 0.5;
     _revealDamping = 1;
+    _neighborGuides = [[TentacleNeighborGuides alloc] initWithSection:self];
+    [TentacleNeighborGuides observeBridge:bridge];
   }
   return self;
 }
@@ -122,21 +92,23 @@ UIView *TentacleFocusedView(id<UIFocusEnvironment> environment)
 - (void)setTvNeighbors:(BOOL)tvNeighbors
 {
   _tvNeighbors = tvNeighbors;
-  if (!tvNeighbors) {
-    [self removeNeighborGuides];
-  } else if (self.window && TentacleFocusedView(self) && [TentacleFocusedView(self) isDescendantOfView:self]) {
-    [self installNeighborGuides];
+  UIView *focused = self.window ? TentacleFocusedView(self) : nil;
+  if (tvNeighbors && focused && InnermostNeighborSection(focused) == self) {
+    [_neighborGuides guideItem:focused];
+  } else {
+    [_neighborGuides clear];
   }
 }
 
 - (void)didMoveToWindow
 {
   [super didMoveToWindow];
+  [TentacleNeighborGuides sectionsChanged];
   if (self.window) {
     [TentacleSectionRegistry() addObject:self];
   } else {
     [TentacleSectionRegistry() removeObject:self];
-    [self removeNeighborGuides];
+    [_neighborGuides clear];
   }
 }
 
@@ -146,44 +118,18 @@ UIView *TentacleFocusedView(id<UIFocusEnvironment> environment)
   [super didUpdateFocusInContext:context withAnimationCoordinator:coordinator];
   UIView *next = context.nextFocusedView;
   if (next == nil || ![next isDescendantOfView:self]) {
-    [self removeNeighborGuides];
+    [_neighborGuides clear];
     return;
   }
-  if (_tvNeighbors) {
-    [self installNeighborGuides];
+  // Les guides : la section la plus proche de l'élément, une seule.
+  if (_tvNeighbors && InnermostNeighborSection(next) == self) {
+    [_neighborGuides guideItem:next];
+  } else {
+    [_neighborGuides clear];
   }
   if (![_revealMode isEqualToString:@"none"]) {
     [[TentacleRevealScroller scrollerForSection:self] revealItem:next];
   }
-}
-
-- (void)installNeighborGuides
-{
-  if (_upGuide != nil) {
-    return;
-  }
-  _upGuide = [[TentacleNeighborGuide alloc] initWithSection:self up:YES];
-  _downGuide = [[TentacleNeighborGuide alloc] initWithSection:self up:NO];
-  for (TentacleNeighborGuide *guide in @[ _upGuide, _downGuide ]) {
-    [self addLayoutGuide:guide];
-    [guide.leftAnchor constraintEqualToAnchor:self.leftAnchor].active = YES;
-    [guide.widthAnchor constraintEqualToAnchor:self.widthAnchor].active = YES;
-    [guide.heightAnchor constraintEqualToConstant:1].active = YES;
-  }
-  [_upGuide.bottomAnchor constraintEqualToAnchor:self.topAnchor].active = YES;
-  [_downGuide.topAnchor constraintEqualToAnchor:self.bottomAnchor].active = YES;
-}
-
-- (void)removeNeighborGuides
-{
-  if (_upGuide != nil) {
-    [self removeLayoutGuide:_upGuide];
-  }
-  if (_downGuide != nil) {
-    [self removeLayoutGuide:_downGuide];
-  }
-  _upGuide = nil;
-  _downGuide = nil;
 }
 
 @end

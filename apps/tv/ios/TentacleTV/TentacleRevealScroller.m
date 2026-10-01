@@ -43,8 +43,10 @@ static char kScrollerKey;
   CFTimeInterval _t0;
   /// La dernière position posée : une autre (un scrollTo du JS) arrête le ressort.
   CGFloat _lastSet;
-  /// La section montrée — celle qui a le focus — et son haut avant un montage.
+  /// La section montrée — celle qui a le focus — et, avant un montage, laquelle
+  /// c'était et où était son haut.
   __weak TentacleFocusSection *_shown;
+  __weak TentacleFocusSection *_shownBefore;
   CGFloat _shownTopBefore;
 }
 
@@ -252,6 +254,7 @@ static char kScrollerKey;
   [manager prependUIBlock:^(__unused RCTUIManager *uiManager, __unused NSDictionary<NSNumber *, UIView *> *registry) {
     TentacleRevealScroller *strongSelf = weakSelf;
     if (strongSelf) {
+      strongSelf->_shownBefore = strongSelf->_shown;
       strongSelf->_shownTopBefore = [strongSelf shownTop];
     }
   }];
@@ -267,10 +270,14 @@ static char kScrollerKey;
 {
   CGFloat before = _shownTopBefore;
   CGFloat after = [self shownTop];
-  _shownTopBefore = NAN;
   TentacleFocusSection *section = _shown;
+  BOOL same = section != nil && section == _shownBefore;
+  _shownTopBefore = NAN;
+  _shownBefore = nil;
   UIScrollView *scroll = _host.scrollView;
-  if (isnan(before) || isnan(after) || section == nil || scroll == nil) {
+  // Une AUTRE section montrée entre-temps (le focus a changé de section) : sa
+  // position d'avant n'a pas été lue — rien à compenser.
+  if (!same || isnan(before) || isnan(after) || scroll == nil) {
     return;
   }
   CGFloat delta = after - before;

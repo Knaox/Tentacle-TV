@@ -20,6 +20,7 @@
 #import <React/RCTTVView.h>
 
 @class RCTScrollView;
+@class TentacleNeighborGuides;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -47,6 +48,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// Le pont React (le magasin des vues, les observateurs du montage).
 @property (nonatomic, weak, readonly, nullable) RCTBridge *sectionBridge;
 
+/// Les guides HAUT / BAS posés sur son élément focalisé.
+@property (nonatomic, strong, readonly) TentacleNeighborGuides *neighborGuides;
+
 @end
 
 /// Les sections de voisinage attachées à une fenêtre.
@@ -63,6 +67,29 @@ FOUNDATION_EXPORT UIView *_Nullable TentacleFocusedView(id<UIFocusEnvironment> e
 /// section `from` — nil quand aucune section n'est au-delà
 /// (`TentacleFocusNeighbors.m`).
 FOUNDATION_EXPORT UIView *_Nullable TentacleNeighborTarget(TentacleFocusSection *from, UIView *focused, BOOL up);
+
+/// Y a-t-il une cible ? La même règle, sans choisir : elle s'arrête au premier
+/// élément trouvé (la pose des guides, réévaluée après chaque montage).
+FOUNDATION_EXPORT BOOL TentacleNeighborExists(TentacleFocusSection *from, UIView *focused, BOOL up);
+
+/// Les guides du voisinage d'une section (`TentacleNeighborGuides.m`).
+@interface TentacleNeighborGuides : NSObject
+
+- (instancetype)initWithSection:(TentacleFocusSection *)section;
+/// Suit `item` (focalisé, dans la section) et pose ses guides — seulement ceux
+/// qui ont une cible.
+- (void)guideItem:(UIView *)item;
+/// Retire les guides et oublie l'élément.
+- (void)clear;
+/// Réévalue les guides de l'élément suivi — tous (`full`), ou ceux qui manquent.
+- (void)refreshFully:(BOOL)full;
+/// Une section est arrivée ou partie : la prochaine réévaluation sera complète.
++ (void)sectionsChanged;
+/// Réévalue toutes les sections ; inscrit, une fois par pont, après chaque montage.
++ (void)refreshAll;
++ (void)observeBridge:(nullable RCTBridge *)bridge;
+
+@end
 
 /// Le défilement d'une page : un par ScrollView verticale, créé à la demande
 /// (`TentacleRevealScroller.m`).
