@@ -1,5 +1,6 @@
 import type { QualityPreset } from "@tentacle-tv/shared";
 import type { TVPlayerViewProps } from "../../components/player/TVPlayerView";
+import type { ScrubCountdownView } from "../../hooks/scrubCountdown";
 import type { PrismStep } from "../../hooks/useTVPrismProgress";
 
 /**
@@ -7,7 +8,10 @@ import type { PrismStep } from "../../hooks/useTVPrismProgress";
  * donne à l'actuel (`TVPlayerViewProps`) — l'orchestration reste une, seul le
  * rendu change —, plus ce que la refonte montre et que l'actuel taisait.
  */
-export interface PlayerRedesignStageProps extends Omit<TVPlayerViewProps, "streamUrl"> {
+export interface PlayerRedesignStageProps extends Omit<TVPlayerViewProps, "streamUrl" | "controls"> {
+  /** Les contrôles de l'actuel, plus le décompte du défilement — l'écran passe
+   *  déjà tout `useTVPlayerControls` ; l'habillage d'Android TV ne le lit pas. */
+  controls: TVPlayerViewProps["controls"] & { scrubCountdown: ScrubCountdownView | null };
   /** Null tant que le flux n'est pas résolu : l'écran de chargement couvre tout. */
   streamUrl: string | null;
   /** La résolution du flux a échoué : « Réessayer ». */

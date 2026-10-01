@@ -32,6 +32,12 @@ export interface ScrubCountdownState {
   total: number;
 }
 
+/** Le décompte tel que le contrôleur l'expose : avec l'origine du
+ *  défilement (s), là où l'abandon ramène. */
+export interface ScrubCountdownView extends ScrubCountdownState {
+  origin: number;
+}
+
 /** L'abandon ne se montre que pendant ses dernières secondes. */
 export const IDLE_COUNTDOWN_SHOWN_MS = 3000;
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { createScrubMachine } from "@tentacle-tv/tv-core";
 import { backgroundHoldsFocus } from "../components/player/focus/osdFocusBus";
-import { reportingActivity } from "./scrubCountdown";
+import { reportingActivity, type ScrubCountdownView } from "./scrubCountdown";
 import { SCRUB_INPUT } from "./scrubInput";
 import { useScrubCountdown } from "./useScrubCountdown";
 import { useScrubHoldMotor } from "./useScrubHoldMotor";
@@ -274,7 +274,7 @@ export function useScrubController({
   }, [startScrubbing, panelOpenRef, skipAnyPressRef, hold]);
 
   // Le décompte, avec l'origine qu'une annulation rendrait (« Reprise à 12:34 »).
-  const scrubCountdown = useMemo(
+  const scrubCountdown = useMemo<ScrubCountdownView | null>(
     () => (countdownState ? { ...countdownState, origin: originRef.current } : null),
     [countdownState],
   );

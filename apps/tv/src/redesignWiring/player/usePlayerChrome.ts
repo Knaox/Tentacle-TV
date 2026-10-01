@@ -10,7 +10,8 @@ import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../hooks/useTVPlayer
 import type { FocusStore } from "../focus/focusStore";
 import { backdropUriOf, logoUriOf, paletteOf, type ImageUrl } from "./playerArt";
 import {
-  buildEndScreen, buildPhase, buildPlayerMedia, buildSkipPill, buildUpNext, parseSpeedLabel, timelineSegments, trickplayFrame,
+  buildEndScreen, buildPhase, buildPlayerMedia, buildScrubCountdown, buildSkipPill, buildUpNext, parseSpeedLabel,
+  timelineSegments, trickplayFrame,
 } from "./playerChromeModels";
 import { buildTracksPanel } from "./playerPanelModels";
 import type { PlayerRedesignStageProps } from "./playerStageTypes";
@@ -108,7 +109,10 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     if (aimTile !== undefined && tp) tp.preloadNeighbors(aimTile, 2);
   }, [aimTile, tp]);
   const scrub: ScrubModel | null = scrubbing
-    ? { target: controls.scrubPosition, speed: parseSpeedLabel(controls.speedLabel), frame: trickplayFrame(tp?.info, aim) }
+    ? {
+      target: controls.scrubPosition, speed: parseSpeedLabel(controls.speedLabel), frame: trickplayFrame(tp?.info, aim),
+      countdown: buildScrubCountdown(controls.scrubCountdown, translate),
+    }
     : null;
   // Rechargement doux (piste, qualité) : la dernière image, figée.
   const reloadSec = p.reloadFrameSec != null && p.hasStarted ? p.reloadFrameSec : null;
