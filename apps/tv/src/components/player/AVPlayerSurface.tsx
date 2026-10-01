@@ -3,6 +3,7 @@ import type { ViewStyle } from "react-native";
 import Video, {
   type OnLoadData,
   type OnProgressData,
+  type OnSeekData,
   type VideoRef,
   SelectedTrackType,
   TextTrackType,
@@ -21,9 +22,8 @@ import type { MPVPlayerHandle, MpvTrack, ExoTextTrack } from "./playerTypes";
  *  - Reprise : on parse `#tnt-start=` de l'URL (AVPlayer ne le lit pas), on l'enlève de l'URI, on
  *    positionne via startPosition + seek de filet. La timeline est ABSOLUE quel que soit le flux
  *    (fichier progressif, HLS de transcodage, HLS local de PrismCore).
- *  - Sous-titres : rendus NATIVEMENT (AVPlayer ne sideload PAS sur HLS → chargement infini sinon) :
- *    direct play progressif → sideload VTT (`source.textTracks`) ; HLS → pistes du manifeste.
- *    Sélection via `selectedTextTrack`, servies en `.vtt`. Burn-in PGS → transcode.
+ *  - Sous-titres : tout le texte est la surimpression JS (`useTVSubtitles`) ; seule la rendition
+ *    OCR d'une image (PrismCore) se sélectionne ici. Le serveur incruste les autres images.
  */
 
 export interface AVPlayerSurfaceProps {
@@ -86,7 +86,8 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // gardé relancerait la vidéo à la position de départ. Remis à zéro quand la
     // source (uri) change.
     const didSeekRef = useRef(false);
-    useEffect(() => { didSeekRef.current = false; }, [uri]);
+    const loadSeenRef = useRef(false);
+    useEffect(() => { didSeekRef.current = false; loadSeenRef.current = false; }, [uri]);
     // Un AVPlayer NEUF quand une nouvelle session PrismCore en remplace une autre
     // (relance du flux, forme muxée) : react-native-video ne fait que remplacer
     // l'item, et sur un master à piste audio pontée (Opus → AAC) l'item de
@@ -101,6 +102,12 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     if (sessionOrigin) lastOriginRef.current = sessionOrigin;
     const playerGeneration = generationRef.current;
     const audioReappliedRef = useRef(false);
+    // Démarré EN PAUSE (relance à froid), AVPlayer n'émet AUCUNE progression : l'écran
+    // d'ouverture attendait la première position pour toujours, focus sur sa croix. La
+    // position atteinte (reprise, saut) en tient lieu — un saut fait en pause s'affiche.
+    const pausedRef = useRef(paused);
+    pausedRef.current = paused;
+    const playableRef = useRef(0);
 
     // Pistes texte VTT sideloadées (rendu natif AVPlayer).
     const rnvTextTracks = useMemo(
@@ -191,8 +198,23 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
           didSeekRef.current = true;
           videoRef.current?.seek(startSec);
         }
+        // En pause : la reprise au 1er chargement (le `onSeek` du saut de `startPosition`
+        // peut précéder `onLoad` et se perdre), la position réelle aux suivants (HLS qui grandit).
+        const firstLoad = !loadSeenRef.current;
+        loadSeenRef.current = true;
+        if (pausedRef.current) {
+          const at = firstLoad && startSec > 1 ? startSec : data.currentTime ?? 0;
+          onProgress?.(Math.max(0, at), playableRef.current);
+        }
       },
-      [onLoad, onVideoSize, onTracks, startSec],
+      [onLoad, onVideoSize, onTracks, onProgress, startSec],
+    );
+
+    const handleSeek = useCallback(
+      (data: OnSeekData) => {
+        if (pausedRef.current) onProgress?.(Math.max(0, data.currentTime), playableRef.current);
+      },
+      [onProgress],
     );
 
     const handleProgress = useCallback(
@@ -204,10 +226,8 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
           audioReappliedRef.current = true;
           setSelectedAudioTrack({ type: SelectedTrackType.INDEX, value: desiredAudioRef.current });
         }
-        onProgress?.(
-          Math.max(0, data.currentTime),
-          data.playableDuration > 0 ? data.playableDuration : 0,
-        );
+        playableRef.current = data.playableDuration > 0 ? data.playableDuration : 0;
+        onProgress?.(Math.max(0, data.currentTime), playableRef.current);
       },
       [onProgress],
     );
@@ -271,6 +291,7 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         progressUpdateInterval={progressInterval}
         onLoad={handleLoad}
         onProgress={handleProgress}
+        onSeek={handleSeek}
         onEnd={onEnd}
         onError={handleError}
       />
