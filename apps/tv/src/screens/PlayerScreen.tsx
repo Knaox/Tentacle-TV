@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ElementRef } from "react";
+import { useEffect, useRef, useState, type ElementRef } from "react";
 import type { TouchableOpacity } from "react-native";
-import { useMediaItem, useItemAncestors } from "@tentacle-tv/api-client";
+import { useItemAncestors } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -26,7 +26,7 @@ import { useTVPrismProgress } from "../hooks/useTVPrismProgress";
 import { useTVTrackLists } from "../hooks/useTVTrackLists";
 import { useTVSessionRemote } from "../hooks/useTVSessionRemote";
 import { useEpisodePanelPrefetch } from "../hooks/useSeasonEpisodes";
-import { findCachedMediaItem } from "../utils/findCachedMediaItem";
+import { usePlayerItem } from "../hooks/usePlayerItem";
 import { useTVOsdEntryFocus } from "../hooks/useTVOsdEntryFocus";
 import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import { PlayerRedesignStage } from "../redesignWiring/player/PlayerRedesignStage";
@@ -43,16 +43,11 @@ type Props = NativeStackScreenProps<RootStackParamList, "Player">;
  */
 export function PlayerScreen({ route, navigation }: Props) {
   const { itemId } = route.params;
-  const { data: item } = useMediaItem(itemId);
+  // La fiche du serveur ; Tentacle muet, celle du cache ou lue en direct. Le
+  // placeholder (cartes, fiche, épisodes) habille seulement le chargement.
+  const { item, placeholderItem } = usePlayerItem(itemId);
   const { data: ancestors } = useItemAncestors(itemId);
   const queryClient = useQueryClient();
-  // Pendant le fetch de l'item complet, la bannière de chargement s'appuie sur la
-  // version déjà en cache (cartes Home, fiche, épisodes) : titre + affiche immédiats.
-  // JAMAIS utilisé pour la lecture elle-même (UserData de reprise potentiellement périmé).
-  const placeholderItem = useMemo(
-    () => (item ? null : findCachedMediaItem(queryClient, itemId)),
-    [item, queryClient, itemId],
-  );
 
   const mpvRef = useRef<MPVPlayerHandle>(null);
   const exoRef = useRef<MPVPlayerHandle>(null);

@@ -4,6 +4,8 @@ import { nativePlayerHeaders } from "./nativePlayerHeaders";
 
 /** Au-delà, pas de réponse : le serveur est tenu pour muet. */
 const PROBE_TIMEOUT_MS = 4000;
+/** Le lecteur attend sa fiche : on tranche plus vite. */
+const TENTACLE_PROBE_TIMEOUT_MS = 3000;
 
 export interface StreamPathProbe {
   ok: boolean;
@@ -34,6 +36,25 @@ export async function probeStreamPath(client: ReturnType<typeof useJellyfinClien
     return res.ok ? { ok: true, culprit: null } : { ok: false, culprit: "media" };
   } catch {
     return { ok: false, culprit: direct ? "media" : "tentacle" };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Tentacle répond-il, quoi qu'il dise ? Le proxy, sans la voie directe :
+ * n'importe quelle réponse HTTP (un 502 quand Jellyfin manque derrière) dit
+ * qu'il est là ; aucune réponse, qu'il est muet. Pour la fiche du lecteur
+ * (`usePlayerItem`), qui ne cherche ailleurs que s'il est muet.
+ */
+export async function tentacleAnswers(client: ReturnType<typeof useJellyfinClient>): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TENTACLE_PROBE_TIMEOUT_MS);
+  try {
+    await fetch(`${client.getBaseUrl()}/System/Info/Public`, { signal: controller.signal });
+    return true;
+  } catch {
+    return false;
   } finally {
     clearTimeout(timer);
   }

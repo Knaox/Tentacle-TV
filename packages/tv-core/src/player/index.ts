@@ -8,3 +8,4 @@ export * from "./holdMotor";
 export * from "./arrowArbiter";
 export * from "./playerState";
 export * from "./playbackRecovery";
+export * from "./playerItemFallback";
