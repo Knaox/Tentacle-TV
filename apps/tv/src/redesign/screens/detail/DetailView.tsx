@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
+import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { StatusPanel } from "../shared/StatusPanel";
@@ -25,7 +26,8 @@ import { useSectionAnchors } from "./useSectionAnchors";
  * vivant teinté de ses couleurs.
  *
  * États : chargement (`header` nul : squelette immobile), erreur (`error` :
- * le panneau, Réessayer / Retour), fiche.
+ * le panneau, Réessayer), fiche. Dans les trois, la croix Retour (`onBack`)
+ * en haut à gauche, sur la colonne du contenu — elle défile avec la page.
  *
  * Contrat — tout arrive résolu, et les hooks existants le fourniront :
  * - `header`, `backdropUri`, `palette` : `useMediaItem` (et la série d'un
@@ -41,12 +43,13 @@ import { useSectionAnchors } from "./useSectionAnchors";
  * - `similar` : `useSimilarItems` ; `collection` : `useCollectionItems` —
  *   cartes par `resolveCardMarkers`.
  *
- * Groupes de focus (`FocusGroup`, liés par le câblage) : `detail:header` (le
- * premier écran, pleine largeur), `detail:seasons`, `detail:episodes`,
- * `detail:cast`, `detail:extras`, `detail:saga`, `detail:collection`,
- * `detail:similar`. Éléments : `detail:*` (en-tête), `season:<i>`,
+ * Groupes de focus (`FocusGroup`, liés par le câblage) : `detail:top` (la
+ * bande de la croix, pleine largeur), `detail:header` (le premier écran,
+ * pleine largeur), `detail:seasons`, `detail:episodes`, `detail:cast`,
+ * `detail:extras`, `detail:saga`, `detail:collection`, `detail:similar`.
+ * Éléments : `detail:back` (la croix), `detail:*` (en-tête), `season:<i>`,
  * `episode:<i>`, `cast:<i>`, `extra:<i>`, `saga:<i>`, `collection:<i>`,
- * `similar:<i>`, `status:primary` / `status:secondary` (erreur).
+ * `similar:<i>`, `status:primary` (erreur).
  */
 
 export interface DetailViewProps extends Omit<DetailSectionsProps, "onSectionFocus" | "onSectionLayout"> {
@@ -65,6 +68,8 @@ export interface DetailViewProps extends Omit<DetailSectionsProps, "onSectionFoc
 /** Ce que la section suivante montre d'elle au premier écran : son titre
  *  seul, au pied — jamais un bout de rangée coupé par le bord. */
 const PEEK = 112;
+/** La bande de la croix, en haut de la page. */
+const BAR_HEIGHT = BACK_TOP + BACK_BUTTON_SIZE;
 
 export const DetailView = memo(function DetailView({
   header,
@@ -96,6 +101,16 @@ export const DetailView = memo(function DetailView({
   );
   const { onSectionFocus, onSectionLayout, tail } = useSectionAnchors(scrollTo);
   const headerFocus = useCallback((focused: boolean) => focused && onSectionFocus("header"), [onSectionFocus]);
+  // La croix, au-dessus de la colonne du contenu ; sa bande couvre toute la
+  // largeur (le câblage y pose le guide qui mène HAUT jusqu'à elle). Dans la
+  // page, elle précède l'en-tête sans le chevaucher ; sur l'écran fixe
+  // (chargement, erreur), elle se pose au même endroit.
+  const backBar = (fixed: boolean) =>
+    onBack ? (
+      <FocusGroup focusKey="detail:top" style={[styles.backBar, fixed && styles.backBarFixed]}>
+        <BackButton focusKey="detail:back" onPress={onBack} onFocusChange={headerFocus} />
+      </FocusGroup>
+    ) : null;
 
   let body;
   if (error) {
@@ -105,7 +120,6 @@ export const DetailView = memo(function DetailView({
         title={error.title}
         message={error.message}
         primary={{ label: t("common:retry"), icon: "refresh", onPress: onRetry }}
-        secondary={onBack ? { label: t("common:back"), icon: "chevronLeft", onPress: onBack } : undefined}
         inset={0}
       />
     );
@@ -123,7 +137,8 @@ export const DetailView = memo(function DetailView({
           style={styles.fill}
           contentContainerStyle={{ paddingBottom: tail }}
         >
-          <FocusGroup focusKey="detail:header" style={styles.hero}>
+          {backBar(false)}
+          <FocusGroup focusKey="detail:header" style={onBack ? styles.heroUnderBar : styles.hero}>
             <DetailHeader
               header={header}
               actions={actions}
@@ -151,6 +166,7 @@ export const DetailView = memo(function DetailView({
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
       {body}
+      {header && !error ? null : backBar(true)}
       <View style={styles.brand} pointerEvents="none">
         <BrandMark size={52} />
       </View>
@@ -164,5 +180,15 @@ const styles = StyleSheet.create({
   // Le premier écran : l'en-tête posé en bas à gauche de l'image, la section
   // suivante qui affleure au pied.
   hero: { minHeight: 1080 - PEEK, justifyContent: "flex-end", paddingLeft: DETAIL_LEFT, paddingTop: 140, paddingBottom: 12 },
+  // Le même premier écran, sous la bande de la croix : rien ne bouge.
+  heroUnderBar: {
+    minHeight: 1080 - PEEK - BAR_HEIGHT,
+    justifyContent: "flex-end",
+    paddingLeft: DETAIL_LEFT,
+    paddingTop: 140 - BAR_HEIGHT,
+    paddingBottom: 12,
+  },
+  backBar: { height: BAR_HEIGHT, paddingTop: BACK_TOP, paddingLeft: DETAIL_LEFT, flexDirection: "row", alignItems: "flex-start" },
+  backBarFixed: { position: "absolute", top: 0, left: 0, right: 0 },
   brand: { position: "absolute", top: TV_STAGE.safe.y + 18, right: TV_STAGE.safe.x + 14 },
 });

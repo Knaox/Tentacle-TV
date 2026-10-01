@@ -5,6 +5,7 @@ import type { CardSheetTarget } from "../../components/cards/actions/cardSheetTa
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { DetailView } from "../../redesign/screens/detail/DetailView";
+import { useBackFocus } from "../focus/backFocus";
 import { useFocusStore } from "../focus/focusStore";
 import { useEntryFocus } from "../screen/useEntryFocus";
 import { ActionSheetRedesign } from "../sheet/ActionSheetRedesign";
@@ -20,7 +21,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
  *
  * Le focus, par le magasin de l'écran (`useFocusStore`) :
  * - l'ENTRÉE sur Lecture (sinon la bande-annonce, sinon Ma liste), et
- *   « Réessayer » sur une fiche en erreur (`useEntryFocus`) ;
+ *   « Réessayer » sur une fiche en erreur (`useEntryFocus`) — JAMAIS sur la
+ *   croix Retour, en haut à gauche : verrouillée jusqu'à ce que l'entrée ait
+ *   le focus, puis atteinte par HAUT depuis l'en-tête (`useBackFocus`) ;
  * - le RETOUR du lecteur, de la bande-annonce ou d'une autre fiche rend le
  *   focus au dernier élément qui l'avait ;
  * - l'entrée de chaque section par son guide (`useDetailGuides`) ;
@@ -28,6 +31,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
  *   avait le focus, il passe à l'action suivante.
  * Menu dépile l'écran (pile native) ; les feuilles le reçoivent elles-mêmes.
  */
+
+/** La croix Retour de la fiche (`DetailView`). */
+const DETAIL_BACK_KEY = "detail:back";
 
 function entryKeyOf({ props }: DetailModel): string | null {
   if (props.error) return "status:primary";
@@ -55,6 +61,7 @@ export function MediaDetailRedesign({ route }: Props) {
   const focus = useFocusStore();
   const entryKey = entryKeyOf(model);
   useEntryFocus(focus, entryKey);
+  useBackFocus(focus, { backKey: DETAIL_BACK_KEY, barKey: "detail:top", entryKey });
   useDetailGuides(focus, entryKey, model.props.episodes);
 
   // La pilule de lecture qui disparaît sous le focus (série terminée, apprise

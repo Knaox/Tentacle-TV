@@ -47,7 +47,8 @@ export function useDetailGuides(focus: FocusStore, entryKey: string | null, epis
     bound.current = true;
     const sides = { trapLeft: true, trapRight: true };
     focus.bind("detail:header", {
-      container: createEntryGuide(focus, { owns: (key) => key.startsWith("detail:"), fallback: () => live.current.entryKey }),
+      // La croix n'est pas de l'en-tête (sa bande est au-dessus) : HAUT depuis une section n'y retourne jamais.
+      container: createEntryGuide(focus, { owns: (key) => key.startsWith("detail:") && key !== "detail:back", fallback: () => live.current.entryKey }),
     });
     focus.bind("detail:seasons", {
       container: createEntryGuide(focus, { owns: rowItems("season"), fallback: () => live.current.season, remember: false, ...sides }),

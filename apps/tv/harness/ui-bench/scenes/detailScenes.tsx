@@ -91,13 +91,15 @@ export function imagesOf(props: DetailViewProps): string[] {
 
 /** L'appui long d'un épisode ouvre la feuille dans l'app ; au banc, seule son indication compte. */
 const HOLD = () => undefined;
+/** La croix Retour : toute fiche l'a (le câblage passe toujours `onBack`). */
+const BACK = () => undefined;
 
 /** La fiche vivante : un onglet de saison choisi au simulateur change la saison. */
 function DetailScene({ data, build }: { data: BenchData; build: (data: BenchData, seasonId?: string) => DetailViewProps }) {
   const { i18n: live } = useTranslation();
   const [seasonId, setSeasonId] = useState<string | undefined>(undefined);
   const props = useMemo(() => build(data, seasonId), [build, data, seasonId, live.language]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <DetailView {...props} onSelectSeason={setSeasonId} onLongPressEpisode={HOLD} />;
+  return <DetailView {...props} onSelectSeason={setSeasonId} onLongPressEpisode={HOLD} onBack={BACK} />;
 }
 
 type Build = (data: BenchData, seasonId?: string) => DetailViewProps;
@@ -131,7 +133,7 @@ function scene(id: string, label: string, focusKeys: string[], build: Build): Be
 const HEADER_KEYS = ["detail:primary", "detail:list", "detail:favorite", "detail:watched", "detail:rate"];
 
 export const DETAIL_SCENES: BenchScene[] = [
-  scene("film-saga", "Film, saga et similaires (Michael)", [...HEADER_KEYS, "cast:0", "saga:0", "saga:1", "similar:1"], (data) =>
+  scene("film-saga", "Film, saga et similaires (Michael)", ["detail:back", ...HEADER_KEYS, "cast:0", "saga:0", "saga:1", "similar:1"], (data) =>
     detailOf(data, ID.michael)),
   scene("film-reprise", "Film en cours, portraits (Orgueil et Préjugés)", ["detail:primary", "detail:list", "cast:0", "cast:2"], (data) =>
     detailOf(data, ID.pride)),
@@ -200,14 +202,13 @@ export const DETAIL_SCENES: BenchScene[] = [
         };
       },
     })),
-  scene("chargement", "Chargement", [], (data) => ({
+  scene("chargement", "Chargement", ["detail:back"], (data) => ({
     header: null,
     palette: (data.item(ID.michael) && paletteOf(data, data.item(ID.michael)!)) || NEUTRAL_PALETTE,
   })),
-  scene("erreur", "Erreur", ["status:primary"], () => ({
+  scene("erreur", "Erreur", ["status:primary", "detail:back"], () => ({
     header: null,
     palette: NEUTRAL_PALETTE,
     error: { title: t("common:contentErrorTitle"), message: t("common:contentErrorMessage") },
-    onBack: () => undefined,
   })),
 ];
