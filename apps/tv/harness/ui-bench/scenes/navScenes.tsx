@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { i18n } from "@tentacle-tv/shared";
 import { NavEntryMenu } from "../../../src/redesign/nav/NavEntryMenu";
+import { sameRailGeometry, type NavRailGeometry } from "../../../src/redesign/nav/navGeometry";
 import { HomeView } from "../../../src/redesign/screens/home/HomeView";
 import { SettingsView } from "../../../src/redesign/screens/settings/SettingsView";
 import type { BenchData } from "../data/benchData";
@@ -36,7 +37,14 @@ function NavScene({ data, activeKey = "Home", options = {}, menu }: {
   /** L'entrée dont le menu d'appui long est ouvert. */
   menu?: string;
 }) {
-  const nav = benchNav(data, activeKey, { libraries: MANY, ...options, heldKey: menu ?? options.heldKey });
+  // Le menu se pose à droite du rail ouvert, à la largeur qu'il prend vraiment
+  // (publiée par la vue, comme dans l'app).
+  const [geometry, setGeometry] = useState<NavRailGeometry | null>(null);
+  const onGeometry = useCallback(
+    (next: NavRailGeometry) => setGeometry((previous) => (sameRailGeometry(previous, next) ? previous : next)),
+    [],
+  );
+  const nav = { ...benchNav(data, activeKey, { libraries: MANY, ...options, heldKey: menu ?? options.heldKey }), onGeometry };
   const rows = useMemo(() => rowsOf(data), [data]);
   const hero = useMemo(() => {
     const items = heroItems(data);
@@ -51,7 +59,9 @@ function NavScene({ data, activeKey = "Home", options = {}, menu }: {
         rows={rows}
         palette={hero?.palette ?? { glows: ["#3a3f5c", "#5c4a2e", "#6b4a3a"], deep: "#0d0b0f" }}
       />
-      {shown ? <NavEntryMenu title={shown.title} caption={shown.caption} items={shown.items} /> : null}
+      {shown ? (
+        <NavEntryMenu title={shown.title} caption={shown.caption} items={shown.items} railWidth={geometry?.expandedWidth} />
+      ) : null}
     </View>
   );
 }
