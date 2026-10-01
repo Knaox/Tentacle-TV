@@ -3,6 +3,7 @@ import { cachedBitrate, useJellyfinClient } from "@tentacle-tv/api-client";
 import { decideStartupWait, type Health } from "@tentacle-tv/tv-core";
 import { publishPlaybackTrouble, readPlaybackTrouble, type StartWait } from "./playbackTroubleStore";
 import type { RecoverySources } from "./recoverySources";
+import { loadGrew, readPlayerLoad, type PlayerLoad } from "../utils/playerLoadProbe";
 import { probeStreamPath } from "../utils/streamPathProbe";
 import { plog } from "../utils/playerDiag";
 
@@ -13,6 +14,8 @@ interface OpeningState {
   lastProgressAt: number | null;
   loaded: boolean;
   buffered: number;
+  /** Ce qu'AVPlayer avait chargé à la lecture d'avant (`playerLoadProbe`). */
+  load: PlayerLoad | null;
   source: Health;
   checkedAt: number | null;
   probing: boolean;
@@ -48,7 +51,7 @@ export function useStartupWait(sources: RecoverySources | undefined): void {
   useEffect(() => {
     if (!opening) return undefined;
     const st: OpeningState = {
-      emittedAt: Date.now(), lastProgressAt: null, loaded: false, buffered: src.current?.s.bufferedTimeRef.current ?? 0,
+      emittedAt: Date.now(), lastProgressAt: null, loaded: false, buffered: src.current?.s.bufferedTimeRef.current ?? 0, load: null,
       source: "unknown", checkedAt: null, probing: false, gaveUp: false,
     };
     let alive = true;
@@ -64,7 +67,13 @@ export function useStartupWait(sources: RecoverySources | undefined): void {
       const s = src.current;
       if (!s || st.gaveUp) return;
       const now = Date.now();
-      // Les signes de vie de l'ouverture : le lecteur prêt (`onLoad`), la mémoire qui grossit.
+      // Les signes de vie de l'ouverture : le lecteur prêt (`onLoad`), la mémoire
+      // qui grossit — et, avant la première image, les données qui arrivent chez
+      // AVPlayer (tvOS), seul signe d'un serveur qui transcode lentement.
+      void readPlayerLoad().then((load) => {
+        if (alive && loadGrew(st.load, load)) st.lastProgressAt = Date.now();
+        st.load = load;
+      });
       const loaded = !s.s.isLoading;
       const buffered = s.s.bufferedTimeRef.current;
       if ((loaded && !st.loaded) || buffered > st.buffered + 0.5) st.lastProgressAt = now;

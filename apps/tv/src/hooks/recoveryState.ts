@@ -1,4 +1,5 @@
 import type { Culprit, Health, ProducerDeath } from "@tentacle-tv/tv-core";
+import type { PlayerLoad } from "../utils/playerLoadProbe";
 
 /**
  * L'état que tient la reprise d'une lecture (`usePlaybackRecovery`) entre deux
@@ -17,6 +18,8 @@ export interface RecoveryState {
    *  la mémoire qui grossit — l'échéance d'un transcodage qui se fait attendre. */
   lastPos: number;
   lastProgressAt: number | null;
+  /** Ce qu'AVPlayer avait chargé à la lecture d'avant, pendant un arrêt (`playerLoadProbe`). */
+  load: PlayerLoad | null;
   source: Health;
   culprit: Culprit | null;
   checkedAt: number | null;
@@ -40,7 +43,7 @@ export interface RecoveryState {
 
 export const freshRecoveryState = (): RecoveryState => ({
   stalledSince: null, lostSince: null, openSince: null, incidentPos: null, buffered: { value: 0, at: Date.now() },
-  lastPos: 0, lastProgressAt: null,
+  lastPos: 0, lastProgressAt: null, load: null,
   source: "unknown", culprit: null, checkedAt: null, probing: false, manualProbe: false, stillDown: false,
   downSince: null, downWhat: null, restarting: false, lastRestartAt: null, restartPending: false, vain: 0,
   retryAsked: false, producerCheckedAt: null, producerChecking: false, producerDeath: null,

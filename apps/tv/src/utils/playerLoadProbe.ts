@@ -1,0 +1,31 @@
+import { NativeModules } from "react-native";
+
+/**
+ * Ce qu'AVPlayer a chargé (tvOS, module natif `TentaclePlayerProbe`) : le
+ * seul signe, pendant une ouverture ou un arrêt, que des données ARRIVENT —
+ * react-native-video ne publie sa mémoire qu'en lecture. `null` sans lecteur
+ * monté, sur Android TV, ou sous un natif plus ancien que la sonde : la
+ * reprise retombe alors sur la position et la mémoire vues en lecture.
+ */
+export interface PlayerLoad {
+  /** La fin la plus lointaine de ce qui est chargé, en secondes. */
+  loadedEnd: number;
+  /** Octets reçus depuis l'ouverture de l'élément. */
+  bytes: number;
+  requests: number;
+  ready: boolean;
+}
+
+const probe = NativeModules.TentaclePlayerProbe as { loadState?: () => Promise<PlayerLoad | null> } | undefined;
+
+export function readPlayerLoad(): Promise<PlayerLoad | null> {
+  if (!probe?.loadState) return Promise.resolve(null);
+  return probe.loadState().catch(() => null);
+}
+
+/** Des données sont-elles arrivées depuis la lecture d'avant ? La première
+ *  lecture ne fait que poser la base : on ne sait pas QUAND ses octets sont venus. */
+export function loadGrew(previous: PlayerLoad | null, next: PlayerLoad | null): boolean {
+  if (!previous || !next) return false;
+  return next.bytes > previous.bytes || next.loadedEnd > previous.loadedEnd + 0.5;
+}

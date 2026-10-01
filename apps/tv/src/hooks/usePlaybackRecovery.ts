@@ -12,6 +12,7 @@ import { useStartupRecovery } from "./useStartupRecovery";
 import { useStartupWait } from "./useStartupWait";
 import { isFormatError, type RecoverySources } from "./recoverySources";
 import type { RestartReason } from "./streamRestart";
+import { loadGrew, readPlayerLoad } from "../utils/playerLoadProbe";
 import { prismStatus } from "../utils/prismCoreStart";
 import { probeStreamPath } from "../utils/streamPathProbe";
 import { plog } from "../utils/playerDiag";
@@ -137,6 +138,14 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     // Un signe de vie : la mémoire qui grossit, la position qui avance.
     if (grew || pos > st.lastPos + 0.5) st.lastProgressAt = now;
     st.lastPos = pos;
+    // À l'arrêt, AVPlayer ne publie plus rien : les données qui ARRIVENT se
+    // lisent chez lui (tvOS), un transcodage lent n'est pas un transcodage mort.
+    if (stalled || st.openSince !== null) {
+      void readPlayerLoad().then((load) => {
+        if (loadGrew(st.load, load)) st.lastProgressAt = Date.now();
+        st.load = load;
+      });
+    } else st.load = null;
     if (grew || buffered < st.buffered.value - 1) {
       st.buffered = { value: buffered, at: now };
       const open = st.openSince !== null || st.lostSince !== null;
