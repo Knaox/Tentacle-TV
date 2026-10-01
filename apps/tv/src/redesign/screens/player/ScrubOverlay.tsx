@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon } from "../../icons/Icon";
@@ -53,7 +53,7 @@ export const ScrubOverlay = memo(function ScrubOverlay({
           <FrameView frame={scrub.frame} />
         </View>
       ) : null}
-      <LinearGradient colors={[scrim(0), scrim(0.68), scrim(0.95)]} locations={[0.4, 0.68, 1]} style={StyleSheet.absoluteFill} />
+      <SoftGradient {...STAGE_SIZE} colors={[scrim(0), scrim(0.68), scrim(0.95)]} locations={[0.4, 0.68, 1]} />
       {scrub.speed ? (
         <View style={styles.speedBox}>
           <GlassSurface radius={36} tone="regular" style={[styles.speed, regularBacking]}>

@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import Animated from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
+import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
@@ -100,7 +100,7 @@ export const TracksPanel = memo(function TracksPanel({
   return (
     <View style={StyleSheet.absoluteFill}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, arrival.veil]}>
-        <LinearGradient colors={[scrim(0.15), scrim(0.55), scrim(0.85)]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+        <SoftGradient {...STAGE_SIZE} colors={[scrim(0.15), scrim(0.55), scrim(0.85)]} locations={[0, 0.4, 1]} />
       </Animated.View>
       <Animated.View pointerEvents="box-none" style={[StyleSheet.absoluteFill, arrival.body]}>
         <FocusGroup focusKey="tracks:panel" style={styles.sheet}>

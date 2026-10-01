@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import Animated from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
@@ -42,14 +42,14 @@ export const EndScreen = memo(function EndScreen({
   return (
     <Animated.View style={[styles.root, body]}>
       {model.backdropUri ? <Image source={{ uri: model.backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
-      <LinearGradient
+      <SoftGradient
+        {...STAGE_SIZE}
         colors={[scrim(0.95), scrim(0.84), scrim(0.5)]}
         locations={[0, 0.48, 1]}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
-        style={StyleSheet.absoluteFill}
       />
-      <LinearGradient colors={[scrim(0), scrim(0.75)]} locations={[0.55, 1]} style={StyleSheet.absoluteFill} />
+      <SoftGradient {...STAGE_SIZE} colors={[scrim(0), scrim(0.75)]} locations={[0.55, 1]} />
       <View style={styles.column}>
         <View style={styles.kickerRow}>
           <View style={styles.dot} />

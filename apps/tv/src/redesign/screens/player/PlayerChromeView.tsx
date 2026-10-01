@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
+import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { Presented } from "../../motion/Presented";
 import { useMotion } from "../../motion/useMotion";
@@ -99,6 +99,8 @@ export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport
 }
 
 const SAFE = TV_STAGE.safe;
+/** Le voile du bas, sous la frise et les commandes. */
+const BOTTOM_SCRIM = 540;
 
 export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChromeViewProps) {
   const { media, labels, phase, timeline, paused, osdVisible, scrub, panel, endScreen, upNext, skip } = props;
@@ -122,7 +124,7 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
       {props.subtitle && playing && !scrub && !endScreen ? <SubtitleLayer cue={props.subtitle} raised={chrome} /> : null}
       <Animated.View style={[StyleSheet.absoluteFill, chromeStyle]} pointerEvents={chrome ? "box-none" : "none"}>
         <FocusGroup focusKey="player:osd" style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          <LinearGradient pointerEvents="none" colors={[scrim(0), scrim(0.66), scrim(0.94)]} locations={[0, 0.48, 1]} style={styles.bottomScrim} />
+          <SoftGradient width={STAGE_SIZE.width} height={BOTTOM_SCRIM} colors={[scrim(0), scrim(0.66), scrim(0.94)]} locations={[0, 0.48, 1]} style={styles.bottomScrim} />
           <Animated.View style={[StyleSheet.absoluteFill, topStyle]} pointerEvents="box-none">
             <OsdTopBar media={media} backLabel={labels.back} onBack={props.onBack} />
           </Animated.View>
@@ -190,7 +192,7 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
 
 const styles = StyleSheet.create({
   pauseDim: { backgroundColor: scrim(0.28) },
-  bottomScrim: { position: "absolute", left: 0, right: 0, bottom: 0, height: 540 },
+  bottomScrim: { top: STAGE_SIZE.height - BOTTOM_SCRIM },
   timeline: { position: "absolute", left: SAFE.x, right: SAFE.x, top: 818 },
   controls: { position: "absolute", left: SAFE.x, right: SAFE.x, top: 888 },
 });

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { PillButton } from "../../controls/PillButton";
 import { Icon } from "../../icons/Icon";
 import { TitleArt } from "../../hero/TitleArt";
@@ -50,14 +50,14 @@ export const PlayerLoading = memo(function PlayerLoading({
   return (
     <View style={styles.root}>
       {media.backdropUri ? <Image source={{ uri: media.backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
-      <LinearGradient
+      <SoftGradient
+        {...STAGE_SIZE}
         colors={[scrim(0.94), scrim(0.72), scrim(0.34)]}
         locations={[0, 0.48, 1]}
         start={{ x: 0, y: 0.8 }}
         end={{ x: 1, y: 0.2 }}
-        style={StyleSheet.absoluteFill}
       />
-      <LinearGradient colors={[scrim(0.45), scrim(0), scrim(0.9)]} locations={[0, 0.36, 1]} style={StyleSheet.absoluteFill} />
+      <SoftGradient {...STAGE_SIZE} colors={[scrim(0.45), scrim(0), scrim(0.9)]} locations={[0, 0.36, 1]} />
       {failed ? null : (
         <View style={styles.back}>
           <PillButton variant="glass" size="md" icon="chevronLeft" label={labels.back} focusKey="loading:back" onPress={onBack} />

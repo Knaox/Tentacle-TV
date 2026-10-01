@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { MetaLine } from "../../hero/MetaLine";
 import { TitleArt } from "../../hero/TitleArt";
 import { fonts, scrim, white } from "../../theme/tokens";
@@ -16,6 +16,8 @@ import type { PlayerMedia } from "./playerTypes";
  */
 
 const SAFE = TV_STAGE.safe;
+/** Le voile du haut, sous le titre et Retour. */
+const TOP_SCRIM = 330;
 
 export const OsdTopBar = memo(function OsdTopBar({
   media,
@@ -28,12 +30,7 @@ export const OsdTopBar = memo(function OsdTopBar({
 }) {
   return (
     <>
-      <LinearGradient
-        pointerEvents="none"
-        colors={[scrim(0.86), scrim(0.52), scrim(0)]}
-        locations={[0, 0.5, 1]}
-        style={styles.scrim}
-      />
+      <SoftGradient width={STAGE_SIZE.width} height={TOP_SCRIM} colors={[scrim(0.86), scrim(0.52), scrim(0)]} locations={[0, 0.5, 1]} />
       <View style={styles.bar} pointerEvents="box-none">
         <CircleButton icon="chevronLeft" label={backLabel} size={72} caption={false} focusKey="player:back" onPress={onBack} />
         <View style={styles.titles}>
@@ -51,7 +48,6 @@ export const OsdTopBar = memo(function OsdTopBar({
 });
 
 const styles = StyleSheet.create({
-  scrim: { position: "absolute", left: 0, right: 0, top: 0, height: 330 },
   bar: { position: "absolute", left: SAFE.x, top: SAFE.y, right: 520, flexDirection: "row", alignItems: "center", gap: 28 },
   titles: { flexShrink: 1, gap: 8, paddingTop: 2 },
   subtitle: { ...fonts.semibold, fontSize: 28, lineHeight: 36, color: white(0.86) },

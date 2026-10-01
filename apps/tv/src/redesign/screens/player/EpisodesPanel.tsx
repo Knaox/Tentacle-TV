@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import Animated from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
+import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
@@ -68,12 +68,12 @@ export const EpisodesPanel = memo(function EpisodesPanel({
   return (
     <View style={StyleSheet.absoluteFill}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, arrival.veil]}>
-        <LinearGradient
+        <SoftGradient
+          {...STAGE_SIZE}
           colors={[scrim(0.3), scrim(0.62), scrim(0.8)]}
           locations={[0, 0.45, 1]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
         />
       </Animated.View>
       <Animated.View pointerEvents="box-none" style={[StyleSheet.absoluteFill, arrival.body]}>
