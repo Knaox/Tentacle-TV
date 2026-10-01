@@ -21,7 +21,10 @@
  * POSITION À ZÉRO — il efface précisément ce qu'on veut sauver.
  *
  * On passe donc par `UserItems/{itemId}/UserData`, et on renvoie l'objet ENTIER
- * qu'on vient de lire, avec le seul `Played` retourné. Le DTO d'écriture porte
+ * qu'on vient de lire, avec le seul `Played` retourné. Le compte est NOMMÉ
+ * (`userId`) : par le proxy de Tentacle, qui parle à Jellyfin avec sa clé
+ * d'administration, la route sans compte répond 400 — mesuré depuis la TV, le
+ * correctif n'y avait jamais rien corrigé. Le DTO d'écriture porte
  * exactement les mêmes champs que celui de lecture (`Rating`, `IsFavorite`,
  * `PlayCount`, `Likes`…) : renvoyer un objet partiel ferait dépendre le résultat
  * de la façon dont le serveur fusionne, ce qu'on ne veut pas parier.
@@ -48,8 +51,9 @@ type UserDataPayload = Record<string, unknown> & {
 export async function clearPlayedWhenResumable(
   client: UserDataClient,
   itemId: string,
+  userId: string,
 ): Promise<number | null> {
-  const path = `/UserItems/${itemId}/UserData`;
+  const path = `/UserItems/${itemId}/UserData?userId=${encodeURIComponent(userId)}`;
   const data = await client.fetch<UserDataPayload>(path).catch(() => null);
   if (!data) return null;
 

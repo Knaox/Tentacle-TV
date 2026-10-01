@@ -32,13 +32,13 @@ function fakeClient(read: unknown, writeFails = false): UserDataClient & { calls
 describe("la contradiction « vu et à reprendre »", () => {
   it("ne touche à rien après une fin normale (vu, position à zéro)", async () => {
     const client = fakeClient({ Played: true, PlaybackPositionTicks: 0 });
-    expect(await clearPlayedWhenResumable(client, "abc")).toBeNull();
+    expect(await clearPlayedWhenResumable(client, "abc", "u1")).toBeNull();
     expect(client.calls).toHaveLength(1);
   });
 
   it("ne touche à rien sur un média jamais vu", async () => {
     const client = fakeClient({ Played: false, PlaybackPositionTicks: 12_000_000_000 });
-    expect(await clearPlayedWhenResumable(client, "abc")).toBeNull();
+    expect(await clearPlayedWhenResumable(client, "abc", "u1")).toBeNull();
     expect(client.calls).toHaveLength(1);
   });
 
@@ -52,10 +52,10 @@ describe("la contradiction « vu et à reprendre »", () => {
       Key: "abc",
     });
 
-    expect(await clearPlayedWhenResumable(client, "abc")).toBe(1_800_000_000);
+    expect(await clearPlayedWhenResumable(client, "abc", "u1")).toBe(1_800_000_000);
 
     const write = client.calls[1];
-    expect(write.path).toBe("/UserItems/abc/UserData");
+    expect(write.path).toBe("/UserItems/abc/UserData?userId=u1");
     expect(write.init?.method).toBe("POST");
     // L'objet ENTIER est renvoyé : ni le favori ni la note ne doivent tomber.
     expect(JSON.parse(String(write.init?.body))).toEqual({
@@ -68,15 +68,24 @@ describe("la contradiction « vu et à reprendre »", () => {
     });
   });
 
+  it("nomme le compte, à la lecture comme à l'écriture (le proxy répond 400 sans)", async () => {
+    const client = fakeClient({ Played: true, PlaybackPositionTicks: 42 });
+    await clearPlayedWhenResumable(client, "abc", "u 1");
+    expect(client.calls.map((c) => c.path)).toEqual([
+      "/UserItems/abc/UserData?userId=u%201",
+      "/UserItems/abc/UserData?userId=u%201",
+    ]);
+  });
+
   it("ne prétend rien quand la lecture échoue", async () => {
     const client = fakeClient(null);
-    expect(await clearPlayedWhenResumable(client, "abc")).toBeNull();
+    expect(await clearPlayedWhenResumable(client, "abc", "u1")).toBeNull();
     expect(client.calls).toHaveLength(1);
   });
 
   it("ne prétend rien quand l'écriture échoue", async () => {
     const client = fakeClient({ Played: true, PlaybackPositionTicks: 42 }, true);
-    expect(await clearPlayedWhenResumable(client, "abc")).toBeNull();
+    expect(await clearPlayedWhenResumable(client, "abc", "u1")).toBeNull();
     expect(client.calls).toHaveLength(2);
   });
 });

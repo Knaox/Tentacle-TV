@@ -63,7 +63,7 @@ export function useWatchStopInvalidation() {
       // repartent chercher leur vérité juste après, et ils doivent la trouver
       // corrigée. Sans effet dans l'écrasante majorité des sorties de lecture —
       // voir `resumeOverPlayed.ts` pour la seule situation qu'elle vise.
-      const resumed = await clearPlayedWhenResumable(client, itemId);
+      const resumed = await clearPlayedWhenResumable(client, itemId, userId);
       if (resumed !== null) {
         // `PlayedPercentage` n'est PAS repeint : il se déduit de la position
         // côté serveur, et la réponse qui arrive dans la seconde le corrige.
