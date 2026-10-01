@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
@@ -52,7 +52,9 @@ export function HomeRedesign({ navigation }: Props) {
   const detail = useCallback((item: MediaItem) => navigation.navigate("MediaDetail", { itemId: item.Id }), [navigation]);
 
   const focus = useFocusStore();
-  const hero = useHomeHero(focus, home.resume, { play, detail });
+  // Le héros dans le champ : sa rotation se suspend quand il en sort.
+  const [heroInView, setHeroInView] = useState(true);
+  const hero = useHomeHero(focus, home.resume, { play, detail }, heroInView);
 
   // L'état de l'écran d'abord : il décide de l'entrée du focus. Le premier
   // héros attend l'art de son titre (logo, fond) : l'écran se dit en
@@ -133,6 +135,7 @@ export function HomeRedesign({ navigation }: Props) {
         onPressCard={onPressCard}
         onLongPressCard={onLongPressCard}
         onFocusCard={onFocusCard}
+        onHeroVisibleChange={setHeroInView}
       />
       {cardActions.sheet}
     </RedesignScreen>

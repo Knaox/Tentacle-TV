@@ -10,23 +10,22 @@ import type { FocusStore } from "../focus/focusStore";
 import { heroModelOf } from "../hero/heroModel";
 import { useBeyondEdge } from "../remote/useBeyondEdge";
 import { HERO_MAX_ITEMS, useHeroArts } from "./useHeroArts";
+import { useHeroRotation } from "./useHeroRotation";
 
 /**
  * Le héros de l'accueil : les visionnages à REPRENDRE d'abord (cinq au plus),
- * sinon une sélection au hasard du serveur. Il tourne toutes les huit
- * secondes — seulement écran affiché, et jamais pendant qu'un de ses boutons
- * a le focus : on ne change pas le titre sous le doigt de celui qui le lit.
- * C'est alors LUI qui le tourne : DROITE au-delà du dernier bouton — clic
- * sur le bord du pavé ou glisser, là où le focus ne va nulle part, vers les
- * points de la rotation — passe au titre suivant, en boucle, un par geste
- * (`useBeyondEdge`). Les boutons ne bougent pas : le focus reste où il est.
+ * sinon une sélection au hasard du serveur. Il tourne seul, en fondu, même
+ * focalisé — le minuteur repart à chaque geste, rien ne tourne hors champ
+ * (`useHeroRotation`). Et on le tourne à la main : DROITE au-delà du dernier
+ * bouton — clic sur le bord du pavé ou glisser, là où le focus ne va nulle
+ * part, vers les points de la rotation — passe au titre suivant, en boucle,
+ * un par geste (`useBeyondEdge`). Les boutons ne bougent pas : le focus
+ * reste où il est.
  *
  * Un épisode se montre sous l'art de sa SÉRIE (logo, fond, genres), chargé
  * par sa fiche (`useMediaItem`, le cache de la page de détail : les gestes de
  * Ma liste y écrivent).
  */
-
-const ROTATE_MS = 8_000;
 
 export interface HomeHero {
   hero: HeroModel | null;
@@ -39,23 +38,12 @@ export interface HomeHero {
   onToggleList: () => void;
 }
 
-/** Vrai tant qu'un bouton du héros a le focus. */
-function useHeroFocused(focus: FocusStore): boolean {
-  const [focused, setFocused] = useState(false);
-  useEffect(
-    () =>
-      focus.subscribe((key, isFocused) => {
-        if (key.startsWith("hero:")) setFocused(isFocused || (focus.focusedKey()?.startsWith("hero:") ?? false));
-      }),
-    [focus],
-  );
-  return focused;
-}
-
 export function useHomeHero(
   focus: FocusStore,
   resume: MediaItem[] | undefined,
   actions: { play: (item: MediaItem) => void; detail: (item: MediaItem) => void },
+  /** Le héros est dans le champ (`HomeView`, `onHeroVisibleChange`). */
+  inView: boolean,
 ): HomeHero {
   const { t } = useTranslation();
   const client = useJellyfinClient();
@@ -65,13 +53,9 @@ export function useHomeHero(
 
   const [index, setIndex] = useState(0);
   const safeIndex = items.length > 0 ? index % items.length : 0;
-  const heroFocused = useHeroFocused(focus);
   const screenFocused = useIsFocused();
-  useEffect(() => {
-    if (items.length <= 1 || !screenFocused || heroFocused) return;
-    const timer = setInterval(() => setIndex((i) => (i + 1) % items.length), ROTATE_MS);
-    return () => clearInterval(timer);
-  }, [items.length, screenFocused, heroFocused]);
+  const advance = useCallback(() => setIndex((i) => (i + 1) % Math.max(1, items.length)), [items.length]);
+  useHeroRotation({ focus, count: items.length, index, shown: screenFocused && inView, onAdvance: advance });
 
   // Les fonds en cache avant leur tour : le fondu n'attend pas le réseau.
   useEffect(() => {
@@ -133,7 +117,7 @@ export function useHomeHero(
     edgeKey: items.length > 1 ? lastAction : null,
     direction: "right",
     enabled: screenFocused,
-    onBeyond: () => setIndex((i) => (i + 1) % items.length),
+    onBeyond: advance,
   });
 
   return { hero, current, pending: items.length > 0 && !hero, onPrimary, onSecondary, onToggleList };

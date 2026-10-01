@@ -1,5 +1,5 @@
-import { memo, useCallback } from "react";
-import { ScrollView, StyleSheet, View, type LayoutChangeEvent } from "react-native";
+import { memo, useCallback, useRef } from "react";
+import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
@@ -29,6 +29,9 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
  * `filter` : la pastille du filtre de plateformes du compte, posée sur la
  * rangée `filterRowKey` — la première rangée recommandée réellement servie
  * (`useRecoFilterChipRow`). Un appui la retire (`onRemoveFilter`).
+ *
+ * `onHeroVisibleChange` dit quand le héros quitte l'écran — plus de la
+ * moitié défilée — et quand il y revient : sa rotation s'y suspend.
  *
  * Clés de focus : `hero:primary`, `hero:secondary`, `hero:list`,
  * `<rangée>:<index>` pour les cartes, `filter:remove`, `status:primary`,
@@ -62,10 +65,14 @@ export interface HomeViewProps {
   onPressCard?: (rowKey: string, card: CardModel) => void;
   onLongPressCard?: (rowKey: string, card: CardModel) => void;
   onFocusCard?: (rowKey: string, card: CardModel) => void;
+  /** Le héros quitte l'écran (plus de la moitié défilée) ou y revient. */
+  onHeroVisibleChange?: (visible: boolean) => void;
 }
 
 const LEFT = TV_STAGE.contentLeft;
 const HERO_WIDTH = 1920 - LEFT - 56;
+/** Au-delà de ce défilement, plus de la moitié du héros est hors de l'écran. */
+const HERO_HIDDEN_AFTER = TV_STAGE.hero.top + TV_STAGE.hero.height / 2;
 
 export const HomeView = memo(function HomeView({
   nav,
@@ -82,8 +89,20 @@ export const HomeView = memo(function HomeView({
   onPressCard,
   onLongPressCard,
   onFocusCard,
+  onHeroVisibleChange,
 }: HomeViewProps) {
   const { scrollRef, sectionLayout, onViewportLayout, onScroll, revealSection } = useForcedFocusReveal();
+  const heroVisible = useRef(true);
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      onScroll(event);
+      const visible = event.nativeEvent.contentOffset.y < HERO_HIDDEN_AFTER;
+      if (visible === heroVisible.current) return;
+      heroVisible.current = visible;
+      onHeroVisibleChange?.(visible);
+    },
+    [onScroll, onHeroVisibleChange],
+  );
   const onRowFocus = useCallback(
     (rowKey: string, card: CardModel) => {
       revealSection(rowKey);
@@ -103,7 +122,7 @@ export const HomeView = memo(function HomeView({
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           onLayout={onViewportLayout}
-          onScroll={onScroll}
+          onScroll={handleScroll}
           scrollEventThrottle={32}
         >
           {hero ? (
