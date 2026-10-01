@@ -10,9 +10,16 @@
  * d'acceptation du chantier n'est pas mesurable.
  */
 
-/** Raisons Jellyfin qui imposent de RECOMPRESSER l'image. */
+/**
+ * Raisons Jellyfin qui imposent de RECOMPRESSER l'image.
+ *
+ * `VideoCodecTagNotSupported` commence par « Video » sans en être une : Jellyfin
+ * la range parmi ses `DirectStreamReasons`. Un HEVC `hev1` refusé à Safari
+ * sort en remux, l'image copiée puis ré-étiquetée `hvc1` (mesuré :
+ * `-codec:v:0 copy -tag:v:0 hvc1`, cf. `avPlayerHevcTagCondition`).
+ */
 const VIDEO_REENCODE_REASONS =
-  /^(video|refframes|anamorphic|interlaced|unknownvideostream|containerbitrateexceeds)/i;
+  /^(video(?!codectagnotsupported)|refframes|anamorphic|interlaced|unknownvideostream|containerbitrateexceeds)/i;
 
 export type PlaybackMode = "DirectPlay" | "DirectStream" | "Remux" | "Transcode";
 

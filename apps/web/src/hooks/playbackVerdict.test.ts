@@ -46,6 +46,24 @@ describe("evaluerLecture", () => {
     expect(v.mode).toBe("Remux");
   });
 
+  it("ne prend pas VideoCodecTagNotSupported pour une raison vidéo — un hev1 se remuxe en hvc1", () => {
+    const v = evaluatePlayback({
+      supportsDirectPlay: false, supportsDirectStream: false,
+      transcodingUrl: urlHls("hevc,h264"), transcodeReasons: ["VideoCodecTagNotSupported"],
+      sourceVideoCodec: "hevc",
+    });
+    expect(v.mode).toBe("Remux");
+    expect(v.videoReencoded).toBe(false);
+  });
+
+  it("une vraie raison vidéo à côté de l'étiquette reste un réencodage", () => {
+    const v = evaluatePlayback({
+      supportsDirectPlay: false, supportsDirectStream: false,
+      transcodingUrl: urlHls("hevc,h264"), transcodeReasons: ["VideoCodecTagNotSupported", "VideoLevelNotSupported"],
+    });
+    expect(v.mode).toBe("Transcode");
+  });
+
   it("croit `VideoCodec=copy` avant tout le reste", () => {
     const v = evaluatePlayback({
       supportsDirectPlay: false, supportsDirectStream: false,
