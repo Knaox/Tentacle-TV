@@ -8,6 +8,7 @@ import {
   upNextOf, videoFrameOf,
 } from "../data/playerModels";
 import { episodesPanelOf, tracksOf } from "../data/playerPanelModels";
+import { noticeOf, panelOf, RESUMED_NOTICE } from "../../../src/redesignWiring/player/playbackTroubleModel";
 import type { BenchScene } from "./types";
 
 /**
@@ -216,7 +217,44 @@ export const PLAYER_SCENES: BenchScene[] = [
     osdVisible: false,
     error: { title: t("player:playbackError"), message: t("player:streamStartFailed") },
   }))),
+  scene("panne-bandeau", "Jellyfin coupé · la lecture continue", patch(film, () => ({
+    osdVisible: false, trouble: noticeOf(t, { kind: "degraded", cause: "media", ahead: 34, since: 0, streamAffected: true }),
+  }))),
+  scene("panne-tentacle", "Tentacle coupé · flux direct, rien d'arrêté", patch(film, () => ({
+    trouble: noticeOf(t, { kind: "degraded", cause: "tentacle", ahead: 30, since: 0, streamAffected: false }),
+  })), ["player:playpause"]),
+  scene("panne-panneau", "Jellyfin coupé · lecture arrêtée (avant tout geste)", patch(episode, (_data, stage) => ({
+    osdVisible: false, trouble: troublePanel({ kind: "waiting", cause: "media", since: 0 }, stage, { nextIn: 4 }),
+  }))),
+  scene("panne-active", "Jellyfin coupé · panneau activé (focus)", patch(film, (_data, stage) => ({
+    osdVisible: false, troubleCovers: true,
+    trouble: troublePanel({ kind: "waiting", cause: "media", since: 0 }, stage, { nextIn: 2, stillDown: true, active: true }),
+  })), ["trouble:retry", "trouble:back"]),
+  scene("panne-debit", "Serveur joignable, lecture qui ne suit pas", patch(film, (_data, stage) => ({
+    osdVisible: false, troubleCovers: true,
+    trouble: troublePanel({ kind: "stuck", cause: "slow", since: 0 }, stage, { active: true, lower: true }),
+  })), ["trouble:retry", "trouble:quality", "trouble:back"]),
+  scene("panne-reprise", "Le serveur revient · reprise en cours", patch(episode, (_data, stage) => ({
+    osdVisible: false, trouble: troublePanel({ kind: "recovering", cause: "media", since: 0 }, stage, {}),
+  }))),
+  scene("panne-repris", "La lecture a repris", patch(film, () => ({ osdVisible: false, trouble: RESUMED_NOTICE(t) }))),
+  scene("panne-ouverture", "Ouverture ratée · Jellyfin coupé", patch(episode, () => ({
+    phase: { kind: "failed", message: t("player:troubleStartMedia") },
+  })), ["loading:retry"]),
 ];
+
+/** Le panneau du message-outil sur une scène : la position est celle de la frise. */
+function troublePanel(
+  phase: Parameters<typeof panelOf>[0]["phase"],
+  stage: Stage,
+  o: { nextIn?: number; stillDown?: boolean; active?: boolean; lower?: boolean },
+) {
+  return panelOf({
+    t, phase, now: 0, position: stage.props.timeline.position,
+    nextCheckAt: o.nextIn !== undefined ? o.nextIn * 1000 : null, checking: false, stillDown: !!o.stillDown,
+    canLowerQuality: !!o.lower, active: !!o.active,
+  });
+}
 
 const styles = StyleSheet.create({
   stage: { flex: 1, backgroundColor: "#000" },
