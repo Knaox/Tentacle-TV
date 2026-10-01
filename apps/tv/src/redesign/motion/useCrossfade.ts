@@ -75,16 +75,10 @@ export function useCrossfade<T>(key: string, item: T, motion: MotionPreset, mode
     if (latest.current.key !== shownKey.current) start(latest.current);
   }, [start]);
 
+  // `key` EST l'identité du contenu : la même clé ne relance rien, quelle que
+  // soit l'identité de `item` d'un rendu à l'autre.
   useLayoutEffect(() => {
-    if (key !== shownKey.current) {
-      if (!busy.current) start({ key, item });
-      return;
-    }
-    // Le même contenu qui se met à jour (une nouvelle identité) : sur place.
-    setState((s) => {
-      const at = s.slots[0]?.key === key ? 0 : s.slots[1]?.key === key ? 1 : null;
-      return at !== null && s.slots[at]?.item !== item ? { ...s, slots: withSlot(s.slots, at, { key, item }) } : s;
-    });
+    if (key !== shownKey.current && !busy.current) start({ key, item });
   }, [key, item, start]);
 
   // Le calque neuf est monté : le fondu part.

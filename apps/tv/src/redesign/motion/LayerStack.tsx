@@ -26,17 +26,17 @@ export interface PoolLayer<T> {
   present: boolean;
 }
 
-/** Les emplacements utilisés, de bas en haut (le présent en dernier). */
+/**
+ * Les emplacements utilisés, de bas en haut (le présent en dernier). `key` EST
+ * l'identité du contenu (les couleurs d'une lumière, jointes) : la même clé ne
+ * repeint rien, quelle que soit l'identité de `item` d'un rendu à l'autre.
+ */
 export function useLayerPool<T>(key: string, item: T, size = 5): PoolLayer<T>[] {
   const [layers, setLayers] = useState<PoolLayer<T>[]>(() => [{ slot: 0, key, item, present: true }]);
   const current = useRef(key);
 
   useLayoutEffect(() => {
-    if (key === current.current) {
-      // Le même contenu, mis à jour : sur place.
-      setLayers((list) => list.map((layer) => (layer.key === key && layer.item !== item ? { ...layer, item } : layer)));
-      return;
-    }
+    if (key === current.current) return;
     current.current = key;
     setLayers((list) => {
       const back = list.find((layer) => layer.key === key);
