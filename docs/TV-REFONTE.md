@@ -981,7 +981,7 @@ la possibilité de cliquer sur retour ».
   aurait fallu demander un code au relais), la fiche d'une collection
   (aucune dans la bibliothèque de test) et l'affiche de fin (scène câblée,
   focus natif : la regarder pour de vrai marquerait l'épisode vu).
-- **Au banc** : groupe « Retour », dix-huit scènes — l'entrée puis la croix,
+- **Au banc** : groupe « Retour », dix-neuf scènes — l'entrée puis la croix,
   ou la croix seule là où elle est la seule action
   (`bench:ui planche retour --focus`) — et deux scènes « Câblée » du lecteur
   (affiche de fin, ouverture), en focus natif sous ses guides.
