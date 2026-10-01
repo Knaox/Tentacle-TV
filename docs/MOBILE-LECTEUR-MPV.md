@@ -73,9 +73,26 @@ comme au départ).
 Ordre iOS : réglage forcé → AirPlay actif → natif · Dolby Vision profil 5 → natif
 · « Préférer l'Atmos du système » (opt-in) + E-AC-3 JOC → natif · **AV1 sans
 puce AV1 → natif** (voir §6) · conteneur non natif → mpv · codec vidéo non
-natif → mpv (AV1 natif seulement avec la puce) · H.264 > 8 bits → mpv · codec
-audio non natif → mpv · codec de sous-titre non natif (ASS, PGS…) → mpv ·
-sinon natif.
+natif → mpv (AV1 natif seulement avec la puce) · **HEVC non étiqueté `hvc1` /
+`dvh1` → mpv** (raison `hevc-tag`, voir ci-dessous) · H.264 > 8 bits → mpv ·
+codec audio non natif → mpv · codec de sous-titre non natif (ASS, PGS…) → mpv
+· sinon natif.
+
+**L'étiquette HEVC (octobre 2026).** AVPlayer n'affiche un HEVC en MP4/MOV que
+sous l'entrée `hvc1` (ou `dvh1`) : un `hev1` — ce que ffmpeg pose de lui-même —
+donne une image NOIRE, le son seul, sans la moindre erreur, donc sans repli.
+Mesuré au simulateur iPhone (iOS 26.3) sur le même HEVC Main 10 : `hev1` en
+lecture directe par le système → noir, la lecture avance ; `hvc1` → image. La
+règle est partagée avec l'Apple TV et Safari (`avPlayerReadsHevcTag`,
+`packages/shared/src/playback/hevcTag.ts`) : le routeur envoie tout HEVC dont
+l'étiquette n'est pas `hvc1` / `dvh1` — inconnue comprise — au lecteur avancé,
+qui le lit tel quel ; le profil du lecteur SYSTÈME porte la condition
+`VideoCodecTag` « hvc1|dvh1 » (`IsRequired: true`), si bien que là où le système
+lit quand même (AirPlay, réglage, module absent, Atmos du système) Jellyfin
+remuxe en HLS fMP4, l'image copiée et ré-étiquetée `hvc1`. ⚠️ Jellyfin 12.1 ne
+renseigne plus `CodecTag` : sur un tel serveur, TOUT HEVC MP4 part au lecteur
+avancé (et au remux sous le système) — jamais de noir, au prix du lecteur
+système pour ces fichiers. Android n'est pas concerné : ExoPlayer lit le `hev1`.
 
 Android : réglage forcé → conteneur → codec vidéo → codec audio → sous-titre
 (ASS → mpv si « sous-titres stylés » est actif) → natif.
