@@ -32,7 +32,9 @@
 > hébergez vous-même.
 
 <p align="center">
-  <img src="docs/screenshot-home.png" alt="Tentacle TV — Home" width="800" />
+  <img src="docs/screenshot-home.png" alt="Tentacle TV on a computer, an Apple TV and a phone — Tentacle TV sur ordinateur, Apple TV et téléphone" width="800" />
+  <br />
+  <sub>Screenshots: open movies by the Blender Foundation, CC BY — <a href="docs/screenshots/CREDITS.md">credits</a> · Captures : films libres de la Blender Foundation, CC BY — <a href="docs/screenshots/CREDITS.md">crédits</a></sub>
 </p>
 
 ---
