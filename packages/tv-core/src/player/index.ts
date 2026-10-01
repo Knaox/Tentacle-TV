@@ -11,3 +11,4 @@ export * from "./playbackRecovery";
 export * from "./playerItemFallback";
 export * from "./playerErrors";
 export * from "./producerDeath";
+export * from "./hevcTag";
