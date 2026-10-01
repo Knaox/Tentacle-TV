@@ -47,10 +47,13 @@ export function useTVStreamUrl(args: {
   /** Compteur de reload explicite (transcode) : changement de piste audio non
    *  couplé à la position. Le bumper force un refetch PlaybackInfo. */
   reloadNonce?: number;
+  /** La fiche complète est là (ou a échoué) : rien ne se résout avant — voir
+   *  `usePlayerStreamPipeline`. */
+  ready: boolean;
 }) {
   const {
     itemId, mediaSourceId, container, streams, audioIndex, subtitleIndex, startTicks,
-    startSeconds, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight,
+    startSeconds, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, ready,
   } = args;
   const client = useJellyfinClient();
   const userId = useUserId();
@@ -132,7 +135,7 @@ export function useTVStreamUrl(args: {
   useEffect(() => () => { fetchIdRef.current++; dropPrismSession(); }, []);
 
   useEffect(() => {
-    if (!itemId || !userId) return;
+    if (!itemId || !userId || !ready) return;
     const fetchId = ++fetchIdRef.current;
     const contentKey = `${itemId}|${mediaSourceId ?? ""}`;
     const ftJustEnabled = forceTranscode && !prevFTRef.current;
@@ -259,7 +262,7 @@ export function useTVStreamUrl(args: {
     // déclenchent l'effet — startTicks/vcodec — coïncident avec sa bonne valeur),
     // puis cuit dans resumeFrag.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemId, mediaSourceId, container, userId, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, startTicks, resumeSec, burnInIndex, args.reloadNonce, vcodec]);
+  }, [itemId, mediaSourceId, container, userId, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, startTicks, resumeSec, burnInIndex, args.reloadNonce, vcodec, ready]);
 
   // `streamUrl` = baseUrl + fragment de reprise, TOUS DEUX cuits ensemble dans
   // `result` (cf. plus haut) → change exactement une fois par reload (plus de

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef } from "react";
 import { ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaItem, MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
-import { usePlaybackReporting, useJellyfinClient } from "@tentacle-tv/api-client";
+import { usePlaybackReporting, useJellyfinClient, useMediaItem } from "@tentacle-tv/api-client";
 import { useTVPlaybackQuality } from "./useTVPlaybackQuality";
 import { useTVAutoQualityCap } from "./useTVAutoQualityCap";
 import { useTVReloadState } from "./useTVReloadState";
@@ -123,13 +123,18 @@ export function usePlayerStreamPipeline(args: {
   // position posée par un changement de piste/qualité (startTicks).
   const { startSeconds } = useTVInitialResume({ item, startTicks, started: hasStarted });
 
+  // Le flux attend la fiche COMPLÈTE : sans elle, ni pistes ni reprise. Résolu
+  // à l'aveugle, il lançait un transcodage à 0:00, jeté dès l'arrivée de la
+  // fiche — deux pour le même appareil sur un AV1, qui calait. Une fiche en
+  // échec relâche la garde : le flux tente sa chance, comme avant.
+  const itemFailed = useMediaItem(itemId).isError;
   const { streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed } = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
     forceTranscode, isTranscodingQuality: transcodingQuality,
     maxBitrate: effectiveMaxBitrate, maxHeight: effectiveMaxHeight,
     isDirectPlay: requestedDirectPlay,
-    reloadNonce,
+    reloadNonce, ready: !!item || itemFailed,
   });
 
   // Synchronisation des refs miroir lues par les handlers/callbacks.

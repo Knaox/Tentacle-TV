@@ -38,11 +38,14 @@ export function useTVStreamUrl(args: {
    *  après rafraîchissement du token direct-streaming (l'URL est recalculée via
    *  resolveMediaUrl → repart avec le token frais). */
   reloadNonce?: number;
+  /** La fiche complète est là (ou a échoué) : pas d'URL avant — voir
+   *  `usePlayerStreamPipeline`. */
+  ready: boolean;
 }) {
   const {
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, isDirectPlay,
-    reloadNonce,
+    reloadNonce, ready,
   } = args;
   const client = useJellyfinClient();
 
@@ -62,7 +65,7 @@ export function useTVStreamUrl(args: {
   }, [audioIndex, burnInIndex, startTicks, isDirectPlay, forceTranscode, isTranscodingQuality]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const streamUrl = useMemo(() => {
-    if (!itemId) return null;
+    if (!itemId || !ready) return null;
     // Fragment de position de départ — jamais envoyé en HTTP, lu par le natif
     const startFragment = startSeconds && startSeconds > 1 ? `#tnt-start=${Math.floor(startSeconds)}` : "";
     if (isTranscodingQuality) {
@@ -81,7 +84,7 @@ export function useTVStreamUrl(args: {
     return client.getStreamUrl(itemId, {
       mediaSourceId, directPlay: true, playSessionId, sourceVideoCodec,
     }) + startFragment;
-  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, reloadNonce]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [client, itemId, mediaSourceId, audioIndex, burnInIndex, startTicks, startSeconds, playSessionId, sourceVideoCodec, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, reloadNonce, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // `isDirectPlay` est renvoyé tel quel (décidé côté client sur Android) pour
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
