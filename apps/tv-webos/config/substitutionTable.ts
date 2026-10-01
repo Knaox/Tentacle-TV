@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { API, CLIENT, MODULES, UI, WEB } from "./substitutionPaths";
 import { PLAYBACK_FILES } from "./substitutionTablePlayback";
+import { SESSION_FILES } from "./substitutionTableSession";
 
 /**
  * Ce que la cible téléviseur remplace dans `apps/web`, et pourquoi.
@@ -235,10 +236,9 @@ export const SUBSTITUTED_FILES: Record<string, string> = {
   // table (`substitutionTablePlayback.ts`), la plus longue et la plus sensible.
   ...PLAYBACK_FILES,
 
-  // Les messages de l'administrateur : un bandeau focalisable volerait le
-  // focus au film. Ils s'effacent seuls, une barre qui se vide le dit.
-  [resolve(WEB, "components/session/SessionMessageHost.tsx")]:
-    resolve(CLIENT, "ui/session/SessionMessageHostTv.tsx"),
+  // Ce qui s'adresse au compte plutôt qu'au catalogue — messages de
+  // l'administrateur, voile hors ligne : sa table (`substitutionTableSession.ts`).
+  ...SESSION_FILES,
 
   // Les rangées de recommandations de l'accueil deviennent des rangées du
   // téléviseur (`RowTv`) : une piste pour le moteur, la bibliothèque seule.
