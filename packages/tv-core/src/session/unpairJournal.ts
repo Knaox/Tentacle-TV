@@ -51,6 +51,9 @@ export const ACCOUNT_STORAGE_KEYS: readonly string[] = [
   "tentacle_recent_searches",
   // Le cache local des réglages de lecture du COMPTE (le serveur les garde).
   "tentacle_playback_settings",
+  // La file persistée des rapports de lecture (`OUTBOX_KEY`, api-client) : des
+  // positions du compte, jamais rejouées avec le jeton d'un autre.
+  "tentacle_playback_outbox",
 ];
 
 /** Le minimum qu'un stockage doit offrir, synchrone. */

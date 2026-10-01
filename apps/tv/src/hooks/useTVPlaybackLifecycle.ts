@@ -57,22 +57,24 @@ export function useTVPlaybackLifecycle(args: {
   // « GO_BACK not handled by any navigator ».
   const exitingRef = useRef(false);
 
-  // Les deux sorties explicites postent l'arrêt AVANT de naviguer, avec la
-  // position finale ; sa promesse est mémorisée (`stopPromiseRef`) et le
-  // cleanup de démontage, juste derrière la navigation, y enchaîne le
+  // Les deux sorties explicites postent l'arrêt, avec la position finale, et
+  // naviguent AUSSITÔT : l'arrêt est noté dans la file persistée avant tout
+  // envoi (api-client, `playbackOutbox`) et part en arrière-plan — attendu, il
+  // retenait le Retour jusqu'à ~3 min quand le serveur se taisait. Sa promesse
+  // est mémorisée (`stopPromiseRef`) et le cleanup de démontage y enchaîne le
   // rangement. Rien à invalider ici : le doubler annulait et relançait les
   // mêmes requêtes que la règle partagée.
-  const leavePlayer = useCallback(async () => {
+  const leavePlayer = useCallback(() => {
     if (exitingRef.current) return;
     exitingRef.current = true;
-    await reportStop();
+    void reportStop();
     navigation.goBack();
   }, [reportStop, navigation]);
 
-  const handleFinished = useCallback(async () => {
+  const handleFinished = useCallback(() => {
     if (exitingRef.current) return;
     exitingRef.current = true;
-    await reportStop();
+    void reportStop();
     if (seriesId) navigation.replace("MediaDetail", { itemId: seriesId });
     else navigation.goBack();
   }, [reportStop, navigation, seriesId]);
