@@ -39,7 +39,7 @@ export function DetailMetadata({ item, linkGenres = true }: DetailMetadataProps)
   if (item.ProductionYear) facts.push(String(item.ProductionYear));
   if (runtime) facts.push(runtime);
   if (endTime) facts.push(t("media:detailEndsAt", { time: endTime }));
-  if (isSeries && item.ChildCount != null && item.ChildCount > 0) facts.push(`${item.ChildCount} ${t("common:seasons")}`);
+  if (isSeries && item.ChildCount != null && item.ChildCount > 0) facts.push(t("common:seasonsCount", { count: item.ChildCount }));
   if (isSeries && item.Status) facts.push(item.Status === "Continuing" ? t("common:ongoing") : t("common:ended"));
 
   return (
