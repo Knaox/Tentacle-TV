@@ -38,6 +38,12 @@ export default {
   nextEpisodeLabel: "Next episode",
   scrubConfirmHint: "OK · Play here",
   scrubCancelHint: "Back · Cancel",
+  // Le décompte du défilement (TV) : ce que fera sa fin si l'on ne bouge
+  // plus — lire à la position visée (doigt levé du pavé), ou abandonner :
+  // la lecture reprend là où l'on était, ou y revient en pause.
+  scrubPlayIn: "Playing in {{seconds}}s",
+  scrubResumeAtIn: "Resuming at {{time}} in {{seconds}}s",
+  scrubReturnAtIn: "Back to {{time}} in {{seconds}}s",
   nowPlaying: "Now playing",
   loadFailed: "Playback could not start. Check the server or try again.",
   streamStartFailed: "The video stream did not start. Retry or change quality.",

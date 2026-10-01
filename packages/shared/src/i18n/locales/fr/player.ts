@@ -40,6 +40,12 @@ export default {
   nextEpisodeLabel: "Épisode suivant",
   scrubConfirmHint: "OK · Lire ici",
   scrubCancelHint: "Retour · Annuler",
+  // Le décompte du défilement (TV) : ce que fera sa fin si l'on ne bouge
+  // plus — lire à la position visée (doigt levé du pavé), ou abandonner :
+  // la lecture reprend là où l'on était, ou y revient en pause.
+  scrubPlayIn: "Lecture dans {{seconds}} s",
+  scrubResumeAtIn: "Reprise à {{time}} dans {{seconds}} s",
+  scrubReturnAtIn: "Retour à {{time}} dans {{seconds}} s",
   nowPlaying: "En cours de visionnage",
   loadFailed: "Impossible de démarrer la lecture. Vérifie le serveur ou réessaie.",
   streamStartFailed: "Le flux vidéo n'a pas démarré. Réessayez ou changez de qualité.",
