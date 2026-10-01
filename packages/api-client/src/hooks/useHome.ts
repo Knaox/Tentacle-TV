@@ -13,13 +13,8 @@ import {
   groupLatestByRuns,
 } from "../utils/mediaFilters";
 import { useNextUpSuccessors } from "./useNextUpSuccessors";
+import { EPISODE_FIELDS, FIELDS, IMAGE_OPTS, USER_DATA } from "./homeQueryParams";
 import { homeLimits, staleFactor } from "../net/dataSaver";
-
-// MediaSources est requis pour afficher le badge qualité (4K / HDR / Dolby)
-// sur les items du hero. Payload +~5KB par item — acceptable pour un Limit=12.
-const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources,ProviderIds";
-const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
-const USER_DATA = "EnableUserData=true";
 
 export function useResumeItems() {
   const client = useJellyfinClient();
@@ -52,11 +47,6 @@ interface LatestItemsOptions {
    *  (mode économie). Par défaut la rangée charge dès le montage. */
   enabled?: boolean;
 }
-
-// Champs pour le rendu épisode (image, label SxxExx, navigation). MediaSources
-// inclus pour alimenter la méta qualité/langues (CardMetaOverlay au hover sur
-// les ajouts récents d'épisodes uniques). Overview/Genres restent exclus.
-const EPISODE_FIELDS = "PrimaryImageAspectRatio,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,MediaSources";
 
 // Fenêtre d'épisodes récupérée avant regroupement par série : cf.
 // `homeLimits().latestEpisodes`. Assez large pour qu'une saison ajoutée en
