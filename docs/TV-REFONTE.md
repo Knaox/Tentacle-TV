@@ -769,8 +769,8 @@ retour.
 | Centre de contrôle, Siri, sélecteur d'apps (`inactive`) | pause, position remontée, session GARDÉE (plus d'arrêt ni de transcodage tué) | focus sur Lecture ; OK → lecture |
 | Accueil, veille, autre app (`background`) | pause, arrêt à la position finale — noté dans la file avant l'envoi | lecteur en pause à la position exacte, focus sur Lecture ; OK → image en 100-280 ms (film et épisode PrismCore, épisode MP4, transcodage 720p ; 20 s comme 4 min d'absence) |
 | … et le serveur local de PrismCore est mort pendant la suspension | — | sondé au retour (600 ms), relancé PENDANT la pause : nouvelle session en 0,7-2,8 s, puis OK → image en 140-280 ms, pistes conservées |
-| App tuée pendant son absence | — | relance : le LECTEUR rouvert en pause, à la position d'arrêt, focus sur Lecture |
-| App morte à l'écran, lecteur ouvert | — | relance : la file rejoue la position notée (≤ 2 s avant la mort), puis la FICHE, « Reprendre » focalisé |
+| App tuée pendant son absence | — | relance : la FICHE — celle de la série pour un épisode —, « Reprendre » focalisé à la position d'arrêt (marqueur) ; jamais le lecteur |
+| App morte à l'écran, lecteur ouvert | — | relance : la file rejoue la position notée (≤ 2 s avant la mort), puis la FICHE (de la série pour un épisode), « Reprendre » focalisé |
 | Lecteur quitté (Retour, Menu, fin) | arrêt en arrière-plan, sortie instantanée | relance : l'accueil |
 
 - **La présence** : une règle partagée, `presenceStep` (tv-core
@@ -797,9 +797,31 @@ retour.
 - **La relance à froid** : marqueur `tentacle_playback_marker` tenu par le
   lecteur (`useTVPlaybackMarker`), règle `coldStartLanding` (tv-core
   `playback/coldStart`, frais 3 h), atterrissage `TVColdStartLanding` — file
-  d'abord, puis la fiche du titre ; 401/403 → rien (le déjumelage prend la
-  main), serveur muet → la fiche. Marqueur et file sont des données du compte
-  (`ACCOUNT_STORAGE_KEYS`).
+  d'abord, puis l'item lu, puis sa FICHE ; 401/403 → rien (le déjumelage prend
+  la main), serveur muet → la fiche quand même. JAMAIS le lecteur (décision du
+  2026-10-01, après l'essai sur l'Apple TV) : un titre qui pose problème ferait
+  replanter l'app à chaque ouverture. Un film ouvre sa fiche, un épisode celle
+  de sa SÉRIE (`coldStartDetailId` ; le marqueur porte `seriesId`, pour un
+  serveur muet), poussée sur l'accueil : Retour y ramène. La fiche de la série
+  s'ouvre sur la saison de la reprise, l'épisode calé à gauche de sa rangée.
+  Marqueur et file sont des données du compte (`ACCOUNT_STORAGE_KEYS`).
+- **La position de la relance** : celle que la file rejoue (≤ 2 s avant la
+  mort) ; l'app tuée pendant son absence, l'arrêt du marqueur — exact, noté
+  lecteur en pause — quand Jellyfin dit plus ancien (`markerStopToAdopt`, la
+  date gagne ; jamais un marqueur écrit à l'écran, en retard de 30 s au plus).
+  Pour un épisode, il atteint aussi « Reprendre S1 · E5 » de la série :
+  `seriesResumeAfterStop` (tv-core) corrige l'état de visionnage relu, posé
+  avant d'ouvrir la fiche (`settleSeriesResume`) — un autre épisode entamé
+  APRÈS l'arrêt (un autre appareil) garde le verdict du serveur.
+- **Mesuré au simulateur (2026-10-02, `simctl terminate` en pleine lecture)** :
+  film PrismCore tué à l'écran à 8 min → sa fiche, « Reprendre » focalisé,
+  « Reste 1 h 33 min » (la file a rejoué 494 s ; le marqueur, en retard, en
+  disait 479) ; épisode S2E5 tué à l'écran, puis pendant son absence → la
+  fiche de la série, « Reprendre S2 · E5 » focalisé, saison 2, E5 calé
+  (une flèche bas y descend) ; Menu → l'accueil ; retour sans fermeture → le
+  lecteur en pause, focus sur Lecture. Arrêt non écrit simulé (marqueur à
+  600 s, Jellyfin à 340 s) → « Reprendre S2 · E5 » à 42 %, réécrit chez
+  Jellyfin par la garde à +20 s.
 - **Le flux attend la fiche complète** : résolu avant elle, il lançait un
   transcodage à 0:00 aussitôt jeté (deux sur un AV1, qui calait).
 - **30 s d'avance** AVPlayer sur les sources distantes (bouclage : 10 s).
@@ -830,14 +852,15 @@ Pièges payés :
    (Instruments) à 10 s puis 30 s d'avance ; étendre seulement si elle tient.
 3. **Veille réelle** : centre de contrôle → Éteindre en pleine lecture,
    réveil après 1 min et après 1 h : lecteur en pause à la position (ou
-   relance à froid si tvOS a tué l'app).
+   relance à froid si tvOS a tué l'app : la fiche).
 4. **App tuée par tvOS** : lecture, Accueil, ouvrir des apps lourdes jusqu'à
-   ce que Tentacle soit tuée, rouvrir : lecteur en pause, focus Lecture.
+   ce que Tentacle soit tuée, rouvrir : la fiche (celle de la série pour un
+   épisode), « Reprendre » focalisé à la position ; Retour → l'accueil.
 5. **Serveur coupé au démarrage** : couper le backend Tentacle (JAMAIS le
    Jellyfin partagé avec la prod), tuer l'app pendant une lecture, la rouvrir :
    la fiche, jamais un lecteur vide ; au retour du serveur, la file se vide.
 6. **Android TV** (rien n'y est éprouvé) : Accueil puis retour (Lecture
-   focalisé, reprise), app tuée puis relancée (lecteur en pause / fiche),
+   focalisé, reprise), app tuée puis relancée (la fiche, jamais le lecteur),
    Retour instantané, flux résolu après la fiche (plus de double démarrage
    MPV/ExoPlayer).
 
@@ -1038,7 +1061,8 @@ Correctifs, dans l'ordre de la branche :
   MaxResumePct − 5 points, titre ≥ 10 min.
 - **Relance à froid** : le marqueur porte la position de l'arrêt ; adoptée si
   Jellyfin dit plus ancien (mesuré : arrêt d'arrière-plan accusé à 106 s,
-  reprise restée à 89,8 s).
+  reprise restée à 89,8 s) — sur la fiche rouverte, jusque dans l'état de
+  visionnage de la série pour un épisode.
 - **Avant la première image**, rien ne s'écrit à 0 : début et arrêt partent
   de la position d'ouverture.
 - **Flux refusé** : l'ouverture ratée tombe en échec (`openFailed`), avec
@@ -1103,8 +1127,8 @@ ouverture sans étiquette.
 3. Robin des Bois (`hev1`) : image par PrismCore, et le CPU de PrismCore sur
    un `hvc1` sans étiquette (Undead Unluck S0E1) — décodage matériel, seul le
    remux compte.
-4. Vraie suspension, veille, app tuée par tvOS : relance à froid au lecteur
-   en pause, à la position (marqueur).
+4. Vraie suspension, veille : lecteur en pause, à la position ; app tuée par
+   tvOS : relance à froid sur la fiche, « Reprendre » à la position (marqueur).
 5. Glisser sur le pavé tactile : gains réels.
 6. 4K : tampon de 30 s et mémoire.
 7. En production : arrêts perdus par Jellyfin 12.1 — la fiche, puis
