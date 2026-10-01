@@ -47,10 +47,6 @@ export function BrowseRedesign({ kind, id, name }: Params) {
   const person = kind === "person";
 
   const goBack = useCallback(() => navigation.goBack(), [navigation]);
-  const onBack = useCallback(() => {
-    goBack();
-    return true;
-  }, [goBack]);
   const retry = useCallback(() => void refetch(), [refetch]);
 
   const failed = isError && !data;
@@ -73,7 +69,8 @@ export function BrowseRedesign({ kind, id, name }: Params) {
     : undefined;
 
   const entryKey = status ? "status:primary" : items.length > 0 ? "grid:0" : "browse:back";
-  const screen = useRedesignScreen({ railKey: "Search", entryKey, onBack, onReselect: goBack });
+  // Une page poussée : Retour y recule, rail ouvert ou non (`BackScope`).
+  const screen = useRedesignScreen({ railKey: "Search", entryKey, onReselect: goBack });
   const { focus } = screen;
   // L'en-tête (ou, sur l'erreur, la bande de la croix) mène à la croix : un
   // guide à destination — un guide `autoFocus` n'y menait que si elle avait

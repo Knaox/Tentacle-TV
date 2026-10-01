@@ -7,6 +7,7 @@ import type { SettingsTab } from "../../redesign/screens/settings/settingsTypes"
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { backdropUriOf, paletteOfItem } from "../cards/cardArtwork";
 import { useFocusStore } from "../focus/focusStore";
+import { useBackLayer } from "../back/BackScope";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { ChoiceModal } from "./ChoiceModal";
@@ -33,7 +34,9 @@ export function SettingsRedesign({ route }: Props) {
   const [tab, setTab] = useState<SettingsTab>(route.params?.tab ?? "account");
   const focus = useFocusStore();
   const nav = useNavigationSettings(focus);
-  const screen = useRedesignScreen({ railKey: "Settings", entryKey: tabFocusKey(tab), onBack: nav.cancelNavMove, focus });
+  const screen = useRedesignScreen({ railKey: "Settings", entryKey: tabFocusKey(tab), focus });
+  // Retour annule d'abord un déplacement en cours dans l'onglet Navigation.
+  useBackLayer("menu", nav.navigation.movingKey !== null, nav.cancelNavMove);
   useSettingsGroups(screen.focus);
   const tabDestination = useActiveTabDestination(screen.focus, tab);
 

@@ -7,6 +7,15 @@ type PartialRoute = { key?: string; name: string; params?: object };
 type RailRoute = "Home" | "Recommendations" | "Search" | "Watchlist" | "Favorites" | "Settings" | "Library";
 
 /**
+ * Les pages du rail — ses destinations. Retour n'y recule jamais d'une page :
+ * il ouvre le rail, puis va sur Réglages, puis quitte (`railBackStep`, tv-core).
+ * Toute autre page est POUSSÉE : Retour y recule.
+ */
+export const RAIL_ROUTES: ReadonlySet<string> = new Set<RailRoute>([
+  "Home", "Recommendations", "Search", "Watchlist", "Favorites", "Settings", "Library",
+]);
+
+/**
  * La navigation du rail, à la manière d'onglets : l'accueil reste la base de
  * la pile, et une destination du rail REMPLACE la précédente au-dessus de lui.
  *

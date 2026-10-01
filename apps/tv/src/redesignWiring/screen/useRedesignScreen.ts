@@ -30,11 +30,6 @@ export interface RedesignScreenOptions {
   /** La clé focalisée à l'arrivée — et au retour, faute de mieux. Réactive :
    *  elle suit l'état de l'écran (chargement, erreur, contenu). */
   entryKey?: string | null;
-  /** Menu depuis le contenu : rend vrai s'il a été pris (un panneau à fermer).
-   *  Sinon, Menu ouvre la navigation. Sur une page poussée, il est rappelé
-   *  APRÈS le dépilage natif, qui a déjà ôté le focus : lire la dernière clé
-   *  focalisée (`lastFocusedKey`), pas seulement la clé focalisée. */
-  onBack?: () => boolean;
   /** Choisir l'entrée de la page où l'on est ; défaut : rendre le focus au contenu. */
   onReselect?: () => void;
   /** Le magasin de focus de l'écran, quand l'écran en a besoin AVANT ce hook
@@ -54,12 +49,11 @@ export interface RedesignScreenModel {
   focusRail: () => void;
   /** La clé de contenu que viserait `focusContent`. */
   contentKey: () => string | null;
-  onBack?: () => boolean;
   /** L'organisation de la navigation : menu d'appui long, déplacement. */
   arrange: RailArrange;
 }
 
-export function useRedesignScreen({ railKey, entryKey = null, onBack, onReselect, focus: given }: RedesignScreenOptions): RedesignScreenModel {
+export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus: given }: RedesignScreenOptions): RedesignScreenModel {
   const own = useFocusStore();
   const focus = given ?? own;
   const arrange = useRailArrange(focus, openNavigationSettings);
@@ -87,5 +81,5 @@ export function useRedesignScreen({ railKey, entryKey = null, onBack, onReselect
     [entries, railKey, expanded, heldKey, movingKey, onSelect, onLongPress],
   );
 
-  return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, onBack, arrange };
+  return { nav, focus, railKey, railFocused, focusContent, focusRail, contentKey, arrange };
 }

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../navigation/types";
-import { MenuPressInterceptor } from "../../components/focus/MenuPressInterceptor";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { PairingView } from "../../redesign/screens/pairing/PairingView";
 import { usePairingFlow, type PairingFlow, type PairingFlowOptions } from "../../hooks/usePairingFlow";
 import { useRelayPairingCode, useServerPairingCode } from "../../hooks/usePairingCode";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
+import { useBackLayer } from "../back/BackScope";
 import { useBackFocus } from "../focus/backFocus";
 import { useFocusStore } from "../focus/focusStore";
 import { AutoFocusGuide } from "../focus/focusGuides";
@@ -54,9 +54,10 @@ function exitOf(flow: PairingFlow): (() => void) | null {
  * reverrouille à chaque étape). Pas de navigation latérale : il n'y a pas
  * encore de compte.
  *
- * Le bouton Menu recule d'une étape, comme la croix (`MenuPressInterceptor`) ;
- * sur l'accueil et le succès, il reste à UIKit — qui quitte l'application à
- * la racine, la règle tvOS.
+ * Le bouton Menu recule d'une étape, comme la croix (la couche « page » du
+ * Retour) ; sur l'accueil et le succès, il reste à UIKit — qui quitte
+ * l'application à la racine, la règle tvOS —, ou recule d'une page quand le
+ * jumelage a été ouvert depuis les réglages (`BackScope`).
  */
 export function PairingRedesign({ navigation }: Props) {
   const onPaired = useCallback(() => navigation.replace("Home"), [navigation]);
@@ -97,9 +98,10 @@ export function PairingRedesign({ navigation }: Props) {
   // Réessayer comme Générer un nouveau code : le code de l'étape affichée.
   const retryCode = flow.step === "manualCode" ? server.regenerate : relay.regenerate;
   const exit = exitOf(flow);
+  useBackLayer("page", exit !== null, () => exit?.());
 
   return (
-    <MenuPressInterceptor enabled={exit !== null} onMenuPress={() => exit?.()} style={styles.fill}>
+    <View style={styles.fill}>
       <FocusBindingProvider bind={store.binder}>
         <PairingView
           step={step}
@@ -121,7 +123,7 @@ export function PairingRedesign({ navigation }: Props) {
           onServerCodeBack={flow.backToLogin}
         />
       </FocusBindingProvider>
-    </MenuPressInterceptor>
+    </View>
   );
 }
 

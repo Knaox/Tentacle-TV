@@ -7,6 +7,7 @@ import type { RootStackParamList } from "./types";
 import { SkeletonLoader } from "./ScreenFallback";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
+import { BackScope } from "../redesignWiring/back/BackScope";
 
 // Direct imports — initial screens, must load immediately
 import { DisclaimerScreen } from "../screens/DisclaimerScreen";
@@ -85,6 +86,10 @@ export function AppNavigator() {
         animationDuration: FADE_MS,
         contentStyle: { backgroundColor: Colors.bgDeep },
         statusBarHidden: true,
+        // Apple TV : Menu ne dépile jamais un écran de lui-même — la pile de
+        // couches du Retour décide (`BackScope`), et UIKit ne garde que la
+        // sortie de l'application. Android TV : sans effet.
+        gestureEnabled: !REDESIGN_ACTIVE,
       }}
       // Frontière de chargement PAR ÉCRAN, pas autour du Navigator : un
       // Suspense global gèle tout l'arbre à la première navigation vers un
@@ -92,10 +97,14 @@ export function AppNavigator() {
       // react-freeze) → squelette plein écran et focus natif perdu. Ici
       // l'écran courant reste affiché pendant le chargement, et un crash ne
       // remplace que l'écran fautif — le rail (sibling du Navigator) survit.
-      screenLayout={({ children, route }) => (
-        <ErrorBoundary route={route}>
-          <Suspense fallback={<SkeletonLoader route={route} />}>{children}</Suspense>
-        </ErrorBoundary>
+      // Autour de tout : la portée du Retour (Apple TV), qui sert aussi
+      // l'erreur et le chargement de l'écran.
+      screenLayout={({ children, route, navigation }) => (
+        <BackScope route={route} navigation={navigation}>
+          <ErrorBoundary route={route}>
+            <Suspense fallback={<SkeletonLoader route={route} />}>{children}</Suspense>
+          </ErrorBoundary>
+        </BackScope>
       )}
     >
       {REDESIGN_ACTIVE ? null : <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />}
