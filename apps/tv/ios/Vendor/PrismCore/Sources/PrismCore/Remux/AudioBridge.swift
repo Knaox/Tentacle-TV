@@ -404,11 +404,12 @@ final class AudioBridge {
     /// caller to rebuild instead; a re-anchor after EOF is the rarer case.
     var isDrained: Bool { drained }
 
-    func reset() {
+    func reset() throws {
         progress = AudioBridgeProgress()
         progress.encoderFrameSamples = Int(encoderCtx?.pointee.frame_size ?? 0)
         onProgress?(progress)
         if let decoderCtx { avcodec_flush_buffers(decoderCtx) }
+        try discardEncoderBacklog()
         if let fifo { av_audio_fifo_reset(fifo) }
         // The resampler's delay line belongs to the old position; dropping
         // the context makes `reconfigureResamplerIfNeeded` build a fresh one
@@ -419,6 +420,57 @@ final class AudioBridge {
         boostFilter?.reset()
         chunker.reset()
         clock.reset()
+    }
+
+    // Modified for Tentacle TV, 2026-10-01 (LGPL-2.1 §2a notice).
+    //
+    // "The encoder is NOT flushed: every send_frame is drained on the spot,
+    // so it holds nothing" holds for EAC3, not for AAC — the target this
+    // build negotiates, MPVKit shipping no eac3 encoder. FFmpeg's AAC encoder
+    // is a delay encoder (AV_CODEC_CAP_DELAY, 1024 samples of initial
+    // padding): it keeps the last frames it was given, two packets' worth,
+    // and hands them out on the next sends — stamped at the position the
+    // producer just left. Measured on an Opus track bridged to AAC: after a
+    // re-anchor from ~20 s to 84.7 s, the new fragment opened on two packets
+    // at 20.75 s (a 64-second first sample); after one from 650 s back to
+    // 199 s, the muxer refused the second packet (-22, "non monotonically
+    // increasing dts") and the producer died — AVPlayer then waits on the
+    // seek target for good. And it cannot be flushed in place: the AAC
+    // encoder lacks AV_CODEC_CAP_ENCODER_FLUSH, so `avcodec_flush_buffers` is
+    // a no-op and a NULL frame would leave it in its terminal drain state.
+    // So a delay encoder that cannot flush is reopened with the same
+    // parameters — one avcodec_open2 per re-anchor, the decoder, resampler,
+    // FIFO and frames all staying as they are.
+    private func discardEncoderBacklog() throws {
+        guard let current = encoderCtx, let codec = current.pointee.codec else { return }
+        let capabilities = codec.pointee.capabilities
+        guard capabilities & AV_CODEC_CAP_DELAY != 0 else { return }
+        if capabilities & AV_CODEC_CAP_ENCODER_FLUSH != 0 {
+            avcodec_flush_buffers(current)
+            return
+        }
+        guard let fresh = avcodec_alloc_context3(codec) else {
+            throw Failure.allocationFailed("encoder context (re-anchor)")
+        }
+        var built: UnsafeMutablePointer<AVCodecContext>? = fresh
+        do {
+            try FFmpegError.check(
+                av_channel_layout_copy(&fresh.pointee.ch_layout, &current.pointee.ch_layout),
+                "av_channel_layout_copy(encoder, re-anchor)"
+            )
+            fresh.pointee.sample_rate = current.pointee.sample_rate
+            fresh.pointee.sample_fmt = current.pointee.sample_fmt
+            fresh.pointee.bit_rate = current.pointee.bit_rate
+            fresh.pointee.time_base = current.pointee.time_base
+            fresh.pointee.flags = current.pointee.flags
+            try FFmpegError.check(avcodec_open2(fresh, codec, nil), "avcodec_open2(encoder, re-anchor)")
+        } catch {
+            avcodec_free_context(&built)
+            throw error
+        }
+        var previous: UnsafeMutablePointer<AVCodecContext>? = current
+        avcodec_free_context(&previous)
+        encoderCtx = fresh
     }
 
     // MARK: - Output stream description

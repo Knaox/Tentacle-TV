@@ -234,7 +234,9 @@ final class AudioRenditionWriter {
                 // The bridge stays: its buffered state is reset, its contexts
                 // live on (`AudioBridge.reset`). Only the muxer is new — tfdt
                 // continuity under frag_discont needs a fresh one.
-                bridge?.reset()
+                // Modified for Tentacle TV, 2026-10-01: `reset` throws — it
+                // reopens a delay encoder (AAC) holding pre-seek frames.
+                try bridge?.reset()
                 try openMuxer(input: input, restart: true)
             }
         } else {

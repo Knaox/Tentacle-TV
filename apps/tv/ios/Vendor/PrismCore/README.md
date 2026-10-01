@@ -58,6 +58,31 @@ qu'une lecture continue leur aurait donné : un pas d'image en arrière par
 paquet (84 508, 84 550 avant 84 592 sur l'épisode mesuré, les valeurs exactes
 de la lecture continue).
 
+### 3. L'encodeur AAC du pont, rouvert à chaque ré-ancrage (2026-10-01)
+
+`Sources/PrismCore/Remux/AudioBridge.swift` (`reset`, `discardEncoderBacklog`)
+et `Sources/PrismCore/Remux/AudioRenditionWriter.swift` (`reanchor`).
+
+Au ré-ancrage, le pont garde ses contextes et vide leur état : l'amont tient
+que l'encodeur « ne garde rien », ce qui est vrai de l'EAC3 qu'il vise, pas de
+l'AAC que ce FFmpeg négocie. L'encodeur AAC de FFmpeg est à retard (1024
+échantillons) : il garde deux paquets de l'ancienne position et les rend aux
+envois suivants, horodatés là où le producteur était. Et il ne sait pas se
+vider sur place (pas de `AV_CODEC_CAP_ENCODER_FLUSH`).
+
+Mesuré le 2026-10-01 sur une piste Opus pontée : saut en avant, le segment
+audio ré-ancré s'ouvrait 64 s trop tôt (un premier échantillon de 64 s) ; saut
+en ARRIÈRE (10:00 → 3:20), le muxeur refusait le deuxième paquet (-22) et le
+producteur mourait — AVPlayer figé sur la cible.
+
+**Titres touchés** : tout titre à audio ponté (Opus, DTS, DTS-HD, TrueHD,
+PCM… → AAC), au premier saut en arrière hors de la fenêtre produite, et un
+segment audio faux à chaque saut en avant.
+
+Le correctif rouvre l'encodeur, mêmes paramètres, quand il garde des trames et
+ne sait pas se vider : un `avcodec_open2` par ré-ancrage ; décodeur,
+rééchantillonneur et FIFO restent.
+
 ## Ce qui est repris, ce qui ne l'est pas
 
 `Package.swift` (réduit à la bibliothèque), `Sources/PrismCore`, `LICENSE`,
@@ -81,5 +106,6 @@ le paquet distant (règle « jusqu'à la prochaine majeure » depuis 3.2.0).
 Pour une montée de version en attendant : recopier `Sources/PrismCore` de la
 nouvelle version, réappliquer les blocs balisés et reprendre les fichiers
 nouveaux, rebâtir, puis rejouer sur l'Apple TV (banc
-`apps/tv/harness/atv-remote`) un titre en DTS seul, et un titre à GOP ouvert
-repris au milieu puis sauté loin en avant et en arrière.
+`apps/tv/harness/atv-remote`) un titre en DTS seul, un titre à GOP ouvert
+repris au milieu puis sauté loin en avant et en arrière, et les mêmes sauts sur
+un titre à audio ponté.
