@@ -15,10 +15,18 @@ const REFRESH_MS = 30_000;
  * quand on quitte le lecteur — le sien seulement : l'épisode suivant monte
  * avant que le précédent ne parte.
  *
+ * Il porte la série d'un épisode (`seriesId`) : la relance ouvre la fiche de
+ * la série, même serveur muet. Connue à l'arrivée de l'item, elle réécrit le
+ * marqueur.
+ *
  * Jamais rafraîchi en arrière-plan : une app gardée vivante des heures hors de
  * l'écran (Android TV) ne doit pas paraître quittée à l'instant.
  */
-export function useTVPlaybackMarker(itemId: string, positionRef: React.MutableRefObject<number>): void {
+export function useTVPlaybackMarker(
+  itemId: string,
+  seriesId: string | undefined,
+  positionRef: React.MutableRefObject<number>,
+): void {
   const { storage } = useTentacleConfig();
   const client = useJellyfinClient();
 
@@ -31,6 +39,7 @@ export function useTVPlaybackMarker(itemId: string, positionRef: React.MutableRe
     // l'app peut mourir sans que Jellyfin ait écrit l'arrêt (cf. TVColdStartLanding).
     const put = () => writePlaybackMarker(storage, {
       itemId, owner, phase, at: Date.now(), playerId,
+      ...(seriesId && { seriesId }),
       ...(Number.isFinite(positionRef.current) && { positionSeconds: Math.max(0, positionRef.current) }),
     });
     put();
@@ -46,5 +55,5 @@ export function useTVPlaybackMarker(itemId: string, positionRef: React.MutableRe
       sub.remove();
       clearPlaybackMarker(storage, playerId);
     };
-  }, [itemId, storage, client, positionRef]);
+  }, [itemId, seriesId, storage, client, positionRef]);
 }

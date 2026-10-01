@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   COLD_START_FRESH_MS, PLAYBACK_MARKER_KEY,
-  clearPlaybackMarker, coldStartLanding, readPlaybackMarker, writePlaybackMarker,
+  clearPlaybackMarker, coldStartDetailId, coldStartLanding, readPlaybackMarker, writePlaybackMarker,
   type MarkerStorage, type PlaybackMarker,
 } from "./coldStart";
 
@@ -14,14 +14,19 @@ const marker = (over: Partial<PlaybackMarker> = {}): PlaybackMarker => ({
 });
 
 describe("où rouvrir l'app après une terminaison", () => {
-  it("rouvre le lecteur quand l'app a été tuée pendant son absence", () => {
+  it("rouvre la fiche — jamais le lecteur — quand l'app a été tuée pendant son absence", () => {
     expect(coldStartLanding(marker({ phase: "background" }), { now: NOW, owner: ME }))
-      .toEqual({ kind: "player", itemId: "film" });
+      .toEqual({ kind: "detail", itemId: "film" });
   });
 
   it("rouvre la fiche — jamais le lecteur — quand l'app est morte à l'écran", () => {
     expect(coldStartLanding(marker({ phase: "playing" }), { now: NOW, owner: ME }))
       .toEqual({ kind: "detail", itemId: "film" });
+  });
+
+  it("garde la série d'un épisode, pour ouvrir sa fiche même sans réseau", () => {
+    expect(coldStartLanding(marker({ itemId: "s1e5", seriesId: "serie" }), { now: NOW, owner: ME }))
+      .toEqual({ kind: "detail", itemId: "s1e5", seriesId: "serie" });
   });
 
   it("rend l'accueil sans marqueur : le lecteur avait été quitté", () => {
@@ -32,7 +37,7 @@ describe("où rouvrir l'app après une terminaison", () => {
     expect(coldStartLanding(marker({ phase: "background", at: NOW - COLD_START_FRESH_MS - 1 }), { now: NOW, owner: ME }).kind)
       .toBe("home");
     expect(coldStartLanding(marker({ phase: "background", at: NOW - COLD_START_FRESH_MS }), { now: NOW, owner: ME }).kind)
-      .toBe("player");
+      .toBe("detail");
     expect(coldStartLanding(marker({ at: NOW + 5 * 60_000 }), { now: NOW, owner: ME }).kind).toBe("home");
   });
 
@@ -40,6 +45,31 @@ describe("où rouvrir l'app après une terminaison", () => {
     expect(coldStartLanding(marker(), { now: NOW, owner: null }).kind).toBe("home");
     expect(coldStartLanding(marker(), { now: NOW, owner: { userId: "u2", deviceId: "tv1" } }).kind).toBe("home");
     expect(coldStartLanding(marker(), { now: NOW, owner: { userId: "u1", deviceId: "tv2" } }).kind).toBe("home");
+  });
+});
+
+describe("la fiche de la relance", () => {
+  const film = { kind: "detail" as const, itemId: "film" };
+  const episode = { kind: "detail" as const, itemId: "s1e5", seriesId: "serie" };
+
+  it("un film ouvre sa propre fiche", () => {
+    expect(coldStartDetailId(film, { Type: "Movie" })).toBe("film");
+    expect(coldStartDetailId(film)).toBe("film");
+  });
+
+  it("un épisode ouvre la fiche de sa série — l'item relu fait foi", () => {
+    expect(coldStartDetailId(episode, { Type: "Episode", SeriesId: "serie" })).toBe("serie");
+    expect(coldStartDetailId({ kind: "detail", itemId: "s1e5" }, { Type: "Episode", SeriesId: "serie" })).toBe("serie");
+  });
+
+  it("sans l'item (serveur muet), la série que le marqueur a notée", () => {
+    expect(coldStartDetailId(episode)).toBe("serie");
+    expect(coldStartDetailId(episode, null)).toBe("serie");
+  });
+
+  it("un épisode sans série connue ouvre sa propre fiche", () => {
+    expect(coldStartDetailId({ kind: "detail", itemId: "s1e5" }, { Type: "Episode", SeriesId: null })).toBe("s1e5");
+    expect(coldStartDetailId({ kind: "detail", itemId: "s1e5" })).toBe("s1e5");
   });
 });
 
@@ -81,6 +111,13 @@ describe("le marqueur persistant", () => {
 
   it("une position illisible rend le marqueur illisible", () => {
     content.set(PLAYBACK_MARKER_KEY, JSON.stringify({ ...marker(), positionSeconds: "106" }));
+    expect(readPlaybackMarker(storage)).toBeNull();
+  });
+
+  it("porte la série d'un épisode ; une série illisible rend le marqueur illisible", () => {
+    writePlaybackMarker(storage, marker({ seriesId: "serie" }));
+    expect(readPlaybackMarker(storage)?.seriesId).toBe("serie");
+    content.set(PLAYBACK_MARKER_KEY, JSON.stringify({ ...marker(), seriesId: 42 }));
     expect(readPlaybackMarker(storage)).toBeNull();
   });
 

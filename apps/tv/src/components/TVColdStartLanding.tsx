@@ -3,68 +3,71 @@ import {
   flushPlaybackOutboxFor, JellyfinError, useAdoptStop, useJellyfinClient, useMediaItem, type StorageAdapter,
 } from "@tentacle-tv/api-client";
 import {
-  clearPlaybackMarker, coldStartLanding, readPlaybackMarker, type ColdStartLanding, type PlaybackMarker,
+  clearPlaybackMarker, coldStartDetailId, coldStartLanding, readPlaybackMarker,
+  type DetailLanding, type PlaybackMarker,
 } from "@tentacle-tv/tv-core/playback";
 import { sessionOwnerOf } from "../auth/sessionOwner";
 import { navigationRef } from "../navigation/navigationRef";
 import { markerStopToAdopt } from "../utils/coldStartResume";
 import { plog } from "../utils/playerDiag";
 
-/** Le temps laissé à la file des rapports pour corriger la position avant de rouvrir. */
+/** Le temps laissé à la file des rapports pour corriger la position avant d'ouvrir. */
 const OUTBOX_WAIT_MS = 4_000;
-/** Au-delà, la fiche du titre ne vient pas : jamais de lecteur ouvert dans le vide. */
+/** Au-delà, l'item lu ne vient pas : la fiche s'ouvre d'après le marqueur seul. */
 const ITEM_WAIT_MS = 8_000;
 const NAV_RETRY_MS = 200;
 const NAV_RETRIES = 25;
 
-type Target = Exclude<ColdStartLanding, { kind: "home" }>;
-
 /**
  * La relance à froid (règle : tv-core `playback/coldStart`). Au démarrage, une
- * fois : le marqueur du lecteur dit comment l'app est morte — tuée pendant son
- * absence → le LECTEUR rouvert EN PAUSE à la position ; morte à l'écran → la
- * FICHE, « Reprendre » focalisé ; sinon l'accueil. Le marqueur est retiré
- * aussitôt lu : une seconde relance ne rejoue rien.
+ * fois : le marqueur du lecteur dit qu'une lecture a été interrompue par la
+ * mort de l'app → la FICHE de ce qui était lu, « Reprendre » focalisé — celle
+ * du film ; celle de la SÉRIE pour un épisode, ouverte sur la saison de la
+ * reprise. JAMAIS le lecteur : un titre qui pose problème ferait replanter
+ * l'app à chaque ouverture. Sans marqueur : l'accueil. Le marqueur est retiré
+ * aussitôt lu : une seconde relance ne rejoue rien. La fiche est poussée sur
+ * l'accueil : Retour y ramène.
  *
- * Avant de rouvrir : la file des rapports d'abord (la position relue doit être
- * la bonne), puis la fiche du titre. Refusée (jeton révoqué), on ne bouge pas —
- * le déjumelage prend la main ; muette (serveur ou Jellyfin coupé), on ouvre la
- * fiche plutôt qu'un lecteur vide. Un déjumelage interrompu, lui, s'est rejoué
- * avant (`resumeUnpair`, au démarrage) et a purgé le marqueur avec le compte.
- * Rouvert en pause, le lecteur part de l'arrêt du marqueur quand Jellyfin n'a
- * rien vu de plus récent (`markerStopToAdopt`) — la garde le défend ensuite.
+ * Avant d'ouvrir : la file des rapports d'abord (la position relue doit être
+ * la bonne), puis l'item lu. Refusé (jeton révoqué), on ne bouge pas — le
+ * déjumelage prend la main ; muet (serveur ou Jellyfin coupé), la fiche quand
+ * même, d'après le marqueur. Un déjumelage interrompu, lui, s'est rejoué avant
+ * (`resumeUnpair`, au démarrage) et a purgé le marqueur avec le compte.
+ * « Reprendre » part de l'arrêt du marqueur quand Jellyfin n'a rien vu de plus
+ * récent (`markerStopToAdopt`) — la garde le défend ensuite.
  */
 export function TVColdStartLanding({ storage }: { storage: StorageAdapter }) {
   const client = useJellyfinClient();
-  const [target, setTarget] = useState<{ landing: Target; marker: PlaybackMarker } | null>(null);
+  const [target, setTarget] = useState<{ landing: DetailLanding; marker: PlaybackMarker } | null>(null);
 
   useEffect(() => {
     const marker = readPlaybackMarker(storage);
     clearPlaybackMarker(storage);
     const landing = coldStartLanding(marker, { now: Date.now(), owner: sessionOwnerOf(storage, client.getDeviceId()) });
     if (marker) plog("relance", `marqueur ${marker.phase}, ${Math.round((Date.now() - marker.at) / 1000)} s → ${landing.kind}`);
-    if (landing.kind !== "home" && marker) setTarget({ landing, marker });
+    if (landing.kind === "detail" && marker) setTarget({ landing, marker });
     // Une fois par démarrage à froid.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return target
-    ? <Landing storage={storage} target={target.landing} marker={target.marker} onDone={() => setTarget(null)} />
+    ? <Landing storage={storage} landing={target.landing} marker={target.marker} onDone={() => setTarget(null)} />
     : null;
 }
 
-function Landing({ storage, target, marker, onDone }: {
-  storage: StorageAdapter; target: Target; marker: PlaybackMarker; onDone: () => void;
+function Landing({ storage, landing, marker, onDone }: {
+  storage: StorageAdapter; landing: DetailLanding; marker: PlaybackMarker; onDone: () => void;
 }) {
   const client = useJellyfinClient();
   const adoptStop = useAdoptStop();
   const [flushed, setFlushed] = useState(false);
-  const { data: item, error } = useMediaItem(target.itemId, { enabled: flushed });
+  const { data: item, error } = useMediaItem(landing.itemId, { enabled: flushed });
   const doneRef = useRef(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
-  const land = (kind: Target["kind"] | null) => {
+  /** `null` : rien à ouvrir (le déjumelage prend la main). */
+  const land = (detailId: string | null) => {
     if (doneRef.current) return;
     doneRef.current = true;
     const attempt = (n: number) => {
@@ -74,10 +77,9 @@ function Landing({ storage, target, marker, onDone }: {
         return;
       }
       // L'utilisateur a déjà bougé, ou l'app est repartie au jumelage : on ne détourne rien.
-      if (kind && navigationRef.getCurrentRoute()?.name === "Home") {
-        plog("relance", `→ ${kind === "player" ? "lecteur en pause" : "fiche"}`);
-        if (kind === "player") navigationRef.navigate("Player", { itemId: target.itemId, startPaused: true });
-        else navigationRef.navigate("MediaDetail", { itemId: target.itemId });
+      if (detailId && navigationRef.getCurrentRoute()?.name === "Home") {
+        plog("relance", `→ fiche ${detailId === landing.itemId ? "du titre" : "de la série"}`);
+        navigationRef.navigate("MediaDetail", { itemId: detailId });
       }
       onDoneRef.current();
     };
@@ -89,7 +91,7 @@ function Landing({ storage, target, marker, onDone }: {
     const wait = new Promise((resolve) => setTimeout(resolve, OUTBOX_WAIT_MS));
     const flush = owner ? flushPlaybackOutboxFor(client, owner.userId) : Promise.resolve();
     void Promise.race([flush, wait]).catch(() => undefined).finally(() => setFlushed(true));
-    const giveUp = setTimeout(() => land("detail"), OUTBOX_WAIT_MS + ITEM_WAIT_MS);
+    const giveUp = setTimeout(() => land(coldStartDetailId(landing)), OUTBOX_WAIT_MS + ITEM_WAIT_MS);
     return () => clearTimeout(giveUp);
     // Une fois.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,15 +100,15 @@ function Landing({ storage, target, marker, onDone }: {
   useEffect(() => {
     if (!flushed) return;
     if (item) {
-      const position = target.kind === "player" ? markerStopToAdopt(marker, item) : null;
+      const position = markerStopToAdopt(marker, item);
       if (position !== null) {
         plog("relance", `arrêt du marqueur (${Math.round(position)} s) préféré à la reprise relue`);
         adoptStop({ itemId: item.Id, positionSeconds: position, runtimeTicks: item.RunTimeTicks, stoppedAt: marker.at });
       }
-      land(target.kind);
+      land(coldStartDetailId(landing, item));
     } else if (error) {
       const refused = error instanceof JellyfinError && (error.status === 401 || error.status === 403);
-      land(refused ? null : "detail");
+      land(refused ? null : coldStartDetailId(landing));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flushed, item, error]);
