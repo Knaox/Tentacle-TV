@@ -11,7 +11,8 @@
 <p align="center">
   <a href="https://discord.gg/FRse3yMhnc"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
   <a href="#quick-start-docker"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker" /></a>
-  <img src="https://img.shields.io/badge/version-1.11.0-8b5cf6" alt="Version" />
+  <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FKnaox%2FTentacle-TV%2Fmain%2Fversions.json&query=%24.desktop&label=desktop&color=8b5cf6" alt="Desktop version" /></a>
+  <a href="#quick-start-docker"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FKnaox%2FTentacle-TV%2Fmain%2Fversions.json&query=%24.server&label=server&color=d946ef" alt="Server version" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white" alt="Node" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
