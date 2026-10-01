@@ -84,6 +84,11 @@ export default {
   offlineHint: "Cela se résout généralement tout seul. Si le problème persiste, contactez votre administrateur.",
   retryConnection: "Réessayer la connexion",
   offlineLogout: "Se déconnecter",
+  // Le voile hors ligne de la refonte (Apple TV) : la sortie quand le serveur
+  // est hors service, à double appui — la ligne armée dit ce qui va se passer.
+  offlineUnpair: "Déjumeler cet appareil",
+  offlineUnpairConfirm: "Confirmer le déjumelage",
+  offlineUnpairHint: "Appuyez de nouveau sur OK : cette TV oubliera votre compte.",
   changeServer: "Changer de serveur",
   resumeAt: "Reprendre à {{time}}",
   showMore: "Voir plus",

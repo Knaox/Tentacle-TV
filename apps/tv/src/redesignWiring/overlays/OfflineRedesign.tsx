@@ -8,7 +8,7 @@ import { useFocusStore } from "../focus/focusStore";
 import { TrapFocusGuide } from "../focus/focusGuides";
 import { useKeepFocusWithin } from "../focus/useKeepFocusWithin";
 
-const KEYS = ["offline:retry", "offline:logout"] as const;
+const KEYS = ["offline:retry", "offline:unpair"] as const;
 
 /**
  * Le voile hors ligne de la refonte (Apple TV), monté par `OfflineBanner`
@@ -19,6 +19,10 @@ const KEYS = ["offline:retry", "offline:logout"] as const;
  * intercepté : monté hors des écrans, le panneau n'est sur le chemin d'aucun,
  * l'appui remonte jusqu'à l'application et renvoie à l'accueil de tvOS —
  * la règle qu'App Review vérifie.
+ *
+ * « Déjumeler cet appareil » (double appui, tenu par la vue) passe par
+ * `useOfflineLogout`, la sortie hors ligne des deux téléviseurs : rien n'y
+ * attend le réseau, et elle passe même pendant une lecture.
  */
 export function OfflineRedesign({ visible, onRetry }: {
   visible: boolean;
@@ -29,7 +33,7 @@ export function OfflineRedesign({ visible, onRetry }: {
 
 function OfflineSurface({ onRetry }: { onRetry: () => void | Promise<unknown> }) {
   const { storage } = useTentacleConfig();
-  const logout = useOfflineLogout();
+  const unpair = useOfflineLogout();
   const [retrying, setRetrying] = useState(false);
 
   const store = useFocusStore();
@@ -49,7 +53,7 @@ function OfflineSurface({ onRetry }: { onRetry: () => void | Promise<unknown> })
           serverUrl={storage.getItem("tentacle_server_url") ?? undefined}
           retrying={retrying}
           onRetry={retry}
-          onLogout={logout}
+          onUnpair={unpair}
         />
       </FocusBindingProvider>
     </View>

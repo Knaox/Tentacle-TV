@@ -38,11 +38,25 @@ export const OVERLAY_SCENES: BenchScene[] = [
     id: "surimpressions/hors-ligne",
     group: "Surimpressions",
     label: "Hors ligne (bloquant)",
-    focusKeys: ["offline:retry", "offline:logout"],
+    focusKeys: ["offline:retry", "offline:unpair"],
     settleMs: 1700,
     render: (data) => (
       <OverHome data={data}>
         <OfflineOverlay serverUrl={DEV_SERVER} />
+      </OverHome>
+    ),
+  },
+  {
+    // Le premier appui de « Déjumeler cet appareil » : la pilule armée et la
+    // ligne qui dit ce que fera le second.
+    id: "surimpressions/hors-ligne-dejumeler",
+    group: "Surimpressions",
+    label: "Hors ligne · déjumeler armé",
+    focusKeys: ["offline:unpair"],
+    settleMs: 1700,
+    render: (data) => (
+      <OverHome data={data}>
+        <OfflineOverlay serverUrl={DEV_SERVER} initialArmed />
       </OverHome>
     ),
   },
