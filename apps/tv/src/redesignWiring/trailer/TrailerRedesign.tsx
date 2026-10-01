@@ -1,14 +1,15 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useIsFocused } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useJellyfinClient, useMediaItem, useTentacleConfig } from "@tentacle-tv/api-client";
 import { parseYouTubeId } from "@tentacle-tv/shared";
 import type { RootStackParamList } from "../../navigation/types";
-import { useTVRemote } from "../../components/focus/useTVRemote";
 import { FocusBindingProvider, type FocusBinding } from "../../redesign/focus/focusBinding";
 import { TrailerView } from "../../redesign/screens/trailer/TrailerView";
 import { TrailerWebView, TRAILER_WEBVIEW_SUPPORTED } from "../../screens/trailer/TrailerWebView";
 import { detailBackdropUri } from "../detail/detailImages";
+import { useRemoteEvents } from "../remote/remoteEvents";
 import { useIdleChrome } from "./useIdleChrome";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
@@ -23,7 +24,10 @@ type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
  *
  * Le chrome s'estompe trois secondes après le début de la lecture, et le
  * moindre geste de la télécommande le rallume (`useIdleChrome`) : « Fermer »
- * garde le focus tout du long, il ne peut donc pas en être le signal.
+ * garde le focus tout du long, il ne peut donc pas en être le signal. Tout
+ * geste compte (`useRemoteEvents`) : un appui, ou un glisser sur le pavé
+ * tactile — le seul signal qu'il émette ici, le focus n'ayant nulle part où
+ * aller.
  */
 
 const CLOSE_KEY = "trailer:close";
@@ -49,11 +53,12 @@ export function TrailerRedesign({ route, navigation }: Props) {
   const state = !canPlay || failed ? "unavailable" : loaded ? "playing" : "loading";
   const { dimmed, wake } = useIdleChrome(state === "playing");
 
+  const isFocused = useIsFocused();
   const close = useCallback(() => navigation.goBack(), [navigation]);
   // Stables : le lecteur relance sa résolution quand ils changent.
   const onLoadEnd = useCallback(() => setLoaded(true), []);
   const onError = useCallback(() => setFailed(true), []);
-  useTVRemote({ onAnyPress: wake, onPlayPause: wake });
+  useRemoteEvents(wake, isFocused);
 
   const video = canPlay && ytId && !failed ? (
     <TrailerWebView

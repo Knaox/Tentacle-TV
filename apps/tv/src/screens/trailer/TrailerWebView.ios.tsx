@@ -19,9 +19,9 @@ import type { TrailerPlayerProps } from "./types";
  * serveur obtient (403 au-delà de son premier mégaoctet, mesuré le
  * 2026-10-01) : l'écran le dit, il ne reste jamais au chargement.
  *
- * Le `<Video>` n'est pas focusable : la télécommande (BACK / Fermer) reste gérée
- * par l'écran (useTVRemote + bouton Fermer), exactement comme avec la WebView
- * Android.
+ * Le `<Video>` n'est pas focusable : la télécommande (Menu / Fermer) reste gérée
+ * par l'écran — bouton « Fermer », pile native, gestes qui rallument le
+ * chrome —, exactement comme avec la WebView Android.
  */
 export const TRAILER_WEBVIEW_SUPPORTED = true;
 
