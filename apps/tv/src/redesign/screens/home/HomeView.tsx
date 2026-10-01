@@ -6,6 +6,7 @@ import { BrandCorner, brandCornerOnHero } from "../../brand/BrandCorner";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
+import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MediaRow } from "../../rows/MediaRow";
@@ -22,9 +23,11 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
  * `useNextUp`, `useWatchlist`, `useLatestItems`, `useRecoPage` (cartes),
  * `useCardMarkers` (marqueurs) et `paletteFromBlurHash` (lumière).
  *
- * Une carte qui prend le focus amène sa rangée ENTIÈRE à l'écran — sa
- * légende et l'indication de l'appui long avec elle (`useForcedFocusReveal`) ;
- * au banc, la rangée de la clé figée.
+ * Le héros et chaque rangée sont des SECTIONS (`FocusSection`) : HAUT / BAS
+ * passe de l'une à la voisine, au plus proche ; le focus qui entre dans une
+ * rangée l'amène ENTIÈRE à l'écran — sa légende et l'indication de l'appui
+ * long avec elle —, en un seul mouvement ; dans le héros, la page remonte tout
+ * en haut. Au banc, la rangée de la clé figée (`useForcedFocusReveal`).
  *
  * `filter` : la pastille du filtre de plateformes du compte, posée sur la
  * rangée `filterRowKey` — la première rangée recommandée réellement servie
@@ -35,7 +38,8 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
  *
  * Clés de focus : `hero:primary`, `hero:secondary`, `hero:list`,
  * `<rangée>:<index>` pour les cartes, `filter:remove`, `status:primary`,
- * `status:secondary`, et `nav:<entrée>` pour la navigation.
+ * `status:secondary`, et `nav:<entrée>` pour la navigation. Sections :
+ * `section:hero`, `section:<rangée>`.
  */
 
 export interface HomeRowModel {
@@ -76,6 +80,9 @@ const HERO_WIDTH = 1920 - LEFT - 56;
 const HERO_BRAND = brandCornerOnHero(LEFT, HERO_WIDTH);
 /** Au-delà de ce défilement, plus de la moitié du héros est hors de l'écran. */
 const HERO_HIDDEN_AFTER = TV_STAGE.hero.top + TV_STAGE.hero.height / 2;
+/** Le héros se montre la page tout en haut ; une rangée, entière, au plus près. */
+const HERO_REVEAL: FocusSectionReveal = { mode: "start" };
+const ROW_REVEAL: FocusSectionReveal = { mode: "nearest" };
 
 export const HomeView = memo(function HomeView({
   nav,
@@ -95,24 +102,16 @@ export const HomeView = memo(function HomeView({
   onFocusCard,
   onHeroVisibleChange,
 }: HomeViewProps) {
-  const { scrollRef, sectionLayout, onViewportLayout, onScroll, revealSection } = useForcedFocusReveal();
+  const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   const heroVisible = useRef(true);
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      onScroll(event);
       const visible = event.nativeEvent.contentOffset.y < HERO_HIDDEN_AFTER;
       if (visible === heroVisible.current) return;
       heroVisible.current = visible;
       onHeroVisibleChange?.(visible);
     },
-    [onScroll, onHeroVisibleChange],
-  );
-  const onRowFocus = useCallback(
-    (rowKey: string, card: CardModel) => {
-      revealSection(rowKey);
-      onFocusCard?.(rowKey, card);
-    },
-    [revealSection, onFocusCard],
+    [onHeroVisibleChange],
   );
   return (
     <View style={styles.root}>
@@ -133,7 +132,7 @@ export const HomeView = memo(function HomeView({
           scrollEventThrottle={32}
         >
           {hero ? (
-            <View style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
+            <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
               <HeroBanner
                 hero={hero}
                 width={HERO_WIDTH}
@@ -142,7 +141,7 @@ export const HomeView = memo(function HomeView({
                 onToggleList={onHeroToggleList}
                 onLongPress={onHeroLongPress}
               />
-            </View>
+            </FocusSection>
           ) : null}
           {rows.map((row, index) => (
             <HomeRow
@@ -154,7 +153,7 @@ export const HomeView = memo(function HomeView({
               onRemoveFilter={onRemoveFilter}
               onPressCard={onPressCard}
               onLongPressCard={onLongPressCard}
-              onFocusCard={onRowFocus}
+              onFocusCard={onFocusCard}
             />
           ))}
           {/* La marque défile avec la page : sur la carte héros, dans son coin. */}
@@ -198,7 +197,12 @@ const HomeRow = memo(function HomeRow({
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
   const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
   return (
-    <View onLayout={onLayout} style={first === "afterHero" ? styles.firstAfterHero : first === "alone" ? styles.firstAlone : undefined}>
+    <FocusSection
+      focusKey={`section:${key}`}
+      reveal={ROW_REVEAL}
+      onLayout={onLayout}
+      style={first === "afterHero" ? styles.firstAfterHero : first === "alone" ? styles.firstAlone : undefined}
+    >
       <MediaRow
         rowKey={key}
         title={row.title}
@@ -214,7 +218,7 @@ const HomeRow = memo(function HomeRow({
         onLongPressCard={onLongPressCard ? longPress : undefined}
         onFocusCard={onFocusCard ? focus : undefined}
       />
-    </View>
+    </FocusSection>
   );
 });
 

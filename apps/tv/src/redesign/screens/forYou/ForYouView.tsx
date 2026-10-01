@@ -7,6 +7,7 @@ import { CARD_NOTE_SPACE } from "../../cards/CardFocusNote";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
+import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MediaRow } from "../../rows/MediaRow";
@@ -38,6 +39,11 @@ import { ForYouNotice, type ForYouNoticeModel } from "./ForYouNotice";
  * - `status` : chargement (`!page && !isError`), erreur (`isError`,
  *   Réessayer), en préparation, vide ;
  * - `palette` : `paletteFromBlurHash` de la carte focalisée, sinon du héros.
+ *
+ * Le héros et chaque étagère sont des SECTIONS (`FocusSection`, clés
+ * `section:hero`, `section:<étagère>`) : HAUT / BAS passe à la voisine, au plus
+ * proche, et l'étagère focalisée vient ENTIÈRE à l'écran — sa légende et la
+ * raison de la carte avec elle —, en un seul mouvement.
  */
 
 export interface ForYouShelfModel {
@@ -72,6 +78,8 @@ export interface ForYouViewProps {
 const LEFT = TV_STAGE.contentLeft;
 const HERO_WIDTH = 1920 - LEFT - 56;
 const HERO_BRAND = brandCornerOnHero(LEFT, HERO_WIDTH);
+const HERO_REVEAL: FocusSectionReveal = { mode: "start" };
+const SHELF_REVEAL: FocusSectionReveal = { mode: "nearest" };
 
 export const ForYouView = memo(function ForYouView({
   nav,
@@ -89,16 +97,7 @@ export const ForYouView = memo(function ForYouView({
   onLongPressCard,
   onFocusCard,
 }: ForYouViewProps) {
-  const { scrollRef, sectionLayout, onViewportLayout, onScroll, revealSection } = useForcedFocusReveal();
-  // L'étagère d'une carte focalisée entière à l'écran : sa légende et la raison
-  // de la carte avec elle (tvOS n'amène que la carte).
-  const onShelfFocus = useCallback(
-    (shelfKey: string, card: CardModel) => {
-      revealSection(shelfKey);
-      onFocusCard?.(shelfKey, card);
-    },
-    [revealSection, onFocusCard],
-  );
+  const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   return (
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
@@ -114,11 +113,9 @@ export const ForYouView = memo(function ForYouView({
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           onLayout={onViewportLayout}
-          onScroll={onScroll}
-          scrollEventThrottle={32}
         >
           {hero ? (
-            <View style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
+            <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
               <HeroBanner
                 hero={hero}
                 width={HERO_WIDTH}
@@ -126,7 +123,7 @@ export const ForYouView = memo(function ForYouView({
                 onSecondary={onHeroSecondary}
                 onToggleList={onHeroToggleList}
               />
-            </View>
+            </FocusSection>
           ) : null}
           {notice ? (
             <View style={hero ? styles.noticeAfterHero : styles.noticeAlone}>
@@ -143,7 +140,7 @@ export const ForYouView = memo(function ForYouView({
               onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
               onPressCard={onPressCard}
               onLongPressCard={onLongPressCard}
-              onFocusCard={onShelfFocus}
+              onFocusCard={onFocusCard}
             />
           ))}
           {/* La marque défile avec la page : sur la carte héros, dans son coin. */}
@@ -186,7 +183,9 @@ const Shelf = memo(function Shelf({
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
   const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
   return (
-    <View
+    <FocusSection
+      focusKey={`section:${key}`}
+      reveal={SHELF_REVEAL}
       onLayout={onLayout}
       style={[
         first === "afterHead" && styles.firstAfterHead,
@@ -209,7 +208,7 @@ const Shelf = memo(function Shelf({
         onLongPressCard={onLongPressCard ? longPress : undefined}
         onFocusCard={onFocusCard ? focus : undefined}
       />
-    </View>
+    </FocusSection>
   );
 });
 
