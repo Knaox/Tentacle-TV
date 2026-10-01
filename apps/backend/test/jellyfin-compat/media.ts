@@ -9,6 +9,11 @@
  * série à plusieurs saisons avec ses spéciaux, des bandes-annonces locales
  * `-trailer` et des dossiers d'extras (film, série, saison), du HEVC et de
  * l'AC3 pour les décisions de transcodage, et une bibliothèque mixte.
+ *
+ * Le HEVC existe sous ses trois formes de conteneur : MP4 étiqueté `hvc1`, MP4
+ * étiqueté `hev1` (ce que ffmpeg pose de lui-même, et qu'AVFoundation affiche
+ * NOIR) et MKV, sans étiquette — les décisions de lecture d'AVPlayer et de
+ * Safari en dépendent (`avPlayerReadsHevcTag`, packages/shared).
  */
 
 import { createHash } from "node:crypto";
@@ -34,6 +39,10 @@ export interface MediaFile {
   subs?: SubTrack[];
   /** Débuts de chapitres, en secondes. */
   chapters?: Array<{ at: number; title: string }>;
+  /** Étiquette d'un HEVC en MP4 : `hvc1` par défaut, `hev1` celle que ffmpeg pose seul. */
+  hevcTag?: "hvc1" | "hev1";
+  /** 10 : Main 10, la forme de la plupart des HEVC réels. 8 par défaut. */
+  bitDepth?: 8 | 10;
 }
 
 /** Sous-titres EXTERNES, à côté du fichier vidéo. */
@@ -66,6 +75,11 @@ export const MEDIA_FILES: MediaFile[] = [
   { path: `${SINTEL}/Sintel (2010) - 1080p.mkv`, seconds: 60, size: "1080p", video: "h264", audio: [EN, FR_51] },
   { path: `${SINTEL}/Sintel (2010) - 720p.mkv`, seconds: 60, size: "720p", video: "h264", audio: [EN] },
   { path: "movies/Tears of Steel (2012)/Tears of Steel (2012).mp4", seconds: 60, size: "720p", video: "hevc", audio: [{ lang: "eng", codec: "aac", channels: 6 }] },
+  // Le même HEVC Main 10 sous ses trois formes : `hev1` (noir sous AVFoundation),
+  // `hvc1` (le témoin) et MKV, sans étiquette.
+  { path: "movies/Spring (2019)/Spring (2019).mp4", seconds: 120, size: "720p", video: "hevc", hevcTag: "hev1", bitDepth: 10, audio: [EN] },
+  { path: "movies/Coffee Run (2020)/Coffee Run (2020).mp4", seconds: 120, size: "720p", video: "hevc", hevcTag: "hvc1", bitDepth: 10, audio: [EN] },
+  { path: "movies/Hero (2018)/Hero (2018).mkv", seconds: 60, size: "720p", video: "hevc", bitDepth: 10, audio: [EN] },
   { path: "movies/Elephants Dream (2006)/Elephants Dream (2006).mkv", seconds: 45, size: "360p", video: "h264", audio: [{ lang: "eng", codec: "ac3", channels: 2 }] },
   { path: "movies/Cosmos Laundromat (2015)/Cosmos Laundromat (2015).mkv", seconds: 45, size: "360p", video: "h264", audio: [EN, FR] },
   {
@@ -143,8 +157,9 @@ function ffmpegCommand(file: MediaFile, index: number): string[] {
     maps.push(`-map_chapters ${inputs.length - 1}`);
   }
   const codec = file.video === "hevc"
-    ? `-c:v libx265 -preset ultrafast -x265-params log-level=error${mkv ? "" : " -tag:v hvc1"}`
+    ? `-c:v libx265 -preset ultrafast -x265-params log-level=error${mkv ? "" : ` -tag:v ${file.hevcTag ?? "hvc1"}`}`
     : "-c:v libx264 -preset ultrafast";
+  const pixFmt = file.bitDepth === 10 ? "yuv420p10le" : "yuv420p";
   const audio = file.audio.map((a, i) => [
     `-c:a:${i} ${a.codec} -ac:a:${i} ${a.channels} -b:a:${i} ${a.codec === "ac3" ? "384k" : "128k"}`,
     `-metadata:s:a:${i} language=${a.lang}`,
@@ -153,7 +168,7 @@ function ffmpegCommand(file: MediaFile, index: number): string[] {
   const subArgs = subs.map((s, i) => `-metadata:s:s:${i} language=${s.lang} -disposition:s:${i} ${s.forced ? "forced" : "0"}`);
   lines.push([
     "$FF -hide_banner -loglevel error -y", ...inputs, ...maps,
-    `${codec} -g 48 -keyint_min 48 -pix_fmt yuv420p`, ...audio,
+    `${codec} -g 48 -keyint_min 48 -pix_fmt ${pixFmt}`, ...audio,
     subs.length ? "-c:s srt" : "", ...subArgs, q(out),
   ].filter(Boolean).join(" "));
   return lines;

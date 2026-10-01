@@ -88,7 +88,10 @@ async function main(): Promise<number> {
     backend = await startBackend({ port: backendPort, dbUrl, runDir });
 
     const context: CompatContext = {
-      jellyfin: { url: instance.url, version: instance.version, image, serverId: instance.serverId, legacyAuth: instance.legacyAuth },
+      jellyfin: {
+        url: instance.url, version: instance.version, image, serverId: instance.serverId,
+        legacyAuth: instance.legacyAuth, container: instance.container,
+      },
       apiKey: instance.apiKey,
       admin: await tentacleLogin(backend.url, instance.admin.name, instance.admin.id),
       user: await tentacleLogin(backend.url, USER_NAME, instance.userIds.user),

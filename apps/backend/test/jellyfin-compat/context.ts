@@ -17,6 +17,8 @@ export interface CompatContext {
     serverId: string;
     /** Autorisation héritée acceptée ? `null` : la version n'a pas l'option (toujours acceptée). */
     legacyAuth: boolean | null;
+    /** Le conteneur Docker de l'instance : ses journaux ffmpeg disent ce qu'un remux a copié. */
+    container: string;
   };
   apiKey: string;
   admin: Account;

@@ -80,6 +80,8 @@ interface Item {
 
 export interface Fixtures {
   movies: { bbb: string; sintel: string; tears: string; elephants: string; cosmos: string };
+  /** Le même HEVC Main 10 : MP4 `hev1`, MP4 `hvc1` (témoin) et MKV sans étiquette. */
+  hevc: { hev1: string; hvc1: string; mkv: string };
   series: { breakingBad: string; bebop: string };
   seasons: { bb1: string; bb2: string };
   episodes: { bbS01E01: string; bbS01E02: string; bbS02E01: string; bebopS01E01: string };
@@ -115,6 +117,11 @@ export async function resolveFixtures(http: JellyfinHttp, token: string, userId:
       tears: byPath("Movie", "Tears of Steel"),
       elephants: byPath("Movie", "Elephants Dream"),
       cosmos: byPath("Movie", "Cosmos Laundromat"),
+    },
+    hevc: {
+      hev1: byPath("Movie", "Spring (2019).mp4"),
+      hvc1: byPath("Movie", "Coffee Run (2020).mp4"),
+      mkv: byPath("Movie", "Hero (2018).mkv"),
     },
     series: { breakingBad, bebop: byPath("Series", "/shows/Cowboy Bebop (1998)") },
     seasons: { bb1: season(1), bb2: season(2) },

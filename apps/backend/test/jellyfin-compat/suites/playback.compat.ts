@@ -2,16 +2,10 @@ import { expect } from "vitest";
 import type { MediaItem } from "../../../../../packages/shared/src/types/media";
 import { measureBitrate } from "../../../../../packages/api-client/src/jellyfin/bitrateMeasure";
 import { check, feature } from "../harness";
+import { firstUri, hevcSampleEntries, initUri, lastFfmpegLog } from "./hlsInspect";
 import { pairedDeviceToken, tvHeaders } from "./pairedDevice";
-import { DIRECT_PROFILE, H264_ONLY_PROFILE } from "./profiles";
+import { AVFOUNDATION_PROFILE, DIRECT_PROFILE, H264_ONLY_PROFILE } from "./profiles";
 import { bodySize, ctx, expectStatus, installedAppHeaders, proxy, tentacleClient } from "./support";
-
-/** La première URI (ligne non commentée) d'un manifeste, résolue sur son adresse. */
-function firstUri(manifest: string, base: string): string {
-  const line = manifest.split("\n").map((l) => l.trim()).find((l) => l && !l.startsWith("#"));
-  if (!line) throw new Error(`manifeste sans URI :\n${manifest.slice(0, 300)}`);
-  return new URL(line, base).toString();
-}
 
 feature("playback.direct-play", () => {
   const { bbb } = ctx().fixtures.movies;
@@ -20,6 +14,15 @@ feature("playback.direct-play", () => {
     const info = await tentacleClient(ctx().user.token).getPlaybackInfo(bbb, { userId: ctx().user.id, deviceProfile: DIRECT_PROFILE });
     expect(info.MediaSources[0]?.SupportsDirectPlay).toBe(true);
     expect(info.PlaySessionId).toBeTruthy();
+  });
+
+  check("HEVC `hvc1` en MP4 : lecture directe sous la règle d'étiquette d'AVFoundation", async () => {
+    const { hvc1 } = ctx().fixtures.hevc;
+    const info = await tentacleClient(ctx().user.token).getPlaybackInfo(hvc1, { userId: ctx().user.id, deviceProfile: AVFOUNDATION_PROFILE });
+    const ms = info.MediaSources[0]!;
+    expect(ms.MediaStreams.find((s) => s.Type === "Video")?.CodecTag).toBe("hvc1");
+    expect(ms.SupportsDirectPlay).toBe(true);
+    expect(ms.TranscodingUrl).toBeFalsy();
   });
 
   check("flux du fichier par getStreamUrl, requête partielle respectée", async () => {
@@ -69,6 +72,42 @@ feature("playback.transcode", () => {
     const manifest = await (await fetch(`${ctx().backend.url}/api/jellyfin${info.MediaSources[0]!.TranscodingUrl}`)).text();
     expect(manifest).not.toContain(ctx().apiKey);
     expect(manifest).toContain("#EXTM3U");
+  }, { timeoutMs: 120_000 });
+
+  /** Remux d'un HEVC vers AVFoundation : manifeste, segment d'init, premier segment, journal ffmpeg. */
+  const remuxForAvFoundation = async (itemId: string) => {
+    const info = await tentacleClient(ctx().user.token).getPlaybackInfo(itemId, { userId: ctx().user.id, deviceProfile: AVFOUNDATION_PROFILE });
+    const ms = info.MediaSources[0]!;
+    expect(ms.SupportsDirectPlay && !ms.TranscodingUrl).toBe(false);
+    const master = `${ctx().backend.url}/api/jellyfin${ms.TranscodingUrl}`;
+    const variantUrl = firstUri(await (await fetch(master)).text(), master);
+    const variant = await (await fetch(variantUrl)).text();
+    const entries = hevcSampleEntries(await (await fetch(initUri(variant, variantUrl))).arrayBuffer());
+    expectStatus(await fetch(firstUri(variant, variantUrl)), 200);
+    const log = lastFfmpegLog(itemId);
+    await proxy(`Videos/ActiveEncodings?deviceId=${encodeURIComponent(client().getDeviceId())}&playSessionId=${info.PlaySessionId}`, {
+      method: "DELETE", headers: installedAppHeaders(ctx().user.token),
+    });
+    return { ms, url: new URL(master), entries, log };
+  };
+
+  check("HEVC `hev1` en MP4 : jamais en direct vers AVFoundation — remux, vidéo copiée et ré-étiquetée hvc1", async () => {
+    const { hev1 } = ctx().fixtures.hevc;
+    const { ms, url, entries, log } = await remuxForAvFoundation(hev1);
+    expect(ms.MediaStreams.find((s) => s.Type === "Video")?.CodecTag).toBe("hev1");
+    expect(url.searchParams.get("TranscodeReasons")).toBe("VideoCodecTagNotSupported");
+    expect(entries).toEqual(["hvc1"]);
+    expect(log.name).toMatch(/^FFmpeg\.Remux/);
+    expect(log.command).toContain("-codec:v:0 copy");
+    expect(log.command).toContain("-tag:v:0 hvc1");
+  }, { timeoutMs: 120_000 });
+
+  check("HEVC en MKV, sans étiquette : la vidéo reste copiée sous la règle d'étiquette (IsRequired)", async () => {
+    const { mkv } = ctx().fixtures.hevc;
+    const { ms, entries, log } = await remuxForAvFoundation(mkv);
+    expect(ms.MediaStreams.find((s) => s.Type === "Video")?.CodecTag).toBeUndefined();
+    expect(entries).toEqual(["hvc1"]);
+    expect(log.command).toContain("-codec:v:0 copy");
   }, { timeoutMs: 120_000 });
 
   check("arrêt d'un transcodage (DELETE Videos/ActiveEncodings)", async () => {
