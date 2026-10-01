@@ -1,6 +1,6 @@
 import { getPrisma, hasPrisma } from "./db";
 import { getConfigValue, setConfigValue } from "./configStore";
-import { revokeDeviceByTokenHash } from "./wsManager";
+import { revokePairedDevices } from "./deviceRevocation";
 import { TV_PAIRING_EPOCH } from "./version";
 
 /** L'époque déjà appliquée par CE serveur, dans `server_config`. */
@@ -16,15 +16,14 @@ export const PAIRING_EPOCH_KEY = "tv_pairing_epoch";
  * supprimer coupe donc l'accès instantanément, sans que le client puisse s'y
  * opposer — c'est une révocation de serveur, pas une demande faite au client.
  *
- * Les clients savent déjà quoi en faire : `routes/authRefresh.ts` répond
+ * Les clients savent déjà quoi en faire : toutes les portes répondent
  * `401 { revoked: true }` quand le jeton est signé mais la ligne absente, et
  * c'est précisément ce verdict qui autorise les téléviseurs à se déjumeler et à
- * revenir sur l'écran de code (Android TV et Apple TV via `doLogout`, webOS via
- * `terminerSession`). Rien à livrer côté téléviseur, donc.
+ * revenir sur l'écran de code. Rien à livrer côté téléviseur, donc.
  *
- * `revokeDeviceByTokenHash` n'est là que pour l'immédiateté : il pousse
- * `session:revoked` sur les sockets ouvertes et les ferme, au lieu d'attendre
- * qu'un appareil resté sur un écran en cache refasse une requête.
+ * Chaque jumelage passe par la révocation commune (`deviceRevocation.ts`) :
+ * `session:revoked` poussé sur les sockets ouvertes, session et appareil
+ * Jellyfin de la TV supprimés.
  *
  * # Idempotence
  *
@@ -43,13 +42,8 @@ export async function applyPairingEpoch(): Promise<void> {
   if (TV_PAIRING_EPOCH <= applied) return;
 
   try {
-    const prisma = getPrisma();
-    const devices = await prisma.pairedDevice.findMany({
-      select: { tokenHash: true },
-    });
-    for (const device of devices) revokeDeviceByTokenHash(device.tokenHash);
-
-    const { count } = await prisma.pairedDevice.deleteMany({});
+    const devices = await getPrisma().pairedDevice.findMany({ select: { id: true } });
+    const count = await revokePairedDevices(devices, "epoch");
     await setConfigValue(PAIRING_EPOCH_KEY, String(TV_PAIRING_EPOCH));
 
     console.log(

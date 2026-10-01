@@ -62,6 +62,12 @@ export function handleSessionClosed(conn: ChannelConnection): void {
   registry.closed(conn);
 }
 
+/** Un appareil jumelé révoqué : sa session Jellyfin s'arrête et se ferme,
+ *  sans délai de grâce (`registry.end`). */
+export function endPairedDeviceSessions(jellyfinDeviceId: string): Promise<void> {
+  return registry.end(jellyfinDeviceId);
+}
+
 /** Les connexions rattachées, pour le tableau de bord. */
 export function sessionConnections(): ConnectionView[] {
   return registry.list();

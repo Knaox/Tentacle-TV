@@ -2,6 +2,7 @@ import { getPrisma } from "./db";
 import { hashToken } from "./jwt";
 import { deleteProvisioningCode } from "./relayProvision";
 import { sweepJellyfinDevices } from "./jellyfinDeviceCleanup";
+import { revokePairedDevice } from "./deviceRevocation";
 
 const CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -18,9 +19,7 @@ async function disableExpiredProvisioning(): Promise<void> {
   });
   for (const row of expired) {
     if (row.token) {
-      await prisma.pairedDevice
-        .deleteMany({ where: { tokenHash: hashToken(row.token) } })
-        .catch(() => {});
+      await revokePairedDevice({ tokenHash: hashToken(row.token) }, "provisioning").catch(() => null);
     }
     await deleteProvisioningCode(row.code);
     await prisma.provisioningCode.update({

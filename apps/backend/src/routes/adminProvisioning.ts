@@ -6,6 +6,7 @@ import { getPublicUrl } from "../services/configStore";
 import { authenticateJellyfinUser } from "../services/jellyfin";
 import { signDeviceToken, hashToken } from "../services/jwt";
 import { seedProvisioningCode, deleteProvisioningCode } from "../services/relayProvision";
+import { revokePairedDevice } from "../services/deviceRevocation";
 
 const PAIR_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 12; // code long : résiste au brute-force (permanent + réutilisable)
@@ -62,9 +63,7 @@ export const adminProvisioningRoutes: FastifyPluginAsync = async (app) => {
 
     // Révoque l'appareil et l'entrée relay liés à l'ancien code
     if (row.token) {
-      await prisma.pairedDevice
-        .deleteMany({ where: { tokenHash: hashToken(row.token) } })
-        .catch(() => {});
+      await revokePairedDevice({ tokenHash: hashToken(row.token) }, "provisioning").catch(() => null);
     }
     await deleteProvisioningCode(row.code);
 
@@ -123,9 +122,7 @@ export const adminProvisioningRoutes: FastifyPluginAsync = async (app) => {
 
       // Révoque l'éventuel appareil précédent (rotation du JWT)
       if (row.token) {
-        await prisma.pairedDevice
-          .deleteMany({ where: { tokenHash: hashToken(row.token) } })
-          .catch(() => {});
+        await revokePairedDevice({ tokenHash: hashToken(row.token) }, "provisioning").catch(() => null);
       }
 
       // Mint d'un JWT device pour le compte dédié + PairedDevice (autorise le proxy
@@ -158,9 +155,7 @@ export const adminProvisioningRoutes: FastifyPluginAsync = async (app) => {
           expiresInSec,
         });
       } catch (err) {
-        await prisma.pairedDevice
-          .deleteMany({ where: { tokenHash: hashToken(token) } })
-          .catch(() => {});
+        await revokePairedDevice({ tokenHash: hashToken(token) }, "provisioning").catch(() => null);
         const msg = err instanceof Error ? err.message : "Échec du relay";
         return reply.status(502).send({ message: msg });
       }
@@ -174,9 +169,7 @@ export const adminProvisioningRoutes: FastifyPluginAsync = async (app) => {
 
     // 2b. Désactivation — révoque l'appareil + l'entrée relay
     if (row.token) {
-      await prisma.pairedDevice
-        .deleteMany({ where: { tokenHash: hashToken(row.token) } })
-        .catch(() => {});
+      await revokePairedDevice({ tokenHash: hashToken(row.token) }, "provisioning").catch(() => null);
     }
     await deleteProvisioningCode(row.code);
     const updated = await prisma.provisioningCode.update({

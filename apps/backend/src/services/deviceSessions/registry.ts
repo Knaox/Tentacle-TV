@@ -1,4 +1,3 @@
-import { createHash } from "crypto";
 import type { DeviceAuth } from "./deviceAuth";
 import type { PlaybackReporter } from "./playbackReporter";
 import type {
@@ -7,6 +6,10 @@ import type {
   SessionPlaystateCommandDto,
   SessionServerMessage,
 } from "./protocolMessages";
+import { generalMessage } from "./generalMessage";
+import { keyOf, samePlayback } from "./registryKeys";
+
+export { generalMessage };
 
 /**
  * Le registre du canal de session : quelles connexions de lecteurs, sur quels
@@ -94,19 +97,6 @@ export interface ConnectionView {
   playback: PlaybackStateDto | null;
 }
 
-function keyOf(auth: DeviceAuth): string {
-  return createHash("sha256")
-    .update(auth.token)
-    .update("\u0000")
-    .update(auth.identity?.deviceId ?? "")
-    .digest("hex");
-}
-
-function samePlayback(reporter: PlaybackReporter, state: PlaybackStateDto): boolean {
-  const current = reporter.current();
-  return current !== null && current.itemId === state.itemId && (current.playSessionId ?? "") === (state.playSessionId ?? "");
-}
-
 export class SessionRegistry {
   private readonly connections = new Map<ChannelConnection, ConnectionEntry>();
   private readonly devices = new Map<string, DeviceEntry>();
@@ -174,6 +164,33 @@ export class SessionRegistry {
     if (!entry) return;
     this.connections.delete(conn);
     this.detach(entry);
+  }
+
+  /**
+   * Un appareil jumelé vient d'être RÉVOQUÉ : il ne reviendra pas, pas de
+   * grâce. Ses lectures s'arrêtent tout de suite — l'arrêt part tant que son
+   * jeton vaut encore, la position est gardée —, puis sa connexion Jellyfin
+   * se ferme.
+   */
+  async end(jellyfinDeviceId: string): Promise<void> {
+    for (const device of [...this.devices.values()]) {
+      if (device.auth.identity?.deviceId !== jellyfinDeviceId) continue;
+      this.devices.delete(device.key);
+      const reporters: PlaybackReporter[] = [];
+      for (const entry of device.connections) {
+        if (entry.reporter) reporters.push(entry.reporter);
+        entry.reporter = null;
+        entry.device = null;
+      }
+      for (const orphan of device.orphans) {
+        clearTimeout(orphan.timer);
+        reporters.push(orphan.reporter);
+      }
+      device.connections.clear();
+      device.orphans.clear();
+      await Promise.all(reporters.map((r) => r.stop().catch(() => false)));
+      device.link.close();
+    }
   }
 
   /** Ce que voit le tableau de bord : une ligne par connexion rattachée. */
@@ -276,18 +293,4 @@ export class SessionRegistry {
     const playing = all.filter((e) => e.reporter?.isActive());
     return playing.length > 0 ? playing : all;
   }
-}
-
-/** `GeneralCommand` de Jellyfin → message du canal. */
-export function generalMessage(name: string, args: Record<string, string>): SessionServerMessage {
-  if (name === "DisplayMessage") {
-    const timeout = Number(args.TimeoutMs);
-    return {
-      type: "session:message",
-      header: (args.Header ?? "").slice(0, 200),
-      text: (args.Text ?? "").slice(0, 2_000),
-      ...(Number.isFinite(timeout) && timeout > 0 ? { timeoutMs: Math.min(timeout, 600_000) } : {}),
-    };
-  }
-  return { type: "session:general", name, arguments: args };
 }

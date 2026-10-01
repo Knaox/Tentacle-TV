@@ -1,8 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getPrisma } from "../../services/db";
-import { requireAuth, requireAdmin } from "../../middleware/auth";
+import { getTokenFromRequest, requireAuth, requireAdmin } from "../../middleware/auth";
 import type { JellyfinUser } from "../../middleware/auth";
-import { revokeDeviceByTokenHash } from "../../services/wsManager";
+import { hashToken, verifyDeviceToken } from "../../services/jwt";
+import { revokePairedDevice } from "../../services/deviceRevocation";
 
 /** Ce que la liste des appareils montre d'un jumelage — jamais un jeton. */
 function toView(d: {
@@ -23,9 +24,27 @@ function toView(d: {
   };
 }
 
-/** Les appareils jumelés : ceux du compte, et tous pour l'admin. Extrait de
- *  `pair.ts`. */
+/** Les appareils jumelés : ceux du compte, et tous pour l'admin ; et le
+ *  déjumelage, toujours par la révocation commune (`deviceRevocation.ts`). */
 export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
+  // ── POST /self/revoke — La TV se déjumelle elle-même ──
+  // Authentifiée par le jeton à révoquer : seul celui qui le détient peut le
+  // faire oublier. Idempotente : la TV la renvoie jusqu'à confirmation (après
+  // un plantage, un serveur coupé), et un jumelage déjà supprimé répond comme
+  // un jumelage supprimé à l'instant. Un jeton illisible n'ouvre rien : 401.
+  app.post(
+    "/self/revoke",
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const token = getTokenFromRequest(request);
+      if (!token || !(await verifyDeviceToken(token))) {
+        return reply.status(401).send({ message: "Jeton d'appareil invalide" });
+      }
+      await revokePairedDevice({ tokenHash: hashToken(token) }, "self");
+      return { revoked: true };
+    },
+  );
+
   // ── GET /my-devices — List current user's paired devices (auth required) ──
   app.get(
     "/my-devices",
@@ -54,10 +73,8 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(404).send({ message: "Appareil introuvable" });
       }
 
-      await prisma.pairedDevice.delete({ where: { id } });
-      // Déconfigure immédiatement l'appareil s'il a une socket ouverte
-      // (sinon la révocation n'est détectée que passivement, au prochain 401).
-      revokeDeviceByTokenHash(device.tokenHash);
+      // Refusé partout, TV prévenue en direct, session et jeton Jellyfin fermés.
+      await revokePairedDevice({ id }, "user");
       return { success: true };
     },
   );
@@ -73,12 +90,9 @@ export const pairedDevicesRoutes: FastifyPluginAsync = async (app) => {
   // ── DELETE /devices/:id — Revoke a paired device (admin only) ──
   app.delete("/devices/:id", { preHandler: [requireAdmin] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const prisma = getPrisma();
-    const device = await prisma.pairedDevice.findUnique({ where: { id } });
-    if (!device) return reply.status(404).send({ message: "Appareil introuvable" });
-    await prisma.pairedDevice.delete({ where: { id } });
-    // Déconfiguration immédiate de la TV/appareil révoqué par l'admin.
-    revokeDeviceByTokenHash(device.tokenHash);
+    if (!(await revokePairedDevice({ id }, "admin"))) {
+      return reply.status(404).send({ message: "Appareil introuvable" });
+    }
     return { success: true };
   });
 };

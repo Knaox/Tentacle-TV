@@ -3,7 +3,8 @@ import { z } from "zod";
 import { getJellyfinUrl } from "../services/configStore";
 import { getPrisma, hasPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
-import { verifyImpersonationToken } from "../services/jwt";
+import { hashToken, verifyDeviceToken, verifyImpersonationToken } from "../services/jwt";
+import { revokePairedDevice } from "../services/deviceRevocation";
 import { buildAuthHeader, deviceIdForOpaque } from "../services/jellyfinIdentity";
 import { authPasswordRoutes } from "./authPassword";
 import { authAccountRoutes } from "./authAccount";
@@ -132,12 +133,19 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const token = authHeader?.slice(7)
       || (request as any).cookies?.tentacle_token;
 
+    // Un appareil jumelé qui se déconnecte se déjumelle : sa sortie vaut
+    // révocation, comme `POST /api/pair/self/revoke`.
+    if (token && (await verifyDeviceToken(token))) {
+      await revokePairedDevice({ tokenHash: hashToken(token) }, "self");
+      return { success: true };
+    }
+
     if (jellyfinUrl && token) {
-      // Un appairage TV copie le token Jellyfin du navigateur confirmateur dans
-      // paired_devices.jellyfinAccessToken (routes/pair.ts) : révoquer ce token
-      // côté Jellyfin tuait le direct streaming et le playstate de TOUTES les TVs
-      // qui en dépendent. Si au moins un appareil jumelé s'en sert encore, on se
-      // contente d'effacer le cookie — la session Jellyfin survit pour les TVs.
+      // Un jumelage d'AVANT gardait une copie du token Jellyfin du navigateur
+      // confirmateur dans paired_devices.jellyfinAccessToken — retirée au
+      // premier contact de la TV, qui reçoit alors son propre jeton. Tant
+      // qu'une copie reste en base, la révoquer côté Jellyfin couperait cette
+      // TV : on se contente d'effacer le cookie, la session Jellyfin survit.
       // Erreur DB → même prudence : le pire ici est une session Jellyfin qui
       // survit, pas des téléviseurs morts.
       let sharedBy = 1;

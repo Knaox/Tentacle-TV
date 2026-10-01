@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { requireAuth } from "../middleware/auth";
+import { revokePairedDevices } from "../services/deviceRevocation";
 import { clearSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
@@ -118,12 +119,14 @@ export const authAccountRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(500).send({ message: msg });
     }
 
-    // 2. Clean up Tentacle DB data
+    // 2. Clean up Tentacle DB data — ses TV d'abord, par la révocation commune :
+    // prévenues en direct, refusées partout, leurs sessions fermées.
     const prisma = getPrisma();
     try {
+      const devices = await prisma.pairedDevice.findMany({ where: { jellyfinUserId: user.userId }, select: { id: true } });
+      await revokePairedDevices(devices, "account");
       await prisma.$transaction([
         prisma.libraryPreference.deleteMany({ where: { jellyfinUserId: user.userId } }),
-        prisma.pairedDevice.deleteMany({ where: { jellyfinUserId: user.userId } }),
         prisma.notification.deleteMany({ where: { jellyfinUserId: user.userId } }),
         prisma.inviteUsage.deleteMany({ where: { jellyfinUserId: user.userId } }),
       ]);
