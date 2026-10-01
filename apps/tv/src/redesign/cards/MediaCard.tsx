@@ -11,6 +11,7 @@ import { CardFocusFooter } from "./CardFocusFooter";
 import { CardFrame } from "./CardFrame";
 import { CardShell } from "./CardShell";
 import { CardMarkerLayer } from "./CardMarkerLayer";
+import { cardLogoBottom } from "./cardMarkerGeometry";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused } from "./useCardFocused";
 
@@ -69,12 +70,13 @@ function Caption({ focused, shift, children }: { focused: boolean; shift: number
   return <Animated.View style={[styles.caption, follow]}>{children}</Animated.View>;
 }
 
-/** Le logo d'une vignette, sur son dégradé. */
-function LogoLayer({ uri, width, height }: { uri: string; width: number; height: number }) {
+/** Le logo d'une vignette, sur son dégradé — au-dessus de la note quand elle
+ *  en a une (`cardLogoBottom`) : rien ne le recouvre. */
+function LogoLayer({ uri, width, height, bottom }: { uri: string; width: number; height: number; bottom: number }) {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <SoftGradient width={width} height={height} colors={[scrim(0), scrim(0.55)]} locations={[0.35, 1]} />
-      <Image source={{ uri }} style={styles.logo} resizeMode="contain" fadeDuration={0} />
+      <Image source={{ uri }} style={[styles.logo, { bottom }]} resizeMode="contain" fadeDuration={0} />
     </View>
   );
 }
@@ -116,7 +118,9 @@ export const MediaCard = memo(function MediaCard({
               <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
             </View>
           )}
-          {landscape && card.logoUri ? <LogoLayer uri={card.logoUri} width={width} height={height} /> : null}
+          {landscape && card.logoUri ? (
+            <LogoLayer uri={card.logoUri} width={width} height={height} bottom={cardLogoBottom(card.markers, card.progress)} />
+          ) : null}
           {card.badge ? <CardBadge label={card.badge} /> : null}
           <CardMarkerLayer markers={card.markers} progress={card.progress} compact={!landscape} />
         </CardFrame>
@@ -140,7 +144,7 @@ export const MediaCard = memo(function MediaCard({
 const styles = StyleSheet.create({
   missing: { flex: 1, padding: 22, justifyContent: "flex-end", backgroundColor: colors.surface3 },
   missingTitle: { ...fonts.bold, fontSize: 26, lineHeight: 30, color: colors.textSecondary },
-  logo: { position: "absolute", left: 22, right: 90, bottom: 22, height: 64 },
+  logo: { position: "absolute", left: 22, right: 90, height: 64 },
   caption: { marginTop: 14, gap: 2 },
   title: { ...fonts.semibold, fontSize: 24, color: colors.textSecondary },
   titleFocused: { color: colors.text },

@@ -4,6 +4,7 @@ import Svg, { Path } from "react-native-svg";
 import { STAR_PATH, STAR_VIEWBOX, formatCommunityRating, formatUserScore, type CardMarkers } from "@tentacle-tv/shared";
 import { BrandGradient } from "../brand/BrandGradient";
 import { colors, fonts, scrim } from "../theme/tokens";
+import { RATING_PILL, showsRating } from "./cardMarkerGeometry";
 import { ToggleGlyph } from "./ToggleGlyph";
 
 /**
@@ -35,7 +36,7 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
   hideRating?: boolean;
 }) {
   const glyph = compact ? 18 : 22;
-  const showRating = !hideRating && (markers.communityRating !== null || markers.userScore !== null);
+  const showRating = showsRating(markers, hideRating);
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {markers.statuses.length > 0 ? (
@@ -80,15 +81,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    height: 40,
+    height: RATING_PILL.height,
     paddingHorizontal: 12,
     borderRadius: 20,
     backgroundColor: scrim(0.72),
   },
-  pillCompact: { height: 34, paddingHorizontal: 10, borderRadius: 17, gap: 6 },
+  pillCompact: { height: RATING_PILL.heightCompact, paddingHorizontal: 10, borderRadius: 17, gap: 6 },
   statuses: { top: 12, right: 12 },
-  rating: { left: 12, bottom: 12 },
-  ratingAboveBar: { bottom: 20 },
+  rating: { left: 12, bottom: RATING_PILL.bottom },
+  ratingAboveBar: { bottom: RATING_PILL.bottomAboveBar },
   value: { ...fonts.bold, fontSize: 22, color: colors.onMedia },
   valueCompact: { fontSize: 22 },
   userScore: {

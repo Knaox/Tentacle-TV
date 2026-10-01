@@ -10,6 +10,7 @@ import { colors, fonts } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
 import { CardFrame } from "./CardFrame";
 import { CardMarkerLayer } from "./CardMarkerLayer";
+import { cardLogoBottom } from "./cardMarkerGeometry";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused } from "./useCardFocused";
 
@@ -98,7 +99,15 @@ function Body({ card, place, focused, press }: { card: CardModel; place?: RowPla
       <Animated.View style={landscapeFade}>
         <CardFrame width={L.width} height={L.height} radius={L.radius} focused={false} place={place}>
           {landscapeUri ? <Image source={{ uri: landscapeUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
-          {card.logoUri ? <Image source={{ uri: card.logoUri }} style={styles.logo} resizeMode="contain" fadeDuration={0} /> : null}
+          {/* Au-dessus de la note, comme sur la vignette 16:9 : rien ne recouvre le logo. */}
+          {card.logoUri ? (
+            <Image
+              source={{ uri: card.logoUri }}
+              style={[styles.logo, { bottom: cardLogoBottom(card.markers, card.progress) }]}
+              resizeMode="contain"
+              fadeDuration={0}
+            />
+          ) : null}
           {card.badge ? <CardBadge label={card.badge} /> : null}
           <CardMarkerLayer markers={card.markers} progress={card.progress} />
         </CardFrame>
@@ -142,7 +151,7 @@ const styles = StyleSheet.create({
     width: POSTER_W,
     height: POSTER_H,
   },
-  logo: { position: "absolute", left: 22, right: 90, bottom: 22, height: 64 },
+  logo: { position: "absolute", left: 22, right: 90, height: 64 },
   caption: { marginTop: 14, gap: 2 },
   title: { ...fonts.semibold, fontSize: 24, color: colors.textSecondary },
   subtitle: { ...fonts.medium, fontSize: 22, color: colors.textTertiary },
