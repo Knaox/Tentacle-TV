@@ -69,14 +69,13 @@ export function useBackFocus(focus: FocusStore, { backKey, barKey, entryKey, arr
   // L'ARRIVÉE, posée pendant le rendu — avant celui de la croix, qui lit sa
   // liaison en se rendant. La bande se lie au tout premier (le port veut un
   // conteneur stable, lié avant que le groupe ne paraisse). Le guide de la
-  // bande est prévenu après le rendu, jamais pendant.
+  // bande est prévenu après le rendu, jamais pendant. Une nouvelle étape
+  // démonte ce qui avait le focus : le focus qui suivra lèvera le verrou.
   const arrived = useRef<{ value: unknown } | null>(null);
   if (arrived.current === null || arrived.current.value !== arrival) {
     if (arrived.current === null && barKey) focus.bind(barKey, { container: createBackGuide(focus, backKey, lock) });
     arrived.current = { value: arrival };
-    const focused = focus.focusedKey();
-    const settled = focused !== null && focused !== backKey;
-    if (entryKey !== backKey && !settled) setLocked(true, false);
+    if (entryKey !== backKey) setLocked(true, false);
   }
   useEffect(() => {
     for (const listener of [...lock.listeners]) listener();
