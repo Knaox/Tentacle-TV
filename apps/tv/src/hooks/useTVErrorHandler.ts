@@ -1,4 +1,7 @@
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { isAudioTransientError } from "@tentacle-tv/tv-core";
+import { useAudioErrorRetry } from "./useAudioErrorRetry";
 import { useTVDirectStreamRecovery } from "./useTVDirectStreamRecovery";
 import { isFormatError, usePlaybackRecovery, type RecoverySources } from "./usePlaybackRecovery";
 import { plog } from "../utils/playerDiag";
@@ -15,6 +18,10 @@ import { plog } from "../utils/playerDiag";
  * reprise (`usePlaybackRecovery`, montée ici) : un serveur coupé n'est pas un
  * refus de format — elle attend son retour et relance le flux sous la même
  * forme, au lieu de la forme muxée puis du transcodage forcé.
+ *
+ * Et avant encore, à l'ouverture comme en lecture, une sortie AUDIO
+ * passagèrement indisponible (`useAudioErrorRetry`) : rejouée à la même forme
+ * après un délai, jamais descendue ; dite si elle ne revient pas.
  */
 export function useTVErrorHandler(args: {
   forceTranscode: boolean;
@@ -31,12 +38,22 @@ export function useTVErrorHandler(args: {
   recovery?: RecoverySources;
 }) {
   const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, bumpReloadNonce, setIsLoading, onMasterRejected } = args;
+  const { t } = useTranslation("player");
   const { onSourceLost } = usePlaybackRecovery(args.recovery);
+  const onAudioError = useAudioErrorRetry(args.recovery);
   const { tryDirectAuthRecovery } = useTVDirectStreamRecovery({
     captureReloadTicks, bumpReloadNonce, setVideoError, setIsLoading,
   });
 
   const handleError = useCallback((error: string) => {
+    if (isAudioTransientError(error)) {
+      if (onAudioError(error)) return;
+      // La sortie ne revient pas : le dire — une autre forme ne la rendrait pas.
+      plog("err", `sortie audio toujours indisponible → erreur dite (${error.slice(0, 60)})`);
+      setIsLoading?.(false);
+      setVideoError(t("audioOutputLost"));
+      return;
+    }
     if (onSourceLost(error)) return;
     if (error === "PRISM_MASTER_REJECTED") {
       plog("err", "master PrismCore refusé par AVPlayer → forme muxée");
@@ -60,7 +77,7 @@ export function useTVErrorHandler(args: {
     }
     plog("err", `erreur SURFACÉE à l'écran : ${error}`);
     setVideoError(error);
-  }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery, onMasterRejected, onSourceLost]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery, onMasterRejected, onSourceLost, onAudioError, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleError };
 }

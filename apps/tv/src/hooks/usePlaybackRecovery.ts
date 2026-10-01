@@ -18,6 +18,8 @@ export interface RecoverySources {
     isLoading: boolean;
     /** Rechargement VOULU en cours (piste, qualité, relance) : pas un arrêt. */
     reloadHold: boolean;
+    /** Tient le lecteur en rechargement (indicateur, aucun son de la session sortante). */
+    holdForReload: () => void;
     positionRef: React.MutableRefObject<number>;
     bufferedTimeRef: React.MutableRefObject<number>;
     endedRef: React.MutableRefObject<boolean>;
@@ -28,6 +30,8 @@ export interface RecoverySources {
     failed: boolean;
     /** Relance l'ouverture — le « Réessayer » de l'écran d'échec. */
     setReloadNonce: (next: (n: number) => number) => void;
+    /** Où la lecture démarre (reprise ou position posée), timeline absolue. */
+    startSeconds: number;
   };
 }
 

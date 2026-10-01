@@ -8,6 +8,7 @@ import Video, {
   TextTrackType,
 } from "react-native-video";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { AUDIO_TRANSIENT_ERROR, classifyAvPlayerError } from "@tentacle-tv/tv-core";
 import { parseStart } from "../../utils/playerHelpers";
 import { nativePlayerHeaders } from "../../utils/nativePlayerHeaders";
 import { plog } from "../../utils/playerDiag";
@@ -211,40 +212,22 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
       [onProgress],
     );
 
-    // Traduit l'erreur AVPlayer en un marqueur reconnu par
-    // `PlayerScreen.handleError` ("codec"/"Could not open") → bascule transcode.
-    // -11828 = format/conteneur non lisible, -11800 = opération échouée.
-    // Sur le flux LOCAL de PrismCore, voir la règle ci-dessous : tout est
-    // récupérable, et on ne surface rien sans avoir essayé les replis.
+    // Traduit l'erreur AVPlayer en un marqueur que reconnaît le gestionnaire
+    // d'erreurs (`useTVErrorHandler`). La règle est pure, avec l'histoire de
+    // chaque cas (`classifyAvPlayerError`, tv-core) : sortie audio passagère →
+    // la même forme ; flux LOCAL de PrismCore → forme muxée puis transcodage,
+    // rien n'est surfacé sans les replis ; format illisible → transcodage.
     const handleError = useCallback(
       (e: { error?: { code?: number; localizedDescription?: string; localizedFailureReason?: string } }) => {
         const err = e?.error;
         const detail = err?.localizedDescription || err?.localizedFailureReason || JSON.stringify(err ?? e);
         plog("averr", `AVPlayer BRUT code=${err?.code ?? "?"} local=${isLoopback ? 1 : 0} : ${detail}`);
-        // Le flux vient de NOTRE serveur local (PrismCore) : quelle que soit
-        // l'erreur, il reste deux issues — la forme muxée, puis le transcode
-        // serveur — et surfacer un code brut est le plus mauvais résultat
-        // possible.
-        //
-        // La règle tenait une LISTE de trois codes (-11868 / -11848 / -1002,
-        // typiquement « Adapter la plage dynamique » coupé sur un panneau HDR).
-        // Un 4K Dolby Vision dont les deux pistes audio passent par le pont
-        // EAC3 échoue en -16170, qui n'y figurait pas : la lecture s'arrêtait
-        // sur un message que rien ne rattrapait, alors que le repli était juste
-        // là. Une liste ne pouvait pas suivre — on ne sait pas d'avance ce
-        // qu'AVPlayer reproche à un flux qu'on fabrique soi-même.
-        //
-        // La boucle est bornée en aval : `onMasterRejected` n'essaie la forme
-        // muxée qu'UNE fois par lecture, puis force le transcode ; une erreur
-        // en transcode est surfacée comme avant.
-        if (isLoopback) {
-          onError?.("PRISM_MASTER_REJECTED");
-          return;
-        }
-        const codecLike =
-          err?.code === -11828 || err?.code === -11800
-          || /format|codec|cannot open|decode/i.test(detail);
-        onError?.(codecLike ? `Could not open: ${detail}` : detail);
+        // AVFoundation enrobe parfois l'OSStatus d'origine dans un -11800 : la raison est lue aussi.
+        const text = [detail, err?.localizedFailureReason].filter(Boolean).join(" — ");
+        const kind = classifyAvPlayerError({ code: err?.code, text, loopback: isLoopback });
+        if (kind === "audioTransient") onError?.(`${AUDIO_TRANSIENT_ERROR} code=${err?.code ?? "?"} : ${detail}`);
+        else if (kind === "masterRejected") onError?.("PRISM_MASTER_REJECTED");
+        else onError?.(kind === "format" ? `Could not open: ${detail}` : detail);
       },
       [onError, isLoopback],
     );
