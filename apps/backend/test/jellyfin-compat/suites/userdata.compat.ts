@@ -67,7 +67,7 @@ feature("userdata.resume", () => {
   check("« vu » retiré quand la reprise l'emporte (clearPlayedWhenResumable)", async () => {
     const client = tentacleClient(ctx().user.token);
     await client.fetch(`/UserItems/${bbS01E03}/UserData`, { method: "POST", body: JSON.stringify({ Played: true, PlaybackPositionTicks: 100_000_000 }) });
-    await clearPlayedWhenResumable(client, bbS01E03);
+    await clearPlayedWhenResumable(client, bbS01E03, ctx().user.id);
     const after = await userData(bbS01E03);
     expect(after.Played).toBe(false);
     expect(after.PlaybackPositionTicks).toBe(100_000_000);
