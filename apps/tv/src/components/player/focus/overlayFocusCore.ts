@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Component } from "react";
 import { findNodeHandle } from "react-native";
-import { osdPlayPauseNodeRef, setOsdFocusReturn, skipClaimedSince, useSkipNode } from "./osdFocusBus";
+import { osdPlayPauseNodeRef, setOsdFocusReturn, skipClaimedSince, skipHoldsFocus, useSkipNode } from "./osdFocusBus";
 
 /** Avance tolérée d'une réclamation du bouton de saut sur le signal de
  *  l'habillage : à la sortie d'une avance rapide, les deux partent du même
@@ -143,8 +143,10 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTarg
   // c'est-à-dire « quitter la vidéo ».
   //
   // Une restauration IMPLICITE cède au bouton de saut qui vient de réclamer le
-  // focus (cf. `noteSkipFocusClaim`) : il apparaît, il le prend. Celle qui
-  // SUIT son départ ne cède jamais — il n'y a plus personne à qui céder.
+  // focus (cf. `noteSkipFocusClaim`) : il apparaît, il le prend — et à celui
+  // qui le TIENT (`skipHoldsFocus`) : l'habillage qui paraît autour de lui ne
+  // le lui reprend pas. Celle qui SUIT son départ ne cède jamais — il n'y a
+  // plus personne à qui céder.
   const restoreTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const scheduleRestore = useCallback((wanted: TransportKey | undefined, yieldToSkip: boolean) => {
     restoreTimers.current.forEach(clearTimeout);
@@ -152,7 +154,7 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTarg
     const askedAt = Date.now();
     restoreTimers.current = [
       setTimeout(() => {
-        if (yieldToSkip && skipClaimedSince(askedAt - SKIP_CLAIM_LEAD_MS)) return;
+        if (yieldToSkip && (skipClaimedSince(askedAt - SKIP_CLAIM_LEAD_MS) || skipHoldsFocus())) return;
         const target = (wanted ? btnRefs.current[wanted] : undefined)
           ?? btnRefs.current[lastFocusedRef.current]
           ?? btnRefs.current.playpause

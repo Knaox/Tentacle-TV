@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { claimTvFocus, useTvFocusClaim } from "../../../hooks/useTvFocusClaim";
-import { noteSkipFocusClaim, returnFocusToOsd } from "./osdFocusBus";
+import { noteSkipFocusClaim, noteSkipHolding, returnFocusToOsd } from "./osdFocusBus";
 
 type PillButton = "skip" | "dismiss";
 type FocusHandlers = { onFocus: () => void; onBlur: () => void };
@@ -77,6 +77,7 @@ export function useSkipPillFocus({
     const holder = holderRef.current;
     if (!(holder && !shown) && !(holder === "dismiss" && !refusable)) return;
     holderRef.current = null;
+    noteSkipHolding(false);
     setSkipFocused(false);
     setDismissFocused(false);
     if (focusOwnedElsewhere) return;
@@ -84,17 +85,20 @@ export function useSkipPillFocus({
     else if (shown) return claimTvFocus(skipRef.current);
   }, [shown, refusable, overlayVisible, focusOwnedElsewhere, skipRef]);
 
-  // Stables : `Focusable` est mémoïsé.
+  // Stables : `Focusable` est mémoïsé. Le bus sait qui tient le focus :
+  // l'habillage qui réapparaît le laisse à la pilule (`skipHoldsFocus`).
   const handlers = useMemo(() => {
     const bind = (key: PillButton, set: (v: boolean) => void): FocusHandlers => ({
-      onFocus: () => { holderRef.current = key; set(true); },
+      onFocus: () => { holderRef.current = key; noteSkipHolding(true); set(true); },
       onBlur: () => {
         if (holderRef.current === key) holderRef.current = null;
+        noteSkipHolding(holderRef.current !== null);
         set(false);
       },
     });
     return { skip: bind("skip", setSkipFocused), dismiss: bind("dismiss", setDismissFocused) };
   }, []);
+  useEffect(() => () => noteSkipHolding(false), []);
 
   return { islandFocused: skipFocused || dismissFocused, handlers };
 }

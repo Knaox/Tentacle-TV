@@ -74,6 +74,25 @@ export function skipClaimedSince(since: number): boolean {
 }
 
 /**
+ * Le bouton de saut TIENT-il le focus ? — publié par `useSkipPillFocus`.
+ *
+ * L'habillage qui réapparaît autour de lui ne le lui reprend pas : une
+ * restauration IMPLICITE lui cède, comme à son apparition. Elle posait le
+ * focus sur le dernier bouton de transport — HAUT depuis la pilule, habillage
+ * caché, faisait DESCENDRE le focus sur lecture/pause, et la pilule
+ * n'atteignait jamais Retour d'un seul geste.
+ */
+let skipHolding = false;
+
+export function noteSkipHolding(holding: boolean): void {
+  skipHolding = holding;
+}
+
+export function skipHoldsFocus(): boolean {
+  return skipHolding;
+}
+
+/**
  * Rendre le focus à l'habillage quand le bouton de saut qui le tenait s'en va
  * (passage fini, sauté, refusé). Un bouton démonté ne rend son focus à
  * personne : sur Android, plus rien n'était focalisé, les touches n'arrivaient
