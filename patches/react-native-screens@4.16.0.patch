@@ -1,8 +1,8 @@
 diff --git a/ios/RNSScreen.mm b/ios/RNSScreen.mm
-index b62a2e2..d783c6f 100644
+index b62a2e2..aa8b417 100644
 --- a/ios/RNSScreen.mm
 +++ b/ios/RNSScreen.mm
-@@ -1451,6 +1451,56 @@ Class<RCTComponentViewProtocol> RNSScreenCls(void)
+@@ -1451,6 +1451,60 @@ Class<RCTComponentViewProtocol> RNSScreenCls(void)
    return self;
  }
  
@@ -25,6 +25,10 @@ index b62a2e2..d783c6f 100644
 +//
 +// Seulement si aucune modale n'est présentée par-dessus : c'est alors à elle
 +// de traiter le Menu (sa propre fermeture).
++//
++// Depuis tvOS 26, l'appui n'arrivait plus jusqu'ici : le GESTE Retour du
++// contrôleur de navigation dépilait d'abord. `RNSNavigationController`
++// (RNSScreenStack.mm) le refuse désormais tant que l'écran le retient.
 +- (BOOL)rnscreens_isPreventedMenuPress:(NSSet<UIPress *> *)presses
 +{
 +  if (!self.screenView.preventNativeDismiss || self.presentedViewController != nil) {
@@ -58,4 +62,58 @@ index b62a2e2..d783c6f 100644
 +
  // TODO: Find out why this is executed when screen is going out
  - (void)viewWillAppear:(BOOL)animated
+ {
+diff --git a/ios/RNSScreenStack.mm b/ios/RNSScreenStack.mm
+index 229dc58..9ecb55c 100644
+--- a/ios/RNSScreenStack.mm
++++ b/ios/RNSScreenStack.mm
+@@ -60,8 +60,49 @@ namespace react = facebook::react;
+ 
+ @end
+ 
++#if TARGET_OS_TV
++// Tentacle patch : de quoi rappeler la décision d'UIKit sur son propre geste
++// (le contrôleur de navigation est le délégué de son geste Retour).
++@interface UINavigationController (RNSTVMenuBackGesture) <UIGestureRecognizerDelegate>
++@end
++#endif // TARGET_OS_TV
++
+ @implementation RNSNavigationController
+ 
++#if TARGET_OS_TV
++#pragma mark - tvOS Menu button (Tentacle patch)
++
++// Tentacle patch : depuis tvOS 26, UIKit dépile par un GESTE — un
++// `UITapGestureRecognizer` Menu posé sur la vue du contrôleur de navigation,
++// dont celui-ci est le délégué (`_backGestureRecognizer`). Un geste voit
++// l'appui AVANT la chaîne de répondeurs : l'écran était dépilé avant que le
++// patch de `RNSScreen` (`pressesEnded`) ou une vue de l'application ne puisse
++// le retenir, puis réempilé par `viewDidDisappear` — et l'écran du dessous
++// restait visible quelques images (mesuré au simulateur tvOS 26.2 : 40 à
++// 70 ms, à chaque Retour qui ne devait fermer qu'un panneau).
++//
++// Le geste ne commence donc plus quand l'écran du dessus le refuse :
++// - `preventNativeDismiss` (`usePreventRemove`) : l'appui suit la chaîne de
++//   répondeurs jusqu'au patch de `RNSScreen`, qui le rend au JS ;
++// - `gestureEnabled: false` : Menu ne dépile jamais cet écran — l'appui va à
++//   l'application, et sinon à UIKit, qui QUITTE l'application (la règle
++//   d'Apple), même avec des écrans empilés dessous.
++- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
++{
++  if ([gestureRecognizer.allowedPressTypes containsObject:@(UIPressTypeMenu)] &&
++      [self.topViewController isKindOfClass:[RNSScreen class]]) {
++    RNSScreenView *screenView = ((RNSScreen *)self.topViewController).screenView;
++    if (!screenView.gestureEnabled || screenView.preventNativeDismiss) {
++      return NO;
++    }
++  }
++  if ([UINavigationController instancesRespondToSelector:@selector(gestureRecognizerShouldBegin:)]) {
++    return [super gestureRecognizerShouldBegin:gestureRecognizer];
++  }
++  return YES;
++}
++#endif // TARGET_OS_TV
++
+ #if RNS_IPHONE_OS_VERSION_AVAILABLE(26_0)
+ - (void)viewDidLoad
  {
