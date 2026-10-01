@@ -921,6 +921,20 @@ streaming direct actif (vidéo et rapports vont droit à Jellyfin) sauf mention.
   lecteur) : relance PrismCore à la même position en 1,5 s ; budget épuisé,
   lecteur figé → le message ; Lecture → relance à la position, bandeau
   effacé, la lecture repart.
+- **Le producteur de PrismCore mort** : AVPlayer ne le dit jamais (il
+  relance ses segments sans fin — mesuré par « calage »). Sur un arrêt du
+  flux local, passé la grâce de 4 s, la reprise lit son état
+  (`prismStatus(gen)`, `PrismBridge.status`) : mort (`failed`) → une relance
+  NEUVE (`restartStream`, raison `remux`) ; remort au même endroit (moins de
+  30 s de la mort précédente) → le chemin serveur à la position
+  (transcodage forcé) et un bandeau honnête (« La lecture passe par le
+  serveur — la lecture directe calait à ce passage »,
+  `player:troubleServerTakesOver*`, hors de l'état de la reprise que
+  l'ouverture du flux serveur remet à zéro). Vivant (source coupée, il
+  réessaie) ou inconnu (session stoppée) : rien, c'est l'affaire de la
+  sonde. Règle pure : `producerDeath` (tv-core, 7 tests). Éprouvé par une
+  mort INJECTÉE (aucun titre connu ne la provoque) : relance neuve à
+  207 s, la lecture reprend ; remort à 195 s → transcodage à 193 s, bandeau.
 - **Le voile hors ligne** ne se pose plus sur `Player`, `PlayerSettings`,
   `Trailer` (App.tsx) ; la joignabilité confirmée se lit partout
   (`hooks/serverReachability`).
