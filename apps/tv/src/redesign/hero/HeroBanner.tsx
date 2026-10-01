@@ -1,9 +1,9 @@
 import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../background/ArtworkHalo";
+import { SoftGradient } from "../background/SoftGradient";
 import type { ArtworkPalette } from "../color/artworkPalette";
 import { PillButton } from "../controls/PillButton";
 import { RoundButton } from "../controls/RoundButton";
@@ -112,14 +112,15 @@ export const HeroBanner = memo(function HeroBanner({
             </Animated.View>
           ) : null,
         )}
-        <LinearGradient
+        <SoftGradient
+          width={width}
+          height={height}
           colors={[scrim(0.9), scrim(0.62), scrim(0.05), scrim(0)]}
           locations={[0, 0.34, 0.64, 1]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
         />
-        <LinearGradient colors={[scrim(0), scrim(0.7)]} locations={[0.6, 1]} style={StyleSheet.absoluteFill} />
+        <SoftGradient width={width} height={height} colors={[scrim(0), scrim(0.7)]} locations={[0.6, 1]} />
         <View style={[StyleSheet.absoluteFill, styles.ring, { borderRadius: H.radius }]} pointerEvents="none" />
         <Animated.View style={[styles.content, arrive]}>
           {shown.kicker && shown.reason ? (

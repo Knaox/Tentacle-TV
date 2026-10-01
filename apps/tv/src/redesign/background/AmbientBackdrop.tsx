@@ -1,10 +1,10 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import type { ArtworkPalette } from "../color/artworkPalette";
 import { PoolLayerView, useLayerPool } from "../motion/LayerStack";
 import { colors } from "../theme/tokens";
+import { SoftGradient, STAGE_SIZE } from "./SoftGradient";
 
 /**
  * Le fond vivant : le noir cinéma du bureau (#000 → #070710), et trois
@@ -79,7 +79,7 @@ export const AmbientBackdrop = memo(function AmbientBackdrop({ palette, intensit
   const layers = useLayerPool(palette.glows.join("-"), palette);
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <LinearGradient colors={[colors.bgTop, colors.bgBottom]} style={StyleSheet.absoluteFill} />
+      <SoftGradient colors={[colors.bgTop, colors.bgBottom]} {...STAGE_SIZE} />
       {layers.map((layer) => (
         <PoolLayerView key={layer.slot} present={layer.present} motion="ambient">
           <Lights palette={layer.item} intensity={intensity} />

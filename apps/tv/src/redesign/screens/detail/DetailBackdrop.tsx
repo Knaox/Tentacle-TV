@@ -1,8 +1,8 @@
 import { memo, useCallback, useState } from "react";
 import { StyleSheet } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_MOTION } from "@tentacle-tv/theme";
+import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { useMotion } from "../../motion/useMotion";
 import { scrim } from "../../theme/tokens";
 
@@ -50,19 +50,15 @@ export const DetailBackdrop = memo(function DetailBackdrop({
   return (
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, fade]}>
       {uri ? <ArrivingImage key={uri} uri={uri} /> : null}
-      <LinearGradient
+      <SoftGradient
+        {...STAGE_SIZE}
         colors={[scrim(0.94), scrim(0.8), scrim(0.42), scrim(0.08), scrim(0)]}
         locations={[0, 0.28, 0.52, 0.72, 0.86]}
         start={{ x: 0, y: 0.35 }}
         end={{ x: 1, y: 0.62 }}
-        style={StyleSheet.absoluteFill}
       />
-      <LinearGradient
-        colors={[scrim(0), scrim(0.5), scrim(0.92)]}
-        locations={[0.5, 0.76, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      <LinearGradient colors={[scrim(0.45), scrim(0)]} locations={[0, 0.22]} style={StyleSheet.absoluteFill} />
+      <SoftGradient {...STAGE_SIZE} colors={[scrim(0), scrim(0.5), scrim(0.92)]} locations={[0.5, 0.76, 1]} />
+      <SoftGradient {...STAGE_SIZE} colors={[scrim(0.45), scrim(0)]} locations={[0, 0.22]} />
     </Animated.View>
   );
 });
@@ -78,12 +74,14 @@ export const DetailTopFade = memo(function DetailTopFade({ scrollY }: { scrollY:
   }));
   return (
     <Animated.View pointerEvents="none" style={[styles.topFade, shown]}>
-      <LinearGradient colors={[scrim(1), scrim(0.9), scrim(0)]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
+      <SoftGradient width={STAGE_SIZE.width} height={TOP_FADE} colors={[scrim(1), scrim(0.9), scrim(0)]} locations={[0, 0.45, 1]} />
     </Animated.View>
   );
 });
 
+/** Plus court que l'ancrage (72) : le titre de la section ancrée reste entier. */
+const TOP_FADE = 68;
+
 const styles = StyleSheet.create({
-  // Plus court que l'ancrage (72) : le titre de la section ancrée reste entier.
-  topFade: { position: "absolute", top: 0, left: 0, right: 0, height: 68 },
+  topFade: { position: "absolute", top: 0, left: 0, right: 0, height: TOP_FADE },
 });
