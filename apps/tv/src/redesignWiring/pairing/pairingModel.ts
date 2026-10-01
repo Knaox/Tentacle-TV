@@ -34,6 +34,15 @@ export function toPairingStep(
       return { kind: "relayCode", code: toCodeState(relay) };
     case "manualServer":
       return { kind: "manualServer", url: flow.serverUrl, checking: flow.testing, error: flow.serverError };
+    case "manualLogin":
+      return {
+        kind: "manualLogin",
+        serverUrl,
+        username: flow.login.username,
+        password: flow.login.password,
+        signingIn: flow.login.signingIn,
+        error: flow.login.error,
+      };
     case "manualCode":
       return { kind: "serverCode", code: toCodeState(server), serverUrl };
     case "success":

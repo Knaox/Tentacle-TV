@@ -7,16 +7,24 @@ import type { PairingLanguage, ServerError, ServerErrorKey } from "../redesign/s
 import { applyBackendUrl } from "../lib/backendUrls";
 import { notifySessionChanged } from "../auth/sessionEvents";
 import type { PairedAccount } from "./usePairingCode";
+import { usePasswordLogin } from "./usePasswordLogin";
 
 /**
  * L'automate du jumelage, commun aux deux téléviseurs — l'écran n'en garde
  * que le rendu (Android TV : ses étapes historiques ; Apple TV : la vue de la
- * refonte). Accueil → code du relais, ou serveur saisi à la main → code du
- * serveur ; puis le succès, et l'accueil de l'app deux secondes plus tard
- * (`onPaired`).
+ * refonte). Accueil → code du relais, ou serveur saisi à la main → identifiant
+ * et mot de passe (le code du serveur en recours) ; puis le succès, et
+ * l'accueil de l'app deux secondes plus tard (`onPaired`).
  */
 
-export type PairingFlowStep = "welcome" | "relayCode" | "manualServer" | "manualCode" | "success";
+export type PairingFlowStep = "welcome" | "relayCode" | "manualServer" | "manualLogin" | "manualCode" | "success";
+
+export interface PairingFlowOptions {
+  /** Ce qui suit un serveur vérifié : l'identifiant et le mot de passe
+   *  (Apple TV), ou le code du serveur — Android TV, dont les étapes
+   *  historiques n'ont pas de connexion, en attendant sa refonte. */
+  afterServer?: "login" | "code";
+}
 
 const SERVER_ERROR_KEYS: readonly ServerErrorKey[] = [
   "invalidUrl",
@@ -37,7 +45,7 @@ const SUCCESS_DELAY_MS = 2000;
 /** La sonde du serveur livré par le relais ne retient jamais le succès. */
 const HEALTH_TIMEOUT_MS = 4000;
 
-export function usePairingFlow(onPaired: () => void) {
+export function usePairingFlow(onPaired: () => void, { afterServer = "code" }: PairingFlowOptions = {}) {
   const { i18n } = useTranslation();
   const { storage } = useTentacleConfig();
   const jellyfinClient = useJellyfinClient();
@@ -113,7 +121,7 @@ export function usePairingFlow(onPaired: () => void) {
         storage.setItem("tentacle_server_url", result.url);
         applyBackendUrl(result.url);
         jellyfinClient.setBaseUrl(`${result.url}/api/jellyfin`);
-        setStep("manualCode");
+        setStep(afterServer === "login" ? "manualLogin" : "manualCode");
       } else {
         setServerError(toServerError(result.errorKey, result.errorParams));
       }
@@ -122,7 +130,7 @@ export function usePairingFlow(onPaired: () => void) {
     } finally {
       setTesting(false);
     }
-  }, [serverUrl, testing, storage, jellyfinClient]);
+  }, [serverUrl, testing, storage, jellyfinClient, afterServer]);
 
   const changeUrl = useCallback((next: string) => {
     setServerUrl(next);
@@ -134,6 +142,22 @@ export function usePairingFlow(onPaired: () => void) {
     storage.removeItem("tentacle_server_url");
     setStep("manualServer");
   }, [storage]);
+
+  /** Identifiant et mot de passe : la connexion jumelle comme un code. */
+  const login = usePasswordLogin(adopt);
+  const { leave: leaveLogin } = login;
+  /** Identifiants → le code du serveur, en recours. */
+  const showServerCode = useCallback(() => {
+    leaveLogin();
+    setStep("manualCode");
+  }, [leaveLogin]);
+  /** Identifiants → la saisie du serveur, qui reste retenu jusqu'à un autre. */
+  const backToServer = useCallback(() => {
+    leaveLogin();
+    setStep("manualServer");
+  }, [leaveLogin]);
+  /** Code du serveur → les identifiants (la croix, quand ils le précèdent). */
+  const backToLogin = useCallback(() => setStep("manualLogin"), []);
 
   const backToWelcome = useCallback(() => {
     setServerError(null);
@@ -156,6 +180,10 @@ export function usePairingFlow(onPaired: () => void) {
     changeUrl,
     submitServer,
     changeServer,
+    login,
+    showServerCode,
+    backToServer,
+    backToLogin,
     onRelayConfirmed,
     onServerConfirmed: adopt,
   };

@@ -61,6 +61,9 @@ function LegacyPairCodeScreen({ navigation }: Props) {
         />
       );
 
+    // Android TV n'entre pas dans les identifiants (`afterServer` vaut « code ») :
+    // s'il y arrivait, le code du serveur reste le chemin qu'il sait rendre.
+    case "manualLogin":
     case "manualCode":
       return (
         <ServerCodeDisplayStep
