@@ -17,19 +17,23 @@
   },
   "playMobile": {
     "$comment": "Version Android (téléphone/tablette) RÉELLEMENT servie par la piste de PRODUCTION de la fiche Play. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (.github/scripts/store-live.mjs : API de rapports Play en lecture seule, recoupée avec la fiche publique ; puis patch-store-manifest.mjs --only=play-mobile --track=production), comme le bloc macAppStore — jamais à l’envoi : mobile.yml le patchait dès la publication, cran test compris, et le site annonçait une version de piste fermée. Ne PAS le déduire de versions.json → mobile, qui porte l’intention et non la publication.",
-    "version": "1.8.1",
+    "version": "1.10.0",
     "packageName": "com.tentacletv.mobile",
     "track": "production",
     "notes": {
-      "fr": "• Une recherche qui propose : le moteur de Tentacle à chaque lettre, fautes corrigées, suggestions et meilleurs résultats dans toutes les barres\n• Bibliothèque : Films, Séries, Animés d'un geste, tri et filtres réunis\n• L'accueil à l'affiche, un en-tête allégé\n• La filmographie d'un acteur d'un toucher\n• Chargement plein écran, qu'on peut quitter\n• Messages de l'administrateur, même en lecture\n• Administrateurs : « Sessions en direct »\n• Nécessite un serveur 1.19.0 ou plus",
-      "en": "• Search that suggests: Tentacle's engine with every letter, typos fixed, suggestions and top results in every bar\n• Library: Movies, Shows, Anime in one swipe, sorting and filters together\n• A poster-first home, a lighter header\n• An actor's filmography in one tap\n• Full-screen loading you can leave\n• Administrator messages, even during playback\n• Administrators: \"Live sessions\"\n• Requires a server on 1.19.0 or newer"
+      "fr": "• Vos statistiques : temps passé, genres, records, « VF ou VO ? », à partager par un lien\n• La saga d'un film sur sa fiche\n• Saisons plus rapides, la saison en cours d'emblée\n• Bande-annonce : un bouton sur la fiche, les bonus, et un guide dans l'Aide\n• Un appui long ouvre les mêmes actions sur toutes les cartes\n• Hors ligne : la nouvelle fiche et un accueil repensé\n• Avec Jellyfin 12 : choix de la version, filtres de langue, VO\n• Premier lancement dans la langue du téléphone",
+      "en": "• Your stats: time spent, genres, records, \"Dubbed or original?\", shareable through a link\n• A movie's saga on its page\n• Faster seasons, the current season right away\n• Trailer: a button on the title page, extras, and a guide in Help\n• A long press opens the same actions on every card\n• Offline: the new title page and a redesigned home\n• With Jellyfin 12: version choice, language filters, original language\n• First launch in your phone's language"
     }
   },
   "playTv": {
     "$comment": "Version Android TV RÉELLEMENT servie en production. MÊME fiche Play que le mobile (com.tentacletv.mobile, form factor TV), mais piste distincte et versionCode préfixé 2e9 — donc un numéro de version propre. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (--only=play-tv --track=tv:production), comme playMobile ; tv.yml ne le patche plus.",
-    "version": "1.2.1",
+    "version": "1.4.0",
     "packageName": "com.tentacletv.mobile",
-    "track": "tv:production"
+    "track": "tv:production",
+    "notes": {
+      "fr": "• Un appui long sur une carte ouvre ses actions : Ma liste, favori, vu et votre note en étoiles\n• La saga d'un film sur sa fiche\n• Saisons plus rapides, la saison en cours d'emblée\n• Bandes-annonces locales et bonus enfin visibles, et la fiche dit où trouver le guide si le serveur n'est pas réglé\n• La VO parmi vos langues audio préférées\n• La fiche se lit sur les images claires\n• Premier lancement dans la langue de l'appareil",
+      "en": "• A long press on a card opens its actions: My list, favorite, watched and your star rating\n• A movie's saga on its page\n• Faster seasons, the current season right away\n• Local trailers and extras finally visible, and the title page says where to find the guide if the server is not set up\n• Original language among your preferred audio languages\n• The title page reads on light images\n• First launch in the device's language"
+    }
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/desktop.yml (job « manifest ») à chaque release desktop-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
