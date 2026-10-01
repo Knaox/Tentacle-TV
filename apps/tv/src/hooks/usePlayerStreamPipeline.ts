@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
+import { unstable_batchedUpdates } from "react-native";
 import { ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaItem, MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { usePlaybackReporting, useJellyfinClient, useMediaItem } from "@tentacle-tv/api-client";
@@ -170,7 +171,10 @@ export function usePlayerStreamPipeline(args: {
   const muxedTriedGenRef = useRef(0);
   const onMasterRejected = useCallback(() => {
     const gen = prismGenRef.current;
-    const bail = () => { captureReloadTicks(); setForceTranscode(true); };
+    // Groupés : appelé aussi après un `await`, hors d'un évènement — l'ancienne
+    // architecture ne groupe pas, et la position seule rouvrait d'abord la
+    // session en cache, morte, avant le transcodage.
+    const bail = () => unstable_batchedUpdates(() => { captureReloadTicks(); setForceTranscode(true); });
     if (gen <= 0 || muxedTriedGenRef.current > 0) { bail(); return; }
     muxedTriedGenRef.current = gen;
     softReloadRef.current = true;

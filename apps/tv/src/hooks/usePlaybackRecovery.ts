@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { unstable_batchedUpdates } from "react-native";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import {
   decideProducerDeath, decideRecovery, MAX_VAIN_RESTARTS, PROBE_EVERY_MS, RESTART_COOLDOWN_MS, shouldCheckProducer,
@@ -143,8 +144,9 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     st.producerDeath = { gen, at };
     if (action === "restart") { void restart("remux"); return; }
     noteServerFallback(Date.now());
-    s.p.captureReloadTicks();
-    s.p.setForceTranscode(true);
+    // Groupés (après un `await`, l'ancienne architecture ne groupe pas) : sinon la
+    // position seule rouvre d'abord la session morte, avant le transcodage.
+    unstable_batchedUpdates(() => { s.p.captureReloadTicks(); s.p.setForceTranscode(true); });
   }, [restart]);
 
   const tick = useCallback(() => {
