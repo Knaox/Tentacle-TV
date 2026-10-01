@@ -12,6 +12,7 @@ import {
   COLLAPSED_WIDTH,
   ITEM,
   ITEM_INSET,
+  LABEL_GAP,
   LIST_TOP,
   MARGIN_BOTTOM,
   RAIL_LEFT,
@@ -139,16 +140,25 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
   const onMeasure = useCallback((next: NavTextWidths) => setWidths((previous) => (sameWidths(previous, next) ? previous : next)), []);
   const expandedWidth = navExpandedWidth(widths, scrolls);
   const width = expanded ? expandedWidth : COLLAPSED_WIDTH;
+  const openItemWidth = expandedItemWidth(expandedWidth, scrolls);
+  // Les libellés restent le temps du repli : ils s'effacent avec le verre.
+  const labels = expanded || moving;
   const frame = useMemo<NavFrame>(
-    () => ({ expanded, openness, itemWidth: expanded ? expandedItemWidth(expandedWidth, scrolls) : ITEM }),
-    [expanded, openness, expandedWidth, scrolls],
+    () => ({
+      expanded,
+      openness,
+      itemWidth: expanded ? openItemWidth : ITEM,
+      labels,
+      labelWidth: openItemWidth - ITEM - LABEL_GAP,
+    }),
+    [expanded, openness, openItemWidth, labels],
   );
 
   useEffect(() => {
     onGeometry?.(railGeometryOf(layout, expandedWidth));
   }, [onGeometry, layout, expandedWidth]);
 
-  const labels = useMemo(() => [search.label, ...entries.map((entry) => entry.label), account.label], [search.label, entries, account.label]);
+  const texts = useMemo(() => [search.label, ...entries.map((entry) => entry.label), account.label], [search.label, entries, account.label]);
   const captions = useMemo(() => (account.caption ? [account.caption] : []), [account.caption]);
 
   const item = { onSelect, onLongPress, onFocusChange };
@@ -220,12 +230,12 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
           </View>
         </Capsule>
       </View>
-      {/* Seulement rail ouvert : elle passe sur le contenu, jamais pendant
-          que le focus y navigue. */}
-      {hints?.length && expanded ? (
+      {/* Rail ouvert, et le temps qu'il se replie (elle s'efface avec lui) :
+          elle passe sur le contenu, jamais pendant que le focus y navigue. */}
+      {hints?.length && labels ? (
         <NavLegend hints={hints} openness={openness} left={RAIL_LEFT + expandedWidth + LEGEND_GAP} bottom={MARGIN_BOTTOM} />
       ) : null}
-      <NavTextMeasure labels={labels} captions={captions} onMeasure={onMeasure} />
+      <NavTextMeasure labels={texts} captions={captions} onMeasure={onMeasure} />
     </NavFrameContext.Provider>
   );
 });

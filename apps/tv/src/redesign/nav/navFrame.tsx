@@ -11,12 +11,17 @@ import type { SharedValue } from "react-native-reanimated";
  *   s'y fondent, en même temps que le verre s'élargit ;
  * - `itemWidth` : la largeur d'une entrée MAINTENANT — repliée, `ITEM` (un
  *   carré centré dans la bande) ; ouverte, celle que la largeur mesurée du
- *   rail lui laisse.
+ *   rail lui laisse ;
+ * - `labels` : les libellés sont dessinés — rail ouvert, et le temps qu'il se
+ *   replie : ils s'effacent avec le verre (`openness`) au lieu de disparaître
+ *   d'un coup ; `labelWidth` : leur colonne, celle du rail ouvert.
  */
 export interface NavFrame {
   expanded: boolean;
   openness: SharedValue<number>;
   itemWidth: number;
+  labels: boolean;
+  labelWidth: number;
 }
 
 export const NavFrameContext = createContext<NavFrame | null>(null);

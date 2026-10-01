@@ -18,7 +18,7 @@ import { navText } from "./navText";
  *
  * Sa largeur, son ouverture et l'apparition de ses libellés viennent du rail
  * (`useNavFrame`) : ouverte, elle prend la largeur que le texte le plus long
- * du rail lui donne.
+ * du rail lui donne ; ses libellés paraissent et s'effacent avec le verre.
  *
  * Deux états d'organisation :
  * - `held` : son menu d'appui long est ouvert — un liseré de la marque dit de
@@ -85,12 +85,14 @@ function Glyph({ icon, avatarUri, initial, color }: { icon?: IconName; avatarUri
 interface RowProps {
   props: NavItemProps;
   width: number;
-  expanded: boolean;
+  /** Les libellés sont dessinés, dans une colonne de cette largeur. */
+  labels: boolean;
+  labelWidth: number;
   dark: boolean;
   labelIn: StyleProp<ViewStyle>;
 }
 
-function Row({ props, width, expanded, dark, labelIn }: RowProps) {
+function Row({ props, width, labels, labelWidth, dark, labelIn }: RowProps) {
   const { label, caption, icon, avatarUri, initial, active, mode } = props;
   const color = dark ? colors.ctaFg : active || mode ? colors.text : colors.textSecondary;
   const bold = dark || active || !!mode;
@@ -99,8 +101,8 @@ function Row({ props, width, expanded, dark, labelIn }: RowProps) {
       <View style={styles.glyph}>
         <Glyph icon={mode === "moving" ? "moveVertical" : icon} avatarUri={avatarUri} initial={initial} color={color} />
       </View>
-      {expanded ? (
-        <Animated.View style={[styles.texts, labelIn]}>
+      {labels ? (
+        <Animated.View style={[styles.texts, { width: labelWidth }, labelIn]}>
           <Text style={[bold ? navText.labelBold : navText.label, { color }]} numberOfLines={1}>
             {label}
           </Text>
@@ -117,7 +119,7 @@ function Row({ props, width, expanded, dark, labelIn }: RowProps) {
 
 function Body(props: NavItemProps & { focused: boolean }) {
   const { active, mode, fade, focused } = props;
-  const { expanded, openness, itemWidth } = useNavFrame();
+  const { expanded, openness, itemWidth, labels, labelWidth } = useNavFrame();
   const p = useFocusProgress(focused);
   const whiteLayer = useAnimatedStyle(() => ({ opacity: p.value }));
   const lift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (mode === "moving" ? 0.06 : 0.04) * p.value }] }));
@@ -126,9 +128,11 @@ function Body(props: NavItemProps & { focused: boolean }) {
     <Animated.View style={[{ width: itemWidth, height: ITEM }, lift, fade]}>
       {active ? <View style={[StyleSheet.absoluteFill, styles.activeGlass]} /> : null}
       {mode === "held" ? <View style={[StyleSheet.absoluteFill, styles.held]} /> : null}
-      <Row props={props} width={itemWidth} expanded={expanded} dark={false} labelIn={labelIn} />
+      <Row props={props} width={itemWidth} labels={labels} labelWidth={labelWidth} dark={false} labelIn={labelIn} />
+      {/* Le texte noir de la pilule blanche n'existe que rail ouvert : au
+          repli, la pilule est déjà réduite à son pictogramme. */}
       <Animated.View style={[StyleSheet.absoluteFill, styles.focusFill, whiteLayer]}>
-        <Row props={props} width={itemWidth} expanded={expanded} dark labelIn={labelIn} />
+        <Row props={props} width={itemWidth} labels={expanded} labelWidth={labelWidth} dark labelIn={labelIn} />
       </Animated.View>
       {mode ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.ring]} /> : null}
     </Animated.View>
@@ -138,7 +142,9 @@ function Body(props: NavItemProps & { focused: boolean }) {
 const styles = StyleSheet.create({
   row: { height: ITEM, flexDirection: "row", alignItems: "center" },
   glyph: { width: ITEM, height: ITEM, alignItems: "center", justifyContent: "center" },
-  texts: { flex: 1, marginLeft: LABEL_GAP, justifyContent: "center" },
+  // Posés à côté du pictogramme, à la largeur du rail ouvert : au repli, ils
+  // s'effacent pendant que l'entrée a déjà repris sa taille de pictogramme.
+  texts: { position: "absolute", left: ITEM + LABEL_GAP, top: 0, bottom: 0, justifyContent: "center" },
   activeGlass: {
     borderRadius: N.itemRadius,
     backgroundColor: white(0.2),
