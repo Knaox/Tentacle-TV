@@ -641,7 +641,12 @@ et ce que la refonte y ajoute — Apple TV seulement.
   (`remote/useBeyondEdge`). Le geste qui AMÈNE le focus sur le bord ne compte
   pas : le moteur de focus déplace le focus à l'enfoncement et l'appui ne
   s'annonce qu'au relâchement (~60 ms après) ; un glisser, à sa fin. Le focus
-  doit tenir le bord depuis 400 ms.
+  doit tenir le bord depuis 400 ms. **L'appui maintenu sur un bouton du
+  héros** ouvre le grand panneau du titre affiché, comme une carte (une
+  reprise dans la variante de « Reprendre », sinon une affiche), et ne lance
+  plus rien au relâchement ; le focus posé, « Maintenir OK : plus
+  d'options » paraît sous les pilules. Panneau ouvert, la rotation attend ;
+  fermé, le focus revient sur la pilule.
 - **Le module commun** : `redesignWiring/remote/remoteEvents.ts` — UN
   abonnement à `TVEventHandler`, traduit en événements typés (`press` avec
   sa phase, `swipe`, `pan`) ; `lib/tvPanGesture.ts` — le pan continu à
@@ -999,10 +1004,10 @@ confirmer sur l'Apple TV (tâche d'appareil, de jour).
 - **La Siri Remote n'émet pas `longLeft`** (ni la fin d'un appui maintenu sur
   une flèche) : un raccourci déclenché par une flèche se garde au rythme du
   focus (`RailShortcuts`).
-- **Un appui MAINTENU sur OK d'un bouton sans `onLongPress`** (les pilules du
-  héros) déclenche son `onPress` au relâchement — « Reprendre » lance la
-  lecture. Comportement de React Native tvOS, constaté en éprouvant la
-  rotation du héros.
+- **Un appui MAINTENU sur OK d'un bouton sans `onLongPress`** déclenche son
+  `onPress` au relâchement (React Native tvOS) : « Reprendre » du héros
+  lançait la lecture. Le héros ouvre désormais le grand panneau ; tout
+  bouton qui ne doit rien faire au maintien prend un `onLongPress`.
 - **Pas de doigt synthétique sur tvOS** : `XCUIRemote` n'a que des appuis, et
   un chemin de pointeur d'XCTest (`XCPointerEventPath`, via
   `eventSynthesizer`, complétion `(BOOL, NSError)`) est accepté sans jamais

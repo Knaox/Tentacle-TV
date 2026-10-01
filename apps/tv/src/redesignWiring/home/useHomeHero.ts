@@ -36,12 +36,22 @@ export interface HomeHero {
   onPrimary: () => void;
   onSecondary: () => void;
   onToggleList: () => void;
+  /** L'appui maintenu sur un bouton : le grand panneau du titre affiché. */
+  onLongPress: () => void;
+}
+
+export interface HomeHeroActions {
+  play: (item: MediaItem) => void;
+  detail: (item: MediaItem) => void;
+  /** Le grand panneau d'un titre, dans la variante de sa carte : une reprise
+   *  comme dans la rangée « Reprendre » (16:9), sinon une affiche. */
+  sheet: (item: MediaItem, variant: "landscape" | "poster") => void;
 }
 
 export function useHomeHero(
   focus: FocusStore,
   resume: MediaItem[] | undefined,
-  actions: { play: (item: MediaItem) => void; detail: (item: MediaItem) => void },
+  actions: HomeHeroActions,
   /** Le héros est dans le champ (`HomeView`, `onHeroVisibleChange`). */
   inView: boolean,
 ): HomeHero {
@@ -93,8 +103,8 @@ export function useHomeHero(
 
   // Des gestes STABLES, qui lisent l'état du moment : le héros ne se
   // redessine pas quand seule la lumière du fond change.
-  const live = useRef({ current, face, isSeries, watchState, toggles, actions });
-  live.current = { current, face, isSeries, watchState, toggles, actions };
+  const live = useRef({ current, face, isSeries, watchState, toggles, actions, fromResume });
+  live.current = { current, face, isSeries, watchState, toggles, actions, fromResume };
   const onPrimary = useCallback(() => {
     const { current: item, isSeries: series, watchState: state, actions: act } = live.current;
     if (!item) return;
@@ -111,6 +121,10 @@ export function useHomeHero(
   const onToggleList = useCallback(() => {
     if (live.current.face) live.current.toggles.toggleList();
   }, []);
+  const onLongPress = useCallback(() => {
+    const { current: item, actions: act, fromResume: resumed } = live.current;
+    if (item) act.sheet(item, resumed ? "landscape" : "poster");
+  }, []);
 
   const lastAction = hero?.listToggle?.focusKey ?? hero?.secondary?.focusKey ?? hero?.primary.focusKey ?? null;
   useBeyondEdge(focus, {
@@ -120,5 +134,5 @@ export function useHomeHero(
     onBeyond: advance,
   });
 
-  return { hero, current, pending: items.length > 0 && !hero, onPrimary, onSecondary, onToggleList };
+  return { hero, current, pending: items.length > 0 && !hero, onPrimary, onSecondary, onToggleList, onLongPress };
 }

@@ -33,6 +33,8 @@ export interface PillButtonProps {
   progress?: number;
   focusKey?: string;
   onPress?: () => void;
+  /** L'appui maintenu (le grand panneau du titre, sur le héros). */
+  onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
 }
 
@@ -71,11 +73,12 @@ export const PillButton = memo(function PillButton({
   progress,
   focusKey,
   onPress,
+  onLongPress,
   onFocusChange,
 }: PillButtonProps) {
   const s = SIZES[size];
   return (
-    <FocusTarget focusKey={focusKey} onPress={onPress} onFocusChange={onFocusChange} accessibilityLabel={label}>
+    <FocusTarget focusKey={focusKey} onPress={onPress} onLongPress={onLongPress} onFocusChange={onFocusChange} accessibilityLabel={label}>
       {(focused) => (
         <Body focused={focused} variant={variant} s={s} label={label} icon={icon} progress={progress} />
       )}

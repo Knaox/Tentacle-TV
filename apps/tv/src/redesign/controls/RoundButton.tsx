@@ -24,6 +24,8 @@ export interface RoundButtonProps {
   size?: number;
   focusKey?: string;
   onPress?: () => void;
+  /** L'appui maintenu (le grand panneau du titre, sur le héros). */
+  onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
 }
 
@@ -35,10 +37,11 @@ export const RoundButton = memo(function RoundButton({
   size = 68,
   focusKey,
   onPress,
+  onLongPress,
   onFocusChange,
 }: RoundButtonProps) {
   return (
-    <FocusTarget focusKey={focusKey} onPress={onPress} onFocusChange={onFocusChange} accessibilityLabel={label}>
+    <FocusTarget focusKey={focusKey} onPress={onPress} onLongPress={onLongPress} onFocusChange={onFocusChange} accessibilityLabel={label}>
       {(focused) => (
         <Round focused={focused} icon={active && activeIcon ? activeIcon : icon} active={active} size={size} label={label} />
       )}

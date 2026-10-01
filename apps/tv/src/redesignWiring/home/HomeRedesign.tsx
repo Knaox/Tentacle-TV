@@ -52,9 +52,16 @@ export function HomeRedesign({ navigation }: Props) {
   const detail = useCallback((item: MediaItem) => navigation.navigate("MediaDetail", { itemId: item.Id }), [navigation]);
 
   const focus = useFocusStore();
-  // Le héros dans le champ : sa rotation se suspend quand il en sort.
+  const cardActions = useTVCardActions();
+  const { openLandscape, openPoster, openReco } = cardActions;
+  const sheet = useCallback(
+    (item: MediaItem, variant: "landscape" | "poster") => (variant === "landscape" ? openLandscape(item) : openPoster(item)),
+    [openLandscape, openPoster],
+  );
+  // Le héros dans le champ, et aucun panneau par-dessus : sa rotation se
+  // suspend quand il en sort, ou qu'un grand panneau s'ouvre devant lui.
   const [heroInView, setHeroInView] = useState(true);
-  const hero = useHomeHero(focus, home.resume, { play, detail }, heroInView);
+  const hero = useHomeHero(focus, home.resume, { play, detail, sheet }, heroInView && cardActions.sheet === null);
 
   // L'état de l'écran d'abord : il décide de l'entrée du focus. Le premier
   // héros attend l'art de son titre (logo, fond) : l'écran se dit en
@@ -68,7 +75,6 @@ export function HomeRedesign({ navigation }: Props) {
 
   const screen = useRedesignScreen({ railKey: "Home", entryKey, focus });
   const { focusedPalette, onFocusCard } = useAmbientPalette(focus);
-  const cardActions = useTVCardActions();
 
   const retry = useCallback(() => {
     void featuredQuery.refetch();
@@ -104,7 +110,6 @@ export function HomeRedesign({ navigation }: Props) {
     },
     [targetOf, play, detail],
   );
-  const { openLandscape, openPoster, openReco } = cardActions;
   const onLongPressCard = useCallback(
     (rowKey: string, card: CardModel) => {
       const target = targetOf(rowKey, card.id);
@@ -132,6 +137,7 @@ export function HomeRedesign({ navigation }: Props) {
         onHeroPrimary={hero.onPrimary}
         onHeroSecondary={hero.onSecondary}
         onHeroToggleList={hero.onToggleList}
+        onHeroLongPress={hero.onLongPress}
         onPressCard={onPressCard}
         onLongPressCard={onLongPressCard}
         onFocusCard={onFocusCard}

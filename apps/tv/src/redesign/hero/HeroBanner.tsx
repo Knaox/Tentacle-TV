@@ -1,13 +1,15 @@
-import { memo } from "react";
+import { memo, useCallback, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../background/ArtworkHalo";
 import { SoftGradient } from "../background/SoftGradient";
+import { CardHoldHint, HOLD_HINT_DWELL_MS } from "../cards/CardHoldHint";
 import type { ArtworkPalette } from "../color/artworkPalette";
 import { PillButton } from "../controls/PillButton";
 import { RoundButton } from "../controls/RoundButton";
 import { Icon, type IconName } from "../icons/Icon";
+import { Reveal } from "../motion/Reveal";
 import { useCrossfade } from "../motion/useCrossfade";
 import { useSwap } from "../motion/useSwap";
 import { colors, fonts, scrim, text, white } from "../theme/tokens";
@@ -33,6 +35,11 @@ import { TitleArt } from "./TitleArt";
  * des boutons — un seul exemplaire, il est focalisable — sort en fondu,
  * change pendant qu'il est invisible, et rentre en montant de quelques
  * points (`useSwap`). Les points de la rotation suivent tout de suite.
+ *
+ * `onLongPress` : l'appui MAINTENU sur l'un de ses boutons ouvre le grand
+ * panneau du titre, comme sur une carte — et, le focus posé sur un bouton,
+ * « Maintenir OK : plus d'options » paraît sous la rangée des boutons, un
+ * temps après lui (`CardHoldHint`).
  */
 
 export interface HeroAction {
@@ -69,6 +76,8 @@ export interface HeroBannerProps {
   onPrimary?: () => void;
   onSecondary?: () => void;
   onToggleList?: () => void;
+  /** L'appui maintenu sur un bouton : le grand panneau du titre. */
+  onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
 }
 
@@ -96,8 +105,18 @@ export const HeroBanner = memo(function HeroBanner({
   onPrimary,
   onSecondary,
   onToggleList,
+  onLongPress,
   onFocusChange,
 }: HeroBannerProps) {
+  // Un bouton du héros a le focus : l'indication de l'appui maintenu paraît.
+  const [actionFocused, setActionFocused] = useState(false);
+  const onActionFocus = useCallback(
+    (focused: boolean) => {
+      setActionFocused(focused);
+      onFocusChange?.(focused);
+    },
+    [onFocusChange],
+  );
   const backdrops = useCrossfade(`${hero.id}|${hero.backdropUri ?? ""}`, hero.backdropUri, "hero", "dissolve");
   const { shown, progress } = useSwap(hero.id, hero, TV_MOTION.crossfade.heroTextOutMs, TV_MOTION.crossfade.heroTextInMs);
   const arrive = useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateY: TEXT_RISE * (1 - progress.value) }] }));
@@ -144,8 +163,10 @@ export const HeroBanner = memo(function HeroBanner({
           <MetaLine items={shown.meta} />
           {shown.synopsis ? <Text style={[text.body, styles.synopsis]} numberOfLines={2}>{shown.synopsis}</Text> : null}
           <View style={styles.actions}>
-            <PillButton variant="brand" {...shown.primary} onPress={onPrimary} onFocusChange={onFocusChange} />
-            {shown.secondary ? <PillButton variant="glass" {...shown.secondary} onPress={onSecondary} onFocusChange={onFocusChange} /> : null}
+            <PillButton variant="brand" {...shown.primary} onPress={onPrimary} onLongPress={onLongPress} onFocusChange={onActionFocus} />
+            {shown.secondary ? (
+              <PillButton variant="glass" {...shown.secondary} onPress={onSecondary} onLongPress={onLongPress} onFocusChange={onActionFocus} />
+            ) : null}
             {shown.listToggle ? (
               <RoundButton
                 icon="plus"
@@ -154,8 +175,14 @@ export const HeroBanner = memo(function HeroBanner({
                 active={shown.listToggle.active}
                 focusKey={shown.listToggle.focusKey}
                 onPress={onToggleList}
-                onFocusChange={onFocusChange}
+                onLongPress={onLongPress}
+                onFocusChange={onActionFocus}
               />
+            ) : null}
+            {onLongPress ? (
+              <Reveal shown={actionFocused} delayMs={HOLD_HINT_DWELL_MS} style={styles.holdHint}>
+                <CardHoldHint />
+              </Reveal>
             ) : null}
           </View>
         </Animated.View>
@@ -180,6 +207,9 @@ const styles = StyleSheet.create({
   reasonText: { ...fonts.semibold, fontSize: 27, color: white(0.92), flexShrink: 1 },
   synopsis: { maxWidth: 760, color: white(0.86) },
   actions: { flexDirection: "row", gap: 18, marginTop: 10 },
+  // Sous les pilules, dans la marge basse du héros — à gauche du libellé
+  // qu'un rond focalisé écrit sous lui.
+  holdHint: { position: "absolute", left: 0, top: ACTIONS_HEIGHT + 14 },
   // Les points de la rotation, sur la ligne des boutons.
   dots: { position: "absolute", right: 56, bottom: INSET + (ACTIONS_HEIGHT - DOT) / 2, flexDirection: "row", gap: 10 },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2, backgroundColor: white(0.4) },

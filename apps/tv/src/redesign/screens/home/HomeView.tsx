@@ -62,6 +62,8 @@ export interface HomeViewProps {
   onHeroSecondary?: () => void;
   /** Le rond « Ma liste » du héros. */
   onHeroToggleList?: () => void;
+  /** L'appui maintenu sur un bouton du héros : le grand panneau du titre. */
+  onHeroLongPress?: () => void;
   onPressCard?: (rowKey: string, card: CardModel) => void;
   onLongPressCard?: (rowKey: string, card: CardModel) => void;
   onFocusCard?: (rowKey: string, card: CardModel) => void;
@@ -86,6 +88,7 @@ export const HomeView = memo(function HomeView({
   onHeroPrimary,
   onHeroSecondary,
   onHeroToggleList,
+  onHeroLongPress,
   onPressCard,
   onLongPressCard,
   onFocusCard,
@@ -133,6 +136,7 @@ export const HomeView = memo(function HomeView({
                 onPrimary={onHeroPrimary}
                 onSecondary={onHeroSecondary}
                 onToggleList={onHeroToggleList}
+                onLongPress={onHeroLongPress}
               />
             </View>
           ) : null}
