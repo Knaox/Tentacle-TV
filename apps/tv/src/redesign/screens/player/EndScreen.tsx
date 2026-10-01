@@ -1,11 +1,13 @@
 import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
+import Animated from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../../background/ArtworkHalo";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { TitleArt } from "../../hero/TitleArt";
+import { useOverlayArrival } from "../../motion/useOverlayArrival";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { CountdownPill } from "./CountdownPill";
 import type { EndScreenModel, PlayerLabels } from "./playerTypes";
@@ -34,8 +36,11 @@ export const EndScreen = memo(function EndScreen({
   onPlayNext?: () => void;
   onLeave?: () => void;
 }) {
+  // L'affiche de fin arrive comme une page : en fondu, son texte montant de
+  // quelques points (Apple TV).
+  const { body } = useOverlayArrival("y", 16, "page");
   return (
-    <View style={styles.root}>
+    <Animated.View style={[styles.root, body]}>
       {model.backdropUri ? <Image source={{ uri: model.backdropUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
       <LinearGradient
         colors={[scrim(0.95), scrim(0.84), scrim(0.5)]}
@@ -68,7 +73,7 @@ export const EndScreen = memo(function EndScreen({
           <View style={[StyleSheet.absoluteFill, styles.ring]} />
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 });
 

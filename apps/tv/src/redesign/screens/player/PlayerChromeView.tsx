@@ -2,9 +2,10 @@ import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { TV_STAGE } from "@tentacle-tv/theme";
+import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { FocusGroup } from "../../focus/FocusGroup";
-import { useFocusProgress } from "../../focus/useFocusProgress";
+import { Presented } from "../../motion/Presented";
+import { useMotion } from "../../motion/useMotion";
 import { scrim } from "../../theme/tokens";
 import { EndScreen } from "./EndScreen";
 import { EpisodesPanel } from "./EpisodesPanel";
@@ -51,6 +52,12 @@ import { UpNextCard } from "./UpNextCard";
  * commandes), là où l'intégration pose sa mémoire du dernier bouton ;
  * `player:timeline` — la frise, passive, que le focus TRAVERSE en montant des
  * commandes vers la pilule de saut.
+ *
+ * Mouvement (Apple TV) : l'habillage paraît vite — la frise et les commandes
+ * montent de quelques points, la barre du haut descend — et s'efface
+ * posément à l'inactivité (préréglage `chrome`) ; le badge de saut entre et
+ * sort en fondu ; panneaux, carte « À suivre » et écran de fin entrent en
+ * glissant (chacun chez lui).
  */
 
 export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport" | "paused" | "labels"> {
@@ -98,9 +105,11 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
   const playing = phase.kind === "playing";
   // L'habillage recule devant ce qui le recouvre : panneau, défilement, fin.
   const chrome = playing && osdVisible && !panel && !scrub && !endScreen;
-  const shown = useFocusProgress(chrome, 250);
-  const dim = useFocusProgress(playing && paused && !scrub && !endScreen, 300);
+  const shown = useMotion(chrome, "chrome");
+  const dim = useMotion(playing && paused && !scrub && !endScreen, "veil");
   const chromeStyle = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const topStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -TV_MOTION.player.chromeDrop * (1 - shown.value) }] }));
+  const bottomStyle = useAnimatedStyle(() => ({ transform: [{ translateY: TV_MOTION.player.chromeRise * (1 - shown.value) }] }));
   const dimStyle = useAnimatedStyle(() => ({ opacity: dim.value }));
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -114,29 +123,35 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
       <Animated.View style={[StyleSheet.absoluteFill, chromeStyle]} pointerEvents={chrome ? "box-none" : "none"}>
         <FocusGroup focusKey="player:osd" style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <LinearGradient pointerEvents="none" colors={[scrim(0), scrim(0.66), scrim(0.94)]} locations={[0, 0.48, 1]} style={styles.bottomScrim} />
-          <OsdTopBar media={media} backLabel={labels.back} onBack={props.onBack} />
-          <FocusGroup focusKey="player:timeline" style={styles.timeline} pointerEvents="none">
-            <OsdTimeline position={timeline.position} duration={timeline.duration} buffered={timeline.buffered} segments={timeline.segments} />
-          </FocusGroup>
-          <View style={styles.controls} pointerEvents="box-none">
-            <OsdControls
-              transport={props.transport}
-              paused={paused}
-              labels={labels}
-              onPlayPause={props.onPlayPause}
-              onSeekBack={props.onSeekBack}
-              onSeekForward={props.onSeekForward}
-              onScrub={props.onScrub}
-              onPrevious={props.onPrevious}
-              onNext={props.onNext}
-              onOpenEpisodes={props.onOpenEpisodes}
-              onOpenTracks={props.onOpenTracks}
-            />
-          </View>
+          <Animated.View style={[StyleSheet.absoluteFill, topStyle]} pointerEvents="box-none">
+            <OsdTopBar media={media} backLabel={labels.back} onBack={props.onBack} />
+          </Animated.View>
+          <Animated.View style={[StyleSheet.absoluteFill, bottomStyle]} pointerEvents="box-none">
+            <FocusGroup focusKey="player:timeline" style={styles.timeline} pointerEvents="none">
+              <OsdTimeline position={timeline.position} duration={timeline.duration} buffered={timeline.buffered} segments={timeline.segments} />
+            </FocusGroup>
+            <View style={styles.controls} pointerEvents="box-none">
+              <OsdControls
+                transport={props.transport}
+                paused={paused}
+                labels={labels}
+                onPlayPause={props.onPlayPause}
+                onSeekBack={props.onSeekBack}
+                onSeekForward={props.onSeekForward}
+                onScrub={props.onScrub}
+                onPrevious={props.onPrevious}
+                onNext={props.onNext}
+                onOpenEpisodes={props.onOpenEpisodes}
+                onOpenTracks={props.onOpenTracks}
+              />
+            </View>
+          </Animated.View>
         </FocusGroup>
       </Animated.View>
       {props.buffering || props.reloadFrame ? <BufferingBadge /> : null}
-      {props.seekFlash && !scrub ? <SeekFlash forward={props.seekFlash.forward} label={props.seekFlash.label} /> : null}
+      <Presented value={props.seekFlash && !scrub ? props.seekFlash : null} motion="reveal">
+        {(flash, appear) => <SeekFlash forward={flash.forward} label={flash.label} appear={appear} />}
+      </Presented>
       {props.notice && playing ? <QualityNotice text={props.notice} /> : null}
       {props.error ? <ErrorBanner title={props.error.title} message={props.error.message} /> : null}
       {skip && playing && !scrub && !panel && !endScreen ? (

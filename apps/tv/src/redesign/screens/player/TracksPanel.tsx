@@ -1,11 +1,13 @@
 import { memo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import { TV_STAGE } from "@tentacle-tv/theme";
+import Animated from "react-native-reanimated";
+import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
 import { Icon, type IconName } from "../../icons/Icon";
+import { useOverlayArrival } from "../../motion/useOverlayArrival";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { CircleButton } from "./CircleButton";
 import type { TrackOptionModel, TracksPanelModel } from "./playerTypes";
@@ -93,26 +95,32 @@ export const TracksPanel = memo(function TracksPanel({
   onClose?: () => void;
 }) {
   const backing = useNativeGlassBacking("strong");
+  // Le voile en fondu, la feuille qui monte du bas (Apple TV).
+  const arrival = useOverlayArrival("y", TV_MOTION.player.panelSlide);
   return (
     <View style={StyleSheet.absoluteFill}>
-      <LinearGradient pointerEvents="none" colors={[scrim(0.15), scrim(0.55), scrim(0.85)]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
-      <FocusGroup focusKey="tracks:panel" style={styles.sheet}>
-        <GlassSurface radius={44} tone="strong" elevated style={[styles.glass, backing]} />
-        <View style={styles.columns}>
-          <Column title={labels.audio} icon="audio" options={model.audio} prefix="audio" autoLabel={labels.auto} onSelect={onSelectAudio} />
-          <View style={styles.divider} />
-          <Column title={labels.subtitles} icon="subtitles" options={model.subtitles} prefix="subtitle" autoLabel={labels.auto} onSelect={onSelectSubtitle} />
-          {model.quality.length ? (
-            <>
-              <View style={styles.divider} />
-              <Column title={labels.quality} icon="sliders" options={model.quality} prefix="quality" autoLabel={labels.auto} onSelect={onSelectQuality} />
-            </>
-          ) : null}
-        </View>
-        <View style={styles.close}>
-          <CircleButton icon="close" label={labels.close} size={64} caption={false} focusKey="tracks:close" onPress={onClose} />
-        </View>
-      </FocusGroup>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, arrival.veil]}>
+        <LinearGradient colors={[scrim(0.15), scrim(0.55), scrim(0.85)]} locations={[0, 0.4, 1]} style={StyleSheet.absoluteFill} />
+      </Animated.View>
+      <Animated.View pointerEvents="box-none" style={[StyleSheet.absoluteFill, arrival.body]}>
+        <FocusGroup focusKey="tracks:panel" style={styles.sheet}>
+          <GlassSurface radius={44} tone="strong" elevated style={[styles.glass, backing]} />
+          <View style={styles.columns}>
+            <Column title={labels.audio} icon="audio" options={model.audio} prefix="audio" autoLabel={labels.auto} onSelect={onSelectAudio} />
+            <View style={styles.divider} />
+            <Column title={labels.subtitles} icon="subtitles" options={model.subtitles} prefix="subtitle" autoLabel={labels.auto} onSelect={onSelectSubtitle} />
+            {model.quality.length ? (
+              <>
+                <View style={styles.divider} />
+                <Column title={labels.quality} icon="sliders" options={model.quality} prefix="quality" autoLabel={labels.auto} onSelect={onSelectQuality} />
+              </>
+            ) : null}
+          </View>
+          <View style={styles.close}>
+            <CircleButton icon="close" label={labels.close} size={64} caption={false} focusKey="tracks:close" onPress={onClose} />
+          </View>
+        </FocusGroup>
+      </Animated.View>
     </View>
   );
 });

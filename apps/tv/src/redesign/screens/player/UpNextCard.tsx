@@ -1,10 +1,12 @@
 import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import { TV_STAGE } from "@tentacle-tv/theme";
+import Animated from "react-native-reanimated";
+import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
+import { useOverlayArrival } from "../../motion/useOverlayArrival";
 import { colors, fonts, white } from "../../theme/tokens";
 import { CountdownPill } from "./CountdownPill";
 import type { PlayerLabels, UpNextModel } from "./playerTypes";
@@ -34,8 +36,10 @@ export const UpNextCard = memo(function UpNextCard({
   onDismiss?: () => void;
 }) {
   const backing = useNativeGlassBacking("strong");
+  // Elle entre en glissant depuis le bord droit (Apple TV).
+  const { body } = useOverlayArrival("x", TV_MOTION.player.panelSlide);
   return (
-    <View style={styles.anchor} pointerEvents="box-none">
+    <Animated.View style={[styles.anchor, body]} pointerEvents="box-none">
       <GlassSurface radius={36} tone="strong" elevated style={[styles.card, backing]}>
         <View style={styles.top}>
           <View style={styles.image}>
@@ -56,7 +60,7 @@ export const UpNextCard = memo(function UpNextCard({
           <PillButton variant="glass" label={labels.dismiss} focusKey="upnext:dismiss" onPress={onDismiss} />
         </FocusGroup>
       </GlassSurface>
-    </View>
+    </Animated.View>
   );
 });
 

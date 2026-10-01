@@ -1,10 +1,12 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import { TV_STAGE } from "@tentacle-tv/theme";
+import Animated from "react-native-reanimated";
+import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useNativeGlassBacking } from "../../glass/glassBacking";
+import { useOverlayArrival } from "../../motion/useOverlayArrival";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { CircleButton } from "./CircleButton";
 import { EpisodeList } from "./EpisodeList";
@@ -61,40 +63,45 @@ export const EpisodesPanel = memo(function EpisodesPanel({
   onClose?: () => void;
 }) {
   const backing = useNativeGlassBacking("strong");
+  // Le voile en fondu, le panneau qui glisse depuis la droite (Apple TV).
+  const arrival = useOverlayArrival("x", TV_MOTION.player.panelSlide);
   return (
     <View style={StyleSheet.absoluteFill}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={[scrim(0.3), scrim(0.62), scrim(0.8)]}
-        locations={[0, 0.45, 1]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <FocusGroup focusKey="episodes:panel" style={styles.panel}>
-        <GlassSurface radius={44} tone="strong" elevated style={[styles.glass, backing]} />
-        <FocusGroup focusKey="episodes:header" style={styles.header}>
-          <View style={styles.headings}>
-            <Text style={styles.title}>{labels.episodes}</Text>
-            <Text style={styles.series} numberOfLines={1}>{model.seriesTitle}</Text>
-          </View>
-          <CircleButton icon="close" label={labels.close} size={64} caption={false} focusKey="episodes:close" onPress={onClose} />
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, arrival.veil]}>
+        <LinearGradient
+          colors={[scrim(0.3), scrim(0.62), scrim(0.8)]}
+          locations={[0, 0.45, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+      <Animated.View pointerEvents="box-none" style={[StyleSheet.absoluteFill, arrival.body]}>
+        <FocusGroup focusKey="episodes:panel" style={styles.panel}>
+          <GlassSurface radius={44} tone="strong" elevated style={[styles.glass, backing]} />
+          <FocusGroup focusKey="episodes:header" style={styles.header}>
+            <View style={styles.headings}>
+              <Text style={styles.title}>{labels.episodes}</Text>
+              <Text style={styles.series} numberOfLines={1}>{model.seriesTitle}</Text>
+            </View>
+            <CircleButton icon="close" label={labels.close} size={64} caption={false} focusKey="episodes:close" onPress={onClose} />
+          </FocusGroup>
+          <SeasonTabs seasons={model.seasons} activeId={model.activeSeasonId} onSelect={onSelectSeason} />
+          <View style={styles.rule} />
+          {model.loading ? (
+            <GhostRows />
+          ) : (
+            // Une liste par saison (clé) : l'ouverture sur l'épisode en cours se
+            // recalcule à chaque changement, sans reste de la précédente.
+            <EpisodeList
+              key={model.activeSeasonId}
+              episodes={model.episodes}
+              nowPlayingLabel={labels.nowPlaying}
+              onSelectEpisode={onSelectEpisode}
+            />
+          )}
         </FocusGroup>
-        <SeasonTabs seasons={model.seasons} activeId={model.activeSeasonId} onSelect={onSelectSeason} />
-        <View style={styles.rule} />
-        {model.loading ? (
-          <GhostRows />
-        ) : (
-          // Une liste par saison (clé) : l'ouverture sur l'épisode en cours se
-          // recalcule à chaque changement, sans reste de la précédente.
-          <EpisodeList
-            key={model.activeSeasonId}
-            episodes={model.episodes}
-            nowPlayingLabel={labels.nowPlaying}
-            onSelectEpisode={onSelectEpisode}
-          />
-        )}
-      </FocusGroup>
+      </Animated.View>
     </View>
   );
 });

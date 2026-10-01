@@ -70,6 +70,8 @@ const PRESETS = {
   page: { enter: timing(TV_MOTION.page.enterMs, EASE.out), exit: timing(TV_MOTION.reveal.outMs, EASE.in) },
   /** Une grande image qui se pose : elle recule lentement à sa place. */
   settle: { enter: timing(TV_MOTION.image.settleMs, EASE.out), exit: timing(TV_MOTION.image.settleMs, EASE.out) },
+  /** L'habillage du lecteur : il paraît vite, s'efface posément (à l'inactivité). */
+  chrome: { enter: timing(TV_MOTION.player.chromeInMs, EASE.out), exit: timing(TV_MOTION.player.chromeOutMs, EASE.inOut) },
   /** Une image chargée qui entre en fondu. */
   imageIn: { enter: timing(TV_MOTION.image.fadeInMs, EASE.out), exit: timing(TV_MOTION.reveal.outMs, EASE.in) },
 } as const;
