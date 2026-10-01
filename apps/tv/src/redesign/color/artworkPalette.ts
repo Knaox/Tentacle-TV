@@ -189,6 +189,44 @@ export function isLogoLegibleOnDark(hash: string | null | undefined): boolean {
   return brightest >= 0.04;
 }
 
+/** La luminance relative d'une couleur (WCAG). */
+function luminance([r, g, b]: Rgb): number {
+  return 0.2126 * srgbToLinear(r) + 0.7152 * srgbToLinear(g) + 0.0722 * srgbToLinear(b);
+}
+
+const bounded = new Map<string, string>();
+const BOUNDED_MAX = 256;
+
+/**
+ * Une couleur de LUMIÈRE posée sur l'encre de la scène : la teinte et la
+ * saturation de l'œuvre, la clarté abaissée jusqu'à ce que sa luminance
+ * relative ne dépasse plus `maxLuminance` (`TV_LIGHT.ambient`). À clarté
+ * égale, un jaune vif est bien plus lumineux qu'un bleu : borné, il n'éblouit
+ * plus et le texte posé sur sa lumière garde son contraste ; un bleu passe tel
+ * quel. Mémoïsée : le focus revient souvent sur les mêmes œuvres.
+ */
+export function boundedLight(hex: string, maxLuminance: number): string {
+  const key = `${hex}|${maxLuminance}`;
+  const known = bounded.get(key);
+  if (known) return known;
+  let light = hex;
+  const rgb = parseHex(hex);
+  if (luminance(rgb) > maxLuminance) {
+    const [h, s, l] = toHsl(rgb);
+    let low = 0;
+    let high = l;
+    for (let i = 0; i < 16; i++) {
+      const mid = (low + high) / 2;
+      if (luminance(parseHex(toHex([h, s, mid]))) > maxLuminance) high = mid;
+      else low = mid;
+    }
+    light = toHex([h, s, low]);
+  }
+  if (bounded.size >= BOUNDED_MAX) bounded.delete(bounded.keys().next().value as string);
+  bounded.set(key, light);
+  return light;
+}
+
 /** Quand l'œuvre n'a pas d'empreinte : une lumière neutre et chaude. */
 export const NEUTRAL_PALETTE: ArtworkPalette = {
   glows: ["#6b4a3a", "#3a3f5c", "#5c4a2e"],

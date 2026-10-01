@@ -4,7 +4,7 @@ import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValu
 import { TV_MOTION } from "@tentacle-tv/theme";
 import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { useMotion } from "../../motion/useMotion";
-import { scrim } from "../../theme/tokens";
+import { ink, scrim } from "../../theme/tokens";
 
 /**
  * Le fond de la fiche : l'image de l'œuvre bord à bord (1920 × 1080), FIXE,
@@ -66,7 +66,9 @@ export const DetailBackdrop = memo(function DetailBackdrop({
 /**
  * Le haut de l'écran, PAR-DESSUS la page : une fois qu'on est descendu, ce
  * qui passe au-dessus de la section ancrée s'y efface au lieu d'être coupé
- * net par le bord. Absent en haut de page (l'image y garde son ciel).
+ * net par le bord. Absent en haut de page (l'image y garde son ciel). Il se
+ * fond dans l'encre de la scène, pas dans le noir : sur le fond éclairé, un
+ * voile noir dessinait une bande.
  */
 export const DetailTopFade = memo(function DetailTopFade({ scrollY }: { scrollY: SharedValue<number> }) {
   const shown = useAnimatedStyle(() => ({
@@ -74,7 +76,7 @@ export const DetailTopFade = memo(function DetailTopFade({ scrollY }: { scrollY:
   }));
   return (
     <Animated.View pointerEvents="none" style={[styles.topFade, shown]}>
-      <SoftGradient width={STAGE_SIZE.width} height={TOP_FADE} colors={[scrim(1), scrim(0.9), scrim(0)]} locations={[0, 0.45, 1]} />
+      <SoftGradient width={STAGE_SIZE.width} height={TOP_FADE} colors={[ink(1), ink(0.9), ink(0)]} locations={[0, 0.45, 1]} />
     </Animated.View>
   );
 });

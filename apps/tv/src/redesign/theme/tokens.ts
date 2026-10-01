@@ -1,19 +1,20 @@
 import { StyleSheet, type TextStyle } from "react-native";
-import { DEFAULT_COLOR_TOKENS, TV_ACCENT, TV_STAGE, TV_TYPE } from "@tentacle-tv/theme";
+import { DEFAULT_COLOR_TOKENS, TV_ACCENT, TV_LIGHT, TV_STAGE, TV_TYPE } from "@tentacle-tv/theme";
 
 /**
  * Les jetons des vues de la refonte : les couleurs du BUREAU
- * (`DEFAULT_COLOR_TOKENS`), la scène TV (`TV_STAGE`, `TV_TYPE`) et l'accent,
- * la marque violet → rose (`TV_ACCENT`). Aucune valeur de couleur n'est
- * recopiée ici : on nomme, on ne redéfinit pas.
+ * (`DEFAULT_COLOR_TOKENS`), la scène TV (`TV_STAGE`, `TV_TYPE`), sa lumière
+ * (`TV_LIGHT`) et l'accent, la marque violet → rose (`TV_ACCENT`). Aucune
+ * valeur de couleur n'est recopiée ici : on nomme, on ne redéfinit pas.
  */
 
 const C = DEFAULT_COLOR_TOKENS;
 
 export const colors = {
-  /** Le fond racine du bureau, en dégradé « cinéma » (#000 → #070710). */
-  bgTop: C.surface.s0,
-  bgBottom: C.surface.s0Tint,
+  /** Le fond de la scène : l'encre de `TV_LIGHT`, plus claire en haut — pas
+   *  le noir pur du bureau (« un grand noir derrière » la carte focalisée). */
+  bgTop: TV_LIGHT.ink.top,
+  bgBottom: TV_LIGHT.ink.bottom,
   surface1: C.surface.s1,
   surface2: C.surface.s2,
   surface3: C.surface.s3,
@@ -58,6 +59,10 @@ export const brandGradient: string[] = [...TV_ACCENT.gradient];
 
 /** Voile noir à l'alpha voulu — les dégradés de lisibilité sur une image. */
 export const scrim = (alpha: number) => `rgba(${C.onMedia.scrimRgb}, ${alpha})`;
+
+/** L'encre du haut de la scène à l'alpha voulu — un voile qui s'y fond (le
+ *  haut d'une page qui défile), là où un voile noir ferait une bande. */
+export const ink = (alpha: number) => `rgba(${TV_LIGHT.ink.topRgb}, ${alpha})`;
 
 /** Blanc à l'alpha voulu — reflets, liserés, remplissages du verre. */
 export const white = (alpha: number) => `rgba(255, 255, 255, ${alpha})`;
