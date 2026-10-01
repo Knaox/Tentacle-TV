@@ -149,6 +149,11 @@ export function clearActivePlayback(provider: () => PlaybackStateDto | null): vo
   if (activePlayback === provider) activePlayback = null;
 }
 
+/** Le titre en cours de lecture sur cet appareil, s'il y en a un. */
+export function currentPlaybackItemId(): string | null {
+  return activePlayback?.()?.itemId ?? null;
+}
+
 /** Début de lecture par le canal ; faux si le canal ne porte pas la télémétrie. */
 export function channelStart(state: PlaybackStateDto): boolean {
   return status.reporting && sendSocketMessage({ type: "playback:start", state });
