@@ -4,7 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { useFocusProgress } from "../focus/useFocusProgress";
-import { pressScale } from "../motion/pressProgress";
+import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { useRecede, type RowPlace } from "../motion/useRowRecede";
 import { colors, white } from "../theme/tokens";
 
@@ -44,7 +44,9 @@ export interface CardFrameProps {
   place?: RowPlace;
   /** Recule — pour une carte hors d'une rangée à valeur partagée. */
   dimmed?: boolean;
-  /** L'appui sur la carte (OK enfoncé), tenu par sa cible (`FocusTarget`). */
+  /** L'appui sur la carte (OK enfoncé), tenu par sa cible (`FocusTarget`) —
+   *  à défaut, celui de la cible qui CONTIENT le cadre (casting, extras,
+   *  épisodes : le cadre y est rendu par la cible elle-même). */
   press?: SharedValue<number>;
   /** Point fixe de l'agrandissement : le haut pour une rangée (la légende
    *  dessous ne bouge pas), le centre dans une grille. */
@@ -66,9 +68,11 @@ export const CardFrame = memo(function CardFrame({
   const p = useFocusProgress(focused);
   const dim = useFocusProgress(dimmed && !focused, "recede");
   const recede = useRecede(place);
+  const enclosing = usePressProgress();
+  const pressed = press ?? enclosing;
   const lift = useAnimatedStyle(() => ({
     opacity: 1 - (1 - TV_STAGE.focus.recede) * (place ? recede.value : dim.value),
-    transform: cardLift(p.value, press ? press.value : 0),
+    transform: cardLift(p.value, pressed ? pressed.value : 0),
   }));
   const rest = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   const raised = useAnimatedStyle(() => ({ opacity: p.value }));

@@ -5,6 +5,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
+import { pressScale, usePressProgress } from "../../motion/pressProgress";
 import { useRecede, useRowFocus, type RowPlace } from "../../motion/useRowRecede";
 import { colors, fonts, text } from "../../theme/tokens";
 import { PersonPortrait } from "./PersonPortrait";
@@ -25,9 +26,10 @@ const CELL = SIZE + 110;
 function Person({ person, focused, place }: { person: SearchPersonModel; focused: boolean; place: RowPlace }) {
   const p = useFocusProgress(focused);
   const recede = useRecede(place);
+  const press = usePressProgress();
   const lift = useAnimatedStyle(() => ({
     opacity: 1 - (1 - TV_STAGE.focus.recede) * recede.value,
-    transform: [{ translateY: -4 * p.value }, { scale: 1 + 0.1 * p.value }],
+    transform: [{ translateY: -4 * p.value }, { scale: (1 + 0.1 * p.value) * pressScale(press ? press.value : 0) }],
   }));
   const shadow = useAnimatedStyle(() => ({ opacity: p.value }));
   return (
