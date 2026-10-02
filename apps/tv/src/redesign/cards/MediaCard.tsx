@@ -97,7 +97,7 @@ export const MediaCard = memo(function MediaCard({
   focusKey,
   origin,
   hideCaption = false,
-  glowTone = "art",
+  glowTone = card.absent ? "neutral" : "art",
   onPress,
   onLongPress,
   onFocusChange,
