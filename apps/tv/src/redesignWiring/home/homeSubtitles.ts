@@ -31,9 +31,10 @@ export function itemSubtitle(item: MediaItem, withEpisodeName = false): string |
   return item.Type === "Episode" ? episodeLabel(item, withEpisodeName) : yearOf(item);
 }
 
-/** Prochains épisodes : « S2 · E5 — Le Prince de Winterfell » — sous le nom
- *  de la série, ce qui suit, comme « Reprendre » dit ce qu'il reste. */
-export function nextUpSubtitle(item: MediaItem): string | undefined {
+/** Prochains épisodes, Déjà vu : « S2 · E5 — Le Prince de Winterfell » — sous
+ *  le nom de la série, l'épisode de la vignette, comme « Reprendre » dit ce
+ *  qu'il reste ; un film, son année. */
+export function episodeRowSubtitle(item: MediaItem): string | undefined {
   if (item.Type !== "Episode") return yearOf(item);
   return [episodeLabel(item, false), item.Name].filter(Boolean).join(" — ");
 }

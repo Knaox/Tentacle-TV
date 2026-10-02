@@ -31,8 +31,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
  * plateformes, lumière de l'œuvre focalisée — dans le cadre du socle
  * (`RedesignScreen` : navigation, Menu, focus d'entrée et de retour).
  *
- * OK : lecture sur une vignette 16:9 (Reprendre, Prochains épisodes), fiche
- * ailleurs. Appui long : la feuille d'actions, dans la variante de la carte.
+ * OK : lecture sur une vignette 16:9 (Reprendre, Prochains épisodes, Déjà
+ * vu), fiche ailleurs. Appui long : la feuille d'actions, dans la variante de
+ * la carte.
  */
 export function HomeRedesign({ navigation }: Props) {
   const { t } = useTranslation();

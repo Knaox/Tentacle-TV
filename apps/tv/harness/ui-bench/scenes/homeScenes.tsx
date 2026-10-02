@@ -6,7 +6,7 @@ import type { ArtworkPalette } from "../../../src/redesign/color/artworkPalette"
 import { useForcedFocusKey } from "../../../src/redesign/focus/focusPreview";
 import type { HeroModel } from "../../../src/redesign/hero/HeroBanner";
 import { HomeView, type HomeRowModel, type HomeViewProps } from "../../../src/redesign/screens/home/HomeView";
-import { nextUpSubtitle } from "../../../src/redesignWiring/home/homeSubtitles";
+import { episodeRowSubtitle } from "../../../src/redesignWiring/home/homeSubtitles";
 import type { BenchData } from "../data/benchData";
 import { cardOf, episodeLabel, resumeSubtitle, yearOf } from "../data/models";
 import { heroOf, navOf } from "../data/screenModels";
@@ -16,8 +16,8 @@ import type { BenchScene } from "./types";
  * L'accueil, sur les vraies données du compte : le héros tourne sur les
  * reprises (sinon sur la mise en avant), les rangées suivent la mise en page
  * du compte (`home-layout`), puis les derniers ajouts de chaque bibliothèque.
- * Comme dans l'app : Reprendre et Prochains épisodes en vignettes 16:9 (OK
- * lit), toutes les autres rangées en affiches.
+ * Comme dans l'app : les rangées d'épisodes (Reprendre, Prochains épisodes,
+ * Déjà vu) en vignettes 16:9 (OK lit), toutes les autres en affiches.
  * Aucune action sur les cartes : l'appui maintenu ouvre le grand panneau.
  */
 
@@ -33,8 +33,8 @@ export function rowsOf(data: BenchData): HomeRowModel[] {
     items.map((item) => cardOf(data, item, subtitle(item), scope));
   for (const key of layout) {
     if (key === "resume") rows.push({ key, title: t("common:resumeWatching"), variant: "landscape", cards: cards(data.list("resume"), resumeSubtitle, "item") });
-    if (key === "nextUp") rows.push({ key, title: t("common:nextEpisodes"), variant: "landscape", cards: cards(data.list("nextUp"), nextUpSubtitle, "item") });
-    if (key === "watched") rows.push({ key, title: t("common:alreadyWatched"), variant: "poster", cards: cards(data.list("watched"), (it) => (it.Type === "Episode" ? episodeLabel(it) : yearOf(it))) });
+    if (key === "nextUp") rows.push({ key, title: t("common:nextEpisodes"), variant: "landscape", cards: cards(data.list("nextUp"), episodeRowSubtitle, "item") });
+    if (key === "watched") rows.push({ key, title: t("common:alreadyWatched"), variant: "landscape", cards: cards(data.list("watched"), episodeRowSubtitle, "item") });
     if (key === "watchlist") rows.push({ key, title: t("common:myList"), variant: "poster", cards: cards(data.list("watchlist"), yearOf) });
     if (key.startsWith("reco:")) {
       const shelf = data.snapshot.shelves.find((s) => s.id === key.slice(5));
