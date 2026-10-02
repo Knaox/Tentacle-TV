@@ -48,6 +48,27 @@ const clean = (name) => String(name ?? "").replace(/^‎/, "").trim();
 /* ── Le faux Vigie ───────────────────────────────────────────────────── */
 
 const poster = (id) => `http://localhost:${PORT}/img/${id}/Primary`;
+
+/* La saga de « L'Attaque des titans : La dernière attaque » (l'instantané en
+ * a la réponse, pas les affiches : relevées sur la page publique de TMDB). Deux
+ * de ses volets sont des demandes du compte : l'une avance, l'autre attend. */
+const SAGA_POSTERS = {
+  379088: "/8dAzRcrzSqRd5FjLNJ7Bw92Kod4.jpg",
+  330081: "/z7UVitlWT3m1hTCbV6kwxPJmGcx.jpg",
+  492999: "/lJ9HfT2paZIyXMFDRupIB2EA5QD.jpg",
+  714194: "/kXUSsxQ2J3QVGkG1thmhI1FadKd.jpg",
+  1333100: "/2wyvGVSCK69uwtUD0Sn82cD2WdH.jpg",
+};
+const tmdbPoster = (tmdbId) => `https://image.tmdb.org/t/p/w342${SAGA_POSTERS[tmdbId]}`;
+function sagaOf(collectionId) {
+  const found = Object.values(snapshot.detail ?? {}).find((d) => d.saga?.collectionId === collectionId)?.saga;
+  if (!found?.saga) return null;
+  return { ...found, saga: { ...found.saga, parts: found.saga.parts.map((p) => ({ ...p, posterPath: SAGA_POSTERS[p.tmdbId] ?? null })) } };
+}
+const sagaTitle = (tmdbId, n) => {
+  const part = sagaOf(383987)?.saga.parts.find((p) => p.tmdbId === tmdbId);
+  return { key: `movie:${tmdbId}`, title: part?.title ?? `Volet ${n}`, year: part?.releaseDate ? Number(part.releaseDate.slice(0, 4)) : null, imageUrl: tmdbPoster(tmdbId), seasons: null };
+};
 function title(kind, index, n) {
   const item = listOf(kind)[index];
   const mediaType = kind === "movies" ? "movie" : "tv";
@@ -76,6 +97,8 @@ function mine() {
   return [
     lifecycle(title("movies", 5, 1), { from: 18, routeS: 120 }, elapsedS),
     lifecycle(title("series", 3, 2), { from: 62, routeS: 400 }, elapsedS),
+    lifecycle(sagaTitle(379088, 1), { from: 30, routeS: 90 }, elapsedS),
+    { ...sagaTitle(330081, 2), state: "pending", percent: null, etaSeconds: null },
     ...still,
   ].filter(Boolean);
 }
@@ -151,6 +174,8 @@ function handle(req, res) {
   if (img) return image(res, img[1], img[2]);
   if (p.startsWith("/api/jellyfin/")) return jellyfin(req, res, p.slice("/api/jellyfin".length), url);
   if (p.startsWith("/api/plugins/seer/")) return vigie(req, res, p.slice("/api/plugins/seer".length), url);
+  const saga = p.match(/^\/api\/sagas\/(\d+)$/);
+  if (saga) return sagaOf(Number(saga[1])) ? json(res, 200, sagaOf(Number(saga[1]))) : json(res, 404, {});
   switch (p) {
     case "/api/health": return json(res, 200, { status: "ok" });
     case "/api/setup/status": return json(res, 200, { state: "running" });

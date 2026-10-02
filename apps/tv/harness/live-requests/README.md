@@ -20,7 +20,10 @@ Il écoute 127.0.0.1 ET ::1 (l'app vise `http://localhost:<port>`). Sans
 Scénario `live` (défaut) : « Projet Dernière Chance » en route de 18 % à 100
 en 2 min, puis 12 s en mise en bibliothèque, 15 s sorti de la liste (arrivé),
 et ça repart ; « Black Mirror » (saison 2) de 62 % en 6 min 40 ; une demande en
-attente, une bloquée.
+attente, une bloquée. Et la saga de « L'Attaque des titans : La dernière
+attaque » (`/api/sagas/383987`, la réponse de l'instantané, affiches TMDB) :
+son volet 1 est une demande qui avance (de 30 % en 1 min 30), son volet 2 une
+demande en attente.
 
 ```bash
 curl "http://localhost:8767/__mode?vigie=blocked"
@@ -60,6 +63,7 @@ sur l'aperçu), la fibre `RequestsDock` son `onSelect` (la fenêtre).
 | Rail replié, ouvert, aperçu focalisé | l'éventail, ce qui bouge devant ; son affiche se colore, le camembert avance |
 | Fenêtre ouverte | chaque ligne avance d'une seconde à l'autre ; `mine` lue toutes les 10 s |
 | Une demande arrive | « Mise en bibliothèque » (camembert plein, pleine couleur), puis « Disponible », puis elle sort |
+| La fiche du film (`navigate("MediaDetail", { itemId: "f461dd313e49d9bde1d226d22fe4ed08" })`), focus sur la saga | le volet 1 avance d'une seconde à l'autre, `mine` lue toutes les 10 s ; arrivé, plus rien ne se relit |
 | App en arrière-plan | aucune lecture ; au retour, UNE lecture, puis 10 s |
 | `scenario=still` | fenêtre ouverte : 30 s ; rail seul : rien (5 min) |
 | `vigie=off`, `blocked` | ni aperçu ni lecture de `mine` |
