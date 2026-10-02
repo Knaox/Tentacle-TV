@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Modal, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
@@ -84,6 +84,8 @@ export interface LibraryViewProps extends FilterSheetHandlers {
   onEndReached?: () => void;
 }
 
+const NO_CARDS: CardModel[] = [];
+
 function Sheet({ sheet, ...handlers }: { sheet: FilterSheetModel } & FilterSheetHandlers) {
   switch (sheet.kind) {
     case "choice":
@@ -108,34 +110,52 @@ function PageTitle({ title, count }: { title: string; count?: string }) {
 
 export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
   const { nav, title, count, pills, activeFilters, labels, cards, palette, columns = 6, loading, loadingMore, noResults, status, sheet } = props;
-  const header = (
-    <View style={styles.header}>
-      <PageTitle title={title} count={count} />
-      {/* La marque, dans l'en-tête : elle défile avec lui. */}
-      <BrandCorner anchor={BRAND_CORNER_IN_SAFE_AREA} />
-      <FilterBar
-        pills={pills}
-        active={activeFilters}
-        labels={labels}
-        onPressPill={props.onPressPill}
-        onRemoveFilter={props.onRemoveFilter}
-        onClearAll={props.onClearAll}
-      />
-    </View>
+  const { onPressPill, onRemoveFilter, onClearAll } = props;
+  // L'en-tête, le vide et le pied ne changent pas avec la lumière : la carte
+  // focalisée la change à chaque pas du focus, et des éléments neufs à chaque
+  // rendu redessinaient toute la grille — en-tête et barre de filtres compris
+  // — à chaque carte traversée.
+  const header = useMemo(
+    () => (
+      <View style={styles.header}>
+        <PageTitle title={title} count={count} />
+        {/* La marque, dans l'en-tête : elle défile avec lui. */}
+        <BrandCorner anchor={BRAND_CORNER_IN_SAFE_AREA} />
+        <FilterBar
+          pills={pills}
+          active={activeFilters}
+          labels={labels}
+          onPressPill={onPressPill}
+          onRemoveFilter={onRemoveFilter}
+          onClearAll={onClearAll}
+        />
+      </View>
+    ),
+    [title, count, pills, activeFilters, labels, onPressPill, onRemoveFilter, onClearAll],
   );
-  const empty = loading ? (
-    <GridSkeleton columns={columns} rows={2} />
-  ) : noResults ? (
-    <FocusGroup focusKey="library:empty" style={styles.noResults}>
-      <EmptyState
-        icon="sliders"
-        title={noResults.title}
-        message={noResults.message}
-        palette={palette}
-        primary={{ label: noResults.actionLabel, icon: "refresh", onPress: props.onClearAll }}
-      />
-    </FocusGroup>
-  ) : null;
+  // Le vide des filtres trop serrés prend la lumière : lui seul la suit.
+  const emptyPalette = noResults ? palette : null;
+  const empty = useMemo(
+    () =>
+      loading ? (
+        <GridSkeleton columns={columns} rows={2} />
+      ) : noResults && emptyPalette ? (
+        <FocusGroup focusKey="library:empty" style={styles.noResults}>
+          <EmptyState
+            icon="sliders"
+            title={noResults.title}
+            message={noResults.message}
+            palette={emptyPalette}
+            primary={{ label: noResults.actionLabel, icon: "refresh", onPress: onClearAll }}
+          />
+        </FocusGroup>
+      ) : null,
+    [loading, columns, noResults, emptyPalette, onClearAll],
+  );
+  const footer = useMemo(
+    () => (loadingMore ? <View style={styles.more}><GridSkeleton columns={columns} rows={1} /></View> : null),
+    [loadingMore, columns],
+  );
   return (
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
@@ -149,11 +169,11 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
         </>
       ) : (
         <PosterGrid
-          cards={loading ? [] : cards}
+          cards={loading ? NO_CARDS : cards}
           columns={columns}
           header={header}
           empty={empty}
-          footer={loadingMore ? <View style={styles.more}><GridSkeleton columns={columns} rows={1} /></View> : null}
+          footer={footer}
           onPressCard={props.onPressCard}
           onLongPressCard={props.onLongPressCard}
           onFocusCard={props.onFocusCard}
