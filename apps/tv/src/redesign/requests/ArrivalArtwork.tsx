@@ -21,16 +21,18 @@ import type { ArrivalModel } from "./arrivalTypes";
  * se pose sur la vue native ELLE-MÊME : sur un parent, le groupe composerait
  * le gris contre son propre fond vide, plus contre l'image. Rien ne se dessine
  * sur le processeur, rien ne s'anime image par image : un pas de l'avancement
- * (une seconde, une lecture) pose une opacité ; un saut — un état qui change,
- * l'arrivée — se fond.
+ * (une seconde, une lecture) POSE une opacité — une image composée, rien de
+ * plus ; seul un changement d'état (l'arrivée…) ou un rattrapage de dix points
+ * se fond. Mesuré au banc : fondre chaque pas, sous le verre de la fenêtre,
+ * coûtait ~100 ms/s de GPU quand l'avancement filait (2,5 %/s).
  *
  * `veil` : le voile qui fait reculer une affiche ABSENTE de la bibliothèque —
  * il s'allège avec la couleur, et tombe à l'arrivée. Sans affiche
  * (`placeholder`) : le cadre fourni, le signe par-dessus.
  */
 
-/** Un saut plus grand se fond ; un pas plus petit se pose. */
-const JUMP = 0.02;
+/** Un rattrapage de cette ampleur se fond (une lecture après un long silence) ; un pas d'avancement se pose. */
+const JUMP = 0.1;
 /** Le fondu d'un saut de gris ou de voile. */
 const EASE_MS = 360;
 /** La part du voile que la pleine couleur retire (avant l'arrivée, qui le retire tout). */
@@ -42,16 +44,17 @@ const DesaturateLayer = DesaturateHost
   ? Animated.createAnimatedComponent(forwardRef<View, ViewProps>((props, ref) => <DesaturateHost ref={ref as never} {...props} />))
   : null;
 
-/** Une valeur qui suit un nombre du rendu : posée pour un pas, fondue pour un saut. */
-function useEased(target: number): SharedValue<number> {
+/** Une valeur qui suit un nombre du rendu : posée pour un pas, fondue quand l'état change (`cue`) ou pour un saut. */
+function useEased(target: number, cue: string): SharedValue<number> {
   const reduced = useReducedMotion();
   const value = useSharedValue(target);
-  const last = useRef(target);
+  const last = useRef({ target, cue });
   useLayoutEffect(() => {
-    const jump = Math.abs(target - last.current) >= JUMP;
-    last.current = target;
-    value.value = jump ? motionTo(target, EASE_MS, reduced) : target;
-  }, [target, reduced, value]);
+    const before = last.current;
+    last.current = { target, cue };
+    const fade = cue !== before.cue || Math.abs(target - before.target) >= JUMP;
+    value.value = fade ? motionTo(target, EASE_MS, reduced) : target;
+  }, [target, cue, reduced, value]);
   return value;
 }
 
@@ -84,8 +87,8 @@ export const ArrivalArtwork = memo(function ArrivalArtwork({
 }: ArrivalArtworkProps) {
   const arrived = arrival.state === "arrived";
   const fraction = colorFraction(arrival.state, percent);
-  const grey = useEased(1 - fraction);
-  const dim = useEased(arrived ? 0 : 1 - VEIL_LIFT * fraction);
+  const grey = useEased(1 - fraction, arrival.state);
+  const dim = useEased(arrived ? 0 : 1 - VEIL_LIFT * fraction, arrival.state);
   const p = useFocusProgress(focused);
   const rest = veil?.rest ?? 0;
   const lit = veil?.focused ?? 0;
