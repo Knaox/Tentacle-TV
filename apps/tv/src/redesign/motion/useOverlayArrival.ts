@@ -10,9 +10,11 @@ import { SWAP_FLOOR } from "./useSwap";
  * entrant en fondu (`body`) — jamais tout à fait transparent (`SWAP_FLOOR`) :
  * tvOS y pose son focus dès l'ouverture.
  *
- * L'entrée seulement : à la fermeture, elle se retire aussitôt — un
- * focalisable qui survivrait le temps d'une sortie disputerait le focus à ce
- * qui le reprend (et ses guides le retiendraient).
+ * L'entrée seulement. La sortie est à qui monte la surimpression : un panneau
+ * du lecteur reste monté le temps de son fondu, focus compris, et ne le rend
+ * qu'à la fin (`useExit`, `PlayerChromeView`) — rendu plus tôt, un focalisable
+ * encore à l'écran changeait d'aspect sous les yeux ; la carte « À suivre » et
+ * l'écran de fin se retirent aussitôt.
  */
 export function useOverlayArrival(axis: "x" | "y", distance: number, motion: Motion = "panel") {
   const p = useEntrance(motion);

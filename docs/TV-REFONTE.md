@@ -30,6 +30,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 18. Saisons manquantes (Apple TV, bureau, mobile) | Fait (2026-10-02) : une série de la bibliothèque à qui il manque des saisons les offre depuis la recherche — en tête de « À demander » et en onglets grisés sur sa fiche (Apple TV), « Demander » au plateau et dans la barre (bureau), dans la feuille d'appui long (mobile) — « Les saisons manquantes » ci-dessous. |
 | 19. Bibliothèques rapides (Apple TV) | Fait (2026-10-02) : champs minimaux, pages de 60 demandées tôt, lignes recyclées, cartes allégées, préchargement depuis la navigation — ouverture ~0,5 s, 3 fois plus de lignes en flèche maintenue, RAM −54 % — « Les bibliothèques rapides (Apple TV) » ci-dessous. |
 | 20. Les demandes en direct (Apple TV) | Fait (2026-10-02) : l'affiche d'une demande, grise, qui reprend sa couleur au prorata de l'avancement, le camembert au centre — partout où une demande se montre ; la fraîcheur de Vigie (10 s, une seconde à l'écran), seulement à l'écran — « Les demandes en direct (Apple TV) » ci-dessous. |
+| 21. Retour sans clignotement, suite de fiches (Apple TV) | Fait (2026-10-02) : tout menu fermé par Retour s'efface d'un seul fondu (panneaux du lecteur, menus en Modal), le rail reste déplié sous une Modal ouverte depuis lui ; une fiche ouverte depuis une autre fiche la remplace, un seul Retour ramène avant la première — « Le Retour (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -1358,9 +1359,10 @@ l'utilisateur sur l'Apple TV : la qualité se cachait sous « Pistes » ; et
 - Focus : entrée sur le palier retenu, GAUCHE vers la croix par la marge,
   Retour → le focus revient à la pilule. Le Retour est la couche « menu » de
   la pile du lecteur (`usePlayerBackLayers`, l'état `showSettings`, commun aux
-  deux onglets) ; à la fermeture, `usePanelReturnFocus` rend le focus à la
-  pilule de l'onglet ouvert (`usePlayerSheet` → `opener`), jamais à
-  « Pistes » quand c'est « Réglages » qui a ouvert.
+  deux onglets) ; à la fermeture — à la fin du fondu de la feuille —,
+  `usePanelReturnFocus` rend le focus à la pilule de l'onglet ouvert
+  (`usePlayerSheet` → `opener`), jamais à « Pistes » quand c'est « Réglages »
+  qui a ouvert.
 - Éprouvé dans l'app réelle (clone « Banc UI TV — qualité (Claude) », faux
   serveur) : focus sur « Réglages » → entrée sur « Original » → Retour (pile
   du lecteur) → feuille refermée, focus sur « Réglages », lecture continue.
@@ -1625,6 +1627,7 @@ l'application (la règle d'Apple).
 | Page du rail, rail ouvert | le focus va sur « Profil et réglages » |
 | … déjà sur Réglages | l'application quitte (écran d'accueil de tvOS) |
 | Page poussée : fiche, personne, genre, bande-annonce, jumelage ouvert depuis les réglages | la page précédente, rail ouvert ou non |
+| Une suite de fiches : similaires, saga, personne du casting, « Plus d'infos », filmographie | là où l'on était avant la PREMIÈRE fiche, focus sur la carte d'origine (chaque fiche ouverte depuis une fiche a remplacé la précédente) |
 | Lecteur : un menu, puis l'habillage, puis rien | ferme le menu, puis masque l'habillage (la lecture continue ; en pause aussi), puis quitte la lecture |
 | Lecteur, défilement | revient où l'on était (inchangé) |
 
@@ -1665,7 +1668,11 @@ l'application (la règle d'Apple).
 - **Une vue nouvelle** (onglet Réglages du lecteur, demandes en cours…) :
   `useBackLayer("menu", ouvert, fermer)` dans le composant qui tient l'état ;
   une Modal ajoute `onRequestClose={fermer}`. Jamais `usePreventRemove` ni
-  d'intercepteur à soi ; une route poussée recule seule.
+  d'intercepteur à soi ; une route poussée recule seule. Et elle SORT en un
+  seul fondu : un menu en Modal passe par `FadingModal` (ou joue sa sortie
+  avant de se retirer, comme le grand panneau) ; un panneau posé dans une
+  vue reste monté le temps de sa sortie (`useExit`), focus compris. Une
+  fiche qui en ouvre une autre passe par `useOpenDetail`.
 
 Éprouvé dans l'app réelle (clone « Banc UI TV — retour (Claude) », compte de
 test, agent XCUITest, `simctl io recordVideo` image par image) : accueil,
@@ -1676,19 +1683,6 @@ d'une entrée du rail, déplacement annulé ; fiche → bibliothèque (fondu
 natif, carte rendue) ; Parcourir, rail ouvert → page précédente ; lecteur :
 pistes et épisodes (aucune image de la fiche), habillage masqué (la lecture
 continue), pause, sortie ; défilement annulé.
-
-**Un panneau du lecteur qui se ferme rend le focus à son bouton TOUT DE
-SUITE** (`player/usePanelReturnFocus.ts`), comme une fenêtre qu'on referme.
-Sous un panneau, l'habillage est à opacité nulle, et tvOS ne focalise rien
-d'invisible : la restauration partagée (`overlayFocusCore`, 220 ms puis un
-cycle de `hasTVPreferredFocus`) laissait 305 à 330 ms sans focus visible,
-parfois un détour par « Reculer de 10 s ». Deux images après la fermeture,
-le fondu de l'habillage commencé, `requestTVFocus` pose le focus sur
-« Pistes », « Réglages » (la pilule de l'onglet ouvert) ou « Épisodes » ;
-la restauration différée reste le filet
-(Android TV n'en change pas). Mesuré au simulateur (journal du magasin de
-focus) : 40 à 45 ms entre la perte du focus par le panneau et sa reprise par
-le bouton, aucune autre cible entre les deux, en lecture comme en pause.
 
 Pièges payés :
 
@@ -1701,6 +1695,111 @@ Pièges payés :
   `Pods/hermes-engine`. Extraire `hermes-ios-*-debug.tar.gz` à la main dans
   `Pods/hermes-engine` et écrire `Debug` dans
   `Pods/.last_build_configuration`.
+- `simctl io recordVideo` sous une charge de 40 à 60 (huit sessions) : il
+  écrit par rafales, ses horodatages se tassent (images à 2 ms d'écart) et
+  un fondu en sortie douce paraît une coupe — juger sur le nombre d'images
+  intermédiaires et le contenu, pas sur l'horodatage. Clore une transition
+  aussi après dix images calmes.
+- Un fondu en sortie douce (0,22 ; 1 ; 0,36 ; 1) est aux trois quarts fait en
+  70 ms : pour un relais qui doit se voir, une durée commune et des courbes
+  choisies pour que la somme des opacités ne retombe jamais sous le plein.
+- Retoucher `redesign/motion/motion.ts` (ou un module sans composant) recharge
+  tout le JS : l'app revient à l'accueil. Une salve d'appuis lancée à
+  l'aveugle derrière part ailleurs — vérifier la pile et le focus avant
+  chaque salve (le banc l'a payé : vingt « +30 s » sur une reprise).
+
+### Sans clignotement : un seul fondu (2026-10-02)
+
+Branche `claude/optimistic-albattani-75d697`. Retour de l'essai : « Le bouton
+back provoque parfois un clignotement quand je clique pour retirer un menu
+(surtout quand je suis dans le lecteur) ». La règle : à la fermeture d'un menu
+par Retour, le menu s'efface en UN fondu, et rien d'autre ne se redessine —
+ni l'habillage, ni le fond, ni une image noire, ni un focus qui passe ailleurs.
+
+- **Le lecteur — la cause, filmée.** Pistes, Réglages et Épisodes se
+  démontaient d'un coup, et l'habillage, à opacité nulle sous eux, repartait
+  de rien : une ou deux images où la vidéo était à nu, plein éclat, entre le
+  voile du panneau et celui de l'habillage. « Parfois » : visible en lecture
+  sur une scène claire, noyé en pause sous le voile de la pause, plus ou
+  moins long selon la charge. Le panneau refermé reste maintenant monté le
+  temps de sa sortie (`useExit`, `PlayerChromeView`) et s'efface pendant que
+  l'habillage revient DESSOUS, sur place (sans monter ni descendre) — le
+  relais `handoff` (`TV_MOTION.player.handoffMs`, 240 ms) : ce qui arrive
+  dessous se pose vite, ce qui part dessus s'attarde puis file ; le haut de
+  l'habillage (son voile dense, le titre) a sa courbe à lui (`handoffTop`,
+  symétrique), son voile ne devant pas se poser sous le voile léger d'un
+  panneau avant qu'il soit parti.
+- **Le focus reste dans le panneau pendant son fondu** (aucun geste n'y agit
+  plus) : il s'efface d'un bloc, sa ligne retenue comme le reste ; à la fin,
+  invisible (`SWAP_FLOOR`), `onPanelExited` rend le focus au bouton qui
+  l'avait ouvert (« Pistes », « Réglages », « Épisodes ») avant qu'il ne se
+  démonte — jamais un instant sans focus, jamais ailleurs. Rendu deux images
+  après la fermeture (la règle d'avant), le focus quittait la ligne pendant
+  que le panneau était encore là : elle passait par une barre grise vide.
+- **Les menus en Modal** — listes de filtres, liste de choix d'un réglage,
+  menu d'une entrée du rail, feuille des saisons (Vigie) — se retiraient
+  d'un coup, voile compris. `FadingModal` (vue) garde la Modal le temps que
+  son contenu s'efface (préréglage `veil`), puis la retire ; tvOS rend alors
+  le focus à ce qui l'avait ouverte. Ce que la fermeture déclenchait part à
+  la fin (`onExited`) : la pastille d'un filtre se réclame une fois la liste
+  effacée (réclamée pendant, la Modal la gardait). Le grand panneau, la
+  feuille d'un titre absent et la vue des demandes avaient déjà leur sortie.
+- **Le rail reste déplié sous une Modal ouverte depuis lui** (vue des
+  demandes, menu d'une entrée) : il se repliait dès que le focus quittait ses
+  entrées — sous la Modal — et se redépliait à la fermeture, quatre images
+  plus tard (filmé). Il ne se replie plus que si le focus se pose ailleurs
+  DANS l'écran (`useRailFocused`).
+- **Retour qui masque l'habillage** : le fondu de l'inactivité, inchangé —
+  aucune image parasite mesurée.
+
+**Mesuré** (simulateur, compte de test, `simctl io recordVideo`, détecteur
+image par image du bloc-notes de la session : chaque image réduite en 48
+cellules ; pendant un vrai fondu, chaque cellule reste entre sa valeur de
+départ et d'arrivée — une image nue, noire ou un focus passé ailleurs fait
+déborder une cellule ; seuil : 20 niveaux sur 255) :
+
+| Menu, 20 fermetures | Avant | Après |
+|---|---|---|
+| Pistes (lecteur) | 19 avec image nue (débord 106 à 110) | 0 — débord max 6 |
+| Réglages, Épisodes (lecteur) | même cause | 0 — max 15 |
+| Listes de filtres | coupe sèche | 0 — max 0,2 |
+| Grand panneau, liste de choix, menu du rail, feuille des saisons | — | 0 |
+| Vue des demandes | rail replié puis redéplié (32) | 0 — max 4 |
+
+Les débords restants (≤ 15) sont un creux doux de luminance pendant le fondu
+— deux voiles indépendants ne se fondent jamais tout à fait linéairement —,
+jamais une image fausse.
+
+### La suite de fiches (2026-10-02)
+
+Retour de l'essai : « Si je vais dans un titre similaire, puis un autre, puis
+un autre, puis un autre, je clique sur back et je dois recliquer sur back
+plusieurs fois pour revenir où j'étais. »
+
+- **La règle** (`detailMove`, tv-core `nav/detailChain`, testée) : une page
+  de détail — la fiche d'un titre (film, série, épisode, saga), la page
+  d'une personne — ouverte depuis une autre page de détail la REMPLACE dans
+  la pile. Un seul Retour ramène avant la première fiche, le focus sur la
+  carte d'origine (la page révélée n'a pas bougé), et la pile ne garde plus
+  une suite de fiches et leurs images.
+- **La hiérarchie d'une série ne change pas** : descendre vers une saison ou
+  un épisode empile, Retour y remonte ; la page visée juste DESSOUS
+  (l'épisode qui remonte à sa série par sa pastille), on y RECULE au lieu
+  d'en empiler une seconde.
+- **Branchée** (`useOpenDetail`) : cartes de la fiche (similaires, saga,
+  collection), personne du casting, pastille de la série, « Plus d'infos »
+  et le repli de « Lire » du grand panneau, affiches de la page d'une
+  personne. Ailleurs (accueil, bibliothèque, recherche), la première fiche
+  s'empile, comme avant.
+- **Le lecteur lancé depuis une fiche y revient toujours** — à la fin d'une
+  série aussi : il ne se remplace plus par la fiche de la série, qui
+  s'empilait sur celle d'origine (`launchedFromDetail`, Apple TV ; Android
+  TV inchangé).
+
+Éprouvé dans l'app (simulateur, compte de test) : quatre fiches en chaîne
+(pile : Accueil > Films > une seule fiche à chaque saut) ; fiche → personne
+→ film ; « Plus d'infos » depuis une fiche ; série → épisode → pastille de la
+série — chaque fois un seul Retour, focus sur la carte d'origine.
 
 ## Les demandes en cours (Apple TV)
 
