@@ -1,11 +1,12 @@
-import { memo } from "react";
+import { memo, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { SoftGradient, STAGE_SIZE } from "../../background/SoftGradient";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { Presented } from "../../motion/Presented";
-import { useMotion } from "../../motion/useMotion";
+import { useExit, useMotion } from "../../motion/useMotion";
+import { SWAP_FLOOR } from "../../motion/useSwap";
 import { scrim } from "../../theme/tokens";
 import { EndScreen } from "./EndScreen";
 import { EpisodesPanel } from "./EpisodesPanel";
@@ -60,7 +61,12 @@ import { UpNextCard } from "./UpNextCard";
  * montent de quelques points, la barre du haut descend — et s'efface
  * posément à l'inactivité (préréglage `chrome`) ; le badge de saut et la vue
  * du défilement entrent et sortent en fondu ; panneaux, carte « À suivre » et
- * écran de fin entrent en glissant (chacun chez lui).
+ * écran de fin entrent en glissant (chacun chez lui). Un panneau REFERMÉ
+ * s'efface d'un seul fondu, focus compris, pendant que l'habillage revient
+ * dessous, sur place (préréglage `handoff`) : leur somme ne retombe jamais
+ * sous le plein. Avant, le panneau disparaissait d'un coup et l'habillage
+ * repartait de rien — la vidéo à nu une image ou deux, le clignotement de
+ * Retour (filmé).
  */
 
 export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport" | "paused" | "labels"> {
@@ -101,6 +107,9 @@ export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport
   onSelectSubtitle?: (key: string) => void;
   onSelectQuality?: (key: string) => void;
   onClosePanel?: () => void;
+  /** Le panneau refermé a fini de s'effacer (il gardait le focus pendant son
+   *  fondu) : l'intégration rend le focus au bouton qui l'avait ouvert. */
+  onPanelExited?: () => void;
   /** Le message-outil quand un serveur ne répond plus (`PlaybackTrouble`). */
   trouble?: PlaybackTroubleModel | null;
   /** Son panneau, activé, tient le focus : l'habillage recule devant lui. */
@@ -121,11 +130,31 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
   const chrome = playing && osdVisible && !panel && !scrub && !endScreen && !covers;
   const trouble = playing ? props.trouble ?? null : null;
   const troublePanel = trouble?.mode === "panel";
-  const shown = useMotion(chrome, "chrome");
+  // Le panneau, gardé le temps de sa sortie : il s'efface d'un bloc, focus
+  // compris, pendant que l'habillage revient — le même relais (`handoff`)
+  // pour les deux ; aucun geste n'y agit plus.
+  const exit = useExit(!!panel, "handoff", props.onPanelExited);
+  const live = !exit.leaving;
+  const lastPanel = useRef<PlayerPanel | null>(null);
+  if (panel) lastPanel.current = panel;
+  const shownPanel = exit.mounted ? lastPanel.current : null;
+  const shown = useMotion(chrome, shownPanel !== null ? "handoff" : "chrome");
+  const shownTop = useMotion(chrome, shownPanel !== null ? "handoffTop" : "chrome");
+  // Sous un panneau, l'habillage s'éteint et se rallume SUR PLACE : il ne
+  // monte ni ne descend — seule l'inactivité le fait partir en glissant.
+  const lift = useMotion(chrome || shownPanel !== null, "chrome");
   const dim = useMotion(playing && paused && !scrub && !endScreen, "veil");
   const chromeStyle = useAnimatedStyle(() => ({ opacity: shown.value }));
-  const topStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -TV_MOTION.player.chromeDrop * (1 - shown.value) }] }));
-  const bottomStyle = useAnimatedStyle(() => ({ transform: [{ translateY: TV_MOTION.player.chromeRise * (1 - shown.value) }] }));
+  // Le haut a sa propre courbe sous un panneau (`handoffTop`) : sa part de
+  // l'opacité de l'ensemble, jamais plus.
+  const topStyle = useAnimatedStyle(() => ({
+    opacity: shown.value > 0.001 ? Math.min(1, shownTop.value / shown.value) : 1,
+    transform: [{ translateY: -TV_MOTION.player.chromeDrop * (1 - lift.value) }],
+  }));
+  const bottomStyle = useAnimatedStyle(() => ({ transform: [{ translateY: TV_MOTION.player.chromeRise * (1 - lift.value) }] }));
+  // Jamais tout à fait 0 : tvOS tiendrait pour caché le focus qu'il garde, et
+  // le chercherait ailleurs avant que l'intégration ne le rende (`SWAP_FLOOR`).
+  const exitStyle = useAnimatedStyle(() => ({ opacity: Math.max(SWAP_FLOOR, exit.progress.value) }));
   const dimStyle = useAnimatedStyle(() => ({ opacity: dim.value }));
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -183,26 +212,35 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
           <ScrubOverlay scrub={value} timeline={timeline} confirmLabel={labels.scrubConfirm} cancelLabel={labels.scrubCancel} appear={appear} />
         )}
       </Presented>
-      {panel?.kind === "episodes" ? (
-        <EpisodesPanel
-          model={panel.episodes}
-          labels={labels}
-          onSelectSeason={props.onSelectSeason}
-          onSelectEpisode={props.onSelectEpisode}
-          onClose={props.onClosePanel}
-        />
-      ) : null}
-      {panel?.kind === "tracks" ? (
-        <TracksPanel
-          model={panel.tracks}
-          labels={labels}
-          onSelectAudio={props.onSelectAudio}
-          onSelectSubtitle={props.onSelectSubtitle}
-          onClose={props.onClosePanel}
-        />
-      ) : null}
-      {panel?.kind === "settings" ? (
-        <SettingsPanel model={panel.settings} labels={labels} onSelectQuality={props.onSelectQuality} onClose={props.onClosePanel} />
+      {shownPanel ? (
+        <Animated.View style={[StyleSheet.absoluteFill, exitStyle]} pointerEvents="box-none">
+          {shownPanel.kind === "episodes" ? (
+            <EpisodesPanel
+              model={shownPanel.episodes}
+              labels={labels}
+              onSelectSeason={live ? props.onSelectSeason : undefined}
+              onSelectEpisode={live ? props.onSelectEpisode : undefined}
+              onClose={live ? props.onClosePanel : undefined}
+            />
+          ) : null}
+          {shownPanel.kind === "tracks" ? (
+            <TracksPanel
+              model={shownPanel.tracks}
+              labels={labels}
+              onSelectAudio={live ? props.onSelectAudio : undefined}
+              onSelectSubtitle={live ? props.onSelectSubtitle : undefined}
+              onClose={live ? props.onClosePanel : undefined}
+            />
+          ) : null}
+          {shownPanel.kind === "settings" ? (
+            <SettingsPanel
+              model={shownPanel.settings}
+              labels={labels}
+              onSelectQuality={live ? props.onSelectQuality : undefined}
+              onClose={live ? props.onClosePanel : undefined}
+            />
+          ) : null}
+        </Animated.View>
       ) : null}
       {endScreen ? <EndScreen model={endScreen} labels={labels} onPlayNext={props.onPlayNext} onLeave={props.onLeaveEnd} /> : null}
       {phase.kind !== "playing" ? <PlayerLoading media={media} phase={phase} labels={labels} onBack={props.onBack} onRetry={props.onRetry} /> : null}

@@ -76,6 +76,62 @@ export function usePresence(shown: boolean, motion: Motion): Presence {
   return { mounted: mounted || shown, progress };
 }
 
+export interface Exit extends Presence {
+  /** La sortie se joue : ce qui part ne se focalise plus, ne s'appuie plus. */
+  leaving: boolean;
+}
+
+/**
+ * La SORTIE seule, pour ce qui a déjà sa propre entrée — un panneau du
+ * lecteur arrive en glissant (`useOverlayArrival`) : monté tant que `shown`,
+ * il le reste le temps de sa sortie (`progress`, 1 → 0), puis se démonte.
+ * Plein (1) tant qu'il est affiché : l'entrée reste celle du contenu.
+ * Rouvert pendant sa sortie, il y revient d'où il en est, sans se démonter.
+ *
+ * Ce qui part GARDE son focus pendant sa sortie : il s'efface d'un bloc, sa
+ * ligne focalisée comme le reste. `onExited` part à la fin, juste avant le
+ * démontage — le moment de rendre le focus à ce qui le reprend, quand plus
+ * rien ne se voit de ce qui s'en va. Pendant la sortie (`leaving`),
+ * l'appelant n'y laisse aucun geste agir.
+ */
+export function useExit(shown: boolean, motion: Motion, onExited?: () => void): Exit {
+  const reduced = useReducedMotion();
+  const [mounted, setMounted] = useState(shown);
+  const progress = useSharedValue(1);
+  const generation = useRef(0);
+  // Une sortie commencée : rouvert, il revient d'où il en est ; monté à neuf, plein d'emblée.
+  const leavingFrom = useRef(false);
+  const exited = useRef(onExited);
+  exited.current = onExited;
+  if (shown && !mounted) setMounted(true);
+
+  const unmount = useCallback((gen: number) => {
+    if (gen !== generation.current) return;
+    leavingFrom.current = false;
+    exited.current?.();
+    setMounted(false);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!mounted) return;
+    const gen = ++generation.current;
+    if (shown) {
+      progress.value = leavingFrom.current ? motionTo(1, motion, reduced) : 1;
+      leavingFrom.current = false;
+      return;
+    }
+    leavingFrom.current = true;
+    progress.value = motionTo(0, motion, reduced, (finished) => {
+      "worklet";
+      if (finished) runOnJS(unmount)(gen);
+    });
+    // `motion` : lu au moment du geste, il ne relance rien.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown, mounted, reduced, progress, unmount]);
+
+  return { mounted: mounted || shown, leaving: mounted && !shown, progress };
+}
+
 /**
  * 0 → 1 UNE fois, à l'arrivée (le montage) : le contenu d'un écran poussé,
  * une image qui se pose. `delayMs` : ce qu'il attend — l'image précède

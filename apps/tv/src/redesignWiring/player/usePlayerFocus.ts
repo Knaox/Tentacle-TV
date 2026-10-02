@@ -86,7 +86,7 @@ function useClaimOnRise(store: FocusStore, key: string | null, active: boolean) 
   }, [store, key, active]);
 }
 
-export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; state: PlayerFocusState } {
+export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; state: PlayerFocusState; onPanelExited: () => void } {
   const { store, overlay, pillShown, showSettings, showEpisodes } = args;
 
   const osd = useOverlayFocus({
@@ -166,8 +166,8 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
   useClaimOnRise(store, "upnext:play", args.upNextShown);
   useClaimOnRise(store, "end:play", args.endShown);
   useClaimOnRise(store, sheetEntryKey, sheetEntryKey !== null);
-  // Un panneau refermé rend le focus à son bouton, sans attendre la restauration.
-  usePanelReturnFocus(store, showSettings, showEpisodes, args.sheetOpener);
+  // Un panneau refermé rend le focus à son bouton, à la fin de son fondu.
+  const onPanelExited = usePanelReturnFocus(store, showSettings, showEpisodes, args.sheetOpener, args.overlayVisible);
 
   const state = useMemo<PlayerFocusState>(() => ({
     store,
@@ -176,7 +176,7 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
     activeSeasonIndex: args.activeSeasonIndex,
   }), [store, refusable, args.overlayVisible, pill.islandFocused, args.activeSeasonIndex]);
 
-  return { binder, state };
+  return { binder, state, onPanelExited };
 }
 
 /**

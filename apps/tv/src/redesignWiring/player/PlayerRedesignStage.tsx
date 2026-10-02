@@ -82,7 +82,7 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
       </TouchableOpacity>
       <FocusBindingProvider bind={focus.binder}>
         <PlayerFocusStateProvider value={focus.state}>
-          <PlayerChromeView {...chrome.view} />
+          <PlayerChromeView {...chrome.view} onPanelExited={focus.onPanelExited} />
         </PlayerFocusStateProvider>
       </FocusBindingProvider>
     </View>

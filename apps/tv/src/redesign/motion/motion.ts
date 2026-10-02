@@ -72,6 +72,18 @@ const PRESETS = {
   settle: { enter: timing(TV_MOTION.image.settleMs, EASE.out), exit: timing(TV_MOTION.image.settleMs, EASE.out) },
   /** L'habillage du lecteur : il paraît vite, s'efface posément (à l'inactivité). */
   chrome: { enter: timing(TV_MOTION.player.chromeInMs, EASE.out), exit: timing(TV_MOTION.player.chromeOutMs, EASE.inOut) },
+  /** Le relais entre un panneau du lecteur et l'habillage, sur la même durée :
+   *  ce qui arrive (dessous) se pose vite, ce qui part (dessus) s'attarde
+   *  puis file. Leur somme ne retombe jamais sous le plein — ni image où la
+   *  vidéo est à nu, ni deux voiles à demi qui laissent passer la lumière
+   *  (avec deux courbes égales, le bas de l'image s'éclaircissait de moitié
+   *  au milieu du fondu, mesuré). */
+  handoff: { enter: timing(TV_MOTION.player.handoffMs, EASE.out), exit: timing(TV_MOTION.player.handoffMs, EASE.in) },
+  /** Le même relais pour le HAUT de l'habillage (son voile, le titre) : le
+   *  voile d'un panneau y est léger, le sien dense — posé vite dessous, il
+   *  assombrissait le haut au-delà de l'arrivée (−30 % sous les épisodes,
+   *  mesuré). Symétrique, il n'a fini qu'une fois le panneau parti. */
+  handoffTop: { enter: timing(TV_MOTION.player.handoffMs, EASE.inOut), exit: timing(TV_MOTION.player.handoffMs, EASE.inOut) },
   /** Une image chargée qui entre en fondu. */
   imageIn: { enter: timing(TV_MOTION.image.fadeInMs, EASE.out), exit: timing(TV_MOTION.reveal.outMs, EASE.in) },
 } as const;

@@ -103,6 +103,10 @@ export const TV_MOTION = {
     chromeDrop: 16,
     /** Ce qu'un panneau (épisodes, pistes) ou une carte glisse en entrant. */
     panelSlide: 48,
+    /** Le panneau refermé qui s'efface pendant que l'habillage revient : une
+     *  seule durée pour les deux, assez longue pour qu'on voie le panneau
+     *  partir (les courbes : préréglage `handoff` de l'app). */
+    handoffMs: 240,
   },
   crossfade: {
     /** Le héros qui tourne : l'image. Le texte part vite, arrive après. */
