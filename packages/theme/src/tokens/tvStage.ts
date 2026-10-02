@@ -121,7 +121,4 @@ export const TV_LIGHT = {
    *  `neutral` : une carte qui doit rester grise (hors bibliothèque) garde
    *  une lueur blanche, douce et basse. */
   cardGlow: { opacity: 0.7, radius: 46, offsetY: 18, neutral: "#FFFFFF", neutralOpacity: 0.18 },
-  /** Le halo de la marque derrière le logo, sur l'encre : la recette du halo
-   *  des icônes de `brand/` (magenta au cœur, violet au bord). */
-  brandHalo: { inner: "#C026D3", outer: "#A855F7", opacity: 0.75 },
 } as const;

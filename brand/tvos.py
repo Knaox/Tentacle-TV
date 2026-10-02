@@ -37,8 +37,8 @@ ICON_SPAN = 0.82
 # Le violet de nuit du fond, de haut en bas.
 NIGHT = ("#43178C", "#1B0939")
 
-# La lumière de la marque : la recette du halo de `brand/` (et de
-# `TV_LIGHT.brandHalo` dans l'app), poussée pour se lire sur le violet.
+# La lumière de la marque : la recette du halo de `brand/`, poussée pour se
+# lire sur le violet.
 LIGHT_STOPS = (("0", "#C026D3", ".82"), (".55", "#A855F7", ".24"), ("1", "#A855F7", "0"))
 # Le rayon de la lumière, en part de la hauteur du cadre.
 LIGHT_RADIUS = 0.62
