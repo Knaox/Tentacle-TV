@@ -159,6 +159,12 @@ export const PosterGrid = memo(function PosterGrid({
       ItemSeparatorComponent={Separator}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      // Pas de barre d'index du défilement rapide de tvOS (flèche maintenue) :
+      // la grille n'en montre aucune, et tvOS la refabriquait pourtant —
+      // étiquettes comprises — à chaque lot de lignes ajouté et à chaque
+      // battement du défilement rapide. Mesuré au profileur : le premier
+      // poste du fil d'interface en défilement rapide.
+      showsScrollIndex={false}
       onEndReached={onEndReached}
       // La page suivante part à trois écrans de la fin : quand le focus
       // dévale (flèche maintenue, glisser vif), elle est là avant lui.
