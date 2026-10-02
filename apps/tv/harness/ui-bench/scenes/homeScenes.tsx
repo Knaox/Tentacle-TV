@@ -29,10 +29,11 @@ export function rowsOf(data: BenchData): HomeRowModel[] {
   const layout = (data.snapshot.extras?.homeLayout as { layout?: { rows?: Array<{ key: string; enabled: boolean }> } } | undefined)
     ?.layout?.rows?.filter((row) => row.enabled).map((row) => row.key) ?? ["resume", "nextUp", "watchlist", "watched"];
   const rows: HomeRowModel[] = [];
-  const cards = (items: MediaItem[], subtitle: (item: MediaItem) => string | undefined) => items.map((item) => cardOf(data, item, subtitle(item)));
+  const cards = (items: MediaItem[], subtitle: (item: MediaItem) => string | undefined, scope?: "item") =>
+    items.map((item) => cardOf(data, item, subtitle(item), scope));
   for (const key of layout) {
-    if (key === "resume") rows.push({ key, title: t("common:resumeWatching"), variant: "landscape", cards: cards(data.list("resume"), resumeSubtitle) });
-    if (key === "nextUp") rows.push({ key, title: t("common:nextEpisodes"), variant: "landscape", cards: cards(data.list("nextUp"), nextUpSubtitle) });
+    if (key === "resume") rows.push({ key, title: t("common:resumeWatching"), variant: "landscape", cards: cards(data.list("resume"), resumeSubtitle, "item") });
+    if (key === "nextUp") rows.push({ key, title: t("common:nextEpisodes"), variant: "landscape", cards: cards(data.list("nextUp"), nextUpSubtitle, "item") });
     if (key === "watched") rows.push({ key, title: t("common:alreadyWatched"), variant: "poster", cards: cards(data.list("watched"), (it) => (it.Type === "Episode" ? episodeLabel(it) : yearOf(it))) });
     if (key === "watchlist") rows.push({ key, title: t("common:myList"), variant: "poster", cards: cards(data.list("watchlist"), yearOf) });
     if (key.startsWith("reco:")) {

@@ -70,11 +70,13 @@ function landscapeOf(data: BenchData, item: MediaItem): { uri?: string; logoUri?
   return { uri: data.image(item.Id, "Backdrop"), logoUri: data.image(item.Id, "Logo") };
 }
 
-export function cardOf(data: BenchData, item: MediaItem, subtitle?: string): CardModel {
+/** `scope` : ce que la carte montre, pour sa note — comme l'app, la série
+ *  pour une affiche, l'épisode lui-même pour une vignette 16:9 (`item`). */
+export function cardOf(data: BenchData, item: MediaItem, subtitle?: string, scope: "item" | "series" = "series"): CardModel {
   const series = seriesOf(data, item);
   const poster = resolvePosterImage(item, "series");
   const landscape = landscapeOf(data, item);
-  const rating = item.Type === "Episode" ? series?.CommunityRating : item.CommunityRating;
+  const rating = item.Type === "Episode" && scope === "series" ? series?.CommunityRating : item.CommunityRating;
   return {
     id: item.Id,
     title: item.Type === "Episode" ? item.SeriesName ?? item.Name ?? "" : item.Name ?? "",
