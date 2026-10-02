@@ -7,16 +7,22 @@ import { formatClock, formatRemaining, fractionOf } from "./formatClock";
 import type { TimelineSegment } from "./playerTypes";
 
 /**
- * La frise : le temps écoulé, la barre (en mémoire, lu, la pastille) et le
+ * La frise : le temps écoulé, la barre (chargé, lu, la tête de lecture) et le
  * temps restant, qui décompte (« −12:34 », comme le lecteur d'Apple).
  * Passive — jamais focalisable : le déplacement se pilote aux flèches et au
- * pavé, et se montre sur elle, la vignette visée au-dessus du curseur
+ * pavé, et se montre sur elle, la vignette visée au-dessus de la cible
  * (`ScrubOverlay`). Le lu porte le dégradé de la marque, violet → rose, comme
  * la barre du lecteur du bureau (`--progress-fill`) : le rose arrive TOUJOURS
  * à la tête de lecture.
  *
- * `ghost` : où l'on vise pendant un déplacement (curseur blanc cerclé), à
- * côté de la position réelle — le restant est alors celui de la cible.
+ * La tête de lecture est un TRAIT fin, un peu plus haut que la barre, comme
+ * le lecteur d'Apple — plus une pastille, qui cachait la portion chargée : sur
+ * un film de 2 h, 30 s d'avance tiennent en 6 points. Son bord DROIT est la
+ * position : le chargé commence au point qui suit, jamais dessous.
+ *
+ * `ghost` : où l'on vise pendant un déplacement (le même trait, plus haut, au
+ * rose de la marque), à côté de la position réelle — le restant est alors
+ * celui de la cible.
  *
  * `segments` : les passages connus (intro, résumé, générique) COUPENT la barre
  * à leurs bords, comme des chapitres — une forme, pas une couleur : la coupure
@@ -28,17 +34,19 @@ export const TIMELINE_WIDTH = 1920 - 2 * TV_STAGE.safe.x;
 /** Le haut de la rangée de la frise, à la même place dans l'habillage et dans
  *  le défilement : elle ne saute pas quand on passe de l'un à l'autre. */
 export const TIMELINE_TOP = 818;
-/** La hauteur de la rangée ; la barre et les curseurs y sont centrés. */
+/** La hauteur de la rangée ; la barre et les traits y sont centrés. */
 export const TIMELINE_ROW = 40;
 const TIME_WIDTH = 132;
 const GAP = 26;
 export const TRACK_WIDTH = TIMELINE_WIDTH - 2 * (TIME_WIDTH + GAP);
-/** Le bord gauche de la barre, sur la scène de 1920 : ce que vise un curseur. */
+/** Le bord gauche de la barre, sur la scène de 1920 : d'où se compte un trait visé. */
 export const TRACK_LEFT = TV_STAGE.safe.x + TIME_WIDTH + GAP;
 const BAR = 10;
-const KNOB = 26;
-/** Le curseur visé du défilement : son diamètre. */
-export const GHOST = 34;
+/** La tête de lecture : un trait, un peu plus haut que la barre. */
+const HEAD_WIDTH = 4;
+const HEAD_HEIGHT = 24;
+/** La cible d'un défilement : le même trait, plus haut. */
+export const AIM_HEIGHT = 40;
 /** La coupure entre deux morceaux de barre. */
 const CUT = 4;
 /** Un bord à moins de 0,5 % d'une extrémité ne coupe rien (passage qui ouvre ou clôt le média). */
@@ -104,7 +112,7 @@ export const OsdTimeline = memo(function OsdTimeline({
   const played = fractionOf(position, duration);
   const loaded = Math.max(played, fractionOf(buffered, duration));
   const aim = ghost != null ? fractionOf(ghost, duration) : null;
-  // L'écart visé, entre la position réelle et le curseur.
+  // L'écart visé, entre la position réelle et la cible.
   const span: [number, number] | null = aim !== null ? [Math.min(played, aim), Math.max(played, aim)] : null;
   const bounds = [0, ...timelineCuts(segments, duration), 1];
   return (
@@ -114,8 +122,8 @@ export const OsdTimeline = memo(function OsdTimeline({
         {bounds.slice(1).map((to, index) => (
           <Piece key={index} from={bounds[index]} to={to} loaded={loaded} played={played} span={span} />
         ))}
-        <View style={[styles.knob, { transform: [{ translateX: played * TRACK_WIDTH - KNOB / 2 }] }]} />
-        {aim !== null ? <View style={[styles.ghost, { transform: [{ translateX: aim * TRACK_WIDTH - GHOST / 2 }] }]} /> : null}
+        <View style={[styles.head, { transform: [{ translateX: Math.max(0, played * TRACK_WIDTH - HEAD_WIDTH) }] }]} />
+        {aim !== null ? <View style={[styles.aim, { transform: [{ translateX: aim * TRACK_WIDTH - HEAD_WIDTH / 2 }] }]} /> : null}
       </View>
       {/* Le restant, qui décompte ; en défilement, celui de la cible visée. */}
       <Text style={[styles.time, styles.total]}>{formatRemaining(ghost ?? position, duration)}</Text>
@@ -137,28 +145,32 @@ const styles = StyleSheet.create({
   played: { overflow: "hidden" },
   // L'écart visé d'un défilement, au-dessus du chargé : plus clair encore.
   span: { backgroundColor: white(0.9) },
-  knob: {
+  // Blanc, détaché d'une image claire par son ombre.
+  head: {
     position: "absolute",
     left: 0,
-    top: (BAR - KNOB) / 2,
-    width: KNOB,
-    height: KNOB,
-    borderRadius: KNOB / 2,
+    top: (BAR - HEAD_HEIGHT) / 2,
+    width: HEAD_WIDTH,
+    height: HEAD_HEIGHT,
+    borderRadius: HEAD_WIDTH / 2,
     backgroundColor: colors.text,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
   },
-  ghost: {
+  // Au rose de la marque : la cible se lit au bout de l'écart blanc.
+  aim: {
     position: "absolute",
     left: 0,
-    top: (BAR - GHOST) / 2,
-    width: GHOST,
-    height: GHOST,
-    borderRadius: GHOST / 2,
-    borderWidth: 4,
-    borderColor: colors.accent,
-    backgroundColor: colors.text,
+    top: (BAR - AIM_HEIGHT) / 2,
+    width: HEAD_WIDTH,
+    height: AIM_HEIGHT,
+    borderRadius: HEAD_WIDTH / 2,
+    backgroundColor: colors.accent,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
   },
 });

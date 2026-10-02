@@ -10,7 +10,7 @@ import { Presented } from "../../motion/Presented";
 import { colors, fonts, scrim, white } from "../../theme/tokens";
 import { formatClock, formatDelta, fractionOf } from "./formatClock";
 import { FrameView } from "./FrameView";
-import { GHOST, OsdTimeline, TIMELINE_ROW, TIMELINE_TOP, TRACK_LEFT, TRACK_WIDTH } from "./OsdTimeline";
+import { AIM_HEIGHT, OsdTimeline, TIMELINE_ROW, TIMELINE_TOP, TRACK_LEFT, TRACK_WIDTH } from "./OsdTimeline";
 import type { PlayerTimeline, ScrubModel } from "./playerTypes";
 import { ScrubCountdown } from "./ScrubCountdown";
 import { SOFT_BASE } from "./surfaces";
@@ -18,8 +18,8 @@ import { SOFT_BASE } from "./surfaces";
 /**
  * Le DÉFILEMENT, comme le lecteur d'Apple (et Netflix sur Apple TV) : la
  * vidéo reste là, figée où l'on était ; la frise, à sa place de l'habillage,
- * montre la position réelle (pastille) et le curseur visé ; au-dessus du
- * curseur, qui le SUIT, une bulle : la vignette de l'image visée (trickplay),
+ * montre la position réelle (la tête de lecture) et le trait visé ; au-dessus
+ * du trait, qui le SUIT, une bulle : la vignette de l'image visée (trickplay),
  * puis le temps visé en grand et l'écart (« +12:30 »). La vitesse d'un
  * maintien (×2, ×4, ×8) se lit sur la vignette. En bas, les deux gestes :
  * « OK · Lire ici », « Retour · Annuler ». Sans vignette (serveur sans
@@ -28,7 +28,7 @@ import { SOFT_BASE } from "./surfaces";
  *
  * Rien n'y est focalisable : les entrées restent au lecteur. Mouvement : la
  * vue paraît et s'efface en fondu (`appear`, préréglage `reveal`), la bulle
- * monte de quelques points en paraissant ; elle suit le curseur sans délai
+ * monte de quelques points en paraissant ; elle suit le trait visé sans délai
  * (un `transform`) — le doigt mène.
  */
 
@@ -40,12 +40,12 @@ const THUMB_RADIUS = 18;
 /** Le temps visé, sous la vignette. */
 const TIME_ROW = 64;
 const GAP = 12;
-/** Le bas de la bulle : au-dessus du curseur visé, à distance. */
-const BUBBLE_BOTTOM = TIMELINE_TOP + TIMELINE_ROW / 2 - GHOST / 2 - 14;
+/** Le bas de la bulle : au-dessus du trait visé, à distance. */
+const BUBBLE_BOTTOM = TIMELINE_TOP + TIMELINE_ROW / 2 - AIM_HEIGHT / 2 - 14;
 /** Ce que la bulle monte en paraissant. */
 const RISE = 16;
 
-/** Le bord gauche de la bulle : centrée sur le curseur, gardée dans la zone sûre. */
+/** Le bord gauche de la bulle : centrée sur le trait visé, gardée dans la zone sûre. */
 export function bubbleLeft(aim: number): number {
   const center = TRACK_LEFT + aim * TRACK_WIDTH;
   return Math.min(STAGE_SIZE.width - SAFE.x - THUMB_W, Math.max(SAFE.x, center - THUMB_W / 2));
