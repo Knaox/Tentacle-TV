@@ -1,30 +1,37 @@
 import { memo, useLayoutEffect, useRef } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue } from "react-native-reanimated";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { motionTo } from "../motion/motion";
 import { useEntrance, useMotion } from "../motion/useMotion";
 import { colors, fonts, white } from "../theme/tokens";
+import { ArrivalArtwork } from "./ArrivalArtwork";
 import { RequestStateLine } from "./RequestStateLine";
 import type { RequestItemModel } from "./requestTypes";
+import { useArrivalPercent } from "./useArrivalPercent";
 
 /**
- * Une demande de la liste, en LECTURE SEULE : l'affiche, le titre, l'année et
- * les saisons, puis où elle en est (`RequestStateLine`). OK n'y fait rien ; le
+ * Une demande de la liste, en LECTURE SEULE : l'affiche — grise, elle reprend
+ * sa couleur au prorata de l'avancement, le camembert au centre
+ * (`ArrivalArtwork`) —, le titre, l'année et les saisons, puis où elle en est
+ * (`RequestStateLine`), à la même seconde que le camembert. OK n'y fait rien ; le
  * focus, quand l'intégration le permet (une longue liste), ne sert qu'à
  * faire défiler — d'où un focus discret : le verre s'éclaire, sans le blanc
  * d'un bouton.
  *
- * Mouvement : une demande arrivée SORT en douceur (`leaving` : elle s'efface,
- * infocalisable), puis les suivantes remontent à leur place ; une demande
- * nouvelle (`fresh`) entre en fondu. Transform et opacité seulement.
+ * Mouvement : une demande arrivée prend d'abord toute sa couleur, son
+ * camembert s'efface (« Disponible ») ; puis elle SORT en douceur (`leaving` :
+ * elle s'efface, infocalisable), et les suivantes remontent à leur place ;
+ * une demande nouvelle (`fresh`) entre en fondu. Transform et opacité seulement.
  */
 
 export const ROW_HEIGHT = 148;
 export const ROW_GAP = 12;
 export const ROW_PITCH = ROW_HEIGHT + ROW_GAP;
 const POSTER = { width: 88, height: 132 };
+/** Le camembert au centre de la petite affiche. */
+const SIGN = 40;
 
 export const requestRowKey = (key: string) => `requests:row:${key}`;
 
@@ -71,19 +78,26 @@ function Body({ item, focused }: { item: RequestItemModel; focused: boolean }) {
   const p = useFocusProgress(focused);
   const lit = useAnimatedStyle(() => ({ opacity: p.value }));
   const lift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + 0.012 * p.value }] }));
+  // Une seule projection pour la ligne : le camembert et le pour cent écrit disent la même chose.
+  const percent = useArrivalPercent(item.arrival);
   return (
     <Animated.View style={[styles.row, lift]}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.lit, lit]} />
       <View style={styles.poster}>
-        {item.imageUri ? (
-          <Image source={{ uri: item.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
-        ) : null}
+        <ArrivalArtwork
+          uri={item.imageUri ?? undefined}
+          width={POSTER.width}
+          height={POSTER.height}
+          arrival={item.arrival}
+          percent={percent}
+          signSize={SIGN}
+        />
       </View>
       <View style={styles.texts}>
         <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
         {item.detail ? <Text style={styles.detail} numberOfLines={1}>{item.detail}</Text> : null}
         <View style={styles.state}>
-          <RequestStateLine item={item} />
+          <RequestStateLine item={item} percent={percent} />
         </View>
       </View>
     </Animated.View>

@@ -1,6 +1,11 @@
 import { memo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { MY_TITLE_PERCENT_KEY } from "@tentacle-tv/shared";
 import { Icon, type IconName } from "../../icons/Icon";
+import { ArrivalSign } from "../../requests/ArrivalSign";
+import type { ArrivalModel, ArrivalState } from "../../requests/arrivalTypes";
+import { useArrivalPercent } from "../../requests/useArrivalPercent";
 import { colors, fonts, white } from "../../theme/tokens";
 import { FilterSheet } from "../library/FilterSheet";
 import { OPTION_ROW_HEIGHT, OptionRow } from "../library/OptionRow";
@@ -10,7 +15,8 @@ import { OPTION_ROW_HEIGHT, OptionRow } from "../library/OptionRow";
  * surimpression des filtres (`FilterSheet`), une ligne par saison. Celles qui
  * se demandent encore se cochent (`OptionRow`, le nombre d'épisodes à
  * droite) ; les autres disent où elles en sont (« Disponible », « Demandée »)
- * et ne prennent pas le focus. En bas, « Demander N saisons » au dégradé de la
+ * et ne prennent pas le focus — celles de la demande du compte, son camembert
+ * et son avancement à l'instant (`status.arrival`). En bas, « Demander N saisons » au dégradé de la
  * marque dès qu'une saison est cochée — avant, « Fermer », en verre.
  *
  * Vue pure. Clés de focus : `sheet:season:<numéro>`, puis `sheet:apply`
@@ -25,8 +31,8 @@ export interface SeasonRowModel {
   label: string;
   /** « 10 épisodes ». */
   detail?: string;
-  /** Pas à cocher : où elle en est. */
-  status?: { label: string; tone: SeasonStatusTone };
+  /** Pas à cocher : où elle en est — et, saison de la demande du compte, son arrivée. */
+  status?: { label: string; tone: SeasonStatusTone; arrival?: ArrivalModel };
   selected: boolean;
 }
 
@@ -57,8 +63,31 @@ const STATUS: Record<SeasonStatusTone, { color: string; icon: IconName }> = {
   neutral: { color: colors.textTertiary, icon: "lock" },
 };
 
+const ARRIVAL_COLOR: Record<ArrivalState, string> = {
+  pending: colors.accentLight,
+  arriving: colors.text,
+  importing: colors.accentLight,
+  blocked: colors.warningFg,
+  arrived: colors.successFg,
+};
+
+/** Une saison de la demande du compte : son camembert, son mot, son avancement à l'instant. */
+function ArrivingRow({ row, arrival, label }: { row: SeasonRowModel; arrival: ArrivalModel; label: string }) {
+  const { t } = useTranslation();
+  const percent = useArrivalPercent(arrival);
+  const value = arrival.state === "arriving" && percent !== null ? t(MY_TITLE_PERCENT_KEY, { percent: Math.floor(percent) }) : null;
+  return (
+    <View style={styles.settled}>
+      <ArrivalSign state={arrival.state} percent={percent} size={28} disc={false} />
+      <Text style={styles.settledLabel} numberOfLines={1}>{row.label}</Text>
+      <Text style={[styles.settledStatus, styles.tabular, { color: ARRIVAL_COLOR[arrival.state] }]}>{value ? `${label} · ${value}` : label}</Text>
+    </View>
+  );
+}
+
 /** Une saison qui ne se coche pas : son nom, et où elle en est. */
 function SettledRow({ row }: { row: SeasonRowModel }) {
+  if (row.status?.arrival) return <ArrivingRow row={row} arrival={row.status.arrival} label={row.status.label} />;
   const status = row.status ? STATUS[row.status.tone] : STATUS.neutral;
   return (
     <View style={styles.settled}>
@@ -143,4 +172,5 @@ const styles = StyleSheet.create({
   },
   settledLabel: { ...fonts.medium, fontSize: 28, color: white(0.6), flexShrink: 1, flexGrow: 1 },
   settledStatus: { ...fonts.semibold, fontSize: 24 },
+  tabular: { fontVariant: ["tabular-nums"] },
 });

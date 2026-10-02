@@ -1,7 +1,12 @@
 import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { MY_TITLE_PERCENT_KEY } from "@tentacle-tv/shared";
 import { BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
+import { ArrivalArtwork } from "../../requests/ArrivalArtwork";
+import type { ArrivalModel } from "../../requests/arrivalTypes";
+import { useArrivalPercent } from "../../requests/useArrivalPercent";
 import { colors, fonts, white } from "../../theme/tokens";
 import type { SheetHeaderModel } from "./sheetTypes";
 
@@ -11,12 +16,18 @@ import type { SheetHeaderModel } from "./sheetTypes";
  * sa forme, affiche ou vignette —, son titre et sa ligne de contexte, ce que
  * le voile vient de recouvrir. Menu ferme aussi.
  *
+ * Un titre que le compte a demandé (`header.arrival`) : son affiche arrive
+ * comme sur sa carte (`ArrivalArtwork`), et la ligne de contexte dit
+ * l'avancement à la même seconde que le camembert.
+ *
  * Focus (câblage) : groupe `sheet:header`, sur TOUTE la largeur du panneau —
  * la croix, dans son coin, n'est au-dessus ni du cran visé ni des pictos ; le
  * groupe, si. Croix : `sheet:close`.
  */
 
 const ART = { poster: { width: 104, height: 156 }, landscape: { width: 224, height: 126 } };
+/** Le camembert au centre de l'affiche de l'en-tête. */
+const SIGN = 44;
 
 export const SheetHeader = memo(function SheetHeader({
   header,
@@ -25,24 +36,54 @@ export const SheetHeader = memo(function SheetHeader({
   header: SheetHeaderModel;
   onClose?: () => void;
 }) {
-  const art = ART[header.shape];
   return (
     <FocusGroup focusKey="sheet:header" style={styles.header}>
       <View style={styles.back}>
         <BackButton focusKey="sheet:close" onPress={onClose} />
       </View>
+      {header.arrival ? <Arriving header={header} arrival={header.arrival} /> : <Still header={header} />}
+    </FocusGroup>
+  );
+});
+
+function Texts({ header, extra }: { header: SheetHeaderModel; extra?: string | null }) {
+  const subtitle = [header.subtitle, extra].filter(Boolean).join(" · ");
+  return (
+    <View style={styles.text}>
+      <Text style={styles.title} numberOfLines={2}>{header.title}</Text>
+      {subtitle ? <Text style={[styles.subtitle, styles.tabular]} numberOfLines={1}>{subtitle}</Text> : null}
+    </View>
+  );
+}
+
+function Still({ header }: { header: SheetHeaderModel }) {
+  const art = ART[header.shape];
+  return (
+    <>
       <View style={[styles.art, art]}>
         {header.imageUri ? (
           <Image source={{ uri: header.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
         ) : null}
       </View>
-      <View style={styles.text}>
-        <Text style={styles.title} numberOfLines={2}>{header.title}</Text>
-        {header.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{header.subtitle}</Text> : null}
-      </View>
-    </FocusGroup>
+      <Texts header={header} />
+    </>
   );
-});
+}
+
+function Arriving({ header, arrival }: { header: SheetHeaderModel; arrival: ArrivalModel }) {
+  const { t } = useTranslation();
+  const art = ART[header.shape];
+  const percent = useArrivalPercent(arrival);
+  const value = arrival.state === "arriving" && percent !== null ? t(MY_TITLE_PERCENT_KEY, { percent: Math.floor(percent) }) : null;
+  return (
+    <>
+      <View style={[styles.art, art]}>
+        <ArrivalArtwork uri={header.imageUri} width={art.width} height={art.height} arrival={arrival} percent={percent} signSize={SIGN} />
+      </View>
+      <Texts header={header} extra={value} />
+    </>
+  );
+}
 
 const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 24 },
@@ -52,4 +93,5 @@ const styles = StyleSheet.create({
   text: { flex: 1, gap: 6 },
   title: { ...fonts.bold, fontSize: 36, lineHeight: 42, color: colors.text },
   subtitle: { ...fonts.medium, fontSize: 24, color: colors.textTertiary },
+  tabular: { fontVariant: ["tabular-nums"] },
 });

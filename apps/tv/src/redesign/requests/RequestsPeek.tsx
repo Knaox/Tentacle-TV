@@ -1,21 +1,30 @@
 import { memo } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { BrandGradient } from "../brand/BrandGradient";
 import { Icon } from "../icons/Icon";
 import { colors, fonts, white } from "../theme/tokens";
+import { ArrivalArtwork } from "./ArrivalArtwork";
 import type { RequestsDockModel } from "./requestTypes";
+import { useArrivalPercent } from "./useArrivalPercent";
 
 /**
  * L'APERÇU des demandes en cours, à la place du pictogramme d'une entrée de la
  * navigation (64 × 64) : une affiche s'il n'y en a qu'une ; deux ou trois, en
  * éventail léger, la plus récente devant, et la pastille du nombre au dégradé
  * de la marque s'il y en a plusieurs. Aucune demande : le bac vide, discret,
- * comme un pictogramme du rail. Rien d'animé.
+ * comme un pictogramme du rail.
+ *
+ * Chaque affiche ARRIVE comme dans la fenêtre (`ArrivalArtwork`) : grise, elle
+ * reprend sa couleur au prorata de son avancement ; celle de devant porte le
+ * camembert (les autres l'auraient sous elle). Le câblage met devant ce qui
+ * bouge : le direct se voit d'un coup d'œil.
  */
 
 const N = TV_STAGE.nav;
 const POSTER = { width: 30, height: 45 };
+/** Le camembert de l'affiche de devant. */
+const SIGN = 18;
 /** De l'arrière vers l'avant : décalage horizontal et inclinaison de chaque affiche —
  *  l'éventail tient dans les 64 points du pictogramme, sans toucher le bord du focus. */
 const FAN: Record<number, Array<{ x: number; deg: number }>> = {
@@ -43,9 +52,7 @@ export const RequestsPeek = memo(function RequestsPeek({ model, dark }: { model:
           key={poster.key}
           style={[styles.poster, { transform: [{ translateX: fan[i].x }, { rotate: `${fan[i].deg}deg` }] }]}
         >
-          {poster.uri ? (
-            <Image source={{ uri: poster.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
-          ) : null}
+          <PeekPoster poster={poster} front={i === back.length - 1} />
         </View>
       ))}
       {model.count > 1 ? (
@@ -57,6 +64,21 @@ export const RequestsPeek = memo(function RequestsPeek({ model, dark }: { model:
     </View>
   );
 });
+
+/** Une affiche de l'éventail, et son avancement à l'instant. */
+function PeekPoster({ poster, front }: { poster: RequestsDockModel["posters"][number]; front: boolean }) {
+  const percent = useArrivalPercent(poster.arrival);
+  return (
+    <ArrivalArtwork
+      uri={poster.uri ?? undefined}
+      width={POSTER.width}
+      height={POSTER.height}
+      arrival={poster.arrival}
+      percent={percent}
+      signSize={front ? SIGN : 0}
+    />
+  );
+}
 
 const styles = StyleSheet.create({
   box: { width: N.itemHeight, height: N.itemHeight, alignItems: "center", justifyContent: "center" },

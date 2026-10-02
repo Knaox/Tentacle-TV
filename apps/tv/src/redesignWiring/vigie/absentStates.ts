@@ -6,13 +6,17 @@ import {
   type TitleState,
 } from "@tentacle-tv/shared";
 import type { AbsentModel, AbsentTone } from "../../redesign/cards/cardTypes";
+import { ARRIVED_LABEL_KEY, STILL_READING, arrivalOf, arrivedModel, type ArrivalReading } from "./arrivalModels";
 
 /**
  * Ce que dit le badge d'un titre absent quand le serveur sait demander des
  * titres (garde Vigie ouverte) — pur. D'abord SA demande, si le compte en a
- * fait une (`mine` : « En attente », « En cours · 42 % »…, les mots de
- * Tentacle) ; sinon ce que l'extension dit du titre (`state` : « Demandé »
- * par quelqu'un d'autre, « En partie »…) ; sinon « Pas dans la bibliothèque ».
+ * fait une (`mine` : « En attente », « En cours »…, les mots de Tentacle) —
+ * son affiche ARRIVE alors façon Apple (`arrival` : grise, elle se colore au
+ * prorata de l'avancement, le camembert au centre, le pour cent qui avance) ;
+ * puis, sortie de la liste en avançant, « Disponible » en pleine couleur ;
+ * sinon ce que l'extension dit du titre (`state` : « Demandé » par quelqu'un
+ * d'autre, « En partie »…) ; sinon « Pas dans la bibliothèque ».
  *
  * Et les phrases des avis : jamais un mot qui nommerait l'extension, son
  * service, ou la famille de « téléchargement » — une phrase de l'extension
@@ -39,17 +43,31 @@ export function mineLabel(t: TFunction, mine: MyTitle): string {
   return mine.percent !== null ? `${state} · ${t(MY_TITLE_PERCENT_KEY, { percent: Math.round(mine.percent) })}` : state;
 }
 
-export function absentFromMine(t: TFunction, mine: MyTitle): AbsentModel {
+/** Sa demande : le MOT de son état (la carte y ajoute le pour cent à l'instant), et son arrivée. */
+export function absentFromMine(t: TFunction, mine: MyTitle, reading: ArrivalReading = STILL_READING): AbsentModel {
   return {
-    label: mineLabel(t, mine),
+    label: t(MY_TITLE_STATE_KEYS[mine.state]),
     tone: MINE_TONE[mine.state],
     ...(mine.percent !== null ? { progress: mine.percent / 100 } : {}),
+    arrival: arrivalOf(mine, reading),
   };
 }
 
-/** Le badge d'un titre absent : sa demande, l'état que dit l'extension, ou rien de plus que l'absence. */
-export function absentOf(t: TFunction, mine: MyTitle | undefined, state: TitleState | null | undefined): AbsentModel {
-  if (mine) return absentFromMine(t, mine);
+/** Sa demande vient d'aboutir : « Disponible », en pleine couleur, le camembert qui s'efface. */
+export function absentArrived(t: TFunction, reading: ArrivalReading = STILL_READING): AbsentModel {
+  return { label: t(ARRIVED_LABEL_KEY), tone: "ready", arrival: arrivedModel(reading) };
+}
+
+/** Le badge d'un titre absent : sa demande, son arrivée, l'état que dit l'extension, ou rien de plus que l'absence. */
+export function absentOf(
+  t: TFunction,
+  mine: MyTitle | undefined,
+  state: TitleState | null | undefined,
+  reading: ArrivalReading = STILL_READING,
+  arrived = false,
+): AbsentModel {
+  if (mine) return absentFromMine(t, mine, reading);
+  if (arrived) return absentArrived(t, reading);
   if (state?.badge) return { label: state.badge.label, tone: BADGE_TONE[state.badge.tone] };
   return { label: t("cards:notInLibrary"), tone: "neutral" };
 }

@@ -8,6 +8,7 @@ import { REQUESTS_CLOSE_KEY, REQUESTS_VISIBLE_ROWS, RequestsPanelView } from "..
 import { useBackLayer } from "../back/BackScope";
 import { setFocusLocked } from "../focus/focusLocks";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
+import { STILL_READING, type ArrivalReading } from "./arrivalModels";
 import { requestItemModel, requestsCountText } from "./requestModels";
 
 /**
@@ -19,6 +20,9 @@ import { requestItemModel, requestsCountText } from "./requestModels";
  *   garde anti-clic fantôme — la fenêtre s'ouvre sous un OK encore enfoncé.
  * - LECTURE SEULE : les lignes ne sont focalisables que pour faire défiler une
  *   liste qui dépasse (`REQUESTS_VISIBLE_ROWS`) ; OK n'y fait rien.
+ * - EN DIRECT : chaque affiche se colore au fil de son avancement, qui bouge
+ *   d'une seconde à l'autre (`reading` : l'heure de la lecture, et si on la
+ *   voit) ; une demande arrivée prend toute sa couleur, puis sort.
  * - Menu ferme : la fenêtre est une couche « menu » de la pile du Retour
  *   (`useBackLayer`), et sa `Modal`, qui reçoit Menu dans son propre
  *   contrôleur, ferme par la même fonction (`onRequestClose`) ; la croix
@@ -26,13 +30,21 @@ import { requestItemModel, requestsCountText } from "./requestModels";
  *   tvOS rend le focus à l'aperçu du rail.
  */
 
-export function RequestsPanel({ titles, onClose }: { titles: MyTitle[] | null; onClose: () => void }) {
+export function RequestsPanel({
+  titles,
+  reading = STILL_READING,
+  onClose,
+}: {
+  titles: MyTitle[] | null;
+  reading?: ArrivalReading;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
   const [closing, setClosing] = useState(false);
   const requestClose = useCallback(() => setClosing(true), []);
   useBackLayer("menu", !closing, requestClose);
   const focus = useFocusStore();
-  const items = useMemo(() => titles?.map((title) => requestItemModel(title, t)) ?? null, [titles, t]);
+  const items = useMemo(() => titles?.map((title) => requestItemModel(title, t, reading)) ?? null, [titles, t, reading]);
   useRowLocks(focus, items ? items.map((item) => requestRowKey(item.key)) : []);
   const bind = useCallback<FocusBinder>(
     (key, form) => {

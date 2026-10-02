@@ -22,9 +22,11 @@ import { useLeavingItems } from "./useLeavingItems";
  * Vue pure. Contrat :
  * - `items` : `null` tant qu'ils ne sont pas lus ; vide : « Vous n'avez rien
  *   en file d'attente. » ;
- * - une demande qui disparaît des données (arrivée) sort en douceur, et la
- *   fenêtre ne saute pas : centrée à l'ouverture, son HAUT reste ensuite où
- *   il est — seul le bas suit la liste (`usePanelAnchor`) ;
+ * - une demande qui disparaît des données en avançant est ARRIVÉE : toute sa
+ *   couleur, son camembert qui s'efface, « Disponible », puis elle sort en
+ *   douceur (`useLeavingItems`) ; et la fenêtre ne saute pas : centrée à
+ *   l'ouverture, son HAUT reste ensuite où il est — seul le bas suit la liste
+ *   (`usePanelAnchor`) ;
  * - `closing` joue la sortie, puis `onClosed` — c'est alors seulement que le
  *   câblage retire sa `Modal`.
  *
@@ -40,8 +42,10 @@ export const REQUESTS_VISIBLE_ROWS = 4;
 const WIDTH = 1320;
 const PAD = 56;
 const LIST_MAX = ROW_PITCH * (REQUESTS_VISIBLE_ROWS + 0.5);
-/** Une demande arrivée s'efface en ce temps, puis s'en va : les suivantes remontent aussitôt. */
+/** Une demande qui part s'efface en ce temps, puis s'en va : les suivantes remontent aussitôt. */
 const LEAVING_MS = TV_MOTION.overlay.veilOutMs + 60;
+/** Une demande ARRIVÉE se montre ainsi — sa couleur, « Disponible » — avant de partir. */
+const ARRIVED_MS = 1400;
 
 export interface RequestsPanelViewProps {
   title: string;
@@ -67,7 +71,7 @@ export const RequestsPanelView = memo(function RequestsPanelView({
 }: RequestsPanelViewProps) {
   const { rise, veil } = usePanelMotion(closing, onClosed);
   const backing = useNativeGlassBacking("strong");
-  const rows = useLeavingItems(items, LEAVING_MS);
+  const rows = useLeavingItems(items, { leavingMs: LEAVING_MS, arrivedMs: ARRIVED_MS });
   const { anchored, onLayout } = usePanelAnchor();
   return (
     <View style={StyleSheet.absoluteFill}>

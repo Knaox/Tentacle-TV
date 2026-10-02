@@ -1,11 +1,12 @@
+import type { ArrivalModel } from "./arrivalTypes";
+
 /**
  * Ce que les vues des demandes en cours reçoivent — tout résolu par le
  * câblage (`redesignWiring/vigie/requestModels.ts`) : les mots dans la langue
  * de l'interface, les images, l'ordre. Les états sont ceux du contrat
- * `titles.mine` (`MyTitleState`, @tentacle-tv/shared).
+ * `titles.mine` (`MyTitleState`, @tentacle-tv/shared), plus l'arrivée — un
+ * état du client (`ArrivalModel`).
  */
-
-export type RequestStateKind = "pending" | "arriving" | "importing" | "blocked";
 
 export interface RequestItemModel {
   key: string;
@@ -13,12 +14,13 @@ export interface RequestItemModel {
   /** « 2011 · Saisons 2 et 3 » ; `null` : rien à en dire. */
   detail: string | null;
   imageUri: string | null;
-  state: RequestStateKind;
+  /** Où elle en est : l'état, la dernière lecture et son temps restant. */
+  arrival: ArrivalModel;
   /** « En attente », « En cours »… */
   stateLabel: string;
-  /** 0 à 100 quand le titre arrive et que l'avancement se sait. */
-  percent: number | null;
-  /** « 42 % » ; `null` sans avancement. */
+  /** « Disponible » : le mot d'une demande qui quitte la liste en avançant (elle est arrivée). */
+  arrivedLabel: string;
+  /** « 42 % » à la dernière lecture, pour les lecteurs d'écran ; `null` sans avancement. */
   percentLabel: string | null;
 }
 
@@ -27,8 +29,8 @@ export interface RequestsDockModel {
   label: string;
   /** « 3 demandes », « Rien en file d'attente » ; `null` tant que la liste n'est pas lue. */
   caption: string | null;
-  /** Les affiches de l'aperçu, la plus récente d'abord — trois au plus. */
-  posters: Array<{ key: string; uri: string | null }>;
+  /** Les affiches de l'aperçu, ce qui bouge d'abord — trois au plus ; chacune arrive façon Apple. */
+  posters: Array<{ key: string; uri: string | null; arrival: ArrivalModel }>;
   /** Le nombre de demandes en cours (la pastille, à partir de deux). */
   count: number;
 }

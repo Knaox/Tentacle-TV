@@ -1,4 +1,5 @@
 import type { CardStatusKind } from "@tentacle-tv/shared";
+import type { ArrivalModel } from "../../requests/arrivalTypes";
 
 /**
  * Ce que fait un picto du panneau : les actions du modèle partagé
@@ -32,6 +33,10 @@ export interface SheetHeaderModel {
   imageUri?: string;
   /** La forme de la carte d'où vient le panneau — son image la rappelle. */
   shape: "poster" | "landscape";
+  /** Un titre que le compte a demandé : son affiche arrive comme sur sa carte
+   *  (grise, puis sa couleur, le camembert au centre), et la ligne de
+   *  contexte y ajoute l'avancement à l'instant. */
+  arrival?: ArrivalModel;
 }
 
 export interface SheetRatingModel {

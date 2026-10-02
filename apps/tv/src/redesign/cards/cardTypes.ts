@@ -1,5 +1,6 @@
 import type { CardMarkers } from "@tentacle-tv/shared";
 import type { ArtworkPalette } from "../color/artworkPalette";
+import type { ArrivalModel } from "../requests/arrivalTypes";
 
 /**
  * Ce qu'une carte reçoit — DÉJÀ résolu par l'intégration : les marqueurs
@@ -44,10 +45,15 @@ export interface CardModel {
 export type AbsentTone = "neutral" | "pending" | "active" | "ready" | "blocked";
 
 export interface AbsentModel {
+  /** Le mot du badge ; pour une demande du compte (`arrival`), le mot de son
+   *  état seul — la carte y ajoute le pour cent à l'instant. */
   label: string;
   tone: AbsentTone;
   /** 0 à 1 : une demande en cours, sa progression. */
   progress?: number;
+  /** Une demande du COMPTE : l'affiche arrive façon Apple — grise, elle se
+   *  colore au prorata de l'avancement, le camembert au centre. */
+  arrival?: ArrivalModel;
 }
 
 export const EMPTY_MARKERS: CardMarkers = { communityRating: null, userScore: null, statuses: [], device: null };
