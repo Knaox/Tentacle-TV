@@ -128,6 +128,18 @@ describe("rangées de formats différents (vignettes 16:9, affiches 2:3)", () =>
     // Centre 1124 : la vignette 2 (1198).
     expect(pickSectionNeighbor(from(above, "watchlist:3"), [above, below], "bas")).toBe("nextUp:2");
   });
+
+  it("des vignettes entre deux rangées d'affiches (« Déjà vu ») : jamais sautées, le centre décide de chaque pas", () => {
+    const above = posters("forYou", 100);
+    const watched = landscape("watched", 630);
+    const below = posters("watchlist", 1014);
+    const stack = [above, watched, below];
+    // 1400 → 1198 (plutôt que 1614), puis 1198 → 1124 ; et en remontant, 1124 → 1198 → 1124.
+    expect(pickSectionNeighbor(from(above, "forYou:4"), stack, "bas")).toBe("watched:2");
+    expect(pickSectionNeighbor(from(watched, "watched:2"), stack, "bas")).toBe("watchlist:3");
+    expect(pickSectionNeighbor(from(below, "watchlist:3"), stack, "haut")).toBe("watched:2");
+    expect(pickSectionNeighbor(from(watched, "watched:2"), stack, "haut")).toBe("forYou:3");
+  });
 });
 
 describe("grilles", () => {
