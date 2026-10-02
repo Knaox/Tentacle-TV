@@ -30,6 +30,8 @@ export default {
   seasonsSubmit_one: "Request {{count}} season",
   seasonsSubmit_other: "Request {{count}} seasons",
   seasonFallback: "Season {{number}}",
+  seasonSpecials: "Specials",
+  seasonNamed: "{{season}} · {{name}}",
   seasonEpisodes_one: "{{count}} episode",
   seasonEpisodes_other: "{{count}} episodes",
   seasonsLoading: "Reading the seasons…",

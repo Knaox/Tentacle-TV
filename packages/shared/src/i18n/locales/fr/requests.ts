@@ -42,6 +42,10 @@ export default {
   seasonsSubmit_one: "Demander {{count}} saison",
   seasonsSubmit_other: "Demander {{count}} saisons",
   seasonFallback: "Saison {{number}}",
+  // Apple TV : le nom d'une saison dans les mots de l'interface — « Spéciaux »
+  // pour la saison 0, et son vrai nom à la suite s'il en a un (tv-core `seasonTitle`).
+  seasonSpecials: "Spéciaux",
+  seasonNamed: "{{season}} · {{name}}",
   seasonEpisodes_one: "{{count}} épisode",
   seasonEpisodes_other: "{{count}} épisodes",
   seasonsLoading: "Lecture des saisons…",
