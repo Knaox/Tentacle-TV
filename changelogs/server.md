@@ -10,6 +10,21 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.22.2]
+### FR
+- **Les bandes-annonces de l'Apple TV passent par le serveur** : elles échouaient presque toujours (2 lectures sur 20 au banc), car le serveur demandait à YouTube un flux où image et son sont mêlés, qu'il ne sert presque plus, et le repli se coupait après un mégaoctet. Il choisit désormais le flux HLS que YouTube destine à visionOS (H.264 jusqu'en 1080p) et le relaie lui-même. Avec l'Apple TV 1.10.0, qui la prépare dès l'ouverture de la fiche : 32 lectures sur 32 au banc, la première image en 0,3 s en médiane. Les Apple TV déjà installées lisent le relais sans mise à jour
+- **Une extraction plus rapide, qui tient son temps** : yt-dlp reste chargé entre deux bandes-annonces (1 à 1,5 s par extraction au lieu de 2,3 à 3,2 s), toutes les tentatives tiennent en 40 s même sur une machine saturée, et un délai dépassé n'empêche plus la tentative suivante
+- **Le relais ne prive plus le téléviseur du reste** : les cent à deux cent cinquante listes et segments d'une bande-annonce comptent avec les images, et non plus dans la limite des appels d'API — quelques lancements d'affilée l'auraient épuisée, et tout le téléviseur serait tombé en erreur 429
+- **Administrateurs** : le journal du serveur dit chaque lecture de bande-annonce de l'Apple TV, avec le délai de la première image ou la raison de l'échec (lignes `[trailers]`) ; les clients YouTube interrogés se règlent par `TENTACLE_TRAILER_CLIENTS`
+- La version minimale exigée des clients reste 1.22.1
+
+### EN
+- **Apple TV trailers go through the server**: they failed almost every time (2 plays out of 20 on the bench), because the server asked YouTube for a stream with picture and sound combined, which it hardly serves anymore, and the fallback cut off after one megabyte. It now picks the HLS stream YouTube intends for visionOS (H.264 up to 1080p) and relays it itself. With Apple TV 1.10.0, which prepares it as soon as the title page opens: 32 plays out of 32 on the bench, first frame in 0.3 s at the median. Apple TVs already installed read the relay without an update
+- **Faster extraction that keeps to its time**: yt-dlp stays loaded between trailers (1 to 1.5 s per extraction instead of 2.3 to 3.2 s), all attempts fit within 40 s even on a saturated machine, and an exceeded delay no longer blocks the next attempt
+- **The relay no longer starves the TV of everything else**: the one to two hundred and fifty playlists and segments of a trailer count with images, no longer within the API call limit — a few launches in a row would have used it up, and the whole TV would have fallen into 429 errors
+- **Administrators**: the server log reports every Apple TV trailer playback, with the delay to the first frame or the reason for the failure (`[trailers]` lines); the YouTube clients queried are set with `TENTACLE_TRAILER_CLIENTS`
+- The minimum required client version stays 1.22.1
+
 ## [1.22.1]
 ### FR
 - **Un téléviseur déjumelé est refusé partout** : un appareil révoqué gardait l'accès aux fiches, aux images et aux flux de son compte, et pour toujours, par le proxy Jellyfin et les vignettes de la frise. Chaque porte le refuse désormais — proxy, images, flux, vignettes, connexion en direct —, une TV éteinte pendant qu'on la déjumelait l'apprend dès sa reconnexion, et chaque requête d'une TV ne coûte plus un aller-retour chez Jellyfin
