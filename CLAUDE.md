@@ -351,7 +351,13 @@ le cœur intègre nativement, toutes dans `redesignWiring/vigie/`. Une demande
 DU COMPTE s'y montre partout de la même façon (`ArrivalArtwork`) : l'affiche
 grise reprend sa couleur au prorata de l'avancement, le camembert au centre,
 en direct — relue toutes les 10 s seulement tant qu'un de ses titres avance
-à l'écran (`liveRequests`, un seul battement), jamais autrement.
+à l'écran (`liveRequests`, un battement par liste), jamais autrement.
+« Mes demandes » (rail, fenêtre) ne montre que les demandes faites DEPUIS UNE
+TV, quelle qu'elle soit : chaque demande d'une TV porte l'origine « tv » et
+sa plateforme (tv-core `tvTitlesGate` → `tvRequestOrigin`, gardée par Vigie),
+la liste se lit par `titles.mine?origin=tv` ; les cartes, elles, disent
+l'état de TOUTES les demandes du compte. Un Vigie d'avant l'origine (< 1.22)
+ignore le filtre : liste entière, comme avant.
 Toute fonction de Vigie sur la TV passe par `useVigieGate` : serveur ou Vigie
 trop anciens, Vigie éteint, compte bloqué dans Vigie (le compte de
 démonstration de la revue Apple) → aucune trace.
