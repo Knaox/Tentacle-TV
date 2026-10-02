@@ -17,6 +17,8 @@ const upstream = vi.hoisted(() => ({
   calls: [] as Array<{ path: string; query: URLSearchParams; authorization: string }>,
   /** Ce que rend l'inventaire : 200, ou un refus. */
   scanStatus: 200,
+  /** La bibliothèque, du plus récent au plus ancien — servie par pages (`StartIndex`, `Limit`). */
+  inventory: [] as Array<Record<string, unknown>>,
 }));
 vi.mock("../src/services/configStore", () => ({
   getJellyfinUrl: () => upstream.url,
@@ -75,11 +77,16 @@ beforeAll(async () => {
     if (!/Token="jeton-de-test-/.test(authorization)) return json(res, 401, {});
     if (url.pathname !== "/Items" || url.searchParams.get("userId") !== "u1") return json(res, 404, {});
     if (url.searchParams.get("Limit") === "500") {
-      return upstream.scanStatus === 200 ? json(res, 200, { Items: INVENTORY }) : json(res, upstream.scanStatus, {});
+      if (upstream.scanStatus !== 200) return json(res, upstream.scanStatus, {});
+      const start = Number(url.searchParams.get("StartIndex") ?? 0);
+      return json(res, 200, { Items: upstream.inventory.slice(start, start + 500) });
     }
     const ids = url.searchParams.get("Ids");
     // L'ordre de Jellyfin n'est pas celui de la rangée : rendu à l'envers.
-    if (ids) return json(res, 200, { Items: ids.split(",").reverse().map((id) => DTOS[id]).filter(Boolean) });
+    if (ids) {
+      const dto = (id: string) => DTOS[id] ?? { Id: id, Name: `Série ${id}`, Type: "Series" };
+      return json(res, 200, { Items: ids.split(",").reverse().map(dto) });
+    }
     // Toute autre requête — le relais ordinaire : la réponse brute, reconnaissable.
     return json(res, 200, { Items: [{ Id: "brut", Type: "Episode" }], TotalRecordCount: 1 });
   });
@@ -102,7 +109,28 @@ beforeEach(() => {
   clearAll();
   upstream.calls = [];
   upstream.scanStatus = 200;
+  upstream.inventory = INVENTORY;
 });
+
+/** Les pages d'inventaire lues pendant le test. */
+const scanPages = () => upstream.calls.filter((c) => c.query.get("Limit") === "500").length;
+
+/**
+ * Une avalanche : `series` séries arrivées l'une après l'autre, chacune avec
+ * ses `episodes` épisodes puis ses dossiers (saison, série), du plus récent
+ * au plus ancien.
+ */
+function avalanche(series: number, episodes: number): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  for (let i = 0; i < series; i++) {
+    const id = `S${i}`;
+    out.push({ Id: `${id}-s1`, Type: "Season", SeriesId: id, IndexNumber: 1 }, { Id: id, Type: "Series" });
+    for (let e = episodes; e >= 1; e--) {
+      out.push({ Id: `${id}-e${e}`, Type: "Episode", SeriesId: id, SeasonId: `${id}-s1`, ParentIndexNumber: 1, IndexNumber: e });
+    }
+  }
+  return out;
+}
 
 async function row(query: string, token = "jeton-de-test-a") {
   const res = await fetch(`${base}/api/jellyfin/Users/u1/Items?${query}`, { headers: { "X-Emby-Token": token } });
@@ -164,6 +192,33 @@ describe("GET /api/jellyfin/Users/{id}/Items — « Derniers ajouts » d'une bib
     expect(upstream.calls).toHaveLength(2);
     expect(upstream.calls[1].query.get("Limit")).toBe("100");
     expect(upstream.calls[1].query.get("IncludeItemTypes")).toBe("Episode");
+  });
+
+  it("avalanche : vingt séries de vingt épisodes font vingt cartes, en une page d'inventaire", async () => {
+    upstream.inventory = avalanche(20, 20);
+    const res = await row(ROW);
+    expect(res.body?.Items).toHaveLength(20);
+    expect(res.body?.Items.every((i) => (i.LatestAdditions as { EpisodeCount: number }).EpisodeCount === 20)).toBe(true);
+    expect(scanPages()).toBe(1);
+    expect(upstream.calls).toHaveLength(2);
+  });
+
+  it("des séries plus grosses : une page de plus, jusqu'aux vingt cartes", async () => {
+    upstream.inventory = avalanche(20, 30);
+    const res = await row(ROW);
+    expect(res.body?.Items.map((i) => i.Id)).toEqual(Array.from({ length: 20 }, (_, i) => `S${i}`));
+    // La série coupée entre deux pages garde tous ses épisodes.
+    expect(res.body?.Items.every((i) => (i.LatestAdditions as { EpisodeCount: number }).EpisodeCount === 30)).toBe(true);
+    expect(scanPages()).toBe(2);
+    expect(upstream.calls[1].query.get("StartIndex")).toBe("500");
+  });
+
+  it("jamais plus de quatre pages : une série de milliers d'épisodes arrivée d'un bloc", async () => {
+    upstream.inventory = [...avalanche(1, 3000), ...avalanche(5, 2)];
+    const res = await row(ROW);
+    expect(scanPages()).toBe(4);
+    expect(res.body?.Items.map((i) => i.Id)).toEqual(["S0"]);
+    expect(upstream.calls).toHaveLength(5);
   });
 
   it("un jeton refusé reste un 401 pour le client", async () => {

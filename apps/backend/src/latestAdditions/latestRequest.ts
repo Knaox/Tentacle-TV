@@ -29,14 +29,16 @@
 export const LATEST_CARD_CAP = 20;
 
 /**
- * Les ajouts lus pour composer la rangée — l'inventaire, champs minimaux, sans
- * images ni données du compte. Assez pour qu'une saison entière, ou deux, ne
- * prive pas la rangée de ses voisines ; borné, parce qu'une série de plusieurs
- * centaines d'épisodes arrivée d'un bloc ne doit pas faire lire la
- * bibliothèque entière. Au-delà, la rangée compte moins de cartes — comme le
- * regroupement des clients, qui ne lisait que 100 épisodes.
+ * L'inventaire des ajouts se lit par PAGES — champs minimaux, sans images ni
+ * données du compte. La rangée se compte en CARTES, pas en épisodes : vingt
+ * séries de vingt épisodes font vingt cartes, pas une. Une page suffit
+ * presque toujours ; la suivante n'est lue que s'il manque encore des cartes
+ * (une avalanche d'épisodes d'une ou deux séries), et jamais plus de quatre :
+ * une série de milliers d'épisodes arrivée d'un bloc ne fait pas lire la
+ * bibliothèque entière.
  */
-export const LATEST_SCAN_LIMIT = 500;
+export const LATEST_SCAN_PAGE = 500;
+export const LATEST_SCAN_PAGES = 4;
 
 /** Les paramètres de PRÉSENTATION du client, rejoués tels quels sur les cartes. */
 const PRESENTATION_PARAMS = ["fields", "enableimagetypes", "imagetypelimit", "enableimages", "enableuserdata"];
@@ -101,14 +103,14 @@ export function matchLatestRequest(path: string, query: string): LatestRequest |
  * qu'une saison, ou la série entière, vient d'arriver. Les éléments virtuels
  * (saisons et épisodes annoncés, sans fichier) n'y entrent pas.
  */
-export function latestScanPath(request: LatestRequest): string {
+export function latestScanPath(request: LatestRequest, startIndex = 0): string {
   const params = new URLSearchParams({
     userId: request.userId,
     ParentId: request.parentId,
     Recursive: "true",
     SortBy: "DateCreated",
     SortOrder: "Descending",
-    Limit: String(LATEST_SCAN_LIMIT),
+    Limit: String(LATEST_SCAN_PAGE),
     Fields: "DateCreated",
     EnableImages: "false",
     EnableUserData: "false",
@@ -116,6 +118,7 @@ export function latestScanPath(request: LatestRequest): string {
     ExcludeLocationTypes: "Virtual",
   });
   if (request.kind === "episodes") params.set("IncludeItemTypes", "Episode,Season,Series");
+  if (startIndex > 0) params.set("StartIndex", String(startIndex));
   return `Items?${params.toString()}`;
 }
 

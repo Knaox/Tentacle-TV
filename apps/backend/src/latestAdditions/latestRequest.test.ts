@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LATEST_SCAN_LIMIT, latestDetailsPath, latestScanPath, matchLatestRequest } from "./latestRequest";
+import { LATEST_SCAN_PAGE, latestDetailsPath, latestScanPath, matchLatestRequest } from "./latestRequest";
 
 /** Les requêtes de l'api-client (`latestItemsQueryOptions`), telles qu'elles partent. */
 const PRESENTATION = "&Fields=PrimaryImageAspectRatio,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,MediaSources"
@@ -81,9 +81,14 @@ describe("les requêtes faites à Jellyfin", () => {
     expect(latestScanPath(series).startsWith("Items?")).toBe(true);
     expect(Object.fromEntries(params)).toEqual({
       userId: "u1", ParentId: "lib1", Recursive: "true", SortBy: "DateCreated", SortOrder: "Descending",
-      Limit: String(LATEST_SCAN_LIMIT), Fields: "DateCreated", EnableImages: "false", EnableUserData: "false",
+      Limit: String(LATEST_SCAN_PAGE), Fields: "DateCreated", EnableImages: "false", EnableUserData: "false",
       EnableTotalRecordCount: "false", ExcludeLocationTypes: "Virtual", IncludeItemTypes: "Episode,Season,Series",
     });
+  });
+
+  it("la page suivante de l'inventaire reprend où la précédente s'arrête", () => {
+    expect(new URLSearchParams(latestScanPath(series).split("?")[1]).has("StartIndex")).toBe(false);
+    expect(new URLSearchParams(latestScanPath(series, 500).split("?")[1]).get("StartIndex")).toBe("500");
   });
 
   it("l'inventaire d'une bibliothèque mixte garde tous les types, comme le client", () => {
