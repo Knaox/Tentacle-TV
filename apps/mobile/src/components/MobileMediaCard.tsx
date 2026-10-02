@@ -153,7 +153,8 @@ export const MobileMediaCard = memo(function MobileMediaCard({
       {isGroupedSeries && <Text style={st.year}>{t("addedEpisodes", { count: addedCount })}</Text>}
       {!isGroupedSeries && !isEpisode && item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
       {isEpisode && item.SeriesName != null && <Text numberOfLines={1} style={st.year}>{item.SeriesName}</Text>}
-      {gapLabel && <Text numberOfLines={1} style={st.gap}>+ {gapLabel}</Text>}
+      {/* Deux lignes : une carte de rangée est étroite, la phrase ne se coupe pas. */}
+      {gapLabel && <Text numberOfLines={2} style={st.gap}>+ {gapLabel}</Text>}
     </PressableCard>
   );
 });
