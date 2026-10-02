@@ -73,8 +73,8 @@ describe.skipIf(!hasPython)("ouvrier yt-dlp", () => {
   });
 
   it("rend les formats, réduits aux champs du choix, pour les clients demandés", async () => {
-    const outcome = await workerExtract(zipapp, request("Way9Dexny3w", ["visionos", "web"]), 15_000);
-    expect(outcome?.formats).toEqual([{
+    const result = await workerExtract(zipapp, request("Way9Dexny3w", ["visionos", "web"]), 15_000);
+    expect(result.status === "done" && result.outcome.formats).toEqual([{
       format_id: "270", protocol: "m3u8_native", vcodec: "avc1.640028", acodec: "none", height: 1080,
       manifest_url: "https://m.test/master.m3u8?visionos,web", http_headers: { "User-Agent": "UA" },
     }]);
@@ -85,15 +85,16 @@ describe.skipIf(!hasPython)("ouvrier yt-dlp", () => {
       workerExtract(zipapp, request("Way9Dexny3w"), 15_000),
       workerExtract(zipapp, request("gone"), 15_000),
     ]);
-    expect(ok?.formats).toHaveLength(1);
-    expect(gone?.formats).toEqual([]);
-    expect(gone?.stderr).toContain("has been removed");
+    expect(ok.status === "done" && ok.outcome.formats).toHaveLength(1);
+    expect(gone.status === "done" && gone.outcome.formats).toEqual([]);
+    expect(gone.status === "done" && gone.outcome.stderr).toContain("has been removed");
   });
 
-  it("cède à la ligne de commande sans zipapp, ou quand l'extraction s'éternise", async () => {
-    expect(await workerExtract(script, request("Way9Dexny3w"), 15_000)).toBeNull();
-    expect(await workerExtract(zipapp, request("slow"), 1_000)).toBeNull();
+  it("cède à la ligne de commande sans zipapp ; une extraction qui s'éternise échoue, sans rejouer", async () => {
+    expect(await workerExtract(script, request("Way9Dexny3w"), 15_000)).toEqual({ status: "unavailable" });
+    expect((await workerExtract(zipapp, request("slow"), 1_000)).status).toBe("failed");
     // L'ouvrier coincé a été arrêté ; le suivant repart d'un processus neuf.
-    expect((await workerExtract(zipapp, request("Way9Dexny3w"), 15_000))?.formats).toHaveLength(1);
+    const next = await workerExtract(zipapp, request("Way9Dexny3w"), 15_000);
+    expect(next.status === "done" && next.outcome.formats).toHaveLength(1);
   });
 });

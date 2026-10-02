@@ -22,6 +22,14 @@ export interface WorkerOutcome {
   stderr: string;
 }
 
+/**
+ * `unavailable` : l'ouvrier ne peut pas servir (pas de zipapp, démarrage en
+ * échec) — la ligne de commande le remplace. `failed` : il a servi, mais
+ * l'extraction a expiré ou il est mort en route — la refaire en ligne de
+ * commande doublerait l'attente pour le même résultat.
+ */
+export type WorkerResult = { status: "done"; outcome: WorkerOutcome } | { status: "unavailable" } | { status: "failed"; reason: string };
+
 /** Sans travail pendant ce temps, l'ouvrier s'éteint : la mémoire revient au serveur. */
 const IDLE_MS = 5 * 60 * 1000;
 /** Python + import de yt-dlp, même sur un petit serveur. */
@@ -118,20 +126,16 @@ function start(zipapp: string, signature: string, python: string): Live {
   return worker;
 }
 
-/**
- * Une passe d'extraction par l'ouvrier ; `null` s'il ne peut pas servir
- * (pas de zipapp, démarrage en échec, délai, mort en route) — la ligne de
- * commande prend alors le relais.
- */
+/** Une passe d'extraction par l'ouvrier (cf. `WorkerResult`). */
 export async function workerExtract(
   command: string,
   request: { url: string; clients: string[]; ejs: boolean },
   timeoutMs: number,
   python = "python3",
-): Promise<WorkerOutcome | null> {
-  if (Date.now() < failedUntil) return null;
+): Promise<WorkerResult> {
+  if (Date.now() < failedUntil) return { status: "unavailable" };
   const file = resolveCommand(command);
-  if (!file || !isZipapp(file)) return null;
+  if (!file || !isZipapp(file)) return { status: "unavailable" };
   // Une nouvelle version de yt-dlp (mise à jour du jour) : un nouvel ouvrier.
   const signature = `${file}:${statSync(file).mtimeMs}`;
   if (live && live.signature !== signature) stop(live);
@@ -140,7 +144,7 @@ export async function workerExtract(
     failedUntil = Date.now() + RETRY_AFTER_FAILURE_MS;
     console.warn("[trailers] l'ouvrier yt-dlp ne démarre pas : la ligne de commande sert");
     stop(worker);
-    return null;
+    return { status: "unavailable" };
   }
   if (worker.idle) clearTimeout(worker.idle);
   const id = nextId++;
@@ -161,7 +165,7 @@ export async function workerExtract(
     worker.idle = setTimeout(() => stop(worker), IDLE_MS);
     worker.idle.unref();
   }
-  return outcome;
+  return outcome ? { status: "done", outcome } : { status: "failed", reason: `ouvrier sans réponse en ${timeoutMs / 1000} s` };
 }
 
 /** Pour les tests et l'arrêt du serveur : éteindre l'ouvrier, oublier un échec. */

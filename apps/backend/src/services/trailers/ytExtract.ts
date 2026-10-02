@@ -60,7 +60,9 @@ const watchUrl = (ytId: string) => `https://www.youtube.com/watch?v=${ytId}`;
 /** Une passe : par l'ouvrier gardé chaud quand il le peut, sinon en lançant yt-dlp. */
 async function runPass(ytId: string, clients: string[]): Promise<PassOutcome | null> {
   const viaWorker = await workerExtract(ytDlpCommand(), { url: watchUrl(ytId), clients, ejs: ejsSupported }, PASS_TIMEOUT_MS);
-  return viaWorker ? { formats: viaWorker.formats as YtFormat[], stderr: viaWorker.stderr } : runCli(ytId, clients);
+  if (viaWorker.status === "done") return { formats: viaWorker.outcome.formats as YtFormat[], stderr: viaWorker.outcome.stderr };
+  if (viaWorker.status === "failed") return { formats: [], stderr: `ERROR: ${viaWorker.reason}` };
+  return runCli(ytId, clients);
 }
 
 function runCli(ytId: string, clients: string[]): Promise<PassOutcome | null> {
