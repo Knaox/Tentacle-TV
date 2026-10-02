@@ -5,7 +5,8 @@ export type RootStackParamList = {
   /** « Pour vous » : recommandations de la bibliothèque seule. */
   Recommendations: undefined;
   Library: { libraryId: string; libraryName: string };
-  MediaDetail: { itemId: string };
+  /** `seasonId` : la saison où ouvrir une série — celle du dernier ajout d'une carte regroupée des « Derniers ajouts ». */
+  MediaDetail: { itemId: string; seasonId?: string };
   Player: { itemId: string };
   /** Panneau Réglages/Qualité présenté en MODALE transparente au-dessus du
    *  Player : sur tvOS, le Menu ferme proprement la modale (révèle l'épisode

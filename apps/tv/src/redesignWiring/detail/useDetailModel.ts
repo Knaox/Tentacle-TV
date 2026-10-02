@@ -74,7 +74,8 @@ export interface DetailModel {
   refetch: () => void;
 }
 
-export function useDetailModel(itemId: string, gate: VigieGate | null): DetailModel {
+/** `openSeasonId` : la saison où ouvrir une série (carte regroupée des « Derniers ajouts »). */
+export function useDetailModel(itemId: string, gate: VigieGate | null, openSeasonId?: string): DetailModel {
   const { t, i18n } = useTranslation();
   const client = useJellyfinClient();
   const lang = i18n.language;
@@ -95,7 +96,7 @@ export function useDetailModel(itemId: string, gate: VigieGate | null): DetailMo
   const toggles = useCardToggles(item ?? PLACEHOLDER);
   const rating = useCardRatingTarget(item ?? null, { scope: "item", enabled: !!item });
   const score = useTVUserScore(rating.identity) ?? null;
-  const episodes = useDetailEpisodes(item, watch);
+  const episodes = useDetailEpisodes(item, watch, isSeries ? openSeasonId : undefined);
   const extras = useDetailExtras(item, series, lang);
   const cards = useDetailCards(item, series, gate);
   // Une collection compte ses titres par son contenu, dès qu'il est là.

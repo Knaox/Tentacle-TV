@@ -52,7 +52,7 @@ function entryKeyOf({ props }: DetailModel): string | null {
 export function MediaDetailRedesign({ route }: Props) {
   // Demander un volet absent de la saga, une saison manquante — rien tant que la garde Vigie est fermée.
   const requests = useTitleRequests();
-  const model = useDetailModel(route.params.itemId, requests?.gate ?? null);
+  const model = useDetailModel(route.params.itemId, requests?.gate ?? null, route.params.seasonId);
   const { item } = model;
   const gapTabs = useSeriesGapTabs(requests, item);
   const shown = model.props.episodes;

@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { latestAdditionsLine, type MediaItem } from "@tentacle-tv/shared";
 import { episodeLabel } from "../hero/heroModel";
 
 /**
@@ -39,8 +39,10 @@ export function episodeRowSubtitle(item: MediaItem): string | undefined {
   return [episodeLabel(item, false), item.Name].filter(Boolean).join(" — ");
 }
 
-/** Derniers ajouts : « +3 épisodes » pour un lot, sinon le repère de l'item. */
+/**
+ * Derniers ajouts : ce qu'une carte regroupée apporte de neuf (« 3 nouveaux
+ * épisodes », « Nouvelle saison » — le modèle partagé), sinon le repère de l'item.
+ */
 export function latestSubtitle(item: MediaItem, t: TFunction): string | undefined {
-  const added = item.RecentlyAddedCount ?? 0;
-  return added > 1 ? t("common:addedEpisodes", { count: added }) : itemSubtitle(item, true);
+  return latestAdditionsLine(t, item) ?? itemSubtitle(item, true);
 }

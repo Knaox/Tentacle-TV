@@ -1,12 +1,13 @@
 import type { JellyfinClient, RecoRowItem } from "@tentacle-tv/api-client";
-import { formatEpisodeCode, resolveBannerImage, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
+import { formatEpisodeCode, latestAdditionsCaption, resolveBannerImage, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import type { SheetHeaderModel } from "../../redesign/screens/sheet/ActionSheetView";
 
 /**
  * L'en-tête de la feuille : ce que la carte MONTRAIT, que le voile vient de
  * recouvrir — son image dans sa forme, son titre, sa ligne de contexte. Lu sur
- * l'item de la CARTE, pas sur la fiche complète : un lot « +N épisodes » est
- * une tuile fabriquée (`groupLatestByRuns`) que la fiche ne connaît pas.
+ * l'item de la CARTE, pas sur la fiche complète : ce qu'apporte une carte
+ * regroupée des « Derniers ajouts » (« Nouvelle saison », ou le lot « +N » que
+ * fabrique `groupLatestByRuns` face à un serveur ancien) n'est pas sur la fiche.
  *
  * Mêmes règles que les légendes des cartes : une AFFICHE d'épisode est le
  * visage de sa série, une VIGNETTE porte le nom de l'épisode.
@@ -33,8 +34,10 @@ export function mediaSheetHeader(
   const code = episode && item.ParentIndexNumber != null && item.IndexNumber != null
     ? formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber)
     : null;
-  const context = lot > 1
-    ? t("common:addedEpisodes", { count: lot })
+  // La ligne de la légende de la carte (modèle partagé), sinon l'année.
+  const additions = latestAdditionsCaption(item);
+  const context = additions
+    ? t(additions.key, additions.count === undefined ? undefined : { count: additions.count })
     : item.ProductionYear ? String(item.ProductionYear) : null;
 
   if (shape === "landscape") {

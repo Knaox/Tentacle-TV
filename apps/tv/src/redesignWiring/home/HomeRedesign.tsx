@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFeaturedItems, useLibraries } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { latestAdditionsSeasonId, type MediaItem } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
 import { HomeView } from "../../redesign/screens/home/HomeView";
@@ -49,7 +49,11 @@ export function HomeRedesign({ navigation }: Props) {
   const { filter, removeFilter } = useRecoFilter();
 
   const play = useCallback((item: MediaItem) => navigation.navigate("Player", { itemId: item.Id }), [navigation]);
-  const detail = useCallback((item: MediaItem) => navigation.navigate("MediaDetail", { itemId: item.Id }), [navigation]);
+  // Une carte regroupée des « Derniers ajouts » ouvre la série sur la saison de son dernier ajout.
+  const detail = useCallback(
+    (item: MediaItem) => navigation.navigate("MediaDetail", { itemId: item.Id, seasonId: latestAdditionsSeasonId(item) }),
+    [navigation],
+  );
 
   const focus = useFocusStore();
   const cardActions = useTVCardActions();

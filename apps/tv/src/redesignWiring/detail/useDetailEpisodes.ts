@@ -11,7 +11,9 @@ import { plainText, progressOf } from "./detailModels";
  * Les saisons et les épisodes de la fiche (série, ou série d'un épisode) —
  * la mécanique commune `useSeasonBrowser` :
  * - fiche d'une SÉRIE : la saison de l'épisode à reprendre, ATTENDUE (pas de
- *   saison provisoire : une liste qui changerait sous le focus le perdrait) ;
+ *   saison provisoire : une liste qui changerait sous le focus le perdrait) —
+ *   ou, ouverte depuis une carte regroupée des « Derniers ajouts », la saison
+ *   de son dernier ajout (`openSeasonId`), d'emblée ;
  * - fiche d'un ÉPISODE : sa saison, lui-même « Épisode actuel ».
  * Sans les sources : une longue saison pèse dix fois plus avec (cf.
  * `useSeasonEpisodeList`) — la qualité d'un épisode se lit au focus de sa
@@ -31,7 +33,11 @@ export interface DetailEpisodes {
   episodeOf: (episodeId: string) => MediaItem | undefined;
 }
 
-export function useDetailEpisodes(item: MediaItem | undefined, watch: NextEpisodeResult | undefined): DetailEpisodes {
+export function useDetailEpisodes(
+  item: MediaItem | undefined,
+  watch: NextEpisodeResult | undefined,
+  openSeasonId?: string,
+): DetailEpisodes {
   const client = useJellyfinClient();
   const isSeries = item?.Type === "Series";
   const isEpisode = item?.Type === "Episode";
@@ -40,7 +46,7 @@ export function useDetailEpisodes(item: MediaItem | undefined, watch: NextEpisod
 
   const browser = useSeasonBrowser({
     seriesId,
-    preferredSeasonId: openedSeasonId,
+    preferredSeasonId: openedSeasonId ?? openSeasonId,
     followResume: isSeries,
     currentEpisodeSeasonId: openedSeasonId,
     sources: false,
