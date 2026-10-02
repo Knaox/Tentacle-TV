@@ -1,4 +1,5 @@
 import { ABSENT_SCENES } from "./absentScenes";
+import { ARRIVAL_SCENES } from "./arrivalScenes";
 import { BACK_SCENES } from "./backScenes";
 import { BENCH_SCENES } from "./benchScenes";
 import { BRICK_SCENES } from "./brickScenes";
@@ -57,6 +58,8 @@ export const SCENES: BenchScene[] = [
   ...SHEET_SCENES,
   ...SHEET_WIRED_SCENES,
   ...REQUEST_SCENES,
+  // Les demandes en direct : l'affiche qui arrive, le camembert, ce qui bouge seul.
+  ...ARRIVAL_SCENES,
   ...TRAILER_SCENES,
   ...OVERLAY_SCENES,
   ...BACK_SCENES,
