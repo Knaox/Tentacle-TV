@@ -30,20 +30,21 @@
 #import <React/RCTUIManager.h>
 #import <React/RCTUIManagerObserverCoordinator.h>
 
-/// Le porteur des guides de `item` : son ancêtre le plus proche qui DÉFILE
-/// avec lui — le contenu de la rangée horizontale qui le contient, sinon la
-/// section. Jamais au-delà d'une ScrollView : une contrainte qui la traverse
-/// n'est pas recalculée quand elle défile (mesuré : le guide restait là où
-/// l'élément était avant que sa rangée défile, hors de l'axe, et tvOS sautait
-/// la rangée courte).
-static UIView *GuideOwnerOf(UIView *item, UIView *section)
+/// Le porteur des guides de `item` : son premier ancêtre qui les CONTIENT — tvOS
+/// ne trouve pas un guide hors des limites de la vue qui le porte (mesuré : sous
+/// une affiche de grille, la section épousait l'affiche, et BAS ne trouvait
+/// rien) — sans jamais aller au-delà du contenu d'une ScrollView : une
+/// contrainte qui la traverse n'est pas recalculée quand elle défile (mesuré :
+/// le guide restait là où l'élément était avant que sa rangée défile).
+static UIView *GuideOwnerOf(UIView *item)
 {
+  CGRect area = CGRectInset(item.bounds, 0, -2);
   for (UIView *v = item.superview; v != nil; v = v.superview) {
-    if (v == section || [v.superview isKindOfClass:[UIScrollView class]]) {
+    if (CGRectContainsRect(v.bounds, [item convertRect:area toView:v]) || [v.superview isKindOfClass:[UIScrollView class]]) {
       return v;
     }
   }
-  return section;
+  return item.window;
 }
 
 @interface TentacleNeighborResolver : UIView
@@ -167,7 +168,7 @@ static BOOL gSectionsChanged = NO;
     return;
   }
   [self removeGuides];
-  UIView *owner = item ? GuideOwnerOf(item, section) : nil;
+  UIView *owner = item ? GuideOwnerOf(item) : nil;
   if (section == nil || owner == nil) {
     return;
   }

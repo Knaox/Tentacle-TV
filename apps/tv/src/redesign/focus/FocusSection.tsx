@@ -20,6 +20,11 @@ import { NativeFocusSection } from "./nativeFocusSection";
  *   sur le ressort `TV_MOTION.spring.scroll`, à la place du défilement de
  *   tvOS — jamais par-dessus (`ios/TentacleTV/TentacleRevealScroller.m`).
  *
+ * Une section peut se dire LISTE de lignes (`list` : un panneau de réglages) :
+ * rien ne la coiffe, HAUT y va à la ligne du dessus au plus proche, comme BAS
+ * — sinon, en remontant, seul ce qui est à l'aplomb compte (la pastille d'un
+ * en-tête n'est pas une étape obligée).
+ *
  * Les sections d'une page ne s'imbriquent pas pour le voisinage ; une section
  * qui ne fait que montrer (sans `focusKey`) peut en contenir — la section des
  * épisodes d'une fiche, qui montre ses onglets et sa rangée.
@@ -35,6 +40,8 @@ export interface FocusSectionProps {
   focusKey?: string;
   /** Ce que la page montre quand le focus y entre ; sans : rien de plus. */
   reveal?: FocusSectionReveal;
+  /** Une liste de lignes, sans en-tête qui la coiffe (un panneau de réglages). */
+  list?: boolean;
   style?: StyleProp<ViewStyle>;
   pointerEvents?: ViewProps["pointerEvents"];
   onLayout?: (event: LayoutChangeEvent) => void;
@@ -44,7 +51,7 @@ export interface FocusSectionProps {
 /** La marge aux bords de `nearest` : la légende et l'indication de l'appui long restent hors de la marge de sécurité. */
 const NEAREST_MARGIN = 56;
 
-export const FocusSection = memo(function FocusSection({ focusKey, reveal, style, pointerEvents, onLayout, children }: FocusSectionProps) {
+export const FocusSection = memo(function FocusSection({ focusKey, reveal, list, style, pointerEvents, onLayout, children }: FocusSectionProps) {
   const binding = useFocusBinding(focusKey, "section");
   if (!NativeFocusSection) {
     return (
@@ -66,6 +73,7 @@ export const FocusSection = memo(function FocusSection({ focusKey, reveal, style
       revealTop={reveal?.mode === "anchor" ? reveal.top : undefined}
       revealResponse={TV_MOTION.spring.scroll.response}
       revealDamping={TV_MOTION.spring.scroll.dampingFraction}
+      lineList={list}
     >
       {children}
     </NativeFocusSection>

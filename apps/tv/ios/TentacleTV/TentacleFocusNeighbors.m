@@ -6,9 +6,11 @@
 //  (`packages/tv-core/src/focus/sections.ts`) — mêmes étapes, mêmes
 //  constantes ; ses tests sont le cahier des charges des deux :
 //
-//  0. à l'APLOMB, dans la section qu'on quitte : ce qui est au-delà de
-//     l'élément et dans son axe (la pastille d'un en-tête, au-dessus de sa
-//     carte) — le plus proche, puis au centre ;
+//  0. dans la section qu'on quitte : en descendant, sa ligne suivante (des
+//     pastilles qui passent à la ligne) ; en remontant, ce qui est à
+//     l'APLOMB seulement (la pastille d'un en-tête, au-dessus de sa carte),
+//     sauf dans une LISTE de lignes (`lineList`) — la ligne la plus proche,
+//     puis au centre ;
 //  1. sinon, les sections AU-DELÀ de celle qu'on quitte, dans la direction, qui
 //     partagent une abscisse avec elle (une autre colonne n'est jamais visée)
 //     et qui ont un élément focalisable ;
@@ -124,27 +126,39 @@ static BOOL IsNearer(TentacleItem item, TentacleItem kept, CGRect from, BOOL up)
   return further < -0.5 || (further <= 0.5 && CGRectGetMinX(item.box) < CGRectGetMinX(kept.box));
 }
 
-/// `inLineWithin` : à l'aplomb de `from`, au-delà, le plus proche.
-static UIView *InLineWithin(CGRect from, NSArray<UIView *> *siblings, BOOL up)
+/// `onSameRow` (geometry.ts) : deux cadres qui partagent plus de la moitié de
+/// la plus petite des deux hauteurs sont sur la même ligne.
+static BOOL OnSameRow(CGRect a, CGRect b)
+{
+  CGFloat overlap = MIN(CGRectGetMaxY(a), CGRectGetMaxY(b)) - MAX(CGRectGetMinY(a), CGRectGetMinY(b));
+  return overlap > 0 && overlap * 2 > MIN(CGRectGetHeight(a), CGRectGetHeight(b));
+}
+
+/// `inLineWithin` : au-delà de `from` dans sa section — à l'aplomb en
+/// remontant, sauf dans une liste —, la ligne la plus proche, puis le centre.
+static UIView *InLineWithin(CGRect from, NSArray<UIView *> *siblings, BOOL up, BOOL list)
 {
   NSMutableArray<NSValue *> *beyond = [NSMutableArray array];
-  CGFloat closest = CGFLOAT_MAX;
+  TentacleItem closest = {nil, CGRectNull};
+  CGFloat closestAdvance = CGFLOAT_MAX;
   for (UIView *view in siblings) {
     CGRect box = [view convertRect:view.bounds toView:nil];
     CGFloat advance = up ? CGRectGetMinY(from) - CGRectGetMaxY(box) : CGRectGetMinY(box) - CGRectGetMaxY(from);
-    if (OverlapX(from, box) <= 0 || advance < -kFrontierSlack) {
+    if ((up && !list && OverlapX(from, box) <= 0) || advance < -kFrontierSlack) {
       continue;
     }
-    closest = MIN(closest, advance);
     TentacleItem item = {view, box};
+    if (advance < closestAdvance) {
+      closestAdvance = advance;
+      closest = item;
+    }
     [beyond addObject:[NSValue valueWithBytes:&item objCType:@encode(TentacleItem)]];
   }
   TentacleItem kept = {nil, CGRectNull};
   for (NSValue *value in beyond) {
     TentacleItem item;
     [value getValue:&item];
-    CGFloat advance = up ? CGRectGetMinY(from) - CGRectGetMaxY(item.box) : CGRectGetMinY(item.box) - CGRectGetMaxY(from);
-    if (advance - closest <= kSameEdge && (kept.view == nil || IsNearer(item, kept, from, up))) {
+    if (OnSameRow(closest.box, item.box) && (kept.view == nil || IsNearer(item, kept, from, up))) {
       kept = item;
     }
   }
@@ -218,7 +232,7 @@ BOOL TentacleNeighborExists(TentacleFocusSection *from, UIView *focused, BOOL up
   NSMutableArray<UIView *> *siblings = [NSMutableArray array];
   CollectItems(from, siblings, YES);
   [siblings removeObject:focused];
-  if (InLineWithin([focused convertRect:focused.bounds toView:nil], siblings, up) != nil) {
+  if (InLineWithin([focused convertRect:focused.bounds toView:nil], siblings, up, from.lineList) != nil) {
     return YES;
   }
   for (TentacleCandidate *candidate in CandidatesBeyond(from, up)) {
@@ -240,7 +254,7 @@ UIView *TentacleNeighborTarget(TentacleFocusSection *from, UIView *focused, BOOL
   NSMutableArray<UIView *> *siblings = [NSMutableArray array];
   CollectItems(from, siblings, YES);
   [siblings removeObject:focused];
-  UIView *within = InLineWithin(itemBox, siblings, up);
+  UIView *within = InLineWithin(itemBox, siblings, up, from.lineList);
   if (within != nil) {
     return within;
   }

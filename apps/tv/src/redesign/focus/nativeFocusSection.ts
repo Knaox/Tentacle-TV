@@ -17,6 +17,7 @@ export interface NativeFocusSectionProps extends ViewProps {
   revealTop?: number;
   revealResponse: number;
   revealDamping: number;
+  lineList?: boolean;
 }
 
 const VIEW_NAME = "TentacleFocusSection";

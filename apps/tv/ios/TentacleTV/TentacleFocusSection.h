@@ -37,6 +37,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) CGFloat revealResponse;
 @property (nonatomic, assign) CGFloat revealDamping;
 
+/// Une LISTE de lignes (un panneau de réglages, décrit par la vue) : HAUT y va
+/// à la ligne du dessus au plus proche, comme BAS — rien ne la coiffe.
+@property (nonatomic, assign) BOOL lineList;
+
 /// La règle de voisinage vertical s'applique à cette section.
 @property (nonatomic, assign) BOOL tvNeighbors;
 /// L'entrée déclarée (numéro natif d'un de ses éléments), ou nil.
