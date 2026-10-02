@@ -37,6 +37,7 @@ import { pairRoutes } from "./routes/pair";
 import { shareRoutes } from "./routes/share";
 import { tmdbRoutes } from "./routes/tmdb";
 import { trailerRoutes } from "./routes/trailers";
+import { trailerMediaRoutes } from "./routes/trailerMedia";
 import { trailerReadinessRoutes } from "./routes/trailerReadiness";
 import { gifRoutes } from "./routes/gifs";
 import { themeRoutes } from "./routes/theme";
@@ -258,6 +259,8 @@ async function main() {
   await app.register(shareRoutes, { prefix: "/api/share" });
   await app.register(tmdbRoutes, { prefix: "/api/tmdb" });
   await app.register(trailerRoutes, { prefix: "/api/trailers" });
+  // Les flux relayés des bandes-annonces : jeton dans l'URL, AVPlayer n'envoie pas d'en-tête.
+  await app.register(trailerMediaRoutes, { prefix: "/api/trailers" });
   // Le diagnostic des bandes-annonces, résumé pour tout compte connecté.
   await app.register(trailerReadinessRoutes, { prefix: "/api/trailers" });
   await app.register(gifRoutes, { prefix: "/api/gifs" });
