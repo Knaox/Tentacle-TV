@@ -1,7 +1,7 @@
 """
 Génère les dix-neuf SVG de `brand/` ET les constantes TypeScript des clients,
-depuis une seule géométrie. Rien ici ne s'édite à la main. Les couches de
-l'icône Apple TV se composent dans `tvos.py`.
+depuis une seule géométrie. Rien ici ne s'édite à la main. L'icône Apple TV en
+couches et son Top Shelf se composent dans `tvos.py`.
 
     python3 brand/generate-svg.py            # écrit brand/ + les modules TS
     python3 brand/generate-svg.py /tmp/out   # aperçu ailleurs, sans les TS
@@ -234,8 +234,6 @@ COMPOSITIONS = {
     # Bannières et écrans de lancement.
     "banner-16x9.svg": (1280, 720, 0.72, True, True, " — bannière"),
     "banner-wide.svg": (620, 300, 0.78, True, True, " — bannière large"),
-    "banner-topshelf.svg": (1920, 720, 0.68, True, True, " — Top Shelf"),
-    "banner-topshelf-wide.svg": (2320, 720, 0.66, True, True, " — Top Shelf large"),
     "poster-2x3.svg": (720, 1080, 0.62, True, True, " — affiche"),
     # Le logo seul, sur transparent : posé par le système sur sa propre couleur.
     "logo-plain.svg": (1024, 1024, 0.92, False, True, " — logo seul"),
@@ -245,7 +243,7 @@ COMPOSITIONS = {
 for name, (w, h, ratio, bg, hat, title) in COMPOSITIONS.items():
     (OUT / name).write_text(compose(w, h, ratio, bg, hat, title))
 
-# ── Apple TV : l'icône en couches ──────────────────────────────────────────
+# ── Apple TV : l'icône en couches et le Top Shelf ──────────────────────────
 TVOS_COUNT = tvos.write(OUT, {"GRADS": GRADS, "BODY": BODY, "HAT_G": HAT_G,
                               "FRONT_G": FRONT_G, "NOTE": NOTE})
 

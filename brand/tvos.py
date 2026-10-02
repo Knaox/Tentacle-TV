@@ -1,7 +1,7 @@
 """
-Les compositions de l'Apple TV : l'icône EN COUCHES. `generate-svg.py` les
-écrit par `write()` et lui passe les pièces du dessin : rien ici ne redessine
-la mascotte, tout se compose depuis elle.
+Les compositions de l'Apple TV : l'icône EN COUCHES et le Top Shelf.
+`generate-svg.py` les écrit par `write()` et lui passe les pièces du dessin :
+rien ici ne redessine la mascotte, tout se compose depuis elle.
 
 L'icône suit la manière des apps d'Apple sur tvOS 26 (Réglages, Sing) : un
 fond plein, le motif devant, en couches, et AUCUN reflet, ombre ni liseré
@@ -41,6 +41,14 @@ NIGHT = ("#43178C", "#1B0939")
 LIGHT_STOPS = (("0", "#C026D3", ".82"), (".55", "#A855F7", ".24"), ("1", "#A855F7", "0"))
 # Le rayon de la lumière, en part de la hauteur du cadre.
 LIGHT_RADIUS = 0.62
+
+# Le Top Shelf : le monde de l'icône, en grand — même nuit, même lumière, la
+# mascotte au centre, à une taille posée (le dessin tient 54 % de la hauteur :
+# l'horloge, en haut à droite, et la rangée d'icônes, dessous, s'y superposent).
+TOP_SHELF = {"banner-topshelf.svg": (1920, 720), "banner-topshelf-wide.svg": (2320, 720)}
+TOP_SHELF_SPAN = 0.60
+# La lumière du Top Shelf s'étire en largeur : une scène, pas une tache.
+TOP_SHELF_LIGHT = (1.25, 0.66)
 
 def _svg(w, h, title, note, defs, body):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img">'
@@ -86,13 +94,25 @@ def _icon_layers(art):
     }
 
 
+def _top_shelf(art):
+    out = {}
+    for name, (w, h) in TOP_SHELF.items():
+        night_defs, night = _night(w, h)
+        rx, ry = TOP_SHELF_LIGHT
+        light_defs, light = _light(w, h, h * rx, h * ry)
+        mascot = f'<g {_place(w, h, h * TOP_SHELF_SPAN)}>{art["BODY"]}{art["HAT_G"]}{art["FRONT_G"]}</g>'
+        out[name] = _svg(w, h, f"Top Shelf {w}×{h}", art["NOTE"], night_defs + light_defs + art["GRADS"],
+                         night + light + mascot)
+    return out
+
+
 def write(out, art):
     """
     Écrit les SVG de l'Apple TV dans `out` ; `art` porte les pièces du dessin
     (`GRADS`, `BODY`, `HAT_G`, `FRONT_G`) et la mention `NOTE`. Rend le nombre
     de fichiers écrits.
     """
-    files = _icon_layers(art)
+    files = {**_icon_layers(art), **_top_shelf(art)}
     for name, text in files.items():
         (out / name).write_text(text)
     return len(files)
