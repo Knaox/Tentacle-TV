@@ -16,7 +16,8 @@
  * Des routes facultatives sont venues après — le droit du compte (`access`)
  * et les titres qu'il attend (`mine`) : `pluginTitlesMine.ts` ; les saisons
  * d'une série, pour un client qui les choisit lui-même (`seasons`) :
- * `pluginTitleSeasons.ts`.
+ * `pluginTitleSeasons.ts` ; celles qui manquent aux séries que la
+ * bibliothèque a EN PARTIE (`gaps`) : `pluginTitleGaps.ts`.
  */
 
 import type { ExternalTone } from "./pluginSearch";
@@ -28,7 +29,7 @@ export type TitleKey = `${TitleMediaType}:${number}`;
 export interface TitlesPlugin {
   pluginId: string;
   configEnabled?: boolean;
-  titles?: { state: string; request?: string; access?: string; mine?: string; seasons?: string };
+  titles?: { state: string; request?: string; access?: string; mine?: string; seasons?: string; gaps?: string };
 }
 
 export interface TitleProvider {
@@ -42,6 +43,8 @@ export interface TitleProvider {
   minePath: string | null;
   /** Les saisons d'une série, à choisir sur place ; `null` : le plugin ne les déclare pas. */
   seasonsPath: string | null;
+  /** Les saisons qui manquent à des séries de la bibliothèque ; `null` : le plugin ne les déclare pas. */
+  gapsPath: string | null;
 }
 
 export interface TitleRequestOffer {
@@ -111,6 +114,7 @@ export function titleProvider(plugins: readonly TitlesPlugin[]): TitleProvider |
       accessPath: isSafePath(titles.access) ? titles.access : null,
       minePath: isSafePath(titles.mine) ? titles.mine : null,
       seasonsPath: isSafePath(titles.seasons) ? titles.seasons : null,
+      gapsPath: isSafePath(titles.gaps) ? titles.gaps : null,
     };
   }
   return null;

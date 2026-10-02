@@ -51,7 +51,8 @@ export function titleSeasonsUrl(provider: TitleProvider, key: TitleKey, lang: st
   return `/api/plugins/${encodeURIComponent(provider.pluginId)}${provider.seasonsPath}?${params.toString()}`;
 }
 
-function readSeason(raw: unknown): TitleSeason | null {
+/** Une saison, validée champ par champ ; illisible : `null`. Lue aussi par `pluginTitleGaps.ts`. */
+export function readSeason(raw: unknown): TitleSeason | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const number = r.number;

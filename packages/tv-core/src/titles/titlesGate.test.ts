@@ -9,6 +9,7 @@ const provider: TitleProvider = {
   accessPath: "/titles/access",
   minePath: "/titles/mine",
   seasonsPath: null,
+  gapsPath: null,
 };
 
 describe("la garde des fonctions d'une extension de demandes", () => {

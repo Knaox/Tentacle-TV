@@ -3,7 +3,7 @@ import type { TitleProvider } from "@tentacle-tv/shared";
 import { loadTitleState } from "./titleStateBatcher";
 
 const provider: TitleProvider = {
-  pluginId: "seer", statePath: "/titles/state", requestPath: "/titles/request", accessPath: null, minePath: null, seasonsPath: null,
+  pluginId: "seer", statePath: "/titles/state", requestPath: "/titles/request", accessPath: null, minePath: null, seasonsPath: null, gapsPath: null,
 };
 
 beforeEach(() => {
