@@ -20,7 +20,8 @@ import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection"
  * Chaque LIGNE est une section (`FocusSection`, clé
  * `${focusPrefix}:line:<n>`) : BAS depuis une colonne que la dernière ligne
  * n'a pas atteint sa dernière affiche, au plus proche ; la ligne focalisée
- * vient entière à l'écran, « Maintenir OK » compris, en un seul mouvement.
+ * vient entière à l'écran, « Maintenir OK » compris, en un seul mouvement —
+ * la première, elle, ramène la page tout en haut (titre et filtres).
  *
  * Les lignes sont RECYCLÉES (FlashList) : une ligne qui sort de l'écran sert
  * à celle qui arrive, ses cartes reçoivent un autre titre au lieu d'être
@@ -93,6 +94,11 @@ const Separator = () => <View style={styles.separator} />;
 /** La ligne entière à l'écran, au plus près : 56 des bords, la place de
  *  « Maintenir OK » sous la légende. */
 const LINE_REVEAL: FocusSectionReveal = { mode: "nearest" };
+/** La PREMIÈRE ligne : la page tout en haut, son titre et ses filtres avec
+ *  elle. Revenir sur la première ligne, c'est revenir en haut — y compris au
+ *  bout d'une remontée maintenue ou d'un glisser vif, où tvOS pose la page où
+ *  son défilement rapide s'arrête (le titre restait masqué). */
+const FIRST_LINE_REVEAL: FocusSectionReveal = { mode: "start" };
 
 interface Line {
   start: number;
@@ -118,7 +124,7 @@ function useLines(cards: CardModel[], columns: number): Line[] {
 
 const GridLine = memo(function GridLine({ line, index, ...cell }: { line: Line; index: number } & Omit<CellProps, "card" | "index">) {
   return (
-    <FocusSection focusKey={`${cell.focusPrefix}:line:${index}`} reveal={LINE_REVEAL} style={styles.columns}>
+    <FocusSection focusKey={`${cell.focusPrefix}:line:${index}`} reveal={index === 0 ? FIRST_LINE_REVEAL : LINE_REVEAL} style={styles.columns}>
       {line.cards.map((card, i) => (
         // Clé de PLACE : recyclée, la ligne garde ses cartes (cf. en-tête).
         <Cell key={i} card={card} index={line.start + i} {...cell} />
