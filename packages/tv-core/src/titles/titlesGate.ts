@@ -25,6 +25,14 @@ export function titlesFeaturesOpen(provider: TitleProvider | null, access: Title
  * rythme que la liste des extensions actives.
  */
 export const MY_TITLES_REFRESH = {
+  /**
+   * Le DIRECT : un titre avance (en route, ou en train d'entrer dans la
+   * bibliothèque) et on le voit — la fenêtre, l'aperçu du rail, des cartes à
+   * l'écran —, l'app au premier plan. Le rythme de Vigie sur le téléphone et
+   * le bureau : sa file se relit toutes les 8 s, sa liste se garde 10 s
+   * (`liveProgress.ts` fait avancer l'écran entre deux lectures).
+   */
+  liveMs: 10_000,
   /** La liste ouverte : l'avancement bouge à vue. */
   watchingMs: 30_000,
   /** Le rail seul : la pile d'aperçu, rafraîchie de loin en loin. */
