@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Modal } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useRequestTitleSeasons, useSeasons, useTitleSeasons } from "@tentacle-tv/api-client";
+import { useMyTitles, useRequestTitleSeasons, useSeasons, useTitleSeasons } from "@tentacle-tv/api-client";
 import { librarySeasonNumbers, type TitleRequestOutcome } from "@tentacle-tv/shared";
+import { isAdvancing } from "@tentacle-tv/tv-core";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { SeasonsSheet, seasonFocusKey } from "../../redesign/screens/requests/SeasonsSheet";
 import { useBackLayer } from "../back/BackScope";
@@ -10,7 +11,9 @@ import { createEntryGuide } from "../focus/entryGuide";
 import { useFocusStore } from "../focus/focusStore";
 import { useChoiceEntry } from "../settings/settingsFocus";
 import type { AbsentTitle } from "./absentTitle";
+import { useLiveRefresh } from "./liveRequests";
 import { requestableNumbers, seasonsSheetModel } from "./seasonsSheetModel";
+import { useAppActive } from "./useAppActive";
 import type { VigieGate } from "./useVigieGate";
 
 /**
@@ -28,6 +31,9 @@ import type { VigieGate } from "./useVigieGate";
  * à cocher, sinon par la pilule (`useChoiceEntry`) ; BAS depuis n'importe
  * quelle ligne mène au pied (`sheet:footer`). Un filet la présente quand
  * même, sur sa lecture.
+ *
+ * Les saisons de la demande du compte en cours disent son état et son
+ * avancement, en direct (`useLiveRefresh` tant qu'elle avance).
  */
 
 const APPLY_KEY = "sheet:apply";
@@ -55,9 +61,17 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
   const owned = useMemo(() => (seriesId ? librarySeasonNumbers(library.data ?? []) : null), [seriesId, library.data]);
   const ownedKnown = !seriesId || library.data !== undefined || library.isError;
   const [checked, setChecked] = useState<ReadonlySet<number>>(() => new Set(focusSeason !== undefined ? [focusSeason] : []));
+  // La demande du compte sur cette série : ses saisons disent où elle en est, en direct.
+  const { titles: mine, updatedAt } = useMyTitles(gate.provider, gate.lang);
+  const appActive = useAppActive();
+  const own = useMemo(() => {
+    const found = mine?.find((m) => m.key === title.key);
+    return found ? { mine: found, reading: { at: updatedAt, live: appActive } } : null;
+  }, [mine, title.key, updatedAt, appActive]);
+  useLiveRefresh(gate, appActive && own !== null && isAdvancing(own.mine.state));
   const sheet = useMemo(
-    () => seasonsSheetModel(t, title.title, ownedKnown ? answer : null, failed, checked, owned),
-    [t, title.title, ownedKnown, answer, failed, checked, owned],
+    () => seasonsSheetModel(t, title.title, ownedKnown ? answer : null, failed, checked, owned, own),
+    [t, title.title, ownedKnown, answer, failed, checked, owned, own],
   );
 
   // Une couche « menu » de la pile du Retour : la Modal reçoit Menu elle-même

@@ -1,10 +1,15 @@
 import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useIsFocused } from "@react-navigation/native";
 import { useQueries } from "@tanstack/react-query";
 import { loadTitleState, tentacleApiFetch, titleStateQueryKey, useMyTitles } from "@tentacle-tv/api-client";
 import { parseTitleKey, type TitleKey, type TitleState } from "@tentacle-tv/shared";
+import { isAdvancing } from "@tentacle-tv/tv-core";
 import type { AbsentModel } from "../../redesign/cards/cardTypes";
 import { absentOf } from "./absentStates";
+import type { ArrivalReading } from "./arrivalModels";
+import { useArrivals, useLiveRefresh } from "./liveRequests";
+import { useAppActive } from "./useAppActive";
 import type { VigieGate } from "./useVigieGate";
 
 /**
@@ -20,6 +25,12 @@ import type { VigieGate } from "./useVigieGate";
  * (`loadTitleState`), et une demande ne réécrit que la sienne. La liste des
  * demandes du compte est celle du socle (`useMyTitles`) : une demande faite
  * ici, patchée dedans, change aussitôt son badge.
+ *
+ * EN DIRECT : une carte de demande du compte qui avance, sur l'écran de
+ * devant, l'app au premier plan, inscrit l'écran au battement de 10 s
+ * (`useLiveRefresh`) ; son affiche se colore au fil de l'avancement, qui bouge
+ * d'une seconde à l'autre. Arrivée (sortie de la liste en avançant) : pleine
+ * couleur, « Disponible ».
  */
 
 export interface AbsentResolver {
@@ -35,7 +46,18 @@ export function useAbsentStates(gate: VigieGate | null, keys: readonly TitleKey[
   const { t } = useTranslation();
   const provider = gate?.provider ?? null;
   const lang = gate?.lang ?? "fr";
-  const { titles: mine } = useMyTitles(provider, lang, { enabled: gate !== null });
+  const { titles: mine, updatedAt } = useMyTitles(provider, lang, { enabled: gate !== null });
+  const arrivals = useArrivals();
+  const screenFocused = useIsFocused();
+  const appActive = useAppActive();
+  const visible = gate !== null && screenFocused && appActive;
+  const mineOf = useMemo(() => new Map((mine ?? []).map((m) => [m.key, m])), [mine]);
+  const advancing = keys.some((key) => {
+    const own = mineOf.get(key);
+    return own !== undefined && isAdvancing(own.state);
+  });
+  useLiveRefresh(gate, visible && advancing);
+  const reading = useMemo<ArrivalReading>(() => ({ at: updatedAt, live: visible }), [updatedAt, visible]);
   const results = useQueries({
     queries: keys.map((key) => ({
       queryKey: titleStateQueryKey(provider, lang, key),
@@ -58,16 +80,16 @@ export function useAbsentStates(gate: VigieGate | null, keys: readonly TitleKey[
   return useMemo(() => {
     if (!gate) return null;
     const stateOf = new Map<TitleKey, TitleState | null>(keys.map((key, i) => [key, stable[i] ?? null]));
-    const mineOf = new Map((mine ?? []).map((m) => [m.key, m]));
     return {
-      absentOf: (key, fallback) => absentOf(t, mineOf.get(key), stateOf.get(key) ?? (fallback ? { badge: fallback, request: null } : null)),
+      absentOf: (key, fallback) =>
+        absentOf(t, mineOf.get(key), stateOf.get(key) ?? (fallback ? { badge: fallback, request: null } : null), reading, arrivals.has(key)),
       hintOf: (key) => {
-        if (mineOf.has(key)) return undefined;
+        if (mineOf.has(key) || arrivals.has(key)) return undefined;
         const offer = stateOf.get(key)?.request;
         if (offer?.mode === "direct") return t("requests:hintRequest");
         const seasons = offer?.mode === "open" && parseTitleKey(key)?.mediaType === "tv" && gate.provider.seasonsPath !== null;
         return seasons ? t("requests:hintSeasons") : undefined;
       },
     };
-  }, [gate, keys, stable, mine, t]);
+  }, [gate, keys, stable, mineOf, reading, arrivals, t]);
 }

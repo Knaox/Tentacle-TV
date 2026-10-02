@@ -14,6 +14,8 @@ import { showNotice } from "../overlays/transientNotice";
 import { AbsentSheetRedesign } from "./AbsentSheetRedesign";
 import { mineLabel, sayable } from "./absentStates";
 import { requestedTitle, type AbsentTitle } from "./absentTitle";
+import { ARRIVED_LABEL_KEY } from "./arrivalModels";
+import { useArrivals } from "./liveRequests";
 import { SeasonsSheetRedesign } from "./SeasonsSheetRedesign";
 import { useVigieGate, type VigieGate } from "./useVigieGate";
 
@@ -25,7 +27,7 @@ import { useVigieGate, type VigieGate } from "./useVigieGate";
  *
  * OK sur un titre absent :
  * - le compte l'a déjà demandé → son état, et l'invite à le suivre sur le
- *   téléphone — jamais une seconde demande ;
+ *   téléphone — jamais une seconde demande ; arrivé depuis → « Disponible » ;
  * - un film que l'extension offre de demander → la demande, en UN geste, puis
  *   « Demande envoyée » ; elle paraît aussitôt dans les demandes du compte
  *   (`withMyTitle`), et son badge change ;
@@ -70,13 +72,14 @@ export function useTitleRequests(): TitleRequests | null {
   const qc = useQueryClient();
   const { titles: mine } = useMyTitles(provider, lang, { enabled: gate !== null });
   const { mutateAsync: requestTitle } = useRequestTitle(provider, lang);
+  const arrivals = useArrivals();
   const [seasonsOf, setSeasonsOf] = useState<{ title: AbsentTitle; target?: SeasonsTarget } | null>(null);
   const [held, setHeld] = useState<AbsentTitle | null>(null);
   const busy = useRef(new Set<string>());
 
   // Les gestes lisent l'état du moment sans changer d'identité.
-  const latest = useRef({ gate, mine, t });
-  latest.current = { gate, mine, t };
+  const latest = useRef({ gate, mine, t, arrivals });
+  latest.current = { gate, mine, t, arrivals };
 
   /** La demande partie : l'avis, et la liste des demandes du compte qui la montre aussitôt. */
   const confirm = useCallback((title: AbsentTitle, seasons: number[] | null) => {
@@ -97,10 +100,11 @@ export function useTitleRequests(): TitleRequests | null {
   }, [confirm]);
 
   const open = useCallback(async (title: AbsentTitle) => {
-    const { gate: g, mine: m, t: tr } = latest.current;
+    const { gate: g, mine: m, t: tr, arrivals: arrived } = latest.current;
     if (!g || busy.current.has(title.key)) return;
     const already = m?.find((x) => x.key === title.key);
     if (already) return showNotice({ kind: "info", title: mineLabel(tr, already), text: tr("requests:followOnPhone") });
+    if (arrived.has(title.key)) return showNotice({ kind: "success", title: tr(ARRIVED_LABEL_KEY) });
     busy.current.add(title.key);
     try {
       const state = await qc.fetchQuery<TitleState | null>({
