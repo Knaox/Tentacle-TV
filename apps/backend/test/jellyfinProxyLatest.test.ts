@@ -120,10 +120,10 @@ const scanPages = () => upstream.calls.filter((c) => c.query.get("Limit") === "5
  * ses `episodes` épisodes puis ses dossiers (saison, série), du plus récent
  * au plus ancien.
  */
-function avalanche(series: number, episodes: number): Array<Record<string, unknown>> {
+function avalanche(series: number, episodes: number, prefix = "S"): Array<Record<string, unknown>> {
   const out: Array<Record<string, unknown>> = [];
   for (let i = 0; i < series; i++) {
-    const id = `S${i}`;
+    const id = `${prefix}${i}`;
     out.push({ Id: `${id}-s1`, Type: "Season", SeriesId: id, IndexNumber: 1 }, { Id: id, Type: "Series" });
     for (let e = episodes; e >= 1; e--) {
       out.push({ Id: `${id}-e${e}`, Type: "Episode", SeriesId: id, SeasonId: `${id}-s1`, ParentIndexNumber: 1, IndexNumber: e });
@@ -203,6 +203,16 @@ describe("GET /api/jellyfin/Users/{id}/Items — « Derniers ajouts » d'une bib
     expect(upstream.calls).toHaveLength(2);
   });
 
+  it("une série de 100 épisodes n'est qu'UNE carte : les 19 autres séries suivent", async () => {
+    upstream.inventory = [...avalanche(1, 100, "Big"), ...avalanche(25, 4)];
+    const res = await row(ROW);
+    expect(res.body?.Items).toHaveLength(20);
+    expect(res.body?.Items[0]).toMatchObject({ Id: "Big0", RecentlyAddedCount: 100, LatestAdditions: { EpisodeCount: 100 } });
+    expect(res.body?.Items.slice(1).map((i) => i.Id)).toEqual(Array.from({ length: 19 }, (_, i) => `S${i}`));
+    expect(new Set(res.body?.Items.map((i) => i.Id)).size).toBe(20);
+    expect(scanPages()).toBe(1);
+  });
+
   it("des séries plus grosses : une page de plus, jusqu'aux vingt cartes", async () => {
     upstream.inventory = avalanche(20, 30);
     const res = await row(ROW);
@@ -214,7 +224,7 @@ describe("GET /api/jellyfin/Users/{id}/Items — « Derniers ajouts » d'une bib
   });
 
   it("jamais plus de quatre pages : une série de milliers d'épisodes arrivée d'un bloc", async () => {
-    upstream.inventory = [...avalanche(1, 3000), ...avalanche(5, 2)];
+    upstream.inventory = [...avalanche(1, 3000), ...avalanche(5, 2, "T")];
     const res = await row(ROW);
     expect(scanPages()).toBe(4);
     expect(res.body?.Items.map((i) => i.Id)).toEqual(["S0"]);
