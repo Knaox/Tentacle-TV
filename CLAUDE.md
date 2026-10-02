@@ -347,7 +347,11 @@ film, rangée « À demander » de la recherche, feuille des saisons
 MANQUANTES d'une série de la bibliothèque — en tête de la rangée « À
 demander » de la recherche, en onglets grisés au bout de la bande des
 saisons de la fiche (`titles.gaps`) — sont les SEULES fonctions de Vigie que
-le cœur intègre nativement, toutes dans `redesignWiring/vigie/`.
+le cœur intègre nativement, toutes dans `redesignWiring/vigie/`. Une demande
+DU COMPTE s'y montre partout de la même façon (`ArrivalArtwork`) : l'affiche
+grise reprend sa couleur au prorata de l'avancement, le camembert au centre,
+en direct — relue toutes les 10 s seulement tant qu'un de ses titres avance
+à l'écran (`liveRequests`, un seul battement), jamais autrement.
 Toute fonction de Vigie sur la TV passe par `useVigieGate` : serveur ou Vigie
 trop anciens, Vigie éteint, compte bloqué dans Vigie (le compte de
 démonstration de la revue Apple) → aucune trace.
