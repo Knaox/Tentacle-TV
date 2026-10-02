@@ -227,8 +227,8 @@ Extensible plugin architecture with admin marketplace. Plugins can add frontend 
 `brand/` est la source unique. Rien de ce qui en dérive ne se retouche à la main :
 
 ```bash
-python3 brand/generate-svg.py brand      # les 17 SVG + 3 modules TS
-python3 brand/generate-icons.py --write  # les 84 binaires (aperçu sans --write ;
+python3 brand/generate-svg.py brand      # les 19 SVG + 3 modules TS
+python3 brand/generate-icons.py --write  # les 90 binaires (aperçu sans --write ;
                                          #  un mot en plus = filtre de chemin)
 pnpm --filter @tentacle-tv/tv-webos icons  # webOS, à part — voir plus bas
 ```
@@ -240,7 +240,7 @@ pnpm --filter @tentacle-tv/tv-webos icons  # webOS, à part — voir plus bas
 divergé. Côté natif les `dasharray` sont en unités RÉELLES de tracé :
 `pathLength` n'existe que dans le rendu web de react-native-svg.
 
-Trois pièges déjà payés :
+Quatre pièges déjà payés :
 
 - **webOS a son propre script** (`apps/tv-webos/scripts/icons.mjs`) et
   `generate-icons.py` l'ignore volontairement : il faut un maître de 5200 px
@@ -250,6 +250,11 @@ Trois pièges déjà payés :
   URL depuis les iframes de plugins, y compris des plugins publiés hors du dépôt.
 - **`stroke-linejoin="round"` est obligatoire** sur les bras : ce sont des
   polylignes, et le `miter` par défaut projette des piques sur leurs angles aigus.
+- **L'Apple TV se compose dans `brand/tvos.py`** : l'icône en COUCHES (fond,
+  lumière, poulpe, bras avant — cadrée à la parallaxe mesurée), son Top Shelf,
+  et le logo de lancement, qui reproduit la première image de l'app
+  (`BootView`) : les deux se retouchent ensemble. Ne régénérer que
+  `generate-icons.py --write apps/tv/ios` ; l'app tvOS se reconstruit.
 
 ## Cartes — un seul survol, trois variantes
 

@@ -26,6 +26,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 14. Demandes en cours (Apple TV) | Faites (2026-10-02) : l'aperçu des demandes Vigie dans le bloc du profil, la fenêtre en lecture seule, le camembert — rien sans Vigie à jour et un compte qui a le droit de demander — « Les demandes en cours (Apple TV) » ci-dessous. |
 | 15. Lumière des fonds et marque (Apple TV) | Fait (2026-10-02) : un fond d'encre éclairé par l'œuvre focalisée, la carte focalisée dans sa propre lumière, la marque mono calée et éclairée — « La lumière des fonds et la marque (Apple TV) » ci-dessous. |
 | 16. Les rangées (Apple TV) | Fait (2026-10-02) : HAUT / BAS vers la section voisine, l'élément au centre le plus proche — partout ; la page qui suit le focus en UN mouvement — « Les rangées (Apple TV) » ci-dessous. |
+| 17. Le logo de l'app (Apple TV) | Fait (2026-10-02) : l'icône en quatre couches (fond, lumière, poulpe, bras avant), le Top Shelf dans le même monde, le lancement = la première image de l'app, plus de noir au démarrage — « Le logo de l'app : icône, Top Shelf, lancement (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -1843,6 +1844,63 @@ lueur paraît, la lumière du fond passe à celle de l'œuvre suivante.
   un focus piloté depuis le relais (`fps --sweep`, `focus` en boucle)
   n'arrive pas au même rythme d'un tour à l'autre — le même code a mesuré 14
   puis 223 ms/s. D'où les scènes « Lumière », au mouvement joué dans l'app.
+
+## Le logo de l'app : icône, Top Shelf, lancement (Apple TV)
+
+Retour de l'essai (2026-10-02) : « le logo est vraiment pas bien affiché de
+l'app ». Lecture retenue : l'icône de l'écran d'accueil d'abord, puis le Top
+Shelf et l'écran de lancement ; le logo DANS l'app, seulement vérifié.
+
+- **Le constat** (simulateur tvOS 26.2 en 4K, à côté de Réglages et de Sing,
+  deux apps d'Apple) : une seule couche, donc aucune profondeur au focus ; un
+  fond cinéma qui tombait au noir pur en bas à droite — sur l'accueil sombre,
+  la tuile se perdait et la mascotte flottait seule.
+- **L'icône, en quatre couches** (`brand/tvos.py`, Sing en a cinq) : le FOND
+  opaque, violet de nuit plus clair en haut (`#43178C` → `#1B0939`) ; la
+  LUMIÈRE de la marque sur sa couche (`#C026D3` 0,82 → `#A855F7` 0,24 → 0) ;
+  le POULPE sans ses bras avant ; les BRAS avant devant tout — à
+  l'inclinaison, ils glissent devant l'écran qu'ils enlacent, leur base reste
+  sur le dôme. Aucun reflet ni ombre peints : tvOS pose les siens au focus.
+  Écartés au simulateur : le fond d'avant ; un violet plus vif (la lumière ne
+  s'y lit plus) ; un halo large (le dôme se fond dedans) ; la mascotte mono
+  blanche sur le dégradé de marque — très « Apple », mais elle perd la
+  couleur que portent toutes les autres icônes de l'app.
+- **Le cadrage, mesuré** : la mascotte tient 74 % de la hauteur de la tuile
+  (les glyphes d'Apple, 70 à 75 %). Le pavé du simulateur ne se pilote pas
+  sans sa fenêtre : une sonde UIKit (hors dépôt) affiche l'icône compilée dans
+  une vue focalisée et impose l'inclinaison au moteur de parallaxe du système
+  — le `UIMotionEffectGroup` de `_UIStackedImageContainerView` donne
+  `focusDirectionX/Y` pour un décalage, appliqués par
+  `_applyKeyPathsAndRelativeValues:forMotionEffect:` (le KVC direct plante).
+  Aux neuf extrêmes, rien n'est rogné ; le tricorne garde 11 % de marge.
+- **Le Top Shelf** : la nuit et la lumière de l'icône, étirée en largeur ; la
+  mascotte à la taille du rouage du Top Shelf de Réglages (420 points). tvOS 26
+  l'étend derrière tout l'accueil : sur l'icône, l'accueil prend la couleur de
+  l'app.
+- **Le lancement EST la première image** : `LaunchLogo` est la mascotte du
+  démarrage dans SA lueur (le `Glow` de `BootView` : l'accent, 0,3 → 0,135 → 0
+  sur 640 points ; la mascotte à 200), que le storyboard pose 50 points
+  au-dessus du milieu (la colonne mascotte + indicateur est centrée), sur
+  l'encre moyenne. Au banc (`surimpressions/demarrage`), lancement et
+  démarrage coïncident au pixel près — seul l'indicateur d'attente apparaît.
+  Ils se retouchent ENSEMBLE (c'est écrit des deux côtés).
+- **Plus de noir au démarrage** : pendant le chargement du JS, la vue racine
+  restait NOIRE — mesuré, JS retenu 6 s par un relais : 6 s de noir.
+  `AppDelegate` pose l'écran de lancement comme vue d'attente de la vue racine
+  (`RCTRootView.loadingView`, par `customizeRootView:`) : il tient jusqu'au
+  premier rendu, puis s'efface en fondu (0,25 s).
+- **Le logo dans l'app** (`BrandCorner`) : net en 4K (react-native-svg
+  rastérise ses masques à l'échelle de l'écran), centre à 0,25 point de la
+  ligne de la croix Retour, bord droit sur la marge : rien à corriger.
+- **Pièges** : tvOS garde en cache l'instantané du lancement par numéro de
+  build — deux builds de même numéro montrent l'ancien (au simulateur : vider
+  `Library/SplashBoard` du conteneur de l'app) ; `generate-icons.py`
+  réécrivait l'icns et l'ico du bureau même sous un filtre (corrigé) ; le
+  simulateur tvOS n'affiche que Réglages — Sing, présent mais masqué dans le
+  runtime, s'affiche réempaqueté sous un autre identifiant (banc seulement).
+- **Le coût** : le catalogue compilé passe de 3,09 à 3,62 Mo (les couches de
+  lumière, dont celle de l'icône App Store en 1280×768).
+- Planches : `apps/tv/harness/ui-bench/out/logo-app-tv/` (hors git).
 
 ## Les rangées (Apple TV)
 

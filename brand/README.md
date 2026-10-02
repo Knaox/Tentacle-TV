@@ -12,6 +12,9 @@ Source unique de vérité pour le logo. Tout PNG/ICNS/ICO/WEBP du dépôt est
 | `app-icon-mono.svg` | Icône d'application, 1024², mono blanc sur dégradé de marque. |
 | `app-icon-rounded.svg` | La même, **à coins continus**, pleine cadre. Windows et Linux, qui posent l'image telle quelle. |
 | `app-icon-macos.svg` | La même au gabarit macOS : le squircle tient 824 sur 1024, marge comprise. |
+| `tvos-back.svg` · `tvos-light.svg` · `tvos-body.svg` · `tvos-front.svg` | Les quatre COUCHES de l'icône Apple TV (400×240 ; l'App Store la prend à 1280×768), de l'arrière vers l'avant : fond, lumière de la marque, poulpe, bras avant. Composées dans `tvos.py`. |
+| `banner-topshelf.svg` · `banner-topshelf-wide.svg` | Le Top Shelf Apple TV : la nuit et la lumière de l'icône, la mascotte au centre. |
+| `launch-logo.svg` | Le logo de l'écran de lancement Apple TV : la mascotte du démarrage (`BootView`) dans sa lueur — ils se retouchent ensemble. |
 
 ## Régénérer
 
