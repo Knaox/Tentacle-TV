@@ -151,6 +151,14 @@ La charge du poste pendant la série finale : 14 à 38 sur 10 cœurs (sept
 autres sessions de travail en parallèle). Une extraction y prend 1,2 à 3,4 s
 (`visionos`) et 4,6 à 5,1 s (« pour enfants »), contre 1,0 à 1,5 s au calme.
 
+**La pile de l'image de production**, éprouvée à part dans un conteneur
+`node:20-alpine` (Node 20.20, Python 3.12 et deno 2.3 d'Alpine, zipapp
+officiel 2026.08.19), avec le code serveur compilé : l'ouvrier démarre, le
+maître `visionos` vient en 1,8 s une fois l'ouvrier chaud, la vidéo « pour
+enfants » passe par le MP4 (11,6 s dans cette petite VM de deux cœurs, avec
+le premier téléchargement du solveur de défis), et le relais lit maître,
+liste et segments par undici sous Node 20.
+
 ## Les autres plateformes
 
 Web, bureau, mobile, Android TV et LG lisent le lecteur YouTube embarqué :
