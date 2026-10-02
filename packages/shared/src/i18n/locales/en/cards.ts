@@ -66,4 +66,12 @@ export default {
   // what we say when it's opened.
   notInLibrary: "Not in library",
   notInLibraryNotice: "This title isn't available in your library.",
+
+  // What a GROUPED "Recently added" card brings — the quiet line of its
+  // caption (`latestAdditionsLine`).
+  newEpisodes_one: "{{count}} new episode",
+  newEpisodes_other: "{{count}} new episodes",
+  newSeasons_one: "New season",
+  newSeasons_other: "{{count}} new seasons",
+  newSeries: "New series",
 } as const;

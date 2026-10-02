@@ -69,4 +69,12 @@ export default {
   // son badge, et ce qu'on dit quand on l'ouvre.
   notInLibrary: "Pas dans la bibliothèque",
   notInLibraryNotice: "Ce titre n'est pas disponible dans votre bibliothèque.",
+
+  // Ce qu'une carte REGROUPÉE des « Derniers ajouts » apporte de neuf — la
+  // ligne discrète de sa légende (`latestAdditionsLine`).
+  newEpisodes_one: "{{count}} nouvel épisode",
+  newEpisodes_other: "{{count}} nouveaux épisodes",
+  newSeasons_one: "Nouvelle saison",
+  newSeasons_other: "{{count}} nouvelles saisons",
+  newSeries: "Nouvelle série",
 } as const;
