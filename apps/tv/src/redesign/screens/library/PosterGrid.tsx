@@ -1,8 +1,9 @@
-import { memo, useCallback, type ReactElement } from "react";
+import { memo, useCallback, useMemo, useRef, type ReactElement } from "react";
 import { FlatList, StyleSheet, View, type ListRenderItemInfo } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
+import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 
 /**
  * La grille d'affiches des pages de catalogue — bibliothèque, Ma liste,
@@ -14,6 +15,11 @@ import type { CardModel } from "../../cards/cardTypes";
  * grille se vide : filtrer à zéro ne démonte pas la pastille qu'on vient
  * d'actionner. Chargement et vide passent par `empty`, à la place des
  * cellules. La clé de focus d'une affiche est `${focusPrefix}:${index}`.
+ *
+ * Chaque LIGNE est une section (`FocusSection`, clé
+ * `${focusPrefix}:line:<n>`) : BAS depuis une colonne que la dernière ligne
+ * n'a pas atteint sa dernière affiche, au plus proche ; la ligne focalisée
+ * vient entière à l'écran, « Maintenir OK » compris, en un seul mouvement.
  */
 
 export interface PosterGridProps {
@@ -74,6 +80,42 @@ const Cell = memo(function Cell({ card, index, width, focusPrefix, onPressCard, 
 
 const Separator = () => <View style={styles.separator} />;
 
+/** La ligne entière à l'écran, au plus près : 56 des bords, la place de
+ *  « Maintenir OK » sous la légende. */
+const LINE_REVEAL: FocusSectionReveal = { mode: "nearest" };
+
+interface Line {
+  start: number;
+  cards: CardModel[];
+}
+
+/** Les cartes par lignes de `columns`. Une ligne inchangée garde son tableau
+ *  (une page de plus ne redessine que la dernière ligne). */
+function useLines(cards: CardModel[], columns: number): Line[] {
+  const previous = useRef<Line[]>([]);
+  return useMemo(() => {
+    const lines: Line[] = [];
+    for (let start = 0; start < cards.length; start += columns) {
+      const slice = cards.slice(start, start + columns);
+      const old = previous.current[lines.length];
+      const same = old && old.start === start && old.cards.length === slice.length && old.cards.every((card, i) => card === slice[i]);
+      lines.push(same ? old : { start, cards: slice });
+    }
+    previous.current = lines;
+    return lines;
+  }, [cards, columns]);
+}
+
+const GridLine = memo(function GridLine({ line, index, ...cell }: { line: Line; index: number } & Omit<CellProps, "card" | "index">) {
+  return (
+    <FocusSection focusKey={`${cell.focusPrefix}:line:${index}`} reveal={LINE_REVEAL} style={styles.columns}>
+      {line.cards.map((card, i) => (
+        <Cell key={card.id} card={card} index={line.start + i} {...cell} />
+      ))}
+    </FocusSection>
+  );
+});
+
 export const PosterGrid = memo(function PosterGrid({
   cards,
   columns = 6,
@@ -87,10 +129,11 @@ export const PosterGrid = memo(function PosterGrid({
   onEndReached,
 }: PosterGridProps) {
   const width = posterWidth(columns);
+  const lines = useLines(cards, columns);
   const renderItem = useCallback(
-    ({ item, index }: ListRenderItemInfo<CardModel>) => (
-      <Cell
-        card={item}
+    ({ item, index }: ListRenderItemInfo<Line>) => (
+      <GridLine
+        line={item}
         index={index}
         width={width}
         focusPrefix={focusPrefix}
@@ -105,15 +148,13 @@ export const PosterGrid = memo(function PosterGrid({
     <FlatList
       // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
       key={`grid-${columns}`}
-      data={cards}
-      numColumns={columns}
-      keyExtractor={(card) => card.id}
+      data={lines}
+      keyExtractor={(line) => line.cards[0].id}
       renderItem={renderItem}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       ListFooterComponent={footer}
       ItemSeparatorComponent={Separator}
-      columnWrapperStyle={styles.columns}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       onEndReached={onEndReached}
@@ -137,6 +178,6 @@ const styles = StyleSheet.create({
     paddingTop: TV_STAGE.safe.y,
     paddingBottom: 160,
   },
-  columns: { gap: GRID_GAP },
+  columns: { flexDirection: "row", gap: GRID_GAP },
   separator: { height: GRID_ROW_GAP },
 });

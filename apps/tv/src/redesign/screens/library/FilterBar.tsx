@@ -2,6 +2,7 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Chip } from "../../controls/Chip";
 import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { colors, fonts } from "../../theme/tokens";
 import { FilterPill } from "./FilterPill";
 import type { ActiveFilterModel, FilterPillModel, LibraryFilterKey } from "./libraryTypes";
@@ -16,8 +17,13 @@ import type { ActiveFilterModel, FilterPillModel, LibraryFilterKey } from "./lib
  * Clés de focus : `pill:<critère>`, `active:<index>`, `active:clear`. Clé de
  * groupe : `filters` — la barre entière, sur toute la largeur de la page : de
  * n'importe quelle affiche, « haut » y trouve une cible, même sous une colonne
- * qu'aucune pastille ne couvre.
+ * qu'aucune pastille ne couvre. Ses deux lignes sont des SECTIONS
+ * (`filters:pills`, `filters:active`) : BAS mène à la ligne d'affiches au
+ * plus proche, même depuis une pastille qu'aucune affiche ne couvre ; y
+ * revenir remonte la page en haut.
  */
+
+const BAR_REVEAL: FocusSectionReveal = { mode: "start" };
 
 export interface FilterBarProps {
   pills: FilterPillModel[];
@@ -31,7 +37,7 @@ export interface FilterBarProps {
 export const FilterBar = memo(function FilterBar({ pills, active, labels, onPressPill, onRemoveFilter, onClearAll }: FilterBarProps) {
   return (
     <FocusGroup focusKey="filters" style={styles.bar}>
-      <View style={styles.pills}>
+      <FocusSection focusKey="filters:pills" reveal={BAR_REVEAL} style={styles.pills}>
         {pills.map((pill) => (
           <FilterPill
             key={pill.key}
@@ -40,9 +46,9 @@ export const FilterBar = memo(function FilterBar({ pills, active, labels, onPres
             onPress={onPressPill ? () => onPressPill(pill.key) : undefined}
           />
         ))}
-      </View>
+      </FocusSection>
       {active.length > 0 ? (
-        <View style={styles.active}>
+        <FocusSection focusKey="filters:active" reveal={BAR_REVEAL} style={styles.active}>
           <Text style={styles.activeLabel}>{labels.activeFilters}</Text>
           {active.map((filter, index) => (
             <Chip
@@ -57,7 +63,7 @@ export const FilterBar = memo(function FilterBar({ pills, active, labels, onPres
           ))}
           <View style={styles.divider} />
           <Chip label={labels.clearAll} icon="refresh" size="md" focusKey="active:clear" onPress={onClearAll} />
-        </View>
+        </FocusSection>
       ) : null}
     </FocusGroup>
   );
