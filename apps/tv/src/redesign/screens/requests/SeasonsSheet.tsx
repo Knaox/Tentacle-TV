@@ -14,13 +14,17 @@ import { OPTION_ROW_HEIGHT, OptionRow } from "../library/OptionRow";
  * La feuille des SAISONS d'une série à demander : la grande liste en
  * surimpression des filtres (`FilterSheet`), une ligne par saison. Celles qui
  * se demandent encore se cochent (`OptionRow`, le nombre d'épisodes à
- * droite) ; les autres disent où elles en sont (« Disponible », « Demandée »)
- * et ne prennent pas le focus — celles de la demande du compte, son camembert
- * et son avancement à l'instant (`status.arrival`). En bas, « Demander N saisons » au dégradé de la
- * marque dès qu'une saison est cochée — avant, « Fermer », en verre.
+ * droite) — en tête, dès deux, « Toutes les saisons manquantes » (`all`), qui
+ * les coche toutes ; les autres disent où elles en sont (« Disponible »,
+ * « Demandée ») et ne prennent pas le focus — celles de la demande du compte,
+ * son camembert et son avancement à l'instant (`status.arrival`). En bas,
+ * « Demander N saisons » au dégradé de la marque dès qu'une saison est cochée
+ * — avant, « Fermer », en verre —, et à sa gauche le RACCOURCI, lisible de
+ * loin (`shortcut` : la touche Lecture/Pause dessinée, « Lecture/Pause :
+ * demander »).
  *
- * Vue pure. Clés de focus : `sheet:season:<numéro>`, puis `sheet:apply`
- * (groupe `sheet:footer`).
+ * Vue pure. Clés de focus : `sheet:season:all`, `sheet:season:<numéro>`, puis
+ * `sheet:apply` (groupe `sheet:footer`).
  */
 
 export type SeasonStatusTone = "pending" | "ready" | "neutral";
@@ -39,6 +43,10 @@ export interface SeasonRowModel {
 export interface SeasonsSheetModel {
   /** Le nom de la série. */
   title: string;
+  /** « Toutes les saisons manquantes », dès deux saisons à cocher ; cochée quand elles le sont toutes. */
+  all?: { label: string; detail?: string; selected: boolean };
+  /** « Lecture/Pause : demander », tant qu'une saison se demande. */
+  shortcut?: string;
   /** « Cochez les saisons à demander. » */
   subtitle: string;
   /** `null` : elles se lisent encore. */
@@ -51,6 +59,8 @@ export interface SeasonsSheetModel {
 }
 
 export const seasonFocusKey = (number: number) => `sheet:season:${number}`;
+/** La ligne « Toutes les saisons manquantes ». */
+export const SEASONS_ALL_KEY = "sheet:season:all";
 
 const WIDTH = 900;
 const INNER = WIDTH - 96;
@@ -98,23 +108,50 @@ function SettledRow({ row }: { row: SeasonRowModel }) {
   );
 }
 
+/** Le raccourci, au pied de la feuille : la touche Lecture/Pause dessinée, et ce qu'elle fait. */
+function ShortcutHint({ label }: { label: string }) {
+  return (
+    <View style={styles.hint}>
+      <View style={styles.hintKey}>
+        <Icon name="play" size={18} color={colors.text} strokeWidth={2.6} />
+        <Icon name="pause" size={18} color={colors.text} strokeWidth={2.6} />
+      </View>
+      <Text style={styles.hintText} numberOfLines={1}>{label}</Text>
+    </View>
+  );
+}
+
 export const SeasonsSheet = memo(function SeasonsSheet({
   sheet,
   onToggle,
+  onToggleAll,
   onSubmit,
   onClose,
 }: {
   sheet: SeasonsSheetModel;
   onToggle?: (number: number) => void;
+  onToggleAll?: () => void;
   onSubmit?: () => void;
   onClose?: () => void;
 }) {
   const request = sheet.submit.kind === "request";
   const seasons = sheet.seasons ?? [];
-  const scrolls = seasons.length > VISIBLE_ROWS;
+  const rows = seasons.length + (sheet.all ? 1 : 0);
+  const scrolls = rows > VISIBLE_ROWS;
   const height = VISIBLE_ROWS * OPTION_ROW_HEIGHT + (VISIBLE_ROWS - 1) * ROW_GAP;
   const list = (
     <View style={styles.list}>
+      {sheet.all ? (
+        <OptionRow
+          label={sheet.all.label}
+          detail={sheet.all.detail}
+          selected={sheet.all.selected}
+          mode="check"
+          width={INNER}
+          focusKey={SEASONS_ALL_KEY}
+          onPress={onToggleAll}
+        />
+      ) : null}
       {seasons.map((row) =>
         row.status ? (
           <SettledRow key={row.number} row={row} />
@@ -142,6 +179,7 @@ export const SeasonsSheet = memo(function SeasonsSheet({
       applyVariant={request ? "brand" : "glass"}
       applyIcon={request ? "check" : "close"}
       onApply={request ? onSubmit : onClose}
+      footerNote={sheet.shortcut ? <ShortcutHint label={sheet.shortcut} /> : undefined}
     >
       {sheet.message ? <Text style={styles.message}>{sheet.message}</Text> : null}
       {seasons.length === 0 ? null : scrolls ? (
@@ -172,5 +210,8 @@ const styles = StyleSheet.create({
   },
   settledLabel: { ...fonts.medium, fontSize: 28, color: white(0.6), flexShrink: 1, flexGrow: 1 },
   settledStatus: { ...fonts.semibold, fontSize: 24 },
+  hint: { flexDirection: "row", alignItems: "center", gap: 14 },
+  hintKey: { flexDirection: "row", alignItems: "center", gap: 1, height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: white(0.16) },
+  hintText: { ...fonts.medium, fontSize: 24, color: white(0.82) },
   tabular: { fontVariant: ["tabular-nums"] },
 });

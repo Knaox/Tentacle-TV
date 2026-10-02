@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMyTitles, useRequestTitleSeasons, useSeasons, useTitleSeasons } from "@tentacle-tv/api-client";
 import { librarySeasonNumbers, type TitleRequestOutcome } from "@tentacle-tv/shared";
-import { isAdvancing } from "@tentacle-tv/tv-core";
+import { hasAllSeasonsRow, isAdvancing, shortcutSeasons, toggleAllSeasons, type SeasonsSheetFocus } from "@tentacle-tv/tv-core";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { FadingModal } from "../../redesign/motion/FadingModal";
-import { SeasonsSheet, seasonFocusKey } from "../../redesign/screens/requests/SeasonsSheet";
+import { SEASONS_ALL_KEY, SeasonsSheet, seasonFocusKey } from "../../redesign/screens/requests/SeasonsSheet";
 import { useBackLayer } from "../back/BackScope";
 import { createEntryGuide } from "../focus/entryGuide";
 import { useFocusStore } from "../focus/focusStore";
+import { useRemoteEvents } from "../remote/remoteEvents";
 import { useChoiceEntry } from "../settings/settingsFocus";
 import type { AbsentTitle } from "./absentTitle";
 import { useLiveRefresh } from "./liveRequests";
@@ -20,9 +21,13 @@ import type { VigieGate } from "./useVigieGate";
  * La feuille des saisons d'une série à demander (garde Vigie ouverte) : une
  * série absente, ou une série de la bibliothèque à qui il en manque
  * (`seriesId` : ses saisons présentes disent « Dans la bibliothèque » et ne
- * se cochent pas). OK sur la série l'ouvre, on coche, « Demander N saisons »
- * en bas — la demande part (`useRequestTitleSeasons`), la feuille se ferme, et
- * l'écran dit la suite (`onAnswer` : « Demande envoyée », ou pourquoi pas).
+ * se cochent pas). OK sur la série l'ouvre ; dans la feuille, OK COCHE (la
+ * ligne « Toutes les saisons manquantes » coche tout) et Lecture/Pause
+ * DEMANDE — tout depuis « Toutes », sinon ce qui est coché, sinon la saison
+ * focalisée (tv-core `shortcutSeasons`) ; « Demander N saisons » en bas fait
+ * de même. La demande part (`useRequestTitleSeasons`, origine de la TV), la
+ * feuille se ferme, et l'écran dit la suite (`onAnswer` : « Demande
+ * envoyée », ou pourquoi pas).
  *
  * Dans une `Modal` (Menu la ferme ; à la fermeture, tvOS rend le focus à la
  * carte), présentée une fois les saisons SUES — et celles de la bibliothèque :
@@ -39,6 +44,14 @@ import type { VigieGate } from "./useVigieGate";
 
 const APPLY_KEY = "sheet:apply";
 const isFooterKey = (key: string) => key === APPLY_KEY;
+const SEASON_KEY = /^sheet:season:(\d+)$/;
+
+/** Ce qui a le focus, tel que la règle du raccourci le lit. */
+function sheetFocusOf(key: string | null): SeasonsSheetFocus {
+  if (key === SEASONS_ALL_KEY) return { kind: "all" };
+  const season = key ? SEASON_KEY.exec(key) : null;
+  return season ? { kind: "season", number: Number(season[1]) } : { kind: "other" };
+}
 /** Le filet : des saisons qui tardent ne retiennent pas la feuille. */
 const ENTRY_WAIT_MS = 1500;
 
@@ -101,7 +114,10 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
     return () => clearTimeout(timer);
   }, []);
   const numbers = useMemo(() => (ownedKnown ? requestableNumbers(answer, owned) : []), [ownedKnown, answer, owned]);
-  const keys = useMemo(() => [...numbers.map(seasonFocusKey), APPLY_KEY], [numbers]);
+  const keys = useMemo(
+    () => [...(hasAllSeasonsRow(numbers) ? [SEASONS_ALL_KEY] : []), ...numbers.map(seasonFocusKey), APPLY_KEY],
+    [numbers],
+  );
   // L'entrée : décidée une fois les saisons sues (ou le filet écoulé), figée ensuite.
   if (entry.current === null && ((answer !== null && ownedKnown) || failed || waited)) {
     const first = focusSeason !== undefined && numbers.includes(focusSeason) ? focusSeason : numbers[0];
@@ -118,9 +134,10 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
     });
   }, []);
 
+  const onToggleAll = useCallback(() => setChecked((current) => toggleAllSeasons(numbers, current)), [numbers]);
+
   const sending = useRef(false);
-  const onSubmit = useCallback(async () => {
-    const seasons = numbers.filter((n) => checked.has(n));
+  const submit = useCallback(async (seasons: number[]) => {
     if (sending.current || seasons.length === 0) return;
     sending.current = true;
     try {
@@ -132,7 +149,16 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
       sending.current = false;
     }
     requestClose();
-  }, [numbers, checked, requestSeasons, title, onAnswer, requestClose]);
+  }, [requestSeasons, title, onAnswer, requestClose]);
+  const onSubmit = useCallback(() => void submit(numbers.filter((n) => checked.has(n))), [submit, numbers, checked]);
+
+  // Lecture/Pause : la feuille ouverte, un appui simple (jamais l'appui maintenu).
+  const ticked = useRef(checked);
+  ticked.current = checked;
+  useRemoteEvents((event) => {
+    if (event.kind !== "press" || event.button !== "playPause" || event.long) return;
+    void submit(shortcutSeasons(numbers, ticked.current, sheetFocusOf(focus.focusedKey())));
+  }, entry.current !== null && !closing);
 
   return (
     <FadingModal value={entry.current !== null && !closing ? sheet : null} onRequestClose={requestClose} onExited={closed}>
@@ -141,6 +167,7 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
           <SeasonsSheet
             sheet={shown}
             onToggle={leaving ? undefined : onToggle}
+            onToggleAll={leaving ? undefined : onToggleAll}
             onSubmit={leaving ? undefined : onSubmit}
             onClose={leaving ? undefined : requestClose}
           />

@@ -19,7 +19,9 @@ import { useAppear } from "./useAppear";
  * l'intégration qui l'écoute.
  *
  * Clés de focus : `sheet:clear`, `sheet:apply` (le contenu pose les siennes) ;
- * le groupe `sheet:footer` les réunit, sur toute la largeur du panneau.
+ * le groupe `sheet:footer` les réunit, sur toute la largeur du panneau. Sans
+ * « Effacer », le pied peut dire autre chose à sa place (`footerNote` : le
+ * raccourci de la feuille des saisons) — jamais focalisable.
  */
 
 export interface FilterSheetProps {
@@ -34,6 +36,8 @@ export interface FilterSheetProps {
   /** Le pictogramme de cette pilule (une coche par défaut). */
   applyIcon?: IconName;
   clearLabel?: string;
+  /** À gauche du pied, sans « Effacer » : une indication, pas une cible. */
+  footerNote?: ReactNode;
   onApply?: () => void;
   onClear?: () => void;
   children: ReactNode;
@@ -47,6 +51,7 @@ export const FilterSheet = memo(function FilterSheet({
   applyVariant = "primary",
   applyIcon = "check",
   clearLabel,
+  footerNote,
   onApply,
   onClear,
   children,
@@ -82,7 +87,7 @@ export const FilterSheet = memo(function FilterSheet({
               {clearLabel ? (
                 <PillButton variant="glass" size="md" icon="close" label={clearLabel} focusKey="sheet:clear" onPress={onClear} />
               ) : (
-                <View />
+                <View>{footerNote}</View>
               )}
               <PillButton variant={applyVariant} size="md" icon={applyIcon} label={applyLabel} focusKey="sheet:apply" onPress={onApply} />
             </FocusGroup>
