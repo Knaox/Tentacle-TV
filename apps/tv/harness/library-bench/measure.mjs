@@ -5,10 +5,13 @@
 //   node measure.mjs steps <étiquette> [n] [s]    n pas BAS à cadence fixe : le même travail pour toutes les versions
 //   node measure.mjs trips <étiquette> [n]        n allers-retours de bout en bout (RAM, tas JS)
 //   node measure.mjs ab <A> <B> [tours]           paquets figés A et B en alternance (client froid à chaque tour)
+//   node measure.mjs updown <version> <n> [s]     BAS maintenu puis HAUT maintenu, tracés image par image
+//                                                 (<version>-down<n>, <version>-up<n> : creux de vitesse, accrocs)
 // `PROFILE=1` : profil Hermes du fil JS pendant `open` et `hold` (out/<étiquette>.cpuprofile).
 import fs from "node:fs";
 import path from "node:path";
 import { analyze, ramSummary, summarizeProfile } from "./lib/analyze.mjs";
+import { analyzeTrace } from "./lib/trace.mjs";
 import {
   CONFIG, OUT, agent, appCpuMs, appPid, cdp, cdpRaw, coldClean, footprint, gpu, probeReport, relaunch,
   save, serverLog, serverReset, setBundle, sleep, startRam,
@@ -43,7 +46,8 @@ async function measured(label, kind, act) {
   rep.serverLog = await serverLog();
   rep.footprint = footprint();
   save(label, rep);
-  const result = { ...analyze(rep, kind), ...extra, ram: ramSummary(ramFile), footprint: rep.footprint.total };
+  const trace = rep.trace?.frames ? analyzeTrace(rep) : undefined;
+  const result = { ...analyze(rep, kind), ...extra, trace, ram: ramSummary(ramFile), footprint: rep.footprint.total };
   fs.writeFileSync(path.join(OUT, `${label}.result.json`), JSON.stringify(result, null, 1));
   return result;
 }
@@ -64,6 +68,21 @@ const hold = (label, seconds = 8) => measured(label, "hold", async () => {
   });
   return { gpu: await gpuP };
 });
+
+/** Une flèche maintenue (`down` ou `up`), sans profil : la trace image par image dit tout. */
+const holdDir = (label, direction, seconds = 8) => measured(label, "hold", async () => {
+  await agent([`hold${direction}:${Math.min(10, seconds)}`]);
+  await sleep(2500);
+  return {};
+});
+
+/** BAS maintenu puis HAUT maintenu, depuis le haut de la grille : la descente
+ *  (pages qui arrivent) et la remontée (tout est chargé). */
+async function updown(version, n = 1, seconds = 8) {
+  const down = await holdDir(`${version}-down${n}`, "down", seconds);
+  const up = await holdDir(`${version}-up${n}`, "up", seconds);
+  return { down: down.trace, up: up.trace };
+}
 
 const steps = (label, n = 30, every = 0.25) => measured(label, "hold", async () => {
   const gpuP = gpu(Math.round(n * every) + 1).catch((e) => ({ error: String(e) }));
@@ -138,5 +157,6 @@ switch (command) {
   case "steps": print(await steps(label, a1 ? Number(a1) : undefined, a2 ? Number(a2) : undefined)); break;
   case "trips": print(await trips(label, a1 ? Number(a1) : undefined)); break;
   case "ab": await ab(label, a1, a2 ? Number(a2) : undefined); break;
-  default: console.log("commandes : relaunch · cold · open · hold · steps · trips · ab (voir l'en-tête)");
+  case "updown": print(await updown(label, a1 ? Number(a1) : 1, a2 ? Number(a2) : undefined)); break;
+  default: console.log("commandes : relaunch · cold · open · hold · steps · trips · ab · updown (voir l'en-tête)");
 }

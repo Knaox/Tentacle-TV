@@ -66,6 +66,27 @@ avec le code de la version), puis `node measure.mjs ab <A> <B> 3` les joue en
 alternance (le faux serveur sert le paquet nommé, client froid à chaque tour)
 et `node table.mjs <A> <B>` en donne les médianes.
 
+## Trace image par image : les creux de vitesse
+
+Le compteur d'images ne voit qu'un fil qui rate des images. Une page qui
+RALENTIT sans en rater (le « léger ralentissement » d'un défilement maintenu)
+ne se voit qu'à sa position image par image : `probe/scrollTrace.js` la relève
+sur le fil d'interface, à chaque image (`_measurePaper` du contenu de la
+ScrollView de la grille, dans le runtime UI de Reanimated), avec les
+événements de la télécommande et du focus (`TVEventHandler`). `lib/trace.mjs`
+en tire la vitesse, les accrocs (> 25 et > 33 ms), la pire fenêtre de 250 ms
+et les CREUX : la vitesse sous la moitié de sa pointe, puis de retour au-dessus
+de 80 %. `timeline(rep, 100)` donne la chronologie par tranches de 100 ms.
+
+```bash
+node measure.mjs relaunch && curl -s -X POST localhost:$AGENT_HTTP/run -d '["select","wait:4"]'
+node measure.mjs updown base 1      # out/base-down1, out/base-up1
+node table.mjs base                 # lignes « BAS / HAUT maintenu (trace) »
+```
+
+Une version NATIVE se compare en installant tour à tour les deux builds
+(`simctl install`, données gardées) avant chaque `relaunch` — même paquet JS.
+
 ## Lire une mesure
 
 - Le Mac rend l'Apple TV simulée : sa charge (les builds des autres sessions)

@@ -8,7 +8,9 @@
 // - chaque affiche : montage, chargement (onLoad), démontage, avec l'heure ;
 // - la position de la grille et ses lignes (FlatList ou FlashList), de quoi
 //   savoir quelles affiches étaient À L'ÉCRAN, et vides ;
-// - l'instant où la navigation change de route (l'ouverture d'une bibliothèque).
+// - l'instant où la navigation change de route (l'ouverture d'une bibliothèque) ;
+// - la position de la page à CHAQUE image du fil d'interface, le focus et la
+//   télécommande (`scrollTrace.js`) : les creux de vitesse.
 // Horloge : Date.now(), celle du Mac — la même que le journal du faux serveur.
 const React = require("react");
 const RN = require("react-native");
@@ -224,5 +226,7 @@ P.nav = (name, params) => {
   return true;
 };
 P.reload = () => { RN.DevSettings.reload(); return true; };
+// La trace image par image (position de la page, focus, télécommande).
+require("./scrollTrace").installScrollTrace(P, flashGrid);
 
 require("../../../src/utils/screenMetricsDiag");

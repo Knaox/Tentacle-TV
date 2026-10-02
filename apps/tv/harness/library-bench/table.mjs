@@ -1,5 +1,5 @@
-// Le tableau des médianes de `measure.mjs ab` : node table.mjs <version> <version>…
-// (lit out/<version>-{open,hold,steps}<n>.result.json).
+// Le tableau des médianes de `measure.mjs ab` et `updown` : node table.mjs <version> <version>…
+// (lit out/<version>-{open,hold,steps,down,up}<n>.result.json).
 import fs from "node:fs";
 import path from "node:path";
 import { OUT } from "./lib/device.mjs";
@@ -31,6 +31,16 @@ const ROWS = [
   ["30 pas : fil JS (i/s)", "steps", (r) => r.js?.fps60],
   ["30 pas : CPU de l'app par ligne (ms)", "steps", (r) => (r.rowsMoved ? r.cpuAppMs / r.rowsMoved : undefined)],
   ["30 pas : GPU du simulateur (ms/s)", "steps", (r) => r.gpu?.gpuMsPerS],
+  ...["down", "up"].flatMap((kind) => {
+    const name = kind === "down" ? "BAS maintenu (trace)" : "HAUT maintenu (trace)";
+    return [
+      [`${name} : creux de vitesse`, kind, (r) => r.trace?.dips?.length],
+      [`${name} : vitesse au fond du creux (pt/s)`, kind, (r) => (r.trace ? Math.min(...r.trace.dips.map((d) => d.low), Infinity) : undefined)],
+      [`${name} : images > 33 ms, fil UI`, kind, (r) => r.trace?.hitches33],
+      [`${name} : pire fenêtre de 250 ms (i/s)`, kind, (r) => r.trace?.worst250Fps],
+      [`${name} : distance parcourue (pt)`, kind, (r) => (r.trace ? Math.abs(r.trace.distance) : undefined)],
+    ];
+  }),
 ];
 
 const versions = process.argv.slice(2);
