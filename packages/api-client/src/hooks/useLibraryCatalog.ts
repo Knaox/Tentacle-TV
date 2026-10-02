@@ -24,9 +24,12 @@ export interface CatalogFilters {
    */
   audioLanguages?: string[];
   subtitleLanguages?: string[];
-  /** "light" (TV) : champs minimum pour la grille ; "full" (web, défaut) :
-   *  + ProviderIds/Studios (requis par le filtre plateforme web). */
-  fields?: "light" | "full";
+  /** "grid" (grille d'affiches Apple TV) : le strict minimum, sans
+   *  MediaSources — 1 Kio par film au lieu de 7,6 (mesuré, Jellyfin 10.11) ;
+   *  "light" (Android TV) : + MediaSources, pour les puces de qualité de ses
+   *  cartes au focus ; "full" (web, défaut) : + ProviderIds/Studios (requis
+   *  par le filtre plateforme). */
+  fields?: "grid" | "light" | "full";
 }
 
 const CATALOG_STALE_TIME = 10 * 60 * 1000;
@@ -61,11 +64,14 @@ function buildCatalogPageFetcher(
     audioLanguages, subtitleLanguages, fields = "full",
   } = filters;
   // RecursiveItemCount requis par le filtre des séries vides ci-dessous ;
-  // MediaSources requis pour les chips qualité au focus/hover.
+  // MediaSources requis pour les chips qualité au focus/hover (web, Android
+  // TV) — c'est lui qui pèse : 87 % d'une page de films.
   // Overview retiré : non consommé par les grilles web/TV (payload dominant).
-  const fieldList = fields === "light"
-    ? "PrimaryImageAspectRatio,RecursiveItemCount,MediaSources"
-    : "PrimaryImageAspectRatio,ProviderIds,Studios,RecursiveItemCount,MediaSources";
+  const fieldList = fields === "grid"
+    ? "RecursiveItemCount"
+    : fields === "light"
+      ? "PrimaryImageAspectRatio,RecursiveItemCount,MediaSources"
+      : "PrimaryImageAspectRatio,ProviderIds,Studios,RecursiveItemCount,MediaSources";
 
   return ({ pageParam }: { pageParam?: unknown }) => {
     const startIndex = typeof pageParam === "number" ? pageParam : 0;

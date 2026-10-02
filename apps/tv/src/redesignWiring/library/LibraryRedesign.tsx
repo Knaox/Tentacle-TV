@@ -13,6 +13,7 @@ import { usePosterGrid } from "../grid/usePosterGrid";
 import { isNavKey } from "../nav/useRailState";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
+import { gridCatalogParams } from "./gridCatalogParams";
 import { activeFiltersOf, pillsOf, type GenreOption } from "./libraryFilterModel";
 import { yearSpanOf } from "./libraryFilterSheets";
 import { useLibraryCatalogState } from "./useLibraryCatalogState";
@@ -45,7 +46,8 @@ const goHome = () => railNavigate("Home");
 export function LibraryRedesign({ libraryId, libraryName }: Params) {
   const { t } = useTranslation();
   const lf = useLibraryFilters(libraryId);
-  const catalog = useLibraryCatalogState(libraryId, lf.filters, lf.params);
+  const params = useMemo(() => gridCatalogParams(lf.filters), [lf.filters]);
+  const catalog = useLibraryCatalogState(libraryId, lf.filters, params);
   const { data: genreList } = useGenres(libraryId);
   const { data: libraries } = useLibraries();
   const genres = useMemo<GenreOption[]>(() => (genreList ?? []).map((g) => ({ id: g.Id, name: g.Name })), [genreList]);
