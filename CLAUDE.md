@@ -357,7 +357,12 @@ TV, quelle qu'elle soit : chaque demande d'une TV porte l'origine « tv » et
 sa plateforme (tv-core `tvTitlesGate` → `tvRequestOrigin`, gardée par Vigie),
 la liste se lit par `titles.mine?origin=tv` ; les cartes, elles, disent
 l'état de TOUTES les demandes du compte. Un Vigie d'avant l'origine (< 1.22)
-ignore le filtre : liste entière, comme avant.
+ignore le filtre : liste entière, comme avant. Les saisons s'y nomment dans
+les mots de l'interface (« Saison 3 », « Spéciaux », et leur vrai nom —
+tv-core `seasonTitle`) ; le « + » d'un onglet grisé de la fiche demande SA
+saison, sans feuille, et garde le focus ; dans la feuille des saisons, OK
+coche et Lecture/Pause demande (tv-core `seasonsShortcut`), dit au pied de
+la feuille.
 Toute fonction de Vigie sur la TV passe par `useVigieGate` : serveur ou Vigie
 trop anciens, Vigie éteint, compte bloqué dans Vigie (le compte de
 démonstration de la revue Apple) → aucune trace.

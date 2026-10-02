@@ -53,12 +53,20 @@ curl "http://localhost:8767/__mode?vigie=blocked"
 | `demandes=on` | un titre absent s'offre à la demande ; `POST titles/request` l'ajoute à la liste du banc, avec son origine (en attente 8 s, en route 60 s, puis arrivé) — défaut `off` : refusé |
 
 `/__request?key=movie:714194&origin=web` : une demande faite AILLEURS (sans
-origine ; `origin=tv` : comme d'une TV) ; `/__mine` : la liste du banc avec
+origine ; `origin=tv` : comme d'une TV ; `&seasons=2,3` : des saisons d'une
+série) ; `/__mine` : la liste du banc avec
 l'origine de chaque titre. `/__log` : chaque lecture de la Vigie, horodatée
 (le rythme se lit là), et chaque demande reçue avec son origine et sa
 plateforme ; `/__reset` : vide le journal et les demandes du banc, l'horloge
 des titres repart. La liste des extensions est gardée 10 min par l'app :
 après `vigie=…`, relancer l'app.
+
+Les SAISONS (`fakeSeasons.mjs`) : la fiche de « GTO - Great Teacher Onizuka »
+(`navigate("MediaDetail", { itemId: "52665ab1c968caf9c32b3ef48f69b3f0" })`)
+sert sa bande des saisons depuis l'instantané (saison 1), et le faux Vigie
+`titles.gaps` / `titles.seasons` : il lui manque « Specials », « Season 2 »,
+« Shonan 14 Days » (saison 3) — à demander — et « Season 4 », demandée par
+quelqu'un d'autre ; des noms TMDB en anglais, comme Vigie les relaie.
 
 ## 2. L'app
 
@@ -88,6 +96,9 @@ sur l'aperçu), la fibre `RequestsDock` son `onSelect` (la fenêtre).
 | OK sur un volet libre de la saga | `POST titles/request` avec `origin: "tv"`, `platform: "appletv"` (journal) ; il paraît aussitôt dans « Mes demandes », avance, puis sort |
 | `/__request?…&origin=web` | rien de plus dans « Mes demandes » ; sa carte, elle, dit « En attente » |
 | `vigie=noorigin` | la liste entière, comme avant : rien ne casse |
+| Fiche de GTO, bande des saisons | « Spéciaux », « Saison 2 », « Saison 3 · Shonan 14 Days », « Saison 4 » (horloge) — jamais « Season 2 » |
+| OK sur le « + » d'un onglet grisé | `POST titles/request` avec `seasons: [n]` et l'origine ; l'onglet dit « En attente » et son camembert, garde le focus |
+| Feuille des saisons de GTO | « Toutes les saisons manquantes » en tête ; OK coche ; Lecture/Pause demande ce qui est coché, sinon la saison focalisée, tout depuis « Toutes » ; « Lecture/Pause : demander » au pied |
 
 ## Pièges
 
