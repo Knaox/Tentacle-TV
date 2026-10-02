@@ -29,6 +29,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 17. Le logo de l'app (Apple TV) | Fait (2026-10-02) : l'icône en quatre couches (fond, lumière, poulpe, bras avant), le Top Shelf dans le même monde, le lancement = la première image de l'app, plus de noir au démarrage — « Le logo de l'app : icône, Top Shelf, lancement (Apple TV) » ci-dessous. |
 | 18. Saisons manquantes (Apple TV, bureau, mobile) | Fait (2026-10-02) : une série de la bibliothèque à qui il manque des saisons les offre depuis la recherche — en tête de « À demander » et en onglets grisés sur sa fiche (Apple TV), « Demander » au plateau et dans la barre (bureau), dans la feuille d'appui long (mobile) — « Les saisons manquantes » ci-dessous. |
 | 19. Bibliothèques rapides (Apple TV) | Fait (2026-10-02) : champs minimaux, pages de 60 demandées tôt, lignes recyclées, cartes allégées, préchargement depuis la navigation — ouverture ~0,5 s, 3 fois plus de lignes en flèche maintenue, RAM −54 % — « Les bibliothèques rapides (Apple TV) » ci-dessous. |
+| 20. Les demandes en direct (Apple TV) | Fait (2026-10-02) : l'affiche d'une demande, grise, qui reprend sa couleur au prorata de l'avancement, le camembert au centre — partout où une demande se montre ; la fraîcheur de Vigie (10 s, une seconde à l'écran), seulement à l'écran — « Les demandes en direct (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -1724,12 +1725,14 @@ ses demandes Vigie en cours, d'un coup d'œil, en lecture seule.
   lignes, pour la faire défiler. Centrée à l'ouverture, elle garde ensuite son
   haut : une demande arrivée s'efface, les suivantes remontent en glissant.
 - **Le camembert** (`redesign/brand/ProgressPie`) : l'avancement façon App
-  Store, statique, repris par « Demander » (tâche 7).
+  Store, statique, repris par « Demander » (tâche 7) — et, depuis le direct, au
+  centre de chaque affiche demandée (« Les demandes en direct », plus bas).
 - **Le rythme** (`MY_TITLES_REFRESH`, tv-core) : fenêtre ouverte, relue en
   l'ouvrant si elle date de plus de 10 s, puis toutes les 30 s ; sinon toutes
   les 5 min, par l'écran de devant seulement ; au retour au premier plan si la
   lecture a plus d'une minute ; rien en arrière-plan. Une demande faite sur la
   TV patche `myTitlesQueryKey` (`withMyTitle`) : l'aperçu la montre aussitôt.
+  Quand un titre AVANCE et qu'on le voit : le direct, 10 s (plus bas).
 - **Éprouvé** dans l'app réelle (simulateur, faux backend et faux Vigie à soi,
   agent XCUITest) : BAS depuis la dernière entrée du rail → l'aperçu → le
   profil → Rechercher, HAUT à l'inverse ; OK ouvre, entrée sur la croix, BAS
@@ -1819,6 +1822,112 @@ saison qui manque, « même dans la barre ».
 3. Mobile : appui long sur la série dans la recherche.
 4. Livrer ENSEMBLE le serveur (relais de `gaps`, `ProviderIds` de la recherche)
    et Vigie (`/titles/gaps`), sinon rien ne paraît — voulu.
+
+## Les demandes en direct (Apple TV)
+
+Branche `claude/intelligent-fermat-a46e61` (2026-10-02, T7 du lot de la
+relève). Retour de l'essai à l'émulateur : « un fromage sur l'affiche, et
+l'affiche fait comme Apple : elle est grisée, puis prend de plus en plus de
+couleur », « en temps réel, comme sur Vigie mobile ou desktop ».
+
+**L'affiche qui arrive** (`redesign/requests/ArrivalArtwork`) — partout où une
+demande DU COMPTE se montre : la fenêtre des demandes, l'aperçu du rail, les
+cartes absentes (saga d'un film, « À demander » de la recherche), la feuille
+des saisons (ses saisons demandées), le grand panneau d'un titre absent.
+
+| État | Affiche | Au centre (`ArrivalSign`) | Mot |
+|---|---|---|---|
+| En attente | grise | le camembert vide (l'anneau) | « En attente » |
+| En route | grise → couleur, au prorata | le camembert qui se remplit | « En cours · 42 % » |
+| Mise en bibliothèque | pleine couleur | le camembert plein | « Mise en bibliothèque » |
+| Bloquée | grise | l'alerte | « Bloquée » |
+| Arrivée (client) | pleine couleur, sans voile | le camembert s'efface en s'ouvrant | « Disponible » |
+
+- **Le gris au GPU, dosé** : la vue native des titres absents
+  (`TentacleDesaturateView`, « saturationBlendMode ») porte une OPACITÉ —
+  1 gris, 0 couleur. Mesuré au banc (`sonde`, pixels) : la saturation suit
+  l'opacité en ligne droite, 40,7 × (1 − opacité). Aucune retouche native.
+  L'opacité se pose sur la vue native ELLE-MÊME : sur un parent, le groupe
+  composerait le gris contre son propre fond vide. Repli (binaire sans la vue)
+  : l'affiche grise SVG par-dessus la couleur, en fondu.
+- **Le signe est sur l'affiche, le mot dessous** : la ligne d'état de la
+  fenêtre et le badge des cartes disent le mot et le pour cent — jamais la
+  couleur seule. Les états sont ceux de `titles.mine` ; « arrivée » est un
+  état du CLIENT (`arrivedBetween`, tv-core) : un titre sorti de la liste en
+  avançant est arrivé ; sorti d'« en attente » ou de « bloquée » (refusé,
+  retiré), il s'en va sans fête.
+- **Une arrivée** : dans la fenêtre, toute sa couleur et « Disponible »
+  1,4 s, puis la ligne sort comme avant ; dans l'aperçu, 1,8 s devant
+  l'éventail ; une carte (saga, recherche) reste « Disponible » en pleine
+  couleur pour la session (`useArrivals`), et OK le dit.
+
+**Le direct — la fraîcheur de Vigie, seulement à l'écran.** Vigie (web,
+bureau, mobile : un même paquet) relit `/requests/progress` toutes les 10 s
+quand quelque chose descend (30 s sinon), page visible seulement, et fait
+avancer sa barre chaque seconde sur le temps restant (`useInterpolatedProgress`).
+La TV fait pareil :
+
+- **Vigie** donne le temps restant (`titles.mine` → `etaSeconds`, champ
+  ADDITIF : seulement ce qui descend vraiment) ; `shared` le lit, borné ;
+- **le battement** (`redesignWiring/vigie/liveRequests`, `useLiveRefresh`) :
+  une vue qui MONTRE des demandes s'inscrit tant qu'elle est sur l'écran de
+  devant, l'app au premier plan, et qu'un de SES titres avance (en route, mise
+  en bibliothèque) ; la liste partagée se relit alors dès qu'elle a 10 s
+  (`MY_TITLES_REFRESH.liveMs`) — un battement pour tout l'appareil, jamais
+  deux lectures. Rien qui avance : aucun minuteur, les rythmes d'avant ;
+- **entre deux lectures** (`useArrivalPercent`, `liveClock`) : l'avancement
+  projeté d'une seconde à l'autre sur le temps restant, plafonné à 99,5 %,
+  jamais de recul sauf vraie chute de plus de 5 points (règles pures de
+  tv-core, `liveProgress`) ; UNE horloge pour toutes les vues, qui ne bat que
+  si quelque chose avance à l'écran ; le camembert et le pour cent écrit
+  disent la même chose à la même seconde ;
+- **un pas se pose, un état se fond** : un pas d'avancement pose une opacité
+  (une image composée) ; seuls un changement d'état et un rattrapage de dix
+  points se fondent (360 ms). Fondre chaque pas coûtait ~100 ms/s de GPU sous
+  le verre de la fenêtre quand l'avancement file.
+
+**Mesuré** — banc (simulateur tvOS 26.2, `gpu`, trois tours alternés, Mac
+chargé de 30 à 58) :
+
+| Scène | GPU | CPU de l'app (JS de développement) |
+|---|---|---|
+| Au repos (états, fenêtre, rail, figés) | 0 ms/s | 2-3 ms/s |
+| Deux affiches en marche | 2-3 ms/s | 24-54 ms/s |
+| Fenêtre en marche (deux lignes, 2,5 %/s) | 10-13 ms/s (avant : 97-109) | 33-48 ms/s |
+| Rail en marche | 3-5 ms/s (avant : 29-41) | 25-54 ms/s |
+
+Dans l'app réelle (faux serveur des demandes, `apps/tv/harness/live-requests`) :
+`mine` lue toutes les 10 s quand ça avance, fenêtre ouverte comme rail seul ;
+aucune lecture en arrière-plan (77 s), une seule au retour (deux avant le
+correctif : les deux relectures « si ça date » partaient ensemble, et
+`refetch()` annule la lecture en cours) ; rien n'avance : 30 s fenêtre ouverte,
+aucune lecture rail seul (5 min) ; Vigie éteint, compte bloqué : ni aperçu ni
+`mine`. La fiche d'un film dont un volet est une demande qui avance relit la
+liste toutes les 10 s, et la carte avance d'une seconde à l'autre ; arrivée,
+plus rien ne s'y relit.
+
+- **Approximation assumée** : « à l'écran » se juge par l'écran de DEVANT (la
+  page), pas par la position de défilement — une saga hors de la vue, sur la
+  fiche de devant, garde son battement.
+- **Au banc** : 12 scènes « Demandes en direct » (`bench:ui planche direct/
+  --focus`) — la même affiche à 0, 25, 50, 75 et 100 %, chaque état, au repos
+  et au focus, la fenêtre, le rail, les saisons, le grand panneau, et ce qui
+  bouge seul (un faux serveur relu toutes les 10 s). Les scènes « Demandes en
+  cours » et « Titres absents » montrent aussi l'affiche qui arrive.
+- **Preuves** (non suivies) : `apps/tv/harness/ui-bench/out/preuves-demandes-direct/`
+  — planches du banc, cycle image par image, vrai rail (replié, ouvert,
+  focalisé, qui avance), vraie fenêtre en direct et une arrivée, vraie saga en
+  direct, garde, mesures GPU.
+
+### Essais sur l'Apple TV (tâche de l'utilisateur)
+
+1. Une demande en cours : son affiche grise se colore au fil de l'avancement,
+   le camembert au centre et le pour cent bougent d'une seconde à l'autre —
+   dans la fenêtre, l'aperçu du rail, la saga du film.
+2. Une demande qui aboutit, fenêtre ouverte : « Mise en bibliothèque », puis
+   « Disponible » en pleine couleur, puis elle sort.
+3. Rien en cours (seulement « en attente ») : rien ne doit bouger.
+4. Vigie éteint, ou compte bloqué : aucune trace.
 
 ## La lumière des fonds et la marque (Apple TV)
 
