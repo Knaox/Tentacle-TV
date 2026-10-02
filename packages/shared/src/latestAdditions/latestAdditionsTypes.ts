@@ -29,10 +29,11 @@ export interface LatestAdditions {
   SeasonNumbers: number[];
   /**
    * Les saisons arrivées ELLES-MÊMES — leur dossier est nouveau, pas seulement
-   * des épisodes —, par numéro croissant. Jamais les spéciaux.
+   * des épisodes — avec le dernier ajout du groupe (dans les 24 h qui le
+   * précèdent), par numéro croissant. Jamais les spéciaux.
    */
   NewSeasonNumbers: number[];
-  /** La série elle-même est arrivée : son dossier est nouveau dans la bibliothèque. */
+  /** La série elle-même est arrivée avec le dernier ajout du groupe (même fenêtre). */
   NewSeries: boolean;
   /** La date (ISO 8601) de l'ajout le plus récent du groupe — celle qui place la carte. */
   LatestDate: string | null;

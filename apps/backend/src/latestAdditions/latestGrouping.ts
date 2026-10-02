@@ -10,6 +10,13 @@ import type { LatestAdditions } from "./latestAdditionsTypes";
  * légende (« S02E05 · Titre ») en dit plus qu'un compte. Les films, et tout ce
  * qui n'appartient à aucune série, gardent leur carte et leur place.
  *
+ * Un DOSSIER (la série, une saison) n'est une nouveauté que s'il est arrivé
+ * avec le dernier ajout du groupe — dans les 24 h qui le précèdent, ce que
+ * Jellyfin 12.1 appelle « ajoutés ensemble ». Sur une bibliothèque calme, la
+ * rangée remonte des mois en arrière : le dossier d'une série installée de
+ * longue date y tombe, et ne doit lui faire dire ni « Nouvelle série », ni
+ * transformer en carte de série un épisode qui arrive seul.
+ *
  * La rangée s'arrête au premier ajout qui ouvrirait une carte de trop : ce qui
  * est plus ancien n'est plus « dans la rangée », et ne compte pas parmi les
  * nouveautés d'une série. Une série regroupée laisse donc de la place aux
@@ -78,20 +85,39 @@ export function planLatestCards(scanned: readonly ScannedAddition[], cards: numb
   return slots.map(toCard);
 }
 
+/** « Ajoutés ensemble » : la fenêtre d'un dossier nouveau, avant le dernier ajout du groupe. */
+export const FRESH_FOLDER_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+const isFolder = (m: ScannedAddition): boolean => m.Type === "Series" || m.Type === "Season";
+
+/** Les dossiers arrivés avec le dernier ajout du groupe — `members` du plus récent au plus ancien. */
+function freshFolders(members: readonly ScannedAddition[]): ScannedAddition[] {
+  const latest = Date.parse(members[0]?.DateCreated ?? "");
+  if (!Number.isFinite(latest)) return [];
+  return members.filter((m) => isFolder(m) && latest - Date.parse(m.DateCreated ?? "") <= FRESH_FOLDER_WINDOW_MS);
+}
+
 function toCard(slot: Slot): LatestCard {
   if (slot.kind === "item") return slot;
-  const [latest, ...rest] = slot.members;
-  if (rest.length === 0 && latest.Type === "Episode") return { kind: "item", id: latest.Id as string };
-  return { kind: "series", seriesId: slot.seriesId, additions: describe(slot.members) };
+  const episodes = slot.members.filter((m) => m.Type === "Episode");
+  const fresh = freshFolders(slot.members);
+  if (episodes.length === 1 && fresh.length === 0) return { kind: "item", id: episodes[0].Id as string };
+  return { kind: "series", seriesId: slot.seriesId, additions: describe(slot.members, episodes, fresh) };
 }
 
 const ascending = (numbers: Iterable<number>): number[] => [...new Set(numbers)].sort((a, b) => a - b);
 
 const isNumber = (value: number | null | undefined): value is number => typeof value === "number" && Number.isFinite(value);
 
-/** Ce que le groupe apporte de neuf — `members` du plus récent au plus ancien. */
-function describe(members: readonly ScannedAddition[]): LatestAdditions {
-  const episodes = members.filter((m) => m.Type === "Episode");
+/**
+ * Ce que le groupe apporte de neuf — `members` du plus récent au plus ancien,
+ * `episodes` les siens, `fresh` ses dossiers arrivés avec le dernier ajout.
+ */
+function describe(
+  members: readonly ScannedAddition[],
+  episodes: readonly ScannedAddition[],
+  fresh: readonly ScannedAddition[],
+): LatestAdditions {
   const seasons = members.filter((m) => m.Type === "Season");
   // L'ajout le plus récent qui SITUE une saison : un épisode (la sienne) ou une saison.
   const anchor = members.find((m) => m.Type === "Episode" || m.Type === "Season");
@@ -104,8 +130,10 @@ function describe(members: readonly ScannedAddition[]): LatestAdditions {
       ...seasons.map((s) => s.IndexNumber).filter(isNumber),
     ]),
     // Les spéciaux n'ouvrent pas une « nouvelle saison » : leur dossier naît au premier bonus.
-    NewSeasonNumbers: ascending(seasons.map((s) => s.IndexNumber).filter(isNumber).filter((n) => n > 0)),
-    NewSeries: members.some((m) => m.Type === "Series"),
+    NewSeasonNumbers: ascending(
+      fresh.filter((m) => m.Type === "Season").map((s) => s.IndexNumber).filter(isNumber).filter((n) => n > 0),
+    ),
+    NewSeries: fresh.some((m) => m.Type === "Series"),
     LatestDate: members[0]?.DateCreated ?? null,
     LatestSeasonId: anchorSeasonId ?? null,
     LatestSeasonNumber: isNumber(anchorSeasonNumber) ? anchorSeasonNumber : null,

@@ -103,6 +103,39 @@ describe("planLatestCards — une série, une carte", () => {
   });
 });
 
+describe("planLatestCards — un dossier n'est nouveau qu'arrivé avec le dernier ajout", () => {
+  const NOW = Date.parse("2026-10-02T20:00:00Z");
+  const HOUR = 60 * 60 * 1000;
+  /** Un ajout daté à `hoursAgo` heures du dernier. */
+  const at = (addition: ScannedAddition, hoursAgo: number): ScannedAddition =>
+    ({ ...addition, DateCreated: new Date(NOW - hoursAgo * HOUR).toISOString() });
+
+  it("le dossier d'une série installée de longue date ne la dit pas nouvelle (bibliothèque calme)", () => {
+    const plan = planLatestCards([
+      at(episode("A", 1, 3), 0),
+      at(season("A", 1), 60 * 24), at(series("A"), 60 * 24), at(episode("A", 1, 2), 60 * 24),
+    ], 16);
+    expect(summary(plan)).toEqual(["A:2e"]);
+  });
+
+  it("un épisode seul, suivi d'un vieux dossier de sa série, reste l'épisode", () => {
+    const plan = planLatestCards([at(episode("A", 3, 2), 0), at(season("A", 3), 7 * 24)], 16);
+    expect(plan).toEqual([{ kind: "item", id: "A-s3e2" }]);
+  });
+
+  it("une saison qui commence — son dossier et son premier épisode — est une nouvelle saison", () => {
+    const plan = planLatestCards([at(season("A", 3), 0), at(episode("A", 3, 1), 0.01)], 16);
+    expect(summary(plan)).toEqual(["A:1e:S3"]);
+  });
+
+  it("la fenêtre fait 24 h, bornes comprises", () => {
+    const edge = planLatestCards([at(episode("A", 2, 2), 0), at(season("A", 2), 24), at(episode("A", 2, 1), 24)], 16);
+    expect(summary(edge)).toEqual(["A:2e:S2"]);
+    const past = planLatestCards([at(episode("A", 2, 2), 0), at(season("A", 2), 24.01), at(episode("A", 2, 1), 24.02)], 16);
+    expect(summary(past)).toEqual(["A:2e"]);
+  });
+});
+
 describe("planLatestCards — la longueur de la rangée", () => {
   it("jamais plus de cartes que demandé : vingt au plus côté proxy", () => {
     const films = Array.from({ length: 30 }, (_, i) => movie(`m${i}`));
