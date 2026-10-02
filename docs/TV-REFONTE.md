@@ -2215,12 +2215,13 @@ noire de 30 points.
   écran à l'autre) ; E, la retenue plus forte (le tertiaire passe sous 4,5:1
   sur certaines œuvres).
 
-**La marque** (`brand/BrandCorner`, `brand/BrandMark` `tone`) :
+**La marque** (`brand/BrandCorner`, `brand/BrandMark`) :
 
-- la mascotte en MONO, à l'encre blanche de l'interface — celle des
-  pictogrammes du rail : `brand/logo-mono.svg`, composé depuis la géométrie
-  générée par `brand/` comme le `TentacleMonoSvg` du web
-  (`components/icons/TentacleMonoLogo.tsx`) — rien n'est redessiné ;
+- la mascotte NORMALE, en couleurs (`brand/logo-color.svg`). ⚠️ Elle fut
+  d'abord en MONO blanche (`brand/logo-mono.svg`) : sur l'Apple TV, ses yeux
+  creusés en orbites noires et le crâne évidé du chapeau lisaient « tête de
+  mort » — l'utilisateur y a vu un « logo d'Halloween » (2026-10-02). Le mono
+  a quitté l'app TV (`TentacleMonoLogo` supprimé) ; ne pas l'y remettre ;
 - éclairée par la lumière de la MARQUE, la seule qui la porte : le halo des
   icônes de `brand/` (magenta au cœur, violet au bord), discret
   (`TV_LIGHT.brandHalo`) ; sur une image (fiche, carte héros), un voile
@@ -2232,7 +2233,7 @@ noire de 30 points.
   rail, dont le bloc se centre depuis le rail compact. Son corps (dôme et
   écran) a la hauteur des
   capitales d'un titre d'écran (carré de 60) ; l'emprise du dessin est
-  mesurée sur `brand/logo-mono.svg` (58 → 182 × 13 → 228 sur 240) : à
+  mesurée sur `brand/logo-color.svg` (55,5 → 184,5 × 13 → 228 sur 240) : à
   remesurer si le dessin change d'encombrement ;
 - elle défile avec la page — dans l'en-tête des grilles, dans la page de la
   fiche, de l'accueil et de « Pour vous » : elle ne passe plus par-dessus les
@@ -2240,11 +2241,12 @@ noire de 30 points.
   carte héros, sur la colonne de ses points de rotation (56 de ses bords) :
   au coin de l'écran, son chapeau dépassait du bord du héros. Fixe là où la
   page ne défile pas : réglages, jumelage, panneaux d'état ;
-- la couleur reste aux ILLUSTRATIONS — accueil du jumelage, démarrage,
-  erreurs, à propos —, déjà posées dans un halo rose ;
-- écartés : la mascotte en couleur, seulement alignée (un autocollant, sur une
-  image surtout) ; le mono au dégradé de la marque (illisible sur une image
-  chaude) ; la couleur avec le halo (un autocollant lumineux).
+- la même mascotte en couleurs que les ILLUSTRATIONS — accueil du jumelage,
+  démarrage, erreurs, à propos ;
+- écartés d'abord : la mascotte en couleur, seulement alignée, et la couleur
+  avec le halo (« un autocollant ») ; le mono au dégradé de la marque
+  (illisible sur une image chaude). Le choix du mono blanc a été défait par
+  l'utilisateur : la marque est TOUJOURS la mascotte normale.
 
 **Le coût** — mesuré au banc (simulateur tvOS 26.2, JS de production, temps
 GPU des services de rendu du simulateur), cinq tours en alternance avant /

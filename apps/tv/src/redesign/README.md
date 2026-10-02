@@ -79,8 +79,8 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `rows/MediaRow` | Titre + cartes horizontales, les voisines reculent |
 | `hero/HeroBanner`, `MetaLine`, `TitleArt` | Le héros, la ligne de métadonnées, le logo-titre |
 | `nav/NavRail` | La navigation flottante (repliée / ouverte sous un voile) |
-| `brand/BrandMark` | La mascotte : en couleur pour les illustrations (jumelage, démarrage, erreurs), en mono (`tone="mono"`, `brand/logo-mono.svg`) pour l'interface |
-| `brand/BrandCorner` | La marque en haut à droite : mono, sur la ligne de la croix Retour, au bord de la marge de sécurité, dans le halo de la marque (`backing="veil"` sur une image) ; posée dans ce qui défile (`BRAND_CORNER_IN_SAFE_AREA` dans l'en-tête d'une grille, `brandCornerOnHero` dans la carte héros) |
+| `brand/BrandMark` | La mascotte, toujours en couleurs (`brand/logo-color.svg`) — jamais la mono blanche, qui lisait « tête de mort » sur la TV |
+| `brand/BrandCorner` | La marque en haut à droite : la mascotte en couleurs, sur la ligne de la croix Retour, au bord de la marge de sécurité, dans le halo de la marque (`backing="veil"` sur une image) ; posée dans ce qui défile (`BRAND_CORNER_IN_SAFE_AREA` dans l'en-tête d'une grille, `brandCornerOnHero` dans la carte héros) |
 | `screens/shared/StatusPanel` | Chargement, erreur, vide |
 | `icons/Icon` | Pictogrammes (`iconPaths.ts`, grille 24, trait 2) |
 

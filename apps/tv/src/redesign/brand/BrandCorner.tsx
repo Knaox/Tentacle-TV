@@ -8,8 +8,10 @@ import { BrandMark } from "./BrandMark";
 /**
  * La marque en haut à droite de l'écran, INTÉGRÉE à la scène (retour de
  * l'essai sur l'Apple TV, 2026-10-01 : elle « faisait PNG qui flotte ») :
- * - la mascotte en MONO, à l'encre blanche de l'interface — celle des
- *   pictogrammes du rail —, plus un autocollant en couleurs posé sur tout ;
+ * - la mascotte NORMALE, en couleurs (« l'Étreinte », `brand/logo-color.svg`).
+ *   Pas la version mono : en blanc, ses yeux creusés en orbites et le crâne
+ *   évidé du chapeau lisaient « tête de mort » à cette taille — le « logo
+ *   d'Halloween » vu sur l'Apple TV (2026-10-02) ;
  * - éclairée par la lumière de la MARQUE, la seule lumière qui la porte : le
  *   halo des icônes de `brand/` (magenta au cœur, violet au bord), discret ;
  * - calée sur la scène : son DESSIN (pas son carré) affleure au bord droit
@@ -36,11 +38,12 @@ export interface BrandCornerProps {
   backing?: "light" | "veil";
 }
 
-/** L'emprise du dessin mono dans son carré de 240, mesurée sur
- *  `brand/logo-mono.svg` (rsvg-convert à 960 px) — à remesurer si le dessin
- *  change d'encombrement. Son corps (dôme + écran) va de 32 à 196. */
-const DRAWING = { left: 58, top: 13, right: 182, bottom: 228 } as const;
-const BODY = { top: 32, bottom: 196 } as const;
+/** L'emprise du dessin dans son carré de 240, mesurée sur
+ *  `brand/logo-color.svg` (rsvg-convert à 960 px, canal alpha) — à remesurer
+ *  si le dessin change d'encombrement. Son corps (dôme + écran, cadre
+ *  compris) va de 32 à 198,5. */
+const DRAWING = { left: 55.5, top: 13, right: 184.5, bottom: 228 } as const;
+const BODY = { top: 32, bottom: 198.5 } as const;
 /** La hauteur des capitales d'Inter, en part de la taille de la police. */
 const INTER_CAP_HEIGHT = 0.727;
 /** Le côté du carré : le CORPS du dessin a la hauteur des capitales d'un
@@ -110,7 +113,7 @@ export const BrandCorner = memo(function BrandCorner({ anchor = BRAND_CORNER_ON_
   return (
     <View pointerEvents="none" style={[styles.corner, place]}>
       <Backing kind={backing} />
-      <BrandMark size={SIZE} tone="mono" />
+      <BrandMark size={SIZE} />
     </View>
   );
 });
