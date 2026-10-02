@@ -24,13 +24,14 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 12. Le Retour (Apple TV) | Fait (2026-10-02) : une pile de couches, menu > surimpression > page > rail > sortie ; plus aucun écran qui paraît quand un menu se ferme ; le rail se referme sur la page choisie — « Le Retour (Apple TV) » ci-dessous. |
 | 13. Rail compact (Apple TV) | Fait (2026-10-02) : le bloc des pages épouse ses entrées et se centre, le profil reste ancré en bas avec la place de l'élément des demandes, largeur ouverte sur l'intitulé le plus long — « Le rail compact (Apple TV) » ci-dessous. |
 | 14. Demandes en cours (Apple TV) | Faites (2026-10-02) : l'aperçu des demandes Vigie dans le bloc du profil, la fenêtre en lecture seule, le camembert — rien sans Vigie à jour et un compte qui a le droit de demander — « Les demandes en cours (Apple TV) » ci-dessous. |
-| 15. Lumière des fonds et marque (Apple TV) | Fait (2026-10-02) : un fond d'encre éclairé par l'œuvre focalisée, la carte focalisée dans sa propre lumière, la marque mono calée et éclairée — « La lumière des fonds et la marque (Apple TV) » ci-dessous. |
+| 15. Lumière des fonds et marque (Apple TV) | Fait (2026-10-02) : un fond d'encre éclairé par l'œuvre focalisée, la carte focalisée dans sa propre lumière, la marque du coin calée et éclairée (retirée depuis : n° 22) — « La lumière des fonds et la marque (Apple TV) » ci-dessous. |
 | 16. Les rangées (Apple TV) | Fait (2026-10-02) : HAUT / BAS vers la section voisine, l'élément au centre le plus proche — partout ; la page qui suit le focus en UN mouvement — « Les rangées (Apple TV) » ci-dessous. |
 | 17. Le logo de l'app (Apple TV) | Fait (2026-10-02) : l'icône en quatre couches (fond, lumière, poulpe, bras avant), le Top Shelf dans le même monde, le lancement = la première image de l'app, plus de noir au démarrage — « Le logo de l'app : icône, Top Shelf, lancement (Apple TV) » ci-dessous. |
 | 18. Saisons manquantes (Apple TV, bureau, mobile) | Fait (2026-10-02) : une série de la bibliothèque à qui il manque des saisons les offre depuis la recherche — en tête de « À demander » et en onglets grisés sur sa fiche (Apple TV), « Demander » au plateau et dans la barre (bureau), dans la feuille d'appui long (mobile) — « Les saisons manquantes » ci-dessous. |
 | 19. Bibliothèques rapides (Apple TV) | Fait (2026-10-02) : champs minimaux, pages de 60 demandées tôt, lignes recyclées, cartes allégées, préchargement depuis la navigation — ouverture ~0,5 s, 3 fois plus de lignes en flèche maintenue, RAM −54 % — « Les bibliothèques rapides (Apple TV) » ci-dessous. |
 | 20. Les demandes en direct (Apple TV) | Fait (2026-10-02) : l'affiche d'une demande, grise, qui reprend sa couleur au prorata de l'avancement, le camembert au centre — partout où une demande se montre ; la fraîcheur de Vigie (10 s, une seconde à l'écran), seulement à l'écran — « Les demandes en direct (Apple TV) » ci-dessous. |
 | 21. Retour sans clignotement, suite de fiches (Apple TV) | Fait (2026-10-02) : tout menu fermé par Retour s'efface d'un seul fondu (panneaux du lecteur, menus en Modal), le rail reste déplié sous une Modal ouverte depuis lui ; une fiche ouverte depuis une autre fiche la remplace, un seul Retour ramène avant la première — « Le Retour (Apple TV) » ci-dessous. |
+| 22. Le logo dans l'app (Apple TV) | Fait (2026-10-03) : AUCUN logo dans l'interface, au choix de l'utilisateur entre trois propositions — le coin et son halo retirés de tous les écrans ; la marque vit dans l'icône, le Top Shelf, le démarrage et les illustrations — « Le logo dans l'app : aucun (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -65,9 +66,9 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
     avant »). Jamais un fond violet — mais jamais un grand noir non plus
     (2026-10-02) : une encre à peine teintée, éclairée par l'œuvre, et la
     carte focalisée dans sa propre lumière ;
-  - la marque, en haut à droite, est la mascotte MONO, à l'encre de
-    l'interface, dans le halo de la marque (2026-10-02 : en couleurs, elle
-    « faisait PNG qui flotte »).
+  - AUCUN logo dans l'interface (2026-10-02, choix de l'utilisateur après un
+    coin « mal intégré », au halo « moche ») : la marque vit dans l'icône, le
+    Top Shelf, le démarrage et les illustrations.
 - **Focus Apple TV, sans contour** : agrandissement, soulèvement, reflet ; le
   verre focalisé devient blanc, texte noir ; les voisines reculent.
 - **Des affiches, sauf les rangées d'épisodes** (retours des 2026-10-01 et
@@ -2215,7 +2216,9 @@ noire de 30 points.
   écran à l'autre) ; E, la retenue plus forte (le tertiaire passe sous 4,5:1
   sur certaines œuvres).
 
-**La marque** (`brand/BrandCorner`, `brand/BrandMark`) :
+**La marque** (`brand/BrandCorner`, `brand/BrandMark`) — ⚠️ le coin a été
+RETIRÉ le 2026-10-03 : plus aucun logo dans l'app (« Le logo dans l'app :
+aucun (Apple TV) », plus bas). Ce qui suit en est l'historique :
 
 - la mascotte NORMALE, en couleurs (`brand/logo-color.svg`). ⚠️ Elle fut
   d'abord en MONO blanche (`brand/logo-mono.svg`) : sur l'Apple TV, ses yeux
@@ -2316,7 +2319,8 @@ Shelf et l'écran de lancement ; le logo DANS l'app, seulement vérifié.
   `AppDelegate` pose l'écran de lancement comme vue d'attente de la vue racine
   (`RCTRootView.loadingView`, par `customizeRootView:`) : il tient jusqu'au
   premier rendu, puis s'efface en fondu (0,25 s).
-- **Le logo dans l'app** (`BrandCorner`) : net en 4K (react-native-svg
+- **Le logo dans l'app** (`BrandCorner`, retiré depuis : « Le logo dans
+  l'app : aucun », ci-dessous) : net en 4K (react-native-svg
   rastérise ses masques à l'échelle de l'écran), centre à 0,25 point de la
   ligne de la croix Retour, bord droit sur la marge : rien à corriger.
 - **Pièges** : tvOS garde en cache l'instantané du lancement par numéro de
@@ -2328,6 +2332,53 @@ Shelf et l'écran de lancement ; le logo DANS l'app, seulement vérifié.
 - **Le coût** : le catalogue compilé passe de 3,09 à 3,62 Mo (les couches de
   lumière, dont celle de l'icône App Store en 1280×768).
 - Planches : `apps/tv/harness/ui-bench/out/logo-app-tv/` (hors git).
+
+## Le logo dans l'app : aucun (Apple TV)
+
+Branche `claude/xenodochial-euler-651183` (2026-10-02 → 03). Retour de
+l'essai sur l'Apple TV : le logo « vraiment mal intégré », qui « ne suit pas
+le scroll », au « halo de lumière moche ». Trois intégrations proposées en
+planches, rendus réels au banc — accueil, bibliothèque, fiche, réglages ; au
+repos et défilés ; rail replié et ouvert :
+
+- A, la mascotte en tête de la capsule des pages, sur son verre, et
+  « Tentacle TV » rail ouvert, comme la barre du bureau ;
+- B, la mascotte devant le surtitre du héros de l'accueil, comme le logo de
+  la chaîne au-dessus d'un titre dans l'app TV d'Apple ; rien ailleurs ;
+- C, aucun logo dans l'app.
+
+Relevé des grandes apps (fiches App Store Apple TV, octobre 2026) : aucune ne
+met son logo en tête de sa navigation — c'est le profil (app TV d'Apple,
+Netflix, Disney+, Plex) ; un logo d'app, quand il existe, est petit et hors
+navigation (Netflix : un « N » seul en haut à droite ; HBO Max : sur ses
+héros) ; aucun chez Apple, Plex, Prime Video, Infuse, Paramount+. La HIG :
+« Ensure branding always defers to content ».
+
+**L'utilisateur a choisi C.** Parti : `BrandCorner` — le coin, son halo de
+marque, son voile d'ombre sur les images — de tous les écrans (accueil, Pour
+vous, bibliothèques, collections, Parcourir, fiche, réglages, jumelage,
+panneaux d'état) ; le jeton `TV_LIGHT.brandHalo` ; les 120 points réservés à
+droite du titre des bibliothèques et des collections ; les enveloppes des
+en-têtes de grille ; l'option `withName` de `BrandMark`, jamais appelée.
+
+La marque reste là où elle est légitime :
+- l'icône en quatre couches, le Top Shelf et le lancement (« Le logo de
+  l'app », ci-dessus) ;
+- les ILLUSTRATIONS, par `BrandMark` : démarrage, accueil et étapes du
+  jumelage, erreurs, hors ligne, À propos — inchangées (démarrage, À
+  propos, accueil du jumelage, hors ligne comparés au banc : 0 pixel de
+  différence) ;
+- le violet → rose en touches : lecture, progression, étoiles, surtitres.
+
+**La règle** : sur Apple TV, aucun logo d'interface — ni coin, ni tête de
+rail, ni marque de héros. La mascotte n'y paraît qu'en illustration d'un
+état (démarrage, attente, vide, erreur, accueil du jumelage).
+
+**La preuve** : de l'avant à l'après, seule la zone du logo change (≈ 100 ×
+120 points au coin, comparaison au pixel des onze états) ; GPU au repos du
+simulateur : 0 ms/s avant comme après (accueil, bibliothèque, fiche,
+réglages). Planches : `apps/tv/harness/ui-bench/out/logo-integration/` (hors
+git) — propositions (00 à 04), avant / après (05, 06).
 
 ## Les rangées (Apple TV)
 

@@ -256,6 +256,13 @@ Quatre pièges déjà payés :
   (`BootView`) : les deux se retouchent ensemble. Ne régénérer que
   `generate-icons.py --write apps/tv/ios` ; l'app tvOS se reconstruit.
 
+**Apple TV : aucun logo dans l'interface** (choix de l'utilisateur,
+2026-10-02, après un coin « mal intégré ») — ni coin, ni tête de rail, ni
+marque de héros. La mascotte n'y paraît qu'en ILLUSTRATION d'un état
+(`BrandMark` : démarrage, jumelage, erreurs, hors ligne, À propos) ;
+l'identité, c'est l'icône en couches, le Top Shelf et le violet → rose en
+touches. Détail : `docs/TV-REFONTE.md`, « Le logo dans l'app : aucun ».
+
 ## Cartes — un seul survol, trois variantes
 
 Toute carte d'un titre de la bibliothèque, sur toutes les plateformes, rend le

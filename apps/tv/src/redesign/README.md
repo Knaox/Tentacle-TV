@@ -26,8 +26,10 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 - **Jamais un grand noir** (`TV_LIGHT`) : le fond est une ENCRE à peine
   teintée de la marque, éclairée d'en haut et des côtés par la lumière de
   l'œuvre focalisée ; la carte focalisée jette sa lumière autour d'elle, pas
-  une ombre noire. La marque, en haut à droite, est la mascotte MONO, à
-  l'encre de l'interface, dans le halo de la marque (`BrandCorner`).
+  une ombre noire.
+- **Aucun logo dans l'interface** (choix du 2026-10-02) : ni coin, ni tête de
+  rail, ni marque de héros. La marque vit dans l'icône, le Top Shelf, le
+  démarrage et les illustrations (`BrandMark`).
 - **Très grand** : rien sous 22 pt, texte courant 26–30, titres de rangée 36,
   titre d'écran 56, titre du héros 58 à 76 selon sa longueur (ou le LOGO de
   l'œuvre).
@@ -79,8 +81,7 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `rows/MediaRow` | Titre + cartes horizontales, les voisines reculent |
 | `hero/HeroBanner`, `MetaLine`, `TitleArt` | Le héros, la ligne de métadonnées, le logo-titre |
 | `nav/NavRail` | La navigation flottante (repliée / ouverte sous un voile) |
-| `brand/BrandMark` | La mascotte, toujours en couleurs (`brand/logo-color.svg`) — jamais la mono blanche, qui lisait « tête de mort » sur la TV |
-| `brand/BrandCorner` | La marque en haut à droite : la mascotte en couleurs, sur la ligne de la croix Retour, au bord de la marge de sécurité, dans le halo de la marque (`backing="veil"` sur une image) ; posée dans ce qui défile (`BRAND_CORNER_IN_SAFE_AREA` dans l'en-tête d'une grille, `brandCornerOnHero` dans la carte héros) |
+| `brand/BrandMark` | La mascotte des ILLUSTRATIONS (démarrage, jumelage, erreurs, hors ligne, À propos), toujours en couleurs (`brand/logo-color.svg`), `crying` pour une erreur — jamais un logo d'interface, ni la mono blanche, qui lisait « tête de mort » sur la TV |
 | `screens/shared/StatusPanel` | Chargement, erreur, vide |
 | `icons/Icon` | Pictogrammes (`iconPaths.ts`, grille 24, trait 2) |
 
