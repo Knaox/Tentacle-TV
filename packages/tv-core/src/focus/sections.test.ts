@@ -90,6 +90,46 @@ describe("HAUT / BAS vers la section voisine", () => {
   });
 });
 
+describe("rangées de formats différents (vignettes 16:9, affiches 2:3)", () => {
+  // L'accueil d'Apple TV : « Reprendre » et « Prochains épisodes » en
+  // vignettes de 380 (légende comprise, 286 de haut), puis des affiches de 240
+  // (432) ; 36 d'écart, colonne de contenu à 176, titre de rangée de 58. Les
+  // cartes de deux formats ne sont jamais alignées : le centre décide.
+  const landscape = (name: string, top: number, count = 5) => row(name, top, count, { left: 176, width: 380, gap: 36, height: 286, header: 58 });
+  const posters = (name: string, top: number, count = 7) => row(name, top, count, { left: 176, width: 240, gap: 36, height: 432, header: 58 });
+  const resume = landscape("resume", 100);
+  const nextUp = landscape("nextUp", 484);
+  const forYou = posters("forYou", 868);
+  const page = [resume, nextUp, forYou];
+
+  it("d'une rangée de vignettes à l'autre, la vignette à l'aplomb", () => {
+    expect(pickSectionNeighbor(from(resume, "resume:2"), page, "bas")).toBe("nextUp:2");
+    expect(pickSectionNeighbor(from(nextUp, "nextUp:3"), page, "haut")).toBe("resume:3");
+  });
+
+  it("BAS depuis une vignette : l'affiche dont le centre est le plus proche", () => {
+    // Centre 782 : l'affiche 2 (848) l'emporte sur l'affiche 1 (572).
+    expect(pickSectionNeighbor(from(nextUp, "nextUp:1"), page, "bas")).toBe("forYou:2");
+  });
+
+  it("HAUT depuis une affiche : la vignette la plus proche, même décalée", () => {
+    // Centre 1400 : la vignette 2 (1198) l'emporte de peu sur la vignette 3 (1614).
+    expect(pickSectionNeighbor(from(forYou, "forYou:4"), page, "haut")).toBe("nextUp:2");
+  });
+
+  it("HAUT depuis le bout des affiches : la dernière vignette d'une rangée plus courte", () => {
+    const short = landscape("nextUp", 484, 3);
+    expect(pickSectionNeighbor(from(forYou, "forYou:6"), [resume, short, forYou], "haut")).toBe("nextUp:2");
+  });
+
+  it("des affiches au-dessus des vignettes (une mise en page du compte) : BAS au plus proche", () => {
+    const above = posters("watchlist", 100);
+    const below = landscape("nextUp", 590);
+    // Centre 1124 : la vignette 2 (1198).
+    expect(pickSectionNeighbor(from(above, "watchlist:3"), [above, below], "bas")).toBe("nextUp:2");
+  });
+});
+
 describe("grilles", () => {
   const lines = [row("l0", 100, 6, { width: 240, height: 360 }), row("l1", 520, 6, { width: 240, height: 360 }), row("l2", 940, 2, { width: 240, height: 360 })];
 
