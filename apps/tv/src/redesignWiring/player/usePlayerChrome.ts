@@ -3,7 +3,7 @@ import { AccessibilityInfo } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useMediaItem, usePlaybackSegments, usePlaybackSettings } from "@tentacle-tv/api-client";
 import type { PlayerChromeViewProps } from "../../redesign/screens/player/PlayerChromeView";
-import { playerChromeLabels, seekFlashLabel, type Translate } from "../../redesign/screens/player/playerLabels";
+import { playerChromeLabels, type Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlayerMedia, PlayerPanel, ScrubModel } from "../../redesign/screens/player/playerTypes";
 import { useAutoCapNotice } from "../../hooks/useAutoCapNotice";
 import { usePlaybackTroubleState } from "../../hooks/playbackTroubleStore";
@@ -151,11 +151,6 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     return sheet.panel;
   }, [p.showEpisodes, episodes.model, sheet.panel]);
 
-  const flash = controls.skipFlash;
-  const seekFlash = useMemo(
-    () => (flash ? { forward: flash.delta > 0, label: seekFlashLabel(translate, flash.delta) } : null),
-    [flash, translate],
-  );
   const notice = useAutoCapNotice(!!p.autoCapActive, p.hasStarted, p.autoCapReason);
   // Un transcodage qui se fait attendre en pleine lecture (changement de
   // qualité, serveur lent) : rien ne bloque, une ligne sous l'indicateur.
@@ -188,7 +183,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     view: {
       ...actions,
       media, labels, phase, timeline, transport, paused: p.paused, osdVisible,
-      buffering: p.isLoading && p.hasStarted, bufferingHint, scrub, seekFlash, skip, upNext, endScreen, panel, reloadFrame,
+      buffering: p.isLoading && p.hasStarted, bufferingHint, scrub, skip, upNext, endScreen, panel, reloadFrame,
       notice, error, subtitle: p.subtitleCue ?? null,
       trouble: trouble.model, troubleCovers: trouble.covers, onTroubleAction: trouble.onAction,
     },

@@ -5,7 +5,6 @@ import { MenuPressInterceptor } from "../../../src/components/focus/MenuPressInt
 import { useTVPlayerBack } from "../../../src/hooks/useTVPlayerBack";
 import { useTVPlayerControls } from "../../../src/hooks/useTVPlayerControls";
 import { PlayerChromeView } from "../../../src/redesign/screens/player/PlayerChromeView";
-import { seekFlashLabel } from "../../../src/redesign/screens/player/playerLabels";
 import type { ScrubModel } from "../../../src/redesign/screens/player/playerTypes";
 import { BackScope } from "../../../src/redesignWiring/back/BackScope";
 import { buildScrubCountdown, parseSpeedLabel } from "../../../src/redesignWiring/player/playerChromeModels";
@@ -125,7 +124,6 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
       countdown: buildScrubCountdown(controls.scrubCountdown, t),
     }
     : null;
-  const flash = controls.skipFlash;
   return (
     <View style={styles.stage}>
       {frame ? <Image source={{ uri: frame }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
@@ -138,7 +136,6 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
         paused={paused}
         osdVisible={osdVisible}
         scrub={scrub}
-        seekFlash={flash ? { forward: flash.delta > 0, label: seekFlashLabel(t, flash.delta) } : null}
       />
     </View>
   );
