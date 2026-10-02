@@ -4,7 +4,7 @@ import { BURN_IN_SUBTITLE_CODECS, TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
 import type { PrismStart } from "../utils/prismCoreStart";
-import { withRestartMark, type RestartOutcome } from "./streamRestart";
+import { resolveRestartAt, withRestartMark, type RestartAt, type RestartOutcome } from "./streamRestart";
 
 /**
  * Construit l'URL Jellyfin selon le mode de lecture :
@@ -66,9 +66,10 @@ export function useTVStreamUrl(args: {
   // que `startTicks` n'a pas bougé : un reload de piste ou de qualité reprend la main.
   const [restarted, setRestarted] = useState<{ mark: number; at: number; baseTicks: number } | null>(null);
   const restartAt = restarted && restarted.baseTicks === startTicks ? restarted : null;
-  const restart = (at: number): Promise<RestartOutcome> => {
+  const restart = (at: RestartAt): Promise<RestartOutcome> => {
     if (!itemId || !ready) return Promise.resolve("failed");
-    setRestarted((r) => ({ mark: (r?.mark ?? 0) + 1, at, baseTicks: startTicks }));
+    const from = resolveRestartAt(at);
+    setRestarted((r) => ({ mark: (r?.mark ?? 0) + 1, at: from, baseTicks: startTicks }));
     return Promise.resolve("ok");
   };
 

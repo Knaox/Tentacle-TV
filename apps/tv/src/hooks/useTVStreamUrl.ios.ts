@@ -8,7 +8,7 @@ import {
   type PrismStart,
 } from "../utils/prismCoreStart";
 import { resolveServerStream } from "../utils/tvosServerStream";
-import { withoutRestartMark, withRestartMark, type RestartOutcome } from "./streamRestart";
+import { resolveRestartAt, withoutRestartMark, withRestartMark, type RestartAt, type RestartOutcome } from "./streamRestart";
 
 /**
  * Variante tvOS de `useTVStreamUrl` (résolue par Metro sur iOS ; Android garde
@@ -255,29 +255,30 @@ export function useTVStreamUrl(args: {
   };
 
   // Relance (contrat : `streamRestart.ts`) : la même source rouverte à `at`, sous
-  // la même forme. Un échec laisse tout en place, sans écran d'erreur.
+  // la même forme. Un échec laisse tout en place, sans écran d'erreur. La
+  // position se lit à l'ÉMISSION : une recherche faite entre-temps la déplace.
   const restartingRef = useRef(false);
   const restartMarkRef = useRef(0);
-  const restart = async (at: number, opts?: { keepSession?: boolean }): Promise<RestartOutcome> => {
+  const restart = async (at: RestartAt, opts?: { keepSession?: boolean }): Promise<RestartOutcome> => {
     if (restartingRef.current) return "busy";
     if (!itemId || !userId || !ready || !contentKeyRef.current) return "failed";
     // Un transcodage qui tarde : la MÊME session (même PlaySessionId), une
     // marque neuve pour qu'AVPlayer recharge — le serveur garde son travail.
     if (opts?.keepSession && result.baseUrl && !result.isPrismCore && !result.isDirectPlay) {
-      setResult({ ...result, baseUrl: withRestartMark(withoutRestartMark(result.baseUrl), ++restartMarkRef.current), resumeFrag: fragmentAt(at) });
+      setResult({ ...result, baseUrl: withRestartMark(withoutRestartMark(result.baseUrl), ++restartMarkRef.current), resumeFrag: fragmentAt(resolveRestartAt(at)) });
       return "ok";
     }
     restartingRef.current = true;
     const fetchId = ++fetchIdRef.current;
     try {
       const next = await resolve({
-        fetchId, contentKey: contentKeyRef.current, startSec: at, fresh: true,
+        fetchId, contentKey: contentKeyRef.current, startSec: resolveRestartAt(at), fresh: true,
         keepShape: !!result.isPrismCore, mark: ++restartMarkRef.current,
       });
       // Supplantée par une résolution plus récente : c'est elle qui émet.
       if (fetchIdRef.current !== fetchId) return "ok";
       if (!next) return "failed";
-      setResult(next);
+      setResult({ ...next, resumeFrag: fragmentAt(resolveRestartAt(at)) });
       return "ok";
     } catch {
       return "failed";

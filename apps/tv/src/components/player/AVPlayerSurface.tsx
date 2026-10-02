@@ -82,7 +82,11 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // source (uri) change.
     const didSeekRef = useRef(false);
     const loadSeenRef = useRef(false);
-    useEffect(() => { didSeekRef.current = false; loadSeenRef.current = false; }, [uri]);
+    // Une recherche demandée AVANT que la source soit prête (réouverture du flux) :
+    // react-native-video la pose, puis la recouvre de `startPosition` à
+    // `readyToPlay` — elle se rejoue au chargement, à la place de la reprise.
+    const earlySeekRef = useRef<number | null>(null);
+    useEffect(() => { didSeekRef.current = false; loadSeenRef.current = false; earlySeekRef.current = null; }, [uri]);
     // Un AVPlayer NEUF quand une nouvelle session PrismCore en remplace une autre
     // (relance du flux, forme muxée) : react-native-video ne fait que remplacer
     // l'item, et sur un master à piste audio pontée (Opus → AAC) l'item de
@@ -115,7 +119,11 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
 
     useImperativeHandle(ref, () => ({
       // Timeline absolue partout : la position JS est celle d'AVPlayer.
-      seek: (seconds: number) => videoRef.current?.seek(Math.max(0, seconds)),
+      seek: (seconds: number) => {
+        const at = Math.max(0, seconds);
+        if (!loadSeenRef.current) earlySeekRef.current = at;
+        videoRef.current?.seek(at);
+      },
       setAudioTrack: (id: number) => {
         desiredAudioRef.current = id;
         setSelectedAudioTrack({ type: SelectedTrackType.INDEX, value: id });
@@ -149,17 +157,20 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         onTracks?.(tracks);
 
         // Reprise : `startPosition` fait l'essentiel, le seek de filet rattrape AVPlayer
-        // quand il démarre au segment récent d'une playlist EVENT. GARDE didSeekRef.
-        if (!didSeekRef.current && startSec > 1) {
+        // quand il démarre au segment récent d'une playlist EVENT — ou rejoue la
+        // recherche faite avant que la source soit prête. GARDE didSeekRef.
+        const target = earlySeekRef.current ?? (startSec > 1 ? startSec : null);
+        earlySeekRef.current = null;
+        if (!didSeekRef.current && target !== null) {
           didSeekRef.current = true;
-          videoRef.current?.seek(startSec);
+          videoRef.current?.seek(target);
         }
-        // En pause : la reprise au 1er chargement (le `onSeek` du saut de `startPosition`
+        // En pause : la cible au 1er chargement (le `onSeek` du saut de `startPosition`
         // peut précéder `onLoad` et se perdre), la position réelle aux suivants (HLS qui grandit).
         const firstLoad = !loadSeenRef.current;
         loadSeenRef.current = true;
         if (pausedRef.current) {
-          const at = firstLoad && startSec > 1 ? startSec : data.currentTime ?? 0;
+          const at = firstLoad && target !== null ? target : data.currentTime ?? 0;
           onProgress?.(Math.max(0, at), playableRef.current);
         }
       },

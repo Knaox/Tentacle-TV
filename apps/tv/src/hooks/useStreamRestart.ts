@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { plog } from "../utils/playerDiag";
-import type { RestartOptions, RestartOutcome } from "./streamRestart";
+import type { RestartAt, RestartOptions, RestartOutcome } from "./streamRestart";
 
 /**
  * `restartStream`, la relance du flux exposée par `usePlayerStreamPipeline`
@@ -16,12 +16,17 @@ import type { RestartOptions, RestartOutcome } from "./streamRestart";
  * remise à zéro qu'un changement de source : chargé = faux, fenêtre de
  * convergence armée sur `at`.
  *
+ * Une recherche faite PENDANT la réouverture (`noteSeek`) déplace la cible :
+ * la nouvelle source part de là — son URL se lit à l'émission —, et l'image
+ * figée la suit. Sans cela, la source rouverte repartait de la position
+ * d'avant et le saut était perdu.
+ *
  * Une relance à la fois. Un échec rend la main sans rien laisser derrière :
  * ni image figée, ni pause de rechargement, ni fenêtre de convergence.
  */
 export function useStreamRestart(args: {
   /** La relance de la variante de plateforme (`useTVStreamUrl`). */
-  restart: (at: number, opts?: { keepSession?: boolean }) => Promise<RestartOutcome>;
+  restart: (at: RestartAt, opts?: { keepSession?: boolean }) => Promise<RestartOutcome>;
   positionRef: React.MutableRefObject<number>;
   softReloadRef: React.MutableRefObject<boolean>;
   setReloadFrameSec: (sec: number | null) => void;
@@ -29,18 +34,31 @@ export function useStreamRestart(args: {
   setIsLoading: (loading: boolean) => void;
   resetLoadedRef: React.MutableRefObject<() => void>;
   notifySeekRef: React.MutableRefObject<(target: number, windowMs?: number, afterReload?: boolean) => void>;
-}): (opts?: RestartOptions) => Promise<RestartOutcome> {
+}): {
+  restartStream: (opts?: RestartOptions) => Promise<RestartOutcome>;
+  /** Une recherche vient d'être demandée : pendant une réouverture, elle devient la cible. */
+  noteSeek: (target: number) => void;
+} {
   const {
     positionRef, softReloadRef, setReloadFrameSec, holdForReload, setIsLoading, resetLoadedRef, notifySeekRef,
   } = args;
   const restartRef = useRef(args.restart);
   restartRef.current = args.restart;
   const inFlightRef = useRef(false);
+  // La cible de la réouverture en vol : `at`, puis la dernière recherche.
+  const targetRef = useRef(0);
 
-  return useCallback(async (opts?: RestartOptions): Promise<RestartOutcome> => {
+  const noteSeek = useCallback((target: number) => {
+    if (!inFlightRef.current) return;
+    targetRef.current = target;
+    setReloadFrameSec(target);
+  }, [setReloadFrameSec]);
+
+  const restartStream = useCallback(async (opts?: RestartOptions): Promise<RestartOutcome> => {
     if (inFlightRef.current) return "busy";
     inFlightRef.current = true;
     const at = Math.max(0, opts?.at ?? positionRef.current);
+    targetRef.current = at;
     plog("restart", `relance (${opts?.reason ?? "manual"}) à ${Math.round(at)}s`);
     softReloadRef.current = true;
     setReloadFrameSec(at);
@@ -49,8 +67,8 @@ export function useStreamRestart(args: {
     resetLoadedRef.current();
     notifySeekRef.current(at, 8000, true);
     try {
-      const outcome = await restartRef.current(at, { keepSession: opts?.keepSession });
-      plog("restart", `→ ${outcome}`);
+      const outcome = await restartRef.current(() => targetRef.current, { keepSession: opts?.keepSession });
+      plog("restart", `→ ${outcome}${targetRef.current !== at ? ` (cible déplacée à ${Math.round(targetRef.current)}s)` : ""}`);
       if (outcome !== "ok") {
         softReloadRef.current = false;
         setReloadFrameSec(null);
@@ -62,4 +80,6 @@ export function useStreamRestart(args: {
       inFlightRef.current = false;
     }
   }, [positionRef, softReloadRef, setReloadFrameSec, holdForReload, setIsLoading, resetLoadedRef, notifySeekRef]);
+
+  return { restartStream, noteSeek };
 }

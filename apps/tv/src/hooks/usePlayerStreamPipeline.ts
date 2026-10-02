@@ -140,9 +140,12 @@ export function usePlayerStreamPipeline(args: {
   });
   // La relance du flux à une position, même forme, en rechargement doux —
   // retour au premier plan, reprise après coupure (contrat : `streamRestart.ts`).
-  const restartStream = useStreamRestart({
+  const { restartStream, noteSeek } = useStreamRestart({
     restart, positionRef, softReloadRef, setReloadFrameSec, holdForReload, setIsLoading, resetLoadedRef, notifySeekRef,
   });
+  // Miroir lu au saut : pendant un (re)chargement, il vise la source qui arrive.
+  const loadingRef = useRef(isLoading);
+  loadingRef.current = isLoading;
 
   // Synchronisation des refs miroir lues par les handlers/callbacks.
   isDirectPlayRef.current = isDirectPlay;
@@ -256,7 +259,7 @@ export function usePlayerStreamPipeline(args: {
   const { handleSeek } = useTVSeekControl({
     jellyfinDuration, playerRef, paused,
     displayTimeRef, positionRef, lastDisplayUpdate, lastProgressTime,
-    reportSeek, setDisplayTime, notifySeekRef, controlsCurrentTimeRef,
+    reportSeek, setDisplayTime, notifySeekRef, controlsCurrentTimeRef, loadingRef, noteSeek,
   });
 
   return {

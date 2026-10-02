@@ -18,6 +18,18 @@
  */
 export type RestartReason = "resume" | "network" | "audio" | "remux" | "manual" | "transcode";
 export type RestartOutcome = "ok" | "failed" | "busy";
+
+/**
+ * Où la source relancée démarre : une position, ou sa lecture au moment où
+ * l'URL est ÉMISE — une recherche faite pendant la réouverture déplace la
+ * cible (`useStreamRestart`), et la nouvelle source part de là, pas de la
+ * position d'avant.
+ */
+export type RestartAt = number | (() => number);
+
+export function resolveRestartAt(at: RestartAt): number {
+  return Math.max(0, typeof at === "function" ? at() : at);
+}
 export interface RestartOptions {
   /** Position de reprise, timeline absolue — défaut : la position courante. */
   at?: number;
