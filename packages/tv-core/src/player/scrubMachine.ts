@@ -12,7 +12,8 @@
  * Trois portes de sortie, et elles ne font pas la même chose : OK confirme,
  * Retour annule, et l'inactivité annule aussi. La troisième est un filet — on
  * repose la télécommande en cours de route, et on ne veut pas retrouver le film
- * déplacé de vingt minutes en revenant.
+ * déplacé de vingt minutes en revenant. Un lecteur qui ferme lui-même son
+ * défilement s'en passe (`idleCancelMs: null`).
  *
  * L'accélération est réservée au MAINTIEN. Un appui simple avance d'un pas de
  * base : c'est la seule façon de viser une position précise, et la répétition
@@ -51,6 +52,13 @@ export interface ScrubMachineOptions {
    * depuis la position visée.
    */
   readPaused?: () => boolean;
+  /**
+   * L'abandon sur inactivité, en ms : `IDLE_CANCEL_MS` par défaut (le
+   * téléviseur LG), `null` pour n'en avoir aucun. Le lecteur d'`apps/tv` ferme
+   * lui-même son défilement — en lecture, la reprise à la cible au bout de son
+   * décompte ; en pause, la cible attend OK ou Retour.
+   */
+  idleCancelMs?: number | null;
   onEnter: (position: number, tier: number) => void;
   onChange: (position: number, tier: number) => void;
   onPause: (pause: boolean) => void;
@@ -89,13 +97,15 @@ export function createScrubMachine(options: ScrubMachineOptions): ScrubMachine {
   /** L'état de lecture à l'entrée : ce qu'une annulation rend. */
   let pausedBefore = false;
   let idle: ReturnType<typeof setTimeout> | null = null;
+  const idleCancelMs = options.idleCancelMs === undefined ? IDLE_CANCEL_MS : options.idleCancelMs;
 
   function armIdle(): void {
+    if (idleCancelMs === null) return;
     if (idle !== null) clearTimeout(idle);
     idle = setTimeout(() => {
       idle = null;
       cancel();
-    }, IDLE_CANCEL_MS);
+    }, idleCancelMs);
   }
 
   function disarm(): void {
