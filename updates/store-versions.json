@@ -46,19 +46,19 @@
     "assets": {
       "appimage": {
         "name": "tentacle-tv_1.25.3_x86_64.AppImage",
-        "sha256": "a3c264afae77b695aeac14185723be9bdef1eb01a096626942cbc42b3186c5fd"
+        "sha256": "75d538d4dabf3dc4865adf5070efde1cca3a109dba1308245f60c828e5fcee0c"
       },
       "deb": {
         "name": "tentacle-tv_1.25.3_amd64.deb",
-        "sha256": "4d9672e8a26741993091ae81780640400d587075d858d3cdeae38c48d146cf38"
+        "sha256": "eace872597e125b3a812463037c9abbf96a5f27351987d01630147733a825aff"
       },
       "rpm": {
         "name": "tentacle-tv_1.25.3_x86_64.rpm",
-        "sha256": "82520d074b80d37d46a36a55e41f1f4c122fc434c5ca0c784acc39ddbf01ebe0"
+        "sha256": "0c9f9bc412e4c5aa84505f25cd363af2c0f0433a7f82fadc76901ddd1d2fcf04"
       },
       "pacman": {
         "name": "tentacle-tv_1.25.3_x64.pkg.tar.zst",
-        "sha256": "ddaef6f116af3796afaf4fc1dd45c16231db759a3f71d9f518fee634cdda6d84"
+        "sha256": "ccb6016d1705f855e4e68cf6dca5a7a1bcf6eb9d21083a05f5d64644763f318c"
       }
     }
   }
