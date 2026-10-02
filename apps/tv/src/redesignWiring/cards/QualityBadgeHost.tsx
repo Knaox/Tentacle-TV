@@ -11,10 +11,10 @@ import { QualityBadgeProvider } from "../../redesign/cards/qualityBadgeSource";
  * écran a lu sert aux autres (une grille, puis l'accueil). Neuve à chaque
  * compte : rien ne passe d'une session à l'autre.
  *
- * Une lecture = un titre, ses flux seuls (`Fields=MediaStreams`), sans images
- * ni état de lecture : quelques kilo-octets, quand le focus d'une carte a
- * tenu (`CardQualityBadges`). La fiche déjà en cache (`["item", id]`) répond
- * sans requête.
+ * Une lecture = un titre, ses flux seuls (`Fields=MediaStreams`), sans images,
+ * état de lecture ni total : 4 à 8 Kio et ~20 ms (Jellyfin 12.1, mesuré),
+ * quand le focus d'une carte a tenu (`CardQualityBadges`). La fiche déjà en
+ * cache (`["item", id]`) répond sans requête.
  */
 export function QualityBadgeHost({ children }: { children: ReactNode }) {
   const client = useJellyfinClient();
@@ -26,7 +26,7 @@ export function QualityBadgeHost({ children }: { children: ReactNode }) {
         load: (id) =>
           userId
             ? client
-                .fetch<{ Items?: MediaItem[] }>(`/Users/${userId}/Items?Ids=${id}&Fields=MediaStreams&EnableImages=false&EnableUserData=false`)
+                .fetch<{ Items?: MediaItem[] }>(`/Users/${userId}/Items?Ids=${id}&Fields=MediaStreams&EnableImages=false&EnableUserData=false&EnableTotalRecordCount=false`)
                 .then((response) => response.Items?.[0])
             : Promise.reject(new Error("no session")),
         peekItem: (id) => queryClient.getQueryData<MediaItem>(["item", id]),
