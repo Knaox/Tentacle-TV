@@ -1432,12 +1432,9 @@ Et un fichier natif neuf prend des identifiants hors de la série
 
 ### Constats non corrigés
 
-- react-native-video n'applique la position de départ qu'à `readyToPlay` :
-  AVPlayer charge d'abord depuis 0:00, puis saute à la reprise. Sur un
-  transcodage, le serveur transcode depuis le début, puis repart au point de
-  reprise — l'attente d'un changement de qualité est doublée (mesuré à ×0,4 :
-  ~3 min au lieu de ~1 min 20). Piste : poser la position sur l'élément
-  AVANT sa lecture (correctif de react-native-video, natif, toutes lectures).
+- ~~react-native-video n'applique la position de départ qu'à `readyToPlay`~~ —
+  corrigé (patch natif) : « Le lecteur — reprise après l'arrière-plan »,
+  plus bas.
 - Le mobile garde la mesure fausse (même `fetch`) : tâche à part.
 - « Réessayer » après « Le transcodage n'avance plus » ouvre une session
   neuve (voulu : l'ancienne n'a rien produit en deux minutes).
@@ -1453,6 +1450,115 @@ Et un fichier natif neuf prend des identifiants hors de la série
 3. La mesure : `[cap] debit mesure N Mb/s` doit suivre le réseau réel
    (Wi-Fi, Ethernet) ; sur un réseau rapide, plus de « qualité réduite » ni
    de « La connexion est trop lente ».
+
+## Le lecteur — reprise après l'arrière-plan, temps restant, portion chargée (Apple TV)
+
+Tâche T1 du lot du 2026-10-02. Retours de l'essai : « si je quitte ma
+lecture en sortant de l'app et que je reviens dessus, après quelques minutes
+la lecture charge et ma TV n'arrive plus à seek » ; à droite de la frise, le
+temps restant plutôt que la durée ; « je ne vois pas la barre de
+préchargement ».
+
+**La cause du blocage.** L'essai avait lieu sur l'Apple TV « Chambre », avec
+une build du 2026-10-01 après-midi qui relançait à froid DIRECTEMENT dans le
+lecteur, en pause. tvOS ayant tué l'app pendant l'absence, le retour ouvrait
+un lecteur en pause qui n'émettait aucune progression : écran de chargement
+sans fin, recherche sans effet. La tête ouvre la FICHE (« quitter et
+reprendre », plus haut) — éprouvé au simulateur : lu jusqu'à 648 s, Accueil,
+app tuée 30 s plus tard, relance → « arrêt du marqueur (648 s) préféré »,
+fiche de la série, « Reprendre S2 · E3 » focalisé, lecture à 647 s, glisser
+→ la cible.
+
+**Le chemin chaud** (app suspendue puis revenue) : cinq défauts, trouvés en
+recréant les conditions de l'appareil au simulateur, corrigés à la source.
+
+| Défaut | Correctif |
+|---|---|
+| Une recherche faite PENDANT une réouverture du flux (bouclage mort au retour, relance après coupure) était perdue : la source rouverte repartait de la position d'avant, puis react-native-video recouvrait le saut par la position de départ. Mesuré : OK pendant la réouverture → lecture à 931 s, la cible perdue. | La relance prend la recherche pour cible (`useStreamRestart.noteSeek`) et lit la position à l'émission de l'URL (contrat `RestartAt`) ; la surface rejoue au chargement une recherche faite avant que sa source soit prête ; pendant un rechargement, la fenêtre de convergence d'un saut attend la source qui arrive. Même geste après : 1003 s, la cible. |
+| Au retour, seul le SERVEUR de bouclage de PrismCore était sondé ; une playlist VOD est servie même producteur mort — AVPlayer redemandait ses segments sans fin, et toute recherche visait un segment que plus rien ne fabriquait. | Le retour lit aussi le producteur (`PrismBridge.status`) : mort, ou session close → relance pendant la pause (0,3 s mesurées, producteur déclaré mort par injection). |
+| La sonde du bouclage concluait « mort » au-delà de 600 ms : sous charge, une réouverture pour rien, indicateur à l'écran. | Un bouclage mort refuse aussitôt la connexion ; un délai dépassé a une seconde chance (2,4 s). |
+| Une relance par le serveur (PlaySessionId neuf) laissait tourner l'encodage de la session remplacée une minute : une session fantôme chez Jellyfin. | Arrêté (`DELETE /Videos/ActiveEncodings`) 3 s après l'émission de la nouvelle URL — mesuré sur Ted 2 : « ffmpeg tué », lecture reprise. |
+| react-native-video ne posait la position de départ qu'à `readyToPlay` : AVPlayer chargeait depuis 0:00, et l'encodeur du serveur démarrait deux fois à chaque ouverture à une position (reprise, réouverture, qualité). | Patch natif (`patches/react-native-video@6.19.0.patch`) : la position est cherchée sur l'élément AVANT de le confier au lecteur. Banc du transcodage lent, reprise à 5:00 : avant, segments 0 puis 50 (premier segment utile à +4,7 s) ; après, 50 d'emblée (+2,25 s). |
+
+<!-- MATRICE -->
+
+**Le temps restant** (`formatRemaining`, `redesign/screens/player/formatClock.ts`) :
+à droite de la frise, « −12:34 », « −1:02:15 », au signe moins typographique,
+en secondes entières comme l'écoulé (écoulé + restant = durée) ; en
+défilement et pendant le décompte avant reprise, celui de la cible visée.
+Durée inconnue : rien. L'habillage d'Android TV garde la durée. Planche :
+`apps/tv/harness/ui-bench/out/planche-temps-restant.png` (lecture, avance
+×4, décompte « Lecture dans 3 s », décompte en pause).
+
+**La portion chargée et la tête de lecture** (`OsdTimeline`) : la fin de la
+plage chargée qui contient la position (react-native-video, à la seconde) —
+déjà dessinée, mais en blanc 40 % sur une piste à 28 %, et cachée sous une
+pastille de 26 points (±65 s d'un film de 2 h). Elle passe à 60 % (≈ 3:1
+contre la piste), l'écart visé d'un défilement à 90 %, et la pastille devient
+une tête de lecture FINE, comme le lecteur d'Apple : un trait blanc de
+4 × 24 points dont le bord droit est la position — le chargé commence au
+point qui suit. En défilement et pendant le décompte, la cible est le même
+trait, plus haut (40 points), au rose de la marque. Les avances ne changent
+pas : sur un film de 2 h, 1 min 30 de lecture directe font 19 points, 30 s
+de transcodage 6, 10 s de PrismCore 2 (5 sur un épisode de 45 min).
+Planches : `apps/tv/harness/ui-bench/out/planche-tete-lecture.png` (vues
+pleines) et `planche-tete-lecture-frise.png` (frise agrandie), scènes du
+banc `lecteur/tete-*`.
+
+Bancs (rejouables, outils dans le bloc-notes de la session) :
+- **Suspension** : `kill -STOP` / `-CONT` du processus de l'app (gelée comme
+  par tvOS ; le simulateur, lui, ne suspend rien) ; **bouclage repris par
+  tvOS** : `PrismBridge.stop(gen)` après le dégel ; **producteur mort** :
+  l'export `prismStatus` remplacé à l'exécution (CDP) ; **source perdue** :
+  le `onError` de `PlayerRedesignStage` appelé par CDP.
+- **Recherche immédiate** : glisser synthétique (`onHWKeyEvent` « pan ») et
+  OK dans la première seconde du retour.
+- **Position de départ** : le banc du transcodage lent, titre repris à 5:00
+  (copie du faux serveur), `/__log` dit le premier segment demandé.
+- **Sessions Jellyfin** : `/Sessions` lu avec le jeton de l'appareil, filtré
+  sur son DeviceId (d'autres sessions du lot partagent Knaoxtest).
+
+Pièges payés :
+- Un Fast Refresh pendant un essai REMONTE le lecteur : la lecture repart,
+  en arrière-plan. Couper le rechargement à chaud
+  (`NativeModules.DevSettings.setHotLoadingEnabled(false)`, persistant) et
+  recharger à la main.
+- `log show` ne garde pas les traces `[TVDIAG]` (niveau info) : pour les
+  lire après coup, `log stream --level debug` PENDANT l'essai.
+- `pnpm patch-commit` re-résout le lockfile au-delà du patch (vitest,
+  jiti) : n'y garder que l'empreinte, vérifier par
+  `pnpm install --frozen-lockfile`.
+- Après un `pnpm install`, Metro perd des modules (« Unable to resolve ») :
+  le redémarrer (vérifier par `lsof` que le nouveau tient le port) et
+  préchauffer le paquet avant de relancer l'app (6 min sous un build Xcode).
+  Jamais `--reset-cache` : le cache de Metro est commun à toutes les
+  sessions (TMPDIR de l'utilisateur) — un cache privé passe par une config
+  enveloppe hors dépôt.
+
+### Constats non corrigés
+
+- En PrismCore, la bande ne dit que les 10 s d'AVPlayer (2 points sur un
+  film de 2 h) ; le producteur a pourtant jusqu'à 30 s d'avance sur le
+  disque, où la recherche est aussi instantanée. Piste : exposer cette plage
+  par `PrismBridge.status` — sans rien allonger.
+- Défilement au pavé entré en lecture : passé le décompte de 3 s, la lecture
+  repart seule ; un OK qui arrive juste après actionne Lecture/Pause, et met
+  en pause.
+
+### Essais sur l'Apple TV (l'utilisateur — l'app doit être reconstruite)
+
+1. Accueil en pleine lecture, retour après 1 min puis 10 min : lecteur en
+   pause à la position, Lecture repart en moins de 2 s ; glisser + OK dès le
+   retour → la cible. Metro : `[presence] retour : flux local vivant`, ou
+   `MORT → relance` / `producteur mort → relance` suivi de
+   `[restart] → ok (cible déplacée …)`.
+2. App tuée pendant l'absence (apps lourdes ouvertes) : la fiche,
+   « Reprendre » à la position ; pas l'ancien écran de chargement.
+3. Transcodage (palier 720p) : reprise à une position — l'image vient sans
+   double attente ; une seule lecture au tableau de bord de Jellyfin.
+4. Le temps restant ; la tête de lecture fine et, juste à sa droite, la
+   portion chargée — nette en lecture directe, quelques points en
+   transcodage et en PrismCore.
 
 ## Le jumelage par identifiants (Apple TV)
 
