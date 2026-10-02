@@ -7,6 +7,7 @@ import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandCorner } from "../../brand/BrandCorner";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { useLiquidGlassEnabled } from "../../glass/liquidGlassMode";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
@@ -154,38 +155,42 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
             contentContainerStyle={styles.scroll}
             showsVerticalScrollIndicator={false}
           >
-            {tab === "account" ? (
-              <AccountPanel
-                account={account}
-                initialArmed={props.armedAction}
-                onChangeServer={props.onChangeServer}
-                onLogout={props.onLogout}
-              />
-            ) : null}
-            {tab === "playback" ? (
-              <PlaybackPanel
-                playback={playback}
-                onSelectPreset={props.onSelectPreset}
-                onSelectLanguage={props.onSelectLanguage}
-                onOpenLibrarySetting={props.onOpenLibrarySetting}
-                onResetLibrary={props.onResetLibrary}
-                onToggleTunneling={props.onToggleTunneling}
-                onToggleMatchFrameRate={props.onToggleMatchFrameRate}
-              />
-            ) : null}
-            {tab === "appearance" ? (
-              <AppearancePanel width={PANEL_INNER} previewImageUri={props.glassPreviewUri} onToggleLiquidGlass={props.onToggleLiquidGlass} />
-            ) : null}
-            {tab === "navigation" && navigation ? (
-              <NavigationPanel
-                navigation={navigation}
-                onMoveEntry={props.onMoveNavEntry}
-                onToggleEntry={props.onToggleNavEntry}
-                onShowAll={props.onShowAllNav}
-                onResetOrder={props.onResetNavOrder}
-              />
-            ) : null}
-            {tab === "about" ? <AboutPanel about={about} /> : null}
+            {/* Les réglages, une LISTE de lignes : HAUT / BAS à la ligne
+                voisine, au plus proche — même un réglage un peu décalé. */}
+            <FocusSection focusKey="settings:lines" list>
+              {tab === "account" ? (
+                <AccountPanel
+                  account={account}
+                  initialArmed={props.armedAction}
+                  onChangeServer={props.onChangeServer}
+                  onLogout={props.onLogout}
+                />
+              ) : null}
+              {tab === "playback" ? (
+                <PlaybackPanel
+                  playback={playback}
+                  onSelectPreset={props.onSelectPreset}
+                  onSelectLanguage={props.onSelectLanguage}
+                  onOpenLibrarySetting={props.onOpenLibrarySetting}
+                  onResetLibrary={props.onResetLibrary}
+                  onToggleTunneling={props.onToggleTunneling}
+                  onToggleMatchFrameRate={props.onToggleMatchFrameRate}
+                />
+              ) : null}
+              {tab === "appearance" ? (
+                <AppearancePanel width={PANEL_INNER} previewImageUri={props.glassPreviewUri} onToggleLiquidGlass={props.onToggleLiquidGlass} />
+              ) : null}
+              {tab === "navigation" && navigation ? (
+                <NavigationPanel
+                  navigation={navigation}
+                  onMoveEntry={props.onMoveNavEntry}
+                  onToggleEntry={props.onToggleNavEntry}
+                  onShowAll={props.onShowAllNav}
+                  onResetOrder={props.onResetNavOrder}
+                />
+              ) : null}
+              {tab === "about" ? <AboutPanel about={about} /> : null}
+            </FocusSection>
           </ScrollView>
         </FocusGroup>
       </GlassSurface>
