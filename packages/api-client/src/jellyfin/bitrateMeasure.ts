@@ -67,18 +67,33 @@ let measuredRoute: string | null = null;
 let inFlight: Promise<number | null> | null = null;
 let inFlightRoute: string | null = null;
 
-/** Dernière mesure (bits/s) si elle a moins de 10 min, sinon null. */
-export function cachedBitrate(): number | null {
+/**
+ * Dernière mesure (bits/s) si elle a moins de 10 min, sinon null. Avec le
+ * client et ses options, seulement si elle a été prise sur la voie qu'il
+ * emprunte MAINTENANT : une mesure du direct ne dit rien d'une lecture
+ * repassée par le proxy (hors du réseau local, direct coupé). Aucun plafond
+ * le temps de remesurer vaut mieux qu'un plafond venu d'un autre lien.
+ */
+export function cachedBitrate(client?: JellyfinClient, options: BitrateMeasureOptions = {}): number | null {
   if (measuredBps == null) return null;
+  if (client && routeKey(openDirect(client, options)) !== measuredRoute) return null;
   return Date.now() - measuredAt <= CACHE_MS ? measuredBps : null;
 }
 
+/** La voie directe, si elle est demandée et ouverte. */
+function openDirect(client: JellyfinClient, options: BitrateMeasureOptions) {
+  const direct = options.preferDirect ? client.getDirectStreaming?.() : null;
+  return direct?.enabled && direct.mediaBaseUrl && direct.jellyfinToken ? direct : null;
+}
+
+const routeKey = (direct: { mediaBaseUrl: string } | null) => (direct ? `direct:${direct.mediaBaseUrl}` : "proxy");
+
 /** La voie à mesurer : directe si demandée et disponible, sinon le proxy. */
 function routeFor(client: JellyfinClient, options: BitrateMeasureOptions): MeasureRoute {
-  const direct = options.preferDirect ? client.getDirectStreaming?.() : null;
-  if (direct?.enabled && direct.mediaBaseUrl && direct.jellyfinToken) {
+  const direct = openDirect(client, options);
+  if (direct) {
     return {
-      key: `direct:${direct.mediaBaseUrl}`,
+      key: routeKey(direct),
       base: `${direct.mediaBaseUrl}/Playback/BitrateTest`,
       headers: directJellyfinHeaders(client.getAuthHeader(direct.jellyfinToken)),
       withCookies: false,

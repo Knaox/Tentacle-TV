@@ -98,3 +98,25 @@ describe("bitrateMeasure — un fetch qui attend le corps entier (opt-in)", () =
     expect(await measure({ bufferedFetch: true })).toBeNull();
   });
 });
+
+describe("bitrateMeasure — la mesure lue pour la voie du client", () => {
+  type Direct = { enabled: boolean; mediaBaseUrl: string; jellyfinToken: string } | null;
+  const LAN: Direct = { enabled: true, mediaBaseUrl: "http://jf.lan:8096", jellyfinToken: "tok" };
+  const options = { preferDirect: true, bufferedFetch: true };
+
+  it("une mesure du direct ne vaut plus quand la lecture repasse par le proxy", async () => {
+    const direct: { current: Direct } = { current: LAN };
+    const viaDirect = { ...client, getDirectStreaming: () => direct.current } as unknown as JellyfinClient;
+    vi.stubGlobal("fetch", rnFetch({ latencyMs: 10, bps: 50e6, convertMs: 10 }));
+    const { measureBitrate, cachedBitrate } = await import("./bitrateMeasure");
+    const pending = measureBitrate(viaDirect, options);
+    await vi.advanceTimersByTimeAsync(60_000);
+    const bps = await pending;
+    expect(bps).toBeGreaterThan(45e6);
+    expect(cachedBitrate(viaDirect, options)).toBe(bps);
+    direct.current = null; // hors du réseau local, ou direct coupé : le proxy
+    expect(cachedBitrate(viaDirect, options)).toBeNull();
+    // Sans client, la lecture d'origine (TV, web) ne change pas.
+    expect(cachedBitrate()).toBe(bps);
+  });
+});
