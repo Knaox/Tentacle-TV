@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { PRESET_LABEL_KEYS, type PlaybackPreset } from "@tentacle-tv/shared";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandCorner } from "../../brand/BrandCorner";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusSection } from "../../focus/FocusSection";
@@ -194,7 +193,6 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
           </ScrollView>
         </FocusGroup>
       </GlassSurface>
-      <BrandCorner />
       <NavRail {...nav} />
       {choiceList ? <ChoiceSheet list={choiceList} onChoose={props.onChoose} /> : null}
     </View>

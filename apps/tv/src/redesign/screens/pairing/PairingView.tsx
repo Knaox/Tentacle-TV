@@ -4,7 +4,6 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandCorner } from "../../brand/BrandCorner";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
@@ -81,8 +80,6 @@ export const PairingView = memo(function PairingView({
 }: PairingViewProps) {
   // Abonné à la langue : l'écran se retraduit dès qu'on la change ici.
   useTranslation();
-  // La mascotte en petit, dans le coin, là où l'étape n'en porte pas en grand.
-  const cornerBrand = step.kind === "relayCode" || step.kind === "serverCode" || step.kind === "manualLogin";
   const back = backOf(step.kind, { onCancel, onBack, onLoginBack, onServerCodeBack });
   return (
     <View style={styles.root}>
@@ -125,7 +122,6 @@ export const PairingView = memo(function PairingView({
           </FocusGroup>
         ) : null}
       </Animated.View>
-      {cornerBrand ? <BrandCorner /> : null}
     </View>
   );
 });

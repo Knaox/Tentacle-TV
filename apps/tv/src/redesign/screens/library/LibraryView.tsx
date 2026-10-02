@@ -2,7 +2,6 @@ import { memo, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BRAND_CORNER_IN_SAFE_AREA, BrandCorner } from "../../brand/BrandCorner";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
@@ -125,8 +124,6 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
     () => (
       <View style={styles.header}>
         <PageTitle title={title} count={count} />
-        {/* La marque, dans l'en-tête : elle défile avec lui. */}
-        <BrandCorner anchor={BRAND_CORNER_IN_SAFE_AREA} />
         <FilterBar
           pills={pills}
           active={activeFilters}
@@ -171,7 +168,6 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
             <PageTitle title={title} />
           </View>
           <StatusPanel {...status} />
-          <BrandCorner />
         </>
       ) : (
         <PosterGrid
@@ -208,7 +204,7 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   header: { gap: 30, marginBottom: 44 },
-  titleRow: { flexDirection: "row", alignItems: "baseline", gap: 22, paddingRight: 120 },
+  titleRow: { flexDirection: "row", alignItems: "baseline", gap: 22 },
   count: { color: "rgba(255, 255, 255, 0.62)" },
   statusTitle: { position: "absolute", left: TV_STAGE.contentLeft, top: TV_STAGE.safe.y },
   noResults: { paddingTop: 40, paddingRight: 0 },

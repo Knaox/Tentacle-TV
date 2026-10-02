@@ -3,7 +3,6 @@ import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedRef, useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandCorner } from "../../brand/BrandCorner";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
@@ -20,7 +19,7 @@ import { useSectionAnchors } from "./useSectionAnchors";
 /**
  * La fiche d'un film, d'une série, d'un épisode ou d'une collection, façon
  * Apple TV : l'image de l'œuvre plein cadre sous ses voiles, sans barre de
- * navigation, la marque en haut à droite ; en bas à gauche du premier écran,
+ * navigation ni logo ; en bas à gauche du premier écran,
  * le logo, les métadonnées, les actions et le synopsis ; en descendant, les
  * sections — la page s'y ancre une à une, et l'image s'efface sur le fond
  * vivant teinté de ses couleurs.
@@ -158,8 +157,6 @@ export const DetailView = memo(function DetailView({
           <SectionStage>
             <DetailSections {...sections} onSectionLayout={onSectionLayout} />
           </SectionStage>
-          {/* La marque défile avec la page, sur l'image : un voile la porte. */}
-          <BrandCorner backing="veil" />
         </Animated.ScrollView>
         <DetailTopFade scrollY={scrollY} />
       </>
@@ -171,7 +168,6 @@ export const DetailView = memo(function DetailView({
       <AmbientBackdrop palette={palette} />
       {body}
       {header && !error ? null : backBar(true)}
-      {header && !error ? null : <BrandCorner />}
     </View>
   );
 });

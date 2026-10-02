@@ -2,7 +2,6 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BRAND_CORNER_IN_SAFE_AREA, BrandCorner } from "../../brand/BrandCorner";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import type { IconName } from "../../icons/Icon";
@@ -88,13 +87,7 @@ export const CollectionView = memo(function CollectionView({
   onLongPressCard,
   onFocusCard,
 }: CollectionViewProps) {
-  // La marque, dans l'en-tête de la grille : elle défile avec lui.
-  const header = (
-    <View>
-      <Header kicker={kicker} title={title} count={loading || empty ? undefined : count} />
-      <BrandCorner anchor={BRAND_CORNER_IN_SAFE_AREA} />
-    </View>
-  );
+  const header = <Header kicker={kicker} title={title} count={loading || empty ? undefined : count} />;
   const placeholder = loading ? (
     <GridSkeleton columns={columns} rows={2} />
   ) : empty ? (
@@ -117,7 +110,6 @@ export const CollectionView = memo(function CollectionView({
             <Header kicker={kicker} title={title} />
           </View>
           <StatusPanel {...status} />
-          <BrandCorner />
         </>
       ) : (
         <PosterGrid
@@ -138,7 +130,7 @@ export const CollectionView = memo(function CollectionView({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   header: { gap: 10, marginBottom: 44 },
-  titleRow: { flexDirection: "row", alignItems: "baseline", gap: 22, paddingRight: 120 },
+  titleRow: { flexDirection: "row", alignItems: "baseline", gap: 22 },
   count: { color: "rgba(255, 255, 255, 0.62)" },
   // Le vide occupe la hauteur restante de la scène, centré dedans.
   empty: { height: 1080 - TV_STAGE.safe.y * 2 - 190, justifyContent: "center" },

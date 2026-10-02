@@ -2,7 +2,6 @@ import { memo, useCallback, useRef } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
-import { BrandCorner, brandCornerOnHero } from "../../brand/BrandCorner";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
@@ -15,8 +14,9 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 
 /**
  * L'accueil : la carte héros plein format, puis les rangées dans l'ordre de
- * la mise en page du compte. La navigation flotte à gauche, la marque en
- * haut à droite, et le fond prend la lumière de ce qui a le focus.
+ * la mise en page du compte. La navigation flotte à gauche, et le fond prend
+ * la lumière de ce qui a le focus. Aucun logo : la marque vit dans l'icône,
+ * le Top Shelf, le démarrage et les illustrations (choix du 2026-10-02).
  *
  * Contrat : tout arrive résolu. Alimenté plus tard par `useTVHomeRows`
  * (ordre des rangées), `useResumeItems` / `useFeaturedItems` (héros),
@@ -77,7 +77,6 @@ export interface HomeViewProps {
 
 const LEFT = TV_STAGE.contentLeft;
 const HERO_WIDTH = 1920 - LEFT - 56;
-const HERO_BRAND = brandCornerOnHero(LEFT, HERO_WIDTH);
 /** Au-delà de ce défilement, plus de la moitié du héros est hors de l'écran. */
 const HERO_HIDDEN_AFTER = TV_STAGE.hero.top + TV_STAGE.hero.height / 2;
 /** Le héros se montre la page tout en haut ; une rangée, entière, au plus près. */
@@ -117,10 +116,7 @@ export const HomeView = memo(function HomeView({
     <View style={styles.root}>
       <AmbientBackdrop palette={palette} />
       {status ? (
-        <>
-          <StatusPanel {...status} />
-          <BrandCorner />
-        </>
+        <StatusPanel {...status} />
       ) : (
         <ScrollView
           ref={scrollRef}
@@ -156,8 +152,6 @@ export const HomeView = memo(function HomeView({
               onFocusCard={onFocusCard}
             />
           ))}
-          {/* La marque défile avec la page : sur la carte héros, dans son coin. */}
-          {hero ? <BrandCorner anchor={HERO_BRAND} backing="veil" /> : <BrandCorner />}
         </ScrollView>
       )}
       <NavRail {...nav} />
