@@ -6,22 +6,33 @@
 // `titles` (`access`, `mine`), dont la liste avance toute seule au fil de
 // l'horloge, temps restant compris (`etaSeconds`), comme le vrai la donnerait.
 // Aucune demande ne part nulle part : `POST titles/request` est journalisé,
-// jamais relayé.
+// jamais relayé — avec `demandes=on`, il entre seulement dans la liste du banc.
+//
+// L'ORIGINE des demandes (Vigie ≥ 1.22) : chaque titre attendu dit d'où il a
+// été demandé — « tv », ou rien (le web, le téléphone…) ; `mine?origin=tv` ne
+// rend que ceux d'une TV, sans `origin` tout le compte.
 //
 // Contrôle :
-//   GET /__mode?vigie=on|off|blocked|old&scenario=live|still|empty
+//   GET /__mode?vigie=on|off|blocked|old|noorigin&scenario=live|still|empty&demandes=on|off
 //     vigie   — `off` : aucune extension ; `blocked` : compte sans droit ;
-//               `old` : Vigie d'avant `access`/`mine` ;
+//               `old` : Vigie d'avant `access`/`mine` ; `noorigin` : Vigie
+//               d'avant l'origine (1.21 : il ignore le filtre, liste entière) ;
 //     scenario — `live` : deux titres en route (l'un boucle : route → mise en
 //               bibliothèque → arrivé → repart), un en attente, un bloqué ;
-//               `still` : rien n'avance ; `empty` : aucune demande.
+//               `still` : rien n'avance ; `empty` : aucune demande ;
+//     demandes — `on` : un titre absent s'offre à la demande (`state` direct),
+//               et `POST titles/request` l'ajoute à la liste du banc avec son
+//               origine (en attente 8 s, puis en route 60 s, puis arrivé).
+//   GET /__request?key=movie:1333100&origin=web — une demande « faite
+//     ailleurs » (sans origine ; `origin=tv` : comme d'une TV), dans la liste ;
 //   GET /__log    — les lectures de `titles/mine` (et le reste de la Vigie), horodatées ;
-//   GET /__reset  — vide le journal, l'horloge des titres repart.
+//   GET /__reset  — vide le journal et les demandes du banc, l'horloge des titres repart.
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { createVigie } from "./fakeVigie.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -30,11 +41,11 @@ const PORT = Number(process.env.PORT ?? 8660);
 const SNAP = process.env.SNAPSHOT_DIR ?? path.join(HERE, "../ui-bench/snapshot");
 const snapshot = JSON.parse(fs.readFileSync(path.join(SNAP, "snapshot.json"), "utf8"));
 
-const mode = { vigie: "on", scenario: "live" };
-let t0 = Date.now();
+/** L'horloge des titres et du journal : `/__reset` la fait repartir. */
+const clock = { t0: Date.now() };
 const log = [];
 const note = (line) => {
-  const entry = `${((Date.now() - t0) / 1000).toFixed(1).padStart(7)}s ${line}`;
+  const entry = `${((Date.now() - clock.t0) / 1000).toFixed(1).padStart(7)}s ${line}`;
   log.push(entry);
   if (log.length > 4000) log.shift();
   console.log(entry);
@@ -44,81 +55,9 @@ const json = (res, status, body) => { res.writeHead(status, { "content-type": "a
 const itemOf = (id) => snapshot.items[id]?.item;
 const listOf = (kind) => (snapshot.lists[kind] ?? []).map(itemOf).filter(Boolean);
 const clean = (name) => String(name ?? "").replace(/^‎/, "").trim();
-
-/* ── Le faux Vigie ───────────────────────────────────────────────────── */
-
 const poster = (id) => `http://localhost:${PORT}/img/${id}/Primary`;
-
-/* La saga de « L'Attaque des titans : La dernière attaque » (l'instantané en
- * a la réponse, pas les affiches : relevées sur la page publique de TMDB). Deux
- * de ses volets sont des demandes du compte : l'une avance, l'autre attend. */
-const SAGA_POSTERS = {
-  379088: "/8dAzRcrzSqRd5FjLNJ7Bw92Kod4.jpg",
-  330081: "/z7UVitlWT3m1hTCbV6kwxPJmGcx.jpg",
-  492999: "/lJ9HfT2paZIyXMFDRupIB2EA5QD.jpg",
-  714194: "/kXUSsxQ2J3QVGkG1thmhI1FadKd.jpg",
-  1333100: "/2wyvGVSCK69uwtUD0Sn82cD2WdH.jpg",
-};
-const tmdbPoster = (tmdbId) => `https://image.tmdb.org/t/p/w342${SAGA_POSTERS[tmdbId]}`;
-function sagaOf(collectionId) {
-  const found = Object.values(snapshot.detail ?? {}).find((d) => d.saga?.collectionId === collectionId)?.saga;
-  if (!found?.saga) return null;
-  return { ...found, saga: { ...found.saga, parts: found.saga.parts.map((p) => ({ ...p, posterPath: SAGA_POSTERS[p.tmdbId] ?? null })) } };
-}
-const sagaTitle = (tmdbId, n) => {
-  const part = sagaOf(383987)?.saga.parts.find((p) => p.tmdbId === tmdbId);
-  return { key: `movie:${tmdbId}`, title: part?.title ?? `Volet ${n}`, year: part?.releaseDate ? Number(part.releaseDate.slice(0, 4)) : null, imageUrl: tmdbPoster(tmdbId), seasons: null };
-};
-function title(kind, index, n) {
-  const item = listOf(kind)[index];
-  const mediaType = kind === "movies" ? "movie" : "tv";
-  return { key: `${mediaType}:${9500 + n}`, title: clean(item?.Name), year: item?.ProductionYear ?? null, imageUrl: item ? poster(item.Id) : null, seasons: mediaType === "tv" ? [2] : null };
-}
-
-/** Un titre qui arrive : de `from` % à 100 en `routeS` s, puis `importS` s en mise en bibliothèque, puis `awayS` s sorti (arrivé), et ça repart. */
-function lifecycle(base, { from, routeS, importS = 12, awayS = 15 }, elapsedS) {
-  const e = elapsedS % (routeS + importS + awayS);
-  if (e < routeS) {
-    const percent = from + ((100 - from) * e) / routeS;
-    return { ...base, state: "arriving", percent: Math.round(percent * 10) / 10, etaSeconds: Math.max(1, Math.round(routeS - e)) };
-  }
-  if (e < routeS + importS) return { ...base, state: "importing", percent: null, etaSeconds: null };
-  return null;
-}
-
-function mine() {
-  const elapsedS = (Date.now() - t0) / 1000;
-  const still = [
-    { ...title("movies", 1, 3), state: "pending", percent: null, etaSeconds: null },
-    { ...title("movies", 6, 4), state: "blocked", percent: null, etaSeconds: null },
-  ];
-  if (mode.scenario === "empty") return [];
-  if (mode.scenario === "still") return still;
-  return [
-    lifecycle(title("movies", 5, 1), { from: 18, routeS: 120 }, elapsedS),
-    lifecycle(title("series", 3, 2), { from: 62, routeS: 400 }, elapsedS),
-    lifecycle(sagaTitle(379088, 1), { from: 30, routeS: 90 }, elapsedS),
-    { ...sagaTitle(330081, 2), state: "pending", percent: null, etaSeconds: null },
-    ...still,
-  ].filter(Boolean);
-}
-
-const TITLES = { state: "/titles/state", request: "/titles/request", access: "/titles/access", mine: "/titles/mine", seasons: "/titles/seasons" };
-
-function activePlugins() {
-  if (mode.vigie === "off") return [];
-  const titles = mode.vigie === "old" ? { state: TITLES.state, request: TITLES.request } : TITLES;
-  return [{ pluginId: "seer", name: "Vigie", configEnabled: true, titles }];
-}
-
-function vigie(req, res, route, url) {
-  note(`[vigie] ${req.method} ${route}${url.search}`);
-  if (route === TITLES.access) return json(res, 200, { request: mode.vigie !== "blocked" });
-  if (route === TITLES.mine) return json(res, 200, { items: mine() });
-  if (route === TITLES.state) return json(res, 200, { items: {} });
-  if (route === TITLES.request) return json(res, 200, { ok: false, message: "Banc : aucune demande ne part." });
-  return json(res, 404, {});
-}
+const vigie = createVigie({ snapshot, listOf, clean, poster, note, json, clock });
+const { mode } = vigie;
 
 /* ── Le faux Jellyfin (l'instantané) ─────────────────────────────────── */
 
@@ -164,23 +103,24 @@ function handle(req, res) {
   const url = new URL(req.url, "http://banc");
   const p = url.pathname;
   if (p === "/__log") { res.writeHead(200, { "content-type": "text/plain; charset=utf-8" }); return res.end(log.join("\n")); }
-  if (p === "/__reset") { log.length = 0; t0 = Date.now(); return json(res, 200, { ok: true }); }
+  if (p === "/__reset") { log.length = 0; vigie.made.length = 0; clock.t0 = Date.now(); return json(res, 200, { ok: true }); }
   if (p === "/__mode") {
-    for (const key of ["vigie", "scenario"]) if (url.searchParams.has(key)) mode[key] = url.searchParams.get(key);
-    note(`[mode] vigie=${mode.vigie} scenario=${mode.scenario}`);
+    for (const key of ["vigie", "scenario", "demandes"]) if (url.searchParams.has(key)) mode[key] = url.searchParams.get(key);
+    note(`[mode] vigie=${mode.vigie} scenario=${mode.scenario} demandes=${mode.demandes}`);
     return json(res, 200, mode);
   }
+  if (vigie.control(p, url, res)) return;
   const img = p.match(/^\/img\/([0-9a-f]{32})\/(\w+)$/);
   if (img) return image(res, img[1], img[2]);
   if (p.startsWith("/api/jellyfin/")) return jellyfin(req, res, p.slice("/api/jellyfin".length), url);
-  if (p.startsWith("/api/plugins/seer/")) return vigie(req, res, p.slice("/api/plugins/seer".length), url);
+  if (p.startsWith("/api/plugins/seer/")) return void vigie.handle(req, res, p.slice("/api/plugins/seer".length), url);
   const saga = p.match(/^\/api\/sagas\/(\d+)$/);
-  if (saga) return sagaOf(Number(saga[1])) ? json(res, 200, sagaOf(Number(saga[1]))) : json(res, 404, {});
+  if (saga) return vigie.sagaOf(Number(saga[1])) ? json(res, 200, vigie.sagaOf(Number(saga[1]))) : json(res, 404, {});
   switch (p) {
     case "/api/health": return json(res, 200, { status: "ok" });
     case "/api/setup/status": return json(res, 200, { state: "running" });
     case "/api/auth/refresh": return json(res, 200, { AccessToken: "banc" });
-    case "/api/plugins/active": note("[tentacle] /api/plugins/active"); return json(res, 200, activePlugins());
+    case "/api/plugins/active": note("[tentacle] /api/plugins/active"); return json(res, 200, vigie.activePlugins());
     case "/api/watch-together/invites": return json(res, 200, []);
     case "/api/watch-together/group": return json(res, 404, {});
     case "/api/config/streaming": return json(res, 200, { directStreaming: { enabled: false, mediaBaseUrl: null, jellyfinToken: null, tokenExpired: false } });
