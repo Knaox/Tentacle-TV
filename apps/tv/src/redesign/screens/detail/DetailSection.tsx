@@ -1,14 +1,17 @@
 import { createContext, memo, useContext, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { useStagedMount } from "../../motion/useStagedMount";
 import { text } from "../../theme/tokens";
 import type { DetailSectionKey } from "./detailTypes";
 
 /**
  * Une section de la fiche, sous l'en-tête : son titre de rangée (36 pt),
- * un accessoire à sa droite (le résumé d'une saga), puis son contenu. Elle
- * dit sa position à la page, qui s'y ancre quand le focus y entre.
+ * un accessoire à sa droite (le résumé d'une saga), puis son contenu. Quand
+ * le focus y entre, la page s'y ANCRE — son titre à `SECTION_ANCHOR_TOP` du
+ * haut de l'écran —, en un seul mouvement (`FocusSection`) ; elle dit aussi
+ * sa position à la page (le pied de page, le focus figé du banc).
  *
  * Dans une page qui ARRIVE (`SectionStage`), le titre est là tout de suite —
  * celui de la première section affleure au pied du premier écran —, le
@@ -18,6 +21,10 @@ import type { DetailSectionKey } from "./detailTypes";
 
 /** La colonne de contenu de la fiche : pas de navigation, la marge de sécurité et un peu d'air. */
 export const DETAIL_LEFT = TV_STAGE.safe.x + 24;
+
+/** Où arrive le haut d'une section ancrée : sous la marge de sécurité. */
+export const SECTION_ANCHOR_TOP = 72;
+const ANCHOR: FocusSectionReveal = { mode: "anchor", top: SECTION_ANCHOR_TOP };
 
 /** Le rang de montage de chaque section, dans l'ordre de la fiche. */
 const RANK: Record<DetailSectionKey, number> = { header: 0, collection: 0, episodes: 1, cast: 2, extras: 3, saga: 4, similar: 5 };
@@ -47,7 +54,11 @@ export const DetailSection = memo(function DetailSection({
 }) {
   const shown = RANK[sectionKey] < useContext(SectionStageContext);
   return (
-    <View style={styles.section} onLayout={(event) => onLayout(sectionKey, event.nativeEvent.layout.y, event.nativeEvent.layout.height)}>
+    <FocusSection
+      reveal={ANCHOR}
+      style={styles.section}
+      onLayout={(event) => onLayout(sectionKey, event.nativeEvent.layout.y, event.nativeEvent.layout.height)}
+    >
       {title ? (
         <View style={styles.header}>
           <Text style={text.rowTitle} numberOfLines={1}>{title}</Text>
@@ -55,7 +66,7 @@ export const DetailSection = memo(function DetailSection({
         </View>
       ) : null}
       {shown ? children : null}
-    </View>
+    </FocusSection>
   );
 });
 

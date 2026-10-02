@@ -26,7 +26,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
  *   le focus, puis atteinte par HAUT depuis l'en-tête (`useBackFocus`) ;
  * - le RETOUR du lecteur, de la bande-annonce ou d'une autre fiche rend le
  *   focus au dernier élément qui l'avait ;
- * - l'entrée de chaque section par son guide (`useDetailGuides`) ;
+ * - HAUT / BAS d'une section à l'autre par la règle commune, et ses deux
+ *   exceptions : la saison affichée, l'épisode à reprendre (`useDetailGuides`) ;
  * - une série qui se révèle terminée perd sa pilule de lecture : si elle
  *   avait le focus, il passe à l'action suivante.
  * Menu dépile l'écran (pile native) ; les feuilles le reçoivent elles-mêmes.
@@ -62,7 +63,7 @@ export function MediaDetailRedesign({ route }: Props) {
   const entryKey = entryKeyOf(model);
   useEntryFocus(focus, entryKey);
   useBackFocus(focus, { backKey: DETAIL_BACK_KEY, barKey: "detail:top", entryKey });
-  useDetailGuides(focus, entryKey, model.props.episodes);
+  useDetailGuides(focus, model.props.episodes);
 
   // La pilule de lecture qui disparaît sous le focus (série terminée, apprise
   // après l'arrivée) ne laisse pas l'écran sans focus.

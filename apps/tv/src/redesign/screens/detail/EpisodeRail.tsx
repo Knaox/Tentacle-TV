@@ -1,7 +1,7 @@
 import { memo, useCallback } from "react";
 import { FlatList, StyleSheet, View, type ListRenderItemInfo } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useRowFocus } from "../../motion/useRowRecede";
 import { white } from "../../theme/tokens";
@@ -79,7 +79,7 @@ export const EpisodeRail = memo(function EpisodeRail({
   if (episodes === null) return <Ghosts />;
   const initial = Math.min(Math.max(0, anchorIndex), Math.max(0, episodes.length - 1));
   return (
-    <FocusGroup focusKey="detail:episodes">
+    <FocusSection focusKey="detail:episodes">
       <FlatList
         horizontal
         data={episodes}
@@ -95,7 +95,7 @@ export const EpisodeRail = memo(function EpisodeRail({
         style={styles.track}
         contentContainerStyle={styles.content}
       />
-    </FocusGroup>
+    </FocusSection>
   );
 });
 

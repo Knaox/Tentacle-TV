@@ -6,7 +6,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFrame } from "../../cards/CardFrame";
 import { CardShell } from "../../cards/CardShell";
 import { useCardFocused } from "../../cards/useCardFocused";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { useRowFocus } from "../../motion/useRowRecede";
@@ -117,7 +117,7 @@ export const CastRow = memo(function CastRow({
   const forcedIndex = forced?.startsWith("cast:") ? Number(forced.slice(5)) : null;
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forcedIndex);
   return (
-    <FocusGroup focusKey="detail:cast">
+    <FocusSection focusKey="detail:cast">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
         {people.map((person, index) => (
           <CastCell
@@ -131,7 +131,7 @@ export const CastRow = memo(function CastRow({
           />
         ))}
       </ScrollView>
-    </FocusGroup>
+    </FocusSection>
   );
 });
 

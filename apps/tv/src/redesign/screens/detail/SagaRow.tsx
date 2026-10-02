@@ -9,7 +9,7 @@ import { CardFrame } from "../../cards/CardFrame";
 import { CardShell } from "../../cards/CardShell";
 import { cardIndexOf } from "../../cards/cardFocusKeys";
 import { MediaCard } from "../../cards/MediaCard";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
@@ -148,7 +148,7 @@ export const SagaRow = memo(function SagaRow({
   const forced = useForcedFocusKey();
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, "saga") : null);
   return (
-    <FocusGroup focusKey="detail:saga">
+    <FocusSection focusKey="detail:saga">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
         {entries.map((entry, index) => (
           <SagaEntry
@@ -163,7 +163,7 @@ export const SagaRow = memo(function SagaRow({
           />
         ))}
       </ScrollView>
-    </FocusGroup>
+    </FocusSection>
   );
 });
 

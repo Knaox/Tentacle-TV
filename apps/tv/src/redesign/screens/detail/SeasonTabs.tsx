@@ -2,7 +2,7 @@ import { memo, useCallback, useRef } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { Chip } from "../../controls/Chip";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { colors } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import type { SeasonTabModel } from "./detailTypes";
@@ -44,7 +44,7 @@ export const SeasonTabs = memo(function SeasonTabs({
   }, []);
 
   return (
-    <FocusGroup focusKey="detail:seasons">
+    <FocusSection focusKey="detail:seasons">
       <ScrollView
         ref={scroll}
         horizontal
@@ -74,7 +74,7 @@ export const SeasonTabs = memo(function SeasonTabs({
           );
         })}
       </ScrollView>
-    </FocusGroup>
+    </FocusSection>
   );
 });
 

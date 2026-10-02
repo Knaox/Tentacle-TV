@@ -6,6 +6,7 @@ import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandCorner } from "../../brand/BrandCorner";
 import { BACK_BUTTON_SIZE, BACK_TOP, BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { StatusPanel } from "../shared/StatusPanel";
 import { DetailBackdrop, DetailTopFade } from "./DetailBackdrop";
@@ -42,16 +43,18 @@ import { useSectionAnchors } from "./useSectionAnchors";
  * - `similar` : `useSimilarItems` ; `collection` : `useCollectionItems` —
  *   cartes par `resolveCardMarkers`.
  *
- * Groupes de focus (`FocusGroup`, liés par le câblage) : `detail:top` (la
- * bande de la croix, pleine largeur), `detail:header` (le premier écran,
- * pleine largeur), `detail:seasons`, `detail:episodes`, `detail:cast`,
- * `detail:extras`, `detail:saga`, `detail:collection`, `detail:similar`.
+ * Groupe de focus (`FocusGroup`, lié par le câblage) : `detail:top` (la
+ * bande de la croix, pleine largeur). Sections (`FocusSection` : HAUT / BAS
+ * vers la voisine, au plus proche) : `detail:header` (le premier écran — la
+ * page remonte tout en haut), `detail:seasons`, `detail:episodes`,
+ * `detail:cast`, `detail:extras`, `detail:saga`, `detail:collection`,
+ * `detail:similar` (la page s'ancre sur leur `DetailSection`).
  * Éléments : `detail:back` (la croix), `detail:*` (en-tête), `season:<i>`,
  * `episode:<i>`, `cast:<i>`, `extra:<i>`, `saga:<i>`, `collection:<i>`,
  * `similar:<i>`, `status:primary` (erreur).
  */
 
-export interface DetailViewProps extends Omit<DetailSectionsProps, "onSectionFocus" | "onSectionLayout"> {
+export interface DetailViewProps extends Omit<DetailSectionsProps, "onSectionLayout"> {
   /** `null` : la fiche se charge. */
   header: DetailHeaderModel | null;
   actions?: DetailActionsModel;
@@ -69,6 +72,8 @@ export interface DetailViewProps extends Omit<DetailSectionsProps, "onSectionFoc
 const PEEK = 112;
 /** La bande de la croix, en haut de la page. */
 const BAR_HEIGHT = BACK_TOP + BACK_BUTTON_SIZE;
+/** L'en-tête se montre la page tout en haut. */
+const HEADER_REVEAL: FocusSectionReveal = { mode: "start" };
 
 export const DetailView = memo(function DetailView({
   header,
@@ -98,8 +103,7 @@ export const DetailView = memo(function DetailView({
     (y: number, animated: boolean) => scrollRef.current?.scrollTo({ y, animated }),
     [scrollRef],
   );
-  const { onSectionFocus, onSectionLayout, tail } = useSectionAnchors(scrollTo);
-  const headerFocus = useCallback((focused: boolean) => focused && onSectionFocus("header"), [onSectionFocus]);
+  const { onSectionLayout, tail } = useSectionAnchors(scrollTo);
   // La croix, au-dessus de la colonne du contenu ; sa bande couvre toute la
   // largeur (le câblage y pose le guide qui mène HAUT jusqu'à elle). Dans la
   // page, elle précède l'en-tête sans le chevaucher ; sur l'écran fixe
@@ -107,7 +111,7 @@ export const DetailView = memo(function DetailView({
   const backBar = (fixed: boolean) =>
     onBack ? (
       <FocusGroup focusKey="detail:top" style={[styles.backBar, fixed && styles.backBarFixed]}>
-        <BackButton focusKey="detail:back" onPress={onBack} onFocusChange={headerFocus} />
+        <BackButton focusKey="detail:back" onPress={onBack} />
       </FocusGroup>
     ) : null;
 
@@ -137,12 +141,11 @@ export const DetailView = memo(function DetailView({
           contentContainerStyle={{ paddingBottom: tail }}
         >
           {backBar(false)}
-          <FocusGroup focusKey="detail:header" style={onBack ? styles.heroUnderBar : styles.hero}>
+          <FocusSection focusKey="detail:header" reveal={HEADER_REVEAL} style={onBack ? styles.heroUnderBar : styles.hero}>
             <DetailHeader
               header={header}
               actions={actions}
               showTrailerHint={showTrailerHint}
-              onFocusChange={headerFocus}
               onPlay={onPlay}
               onTrailer={onTrailer}
               onToggleWatchlist={onToggleWatchlist}
@@ -151,9 +154,9 @@ export const DetailView = memo(function DetailView({
               onRate={onRate}
               onOpenSeries={onOpenSeries}
             />
-          </FocusGroup>
+          </FocusSection>
           <SectionStage>
-            <DetailSections {...sections} onSectionFocus={onSectionFocus} onSectionLayout={onSectionLayout} />
+            <DetailSections {...sections} onSectionLayout={onSectionLayout} />
           </SectionStage>
           {/* La marque défile avec la page, sur l'image : un voile la porte. */}
           <BrandCorner backing="veil" />

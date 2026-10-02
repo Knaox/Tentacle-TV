@@ -1,34 +1,27 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { EpisodesModel } from "../../redesign/screens/detail/detailTypes";
-import { createEntryGuide, rowItems } from "../focus/entryGuide";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusExtras, FocusStore } from "../focus/focusStore";
+import { useSectionEntry } from "../focus/sectionEntry";
 
 /**
- * Les guides d'entrée des groupes de la fiche (`FocusGroup` de `DetailView`),
- * éprouvés au banc à la télécommande :
- * - `detail:header` (le premier écran, pleine largeur) : HAUT depuis une
- *   section rejoint la dernière action de l'en-tête, sinon l'entrée — même
- *   depuis la droite de l'écran, où rien de l'en-tête n'est au-dessus ;
- * - `detail:seasons` : toujours l'onglet de la saison AFFICHÉE (pas celui qui
- *   se trouve sous le bouton d'où l'on descend) ;
- * - `detail:episodes` : le dernier épisode visité, sinon celui sur lequel la
- *   rangée s'ouvre (reprise, épisode ouvert) — pas celui sous l'onglet ;
- * - les rangées (distribution, extras, saga, collection, similaires) : la
- *   dernière carte visitée, sinon la première.
+ * Le focus des sections de la fiche (`FocusSection` de `DetailView`). HAUT /
+ * BAS suivent la règle de voisinage commune — la section voisine, l'élément
+ * au centre le plus proche (`focus/sectionNeighbors.ts`) — qui remplace les
+ * entrées mémorisées d'avant (dernière carte visitée, dernière action de
+ * l'en-tête). Deux exceptions, tranchées le 2026-10-01 :
+ * - `detail:seasons` entre TOUJOURS par l'onglet de la saison AFFICHÉE : un
+ *   sélecteur entre par sa sélection (le focus d'un onglet ne change pas la
+ *   saison, seul OK le fait) ;
+ * - `detail:episodes` entre par l'épisode À REPRENDRE à sa première entrée —
+ *   l'arrivée sur la fiche, puis chaque saison choisie par OK ; ensuite, dans
+ *   la même visite, au plus proche (la rangée reste où on l'a laissée).
  * Les bouts des rangées retiennent le focus : de côté, rien à atteindre.
  *
- * Liés une fois, au premier rendu, avant que les groupes se montent : le port
- * veut des conteneurs stables. Ce qui change (l'entrée, la saison affichée,
- * l'épisode d'ouverture) est relu à chaque visée.
+ * Liés une fois, au premier rendu, avant que les sections se montent.
  */
 
-const ROWS: ReadonlyArray<readonly [group: string, prefix: string]> = [
-  ["detail:cast", "cast"],
-  ["detail:extras", "extra"],
-  ["detail:saga", "saga"],
-  ["detail:collection", "collection"],
-  ["detail:similar", "similar"],
-];
+const ROWS = ["detail:seasons", "detail:episodes", "detail:cast", "detail:extras", "detail:saga", "detail:collection", "detail:similar"];
+const SIDES: FocusExtras = { native: { trapFocusLeft: true, trapFocusRight: true } };
 
 function keysOf(episodes: EpisodesModel | null | undefined) {
   const selected = episodes ? episodes.seasons.findIndex((season) => season.id === episodes.selectedSeasonId) : -1;
@@ -38,26 +31,29 @@ function keysOf(episodes: EpisodesModel | null | undefined) {
   };
 }
 
-export function useDetailGuides(focus: FocusStore, entryKey: string | null, episodes: EpisodesModel | null | undefined): void {
-  const live = useRef({ entryKey, ...keysOf(episodes) });
-  live.current = { entryKey, ...keysOf(episodes) };
-
+export function useDetailGuides(focus: FocusStore, episodes: EpisodesModel | null | undefined): void {
   const bound = useRef(false);
   if (!bound.current) {
     bound.current = true;
-    const sides = { trapLeft: true, trapRight: true };
-    focus.bind("detail:header", {
-      // La croix n'est pas de l'en-tête (sa bande est au-dessus) : HAUT depuis une section n'y retourne jamais.
-      container: createEntryGuide(focus, { owns: (key) => key.startsWith("detail:") && key !== "detail:back", fallback: () => live.current.entryKey }),
-    });
-    focus.bind("detail:seasons", {
-      container: createEntryGuide(focus, { owns: rowItems("season"), fallback: () => live.current.season, remember: false, ...sides }),
-    });
-    focus.bind("detail:episodes", {
-      container: createEntryGuide(focus, { owns: rowItems("episode"), fallback: () => live.current.episode, ...sides }),
-    });
-    for (const [group, prefix] of ROWS) {
-      focus.bind(group, { container: createEntryGuide(focus, { owns: rowItems(prefix), fallback: () => `${prefix}:0`, ...sides }) });
-    }
+    for (const key of ROWS) focus.bind(key, SIDES);
   }
+
+  const { season, episode } = keysOf(episodes);
+  // L'épisode à reprendre ne vaut que pour la première entrée de la visite —
+  // réarmé à chaque saison choisie.
+  const [armed, setArmed] = useState(true);
+  const armedRef = useRef(armed);
+  armedRef.current = armed;
+  const seasonId = episodes?.selectedSeasonId;
+  useEffect(() => setArmed(true), [seasonId]);
+  useEffect(
+    () =>
+      focus.subscribe((key, focused) => {
+        if (focused && armedRef.current && key.startsWith("episode:")) setArmed(false);
+      }),
+    [focus],
+  );
+
+  useSectionEntry(focus, "detail:seasons", season);
+  useSectionEntry(focus, "detail:episodes", armed ? episode : null);
 }

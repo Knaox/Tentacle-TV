@@ -6,7 +6,7 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { CardFrame } from "../../cards/CardFrame";
 import { CardShell } from "../../cards/CardShell";
 import { useCardFocused } from "../../cards/useCardFocused";
-import { FocusGroup } from "../../focus/FocusGroup";
+import { FocusSection } from "../../focus/FocusSection";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { useFocusProgress } from "../../focus/useFocusProgress";
 import { Icon } from "../../icons/Icon";
@@ -112,7 +112,7 @@ export const ExtrasRow = memo(function ExtrasRow({
   const forcedIndex = forced?.startsWith("extra:") ? Number(forced.slice(6)) : null;
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forcedIndex);
   return (
-    <FocusGroup focusKey="detail:extras">
+    <FocusSection focusKey="detail:extras">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.track} contentContainerStyle={styles.content}>
         {extras.map((extra, index) => (
           <ExtraCell
@@ -126,7 +126,7 @@ export const ExtrasRow = memo(function ExtrasRow({
           />
         ))}
       </ScrollView>
-    </FocusGroup>
+    </FocusSection>
   );
 });
 
