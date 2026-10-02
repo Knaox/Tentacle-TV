@@ -3,12 +3,6 @@ import { TVFocusGuideView, type View } from "react-native";
 import type { FocusGroupContainerProps } from "../../redesign/focus/focusBinding";
 import type { FocusStore } from "./focusStore";
 
-/** Les éléments d'une rangée : `<préfixe>:<index>`. */
-export function rowItems(prefix: string): (focusKey: string) => boolean {
-  const item = new RegExp(`^${prefix}:\\d+$`);
-  return (focusKey) => item.test(focusKey);
-}
-
 /**
  * Le guide d'ENTRÉE d'un groupe (`FocusGroup`) : quand le focus y arrive
  * d'ailleurs, il atterrit sur la dernière clé du groupe qui l'a eu — ou,

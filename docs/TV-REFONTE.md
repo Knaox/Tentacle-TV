@@ -25,6 +25,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 13. Rail compact (Apple TV) | Fait (2026-10-02) : le bloc des pages épouse ses entrées et se centre, le profil reste ancré en bas avec la place de l'élément des demandes, largeur ouverte sur l'intitulé le plus long — « Le rail compact (Apple TV) » ci-dessous. |
 | 14. Demandes en cours (Apple TV) | Faites (2026-10-02) : l'aperçu des demandes Vigie dans le bloc du profil, la fenêtre en lecture seule, le camembert — rien sans Vigie à jour et un compte qui a le droit de demander — « Les demandes en cours (Apple TV) » ci-dessous. |
 | 15. Lumière des fonds et marque (Apple TV) | Fait (2026-10-02) : un fond d'encre éclairé par l'œuvre focalisée, la carte focalisée dans sa propre lumière, la marque mono calée et éclairée — « La lumière des fonds et la marque (Apple TV) » ci-dessous. |
+| 16. Les rangées (Apple TV) | Fait (2026-10-02) : HAUT / BAS vers la section voisine, l'élément au centre le plus proche — partout ; la page qui suit le focus en UN mouvement — « Les rangées (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -134,9 +135,10 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   (`useBackLayer`). Plus de `usePreventRemove` ni d'intercepteur par écran —
   « Le Retour (Apple TV) », plus bas.
 - **La rangée focalisée entière à l'écran** : tvOS n'amène que la carte ;
-  `revealSection` (`redesign/screens/shared/useForcedFocusReveal.ts`) amène
-  sa section — légende, raison, indication de l'appui long — au plus près, à
-  56 points des bords. Au banc, le même geste suit le focus figé.
+  la SECTION native (`FocusSection`) amène la sienne — légende, raison,
+  indication de l'appui long — au plus près, à 56 points des bords, en un
+  seul mouvement, à la place du défilement de tvOS (« Les rangées (Apple
+  TV) »). Au banc, le focus figé passe par `useForcedFocusReveal`.
 
 ## Tester la refonte
 
@@ -376,7 +378,9 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
   rejoignait jamais l'en-tête (rien au-dessus ne chevauche — d'où le groupe
   `detail:header`, le premier écran en pleine largeur). `destinations` doit
   TOUJOURS être un tableau : sans lui tvOS rend le contenu du guide
-  inatteignable.
+  inatteignable. Depuis le 2026-10-02, les sections de la fiche suivent la
+  règle de voisinage commune (« Les rangées (Apple TV) ») : il n'en reste que
+  deux entrées déclarées — la saison affichée, l'épisode à reprendre.
 - **Panneau** (`ActionSheetRedesign`, son focus dans `sheetFocus.ts`) : dans
   une `Modal` (Menu par `onRequestClose` : ferme). Entrée sur l'échelle, à la
   note posée, sinon à 5/10 — décidée une fois la note CONNUE (liste des notes,
@@ -1656,6 +1660,129 @@ lueur paraît, la lumière du fond passe à celle de l'œuvre suivante.
   un focus piloté depuis le relais (`fps --sweep`, `focus` en boucle)
   n'arrive pas au même rythme d'un tour à l'autre — le même code a mesuré 14
   puis 223 ms/s. D'où les scènes « Lumière », au mouvement joué dans l'app.
+
+## Les rangées (Apple TV)
+
+Branche `claude/bold-dirac-7e0a34` (2026-10-02). Deux retours de l'essai de
+l'utilisateur sur son Apple TV : HAUT / BAS qui ne fait « rien » alors que
+quelque chose existe plus bas (au bout d'un carrousel au-dessus d'une rangée
+plus courte, depuis un réglage un peu décalé), et le passage d'un carrousel à
+l'autre qui fait « un saut très étrange ».
+
+**La règle — une seule, pour toute la refonte** (`@tentacle-tv/tv-core`,
+`focus/sections.ts`, ses tests en sont le cahier des charges) : une page est
+une pile de SECTIONS — une rangée (titre et accessoire compris), une ligne de
+grille, une ligne de la barre de filtres, l'en-tête d'une fiche, le panneau
+des réglages. HAUT / BAS depuis un élément d'une section :
+
+1. dans sa section d'abord : en descendant, sa ligne suivante (des pastilles
+   qui passent à la ligne) ; en remontant, seulement ce qui est à l'APLOMB —
+   la pastille du filtre, au-dessus de sa carte, n'est jamais une étape
+   obligée depuis le bout de la rangée. Une section qui se dit LISTE de
+   lignes (`FocusSection list` : le panneau des réglages) n'a rien qui la
+   coiffe : HAUT y va aussi à la ligne voisine, au plus proche ;
+2. sinon, la section voisine dès qu'elle a un élément focalisable (une autre
+   colonne n'est jamais visée), sur ce qui fait face (sa première ligne en
+   descendant ; en remontant, la dernière — et les colonnes qu'une dernière
+   ligne incomplète n'a pas), l'élément dont le CENTRE est le plus proche,
+   horizontalement, de celui qu'on quitte, même s'il n'est pas sous lui ;
+3. rien au-delà : la règle ne décide rien, tvOS et les guides des écrans
+   gardent la main (la bande de la croix Retour d'une fiche).
+
+**Deux exceptions, et seulement deux** (tranchées le 2026-10-01) — une section
+peut déclarer son ENTRÉE (`redesignWiring/focus/sectionEntry.ts`, prop native
+`tvEntry`), qui l'emporte quand elle est focalisable :
+
+- **les onglets de saisons** entrent TOUJOURS par la saison affichée — un
+  sélecteur entre par sa sélection ; le focus d'un onglet ne change pas la
+  saison, seul OK le fait ;
+- **la rangée des épisodes** entre par l'épisode À REPRENDRE à sa première
+  entrée — l'arrivée sur la fiche, puis chaque saison choisie par OK ; ensuite,
+  dans la même visite, au plus proche (la rangée reste où on l'a laissée).
+
+Elles REMPLACENT les entrées mémorisées d'avant (dernière carte visitée des
+rangées de la fiche, dernière action de l'en-tête). La croix Retour garde ses
+guides (« La croix Retour », plus haut).
+
+**La traduction Apple TV** — native, parce que la géométrie n'est juste qu'au
+moment même du geste (une rangée défile encore quand la flèche part) :
+
+- la vue décrit : `FocusSection` (`redesign/focus/`) — que c'est une section
+  (`focusKey`), comment la page la montre (`reveal` : `nearest` à 56 des
+  bords, `anchor` à 72 du haut, `start`), si c'est une liste ;
+- le port décide : la forme `section` reçoit la règle, au même endroit pour
+  tous les écrans (`redesignWiring/focus/sectionNeighbors.ts`, lu par le
+  magasin de focus ; le port du banc fait de même) ;
+- la vue native `TentacleFocusSection` (`ios/TentacleTV/`) : sur l'élément
+  focalisé, deux guides d'un point, de sa largeur, collés au-dessus et
+  au-dessous (`TentacleNeighborGuides.m`) — seulement si la règle a une
+  cible ; ils renvoient vers un résolveur qui applique la règle au geste
+  (`TentacleFocusNeighbors.m`).
+
+**Le saut, et ce qui le remplace.** Cause, mesurée image par image : tvOS
+défilait pour amener la carte, puis, une image ou deux plus tard, le
+`scrollTo` animé du JS (`revealSection`, `useSectionAnchors`) l'interrompait
+— la page s'arrêtait NET (47 → 0 pt/image) et repartait de zéro : deux
+mouvements, une durée de 417 à 750 ms selon le moment. Désormais, UN mouvement
+(`TentacleRevealScroller.m`) : tvOS propose sa cible par
+`scrollViewWillEndDragging:…targetContentOffset:` (aussi pour un défilement
+de focus), on lui rend la position courante, et la page va à la cible de la
+section sur le ressort `TV_MOTION.spring.scroll` (critique, 0,5 s), joué image
+par image — un nouveau focus en plein vol reprend position et vitesse ; ce qui
+bouge AU-DESSUS de la section montrée (une rangée qui arrive, un logo lu) est
+compensé dans le même montage — plus de recalage après coup. « Réduire les
+animations » : la page se pose aussitôt.
+
+| Mesuré (banc, JS de production, Mac au calme, 3 séries de 6 passages) | Avant | Après |
+|---|---|---|
+| Passages de rangée en un seul mouvement | 1 sur 6 | 6 sur 6 |
+| Pire chute de vitesse d'une image à l'autre | 43 à 50 pt | 5 pt (série au calme) |
+| Durée jusqu'à 98 % du trajet | 417 à 750 ms | 483 à 500 ms, quelle que soit la distance |
+| Fil d'interface (`bench:ui fps`, flèches de l'agent XCUITest) | 59,7 à 59,9 i/s | 59,8 à 59,9 i/s |
+
+Dans l'app réelle (compte de test, JS de développement) : chaque passage
+vertical en 467 à 517 ms, sans rupture, accueil comme fiche. Planche de
+preuve (courbes image par image, images réelles avant / après) et relevés :
+`apps/tv/harness/ui-bench/out/2026-10-02-rangees/` (non suivi). La sonde
+d'images était un fichier natif temporaire (couche de présentation de la
+page à chaque `CADisplayLink`), jamais commité.
+
+**Partout** : accueil et « Pour vous » (héros, rangées), fiche (en-tête,
+onglets, épisodes, distribution, extras, saga, collection, similaires — la
+page s'ancre sur la `DetailSection`), bibliothèques, Ma liste, Favoris et
+Parcourir (chaque ligne de la grille, rendue par lignes ; les deux lignes de
+la barre de filtres), recherche (résultats, groupes du repos), réglages (le
+panneau, une liste). Au banc : « Accueil · Rangées inégales » rejoue le bout
+d'un carrousel au-dessus d'une rangée plus courte et la pastille du filtre.
+
+Pièges payés (simulateur tvOS 26.2) :
+
+- **tvOS lit la valeur STOCKÉE des destinations d'un `UIFocusGuide`** : une
+  méthode surchargée n'est jamais appelée. Pour décider au geste, le guide
+  renvoie vers une VUE dont tvOS consulte `preferredFocusEnvironments`.
+- **Une bande de toute la largeur, au bord d'une section, perd** contre un
+  élément dans l'axe deux rangées plus bas (la rangée courte était sautée) :
+  le guide a la largeur de l'élément et lui est collé, comme `nextFocusDown`.
+- **Une contrainte qui traverse une ScrollView n'est pas recalculée quand
+  elle défile** : un guide posé sur la vue racine restait là où la carte était
+  avant que sa rangée défile. Le guide est porté par ce qui défile avec elle.
+- **Un guide hors des limites de la vue qui le porte n'est pas trouvé** (sous
+  une affiche de grille, la section épouse l'affiche) : le porteur est le
+  premier ancêtre qui le contient, sans franchir une ScrollView.
+- **Sans cible, pas de guide** : un guide qui ne mène nulle part prendrait le
+  geste aux guides des écrans (la bande de la croix Retour).
+- **La compensation de mise en page compare la MÊME section** : comparée à
+  celle d'avant le changement de focus, elle faisait sauter la page de 200 pt
+  au premier passage du héros aux rangées.
+- **`FlatList numColumns` ne laisse pas envelopper une ligne** : la grille se
+  rend par lignes (`PosterGrid`, une section chacune), à l'identique.
+
+À éprouver sur l'Apple TV (tâche de l'utilisateur) : le glisser du pavé à
+travers les rangées (élan), le ressort de la page (0,5 s) au salon, les deux
+entrées de la fiche d'une série, la grille au bout d'une bibliothèque, les
+réglages. Android TV et webOS n'en reçoivent rien (leurs écrans n'ont pas de
+`FocusSection` native ; `tv-core` gagne une règle que personne d'autre ne lit
+encore — le modèle de la future navigation commune).
 
 ---
 
