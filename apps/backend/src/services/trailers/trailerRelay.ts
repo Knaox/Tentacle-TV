@@ -9,7 +9,7 @@
 /*  extraction, transparente pour le téléviseur.                       */
 /* ------------------------------------------------------------------ */
 
-import { Agent } from "undici";
+import { Agent, fetch as undiciFetch } from "undici";
 import { parseMaster, renderMaster, rewriteMedia, startVariant, type RelayMaster, type RelayMedia } from "./hlsPlaylists";
 import { extractTrailerSource } from "./ytExtract";
 import type { TrailerSource } from "./trailerSource";
@@ -41,8 +41,13 @@ const entries = new Map<string, Entry>();
 const inflight = new Map<string, Promise<Entry | null>>();
 const misses = new Map<string, number>();
 
-/** Connexions maintenues vers googlevideo : un segment ne repaie pas TCP + TLS à chaque fois. */
-export const upstreamDispatcher = new Agent({ keepAliveTimeout: 30_000, connections: 16, headersTimeout: 15_000 });
+/**
+ * Connexions maintenues vers googlevideo : un segment ne repaie pas TCP + TLS
+ * à chaque fois. Le `fetch` du paquet `undici`, pas le global : le `fetch` de
+ * Node embarque sa propre version d'undici et refuse un `Agent` du paquet
+ * (« fetch failed ») — même choix que le proxy Jellyfin.
+ */
+const upstreamDispatcher = new Agent({ keepAliveTimeout: 30_000, connections: 16, headersTimeout: 15_000 });
 
 function evict(): void {
   if (entries.size <= MAX_ENTRIES) return;
@@ -101,11 +106,10 @@ export async function resolveTrailer(ytId: string): Promise<{ kind: TrailerSourc
 
 /** Lit une ressource amont ; `refused` pour une URL que googlevideo ne sert plus. */
 export async function fetchUpstream(url: string, headers: Record<string, string>, init: { signal?: AbortSignal; range?: string } = {}) {
-  const res = await fetch(url, {
+  const res = await undiciFetch(url, {
     headers: { ...headers, ...(init.range ? { Range: init.range } : {}) },
     signal: init.signal ?? AbortSignal.timeout(15_000),
-    // `dispatcher` est une option d'undici, le moteur du fetch de Node.
-    ...({ dispatcher: upstreamDispatcher } as object),
+    dispatcher: upstreamDispatcher,
   });
   return { res, refused: res.status === 403 || res.status === 404 || res.status === 410 };
 }

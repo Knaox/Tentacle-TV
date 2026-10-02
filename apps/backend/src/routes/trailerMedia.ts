@@ -10,6 +10,7 @@
 
 import { Readable } from "stream";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { Response as UpstreamResponse } from "undici";
 import { requestSignal } from "./jellyfinProxy/clientAbort";
 import { verifyRelayToken } from "../services/trailers/relayToken";
 import {
@@ -45,7 +46,7 @@ function sendPlaylist(reply: FastifyReply, template: string | null, token: strin
 }
 
 /** Relaie une réponse amont (statut, type, longueur, plage) vers AVPlayer. */
-function relay(reply: FastifyReply, res: Response, fallbackType: string) {
+function relay(reply: FastifyReply, res: UpstreamResponse, fallbackType: string) {
   if (!res.body) return reply.status(502).send({ error: "upstream" });
   reply.status(res.status);
   reply.header("Content-Type", res.headers.get("content-type") ?? fallbackType);

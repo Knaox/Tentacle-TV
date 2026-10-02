@@ -13,6 +13,8 @@ import type { ExtractionResult } from "../services/trailers/ytExtract";
 const { extractTrailerSource } = vi.hoisted(() => ({ extractTrailerSource: vi.fn<(ytId: string) => Promise<ExtractionResult>>() }));
 vi.mock("../services/trailers/ytExtract", () => ({ extractTrailerSource }));
 vi.mock("../services/ytDlp", () => ({ startYtDlpUpdates: () => {} }));
+// Le relais lit googlevideo par le `fetch` du paquet undici : renvoyé ici vers le global, que chaque test remplace.
+vi.mock("undici", async (original) => ({ ...(await original<typeof import("undici")>()), fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args) }));
 vi.mock("../middleware/auth", () => ({
   requireAuth: async (request: { headers: Record<string, unknown> }, reply: { status: (c: number) => { send: (b: unknown) => unknown } }) => {
     if (request.headers.authorization !== "Bearer ok") return reply.status(401).send({ message: "Unauthorized" });

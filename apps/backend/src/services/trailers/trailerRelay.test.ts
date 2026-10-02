@@ -4,6 +4,8 @@ import { TOKEN_SLOT, isReadable, masterTemplate, mediaTemplate, prepareTrailer, 
 
 const { extractTrailerSource } = vi.hoisted(() => ({ extractTrailerSource: vi.fn<(ytId: string) => Promise<ExtractionResult>>() }));
 vi.mock("./ytExtract", () => ({ extractTrailerSource }));
+// Le relais lit googlevideo par le `fetch` du paquet undici : renvoyé ici vers le global, que chaque test remplace.
+vi.mock("undici", async (original) => ({ ...(await original<typeof import("undici")>()), fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args) }));
 
 const MIB = 1024 * 1024;
 const FUTURE = Math.floor(Date.now() / 1000) + 6 * 3600;
