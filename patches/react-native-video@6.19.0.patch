@@ -1,9 +1,9 @@
 diff --git a/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt b/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt
-index 1234567..abcdefg 100644
+index bb945fe79399d4ff41579890e9a061059e0384b5..7f337b13dd60f8fa4a78040ee75e6de3bcc6726c 100644
 --- a/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt
 +++ b/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt
-@@ -109,9 +109,16 @@
-
+@@ -109,9 +109,16 @@ class ExoPlayerView @JvmOverloads constructor(context: Context, attrs: Attribute
+ 
      fun setSubtitleStyle(style: SubtitleStyle) {
          playerView.subtitleView?.let { subtitleView ->
 -            // Reset to defaults
@@ -19,6 +19,28 @@ index 1234567..abcdefg 100644
 +                null                                             // typeface
 +            )
 +            subtitleView.setStyle(captionStyle)
-
+ 
              // Apply custom styling
              if (style.fontSize > 0) {
+diff --git a/ios/Video/RCTVideo.swift b/ios/Video/RCTVideo.swift
+index 48c4df73a384d2360d940a2270fe171e1685fe4d..5ff19bf4e8bf6da2c9d37d7a88ec14e81b77857f 100644
+--- a/ios/Video/RCTVideo.swift
++++ b/ios/Video/RCTVideo.swift
+@@ -565,6 +565,17 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
+         if let maxBitRate = _maxBitRate {
+             _playerItem?.preferredPeakBitRate = Double(maxBitRate)
+         }
++        // Tentacle : la position de départ posée sur l'élément AVANT qu'il charge.
++        // Sans elle, AVPlayer chargeait depuis 0:00 et ne sautait qu'à readyToPlay —
++        // un HLS de transcodage démarrait deux fois chez le serveur (au début, puis
++        // au point de reprise). Sans gestionnaire de fin, la demande est admise avant
++        // readyToPlay ; le saut de readyToPlay (plus bas) reste en filet.
++        if _startPosition > 0 {
++            playerItem.seek(
++                to: CMTime(seconds: _startPosition, preferredTimescale: 1000),
++                toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: nil
++            )
++        }
+ 
+         if _player == nil {
+             _player = AVPlayer()
