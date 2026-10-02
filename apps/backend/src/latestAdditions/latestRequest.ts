@@ -100,8 +100,11 @@ export function matchLatestRequest(path: string, query: string): LatestRequest |
  * L'inventaire des ajouts récents, chez Jellyfin (forme documentée, `userId`
  * en query) : identifiants, types, rattachements et dates, rien d'autre. Une
  * bibliothèque de séries y ajoute ses SAISONS et ses SÉRIES — c'est ce qui dit
- * qu'une saison, ou la série entière, vient d'arriver. Les éléments virtuels
- * (saisons et épisodes annoncés, sans fichier) n'y entrent pas.
+ * qu'une saison, ou la série entière, vient d'arriver. Une bibliothèque mixte
+ * s'en tient aux films et aux séries, comme tout le catalogue de Tentacle :
+ * sans type, Jellyfin y rendait aussi ses DOSSIERS (le dossier racine
+ * « mixed » faisait une carte). Les éléments virtuels (saisons et épisodes
+ * annoncés, sans fichier) n'y entrent pas.
  */
 export function latestScanPath(request: LatestRequest, startIndex = 0): string {
   const params = new URLSearchParams({
@@ -117,7 +120,7 @@ export function latestScanPath(request: LatestRequest, startIndex = 0): string {
     EnableTotalRecordCount: "false",
     ExcludeLocationTypes: "Virtual",
   });
-  if (request.kind === "episodes") params.set("IncludeItemTypes", "Episode,Season,Series");
+  params.set("IncludeItemTypes", request.kind === "episodes" ? "Episode,Season,Series" : "Movie,Series,Season,Episode");
   if (startIndex > 0) params.set("StartIndex", String(startIndex));
   return `Items?${params.toString()}`;
 }

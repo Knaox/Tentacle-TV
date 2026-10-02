@@ -91,8 +91,8 @@ describe("les requêtes faites à Jellyfin", () => {
     expect(new URLSearchParams(latestScanPath(series, 500).split("?")[1]).get("StartIndex")).toBe("500");
   });
 
-  it("l'inventaire d'une bibliothèque mixte garde tous les types, comme le client", () => {
-    expect(new URLSearchParams(latestScanPath(mixed).split("?")[1]).has("IncludeItemTypes")).toBe(false);
+  it("l'inventaire d'une bibliothèque mixte s'en tient aux films et aux séries — pas ses dossiers", () => {
+    expect(new URLSearchParams(latestScanPath(mixed).split("?")[1]).get("IncludeItemTypes")).toBe("Movie,Series,Season,Episode");
   });
 
   it("les cartes : en un appel, avec la présentation du client", () => {
