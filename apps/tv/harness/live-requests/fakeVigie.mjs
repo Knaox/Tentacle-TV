@@ -5,9 +5,14 @@
 // (avec `demandes=on`, une demande entre dans la liste du banc — jamais
 // relayée nulle part).
 //
+// Les saisons des séries du banc (`titles.seasons`, `titles.gaps`) :
+// fakeSeasons.mjs.
+//
 // `createVigie(ctx)` — ctx : l'instantané et ses lecteurs (`snapshot`,
 // `listOf`, `clean`, `poster`), le journal (`note`), la réponse (`json`), et
 // l'horloge des titres (`clock.t0`, remise à zéro par `/__reset`).
+
+import { gapsOf, onePerTitle, seasonsOf, SERIES } from "./fakeSeasons.mjs";
 
 export function createVigie({ snapshot, listOf, clean, poster, note, json, clock }) {
   const mode = { vigie: "on", scenario: "live", demandes: "off" };
@@ -84,25 +89,37 @@ export function createVigie({ snapshot, listOf, clean, poster, note, json, clock
     ].filter(Boolean);
   }
 
-  /** `mine` comme le vrai : filtrée par `origin` s'il est donné (Vigie ≥ 1.22), sans dire d'où vient chaque titre. */
+  /** `mine` comme le vrai : filtrée par `origin` s'il est donné (Vigie ≥ 1.22) AVANT de ranger par titre, sans dire d'où vient chaque titre. */
   function mineFor(url) {
     const origin = mode.vigie === "noorigin" ? null : url.searchParams.get("origin");
     const items = origin === null ? mine() : mine().filter((t) => t.origin === origin);
-    return items.map(({ origin: _origin, ...item }) => item);
+    return onePerTitle(items).map(({ origin: _origin, ...item }) => item);
   }
 
-  /** Ce que le banc sait d'un titre demandé : un volet de la saga, sinon un nom de banc. */
+  /** Ce que le banc sait d'un titre demandé : un volet de la saga, un titre de l'instantané, sinon un nom de banc. */
   function describe(key) {
     const [mediaType, id] = key.split(":");
     const part = sagaOf(383987)?.saga.parts.find((p) => p.tmdbId === Number(id));
     if (part) return sagaTitle(part.tmdbId, 0);
+    const local = Object.values(snapshot.items).map((entry) => entry.item)
+      .find((item) => item?.ProviderIds?.Tmdb === id && (item.Type === "Series") === (mediaType === "tv"));
+    if (local) return { key, title: clean(local.Name), year: local.ProductionYear ?? null, imageUrl: poster(local.Id), seasons: null };
     return { key, title: `Titre ${id}`, year: null, imageUrl: null, seasons: mediaType === "tv" ? [1] : null };
   }
 
+  /** Les saisons d'une série que le compte a demandées au banc (toutes origines). */
+  const requestedSeasons = (key) => new Set(made.filter((m) => m.key === key).flatMap((m) => m.seasons ?? []));
+
+  /** Une demande de plus : un film une fois ; une série, pour des saisons qu'elle n'a pas encore demandées. */
   function remember(key, origin, platform, seasons) {
-    if (made.some((m) => m.key === key)) return false;
-    made.unshift({ ...describe(key), ...(seasons ? { seasons } : {}), origin, platform, at: Date.now() });
-    note(`[demande] ${key} origine=${origin ?? "ailleurs"} plateforme=${platform ?? "-"}${seasons ? ` saisons=${seasons.join(",")}` : ""}`);
+    let fresh = seasons;
+    if (seasons) {
+      const known = requestedSeasons(key);
+      fresh = seasons.filter((n) => !known.has(n));
+      if (fresh.length === 0) return false;
+    } else if (made.some((m) => m.key === key)) return false;
+    made.unshift({ ...describe(key), ...(fresh ? { seasons: fresh } : {}), origin, platform, at: Date.now() });
+    note(`[demande] ${key} origine=${origin ?? "ailleurs"} plateforme=${platform ?? "-"}${fresh ? ` saisons=${fresh.join(",")}` : ""}`);
     return true;
   }
 
@@ -123,7 +140,7 @@ export function createVigie({ snapshot, listOf, clean, poster, note, json, clock
       : { badge: null, request: { mode: "open", label: "Choisir les saisons", href: `/seer/tv/${key.slice(3)}` } };
   }
 
-  const TITLES = { state: "/titles/state", request: "/titles/request", access: "/titles/access", mine: "/titles/mine", seasons: "/titles/seasons" };
+  const TITLES = { state: "/titles/state", request: "/titles/request", access: "/titles/access", mine: "/titles/mine", seasons: "/titles/seasons", gaps: "/titles/gaps" };
 
   function activePlugins() {
     if (mode.vigie === "off") return [];
@@ -140,6 +157,17 @@ export function createVigie({ snapshot, listOf, clean, poster, note, json, clock
       for (const key of (url.searchParams.get("keys") ?? "").split(",").filter(Boolean)) {
         const state = stateFor(key);
         if (state) items[key] = state;
+      }
+      return json(res, 200, { items });
+    }
+    if (route === TITLES.seasons) {
+      const key = url.searchParams.get("key") ?? "";
+      return json(res, 200, { seasons: seasonsOf(key, requestedSeasons(key)) });
+    }
+    if (route === TITLES.gaps) {
+      const items = {};
+      for (const key of (url.searchParams.get("keys") ?? "").split(",").filter((k) => SERIES[k])) {
+        items[key] = { seasons: gapsOf(key, requestedSeasons(key)) };
       }
       return json(res, 200, { items });
     }
@@ -166,7 +194,8 @@ export function createVigie({ snapshot, listOf, clean, poster, note, json, clock
       const key = url.searchParams.get("key") ?? "";
       if (!/^(movie|tv):\d+$/.test(key)) return json(res, 400, { error: "key=movie:<id>" }), true;
       const origin = url.searchParams.get("origin") === "tv" ? TV : ELSEWHERE;
-      json(res, 200, { added: remember(key, origin, origin ? "banc" : null, null), made: made.length });
+      const seasons = url.searchParams.get("seasons")?.split(",").map(Number).filter(Number.isInteger) ?? null;
+      json(res, 200, { added: remember(key, origin, origin ? "banc" : null, seasons), made: made.length });
       return true;
     }
     if (p === "/__mine") return json(res, 200, { all: mine(), tv: mine().filter((t) => t.origin === TV) }), true;

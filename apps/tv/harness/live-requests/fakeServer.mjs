@@ -86,6 +86,12 @@ function jellyfin(req, res, jf, url) {
     const ids = parent ? snapshot.latestByLibrary?.[parent] ?? [] : snapshot.lists.latest ?? [];
     return json(res, 200, ids.map(itemOf).filter(Boolean).slice(0, 16));
   }
+  // Les saisons et épisodes d'une série de l'instantané (la bande des saisons d'une fiche).
+  const showSeasons = jf.match(/^\/Shows\/([0-9a-f]{32})\/Seasons$/i);
+  if (showSeasons) return json(res, 200, page((snapshot.seasons?.[showSeasons[1]] ?? []).map(itemOf).filter(Boolean)));
+  if (/^\/Shows\/[0-9a-f]{32}\/Episodes$/i.test(jf)) {
+    return json(res, 200, page((snapshot.episodes?.[url.searchParams.get("SeasonId")] ?? []).map(itemOf).filter(Boolean)));
+  }
   const one = jf.match(/^\/(?:Users\/[^/]+\/)?Items\/([0-9a-f]{32})$/i);
   if (one) return itemOf(one[1]) ? json(res, 200, itemOf(one[1])) : json(res, 404, {});
   if (/^\/Users\/[^/]+$/i.test(jf)) return json(res, 200, { Id: "banc-user", Name: snapshot.profile?.name ?? "Banc", Policy: { IsAdministrator: false } });
