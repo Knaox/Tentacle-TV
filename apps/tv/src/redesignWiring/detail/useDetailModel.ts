@@ -14,6 +14,7 @@ import {
 } from "@tentacle-tv/api-client";
 import type { MediaItem, NextEpisodeResult } from "@tentacle-tv/shared";
 import { useTVUserScore } from "../../components/cards/actions/useTVUserScore";
+import { useTrailerPreparation } from "../../screens/trailer/useTrailerPreparation";
 import type { DetailViewProps } from "../../redesign/screens/detail/DetailView";
 import type { DetailActionsModel } from "../../redesign/screens/detail/detailTypes";
 import { paletteOfItem } from "../cards/cardModels";
@@ -86,6 +87,8 @@ export function useDetailModel(itemId: string, gate: VigieGate | null): DetailMo
   const watchQuery = useSeriesWatchState(isSeries ? item?.Id : undefined);
   const watch = watchQuery.data;
   const trailer = useItemTrailer(item, lang);
+  // La bande-annonce se prépare côté serveur pendant qu'on lit la fiche.
+  useTrailerPreparation(trailer.target?.kind === "remote" ? trailer.target.trailer.Url : undefined);
   const hint = useTrailerHint({ itemType: item?.Type, trailerVisible: trailer.visible, trailerSettled: trailer.settled });
   // Un visage vide tant que l'item se charge : les hooks s'appellent toujours.
   const toggles = useCardToggles(item ?? PLACEHOLDER);

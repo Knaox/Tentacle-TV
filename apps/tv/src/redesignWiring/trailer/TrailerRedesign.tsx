@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -23,6 +23,10 @@ type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
  * focus d'entrée (seule action) ; Menu dépile l'écran (pile native), la fin
  * de la vidéo aussi.
  *
+ * Un échec se dit en une phrase (« indisponible »), puis l'écran rend la
+ * fiche de lui-même (`UNAVAILABLE_RETURN_MS`) — le focus y retrouve
+ * « Bande-annonce » : jamais un écran sans issue, ni un lecteur figé.
+ *
  * Le chrome s'estompe trois secondes après le début de la lecture, et le
  * moindre geste de la télécommande le rallume (`useIdleChrome`) : la croix
  * garde le focus tout du long, elle ne peut donc pas en être le signal. Tout
@@ -32,6 +36,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
  */
 
 const CLOSE_KEY = "trailer:close";
+/** Le temps de lire la phrase de l'indisponible avant de rendre la fiche. */
+const UNAVAILABLE_RETURN_MS = 4_000;
 const ENTRY: FocusBinding = { native: { hasTVPreferredFocus: true } };
 const bindClose = (focusKey: string) => (focusKey === CLOSE_KEY ? ENTRY : undefined);
 
@@ -61,6 +67,12 @@ export function TrailerRedesign({ route, navigation }: Props) {
   const onLoadEnd = useCallback(() => setLoaded(true), []);
   const onError = useCallback(() => setFailed(true), []);
   useRemoteEvents(wake, isFocused);
+
+  useEffect(() => {
+    if (state !== "unavailable" || !isFocused) return;
+    const timer = setTimeout(close, UNAVAILABLE_RETURN_MS);
+    return () => clearTimeout(timer);
+  }, [state, isFocused, close]);
 
   const video = canPlay && ytId && !failed ? (
     <TrailerWebView

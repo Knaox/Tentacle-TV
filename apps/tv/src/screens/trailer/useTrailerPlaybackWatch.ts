@@ -24,7 +24,7 @@ import type { OnLoadData, OnProgressData, OnVideoErrorData } from "react-native-
  * chaque tic de progression.
  */
 
-export const START_TIMEOUT_MS = 20_000;
+export const START_TIMEOUT_MS = 15_000;
 export const STALL_TIMEOUT_MS = 15_000;
 export const WAIT_SHOW_MS = 1_000;
 /** À moins de deux secondes de la fin, un arrêt EST la fin. */
