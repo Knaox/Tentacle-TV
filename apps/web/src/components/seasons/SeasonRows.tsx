@@ -39,13 +39,21 @@ function CheckRow({ row, onToggle, inputRef }: {
 }) {
   return (
     <li>
-      <label className="flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl px-3 transition-colors hover:bg-fill-soft has-[:focus-visible]:bg-fill-soft">
+      <label className="group relative z-0 flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl px-3">
         <input
           ref={inputRef}
           type="checkbox"
           className="peer sr-only"
           checked={row.selected}
           onChange={() => onToggle(row.number)}
+        />
+        {/* Le fond de la ligne, au survol comme au focus clavier : un calque
+            FRÈRE de la case (`peer`), jamais `:has()` — le client LG compile ce
+            CSS, et son socle Chrome 53 perdrait la règle entière (build webOS
+            refusée). En fondu d'opacité : aucune couleur animée. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 rounded-xl bg-fill-soft opacity-0 transition-opacity group-hover:opacity-100 peer-focus-visible:opacity-100"
         />
         <span
           aria-hidden
