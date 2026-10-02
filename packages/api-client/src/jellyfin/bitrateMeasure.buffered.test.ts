@@ -74,8 +74,27 @@ describe("bitrateMeasure — un fetch qui attend le corps entier (opt-in)", () =
     expect(await measure({})).toBe(120_000_000);
   });
 
-  it("un réseau trop lent pour le témoin (délai dépassé) : pas de mesure", async () => {
-    vi.stubGlobal("fetch", rnFetch({ latencyMs: 30, bps: 2e6, convertMs: 100 }));
+  it("un témoin hors délai après deux sondes : la borne haute, sans seconde passe", async () => {
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", rnFetch({ latencyMs: 30, bps: 2e6, convertMs: 100 }, calls));
+    const bps = await measure({ bufferedFetch: true });
+    // 3 Mo en moins de 8 s moins la latence (34 ms) : 3,01 Mb/s au plus.
+    expect(bps).toBe(Math.round((3_000_000 * 8) / (8 - 0.034)));
+    expect(calls.map((url) => new URL(url).searchParams.get("size"))).toEqual(["1000", "1000", "3000000"]);
+  });
+
+  it("une sonde hors délai : pas de mesure, et pas de témoin", async () => {
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", rnFetch({ latencyMs: 9_000, bps: 100e6, convertMs: 10 }, calls));
+    expect(await measure({ bufferedFetch: true })).toBeNull();
+    expect(calls.map((url) => new URL(url).searchParams.get("size"))).toEqual(["1000"]);
+  });
+
+  it("la seconde sonde muette, puis le témoin hors délai : pas de borne", async () => {
+    const slow = rnFetch({ latencyMs: 30, bps: 2e6, convertMs: 10 });
+    // La seconde sonde reçoit une erreur du serveur : seule la première a répondu.
+    let n = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (++n === 2 ? { ok: false } : slow(url))));
     expect(await measure({ bufferedFetch: true })).toBeNull();
   });
 });

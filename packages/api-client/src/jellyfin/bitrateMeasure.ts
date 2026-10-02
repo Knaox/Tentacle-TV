@@ -12,7 +12,9 @@ import type { JellyfinClient } from "../jellyfin";
  * qualité. La mesure est UNE photographie, pas un tuner permanent : cache de
  * 10 min, single-flight, et tout échec (proxy sans l'entrée, timeout, réseau)
  * rend `null` — l'appelant n'applique alors AUCUN cap (dégradation gracieuse,
- * indispensable face à un serveur pas encore à jour).
+ * indispensable face à un serveur pas encore à jour). Seule exception, le
+ * chemin tamponné : un témoin hors délai après des sondes réussies vaut une
+ * borne haute (cf. `runBufferedMeasure`).
  *
  * **La mesure suit la voie du média.** Avec `preferDirect`, et quand le direct
  * streaming est actif, le témoin part vers le serveur Jellyfin lui-même — là
@@ -150,26 +152,46 @@ async function runMeasure(route: MeasureRoute): Promise<number | null> {
 /** La petite requête qui ne mesure que la latence (aller-retour, serveur, proxy). */
 const LATENCY_PROBE_BYTES = 1_000;
 
+/** La réponse n'est pas arrivée dans le délai — ce n'est pas un échec du serveur. */
+const TIMED_OUT = "timed-out";
+type WholeResponse = number | typeof TIMED_OUT | null;
+
+const seconds = (r: WholeResponse): number | null => (typeof r === "number" ? r : null);
+
 /**
  * Sous un `fetch` qui attend le corps entier (`bufferedFetch`) : la latence
  * d'abord — deux petites requêtes, la meilleure (la première ouvre la
  * connexion) —, puis le témoin, deux passes, la meilleure ; le débit, c'est
  * le témoin moins la latence.
+ *
+ * Un témoin qui dépasse le délai alors que les DEUX sondes ont répondu dit
+ * quand même quelque chose : le lien porte moins que 3 Mo en 8 s, ~3 Mb/s.
+ * Cette borne haute est retenue comme mesure, sans seconde passe — sinon la
+ * connexion la plus lente, celle qui a le plus besoin du plafond, n'en
+ * aurait aucun. Le palier qui en découle est celui d'une mesure exacte : tout
+ * ce qui passe sous 5,6 Mb/s tombe déjà au plus bas. Une sonde muette, elle,
+ * ne dit rien du débit : pas de mesure.
  */
 async function runBufferedMeasure(route: MeasureRoute): Promise<number | null> {
-  const firstProbe = await wholeResponseSeconds(route, LATENCY_PROBE_BYTES);
+  const firstProbe = seconds(await wholeResponseSeconds(route, LATENCY_PROBE_BYTES));
   if (firstProbe == null) return null;
-  const latency = Math.min(firstProbe, (await wholeResponseSeconds(route, LATENCY_PROBE_BYTES)) ?? firstProbe);
+  const secondProbe = seconds(await wholeResponseSeconds(route, LATENCY_PROBE_BYTES));
+  const latency = Math.min(firstProbe, secondProbe ?? firstProbe);
   const first = await wholeResponseSeconds(route, SIZE_BYTES);
+  if (first === TIMED_OUT) {
+    const ceiling = secondProbe == null ? null : boundedBps(SIZE_BYTES, TIMEOUT_MS / 1000 - latency);
+    return ceiling == null ? null : remember(route, ceiling);
+  }
   if (first == null) return null;
-  const total = Math.min(first, (await wholeResponseSeconds(route, SIZE_BYTES)) ?? first);
+  const total = Math.min(first, seconds(await wholeResponseSeconds(route, SIZE_BYTES)) ?? first);
   const bps = boundedBps(SIZE_BYTES, total - latency);
   return bps == null ? null : remember(route, bps);
 }
 
-/** La durée de la requête à la réponse ENTIÈRE, en secondes, ou null. Le
- *  corps est déjà là : on ne le lit pas — sa conversion faussait l'ancienne mesure. */
-async function wholeResponseSeconds(route: MeasureRoute, size: number): Promise<number | null> {
+/** La durée de la requête à la réponse ENTIÈRE, en secondes ; `TIMED_OUT` au
+ *  délai dépassé, null en échec. Le corps est déjà là : on ne le lit pas — sa
+ *  conversion faussait l'ancienne mesure. */
+async function wholeResponseSeconds(route: MeasureRoute, size: number): Promise<WholeResponse> {
   try {
     return await Promise.race([
       (async () => {
@@ -180,7 +202,7 @@ async function wholeResponseSeconds(route: MeasureRoute, size: number): Promise<
         });
         return response.ok ? (Date.now() - startedAt) / 1000 : null;
       })(),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), TIMEOUT_MS)),
+      new Promise<typeof TIMED_OUT>((resolve) => setTimeout(() => resolve(TIMED_OUT), TIMEOUT_MS)),
     ]);
   } catch {
     return null;
