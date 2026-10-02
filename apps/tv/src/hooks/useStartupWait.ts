@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { cachedBitrate, useJellyfinClient } from "@tentacle-tv/api-client";
 import { decideStartupWait, type Health } from "@tentacle-tv/tv-core";
 import { publishPlaybackTrouble, readPlaybackTrouble, type StartWait } from "./playbackTroubleStore";
+import { withoutRestartMark } from "./streamRestart";
 import type { RecoverySources } from "./recoverySources";
 import { loadGrew, readPlayerLoad, type PlayerLoad } from "../utils/playerLoadProbe";
 import { probeStreamPath } from "../utils/streamPathProbe";
@@ -45,7 +46,9 @@ export function useStartupWait(sources: RecoverySources | undefined): void {
   const client = useJellyfinClient();
   const src = useRef(sources);
   src.current = sources;
-  const streamUrl = sources?.p.streamUrl ?? null;
+  // Une ouverture = un flux, à sa marque de relance près : la même session
+  // rechargée (`useTranscodeReload`) ne remet pas l'attente à zéro.
+  const streamUrl = sources?.p.streamUrl ? withoutRestartMark(sources.p.streamUrl) : null;
   const opening = !!sources && !!streamUrl && !sources.s.hasStarted;
 
   useEffect(() => {

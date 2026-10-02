@@ -8,7 +8,7 @@ import {
   type PrismStart,
 } from "../utils/prismCoreStart";
 import { resolveServerStream } from "../utils/tvosServerStream";
-import { withRestartMark, type RestartOutcome } from "./streamRestart";
+import { withoutRestartMark, withRestartMark, type RestartOutcome } from "./streamRestart";
 
 /**
  * Variante tvOS de `useTVStreamUrl` (résolue par Metro sur iOS ; Android garde
@@ -258,9 +258,15 @@ export function useTVStreamUrl(args: {
   // la même forme. Un échec laisse tout en place, sans écran d'erreur.
   const restartingRef = useRef(false);
   const restartMarkRef = useRef(0);
-  const restart = async (at: number): Promise<RestartOutcome> => {
+  const restart = async (at: number, opts?: { keepSession?: boolean }): Promise<RestartOutcome> => {
     if (restartingRef.current) return "busy";
     if (!itemId || !userId || !ready || !contentKeyRef.current) return "failed";
+    // Un transcodage qui tarde : la MÊME session (même PlaySessionId), une
+    // marque neuve pour qu'AVPlayer recharge — le serveur garde son travail.
+    if (opts?.keepSession && result.baseUrl && !result.isPrismCore && !result.isDirectPlay) {
+      setResult({ ...result, baseUrl: withRestartMark(withoutRestartMark(result.baseUrl), ++restartMarkRef.current), resumeFrag: fragmentAt(at) });
+      return "ok";
+    }
     restartingRef.current = true;
     const fetchId = ++fetchIdRef.current;
     try {

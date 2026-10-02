@@ -17,7 +17,10 @@ import { plog } from "../utils/playerDiag";
  * AVANT tout cela, une erreur survenue après le démarrage est confiée à la
  * reprise (`usePlaybackRecovery`, montée ici) : un serveur coupé n'est pas un
  * refus de format — elle attend son retour et relance le flux sous la même
- * forme, au lieu de la forme muxée puis du transcodage forcé.
+ * forme, au lieu de la forme muxée puis du transcodage forcé. Et, à
+ * l'ouverture comme en lecture, un segment abandonné par AVPlayer sur un
+ * transcodage qui tarde recharge la MÊME session (`useTranscodeReload`) : ni
+ * échec, ni session neuve.
  *
  * Et avant encore, à l'ouverture comme en lecture, une sortie AUDIO
  * passagèrement indisponible (`useAudioErrorRetry`) : rejouée à la même forme
@@ -40,7 +43,7 @@ export function useTVErrorHandler(args: {
 }) {
   const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, bumpReloadNonce, setIsLoading, onMasterRejected } = args;
   const { t } = useTranslation("player");
-  const { onSourceLost } = usePlaybackRecovery(args.recovery);
+  const { onSourceLost, onSlowSegment } = usePlaybackRecovery(args.recovery);
   const recoveryRef = useRef(args.recovery);
   recoveryRef.current = args.recovery;
   const onAudioError = useAudioErrorRetry(args.recovery, {
@@ -52,6 +55,7 @@ export function useTVErrorHandler(args: {
 
   const handleError = useCallback((error: string) => {
     if (isAudioTransientError(error)) { onAudioError(error); return; }
+    if (onSlowSegment(error)) return;
     if (onSourceLost(error)) return;
     if (error === "PRISM_MASTER_REJECTED") {
       plog("err", "master PrismCore refusé par AVPlayer → forme muxée");
@@ -79,7 +83,7 @@ export function useTVErrorHandler(args: {
     // bandeau s'efface seul, et l'écran d'ouverture tournait ensuite pour toujours.
     const state = recoveryRef.current?.s;
     if (state && !state.hasStarted) state.setOpenFailed(true);
-  }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery, onMasterRejected, onSourceLost, onAudioError]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery, onMasterRejected, onSourceLost, onSlowSegment, onAudioError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleError };
 }

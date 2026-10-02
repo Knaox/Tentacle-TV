@@ -8,18 +8,23 @@
  * jamais le transcodage forcé. Appelants : le retour au premier plan
  * (bouclage PrismCore mort pendant la suspension), la reprise après une
  * coupure du serveur ou de Jellyfin ou une mort du producteur de PrismCore,
- * et la sortie audio revenue (`useAudioErrorRetry`).
+ * et la sortie audio revenue (`useAudioErrorRetry`) ; et, gardant la session
+ * du serveur (`keepSession`), un transcodage dont AVPlayer a abandonné un
+ * segment qui tardait (`useTranscodeReload`).
  *
  * - "ok" : la nouvelle URL est émise (la lecture repart de `at`) ;
  * - "failed" : la résolution a échoué — l'état courant reste tel quel ;
  * - "busy" : une relance est déjà en vol.
  */
-export type RestartReason = "resume" | "network" | "audio" | "remux" | "manual";
+export type RestartReason = "resume" | "network" | "audio" | "remux" | "manual" | "transcode";
 export type RestartOutcome = "ok" | "failed" | "busy";
 export interface RestartOptions {
   /** Position de reprise, timeline absolue — défaut : la position courante. */
   at?: number;
   reason: RestartReason;
+  /** La MÊME session du serveur, rechargée — un transcodage qui tarde : le
+   *  travail déjà fait l'attend. Sans session à garder, une relance ordinaire. */
+  keepSession?: boolean;
 }
 
 /**
@@ -29,6 +34,15 @@ export interface RestartOptions {
  * `/Videos/{id}/stream`). Il se pose AVANT le fragment `#tnt-start`, que le
  * natif Android lit jusqu'au bout de l'URL.
  */
+/** L'URL sans sa marque de relance (`tntRestart`), fragment gardé. */
+export function withoutRestartMark(url: string): string {
+  const hash = url.indexOf("#");
+  const base = hash >= 0 ? url.slice(0, hash) : url;
+  const fragment = hash >= 0 ? url.slice(hash) : "";
+  const cleaned = base.replace(/([?&])tntRestart=\d+(&?)/, (_match, lead: string, tail: string) => (tail ? lead : ""));
+  return cleaned + fragment;
+}
+
 export function withRestartMark(url: string, mark: number): string {
   if (mark <= 0) return url;
   const hash = url.indexOf("#");

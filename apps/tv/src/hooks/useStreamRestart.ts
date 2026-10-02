@@ -21,7 +21,7 @@ import type { RestartOptions, RestartOutcome } from "./streamRestart";
  */
 export function useStreamRestart(args: {
   /** La relance de la variante de plateforme (`useTVStreamUrl`). */
-  restart: (at: number) => Promise<RestartOutcome>;
+  restart: (at: number, opts?: { keepSession?: boolean }) => Promise<RestartOutcome>;
   positionRef: React.MutableRefObject<number>;
   softReloadRef: React.MutableRefObject<boolean>;
   setReloadFrameSec: (sec: number | null) => void;
@@ -48,7 +48,7 @@ export function useStreamRestart(args: {
     resetLoadedRef.current();
     notifySeekRef.current(at, 8000, true);
     try {
-      const outcome = await restartRef.current(at);
+      const outcome = await restartRef.current(at, { keepSession: opts?.keepSession });
       plog("restart", `→ ${outcome}`);
       if (outcome !== "ok") {
         softReloadRef.current = false;

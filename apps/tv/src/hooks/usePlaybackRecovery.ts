@@ -10,6 +10,7 @@ import { readServerReachability, requestServerProbe } from "./serverReachability
 import { IDLE_TROUBLE, noteServerFallback, publishPlaybackTrouble, registerTroubleRetry } from "./playbackTroubleStore";
 import { useStartupRecovery } from "./useStartupRecovery";
 import { useStartupWait } from "./useStartupWait";
+import { useTranscodeReload } from "./useTranscodeReload";
 import { isFormatError, type RecoverySources } from "./recoverySources";
 import type { RestartReason } from "./streamRestart";
 import { loadGrew, readPlayerLoad } from "../utils/playerLoadProbe";
@@ -269,5 +270,8 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     return true;
   }, []);
 
-  return { onSourceLost };
+  // Un segment abandonné sur un transcodage : la même session, rechargée.
+  const onSlowSegment = useTranscodeReload(src, state);
+
+  return { onSourceLost, onSlowSegment };
 }
