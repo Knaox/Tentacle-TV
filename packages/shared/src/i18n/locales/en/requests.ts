@@ -34,4 +34,11 @@ export default {
   seasonsLoading: "Reading the seasons…",
   seasonsFailed: "The seasons can't be read right now. Try again later.",
   seasonsNone: "All its seasons are already here or requested.",
+
+  missingSeasons_one: "{{count}} season to request",
+  missingSeasons_other: "{{count}} seasons to request",
+  requestMissing: "Request missing seasons",
+  seasonInLibrary: "In your library",
+  seasonToRequest: "To request",
+  seasonsSubmitIdle: "Request",
 };

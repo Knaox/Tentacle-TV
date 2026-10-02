@@ -44,4 +44,17 @@ export default {
   seasonsLoading: "Lecture des saisons…",
   seasonsFailed: "Les saisons ne se lisent pas pour l'instant. Réessayez plus tard.",
   seasonsNone: "Toutes ses saisons sont déjà là ou demandées.",
+
+  // Une série de la bibliothèque à qui il manque des saisons (contrat
+  // `titles.gaps`) : la recherche de toutes les plateformes, la fiche de la TV.
+  missingSeasons_one: "{{count}} saison à demander",
+  missingSeasons_other: "{{count}} saisons à demander",
+  // L'action, quand le nombre ne se dit pas (bulle, lecteur d'écran).
+  requestMissing: "Demander les saisons manquantes",
+  // Une saison que la bibliothèque a déjà : jamais à cocher.
+  seasonInLibrary: "Dans la bibliothèque",
+  // Une saison manquante qui se demande encore (onglet de la fiche, TV).
+  seasonToRequest: "À demander",
+  // La pilule de la feuille, tant que rien n'est coché (désactivée).
+  seasonsSubmitIdle: "Demander",
 };
