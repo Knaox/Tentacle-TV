@@ -56,7 +56,7 @@ interface Props {
 export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason, onAnswer, onClose }: Props) {
   const { t } = useTranslation();
   const { answer, failed } = useTitleSeasons(gate.provider, title.key, gate.lang);
-  const { mutateAsync: requestSeasons } = useRequestTitleSeasons(gate.provider, gate.lang);
+  const { mutateAsync: requestSeasons } = useRequestTitleSeasons(gate.provider, gate.lang, gate.origin);
   // Ce que la bibliothèque a de la série : attendu avant d'ouvrir (sans série, rien à attendre).
   const library = useSeasons(seriesId);
   const owned = useMemo(() => (seriesId ? librarySeasonNumbers(library.data ?? []) : null), [seriesId, library.data]);

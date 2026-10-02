@@ -10,6 +10,7 @@ import {
   useRequestTitle,
 } from "@tentacle-tv/api-client";
 import { parseTitleKey, withMyTitle, type MyTitle, type TitleRequestOutcome, type TitleState } from "@tentacle-tv/shared";
+import { TV_TITLE_ORIGIN } from "@tentacle-tv/tv-core";
 import { showNotice } from "../overlays/transientNotice";
 import { AbsentSheetRedesign } from "./AbsentSheetRedesign";
 import { mineLabel, sayable } from "./absentStates";
@@ -29,7 +30,8 @@ import { useVigieGate, type VigieGate } from "./useVigieGate";
  * - le compte l'a déjà demandé → son état, et l'invite à le suivre sur le
  *   téléphone — jamais une seconde demande ; arrivé depuis → « Disponible » ;
  * - un film que l'extension offre de demander → la demande, en UN geste, puis
- *   « Demande envoyée » ; elle paraît aussitôt dans les demandes du compte
+ *   « Demande envoyée » ; elle part avec l'origine de la TV (`gate.origin`),
+ *   paraît aussitôt dans les demandes du compte et dans celles des TV
  *   (`withMyTitle`), et son badge change ;
  * - une série → la feuille de ses saisons (`SeasonsSheetRedesign`), si
  *   l'extension sait les dire (`titles.seasons`) ;
@@ -71,7 +73,7 @@ export function useTitleRequests(): TitleRequests | null {
   const lang = gate?.lang ?? "fr";
   const qc = useQueryClient();
   const { titles: mine } = useMyTitles(provider, lang, { enabled: gate !== null });
-  const { mutateAsync: requestTitle } = useRequestTitle(provider, lang);
+  const { mutateAsync: requestTitle } = useRequestTitle(provider, lang, gate?.origin ?? null);
   const arrivals = useArrivals();
   const [seasonsOf, setSeasonsOf] = useState<{ title: AbsentTitle; target?: SeasonsTarget } | null>(null);
   const [held, setHeld] = useState<AbsentTitle | null>(null);
@@ -81,11 +83,21 @@ export function useTitleRequests(): TitleRequests | null {
   const latest = useRef({ gate, mine, t, arrivals });
   latest.current = { gate, mine, t, arrivals };
 
-  /** La demande partie : l'avis, et la liste des demandes du compte qui la montre aussitôt. */
+  /**
+   * La demande partie : l'avis, et les listes qui la montrent aussitôt — celle
+   * du compte (l'état des cartes), et « Mes demandes », celle des TV, si elle
+   * est déjà lue (sinon sa première lecture l'apportera).
+   */
   const confirm = useCallback((title: AbsentTitle, seasons: number[] | null) => {
     const { gate: g, t: tr } = latest.current;
     const entry = requestedTitle(title, seasons);
-    if (g && entry) qc.setQueryData<MyTitle[]>(myTitlesQueryKey(g.provider, g.lang), (list) => withMyTitle(list ?? [], entry));
+    if (g && entry) {
+      qc.setQueryData<MyTitle[]>(myTitlesQueryKey(g.provider, g.lang), (list) => withMyTitle(list ?? [], entry));
+      qc.setQueryData<MyTitle[] | undefined>(
+        myTitlesQueryKey(g.provider, g.lang, TV_TITLE_ORIGIN),
+        (list) => (list ? withMyTitle(list, entry) : list),
+      );
+    }
     showNotice({ kind: "success", title: tr("cards:requestSent"), text: tr("requests:followOnPhone") });
   }, [qc]);
 

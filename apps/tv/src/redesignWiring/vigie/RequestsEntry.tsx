@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
+import { TV_TITLE_ORIGIN } from "@tentacle-tv/tv-core";
 import type { NavAccessory } from "../../redesign/nav/NavRail";
 import { REQUESTS_DOCK_HEIGHT, REQUESTS_DOCK_KEY, RequestsDock } from "../../redesign/requests/RequestsDock";
 import { setFocusLocked } from "../focus/focusLocks";
@@ -12,9 +13,10 @@ import { useMyRequests } from "./useMyRequests";
 import { useVigieGate, type VigieGate } from "./useVigieGate";
 
 /**
- * Les demandes en cours dans la navigation — LE point d'entrée de cette
- * fonction de Vigie dans le rail (`useRedesignScreen`, une ligne) : un
- * accessoire du bloc du profil, ou rien. Garde fermée (pas de Vigie à jour,
+ * Les demandes en cours dans la navigation, celles faites depuis une TV
+ * (« Mes demandes », `useMyRequests`). LE point d'entrée de cette fonction de
+ * Vigie dans le rail (`useRedesignScreen`, une ligne) : un accessoire du bloc
+ * du profil, ou rien. Garde fermée (pas de Vigie à jour,
  * compte sans droit) : `null`, aucune requête des demandes, aucune place
  * réservée. Ouverte : l'aperçu, TOUJOURS là, même sans demande (son état
  * discret), et OK ouvre la fenêtre.
@@ -49,7 +51,7 @@ const RequestsEntry = memo(function RequestsEntry({ gate, active }: { gate: Vigi
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { titles, reading } = useMyRequests(gate, { watching: open, active });
-  const arrived = useJustArrived(PEEK_ARRIVED_MS);
+  const arrived = useJustArrived(PEEK_ARRIVED_MS, TV_TITLE_ORIGIN);
   const model = useMemo(() => requestsDockModel(titles, t, reading, arrived), [titles, t, reading, arrived]);
   const openPanel = useCallback(() => setOpen(true), []);
   const closePanel = useCallback(() => setOpen(false), []);

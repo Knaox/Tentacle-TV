@@ -2,15 +2,20 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { myTitlesQueryKey, useMyTitles, type MyTitlesFeed } from "@tentacle-tv/api-client";
 import type { MyTitle } from "@tentacle-tv/shared";
-import { MY_TITLES_REFRESH, anyAdvancing, myTitlesRefetchMs } from "@tentacle-tv/tv-core";
+import { MY_TITLES_REFRESH, TV_TITLE_ORIGIN, anyAdvancing, myTitlesRefetchMs } from "@tentacle-tv/tv-core";
 import type { ArrivalReading } from "./arrivalModels";
 import { useLiveRefresh } from "./liveRequests";
 import { useAppActive } from "./useAppActive";
 import type { VigieGate } from "./useVigieGate";
 
 /**
- * Le suivi des demandes en cours de l'aperçu du rail et de sa fenêtre (rythmes
- * dans tv-core, `MY_TITLES_REFRESH`) :
+ * « Mes demandes » — les demandes faites depuis une TV (`TV_TITLE_ORIGIN`,
+ * tv-core), de ce compte, quelle que soit la TV : ce qu'il a demandé ailleurs
+ * (web, bureau, téléphone, page de Vigie) n'y paraît pas, et les cartes, elles,
+ * gardent l'état de toutes ses demandes (`useMyTitles` sans origine).
+ *
+ * Leur suivi, pour l'aperçu du rail et sa fenêtre (rythmes dans tv-core,
+ * `MY_TITLES_REFRESH`) :
  * - un titre AVANCE (en route, ou en train d'entrer dans la bibliothèque) et
  *   l'écran est devant : le DIRECT, toutes les 10 s (`useLiveRefresh`, un
  *   battement pour tout l'appareil) — l'aperçu le montre (ce qui bouge passe
@@ -38,13 +43,14 @@ export function useMyRequests(gate: VigieGate | null, { watching, active }: { wa
   const appActive = useAppActive();
   const polling = !!gate && active && appActive;
   // Ce qui avance se suit au rythme du direct : les rythmes lents s'effacent alors (jamais deux lectures).
-  const cached = gate ? qc.getQueryData<MyTitle[]>(myTitlesQueryKey(gate.provider, gate.lang)) : undefined;
+  const cached = gate ? qc.getQueryData<MyTitle[]>(myTitlesQueryKey(gate.provider, gate.lang, TV_TITLE_ORIGIN)) : undefined;
   const advancing = anyAdvancing(cached);
   const feed = useMyTitles(gate?.provider ?? null, gate?.lang ?? "en", {
     enabled: !!gate && active,
     refetchIntervalMs: polling && !advancing ? myTitlesRefetchMs(watching) : false,
+    origin: TV_TITLE_ORIGIN,
   });
-  useLiveRefresh(gate, polling && advancing);
+  useLiveRefresh(gate, polling && advancing, TV_TITLE_ORIGIN);
   const updatedAt = useRef(feed.updatedAt);
   updatedAt.current = feed.updatedAt;
 
@@ -56,7 +62,7 @@ export function useMyRequests(gate: VigieGate | null, { watching, active }: { wa
   const lang = gate?.lang ?? "en";
   const refreshIfOlder = useCallback((ms: number) => {
     if (!provider || updatedAt.current === 0 || Date.now() - updatedAt.current <= ms) return;
-    void qc.refetchQueries({ queryKey: myTitlesQueryKey(provider, lang), exact: true }, { cancelRefetch: false });
+    void qc.refetchQueries({ queryKey: myTitlesQueryKey(provider, lang, TV_TITLE_ORIGIN), exact: true }, { cancelRefetch: false });
   }, [qc, provider, lang]);
   useEffect(() => {
     if (polling) refreshIfOlder(watching ? OPEN_STALE_MS : MY_TITLES_REFRESH.staleMs);
