@@ -1,5 +1,5 @@
 import type { JellyfinClient, RecoRowItem } from "@tentacle-tv/api-client";
-import { formatEpisodeCode, latestAdditionsCaption, resolveBannerImage, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
+import { formatEpisodeCode, latestAdditionsLine, resolveBannerImage, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import type { SheetHeaderModel } from "../../redesign/screens/sheet/ActionSheetView";
 
 /**
@@ -35,10 +35,7 @@ export function mediaSheetHeader(
     ? formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber)
     : null;
   // La ligne de la légende de la carte (modèle partagé), sinon l'année.
-  const additions = latestAdditionsCaption(item);
-  const context = additions
-    ? t(additions.key, additions.count === undefined ? undefined : { count: additions.count })
-    : item.ProductionYear ? String(item.ProductionYear) : null;
+  const context = latestAdditionsLine(t, item) ?? (item.ProductionYear ? String(item.ProductionYear) : null);
 
   if (shape === "landscape") {
     const image = resolveBannerImage(item);

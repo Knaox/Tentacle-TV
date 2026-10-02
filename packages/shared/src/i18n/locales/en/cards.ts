@@ -68,10 +68,14 @@ export default {
   notInLibraryNotice: "This title isn't available in your library.",
 
   // What a GROUPED "Recently added" card brings — the quiet line of its
-  // caption (`latestAdditionsLine`).
-  newEpisodes_one: "{{count}} new episode",
-  newEpisodes_other: "{{count}} new episodes",
+  // caption (`latestAdditionsLine`). A no-break space ties the number to its
+  // noun: on a narrow card the line wraps BEFORE the count, never inside it.
+  newEpisodes_one: "{{count}}\u00A0new episode",
+  newEpisodes_other: "{{count}}\u00A0new episodes",
   newSeasons_one: "New season",
-  newSeasons_other: "{{count}} new seasons",
+  newSeasons_other: "{{count}}\u00A0new seasons",
   newSeries: "New series",
+  // The group's episode count, always shown: "New season · 8 episodes".
+  episodeCount_one: "{{count}}\u00A0episode",
+  episodeCount_other: "{{count}}\u00A0episodes",
 } as const;

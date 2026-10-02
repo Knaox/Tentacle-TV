@@ -71,10 +71,15 @@ export default {
   notInLibraryNotice: "Ce titre n'est pas disponible dans votre bibliothèque.",
 
   // Ce qu'une carte REGROUPÉE des « Derniers ajouts » apporte de neuf — la
-  // ligne discrète de sa légende (`latestAdditionsLine`).
-  newEpisodes_one: "{{count}} nouvel épisode",
-  newEpisodes_other: "{{count}} nouveaux épisodes",
+  // ligne discrète de sa légende (`latestAdditionsLine`). Espace insécable
+  // entre le nombre et son nom : sur une carte étroite, la ligne passe à la
+  // suivante AVANT le compte, jamais au milieu (« Nouvelle saison · » / « 8 épisodes »).
+  newEpisodes_one: "{{count}}\u00A0nouvel épisode",
+  newEpisodes_other: "{{count}}\u00A0nouveaux épisodes",
   newSeasons_one: "Nouvelle saison",
-  newSeasons_other: "{{count}} nouvelles saisons",
+  newSeasons_other: "{{count}}\u00A0nouvelles saisons",
   newSeries: "Nouvelle série",
+  // Le compte des épisodes du groupe, toujours dit : « Nouvelle saison · 8 épisodes ».
+  episodeCount_one: "{{count}}\u00A0épisode",
+  episodeCount_other: "{{count}}\u00A0épisodes",
 } as const;

@@ -9,6 +9,9 @@ import { latestAdditionsCaption, latestAdditionsDetailQuery, latestAdditionsLine
 const i18n = i18next.createInstance();
 await i18n.init({ lng: "fr", resources: { fr: { cards: fr }, en: { cards: en } }, interpolation: { escapeValue: false } });
 
+/** La ligne lue à l'œil : ses espaces insécables comptent pour des espaces. */
+const line = (item: MediaItem): string | null => latestAdditionsLine(i18n.t, item)?.replace(/\u00A0/g, " ") ?? null;
+
 const additions = (partial: Partial<LatestAdditions>): LatestAdditions => ({
   EpisodeCount: 0, SeasonNumbers: [], NewSeasonNumbers: [], NewSeries: false,
   LatestDate: "2026-10-02T20:00:00Z", LatestSeasonId: "s2", LatestSeasonNumber: 2, ...partial,
@@ -19,32 +22,53 @@ const grouped = (partial: Partial<LatestAdditions>): MediaItem =>
 describe("latestAdditionsLine", () => {
   it("« 3 nouveaux épisodes », « 1 nouvel épisode »", async () => {
     await i18n.changeLanguage("fr");
-    expect(latestAdditionsLine(i18n.t, grouped({ EpisodeCount: 3, SeasonNumbers: [1, 2] }))).toBe("3 nouveaux épisodes");
-    expect(latestAdditionsLine(i18n.t, grouped({ EpisodeCount: 1 }))).toBe("1 nouvel épisode");
+    expect(line(grouped({ EpisodeCount: 3, SeasonNumbers: [1, 2] }))).toBe("3 nouveaux épisodes");
+    expect(line(grouped({ EpisodeCount: 1 }))).toBe("1 nouvel épisode");
   });
 
-  it("une saison nouvelle l'emporte sur le compte de ses épisodes", async () => {
+  it("une saison nouvelle l'emporte, le nombre d'épisodes se lit toujours", async () => {
     await i18n.changeLanguage("fr");
-    expect(latestAdditionsLine(i18n.t, grouped({ EpisodeCount: 10, NewSeasonNumbers: [3] }))).toBe("Nouvelle saison");
-    expect(latestAdditionsLine(i18n.t, grouped({ EpisodeCount: 20, NewSeasonNumbers: [3, 4] }))).toBe("2 nouvelles saisons");
+    expect(line(grouped({ EpisodeCount: 10, NewSeasonNumbers: [3] }))).toBe("Nouvelle saison · 10 épisodes");
+    expect(line(grouped({ EpisodeCount: 1, NewSeasonNumbers: [3] }))).toBe("Nouvelle saison · 1 épisode");
+    expect(line(grouped({ EpisodeCount: 20, NewSeasonNumbers: [3, 4] }))).toBe("2 nouvelles saisons · 20 épisodes");
   });
 
-  it("une série nouvelle l'emporte sur tout", async () => {
+  it("une série nouvelle l'emporte sur tout, avec son nombre d'épisodes", async () => {
     await i18n.changeLanguage("fr");
-    expect(latestAdditionsLine(i18n.t, grouped({ EpisodeCount: 24, NewSeasonNumbers: [1, 2], NewSeries: true }))).toBe("Nouvelle série");
+    expect(line(grouped({ EpisodeCount: 24, NewSeasonNumbers: [1, 2], NewSeries: true })))
+      .toBe("Nouvelle série · 24 épisodes");
+  });
+
+  it("un dossier seul, sans épisode dans la rangée : la nouveauté sans compte", async () => {
+    await i18n.changeLanguage("fr");
+    expect(line(grouped({ NewSeasonNumbers: [4] }))).toBe("Nouvelle saison");
+    expect(line(grouped({ NewSeries: true }))).toBe("Nouvelle série");
   });
 
   it("en anglais", async () => {
     await i18n.changeLanguage("en");
-    expect(latestAdditionsLine(i18n.t, grouped({ EpisodeCount: 3 }))).toBe("3 new episodes");
-    expect(latestAdditionsLine(i18n.t, grouped({ NewSeasonNumbers: [2] }))).toBe("New season");
-    expect(latestAdditionsLine(i18n.t, grouped({ NewSeries: true }))).toBe("New series");
+    expect(line(grouped({ EpisodeCount: 3 }))).toBe("3 new episodes");
+    expect(line(grouped({ EpisodeCount: 8, NewSeasonNumbers: [2] }))).toBe("New season · 8 episodes");
+    expect(line(grouped({ EpisodeCount: 1, NewSeries: true }))).toBe("New series · 1 episode");
+  });
+
+  it("une carte étroite passe à la ligne avant le compte, jamais au milieu", async () => {
+    await i18n.changeLanguage("fr");
+    const raw = latestAdditionsLine(i18n.t, grouped({ EpisodeCount: 8, NewSeasonNumbers: [2] }));
+    // Seule coupure possible : après le point médian.
+    expect(raw?.split(" ")).toEqual(["Nouvelle", "saison\u00A0·", "8\u00A0épisodes"]);
+  });
+
+  it("un écran qui traduit lui-même reçoit les morceaux de la ligne", () => {
+    expect(latestAdditionsCaption(grouped({ EpisodeCount: 8, NewSeasonNumbers: [2] }))).toEqual([
+      { key: "cards:newSeasons", count: 1 }, { key: "cards:episodeCount", count: 8 },
+    ]);
   });
 
   it("la tuile « +N » qu'un client fabrique face à un serveur plus ancien dit son compte de la même façon", async () => {
     await i18n.changeLanguage("fr");
     const tile = { Id: "a", Name: "Série", Type: "Series", RecentlyAddedCount: 4 } as MediaItem;
-    expect(latestAdditionsLine(i18n.t, tile)).toBe("4 nouveaux épisodes");
+    expect(line(tile)).toBe("4 nouveaux épisodes");
   });
 
   it("rien pour une carte ordinaire : elle garde sa légende", () => {
