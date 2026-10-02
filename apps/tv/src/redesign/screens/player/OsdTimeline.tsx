@@ -131,9 +131,12 @@ const styles = StyleSheet.create({
   track: { width: TRACK_WIDTH, height: BAR },
   piece: { position: "absolute", top: 0, height: BAR, borderRadius: BAR / 2, backgroundColor: white(0.28) },
   fill: { position: "absolute", left: 0, top: 0, height: BAR, borderRadius: BAR / 2 },
-  buffer: { backgroundColor: white(0.4) },
+  // Ce qui est déjà chargé, où la recherche est instantanée, comme le lecteur
+  // d'Apple : nettement plus clair que la piste (≈ 3:1 sur le fond assombri).
+  buffer: { backgroundColor: white(0.6) },
   played: { overflow: "hidden" },
-  span: { backgroundColor: white(0.78) },
+  // L'écart visé d'un défilement, au-dessus du chargé : plus clair encore.
+  span: { backgroundColor: white(0.9) },
   knob: {
     position: "absolute",
     left: 0,
