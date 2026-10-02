@@ -140,6 +140,7 @@ describe("GET /api/jellyfin/Users/{id}/Items — « Derniers ajouts » d'une bib
     await row(ROW, "jeton-de-test-b");
     const again = await row(ROW, "jeton-de-test-b");
     expect(again.cache).toBe("HIT");
+    expect(again.cacheControl).toBe("no-store");
     expect(again.body?.Items.map((i) => i.Id)).toEqual(["C", "A", "B-s4e1"]);
     expect(upstream.calls).toHaveLength(2);
 

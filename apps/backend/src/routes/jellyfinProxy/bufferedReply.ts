@@ -20,10 +20,16 @@ export function readsInFull(path: string, cacheTtl: number | null): boolean {
   return cacheTtl !== null || isLibraryViewsPath(path);
 }
 
-/** Une réponse resservie depuis le cache (cf. `jellyfinCache`), sans toucher Jellyfin. */
+/**
+ * Une réponse resservie depuis le cache (cf. `jellyfinCache`), sans toucher
+ * Jellyfin. `no-store` comme au premier envoi (cf. `apiCacheControl`) : ces
+ * réponses portent l'état d'un compte, et le cache HTTP du client — celui de
+ * l'iPhone en tête — ne doit pas les resservir à son tour.
+ */
 export function replyFromCache(reply: FastifyReply, cached: CacheEntry): FastifyReply {
   reply.status(cached.status);
   reply.header("content-type", cached.contentType);
+  reply.header("cache-control", "no-store");
   reply.header("x-tentacle-cache", "HIT");
   return reply.send(cached.body);
 }
