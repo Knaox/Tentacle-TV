@@ -14,13 +14,8 @@ export * from "./tokens";
 export * as motion from "./motion";
 export * as effects from "./effects";
 
-// Theming runtime : MARQUE (admin, `/api/theme`) × APPARENCE (light/dark/auto).
-export {
-  ThemeProvider,
-  BrandThemeContext,
-  useBrandTheme,
-  type BrandThemeContextValue,
-} from "./ThemeProvider";
+// Theming runtime : l'APPARENCE (light/dark/auto) ; la marque vient du code.
+export { ThemeProvider } from "./ThemeProvider";
 export {
   AppThemeContext,
   ThemePrefsContext,
@@ -59,8 +54,6 @@ export {
   type LiquidGlassModule,
   type LiquidGlassViewProps,
 } from "./liquidGlass";
-export { fetchThemeState } from "./themeApi";
-export type { BackendThemeState } from "./types";
 export { parsePx, parseMs, parseScale } from "./utils";
 
 // Responsive / iPad — helpers d'adaptation tablette (l'iPhone reste inchangé).

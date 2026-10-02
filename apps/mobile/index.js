@@ -2,10 +2,12 @@
 import { AppRegistry, View, Text } from "react-native";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { applyThemeOverride } from "@tentacle-tv/shared";
 import { sanitizeThemeMode, setBootThemeMode } from "./src/theme/themeMode";
 import { setBootLiquidGlassEnabled } from "./src/theme/liquidGlass";
 
+// Miroir des jetons de l'ancien thème d'administrateur (presets saisonniers
+// compris) : plus jamais appliqué, effacé s'il traîne encore. Nom de clé
+// conservé tel quel — c'est une clé de stockage.
 const THEME_KEY = "tentacle_theme_tokens";
 const THEME_MODE_KEY = "tentacle_theme_mode";
 const LIQUID_GLASS_KEY = "tentacle_liquid_glass";
@@ -30,35 +32,26 @@ try {
   const ctx = require.context("./app");
   console.log("[index.js] Step 4: Context created, keys:", ctx.keys());
 
-  // Why this gate exists: RN `StyleSheet.create` snapshots its color values
-  // at *module evaluation time*. Non-migrated screens referencing
-  // `BRAND.violet`, `colors.accent`, etc. at the top level bake those values
-  // once captured — they cannot react to a later `applyThemeOverride()` call.
-  // By delaying <ExpoRoot> mount until after AsyncStorage has been read:
-  //  1. brand tokens are applied so the first import of any screen sees the
-  //     admin-configured colors (files migrated to useThemedStyles re-render
-  //     live and don't depend on this anymore);
-  //  2. the appearance mode (light/dark/auto) is posed via setBootThemeMode
-  //     BEFORE the first render — Appearance.setColorScheme is applied, so
-  //     useColorScheme() and native elements are correct from frame one.
+  // Pourquoi cette attente : <ExpoRoot> ne se monte qu'une fois AsyncStorage
+  // lu, pour que le mode d'apparence (clair, sombre, auto) soit posé par
+  // setBootThemeMode AVANT le premier rendu — Appearance.setColorScheme est
+  // appliqué, useColorScheme() et les éléments natifs sont justes dès la
+  // première image (de même pour la préférence Liquid Glass).
   RootApp = function App() {
     const [themed, setThemed] = useState(false);
     useEffect(() => {
       let done = false;
       AsyncStorage.multiGet([THEME_KEY, THEME_MODE_KEY, LIQUID_GLASS_KEY])
         .then((pairs) => {
-          let tokensJson = null;
+          let staleTokens = false;
           let modeRaw = null;
           let liquidRaw = null;
           for (const [key, value] of pairs) {
-            if (key === THEME_KEY) tokensJson = value;
+            if (key === THEME_KEY) staleTokens = value != null;
             else if (key === THEME_MODE_KEY) modeRaw = value;
             else if (key === LIQUID_GLASS_KEY) liquidRaw = value;
           }
-          if (tokensJson) {
-            try { applyThemeOverride(JSON.parse(tokensJson)); }
-            catch (e) { console.warn("[index.js] bad theme tokens cache:", e?.message); }
-          }
+          if (staleTokens) AsyncStorage.removeItem(THEME_KEY).catch(() => {});
           setBootThemeMode(sanitizeThemeMode(modeRaw));
           setBootLiquidGlassEnabled(liquidRaw);
         })

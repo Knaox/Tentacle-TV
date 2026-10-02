@@ -1,88 +1,25 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  type ReactNode,
-} from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { DEFAULT_THEME, mergeTheme, type Theme } from "@tentacle-tv/theme";
-import { applyThemeOverride } from "@tentacle-tv/shared";
-import { fetchThemeState } from "./themeApi";
+import { createContext, useContext, type ReactNode } from "react";
+import { DEFAULT_THEME, type Theme } from "@tentacle-tv/theme";
 
 export interface ThemeContextValue {
   theme: Theme;
-  isLoading: boolean;
-  refresh: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextValue>({
-  theme: DEFAULT_THEME,
-  isLoading: false,
-  refresh: () => {},
-});
-
-interface ThemeProviderProps {
-  /** Backend base URL — null pre-pairing, no fetch performed. */
-  backendUrl: string | null;
-  children: ReactNode;
 }
 
 /**
- * TV theme bootstrap.
+ * Le thème de la TV est CONSTANT : celui du code (`DEFAULT_THEME`).
  *
- * Uses TanStack Query v4 (note the `cacheTime` key — renamed `gcTime` in v5).
- *
- * Strategy mirrors the mobile provider: hydrate with `DEFAULT_THEME`
- * synchronously, fetch `/api/theme` in the background, merge any partial
- * override into the default tree. No CustomCSS on TV (no DOM).
+ * Il venait autrefois de `/api/theme`, que l'administrateur pouvait surcharger
+ * — c'est par là que les presets saisonniers (Noël, Pâques, Halloween)
+ * décalaient les couleurs de la TV. Presets et surcharge ont quitté le serveur
+ * (1.17, qui sert depuis un état constant) : la TV ne lit plus la route, et un
+ * serveur plus ancien resté sur un preset ne la teinte plus.
  */
-export function ThemeProvider({ backendUrl, children }: ThemeProviderProps) {
-  const queryClient = useQueryClient();
+const VALUE: ThemeContextValue = { theme: DEFAULT_THEME };
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["theme", backendUrl ?? ""],
-    queryFn: () => fetchThemeState(backendUrl as string),
-    enabled: !!backendUrl,
-    // Always stale → refetched on focus / mount. Admin changes propagate next
-    // foreground without forcing the user to relaunch the TV app.
-    staleTime: 0,
-    cacheTime: 30 * 60 * 1000,
-    retry: 1,
-    refetchOnWindowFocus: true,
-  });
+const ThemeContext = createContext<ThemeContextValue>(VALUE);
 
-  const theme = useMemo<Theme>(() => {
-    if (!data) return DEFAULT_THEME;
-    return mergeTheme(DEFAULT_THEME, {
-      id: data.id,
-      name: data.name,
-      tokens: data.tokens,
-    });
-  }, [data]);
-
-  // Push the override into the shared mutable theme exports so inline-style
-  // consumers reading `Colors.accentPurple`, `BRAND.violet`, etc. pick up the
-  // admin's theme on the next render. Module-level StyleSheet.create stays
-  // frozen at boot-time snapshot — known limitation, handled component by
-  // component via `useTheme().theme.tokens.*` for future migration.
-  useEffect(() => {
-    applyThemeOverride(data?.tokens ?? null);
-  }, [data?.tokens]);
-
-  const value = useMemo<ThemeContextValue>(
-    () => ({
-      theme,
-      isLoading,
-      refresh: () =>
-        queryClient.invalidateQueries({ queryKey: ["theme"] }),
-    }),
-    [theme, isLoading, queryClient],
-  );
-
-  return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  );
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  return <ThemeContext.Provider value={VALUE}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme(): ThemeContextValue {

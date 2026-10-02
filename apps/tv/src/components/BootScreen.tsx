@@ -10,9 +10,9 @@ import { BootView } from "../redesign/screens/overlays/BootView";
  */
 export function BootScreen() {
   if (REDESIGN_ACTIVE) return <BootView />;
-  // Avant tout fournisseur : la couleur de marque statique de DEFAULT_THEME
-  // (le thème de l'administrateur n'est pas encore lu). `#0a0a0f` n'a pas de
-  // jeton équivalent — gardé en littéral.
+  // Avant tout fournisseur : la couleur de marque de DEFAULT_THEME, la seule
+  // (aucun thème ne vient plus du serveur). `#0a0a0f` n'a pas de jeton
+  // équivalent — gardé en littéral.
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0a0a0f" }}>
       <ActivityIndicator size="large" color={DEFAULT_THEME.tokens.color.brand.base} />

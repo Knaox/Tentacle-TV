@@ -9,8 +9,6 @@ export {
   useTheme,
   type ThemeContextValue,
 } from "./ThemeProvider";
-export { fetchThemeState } from "./themeApi";
-export type { BackendThemeState } from "./types";
 // Les convertisseurs vivent dans `@tentacle-tv/theme` : ils servent aussi la
 // cible webOS, et une copie locale avait déjà pris la poussière ici sans qu'un
 // seul appelant s'en serve. Ré-exportés pour que les écrans n'aient pas à

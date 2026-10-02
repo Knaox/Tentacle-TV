@@ -217,7 +217,6 @@ export function App() {
   const liquidGlass = useLiquidGlass();
   const [ready, setReady] = useState(false);
   const [client, setClient] = useState<JellyfinClient | null>(null);
-  const [serverUrl, setServerUrl] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -253,7 +252,6 @@ export function App() {
         } catch { /* silent — use local cache */ }
       }
 
-      setServerUrl(tentacleUrl);
       setClient(jfClient);
       setReady(true);
     })();
@@ -265,7 +263,7 @@ export function App() {
     <LiquidGlassProvider enabled={liquidGlass}>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <ThemeProvider backendUrl={serverUrl}>
+          <ThemeProvider>
             <TentacleConfigContext.Provider value={{ storage, uuid }}>
               <JellyfinClientContext.Provider value={client}>
                 <AppContent />

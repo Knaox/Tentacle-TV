@@ -9,12 +9,11 @@ import { TV_BANNER_CARD, TV_RADIUS, withAlpha } from "@tentacle-tv/theme";
 // progress orange) stay local because they don't apply to other platforms.
 
 /**
- * TV colour namespace — getters bind every shared-token-derived field to the
- * live `BRAND` / `SURFACE` / `TEXT` / `STATUS` / `BORDER` exports from
- * `@tentacle-tv/shared`. After `applyThemeOverride()` runs at boot
- * (post `/api/theme` fetch), inline-style consumers reading `Colors.accentPurple`
- * etc. immediately reflect the admin's override. TV-specific values
- * (`bgDeep` OLED black, `bgCard`, glass tints) stay hardcoded by design.
+ * Les couleurs de la TV : des accesseurs sur les jetons de `@tentacle-tv/shared`
+ * (`BRAND`, `SURFACE`, `TEXT`, `STATUS`, `BORDER`), lus au rendu — la marque n'a
+ * qu'une source, et la TV ne reçoit plus aucune surcharge du serveur (les
+ * presets de l'administrateur sont retirés). Les valeurs propres à la TV (noir
+ * OLED `bgDeep`, `bgCard`, teintes du verre) restent écrites ici.
  */
 interface TvColors {
   readonly bgDeep: string;
@@ -110,9 +109,9 @@ export { BRAND, SURFACE, TEXT, STATUS, BORDER };
 // ─── Spacing ─────────────────────────────────────────────────────────────────
 
 /**
- * Teinte de marque à l'alpha donné, lue AU RENDU sur le token vivant : un
- * littéral `rgba(139, 92, 246, …)` court-circuite `applyThemeOverride()` — un
- * admin qui change la couleur de marque voyait ces zones rester violettes.
+ * Teinte de marque à l'alpha donné, lue sur le jeton partagé : un littéral
+ * `rgba(139, 92, 246, …)` recopierait la couleur de marque, qui n'a qu'une
+ * source.
  */
 export function brandAlpha(alpha: number): string {
   return withAlpha(BRAND.violet, alpha, `rgba(139, 92, 246, ${alpha})`);
