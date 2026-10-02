@@ -25,6 +25,8 @@ interface Entry {
   master?: RelayMaster;
   masterText?: string;
   media: Map<string, RelayMedia>;
+  /** Les lectures amont en vol : deux demandes de la même liste en partagent une. */
+  loading: Map<string, Promise<unknown>>;
 }
 
 /** Un trou de dix minutes avant l'échéance : une bande-annonce entamée doit pouvoir finir. */
@@ -76,7 +78,7 @@ async function extract(ytId: string): Promise<Entry | null> {
   }
   misses.delete(ytId);
   const now = Date.now();
-  const entry: Entry = { source: result.source, validUntil: result.source.expiresAt - EXPIRY_MARGIN_MS, extractedAt: now, lastUsed: now, media: new Map() };
+  const entry: Entry = { source: result.source, validUntil: result.source.expiresAt - EXPIRY_MARGIN_MS, extractedAt: now, lastUsed: now, media: new Map(), loading: new Map() };
   entries.set(ytId, entry);
   evict();
   console.log(`[trailers] ${ytId} : ${result.source.kind} via ${result.clients.join(",")} en ${Date.now() - started} ms`);
@@ -136,16 +138,28 @@ export async function isReadable(url: string, headers: Record<string, string> = 
   }
 }
 
-async function loadMaster(entry: Entry): Promise<RelayMaster | null> {
-  if (entry.master) return entry.master;
-  if (entry.source.kind !== "hls") return null;
-  const { res } = await fetchUpstream(entry.source.masterUrl, entry.source.headers);
-  if (!res.ok) return null;
-  const master = parseMaster(await res.text(), entry.source.masterUrl);
-  if (!master) return null;
-  entry.master = master;
-  entry.masterText = renderMaster(master, (key) => `p/${key}.m3u8?t=${TOKEN_SLOT}`);
-  return master;
+/** Une lecture amont à la fois par ressource ; une erreur de réseau vaut « rien ». */
+function once<T>(entry: Entry, key: string, task: () => Promise<T | null>): Promise<T | null> {
+  const pending = entry.loading.get(key) as Promise<T | null> | undefined;
+  if (pending) return pending;
+  const run = task().catch(() => null).finally(() => entry.loading.delete(key));
+  entry.loading.set(key, run);
+  return run;
+}
+
+function loadMaster(entry: Entry): Promise<RelayMaster | null> {
+  if (entry.master) return Promise.resolve(entry.master);
+  const source = entry.source;
+  if (source.kind !== "hls") return Promise.resolve(null);
+  return once(entry, "master", async () => {
+    const { res } = await fetchUpstream(source.masterUrl, source.headers);
+    if (!res.ok) return null;
+    const master = parseMaster(await res.text(), source.masterUrl);
+    if (!master) return null;
+    entry.master = master;
+    entry.masterText = renderMaster(master, (key) => `p/${key}.m3u8?t=${TOKEN_SLOT}`);
+    return master;
+  });
 }
 
 /** Le maître relayé (gabarit à jeton), avec une reprise si l'URL amont est morte. */
@@ -159,17 +173,19 @@ export async function masterTemplate(ytId: string): Promise<string | null> {
   return null;
 }
 
-async function loadMedia(entry: Entry, key: string): Promise<RelayMedia | null> {
+function loadMedia(entry: Entry, key: string): Promise<RelayMedia | null> {
   const cached = entry.media.get(key);
-  if (cached) return cached;
-  const master = await loadMaster(entry);
-  const upstream = master?.variants.find((v) => v.key === key)?.upstream ?? master?.audio.find((a) => a.key === key)?.upstream;
-  if (!upstream || entry.source.kind !== "hls") return null;
-  const { res } = await fetchUpstream(upstream, entry.source.headers);
-  if (!res.ok) return null;
-  const media = rewriteMedia(await res.text(), upstream, (i) => `../s/${key}/${i}.ts?t=${TOKEN_SLOT}`, () => `../s/${key}/init.mp4?t=${TOKEN_SLOT}`);
-  if (media) entry.media.set(key, media);
-  return media;
+  if (cached) return Promise.resolve(cached);
+  return once(entry, `media:${key}`, async () => {
+    const master = await loadMaster(entry);
+    const upstream = master?.variants.find((v) => v.key === key)?.upstream ?? master?.audio.find((a) => a.key === key)?.upstream;
+    if (!upstream || entry.source.kind !== "hls") return null;
+    const { res } = await fetchUpstream(upstream, entry.source.headers);
+    if (!res.ok) return null;
+    const media = rewriteMedia(await res.text(), upstream, (i) => `../s/${key}/${i}.ts?t=${TOKEN_SLOT}`, () => `../s/${key}/init.mp4?t=${TOKEN_SLOT}`);
+    if (media) entry.media.set(key, media);
+    return media;
+  });
 }
 
 /** Une liste de segments relayée (gabarit à jeton), avec une reprise si l'URL amont est morte. */

@@ -80,6 +80,17 @@ describe("listes relayées", () => {
     expect((await segmentTarget("Way9Dexny3w", "270", 1))?.url).toContain("/seg/270/1.ts");
   });
 
+  it("partage une lecture amont entre deux demandes de la même liste", async () => {
+    extractTrailerSource.mockResolvedValue(hls());
+    const fetch = googlevideo();
+    vi.stubGlobal("fetch", fetch);
+    await resolveTrailer("Way9Dexny3w");
+    await Promise.all([masterTemplate("Way9Dexny3w"), masterTemplate("Way9Dexny3w"), mediaTemplate("Way9Dexny3w", "270"), mediaTemplate("Way9Dexny3w", "270")]);
+    const asked = fetch.mock.calls.map(([url]) => String(url));
+    expect(asked.filter((u) => u.endsWith("/index.m3u8"))).toHaveLength(1);
+    expect(asked.filter((u) => u.includes("/itag/270/"))).toHaveLength(1);
+  });
+
   it("prépare le maître et les listes de départ (vidéo 720p et son audio)", async () => {
     extractTrailerSource.mockResolvedValue(hls());
     const fetch = googlevideo();

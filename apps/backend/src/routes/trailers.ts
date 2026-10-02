@@ -56,6 +56,9 @@ export async function trailerRoutes(app: FastifyInstance) {
 
     const resolved = await resolveTrailer(ytId);
     if (!resolved) return reply.status(404).send({ error: "unavailable" });
+    // Le maître et les premières listes partent chez googlevideo pendant que la
+    // réponse voyage : AVPlayer les trouvera prêts, ou en route.
+    void prepareTrailer(ytId).catch(() => undefined);
 
     const token = signRelayToken(ytId);
     const path = resolved.kind === "hls"
