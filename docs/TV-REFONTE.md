@@ -28,6 +28,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 16. Les rangées (Apple TV) | Fait (2026-10-02) : HAUT / BAS vers la section voisine, l'élément au centre le plus proche — partout ; la page qui suit le focus en UN mouvement — « Les rangées (Apple TV) » ci-dessous. |
 | 17. Le logo de l'app (Apple TV) | Fait (2026-10-02) : l'icône en quatre couches (fond, lumière, poulpe, bras avant), le Top Shelf dans le même monde, le lancement = la première image de l'app, plus de noir au démarrage — « Le logo de l'app : icône, Top Shelf, lancement (Apple TV) » ci-dessous. |
 | 18. Saisons manquantes (Apple TV, bureau, mobile) | Fait (2026-10-02) : une série de la bibliothèque à qui il manque des saisons les offre depuis la recherche — en tête de « À demander » et en onglets grisés sur sa fiche (Apple TV), « Demander » au plateau et dans la barre (bureau), dans la feuille d'appui long (mobile) — « Les saisons manquantes » ci-dessous. |
+| 19. Bibliothèques rapides (Apple TV) | Fait (2026-10-02) : champs minimaux, pages de 60 demandées tôt, lignes recyclées, cartes allégées, préchargement depuis la navigation — ouverture ~0,5 s, 3 fois plus de lignes en flèche maintenue, RAM −54 % — « Les bibliothèques rapides (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -2142,6 +2143,100 @@ Planches (avant / après, et la même rangée du bureau, rendue par le vrai
 composant web sur le même instantané) :
 `apps/tv/harness/ui-bench/out/t4-prochains/` et `…/out/t4-deja-vu/` (non
 suivis).
+
+## Les bibliothèques rapides (Apple TV)
+
+Branche `claude/friendly-wu-62d746` (2026-10-02). Retour de l'essai : « que
+le chargement des bibliothèques soit ultra rapide, défiler super vite, mais
+attention à la RAM ». Tout est mesuré au banc des bibliothèques
+(`apps/tv/harness/library-bench/`, README) : l'app réelle au simulateur, en JS
+de production, devant 1 200 films servis par un faux serveur CALIBRÉ sur le
+vrai (Jellyfin 10.11, compte de test, lecture seule).
+
+**Ce qui coûtait** — mesuré avant de toucher à rien (profileurs Hermes et
+natif, sonde de chargement) :
+
+- les pages : 30 titres AVEC leurs sources (`MediaSources` : 87 % du poids,
+  229 Kio la page, 7,6 Kio par film), demandées à 0,6 écran de la fin — flèche
+  maintenue, le focus attendait à chaque frontière de page ;
+- la FlatList par défaut : 21 écrans montés, des lots de dix lignes (60
+  cartes : des tâches JS de 0,4 à 1 s quand une page arrivait) ;
+- le montage d'une affiche : sept valeurs partagées et huit styles ou
+  réactions Reanimated, la plupart à zéro au repos — leur clonage était le
+  premier poste du fil JS ; et une valeur partagée LUE sur le fil JS est un
+  appel synchrone au fil d'interface (`executeOnUIRuntimeSync`) ;
+- la lumière qui suit le focus redessinait l'en-tête et toute la grille à
+  chaque carte traversée ;
+- la barre d'index du défilement rapide de tvOS (flèche maintenue :
+  `_UIFocusFastScrollingController`), que la grille ne montre pas mais que
+  tvOS refabriquait, étiquettes comprises, à chaque lot de lignes ajouté :
+  le premier poste du fil d'interface.
+
+**Ce qui change** (un commit chacun) :
+
+- la grille demande ses champs à elle (`gridCatalogParams`, jeu `grid` de
+  l'api-client : `RecursiveItemCount` seul — Android TV garde `light`, ses
+  cartes lisent les sources pour leurs puces de qualité) et des pages de 60 :
+  58 Kio au lieu de 229 pour deux fois plus de titres ;
+- la page suivante part à trois écrans de la fin ;
+- les lignes sont RECYCLÉES (FlashList, déjà embarquée) : défiler ne crée
+  plus ni vue native ni valeur animée ; cartes clées par leur place, images
+  par leur adresse (une `Image` d'iOS garde l'ancienne image le temps que la
+  nouvelle arrive) ; deux lignes d'avance, la règle des sections trouve
+  toujours la ligne suivante ;
+- l'habit du focus d'une carte (lueur, reflet, fondu de l'ombre :
+  `CardFocusDressing`) ne naît qu'au focus et meurt à la fin du retour ; le
+  recul n'existe que pour une carte de rangée ; `Reveal` ne crée rien tant
+  que rien ne paraît — rendu identique, comparé au pixel ;
+- la lumière du fond change toujours à chaque pas du focus, sans redessiner
+  la grille (en-tête, vide et pied mémoïsés) ;
+- `showsScrollIndex={false}` (react-native-tvos) : plus de barre d'index ;
+- la navigation précharge la grille où le focus s'arrête 300 ms : sa première
+  page (les paramètres EXACTS de l'écran) et les affiches des deux premières
+  lignes, dans le cache HTTP.
+
+| Mesuré (banc, 1 200 titres, médianes de 3 tours alternés) | Avant | Après |
+|---|---|---|
+| Ouverture : 1re affiche après OK | 713 ms | 508 ms |
+| Ouverture : premier écran complet | 770 ms | 509 ms |
+| Flèche BAS maintenue 8 s : lignes parcourues | 29 | 90 |
+| — affiches vides (part du temps) | 3,4 % | 0,3 % |
+| — pire attente d'une affiche | 580 ms | 80 ms |
+| — affiches là après l'arrêt | 0 ms | 0 ms |
+| — fil d'interface | 57,3 i/s | 59,7 i/s |
+| — fil JS / sa pire tâche | 45,5 i/s / 665 ms | 54,4 i/s / 153 ms |
+| 30 pas BAS, même travail : fil d'interface | 57,3 à 57,9 i/s | 59,0 à 59,9 i/s |
+| — CPU de l'app par ligne parcourue | 433 à 501 ms | 219 à 306 ms |
+| — GPU du simulateur | 297 à 321 ms/s | 303 à 322 ms/s |
+| RAM, 3 allers-retours de bout en bout (empreinte) | 206 → 429 → 534 → 556 → 568 → 572 → 570 Mo, pic 618 | 199 → 252 → 257 → 259 → 260 → 262 → 263 Mo, pic 286 |
+
+Mac chargé par les autres sessions (charge 16 à 32 pendant ce tableau) : les
+temps absolus bougent d'une série à l'autre, l'ordre jamais. Simulateur
+1080p : sur une Apple TV 4K, une affiche décodée pèse 614 Ko au lieu de 369.
+RAM : sur seize passages de bout en bout, 252 → 275 Mo, une croissance qui
+s'éteint (+11, +9, +3 Mo par série) ; le tas JS principal reste à 64 Mo
+réservés, ses octets vivants baissent. Tas JS d'« avant » : 191 Mo, après :
+73 à 78.
+
+Pièges payés :
+
+- **Flèche maintenue = défilement rapide de tvOS**, pas des pas du focus : la
+  page file à 10 000 points/s, puis le focus se pose. Sa barre d'index se
+  refabrique à chaque `setContentSize` : `showsScrollIndex={false}` sur toute
+  longue page qui défile (l'accueil en profiterait aussi).
+- **Après une remontée maintenue jusqu'en haut**, tvOS pose la page où son
+  défilement rapide s'arrête : avec la grille recyclée, la première ligne est
+  entière mais le titre de la page masqué (HAUT une fois de plus : la barre
+  de filtres, l'en-tête). Avec la FlatList, le titre restait visible.
+- **L'agent XCUITest ne tient pas un appui plus d'~11 s** ; sous une charge de
+  ~50, les captures `simctl` arrivent avec des secondes de retard — mesurer par
+  la sonde, pas par des rafales de captures.
+
+À éprouver sur l'Apple TV (tâche de l'utilisateur) : ouvrir Films depuis la
+navigation (le préchargement joue si le focus s'y arrête un instant), flèche
+maintenue jusqu'au bout et retour, glisser vif au pavé, appui long et fiche
+depuis une affiche, Favoris et Ma liste (même grille). JS seulement : aucune
+reconstruction de l'app, aucun changement du serveur.
 
 ---
 
