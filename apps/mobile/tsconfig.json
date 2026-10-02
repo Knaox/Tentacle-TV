@@ -8,5 +8,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "app", "app.config.ts"]
+  "include": ["src", "app", "app.config.ts", "app.config.test.ts"]
 }
