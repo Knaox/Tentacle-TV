@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
 import type { CardModel } from "../../redesign/cards/cardTypes";
@@ -34,13 +34,17 @@ export function usePosterGrid(items: MediaItem[]): PosterGrid {
   const cards = useCardModels(items, { variant: "poster", subtitle: yearSubtitle });
   const [focused, setFocused] = useState<ArtworkPalette | null>(null);
   const byId = useMemo(() => new Map(items.map((item) => [item.Id, item])), [items]);
+  // Les gestionnaires lisent l'index du moment : stables d'une page à
+  // l'autre, une page qui arrive ne redessine pas toute la grille montée.
+  const byIdRef = useRef(byId);
+  byIdRef.current = byId;
   const { openPoster, sheet } = useTVCardActions();
 
-  const onPressCard = useCallback((card: CardModel) => openTitle(byId.get(card.id) ?? { Id: card.id }), [openTitle, byId]);
+  const onPressCard = useCallback((card: CardModel) => openTitle(byIdRef.current.get(card.id) ?? { Id: card.id }), [openTitle]);
   const onLongPressCard = useCallback((card: CardModel) => {
-    const item = byId.get(card.id);
+    const item = byIdRef.current.get(card.id);
     if (item) openPoster(item);
-  }, [byId, openPoster]);
+  }, [openPoster]);
   const onFocusCard = useCallback((card: CardModel) => {
     if (card.palette) setFocused(card.palette);
   }, []);
