@@ -44,6 +44,7 @@ import { PushRegistrationSync } from "@/hooks/usePushRegistration";
 import { TranscodeCleanupSync } from "@/providers/TranscodeCleanupSync";
 import { SessionChannelSync } from "@/session/SessionChannelSync";
 import { StorageReadyContext } from "./StorageReadyContext";
+import { MOBILE_BITRATE_MEASURE } from "@/utils/bitrateMeasureOptions";
 
 interface AppProvidersProps {
   storage: StorageAdapter;
@@ -163,13 +164,7 @@ function DirectStreamingSync({ storage }: { storage: StorageAdapter }) {
   const client = useJellyfinClient();
   const qc = useQueryClient();
   const token = storage.getItem("tentacle_token");
-  const { data } = useStreamingConfig(token);
-
-  // Préchauffage de la mesure de débit (miroir TV/web) : la PREMIÈRE lecture
-  // après le lancement peut déjà être capée — cache 10 min, fire-and-forget.
-  useEffect(() => {
-    if (token) primeBitrateMeasure(client);
-  }, [client, token]);
+  const { data, isFetched } = useStreamingConfig(token);
 
   useEffect(() => {
     if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {
@@ -181,7 +176,14 @@ function DirectStreamingSync({ storage }: { storage: StorageAdapter }) {
     } else {
       client.setDirectStreaming(null);
     }
-  }, [client, data]);
+    // Préchauffage de la mesure de débit (miroir TV/web) : la PREMIÈRE lecture
+    // après le lancement peut déjà être capée — cache 10 min, fire-and-forget.
+    // Sur la voie que prendront les segments, une fois la config CONNUE : une
+    // mesure du proxy prise avant ne dirait rien du direct (et coûterait 6 Mo).
+    // Remesurée quand la voie change — direct ouvert, ou coupé (hors du réseau
+    // local) ; une voie inchangée garde sa mesure.
+    if (token && isFetched) primeBitrateMeasure(client, MOBILE_BITRATE_MEASURE);
+  }, [client, data, token, isFetched]);
 
   useEffect(() => {
     client.setOnDirectStreamingFail(() => {

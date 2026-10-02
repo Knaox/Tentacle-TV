@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cachedBitrate, primeBitrateMeasure, useJellyfinClient } from "@tentacle-tv/api-client";
 import { buildQualityLadder, capForBitrate, findPreset, isPresetOffered } from "@tentacle-tv/shared";
 import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
+import { MOBILE_BITRATE_MEASURE } from "@/utils/bitrateMeasureOptions";
 
 /**
  * Échelle + palier + CAP AUTOMATIQUE de qualité du lecteur mobile — extrait de
@@ -11,7 +12,9 @@ import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared
  *    prime toujours, jamais de rétrogradation par-dessus ;
  *  - le cap est PHOTOGRAPHIÉ à chaque résolution de flux (chaque
  *    `fetchPlaybackInfo` ouvre une nouvelle session Jellyfin) — jamais en
- *    lecture continue ; mesure absente/périmée → aucun cap, jamais de blocage ;
+ *    lecture continue ; mesure absente/périmée, ou prise sur une AUTRE voie
+ *    que celle du flux (direct coupé, hors du réseau local) → aucun cap,
+ *    jamais de blocage ;
  *  - la clé AFFICHÉE au menu est le palier servi, cap compris.
  */
 export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSource | undefined }): {
@@ -23,7 +26,8 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
   /** Aucun choix manuel pour cet item : le mode « Auto » est armé. */
   autoModeArmed: boolean;
   /** Palier à servir à la PROCHAINE résolution de flux — photographie le cap
-   *  (cachedBitrate au moment T) quand la clé est « original » non désarmée. */
+   *  (la mesure de la voie du flux au moment T) quand la clé est « original »
+   *  non désarmée. */
   presetForFetch: () => QualityPreset;
   /** Choix du menu : désarme le cap pour l'item, puis applique. */
   selectQualityManual: (key: QualityKey) => QualityPreset;
@@ -39,9 +43,11 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
   const disarmedRef = useRef<string | undefined>(undefined);
 
   // Filet du montage lecteur (le préchauffage vit aussi au lancement de
-  // l'app, cf. AppProviders) : fire-and-forget, cache 10 min.
+  // l'app, cf. AppProviders) : fire-and-forget, cache 10 min. MÊME réglage
+  // que le lancement : sans la voie du média, ce filet remesurerait le proxy
+  // et écraserait la mesure directe.
   useEffect(() => {
-    primeBitrateMeasure(client);
+    primeBitrateMeasure(client, MOBILE_BITRATE_MEASURE);
   }, [client]);
 
   // Paliers calculés d'après la source : jamais au-dessus de son débit ni de
@@ -68,10 +74,10 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
       setAppliedCap(null);
       return manual;
     }
-    const cap = capForBitrate(mediaSource, cachedBitrate());
+    const cap = capForBitrate(mediaSource, cachedBitrate(client, MOBILE_BITRATE_MEASURE));
     setAppliedCap(cap);
     return cap ?? manual;
-  }, [qualityKey, qualityPresets, itemId, mediaSource]);
+  }, [qualityKey, qualityPresets, itemId, mediaSource, client]);
 
   const selectQualityManual = useCallback(
     (key: QualityKey): QualityPreset => {

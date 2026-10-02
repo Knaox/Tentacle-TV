@@ -7,7 +7,7 @@ import type { JellyfinClient } from "../jellyfin";
  * `GET /Playback/BitrateTest?size=N` (N octets aléatoires, servis à travers le
  * proxy Tentacle — entrée de liste blanche dédiée côté backend).
  *
- * Usage : les clients TV appellent `primeBitrateMeasure(client)` tôt (montage de
+ * Usage : les clients appellent `primeBitrateMeasure(client)` tôt (montage de
  * l'accueil / du lecteur), puis lisent `cachedBitrate()` au moment de choisir la
  * qualité. La mesure est UNE photographie, pas un tuner permanent : cache de
  * 10 min, single-flight, et tout échec (proxy sans l'entrée, timeout, réseau)
@@ -44,8 +44,8 @@ export interface BitrateMeasureOptions {
    * « 115 Mb/s » sur n'importe quel réseau, et sur un appareil lent un chiffre
    * bas sans rapport avec lui. Le temps se compte alors de la requête à la
    * réponse, moins la latence de deux petites requêtes ; jamais la conversion.
-   * OPT-IN : la TV seulement (le mobile a sa tâche ; un navigateur lit le
-   * corps en flux et garde la mesure d'origine).
+   * OPT-IN : la TV et le mobile (un navigateur lit le corps en flux et garde
+   * la mesure d'origine).
    */
   bufferedFetch?: boolean;
 }
