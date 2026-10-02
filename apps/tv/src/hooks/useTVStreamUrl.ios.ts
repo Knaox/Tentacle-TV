@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { killActiveEncoding, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { plog } from "../utils/playerDiag";
@@ -279,6 +279,10 @@ export function useTVStreamUrl(args: {
       if (fetchIdRef.current !== fetchId) return "ok";
       if (!next) return "failed";
       setResult({ ...next, resumeFrag: fragmentAt(resolveRestartAt(at)) });
+      // Une session serveur NEUVE : l'encodage de la précédente s'arrête — sinon il
+      // tournait encore une minute à côté, une session fantôme chez Jellyfin.
+      const previous = result.playSessionId;
+      if (previous && previous !== next.playSessionId) setTimeout(() => { void killActiveEncoding(client, previous); }, RETIRE_DELAY_MS);
       return "ok";
     } catch {
       return "failed";
