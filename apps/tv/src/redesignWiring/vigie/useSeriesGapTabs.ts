@@ -1,17 +1,28 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useSeasons, useTitleGaps } from "@tentacle-tv/api-client";
-import { seriesTitleKey, type MediaItem, type TitleKey } from "@tentacle-tv/shared";
-import { seasonTitle } from "@tentacle-tv/tv-core";
+import { useIsFocused } from "@react-navigation/native";
+import { useJellyfinClient, useMyTitles, useSeasons, useTitleGaps } from "@tentacle-tv/api-client";
+import { MY_TITLE_STATE_KEYS, seriesTitleKey, type MediaItem, type TitleKey } from "@tentacle-tv/shared";
+import { isAdvancing, seasonTitle } from "@tentacle-tv/tv-core";
 import type { MissingSeasonTabModel } from "../../redesign/screens/detail/detailTypes";
+import { showNotice } from "../overlays/transientNotice";
+import { arrivalOf, type ArrivalReading } from "./arrivalModels";
+import { useLiveRefresh } from "./liveRequests";
+import { useAppActive } from "./useAppActive";
 import type { TitleRequests } from "./useTitleRequests";
 
 /**
  * Les saisons MANQUANTES d'une série, sur sa fiche (garde Vigie ouverte) : au
  * bout de la bande des saisons, un onglet GRISÉ par saison que l'extension
  * connaît et que la bibliothèque n'a pas (`titles.gaps`) — un « + » quand
- * elle se demande, une horloge quand elle l'est déjà. OK ouvre la feuille des
- * saisons sur elle, déjà cochée.
+ * elle se demande, une horloge quand elle l'est déjà.
+ *
+ * OK sur un « + » DEMANDE cette saison, sans feuille (`requestSeasons`, avec
+ * l'origine de la TV) : l'onglet prend aussitôt son état — « En attente » et
+ * son camembert, ceux de la demande du compte qui le couvre (`useMyTitles`,
+ * toutes ses demandes), en direct tant qu'elle avance — et le focus reste
+ * sur lui. OK sur une saison déjà demandée : son état, et l'invite à la
+ * suivre sur le téléphone.
  *
  * Une question pour la fiche, et rien pour une série complète : l'extension
  * répond de sa mémoire. Les saisons de la bibliothèque sont celles de la bande
@@ -38,6 +49,13 @@ export function useSeriesGapTabs(requests: TitleRequests | null, item: MediaItem
   const open = gate !== null && gate.provider.seasonsPath !== null && key !== null;
   const gaps = useTitleGaps(gate?.provider ?? null, keys, gate?.lang ?? "fr", { enabled: open });
   const { data: seasons } = useSeasons(open ? series?.Id : undefined);
+  const { titles: mine, updatedAt } = useMyTitles(gate?.provider ?? null, gate?.lang ?? "fr", { enabled: open });
+  const own = key ? mine?.find((title) => title.key === key) : undefined;
+  const screenFocused = useIsFocused();
+  const appActive = useAppActive();
+  const visible = open && screenFocused && appActive;
+  useLiveRefresh(gate, visible && own !== undefined && isAdvancing(own.state));
+  const reading = useMemo<ArrivalReading>(() => ({ at: updatedAt, live: visible }), [updatedAt, visible]);
 
   const missing = useMemo<MissingSeasonTabModel[] | undefined>(() => {
     const list = key && gaps ? gaps.get(key) : undefined;
@@ -46,26 +64,35 @@ export function useSeriesGapTabs(requests: TitleRequests | null, item: MediaItem
     const tabs = new Set(seasons.map((season) => season.IndexNumber).filter((n): n is number => typeof n === "number"));
     const out = list
       .filter((season) => !tabs.has(season.number))
-      .map((season) => ({
-        number: season.number,
-        label: seasonTitle(t, season.number, season.name),
-        requestable: season.requestable,
-        status: season.requestable ? t("requests:seasonToRequest") : season.badge?.label ?? "",
-      }));
+      .map((season): MissingSeasonTabModel => {
+        const covered = own !== undefined && (own.seasons === null || own.seasons.includes(season.number));
+        const ownLabel = own ? t(MY_TITLE_STATE_KEYS[own.state]) : "";
+        return {
+          number: season.number,
+          label: seasonTitle(t, season.number, season.name),
+          requestable: season.requestable && !covered,
+          status: covered ? ownLabel : season.requestable ? t("requests:seasonToRequest") : season.badge?.label ?? "",
+          ...(covered && own ? { request: { arrival: arrivalOf(own, reading), label: ownLabel } } : {}),
+        };
+      });
     return out.length > 0 ? out : undefined;
-  }, [key, gaps, seasons, t]);
+  }, [key, gaps, seasons, own, reading, t]);
 
-  const openSeasons = requests?.openSeasons;
+  const latest = useRef(missing);
+  latest.current = missing;
+  const requestSeasons = requests?.requestSeasons;
   const onRequestSeason = useCallback((number: number) => {
-    if (!openSeasons || !series || !key) return;
+    const tab = latest.current?.find((season) => season.number === number);
+    if (!tab || !requestSeasons || !series || !key) return;
+    if (!tab.requestable) {
+      showNotice({ kind: "info", title: tab.status || t("requests:statePending"), text: t("requests:followOnPhone") });
+      return;
+    }
     // L'affiche de la bibliothèque : celle que montrent aussitôt les demandes du compte.
     const tag = series.ImageTags?.Primary;
     const imageUrl = tag ? client.getImageUrl(series.Id, "Primary", { width: 342, quality: 85, tag }) : null;
-    openSeasons(
-      { key, title: series.Name ?? "", year: series.ProductionYear ?? null, imageUrl },
-      { seriesId: series.Id, focus: number },
-    );
-  }, [openSeasons, series, key, client]);
+    requestSeasons({ key, title: series.Name ?? "", year: series.ProductionYear ?? null, imageUrl }, [number]);
+  }, [requestSeasons, series, key, client, t]);
 
   return { missing, onRequestSeason };
 }

@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { FocusTarget } from "../focus/FocusTarget";
@@ -20,13 +20,16 @@ import { colors, fonts, white } from "../theme/tokens";
  *   (`NativeDesaturate`), cerclé de pointillés, le texte en retrait ; au
  *   focus, un gris clair et un texte noir : elle reste grise, focalisée.
  * `detail` : une valeur à droite (« 3 », « 2019–2024 »). `trailingIcon` :
- * la croix d'un filtre actif, le chevron d'une liste.
+ * la croix d'un filtre actif, le chevron d'une liste. `leading` : un signe
+ * dessiné à la place de l'icône (le camembert d'une saison demandée).
  */
 
 export interface ChipProps {
   label: string;
   detail?: string;
   icon?: IconName;
+  /** Rendu à la place de `icon`, au repos comme au focus. */
+  leading?: ReactNode;
   trailingIcon?: IconName;
   selected?: boolean;
   absent?: boolean;
@@ -51,10 +54,11 @@ export const Chip = memo(function Chip(props: ChipProps) {
   );
 });
 
-function Row({ label, detail, icon, trailingIcon, color, detailColor, height, bold }: {
+function Row({ label, detail, icon, leading, trailingIcon, color, detailColor, height, bold }: {
   label: string;
   detail?: string;
   icon?: IconName;
+  leading?: ReactNode;
   trailingIcon?: IconName;
   color: string;
   detailColor: string;
@@ -63,7 +67,7 @@ function Row({ label, detail, icon, trailingIcon, color, detailColor, height, bo
 }) {
   return (
     <View style={[styles.row, { height, paddingHorizontal: height * 0.44 }]}>
-      {icon ? <Icon name={icon} size={24} color={color} /> : null}
+      {leading ?? (icon ? <Icon name={icon} size={24} color={color} /> : null)}
       <Text style={[bold ? styles.labelBold : styles.label, { color }]} numberOfLines={1}>{label}</Text>
       {detail ? <Text style={[styles.detail, { color: detailColor }]} numberOfLines={1}>{detail}</Text> : null}
       {trailingIcon ? <Icon name={trailingIcon} size={22} color={color} strokeWidth={2.4} /> : null}
@@ -71,7 +75,7 @@ function Row({ label, detail, icon, trailingIcon, color, detailColor, height, bo
   );
 }
 
-function ChipBody({ label, detail, icon, trailingIcon, selected = false, absent = false, size = "lg", focused }: ChipProps & { focused: boolean }) {
+function ChipBody({ label, detail, icon, leading, trailingIcon, selected = false, absent = false, size = "lg", focused }: ChipProps & { focused: boolean }) {
   const p = useFocusProgress(focused);
   const press = usePressProgress();
   const lift = useAnimatedStyle(() => ({ transform: [{ scale: (1 + 0.05 * p.value) * pressScale(press ? press.value : 0) }] }));
@@ -96,6 +100,7 @@ function ChipBody({ label, detail, icon, trailingIcon, selected = false, absent 
         label={label}
         detail={detail}
         icon={icon}
+        leading={leading}
         trailingIcon={trailingIcon}
         color={absent ? ABSENT_TEXT : colors.text}
         detailColor={absent ? ABSENT_TEXT : colors.textSecondary}
@@ -103,7 +108,7 @@ function ChipBody({ label, detail, icon, trailingIcon, selected = false, absent 
         bold={selected}
       />
       <Animated.View style={[StyleSheet.absoluteFill, { borderRadius: radius, backgroundColor: absent ? ABSENT_FOCUS : colors.ctaBg }, whiteLayer]}>
-        <Row label={label} detail={detail} icon={icon} trailingIcon={trailingIcon} color={colors.ctaFg} detailColor="rgba(0, 0, 0, 0.6)" height={height} bold={selected} />
+        <Row label={label} detail={detail} icon={icon} leading={leading} trailingIcon={trailingIcon} color={colors.ctaFg} detailColor="rgba(0, 0, 0, 0.6)" height={height} bold={selected} />
       </Animated.View>
     </Animated.View>
   );

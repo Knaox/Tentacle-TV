@@ -34,3 +34,16 @@ export function requestedTitle(title: AbsentTitle, seasons: number[] | null = nu
     etaSeconds: null,
   };
 }
+
+/**
+ * La demande du compte après une demande de plus sur le même titre : ses
+ * saisons s'additionnent, son état reste le sien (ce qui bouge l'emporte,
+ * comme dans la liste de l'extension) ; sans demande d'avant, la nouvelle.
+ */
+export function mergedRequest(existing: MyTitle | undefined, fresh: MyTitle): MyTitle {
+  if (!existing) return fresh;
+  const seasons = existing.seasons === null || fresh.seasons === null
+    ? null
+    : [...new Set([...existing.seasons, ...fresh.seasons])].sort((a, b) => a - b);
+  return { ...existing, seasons };
+}

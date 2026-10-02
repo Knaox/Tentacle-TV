@@ -8,13 +8,14 @@ import {
   titleStateQueryKey,
   useMyTitles,
   useRequestTitle,
+  useRequestTitleSeasons,
 } from "@tentacle-tv/api-client";
 import { parseTitleKey, withMyTitle, type MyTitle, type TitleRequestOutcome, type TitleState } from "@tentacle-tv/shared";
 import { TV_TITLE_ORIGIN } from "@tentacle-tv/tv-core";
 import { showNotice } from "../overlays/transientNotice";
 import { AbsentSheetRedesign } from "./AbsentSheetRedesign";
 import { mineLabel, sayable } from "./absentStates";
-import { requestedTitle, type AbsentTitle } from "./absentTitle";
+import { mergedRequest, requestedTitle, type AbsentTitle } from "./absentTitle";
 import { ARRIVED_LABEL_KEY } from "./arrivalModels";
 import { useArrivals } from "./liveRequests";
 import { SeasonsSheetRedesign } from "./SeasonsSheetRedesign";
@@ -43,8 +44,9 @@ import { useVigieGate, type VigieGate } from "./useVigieGate";
  *
  * Une série de la BIBLIOTHÈQUE à qui il manque des saisons (contrat
  * `titles.gaps`) passe directement à sa feuille des saisons (`openSeasons`) :
- * ses saisons présentes y disent « Dans la bibliothèque », et l'onglet grisé
- * d'une fiche y entre par sa saison, déjà cochée.
+ * ses saisons présentes y disent « Dans la bibliothèque ». Le « + » d'un
+ * onglet grisé de sa fiche demande CETTE saison, sans feuille
+ * (`requestSeasons`) : même avis, mêmes listes patchées.
  */
 
 /** La feuille des saisons d'une série de la bibliothèque : la série, et la saison par laquelle on entre. */
@@ -59,6 +61,8 @@ export interface TitleRequests {
   hold: (title: AbsentTitle) => void;
   /** La feuille des saisons, sans détour — une série de la bibliothèque à compléter. */
   openSeasons: (title: AbsentTitle, target?: SeasonsTarget) => void;
+  /** Ces saisons-là, demandées d'un geste, sans feuille (le « + » d'un onglet grisé). */
+  requestSeasons: (title: AbsentTitle, seasons: number[]) => void;
   overlay: ReactElement | null;
 }
 
@@ -74,6 +78,7 @@ export function useTitleRequests(): TitleRequests | null {
   const qc = useQueryClient();
   const { titles: mine } = useMyTitles(provider, lang, { enabled: gate !== null });
   const { mutateAsync: requestTitle } = useRequestTitle(provider, lang, gate?.origin ?? null);
+  const { mutateAsync: requestTitleSeasons } = useRequestTitleSeasons(provider, lang, gate?.origin ?? null);
   const arrivals = useArrivals();
   const [seasonsOf, setSeasonsOf] = useState<{ title: AbsentTitle; target?: SeasonsTarget } | null>(null);
   const [held, setHeld] = useState<AbsentTitle | null>(null);
@@ -92,11 +97,10 @@ export function useTitleRequests(): TitleRequests | null {
     const { gate: g, t: tr } = latest.current;
     const entry = requestedTitle(title, seasons);
     if (g && entry) {
-      qc.setQueryData<MyTitle[]>(myTitlesQueryKey(g.provider, g.lang), (list) => withMyTitle(list ?? [], entry));
-      qc.setQueryData<MyTitle[] | undefined>(
-        myTitlesQueryKey(g.provider, g.lang, TV_TITLE_ORIGIN),
-        (list) => (list ? withMyTitle(list, entry) : list),
-      );
+      // Une demande de plus sur le même titre (d'autres saisons) s'ajoute à la sienne.
+      const add = (list: MyTitle[]) => withMyTitle(list, mergedRequest(list.find((m) => m.key === entry.key), entry));
+      qc.setQueryData<MyTitle[]>(myTitlesQueryKey(g.provider, g.lang), (list) => add(list ?? []));
+      qc.setQueryData<MyTitle[] | undefined>(myTitlesQueryKey(g.provider, g.lang, TV_TITLE_ORIGIN), (list) => (list ? add(list) : list));
     }
     showNotice({ kind: "success", title: tr("cards:requestSent"), text: tr("requests:followOnPhone") });
   }, [qc]);
@@ -138,6 +142,19 @@ export function useTitleRequests(): TitleRequests | null {
   }, [qc, requestTitle, answer]);
 
   const openTitle = useCallback((title: AbsentTitle) => void open(title), [open]);
+  const requestSeasons = useCallback(async (title: AbsentTitle, seasons: number[]) => {
+    const once = `${title.key}:${seasons.join(",")}`;
+    if (!latest.current.gate || busy.current.has(once)) return;
+    busy.current.add(once);
+    try {
+      answer(title, await requestTitleSeasons({ key: title.key, seasons }), seasons);
+    } catch {
+      showNotice({ kind: "error", title: latest.current.t("cards:requestFailed") });
+    } finally {
+      busy.current.delete(once);
+    }
+  }, [requestTitleSeasons, answer]);
+  const requestSeasonsNow = useCallback((title: AbsentTitle, seasons: number[]) => void requestSeasons(title, seasons), [requestSeasons]);
   const openSeasons = useCallback((title: AbsentTitle, target?: SeasonsTarget) => {
     if (latest.current.gate?.provider.seasonsPath) setSeasonsOf({ title, target });
   }, []);
@@ -169,6 +186,6 @@ export function useTitleRequests(): TitleRequests | null {
     </>
   ) : null;
 
-  // `open`, `hold` et `openSeasons` sont stables : les rangées mémoïsées ne se redessinent pas pour eux.
-  return gate ? { gate, open: openTitle, hold, openSeasons, overlay } : null;
+  // Les gestes sont stables : les rangées mémoïsées ne se redessinent pas pour eux.
+  return gate ? { gate, open: openTitle, hold, openSeasons, requestSeasons: requestSeasonsNow, overlay } : null;
 }

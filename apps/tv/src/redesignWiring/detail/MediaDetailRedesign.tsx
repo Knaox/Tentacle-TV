@@ -33,8 +33,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
  * - une série qui se révèle terminée perd sa pilule de lecture : si elle
  *   avait le focus, il passe à l'action suivante.
  * Une série incomplète montre ses saisons manquantes en onglets GRISÉS au bout
- * de la bande (`useSeriesGapTabs`, garde Vigie ouverte) : OK ouvre la feuille
- * des saisons sur elles.
+ * de la bande (`useSeriesGapTabs`, garde Vigie ouverte) : OK sur un « + »
+ * demande cette saison, et l'onglet prend son état sans que le focus bouge.
  * Menu dépile l'écran (pile native) ; les feuilles le reçoivent elles-mêmes.
  */
 

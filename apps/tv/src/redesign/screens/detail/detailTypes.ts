@@ -1,6 +1,7 @@
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import type { MetaItem } from "../../hero/MetaLine";
+import type { ArrivalModel } from "../../requests/arrivalTypes";
 
 /**
  * Le contrat de la fiche média : tout arrive RÉSOLU par l'intégration. La
@@ -65,17 +66,19 @@ export interface SeasonTabModel {
 
 /**
  * Une saison que la bibliothèque n'a PAS, au bout des onglets (série
- * incomplète, garde Vigie ouverte) : un onglet GRISÉ, qui ouvre la feuille
- * des saisons sur elle.
+ * incomplète, garde Vigie ouverte) : un onglet GRISÉ — son « + » la demande.
  */
 export interface MissingSeasonTabModel {
   number: number;
-  /** « Saison 5 ». */
+  /** « Saison 5 », « Spéciaux », « Saison 1 · Book One: Water ». */
   label: string;
   /** Elle se demande encore (un « + ») ; sinon, elle l'est déjà (une horloge). */
   requestable: boolean;
   /** Où elle en est, dit aux lecteurs d'écran : « À demander », « Demandée ». */
   status: string;
+  /** Elle fait partie d'une demande du COMPTE : son camembert et son état
+   *  (« En attente », « En cours ») à la place du « + » ou de l'horloge. */
+  request?: { arrival: ArrivalModel; label: string };
 }
 
 /** Reprendre (entamé), À suivre (le prochain à voir), Épisode actuel (fiche d'épisode). */

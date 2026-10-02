@@ -6,6 +6,7 @@ import { FocusSection } from "../../focus/FocusSection";
 import { colors } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
 import type { MissingSeasonTabModel, SeasonTabModel } from "./detailTypes";
+import { MissingSeasonTab } from "./MissingSeasonTab";
 
 /**
  * La bande des saisons : une pastille par saison, le nombre d'épisodes en
@@ -14,9 +15,10 @@ import type { MissingSeasonTabModel, SeasonTabModel } from "./detailTypes";
  * plus : la bande défile, et s'ouvre calée sur la saison affichée.
  *
  * Au bout, les saisons que la bibliothèque n'a PAS (`missing`, série
- * incomplète) : des onglets GRISÉS (`Chip absent`), un « + » quand elles se
- * demandent, une horloge quand elles le sont déjà ; OK ouvre la feuille des
- * saisons sur elles. Rien à charger au focus : elles ne sont pas là.
+ * incomplète) : des onglets GRISÉS (`MissingSeasonTab`), un « + » quand
+ * elles se demandent — OK la demande —, une horloge quand elles le sont déjà,
+ * le camembert d'une demande du compte. Rien à charger au focus : elles ne
+ * sont pas là.
  *
  * Contrat : `useSeasonBrowser` — `seasons`, `selectedSeasonId`,
  * `markedSeasonId`, `select`, `prefetch` (au focus d'un onglet).
@@ -84,12 +86,9 @@ export const SeasonTabs = memo(function SeasonTabs({
           );
         })}
         {missing?.map((season, index) => (
-          <Chip
+          <MissingSeasonTab
             key={`missing:${season.number}`}
-            label={season.label}
-            icon={season.requestable ? "plus" : "clock"}
-            absent
-            accessibilityLabel={`${season.label}, ${season.status}`}
+            season={season}
             focusKey={`season:${seasons.length + index}`}
             onPress={onRequestSeason ? () => onRequestSeason(season.number) : undefined}
             onFocusChange={onFocusChange}
