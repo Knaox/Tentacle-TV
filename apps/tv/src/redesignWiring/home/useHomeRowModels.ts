@@ -19,7 +19,7 @@ import { missingSeriesRatingIds, type MediaItem } from "@tentacle-tv/shared";
 import type { HomeRowModel } from "../../redesign/screens/home/HomeView";
 import { useTVHomeRows } from "../../components/home/useTVHomeRows";
 import { useCardLists } from "../cards/cardModels";
-import { episodeRowSubtitle, itemSubtitle, latestSubtitle, resumeSubtitle, yearOf } from "./homeSubtitles";
+import { episodeRowSubtitle, itemSubtitle, latestCardLines, latestSubtitle, resumeSubtitle, yearOf } from "./homeSubtitles";
 import { useHomeRecoSource } from "./useHomeRecoSource";
 
 /**
@@ -130,7 +130,7 @@ export function useHomeRowModels(): HomeRowsModel {
           key,
           title: t("common:latestAdditions", { name }),
           variant: "poster",
-          cards: lists(key, items, { variant: "poster", subtitle: (item) => latestSubtitle(item, t) }),
+          cards: lists(key, items, { variant: "poster", subtitle: (item) => latestSubtitle(item, t) }, latestCardLines),
         });
         register(key, items, { kind: "detail", sheet: "poster" });
       } else if (key.startsWith("reco:")) {

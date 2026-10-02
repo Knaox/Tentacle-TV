@@ -11,8 +11,14 @@ import type { ArrivalModel } from "../requests/arrivalTypes";
 export interface CardModel {
   id: string;
   title: string;
-  /** « S2 · É3 — 18 min restantes », « 2019 », « +3 épisodes »… */
+  /** « S2 · É3 — 18 min restantes », « 2019 », « Nouvelle saison · 8 épisodes »… */
   subtitle?: string;
+  /**
+   * La légende peut prendre deux lignes — ce qu'apporte une carte regroupée
+   * des « Derniers ajouts » : son nombre d'épisodes ne se coupe jamais. Une
+   * ligne sinon.
+   */
+  subtitleLines?: 2;
   /** Image 16:9 (Thumb, Backdrop, ou l'image d'un épisode). */
   landscapeUri?: string;
   /** Affiche 2:3 (Primary). */

@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
-import { latestAdditionsLine, type MediaItem } from "@tentacle-tv/shared";
+import { latestAdditionsCaption, latestAdditionsLine, type MediaItem } from "@tentacle-tv/shared";
+import type { CardModel } from "../../redesign/cards/cardTypes";
 import { episodeLabel } from "../hero/heroModel";
 
 /**
@@ -45,4 +46,12 @@ export function episodeRowSubtitle(item: MediaItem): string | undefined {
  */
 export function latestSubtitle(item: MediaItem, t: TFunction): string | undefined {
   return latestAdditionsLine(t, item) ?? itemSubtitle(item, true);
+}
+
+/**
+ * Une carte regroupée garde sa ligne entière, sur deux lignes s'il le faut :
+ * « Nouvelle saison · » / « 8 épisodes » tient mal dans une affiche de 240.
+ */
+export function latestCardLines(item: MediaItem, card: CardModel): CardModel {
+  return latestAdditionsCaption(item) ? { ...card, subtitleLines: 2 } : card;
 }

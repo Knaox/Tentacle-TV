@@ -112,7 +112,8 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
           : ""}
         {item.Name}
       </p>
-      {additionsLine && <p className="mt-0.5 truncate text-[10px] font-medium text-content-tertiary">{additionsLine}</p>}
+      {/* Deux lignes au plus : sur une carte étroite, le compte passe à la ligne, il n'est pas coupé. */}
+      {additionsLine && <p className="mt-0.5 line-clamp-2 text-[10px] font-medium text-content-tertiary">{additionsLine}</p>}
       {!additionsLine && !isEpisode && item.ProductionYear != null && (
         <p className="mt-0.5 text-[10px] font-medium text-content-tertiary">{item.ProductionYear}</p>
       )}

@@ -24,6 +24,7 @@ export function sameCard(a: CardModel, b: CardModel): boolean {
     a.id === b.id &&
     a.title === b.title &&
     a.subtitle === b.subtitle &&
+    a.subtitleLines === b.subtitleLines &&
     a.landscapeUri === b.landscapeUri &&
     a.posterUri === b.posterUri &&
     a.logoUri === b.logoUri &&

@@ -172,7 +172,7 @@ export const MediaCard = memo(function MediaCard({
       {hideCaption ? null : (
         <Caption focused={focused} shift={captionShift(height, origin)}>
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
-          {card.subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{card.subtitle}</Text> : null}
+          {card.subtitle ? <Text style={styles.subtitle} numberOfLines={card.subtitleLines ?? 1}>{card.subtitle}</Text> : null}
           <CardFocusFooter
             note={focused ? card.focusNote : undefined}
             hold={focused && onLongPress !== undefined}

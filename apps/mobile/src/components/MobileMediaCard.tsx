@@ -153,7 +153,8 @@ export const MobileMediaCard = memo(function MobileMediaCard({
           ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} · `
           : ""}{item.Name}
       </Text>
-      {additionsLine && <Text numberOfLines={1} style={st.year}>{additionsLine}</Text>}
+      {/* Deux lignes au plus : sur une carte étroite, le compte passe à la ligne, il n'est pas coupé. */}
+      {additionsLine && <Text numberOfLines={2} style={st.year}>{additionsLine}</Text>}
       {!additionsLine && !isEpisode && item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
       {isEpisode && item.SeriesName != null && <Text numberOfLines={1} style={st.year}>{item.SeriesName}</Text>}
       {/* Deux lignes : une carte de rangée est étroite, la phrase ne se coupe pas. */}

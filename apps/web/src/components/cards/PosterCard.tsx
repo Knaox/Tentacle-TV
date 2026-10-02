@@ -141,7 +141,8 @@ export const PosterCard = memo(function PosterCard({
           {isEpisode ? (item.SeriesName ?? item.Name) : item.Name}
         </h3>
         {additionsLine ? (
-          <p className="mt-0.5 truncate text-xs card-caption">{additionsLine}</p>
+          // Deux lignes au plus : sur une carte étroite, le compte passe à la ligne, il n'est pas coupé.
+          <p className="mt-0.5 line-clamp-2 text-xs card-caption">{additionsLine}</p>
         ) : isEpisode ? (
           <p className="mt-0.5 truncate text-xs card-caption">
             {[epLabel, item.Name].filter(Boolean).join(" · ")}
