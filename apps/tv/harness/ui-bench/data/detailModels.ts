@@ -17,6 +17,7 @@ import type {
   EpisodeModel,
   EpisodesModel,
 } from "../../../src/redesign/screens/detail/detailTypes";
+import { cardQualityOf } from "../../../src/redesignWiring/cards/cardQuality";
 import type { BenchData } from "./benchData";
 import { paletteOf, progressOf, seriesOf } from "./models";
 
@@ -193,6 +194,7 @@ export function episodesOf(data: BenchData, seriesId: string, options: EpisodesO
     watched: episode.UserData?.Played === true,
     badge: badgeOf(episode),
     palette: paletteOf(data, episode),
+    quality: cardQualityOf(episode),
   }));
   return {
     seasons: seasons.map((season) => ({

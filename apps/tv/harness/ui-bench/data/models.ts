@@ -7,6 +7,7 @@ import {
   type MediaItem,
 } from "@tentacle-tv/shared";
 import type { CardModel } from "../../../src/redesign/cards/cardTypes";
+import { cardQualityOf } from "../../../src/redesignWiring/cards/cardQuality";
 import { NEUTRAL_PALETTE, paletteFromBlurHash, type ArtworkPalette } from "../../../src/redesign/color/artworkPalette";
 import type { BenchData } from "./benchData";
 
@@ -91,6 +92,9 @@ export function cardOf(data: BenchData, item: MediaItem, subtitle?: string, scop
     }),
     progress: progressOf(item),
     palette: paletteOf(data, item),
+    // La règle de l'app : les fiches de l'instantané portent leurs flux, la
+    // qualité se lit sans la source du focus (absente du banc).
+    quality: cardQualityOf(item),
   };
 }
 

@@ -23,6 +23,7 @@ import { PLAYER_QUALITY_SCENES } from "./playerQualityScenes";
 import { PLAYER_SCENES } from "./playerScenes";
 import { PLAYER_WIRED_SCENES } from "./playerWiredScenes";
 import { PLAYHEAD_SCENES } from "./playheadScenes";
+import { QUALITY_SCENES } from "./qualityScenes";
 import { RAIL_SCENES } from "./railScenes";
 import { REQUEST_SCENES } from "./requestScenes";
 import { SEARCH_SCENES } from "./searchScenes";
@@ -68,6 +69,8 @@ export const SCENES: BenchScene[] = [
   ...PLAYER_WIRED_SCENES,
   ...PLAYER_LIVE_SCENES,
   ...BRICK_SCENES,
+  // Les badges de qualité au focus des cartes (4K, Dolby Vision, Dolby Atmos).
+  ...QUALITY_SCENES,
   ...GLASS_SCENES,
   ...LEGIBILITY_SCENES,
   ...MEASURE_SCENES,
