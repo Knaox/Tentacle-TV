@@ -65,9 +65,10 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
     « faisait PNG qui flotte »).
 - **Focus Apple TV, sans contour** : agrandissement, soulèvement, reflet ; le
   verre focalisé devient blanc, texte noir ; les voisines reculent.
-- **Des affiches, sauf la reprise** (retour du 2026-10-01, « comme sur le
-  bureau ») : seule « Reprendre la lecture » est en vignettes 16:9 ; toutes les
-  autres rangées et étagères sont en affiches 2:3, la raison d'une
+- **Des affiches, sauf la reprise et la suite** (retours des 2026-10-01 et
+  2026-10-02, « comme sur le bureau ») : « Reprendre la lecture » et
+  « Prochains épisodes » sont en vignettes 16:9, et OK y lance la lecture ;
+  toutes les autres rangées et étagères sont en affiches 2:3, la raison d'une
   recommandation sous la légende de l'affiche focalisée (`CardFocusNote`).
 - **La carte qui se redresse** (`MorphCard`) : 16:9 au repos, affiche 2:3 au
   focus, en fondu, sans recalcul de mise en page. L'affiche DESCEND (sur la
@@ -1966,6 +1967,41 @@ réglages. Android TV et webOS n'en reçoivent rien (leurs écrans n'ont pas de
 `FocusSection` native ; `tv-core` gagne une règle que personne d'autre ne lit
 encore — le modèle de la future navigation commune).
 
+## Prochains épisodes en 16:9 (Apple TV)
+
+Branche `claude/jolly-mayer-78c071` (2026-10-02), après l'essai de
+l'utilisateur : « Les cards prochains épisodes sont affichées au format
+vertical au lieu d'horizontal comme desktop. »
+
+- **La rangée** (`useHomeRowModels`) passe à la variante `landscape` du modèle
+  partagé, comme au bureau (`ContinueWatchingRow`) et comme « Reprendre » : la
+  vignette de l'ÉPISODE (repli : son fond, puis celui de la série —
+  `resolveBannerImage`, la règle du bureau), sa note à lui (portée `item`),
+  les marqueurs et la barre de progression du modèle. Même gabarit que
+  « Reprendre » (380 × 214), même légende : la série, puis « S2 · E5 — titre
+  de l'épisode » (`nextUpSubtitle`) ; le titre entier est dans l'en-tête du
+  panneau.
+- **Les gestes**, ceux d'une vignette : OK lance la lecture ; l'appui maintenu
+  ouvre le panneau de la vignette (l'image de l'épisode, « Lire » en tête,
+  Ma liste, favori, vu, « Plus d'infos ») ; « Maintenir OK » sous la légende.
+  « Déjà vu » reste en affiches (décision du lot ; le bureau l'a en 16:9).
+- **Le focus** : la règle des sections ne change pas — ses tests disent
+  désormais les deux formats (`sections.test.ts`, « rangées de formats
+  différents »). Éprouvé au banc en focus NATIF (agent XCUITest) : de
+  « Reprendre » à « Prochains épisodes », l'aplomb ; BAS depuis la vignette
+  centrée à 782 → l'affiche à 848 ; HAUT depuis l'affiche à 1400 → la
+  vignette à 1198 (plutôt que 1614).
+- **Le défilement** : mesuré en A/B dans le même paquet (JS de production,
+  10 s de HAUT / BAS au pavé, trois tours alternés, Mac chargé à 44–53) :
+  59,4 / 59,4 / 58,8 i/s en 16:9 contre 59,6 / 59,1 / 58,9 en affiches,
+  autant d'images perdues et le même CPU de l'app, au bruit près.
+- **Le banc** notait toute carte d'épisode sur sa série : une vignette se note
+  désormais sur l'épisode, comme l'app (`cardOf`, portée).
+
+Planches (avant / après, et la même rangée du bureau, rendue par le vrai
+composant web sur le même instantané) :
+`apps/tv/harness/ui-bench/out/t4-prochains/` (non suivi).
+
 ---
 
 ## Inventaire — les écrans
@@ -2006,9 +2042,9 @@ Automate en 6 étapes, toutes gardées :
   rotation ; logo sinon titre ; « S01E02 · Nom » pour un épisode ; année ·
   note · durée · genres ; puces qualité/langues ; barre de reprise ; accroche
   sinon synopsis ; Lecture/Reprendre, Plus d'infos ; indicateurs.
-- **Rangées**, dans l'ordre de la mise en page du compte : Reprendre
-  (vignettes 16:9, OK = lecture — la seule) · puis en affiches (OK = la
-  fiche) : Prochains épisodes · Déjà vu · Ma liste · Favoris · Derniers ajouts
+- **Rangées**, dans l'ordre de la mise en page du compte : Reprendre et
+  Prochains épisodes (vignettes 16:9, OK = lecture) · puis en affiches (OK = la
+  fiche) : Déjà vu · Ma liste · Favoris · Derniers ajouts
   par bibliothèque (lots « +N épisodes ») · rangées reco (`reco:forYou`,
   `inLibrary`, `anime`, `trending`…), dont la première porte la pastille du
   filtre de plateformes.
