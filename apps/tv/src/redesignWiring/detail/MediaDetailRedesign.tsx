@@ -10,6 +10,7 @@ import { useFocusStore } from "../focus/focusStore";
 import { useEntryFocus } from "../screen/useEntryFocus";
 import { ActionSheetRedesign } from "../sheet/ActionSheetRedesign";
 import { useTitleRequests } from "../vigie/useTitleRequests";
+import { useSeriesGapTabs } from "../vigie/useSeriesGapTabs";
 import { useDetailActions } from "./useDetailActions";
 import { useDetailGuides } from "./useDetailGuides";
 import { useDetailModel, type DetailModel } from "./useDetailModel";
@@ -31,6 +32,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
  *   exceptions : la saison affichée, l'épisode à reprendre (`useDetailGuides`) ;
  * - une série qui se révèle terminée perd sa pilule de lecture : si elle
  *   avait le focus, il passe à l'action suivante.
+ * Une série incomplète montre ses saisons manquantes en onglets GRISÉS au bout
+ * de la bande (`useSeriesGapTabs`, garde Vigie ouverte) : OK ouvre la feuille
+ * des saisons sur elles.
  * Menu dépile l'écran (pile native) ; les feuilles le reçoivent elles-mêmes.
  */
 
@@ -46,10 +50,16 @@ function entryKeyOf({ props }: DetailModel): string | null {
 }
 
 export function MediaDetailRedesign({ route }: Props) {
-  // Demander un volet absent de la saga — rien tant que la garde Vigie est fermée.
+  // Demander un volet absent de la saga, une saison manquante — rien tant que la garde Vigie est fermée.
   const requests = useTitleRequests();
   const model = useDetailModel(route.params.itemId, requests?.gate ?? null);
   const { item } = model;
+  const gapTabs = useSeriesGapTabs(requests, item);
+  const shown = model.props.episodes;
+  const episodes = useMemo(
+    () => (shown && gapTabs.missing ? { ...shown, missing: gapTabs.missing } : shown),
+    [shown, gapTabs.missing],
+  );
   const cardActions = useTVCardActions();
   const [rating, setRating] = useState(false);
   const openRating = useCallback(() => setRating(true), []);
@@ -89,7 +99,7 @@ export function MediaDetailRedesign({ route }: Props) {
 
   return (
     <FocusBindingProvider bind={focus.binder}>
-      <DetailView {...model.props} {...callbacks} />
+      <DetailView {...model.props} episodes={episodes} {...callbacks} onRequestSeason={gapTabs.onRequestSeason} />
       {model.extras.probes}
       {cardActions.sheet}
       {requests?.overlay}

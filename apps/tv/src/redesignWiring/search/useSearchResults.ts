@@ -7,6 +7,7 @@ import type { SearchContentModel, SearchSectionModel, SearchSuggestionModel } fr
 import { searchDiscover, searchNotice, searchPalette, searchSections, searchSuggestions, type SearchModelSources } from "./searchModels";
 import type { AbsentTitle } from "../vigie/absentTitle";
 import { useSearchAbsent } from "../vigie/useSearchAbsent";
+import { useSearchGaps, type SearchGap } from "../vigie/useSearchGaps";
 import type { VigieGate } from "../vigie/useVigieGate";
 import type { SearchInput } from "./useSearchInput";
 
@@ -26,9 +27,12 @@ export interface SearchResults {
   itemOf: (id: string) => MediaItem | undefined;
   /** Le titre absent derrière une carte de la rangée « À demander ». */
   absentOf: (id: string) => AbsentTitle | undefined;
+  /** La série incomplète derrière une carte de la rangée « À demander ». */
+  gapOf: (id: string) => SearchGap | undefined;
 }
 
 const NO_ABSENT = () => undefined;
+const NO_GAP = () => undefined;
 
 function firstKeyOf(sections: SearchSectionModel[]): string | null {
   const first = sections[0];
@@ -68,13 +72,17 @@ export function useSearchResults(src: SearchModelSources, input: SearchInput, ga
   // demandes) — rien tant que la garde Vigie est fermée.
   const owned = useMemo(() => libraryTitlesOf(data), [data]);
   const absent = useSearchAbsent(gate, debounced, owned);
+  // Les séries de la bibliothèque à qui il manque des saisons, en tête de la
+  // même rangée (`useSearchGaps`) — leur affiche, celle de la bibliothèque.
+  const posterOf = useCallback((item: SearchMediaItem) => src.card(src.full(item), undefined, "poster").posterUri, [src]);
+  const gaps = useSearchGaps(gate, data, posterOf);
   const sections = useMemo(() => {
     const found = searchSections(src, data, episodeItems ?? []);
-    const cards = absent?.cards ?? [];
+    const cards = [...(gaps?.cards ?? []), ...(absent?.cards ?? [])];
     if (cards.length === 0) return found;
     const { t } = src;
     return [...found, { key: "absent" as const, title: t("requests:searchRow"), count: t("search:countTitles", { count: cards.length }), cards }];
-  }, [src, data, episodeItems, absent]);
+  }, [src, data, episodeItems, gaps, absent]);
   const { completion, suggestions } = useMemo(() => searchSuggestions(query, data), [query, data]);
 
   const idle = debounced.length === 0;
@@ -107,6 +115,7 @@ export function useSearchResults(src: SearchModelSources, input: SearchInput, ga
     firstKey: firstKeyOf(sections),
     itemOf,
     absentOf: absent?.titleOf ?? NO_ABSENT,
+    gapOf: gaps?.gapOf ?? NO_GAP,
   };
 }
 

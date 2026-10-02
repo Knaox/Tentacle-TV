@@ -12,6 +12,7 @@ import { AutoFocusGuide } from "../focus/focusGuides";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { useTitleRequests } from "../vigie/useTitleRequests";
+import { openSearchGap } from "../vigie/useSearchGaps";
 import { HiddenSearchInput } from "./HiddenSearchInput";
 import { searchInputLabels } from "./searchModels";
 import { useSearchInput } from "./useSearchInput";
@@ -93,20 +94,27 @@ export function SearchRedesign() {
   }, [top, openBrowse, remember, navigation]);
 
   // Une vignette d'épisode LIT, une affiche ouvre sa fiche (le modèle des
-  // cartes) ; un titre « À demander » se demande.
-  const { itemOf, absentOf } = results;
+  // cartes) ; un titre « À demander » se demande — une série incomplète par
+  // la feuille de ses saisons.
+  const { itemOf, absentOf, gapOf } = results;
   const open = requests?.open;
   const hold = requests?.hold;
   const onPressCard = useCallback((section: string, card: CardModel) => {
     remember();
     if (section === "absent") {
+      const gap = gapOf(card.id);
+      if (gap && requests) return openSearchGap(requests, gap, t);
       const title = absentOf(card.id);
       if (title) open?.(title);
     } else if (section === "episodes") navigation.navigate("Player", { itemId: card.id });
     else navigation.navigate("MediaDetail", { itemId: card.id });
-  }, [remember, navigation, absentOf, open]);
+  }, [remember, navigation, absentOf, gapOf, open, requests, t]);
   const onLongPressCard = useCallback((section: string, card: CardModel) => {
     if (section === "absent") {
+      // Une série incomplète est un titre de la bibliothèque : son panneau.
+      const gap = gapOf(card.id);
+      const series = gap ? itemOf(gap.seriesId) : undefined;
+      if (series) return openPoster(series);
       const title = absentOf(card.id);
       if (title) hold?.(title);
       return;
@@ -115,7 +123,7 @@ export function SearchRedesign() {
     if (!item) return;
     if (section === "episodes") openLandscape(item);
     else openPoster(item);
-  }, [itemOf, absentOf, hold, openLandscape, openPoster]);
+  }, [itemOf, absentOf, gapOf, hold, openLandscape, openPoster]);
 
   const onOpenPerson = useCallback((person: SearchPersonModel) => openBrowse({ kind: "person", id: person.id, name: person.name }), [openBrowse]);
   const onOpenFacet = useCallback((facet: SearchFacetModel) => openBrowse({ kind: facet.kind, name: facet.name }), [openBrowse]);

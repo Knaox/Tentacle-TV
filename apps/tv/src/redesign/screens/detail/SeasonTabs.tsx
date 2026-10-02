@@ -5,7 +5,7 @@ import { Chip } from "../../controls/Chip";
 import { FocusSection } from "../../focus/FocusSection";
 import { colors } from "../../theme/tokens";
 import { DETAIL_LEFT } from "./DetailSection";
-import type { SeasonTabModel } from "./detailTypes";
+import type { MissingSeasonTabModel, SeasonTabModel } from "./detailTypes";
 
 /**
  * La bande des saisons : une pastille par saison, le nombre d'épisodes en
@@ -13,9 +13,15 @@ import type { SeasonTabModel } from "./detailTypes";
  * reprendre porte un point, une saison vue une coche. Jusqu'à 15 saisons et
  * plus : la bande défile, et s'ouvre calée sur la saison affichée.
  *
+ * Au bout, les saisons que la bibliothèque n'a PAS (`missing`, série
+ * incomplète) : des onglets GRISÉS (`Chip absent`), un « + » quand elles se
+ * demandent, une horloge quand elles le sont déjà ; OK ouvre la feuille des
+ * saisons sur elles. Rien à charger au focus : elles ne sont pas là.
+ *
  * Contrat : `useSeasonBrowser` — `seasons`, `selectedSeasonId`,
  * `markedSeasonId`, `select`, `prefetch` (au focus d'un onglet).
- * Groupe de focus : `detail:seasons` ; onglets `season:<i>`.
+ * Groupe de focus : `detail:seasons` ; onglets `season:<i>`, les manquants à
+ * la suite.
  */
 
 /** Les onglets qui précèdent la saison affichée restent en vue, à gauche. */
@@ -23,15 +29,19 @@ const LEAD = 260;
 
 export const SeasonTabs = memo(function SeasonTabs({
   seasons,
+  missing,
   selectedId,
   onSelect,
   onFocusSeason,
+  onRequestSeason,
   onFocusChange,
 }: {
   seasons: SeasonTabModel[];
+  missing?: MissingSeasonTabModel[];
   selectedId?: string;
   onSelect?: (seasonId: string) => void;
   onFocusSeason?: (seasonId: string) => void;
+  onRequestSeason?: (number: number) => void;
   onFocusChange?: (focused: boolean) => void;
 }) {
   const scroll = useRef<ScrollView>(null);
@@ -73,6 +83,18 @@ export const SeasonTabs = memo(function SeasonTabs({
             </View>
           );
         })}
+        {missing?.map((season, index) => (
+          <Chip
+            key={`missing:${season.number}`}
+            label={season.label}
+            icon={season.requestable ? "plus" : "clock"}
+            absent
+            accessibilityLabel={`${season.label}, ${season.status}`}
+            focusKey={`season:${seasons.length + index}`}
+            onPress={onRequestSeason ? () => onRequestSeason(season.number) : undefined}
+            onFocusChange={onFocusChange}
+          />
+        ))}
       </ScrollView>
     </FocusSection>
   );

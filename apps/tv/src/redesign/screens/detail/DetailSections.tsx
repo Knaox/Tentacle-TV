@@ -52,6 +52,7 @@ export const DetailSections = memo(function DetailSections({
   onSectionLayout,
   onSelectSeason,
   onFocusSeason,
+  onRequestSeason,
   onPlayEpisode,
   onLongPressEpisode,
   onOpenPerson,
@@ -81,12 +82,14 @@ export const DetailSections = memo(function DetailSections({
       ) : null}
       {episodes ? (
         <DetailSection sectionKey="episodes" title={t("common:seasonsEpisodes")} onLayout={onSectionLayout}>
-          {episodes.seasons.length > 1 ? (
+          {episodes.seasons.length + (episodes.missing?.length ?? 0) > 1 ? (
             <SeasonTabs
               seasons={episodes.seasons}
+              missing={episodes.missing}
               selectedId={episodes.selectedSeasonId}
               onSelect={onSelectSeason}
               onFocusSeason={onFocusSeason}
+              onRequestSeason={onRequestSeason}
             />
           ) : null}
           <EpisodeRail

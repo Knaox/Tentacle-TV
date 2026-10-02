@@ -63,6 +63,21 @@ export interface SeasonTabModel {
   state?: "current" | "watched" | null;
 }
 
+/**
+ * Une saison que la bibliothèque n'a PAS, au bout des onglets (série
+ * incomplète, garde Vigie ouverte) : un onglet GRISÉ, qui ouvre la feuille
+ * des saisons sur elle.
+ */
+export interface MissingSeasonTabModel {
+  number: number;
+  /** « Saison 5 ». */
+  label: string;
+  /** Elle se demande encore (un « + ») ; sinon, elle l'est déjà (une horloge). */
+  requestable: boolean;
+  /** Où elle en est, dit aux lecteurs d'écran : « À demander », « Demandée ». */
+  status: string;
+}
+
 /** Reprendre (entamé), À suivre (le prochain à voir), Épisode actuel (fiche d'épisode). */
 export type EpisodeBadge = "resume" | "upNext" | "current";
 
@@ -86,6 +101,8 @@ export interface EpisodeModel {
 
 export interface EpisodesModel {
   seasons: SeasonTabModel[];
+  /** Les saisons manquantes, grisées au bout de la bande ; absentes : rien à demander. */
+  missing?: MissingSeasonTabModel[];
   selectedSeasonId?: string;
   /** `null` : la saison se charge (vignettes fantômes). */
   episodes: EpisodeModel[] | null;
@@ -157,6 +174,8 @@ export interface DetailCallbacks {
   onSelectSeason?: (seasonId: string) => void;
   /** Un onglet qui garde le focus : précharger sa saison (`useSeasonBrowser().prefetch`). */
   onFocusSeason?: (seasonId: string) => void;
+  /** OK sur une saison manquante (onglet grisé) : la feuille des saisons, sur elle. */
+  onRequestSeason?: (number: number) => void;
   onPlayEpisode?: (episode: EpisodeModel) => void;
   onLongPressEpisode?: (episode: EpisodeModel) => void;
   onOpenPerson?: (person: PersonModel) => void;

@@ -1,27 +1,15 @@
 import type { TFunction } from "i18next";
-import type { TitleSeason, TitleSeasonsAnswer } from "@tentacle-tv/shared";
-import type { SeasonRowModel, SeasonsSheetModel, SeasonStatusTone } from "../../redesign/screens/requests/SeasonsSheet";
+import { requestableSeasonNumbers, seasonPick, type TitleSeasonsAnswer } from "@tentacle-tv/shared";
+import type { SeasonsSheetModel } from "../../redesign/screens/requests/SeasonsSheet";
 
 /**
- * La feuille des saisons mise en mots — pur. Les saisons dans l'ordre que
- * l'extension donne (numérotées, puis les épisodes spéciaux) ; celles qui ne
- * se demandent plus disent où elles en sont, avec les mots de l'extension.
+ * La feuille des saisons mise en mots — le modèle commun aux plateformes
+ * (`seasonPick`, shared) dans la forme de la vue TV. Les saisons dans l'ordre
+ * que l'extension donne (numérotées, puis les épisodes spéciaux) ; celles qui
+ * ne se demandent plus disent où elles en sont, avec les mots de
+ * l'extension ; celles que la bibliothèque a déjà (`library`, une série de la
+ * bibliothèque) disent « Dans la bibliothèque » et ne se cochent pas.
  */
-
-function toneOf(badge: TitleSeason["badge"]): SeasonStatusTone {
-  if (badge?.tone === "success") return "ready";
-  return badge?.tone === "info" ? "pending" : "neutral";
-}
-
-function rowOf(t: TFunction, season: TitleSeason, checked: ReadonlySet<number>): SeasonRowModel {
-  return {
-    number: season.number,
-    label: season.name ?? t("requests:seasonFallback", { number: season.number }),
-    detail: season.episodeCount !== null ? t("requests:seasonEpisodes", { count: season.episodeCount }) : undefined,
-    status: season.requestable ? undefined : { label: season.badge?.label ?? "", tone: toneOf(season.badge) },
-    selected: season.requestable && checked.has(season.number),
-  };
-}
 
 export function seasonsSheetModel(
   t: TFunction,
@@ -29,23 +17,19 @@ export function seasonsSheetModel(
   answer: TitleSeasonsAnswer | null,
   failed: boolean,
   checked: ReadonlySet<number>,
+  library?: ReadonlySet<number> | null,
 ): SeasonsSheetModel {
-  const seasons = answer ? answer.seasons.map((season) => rowOf(t, season, checked)) : null;
-  let message: string | undefined;
-  if (failed || answer?.failure != null) message = t("requests:seasonsFailed");
-  else if (!answer) message = t("requests:seasonsLoading");
-  else if (!answer.seasons.some((s) => s.requestable)) message = t("requests:seasonsNone");
-  const count = checked.size;
+  const pick = seasonPick(t, answer, failed, checked, library);
   return {
     title,
     subtitle: t("requests:seasonsSubtitle"),
-    seasons,
-    message,
-    submit: count > 0 ? { label: t("requests:seasonsSubmit", { count }), kind: "request" } : { label: t("common:close"), kind: "close" },
+    seasons: pick.rows,
+    message: pick.message,
+    submit: pick.submitLabel ? { label: pick.submitLabel, kind: "request" } : { label: t("common:close"), kind: "close" },
   };
 }
 
-/** Les saisons qui se cochent, dans leur ordre. */
-export function requestableNumbers(answer: TitleSeasonsAnswer | null): number[] {
-  return (answer?.seasons ?? []).filter((s) => s.requestable).map((s) => s.number);
+/** Les saisons qui se cochent, dans leur ordre — hors celles que la bibliothèque a. */
+export function requestableNumbers(answer: TitleSeasonsAnswer | null, library?: ReadonlySet<number> | null): number[] {
+  return requestableSeasonNumbers(answer, library);
 }

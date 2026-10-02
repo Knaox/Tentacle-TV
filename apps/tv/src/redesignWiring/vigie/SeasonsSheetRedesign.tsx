@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Modal } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useRequestTitleSeasons, useTitleSeasons } from "@tentacle-tv/api-client";
-import type { TitleRequestOutcome } from "@tentacle-tv/shared";
+import { useRequestTitleSeasons, useSeasons, useTitleSeasons } from "@tentacle-tv/api-client";
+import { librarySeasonNumbers, type TitleRequestOutcome } from "@tentacle-tv/shared";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { SeasonsSheet, seasonFocusKey } from "../../redesign/screens/requests/SeasonsSheet";
 import { useBackLayer } from "../back/BackScope";
@@ -14,16 +14,20 @@ import { requestableNumbers, seasonsSheetModel } from "./seasonsSheetModel";
 import type { VigieGate } from "./useVigieGate";
 
 /**
- * La feuille des saisons d'une série absente (garde Vigie ouverte) : OK sur
- * la série l'ouvre, on coche, « Demander N saisons » en bas — la demande part
- * (`useRequestTitleSeasons`), la feuille se ferme, et l'écran dit la suite
- * (`onAnswer` : « Demande envoyée », ou pourquoi pas).
+ * La feuille des saisons d'une série à demander (garde Vigie ouverte) : une
+ * série absente, ou une série de la bibliothèque à qui il en manque
+ * (`seriesId` : ses saisons présentes disent « Dans la bibliothèque » et ne
+ * se cochent pas). OK sur la série l'ouvre, on coche, « Demander N saisons »
+ * en bas — la demande part (`useRequestTitleSeasons`), la feuille se ferme, et
+ * l'écran dit la suite (`onAnswer` : « Demande envoyée », ou pourquoi pas).
  *
  * Dans une `Modal` (Menu la ferme ; à la fermeture, tvOS rend le focus à la
- * carte), présentée une fois les saisons SUES : rien n'y déplace le focus
- * après coup. On y ENTRE par la première saison à cocher, sinon par la pilule
- * (`useChoiceEntry`) ; BAS depuis n'importe quelle ligne mène au pied
- * (`sheet:footer`). Un filet la présente quand même, sur sa lecture.
+ * carte), présentée une fois les saisons SUES — et celles de la bibliothèque :
+ * rien n'y déplace le focus après coup. On y ENTRE par la saison choisie
+ * (`focus` : l'onglet grisé de la fiche, déjà cochée), sinon par la première
+ * à cocher, sinon par la pilule (`useChoiceEntry`) ; BAS depuis n'importe
+ * quelle ligne mène au pied (`sheet:footer`). Un filet la présente quand
+ * même, sur sa lecture.
  */
 
 const APPLY_KEY = "sheet:apply";
@@ -34,16 +38,27 @@ const ENTRY_WAIT_MS = 1500;
 interface Props {
   gate: VigieGate;
   title: AbsentTitle;
+  /** La série dans la bibliothèque : ses saisons présentes ne se cochent pas. */
+  seriesId?: string;
+  /** La saison par laquelle on entre, cochée d'avance (l'onglet grisé d'une fiche). */
+  focus?: number;
   onAnswer: (title: AbsentTitle, outcome: TitleRequestOutcome, seasons: number[]) => void;
   onClose: () => void;
 }
 
-export function SeasonsSheetRedesign({ gate, title, onAnswer, onClose }: Props) {
+export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason, onAnswer, onClose }: Props) {
   const { t } = useTranslation();
   const { answer, failed } = useTitleSeasons(gate.provider, title.key, gate.lang);
   const { mutateAsync: requestSeasons } = useRequestTitleSeasons(gate.provider, gate.lang);
-  const [checked, setChecked] = useState<ReadonlySet<number>>(() => new Set());
-  const sheet = useMemo(() => seasonsSheetModel(t, title.title, answer, failed, checked), [t, title.title, answer, failed, checked]);
+  // Ce que la bibliothèque a de la série : attendu avant d'ouvrir (sans série, rien à attendre).
+  const library = useSeasons(seriesId);
+  const owned = useMemo(() => (seriesId ? librarySeasonNumbers(library.data ?? []) : null), [seriesId, library.data]);
+  const ownedKnown = !seriesId || library.data !== undefined || library.isError;
+  const [checked, setChecked] = useState<ReadonlySet<number>>(() => new Set(focusSeason !== undefined ? [focusSeason] : []));
+  const sheet = useMemo(
+    () => seasonsSheetModel(t, title.title, ownedKnown ? answer : null, failed, checked, owned),
+    [t, title.title, ownedKnown, answer, failed, checked, owned],
+  );
 
   // Une couche « menu » de la pile du Retour : la Modal reçoit Menu elle-même
   // (`onRequestClose`), mais l'écran sait qu'un menu est ouvert.
@@ -57,12 +72,13 @@ export function SeasonsSheetRedesign({ gate, title, onAnswer, onClose }: Props) 
     const timer = setTimeout(() => setWaited(true), ENTRY_WAIT_MS);
     return () => clearTimeout(timer);
   }, []);
-  const numbers = useMemo(() => requestableNumbers(answer), [answer]);
+  const numbers = useMemo(() => (ownedKnown ? requestableNumbers(answer, owned) : []), [ownedKnown, answer, owned]);
   const keys = useMemo(() => [...numbers.map(seasonFocusKey), APPLY_KEY], [numbers]);
   // L'entrée : décidée une fois les saisons sues (ou le filet écoulé), figée ensuite.
   const entry = useRef<string | null>(null);
-  if (entry.current === null && (answer !== null || failed || waited)) {
-    entry.current = numbers.length > 0 ? seasonFocusKey(numbers[0]) : APPLY_KEY;
+  if (entry.current === null && ((answer !== null && ownedKnown) || failed || waited)) {
+    const first = focusSeason !== undefined && numbers.includes(focusSeason) ? focusSeason : numbers[0];
+    entry.current = first !== undefined ? seasonFocusKey(first) : APPLY_KEY;
   }
   useChoiceEntry(focus, keys, entry.current);
 

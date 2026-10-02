@@ -36,12 +36,25 @@ import { useVigieGate, type VigieGate } from "./useVigieGate";
  * L'appui maintenu ouvre le grand panneau du titre (`AbsentSheetRedesign`).
  * Les feuilles se rendent DANS l'écran (`overlay`) : le focus revient à la
  * carte quand elles se ferment.
+ *
+ * Une série de la BIBLIOTHÈQUE à qui il manque des saisons (contrat
+ * `titles.gaps`) passe directement à sa feuille des saisons (`openSeasons`) :
+ * ses saisons présentes y disent « Dans la bibliothèque », et l'onglet grisé
+ * d'une fiche y entre par sa saison, déjà cochée.
  */
+
+/** La feuille des saisons d'une série de la bibliothèque : la série, et la saison par laquelle on entre. */
+export interface SeasonsTarget {
+  seriesId?: string;
+  focus?: number;
+}
 
 export interface TitleRequests {
   gate: VigieGate;
   open: (title: AbsentTitle) => void;
   hold: (title: AbsentTitle) => void;
+  /** La feuille des saisons, sans détour — une série de la bibliothèque à compléter. */
+  openSeasons: (title: AbsentTitle, target?: SeasonsTarget) => void;
   overlay: ReactElement | null;
 }
 
@@ -57,7 +70,7 @@ export function useTitleRequests(): TitleRequests | null {
   const qc = useQueryClient();
   const { titles: mine } = useMyTitles(provider, lang, { enabled: gate !== null });
   const { mutateAsync: requestTitle } = useRequestTitle(provider, lang);
-  const [seasonsOf, setSeasonsOf] = useState<AbsentTitle | null>(null);
+  const [seasonsOf, setSeasonsOf] = useState<{ title: AbsentTitle; target?: SeasonsTarget } | null>(null);
   const [held, setHeld] = useState<AbsentTitle | null>(null);
   const busy = useRef(new Set<string>());
 
@@ -98,7 +111,7 @@ export function useTitleRequests(): TitleRequests | null {
       const offer = state?.request;
       if (offer?.mode === "direct") return answer(title, await requestTitle(title.key), null);
       const series = parseTitleKey(title.key)?.mediaType === "tv";
-      if (offer?.mode === "open" && series && g.provider.seasonsPath !== null) return setSeasonsOf(title);
+      if (offer?.mode === "open" && series && g.provider.seasonsPath !== null) return setSeasonsOf({ title });
       if (state?.badge) return showNotice({ kind: "info", title: state.badge.label, text: tr("requests:followOnPhone") });
       showNotice({ kind: "info", title: tr("cards:notInLibraryNotice") });
     } catch {
@@ -109,6 +122,9 @@ export function useTitleRequests(): TitleRequests | null {
   }, [qc, requestTitle, answer]);
 
   const openTitle = useCallback((title: AbsentTitle) => void open(title), [open]);
+  const openSeasons = useCallback((title: AbsentTitle, target?: SeasonsTarget) => {
+    if (latest.current.gate?.provider.seasonsPath) setSeasonsOf({ title, target });
+  }, []);
   const hold = useCallback((title: AbsentTitle) => setHeld(title), []);
   const closeSeasons = useCallback(() => setSeasonsOf(null), []);
   const closeHeld = useCallback(() => setHeld(null), []);
@@ -123,11 +139,20 @@ export function useTitleRequests(): TitleRequests | null {
 
   const overlay = gate ? (
     <>
-      {seasonsOf ? <SeasonsSheetRedesign gate={gate} title={seasonsOf} onAnswer={answer} onClose={closeSeasons} /> : null}
+      {seasonsOf ? (
+        <SeasonsSheetRedesign
+          gate={gate}
+          title={seasonsOf.title}
+          seriesId={seasonsOf.target?.seriesId}
+          focus={seasonsOf.target?.focus}
+          onAnswer={answer}
+          onClose={closeSeasons}
+        />
+      ) : null}
       {held ? <AbsentSheetRedesign gate={gate} title={held} onRequest={requestFromSheet} onClose={closeHeld} /> : null}
     </>
   ) : null;
 
-  // `open` et `hold` sont stables : les rangées mémoïsées ne se redessinent pas pour eux.
-  return gate ? { gate, open: openTitle, hold, overlay } : null;
+  // `open`, `hold` et `openSeasons` sont stables : les rangées mémoïsées ne se redessinent pas pour eux.
+  return gate ? { gate, open: openTitle, hold, openSeasons, overlay } : null;
 }
