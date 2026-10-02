@@ -281,12 +281,18 @@ MÊME modèle, dans `packages/shared/src/utils/` :
   bouton du plateau (`CardTrayPrimaryButton`) — « Lire » discret (ton
   `quiet`) là seulement où le clic ne lit pas (`playInTray` : affiche,
   reco ; jamais la vignette 16:9, qui EST la lecture), « Demander » (ton
-  `brand`) sur une carte Vigie. Une feuille (appui long, télécommande)
+  `brand`) sur une carte Vigie. Une série de la bibliothèque à qui il manque
+  des saisons, DANS LA RECHERCHE (`SeriesGapsScope`, contrat `titles.gaps`,
+  une question par page), offre « Demander » au ton `brand` JUSTE APRÈS
+  « Lire » (`overlay.request`) — et « 2 saisons à demander » sous l'affiche ;
+  une feuille le met sous la lecture. Tout ouvre la feuille des saisons
+  (modèle `seasonPick`, shared) : ce que la bibliothèque a y dit « Dans la
+  bibliothèque », jamais à cocher. Une feuille (appui long, télécommande)
   remplace la carte : elle garde « Lire » en tête dans tous les cas. Le
   plateau se resserre sur une affiche étroite (`TRAY_SIZE`) sans jamais
   déborder, et garde des centres à 24 px au moins
   (espacement WCAG 2.5.8) : cinq boutons au plus sur une affiche — une reco
-  n'offre donc pas « garder hors ligne ».
+  n'offre donc pas « garder hors ligne », une série à compléter non plus.
 
 Seule l'ENTRÉE change : la souris sur le web et le bureau (`CardHoverOverlay`,
 monté au survol), l'appui long sur le mobile et le miroir (`CardSheetScope` /
@@ -335,10 +341,13 @@ ton, d'ordre ou de gabarit du plateau s'y reporte. Sur les cartes du cœur,
 un Vigie trop ancien les laisse sans « + », sans la moindre erreur — vérifier
 la version déployée (`data/plugins/installed.json`) avant de conclure au bug.
 **Exception assumée, Apple TV :** les demandes en cours (routes `titles.access`
-et `titles.mine` du contrat) et « Demander » un titre absent — collection d'un
+et `titles.mine` du contrat), « Demander » un titre absent — collection d'un
 film, rangée « À demander » de la recherche, feuille des saisons
-(`titles.state`, `titles.request`, `titles.seasons`) — sont les SEULES fonctions
-de Vigie que le cœur intègre nativement, toutes dans `redesignWiring/vigie/`.
+(`titles.state`, `titles.request`, `titles.seasons`) — et les saisons
+MANQUANTES d'une série de la bibliothèque — en tête de la rangée « À
+demander » de la recherche, en onglets grisés au bout de la bande des
+saisons de la fiche (`titles.gaps`) — sont les SEULES fonctions de Vigie que
+le cœur intègre nativement, toutes dans `redesignWiring/vigie/`.
 Toute fonction de Vigie sur la TV passe par `useVigieGate` : serveur ou Vigie
 trop anciens, Vigie éteint, compte bloqué dans Vigie (le compte de
 démonstration de la revue Apple) → aucune trace.
