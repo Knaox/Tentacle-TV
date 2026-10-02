@@ -49,6 +49,16 @@ interface LatestItemsOptions {
   enabled?: boolean;
 }
 
+/**
+ * Les cartes d'une rangée « Derniers ajouts » : vingt au plus — une fois les
+ * épisodes regroupés par série, seize laissaient la rangée trop vide (demandé
+ * par l'utilisateur le 2026-10-02). Le serveur en rend autant.
+ */
+export const LATEST_ROW_CARDS = 20;
+
+/** Stable : `select` recalcule à chaque nouvelle identité de fonction. */
+const selectLatestRow = (items: MediaItem[]): MediaItem[] => groupLatestByRuns(items, LATEST_ROW_CARDS);
+
 // Fenêtre d'épisodes récupérée avant regroupement par série : cf.
 // `homeLimits().latestEpisodes`. Assez large pour qu'une saison ajoutée en
 // masse n'éjecte pas les séries précédentes, mais bornée — 200 → 100 divisait
@@ -90,12 +100,12 @@ export function latestItemsQueryOptions(
       return client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?ParentId=${parentId}&Recursive=true${typeFilter}` +
-            `&SortBy=DateCreated&SortOrder=Descending&Limit=16` +
+            `&SortBy=DateCreated&SortOrder=Descending&Limit=${LATEST_ROW_CARDS}` +
             `&Fields=${FIELDS}&${IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items);
     },
-    select: episodeMode ? groupLatestByRuns : undefined,
+    select: episodeMode ? selectLatestRow : undefined,
     enabled: !!userId && !!parentId && (options?.enabled ?? true),
     staleTime: 2 * 60 * 1000 * staleFactor(),
   };

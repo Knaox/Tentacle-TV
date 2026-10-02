@@ -12,7 +12,8 @@
  *
  * — des ÉPISODES pour une bibliothèque de séries (une fenêtre de 100, 40 en
  * mode économie, que le client regroupait lui-même par séries CONSÉCUTIVES),
- * tout ce qui arrive pour une bibliothèque mixte (`Limit` : la rangée, 16).
+ * tout ce qui arrive pour une bibliothèque mixte (`Limit` : la rangée — 20,
+ * 16 pour les clients d'avant le regroupement au serveur).
  * Les films (`IncludeItemTypes=Movie`) ne sont pas concernés : rien à
  * regrouper, la requête part telle quelle.
  *
