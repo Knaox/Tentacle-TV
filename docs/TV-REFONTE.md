@@ -33,6 +33,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 21. Retour sans clignotement, suite de fiches (Apple TV) | Fait (2026-10-02) : tout menu fermé par Retour s'efface d'un seul fondu (panneaux du lecteur, menus en Modal), le rail reste déplié sous une Modal ouverte depuis lui ; une fiche ouverte depuis une autre fiche la remplace, un seul Retour ramène avant la première — « Le Retour (Apple TV) » ci-dessous. |
 | 22. Le logo dans l'app (Apple TV) | Fait (2026-10-03) : AUCUN logo dans l'interface, au choix de l'utilisateur entre trois propositions — le coin et son halo retirés de tous les écrans ; la marque vit dans l'icône, le Top Shelf, le démarrage et les illustrations — « Le logo dans l'app : aucun (Apple TV) » ci-dessous. |
 | 23. Saut de 30 s, validation en 5 s (Apple TV, Android TV) | Fait (2026-10-03) : → +30 s, ← −10 s, les boutons de l'habillage font pareil ; une seule règle pour toutes les entrées — la cible posée, « Lecture dans 5 s », OK lit, Retour annule, rien en pause ; plus d'abandon à 7 s — « Saut de 30 s et validation en 5 s » ci-dessous. |
+| 24. Badges de qualité au focus (Apple TV) | Fait (2026-10-03) : « 4K · VISION · ATMOS » dans l'image, en bas à droite, sur la rangée de la note, quand le focus a tenu 300 ms ; la qualité lue au focus, un titre à la fois (jamais les flux dans les grilles) ; la fiche dit la même chose — « Les badges de qualité au focus (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -2708,6 +2709,90 @@ Pièges payés :
 navigation (le préchargement joue si le focus s'y arrête un instant), flèche
 maintenue jusqu'au bout et retour, glisser vif au pavé, appui long et fiche
 depuis une affiche, Favoris et Ma liste (même grille). JS seulement : aucune
+reconstruction de l'app, aucun changement du serveur.
+
+## Les badges de qualité au focus (Apple TV)
+
+Branche `claude/sweet-maxwell-3d9a5f` (2026-10-03). Demande de l'utilisateur :
+« Affiche au minimum un badge 4K, ou Dolby Vision, ou Dolby Atmos si présent
+lors du focus sur la card. Attention, ça doit être discret et bien intégré,
+style Apple TV. »
+
+- **Ce qui paraît** : au focus d'une affiche, d'une vignette 16:9 ou d'une
+  vignette d'épisode de la fiche, quand le focus a tenu 300 ms, la qualité du
+  titre — « 4K · VISION · ATMOS » — DANS l'image, en bas à droite : une
+  pastille du verre de la note (voile 0,72), sur la rangée de la note
+  (au-dessus de la barre de progression), sans la croiser, ni les épingles
+  (en haut), ni le logo d'une vignette quand il descend jusqu'à cette rangée.
+  Le 4K seul dans une capsule à peine teintée de la marque, le reste en texte
+  secondaire monochrome. Fondu d'opacité seulement ; rien au repos (montée avec
+  l'habit du focus, `CardFrame.focusLayer`) ; dans le sous-arbre de la cible,
+  comme la note : la pastille suit la parallaxe, rien ne recouvre la cible.
+  Aucun écart de grille ni de rangée ne change.
+- **La règle** (`packages/shared/src/utils/qualityBadges.ts`, testée) : 4K dès
+  3200 de large ou 2000 de haut (un 4K recadré en scope en est un) ; UNE
+  plage — Dolby Vision, à défaut HDR10+, HDR10, HDR (« DOVIInvalid » n'est pas
+  du Dolby Vision) ; Dolby Atmos dès qu'UNE piste le dit, par son profil ou son
+  titre — sur un MULTi, l'Atmos est sur la VO, la piste par défaut ne le dit
+  pas —, jamais déduit du codec (un TrueHD sans Atmos existe). Trois au plus,
+  dans cet ordre ; formes courtes sur les cartes (celles des puces du web),
+  noms entiers sur la fiche, qui suit désormais la même règle (« Dolby Atmos »
+  quand la VO l'a, « HDR10 » plutôt qu'un « HDR » nu). Le web garde ses puces.
+- **Ce qui tient** : chasses d'Inter relevées dans les polices embarquées
+  (`redesign/theme/interMetrics.ts`, sans crénage : une borne haute), largeur
+  de la note calculée de même (`cardMarkerGeometry`) ; `fitQualityBadges`
+  retire les derniers badges jusqu'à ce que la rangée tienne, le 4K d'abord.
+  Affiche de 240 pt avec sa note : « 4K · VISION » ; sans note, les trois ;
+  vignette 16:9 et vignette d'épisode : les trois.
+- **Les données** : les grilles ne demandent toujours pas les flux (jeu
+  `grid`). Une liste qui les porte (fiche, rangées avec sources) dit la
+  qualité tout de suite ; une série, rien. Sinon, quand le focus a TENU,
+  UNE lecture légère du titre (`Items?Ids=<id>&Fields=MediaStreams`, sans
+  images, état de lecture ni total) : 4 à 8 Kio, 10 à 25 ms à chaud sur le
+  Jellyfin 12.1 (mesuré en lecture seule, compte de test). La source
+  (`createQualityBadgeStore`, tv-core, testée ; port `qualityBadgeSource`,
+  hôte unique `QualityBadgeHost`) garde ce qu'elle a lu pour la session,
+  répond depuis la fiche en cache (`["item", id]`), ne lit jamais deux fois le
+  même titre à la fois, suspend ses lectures 15 s après un échec. Rien ne
+  s'annule en vol : le client Jellyfin n'emploie aucun signal
+  (`fetchWithRetry`) ; ce qui ne part pas, c'est la lecture d'un focus qui n'a
+  pas tenu.
+
+Mesuré au banc des bibliothèques (`apps/tv/harness/library-bench/`, 1 200
+films, JS de production, paquets figés joués en alternance, 3 tours ; le faux
+Jellyfin compte à part les lectures de qualité, `/__stats` `qualityReads`) :
+
+| Mesuré | Avant (`c91966235`) | Badges |
+|---|---|---|
+| Flèche BAS maintenue 8 s : lignes parcourues | 92 | 91 |
+| — lectures de qualité PENDANT le défilement | — | **0** (une, 320 ms après le lâcher, sur la carte où le focus s'arrête) |
+| — fil d'interface / fil JS | 60 / 58 i/s | 59,9 / 57,8 i/s |
+| — RAM en fin (empreinte) | 220 Mo | 223 Mo |
+| Ouverture : premier écran complet | 336 à 542 ms | 378 à 401 ms |
+| 30 pas BAS (une carte toutes les ~0,5 s) : lectures | — | 30 — chaque carte reste plus de 300 ms, sa pastille paraît |
+| — fil d'interface / fil JS | 59,9 / 59,6 i/s | 60 / 59,2 i/s |
+| — CPU de l'app par pas | 204 à 218 ms | 238 à 244 ms |
+| — GPU du simulateur | 203 à 246 ms/s | 221 à 254 ms/s |
+| 2 allers-retours de bout en bout (800 lignes) : lectures | — | 9, toutes aux arrêts entre deux appuis maintenus |
+| — RAM (empreinte), début → fin, pic | 192 → 229 → 236 → 239 → 240 Mo, pic 244 | 198 → 232 → 240 → 242 → 243 Mo, pic 247 |
+
+Images par seconde et RAM inchangées ; un défilement rapide ne lit rien. Le
+seul coût est celui de la pastille quand le focus TIENT : une lecture (4 à
+14 Kio), son montage et ses deux fondus — ~25 ms de CPU par carte où l'on
+s'arrête. Mac chargé par les bancs d'autres sessions (charge 4 à 18) : les
+écarts d'ouverture sont dans le bruit (A va de 336 à 542 ms).
+
+Planches : `apps/tv/harness/ui-bench/out/2026-10-03-00-08-26-badges/`
+(non suivies) — groupe « Badges de qualité » du banc (`bench:ui planche
+badges --focus`) : Captain America : Brave New World (4K Dolby Vision, VO
+TrueHD Atmos), Les Chevaliers du ciel (1080p, rien), Game of Thrones S2 · E8
+(4K HDR10), en affiche, en vignette et en vignette d'épisode.
+
+À éprouver sur l'Apple TV (tâche de l'utilisateur) : une bibliothèque, un
+film 4K Dolby Vision (s'arrêter une demi-seconde : la pastille paraît en bas
+à droite, à côté de la note), un 1080p (rien), une série (rien) ; flèche
+maintenue (rien ne paraît en route) ; la fiche du même film (mêmes badges,
+noms entiers) ; « Reprendre » et la saison d'une série. JS seulement : aucune
 reconstruction de l'app, aucun changement du serveur.
 
 ---
