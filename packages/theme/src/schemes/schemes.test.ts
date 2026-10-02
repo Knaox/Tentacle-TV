@@ -1,26 +1,15 @@
 /**
- * Garde-fou de l'INVARIANT le plus coûteux du design system.
- *
- * Les builders de palette DOIVENT lire les exports MUTABLES de
- * `@tentacle-tv/shared/theme`, réécrits en place par `applyThemeOverride()`.
- * Si quelqu'un les remplace un jour par `DEFAULT_COLOR_TOKENS` ou par une copie
- * figée, le thème de marque admin cesse silencieusement de se propager sur
- * mobile ET sur TV : ni erreur de type, ni échec de lint, ni crash — la
- * régression n'apparaît que chez un utilisateur ayant personnalisé sa marque.
- *
- * Ce test échoue immédiatement dans ce cas.
+ * Garde-fous des palettes : leurs valeurs par défaut, leur source unique (les
+ * jetons de marque de `@tentacle-tv/shared/theme`), la parité des clés entre
+ * les deux schémas et la résolution du mode.
  */
 
-import { afterEach, describe, expect, it } from "vitest";
-import { BRAND, applyThemeOverride } from "@tentacle-tv/shared/theme";
+import { describe, expect, it } from "vitest";
+import { BRAND } from "@tentacle-tv/shared/theme";
 
 import { buildDarkPalette } from "./dark";
 import { buildLightPalette } from "./light";
 import { resolveScheme, sanitizeThemeMode } from "./index";
-
-afterEach(() => {
-  applyThemeOverride(null);
-});
 
 describe("palettes — valeurs par défaut", () => {
   it("sombre reprend la marque partagée", () => {
@@ -46,51 +35,21 @@ describe("palettes — valeurs par défaut", () => {
   });
 });
 
-describe("INVARIANT — l'override de marque admin se propage", () => {
-  it("atteint le schéma sombre", () => {
-    applyThemeOverride({
-      color: { brand: { base: "#FF0000", light: "#FF6666", dark: "#CC0000" } },
-    });
-    expect(BRAND.violet).toBe("#FF0000");
-    expect(buildDarkPalette().brand.violet).toBe("#FF0000");
-  });
-
-  it("atteint le schéma clair par dérivation — chemin qui casse en premier", () => {
-    applyThemeOverride({
-      color: { brand: { base: "#FF0000", light: "#FF6666", dark: "#CC0000" } },
-    });
-    const light = buildLightPalette();
-    expect(light.brand.violet).toBe("#CC0000");
-    // Alphas recalculés depuis la marque surchargée, pas des littéraux violets.
-    expect(light.brand.glow).toBe("rgba(204, 0, 0, 0.25)");
-    expect(light.brand.soft).toBe("rgba(204, 0, 0, 0.1)");
-    expect(light.cta.brandBg).toBe("#CC0000");
-    expect(light.border.focus).toBe("#CC0000");
-  });
-
-  it("l'accent rose est surchargeable — et suit dans les deux schémas", () => {
-    applyThemeOverride({
-      color: { brand: { accent: "#00FF88", accentDark: "#00CC66" } },
-    });
-    expect(buildDarkPalette().brand.accent).toBe("#00FF88");
-    expect(buildLightPalette().brand.accent).toBe("#00CC66");
-    expect(buildLightPalette().brand.accentLight).toBe("#00FF88");
-  });
-
-  it("une surcharge de surface s'applique au sombre sans casser le clair", () => {
-    applyThemeOverride({ color: { surface: { s1: "#123456" } } });
-    expect(buildDarkPalette().surface.s1).toBe("#123456");
-    // `glass.panel` est un alias de SURFACE.s1 en sombre — il doit suivre.
-    expect(buildDarkPalette().glass.panel).toBe("#123456");
-    // Le clair garde ses constantes locales : une valeur sombre n'y fuit pas.
-    expect(buildLightPalette().surface.s1).toBe("#FFFFFF");
-  });
-
-  it("le retrait de l'override restaure les défauts", () => {
-    applyThemeOverride({ color: { brand: { base: "#FF0000" } } });
-    applyThemeOverride(null);
-    expect(buildDarkPalette().brand.violet).toBe("#8B5CF6");
-    expect(buildLightPalette().brand.violet).toBe("#7C3AED");
+describe("une seule source de marque", () => {
+  it("les deux schémas lisent les jetons partagés, jamais une copie", () => {
+    // Une copie figée (`DEFAULT_COLOR_TOKENS`, un littéral) aux mêmes valeurs
+    // passerait une simple comparaison : on change le jeton partagé le temps
+    // du test, les palettes doivent suivre.
+    const saved = { ...BRAND };
+    try {
+      Object.assign(BRAND, { violet: "#FF0000", dark: "#CC0000", accent: "#00FF88", accentDark: "#00CC66" });
+      expect(buildDarkPalette().brand.violet).toBe("#FF0000");
+      expect(buildDarkPalette().brand.accent).toBe("#00FF88");
+      expect(buildLightPalette().brand.violet).toBe("#CC0000");
+      expect(buildLightPalette().brand.accent).toBe("#00CC66");
+    } finally {
+      Object.assign(BRAND, saved);
+    }
   });
 });
 

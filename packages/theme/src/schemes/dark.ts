@@ -1,19 +1,11 @@
 /**
  * Palette sombre — reprise EXACTE du rendu actuel de l'app.
  *
- * Builder (et non constante) : il lit les exports partagés AU MOMENT de
- * l'appel, donc APRÈS `applyThemeOverride()` — le theming de marque admin
- * (hue violette personnalisée, surfaces, etc.) est automatiquement reflété.
- *
- * ┌─ INVARIANT — NE PAS CONTOURNER ────────────────────────────────────────┐
- * │ L'import DOIT viser `@tentacle-tv/shared/theme`, dont les objets sont  │
- * │ volontairement MUTABLES et réécrits en place par `applyThemeOverride`. │
- * │ Ne JAMAIS remplacer par `DEFAULT_COLOR_TOKENS` (./tokens/colors) ni    │
- * │ par une copie figée : le snapshot casserait silencieusement la         │
- * │ propagation du thème admin sur mobile ET sur TV, sans erreur de type   │
- * │ ni échec de test — la régression n'apparaîtrait que chez un            │
- * │ utilisateur ayant personnalisé sa marque.                              │
- * └────────────────────────────────────────────────────────────────────────┘
+ * Builder (et non constante) : il lit les jetons de marque partagés
+ * (`@tentacle-tv/shared/theme`), la SEULE source de la marque du web, du
+ * bureau, du mobile et de la TV. Ne pas les remplacer par
+ * `DEFAULT_COLOR_TOKENS` (./tokens/colors) ni par une copie : deux sources
+ * finiraient par diverger (garde-fou dans `schemes.test.ts`).
  *
  * Les slots additionnels (fill/danger/glass/tabBar) reprennent à l'identique
  * les littéraux historiques du code (audit couleurs) : rendu dark pixel-perfect.

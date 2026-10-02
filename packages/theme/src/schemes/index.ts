@@ -2,9 +2,8 @@
  * Schémas d'apparence clair/sombre — source de vérité unique pour web,
  * desktop et mobile.
  *
- * Les deux builders lisent les exports MUTABLES de `@tentacle-tv/shared/theme`
- * au moment de l'appel, donc après `applyThemeOverride()` : le thème de marque
- * admin est reflété sans code supplémentaire. Voir l'INVARIANT dans `./dark.ts`.
+ * Les deux builders lisent les jetons de marque de `@tentacle-tv/shared/theme`,
+ * la seule source de la marque — voir `./dark.ts`.
  */
 
 export type {

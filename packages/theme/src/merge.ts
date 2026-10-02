@@ -1,4 +1,4 @@
-import type { PartialThemeTokens, Theme, ThemeTokens } from "./types";
+import type { PartialThemeTokens, ThemeTokens } from "./types";
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -35,15 +35,3 @@ export const mergeThemeTokens = (
     base as unknown as Record<string, unknown>,
     override as Record<string, unknown> | undefined,
   ) as unknown as ThemeTokens;
-
-export const mergeTheme = (
-  base: Theme,
-  override: { id?: string; name?: string; tokens?: PartialThemeTokens } | undefined,
-): Theme => {
-  if (!override) return base;
-  return {
-    id: override.id ?? base.id,
-    name: override.name ?? base.name,
-    tokens: mergeThemeTokens(base.tokens, override.tokens),
-  };
-};

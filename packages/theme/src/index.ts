@@ -3,7 +3,7 @@
  *
  * - Types: `Theme`, `ThemeTokens`, plus per-category interfaces.
  * - Defaults: `DEFAULT_THEME`, `DEFAULT_THEME_TOKENS`.
- * - Runtime: `mergeTheme`, `mergeThemeTokens` for applying overrides.
+ * - Runtime: `mergeThemeTokens` (fusion d'arbres de jetons — la couche TV).
  * - CSS bridge: `themeToCssVariables`, `themeToCssVarEntries`, `CSS_VAR_NAMES`,
  *   `cssVar`.
  * - Tailwind: preset re-exported via the `./tailwind` subpath.
@@ -57,7 +57,7 @@ export {
   DEFAULT_TYPOGRAPHY_TOKENS,
 } from "./tokens";
 
-export { mergeTheme, mergeThemeTokens } from "./merge";
+export { mergeThemeTokens } from "./merge";
 
 export {
   CSS_VAR_NAMES,

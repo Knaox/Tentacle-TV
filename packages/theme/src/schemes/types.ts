@@ -2,14 +2,13 @@
  * Types du système d'apparence clair/sombre — partagés web, desktop et mobile.
  *
  * `ThemePalette` est un instantané immutable construit par `buildDarkPalette()`
- * / `buildLightPalette()` à partir des tokens de marque partagés (lus APRÈS
- * `applyThemeOverride`, donc brand-aware).
+ * / `buildLightPalette()` à partir des tokens de marque partagés.
  *
  * HISTORIQUE — ces types vivaient dans `apps/mobile/src/theme/palette.types.ts`
  * avec la note « le light vit ici car la TV et le web restent dark ». Cette
  * hypothèse n'est plus vraie : le web/desktop consomme désormais les deux
- * schémas. `apps/tv` reste sombre uniquement, mais lit les mêmes exports
- * mutables de `@tentacle-tv/shared` — voir INVARIANT dans `dark.ts`.
+ * schémas. `apps/tv` reste sombre uniquement, mais lit les mêmes jetons de
+ * `@tentacle-tv/shared` — voir `dark.ts`.
  */
 
 /** Choix utilisateur persisté ("auto" suit le réglage système). */
