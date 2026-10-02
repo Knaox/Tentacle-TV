@@ -1,4 +1,5 @@
 import { i18n, type MediaItem, type SubtitleCue } from "@tentacle-tv/shared";
+import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../../src/hooks/seekTuning";
 import { playerChromeLabels } from "../../../src/redesign/screens/player/playerLabels";
 import type {
   EndScreenModel,
@@ -24,7 +25,8 @@ export const t = (key: string, options?: Record<string, unknown>) => i18n.t(key,
 
 const TICKS_PER_SECOND = 10_000_000;
 
-export const playerLabels = (): PlayerLabels => playerChromeLabels(t, { back: 10, forward: 30 });
+export const playerLabels = (): PlayerLabels =>
+  playerChromeLabels(t, { back: SKIP_BACK_SECONDS, forward: SKIP_FORWARD_SECONDS });
 
 export function byName(data: BenchData, name: string): MediaItem | undefined {
   return Object.values(data.snapshot.items).find((entry) => entry.item.Name === name)?.item;
@@ -77,8 +79,8 @@ export function transportOf(data: BenchData, item: MediaItem): PlayerTransport {
     hasPrevious: !!around.previous,
     hasNext: !!around.next,
     hasEpisodes: item.Type === "Episode" && !!item.SeriesId,
-    seekBackSeconds: 10,
-    seekForwardSeconds: 30,
+    seekBackSeconds: SKIP_BACK_SECONDS,
+    seekForwardSeconds: SKIP_FORWARD_SECONDS,
   };
 }
 

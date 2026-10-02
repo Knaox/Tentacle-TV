@@ -7,7 +7,7 @@ import { playerChromeLabels, seekFlashLabel, type Translate } from "../../redesi
 import type { PlayerMedia, PlayerPanel, ScrubModel } from "../../redesign/screens/player/playerTypes";
 import { useAutoCapNotice } from "../../hooks/useAutoCapNotice";
 import { usePlaybackTroubleState } from "../../hooks/playbackTroubleStore";
-import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../hooks/useTVPlayerControls";
+import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../hooks/seekTuning";
 import type { FocusStore } from "../focus/focusStore";
 import { backdropUriOf, logoUriOf, paletteOf, type ImageUrl } from "./playerArt";
 import {

@@ -3,6 +3,7 @@ import { createScrubMachine } from "@tentacle-tv/tv-core";
 import { backgroundHoldsFocus } from "../components/player/focus/osdFocusBus";
 import { reportingActivity, type ScrubCountdownView } from "./scrubCountdown";
 import { SCRUB_INPUT } from "./scrubInput";
+import { jumpSecondsOf } from "./seekTuning";
 import { useScrubCountdown } from "./useScrubCountdown";
 import { useScrubHoldMotor } from "./useScrubHoldMotor";
 
@@ -10,14 +11,6 @@ type Dir = "forward" | "backward";
 type Ref<T> = MutableRefObject<T>;
 
 const signOf = (dir: Dir): 1 | -1 => (dir === "forward" ? 1 : -1);
-
-/**
- * Le pas d'un APPUI sur une flèche — dix secondes, dans les deux sens, comme
- * le lecteur d'Apple (et Netflix sur Apple TV, qui l'a longtemps été) : un
- * saut de la lecture, habillage caché ; un pas fin du curseur, en défilement.
- * L'accélération est réservée au MAINTIEN.
- */
-export const ARROW_JUMP_SECONDS = 10;
 
 /** Une reprise automatique sur une cible inchangée n'est qu'une annulation :
  *  aucun seek pour revenir au même endroit. */
@@ -34,7 +27,7 @@ interface ScrubControllerArgs {
   pausedRef: Ref<boolean>;
   onSeekRef: Ref<(seconds: number) => void>;
   onScrubPauseRef: Ref<(paused: boolean) => void>;
-  /** Un appui simple qui appartient à la vidéo : le saut de ±10 s. */
+  /** Un appui simple qui appartient à la vidéo : le saut de son sens. */
   onJumpRef: Ref<(dir: Dir) => void>;
   overlayVisibleRef: Ref<boolean>;
   panelOpenRef: Ref<boolean>;
@@ -53,8 +46,9 @@ interface ScrubControllerArgs {
  *  - l'absorption des événements JUMEAUX (un OK émet à la fois l'event TV
  *    global et le press du bouton focusé) et des échos de touches média ;
  *  - les gestes, les mêmes sur toutes les plateformes : un APPUI saute (la
- *    lecture de ±10 s habillage caché, le curseur de ±10 s en défilement), un
- *    MAINTIEN défile en accélérant ; la couture `SCRUB_INPUT` dit seulement
+ *    lecture habillage caché, le curseur en défilement) du saut de son sens —
+ *    +30 s, −10 s (`seekTuning.ts`) —, un MAINTIEN défile en accélérant ;
+ *    la couture `SCRUB_INPUT` dit seulement
  *    comment la plateforme les émet ;
  *  - la TRAPPE du curseur — voir `nudgeScrub` ;
  *  - le DÉCOMPTE (`scrubCountdown.ts`) : quand le défilement se fermera seul.
@@ -63,8 +57,8 @@ interface ScrubControllerArgs {
  *    de la machine, dit pendant ses dernières secondes. Seul le pavé arme la
  *    reprise : sans pavé (Android TV), rien n'en part.
  *
- * **La trappe.** Le glisser du pavé avance par deltas CONTINUS, l'appui fin
- * de dix secondes : la machine ne connaît que ses pas proportionnels. La
+ * **La trappe.** Le glisser du pavé avance par deltas CONTINUS, l'appui d'un
+ * saut fixe : la machine ne connaît que ses pas proportionnels. La
  * position AFFICHÉE fait donc foi : les pas de la machine s'y appliquent en
  * DELTAS, la trappe directement (en repoussant l'abandon, `touch`), et la
  * confirmation seek TOUJOURS sur l'affichage.
@@ -134,7 +128,7 @@ export function useScrubController({
     onPause: (pause) => onScrubPauseRef.current(pause),
     onSeek: () => {
       // La position AFFICHÉE fait foi (elle intègre la trappe). Base des
-      // skips ±10/30 synchronisée AVANT le seek : un +30 immédiat après la
+      // sauts synchronisée AVANT le seek : un saut aussitôt après la
       // confirmation ne doit pas repartir de la position pré-scrub.
       currentTimeRef.current = scrubPositionRef.current;
       onSeekRef.current(scrubPositionRef.current);
@@ -169,11 +163,11 @@ export function useScrubController({
     setDisplay(clampDisplay(scrubPositionRef.current + deltaSeconds));
   }, [machine, clampDisplay, setDisplay]);
 
-  /** Un pas SEC (appui simple ←/→ ou touche média isolée) : dix secondes,
-   *  jamais d'accélération — elle est réservée au MAINTIEN (tic du moteur). */
+  /** Un pas SEC (appui simple ←/→ ou touche média isolée) : le saut de son
+   *  sens, jamais d'accélération — elle est réservée au MAINTIEN (tic du moteur). */
   const stepScrub = useCallback((dir: Dir) => {
     setSpeedLabel(null);
-    nudgeScrub(signOf(dir) * ARROW_JUMP_SECONDS);
+    nudgeScrub(jumpSecondsOf(dir));
   }, [nudgeScrub]);
 
   const startScrubbing = useCallback((dir?: Dir) => {
@@ -226,7 +220,7 @@ export function useScrubController({
   }, [machine, countdown]);
 
   /** Un APPUI ←/→ hors défilement, une fois tranché. Il n'appartient à la
-   *  vidéo — saut de ±10 s — que habillage caché, fond focalisé : sous la
+   *  vidéo — le saut de son sens — que habillage caché, fond focalisé : sous la
    *  pilule de saut ou une carte, il sert leur focus ; habillage visible, la
    *  navigation. Ailleurs, il (r)allume l'habillage. */
   const tap = useCallback((dir: Dir) => {

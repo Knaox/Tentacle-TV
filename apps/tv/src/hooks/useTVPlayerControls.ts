@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import type { TouchMode } from "./scrubTouchTuning";
+import { jumpSecondsOf } from "./seekTuning";
 import { useScrubGestures } from "./useScrubGestures";
-import { ARROW_JUMP_SECONDS, useScrubController } from "./useScrubController";
+import { useScrubController } from "./useScrubController";
 
 const OVERLAY_HIDE_MS = 5000;
 /** Fenêtre de cumul des sauts consécutifs (= durée d'affichage du badge). Tant
@@ -24,10 +25,6 @@ const MEDIA_KEY_ECHO_MS = 300;
 /** Un toucher du pavé qui suit un appui de si près l'ACCOMPAGNE (le pouce
  *  frôle la surface en cliquant le bord de l'anneau) : ce n'est pas un geste. */
 const TOUCH_AFTER_PRESS_MS = 600;
-/** Les sauts du transport : l'habillage les AFFICHE (« 30 » dans sa flèche),
- *  il doit donc lire les mêmes valeurs que celles qu'on applique. */
-export const SKIP_FORWARD_SECONDS = 30;
-export const SKIP_BACK_SECONDS = 10;
 
 interface TVPlayerControlsOptions {
   paused: boolean;
@@ -50,10 +47,11 @@ interface TVPlayerControlsOptions {
 /**
  * Contrôles télécommande du lecteur — le modèle du lecteur d'Apple, que
  * Netflix a longtemps été sur Apple TV : habillage caché, un APPUI ←/→ saute
- * de ±10 s et la lecture continue ; un MAINTIEN ouvre le défilement (curseur
+ * comme les boutons de l'habillage (+30 s, −10 s : `seekTuning.ts`) et la
+ * lecture continue ; un MAINTIEN ouvre le défilement (curseur
  * fantôme qui accélère, seek seulement à la confirmation : OK lit depuis la
  * position visée, Retour revient où l'on était) ; habillage visible, ←/→
- * naviguent. Orchestrateur : visibilité de l'OSD + sauts des boutons (−10/+30),
+ * naviguent. Orchestrateur : visibilité de l'OSD + sauts des boutons,
  * délègue tout le scrub à useScrubController (source unique partagée
  * Android/tvOS) et branche les entrées (télécommande + gestes tvOS).
  */
@@ -109,7 +107,7 @@ export function useTVPlayerControls({
   }, []);
 
   // --- Badge « +30s / −10s » après un skip OSD caché : juste le delta, façon
-  // Netflix. OSD visible (boutons ±10/30) : la seekbar montre déjà le saut. ---
+  // Netflix. OSD visible (boutons de saut) : la seekbar montre déjà le saut. ---
   const [skipFlash, setSkipFlash] = useState<{ delta: number; id: number } | null>(null);
   const skipFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Cumul des sauts consécutifs de même sens dans la fenêtre SKIP_BADGE_MS.
@@ -134,11 +132,9 @@ export function useTVPlayerControls({
     skipFlashTimerRef.current = setTimeout(() => { skipAccumRef.current = 0; setSkipFlash(null); }, SKIP_BADGE_MS);
   }, []);
 
-  // Un appui ←/→ qui appartient à la vidéo SAUTE de dix secondes, la lecture
-  // continue (le lecteur d'Apple, Netflix sur Apple TV) — cf. `useScrubController`.
-  const jumpRef = useRef((dir: "forward" | "backward") => {
-    skipBy(dir === "forward" ? ARROW_JUMP_SECONDS : -ARROW_JUMP_SECONDS);
-  });
+  // Un appui ←/→ qui appartient à la vidéo SAUTE comme les boutons de
+  // l'habillage — +30 s, −10 s (`seekTuning.ts`) — cf. `useScrubController`.
+  const jumpRef = useRef((dir: "forward" | "backward") => skipBy(jumpSecondsOf(dir)));
 
   // --- Moteur de scrub (partagé) ---
   const scrub = useScrubController({
@@ -164,14 +160,15 @@ export function useTVPlayerControls({
       fn(...args);
     }, [scrub, scrubbingRef]);
 
-  const handleSkipForward = useCallback(() => skipBy(SKIP_FORWARD_SECONDS), [skipBy]);
-  const handleSkipBack = useCallback(() => skipBy(-SKIP_BACK_SECONDS), [skipBy]);
+  // Les boutons de saut de l'habillage font EXACTEMENT ce que font les flèches.
+  const handleSkipForward = useCallback(() => jumpRef.current("forward"), []);
+  const handleSkipBack = useCallback(() => jumpRef.current("backward"), []);
   /** Bouton ⏩ de l'OSD : appui simple → mode scrub (curseur fantôme).
    *  En scrub, guardScrub transforme le même appui en confirmation. */
   const enterScrub = useCallback(() => scrub.startScrubbing(), [scrub]);
 
   /** Un simple toucher du pavé réveille l'habillage, comme le lecteur d'Apple —
-   *  sauf celui qui accompagne un clic (le saut de 10 s ne rallume rien). En
+   *  sauf celui qui accompagne un clic (le saut d'un appui ne rallume rien). En
    *  défilement, c'est un geste : le décompte repart de zéro. */
   const { endDrag } = scrub;
   const wakeFromTouch = useCallback(() => {
