@@ -16,7 +16,7 @@
  * garder zéro dépendance externe — un seul process backend par déploiement.
  */
 
-interface CacheEntry {
+export interface CacheEntry {
   body: Buffer;
   contentType: string;
   status: number;

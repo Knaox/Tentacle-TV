@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Response } from "undici";
 import { getJellyfinApiKey } from "../../services/configStore";
-import { setCached } from "../../services/jellyfinCache";
+import { setCached, type CacheEntry } from "../../services/jellyfinCache";
 import { isLibraryViewsPath, keepSupportedLibraries } from "./libraryViews";
 import { scrubAdminKey } from "./scrubAdminKey";
 
@@ -18,6 +18,14 @@ import { scrubAdminKey } from "./scrubAdminKey";
  */
 export function readsInFull(path: string, cacheTtl: number | null): boolean {
   return cacheTtl !== null || isLibraryViewsPath(path);
+}
+
+/** Une réponse resservie depuis le cache (cf. `jellyfinCache`), sans toucher Jellyfin. */
+export function replyFromCache(reply: FastifyReply, cached: CacheEntry): FastifyReply {
+  reply.status(cached.status);
+  reply.header("content-type", cached.contentType);
+  reply.header("x-tentacle-cache", "HIT");
+  return reply.send(cached.body);
 }
 
 export interface BufferedReplyContext {

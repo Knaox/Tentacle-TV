@@ -16,7 +16,7 @@ import {
 import { emitProxyEvents } from "./jellyfinProxy/events";
 import { carriesPlaybackUrl, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
-import { readsInFull, sendBuffered } from "./jellyfinProxy/bufferedReply";
+import { readsInFull, replyFromCache, sendBuffered } from "./jellyfinProxy/bufferedReply";
 import { isOutOfScope, userIdFromPath, userIdFromQuery } from "./jellyfinProxy/userScope";
 import { readIncomingAuth } from "./jellyfinProxy/incomingAuth";
 import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
@@ -105,12 +105,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       ? getCacheTtl(wildcardPath) : null;
     if (cacheTtl !== null) {
       const cached = getCached(wildcardPath, queryString, incomingToken);
-      if (cached) {
-        reply.status(cached.status);
-        reply.header("content-type", cached.contentType);
-        reply.header("x-tentacle-cache", "HIT");
-        return reply.send(cached.body);
-      }
+      if (cached) return replyFromCache(reply, cached);
     }
 
     // Un seul en-tête `Authorization: MediaBrowser` part chez Jellyfin : le
