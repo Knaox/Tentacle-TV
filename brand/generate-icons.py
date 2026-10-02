@@ -119,6 +119,11 @@ def build_icns(svg, target):
     body = b"".join(blocks)
     target.write_bytes(b"icns" + struct.pack(">I", len(body) + 8) + body)
 
+def selected(target):
+    """La cible passe le filtre de chemin — sans filtre, toutes passent."""
+    rel = str(target.relative_to(ROOT))
+    return not FILTER or any(f in rel for f in FILTER)
+
 def main():
     need("rsvg-convert"); need("magick")
     done, seen = [], set()
@@ -129,8 +134,7 @@ def main():
         for target in sorted(ROOT.glob(pattern)):
             if target in seen:
                 continue
-            rel = str(target.relative_to(ROOT))
-            if FILTER and not any(f in rel for f in FILTER):
+            if not selected(target):
                 continue
             seen.add(target)
             w, h = dimensions(target)
@@ -143,12 +147,14 @@ def main():
     print(f"\n{len(done)} cibles" + (f" (filtre : {' '.join(FILTER)})" if FILTER else "") + ("" if WRITE else " — aperçu, rien écrit (ajouter --write)"))
 
     # ── macOS et Windows attendent des conteneurs multi-résolutions ─────────
+    # Eux aussi suivent le filtre : sans lui, régénérer les seules images de
+    # l'Apple TV réécrivait l'icône du bureau (un bruit binaire de plus).
     icns = ROOT / "apps/desktop-electron/icons/icon.icns"
     ico = ROOT / "apps/desktop-electron/icons/icon.ico"
-    if WRITE and icns.exists():
+    if WRITE and icns.exists() and selected(icns):
         build_icns(BRAND / "app-icon-macos.svg", icns)
         print(f"  icns reconstruit : {icns.relative_to(ROOT)}")
-    if WRITE and ico.exists():
+    if WRITE and ico.exists() and selected(ico):
         pngs = []
         for size in (16, 24, 32, 48, 64, 128, 256):
             out = BRAND / f"ico-{size}.png"
