@@ -2,12 +2,12 @@ import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_LIGHT, TV_STAGE } from "@tentacle-tv/theme";
-import { SoftGradient } from "../background/SoftGradient";
 import { boundedLight, type ArtworkPalette } from "../color/artworkPalette";
 import { useFocusProgress } from "../focus/useFocusProgress";
 import { pressScale, usePressProgress } from "../motion/pressProgress";
 import { useRecede, type RowPlace } from "../motion/useRowRecede";
 import { colors, white } from "../theme/tokens";
+import { dressingStyles, FadingRestShadow, FocusRaised, FocusSheen, useFocusDressing } from "./CardFocusDressing";
 
 /**
  * Le cadre d'une carte et son focus façon Apple TV — SANS contour :
@@ -22,6 +22,10 @@ import { colors, white } from "../theme/tokens";
  * - un reflet spéculaire discret glisse en travers de l'image ;
  * - une voisine a le focus, la carte recule un peu : `place` (sa place dans
  *   une rangée, lue sur le fil d'interface, sans rendu), ou `dimmed`.
+ *
+ * Au repos, une carte n'a que son ombre de contact et sa transformation : le
+ * soulèvement, le reflet et le fondu de l'ombre (`CardFocusDressing`) ne
+ * naissent qu'avec le focus — une grille en monte des centaines.
  *
  * Le cadre ne fait que DESSINER : sur tvOS, un focalisable recouvert par un
  * frère qui dessine n'est plus proposé par la recherche géométrique du focus.
@@ -85,80 +89,58 @@ export function cardGlowOf(palette: ArtworkPalette | undefined, tone: "art" | "n
   return { color: boundedLight(palette.glows[1], TV_LIGHT.ambient.maxLuminance), opacity: G.opacity };
 }
 
-export const CardFrame = memo(function CardFrame({
+export const CardFrame = memo(function CardFrame(props: CardFrameProps) {
+  // Le recul d'une carte de rangée (une réaction sur le fil d'interface)
+  // n'existe que pour elle : `place` ne change pas d'un rendu à l'autre.
+  return props.place ? <RowCardFrame {...props} place={props.place} /> : <FrameBody {...props} recede={null} />;
+});
+
+function RowCardFrame(props: CardFrameProps & { place: RowPlace }) {
+  const recede = useRecede(props.place);
+  return <FrameBody {...props} recede={recede} />;
+}
+
+function FrameBody({
   width,
   height,
   radius,
   focused,
-  place,
+  recede,
   dimmed = false,
   press,
   origin = "top",
   glow,
   children,
-}: CardFrameProps) {
+}: CardFrameProps & { recede: SharedValue<number> | null }) {
   const p = useFocusProgress(focused);
   const dim = useFocusProgress(dimmed && !focused, "recede");
-  const recede = useRecede(place);
   const enclosing = usePressProgress();
   const pressed = press ?? enclosing;
   const lift = useAnimatedStyle(() => ({
-    opacity: 1 - (1 - TV_STAGE.focus.recede) * (place ? recede.value : dim.value),
+    opacity: 1 - (1 - TV_STAGE.focus.recede) * (recede ? recede.value : dim.value),
     transform: cardLift(p.value, pressed ? pressed.value : 0),
   }));
-  const rest = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
-  const raised = useAnimatedStyle(() => ({ opacity: p.value }));
-  const sheen = useAnimatedStyle(() => ({ opacity: 0.9 * p.value }));
+  // Soulèvement, reflet et fondu de l'ombre : au focus, le temps du retour.
+  const [dressed, settle] = useFocusDressing(focused);
   const shape = { width, height, borderRadius: radius };
   return (
     <Animated.View style={[shape, cardOrigin(origin), lift]}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.shadowRest, { borderRadius: radius }, glow ? null : rest]} />
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          glow ? [styles.glowRaised, { shadowColor: glow.color, shadowOpacity: glow.opacity }] : styles.shadowRaised,
-          { borderRadius: radius },
-          raised,
-        ]}
-      />
+      {dressed && !glow ? (
+        <FadingRestShadow progress={p} radius={radius} />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, dressingStyles.shadowRest, { borderRadius: radius }]} />
+      )}
+      {dressed ? <FocusRaised progress={p} glow={glow} radius={radius} focused={focused} onSettled={settle} /> : null}
       <View style={[shape, styles.clip]}>
         {children}
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, sheen]}>
-          <SoftGradient
-            width={width}
-            height={height}
-            colors={[white(0.26), white(0.06), white(0)]}
-            locations={[0, 0.35, 0.6]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-          />
-        </Animated.View>
+        {dressed ? <FocusSheen progress={p} width={width} height={height} /> : null}
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius }, styles.hairline]} />
       </View>
     </Animated.View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   clip: { overflow: "hidden", backgroundColor: colors.surface2 },
   hairline: { borderWidth: 1, borderColor: white(0.12) },
-  shadowRest: {
-    backgroundColor: "#000",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-  },
-  glowRaised: {
-    backgroundColor: "#000",
-    shadowOffset: { width: 0, height: G.offsetY },
-    shadowRadius: G.radius,
-  },
-  shadowRaised: {
-    backgroundColor: "#000",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 28 },
-    shadowOpacity: 0.65,
-    shadowRadius: 30,
-  },
 });
