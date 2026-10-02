@@ -34,15 +34,30 @@ const MAX_BPS = 1_000_000_000;
 export interface BitrateMeasureOptions {
   /** Mesurer la voie directe (serveur Jellyfin) quand le direct streaming est actif. */
   preferDirect?: boolean;
+  /**
+   * Le `fetch` du runtime ne rend la réponse qu'une fois le corps ENTIER reçu
+   * — React Native. Mesuré au simulateur Apple TV (2026-10-02) : 4,9 s pour
+   * 3 Mo bridés à 5 Mb/s, puis 0,2 s de conversion du corps ; chronométrée
+   * « à l'arrivée des en-têtes », la mesure ne voyait que la conversion —
+   * « 115 Mb/s » sur n'importe quel réseau, et sur un appareil lent un chiffre
+   * bas sans rapport avec lui. Le temps se compte alors de la requête à la
+   * réponse, moins la latence de deux petites requêtes ; jamais la conversion.
+   * OPT-IN : la TV seulement (le mobile a sa tâche ; un navigateur lit le
+   * corps en flux et garde la mesure d'origine).
+   */
+  bufferedFetch?: boolean;
 }
 
 interface MeasureRoute {
   /** Clé de cache : une mesure de la voie proxy ne vaut pas pour la voie directe. */
   key: string;
-  url: string;
+  /** Le témoin, sans sa taille (`?size=N`). */
+  base: string;
   headers: Record<string, string>;
   withCookies: boolean;
 }
+
+const urlOf = (route: MeasureRoute, size: number) => `${route.base}?size=${size}`;
 
 let measuredBps: number | null = null;
 let measuredAt = 0;
@@ -62,7 +77,7 @@ function routeFor(client: JellyfinClient, options: BitrateMeasureOptions): Measu
   if (direct?.enabled && direct.mediaBaseUrl && direct.jellyfinToken) {
     return {
       key: `direct:${direct.mediaBaseUrl}`,
-      url: `${direct.mediaBaseUrl}/Playback/BitrateTest?size=${SIZE_BYTES}`,
+      base: `${direct.mediaBaseUrl}/Playback/BitrateTest`,
       headers: directJellyfinHeaders(client.getAuthHeader(direct.jellyfinToken)),
       withCookies: false,
     };
@@ -70,7 +85,7 @@ function routeFor(client: JellyfinClient, options: BitrateMeasureOptions): Measu
   const token = client.getAccessToken();
   return {
     key: "proxy",
-    url: `${client.getBaseUrl()}/Playback/BitrateTest?size=${SIZE_BYTES}`,
+    base: `${client.getBaseUrl()}/Playback/BitrateTest`,
     headers: {
       [JELLYFIN_AUTH_HEADER]: client.getAuthHeader(),
       ...(token ? { [JELLYFIN_TOKEN_HEADER]: token } : {}),
@@ -101,8 +116,23 @@ export function measureBitrate(client: JellyfinClient, options: BitrateMeasureOp
   if (fresh != null && measuredRoute === route.key) return Promise.resolve(fresh);
   if (inFlight) return inFlight;
   inFlightRoute = route.key;
-  inFlight = runMeasure(route).finally(() => { inFlight = null; inFlightRoute = null; });
+  const run = options.bufferedFetch ? runBufferedMeasure(route) : runMeasure(route);
+  inFlight = run.finally(() => { inFlight = null; inFlightRoute = null; });
   return inFlight;
+}
+
+function remember(route: MeasureRoute, bps: number): number {
+  measuredBps = bps;
+  measuredAt = Date.now();
+  measuredRoute = route.key;
+  return bps;
+}
+
+/** Des bits/s bornés, ou null (durée nulle, valeur invraisemblable). */
+function boundedBps(bytes: number, seconds: number): number | null {
+  if (!(seconds > 0)) return null;
+  const bps = Math.round((bytes * 8) / seconds);
+  return bps < MIN_BPS || bps > MAX_BPS ? null : bps;
 }
 
 async function runMeasure(route: MeasureRoute): Promise<number | null> {
@@ -114,11 +144,47 @@ async function runMeasure(route: MeasureRoute): Promise<number | null> {
   const first = await timeOnePass(route);
   if (first == null) return null;
   const second = await timeOnePass(route);
-  const bps = Math.max(first, second ?? 0);
-  measuredBps = bps;
-  measuredAt = Date.now();
-  measuredRoute = route.key;
-  return bps;
+  return remember(route, Math.max(first, second ?? 0));
+}
+
+/** La petite requête qui ne mesure que la latence (aller-retour, serveur, proxy). */
+const LATENCY_PROBE_BYTES = 1_000;
+
+/**
+ * Sous un `fetch` qui attend le corps entier (`bufferedFetch`) : la latence
+ * d'abord — deux petites requêtes, la meilleure (la première ouvre la
+ * connexion) —, puis le témoin, deux passes, la meilleure ; le débit, c'est
+ * le témoin moins la latence.
+ */
+async function runBufferedMeasure(route: MeasureRoute): Promise<number | null> {
+  const firstProbe = await wholeResponseSeconds(route, LATENCY_PROBE_BYTES);
+  if (firstProbe == null) return null;
+  const latency = Math.min(firstProbe, (await wholeResponseSeconds(route, LATENCY_PROBE_BYTES)) ?? firstProbe);
+  const first = await wholeResponseSeconds(route, SIZE_BYTES);
+  if (first == null) return null;
+  const total = Math.min(first, (await wholeResponseSeconds(route, SIZE_BYTES)) ?? first);
+  const bps = boundedBps(SIZE_BYTES, total - latency);
+  return bps == null ? null : remember(route, bps);
+}
+
+/** La durée de la requête à la réponse ENTIÈRE, en secondes, ou null. Le
+ *  corps est déjà là : on ne le lit pas — sa conversion faussait l'ancienne mesure. */
+async function wholeResponseSeconds(route: MeasureRoute, size: number): Promise<number | null> {
+  try {
+    return await Promise.race([
+      (async () => {
+        const startedAt = Date.now();
+        const response = await fetch(urlOf(route, size), {
+          headers: route.headers,
+          credentials: route.withCookies ? "include" : undefined,
+        });
+        return response.ok ? (Date.now() - startedAt) / 1000 : null;
+      })(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), TIMEOUT_MS)),
+    ]);
+  } catch {
+    return null;
+  }
 }
 
 /** Une passe : bits/s bornés, ou null (échec, délai, valeur invraisemblable). */
@@ -128,15 +194,12 @@ async function timeOnePass(route: MeasureRoute): Promise<number | null> {
     // fetchWithRetry (un signal casse certains fetch React Native). Le fetch
     // abandonné continue en arrière-plan, son résultat est simplement ignoré.
     const seconds = await Promise.race([
-      download(route.url, route.headers, route.withCookies),
+      download(urlOf(route, SIZE_BYTES), route.headers, route.withCookies),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), TIMEOUT_MS)),
     ]);
-    if (seconds == null || seconds <= 0) return null;
     // La taille demandée est CONNUE (N octets) : seul le temps compte — pas
     // besoin de faire confiance à la longueur rapportée par le runtime.
-    const bps = Math.round((SIZE_BYTES * 8) / seconds);
-    if (bps < MIN_BPS || bps > MAX_BPS) return null;
-    return bps;
+    return seconds == null ? null : boundedBps(SIZE_BYTES, seconds);
   } catch {
     return null;
   }

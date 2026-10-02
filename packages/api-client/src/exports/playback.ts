@@ -37,4 +37,4 @@ export { directJellyfinHeaders, withDirectApiKey } from "../jellyfin/directAuth"
 
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le
 // cap automatique de qualité des clients TV.
-export { primeBitrateMeasure, cachedBitrate, measureBitrate } from "../jellyfin/bitrateMeasure";
+export { primeBitrateMeasure, cachedBitrate, measureBitrate, type BitrateMeasureOptions } from "../jellyfin/bitrateMeasure";
