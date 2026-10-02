@@ -64,10 +64,16 @@ export function analyzeTrace(rep, { from = -Infinity, to = Infinity } = {}) {
   };
 }
 
+/** Un défilement LANCÉ : la page a dépassé cette vitesse. Avant, une flèche
+ *  maintenue n'a fait qu'un pas — puis tvOS attend ~0,5 s sa première
+ *  répétition (la page finit son pas et s'arrête, comme dans toute app
+ *  tvOS) : ce n'est pas un ralentissement. */
+const LAUNCHED = 2500;
+
 /**
- * Les creux : la vitesse (absolue) passe sous la moitié du pic atteint
- * jusque-là, puis remonte au-dessus de 80 % de ce pic — un ralentissement
- * passager, pas l'arrêt final.
+ * Les creux : une fois le défilement lancé, la vitesse (absolue) passe sous
+ * la moitié du pic atteint jusque-là, puis remonte au-dessus de 80 % de ce
+ * pic — un ralentissement passager, pas l'arrêt final.
  */
 export function dipsOf(moving) {
   const dips = [];
@@ -75,7 +81,7 @@ export function dipsOf(moving) {
   let dip = null;
   for (const { t, v } of moving) {
     const speed = Math.abs(v);
-    if (!dip && peak > 1500 && speed < peak / 2) dip = { at: Math.round(t), peak: Math.round(peak), low: Math.round(speed) };
+    if (!dip && peak > LAUNCHED && speed < peak / 2) dip = { at: Math.round(t), peak: Math.round(peak), low: Math.round(speed) };
     if (dip) {
       dip.low = Math.min(dip.low, Math.round(speed));
       if (speed > peak * 0.8) {
