@@ -31,11 +31,14 @@ export function TrailerWebView({ ytId, onLoadEnd, onError, onEnded, onWaitingCha
   const openedAt = useRef(Date.now());
   const server = useRef({ url: "", token: "" });
 
-  // Une issue, une seule fois : la première image, ou l'échec et sa raison.
-  const settled = useRef(false);
+  // La première image une fois, l'échec une fois — même après la première
+  // image : une lecture qui casse en route se dit aussi au serveur.
+  const reported = useRef({ started: false, failed: false });
   const report = useCallback((outcome: Omit<TrailerOutcome, "ms">) => {
-    if (settled.current) return;
-    settled.current = true;
+    const done = reported.current;
+    if (outcome.ok ? done.started || done.failed : done.failed) return;
+    if (outcome.ok) done.started = true;
+    else done.failed = true;
     const ms = Date.now() - openedAt.current;
     plog("trailer", `${ytId} : ${outcome.ok ? `première image en ${ms} ms` : `échec après ${ms} ms (${outcome.reason})`}`);
     if (server.current.url) reportTrailerOutcome(server.current.url, server.current.token, ytId, { ...outcome, ms });
@@ -47,7 +50,7 @@ export function TrailerWebView({ ytId, onLoadEnd, onError, onEnded, onWaitingCha
     const token = storage.getItem("tentacle_token") ?? "";
     server.current = { url: serverUrl, token };
     openedAt.current = Date.now();
-    settled.current = false;
+    reported.current = { started: false, failed: false };
     if (!serverUrl || !ytId) {
       onError();
       return;
