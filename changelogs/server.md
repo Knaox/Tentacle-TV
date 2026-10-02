@@ -16,6 +16,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Une extraction plus rapide, qui tient son temps** : yt-dlp reste chargé entre deux bandes-annonces (1 à 1,5 s par extraction au lieu de 2,3 à 3,2 s), toutes les tentatives tiennent en 40 s même sur une machine saturée, et un délai dépassé n'empêche plus la tentative suivante
 - **Le relais ne prive plus le téléviseur du reste** : les cent à deux cent cinquante listes et segments d'une bande-annonce comptent avec les images, et non plus dans la limite des appels d'API — quelques lancements d'affilée l'auraient épuisée, et tout le téléviseur serait tombé en erreur 429
 - **Administrateurs** : le journal du serveur dit chaque lecture de bande-annonce de l'Apple TV, avec le délai de la première image ou la raison de l'échec (lignes `[trailers]`) ; les clients YouTube interrogés se règlent par `TENTACLE_TRAILER_CLIENTS`
+- **« Derniers ajouts » reste varié** : les épisodes et saisons d'une même série arrivés ensemble ne forment plus qu'une carte, celle de la série, avec le nombre de nouveaux épisodes (20 cartes au plus)
 - La version minimale exigée des clients reste 1.22.1
 
 ### EN
@@ -23,6 +24,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Faster extraction that keeps to its time**: yt-dlp stays loaded between trailers (1 to 1.5 s per extraction instead of 2.3 to 3.2 s), all attempts fit within 40 s even on a saturated machine, and an exceeded delay no longer blocks the next attempt
 - **The relay no longer starves the TV of everything else**: the one to two hundred and fifty playlists and segments of a trailer count with images, no longer within the API call limit — a few launches in a row would have used it up, and the whole TV would have fallen into 429 errors
 - **Administrators**: the server log reports every Apple TV trailer playback, with the delay to the first frame or the reason for the failure (`[trailers]` lines); the YouTube clients queried are set with `TENTACLE_TRAILER_CLIENTS`
+- **"Recently added" stays varied**: episodes and seasons of the same series that arrived together now form a single card, the series', with the number of new episodes (up to 20 cards)
 - The minimum required client version stays 1.22.1
 
 ## [1.22.1]

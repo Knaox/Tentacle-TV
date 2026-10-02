@@ -14,7 +14,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Une navigation qui épouse vos bibliothèques** : compacte et centrée quand il y en a peu, elle défile quand il y en a beaucoup ; maintenir OK sur une entrée permet de la déplacer ou de la masquer, et tout s'organise dans Réglages › Navigation
 - **Plus fluide** : HAUT et BAS mènent à la carte la plus proche, la page suit en un seul mouvement, et les bibliothèques s'ouvrent plus vite avec deux fois moins de mémoire
 - **Un seul bouton Retour** : une croix en haut à gauche, partout. Retour ferme d'abord ce qui est ouvert, sans clignoter, et une suite de fiches ouvertes l'une depuis l'autre se remonte d'un seul Retour
-- **Le défilement du lecteur d'Apple** : un appui saute de 10 s, un appui maintenu défile de plus en plus vite ; sur le pavé, le doigt emporte le curseur, l'image visée au-dessus, et la lecture reprend à la cible après un décompte de 3 s. La frise montre le temps restant, la portion déjà chargée et les passages connus — intro, résumé, générique
+- **Le défilement du lecteur d'Apple** : → avance de 30 s, ← recule de 10 s, un appui maintenu défile de plus en plus vite ; sur le pavé, le doigt emporte le curseur, l'image visée au-dessus, et la lecture reprend à la cible après un décompte de 5 s, que OK abrège. La frise montre le temps restant, la portion déjà chargée et les passages connus — intro, résumé, générique
 - **Un onglet Réglages dans le lecteur** pour la qualité ; un serveur lent à préparer la vidéo le dit discrètement, sans jamais bloquer la lecture
 - **Quitter l'app ne coûte plus rien** : la lecture se met en pause et reprend au retour ; si tvOS a fermé l'app, elle rouvre sur la fiche, « Reprendre » à la bonne position. La fiche montre où vous en êtes dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard
 - **Serveur ou Jellyfin coupé en pleine lecture** : le film continue sur ce qui est chargé, un bandeau dit ce qui se passe, et la lecture reprend seule au retour du serveur
@@ -23,6 +23,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Se connecter par identifiant et mot de passe** : « Configurer manuellement », l'adresse du serveur, puis le compte — sans passer par un autre appareil
 - **Déjumeler pour de bon** : « Déjumeler cet appareil » coupe l'accès sur-le-champ, même en pleine lecture, et efface de l'Apple TV tout ce qui appartenait au compte
 - **Une icône en couches** qui s'anime sous le pouce, un Top Shelf dans le même univers, et plus d'écran noir au lancement
+- **4K, Dolby Vision, Atmos** : en s'arrêtant sur une carte, une discrète pastille dit ce que le titre offre ; le défilement rapide ne ralentit plus
 
 ### EN
 - **A fully redesigned Apple TV app**: a glass navigation floating on the left, a large banner cycling through featured titles, large posters, an ink backdrop lit by the artwork, and cards that grow in their own light while following your thumb on the touch surface. On tvOS 26, the glass is the system's Liquid Glass (Settings › Appearance to go back to classic glass)
@@ -31,7 +32,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **A navigation that fits your libraries**: compact and centered when there are few, it scrolls when there are many; holding OK on an entry lets you move or hide it, and everything can be arranged in Settings › Navigation
 - **Smoother**: UP and DOWN go to the nearest card, the page follows in a single motion, and libraries open faster with half the memory
 - **One Back button**: a cross at the top left, everywhere. Back first closes what is open, without flickering, and a chain of title pages opened one from another unwinds with a single Back
-- **Scrubbing like Apple's player**: a press skips 10 s, holding scrubs faster and faster; on the touch surface, your finger carries the cursor, the targeted frame above it, and playback resumes at the target after a 3-second countdown. The timeline shows the time left, the part already loaded and known segments — intro, recap, credits
+- **Scrubbing like Apple's player**: → skips ahead 30 s, ← goes back 10 s, holding scrubs faster and faster; on the touch surface, your finger carries the cursor, the targeted frame above it, and playback resumes at the target after a 5-second countdown that OK cuts short. The timeline shows the time left, the part already loaded and known segments — intro, recap, credits
 - **A Settings tab in the player** for quality; a server slow to prepare the video says so discreetly, without ever blocking playback
 - **Leaving the app costs nothing**: playback pauses and resumes when you come back; if tvOS closed the app, it reopens on the title page, "Resume" at the right position. The title page shows where you are as soon as you leave the player, even when Jellyfin 12.1 writes it late
 - **Server or Jellyfin down mid-playback**: the movie goes on with what is buffered, a banner says what is happening, and playback resumes on its own when the server is back
@@ -40,6 +41,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - **Sign in with a username and password**: "Configure manually", the server address, then the account — no other device needed
 - **Unpair for good**: "Unpair this device" cuts access right away, even mid-playback, and erases from the Apple TV everything that belonged to the account
 - **A layered icon** that comes alive under your thumb, a Top Shelf in the same world, and no more black screen at launch
+- **4K, Dolby Vision, Atmos**: pausing on a card, a discreet badge says what the title offers; fast scrolling no longer slows down
 
 ## [1.4.0]
 <!-- Bloc nu : Google Play, 500 caractères. Le bloc atv- porte la version complète. -->
