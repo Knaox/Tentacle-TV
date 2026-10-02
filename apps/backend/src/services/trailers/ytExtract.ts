@@ -11,6 +11,7 @@
 
 import { execFile } from "child_process";
 import { ytDlpCommand } from "../ytDlp";
+import { workerExtract } from "./ytWorker";
 import { clientPasses, isPermanentFailure, pickTrailerSource, type TrailerSource, type YtFormat } from "./trailerSource";
 
 /**
@@ -54,7 +55,15 @@ interface PassOutcome {
   stderr: string;
 }
 
-function runPass(ytId: string, clients: string[]): Promise<PassOutcome | null> {
+const watchUrl = (ytId: string) => `https://www.youtube.com/watch?v=${ytId}`;
+
+/** Une passe : par l'ouvrier gardé chaud quand il le peut, sinon en lançant yt-dlp. */
+async function runPass(ytId: string, clients: string[]): Promise<PassOutcome | null> {
+  const viaWorker = await workerExtract(ytDlpCommand(), { url: watchUrl(ytId), clients, ejs: ejsSupported }, PASS_TIMEOUT_MS);
+  return viaWorker ? { formats: viaWorker.formats as YtFormat[], stderr: viaWorker.stderr } : runCli(ytId, clients);
+}
+
+function runCli(ytId: string, clients: string[]): Promise<PassOutcome | null> {
   const withEjs = ejsSupported;
   const args = [
     ...(withEjs ? EJS_ARGS : []),
@@ -65,13 +74,13 @@ function runPass(ytId: string, clients: string[]): Promise<PassOutcome | null> {
     "--no-playlist",
     "--no-warnings",
     "--socket-timeout", "10",
-    `https://www.youtube.com/watch?v=${ytId}`,
+    watchUrl(ytId),
   ];
   return new Promise((resolve) => {
     execFile(ytDlpCommand(), args, { timeout: PASS_TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err && withEjs && (err as { code?: unknown }).code === 2) {
         ejsSupported = false;
-        return resolve(runPass(ytId, clients));
+        return resolve(runCli(ytId, clients));
       }
       try {
         const info = JSON.parse(stdout) as { formats?: YtFormat[] };
