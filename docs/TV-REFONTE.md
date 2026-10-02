@@ -429,10 +429,20 @@ Branche `refonte/tv-fiche`. Le câblage vit dans `redesignWiring/detail/`,
   (`screens/trailer/TrailerWebView.ios.tsx`) borne la résolution à 45 s
   (`resolveTrailerStream`) ; son chien de garde (`useTrailerPlaybackWatch`)
   ne dit « lecture » qu'à la première image (`onReadyForDisplay`), conclut à
-  l'échec sans image en 20 s ou sans progrès pendant 15 s (à la fin si l'on
+  l'échec sans image en 15 s ou sans progrès pendant 15 s (à la fin si l'on
   est au bout), montre une roue sur la dernière image au bout d'une seconde
   sans progrès (`waiting`), et se suspend en arrière-plan. La raison d'un
-  échec part dans les traces de dev (`[TVDIAG] [trailer]`).
+  échec part dans les traces de dev (`[TVDIAG] [trailer]`) et au serveur
+  (`POST /api/trailers/report`) ; l'indisponible rend la fiche de lui-même
+  au bout de 4 s (2026-10-02).
+- **Fiables et rapides** (2026-10-02, `docs/BANDES-ANNONCES.md`) : la vraie
+  cause était le sélecteur de format du serveur, qui exigeait un HLS muxé
+  que YouTube ne sert presque plus, et ignorait le maître HLS du client
+  `visionos`. Le serveur choisit désormais lui-même le flux, le RELAIE (les
+  URL googlevideo sont liées à son adresse IP), garde un ouvrier yt-dlp
+  chaud, et la fiche prépare la bande-annonce pendant qu'on la lit :
+  32 lancements sur 32, première image en 0,29 s en médiane (avant : 2 sur
+  20, échecs au bout de 13 à 23 s). Le paragraphe suivant est l'état d'avant.
 - **Pourquoi elles ne se lançaient pas** : YouTube, pas l'app. Mesuré le
   2026-10-01 avec le yt-dlp du Mac (Homebrew 2026.06.09, hors de la mise à
   jour automatique qui ne tourne qu'en production) : le client `web_safari`

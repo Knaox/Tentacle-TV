@@ -387,6 +387,19 @@ COMPTE (`/api/preferences/hints`, liste FERMÉE `help/dismissibleHints.ts`,
 miroir backend verrouillé, suivie en direct par la portée `hints`) : un
 nouveau rappel masquable s'y ajoute, jamais une clé de stockage d'appareil.
 
+## Bandes-annonces (Apple TV) — le serveur relaie, il ne prête pas d'URL
+
+L'Apple TV n'a pas de WebView : `GET /api/trailers/resolve` extrait la
+bande-annonce par yt-dlp puis la RELAIE (`routes/trailerMedia.ts`). Jamais une
+URL googlevideo rendue au téléviseur : elles sont signées pour l'adresse IP de
+l'extraction. Le choix du flux (`services/trailers/trailerSource.ts`) prend le
+maître HLS H.264 (client `visionos`, sans défi JavaScript), sinon un MP4 muxé —
+jamais un filtre figé d'itags ou de « muxé », que YouTube rend caduc en
+quelques semaines (« plantent 2 fois sur 3 », 2026-10-02). La fiche prépare la
+bande-annonce (`/prepare`) ; chaque lecture rend compte au serveur (`/report`,
+`docker logs … | grep '\[trailers\]'`). Mesures, banc et fragilités :
+`docs/BANDES-ANNONCES.md`.
+
 ## Coding Standards
 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded
