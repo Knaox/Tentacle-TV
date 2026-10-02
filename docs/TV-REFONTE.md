@@ -2442,10 +2442,15 @@ Pièges payés :
   page file à 10 000 points/s, puis le focus se pose. Sa barre d'index se
   refabrique à chaque `setContentSize` : `showsScrollIndex={false}` sur toute
   longue page qui défile (l'accueil en profiterait aussi).
-- **Après une remontée maintenue jusqu'en haut**, tvOS pose la page où son
-  défilement rapide s'arrête : avec la grille recyclée, la première ligne est
-  entière mais le titre de la page masqué (HAUT une fois de plus : la barre
-  de filtres, l'en-tête). Avec la FlatList, le titre restait visible.
+- **Après une remontée maintenue ou un glisser vif vers le haut**, tvOS pose
+  la page où son défilement rapide s'arrête (127 points sous le haut : titre
+  et filtres masqués). Réglé : la PREMIÈRE ligne d'une grille se révèle en
+  mode `start` — dès que le focus y entre, d'où qu'il vienne, la page remonte
+  d'elle-même jusqu'au titre (prouvé image par image, vidéo de l'écran avec
+  `simctl io recordVideo --display=external`). Les autres lignes gardent le
+  « au plus près ». La section native appelle sa révélation à CHAQUE entrée
+  du focus (`didUpdateFocusInContext`), même quand tvOS ne propose aucun
+  défilement.
 - **L'agent XCUITest ne tient pas un appui plus d'~11 s** ; sous une charge de
   ~50, les captures `simctl` arrivent avec des secondes de retard — mesurer par
   la sonde, pas par des rafales de captures.
