@@ -32,6 +32,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 20. Les demandes en direct (Apple TV) | Fait (2026-10-02) : l'affiche d'une demande, grise, qui reprend sa couleur au prorata de l'avancement, le camembert au centre — partout où une demande se montre ; la fraîcheur de Vigie (10 s, une seconde à l'écran), seulement à l'écran — « Les demandes en direct (Apple TV) » ci-dessous. |
 | 21. Retour sans clignotement, suite de fiches (Apple TV) | Fait (2026-10-02) : tout menu fermé par Retour s'efface d'un seul fondu (panneaux du lecteur, menus en Modal), le rail reste déplié sous une Modal ouverte depuis lui ; une fiche ouverte depuis une autre fiche la remplace, un seul Retour ramène avant la première — « Le Retour (Apple TV) » ci-dessous. |
 | 22. Le logo dans l'app (Apple TV) | Fait (2026-10-03) : AUCUN logo dans l'interface, au choix de l'utilisateur entre trois propositions — le coin et son halo retirés de tous les écrans ; la marque vit dans l'icône, le Top Shelf, le démarrage et les illustrations — « Le logo dans l'app : aucun (Apple TV) » ci-dessous. |
+| 23. Saut de 30 s, validation en 5 s (Apple TV, Android TV) | Fait (2026-10-03) : → +30 s, ← −10 s, les boutons de l'habillage font pareil ; une seule règle pour toutes les entrées — la cible posée, « Lecture dans 5 s », OK lit, Retour annule, rien en pause ; plus d'abandon à 7 s — « Saut de 30 s et validation en 5 s » ci-dessous. |
 
 ## La direction retenue
 
@@ -853,9 +854,9 @@ le comportement historique, celui du lecteur d'Apple :
 
 | Geste | Habillage caché, en lecture | En défilement |
 |---|---|---|
-| Appui ←/→ | saut de ±10 s, la lecture continue, la pastille cumule (+10, +20…) | le curseur bouge de 10 s |
+| Appui ←/→ | saut de ±10 s, la lecture continue, la pastille cumule (+10, +20…) — **depuis le 2026-10-03 : +30 s / −10 s, la cible posée et décomptée 5 s** (« Saut de 30 s et validation en 5 s », plus bas) | le curseur bouge de 10 s (désormais +30 / −10) |
 | Maintien ←/→ | le défilement s'ouvre aussitôt (0,5 s) et accélère, ×1 → ×2 → ×4 → ×8 (une marche par seconde), jusqu'au relâcher | idem, depuis le curseur |
-| Glisser sur le pavé | le doigt EMPORTE le curseur (en lecture comme en pause) : fin s'il est lent, plus large s'il est vif, plafonné ; habillage CACHÉ, seulement après 600 ms de contact | idem, dès le premier pas ; doigt levé, la lecture repart à la cible au bout d'un décompte de 3 s |
+| Glisser sur le pavé | le doigt EMPORTE le curseur (en lecture comme en pause) : fin s'il est lent, plus large s'il est vif, plafonné ; habillage CACHÉ, seulement après 600 ms de contact | idem, dès le premier pas ; doigt levé, la lecture repart à la cible au bout d'un décompte de 3 s (5 s depuis le 2026-10-03) |
 | Simple toucher | réveille l'habillage (pas celui qui accompagne un clic) | relance le décompte |
 | OK, ▶︎❙❙ | — | lit depuis la position visée |
 | Menu | — | revient où l'on était, en pause si on y était |
@@ -864,7 +865,8 @@ Habillage visible, les flèches parcourent ses boutons ; le pavé, lui, défile
 (les panneaux — épisodes, pistes, fin — le gardent pour leurs listes).
 L'inactivité (7 s) annule un défilement oublié — décomptée à l'écran pendant
 ses 3 dernières secondes (« Avance rapide au pavé — plus douce, plus sûre »,
-plus bas).
+plus bas). Remplacé le 2026-10-03 : plus d'abandon, une seule règle de
+validation (« Saut de 30 s et validation en 5 s »).
 
 - **La vue** (`ScrubOverlay`) : la vidéo reste figée où l'on était ; la frise
   est à sa place de l'habillage ; au-dessus du curseur visé, qui le suit, une
@@ -924,7 +926,8 @@ lecture, et l'on ne savait pas quand le défilement se fermerait.
   l'habillage. Habillage AFFICHÉ : inchangé — 60 points, 180 ms ou geste
   franc ; en pause, l'habillage masqué par Retour compte pour caché. Défilement déjà ouvert : le doigt reprend dès 12 points
   (`canEngage`, régime lu par `readTouchMode`).
-- **Le décompte** (`hooks/scrubCountdown.ts`, pur ; `useScrubCountdown`) :
+- **Le décompte** (`hooks/scrubCountdown.ts`, pur ; `useScrubCountdown`) —
+  remplacé le 2026-10-03 par une règle unique (section suivante) :
   - glisser au pavé, ENTRÉ EN LECTURE : doigt levé ou immobile 450 ms, la
     lecture repart à la position VISÉE au bout de 3 s
     (`RESUME_COUNTDOWN_MS`) — « ▶ Lecture dans 3 s ». Doigt reposé ou
@@ -962,6 +965,65 @@ l'origine ; doigt reposé → décompte caché, puis 3 s entières.
 vif), les 600 ms habillage caché (frôlement, télécommande ramassée, glisser
 voulu), le décompte et sa lisibilité ; retoucher `scrubTouchTuning.ts` si
 besoin.
+
+### Saut de 30 s et validation en 5 s (Apple TV, Android TV)
+
+Retour de l'essai sur l'Apple TV (2026-10-02, soir) : le raccourci DROITE en
+lecture doit sauter de 30 s, pas de 10 ; 3 s pour valider l'avance rapide,
+c'est court ; le bouton et le raccourci doivent se comporter pareil.
+
+- **Les sauts** (`hooks/seekTuning.ts`, leur seule source) : → +30 s
+  (`SKIP_FORWARD_SECONDS`), ← −10 s (`SKIP_BACK_SECONDS`) — appui habillage
+  caché, appui en défilement, touche média isolée, boutons « −10 s » /
+  « +30 s » de l'habillage et leurs libellés, banc compris.
+- **Une seule règle de validation** (`hooks/scrubCountdown.ts`, réécrit ;
+  `RESUME_COUNTDOWN_MS` = 5 s dans `seekTuning.ts`) pour toutes les
+  entrées — pavé, flèches (appui et maintien), boutons de saut, bouton
+  « Déplacement », touches média :
+  - un appui ←/→ ou un bouton de saut POSE la cible, le défilement s'ouvrant
+    s'il ne l'est pas (`jump`) ; chaque appui suivant la déplace encore ;
+  - entré EN LECTURE : « ▶ Lecture dans 5 s », puis la lecture repart à la
+    cible. Tout geste relance les 5 s ; un geste continu (doigt posé,
+    maintien) les tient, et elles repartent en entier à son relâcher ; cible
+    inchangée : reprise sans seek ;
+  - OK (ou ▶︎❙❙) lit aussitôt depuis la cible ; Retour annule, sans seek ;
+  - entré EN PAUSE : ni décompte ni abandon — la cible attend OK ou Retour.
+- **Plus d'abandon à 7 s** dans `apps/tv` : `createScrubMachine({
+  idleCancelMs: null })`, option de tv-core (la LG garde ses 7 s par
+  défaut). « Reprise / Retour à 12:34 dans 3 s » et leurs clés disparaissent.
+- **Le badge des sauts** : le cerveau émet toujours `skipFlash` à chaque
+  saut, cumulé comme avant (+30 → +60) — l'écran d'Android TV
+  (`TVSkipBadge`) le garde tel quel ; l'habillage Apple TV ne l'affiche plus
+  (`SeekFlash` retiré) : la vue du défilement dit déjà l'écart.
+- **Deux gardes ajustées** : le « select » jumeau n'est plus absorbé
+  qu'après une entrée par un BOUTON de l'habillage (l'OK qui suit de près une
+  flèche valide) ; `showOverlay` ne fait rien pendant le défilement — les
+  deux écrans rallument l'habillage juste après un bouton de saut, qui
+  l'ouvre désormais.
+- **Android TV** (cerveau partagé, non éprouvé ici) : même comportement,
+  aucun écran retouché. À reprendre avec lui : sa vue plein écran du
+  défilement (`TVScrubFullscreen`) n'affiche pas le décompte, et
+  `TVPlayerOverlay` écrit « -10s » / « +30s » en dur.
+- **webOS** : inchangé — son propre cerveau (`playerKeysTv.ts`, +30 / −10
+  recopiés, l'abandon à 7 s de la machine).
+
+Éprouvé au banc « lecteur vivant » — appuis RÉELS par l'agent XCUITest
+(moteur de focus natif, `onPress` du bouton), relevés par CDP, planches dans
+`apps/tv/harness/ui-bench/out/saut-30/` (ignorées par git). La scène monte
+désormais le fond focalisable et les gestes de l'habillage de l'app. → en
+lecture : cible +0:30, « Lecture dans 5, 4, 3, 2, 1 s », seek à la cible à
+5,4 s ; OK sur le bouton « +30 s » : identique (seek à 5,1 s), habillage
+éteint pendant le défilement ; ← : −0:10, seek à 5,3 s ; deux → à 0,9 s :
++1:00, badge +30 → +60, décompte relancé ; glisser lent : +0:21, décompte au
+doigt levé, seek à 7,2 s ; maintien 2 s : +10:30, décompte au relâcher ; OK à
+2 s : seek aussitôt ; Retour : aucun seek, la lecture repart du départ ; en
+pause : aucun décompte, la cible attend 10 s, puis OK lit depuis elle ;
+Retour en pause : la pause reste, au départ.
+
+À essayer sur l'Apple TV : → et ← en lecture, le bouton « +30 s », un
+glisser, OK puis Retour pendant le décompte, la même chose en pause ; après
+« +30 s » et la reprise, le focus doit revenir sur le bouton (mémoire de
+l'habillage, que le banc ne monte pas).
 
 ## Le lecteur — quitter et reprendre (Apple TV, Android TV)
 
