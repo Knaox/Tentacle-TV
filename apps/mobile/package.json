@@ -1,6 +1,6 @@
 {
   "name": "@tentacle-tv/mobile",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "private": true,
   "main": "./index.js",
   "scripts": {
