@@ -11,6 +11,7 @@ import {
   type TitleSeasonsAnswer,
 } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "../hooks/usePreferences";
+import { titleGapsQueryKey } from "./useTitleGaps";
 import { titleStateQueryKey } from "./useTitleState";
 
 /**
@@ -54,7 +55,7 @@ export function useTitleSeasons(
 /**
  * Demander des saisons cochées : la même route que tout geste « demander »,
  * avec `seasons`. L'état que rend l'extension remplace celui de la carte ; les
- * saisons de la série se relisent.
+ * saisons de la série se relisent, et ce qui lui manque (`useTitleGaps`).
  */
 export function useRequestTitleSeasons(provider: TitleProvider | null, lang: string) {
   const qc = useQueryClient();
@@ -74,6 +75,7 @@ export function useRequestTitleSeasons(provider: TitleProvider | null, lang: str
       if (outcome.kind === "done" && outcome.state) qc.setQueryData(stateKey, outcome.state);
       else void qc.invalidateQueries({ queryKey: stateKey });
       void qc.invalidateQueries({ queryKey: titleSeasonsQueryKey(provider, lang, key) });
+      void qc.invalidateQueries({ queryKey: titleGapsQueryKey(provider, lang, key) });
     },
   });
 }

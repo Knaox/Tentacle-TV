@@ -6,6 +6,8 @@ export { useTitleState, useRequestTitle, titleStateQueryKey } from "../titles/us
 export {
   useTitleSeasons, useRequestTitleSeasons, titleSeasonsQueryKey, type TitleSeasonsFeed,
 } from "../titles/useTitleSeasons";
+// Ce qui manque aux séries de la bibliothèque (route `gaps`), en une requête par page.
+export { useTitleGaps, titleGapsQueryKey, loadTitleGaps } from "../titles/useTitleGaps";
 export { loadTitleState, type TitleFetcher } from "../titles/titleStateBatcher";
 // Ce que le compte attend (routes `access` et `mine` du même contrat) : son
 // droit, et ses titres demandés pas encore arrivés.
