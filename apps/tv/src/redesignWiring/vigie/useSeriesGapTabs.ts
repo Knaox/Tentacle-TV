@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useSeasons, useTitleGaps } from "@tentacle-tv/api-client";
 import { seriesTitleKey, type MediaItem, type TitleKey } from "@tentacle-tv/shared";
+import { seasonTitle } from "@tentacle-tv/tv-core";
 import type { MissingSeasonTabModel } from "../../redesign/screens/detail/detailTypes";
 import type { TitleRequests } from "./useTitleRequests";
 
@@ -47,7 +48,7 @@ export function useSeriesGapTabs(requests: TitleRequests | null, item: MediaItem
       .filter((season) => !tabs.has(season.number))
       .map((season) => ({
         number: season.number,
-        label: season.name ?? t("requests:seasonFallback", { number: season.number }),
+        label: seasonTitle(t, season.number, season.name),
         requestable: season.requestable,
         status: season.requestable ? t("requests:seasonToRequest") : season.badge?.label ?? "",
       }));

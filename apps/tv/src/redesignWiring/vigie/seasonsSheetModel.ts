@@ -7,6 +7,7 @@ import {
   type SeasonPickRow,
   type TitleSeasonsAnswer,
 } from "@tentacle-tv/shared";
+import { seasonTitle } from "@tentacle-tv/tv-core";
 import type { SeasonRowModel, SeasonsSheetModel } from "../../redesign/screens/requests/SeasonsSheet";
 import { arrivalOf, type ArrivalReading } from "./arrivalModels";
 
@@ -19,7 +20,10 @@ import { arrivalOf, type ArrivalReading } from "./arrivalModels";
  * bibliothèque) disent « Dans la bibliothèque » et ne se cochent pas.
  *
  * Apple TV : les saisons demandées qui font partie de la demande du COMPTE en
- * cours (`own`) disent son état, son camembert et son avancement en direct.
+ * cours (`own`) disent son état, son camembert et son avancement en direct ;
+ * chaque saison se nomme dans les mots de l'interface (« Saison 3 »,
+ * « Spéciaux », et son vrai nom s'il en a un — tv-core `seasonTitle`), jamais
+ * le nom générique d'une autre langue que l'extension relaie.
  */
 
 /** La demande du compte sur cette série, et la lecture d'où partent les vues. */
@@ -31,6 +35,17 @@ export interface OwnSeasonsRequest {
 /** Une saison demandée de la demande du compte (la série entière : toute saison demandée). */
 function ownsRow(row: SeasonPickRow, own: OwnSeasonsRequest): boolean {
   return row.status?.tone === "pending" && (own.mine.seasons === null || own.mine.seasons.includes(row.number));
+}
+
+/** Les saisons, une par une, sous leur nom TV ; la ligne qui regroupe celles de la bibliothèque garde le sien. */
+function withTitles(t: TFunction, rows: SeasonPickRow[] | null, answer: TitleSeasonsAnswer | null): SeasonPickRow[] | null {
+  if (!rows || !answer) return rows;
+  const names = new Map(answer.seasons.map((season) => [season.number, season.name]));
+  return rows.map((row) => {
+    const name = names.get(row.number) ?? null;
+    const single = row.label === (name ?? t("requests:seasonFallback", { number: row.number }));
+    return single ? { ...row, label: seasonTitle(t, row.number, name) } : row;
+  });
 }
 
 function withOwn(t: TFunction, rows: SeasonPickRow[] | null, own: OwnSeasonsRequest | null): SeasonRowModel[] | null {
@@ -55,7 +70,7 @@ export function seasonsSheetModel(
   return {
     title,
     subtitle: t("requests:seasonsSubtitle"),
-    seasons: withOwn(t, pick.rows, own),
+    seasons: withOwn(t, withTitles(t, pick.rows, answer), own),
     message: pick.message,
     submit: pick.submitLabel ? { label: pick.submitLabel, kind: "request" } : { label: t("common:close"), kind: "close" },
   };
