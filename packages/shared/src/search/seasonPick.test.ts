@@ -66,6 +66,20 @@ describe("seasonPick", () => {
     await i18n.changeLanguage("fr");
   });
 
+  it("regroupe en une ligne trois saisons numérotées ou plus qu'on a ; les spéciaux gardent la leur", () => {
+    const seasons = [1, 2, 3, 4, 5, 7].map((n) => season(n, { badge: { label: "Disponible", tone: "success" }, requestable: false }));
+    const pick = seasonPick(i18n.t, answer([...seasons, season(6), season(8), season(0, { name: "Épisodes spéciaux" })]), false, NONE, new Set([0, 1, 2, 3, 4, 5, 7]));
+    expect(pick.rows?.map((row) => [row.number, row.label, row.status?.label ?? null])).toEqual([
+      [1, "Saisons 1–5 et 7", "Dans la bibliothèque"],
+      [6, "Saison 6", null],
+      [8, "Saison 8", null],
+      [0, "Épisodes spéciaux", "Dans la bibliothèque"],
+    ]);
+    expect(pick.requestable).toEqual([6, 8]);
+    // Deux seulement : chacune sa ligne.
+    expect(seasonPick(i18n.t, answer([season(1), season(2), season(3)]), false, NONE, new Set([1, 2])).rows?.length).toBe(3);
+  });
+
   it("la bibliothèque a ses saisons à fichiers, pas les saisons virtuelles", () => {
     expect([...librarySeasonNumbers([
       { IndexNumber: 0 }, { IndexNumber: 1, LocationType: "FileSystem" }, { IndexNumber: 4, LocationType: "Virtual" }, { IndexNumber: null }, {},

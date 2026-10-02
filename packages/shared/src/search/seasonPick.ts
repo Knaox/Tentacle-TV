@@ -8,13 +8,19 @@
  * le dit, avec ses mots (« Demandée »). Le client n'y ajoute qu'UNE chose,
  * qu'il sait mieux qu'elle : les saisons que SA bibliothèque a déjà
  * (`library`) — « Dans la bibliothèque », jamais à cocher, même quand
- * l'extension n'en sait encore rien. On ne demande pas ce qu'on a.
+ * l'extension n'en sait encore rien. On ne demande pas ce qu'on a. Trois
+ * saisons numérotées ou plus qu'on a tiennent en UNE ligne (« Saisons 1–15 »,
+ * `seasonRuns`) : ce qui manque à une longue série reste en vue.
  *
  * Les mots du client : espace `requests` (jamais « téléchargement »).
  */
 
 import type { TFunction } from "i18next";
 import type { TitleSeason, TitleSeasonsAnswer } from "./pluginTitleSeasons";
+import { seasonRuns } from "./pluginTitlesMine";
+
+/** Au-delà, les saisons numérotées qu'on a tiennent en une ligne. */
+const GROUP_FROM = 3;
 
 /** Le ton d'une saison qui ne se coche pas : là (`ready`), demandée (`pending`), sinon neutre. */
 export type SeasonPickTone = "ready" | "pending" | "neutral";
@@ -96,6 +102,39 @@ function rowOf(
   return { ...base, selected: checked.has(season.number) };
 }
 
+/** « Saisons 1–4, 6 et 8 » : les morceaux de `seasonRuns`, joints dans la langue. */
+function seasonsLabel(t: TFunction, numbers: number[]): string {
+  const parts = seasonRuns(numbers);
+  const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} ${t("requests:and")} ${parts[parts.length - 1]}`;
+  return t("requests:seasons", { count: numbers.length, list });
+}
+
+/** Les lignes, dans l'ordre de l'extension ; les saisons numérotées qu'on a, regroupées à la première. */
+function rowsOf(
+  t: TFunction,
+  seasons: readonly TitleSeason[],
+  checked: ReadonlySet<number>,
+  library: ReadonlySet<number> | null | undefined,
+): SeasonPickRow[] {
+  const owned = seasons.filter((season) => season.number > 0 && library?.has(season.number)).map((season) => season.number);
+  const grouped = owned.length >= GROUP_FROM;
+  const rows: SeasonPickRow[] = [];
+  for (const season of seasons) {
+    if (grouped && owned.includes(season.number)) {
+      if (season.number !== owned[0]) continue;
+      rows.push({
+        number: season.number,
+        label: seasonsLabel(t, owned),
+        status: { label: t("requests:seasonInLibrary"), tone: "ready" },
+        selected: false,
+      });
+      continue;
+    }
+    rows.push(rowOf(t, season, checked, library));
+  }
+  return rows;
+}
+
 export function seasonPick(
   t: TFunction,
   answer: TitleSeasonsAnswer | null,
@@ -103,7 +142,7 @@ export function seasonPick(
   checked: ReadonlySet<number>,
   library?: ReadonlySet<number> | null,
 ): SeasonPick {
-  const rows = answer ? answer.seasons.map((season) => rowOf(t, season, checked, library)) : null;
+  const rows = answer ? rowsOf(t, answer.seasons, checked, library) : null;
   const requestable = requestableSeasonNumbers(answer, library);
   let message: string | undefined;
   if (failed || answer?.failure != null) message = t("requests:seasonsFailed");
