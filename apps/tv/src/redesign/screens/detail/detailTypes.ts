@@ -1,4 +1,4 @@
-import type { CardModel } from "../../cards/cardTypes";
+import type { CardModel, CardQuality } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import type { MetaItem } from "../../hero/MetaLine";
 import type { ArrivalModel } from "../../requests/arrivalTypes";
@@ -100,6 +100,9 @@ export interface EpisodeModel {
   badge?: EpisodeBadge | null;
   /** La lumière de l'image : le halo de la vignette focalisée. */
   palette?: ArtworkPalette;
+  /** La qualité de l'épisode (4K, HDR10…), montrée au focus dans l'image —
+   *  lue à ce moment-là : la saison se charge sans ses flux. */
+  quality?: CardQuality;
 }
 
 export interface EpisodesModel {

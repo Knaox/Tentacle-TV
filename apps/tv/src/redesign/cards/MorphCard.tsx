@@ -10,7 +10,7 @@ import { colors, fonts } from "../theme/tokens";
 import { CardBadge } from "./CardBadge";
 import { CardFrame } from "./CardFrame";
 import { CardMarkerLayer } from "./CardMarkerLayer";
-import { cardLogoBottom } from "./cardMarkerGeometry";
+import { cardLogoBottom, LOGO_BOX } from "./cardMarkerGeometry";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused } from "./useCardFocused";
 
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     width: POSTER_W,
     height: POSTER_H,
   },
-  logo: { position: "absolute", left: 22, right: 90, height: 64 },
+  logo: { position: "absolute", left: LOGO_BOX.left, right: LOGO_BOX.right, height: LOGO_BOX.height },
   caption: { marginTop: 14, gap: 2 },
   title: { ...fonts.semibold, fontSize: 24, color: colors.textSecondary },
   subtitle: { ...fonts.medium, fontSize: 22, color: colors.textTertiary },

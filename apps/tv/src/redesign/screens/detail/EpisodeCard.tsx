@@ -9,6 +9,7 @@ import { CardFrame } from "../../cards/CardFrame";
 import { CardFocusFooter } from "../../cards/CardFocusFooter";
 import { HOLD_HINT_DWELL_MS } from "../../cards/CardHoldHint";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
+import { CardQualityBadges } from "../../cards/CardQualityBadges";
 import { CardShell } from "../../cards/CardShell";
 import { useCardFocused } from "../../cards/useCardFocused";
 import { useFocusProgress } from "../../focus/useFocusProgress";
@@ -25,7 +26,8 @@ import type { EpisodeBadge, EpisodeModel } from "./detailTypes";
  * carte grandit et se soulève, la légende descend avec elle — et, quand
  * l'appui long ouvre la feuille, dit sous elle « Maintenir OK : plus
  * d'options » (`CardFocusFooter`, comme toute carte qui s'ouvre par l'appui
- * maintenu). Quand le focus s'y POSE, sa lumière déborde (halo monté à la
+ * maintenu) ; dans l'image, en bas à droite, la qualité de l'épisode
+ * (`CardQualityBadges`). Quand le focus s'y POSE, sa lumière déborde (halo monté à la
  * demande, jamais gardé caché — `HALO_DWELL_MS`). L'image et son halo
  * suivent le pouce, la légende reste droite (`CardShell`).
  */
@@ -90,6 +92,8 @@ export const EpisodeCard = memo(function EpisodeCard({
   const { t } = useTranslation();
   const badge = episode.badge ?? null;
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
+  const markers = episode.watched ? WATCHED : NONE;
+  const progress = episode.watched ? undefined : episode.progress;
   return (
     <CardShell
       focusKey={focusKey}
@@ -106,7 +110,18 @@ export const EpisodeCard = memo(function EpisodeCard({
               <ArtworkHalo width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} palette={episode.palette} spread={14} blur={30} opacity={0.4} />
             </Reveal>
           ) : null}
-          <CardFrame width={EPISODE_CARD.width} height={EPISODE_CARD.height} radius={EPISODE_CARD.radius} focused={focused} place={place}>
+          <CardFrame
+            width={EPISODE_CARD.width}
+            height={EPISODE_CARD.height}
+            radius={EPISODE_CARD.radius}
+            focused={focused}
+            place={place}
+            focusLayer={
+              episode.quality ? (
+                <CardQualityBadges quality={episode.quality} focused={focused} width={EPISODE_CARD.width} markers={markers} progress={progress} compact={false} logo={false} />
+              ) : undefined
+            }
+          >
             {episode.imageUri ? (
               <Image source={{ uri: episode.imageUri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
             ) : (
@@ -114,7 +129,7 @@ export const EpisodeCard = memo(function EpisodeCard({
                 <Text style={styles.missingNumber}>{episode.number ?? ""}</Text>
               </View>
             )}
-            <CardMarkerLayer markers={episode.watched ? WATCHED : NONE} progress={episode.watched ? undefined : episode.progress} />
+            <CardMarkerLayer markers={markers} progress={progress} />
             {badge ? (
               <View style={[styles.badge, badge === "current" && styles.badgeCurrent]}>
                 <Text style={[styles.badgeText, badge === "current" && styles.badgeTextCurrent]}>{t(BADGE_KEY[badge])}</Text>

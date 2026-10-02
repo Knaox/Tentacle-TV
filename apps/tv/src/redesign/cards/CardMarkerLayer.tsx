@@ -4,7 +4,7 @@ import Svg, { Path } from "react-native-svg";
 import { STAR_PATH, STAR_VIEWBOX, formatCommunityRating, formatUserScore, type CardMarkers } from "@tentacle-tv/shared";
 import { BrandGradient } from "../brand/BrandGradient";
 import { colors, fonts, scrim } from "../theme/tokens";
-import { RATING_PILL, showsRating } from "./cardMarkerGeometry";
+import { MARKER_INSET, RATING_PILL, showsRating } from "./cardMarkerGeometry";
 import { ToggleGlyph } from "./ToggleGlyph";
 
 /**
@@ -35,7 +35,7 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
   compact?: boolean;
   hideRating?: boolean;
 }) {
-  const glyph = compact ? 18 : 22;
+  const glyph = compact ? RATING_PILL.glyphCompact : RATING_PILL.glyph;
   const showRating = showsRating(markers, hideRating);
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -58,7 +58,7 @@ export const CardMarkerLayer = memo(function CardMarkerLayer({
             <View style={styles.userScore}>
               {/* Le dégradé de la marque, comme la note perso du bureau (`CardRatingBadge`). */}
               <BrandGradient />
-              <Star size={glyph - 6} color={colors.onAccent} />
+              <Star size={glyph - RATING_PILL.user.starInset} color={colors.onAccent} />
               <Text style={[styles.userValue, compact && styles.valueCompact]}>{formatUserScore(markers.userScore)}</Text>
             </View>
           ) : null}
@@ -80,28 +80,28 @@ const styles = StyleSheet.create({
     position: "absolute",
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: RATING_PILL.gap,
     height: RATING_PILL.height,
-    paddingHorizontal: 12,
+    paddingHorizontal: RATING_PILL.padding,
     borderRadius: 20,
     backgroundColor: scrim(0.72),
   },
-  pillCompact: { height: RATING_PILL.heightCompact, paddingHorizontal: 10, borderRadius: 17, gap: 6 },
-  statuses: { top: 12, right: 12 },
-  rating: { left: 12, bottom: RATING_PILL.bottom },
+  pillCompact: { height: RATING_PILL.heightCompact, paddingHorizontal: RATING_PILL.paddingCompact, borderRadius: 17, gap: RATING_PILL.gapCompact },
+  statuses: { top: MARKER_INSET, right: MARKER_INSET },
+  rating: { left: MARKER_INSET, bottom: RATING_PILL.bottom },
   ratingAboveBar: { bottom: RATING_PILL.bottomAboveBar },
-  value: { ...fonts.bold, fontSize: 22, color: colors.onMedia },
-  valueCompact: { fontSize: 22 },
+  value: { ...fonts.bold, fontSize: RATING_PILL.fontSize, color: colors.onMedia },
+  valueCompact: { fontSize: RATING_PILL.fontSize },
   userScore: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    height: 28,
-    borderRadius: 14,
+    gap: RATING_PILL.user.gap,
+    paddingHorizontal: RATING_PILL.user.padding,
+    height: RATING_PILL.user.height,
+    borderRadius: RATING_PILL.user.height / 2,
     overflow: "hidden",
   },
-  userValue: { ...fonts.extrabold, fontSize: 22, color: colors.onAccent },
+  userValue: { ...fonts.extrabold, fontSize: RATING_PILL.fontSize, color: colors.onAccent },
   track: { position: "absolute", left: 0, right: 0, bottom: 0, height: 6, backgroundColor: "rgba(255, 255, 255, 0.22)" },
   fill: { height: 6, overflow: "hidden" },
 });

@@ -21,7 +21,8 @@ import { motionTo, type Motion } from "./motion";
  * et meurt avec sa sortie.
  */
 
-function useDwell(on: boolean, delayMs: number): boolean {
+/** Vrai quand `on` a TENU `delayMs` ; retombe avec lui, sans attendre. */
+export function useDwell(on: boolean, delayMs: number): boolean {
   const [held, setHeld] = useState(false);
   useEffect(() => {
     if (!on || delayMs <= 0) {

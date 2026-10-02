@@ -12,7 +12,8 @@ import { CardFocusFooter } from "./CardFocusFooter";
 import { CardFrame, cardGlowOf } from "./CardFrame";
 import { CardShell } from "./CardShell";
 import { CardMarkerLayer } from "./CardMarkerLayer";
-import { cardLogoBottom } from "./cardMarkerGeometry";
+import { cardLogoBottom, LOGO_BOX } from "./cardMarkerGeometry";
+import { CardQualityBadges } from "./CardQualityBadges";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused } from "./useCardFocused";
 
@@ -30,7 +31,9 @@ import { useCardFocused } from "./useCardFocused";
  * Sous la légende, au focus (`CardFocusFooter`) : la phrase de focus d'une
  * carte qui en a une (`card.focusNote`, la raison d'une recommandation), puis
  * — toute carte qui s'ouvre par l'appui maintenu (`onLongPress`) —
- * « Maintenir OK : plus d'options » : rien d'autre ne l'apprendrait.
+ * « Maintenir OK : plus d'options » : rien d'autre ne l'apprendrait. DANS
+ * l'image, en bas à droite, quand le focus a tenu : la qualité du titre
+ * (`CardQualityBadges` — « 4K · VISION · ATMOS »), lue au besoin à ce moment-là.
  *
  * Un titre ABSENT de la bibliothèque (`card.absent`) garde la même carte : son
  * affiche grisée et son badge (`AbsentArtwork`) remplacent image et marqueurs.
@@ -119,7 +122,29 @@ export const MediaCard = memo(function MediaCard({
       onTargetFocusChange={onTargetFocusChange}
       accessibilityLabel={card.title}
       frame={
-        <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin} glow={glow}>
+        <CardFrame
+          width={width}
+          height={height}
+          radius={radius}
+          focused={focused}
+          place={place}
+          dimmed={dimmed}
+          origin={origin}
+          glow={glow}
+          focusLayer={
+            card.quality && !card.absent ? (
+              <CardQualityBadges
+                quality={card.quality}
+                focused={focused}
+                width={width}
+                markers={card.markers}
+                progress={card.progress}
+                compact={!landscape}
+                logo={landscape && card.logoUri !== undefined}
+              />
+            ) : undefined
+          }
+        >
           {/* L'image est clée par son adresse : une carte RECYCLÉE (grille)
               qui change de titre ne garde pas l'affiche précédente le temps
               que la sienne arrive — une Image d'iOS la garderait. */}
@@ -162,7 +187,7 @@ export const MediaCard = memo(function MediaCard({
 const styles = StyleSheet.create({
   missing: { flex: 1, padding: 22, justifyContent: "flex-end", backgroundColor: colors.surface3 },
   missingTitle: { ...fonts.bold, fontSize: 26, lineHeight: 30, color: colors.textSecondary },
-  logo: { position: "absolute", left: 22, right: 90, height: 64 },
+  logo: { position: "absolute", left: LOGO_BOX.left, right: LOGO_BOX.right, height: LOGO_BOX.height },
   caption: { marginTop: 14, gap: 2 },
   title: { ...fonts.semibold, fontSize: 24, color: colors.textSecondary },
   titleFocused: { color: colors.text },

@@ -1,4 +1,4 @@
-import type { CardMarkers } from "@tentacle-tv/shared";
+import type { CardMarkers, QualityBadge } from "@tentacle-tv/shared";
 import type { ArtworkPalette } from "../color/artworkPalette";
 import type { ArrivalModel } from "../requests/arrivalTypes";
 
@@ -35,7 +35,18 @@ export interface CardModel {
   /** Un titre ABSENT de la bibliothèque : son affiche (TMDB) grisée, et son
    *  badge. Ni marqueurs ni progression : rien de lui n'est dans Jellyfin. */
   absent?: AbsentModel;
+  /** La qualité du titre — 4K, Dolby Vision, Dolby Atmos —, montrée au focus
+   *  DANS l'image (`CardQualityBadges`). Absente : rien à montrer. */
+  quality?: CardQuality;
 }
+
+/**
+ * Ce qu'une carte sait de la qualité de son titre : ses badges, quand sa liste
+ * portait ses flux ; sinon l'identifiant à lire AU FOCUS (`probe`, par la
+ * source de l'intégration — `qualityBadgeSource`). Une série n'a que le
+ * premier cas : rien ne se demande pour elle.
+ */
+export type CardQuality = { badges: readonly QualityBadge[] } | { probe: string };
 
 /**
  * Ce que dit le badge d'un titre absent : « Pas dans la bibliothèque », ou —

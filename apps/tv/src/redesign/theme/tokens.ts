@@ -67,6 +67,10 @@ export const ink = (alpha: number) => `rgba(${TV_LIGHT.ink.topRgb}, ${alpha})`;
 /** Blanc à l'alpha voulu — reflets, liserés, remplissages du verre. */
 export const white = (alpha: number) => `rgba(255, 255, 255, ${alpha})`;
 
+/** Le violet de la marque à l'alpha voulu — une touche à peine teintée (le 4K
+ *  des badges de qualité, comme sa puce au bureau). */
+export const brandTint = (alpha: number) => `rgba(${C.brand.rgb}, ${alpha})`;
+
 /** Inter, comme le bureau — embarquée dans l'app tvOS (`UIAppFonts`) comme
  *  sur Android. La graisse posée à côté garde le bon poids en police système
  *  sur une build qui ne l'aurait pas. */

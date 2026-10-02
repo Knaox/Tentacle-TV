@@ -65,6 +65,9 @@ export interface CardFrameProps {
   origin?: "top" | "center";
   /** La lueur du focus (`cardGlowOf`) ; sans elle, l'ombre noire. */
   glow?: CardGlow;
+  /** Ce qui ne paraît qu'au focus, DANS l'image (les badges de qualité) :
+   *  monté avec l'habit du focus, le temps du retour compris — rien au repos. */
+  focusLayer?: ReactNode;
   children: ReactNode;
 }
 
@@ -110,6 +113,7 @@ function FrameBody({
   press,
   origin = "top",
   glow,
+  focusLayer,
   children,
 }: CardFrameProps & { recede: SharedValue<number> | null }) {
   const p = useFocusProgress(focused);
@@ -133,6 +137,7 @@ function FrameBody({
       {dressed ? <FocusRaised progress={p} glow={glow} radius={radius} focused={focused} onSettled={settle} /> : null}
       <View style={[shape, styles.clip]}>
         {children}
+        {dressed ? focusLayer : null}
         {dressed ? <FocusSheen progress={p} width={width} height={height} /> : null}
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius }, styles.hairline]} />
       </View>
