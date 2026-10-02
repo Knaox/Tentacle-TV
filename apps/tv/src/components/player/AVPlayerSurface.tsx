@@ -6,7 +6,6 @@ import Video, {
   type OnSeekData,
   type VideoRef,
   SelectedTrackType,
-  TextTrackType,
 } from "react-native-video";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { AUDIO_TRANSIENT_ERROR, classifyAvPlayerError } from "@tentacle-tv/tv-core";
@@ -14,6 +13,7 @@ import { parseStart } from "../../utils/playerHelpers";
 import { nativePlayerHeaders } from "../../utils/nativePlayerHeaders";
 import { plog } from "../../utils/playerDiag";
 import type { MPVPlayerHandle, MpvTrack, ExoTextTrack } from "./playerTypes";
+import { useAvTextTracks } from "./useAvTextTracks";
 
 /**
  * Surface native tvOS (AVPlayer via react-native-video) : MÊME contrat `MPVPlayerHandle` + events que les
@@ -66,11 +66,6 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // poser ferait passer react-native-video par un resource-loader maison qui casse
     // l'indirection master → variantes. Tout le reste (Jellyfin direct ou proxy) les exige.
     const isLoopback = uri.startsWith("http://127.0.0.1");
-    // Pistes texte réellement exposées par AVPlayer : sideload (direct play) ou
-    // renditions du manifeste HLS (transcode, SubtitleMethod=Hls). Sert à mapper
-    // l'index Jellyfin → l'index AVPlayer quand l'ordre diffère.
-    const [avTextTracks, setAvTextTracks] =
-      useState<Array<{ index: number; title?: string; language?: string }>>([]);
     // Piloté par setAudioTrack() (changement de piste audio en direct play).
     const [selectedAudioTrack, setSelectedAudioTrack] =
       useState<{ type: SelectedTrackType; value?: number } | undefined>(undefined);
@@ -109,47 +104,8 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     pausedRef.current = paused;
     const playableRef = useRef(0);
 
-    // Pistes texte VTT sideloadées (rendu natif AVPlayer).
-    const rnvTextTracks = useMemo(
-      () => (textTracks ?? []).map((t) => ({
-        title: t.label,
-        language: t.language || "und",
-        type: TextTrackType.VTT,
-        uri: t.uri,
-      })),
-      [textTracks],
-    );
-    // Sélection native, valable pour les deux modes : sideload (direct play) ET
-    // pistes du manifeste HLS (transcode, SubtitleMethod=Hls). La position dans
-    // notre liste suit le même ordre que les pistes du flux. En HLS, si AVPlayer
-    // remonte un ordre différent (onTextTracks), on remappe par langue + titre
-    // (NAME = DisplayTitle Jellyfin) pour fiabiliser.
-    const selectedTextTrack = useMemo<{ type: SelectedTrackType; value?: number }>(() => {
-      // PrismCore : rendition OCR d'une piste image, sélectionnée par index dans
-      // le groupe legible (cf. utils/prismSubtitleMatch). Le texte reste l'overlay JS.
-      if (prismTextTrackIndex != null) return { type: SelectedTrackType.INDEX, value: prismTextTrackIndex };
-      if (subtitleIndex == null || subtitleIndex < 0 || !textTracks?.length) {
-        return { type: SelectedTrackType.DISABLED };
-      }
-      const pos = textTracks.findIndex((t) => t.jellyfinIndex === subtitleIndex);
-      if (pos < 0) return { type: SelectedTrackType.DISABLED };
-      if (avTextTracks.length) {
-        const want = textTracks[pos];
-        const wantLang = (want.language ?? "").toLowerCase();
-        const match =
-          avTextTracks.find((a) => (a.language ?? "").toLowerCase() === wantLang && (a.title ?? "") === want.label) ??
-          avTextTracks.find((a) => (a.language ?? "").toLowerCase() === wantLang);
-        if (match) return { type: SelectedTrackType.INDEX, value: match.index };
-      }
-      return { type: SelectedTrackType.INDEX, value: pos };
-    }, [textTracks, subtitleIndex, avTextTracks, prismTextTrackIndex]);
-
-    const handleTextTracks = useCallback(
-      (e: { textTracks?: Array<{ index: number; title?: string; language?: string }> }) => {
-        setAvTextTracks(e?.textTracks ?? []);
-      },
-      [],
-    );
+    // Pistes texte natives : sideload VTT et sélection (cf. `useAvTextTracks`).
+    const { rnvTextTracks, selectedTextTrack, handleTextTracks } = useAvTextTracks({ textTracks, subtitleIndex, prismTextTrackIndex });
 
     // Headers d'auth Jellyfin — INDISPENSABLES sur tvOS : l'URL passe par le proxy
     // `/api/jellyfin` qui authentifie par en-tête (le player natif Android les
