@@ -25,6 +25,8 @@ import { nameDeviceFromHeader } from "../services/deviceNaming";
 import { buildTargetUrl } from "./jellyfinProxy/targetUrl";
 import { traceBody, traceFailure, traceHeaders } from "./jellyfinProxy/streamTraces";
 import { requestSignal } from "./jellyfinProxy/clientAbort";
+import { serveLatestAdditions } from "./jellyfinProxy/latestAdditions";
+import { matchLatestRequest } from "../latestAdditions/latestRequest";
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
   app.all("/*", async (request, reply) => {
@@ -117,6 +119,11 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       request.headers as Record<string, string | string[] | undefined>,
       { identity: incoming.identity, token: apiKeyOverride ?? incomingToken },
     );
+
+    // « Derniers ajouts » : regroupés par série ICI, pour tous les clients (cf. latestAdditions).
+    const latest = request.method === "GET" && !rewrite ? matchLatestRequest(wildcardPath, qs) : null;
+    const latestCtx = { jellyfinUrl, headers, token: incomingToken, path: wildcardPath, queryString: qs };
+    if (latest && (await serveLatestAdditions(request, reply, latest, latestCtx))) return reply;
 
     // Progressive video streams (remux) can last hours — use a long timeout.
     // HLS segments and API calls complete quickly, keep short timeout.
