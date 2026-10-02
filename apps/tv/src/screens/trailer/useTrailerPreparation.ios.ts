@@ -7,12 +7,12 @@ import { prepareTrailerStream } from "./resolveTrailerStream";
  * Le temps de se poser sur la fiche avant de préparer : traverser des fiches
  * (retour, saga) ne lance pas une extraction par page.
  */
-const PREPARE_DELAY_MS = 600;
+const PREPARE_DELAY_MS = 300;
 
 /**
  * Apple TV : la fiche qui propose une bande-annonce YouTube la fait préparer
  * par le serveur pendant qu'on la lit — extraction, maître, premières listes.
- * Mesuré : deux secondes d'extraction que le lancement n'attend plus.
+ * Mesuré : une à trois secondes d'extraction que le lancement n'attend plus.
  */
 export function useTrailerPreparation(trailerUrl: string | undefined): void {
   const { storage } = useTentacleConfig();
