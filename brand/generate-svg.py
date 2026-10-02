@@ -1,6 +1,7 @@
 """
-Génère les dix-sept SVG de `brand/` ET les constantes TypeScript des clients,
-depuis une seule géométrie. Rien ici ne s'édite à la main.
+Génère les dix-neuf SVG de `brand/` ET les constantes TypeScript des clients,
+depuis une seule géométrie. Rien ici ne s'édite à la main. Les couches de
+l'icône Apple TV se composent dans `tvos.py`.
 
     python3 brand/generate-svg.py            # écrit brand/ + les modules TS
     python3 brand/generate-svg.py /tmp/out   # aperçu ailleurs, sans les TS
@@ -22,6 +23,7 @@ import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from geometry import (arm_spine, tapered, suckers, mirror_pts, spire_gap, width_at,
                       squircle_path)
+import tvos
 
 BRAND = pathlib.Path(__file__).parent
 OUT = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else BRAND
@@ -207,7 +209,7 @@ def squircle_bg(span):
     '<rect width="1024" height="1024" fill="url(#bgm)"/><rect width="1024" height="1024" fill="url(#glow)"/>'
     f'<g {PLACE} color="#FFFFFF"><g mask="url(#mCut)" fill="currentColor">{MONO_BODY}</g></g></svg>\n')
 
-# ── Compositions dérivées : bannières, écrans de lancement, couches tvOS ────
+# ── Compositions dérivées : bannières, écrans de lancement ─────────────────
 def compose(w, h, ratio, with_bg=True, with_hat=True, title=""):
     """
     Place la mascotte dans un cadre w×h, occupant `ratio` de la plus petite
@@ -239,20 +241,13 @@ COMPOSITIONS = {
     "logo-plain.svg": (1024, 1024, 0.92, False, True, " — logo seul"),
     # `LaunchLogo` tvOS n'est pas carré : une source carrée y serait étirée.
     "launch-logo.svg": (330, 360, 0.94, False, True, " — logo de lancement tvOS"),
-    # tvOS attend deux COUCHES : le fond bouge moins que l'avant-plan.
-    "tvos-back.svg": (400, 240, 0.001, True, True, " — couche arrière tvOS"),
-    "tvos-front.svg": (400, 240, 0.86, False, True, " — couche avant tvOS"),
 }
 for name, (w, h, ratio, bg, hat, title) in COMPOSITIONS.items():
-    if name == "tvos-back.svg":
-        # Fond seul : la couche arrière ne porte pas la mascotte.
-        (OUT / name).write_text(
-            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img">'
-            f'<title>Tentacle TV{title}</title>{NOTE}<defs>{BG_CINEMA.format(w=w, h=h)}</defs>'
-            f'<rect width="{w}" height="{h}" fill="url(#bg)"/>'
-            f'<rect width="{w}" height="{h}" fill="url(#halo)"/></svg>\n')
-    else:
-        (OUT / name).write_text(compose(w, h, ratio, bg, hat, title))
+    (OUT / name).write_text(compose(w, h, ratio, bg, hat, title))
+
+# ── Apple TV : l'icône en couches ──────────────────────────────────────────
+TVOS_COUNT = tvos.write(OUT, {"GRADS": GRADS, "BODY": BODY, "HAT_G": HAT_G,
+                              "FRONT_G": FRONT_G, "NOTE": NOTE})
 
 # ── Modules TypeScript : un SEUL contenu pour web, TV et mobile — les bras
 #    étant des formes pleines, `pathLength` et les dasharray ont disparu, et
@@ -313,6 +308,6 @@ if not PREVIEW:
         else:
             print(f"  (ignoré, dossier absent : {target})")
 
-print(f"{7 + len(COMPOSITIONS)} SVG — {len(CUPS)} ventouses, "
+print(f"{7 + len(COMPOSITIONS) + TVOS_COUNT} SVG — {len(CUPS)} ventouses, "
       f"{len(FRONT_DS) + len(BACK_DS)} bras"
       + (" (aperçu : modules TS non écrits)" if PREVIEW else " + 3 modules TS"))

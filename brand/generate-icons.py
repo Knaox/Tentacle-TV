@@ -52,7 +52,11 @@ RULES = [
     ("apps/tv/store-assets/tv-banner-*.png", "banner-16x9.svg"),
     ("apps/tv/store-assets/icon-*.png", "app-icon-color.svg"),
     # ── tvOS : l'icône est faite de COUCHES (effet de parallaxe) ─────────────
+    # De l'arrière vers l'avant : le fond, la lumière, le poulpe, les bras
+    # avant (voir brand/tvos.py).
     ("apps/tv/ios/*/Images.xcassets/*.brandassets/*.imagestack/Back.imagestacklayer/Content.imageset/*.png", "tvos-back.svg"),
+    ("apps/tv/ios/*/Images.xcassets/*.brandassets/*.imagestack/Light.imagestacklayer/Content.imageset/*.png", "tvos-light.svg"),
+    ("apps/tv/ios/*/Images.xcassets/*.brandassets/*.imagestack/Middle.imagestacklayer/Content.imageset/*.png", "tvos-body.svg"),
     ("apps/tv/ios/*/Images.xcassets/*.brandassets/*.imagestack/Front.imagestacklayer/Content.imageset/*.png", "tvos-front.svg"),
     ("apps/tv/ios/*/Images.xcassets/*.brandassets/Top Shelf Image Wide.imageset/*.png", "banner-topshelf-wide.svg"),
     ("apps/tv/ios/*/Images.xcassets/*.brandassets/Top Shelf Image.imageset/*.png", "banner-topshelf.svg"),
