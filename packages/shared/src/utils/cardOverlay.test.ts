@@ -20,10 +20,28 @@ describe("resolveCardOverlay", () => {
       play: { labelKey: "play" },
       playInTray: true,
       open: "details",
+      request: false,
       rate: true,
       toggles: ["watchlist", "favorite", "watched"],
       extras: [],
     });
+  });
+
+  it("offre de compléter une série incomplète, après la lecture, à la place du hors ligne", () => {
+    const overlay = resolveCardOverlay({ variant: "poster", ...LIBRARY, offline: true, request: true });
+    expect(overlay.request).toBe(true);
+    expect(overlay.playInTray).toBe(true);
+    expect(overlay.toggles).toEqual(["watchlist", "favorite", "watched"]);
+    // Cinq boutons au plus : Lire, Demander, les trois bascules — le hors ligne reste à la fiche.
+    expect(overlay.extras).toEqual([]);
+    expect(resolveCardOverlay({ variant: "poster", ...LIBRARY, offline: true }).extras).toEqual(["offline"]);
+    // Les feuilles n'en font pas une entrée : elles la rendent sous la lecture.
+    expect(cardActionEntries(overlay, NONE).map((entry) => entry.kind)).toEqual(["play", "watchlist", "favorite", "watched"]);
+  });
+
+  it("ne demande rien pour un titre hors bibliothèque, ni pour un titre lu sur le disque", () => {
+    expect(resolveCardOverlay({ variant: "poster", inLibrary: false, playable: false, rateable: true, request: true }).request).toBe(false);
+    expect(resolveCardOverlay({ variant: "poster", ...LIBRARY, local: true, request: true }).request).toBe(false);
   });
 
   it("range les bascules dans l'ordre de la pastille d'états du repos", () => {

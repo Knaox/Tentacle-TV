@@ -70,6 +70,13 @@ export interface CardOverlayInput {
   /** La plateforme garde hors ligne, et ce titre s'y prête. */
   offline?: boolean;
   /**
+   * Une extension de demandes offre de compléter le titre — les saisons qui
+   * manquent à une série que la bibliothèque a EN PARTIE (`titles.gaps`). Le
+   * survol l'offre alors, au dégradé de la marque, juste après la lecture.
+   * Seulement sur la carte d'un titre de la bibliothèque.
+   */
+  request?: boolean;
+  /**
    * Titre lu sur le DISQUE (catalogue local, fiche locale), sans le serveur —
    * hors ligne, ou sur la page « Sur cet appareil ». Seule la coche « vu » s'y
    * bascule (en base locale) : Ma liste et les favoris vivent sur le serveur,
@@ -91,6 +98,13 @@ export interface CardOverlay {
   playInTray: boolean;
   /** Ce que fait le clic (le tap, la validation) sur la carte, hors boutons. */
   open: "details" | "play";
+  /**
+   * « Demander » ce qui manque au titre (les saisons d'une série incomplète) :
+   * au plateau, juste après la lecture, au ton de la marque — la SEULE couleur
+   * du survol ; dans une feuille, juste sous la lecture. Ce que « demander »
+   * veut dire appartient à l'extension (`titles.seasons`).
+   */
+  request: boolean;
   /** Les étoiles de notation. */
   rate: boolean;
   /** Les bascules, dans l'ordre du plateau. Vides hors bibliothèque. */
@@ -119,8 +133,13 @@ export function resolveCardOverlay(input: CardOverlayInput): CardOverlay {
   // Une vignette qui n'a rien à lire retombe sur la fiche, comme une affiche.
   const open = variant === "landscape" && playable ? "play" : "details";
 
+  // Compléter le titre : une carte de la bibliothèque, servie par le serveur.
+  const request = inLibrary && !local && input.request === true;
   const extras: CardTrayExtra[] = [];
-  if (inLibrary && !local && input.offline === true && variant !== "reco") extras.push("offline");
+  // Cinq boutons au plus sur une affiche (espacement de WCAG 2.5.8, cf.
+  // `CardTrayExtra`) : « Demander » prend la place du hors ligne, qui reste à
+  // la fiche — comme sur une recommandation.
+  if (inLibrary && !local && input.offline === true && variant !== "reco" && !request) extras.push("offline");
   if (open === "play") extras.push("details");
   if (variant === "reco") extras.push("dismiss");
 
@@ -129,6 +148,7 @@ export function resolveCardOverlay(input: CardOverlayInput): CardOverlay {
     play: playable ? { labelKey: input.resume === true ? "resume" : "play" } : null,
     playInTray: playable && open !== "play",
     open,
+    request,
     rate: input.rateable && !local,
     toggles: local ? LOCAL_TOGGLES : inLibrary ? CARD_TOGGLE_ORDER : NO_TOGGLES,
     extras,
