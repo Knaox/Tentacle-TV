@@ -26,7 +26,8 @@ export { useExternalSearch, combineExternal, type ExternalSearchOptions, type Ex
 export { useExternalFilmography, type ExternalFilmographyOptions, type FilmographyPerson } from "../hooks/useExternalFilmography";
 export { usePersonDetails, usePersonFilmography, type PersonFilmography } from "../hooks/usePerson";
 export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog, type CatalogFilters } from "../hooks/useLibraryCatalog";
-export { useResumeItems, useLatestItems, latestItemsQueryOptions, useNextUp, useWatchedItems, useFeaturedItems } from "../hooks/useHome";
+export { useResumeItems, useNextUp, useWatchedItems, useFeaturedItems } from "../hooks/useHome";
+export { useLatestItems, latestItemsQueryOptions } from "../hooks/useLatestItems";
 export { useLocalTrailers, useSpecialFeatures } from "../hooks/useTrailers";
 // Les extras d'une fiche, pour toutes les plateformes : locaux (bandes-annonces
 // puis bonus), distants (Jellyfin + TMDB, triés par langue), et le bouton.
