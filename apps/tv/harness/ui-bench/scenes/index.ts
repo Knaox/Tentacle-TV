@@ -1,3 +1,4 @@
+import { ABSENT_SCENES } from "./absentScenes";
 import { BACK_SCENES } from "./backScenes";
 import { BENCH_SCENES } from "./benchScenes";
 import { BRICK_SCENES } from "./brickScenes";
@@ -42,6 +43,8 @@ export const SCENES: BenchScene[] = [
   ...LIBRARY_SCENES,
   ...COLLECTION_SCENES,
   ...SEARCH_SCENES,
+  // Les titres absents de la bibliothèque, et leur demande (garde Vigie).
+  ...ABSENT_SCENES,
   ...BROWSE_SCENES,
   ...FOR_YOU_SCENES,
   ...SETTINGS_SCENES,

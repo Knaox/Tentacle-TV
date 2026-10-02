@@ -70,11 +70,12 @@ export function crewOf(item: MediaItem): CrewGroupModel[] {
 /**
  * La saga : la réponse RÉELLE de `/api/sagas`, les films de la bibliothèque,
  * et les volets manquants tirés des `parts` de TMDB — leur affiche quand la
- * réponse la porte (`posterPath`, serveurs récents), grisée, sinon un cadre
+ * réponse la porte (`posterPath`, serveurs récents) ou que la scène les
+ * fournit (`posters`, l'instantané étant d'avant), grisée, sinon un cadre
  * titre et année ; le badge « Pas dans la bibliothèque », comme dans l'app
  * (`absentCard`).
  */
-export function sagaOf(data: BenchData, item: MediaItem): SagaModel | null {
+export function sagaOf(data: BenchData, item: MediaItem, posters: Record<number, string> = {}): SagaModel | null {
   const raw = data.snapshot.detail?.[item.Id]?.saga as { collectionId: number; saga: SagaInfo | null; members: SagaMember[] } | undefined;
   if (!raw?.saga) return null;
   const owned = new Set(raw.members.map((member) => member.tmdbId));
@@ -86,7 +87,7 @@ export function sagaOf(data: BenchData, item: MediaItem): SagaModel | null {
       title: part.title,
       year: part.releaseDate ? Number(part.releaseDate.slice(0, 4)) : null,
       subtitle: null,
-      imageUrl: tmdbPosterUri(part.posterPath) ?? null,
+      imageUrl: tmdbPosterUri(part.posterPath ?? posters[part.tmdbId]) ?? null,
       href: "",
       badge: null,
       tmdbId: part.tmdbId,
