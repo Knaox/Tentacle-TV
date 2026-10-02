@@ -1396,6 +1396,20 @@ Corrigé en OPT-IN (`bufferedFetch`, api-client : de la requête à la réponse
 entière, moins la latence de deux petites requêtes), activé par la TV seule
 (`TV_BITRATE_MEASURE`) : 5,02 Mb/s mesurés pour un témoin bridé à 5 Mb/s.
 
+**Le piège du `project.pbxproj` partagé** : deux branches du lot avaient pris
+les mêmes identifiants (`…A101`, `…A102`) pour deux fichiers natifs
+différents (la sonde, `TentacleFocusSection.m`), chacun unique dans sa
+branche. La fusion passe sans conflit ; Xcode ne garde qu'un des deux objets,
+et l'autre sort du build en silence (« Removed stale file … .o »). Après une
+fusion qui touche au projet, aucune définition ne doit sortir en double :
+
+```bash
+grep -E '^\s+[0-9A-F]{24} (/\*[^*]*\*/ )?= \{' apps/tv/ios/TentacleTV.xcodeproj/project.pbxproj | grep -oE '^\s+[0-9A-F]{24}' | sort | uniq -d
+```
+
+Et un fichier natif neuf prend des identifiants hors de la série
+`AB12CD34EF5601234567…`, que chaque session prolonge.
+
 ### Constats non corrigés
 
 - react-native-video n'applique la position de départ qu'à `readyToPlay` :

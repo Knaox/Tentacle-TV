@@ -21,7 +21,7 @@
 		7699B88040F8A987B510C191 /* libPods-TentacleTV-TentacleTVTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-TentacleTV-TentacleTVTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		AB12CD34EF5601234567BB01 /* HDRCapabilities.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567BB02 /* HDRCapabilities.m */; };
-		AB12CD34EF5601234567A101 /* PlayerLoadProbe.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A102 /* PlayerLoadProbe.m */; };
+		D1A9C0DE5EC0A11B0000F001 /* PlayerLoadProbe.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A9C0DE5EC0A11B0000F002 /* PlayerLoadProbe.m */; };
 		AB12CD34EF5601234567CC01 /* PrismBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC02 /* PrismBridge.swift */; };
 		AB12CD34EF5601234567CC03 /* PrismBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC04 /* PrismBridge.m */; };
 		AB12CD34EF5601234567CC05 /* PrismSessionRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC06 /* PrismSessionRegistry.swift */; };
@@ -71,7 +71,7 @@
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = TentacleTV/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-TentacleTV-TentacleTVTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV-TentacleTVTests.release.xcconfig"; path = "Target Support Files/Pods-TentacleTV-TentacleTVTests/Pods-TentacleTV-TentacleTVTests.release.xcconfig"; sourceTree = "<group>"; };
 		AB12CD34EF5601234567BB02 /* HDRCapabilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = HDRCapabilities.m; path = TentacleTV/HDRCapabilities.m; sourceTree = "<group>"; };
-		AB12CD34EF5601234567A102 /* PlayerLoadProbe.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PlayerLoadProbe.m; path = TentacleTV/PlayerLoadProbe.m; sourceTree = "<group>"; };
+		D1A9C0DE5EC0A11B0000F002 /* PlayerLoadProbe.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PlayerLoadProbe.m; path = TentacleTV/PlayerLoadProbe.m; sourceTree = "<group>"; };
 		AB12CD34EF5601234567CC02 /* PrismBridge.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PrismBridge.swift; path = TentacleTV/PrismBridge.swift; sourceTree = "<group>"; };
 		AB12CD34EF5601234567CC04 /* PrismBridge.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PrismBridge.m; path = TentacleTV/PrismBridge.m; sourceTree = "<group>"; };
 		AB12CD34EF5601234567CC06 /* PrismSessionRegistry.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PrismSessionRegistry.swift; path = TentacleTV/PrismSessionRegistry.swift; sourceTree = "<group>"; };
@@ -133,7 +133,7 @@
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.mm */,
 				AB12CD34EF5601234567BB02 /* HDRCapabilities.m */,
-				AB12CD34EF5601234567A102 /* PlayerLoadProbe.m */,
+				D1A9C0DE5EC0A11B0000F002 /* PlayerLoadProbe.m */,
 				AB12CD34EF5601234567CC02 /* PrismBridge.swift */,
 				AB12CD34EF5601234567CC04 /* PrismBridge.m */,
 				AB12CD34EF5601234567CC06 /* PrismSessionRegistry.swift */,
@@ -480,7 +480,7 @@
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				AB12CD34EF5601234567BB01 /* HDRCapabilities.m in Sources */,
-				AB12CD34EF5601234567A101 /* PlayerLoadProbe.m in Sources */,
+				D1A9C0DE5EC0A11B0000F001 /* PlayerLoadProbe.m in Sources */,
 				AB12CD34EF5601234567CC01 /* PrismBridge.swift in Sources */,
 				AB12CD34EF5601234567CC03 /* PrismBridge.m in Sources */,
 				AB12CD34EF5601234567CC05 /* PrismSessionRegistry.swift in Sources */,
