@@ -53,6 +53,9 @@ export * from "./person/castCredits";
 export * from "./saga/sagaTypes";
 export * from "./saga/sagaModel";
 export * from "./saga/sagaLabels";
+// Les « Derniers ajouts » regroupés par série au serveur : ce que la carte de
+// la série apporte de neuf (miroir backend).
+export * from "./latestAdditions/latestAdditionsTypes";
 // La compatibilité Jellyfin : la forme du manifeste que produit la suite de
 // tests (compat/jellyfin.json, miroir backend), le verdict d'une version, et les
 // contrats de /api/admin/jellyfin/compat et /api/admin/jellyfin/setup.

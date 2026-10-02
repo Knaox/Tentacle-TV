@@ -1,3 +1,5 @@
+import type { LatestAdditions } from "../latestAdditions/latestAdditionsTypes";
+
 export interface MediaItem {
   Id: string;
   Name: string;
@@ -82,8 +84,13 @@ export interface MediaItem {
   CollectionType?: string;
 
   // Tentacle-only : nombre d'épisodes récemment ajoutés pour une série groupée
-  // dans la rangée « Derniers ajouts ». Calculé côté client, jamais renvoyé par Jellyfin.
+  // dans la rangée « Derniers ajouts ». Jamais renvoyé par Jellyfin : posé par
+  // le serveur Tentacle sur ses cartes regroupées, ou par le client
+  // (`groupLatestByRuns`) face à un serveur plus ancien.
   RecentlyAddedCount?: number;
+  // Tentacle-only : ce qu'une carte regroupée des « Derniers ajouts » apporte
+  // de neuf — posé par le serveur sur la série (cf. `LatestAdditions`).
+  LatestAdditions?: LatestAdditions;
 
   // Studios
   Studios?: Array<{ Name: string; Id: string }>;
