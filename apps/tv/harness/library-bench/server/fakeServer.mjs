@@ -36,7 +36,7 @@ const catalog = loadCatalog({
 });
 
 const mode = { bw: 50, cold: 0, imgms: 7, bundle: "" };
-const freshStats = () => ({ items: 0, itemsBytes: 0, images: 0, imagesBytes: 0, unknown: {} });
+const freshStats = () => ({ items: 0, itemsBytes: 0, qualityReads: 0, images: 0, imagesBytes: 0, unknown: {} });
 const stats = freshStats();
 const log = [];
 const T0 = Date.now();

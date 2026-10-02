@@ -4,6 +4,10 @@
 //   page Items : ~55 ms + 0,22 ms/Kio + 40 ms quand le total est demandé ;
 //     ~1 Kio par film sans MediaSources, 7,6 Kio avec ;
 //   affiche à chaud : ~7 ms ; à froid (taille jamais demandée) 80 à 270 ms.
+// Lecture de la qualité d'un titre (badges du focus : `Ids=<un titre>`,
+// `Fields=MediaStreams`, sans total) — mesurée le 2026-10-03 sur Jellyfin
+// 12.1 : 4 à 8 Kio, 13 à 25 ms à chaud (250 ms la toute première). Comptée à
+// part (`qualityReads`) : un défilement rapide n'en doit faire aucune.
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -43,6 +47,14 @@ export function createJellyfin({ catalog, mode, note, stats, imgDir }) {
     const withTotal = q.get("EnableTotalRecordCount") !== "false";
     const body = Buffer.from(JSON.stringify({ Items: page.map((e) => render(e, fields)), TotalRecordCount: withTotal ? pool.length : 0, StartIndex: start }));
     const kib = body.length / 1024;
+    const qualityRead = ids !== null && !parent && fields.has("MediaStreams") && page.length === 1;
+    if (qualityRead) {
+      const ms = 15 + 0.22 * kib + (withTotal ? 40 : 0) + Math.random() * 10;
+      stats.qualityReads += 1;
+      stats.itemsBytes += body.length;
+      note(`[qualité] ${page[0].base.Name} (${kib.toFixed(1)} Kio, ${ms.toFixed(0)} ms serveur)`);
+      return send(res, mode, 200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }, body, ms);
+    }
     const serverMs = 55 + 0.22 * kib + (withTotal ? 40 : 0) + (Math.random() - 0.5) * 20;
     stats.items += 1;
     stats.itemsBytes += body.length;

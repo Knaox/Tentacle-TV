@@ -85,7 +85,10 @@ export function render(entry, fields) {
   if (fields.has("PrimaryImageAspectRatio")) out.PrimaryImageAspectRatio = 2 / 3;
   if (fields.has("RecursiveItemCount") && entry.kind === "Series") out.RecursiveItemCount = 10;
   if (fields.has("MediaSources") && src.MediaSources) out.MediaSources = src.MediaSources.map((ms) => ({ ...ms, Id: entry.base.Id }));
-  if (fields.has("MediaStreams") && src.MediaStreams) out.MediaStreams = src.MediaStreams;
+  // Comme Jellyfin : les flux de la source par défaut (une fiche de l'instantané
+  // ne les porte souvent que dans ses sources).
+  const streams = src.MediaStreams ?? src.MediaSources?.[0]?.MediaStreams;
+  if (fields.has("MediaStreams") && streams) out.MediaStreams = streams;
   if (fields.has("SortName")) out.SortName = entry.sortName;
   if (fields.has("DateCreated")) out.DateCreated = entry.dateCreated;
   if (fields.has("ParentId")) out.ParentId = entry.libId;
