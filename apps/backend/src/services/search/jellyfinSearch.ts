@@ -21,7 +21,7 @@ import { jellyfinAuthHeaders } from "../jellyfinAuth";
 const TIMEOUT_MS = 8_000;
 
 const EPISODE_FIELDS = "PrimaryImageAspectRatio,SeriesPrimaryImageTag,ParentBackdropImageTags,RunTimeTicks";
-const ITEM_FIELDS = "PrimaryImageAspectRatio,Genres,OriginalTitle,ChildCount";
+const ITEM_FIELDS = "PrimaryImageAspectRatio,Genres,OriginalTitle,ChildCount,ProviderIds";
 
 async function searchTermQuery(
   userId: string,

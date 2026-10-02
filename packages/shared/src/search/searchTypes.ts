@@ -46,6 +46,13 @@ export interface SearchMediaItem {
   Genres?: string[];
   ImageTags?: Record<string, string>;
   BackdropImageTags?: string[];
+  /**
+   * L'identité du titre chez les fournisseurs — l'identifiant TMDB seul
+   * (`Tmdb`) depuis l'index du serveur. Ce qu'un client demande à une
+   * extension sur ce titre passe par lui (les saisons qui manquent à une
+   * série, `titles.gaps`). Absent d'un serveur plus ancien.
+   */
+  ProviderIds?: Record<string, string>;
   /** Épisodes : la série, son affiche, la position dans la saison. */
   SeriesName?: string;
   SeriesId?: string;

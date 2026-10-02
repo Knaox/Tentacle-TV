@@ -1,7 +1,7 @@
 /**
  * Du catalogue à l'écran : un titre du catalogue devient un `SearchMediaItem` RÉDUIT
  * — ce que les cartes de l'app lisent (affiche par son tag, année, note, fin de
- * diffusion, reprise, vu, favori) — et rien de plus. Une grille de résultats
+ * diffusion, reprise, vu, favori, identité TMDB) — et rien de plus. Une grille de résultats
  * se peint ainsi sans un seul aller-retour vers Jellyfin, et ses images sont
  * adressées par contenu (le tag), donc servies du cache.
  */
@@ -30,6 +30,8 @@ export function toMediaItem(item: CatalogItem, userData: SearchUserData | undefi
     Genres: item.genres.slice(0, GENRES_KEPT),
     ImageTags: item.imageTags,
     BackdropImageTags: item.backdropTag === null ? [] : [item.backdropTag],
+    // L'identité TMDB : ce qu'un client demande à une extension sur ce titre.
+    ...(item.tmdbId !== null ? { ProviderIds: { Tmdb: item.tmdbId } } : {}),
     ...(userData !== undefined ? { UserData: userData } : {}),
   };
 }
