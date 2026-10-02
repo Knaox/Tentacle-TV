@@ -33,9 +33,18 @@ import type { FastifyRequest } from "fastify";
 /** Affiches, backdrops, logos et vignettes de trickplay servis par le proxy. */
 const IMAGE_PATH = /^\/api\/jellyfin\/(Items\/[^/]+\/Images\/|items\/[^/]+\/trickplay\/)/i;
 
+/**
+ * Les flux relayés des bandes-annonces (Apple TV) : même nature — des octets
+ * relayés, déjà protégés par leur jeton. Une seule bande-annonce, c'est cent
+ * à deux cent cinquante listes et segments en une ou deux minutes (mesuré le
+ * 2026-10-02) : dans le seau de l'API, quelques lancements d'affilée le
+ * videraient, et tout le reste tomberait en 429 avec eux.
+ */
+const TRAILER_MEDIA_PATH = /^\/api\/trailers\/(hls|file)\//;
+
 export function isImage(url: string): boolean {
   const path = url.split("?")[0];
-  return IMAGE_PATH.test(path);
+  return IMAGE_PATH.test(path) || TRAILER_MEDIA_PATH.test(path);
 }
 
 /** Plafond d'API — celui que la variable d'environnement pilote. */
