@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DeviceEventEmitter, Image, StyleSheet, View } from "react-native";
+import { DeviceEventEmitter, Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
 import { MenuPressInterceptor } from "../../../src/components/focus/MenuPressInterceptor";
+import { BACKGROUND_FOCUS } from "../../../src/components/player/focus/osdFocusBus";
 import { useTVPlayerBack } from "../../../src/hooks/useTVPlayerBack";
 import { useTVPlayerControls } from "../../../src/hooks/useTVPlayerControls";
+import { useTvFocusClaim } from "../../../src/hooks/useTvFocusClaim";
 import { PlayerChromeView } from "../../../src/redesign/screens/player/PlayerChromeView";
 import type { ScrubModel } from "../../../src/redesign/screens/player/playerTypes";
 import { BackScope } from "../../../src/redesignWiring/back/BackScope";
 import { buildScrubCountdown, parseSpeedLabel } from "../../../src/redesignWiring/player/playerChromeModels";
 import type { PlayerRedesignStageProps } from "../../../src/redesignWiring/player/playerStageTypes";
 import { useOsdPin, usePlayerBackLayers } from "../../../src/redesignWiring/player/usePlayerBackLayers";
+import { usePlayerChromeActions, type PlayerActionSources } from "../../../src/redesignWiring/player/usePlayerChromeActions";
 import type { BenchData } from "../data/benchData";
 import { byName, durationOf, mediaOf, playerLabels, t, transportOf, videoFrameOf } from "../data/playerModels";
 import type { BenchScene } from "./types";
@@ -20,8 +23,12 @@ import type { BenchScene } from "./types";
  * l'habillage refondu par-dessus une image du film, et le vrai Retour
  * d'Apple TV : la portée (`BackScope`), les couches du lecteur
  * (`usePlayerBackLayers`, `useOsdPin`) et le routage du défilement
- * (`useTVPlayerBack`). Ce que la Siri Remote fera, éprouvé par des événements
- * injectés sur le chemin JS de la vraie télécommande (`onHWKeyEvent`).
+ * (`useTVPlayerBack`). Comme `PlayerRedesignStage` : le fond focalisable qui
+ * tient les flèches habillage caché (`BACKGROUND_FOCUS`), et les boutons de
+ * l'habillage câblés par les mêmes gestes (`usePlayerChromeActions`) — un
+ * appui réel (agent XCUITest) sur « +30 s » fait ce qu'il fait dans l'app.
+ * Ce que la Siri Remote fera, éprouvé aussi par des événements injectés sur
+ * le chemin JS de la vraie télécommande (`onHWKeyEvent`).
  *
  * Pilotage (CDP) : `__livePan(body)` et `__liveKey(eventType, keyAction)`
  * émettent ; `__liveMenu()` rend à la portée l'appui sur Menu que lui rendrait
@@ -32,7 +39,7 @@ import type { BenchScene } from "./types";
 interface LiveEntry { at: number; event: string; value?: number }
 interface LiveState {
   position: number; paused: boolean; scrubbing: boolean; target: number; overlay: boolean; osd: boolean;
-  countdown: unknown;
+  countdown: unknown; flash: unknown;
 }
 interface Fiber { elementType?: unknown; memoizedProps?: { onMenuPress?: () => void }; child?: Fiber | null; sibling?: Fiber | null }
 const live = globalThis as typeof globalThis & {
@@ -75,6 +82,13 @@ const NO_SURFACE: { readonly current: PlayerOverlay } = { current: { kind: "none
 const LIVE_ROUTE = { name: "Player" };
 const NO_STACK = { canGoBack: () => false, goBack: () => note("goBack") };
 const noop = () => {};
+/** Ce que les gestes de l'habillage appellent hors du transport : rien au banc. */
+const IDLE_SOURCES = {
+  overlay: { kind: "none" }, autoPlay: { navigateToNextEpisode: noop, cancelAutoPlay: noop },
+  onRetry: noop, onPrevEpisode: noop, onNextEpisode: noop, onToggleSettings: noop, onCloseSettings: noop,
+  onSkipSegment: noop, onDismissSegment: noop, onPlayNextNow: noop, onSelectAudio: noop, onSelectSubtitle: noop,
+  onSelectQuality: noop, onSelectSeason: noop, episodeById: () => undefined, onOpenSheet: noop,
+};
 
 function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boolean }) {
   const item = byName(data, "Interstellar");
@@ -84,6 +98,7 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
   const timeRef = useRef(Math.round(duration * 0.42));
   const [time, setTime] = useState(timeRef.current);
   const log = useCallback(note, []);
+  const togglePause = useCallback(() => setPaused((was) => { log(was ? "play" : "pause"); return !was; }), [log]);
   useEffect(() => { live.__liveLog = []; }, []);
   // L'horloge de la « vidéo » : un quart de seconde à la fois, en lecture.
   useEffect(() => {
@@ -98,7 +113,7 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
     paused, jellyfinDuration: duration, currentTimeRef: timeRef,
     onSeek: (seconds) => { timeRef.current = seconds; setTime(seconds); log("seek", seconds); },
     onBack: () => log("back"),
-    onPlayPause: () => setPaused((was) => { log(was ? "play" : "pause"); return !was; }),
+    onPlayPause: togglePause,
     onScrubPause: (pause) => { log(pause ? "scrub:pause" : "scrub:play"); setPaused(pause); },
   });
   // Le Retour du lecteur refondu, tel que `PlayerScreen` et `PlayerRedesignStage` le câblent.
@@ -113,9 +128,18 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
     showSettings: false, showEpisodes: false, onCloseSettings: noop, onCloseEpisodes: noop, onBack: () => log("quit"),
   } as unknown as PlayerRedesignStageProps;
   usePlayerBackLayers(stage, { shown: osdVisible && !controls.scrubbing, unpin: pin.unpin });
+  const actions = usePlayerChromeActions({
+    ...IDLE_SOURCES, controls, onBack: () => log("quit"), onPlayPause: togglePause,
+  } as unknown as PlayerActionSources);
+  // Le fond de `PlayerRedesignStage` : focalisable habillage caché, il tient
+  // alors les flèches (le saut n'appartient à la vidéo que là).
+  const backgroundRef = useRef<View>(null);
+  const backgroundFocusable = !osdVisible;
+  useTvFocusClaim(backgroundRef, backgroundFocusable);
   live.__live = () => ({
     position: timeRef.current, paused, scrubbing: controls.scrubbing, target: controls.scrubPosition,
     overlay: controls.overlayVisible, osd: osdVisible && !controls.scrubbing, countdown: controls.scrubCountdown,
+    flash: controls.skipFlash,
   });
   if (!item) return <View style={styles.stage} />;
   const scrub: ScrubModel | null = controls.scrubbing
@@ -127,7 +151,20 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
   return (
     <View style={styles.stage}>
       {frame ? <Image source={{ uri: frame }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
+      <TouchableOpacity
+        ref={backgroundRef}
+        {...BACKGROUND_FOCUS}
+        activeOpacity={1}
+        style={StyleSheet.absoluteFill}
+        onPress={controls.showOverlay}
+        hasTVPreferredFocus={backgroundFocusable}
+        focusable={backgroundFocusable}
+        accessible={backgroundFocusable}
+      >
+        <View style={styles.fill} />
+      </TouchableOpacity>
       <PlayerChromeView
+        {...actions}
         media={mediaOf(data, item)}
         labels={playerLabels()}
         phase={{ kind: "playing" }}
@@ -141,7 +178,7 @@ function LivePlayer({ data, startPaused }: { data: BenchData; startPaused: boole
   );
 }
 
-const styles = StyleSheet.create({ stage: { flex: 1, backgroundColor: "#000" } });
+const styles = StyleSheet.create({ stage: { flex: 1, backgroundColor: "#000" }, fill: { flex: 1 } });
 
 const scene = (id: string, label: string, startPaused: boolean): BenchScene => ({
   id: `lecteur-vivant/${id}`,
