@@ -46,6 +46,9 @@ export interface MediaItem {
 
   // Media
   MediaSources?: MediaSource[];
+  /** Les flux de la source par défaut, seuls — ce que `Fields=MediaStreams`
+   *  rend sans les sources (lecture légère de la qualité d'un titre). */
+  MediaStreams?: MediaStream[];
   UserData?: UserItemData;
   Chapters?: ChapterInfo[];
 

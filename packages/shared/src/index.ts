@@ -13,6 +13,8 @@ export * from "./utils/cardMarkerGlyphs";
 export * from "./utils/cardOverlay";
 export * from "./utils/externalCardOverlay";
 export * from "./utils/mediaQuality";
+// Les badges de qualité d'un titre (4K, Dolby Vision, Dolby Atmos) — Apple TV.
+export * from "./utils/qualityBadges";
 export * from "./utils/streamLanguages";
 export * from "./utils/mediaVersions";
 export * from "./utils/mediaFacts";
