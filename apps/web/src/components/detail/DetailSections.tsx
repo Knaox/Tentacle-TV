@@ -23,6 +23,8 @@ interface DetailSectionsProps {
   episodeListSeriesId?: string;
   highlightEpisodeId?: string;
   highlightSeasonId?: string;
+  /** La saison où ouvrir la liste d'une série (carte regroupée des « Derniers ajouts »). */
+  openSeasonId?: string;
 }
 
 /**
@@ -38,7 +40,7 @@ interface DetailSectionsProps {
  * Chaque section entre en fondu une seule fois, à son arrivée dans le champ.
  */
 export function DetailSections({
-  item, parentSeries, collectionItems, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId,
+  item, parentSeries, collectionItems, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId, openSeasonId,
 }: DetailSectionsProps) {
   const { t } = useTranslation("common");
   const isEpisode = item.Type === "Episode";
@@ -65,6 +67,7 @@ export function DetailSections({
             seriesId={episodeListSeriesId}
             currentEpisodeId={highlightEpisodeId}
             initialSeasonId={highlightSeasonId}
+            openSeasonId={openSeasonId}
             seriesItem={isSeries ? item : parentSeries}
             followResume={isSeries}
           />

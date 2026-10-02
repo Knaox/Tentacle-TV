@@ -20,6 +20,8 @@ interface Props {
   episodeListSeriesId?: string;
   highlightEpisodeId?: string;
   highlightSeasonId?: string;
+  /** La saison où ouvrir la liste d'une série (carte regroupée des « Derniers ajouts »). */
+  openSeasonId?: string;
 }
 
 /**
@@ -28,7 +30,7 @@ interface Props {
  * saga du film → titres similaires. Le même sous le visuel (portrait) que dans
  * la colonne droite qui défile (iPad paysage).
  */
-export const DetailBody = memo(function DetailBody({ item, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId }: Props) {
+export const DetailBody = memo(function DetailBody({ item, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId, openSeasonId }: Props) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   const isEpisode = item.Type === "Episode";
@@ -71,6 +73,7 @@ export const DetailBody = memo(function DetailBody({ item, parentSeries, similar
             seriesId={episodeListSeriesId}
             currentEpisodeId={highlightEpisodeId}
             initialSeasonId={highlightSeasonId}
+            openSeasonId={openSeasonId}
             followResume={item.Type === "Series"}
             onPlay={onPlay}
           />

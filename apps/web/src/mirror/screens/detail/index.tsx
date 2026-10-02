@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useMediaItem, useSeriesWatchState, useSimilarItems } from "@tentacle-tv/api-client";
-import { detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
+import { DETAIL_SEASON_PARAM, detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { DetailImageViewer } from "../../../components/detail/DetailImageViewer";
 import { CardSheetProvider } from "../../cards/CardSheetProvider";
 import { useViewport } from "../../useFormFactor";
@@ -48,6 +48,8 @@ function DetailScreen({ itemId }: { itemId: string }) {
   const { t } = useTranslation("media");
   const hostRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  // Une carte regroupée des « Derniers ajouts » ouvre la série sur une saison.
+  const [searchParams] = useSearchParams();
 
   const { data: item } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
@@ -73,6 +75,7 @@ function DetailScreen({ itemId }: { itemId: string }) {
   const seriesResumeEp = isSeries && seriesWatchState && seriesWatchState.type !== "completed" ? seriesWatchState.episode : undefined;
   const highlightEpisodeId = isEpisode ? item.Id : seriesResumeEp?.Id;
   const highlightSeasonId = isEpisode ? item.SeasonId : seriesResumeEp?.SeasonId;
+  const openSeasonId = isSeries ? searchParams.get(DETAIL_SEASON_PARAM) ?? undefined : undefined;
 
   const openImages = gallery.length > 0 ? () => setViewerIndex(0) : undefined;
   const openPoster = gallery.length > 0 ? () => setViewerIndex(galleryIndexOf(gallery, isEpisode ? "still" : "poster")) : undefined;
@@ -96,6 +99,7 @@ function DetailScreen({ itemId }: { itemId: string }) {
         episodeListSeriesId={episodeListSeriesId}
         highlightEpisodeId={highlightEpisodeId}
         highlightSeasonId={highlightSeasonId}
+        openSeasonId={openSeasonId}
       />
     </div>
   );

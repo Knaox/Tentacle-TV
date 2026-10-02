@@ -11,6 +11,8 @@ interface Props {
   onPlay: (episode: MediaItem) => void;
   currentEpisodeId?: string;
   initialSeasonId?: string;
+  /** Saison imposée à l'ouverture : celle du dernier ajout d'une carte regroupée. */
+  openSeasonId?: string;
   /** Fiche d'une SÉRIE : la liste s'ouvre sur la saison de l'épisode à reprendre. */
   followResume?: boolean;
 }
@@ -25,10 +27,10 @@ interface Props {
  * d'emblée, liste légère puis sources, voisines préchargées. La bande aussi
  * (`SeasonTabs`) : au doigt, les pastilles montent à 44 px.
  */
-export const EpisodeList = memo(function EpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId, followResume = false }: Props) {
+export const EpisodeList = memo(function EpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId, openSeasonId, followResume = false }: Props) {
   const browser = useSeasonBrowser({
     seriesId,
-    preferredSeasonId: initialSeasonId,
+    preferredSeasonId: openSeasonId ?? initialSeasonId,
     followResume,
     currentEpisodeSeasonId: currentEpisodeId ? initialSeasonId : undefined,
   });

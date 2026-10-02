@@ -33,6 +33,12 @@ interface EpisodeListProps {
   currentEpisodeId?: string;
   /** Saison à présélectionner (saison de l'épisode courant). */
   initialSeasonId?: string;
+  /**
+   * Saison imposée à l'ouverture, avant toute autre : celle du dernier ajout
+   * d'une carte regroupée des « Derniers ajouts ». Le marquage de l'épisode à
+   * reprendre n'en dépend pas.
+   */
+  openSeasonId?: string;
   /** La SÉRIE (fiche série, ou parent d'une fiche épisode) : son tmdb note les épisodes. */
   seriesItem?: MediaItem | null;
   /**
@@ -42,7 +48,7 @@ interface EpisodeListProps {
   followResume?: boolean;
 }
 
-export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, seriesItem, followResume = false }: EpisodeListProps) {
+export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, openSeasonId, seriesItem, followResume = false }: EpisodeListProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   const { t: tDownloads } = useTranslation("downloads");
@@ -55,7 +61,7 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
   // préchargements : la même mécanique sur toutes les plateformes.
   const browser = useSeasonBrowser({
     seriesId,
-    preferredSeasonId: initialSeasonId,
+    preferredSeasonId: openSeasonId ?? initialSeasonId,
     followResume,
     currentEpisodeSeasonId: currentEpisodeId ? initialSeasonId : undefined,
   });

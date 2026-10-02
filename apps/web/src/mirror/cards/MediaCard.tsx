@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { cardRatingFor, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
+import { cardRatingFor, latestAdditionsDetailQuery, latestAdditionsLine, resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import { CardMarkerLayer } from "../../components/cards/CardMarkerLayer";
 import { useSeriesRatingMap } from "../../components/cards/SeriesRatingContext";
 import { ProgressBar } from "../ui/ProgressBar";
@@ -43,6 +43,8 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
   const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
   const grouped = addedCount > 1;
+  // Ce qu'une carte regroupée des « Derniers ajouts » apporte de neuf (modèle partagé).
+  const additionsLine = latestAdditionsLine(t, item);
   const resolved = resolvePosterImage(item, "series");
   const poster =
     resolved && !broken
@@ -55,7 +57,7 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
 
   return (
     <Pressable
-      onPress={onPress ?? (() => navigate(`/media/${item.Id}`))}
+      onPress={onPress ?? (() => navigate(`/media/${item.Id}${latestAdditionsDetailQuery(item)}`))}
       onLongPress={onLongPress ?? (openSheet ? () => openSheet({ kind: "media", variant: "poster", item }) : undefined)}
       style={{ width: cardWidth }}
       aria-label={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}`}
@@ -110,8 +112,8 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
           : ""}
         {item.Name}
       </p>
-      {grouped && <p className="mt-0.5 text-[10px] font-medium text-content-tertiary">{t("addedEpisodes", { count: addedCount })}</p>}
-      {!grouped && !isEpisode && item.ProductionYear != null && (
+      {additionsLine && <p className="mt-0.5 truncate text-[10px] font-medium text-content-tertiary">{additionsLine}</p>}
+      {!additionsLine && !isEpisode && item.ProductionYear != null && (
         <p className="mt-0.5 text-[10px] font-medium text-content-tertiary">{item.ProductionYear}</p>
       )}
       {isEpisode && item.SeriesName != null && (

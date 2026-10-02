@@ -2,7 +2,7 @@ import { memo, useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { formatEpisodeCode } from "@tentacle-tv/shared";
+import { formatEpisodeCode, latestAdditionsDetailQuery, latestAdditionsLine } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PosterTile } from "./PosterTile";
 import { useCardContextMenu } from "./useCardContextMenu";
@@ -77,6 +77,9 @@ export const PosterCard = memo(function PosterCard({
 
   const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
+  // Une carte regroupée des « Derniers ajouts » dit ce qu'elle apporte de neuf
+  // (« 3 nouveaux épisodes », « Nouvelle saison ») — le modèle partagé l'écrit.
+  const additionsLine = latestAdditionsLine(t, item);
   const resolvedImage = resolvePosterImage(item, posterImageMode);
   // « » : la donnée prouve qu'il n'y a pas d'affiche — `CardImage` rend son
   // repli sans lancer une requête vouée au 404 (cf. `cardImage.ts` (shared)).
@@ -104,7 +107,8 @@ export const PosterCard = memo(function PosterCard({
       item.Id,
       imageUrl,
     );
-    navigate(`/media/${item.Id}`);
+    // Une carte regroupée ouvre la fiche sur la saison de son dernier ajout.
+    navigate(`/media/${item.Id}${latestAdditionsDetailQuery(item)}`);
   };
 
   return (
@@ -136,10 +140,8 @@ export const PosterCard = memo(function PosterCard({
         <h3 className="truncate text-sm font-semibold tracking-tight text-content-primary">
           {isEpisode ? (item.SeriesName ?? item.Name) : item.Name}
         </h3>
-        {addedCount > 1 ? (
-          <p className="mt-0.5 truncate text-xs card-caption">
-            {t("common:addedEpisodes", { count: addedCount })}
-          </p>
+        {additionsLine ? (
+          <p className="mt-0.5 truncate text-xs card-caption">{additionsLine}</p>
         ) : isEpisode ? (
           <p className="mt-0.5 truncate text-xs card-caption">
             {[epLabel, item.Name].filter(Boolean).join(" · ")}
