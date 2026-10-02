@@ -1480,7 +1480,32 @@ recréant les conditions de l'appareil au simulateur, corrigés à la source.
 | Une relance par le serveur (PlaySessionId neuf) laissait tourner l'encodage de la session remplacée une minute : une session fantôme chez Jellyfin. | Arrêté (`DELETE /Videos/ActiveEncodings`) 3 s après l'émission de la nouvelle URL — mesuré sur Ted 2 : « ffmpeg tué », lecture reprise. |
 | react-native-video ne posait la position de départ qu'à `readyToPlay` : AVPlayer chargeait depuis 0:00, et l'encodeur du serveur démarrait deux fois à chaque ouverture à une position (reprise, réouverture, qualité). | Patch natif (`patches/react-native-video@6.19.0.patch`) : la position est cherchée sur l'élément AVANT de le confier au lecteur. Banc du transcodage lent, reprise à 5:00 : avant, segments 0 puis 50 (premier segment utile à +4,7 s) ; après, 50 d'emblée (+2,25 s). |
 
-<!-- MATRICE -->
+**La matrice de preuves** — tête rebasée sur `refonte/tv-ui` (58408a131),
+build Debug de la branche, simulateur à soi, compte Knaoxtest. Chaque cas :
+45 s de lecture, Accueil, l'app GELÉE (`kill -STOP`) pendant l'absence comme
+tvOS la suspend — au-delà de 5 min, le bouclage PrismCore repris
+(`PrismBridge.stop`) comme tvOS reprend son socket —, dégel, puis glisser et
+OK dans la PREMIÈRE seconde du retour. « Reprise après OK » : médiane des
+relevés à la seconde (± 1 s). Lectures : `/Sessions` lu 20 s après, filtré
+sur le DeviceId de l'appareil.
+
+| Chemin | Absence | Quitté à | Au retour | Flux au retour | Glisser + OK dès le retour | Reprise après OK | Lectures Jellyfin de l'appareil |
+|---|---|---|---|---|---|---|---|
+| PrismCore (remux local) | 30 s | 18:36 | en pause, 18:37 | vivant | cible 19:05 honorée | < 1 s | 1 (DirectPlay) |
+| Lecture directe | 30 s | 8:54 | en pause, 8:56 | sans objet | cible 9:25 honorée | < 1 s | 1 (DirectPlay) |
+| Transcodage HLS | 30 s | 15:41 | en pause, 15:42 | sans objet | cible 16:10 honorée | < 1 s | 1 (Transcode) |
+| PrismCore (remux local) | 6 min | 20:19 | en pause, 20:20 | MORT → relancé, à la cible 20:40 | cible 20:40 honorée | ≈ 2 s | 1 (DirectPlay) |
+| Lecture directe | 6 min | 10:38 | en pause, 10:39 | sans objet | cible 11:07 honorée | < 1 s | 1 (DirectPlay) |
+| Transcodage HLS | 6 min | 17:24 | en pause, 17:25 | sans objet | cible 17:54 honorée | ≈ 1 s | 1 (Transcode) |
+| PrismCore (remux local) | 20 min | 21:54 | en pause, 21:55 | MORT → relancé, à la cible 22:23 | cible 22:23 honorée | ≈ 2 s | 1 (DirectPlay) |
+| Lecture directe | 20 min | 12:21 | en pause, 12:22 | sans objet | cible 12:36 honorée | < 1 s | 1 (DirectPlay) |
+| Transcodage HLS | 20 min | 19:06 | en pause, 19:07 | sans objet | cible 19:36 honorée | ≈ 2 s | 1 (Transcode) |
+
+PrismCore lit sa source en lecture directe chez Jellyfin (« DirectPlay »).
+En transcodage, la même PlaySessionId du départ au retour, même après
+20 min : ni session neuve, ni fantôme. Le chemin froid (app tuée par tvOS
+pendant l'absence) est plus haut, « La cause du blocage » : la fiche,
+« Reprendre » à la position, recherche honorée.
 
 **Le temps restant** (`formatRemaining`, `redesign/screens/player/formatClock.ts`) :
 à droite de la frise, « −12:34 », « −1:02:15 », au signe moins typographique,
@@ -1500,10 +1525,13 @@ une tête de lecture FINE, comme le lecteur d'Apple : un trait blanc de
 point qui suit. En défilement et pendant le décompte, la cible est le même
 trait, plus haut (40 points), au rose de la marque. Les avances ne changent
 pas : sur un film de 2 h, 1 min 30 de lecture directe font 19 points, 30 s
-de transcodage 6, 10 s de PrismCore 2 (5 sur un épisode de 45 min).
-Planches : `apps/tv/harness/ui-bench/out/planche-tete-lecture.png` (vues
-pleines) et `planche-tete-lecture-frise.png` (frise agrandie), scènes du
-banc `lecteur/tete-*`.
+de transcodage 6, 10 s de PrismCore 2. Mesuré dans l'app (tête rebasée,
+simulateur) : 69 s chargées en lecture directe (Lucifer S1 E3), 16 s en
+PrismCore (S2 E3, au-delà du plafond indicatif de 10 s), 32 s en transcodage
+(Ted 2) — toutes visibles à droite du trait. Planches :
+`apps/tv/harness/ui-bench/out/planche-tete-lecture.png` (vues pleines,
+avant/après), `planche-tete-lecture-frise.png` (frise agrandie) — scènes du
+banc `lecteur/tete-*` — et `frises-reelles-tete-lecture.png` (l'app).
 
 Bancs (rejouables, outils dans le bloc-notes de la session) :
 - **Suspension** : `kill -STOP` / `-CONT` du processus de l'app (gelée comme
