@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   parseTitleKey,
   readTitleRequestOutcome,
+  titleRequestBody,
   titleRequestUrl,
   type TitleKey,
   type TitleProvider,
+  type TitleRequestOrigin,
   type TitleRequestOutcome,
   type TitleState,
 } from "@tentacle-tv/shared";
@@ -44,9 +46,10 @@ export function useTitleState(
 /**
  * Le geste « demander » : le plugin le fait sur place (un film), ou désigne sa
  * page pour un choix (les saisons d'une série) — à l'appelant de naviguer.
- * L'état qu'il rend remplace aussitôt celui de la carte.
+ * L'état qu'il rend remplace aussitôt celui de la carte. `origin` : d'où part
+ * la demande, quand le client le dit (un téléviseur, `pluginTitleOrigin`).
  */
-export function useRequestTitle(provider: TitleProvider | null, lang: string) {
+export function useRequestTitle(provider: TitleProvider | null, lang: string, origin?: TitleRequestOrigin | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (key: TitleKey): Promise<TitleRequestOutcome> => {
@@ -54,7 +57,7 @@ export function useRequestTitle(provider: TitleProvider | null, lang: string) {
       const parsed = parseTitleKey(key);
       if (!url || !parsed) throw new Error("Aucune extension ne sait demander ce titre");
       const outcome = readTitleRequestOutcome(
-        await tentacleApiFetch(url, { method: "POST", body: JSON.stringify({ ...parsed, lang }) }),
+        await tentacleApiFetch(url, { method: "POST", body: titleRequestBody({ ...parsed, lang }, origin) }),
       );
       if (!outcome) throw new Error("Réponse illisible de l'extension");
       return outcome;

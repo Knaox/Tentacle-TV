@@ -13,7 +13,7 @@ export { loadTitleState, type TitleFetcher } from "../titles/titleStateBatcher";
 // Ce que le compte attend (routes `access` et `mine` du même contrat) : son
 // droit, et ses titres demandés pas encore arrivés.
 export {
-  useTitlesAccess, useMyTitles, titlesAccessQueryKey, myTitlesQueryKey, MY_TITLES_KEY,
+  useTitlesAccess, useMyTitles, titlesAccessQueryKey, myTitlesQueryKey, myTitlesKeyOrigin, MY_TITLES_KEY,
   type MyTitlesOptions, type MyTitlesFeed,
 } from "../titles/useMyTitles";
 export { useIsWatchlistPending, useWatchlistByTmdb, WATCHLIST_PENDING_KEY } from "../hooks/useWatchlistPending";

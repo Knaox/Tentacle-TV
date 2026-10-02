@@ -3,10 +3,12 @@ import {
   parseTitleKey,
   readTitleRequestOutcome,
   readTitleSeasons,
+  titleRequestBody,
   titleRequestUrl,
   titleSeasonsUrl,
   type TitleKey,
   type TitleProvider,
+  type TitleRequestOrigin,
   type TitleRequestOutcome,
   type TitleSeasonsAnswer,
 } from "@tentacle-tv/shared";
@@ -54,10 +56,11 @@ export function useTitleSeasons(
 
 /**
  * Demander des saisons cochées : la même route que tout geste « demander »,
- * avec `seasons`. L'état que rend l'extension remplace celui de la carte ; les
- * saisons de la série se relisent, et ce qui lui manque (`useTitleGaps`).
+ * avec `seasons` (et `origin`, quand le client dit d'où part la demande). L'état
+ * que rend l'extension remplace celui de la carte ; les saisons de la série se
+ * relisent, et ce qui lui manque (`useTitleGaps`).
  */
-export function useRequestTitleSeasons(provider: TitleProvider | null, lang: string) {
+export function useRequestTitleSeasons(provider: TitleProvider | null, lang: string, origin?: TitleRequestOrigin | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ key, seasons }: { key: TitleKey; seasons: number[] }): Promise<TitleRequestOutcome> => {
@@ -65,7 +68,7 @@ export function useRequestTitleSeasons(provider: TitleProvider | null, lang: str
       const parsed = parseTitleKey(key);
       if (!url || parsed?.mediaType !== "tv" || seasons.length === 0) throw new Error("Aucune saison à demander");
       const outcome = readTitleRequestOutcome(
-        await tentacleApiFetch(url, { method: "POST", body: JSON.stringify({ ...parsed, lang, seasons }) }),
+        await tentacleApiFetch(url, { method: "POST", body: titleRequestBody({ ...parsed, lang, seasons }, origin) }),
       );
       if (!outcome) throw new Error("Réponse illisible de l'extension");
       return outcome;
