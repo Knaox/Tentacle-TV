@@ -39,6 +39,7 @@ import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
 import { TVNavChrome, deriveRailKey } from "./components/nav/TVNavChrome";
 import { TVNavProvider } from "./context/TVNavContext";
+import { QualityBadgeHost } from "./redesignWiring/cards/QualityBadgeHost";
 import { ThemeProvider, useTheme } from "./theme";
 
 // Instance unique, définie dans son module pour que le magasin d'épinglage du
@@ -192,21 +193,24 @@ function AppContent() {
       <TVSessionChannel storage={storage} />
       <TVPlaybackOutbox storage={storage} />
       <TVColdStartLanding storage={storage} />
-      <TVNavProvider>
-          <NavigationContainer
-            ref={navigationRef}
-            theme={navTheme}
-            onReady={syncRailKey}
-            onStateChange={syncRailKey}
-          >
-            <AppNavigator />
-            {/* Rail persistant monté une seule fois (overlay sibling du Navigator) */}
-            <TVNavChrome railKey={railKey} />
-            <OfflineBanner visible={!isReachable && !playbackShown} onRetry={retry} />
-            <PairingExpiredBanner />
-            <TVSessionMessageHost />
-          </NavigationContainer>
-      </TVNavProvider>
+      {/* La qualité des titres, lue au focus des cartes de la refonte : une source pour toute l'app. */}
+      <QualityBadgeHost>
+        <TVNavProvider>
+            <NavigationContainer
+              ref={navigationRef}
+              theme={navTheme}
+              onReady={syncRailKey}
+              onStateChange={syncRailKey}
+            >
+              <AppNavigator />
+              {/* Rail persistant monté une seule fois (overlay sibling du Navigator) */}
+              <TVNavChrome railKey={railKey} />
+              <OfflineBanner visible={!isReachable && !playbackShown} onRetry={retry} />
+              <PairingExpiredBanner />
+              <TVSessionMessageHost />
+            </NavigationContainer>
+        </TVNavProvider>
+      </QualityBadgeHost>
     </>
   );
 }
