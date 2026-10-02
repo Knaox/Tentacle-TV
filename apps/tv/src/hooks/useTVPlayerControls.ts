@@ -93,7 +93,7 @@ export function useTVPlayerControls({
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
 
-  const showOverlay = useCallback(() => {
+  const revealOverlay = useCallback(() => {
     lastShowOverlayRef.current = Date.now();
     setOverlayVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -131,10 +131,17 @@ export function useTVPlayerControls({
 
   // --- Moteur de scrub (partagé) ---
   const scrub = useScrubController({
-    showOverlay, hideOverlay, currentTimeRef, durationRef, pausedRef, onSeekRef, onScrubPauseRef, onJumpedRef: jumpedRef,
-    overlayVisibleRef, panelOpenRef, skipAnyPressRef,
+    showOverlay: revealOverlay, hideOverlay, currentTimeRef, durationRef, pausedRef, onSeekRef, onScrubPauseRef,
+    onJumpedRef: jumpedRef, overlayVisibleRef, panelOpenRef, skipAnyPressRef,
   });
   const { scrubbingRef } = scrub;
+
+  /** L'habillage, rallumé — sauf pendant le défilement : sa vue y est seule.
+   *  Un bouton de saut rallume l'habillage APRÈS avoir ouvert le défilement
+   *  (les deux écrans) ; sa fin le rallumera (`onExit`). */
+  const showOverlay = useCallback(() => {
+    if (!scrubbingRef.current) revealOverlay();
+  }, [revealOverlay, scrubbingRef]);
 
   // Ré-affiche l'OSD aux transitions play/pause — SAUF celle provoquée par le
   // scrub lui-même (startScrubbing met en pause juste après avoir masqué l'OSD).
