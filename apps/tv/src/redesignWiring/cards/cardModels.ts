@@ -15,12 +15,14 @@ import {
 import { cardRatingFor, missingSeriesRatingIds, resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { landscapeOf, paletteOfItem, posterUriOf, progressOf } from "./cardArtwork";
+import { cardQualityOf } from "./cardQuality";
 import { sameCard } from "./sameCard";
 
 /**
  * MediaItem → `CardModel` : ce que les cartes de la refonte reçoivent, déjà
  * résolu — marqueurs par le modèle partagé (`resolveCardMarkers`), images en
- * adresses prêtes, progression, lumière de l'œuvre.
+ * adresses prêtes, progression, lumière de l'œuvre, qualité (ses badges, ou
+ * le titre à lire au focus — `cardQualityOf`).
  *
  * Les marqueurs se résolvent au niveau de la LISTE, pas de la carte : la vue
  * rend ses cartes elle-même, l'intégration ne peut pas y glisser un hook par
@@ -106,6 +108,7 @@ export function useCardModelFactory(): CardModelFactory {
         progress: progressOf(item),
         badge: options.badge?.(item),
         palette: paletteOfItem(item),
+        quality: cardQualityOf(item),
       };
     },
     [client, context],

@@ -1,5 +1,6 @@
 import type { CardMarkers } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
+import { sameQuality } from "./cardQuality";
 
 /**
  * Deux modèles de carte disent-ils la même chose ? Sert à garder l'objet
@@ -30,6 +31,7 @@ export function sameCard(a: CardModel, b: CardModel): boolean {
     a.badge === b.badge &&
     a.focusNote === b.focusNote &&
     a.palette === b.palette &&
+    sameQuality(a.quality, b.quality) &&
     sameMarkers(a.markers, b.markers)
   );
 }

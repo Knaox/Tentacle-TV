@@ -3,6 +3,7 @@ import { useJellyfinClient, useSeasonBrowser } from "@tentacle-tv/api-client";
 import { formatDuration, type MediaItem, type NextEpisodeResult } from "@tentacle-tv/shared";
 import type { EpisodeBadge, EpisodeModel, EpisodesModel } from "../../redesign/screens/detail/detailTypes";
 import { paletteOfItem } from "../cards/cardModels";
+import { cardQualityOf } from "../cards/cardQuality";
 import { episodeStillUri } from "./detailImages";
 import { plainText, progressOf } from "./detailModels";
 
@@ -12,8 +13,9 @@ import { plainText, progressOf } from "./detailModels";
  * - fiche d'une SÉRIE : la saison de l'épisode à reprendre, ATTENDUE (pas de
  *   saison provisoire : une liste qui changerait sous le focus le perdrait) ;
  * - fiche d'un ÉPISODE : sa saison, lui-même « Épisode actuel ».
- * Sans les sources : la vignette refondue n'a pas de pastilles de qualité, et
- * une longue saison pèse dix fois plus avec (cf. `useSeasonEpisodeList`).
+ * Sans les sources : une longue saison pèse dix fois plus avec (cf.
+ * `useSeasonEpisodeList`) — la qualité d'un épisode se lit au focus de sa
+ * vignette (`cardQualityOf`, un titre à la fois).
  *
  * Le badge suit le banc : l'épisode ouvert est « actuel » ; sur une série,
  * celui de l'état de visionnage est « Reprendre » s'il est entamé, sinon « À
@@ -67,6 +69,7 @@ export function useDetailEpisodes(item: MediaItem | undefined, watch: NextEpisod
       watched: episode.UserData?.Played === true,
       badge: badgeOf(episode),
       palette: paletteOfItem(episode),
+      quality: cardQualityOf(episode),
     }));
   }, [episodes, client, highlightId, isEpisode]);
 
