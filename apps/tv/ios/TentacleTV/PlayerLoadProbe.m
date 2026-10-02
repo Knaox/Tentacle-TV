@@ -1,6 +1,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <React/RCTBridgeModule.h>
 #import <UIKit/UIKit.h>
+#import <objc/runtime.h>
 
 /**
  * Ce qu'AVPlayer a CHARGÉ — la seule façon, pour le JS, de voir des données
@@ -13,8 +14,11 @@
  * La reprise du lecteur (`usePlaybackRecovery`, `useStartupWait`) y lit un
  * signe de vie d'un transcodage lent : les octets reçus, la mémoire chargée
  * qui avance. Lecture seule, sur le fil principal ; `nil` sans lecteur monté.
- * La couche est celle de react-native-video (`AVPlayerLayer`, sous-couche de
- * sa vue) : on la cherche dans les fenêtres, le lecteur n'en monte qu'une.
+ *
+ * Le lecteur est celui de la vue de react-native-video (`RCTVideo`, son champ
+ * `_player`) : sa couche (`AVPlayerLayer`) n'est posée qu'une fois l'élément
+ * prêt — mesuré, rien à lire pendant toute l'ouverture. La couche reste le
+ * repli si le champ change de nom ; sans l'un ni l'autre, `nil`.
  */
 @interface TentaclePlayerProbe : NSObject <RCTBridgeModule>
 @end
@@ -47,13 +51,31 @@ static AVPlayerLayer *TentacleFindPlayerLayer(CALayer *layer, NSUInteger depth)
   return nil;
 }
 
-static AVPlayerLayer *TentacleCurrentPlayerLayer(void)
+/** Le lecteur d'une vue `RCTVideo` (Swift : `var _player: AVPlayer?`), lu par le runtime. */
+static AVPlayer *TentacleFindVideoPlayer(UIView *view, NSUInteger depth)
+{
+  if (view == nil || depth > 64) return nil;
+  if ([NSStringFromClass(object_getClass(view)) containsString:@"RCTVideo"]) {
+    Ivar ivar = class_getInstanceVariable(object_getClass(view), "_player");
+    id value = ivar != NULL ? object_getIvar(view, ivar) : nil;
+    if ([value isKindOfClass:[AVPlayer class]] && ((AVPlayer *)value).currentItem != nil) return (AVPlayer *)value;
+  }
+  for (UIView *subview in view.subviews) {
+    AVPlayer *found = TentacleFindVideoPlayer(subview, depth + 1);
+    if (found != nil) return found;
+  }
+  return nil;
+}
+
+static AVPlayer *TentacleCurrentPlayer(void)
 {
   for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
     if (![scene isKindOfClass:[UIWindowScene class]]) continue;
     for (UIWindow *window in ((UIWindowScene *)scene).windows) {
-      AVPlayerLayer *found = TentacleFindPlayerLayer(window.layer, 0);
-      if (found != nil) return found;
+      AVPlayer *player = TentacleFindVideoPlayer(window, 0);
+      if (player != nil) return player;
+      AVPlayerLayer *layer = TentacleFindPlayerLayer(window.layer, 0);
+      if (layer != nil) return layer.player;
     }
   }
   return nil;
@@ -61,8 +83,8 @@ static AVPlayerLayer *TentacleCurrentPlayerLayer(void)
 
 RCT_EXPORT_METHOD(loadState:(RCTPromiseResolveBlock)resolve rejecter:(__unused RCTPromiseRejectBlock)reject)
 {
-  AVPlayerLayer *playerLayer = TentacleCurrentPlayerLayer();
-  AVPlayerItem *item = playerLayer.player.currentItem;
+  AVPlayer *player = TentacleCurrentPlayer();
+  AVPlayerItem *item = player.currentItem;
   if (item == nil) {
     resolve([NSNull null]);
     return;
@@ -81,11 +103,19 @@ RCT_EXPORT_METHOD(loadState:(RCTPromiseResolveBlock)resolve rejecter:(__unused R
     if (event.numberOfBytesTransferred > 0) bytes += event.numberOfBytesTransferred;
     if (event.numberOfMediaRequests > 0) requests += event.numberOfMediaRequests;
   }
+  // De quoi lire un incident dans les journaux : où en est AVPlayer, et pourquoi il attend.
+  NSString *waiting = player.reasonForWaitingToPlay ?: @"";
   resolve(@{
     @"loadedEnd" : @(loadedEnd),
     @"bytes" : @(bytes),
     @"requests" : @(requests),
     @"ready" : @(item.status == AVPlayerItemStatusReadyToPlay),
+    @"failed" : @(item.status == AVPlayerItemStatusFailed),
+    @"rate" : @(player.rate),
+    @"control" : @(player.timeControlStatus),
+    @"waiting" : waiting,
+    @"keepUp" : @(item.isPlaybackLikelyToKeepUp),
+    @"full" : @(item.isPlaybackBufferFull),
   });
 }
 

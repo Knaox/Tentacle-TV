@@ -14,6 +14,14 @@ export interface PlayerLoad {
   bytes: number;
   requests: number;
   ready: boolean;
+  /** Diagnostic : élément en échec, vitesse, état de lecture (0 pause, 1 attente,
+   *  2 lecture), raison de l'attente, tampon « suffisant » et plein. */
+  failed?: boolean;
+  rate?: number;
+  control?: number;
+  waiting?: string;
+  keepUp?: boolean;
+  full?: boolean;
 }
 
 const probe = NativeModules.TentaclePlayerProbe as { loadState?: () => Promise<PlayerLoad | null> } | undefined;
