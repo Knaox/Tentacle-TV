@@ -1,21 +1,24 @@
 import { memo, useCallback } from "react";
-import { PixelRatio, StyleSheet, View } from "react-native";
+import { Image, PixelRatio, StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import Svg, { Defs, FeColorMatrix, Filter, Image as SvgImage } from "react-native-svg";
 import { motionTo } from "../motion/motion";
+import { NativeDesaturate } from "./nativeDesaturate";
 
 /**
  * Une image en niveaux de gris — l'affiche d'un titre absent de la
- * bibliothèque. L'ancienne architecture de React Native n'a ni `filter` ni
- * `mixBlendMode` (sans effet hors du nouveau moteur de rendu) : le gris passe
- * par un filtre SVG (`FeColorMatrix` saturation 0, Core Image), comme le halo
- * du héros historique.
+ * bibliothèque.
  *
- * Ce qui se dessine sur le processeur se paie au montage, sur le fil
- * principal, quatre fois plus sur une Apple TV 4K (échelle 2) : l'image est
- * dessinée à UN pixel par point, puis agrandie par le GPU (`k`). Grisée et
- * assombrie, l'affiche n'a pas besoin de plus de finesse ; le simulateur 1080p
- * (échelle 1) la dessine à sa taille.
+ * Sur Apple TV, l'image est une `Image` ordinaire (décodée hors du fil
+ * principal), sous la vue native de désaturation (`NativeDesaturate`) : un
+ * gris composé en « saturation » par le GPU, gratuit au montage comme au
+ * focus. Mesuré au banc : le même gris par un filtre SVG retenait le fil
+ * principal 50 à 75 ms par affiche à l'arrivée d'une fiche.
+ *
+ * Repli — un binaire sans la vue native (Android TV, build d'avant) : le
+ * filtre SVG (`FeColorMatrix` saturation 0, Core Image), dessiné à UN pixel
+ * par point puis agrandi par le GPU. L'ancienne architecture n'a ni `filter`
+ * ni `mixBlendMode`.
  *
  * Elle paraît en fondu à son arrivée, sur `imageIn` — rien ne clignote.
  */
@@ -37,6 +40,14 @@ export const GreyscaleImage = memo(function GreyscaleImage({
   const onLoad = useCallback(() => {
     shown.value = motionTo(1, "imageIn");
   }, [shown]);
+  if (NativeDesaturate) {
+    return (
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, appear]}>
+        <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} onLoad={onLoad} />
+        <NativeDesaturate pointerEvents="none" style={StyleSheet.absoluteFill} />
+      </Animated.View>
+    );
+  }
   const w = width / K;
   const h = height / K;
   return (

@@ -33,6 +33,7 @@
 		AB12CD34EF5601234567A103 /* TentacleFocusNeighbors.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A104 /* TentacleFocusNeighbors.m */; };
 		AB12CD34EF5601234567A105 /* TentacleRevealScroller.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */; };
 		AB12CD34EF5601234567A108 /* TentacleNeighborGuides.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A109 /* TentacleNeighborGuides.m */; };
+		AB12CD34EF5601234567DE01 /* TentacleDesaturateView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567DE02 /* TentacleDesaturateView.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -82,6 +83,7 @@
 		AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleRevealScroller.m; path = TentacleTV/TentacleRevealScroller.m; sourceTree = "<group>"; };
 		AB12CD34EF5601234567A109 /* TentacleNeighborGuides.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleNeighborGuides.m; path = TentacleTV/TentacleNeighborGuides.m; sourceTree = "<group>"; };
 		AB12CD34EF5601234567A107 /* TentacleFocusSection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TentacleFocusSection.h; path = TentacleTV/TentacleFocusSection.h; sourceTree = "<group>"; };
+		AB12CD34EF5601234567DE02 /* TentacleDesaturateView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleDesaturateView.m; path = TentacleTV/TentacleDesaturateView.m; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -142,6 +144,7 @@
 				AB12CD34EF5601234567FF02 /* TentacleGlassView.m */,
 				AB12CD34EF5601234567CC0C /* TentacleTV-Bridging-Header.h */,
 				AB12CD34EF5601234567EE02 /* TVMenuPressInterceptor.m */,
+				AB12CD34EF5601234567DE02 /* TentacleDesaturateView.m */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
@@ -480,6 +483,7 @@
 				AB12CD34EF5601234567CC07 /* PrismSessionConfig.swift in Sources */,
 				AB12CD34EF5601234567CC09 /* PrismErrorCode.swift in Sources */,
 				AB12CD34EF5601234567EE01 /* TVMenuPressInterceptor.m in Sources */,
+				AB12CD34EF5601234567DE01 /* TentacleDesaturateView.m in Sources */,
 				AB12CD34EF5601234567FF01 /* TentacleGlassView.m in Sources */,
 				AB12CD34EF5601234567A101 /* TentacleFocusSection.m in Sources */,
 				AB12CD34EF5601234567A103 /* TentacleFocusNeighbors.m in Sources */,

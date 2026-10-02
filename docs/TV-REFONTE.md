@@ -480,10 +480,14 @@ seulement quand le serveur déclare Vigie installé ET activé, et rien d'autre
   affiche TMDB en niveaux de gris sous un voile qui s'allège au focus, et un
   badge au pied de l'image, là où les autres cartes portent leur note — « Pas
   dans la bibliothèque », ou l'état de sa demande. Sans affiche (serveur
-  d'avant `posterPath`) : un cadre qui écrit titre et année. Le gris passe
-  par un filtre SVG (`GreyscaleImage`, `FeColorMatrix` saturation 0) :
-  l'ancienne architecture n'a ni `filter` ni `mixBlendMode` ; dessiné à un
-  pixel par point, puis agrandi par le GPU.
+  d'avant `posterPath`) : un cadre qui écrit titre et année. Le gris est
+  NATIF (`GreyscaleImage` → `TentacleDesaturateView.m`) : une vue grise
+  composée en `saturationBlendMode` par-dessus une `Image` ordinaire, sur le
+  GPU — l'ancienne architecture n'a ni `filter` ni `mixBlendMode`. Repli,
+  pour un binaire sans la vue : un filtre SVG (`FeColorMatrix` saturation 0),
+  qui retenait le fil principal 50 à 75 ms PAR affiche (175 à 300 ms à
+  l'arrivée d'une saga de quatre volets, mesuré au banc en JS de prod ; 34 ms
+  au pire avec la vue native). Fichier natif : l'app doit être reconstruite.
 - **La saga d'un film** : chaque volet montre sa miniature, même absent
   (`SagaPart.posterPath`, `/api/sagas` → TMDB `poster_path`), dans l'ordre de
   la saga. Sans Vigie, OK sur un volet absent dit « Ce titre n'est pas
