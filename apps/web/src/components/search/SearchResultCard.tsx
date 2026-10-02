@@ -15,6 +15,7 @@
 
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Plus } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { resolvePosterImage, type MediaItem } from "@tentacle-tv/shared";
 import { MediaContextMenu } from "../MediaContextMenu";
@@ -23,6 +24,7 @@ import { prefetchDetailRoute } from "../cards/prefetchDetail";
 import { useCardContextMenu } from "../cards/useCardContextMenu";
 import { useCardHover } from "../cards/useCardHover";
 import { captureDetailOrigin } from "../detail/detailTransition";
+import { useSeriesGapOffer } from "../seasons/SeriesGapsScope";
 
 export function SearchResultCard({
   item,
@@ -40,6 +42,9 @@ export function SearchResultCard({
   // (cf. `useCardHover`) — c'est ce qui rend le plateau accessible sans souris.
   const hover = useCardHover(rootRef);
   const ctx = useCardContextMenu();
+  // Une série incomplète (recherche seulement) le dit sous son affiche, au
+  // repos : le plateau du survol n'est pas le seul chemin vers « Demander ».
+  const gap = useSeriesGapOffer(item.Id);
   const image = resolvePosterImage(item, "auto");
   const imageUrl = image
     ? client.getImageUrl(image.id, image.type, { height: 450, quality: 90, ...(image.tag ? { tag: image.tag } : {}) })
@@ -97,6 +102,12 @@ export function SearchResultCard({
           {type}
           {item.ProductionYear ? ` · ${item.ProductionYear}` : ""}
         </p>
+        {gap && (
+          <p className="mt-0.5 flex items-center gap-1 px-0.5 text-xs font-medium text-[var(--brand-light)]">
+            <Plus className="h-3 w-3 shrink-0" strokeWidth={2.6} aria-hidden />
+            <span className="truncate">{t("requests:missingSeasons", { count: gap.count })}</span>
+          </p>
+        )}
       </div>
 
       {ctx.ctxMenu && (

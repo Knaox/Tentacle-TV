@@ -17,6 +17,7 @@ import { SearchPageHeader } from "../components/search/page/SearchPageHeader";
 import { SearchResultsView } from "../components/search/page/SearchResultsView";
 import { readSearchParams, searchHref, type SearchTab } from "../components/search/page/searchParams";
 import { useExternalSearch } from "../components/search/external/useExternalSearch";
+import { SeriesGapsScope } from "../components/seasons/SeriesGapsScope";
 
 export function Search() {
   const [params] = useSearchParams();
@@ -35,6 +36,11 @@ export function Search() {
     () => parseSearchQuery(search.data?.correction ?? state.query).terms,
     [search.data?.correction, state.query],
   );
+  // Les séries trouvées : celles qui sont incomplètes offrent leurs saisons à demander.
+  const series = useMemo(() => {
+    const top = search.data?.top;
+    return [...(top?.kind === "item" ? [top.hit.item] : []), ...(search.data?.series ?? []).map((hit) => hit.item)];
+  }, [search.data]);
 
   const setQuery = useCallback((query: string) => {
     navigate(searchHref(query, state.tab), { replace: true });
@@ -70,6 +76,7 @@ export function Search() {
             <SearchPageHeader query={state.query} tab={state.tab} counts={counts} onQuery={setQuery} onTab={setTab} />
             {!searching && <SearchPageEmpty onQuery={setQuery} onGenre={(name) => openFacet("genre", name)} />}
             {searching && search.data && (
+              <SeriesGapsScope items={series}>
               <SearchResultsView
                 response={search.data}
                 episodes={episodes.data?.episodes ?? []}
@@ -83,6 +90,7 @@ export function Search() {
                 onOpenFacet={openFacet}
                 onRetry={setQuery}
               />
+              </SeriesGapsScope>
             )}
           </>
         )}

@@ -9,6 +9,7 @@
 
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { Plus } from "lucide-react";
 import {
   formatEpisodeCode,
   itemMeta,
@@ -210,6 +211,33 @@ export const ExternalRow = memo(function ExternalRow({ item, terms, ...row }: Ro
         {item.subtitle !== null && <p className="mt-0.5 truncate text-xs text-content-tertiary">{item.subtitle}</p>}
       </div>
       <ExternalBadge badge={item.badge} />
+    </RowShell>
+  );
+});
+
+/**
+ * Une série de la bibliothèque à qui il manque des saisons : son affiche, son
+ * nom, et « 2 saisons à demander » au ton de la marque. ↵ ouvre la feuille de
+ * ses saisons (l'omnibox se referme d'abord).
+ */
+export const MissingSeasonsRow = memo(function MissingSeasonsRow({ item, count, terms, ...row }: RowProps & {
+  item: SearchMediaItem;
+  count: number;
+  terms: readonly string[];
+}) {
+  const { t } = useTranslation("search");
+  return (
+    <RowShell {...row}>
+      <PosterThumb item={item} height={120} className="h-[54px] w-9 rounded-md" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-content-secondary">
+          <HighlightedText text={item.Name} terms={terms} />
+        </p>
+        <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-[var(--brand-light)]">
+          <Plus className="h-3 w-3 shrink-0" strokeWidth={2.6} aria-hidden />
+          {t("requests:missingSeasons", { count })}
+        </p>
+      </div>
     </RowShell>
   );
 });

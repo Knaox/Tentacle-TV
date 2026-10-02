@@ -16,10 +16,11 @@ import type {
   SearchPersonHit,
   SearchProvider,
   SearchResponse,
+  TitleKey,
 } from "@tentacle-tv/shared";
 
 export type OmniboxSection =
-  | "top" | "movies" | "series" | "collections" | "people" | "episodes" | "external" | "facets"
+  | "top" | "movies" | "series" | "collections" | "people" | "episodes" | "missing" | "external" | "facets"
   | "recent" | "resume" | "genres" | "all";
 
 export type OmniboxTarget =
@@ -30,7 +31,15 @@ export type OmniboxTarget =
   | { type: "recent"; query: string }
   | { type: "resume"; item: MediaItem }
   | { type: "external"; item: ExternalSearchItem; provider: SearchProvider }
+  | { type: "seasons"; item: SearchMediaItem; key: TitleKey; count: number }
   | { type: "all"; query: string };
+
+/** Une série de la bibliothèque à qui il manque des saisons à demander (`titles.gaps`). */
+export interface OmniboxMissing {
+  item: SearchMediaItem;
+  key: TitleKey;
+  count: number;
+}
 
 export interface OmniboxOption {
   key: string;
@@ -50,6 +59,7 @@ export function resultOptions(
   episodes: readonly SearchMediaItem[],
   query: string,
   external: readonly ExternalSearchResult[] = [],
+  missing: readonly OmniboxMissing[] = [],
 ): OmniboxOption[] {
   const out: OmniboxOption[] = [];
   const top = response?.top ?? null;
@@ -64,7 +74,11 @@ export function resultOptions(
     }
   }
   for (const item of episodes) out.push({ key: `episodes:${item.Id}`, section: "episodes", target: { type: "episode", item } });
-  // Hors bibliothèque : après tout ce qui se lit ici, jamais devant.
+  // À demander : les saisons qui manquent aux séries trouvées, puis ce que la
+  // bibliothèque n'a pas du tout — après tout ce qui se lit ici, jamais devant.
+  for (const { item, key, count } of missing) {
+    out.push({ key: `missing:${item.Id}`, section: "missing", target: { type: "seasons", item, key, count } });
+  }
   for (const result of external) {
     const group = `external:${result.provider.pluginId}`;
     for (const item of result.items) {
@@ -97,7 +111,10 @@ export function zeroOptions(
   ];
 }
 
-/** Où mène une option ; `null` pour une recherche récente, qui se rejoue dans la barre. */
+/**
+ * Où mène une option ; `null` pour une recherche récente, qui se rejoue dans la
+ * barre, et pour des saisons à demander, qui ouvrent leur feuille.
+ */
 export function optionPath(target: OmniboxTarget): string | null {
   switch (target.type) {
     case "item":
@@ -114,6 +131,7 @@ export function optionPath(target: OmniboxTarget): string | null {
     case "external":
       return target.item.href;
     case "recent":
+    case "seasons":
       return null;
   }
 }

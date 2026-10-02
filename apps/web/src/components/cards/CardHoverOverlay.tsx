@@ -10,6 +10,7 @@ import {
 import { CardActionTray } from "./CardActionTray";
 import { CardHoverShell } from "./CardHoverShell";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
+import { useSeriesGapOffer } from "../seasons/SeriesGapsScope";
 import { HoverRatingStars } from "../rating/HoverRatingStars";
 import { supportsDownloads } from "../../desktop/bridge";
 import { useMediaWarmup } from "../../hooks/useMediaWarmup";
@@ -55,7 +56,8 @@ interface CardHoverOverlayProps {
  * LE survol des cartes du web — un composant, trois variantes (`poster`,
  * `landscape`, `reco`), une seule grammaire : puces qualité/langues en haut à
  * gauche, voile, étoiles puis plateau (« Lire » discret en tête quand le clic
- * ne lit pas, Ma liste, favori, vu, et les extras). Rien au centre de
+ * ne lit pas, « Demander » au dégradé pour une série incomplète de la
+ * recherche, Ma liste, favori, vu, et les extras). Rien au centre de
  * l'image. Ce qu'il offre, et dans quel ordre, vient du modèle partagé
  * (`resolveCardOverlay`) : la feuille d'appui long du mobile et le menu de la
  * télécommande en rendent exactement la même liste.
@@ -98,6 +100,8 @@ export function CardHoverOverlay({
   // un titre lu sur le disque. Le survol quitté avant le délai ne demande rien.
   useMediaWarmup(visible && play !== null && !local ? (metaItem ?? face) : null, WARMUP_AFTER_MS);
 
+  // Une série à qui il manque des saisons — dans la recherche seulement (`SeriesGapsScope`).
+  const gap = useSeriesGapOffer(local ? null : item?.Id);
   const overlay = resolveCardOverlay({
     variant,
     inLibrary: item !== null,
@@ -106,11 +110,15 @@ export function CardHoverOverlay({
     rateable: identity !== null || target.pending || facePending,
     offline: supportsDownloads(),
     local: local !== undefined,
+    request: gap !== null,
   });
   const trayPlay = overlay.playInTray && overlay.play && play
     ? { label: `${play.label ?? t(overlay.play.labelKey)} — ${title}`, onPlay: play.onPlay }
     : null;
-  const hasTray = trayPlay !== null || overlay.toggles.length > 0 || overlay.extras.length > 0;
+  const trayRequest = overlay.request && gap
+    ? { label: `${t("requests:requestMissing")} — ${title}`, onRequest: gap.open }
+    : null;
+  const hasTray = trayPlay !== null || trayRequest !== null || overlay.toggles.length > 0 || overlay.extras.length > 0;
   // Pleine largeur sur une affiche seulement quand le plateau est complet :
   // une capsule d'un ou deux boutons (hors bibliothèque, titre local) épouse
   // son contenu, au centre — étirée, un bouton seul flotterait au bord.
@@ -147,6 +155,7 @@ export function CardHoverOverlay({
               onDismiss={onDismiss}
               localToggles={local}
               play={trayPlay}
+              request={trayRequest}
             />
           </div>
         )}

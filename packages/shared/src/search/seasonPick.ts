@@ -53,6 +53,21 @@ function isRequestable(season: TitleSeason, library: ReadonlySet<number> | null 
   return season.requestable && !library?.has(season.number);
 }
 
+/**
+ * Les saisons que la bibliothèque A — leurs numéros, lus sur les saisons
+ * Jellyfin de la série. Une saison « virtuelle » (épisodes manquants que
+ * Jellyfin affiche sans fichier) n'est pas là.
+ */
+export function librarySeasonNumbers(
+  seasons: ReadonlyArray<{ IndexNumber?: number | null; LocationType?: string | null }>,
+): Set<number> {
+  const out = new Set<number>();
+  for (const season of seasons) {
+    if (typeof season.IndexNumber === "number" && season.LocationType !== "Virtual") out.add(season.IndexNumber);
+  }
+  return out;
+}
+
 /** Les saisons qui se cochent, dans leur ordre. */
 export function requestableSeasonNumbers(
   answer: TitleSeasonsAnswer | null,

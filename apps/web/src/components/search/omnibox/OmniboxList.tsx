@@ -10,7 +10,7 @@ import type { SearchResponse } from "@tentacle-tv/shared";
 import { groupBySection, type OmniboxOption, type OmniboxSection } from "../omniboxModel";
 import { FacetChip } from "./OmniboxChips";
 import {
-  AllResultsRow, EpisodeRow, ExternalRow, ItemRow, PersonRow, RecentRow, ResumeRow, type RowProps,
+  AllResultsRow, EpisodeRow, ExternalRow, ItemRow, MissingSeasonsRow, PersonRow, RecentRow, ResumeRow, type RowProps,
 } from "./OmniboxRows";
 import { TopItemHit, TopPersonHit } from "./OmniboxTopHit";
 
@@ -33,6 +33,8 @@ const TITLES: Partial<Record<OmniboxSection, string>> = {
   collections: "collections",
   people: "people",
   episodes: "episodes",
+  // « À demander » : le nom de la rangée des téléviseurs, dans l'espace des demandes.
+  missing: "requests:searchRow",
   facets: "facets",
   recent: "recent",
   resume: "continueWatching",
@@ -76,6 +78,8 @@ function OptionView({ option, row, terms, onPlay, onRemoveRecent }: {
       return <ResumeRow {...row} item={target.item} />;
     case "external":
       return <ExternalRow {...row} item={target.item} terms={terms} />;
+    case "seasons":
+      return <MissingSeasonsRow {...row} item={target.item} count={target.count} terms={terms} />;
     case "all":
       return <AllResultsRow {...row} query={target.query} />;
   }

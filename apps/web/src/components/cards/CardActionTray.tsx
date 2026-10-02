@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { EyeOff, Info } from "lucide-react";
+import { EyeOff, Info, Plus } from "lucide-react";
 import { useCardToggles } from "@tentacle-tv/api-client";
 import {
   cardExtraLabelKey,
@@ -37,6 +37,11 @@ interface CardActionTrayProps {
    * (« Reprendre — Dune ») et le geste. Absent : la carte ne lit rien d'ici.
    */
   play?: { label: string; onPlay: () => void } | null;
+  /**
+   * « Demander » ce qui manque à la série (`overlay.request`), au dégradé de la
+   * marque, juste après la lecture : le libellé complet et le geste.
+   */
+  request?: { label: string; onRequest: () => void } | null;
 }
 
 /**
@@ -57,7 +62,8 @@ export const TRAY_SIZE = {
 
 /**
  * Le plateau du survol : « Lire » en tête quand le clic de la carte ne lit
- * pas, puis Ma liste, favori, vu, puis ce que la carte ajoute — hors ligne,
+ * pas, « Demander » au dégradé quand une série a des saisons à demander, puis
+ * Ma liste, favori, vu, puis ce que la carte ajoute — hors ligne,
  * fiche, refus d'une recommandation — dans UNE capsule, dans l'ordre que fixe
  * le modèle partagé (`cardOverlay.ts`).
  *
@@ -83,6 +89,7 @@ export function CardActionTray({
   onDismiss,
   localToggles,
   play,
+  request,
 }: CardActionTrayProps) {
   const { t } = useTranslation("cards");
   const { box, icon } = TRAY_SIZE[size];
@@ -93,6 +100,11 @@ export function CardActionTray({
       {play && (
         <CardTrayPrimaryButton box={box} icon={icon} tone="quiet" label={play.label} onPress={play.onPlay}>
           <PlayGlyph className={icon} />
+        </CardTrayPrimaryButton>
+      )}
+      {request && (
+        <CardTrayPrimaryButton box={box} icon={icon} tone="brand" label={request.label} onPress={request.onRequest}>
+          <Plus className={icon} strokeWidth={2.5} aria-hidden />
         </CardTrayPrimaryButton>
       )}
       {overlay.toggles.length > 0 &&

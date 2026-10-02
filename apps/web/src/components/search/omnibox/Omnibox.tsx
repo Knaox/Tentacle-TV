@@ -27,6 +27,7 @@ import { useIsMobile } from "../../../hooks/useIsMobile";
 import { easeOut } from "../../../theme/motion";
 import { optionPath, stepIndex } from "../omniboxModel";
 import { pushRecentSearch } from "../recentSearches";
+import { useSeasonRequest } from "../../seasons/SeasonRequestProvider";
 import { OmniboxFooter } from "./OmniboxFooter";
 import { OmniboxInput } from "./OmniboxInput";
 import { OmniboxList } from "./OmniboxList";
@@ -44,6 +45,7 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
   const [active, setActive] = useState(-1);
   const data = useOmniboxData(query);
   const { options } = data;
+  const openSeasons = useSeasonRequest();
 
   // Une liste neuve : la première option est prête pour ↵ quand on cherche ;
   // barre vide, rien n'est présélectionné.
@@ -94,11 +96,19 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
       inputRef.current?.focus();
       return;
     }
+    if (option.target.type === "seasons") {
+      // La feuille des saisons s'ouvre sur la page, l'omnibox refermée.
+      const { item, key } = option.target;
+      remember();
+      onClose();
+      openSeasons?.({ seriesId: item.Id, key, name: item.Name });
+      return;
+    }
     const path = optionPath(option.target);
     if (path === null) return;
     remember();
     go(path);
-  }, [options, remember, go]);
+  }, [options, remember, go, onClose, openSeasons]);
 
   const play = useCallback((id: string) => {
     remember();

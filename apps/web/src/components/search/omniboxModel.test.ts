@@ -35,6 +35,16 @@ describe("resultOptions", () => {
     expect(new Set(options.map((o) => o.key)).size).toBe(options.length);
   });
 
+  it("range les saisons à demander après les épisodes, avant ce que la bibliothèque n'a pas", () => {
+    const missing = [{ item: RESPONSE.series[0]!.item, key: "tv:90228" as const, count: 2 }];
+    const options = resultOptions(RESPONSE, [], "dune", [], missing);
+    expect(options.map((o) => o.section)).toEqual(["top", "movies", "series", "people", "missing", "facets", "facets", "all"]);
+    const seasons = options.find((o) => o.section === "missing");
+    expect(seasons?.target).toEqual({ type: "seasons", item: RESPONSE.series[0]!.item, key: "tv:90228", count: 2 });
+    // Elles ouvrent leur feuille : pas de chemin.
+    expect(optionPath(seasons!.target)).toBeNull();
+  });
+
   it("sans saisie, pas d'option « tous les résultats »", () => {
     expect(resultOptions(undefined, [], "  ")).toEqual([]);
   });

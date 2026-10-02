@@ -3,7 +3,7 @@ import i18next from "i18next";
 import fr from "../i18n/locales/fr/requests";
 import en from "../i18n/locales/en/requests";
 import type { TitleSeason, TitleSeasonsAnswer } from "./pluginTitleSeasons";
-import { requestableSeasonNumbers, seasonPick } from "./seasonPick";
+import { librarySeasonNumbers, requestableSeasonNumbers, seasonPick } from "./seasonPick";
 
 /**
  * La feuille des saisons, la même partout : l'extension dit ce qui se demande,
@@ -64,5 +64,11 @@ describe("seasonPick", () => {
     expect(pick.rows?.[0]).toEqual({ number: 2, label: "Season 2", detail: "1 episode", selected: true });
     expect(pick.submitLabel).toBe("Request 1 season");
     await i18n.changeLanguage("fr");
+  });
+
+  it("la bibliothèque a ses saisons à fichiers, pas les saisons virtuelles", () => {
+    expect([...librarySeasonNumbers([
+      { IndexNumber: 0 }, { IndexNumber: 1, LocationType: "FileSystem" }, { IndexNumber: 4, LocationType: "Virtual" }, { IndexNumber: null }, {},
+    ])]).toEqual([0, 1]);
   });
 });

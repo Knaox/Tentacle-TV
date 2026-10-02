@@ -9,11 +9,13 @@
 
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { Plus } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, itemMeta, matchReason, personMeta, type SearchTopHit } from "@tentacle-tv/shared";
 import { CardMarkerLayer } from "../../cards/CardMarkerLayer";
 import { HighlightedText } from "../HighlightedText";
 import { PersonAvatar, PosterThumb } from "../SearchThumbs";
+import { useSeriesGapOffer } from "../../seasons/SeriesGapsScope";
 
 interface TopResultHeroProps {
   top: SearchTopHit;
@@ -24,6 +26,8 @@ interface TopResultHeroProps {
 export const TopResultHero = memo(function TopResultHero({ top, terms, onOpen }: TopResultHeroProps) {
   const { t, i18n } = useTranslation("search");
   const client = useJellyfinClient();
+  // Une série incomplète : ses saisons à demander, à côté de « Détails ».
+  const gap = useSeriesGapOffer(top.kind === "item" ? top.hit.item.Id : null);
 
   if (top.kind === "person") {
     const person = top.hit;
@@ -79,6 +83,12 @@ export const TopResultHero = memo(function TopResultHero({ top, terms, onOpen }:
             <button type="button" onClick={() => onOpen(`/media/${item.Id}`)} className="rounded-full bg-[var(--cta-secondary-bg)] px-5 py-2.5 text-sm font-semibold text-[var(--cta-secondary-fg)] transition-colors hover:bg-[var(--cta-secondary-bg-hover)]">
               {t("details")}
             </button>
+            {gap && (
+              <button type="button" onClick={gap.open} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-5 py-2.5 text-sm font-bold text-cta-brand-fg shadow-[0_2px_10px_rgba(var(--brand-rgb),0.45)] transition-transform hover:scale-[1.03] active:scale-95">
+                <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+                {t("requests:missingSeasons", { count: gap.count })}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -9,10 +9,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useResumeItems, useSearchDiscover, useSearchEpisodes, useTentacleSearch,
 } from "@tentacle-tv/api-client";
-import { parseSearchQuery, withoutLibraryTwins } from "@tentacle-tv/shared";
+import { parseSearchQuery, withoutLibraryTwins, type SearchMediaItem } from "@tentacle-tv/shared";
 import { clearRecentSearches, readRecentSearches, removeRecentSearch } from "../recentSearches";
-import { resultOptions, zeroOptions } from "../omniboxModel";
+import { resultOptions, zeroOptions, type OmniboxMissing } from "../omniboxModel";
 import { useExternalSearch } from "../external/useExternalSearch";
+import { useSeriesGaps } from "../../seasons/useSeriesGaps";
 
 /** Le temps de laisser finir un mot tapé d'un trait. */
 const DEBOUNCE_MS = 90;
@@ -57,12 +58,25 @@ export function useOmniboxData(query: string) {
       .map((result) => ({ ...result, items: withoutLibraryTwins(result.items, owned) }))
       .filter((result) => result.items.length > 0);
   }, [external.results, response]);
+  // Les séries trouvées à qui il manque des saisons : une question pour toutes.
+  const seriesFound = useMemo<SearchMediaItem[]>(() => [
+    ...(response?.top?.kind === "item" && response.top.hit.item.Type === "Series" ? [response.top.hit.item] : []),
+    ...(response?.series ?? []).map((hit) => hit.item),
+  ], [response]);
+  const gaps = useSeriesGaps(seriesFound);
+  const missing = useMemo<OmniboxMissing[]>(
+    () => seriesFound.flatMap((item) => {
+      const gap = gaps.get(item.Id);
+      return gap ? [{ item, key: gap.key, count: gap.count }] : [];
+    }),
+    [seriesFound, gaps],
+  );
   const options = useMemo(() => {
     if (debounced === "") {
       return zeroOptions(recents, (resume.data ?? []).slice(0, RESUME_SHOWN), (discover.data?.genres ?? []).slice(0, GENRES_SHOWN));
     }
-    return resultOptions(response, episodeList ?? [], debounced, beyond);
-  }, [debounced, response, episodeList, beyond, recents, resume.data, discover.data]);
+    return resultOptions(response, episodeList ?? [], debounced, beyond, missing);
+  }, [debounced, response, episodeList, beyond, missing, recents, resume.data, discover.data]);
 
   // Les termes à faire ressortir : ceux de la correction quand le moteur a
   // cherché autre chose que ce qui a été tapé.

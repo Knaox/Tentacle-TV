@@ -16,6 +16,7 @@ import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
 import { SessionMessageHost } from "./components/session/SessionMessageHost";
 import { OmniboxHost } from "./components/search/OmniboxHost";
+import { SeasonRequestProvider } from "./components/seasons/SeasonRequestProvider";
 import { isDesktopApp } from "./desktop/bridge";
 import { Disclaimer } from "./pages/Disclaimer";
 
@@ -128,6 +129,8 @@ export function App() {
   return (
     <ToastProvider>
       <WatchTogetherProvider>
+      {/* La feuille des saisons à demander : la recherche et l'omnibox l'ouvrent. */}
+      <SeasonRequestProvider>
       <AppBindings authed={authed} offlineMode={offlineMode} />
       {/* Les messages de l'administrateur à cette session — au-dessus de tout, lecteur compris. */}
       <SessionMessageHost />
@@ -278,6 +281,7 @@ export function App() {
           Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)
           remplace le blocage — l'app reste utilisable sur le contenu local. */}
       {!isDesktopApp() && <OfflineBanner />}
+      </SeasonRequestProvider>
       </WatchTogetherProvider>
     </ToastProvider>
   );
