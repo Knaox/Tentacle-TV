@@ -34,6 +34,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 22. Le logo dans l'app (Apple TV) | Fait (2026-10-03) : AUCUN logo dans l'interface, au choix de l'utilisateur entre trois propositions — le coin et son halo retirés de tous les écrans ; la marque vit dans l'icône, le Top Shelf, le démarrage et les illustrations — « Le logo dans l'app : aucun (Apple TV) » ci-dessous. |
 | 23. Saut de 30 s, validation en 5 s (Apple TV, Android TV) | Fait (2026-10-03) : → +30 s, ← −10 s, les boutons de l'habillage font pareil ; une seule règle pour toutes les entrées — la cible posée, « Lecture dans 5 s », OK lit, Retour annule, rien en pause ; plus d'abandon à 7 s — « Saut de 30 s et validation en 5 s » ci-dessous. |
 | 24. Badges de qualité au focus (Apple TV) | Fait (2026-10-03) : « 4K · VISION · ATMOS » dans l'image, en bas à droite, sur la rangée de la note, quand le focus a tenu 300 ms ; la qualité lue au focus, un titre à la fois (jamais les flux dans les grilles) ; la fiche dit la même chose — « Les badges de qualité au focus (Apple TV) » ci-dessous. |
+| 25. Défilement rapide sans creux (Apple TV) | Fait (2026-10-03) : flèche maintenue ou glisser, la page ne ralentit plus quand tvOS passe en défilement rapide — pendant une rafale, c'est tvOS qui défile, vers nos cibles ; un appui isolé garde le ressort. Natif : app à reconstruire — « Le défilement rapide sans creux (Apple TV) » ci-dessous. |
 
 ## La direction retenue
 
@@ -2513,7 +2514,10 @@ section sur le ressort `TV_MOTION.spring.scroll` (critique, 0,5 s), joué image
 par image — un nouveau focus en plein vol reprend position et vitesse ; ce qui
 bouge AU-DESSUS de la section montrée (une rangée qui arrive, un logo lu) est
 compensé dans le même montage — plus de recalage après coup. « Réduire les
-animations » : la page se pose aussitôt.
+animations » : la page se pose aussitôt. Pendant une RAFALE (flèche maintenue,
+glisser), c'est l'animateur de tvOS qui défile, vers la même cible : sans
+quoi son défilement rapide repartait de zéro (« Le défilement rapide sans
+creux », plus bas).
 
 | Mesuré (banc, JS de production, Mac au calme, 3 séries de 6 passages) | Avant | Après |
 |---|---|---|
@@ -2794,6 +2798,94 @@ film 4K Dolby Vision (s'arrêter une demi-seconde : la pastille paraît en bas
 maintenue (rien ne paraît en route) ; la fiche du même film (mêmes badges,
 noms entiers) ; « Reprendre » et la saison d'une série. JS seulement : aucune
 reconstruction de l'app, aucun changement du serveur.
+
+## Le défilement rapide sans creux (Apple TV)
+
+Branche `claude/elegant-herschel-c1aea3` (2026-10-03). Retour de l'essai sur
+l'Apple TV (build Release) : « quand je scroll les bibliothèques, je vais vite
+[…] ; après 1 à 2 s de scroll, il y a un léger ralentissement, puis ça
+rescroll normalement. Pareil quand je remonte. »
+
+**Mesuré** au banc des bibliothèques, image par image — la position de la page
+à chaque image du fil d'interface, le focus et la télécommande
+(`probe/scrollTrace.js`, scénario `updown`, README du banc) : flèche
+maintenue, le focus avance d'une ligne toutes les 100 ms et la page monte à
+~5 000 pt/s ; puis tvOS passe en défilement rapide
+(`_UIFocusFastScrollingController`), les pas du focus cessent, et la page
+tombe à ~400 pt/s avant de remonter en ligne droite (+2 500 pt/s²) jusqu'au
+plafond de tvOS, 10 024 pt/s. Un creux de VITESSE de ~1,8 s, sans image perdue
+(le fil d'interface reste à 60 i/s : le compteur d'images ne le voyait pas) —
+à la descente comme à la remontée, pages chargées ou non.
+
+**La cause** (lue au débogueur, `lldb` sur le simulateur) : au déclenchement,
+UIKit donne au défilement rapide la vitesse de SON animateur de défilement du
+focus (`-[_UIFocusScrollManager currentVelocityForScrollableContainer:]`,
+`_UIFocusDisplayLinkScrollAnimator`). Notre ressort (`TentacleRevealScroller`,
+« Les rangées ») annulait le défilement de tvOS et posait la page lui-même :
+tvOS lisait 0 pt/s. La même grille sans ressort : 6 932 pt/s lus, passation
+continue. C'est donc l'app, pas tvOS.
+
+**Ce qui change** (natif, `ios/TentacleTV/` : reconstruire l'app) :
+
+- un pas ISOLÉ (un appui) garde le ressort : courbe, durée (~490 ms) et
+  positions inchangées ;
+- pendant une RAFALE — les répétitions d'une flèche maintenue, un glisser du
+  pavé —, on rend à tvOS NOTRE cible (`nearest`, `start`…) et c'est son
+  animateur qui défile : il connaît la vitesse de la page, son défilement
+  rapide la reprend. Le premier pas d'une flèche maintenue reste au ressort :
+  la première répétition vient ~470 ms plus tard, le ressort a presque fini ;
+- un observateur passif posé sur la fenêtre (`TentacleFocusInput.m` : un
+  geste qui ne se reconnaît jamais) dit si une flèche est maintenue depuis
+  plus de 200 ms, ou si le pavé a servi dans la demi-seconde ; une rafale qui
+  finit (0,7 s) ou tvOS encore en mouvement gardent la main à tvOS ;
+- tvOS ne propose rien pour un pas de rafale (l'élément lui semble visible) :
+  la section se montre comme pour un pas isolé, une fois tvOS arrêté — le
+  titre d'une grille revient toujours ;
+- le ressort et la mise en page qui bouge passent dans
+  `TentacleRevealMotion.m` (état commun : `TentacleRevealScroller+Private.h`).
+
+| Mesuré (banc, JS de production, même paquet, 3 tours alternés, charge 6 à 9) | Avant | Après |
+|---|---|---|
+| BAS maintenu 8 s : creux de vitesse | 3 sur 3 (1,6 à 1,9 s, fond à 160-180 pt/s) | 0 sur 3 |
+| HAUT maintenu 8 s : creux de vitesse | 3 sur 3 (1,5 s, fond à 210-220 pt/s) | 0 sur 3 |
+| Distance parcourue en ~10 s (médiane) | 44 606 pt | 63 449 pt |
+| Images > 33 ms, fil d'interface | 0 à 1 | 0 |
+| Pire fenêtre de 250 ms | 56 à 60 i/s | 56 à 60 i/s (le tout premier pas) |
+| Pas isolé : jusqu'à 98 % du trajet / carte focalisée | 485-494 ms / 585 · 56 pt | 473-488 ms / 585 · 56 pt |
+| Ouverture : 1re affiche (3 tours) | 303 · 379 · 503 ms | 361 · 430 · 478 ms |
+| RAM, 2 allers-retours de bout en bout (empreinte) | 196 → 233 → 241 → 243 → 245 Mo, pic 250 | 201 → 230 → 238 → 241 → 242 Mo, pic 245 |
+
+La pause de ~0,5 s entre le premier pas d'une flèche maintenue et sa première
+répétition est celle de tvOS (toute app tvOS, mesurée aussi quand tvOS défile
+seul) : inchangée, et le banc ne la compte pas comme un creux.
+
+Pièges payés :
+
+- **Le premier pas d'une nouvelle rafale part de la position COURANTE**, pas
+  de la cible de la rafale précédente : en remontant juste après une
+  descente, la cible périmée faisait faire un premier pas de deux lignes.
+- **Le ressort avait aussi un accroc par répétition** : à chaque pas d'une
+  flèche maintenue, une image presque immobile puis un rattrapage (−299 puis
+  −10 898 pt/s, mesuré). Disparu avec l'animateur de tvOS.
+- **L'ordre natif d'un pas** : `didUpdateFocusInContext:` (la section), puis
+  `scrollViewWillEndDragging:…` ~3 ms après ; tvOS propose à CHAQUE pas, même
+  sans défilement (cible = position courante). Sa proposition est de centrer
+  davantage (carte à 461 pt en descendant) que notre « au plus près » (585).
+- **lldb sur l'app du simulateur** : `--batch` avec un point d'arrêt à un coup,
+  puis `register read` et `detach` — les rappels Python et les
+  `breakpoint command` ne sortent rien en lot, et une expression Objective-C
+  complexe (`class_copyIvarList`) fige l'app.
+- **L'agent XCUITest n'appuie pas plus vite que ~2,3 fois par seconde**
+  (chaque appui coûte ~300 ms) : ses « rafales » sont des pas isolés, et
+  aucun doigt synthétique n'existe pour le pavé de tvOS — le glisser vif se
+  vérifie sur l'Apple TV.
+
+À éprouver sur l'Apple TV (tâche de l'utilisateur, après reconstruction) :
+Films, flèche BAS maintenue 5 à 8 s puis HAUT maintenue — la page accélère
+sans jamais ralentir, puis s'arrête sur une ligne entière ; glissers vifs
+répétés au pavé, dans les deux sens ; quelques appuis isolés (le mouvement
+d'une ligne à l'autre ne change pas) ; en haut, le titre et les filtres
+reviennent. Même chose à l'accueil (rangées) et sur une fiche longue.
 
 ---
 
