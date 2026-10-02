@@ -1319,6 +1319,107 @@ ouverture sans étiquette.
 7. En production : arrêts perdus par Jellyfin 12.1 — la fiche, puis
    `[reprise] arrêt à N s réécrit chez Jellyfin` dans Metro.
 
+## Le lecteur — onglet Réglages et transcodage lent (Apple TV)
+
+Branche `claude/serene-sammet-bf5a89` (2026-10-01/02). Retours d'essai de
+l'utilisateur sur l'Apple TV : la qualité se cachait sous « Pistes » ; et
+« connexion trop lente » paraissait quand le SERVEUR transcodait lentement
+(serveur peu puissant, changement de qualité) — la vidéo ne venait jamais.
+
+**L'onglet « Réglages »** (EN « Settings ») :
+- « Pistes » ne garde que l'audio et les sous-titres ; la pilule « Réglages »,
+  juste après, ouvre la même feuille (`PlayerSheet`, commune aux deux) : la
+  qualité — « Original » et ses pastilles, les paliers et leur débit,
+  « Auto » quand le plafond a choisi — et, à côté, « Comment choisir ». Tout
+  ce qui n'est pas un choix de piste y prendra place.
+- L'écran ne tient toujours qu'un état (`showSettings`, celui d'Android TV et
+  de sa route modale, inchangée) ; l'onglet, c'est la pilule pressée
+  (`usePlayerSheet`). Clés `player:settings` (transport `options`),
+  `settings:quality:<clé>`, `settings:close` ; groupes `settings:panel`,
+  `settings:back`.
+- Focus : entrée sur le palier retenu, GAUCHE vers la croix par la marge,
+  Retour → le focus revient à la pilule. Le Retour est la couche « menu » de
+  la pile du lecteur (`usePlayerBackLayers`, l'état `showSettings`, commun aux
+  deux onglets) ; à la fermeture, `usePanelReturnFocus` rend le focus à la
+  pilule de l'onglet ouvert (`usePlayerSheet` → `opener`), jamais à
+  « Pistes » quand c'est « Réglages » qui a ouvert.
+- Éprouvé dans l'app réelle (clone « Banc UI TV — qualité (Claude) », faux
+  serveur) : focus sur « Réglages » → entrée sur « Original » → Retour (pile
+  du lecteur) → feuille refermée, focus sur « Réglages », lecture continue.
+  Au banc : `planche lecteur/reglages --focus`, `lecteur/osd-reglages`,
+  `lecteur/pistes`, `lecteur/transcodage`.
+
+**Transcodage lent ≠ connexion lente** :
+
+| Situation | Avant | Maintenant |
+|---|---|---|
+| Ouverture d'un transcodage lent | écran sans un mot ; sans premier segment au bout de ~40 s, AVPlayer abandonne l'élément (-12889) → « Impossible de démarrer » | dès 6 s, « Le transcodage peut prendre un peu plus de temps » ; la même session rechargée ; l'échec seulement après 2 min sans AUCUNE donnée (« aucune image n'est arrivée depuis deux minutes », Réessayer) |
+| Arrêt en lecture, changement de qualité | « La vidéo arrive trop lentement », puis une session NEUVE à 12 s : le serveur repartait de zéro pendant que l'ancienne tournait encore — la vidéo ne venait jamais | la ligne discrète sous l'indicateur, jamais bloquante ; jamais de session neuve ; après 30 s sans données, la MÊME session rechargée ; 2 min sans rien → « Le transcodage n'avance plus » (Réessayer, Baisser la qualité) |
+| Réseau MESURÉ sous le besoin du flux | — (la mesure était fausse, ci-dessous) | « La connexion est trop lente — réseau mesuré à X Mb/s : cette qualité en demande Y Mb/s », sans relance (elle n'y changerait rien) |
+| Lecture directe qui cale, serveur joignable | « La vidéo arrive trop lentement » | « La vidéo se fait attendre », nouvel essai automatique (comme avant) |
+
+- Les règles sont pures et communes (tv-core, testées) : `decideRecovery`
+  (phase `transcoding`, causes `transcode`, `stall`, `slow` ;
+  `NO_PROGRESS_MS`, `nudge` / `NUDGE_AFTER_MS`), `decideStartupWait`,
+  `networkShortfall`, `isSegmentTimeout`. Exécutées par `usePlaybackRecovery`,
+  `useStartupWait` et `useTranscodeReload`, le seul rechargeur :
+  `restartStream({ keepSession: true, hold: false })` — même PlaySessionId,
+  une marque de relance neuve, sans pause de rechargement.
+- **Les données qui arrivent** se lisent chez AVPlayer : la sonde native
+  `TentaclePlayerProbe` (lecture seule ; le `_player` de la vue
+  react-native-video, la couche en repli) rend les octets reçus, la mémoire
+  chargée et l'état d'AVPlayer. Sans elle (Android TV, natif plus ancien) :
+  la position et la mémoire vues en lecture.
+
+Mesuré au banc factice (faux Tentacle + faux Jellyfin, HLS généré localement,
+« encodeur » à vitesse réglable — `apps/tv/harness/slow-transcode/`) :
+- AVPlayer abandonne une requête de segment au bout de ~6 s (la durée cible)
+  et la redemande ; sans premier segment au bout de ~40 s, -12889 ;
+- plus lent que le temps réel, il ne démarre qu'avec ~36 s de vidéo en
+  mémoire (`automaticallyWaitsToMinimizeStalling`, 30 s d'avance) : 80 s
+  d'ouverture à ×0,6, sans le moindre signal au JS — d'où la sonde ;
+- après un rechargement, il abandonne un segment lent UNE fois et ne le
+  redemande plus — aucune erreur, « ToMinimizeStalls » sans fin, le serveur
+  ayant produit la suite : d'où la relance douce à 30 s ;
+- tenu en pause pendant un rechargement, il cesse de remplir sa mémoire après
+  deux segments : d'où `hold: false` ;
+- avec tout cela, à ×0,3 : première image à 2 min 23 sans échec ; en lecture,
+  arrêts dits par la ligne discrète, reprises après relance douce, une seule
+  session serveur de bout en bout ; transcodage mort : l'échec à 2 min.
+
+**Le piège du `fetch` de React Native** : il ne se résout qu'une fois le corps
+ENTIER reçu (4,9 s pour 3 Mo à 5 Mb/s, puis 0,2 s de conversion). La mesure
+de débit chronométrée « à l'arrivée des en-têtes » ne voyait que la
+conversion — « 115 Mb/s » sur tout réseau, un chiffre bas sur un appareil
+lent : le plafond automatique de la TV décidait sur la vitesse du processeur.
+Corrigé en OPT-IN (`bufferedFetch`, api-client : de la requête à la réponse
+entière, moins la latence de deux petites requêtes), activé par la TV seule
+(`TV_BITRATE_MEASURE`) : 5,02 Mb/s mesurés pour un témoin bridé à 5 Mb/s.
+
+### Constats non corrigés
+
+- react-native-video n'applique la position de départ qu'à `readyToPlay` :
+  AVPlayer charge d'abord depuis 0:00, puis saute à la reprise. Sur un
+  transcodage, le serveur transcode depuis le début, puis repart au point de
+  reprise — l'attente d'un changement de qualité est doublée (mesuré à ×0,4 :
+  ~3 min au lieu de ~1 min 20). Piste : poser la position sur l'élément
+  AVANT sa lecture (correctif de react-native-video, natif, toutes lectures).
+- Le mobile garde la mesure fausse (même `fetch`) : tâche à part.
+- « Réessayer » après « Le transcodage n'avance plus » ouvre une session
+  neuve (voulu : l'ancienne n'a rien produit en deux minutes).
+
+### Essais sur l'Apple TV (tâche d'appareil)
+
+1. Réglages : la pilule après « Pistes », la qualité changée, Menu referme et
+   rend le focus à « Réglages » ; « Pistes » sans qualité.
+2. Serveur peu puissant : un titre en 720p (transcodage), puis un changement
+   de qualité en pleine lecture — la ligne discrète, jamais de panneau ni
+   d'échec tant que ça avance ; Metro : `[recover] transcodage : … même
+   session rechargée`, jamais deux sessions au tableau de bord de Jellyfin.
+3. La mesure : `[cap] debit mesure N Mb/s` doit suivre le réseau réel
+   (Wi-Fi, Ethernet) ; sur un réseau rapide, plus de « qualité réduite » ni
+   de « La connexion est trop lente ».
+
 ## Le jumelage par identifiants (Apple TV)
 
 Branche `refonte/tv-jumelage-manuel` (2026-10-01). Constat : ni l'app publiée
@@ -1551,7 +1652,8 @@ d'invisible : la restauration partagée (`overlayFocusCore`, 220 ms puis un
 cycle de `hasTVPreferredFocus`) laissait 305 à 330 ms sans focus visible,
 parfois un détour par « Reculer de 10 s ». Deux images après la fermeture,
 le fondu de l'habillage commencé, `requestTVFocus` pose le focus sur
-« Pistes » ou « Épisodes » ; la restauration différée reste le filet
+« Pistes », « Réglages » (la pilule de l'onglet ouvert) ou « Épisodes » ;
+la restauration différée reste le filet
 (Android TV n'en change pas). Mesuré au simulateur (journal du magasin de
 focus) : 40 à 45 ms entre la perte du focus par le panneau et sa reprise par
 le bouton, aucune autre cible entre les deux, en lecture comme en pause.
@@ -2001,8 +2103,9 @@ Sur de faux états au banc, moteur jamais chargé :
   avec décompte + Masquer, en sourdine) et « Épisode suivant » ;
 - carte « À suivre » du générique (décompte, lecture auto) et affiche de fin
   plein écran ;
-- panneau des épisodes ; réglages (pistes audio, sous-titres, qualité :
-  Original — 4K, paliers, puces DV/HDR/Atmos/Mb/s, Auto) ;
+- panneau des épisodes ; pistes (audio, sous-titres) ; réglages (qualité :
+  Original — 4K, paliers, puces DV/HDR/Atmos/Mb/s, Auto ; « Comment
+  choisir ») ;
 - rechargement doux (image figée), badge « qualité réduite », bandeau
   d'erreur, sous-titres en calque ; passages connus (intro, résumé, générique)
   qui COUPENT la frise, comme des chapitres.
