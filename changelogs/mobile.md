@@ -5,6 +5,19 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.10.2]
+### FR
+- **La qualité automatique suit enfin le vrai débit** : la mesure du réseau était fausse, la qualité ne baissait jamais sur une connexion lente
+- **La lecture directe marche dès l'ouverture de l'app**, sans attendre un retour au premier plan
+- **Demander les saisons qui manquent** à une série depuis la recherche, par l'appui long
+- Corrections et stabilité
+
+### EN
+- **Automatic quality finally follows the real bandwidth**: the network measurement was wrong, so quality never dropped on a slow connection
+- **Direct streaming works as soon as the app opens**, without waiting to come back to the foreground
+- **Request the seasons a series is missing** from search, with a long press
+- Fixes and stability
+
 ## [1.10.1]
 <!-- Bloc nu : Google Play, 500 caractères. Le bloc ios- ajoute le HEVC « hev1 », qu'Android lisait déjà. -->
 ### FR
