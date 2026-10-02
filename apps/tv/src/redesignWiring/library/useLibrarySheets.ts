@@ -65,6 +65,8 @@ export interface LibrarySheets extends Required<FilterSheetHandlers> {
   openSheet: (key: LibraryFilterKey) => void;
   /** Menu, Retour ou « Voir N titres ». */
   closeSheet: () => void;
+  /** La liste a fini de s'effacer, sa Modal se retire : le focus revient à sa pastille. */
+  onSheetExited: () => void;
 }
 
 /**
@@ -76,7 +78,8 @@ export interface LibrarySheets extends Required<FilterSheetHandlers> {
  * « Effacer », qui disparaît sous le doigt, rend le focus au premier choix par
  * le même verrou. BAS depuis n'importe quelle colonne atteint le pied de la
  * liste (groupe `sheet:footer`), par « Voir N titres ». En sortir rend le
- * focus à la pastille qui l'a ouverte (restauration de tvOS, réclamée en plus).
+ * focus à la pastille qui l'a ouverte (restauration de tvOS, réclamée en plus
+ * à la fin du fondu de la liste : réclamé pendant, la Modal le gardait).
  */
 export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, update: Update, focus: FocusStore, context: SheetContext): LibrarySheets {
   const [open, setOpen] = useState<{ filter: LibraryFilterKey; entry: string } | null>(null);
@@ -98,11 +101,18 @@ export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, upda
 
   const openRef = useRef(open);
   openRef.current = open;
+  // La pastille à qui rendre le focus, une fois la liste effacée.
+  const closedPill = useRef<string | null>(null);
   const closeSheet = useCallback(() => {
     const current = openRef.current;
     if (!current) return;
     setOpen(null);
-    focus.claim(`pill:${current.filter}`);
+    closedPill.current = `pill:${current.filter}`;
+  }, []);
+  const onSheetExited = useCallback(() => {
+    const pill = closedPill.current;
+    closedPill.current = null;
+    if (pill) focus.claim(pill);
   }, [focus]);
   // Retour, liste ouverte : la refermer (la Modal le reçoit, `onSheetClose`).
   useBackLayer("menu", open !== null, closeSheet);
@@ -124,6 +134,7 @@ export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, upda
     sheet,
     openSheet,
     closeSheet,
+    onSheetExited,
     onSheetOption,
     onSheetClear,
     onSheetApply: closeSheet,

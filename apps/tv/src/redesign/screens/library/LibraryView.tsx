@@ -1,11 +1,12 @@
 import { memo, useMemo } from "react";
-import { Modal, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BRAND_CORNER_IN_SAFE_AREA, BrandCorner } from "../../brand/BrandCorner";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
+import { FadingModal } from "../../motion/FadingModal";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { text } from "../../theme/tokens";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
@@ -48,7 +49,9 @@ import { YearSheet } from "./YearSheet";
  *
  * La liste ouverte vit dans une `Modal` : son propre contrôleur de vue, où le
  * focus reste, et que Menu (Apple TV) ou Retour (Android) referme
- * (`onSheetClose`, sinon `onSheetApply`) sans quitter la bibliothèque.
+ * (`onSheetClose`, sinon `onSheetApply`) sans quitter la bibliothèque. Elle
+ * s'efface d'un seul fondu avant que la Modal ne se retire (`FadingModal`,
+ * puis `onSheetExited`).
  */
 
 export interface LibraryViewProps extends FilterSheetHandlers {
@@ -75,6 +78,8 @@ export interface LibraryViewProps extends FilterSheetHandlers {
   sheet?: FilterSheetModel | null;
   /** Menu ou Retour, liste ouverte : la refermer (défaut : `onSheetApply`). */
   onSheetClose?: () => void;
+  /** La liste refermée a fini de s'effacer ; sa Modal se retire. */
+  onSheetExited?: () => void;
   onPressPill?: (key: LibraryFilterKey) => void;
   onRemoveFilter?: (id: string) => void;
   onClearAll?: () => void;
@@ -85,6 +90,7 @@ export interface LibraryViewProps extends FilterSheetHandlers {
 }
 
 const NO_CARDS: CardModel[] = [];
+const noop = () => {};
 
 function Sheet({ sheet, ...handlers }: { sheet: FilterSheetModel } & FilterSheetHandlers) {
   switch (sheet.kind) {
@@ -181,19 +187,20 @@ export const LibraryView = memo(function LibraryView(props: LibraryViewProps) {
         />
       )}
       <NavRail {...nav} />
-      {sheet ? (
-        // Sans animation de la Modal : la liste a déjà la sienne (voile, panneau).
-        <Modal visible transparent animationType="none" onRequestClose={props.onSheetClose ?? props.onSheetApply}>
+      {/* La liste entre avec son voile et son panneau, et s'efface d'un seul
+          fondu avant que la Modal ne se retire (`FadingModal`). */}
+      <FadingModal value={sheet ?? null} onRequestClose={props.onSheetClose ?? props.onSheetApply ?? noop} onExited={props.onSheetExited}>
+        {(shown, leaving) => (
           <Sheet
-            sheet={sheet}
-            onSheetOption={props.onSheetOption}
-            onSheetClear={props.onSheetClear}
-            onSheetApply={props.onSheetApply}
-            onYearStep={props.onYearStep}
-            onRatingSelect={props.onRatingSelect}
+            sheet={shown}
+            onSheetOption={leaving ? undefined : props.onSheetOption}
+            onSheetClear={leaving ? undefined : props.onSheetClear}
+            onSheetApply={leaving ? undefined : props.onSheetApply}
+            onYearStep={leaving ? undefined : props.onYearStep}
+            onRatingSelect={leaving ? undefined : props.onRatingSelect}
           />
-        </Modal>
-      ) : null}
+        )}
+      </FadingModal>
     </View>
   );
 });

@@ -139,6 +139,7 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
         onSheetClear={sheets.onSheetClear}
         onSheetApply={sheets.onSheetApply}
         onSheetClose={sheets.closeSheet}
+        onSheetExited={sheets.onSheetExited}
         onYearStep={sheets.onYearStep}
         onRatingSelect={sheets.onRatingSelect}
       />

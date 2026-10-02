@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Modal } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useMyTitles, useRequestTitleSeasons, useSeasons, useTitleSeasons } from "@tentacle-tv/api-client";
 import { librarySeasonNumbers, type TitleRequestOutcome } from "@tentacle-tv/shared";
 import { isAdvancing } from "@tentacle-tv/tv-core";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
+import { FadingModal } from "../../redesign/motion/FadingModal";
 import { SeasonsSheet, seasonFocusKey } from "../../redesign/screens/requests/SeasonsSheet";
 import { useBackLayer } from "../back/BackScope";
 import { createEntryGuide } from "../focus/entryGuide";
@@ -26,11 +26,12 @@ import type { VigieGate } from "./useVigieGate";
  *
  * Dans une `Modal` (Menu la ferme ; à la fermeture, tvOS rend le focus à la
  * carte), présentée une fois les saisons SUES — et celles de la bibliothèque :
- * rien n'y déplace le focus après coup. On y ENTRE par la saison choisie
- * (`focus` : l'onglet grisé de la fiche, déjà cochée), sinon par la première
- * à cocher, sinon par la pilule (`useChoiceEntry`) ; BAS depuis n'importe
- * quelle ligne mène au pied (`sheet:footer`). Un filet la présente quand
- * même, sur sa lecture.
+ * rien n'y déplace le focus après coup. Fermer joue d'abord sa sortie, un seul
+ * fondu (`FadingModal`) ; `onClose` — et la réponse d'une demande — ne partent
+ * qu'à sa fin. On y ENTRE par la saison choisie (`focus` : l'onglet grisé de
+ * la fiche, déjà cochée), sinon par la première à cocher, sinon par la pilule
+ * (`useChoiceEntry`) ; BAS depuis n'importe quelle ligne mène au pied
+ * (`sheet:footer`). Un filet la présente quand même, sur sa lecture.
  *
  * Les saisons de la demande du compte en cours disent son état et son
  * avancement, en direct (`useLiveRefresh` tant qu'elle avance).
@@ -74,9 +75,22 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
     [t, title.title, ownedKnown, answer, failed, checked, owned, own],
   );
 
+  // Fermer, c'est d'abord jouer la sortie ; `onClose` ne part qu'à sa fin —
+  // tout de suite si la feuille n'a pas encore paru (saisons pas encore sues).
+  const [closing, setClosing] = useState(false);
+  const after = useRef<(() => void) | null>(null);
+  const closed = useCallback(() => {
+    onClose();
+    after.current?.();
+  }, [onClose]);
+  const entry = useRef<string | null>(null);
+  const requestClose = useCallback(() => {
+    if (entry.current === null) closed();
+    else setClosing(true);
+  }, [closed]);
   // Une couche « menu » de la pile du Retour : la Modal reçoit Menu elle-même
   // (`onRequestClose`), mais l'écran sait qu'un menu est ouvert.
-  useBackLayer("menu", true, onClose);
+  useBackLayer("menu", !closing, requestClose);
 
   const focus = useFocusStore();
   // Le pied de la liste, lié avant le premier rendu de la vue.
@@ -89,7 +103,6 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
   const numbers = useMemo(() => (ownedKnown ? requestableNumbers(answer, owned) : []), [ownedKnown, answer, owned]);
   const keys = useMemo(() => [...numbers.map(seasonFocusKey), APPLY_KEY], [numbers]);
   // L'entrée : décidée une fois les saisons sues (ou le filet écoulé), figée ensuite.
-  const entry = useRef<string | null>(null);
   if (entry.current === null && ((answer !== null && ownedKnown) || failed || waited)) {
     const first = focusSeason !== undefined && numbers.includes(focusSeason) ? focusSeason : numbers[0];
     entry.current = first !== undefined ? seasonFocusKey(first) : APPLY_KEY;
@@ -112,21 +125,27 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
     sending.current = true;
     try {
       const outcome = await requestSeasons({ key: title.key, seasons });
-      onClose();
-      onAnswer(title, outcome, seasons);
+      after.current = () => onAnswer(title, outcome, seasons);
     } catch {
-      onClose();
-      onAnswer(title, { kind: "done", ok: false, message: null, state: null }, seasons);
+      after.current = () => onAnswer(title, { kind: "done", ok: false, message: null, state: null }, seasons);
     } finally {
       sending.current = false;
     }
-  }, [numbers, checked, requestSeasons, title, onClose, onAnswer]);
+    requestClose();
+  }, [numbers, checked, requestSeasons, title, onAnswer, requestClose]);
 
   return (
-    <Modal visible={entry.current !== null} transparent animationType="none" onRequestClose={onClose}>
-      <FocusBindingProvider bind={focus.binder}>
-        <SeasonsSheet sheet={sheet} onToggle={onToggle} onSubmit={onSubmit} onClose={onClose} />
-      </FocusBindingProvider>
-    </Modal>
+    <FadingModal value={entry.current !== null && !closing ? sheet : null} onRequestClose={requestClose} onExited={closed}>
+      {(shown, leaving) => (
+        <FocusBindingProvider bind={focus.binder}>
+          <SeasonsSheet
+            sheet={shown}
+            onToggle={leaving ? undefined : onToggle}
+            onSubmit={leaving ? undefined : onSubmit}
+            onClose={leaving ? undefined : requestClose}
+          />
+        </FocusBindingProvider>
+      )}
+    </FadingModal>
   );
 }

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Modal } from "react-native";
+import { FadingModal } from "../../redesign/motion/FadingModal";
 import { ChoiceSheet } from "../../redesign/screens/settings/ChoiceSheet";
 import type { ChoiceListModel } from "../../redesign/screens/settings/settingsTypes";
 import { useBackLayer } from "../back/BackScope";
@@ -10,8 +10,9 @@ import { useChoiceEntry } from "./settingsFocus";
  * La liste de choix d'un réglage, dans une `Modal` : sur tvOS elle a son
  * propre contrôleur, le focus ne peut pas en sortir, et Menu la referme
  * (`onRequestClose`, sa couche « menu » du Retour) — le focus retrouve alors
- * la tuile qui l'avait ouverte. La feuille garde son voile et son fondu ; elle
- * s'ouvre sur la valeur retenue (`useChoiceEntry`).
+ * la tuile qui l'avait ouverte. La feuille garde son voile et son fondu
+ * d'entrée, s'efface d'un seul fondu avant que la Modal ne se retire
+ * (`FadingModal`), et s'ouvre sur la valeur retenue (`useChoiceEntry`).
  */
 export function ChoiceModal({ list, focus, onChoose, onClose }: {
   list: ChoiceListModel | null;
@@ -29,8 +30,8 @@ export function ChoiceModal({ list, focus, onChoose, onClose }: {
   const shown = useMemo(() => (list ? { ...list } : null), [list, releases]);
   useBackLayer("menu", list !== null, onClose);
   return (
-    <Modal visible={shown !== null} transparent animationType="none" onRequestClose={onClose}>
-      {shown ? <ChoiceSheet list={shown} onChoose={onChoose} /> : null}
-    </Modal>
+    <FadingModal value={shown} onRequestClose={onClose}>
+      {(list, leaving) => <ChoiceSheet list={list} onChoose={leaving ? undefined : onChoose} />}
+    </FadingModal>
   );
 }
