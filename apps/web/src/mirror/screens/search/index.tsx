@@ -1,7 +1,8 @@
 import "../../mirror.css";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { CardSheetProvider } from "../../cards/CardSheetProvider";
+import { SeriesGapsScope } from "../../../components/seasons/SeriesGapsScope";
 import { useIsTablet } from "../../useMirrorLayout";
 import { QuerySuggestions } from "./QuerySuggestions";
 import { SearchBrowse } from "./SearchBrowse";
@@ -32,20 +33,29 @@ const AMBIENT = "linear-gradient(to bottom, rgba(var(--brand-rgb), 0.18) 0%, rgb
  * d'une personne, d'un genre, d'un studio. Le champ prend le focus à
  * l'ouverture, sauf ouvert sur une filmographie ; le clavier se range dès
  * qu'on fait défiler du doigt. L'appui long d'une affiche ouvre la feuille
- * de ses actions (`CardSheetProvider`).
+ * de ses actions (`CardSheetProvider`). Les séries incomplètes trouvées offrent
+ * leurs saisons à demander (`SeriesGapsScope`, qui enveloppe la feuille : elle
+ * la lit aussi).
  */
 export function MirrorSearch() {
+  const s = useMirrorSearch();
+  const response = s.response;
+  const series = useMemo(() => {
+    const top = response?.top;
+    return [...(top?.kind === "item" ? [top.hit.item] : []), ...(response?.series ?? []).map((hit) => hit.item)];
+  }, [response]);
   return (
-    <CardSheetProvider>
-      <SearchScreen />
-    </CardSheetProvider>
+    <SeriesGapsScope items={series}>
+      <CardSheetProvider>
+        <SearchScreen s={s} />
+      </CardSheetProvider>
+    </SeriesGapsScope>
   );
 }
 
-function SearchScreen() {
+function SearchScreen({ s }: { s: ReturnType<typeof useMirrorSearch> }) {
   const { t } = useTranslation("search");
   const isTablet = useIsTablet();
-  const s = useMirrorSearch();
   const { nav } = s;
   const inputRef = useRef<HTMLInputElement>(null);
   const touching = useRef(false);

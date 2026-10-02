@@ -6,6 +6,8 @@ import type { MediaSheetTarget } from "../cardSheet";
 import { SheetActions } from "./SheetActions";
 import { mediaSheetHeader, SheetHeader } from "./SheetHeader";
 import { SheetPlayButton } from "./SheetPlayButton";
+import { SheetRequestButton } from "./SheetRequestButton";
+import { useSeriesGapOffer } from "../../../components/seasons/SeriesGapsScope";
 import { SheetRating } from "./SheetRating";
 import { sheetPlayPlan } from "./sheetPlay";
 
@@ -38,6 +40,8 @@ export function MediaSheetBody({ target, onClose }: { target: MediaSheetTarget; 
   const plan = sheetPlayPlan(item, watchState);
   // La note de ce que la carte MONTRE : la série sur une affiche, l'épisode sur une vignette.
   const rating = useCardRatingTarget(item, { scope: variant === "landscape" ? "item" : "series", enabled: true });
+  // Une série à qui il manque des saisons — dans la recherche seulement (`SeriesGapsScope`).
+  const gap = useSeriesGapOffer(item.Id);
 
   const overlay = resolveCardOverlay({
     variant,
@@ -48,6 +52,7 @@ export function MediaSheetBody({ target, onClose }: { target: MediaSheetTarget; 
     // place de ses étoiles : elles n'apparaissent pas après coup.
     rateable: rating.identity !== null || rating.pending || (isPending && RATEABLE_TYPES.has(item.Type)),
     offline: false,
+    request: gap !== null,
   });
 
   // Toute navigation ferme d'abord : une fiche similaire garde le même écran.
@@ -64,6 +69,16 @@ export function MediaSheetBody({ target, onClose }: { target: MediaSheetTarget; 
           plan={plan}
           title={item.Name}
           onPress={() => go(plan.targetId ? `/watch/${plan.targetId}` : `/media/${item.Id}`)}
+        />
+      )}
+      {overlay.request && gap && (
+        <SheetRequestButton
+          count={gap.count}
+          title={item.Name}
+          onPress={() => {
+            onClose();
+            gap.open();
+          }}
         />
       )}
       <SheetActions item={item} overlay={overlay} onOpenDetails={() => go(`/media/${item.Id}`)} />

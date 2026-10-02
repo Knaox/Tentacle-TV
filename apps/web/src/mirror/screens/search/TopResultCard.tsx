@@ -1,6 +1,7 @@
 import { memo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Film, Info, Play } from "lucide-react";
+import { Film, Info, Play, Plus } from "lucide-react";
+import { useSeriesGapOffer } from "../../../components/seasons/SeriesGapsScope";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { cardRatingFor, itemMeta, matchReason, personMeta, type SearchPersonHit, type SearchTopHit } from "@tentacle-tv/shared";
 import { CardMarkerLayer } from "../../../components/cards/CardMarkerLayer";
@@ -51,6 +52,8 @@ export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, 
   const openSheet = useOpenCardSheet();
   const media = top.kind === "item" ? asMediaItem(top.hit.item) : null;
   const press = useLongPress(openSheet && media ? () => openSheet({ kind: "media", variant: "poster", item: media }) : undefined);
+  // Une série incomplète : ses saisons à demander, à côté de « Détails » (`SeriesGapsScope`).
+  const gap = useSeriesGapOffer(media?.Id);
 
   if (top.kind === "person") {
     const person = top.hit;
@@ -113,6 +116,17 @@ export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, 
               <Info size={15} aria-hidden />
               {t("details")}
             </button>
+            {gap && (
+              <button
+                type="button"
+                onClick={gap.open}
+                aria-label={`${t("requests:requestMissing")} — ${item.Name}`}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] px-4 text-sm font-bold text-brand-light active:opacity-75"
+              >
+                <Plus size={15} strokeWidth={2.5} aria-hidden />
+                {t("requests:missingSeasons", { count: gap.count })}
+              </button>
+            )}
           </div>
         </div>
       </div>

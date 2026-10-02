@@ -10,6 +10,7 @@ import { Pressable } from "../ui/Pressable";
 import { useCardWidth } from "../useMirrorLayout";
 import { useOpenCardSheet } from "./cardSheet";
 import { cardProgress } from "./cardProgress";
+import { useSeriesGapOffer } from "../../components/seasons/SeriesGapsScope";
 
 interface Props {
   item: MediaItem;
@@ -50,6 +51,7 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
   const progress = cardProgress(item.UserData);
   const hasProgress = progress !== null;
   const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
+  const gap = useSeriesGapOffer(item.Id);
 
   return (
     <Pressable
@@ -115,6 +117,8 @@ export const MediaCard = memo(function MediaCard({ item, onPress, onLongPress, w
       {isEpisode && item.SeriesName != null && (
         <p className="mt-0.5 truncate text-[10px] font-medium text-content-tertiary">{item.SeriesName}</p>
       )}
+      {/* Une série incomplète (recherche seulement) : son appui long offre de demander ses saisons. */}
+      {gap && <p className="mt-0.5 line-clamp-2 text-[10px] font-semibold text-brand-light">+ {t("requests:missingSeasons", { count: gap.count })}</p>}
     </Pressable>
   );
 });
