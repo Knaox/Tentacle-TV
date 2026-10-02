@@ -16,6 +16,9 @@ export default {
   stateImporting: "Mise en bibliothèque",
   // N'avance plus pour l'instant — jamais un échec.
   stateBlocked: "Bloquée",
+  // Apple TV : le titre vient d'entrer dans la bibliothèque — son affiche
+  // reprend toute sa couleur, puis la demande quitte la liste.
+  stateArrived: "Disponible",
   percent: "{{percent}} %",
   // La liste des demandes en cours (TV) : l'entrée du rail et sa fenêtre.
   dockLabel: "Mes demandes",

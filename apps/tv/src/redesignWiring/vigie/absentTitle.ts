@@ -31,5 +31,6 @@ export function requestedTitle(title: AbsentTitle, seasons: number[] | null = nu
     seasons: parsed.mediaType === "tv" ? seasons : null,
     state: "pending",
     percent: null,
+    etaSeconds: null,
   };
 }

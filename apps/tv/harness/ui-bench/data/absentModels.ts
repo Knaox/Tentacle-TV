@@ -37,7 +37,7 @@ export const AOT_FILM = "f461dd313e49d9bde1d226d22fe4ed08";
 /** Une demande d'exemple du compte (la liste du socle, `mine`). */
 function mine(key: TitleKey, title: string, state: MyTitle["state"], percent: number | null = null): MyTitle {
   const [mediaType, id] = key.split(":");
-  return { key, mediaType: mediaType as MyTitle["mediaType"], tmdbId: Number(id), title, year: null, imageUrl: null, seasons: null, state, percent };
+  return { key, mediaType: mediaType as MyTitle["mediaType"], tmdbId: Number(id), title, year: null, imageUrl: null, seasons: null, state, percent, etaSeconds: null };
 }
 
 /** Ce que l'extension dirait d'un titre demandé par quelqu'un d'autre. */

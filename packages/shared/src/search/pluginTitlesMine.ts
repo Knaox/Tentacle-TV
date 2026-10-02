@@ -6,9 +6,11 @@
  *   GET access       → { request: boolean }
  *     le compte peut-il demander quoi que ce soit (faux : bloqué, ou aucun
  *     type de titre permis) ;
- *   GET mine?lang=fr → { items: [{ key, title, year, imageUrl, seasons, state, percent }] }
+ *   GET mine?lang=fr → { items: [{ key, title, year, imageUrl, seasons, state, percent, etaSeconds }] }
  *     les titres qu'il attend — demandés, pas encore dans la bibliothèque —,
- *     un par titre, les plus récents d'abord.
+ *     un par titre, les plus récents d'abord. `etaSeconds` (ajouté après
+ *     coup, facultatif) : le temps qu'il reste à un titre qui arrive VRAIMENT
+ *     — de quoi faire avancer son avancement entre deux lectures.
  *
  * À la différence des pastilles de `state`, seul l'ÉTAT voyage : les mots sont
  * ceux de Tentacle (`MY_TITLE_STATE_KEYS`, espace i18n `requests`), les mêmes
@@ -39,6 +41,9 @@ export interface MyTitle {
   state: MyTitleState;
   /** 0 à 100 quand le titre arrive et que l'avancement se sait ; sinon `null`. */
   percent: number | null;
+  /** Les secondes qu'il lui reste, quand il arrive et que ça avance ; sinon
+   *  `null` — une extension d'avant ce champ, ou rien qui descende. */
+  etaSeconds: number | null;
 }
 
 export interface TitlesAccess {
@@ -61,6 +66,8 @@ export const MY_TITLE_PERCENT_KEY = "requests:percent";
 export const MAX_MY_TITLES = 50;
 
 const MAX_SEASONS = 100;
+/** Au-delà d'une semaine, un temps restant n'annonce plus rien d'utile. */
+const MAX_ETA_SECONDS = 7 * 24 * 3600;
 
 function pluginRoute(provider: TitleProvider, path: string): string {
   return `/api/plugins/${encodeURIComponent(provider.pluginId)}${path}`;
@@ -111,6 +118,10 @@ function readPercent(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : null;
 }
 
+function readEta(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 && value <= MAX_ETA_SECONDS ? Math.round(value) : null;
+}
+
 /** Un titre attendu, validé champ par champ ; `null` s'il ne se lit pas. */
 export function readMyTitle(raw: unknown): MyTitle | null {
   if (!raw || typeof raw !== "object") return null;
@@ -130,6 +141,7 @@ export function readMyTitle(raw: unknown): MyTitle | null {
     state,
     // L'avancement ne se dit que d'un titre en route : bloqué ou rangé, la barre n'a plus de sens.
     percent: state === "arriving" ? readPercent(r.percent) : null,
+    etaSeconds: state === "arriving" ? readEta(r.etaSeconds) : null,
   };
 }
 

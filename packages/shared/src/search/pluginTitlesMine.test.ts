@@ -21,7 +21,7 @@ const vigie = {
 
 const arriving = {
   key: "tv:1399", title: "Game of Thrones", year: 2011, imageUrl: "https://image.tmdb.org/t/p/w185/a.jpg",
-  seasons: [3, 2, 3], state: "arriving", percent: 42.7,
+  seasons: [3, 2, 3], state: "arriving", percent: 42.7, etaSeconds: 754.4,
 };
 
 describe("les routes du compte dans le contrat titles", () => {
@@ -57,7 +57,18 @@ describe("un titre attendu", () => {
     expect(readMyTitle(arriving)).toEqual({
       key: "tv:1399", mediaType: "tv", tmdbId: 1399, title: "Game of Thrones", year: 2011,
       imageUrl: "https://image.tmdb.org/t/p/w185/a.jpg", seasons: [2, 3], state: "arriving", percent: 42.7,
+      etaSeconds: 754,
     });
+  });
+
+  it("n'a de temps restant qu'en route, en secondes entières, et lisible", () => {
+    expect(readMyTitle({ ...arriving, etaSeconds: undefined })?.etaSeconds).toBeNull();
+    for (const etaSeconds of [0, -5, "600", Number.NaN, Number.POSITIVE_INFINITY, 8 * 24 * 3600]) {
+      expect(readMyTitle({ ...arriving, etaSeconds })?.etaSeconds, String(etaSeconds)).toBeNull();
+    }
+    for (const state of ["pending", "importing", "blocked"]) {
+      expect(readMyTitle({ ...arriving, state, etaSeconds: 600 })?.etaSeconds, state).toBeNull();
+    }
   });
 
   it("n'a d'avancement qu'en route, borné de 0 à 100", () => {

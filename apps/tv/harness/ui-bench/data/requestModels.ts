@@ -13,6 +13,8 @@ interface Spec {
   index: number;
   state: MyTitleState;
   percent?: number | null;
+  /** Le temps restant d'un titre qui arrive : son camembert avance seul. */
+  etaSeconds?: number | null;
   seasons?: number[];
 }
 
@@ -33,6 +35,7 @@ function toTitle(data: BenchData, spec: Spec, n: number): MyTitle | null {
     seasons: mediaType === "tv" ? spec.seasons ?? null : null,
     state: spec.state,
     percent: spec.state === "arriving" ? spec.percent ?? null : null,
+    etaSeconds: spec.state === "arriving" ? spec.etaSeconds ?? null : null,
   };
 }
 

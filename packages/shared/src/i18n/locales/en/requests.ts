@@ -8,6 +8,7 @@ export default {
   stateArriving: "In progress",
   stateImporting: "Adding to library",
   stateBlocked: "Stuck",
+  stateArrived: "Available",
   percent: "{{percent}}%",
   dockLabel: "My requests",
   dockEmpty: "Nothing in the queue",
