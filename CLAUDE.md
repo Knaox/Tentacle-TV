@@ -329,11 +329,14 @@ ton, d'ordre ou de gabarit du plateau s'y reporte. Sur les cartes du cœur,
 « Demander » n'existe que si le Vigie installé déclare le contrat `titles` :
 un Vigie trop ancien les laisse sans « + », sans la moindre erreur — vérifier
 la version déployée (`data/plugins/installed.json`) avant de conclure au bug.
-**Exception assumée, Apple TV :** les demandes en cours (`redesignWiring/vigie/`,
-routes `titles.access` et `titles.mine` du contrat) sont la SEULE fonction de
-Vigie que le cœur intègre nativement. Toute fonction de Vigie sur la TV passe
-par `useVigieGate` : serveur ou Vigie trop anciens, Vigie éteint, compte bloqué
-dans Vigie (le compte de démonstration de la revue Apple) → aucune trace.
+**Exception assumée, Apple TV :** les demandes en cours (routes `titles.access`
+et `titles.mine` du contrat) et « Demander » un titre absent — collection d'un
+film, rangée « À demander » de la recherche, feuille des saisons
+(`titles.state`, `titles.request`, `titles.seasons`) — sont les SEULES fonctions
+de Vigie que le cœur intègre nativement, toutes dans `redesignWiring/vigie/`.
+Toute fonction de Vigie sur la TV passe par `useVigieGate` : serveur ou Vigie
+trop anciens, Vigie éteint, compte bloqué dans Vigie (le compte de
+démonstration de la revue Apple) → aucune trace.
 
 ## Recommandations — le goût, et le retrait jamais sous le curseur
 

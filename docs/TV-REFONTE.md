@@ -477,7 +477,8 @@ seulement quand le serveur déclare Vigie installé ET activé, et rien d'autre
 — ni pages Vigie, ni le mot « Vigie », « plugin », « téléchargement ».
 
 - **La carte d'un titre absent** (`card.absent`, `cards/AbsentArtwork`) : son
-  affiche TMDB en niveaux de gris sous un voile qui s'allège au focus, et un
+  affiche TMDB en niveaux de gris sous un voile qui s'allège au focus — sa
+  lueur y est NEUTRE (`glowTone`, jamais la couleur d'une œuvre) —, et un
   badge au pied de l'image, là où les autres cartes portent leur note — « Pas
   dans la bibliothèque », ou l'état de sa demande. Sans affiche (serveur
   d'avant `posterPath`) : un cadre qui écrit titre et année. Le gris est
@@ -520,8 +521,8 @@ seulement quand le serveur déclare Vigie installé ET activé, et rien d'autre
   et `POST request` avec `seasons: [1, 2]` — Vigie, branche
   `feat/tv-saisons` ; le cœur les relaie (`readTitlesMeta`,
   `TitleProvider.seasonsPath`, `useTitleSeasons`, `useRequestTitleSeasons`).
-- **Éprouvé** : au banc, groupe « Demandes » (`bench:ui planche demandes
-  --focus`) ; dans l'app réelle (simulateur, compte Knaoxtest) derrière un
+- **Éprouvé** : au banc, groupe « Titres absents » (`bench:ui planche
+  absents --focus`) ; dans l'app réelle (simulateur, compte Knaoxtest) derrière un
   relais à soi devant 3001, qui imite Vigie et ne relaie AUCUNE écriture
   (chaque POST journalisé) : sans Vigie, compte bloqué, Vigie actif — saga
   (états, demande d'un film, panneau), recherche « marvel » (rangée, demande
