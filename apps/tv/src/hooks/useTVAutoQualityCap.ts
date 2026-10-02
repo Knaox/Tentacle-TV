@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { primeBitrateMeasure, cachedBitrate, useJellyfinClient } from "@tentacle-tv/api-client";
 import { capForBitrate } from "@tentacle-tv/shared";
 import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
+import { TV_BITRATE_MEASURE } from "../utils/bitrateMeasureOptions";
 import { plog } from "../utils/playerDiag";
 
 /**
@@ -49,7 +50,7 @@ export function useTVAutoQualityCap(args: {
   // DirectStreamingSync (`preferDirect`) : sans elle, ce filet remesurait le
   // proxy et ÉCRASAIT la mesure directe — la lecture suivante, servie en
   // direct par Jellyfin, était plafonnée sur le débit du proxy.
-  useEffect(() => { primeBitrateMeasure(client, { preferDirect: true }); }, [client]);
+  useEffect(() => { primeBitrateMeasure(client, TV_BITRATE_MEASURE); }, [client]);
 
   // Photographie par (item, session) : re-prise quand startTicks bouge — un
   // reload reconstruit le flux de toute façon, c'est le seul moment où changer

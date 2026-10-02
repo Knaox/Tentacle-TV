@@ -8,6 +8,7 @@ import {
 } from "@tentacle-tv/api-client";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
 import { useStoredToken } from "../hooks/useStoredToken";
+import { TV_BITRATE_MEASURE } from "../utils/bitrateMeasureOptions";
 
 interface Props {
   storage: StorageAdapter;
@@ -44,7 +45,7 @@ export function DirectStreamingSync({ storage }: Props) {
   // mesurer sur place (cf. useTVAutoQualityCap). Voie DIRECTE dès qu'elle est
   // active (runtime natif, pas de CORS) : c'est elle que prendront les
   // segments, et l'effet ci-dessous remesure quand elle s'ouvre.
-  useEffect(() => { if (token) primeBitrateMeasure(client, { preferDirect: true }); }, [client, token]);
+  useEffect(() => { if (token) primeBitrateMeasure(client, TV_BITRATE_MEASURE); }, [client, token]);
 
   useEffect(() => {
     if (data?.tokenExpired) {
@@ -66,7 +67,7 @@ export function DirectStreamingSync({ storage }: Props) {
       });
       // Une mesure prise par le proxy avant l'ouverture du direct ne dit rien
       // de la voie qu'emprunteront les segments : elle est refaite.
-      primeBitrateMeasure(client, { preferDirect: true });
+      primeBitrateMeasure(client, TV_BITRATE_MEASURE);
     } else if (isFetched && !isError) {
       // Le backend a répondu et le direct n'est PAS actif (désactivé, ou pas de
       // token) → mode proxy : tout passe par Tentacle (bon serveur Jellyfin).
