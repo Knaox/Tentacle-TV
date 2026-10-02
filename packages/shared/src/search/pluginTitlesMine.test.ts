@@ -32,6 +32,12 @@ describe("les routes du compte dans le contrat titles", () => {
     expect(myTitlesUrl(provider, "fr")).toBe("/api/plugins/seer/titles/mine?lang=fr");
   });
 
+  it("filtrent les titres attendus par origine, sans rien changer sans elle", () => {
+    const provider = titleProvider([vigie])!;
+    expect(myTitlesUrl(provider, "fr", "tv")).toBe("/api/plugins/seer/titles/mine?lang=fr&origin=tv");
+    expect(myTitlesUrl(provider, "en", null)).toBe("/api/plugins/seer/titles/mine?lang=en");
+  });
+
   it("manquent sans rien casser chez un plugin d'avant, ou mal formées", () => {
     const old = titleProvider([{ ...vigie, titles: { state: "/titles/state", request: "/titles/request" } }])!;
     expect(old).toMatchObject({ accessPath: null, minePath: null, requestPath: "/titles/request" });

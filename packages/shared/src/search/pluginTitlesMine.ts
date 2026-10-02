@@ -10,7 +10,9 @@
  *     les titres qu'il attend — demandés, pas encore dans la bibliothèque —,
  *     un par titre, les plus récents d'abord. `etaSeconds` (ajouté après
  *     coup, facultatif) : le temps qu'il reste à un titre qui arrive VRAIMENT
- *     — de quoi faire avancer son avancement entre deux lectures.
+ *     — de quoi faire avancer son avancement entre deux lectures. `origin`
+ *     (venu après, facultatif) : ceux d'une origine seulement — « tv », les
+ *     demandes faites depuis un téléviseur (`pluginTitleOrigin.ts`).
  *
  * À la différence des pastilles de `state`, seul l'ÉTAT voyage : les mots sont
  * ceux de Tentacle (`MY_TITLE_STATE_KEYS`, espace i18n `requests`), les mêmes
@@ -23,6 +25,7 @@
  */
 
 import { parseTitleKey, type TitleKey, type TitleMediaType, type TitleProvider } from "./pluginTitles";
+import type { TitleOrigin } from "./pluginTitleOrigin";
 
 /** Pas encore validé · en route · rangé dans la bibliothèque · bloqué en chemin. */
 export type MyTitleState = "pending" | "arriving" | "importing" | "blocked";
@@ -77,10 +80,12 @@ export function titlesAccessUrl(provider: TitleProvider): string | null {
   return provider.accessPath === null ? null : pluginRoute(provider, provider.accessPath);
 }
 
-export function myTitlesUrl(provider: TitleProvider, lang: string): string | null {
-  return provider.minePath === null
-    ? null
-    : `${pluginRoute(provider, provider.minePath)}?${new URLSearchParams({ lang }).toString()}`;
+/** Les titres attendus ; `origin` : ceux de cette origine seulement — sinon tous, comme avant. */
+export function myTitlesUrl(provider: TitleProvider, lang: string, origin: TitleOrigin | null = null): string | null {
+  if (provider.minePath === null) return null;
+  const params = new URLSearchParams({ lang });
+  if (origin) params.set("origin", origin);
+  return `${pluginRoute(provider, provider.minePath)}?${params.toString()}`;
 }
 
 /** Le droit du compte ; illisible : `null` — l'appelant le tient pour fermé. */
