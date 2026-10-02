@@ -26,7 +26,7 @@ export interface Stage {
 export type Build = (data: BenchData) => Stage | null;
 export type Patch = (data: BenchData, stage: Stage) => Partial<PlayerChromeViewProps> & { frame?: string };
 
-function base(data: BenchData, item: MediaItem | undefined, fraction: number): Stage | null {
+export function base(data: BenchData, item: MediaItem | undefined, fraction: number): Stage | null {
   if (!item) return null;
   return {
     frame: videoFrameOf(data, item),
@@ -71,7 +71,7 @@ const skip = (labelKey: Parameters<typeof skipPillLabel>[1], kind: "segment" | "
 
 /** Un défilement de `offset` secondes depuis la position, et son décompte
  *  (`action`, `remaining` secondes sur 3) — l'origine est la position. */
-const aimedWith = (
+export const aimedWith = (
   action: "play" | "resume" | "return", remaining: number, offset: number, paused = false, withFrame = true,
 ): Patch => (_data, stage) => ({
   paused,
