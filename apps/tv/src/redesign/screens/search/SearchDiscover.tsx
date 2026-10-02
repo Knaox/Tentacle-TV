@@ -2,6 +2,7 @@ import { memo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { Chip } from "../../controls/Chip";
+import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { colors, text } from "../../theme/tokens";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 import { RESULTS_CLIP, type SearchDiscoverModel } from "./searchViewModel";
@@ -12,8 +13,12 @@ import { RESULTS_CLIP, type SearchDiscoverModel } from "./searchViewModel";
  * (un titre, un acteur, un genre, une faute de frappe), les recherches
  * récentes (un appui les relance) et les genres de la bibliothèque à
  * parcourir, avec ce qu'ils couvrent. `empty` : la saisie n'a rien trouvé, la
- * même page le dit en tête. Clés : `recent:0`…, `genre:0`…
+ * même page le dit en tête. Clés : `recent:0`…, `genre:0`… ; les deux
+ * groupes sont des sections (`section:recent`, `section:genre`) : HAUT / BAS
+ * de l'un à l'autre au plus proche, et d'une ligne de pastilles à la suivante.
  */
+
+const GROUP_REVEAL: FocusSectionReveal = { mode: "nearest" };
 export const SearchDiscover = memo(function SearchDiscover({
   discover,
   empty,
@@ -39,7 +44,7 @@ export const SearchDiscover = memo(function SearchDiscover({
         <Text style={[text.body, styles.hint]}>{discover.hint}</Text>
       </View>
       {discover.recents.length > 0 ? (
-        <View style={styles.group} onLayout={sectionLayout("recent", ["recent"])}>
+        <FocusSection focusKey="section:recent" reveal={GROUP_REVEAL} style={styles.group} onLayout={sectionLayout("recent", ["recent"])}>
           <Text style={text.rowTitle}>{discover.recentsTitle}</Text>
           <View style={styles.chips}>
             {discover.recents.map((query, index) => (
@@ -52,10 +57,10 @@ export const SearchDiscover = memo(function SearchDiscover({
               />
             ))}
           </View>
-        </View>
+        </FocusSection>
       ) : null}
       {discover.genres.length > 0 ? (
-        <View style={styles.group} onLayout={sectionLayout("genre", ["genre"])}>
+        <FocusSection focusKey="section:genre" reveal={GROUP_REVEAL} style={styles.group} onLayout={sectionLayout("genre", ["genre"])}>
           <Text style={text.rowTitle}>{discover.genresTitle}</Text>
           <View style={styles.chips}>
             {discover.genres.map((genre, index) => (
@@ -68,7 +73,7 @@ export const SearchDiscover = memo(function SearchDiscover({
               />
             ))}
           </View>
-        </View>
+        </FocusSection>
       ) : null}
     </ScrollView>
   );

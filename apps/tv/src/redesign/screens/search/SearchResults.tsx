@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import type { CardModel } from "../../cards/cardTypes";
 import { Chip } from "../../controls/Chip";
+import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { MediaRow } from "../../rows/MediaRow";
 import { text } from "../../theme/tokens";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
@@ -24,7 +25,13 @@ import {
  * autres (films, séries, collections en affiches ; personnes en portraits ;
  * épisodes en 16:9 ; genres et studios en pastilles). Une réponse périmée —
  * celle d'une frappe précédente — reste lisible, atténuée.
+ *
+ * Chaque rangée est une SECTION (`FocusSection`, clé `section:<rangée>`) :
+ * HAUT / BAS passe à la voisine, au plus proche, et la rangée focalisée vient
+ * entière dans la colonne, en un seul mouvement.
  */
+
+const ROW_REVEAL: FocusSectionReveal = { mode: "nearest" };
 
 export interface SearchResultsProps {
   notice: SearchNoticeModel | null;
@@ -73,7 +80,7 @@ export const SearchResults = memo(function SearchResults({
         switch (section.key) {
           case "top":
             return (
-              <View key="top" style={[styles.top, dim]} onLayout={layout}>
+              <FocusSection key="top" focusKey="section:top" reveal={ROW_REVEAL} style={[styles.top, dim]} onLayout={layout}>
                 <SearchTopHit
                   top={section.top}
                   label={section.label}
@@ -82,17 +89,17 @@ export const SearchResults = memo(function SearchResults({
                   onPress={onOpenTop}
                   onFocusChange={onFocusTop}
                 />
-              </View>
+              </FocusSection>
             );
           case "people":
             return (
-              <View key="people" style={dim} onLayout={layout}>
+              <FocusSection key="people" focusKey="section:people" reveal={ROW_REVEAL} style={dim} onLayout={layout}>
                 <PeopleRow title={section.title} people={section.people} inset={RESULTS_CLIP} onOpen={onOpenPerson} />
-              </View>
+              </FocusSection>
             );
           case "facets":
             return (
-              <View key="facets" style={[styles.facets, dim]} onLayout={layout}>
+              <FocusSection key="facets" focusKey="section:facets" reveal={ROW_REVEAL} style={[styles.facets, dim]} onLayout={layout}>
                 <Text style={text.rowTitle} numberOfLines={1}>{section.title}</Text>
                 <View style={styles.chips}>
                   {section.facets.map((facet, index) => (
@@ -105,11 +112,11 @@ export const SearchResults = memo(function SearchResults({
                     />
                   ))}
                 </View>
-              </View>
+              </FocusSection>
             );
           default:
             return (
-              <View key={section.key} style={dim} onLayout={layout}>
+              <FocusSection key={section.key} focusKey={`section:${section.key}`} reveal={ROW_REVEAL} style={dim} onLayout={layout}>
                 <MediaRow
                   rowKey={section.key}
                   title={section.title}
@@ -122,7 +129,7 @@ export const SearchResults = memo(function SearchResults({
                   onLongPressCard={onLongPressCard ? (card) => onLongPressCard(section.key, card) : undefined}
                   onFocusCard={onFocusCard ? (card) => onFocusCard(section.key, card) : undefined}
                 />
-              </View>
+              </FocusSection>
             );
         }
       })}
