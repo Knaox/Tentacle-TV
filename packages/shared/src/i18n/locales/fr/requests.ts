@@ -46,6 +46,10 @@ export default {
   // pour la saison 0, et son vrai nom à la suite s'il en a un (tv-core `seasonTitle`).
   seasonSpecials: "Spéciaux",
   seasonNamed: "{{season}} · {{name}}",
+  // La feuille des saisons (TV) : OK coche, Lecture/Pause demande — la ligne
+  // qui coche tout (dès deux saisons), et le raccourci dit au pied de la feuille.
+  seasonsAll: "Toutes les saisons manquantes",
+  seasonsShortcut: "Lecture/Pause : demander",
   seasonEpisodes_one: "{{count}} épisode",
   seasonEpisodes_other: "{{count}} épisodes",
   seasonsLoading: "Lecture des saisons…",

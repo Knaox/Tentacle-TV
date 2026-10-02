@@ -2,5 +2,6 @@
 export * from "./arrivals";
 export * from "./liveProgress";
 export * from "./seasonTitle";
+export * from "./seasonsShortcut";
 export * from "./titlesGate";
 export * from "./tvOrigin";

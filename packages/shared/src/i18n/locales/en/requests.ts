@@ -32,6 +32,8 @@ export default {
   seasonFallback: "Season {{number}}",
   seasonSpecials: "Specials",
   seasonNamed: "{{season}} · {{name}}",
+  seasonsAll: "All missing seasons",
+  seasonsShortcut: "Play/Pause: request",
   seasonEpisodes_one: "{{count}} episode",
   seasonEpisodes_other: "{{count}} episodes",
   seasonsLoading: "Reading the seasons…",
