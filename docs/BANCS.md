@@ -18,6 +18,10 @@ backend 3001 redémarré ; compte Knaoxtest seulement.
 
 Lanceur : `apps/tv/harness/launcher/cli.mjs`.
 
+Apple TV PHYSIQUE (Release autonome, installée par-dessus) :
+`apps/tv/harness/launcher/install-appletv-release.sh` (`--js-only` si seul le JS a changé ;
+autre appareil : `APPLETV_DEVICE=<id>`).
+
 ## Bancs de l'app TV (`apps/tv/harness/`)
 
 | Dossier | Ce qu'il éprouve |
