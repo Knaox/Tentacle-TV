@@ -87,6 +87,19 @@ describe("/api/trailers/resolve", () => {
   });
 });
 
+describe("/api/trailers/report", () => {
+  it("consigne l'issue d'une lecture, et refuse un compte rendu malformé", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const app = await server();
+    const post = (payload: unknown) => app.inject({ method: "POST", url: "/api/trailers/report", headers: { authorization: "Bearer ok" }, payload: payload as object });
+    expect((await post({ ytId: ID, ok: true, ms: 812 })).statusCode).toBe(204);
+    expect(log).toHaveBeenCalledWith(`[trailers] ${ID} : première image en 812 ms`);
+    expect((await post({ ytId: "nope", ok: true, ms: 1 })).statusCode).toBe(400);
+    expect((await post({ ytId: ID, ok: false, ms: -5 })).statusCode).toBe(400);
+    log.mockRestore();
+  });
+});
+
 describe("flux relayés", () => {
   async function resolved(app: Awaited<ReturnType<typeof server>>) {
     const res = await app.inject({ url: `/api/trailers/resolve?ytId=${ID}`, headers: { authorization: "Bearer ok" } });

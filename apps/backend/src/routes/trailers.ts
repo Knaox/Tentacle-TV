@@ -11,6 +11,7 @@
 /* ------------------------------------------------------------------ */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
 import { startYtDlpUpdates } from "../services/ytDlp";
 import { prepareTrailer, resolveTrailer } from "../services/trailers/trailerRelay";
@@ -20,6 +21,14 @@ import { signRelayToken } from "../services/trailers/relayToken";
 const YT_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 
 const HLS_MIME = "application/vnd.apple.mpegurl";
+
+/** L'issue d'une lecture, telle que le téléviseur la rend (`reportTrailerOutcome`). */
+const OUTCOME = z.object({
+  ytId: z.string().regex(YT_ID_RE),
+  ok: z.boolean(),
+  ms: z.number().int().min(0).max(10 * 60_000),
+  reason: z.string().max(200).optional(),
+});
 
 function ytIdOf(request: FastifyRequest): string | null {
   const { ytId } = request.query as { ytId?: string };
@@ -71,5 +80,21 @@ export async function trailerRoutes(app: FastifyInstance) {
     if (!ytId) return reply.status(400).send({ error: "invalid ytId" });
     void prepareTrailer(ytId).catch((err) => console.warn(`[trailers] préparation de ${ytId} :`, err?.message ?? err));
     return reply.status(202).send({ status: "preparing" });
+  });
+
+  /**
+   * POST /api/trailers/report { ytId, ok, ms, reason? } → 204.
+   * Le téléviseur dit comment la lecture s'est passée : la première image et
+   * son délai depuis l'ouverture de l'écran, ou l'échec et sa raison. Une
+   * ligne de journal par lecture — c'est elle qui dira, en production, que
+   * YouTube a de nouveau changé (docs/BANDES-ANNONCES.md, « Surveiller »).
+   */
+  app.post("/report", async (request: FastifyRequest, reply: FastifyReply) => {
+    const parsed = OUTCOME.safeParse(request.body);
+    if (!parsed.success) return reply.status(400).send({ error: "invalid report" });
+    const { ytId, ok, ms, reason } = parsed.data;
+    if (ok) console.log(`[trailers] ${ytId} : première image en ${ms} ms`);
+    else console.warn(`[trailers] ${ytId} : échec de lecture après ${ms} ms (${reason ?? "sans raison"})`);
+    return reply.status(204).send();
   });
 }
