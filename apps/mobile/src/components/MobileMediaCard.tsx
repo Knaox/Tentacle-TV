@@ -5,7 +5,7 @@ import Animated from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { cardRatingFor, resolvePosterImage } from "@tentacle-tv/shared";
+import { cardRatingFor, latestAdditionsLine, resolvePosterImage } from "@tentacle-tv/shared";
 import { useResilientImage } from "@/hooks/useResilientImage";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar } from "@/components/ui";
@@ -59,6 +59,9 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   // Id = SeriesId, sans ImageTags — le poster série existe côté Jellyfin.
   const addedCount = item.RecentlyAddedCount ?? 0;
   const isGroupedSeries = addedCount > 1;
+  // Ce qu'une carte regroupée apporte de neuf — « 3 nouveaux épisodes »,
+  // « Nouvelle saison » —, écrit par le modèle partagé, à la place de l'année.
+  const additionsLine = latestAdditionsLine(t, item);
   // La chaîne de repli est celle du web et de la TV (`cardImage` partagé) :
   // affiche de l'épisode, puis de la série, avec son `tag` — sans lui l'URL
   // est immuable, et une affiche apparue après un 404 resterait grise à vie.
@@ -90,7 +93,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
       onLongPress={handleLongPress}
       style={{ width: cardWidth }}
       accessibilityRole="button"
-      accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${progress !== null ? `, ${Math.round(progress)}%` : ""}${isGroupedSeries ? `, ${t("addedEpisodes", { count: addedCount })}` : ""}${gapLabel ? `, ${gapLabel}` : ""}`}
+      accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${progress !== null ? `, ${Math.round(progress)}%` : ""}${additionsLine ? `, ${additionsLine}` : ""}${gapLabel ? `, ${gapLabel}` : ""}`}
       accessibilityState={selected === undefined ? undefined : { selected }}
     >
       <View style={st.poster}>
@@ -150,8 +153,8 @@ export const MobileMediaCard = memo(function MobileMediaCard({
           ? `S${String(item.ParentIndexNumber ?? 1).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} · `
           : ""}{item.Name}
       </Text>
-      {isGroupedSeries && <Text style={st.year}>{t("addedEpisodes", { count: addedCount })}</Text>}
-      {!isGroupedSeries && !isEpisode && item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
+      {additionsLine && <Text numberOfLines={1} style={st.year}>{additionsLine}</Text>}
+      {!additionsLine && !isEpisode && item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
       {isEpisode && item.SeriesName != null && <Text numberOfLines={1} style={st.year}>{item.SeriesName}</Text>}
       {/* Deux lignes : une carte de rangée est étroite, la phrase ne se coupe pas. */}
       {gapLabel && <Text numberOfLines={2} style={st.gap}>+ {gapLabel}</Text>}

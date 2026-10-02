@@ -30,6 +30,8 @@ interface Props {
   episodeListSeriesId?: string;
   highlightEpisodeId?: string;
   highlightSeasonId?: string;
+  /** La saison où ouvrir la liste d'une série (carte regroupée des « Derniers ajouts »). */
+  openSeasonId?: string;
 }
 
 /**
@@ -38,7 +40,7 @@ interface Props {
  * saga du film → similaires). Extrait de MediaDetailScreen (règle 300 lignes) ; partagé entre
  * le layout portrait (sous le hero) et paysage (colonne droite défilante).
  */
-export function DetailBody({ item, isEpisode, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId }: Props) {
+export function DetailBody({ item, isEpisode, parentSeries, similar, episodeListSeriesId, highlightEpisodeId, highlightSeasonId, openSeasonId }: Props) {
   const router = useRouter();
   const { t } = useTranslation("common");
   const st = useThemedStyles(makeMediaDetailStyles);
@@ -104,6 +106,7 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
             seriesId={episodeListSeriesId}
             currentEpisodeId={highlightEpisodeId}
             initialSeasonId={highlightSeasonId}
+            openSeasonId={openSeasonId}
             followResume={item.Type === "Series"}
             onPlay={(ep) => router.push(`/watch/${ep.Id}`)}
             seasonTrailing={(episodes) => <SeasonKeepOfflinePill episodes={episodes} />}

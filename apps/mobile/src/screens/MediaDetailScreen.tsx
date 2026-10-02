@@ -21,9 +21,13 @@ import { useMediaDetailAnimations } from "../hooks/useMediaDetailAnimations";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-interface Props { itemId: string }
+interface Props {
+  itemId: string;
+  /** La saison où ouvrir la liste d'une série (carte regroupée des « Derniers ajouts »). */
+  openSeasonId?: string;
+}
 
-export function MediaDetailScreen({ itemId }: Props) {
+export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
   const { t } = useTranslation("common");
   const theme = useTheme();
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
@@ -89,7 +93,8 @@ export function MediaDetailScreen({ itemId }: Props) {
   const body = (
     <Animated.View style={anims.contentStyle}>
       <DetailBody item={item} isEpisode={isEpisode} parentSeries={parentSeries} similar={similar}
-        episodeListSeriesId={episodeListSeriesId} highlightEpisodeId={highlightEpisodeId} highlightSeasonId={highlightSeasonId} />
+        episodeListSeriesId={episodeListSeriesId} highlightEpisodeId={highlightEpisodeId} highlightSeasonId={highlightSeasonId}
+        openSeasonId={isSeries ? openSeasonId : undefined} />
     </Animated.View>
   );
   // iPad : bouton FIXE à l'écran (il ne scrolle pas), plus grand et bordé pour

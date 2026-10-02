@@ -12,6 +12,8 @@ interface Props {
   currentEpisodeId?: string;
   /** Saison à présélectionner (saison de l'épisode courant). */
   initialSeasonId?: string;
+  /** Saison imposée à l'ouverture : celle du dernier ajout d'une carte regroupée. */
+  openSeasonId?: string;
   /** Fiche d'une SÉRIE : la liste s'ouvre sur la saison de l'épisode à reprendre. */
   followResume?: boolean;
   /**
@@ -41,10 +43,10 @@ interface Props {
  * puis sautait), liste légère puis sources, voisines préchargées, préchargement
  * dès que le doigt se pose sur une pastille.
  */
-export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId, followResume = false, scrollTargetRef, seasonTrailing, rowLeading, onLongPressEpisode }: Props) {
+export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId, openSeasonId, followResume = false, scrollTargetRef, seasonTrailing, rowLeading, onLongPressEpisode }: Props) {
   const browser = useSeasonBrowser({
     seriesId,
-    preferredSeasonId: initialSeasonId,
+    preferredSeasonId: openSeasonId ?? initialSeasonId,
     followResume,
     currentEpisodeSeasonId: currentEpisodeId ? initialSeasonId : undefined,
   });

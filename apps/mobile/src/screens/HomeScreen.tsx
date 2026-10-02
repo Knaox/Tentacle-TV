@@ -10,7 +10,7 @@ import {
   useWatchlist,
   useHomeWebSocket, usePreferencesLive, useRecoLive, useTentacleConfig,
 } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { latestAdditionsDetailQuery, type MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
@@ -76,7 +76,8 @@ export function HomeScreen() {
     for (const queryKey of REFRESH_KEYS) void queryClient.invalidateQueries({ queryKey });
   }, [featured, resume, nextUp, libraries, queryClient]);
 
-  const handlePress = useCallback((item: MediaItem) => { router.push(`/media/${item.Id}`); }, [router]);
+  // Une carte regroupée des « Derniers ajouts » ouvre la série sur la saison de son dernier ajout.
+  const handlePress = useCallback((item: MediaItem) => { router.push(`/media/${item.Id}${latestAdditionsDetailQuery(item)}`); }, [router]);
   const handlePlay = useCallback((item: MediaItem) => { router.push(`/watch/${item.Id}`); }, [router]);
   // Le bandeau suit le mode du compte (reprise, aléatoire, titre fixe, reco).
   const { slides: heroSlides, loading: heroLoading } = useHomeHero({
