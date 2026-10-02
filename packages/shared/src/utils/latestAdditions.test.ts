@@ -4,7 +4,7 @@ import type { MediaItem } from "../types/media";
 import type { LatestAdditions } from "../latestAdditions/latestAdditionsTypes";
 import fr from "../i18n/locales/fr/cards";
 import en from "../i18n/locales/en/cards";
-import { latestAdditionsCaption, latestAdditionsLine, latestAdditionsSeasonId } from "./latestAdditions";
+import { latestAdditionsCaption, latestAdditionsDetailQuery, latestAdditionsLine, latestAdditionsSeasonId } from "./latestAdditions";
 
 const i18n = i18next.createInstance();
 await i18n.init({ lng: "fr", resources: { fr: { cards: fr }, en: { cards: en } }, interpolation: { escapeValue: false } });
@@ -60,5 +60,10 @@ describe("latestAdditionsSeasonId", () => {
     expect(latestAdditionsSeasonId(grouped({ LatestSeasonId: "s3" }))).toBe("s3");
     expect(latestAdditionsSeasonId(grouped({ LatestSeasonId: null }))).toBeUndefined();
     expect(latestAdditionsSeasonId({ Id: "m", Name: "Film", Type: "Movie" })).toBeUndefined();
+  });
+
+  it("l'adresse de la fiche porte la saison, et rien d'autre pour une carte ordinaire", () => {
+    expect(latestAdditionsDetailQuery(grouped({ LatestSeasonId: "s3" }))).toBe("?season=s3");
+    expect(latestAdditionsDetailQuery({ Id: "m", Name: "Film", Type: "Movie" })).toBe("");
   });
 });

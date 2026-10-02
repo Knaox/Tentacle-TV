@@ -47,3 +47,12 @@ export function latestAdditionsLine(t: TFunction, item: MediaItem): string | nul
 export function latestAdditionsSeasonId(item: MediaItem): string | undefined {
   return item.LatestAdditions?.LatestSeasonId ?? undefined;
 }
+
+/** Le paramètre d'adresse d'une fiche de série qui s'ouvre sur une saison (web, bureau, mobile). */
+export const DETAIL_SEASON_PARAM = "season";
+
+/** « ?season=… » : la fiche d'une carte regroupée, ouverte sur sa saison ; rien pour une autre carte. */
+export function latestAdditionsDetailQuery(item: MediaItem): string {
+  const seasonId = latestAdditionsSeasonId(item);
+  return seasonId ? `?${DETAIL_SEASON_PARAM}=${encodeURIComponent(seasonId)}` : "";
+}
