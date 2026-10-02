@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useLayoutEffect, useMemo } from "react";
 import { AppState, Platform } from "react-native";
 import { QueryClient, QueryClientProvider, focusManager, useQueryClient } from "@tanstack/react-query";
 
@@ -108,7 +108,12 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
   // retour au premier plan (cf. auth/useAuthRefresh)
   useAuthRefresh({ client, storage, serverUrl, queryClient });
 
-  useEffect(() => {
+  // Les adresses du serveur AVANT les requêtes des enfants : leurs effets
+  // passent avant ceux du parent, mais après TOUS les effets de mise en page.
+  // Posées dans un `useEffect`, la config du direct partait sans hôte au
+  // démarrage à froid (« /api/config/streaming » relatif, échec sans
+  // nouvel essai) — et tout passait par le proxy jusqu'au retour au premier plan.
+  useLayoutEffect(() => {
     if (!serverUrl) return;
     client.setBaseUrl(`${serverUrl}/api/jellyfin`);
     setPreferencesBackendUrl(serverUrl);
