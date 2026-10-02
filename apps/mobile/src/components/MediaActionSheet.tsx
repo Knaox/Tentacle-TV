@@ -11,6 +11,8 @@ import { SheetActionGrid } from "@/components/cards/sheet/SheetActionGrid";
 import { SheetFrame } from "@/components/cards/sheet/SheetFrame";
 import { SheetHeader } from "@/components/cards/sheet/SheetHeader";
 import { SheetPlayButton } from "@/components/cards/sheet/SheetPlayButton";
+import { SheetRequestButton } from "@/components/cards/sheet/SheetRequestButton";
+import { useSeriesGapOffer } from "@/components/seasons/SeriesGapsScope";
 import { useSheetPlay } from "@/components/cards/sheet/useSheetPlay";
 import { spacing } from "@/theme";
 
@@ -33,7 +35,8 @@ interface Props {
  *
  *   1. l'en-tête (et « Pourquoi ce titre » pour une recommandation) ;
  *   2. Lire / Reprendre — l'action primaire de la carte, quand quelque chose se
- *      lance (une série : son épisode à reprendre ou à suivre) ;
+ *      lance (une série : son épisode à reprendre ou à suivre) — puis, pour une
+ *      série incomplète de la recherche, « Demander les saisons manquantes » ;
  *   3. les bascules, dans l'ordre de la pastille d'états : Ma liste, favori,
  *      vu — Ma liste et favori au niveau SÉRIE, « vu » sur le titre montré ;
  *   4. les extras : garder hors ligne, Plus d'infos (carte dont le tap lance
@@ -71,6 +74,8 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
     enabled: !local,
   });
   const identity = ratingTarget.identity;
+  // Une série à qui il manque des saisons — dans la recherche seulement (`SeriesGapsScope`).
+  const gap = useSeriesGapOffer(local ? null : item?.Id);
 
   const overlay = resolveCardOverlay({
     variant: target.variant,
@@ -84,6 +89,7 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
     // titre ne s'y prête pas (droits, collection).
     offline: true,
     local,
+    request: gap !== null,
   });
   // Un titre local n'a d'autres bascules que celles de l'appelant : le
   // serveur, qui porte Ma liste et les favoris, n'est peut-être pas là.
@@ -113,6 +119,9 @@ function CardSheet({ target, onClose, navigation }: { target: CardSheetTarget; o
               pending={play.pending}
               onPress={() => leave(() => (play.targetId ? go.play(play.targetId) : go.open(item.Id)))}
             />
+          )}
+          {overlay.request && gap && (
+            <SheetRequestButton count={gap.count} title={target.title} onPress={() => leave(gap.open)} />
           )}
           <SheetActionGrid
             item={item}

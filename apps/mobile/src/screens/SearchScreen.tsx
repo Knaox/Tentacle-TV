@@ -9,6 +9,7 @@ import type { SearchPersonHit } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import { SubtleBackground, GlassSurface } from "@/components/ui";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
+import { SeriesGapsScope } from "@/components/seasons/SeriesGapsScope";
 import type { CardSheetNavigation } from "@/components/cards/sheet/cardSheetContext";
 import { AcceptCompletion, AssistedInput } from "@/components/search/GhostCompletion";
 import { QuerySuggestions } from "@/components/search/QuerySuggestions";
@@ -79,6 +80,11 @@ export function SearchScreen() {
     [debounced, search.data],
   );
   const completion = searching && focused ? completionFor(query, suggestions) : null;
+  // Les séries trouvées : celles qui sont incomplètes offrent leurs saisons à demander.
+  const seriesFound = useMemo(() => {
+    const top = search.data?.top;
+    return [...(top?.kind === "item" ? [top.hit.item] : []), ...(search.data?.series ?? []).map((hit) => hit.item)];
+  }, [search.data]);
 
   // Un filtre qui n'a plus rien à montrer (nouvelle requête) retombe sur « Tout ».
   useEffect(() => {
@@ -124,6 +130,7 @@ export function SearchScreen() {
   const headerTop = sheet ? spacing.lg : Math.max(insets.top, 24) + spacing.md;
 
   return (
+    <SeriesGapsScope items={seriesFound}>
     <CardSheetScope navigation={sheetNavigation}>
       <SubtleBackground ambient>
         <View style={[st.headerWrap, { paddingTop: headerTop }]}>
@@ -208,6 +215,7 @@ export function SearchScreen() {
         </ScrollView>
       </SubtleBackground>
     </CardSheetScope>
+    </SeriesGapsScope>
   );
 }
 

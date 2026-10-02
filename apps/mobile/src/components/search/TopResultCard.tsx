@@ -10,6 +10,7 @@ import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 import { cardProgress } from "@/components/cards/cardProgress";
 import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
 import { posterSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
+import { useSeriesGapOffer } from "@/components/seasons/SeriesGapsScope";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { PersonAvatar } from "./SearchPeople";
 import { asMediaItem } from "./SearchSection";
@@ -30,6 +31,7 @@ const PLAYABLE = new Set(["Movie", "Episode"]);
  * Hanks »), et le geste principal : « Lire » (ou « Reprendre ») pour un film,
  * « Détails » sinon. Une personne ouvre sa filmographie. L'affiche porte les
  * marqueurs de toutes les cartes, et son appui long la feuille des cartes.
+ * Une série incomplète offre ses saisons à demander (`SeriesGapsScope`).
  */
 export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, onPerson }: Props) {
   const { t, i18n } = useTranslation("search");
@@ -37,6 +39,7 @@ export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, 
   const st = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const openSheet = useCardSheetOpener();
+  const gap = useSeriesGapOffer(top.kind === "item" ? top.hit.item.Id : null);
 
   if (top.kind === "person") {
     const person = top.hit;
@@ -110,6 +113,17 @@ export const TopResultCard = memo(function TopResultCard({ top, onOpen, onPlay, 
               <Feather name="info" size={15} color={playable ? theme.colors.text.primary : theme.colors.cta.primaryFg} />
               <Text style={playable ? st.ctaSecondaryTxt : st.ctaPrimaryTxt}>{t("details")}</Text>
             </Pressable>
+            {gap && (
+              <Pressable
+                onPress={gap.open}
+                accessibilityRole="button"
+                accessibilityLabel={`${t("requests:requestMissing")} — ${item.Name}`}
+                style={({ pressed }) => [st.cta, st.ctaBrand, pressed && st.pressed]}
+              >
+                <Feather name="plus" size={15} color={theme.colors.brand.light} />
+                <Text style={st.ctaBrandTxt}>{t("requests:missingSeasons", { count: gap.count })}</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </View>
@@ -163,5 +177,8 @@ const makeStyles = (t: AppTheme) =>
     ctaPrimaryTxt: { fontSize: 14, fontFamily: FONT_FAMILY.bold, color: t.colors.cta.primaryFg },
     ctaSecondary: { backgroundColor: t.colors.fill.soft, borderWidth: 1, borderColor: t.colors.border.subtle },
     personCta: { marginTop: 4, alignSelf: "flex-start" as const },
+    // Au ton de la marque, en retrait de « Détails » : un verre teinté et cerclé.
+    ctaBrand: { backgroundColor: t.colors.brand.soft, borderWidth: 1, borderColor: t.colors.brand.glow },
+    ctaBrandTxt: { fontSize: 14, fontFamily: FONT_FAMILY.bold, color: t.colors.brand.light },
     ctaSecondaryTxt: { fontSize: 14, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
   });

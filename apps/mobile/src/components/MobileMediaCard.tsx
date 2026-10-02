@@ -16,6 +16,7 @@ import { CardMarkerLayer } from "@/components/cards/CardMarkerLayer";
 import { cardProgress } from "@/components/cards/cardProgress";
 import { useCardSheetOpener } from "@/components/cards/sheet/cardSheetContext";
 import { posterSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
+import { useSeriesGapOffer } from "@/components/seasons/SeriesGapsScope";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
@@ -78,6 +79,10 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   const openSheet = useCardSheetOpener();
   const handleLongPress = onLongPress ?? (openSheet ? () => openSheet(posterSheetTarget(item)) : undefined);
   const posterUri = image.uri;
+  // Une série incomplète (recherche seulement) le dit sous son affiche : son
+  // appui long offre de demander ses saisons.
+  const gap = useSeriesGapOffer(item.Id);
+  const gapLabel = gap ? t("requests:missingSeasons", { count: gap.count }) : null;
 
   return (
     <PressableCard
@@ -85,7 +90,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
       onLongPress={handleLongPress}
       style={{ width: cardWidth }}
       accessibilityRole="button"
-      accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${progress !== null ? `, ${Math.round(progress)}%` : ""}${isGroupedSeries ? `, ${t("addedEpisodes", { count: addedCount })}` : ""}`}
+      accessibilityLabel={`${item.Name}${item.ProductionYear ? `, ${item.ProductionYear}` : ""}${progress !== null ? `, ${Math.round(progress)}%` : ""}${isGroupedSeries ? `, ${t("addedEpisodes", { count: addedCount })}` : ""}${gapLabel ? `, ${gapLabel}` : ""}`}
       accessibilityState={selected === undefined ? undefined : { selected }}
     >
       <View style={st.poster}>
@@ -148,6 +153,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
       {isGroupedSeries && <Text style={st.year}>{t("addedEpisodes", { count: addedCount })}</Text>}
       {!isGroupedSeries && !isEpisode && item.ProductionYear != null && <Text style={st.year}>{item.ProductionYear}</Text>}
       {isEpisode && item.SeriesName != null && <Text numberOfLines={1} style={st.year}>{item.SeriesName}</Text>}
+      {gapLabel && <Text numberOfLines={1} style={st.gap}>+ {gapLabel}</Text>}
     </PressableCard>
   );
 });
@@ -216,6 +222,12 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
     ...typography.badge,
     fontFamily: FONT_FAMILY.medium,
     color: t.colors.text.tertiary,
+    marginTop: 2,
+  },
+  gap: {
+    ...typography.badge,
+    fontFamily: FONT_FAMILY.semibold,
+    color: t.colors.brand.light,
     marginTop: 2,
   },
 });
