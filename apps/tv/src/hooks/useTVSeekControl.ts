@@ -26,8 +26,8 @@ export function useTVSeekControl(args: {
   reportSeek: (seconds: number, paused: boolean) => void;
   setDisplayTime: (v: number) => void;
   notifySeekRef: React.MutableRefObject<(target: number, windowMs?: number, afterReload?: boolean) => void>;
-  /** Base des skips ±10/30 (useTVPlayerControls) : synchronisée à chaque commit de seek —
-   *  sinon un +30 juste après un seek repartait de l'ancienne position (progress pas encore accepté). */
+  /** Base des sauts (useTVPlayerControls) : synchronisée à chaque commit de seek —
+   *  sinon un saut juste après un seek repartait de l'ancienne position (progress pas encore accepté). */
   controlsCurrentTimeRef?: React.MutableRefObject<number>;
   /** La source se (re)charge : indicateur posé par un rechargement ou une attente de données. */
   loadingRef?: React.MutableRefObject<boolean>;

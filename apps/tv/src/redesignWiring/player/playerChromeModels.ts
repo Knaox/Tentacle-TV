@@ -1,9 +1,8 @@
 import {
   extractMediaQuality, formatEpisodeCode, type MediaItem, type PlayerOverlay, type ResolvedSegment,
 } from "@tentacle-tv/shared";
-import type { ScrubCountdownView } from "../../hooks/scrubCountdown";
+import type { ScrubCountdownState } from "../../hooks/scrubCountdown";
 import type { MetaItem } from "../../redesign/hero/MetaLine";
-import { formatClock } from "../../redesign/screens/player/formatClock";
 import {
   nextCountdownLabel, scrubCountdownLabel, skipPillLabel, type Translate,
 } from "../../redesign/screens/player/playerLabels";
@@ -146,13 +145,12 @@ export function buildEndScreen(
   return { ...upNext, seriesTitle: series.title, logoUri: series.logoUri, backdropUri: series.backdropUri, palette: series.palette };
 }
 
-/** Le décompte du défilement (`scrubCountdown.ts`) : ce que fera sa fin, et
- *  l'origine d'un abandon, dite en clair (« Reprise à 12:34 dans 2 s »). */
-export function buildScrubCountdown(state: ScrubCountdownView | null, t: Translate): ScrubCountdownModel | null {
+/** Le décompte du défilement (`scrubCountdown.ts`) : la lecture repartira à
+ *  la position visée, dit en clair (« Lecture dans 5 s »). */
+export function buildScrubCountdown(state: ScrubCountdownState | null, t: Translate): ScrubCountdownModel | null {
   if (!state) return null;
   return {
-    label: scrubCountdownLabel(t, state.action, state.remaining, formatClock(state.origin)),
-    kind: state.action === "play" ? "play" : "back",
+    label: scrubCountdownLabel(t, state.remaining),
     countdown: { remaining: state.remaining, total: state.total },
     live: true,
   };

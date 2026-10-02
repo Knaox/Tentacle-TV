@@ -13,12 +13,10 @@ import type { ScrubCountdownModel } from "./playerTypes";
 import { SOFT_BASE } from "./surfaces";
 
 /**
- * Le DÉCOMPTE du défilement : ce qui se passera si l'on ne bouge plus, et
- * quand — « Lecture dans 3 s » (le doigt levé du pavé : la lecture repart à
- * la position visée), « Reprise à 12:34 dans 3 s » (l'abandon : on revient
- * au départ). Une pilule de verre discrète, posée au bas de la vignette,
- * juste au-dessus du temps visé et de l'écart ; sa barre, au dégradé de la
- * marque, se vide avec le temps.
+ * Le DÉCOMPTE du défilement : quand la lecture repartira à la position visée
+ * si l'on ne bouge plus — « Lecture dans 5 s ». Une pilule de verre discrète,
+ * posée au bas de la vignette, juste au-dessus du temps visé et de l'écart ;
+ * sa barre, au dégradé de la marque, se vide avec le temps.
  *
  * Le décompte est une valeur reçue (secondes restantes, sur combien) : rien
  * ne compte ici. `live` : la barre GLISSE d'une seconde à la suivante, sur le
@@ -57,7 +55,7 @@ export const ScrubCountdown = memo(function ScrubCountdown({ model, appear }: {
   return (
     <Animated.View style={enter} pointerEvents="none" accessible accessibilityLabel={model.label}>
       <GlassSurface radius={HEIGHT / 2} tone="strong" style={[styles.pill, backing]}>
-        <Icon name={model.kind === "play" ? "play" : "history"} size={22} color={colors.text} strokeWidth={2.4} />
+        <Icon name="play" size={22} color={colors.text} strokeWidth={2.4} />
         <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
           {model.label}
         </Text>

@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import type { TouchMode } from "./scrubTouchTuning";
-import { jumpSecondsOf } from "./seekTuning";
 import { useScrubGestures } from "./useScrubGestures";
 import { useScrubController } from "./useScrubController";
 
@@ -46,14 +45,17 @@ interface TVPlayerControlsOptions {
 
 /**
  * Contrôles télécommande du lecteur — le modèle du lecteur d'Apple, que
- * Netflix a longtemps été sur Apple TV : habillage caché, un APPUI ←/→ saute
- * comme les boutons de l'habillage (+30 s, −10 s : `seekTuning.ts`) et la
- * lecture continue ; un MAINTIEN ouvre le défilement (curseur
- * fantôme qui accélère, seek seulement à la confirmation : OK lit depuis la
- * position visée, Retour revient où l'on était) ; habillage visible, ←/→
- * naviguent. Orchestrateur : visibilité de l'OSD + sauts des boutons,
- * délègue tout le scrub à useScrubController (source unique partagée
- * Android/tvOS) et branche les entrées (télécommande + gestes tvOS).
+ * Netflix a longtemps été sur Apple TV, avec UNE règle de validation pour
+ * toutes les façons d'avancer : habillage caché, un APPUI ←/→ pose la cible
+ * du saut de son sens (+30 s, −10 s : `seekTuning.ts`), exactement comme les
+ * boutons de saut de l'habillage ; un MAINTIEN ouvre le défilement (curseur
+ * fantôme qui accélère) ; le pavé l'emporte au doigt. Seek seulement à la
+ * validation : OK lit aussitôt depuis la position visée, Retour revient où
+ * l'on était ; entré en lecture, la lecture repart seule à la cible 5 s après
+ * le dernier geste (`scrubCountdown.ts`) ; en pause, rien ne part seul.
+ * Habillage visible, ←/→ naviguent. Orchestrateur : visibilité de l'OSD,
+ * badge des sauts ; délègue tout le scrub à useScrubController (source unique
+ * partagée Android/tvOS) et branche les entrées (télécommande + gestes tvOS).
  */
 export function useTVPlayerControls({
   paused, jellyfinDuration, onSeek, onBack, onPlayPause, onScrubPause,
@@ -106,39 +108,30 @@ export function useTVPlayerControls({
     setOverlayVisible(false);
   }, []);
 
-  // --- Badge « +30s / −10s » après un skip OSD caché : juste le delta, façon
-  // Netflix. OSD visible (boutons de saut) : la seekbar montre déjà le saut. ---
+  // --- Badge « +30s / −10s » d'un saut (appui ←/→, bouton) : juste le delta
+  // cumulé, façon Netflix. Le saut lui-même passe par le défilement ; l'écran
+  // d'Android TV affiche ce badge (`TVSkipBadge`), celui d'Apple TV non : sa
+  // vue du défilement dit déjà l'écart. ---
   const [skipFlash, setSkipFlash] = useState<{ delta: number; id: number } | null>(null);
   const skipFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Cumul des sauts consécutifs de même sens dans la fenêtre SKIP_BADGE_MS.
   const skipAccumRef = useRef(0);
   useEffect(() => () => { if (skipFlashTimerRef.current) clearTimeout(skipFlashTimerRef.current); }, []);
 
-  const skipBy = useCallback((delta: number) => {
-    const dur = durationRef.current || 0;
-    const target = currentTimeRef.current + delta;
-    const clamped = Math.max(0, dur > 0 ? Math.min(target, dur) : target);
-    currentTimeRef.current = clamped;
-    onSeekRef.current(clamped);
-
-    // Badge cumulatif : appuis répétés dans le MÊME sens → +30/+60/+90 (ou
-    // −10/−20…). Un saut en sens opposé (ou hors fenêtre) repart du delta seul.
-    // Le seek lui-même reste incrémental (currentTimeRef se cumule). Affiché
-    // que l'OSD soit visible (clic bouton) ou caché (raccourci télécommande).
+  // Badge cumulatif : appuis répétés dans le MÊME sens → +30/+60/+90 (ou
+  // −10/−20…). Un saut en sens opposé (ou hors fenêtre) repart du delta seul.
+  // Affiché que l'OSD soit visible (clic bouton) ou caché (raccourci télécommande).
+  const jumpedRef = useRef((delta: number) => {
     const sameDir = skipAccumRef.current !== 0 && Math.sign(delta) === Math.sign(skipAccumRef.current);
     skipAccumRef.current = sameDir ? skipAccumRef.current + delta : delta;
     setSkipFlash({ delta: skipAccumRef.current, id: Date.now() });
     if (skipFlashTimerRef.current) clearTimeout(skipFlashTimerRef.current);
     skipFlashTimerRef.current = setTimeout(() => { skipAccumRef.current = 0; setSkipFlash(null); }, SKIP_BADGE_MS);
-  }, []);
-
-  // Un appui ←/→ qui appartient à la vidéo SAUTE comme les boutons de
-  // l'habillage — +30 s, −10 s (`seekTuning.ts`) — cf. `useScrubController`.
-  const jumpRef = useRef((dir: "forward" | "backward") => skipBy(jumpSecondsOf(dir)));
+  });
 
   // --- Moteur de scrub (partagé) ---
   const scrub = useScrubController({
-    showOverlay, hideOverlay, currentTimeRef, durationRef, pausedRef, onSeekRef, onScrubPauseRef, onJumpRef: jumpRef,
+    showOverlay, hideOverlay, currentTimeRef, durationRef, pausedRef, onSeekRef, onScrubPauseRef, onJumpedRef: jumpedRef,
     overlayVisibleRef, panelOpenRef, skipAnyPressRef,
   });
   const { scrubbingRef } = scrub;
@@ -160,12 +153,18 @@ export function useTVPlayerControls({
       fn(...args);
     }, [scrub, scrubbingRef]);
 
-  // Les boutons de saut de l'habillage font EXACTEMENT ce que font les flèches.
-  const handleSkipForward = useCallback(() => jumpRef.current("forward"), []);
-  const handleSkipBack = useCallback(() => jumpRef.current("backward"), []);
-  /** Bouton ⏩ de l'OSD : appui simple → mode scrub (curseur fantôme).
-   *  En scrub, guardScrub transforme le même appui en confirmation. */
-  const enterScrub = useCallback(() => scrub.startScrubbing(), [scrub]);
+  // Un bouton de l'habillage ouvre le défilement sous un appui sur OK : le
+  // « select » jumeau de cet appui ne doit pas le valider aussitôt.
+  const { jump, startScrubbing, scrubStartedAtRef } = scrub;
+  const pressEntry = useCallback(() => { scrubStartedAtRef.current = Date.now(); }, [scrubStartedAtRef]);
+  // Les boutons de saut de l'habillage font EXACTEMENT ce que font les
+  // flèches : la cible bouge, le défilement s'ouvre, le décompte part.
+  const handleSkipForward = useCallback(() => { pressEntry(); jump("forward"); }, [pressEntry, jump]);
+  const handleSkipBack = useCallback(() => { pressEntry(); jump("backward"); }, [pressEntry, jump]);
+  /** Bouton ⏩ de l'OSD : appui simple → mode scrub (curseur fantôme), et le
+   *  décompte part (en lecture). En scrub, guardScrub transforme le même
+   *  appui en confirmation. */
+  const enterScrub = useCallback(() => { pressEntry(); startScrubbing(); }, [pressEntry, startScrubbing]);
 
   /** Un simple toucher du pavé réveille l'habillage, comme le lecteur d'Apple —
    *  sauf celui qui accompagne un clic (le saut d'un appui ne rallume rien). En
@@ -225,7 +224,7 @@ export function useTVPlayerControls({
       if (scrubbingRef.current) {
         // Écho pendant le maintien d'une touche media FF/RW → ignorer.
         if (Date.now() - scrub.lastMediaKeyAtRef.current < MEDIA_KEY_ECHO_MS) return;
-        // Jumeau du OK qui vient d'OUVRIR le scrub (bouton ⏩) → ignorer.
+        // Jumeau du OK qui vient d'OUVRIR le scrub (un bouton) → ignorer.
         if (Date.now() - scrub.scrubStartedAtRef.current < SCRUB_TWIN_PRESS_MS) return;
         scrub.confirmScrub();
         return;
@@ -254,7 +253,7 @@ export function useTVPlayerControls({
       if (scrubbingRef.current) {
         // Écho pendant le maintien d'une touche media FF/RW → ignorer.
         if (Date.now() - scrub.lastMediaKeyAtRef.current < MEDIA_KEY_ECHO_MS) return;
-        // Jumeau du OK qui vient d'OUVRIR le scrub (bouton ⏩) → ignorer.
+        // Jumeau du OK qui vient d'OUVRIR le scrub (un bouton) → ignorer.
         if (Date.now() - scrub.scrubStartedAtRef.current < SCRUB_TWIN_PRESS_MS) return;
         scrub.confirmScrub();
       }

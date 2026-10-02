@@ -37,5 +37,5 @@ export const PLAYHEAD_SCENES: BenchScene[] = [
   scene("tete-pause", "Tête de lecture · en pause", patch(transcoded, () => ({ paused: true }))),
   scene("tete-avance", "Tête de lecture · avance rapide ×4", patch(transcoded, scrubbing(750, 4))),
   scene("tete-recul", "Tête de lecture · recul ×2, le chargé à droite", patch(transcoded, scrubbing(-240, 2))),
-  scene("tete-decompte", "Tête de lecture · décompte, lecture dans 3 s", patch(transcoded, aimedWith("play", 3, 212))),
+  scene("tete-decompte", "Tête de lecture · décompte, lecture dans 5 s", patch(transcoded, aimedWith(5, 212))),
 ];

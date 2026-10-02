@@ -9,6 +9,9 @@
  * ~1920 points. Les gains se disent en LARGEURS DE PAVÉ — ce que sent le
  * pouce —, plus en fraction de la durée : un même geste fait le même chemin
  * dans un épisode de vingt minutes et dans un film de trois heures.
+ *
+ * Le doigt levé (ou immobile), la validation est celle de toutes les entrées
+ * (`RESUME_COUNTDOWN_MS`, `seekTuning.ts`).
  */
 
 /** La largeur du pavé, en points de pan. Si la Siri Remote réelle dit autre
@@ -25,10 +28,6 @@ export const FAST_FULL_SWIPE_SECONDS = 360;
 export const SLOW_SWIPE_PADS_PER_SECOND = 1;
 /** …au-delà de celle-ci, il plafonne ; entre les deux, il monte en douceur. */
 export const FAST_SWIPE_PADS_PER_SECOND = 4;
-
-/** Le doigt levé (ou immobile), la lecture repart à la position visée au
- *  bout de ce délai — décompté à l'écran (`scrubCountdown.ts`). */
-export const RESUME_COUNTDOWN_MS = 3000;
 
 /** Habillage CACHÉ : un glisser ne défile qu'après ce contact tenu, compté
  *  depuis le début du glisser (tvOS ne signale pas un doigt posé immobile).

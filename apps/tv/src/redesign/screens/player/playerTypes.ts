@@ -79,13 +79,11 @@ export interface Countdown {
   total: number;
 }
 
-/** Le décompte du défilement (`ScrubCountdown`). */
+/** Le décompte du défilement (`ScrubCountdown`) : la lecture repartira à la
+ *  position visée. */
 export interface ScrubCountdownModel {
-  /** « Lecture dans 3 s », « Reprise à 12:34 dans 3 s » (`scrubCountdownLabel`). */
+  /** « Lecture dans 5 s » (`scrubCountdownLabel`). */
   label: string;
-  /** `play` : la lecture repart à la position visée ; `back` : on revient
-   *  au point de départ. */
-  kind: "play" | "back";
   /** En secondes. */
   countdown: Countdown;
   /** La barre glisse d'une seconde à la suivante ; sans, elle se pose (banc). */
