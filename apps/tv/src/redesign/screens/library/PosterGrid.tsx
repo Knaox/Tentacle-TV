@@ -44,6 +44,8 @@ export const GRID_GAP = 36;
  *  légende de l'affiche focalisée, qui descend de la moitié de son
  *  agrandissement (~15) — sans quoi la rangée suivante mord la ligne. */
 export const GRID_ROW_GAP = 52;
+/** À combien d'écrans de la fin la page suivante est demandée. */
+const END_REACHED_SCREENS = 3;
 
 /** La largeur d'une affiche pour `columns` colonnes. */
 export function posterWidth(columns: number): number {
@@ -158,8 +160,16 @@ export const PosterGrid = memo(function PosterGrid({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       onEndReached={onEndReached}
-      onEndReachedThreshold={0.6}
-      initialNumToRender={4}
+      // La page suivante part à trois écrans de la fin : quand le focus
+      // dévale (flèche maintenue, glisser vif), elle est là avant lui.
+      onEndReachedThreshold={END_REACHED_SCREENS}
+      // Ce qui est monté : l'écran et deux de chaque côté (21 par défaut —
+      // des centaines d'affiches gardées en mémoire), par lots de deux
+      // lignes (dix par défaut : une page qui arrive figeait le fil JS une
+      // demi-seconde). Au premier rendu, les deux lignes visibles.
+      initialNumToRender={2}
+      maxToRenderPerBatch={2}
+      windowSize={5}
       style={styles.list}
     />
   );
