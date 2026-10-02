@@ -193,6 +193,11 @@ export function dedupResumeBySeries(items: MediaItem[]): MediaItem[] {
  *  - film / item sans `SeriesId` → poussé tel quel.
  *
  * NE filtre PAS `UserData.Played` : un item vu reste dans le carrousel.
+ *
+ * REPLI des serveurs anciens : un serveur Tentacle récent regroupe lui-même la
+ * rangée (proxy, `latestAdditions`) — une carte par série, la vraie série,
+ * avec `LatestAdditions` —, et cette fonction la laisse passer telle quelle :
+ * ses séries ne sont pas des épisodes, et aucune série n'y revient deux fois.
  */
 export function groupLatestByRuns(items: MediaItem[], limit = 16): MediaItem[] {
   const out: MediaItem[] = [];

@@ -40,8 +40,9 @@ export function useResumeItems() {
 
 interface LatestItemsOptions {
   /** CollectionType de la bibliothèque (ex: "tvshows", "movies"). Quand "tvshows",
-   *  la rangée renvoie des épisodes, regroupés en collection par runs consécutifs
-   *  d'une même série (cf. groupLatestByRuns). */
+   *  la rangée demande des épisodes : un serveur récent les rend déjà regroupés,
+   *  une carte par série (proxy, `latestAdditions`) ; face à un serveur plus
+   *  ancien, ils sont regroupés ici par runs consécutifs (cf. groupLatestByRuns). */
   collectionType?: string;
   /** Différer la requête jusqu'à ce que la rangée approche du viewport
    *  (mode économie). Par défaut la rangée charge dès le montage. */
