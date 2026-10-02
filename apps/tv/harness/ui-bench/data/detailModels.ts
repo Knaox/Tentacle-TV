@@ -1,5 +1,4 @@
 import {
-  extractMediaQuality,
   formatCommunityRating,
   formatDuration,
   formatEpisodeCode,
@@ -18,6 +17,7 @@ import type {
   EpisodesModel,
 } from "../../../src/redesign/screens/detail/detailTypes";
 import { cardQualityOf } from "../../../src/redesignWiring/cards/cardQuality";
+import { badgesOf } from "../../../src/redesignWiring/detail/detailModels";
 import type { BenchData } from "./benchData";
 import { paletteOf, progressOf, seriesOf } from "./models";
 
@@ -54,18 +54,8 @@ export function factsOf(item: MediaItem): MetaItem[] {
   return meta;
 }
 
-/** « 4K · Dolby Vision · Atmos · VF · EN » — des pastilles de texte, jamais des drapeaux. */
-export function badgesOf(item: MediaItem): MetaItem[] {
-  const q = extractMediaQuality(item);
-  const badges: MetaItem[] = [];
-  if (q.resolution === "4K") badges.push({ badge: "4K", strong: true });
-  if (q.isDolbyVision) badges.push({ badge: "Dolby Vision" });
-  else if (q.isHDR) badges.push({ badge: "HDR" });
-  if (q.isDolbyAtmos) badges.push({ badge: "Atmos" });
-  else if (q.surroundLabel) badges.push({ badge: q.surroundLabel });
-  for (const label of q.audioLabels.slice(0, 3)) badges.push({ badge: label.token });
-  return badges;
-}
+/** Les pastilles de la fiche : la règle de l'app elle-même (qualité des cartes, son, langues). */
+export { badgesOf };
 
 function kindOf(item: MediaItem): DetailHeaderModel["kind"] {
   if (item.Type === "Series") return "series";

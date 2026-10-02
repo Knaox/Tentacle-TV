@@ -1,8 +1,10 @@
 import {
+  NO_QUALITY_BADGES,
   extractMediaQuality,
   formatCommunityRating,
   formatDuration,
   formatEpisodeCode,
+  qualityBadgesOf,
   type MediaItem,
   type NextEpisodeResult,
 } from "@tentacle-tv/shared";
@@ -66,15 +68,17 @@ export function factsOf(item: MediaItem, t: Translate): MetaItem[] {
   return meta;
 }
 
-/** « 4K · Dolby Vision · Atmos · VF · EN » — des pastilles de texte, jamais des drapeaux. */
+/**
+ * « 4K · Dolby Vision · Dolby Atmos · VF · EN » — des pastilles de texte,
+ * jamais des drapeaux. La qualité suit la règle des cartes (`qualityBadgesOf`,
+ * leurs noms entiers) : la carte et la fiche d'un titre disent la même chose.
+ * Sans Atmos, le son de la piste par défaut (5.1, 7.1) ; puis les langues.
+ */
 export function badgesOf(item: MediaItem): MetaItem[] {
   const q = extractMediaQuality(item);
-  const badges: MetaItem[] = [];
-  if (q.resolution === "4K") badges.push({ badge: "4K", strong: true });
-  if (q.isDolbyVision) badges.push({ badge: "Dolby Vision" });
-  else if (q.isHDR) badges.push({ badge: "HDR" });
-  if (q.isDolbyAtmos) badges.push({ badge: "Atmos" });
-  else if (q.surroundLabel) badges.push({ badge: q.surroundLabel });
+  const quality = qualityBadgesOf(item) ?? NO_QUALITY_BADGES;
+  const badges: MetaItem[] = quality.map((badge): MetaItem => (badge.accent ? { badge: badge.label, strong: true } : { badge: badge.label }));
+  if (!quality.some((badge) => badge.kind === "dolbyAtmos") && q.surroundLabel) badges.push({ badge: q.surroundLabel });
   for (const label of q.audioLabels.slice(0, 3)) badges.push({ badge: label.token });
   return badges;
 }
