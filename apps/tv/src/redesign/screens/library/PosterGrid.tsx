@@ -1,5 +1,6 @@
 import { memo, useCallback, useMemo, useRef, type ReactElement } from "react";
-import { FlatList, StyleSheet, View, type ListRenderItemInfo } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
@@ -20,6 +21,13 @@ import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection"
  * `${focusPrefix}:line:<n>`) : BAS depuis une colonne que la dernière ligne
  * n'a pas atteint sa dernière affiche, au plus proche ; la ligne focalisée
  * vient entière à l'écran, « Maintenir OK » compris, en un seul mouvement.
+ *
+ * Les lignes sont RECYCLÉES (FlashList) : une ligne qui sort de l'écran sert
+ * à celle qui arrive, ses cartes reçoivent un autre titre au lieu d'être
+ * démontées et remontées — dans une bibliothèque de mille titres, défiler ne
+ * crée plus ni vue native ni valeur animée. Les cartes d'une ligne sont donc
+ * clées par leur PLACE, et une carte qui change de titre change d'image sans
+ * jamais montrer la précédente (`MediaCard`).
  */
 
 export interface PosterGridProps {
@@ -112,7 +120,8 @@ const GridLine = memo(function GridLine({ line, index, ...cell }: { line: Line; 
   return (
     <FocusSection focusKey={`${cell.focusPrefix}:line:${index}`} reveal={LINE_REVEAL} style={styles.columns}>
       {line.cards.map((card, i) => (
-        <Cell key={card.id} card={card} index={line.start + i} {...cell} />
+        // Clé de PLACE : recyclée, la ligne garde ses cartes (cf. en-tête).
+        <Cell key={i} card={card} index={line.start + i} {...cell} />
       ))}
     </FocusSection>
   );
@@ -147,43 +156,59 @@ export const PosterGrid = memo(function PosterGrid({
     [width, focusPrefix, onPressCard, onLongPressCard, onFocusCard],
   );
   return (
-    <FlatList
-      // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
-      key={`grid-${columns}`}
-      data={lines}
-      keyExtractor={(line) => line.cards[0].id}
-      renderItem={renderItem}
-      ListHeaderComponent={header}
-      ListEmptyComponent={empty}
-      ListFooterComponent={footer}
-      ItemSeparatorComponent={Separator}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      // Pas de barre d'index du défilement rapide de tvOS (flèche maintenue) :
-      // la grille n'en montre aucune, et tvOS la refabriquait pourtant —
-      // étiquettes comprises — à chaque lot de lignes ajouté et à chaque
-      // battement du défilement rapide. Mesuré au profileur : le premier
-      // poste du fil d'interface en défilement rapide.
-      showsScrollIndex={false}
-      onEndReached={onEndReached}
-      // La page suivante part à trois écrans de la fin : quand le focus
-      // dévale (flèche maintenue, glisser vif), elle est là avant lui.
-      onEndReachedThreshold={END_REACHED_SCREENS}
-      // Ce qui est monté : l'écran et deux de chaque côté (21 par défaut —
-      // des centaines d'affiches gardées en mémoire), par lots de deux
-      // lignes (dix par défaut : une page qui arrive figeait le fil JS une
-      // demi-seconde). Au premier rendu, les deux lignes visibles.
-      initialNumToRender={2}
-      maxToRenderPerBatch={2}
-      windowSize={5}
-      style={styles.list}
-    />
+    // FlashList veut un parent de taille connue : la scène.
+    <View style={styles.list}>
+      <FlashList
+        // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
+        key={`grid-${columns}`}
+        data={lines}
+        keyExtractor={lineKey}
+        renderItem={renderItem}
+        estimatedItemSize={lineStride(width)}
+        // Deux lignes d'avance de chaque côté (la liste étend ensuite son
+        // avance par étapes) : une flèche maintenue trouve toujours la ligne
+        // suivante montée — la règle des sections la cherche parmi les
+        // lignes présentes.
+        drawDistance={DRAW_DISTANCE}
+        ListHeaderComponent={header}
+        ListEmptyComponent={empty}
+        ListFooterComponent={footer}
+        ItemSeparatorComponent={Separator}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        // Pas de barre d'index du défilement rapide de tvOS (flèche maintenue) :
+        // la grille n'en montre aucune, et tvOS la refabriquait pourtant —
+        // étiquettes comprises — à chaque lot de lignes ajouté et à chaque
+        // battement du défilement rapide. Mesuré au profileur : le premier
+        // poste du fil d'interface en défilement rapide.
+        overrideProps={SCROLL_PROPS}
+        onEndReached={onEndReached}
+        // La page suivante part à trois écrans de la fin : quand le focus
+        // dévale (flèche maintenue, glisser vif), elle est là avant lui.
+        onEndReachedThreshold={END_REACHED_SCREENS}
+      />
+    </View>
   );
 });
 
-/** La hauteur de la scène. Sur TV, la liste virtualisée enveloppe son
- *  défilement dans un `TVFocusGuideView` SANS style (hauteur automatique) :
- *  un `flex: 1` y écrase la grille à 1 point. Une hauteur explicite, oui. */
+const lineKey = (line: Line) => line.cards[0].id;
+
+/** La hauteur d'une légende d'affiche (titre, année) : une estimation, la
+ *  liste mesure les lignes réelles. */
+const CAPTION_ESTIMATE = 67;
+
+/** D'une ligne à la suivante : l'affiche, sa légende, l'espace. */
+function lineStride(width: number): number {
+  return Math.round(width * 1.5) + CAPTION_ESTIMATE + GRID_ROW_GAP;
+}
+
+/** Ce que la liste garde monté au-delà de l'écran, de chaque côté. */
+const DRAW_DISTANCE = 1100;
+
+const SCROLL_PROPS = { showsScrollIndex: false };
+
+/** La hauteur de la scène : une hauteur explicite (un `flex: 1` peut écraser
+ *  la grille à 1 point sous un guide de focus sans style). */
 const STAGE_HEIGHT = 1080;
 
 const styles = StyleSheet.create({

@@ -120,12 +120,15 @@ export const MediaCard = memo(function MediaCard({
       accessibilityLabel={card.title}
       frame={
         <CardFrame width={width} height={height} radius={radius} focused={focused} place={place} dimmed={dimmed} origin={origin} glow={glow}>
+          {/* L'image est clée par son adresse : une carte RECYCLÉE (grille)
+              qui change de titre ne garde pas l'affiche précédente le temps
+              que la sienne arrive — une Image d'iOS la garderait. */}
           {card.absent ? (
-            <AbsentArtwork absent={card.absent} uri={uri} title={card.title} year={card.subtitle} width={width} height={height} focused={focused} />
+            <AbsentArtwork key={uri} absent={card.absent} uri={uri} title={card.title} year={card.subtitle} width={width} height={height} focused={focused} />
           ) : (
             <>
               {uri ? (
-                <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+                <Image key={uri} source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
               ) : (
                 <View style={styles.missing}>
                   <Text style={styles.missingTitle} numberOfLines={3}>{card.title}</Text>
