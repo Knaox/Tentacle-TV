@@ -53,11 +53,17 @@ describe("résolution", () => {
     expect(extractTrailerSource).toHaveBeenCalledTimes(1);
   });
 
-  it("retient un échec : une minute s'il est passager, sans relancer yt-dlp", async () => {
-    extractTrailerSource.mockResolvedValue({ ok: false, permanent: false, reason: "délai" });
+  it("retient un échec un instant, sans relancer yt-dlp dans la rafale", async () => {
+    extractTrailerSource.mockResolvedValue({ ok: false, permanent: false, timedOut: false, reason: "0 formats" });
     expect(await resolveTrailer("Way9Dexny3w")).toBeNull();
     expect(await resolveTrailer("Way9Dexny3w")).toBeNull();
     expect(extractTrailerSource).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne retient pas un délai épuisé : le geste suivant réessaie", async () => {
+    extractTrailerSource.mockResolvedValueOnce({ ok: false, permanent: false, timedOut: true, reason: "sans réponse" }).mockResolvedValueOnce(hls());
+    expect(await resolveTrailer("Way9Dexny3w")).toBeNull();
+    expect((await resolveTrailer("Way9Dexny3w"))?.kind).toBe("hls");
   });
 });
 

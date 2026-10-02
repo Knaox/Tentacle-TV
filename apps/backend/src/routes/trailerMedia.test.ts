@@ -82,7 +82,7 @@ describe("/api/trailers/resolve", () => {
   });
 
   it("dit « indisponible » sans flux, et prépare sans attendre", async () => {
-    extractTrailerSource.mockResolvedValue({ ok: false, permanent: true, reason: "Private video" });
+    extractTrailerSource.mockResolvedValue({ ok: false, permanent: true, timedOut: false, reason: "Private video" });
     const app = await server();
     expect((await app.inject({ url: `/api/trailers/resolve?ytId=${ID}`, headers: { authorization: "Bearer ok" } })).statusCode).toBe(404);
     expect((await app.inject({ url: `/api/trailers/prepare?ytId=${ID}`, headers: { authorization: "Bearer ok" } })).statusCode).toBe(202);

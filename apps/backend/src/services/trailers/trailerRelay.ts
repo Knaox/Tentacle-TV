@@ -33,9 +33,14 @@ const EXPIRY_MARGIN_MS = 10 * 60 * 1000;
 const REFRESH_MIN_AGE_MS = 60 * 1000;
 /** Quelques dizaines de vidéos suffisent (une soirée de fiches) ; chacune pèse moins de 100 Ko. */
 const MAX_ENTRIES = 48;
-/** Une vidéo absente pour de bon n'est pas redemandée avant une heure ; un raté passager, une minute. */
+/**
+ * Une vidéo absente pour de bon n'est pas redemandée avant une heure ; un
+ * raté passager, quinze secondes (le temps d'éviter une rafale). Un délai
+ * épuisé n'est pas retenu du tout : le prochain geste réessaie — l'ancien
+ * « échec retenu dix minutes » faisait échouer aussitôt chaque relance.
+ */
 const PERMANENT_MISS_MS = 60 * 60 * 1000;
-const TRANSIENT_MISS_MS = 60 * 1000;
+const TRANSIENT_MISS_MS = 15 * 1000;
 
 const entries = new Map<string, Entry>();
 const inflight = new Map<string, Promise<Entry | null>>();
@@ -59,7 +64,7 @@ async function extract(ytId: string): Promise<Entry | null> {
   const started = Date.now();
   const result = await extractTrailerSource(ytId);
   if (!result.ok) {
-    misses.set(ytId, Date.now() + (result.permanent ? PERMANENT_MISS_MS : TRANSIENT_MISS_MS));
+    if (!result.timedOut) misses.set(ytId, Date.now() + (result.permanent ? PERMANENT_MISS_MS : TRANSIENT_MISS_MS));
     if (misses.size > 500) for (const [id, until] of misses) if (until <= Date.now()) misses.delete(id);
     console.warn(`[trailers] ${ytId} : aucun flux (${result.reason})`);
     return null;

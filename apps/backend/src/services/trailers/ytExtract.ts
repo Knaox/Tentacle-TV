@@ -24,11 +24,14 @@ const EJS_ARGS = ["--remote-components", "ejs:github"];
 let ejsSupported = true;
 
 /**
- * Une passe : page, API du lecteur, manifeste. Deux secondes d'ordinaire ; un
- * serveur lent en met plus. Deux passes tiennent sous les 45 s que le
- * téléviseur accorde à la résolution.
+ * Le temps d'une extraction, toutes passes comprises : une passe prend une ou
+ * deux secondes d'ordinaire, bien plus sur un serveur chargé. Le budget tient
+ * sous les 45 s que le téléviseur accorde à la résolution ; une passe qui
+ * l'épuise met fin à l'extraction — la suivante ne ferait pas mieux.
  */
-const PASS_TIMEOUT_MS = 20_000;
+const EXTRACTION_BUDGET_MS = 40_000;
+/** En deçà, une passe de plus n'aurait pas le temps d'aboutir. */
+const MIN_PASS_MS = 3_000;
 
 /**
  * Deux extractions à la fois au plus : chacune est un processus Python, et
@@ -53,19 +56,21 @@ async function withSlot<T>(task: () => Promise<T>): Promise<T> {
 interface PassOutcome {
   formats: YtFormat[];
   stderr: string;
+  /** La passe a épuisé son temps : yt-dlp n'a rien conclu. */
+  timedOut?: boolean;
 }
 
 const watchUrl = (ytId: string) => `https://www.youtube.com/watch?v=${ytId}`;
 
 /** Une passe : par l'ouvrier gardé chaud quand il le peut, sinon en lançant yt-dlp. */
-async function runPass(ytId: string, clients: string[]): Promise<PassOutcome | null> {
-  const viaWorker = await workerExtract(ytDlpCommand(), { url: watchUrl(ytId), clients, ejs: ejsSupported }, PASS_TIMEOUT_MS);
+async function runPass(ytId: string, clients: string[], timeoutMs: number): Promise<PassOutcome | null> {
+  const viaWorker = await workerExtract(ytDlpCommand(), { url: watchUrl(ytId), clients, ejs: ejsSupported }, timeoutMs);
   if (viaWorker.status === "done") return { formats: viaWorker.outcome.formats as YtFormat[], stderr: viaWorker.outcome.stderr };
-  if (viaWorker.status === "failed") return { formats: [], stderr: `ERROR: ${viaWorker.reason}` };
-  return runCli(ytId, clients);
+  if (viaWorker.status === "failed") return { formats: [], stderr: `ERROR: ${viaWorker.reason}`, timedOut: true };
+  return runCli(ytId, clients, timeoutMs);
 }
 
-function runCli(ytId: string, clients: string[]): Promise<PassOutcome | null> {
+function runCli(ytId: string, clients: string[], timeoutMs: number): Promise<PassOutcome | null> {
   const withEjs = ejsSupported;
   const args = [
     ...(withEjs ? EJS_ARGS : []),
@@ -79,11 +84,12 @@ function runCli(ytId: string, clients: string[]): Promise<PassOutcome | null> {
     watchUrl(ytId),
   ];
   return new Promise((resolve) => {
-    execFile(ytDlpCommand(), args, { timeout: PASS_TIMEOUT_MS, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+    execFile(ytDlpCommand(), args, { timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err && withEjs && (err as { code?: unknown }).code === 2) {
         ejsSupported = false;
-        return resolve(runCli(ytId, clients));
+        return resolve(runCli(ytId, clients, timeoutMs));
       }
+      if (err?.killed) return resolve({ formats: [], stderr: `ERROR: yt-dlp sans réponse en ${timeoutMs / 1000} s`, timedOut: true });
       try {
         const info = JSON.parse(stdout) as { formats?: YtFormat[] };
         resolve({ formats: info.formats ?? [], stderr });
@@ -96,23 +102,26 @@ function runCli(ytId: string, clients: string[]): Promise<PassOutcome | null> {
 
 export type ExtractionResult =
   | { ok: true; source: TrailerSource; clients: string[] }
-  | { ok: false; permanent: boolean; reason: string };
+  | { ok: false; permanent: boolean; timedOut: boolean; reason: string };
 
 /** Extrait le meilleur flux de `ytId`, passe après passe ; la première qui rend un flux gagne. */
 export function extractTrailerSource(ytId: string): Promise<ExtractionResult> {
   return withSlot(async () => {
+    const deadline = Date.now() + EXTRACTION_BUDGET_MS;
     let reason = "aucune passe";
-    let permanent = false;
     for (const clients of clientPasses(process.env.TENTACLE_TRAILER_CLIENTS)) {
-      const outcome = await runPass(ytId, clients);
+      const remaining = deadline - Date.now();
+      if (remaining < MIN_PASS_MS) break;
+      const outcome = await runPass(ytId, clients, remaining);
       const source = outcome && pickTrailerSource(outcome.formats);
       if (source) return { ok: true, source, clients };
       const lastError = outcome?.stderr.split("\n").filter((l) => l.startsWith("ERROR")).pop();
       reason = lastError ?? `${clients.join(",")} : ${outcome ? `${outcome.formats.length} formats, aucun lisible` : "sortie illisible"}`;
-      permanent = !!outcome && isPermanentFailure(outcome.stderr);
+      // Le temps est épuisé : une autre passe ne ferait pas mieux.
+      if (outcome?.timedOut) return { ok: false, permanent: false, timedOut: true, reason };
       // Une vidéo retirée ou privée l'est pour tous les clients : inutile d'insister.
-      if (permanent) break;
+      if (outcome && isPermanentFailure(outcome.stderr)) return { ok: false, permanent: true, timedOut: false, reason };
     }
-    return { ok: false, permanent, reason };
+    return { ok: false, permanent: false, timedOut: false, reason };
   });
 }

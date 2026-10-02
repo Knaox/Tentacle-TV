@@ -32,8 +32,12 @@ export type WorkerResult = { status: "done"; outcome: WorkerOutcome } | { status
 
 /** Sans travail pendant ce temps, l'ouvrier s'éteint : la mémoire revient au serveur. */
 const IDLE_MS = 5 * 60 * 1000;
-/** Python + import de yt-dlp, même sur un petit serveur. */
-const START_TIMEOUT_MS = 20_000;
+/**
+ * Garde-fou d'un ouvrier qui ne dit jamais « prêt » (Python bloqué) : au-delà,
+ * on l'arrête. Un démarrage simplement LENT (serveur chargé) n'est pas un
+ * échec : la passe en cours expire, l'ouvrier reste pour les suivantes.
+ */
+const START_TIMEOUT_MS = 120_000;
 /** Un ouvrier qui n'a pas su démarrer n'est pas relancé avant ce délai : la ligne de commande sert. */
 const RETRY_AFTER_FAILURE_MS = 10 * 60 * 1000;
 
@@ -88,7 +92,10 @@ function start(zipapp: string, signature: string, python: string): Live {
   const proc = spawn(python, ["-u", "-c", WORKER_SCRIPT, zipapp], { stdio: ["pipe", "pipe", "pipe"] });
   const worker: Live = { proc, signature, ready: Promise.resolve(false), pending: new Map(), idle: null };
   worker.ready = new Promise<boolean>((resolveReady) => {
-    const timer = setTimeout(() => resolveReady(false), START_TIMEOUT_MS);
+    const timer = setTimeout(() => {
+      resolveReady(false);
+      stop(worker);
+    }, START_TIMEOUT_MS);
     let buffer = "";
     proc.stdout.setEncoding("utf8");
     proc.stdout.on("data", (chunk: string) => {
@@ -140,12 +147,17 @@ export async function workerExtract(
   const signature = `${file}:${statSync(file).mtimeMs}`;
   if (live && live.signature !== signature) stop(live);
   const worker = live ?? (live = start(file, signature, python));
-  if (!(await worker.ready)) {
+  const started = Date.now();
+  const ready = await Promise.race([worker.ready, new Promise<"slow">((go) => setTimeout(() => go("slow"), timeoutMs).unref())]);
+  if (ready === "slow") return { status: "failed", reason: `ouvrier encore au démarrage après ${timeoutMs / 1000} s` };
+  if (!ready) {
+    // Mort avant d'être prêt (Python absent, import en échec) : la ligne de commande sert.
     failedUntil = Date.now() + RETRY_AFTER_FAILURE_MS;
     console.warn("[trailers] l'ouvrier yt-dlp ne démarre pas : la ligne de commande sert");
     stop(worker);
     return { status: "unavailable" };
   }
+  const remaining = timeoutMs - (Date.now() - started);
   if (worker.idle) clearTimeout(worker.idle);
   const id = nextId++;
   const outcome = await new Promise<WorkerOutcome | null>((settle) => {
@@ -154,7 +166,7 @@ export async function workerExtract(
       settle(null);
       // Une extraction qui ne rend pas la main : l'ouvrier est peut-être coincé.
       stop(worker);
-    }, timeoutMs);
+    }, Math.max(remaining, 1));
     worker.pending.set(id, (result) => {
       clearTimeout(timer);
       settle(result);
