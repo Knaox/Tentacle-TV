@@ -6,6 +6,7 @@ import { BROWSE_SCENES } from "./browseScenes";
 import { COLLECTION_SCENES } from "./collectionScenes";
 import { DETAIL_SCENES } from "./detailScenes";
 import { FOR_YOU_SCENES } from "./forYouScenes";
+import { GAP_SCENES } from "./gapScenes";
 import { GLASS_SCENES } from "./glassScenes";
 import { HOME_SCENES } from "./homeScenes";
 import { LEGIBILITY_SCENES } from "./legibilityScenes";
@@ -46,6 +47,8 @@ export const SCENES: BenchScene[] = [
   ...SEARCH_SCENES,
   // Les titres absents de la bibliothèque, et leur demande (garde Vigie).
   ...ABSENT_SCENES,
+  // Les saisons manquantes d'une série de la bibliothèque (garde Vigie).
+  ...GAP_SCENES,
   ...BROWSE_SCENES,
   ...FOR_YOU_SCENES,
   ...SETTINGS_SCENES,
