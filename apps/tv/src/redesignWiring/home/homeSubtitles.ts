@@ -31,6 +31,13 @@ export function itemSubtitle(item: MediaItem, withEpisodeName = false): string |
   return item.Type === "Episode" ? episodeLabel(item, withEpisodeName) : yearOf(item);
 }
 
+/** Prochains épisodes : « S2 · E5 — Le Prince de Winterfell » — sous le nom
+ *  de la série, ce qui suit, comme « Reprendre » dit ce qu'il reste. */
+export function nextUpSubtitle(item: MediaItem): string | undefined {
+  if (item.Type !== "Episode") return yearOf(item);
+  return [episodeLabel(item, false), item.Name].filter(Boolean).join(" — ");
+}
+
 /** Derniers ajouts : « +3 épisodes » pour un lot, sinon le repère de l'item. */
 export function latestSubtitle(item: MediaItem, t: TFunction): string | undefined {
   const added = item.RecentlyAddedCount ?? 0;

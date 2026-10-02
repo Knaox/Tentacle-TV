@@ -19,16 +19,18 @@ import { missingSeriesRatingIds, type MediaItem } from "@tentacle-tv/shared";
 import type { HomeRowModel } from "../../redesign/screens/home/HomeView";
 import { useTVHomeRows } from "../../components/home/useTVHomeRows";
 import { useCardLists } from "../cards/cardModels";
-import { itemSubtitle, latestSubtitle, resumeSubtitle, yearOf } from "./homeSubtitles";
+import { itemSubtitle, latestSubtitle, nextUpSubtitle, resumeSubtitle, yearOf } from "./homeSubtitles";
 import { useHomeRecoSource } from "./useHomeRecoSource";
 
 /**
  * Les rangées de l'accueil refondu, dans l'ordre de la mise en page du COMPTE
  * (`useTVHomeRows` : celle que le web édite, réconciliée avec les
- * bibliothèques). Reprendre seule en vignettes 16:9 (OK = lecture) ; toutes
- * les autres en AFFICHES (OK = la fiche) : Prochains épisodes, Déjà vu, Ma
- * liste, Favoris, Derniers ajouts par bibliothèque, rangées recommandées —
- * voulu ainsi, « comme sur le bureau » (2026-10-01).
+ * bibliothèques). Reprendre et Prochains épisodes en vignettes 16:9 (OK =
+ * lecture, appui long = le panneau de la vignette) ; toutes les autres en
+ * AFFICHES (OK = la fiche) : Déjà vu, Ma liste, Favoris, Derniers ajouts par
+ * bibliothèque, rangées recommandées — « comme sur le bureau » (2026-10-01 ;
+ * Prochains épisodes passés en 16:9 le 2026-10-02, au retour de l'essai : « au
+ * format vertical au lieu d'horizontal comme desktop »).
  *
  * Chaque carte garde l'item qu'elle montre (`targetOf`) : l'appui, l'appui
  * long et la lumière du fond en partent.
@@ -52,9 +54,6 @@ export interface HomeRowsModel {
   /** Les données qui décident de l'état de l'écran. */
   resume: MediaItem[] | undefined;
 }
-
-/** Les rangées d'épisodes en cours ou vus : leur légende dit l'épisode. */
-const EPISODE_ROWS = new Set(["nextUp", "watched"]);
 
 export function useHomeRowModels(): HomeRowsModel {
   const { t } = useTranslation();
@@ -110,11 +109,15 @@ export function useHomeRowModels(): HomeRowsModel {
         const subtitle = (item: MediaItem) => resumeSubtitle(item, t);
         rows.push({ key, title: t("common:resumeWatching"), variant: "landscape", cards: lists(key, items, { variant: "landscape", subtitle }) });
         register(key, items, { kind: "play", sheet: "landscape" });
-      } else if (EPISODE_ROWS.has(key)) {
-        const items = (key === "nextUp" ? nextUp : watched) ?? [];
-        const title = key === "nextUp" ? t("common:nextEpisodes") : t("common:alreadyWatched");
-        const subtitle = (item: MediaItem) => itemSubtitle(item, key === "nextUp");
-        rows.push({ key, title, variant: "poster", cards: lists(key, items, { variant: "poster", subtitle }) });
+      } else if (key === "nextUp") {
+        // La vignette de l'ÉPISODE (repli : son fond, puis celui de la série —
+        // `resolveBannerImage`, la règle du bureau) ; sa note, pas celle de la série.
+        const items = nextUp ?? [];
+        rows.push({ key, title: t("common:nextEpisodes"), variant: "landscape", cards: lists(key, items, { variant: "landscape", subtitle: nextUpSubtitle }) });
+        register(key, items, { kind: "play", sheet: "landscape" });
+      } else if (key === "watched") {
+        const items = watched ?? [];
+        rows.push({ key, title: t("common:alreadyWatched"), variant: "poster", cards: lists(key, items, { variant: "poster", subtitle: (item) => itemSubtitle(item) }) });
         register(key, items, { kind: "detail", sheet: "poster" });
       } else if (key === "watchlist" || key === "favorites") {
         const items = (key === "watchlist" ? watchlist : favorites) ?? [];
