@@ -45,22 +45,22 @@ export function useMyRequests(gate: VigieGate | null, { watching, active }: { wa
     refetchIntervalMs: polling && !advancing ? myTitlesRefetchMs(watching) : false,
   });
   useLiveRefresh(gate, polling && advancing);
-  const latest = useRef(feed);
-  latest.current = feed;
+  const updatedAt = useRef(feed.updatedAt);
+  updatedAt.current = feed.updatedAt;
 
-  // La première lecture est celle de la requête elle-même : on ne relit que ce qui date.
+  // La première lecture est celle de la requête elle-même : on ne relit que ce
+  // qui date — la liste qu'on ouvre (10 s), le retour au premier plan ou sur un
+  // écran du rail (1 min). UNE relecture, jamais annulée : le battement du
+  // direct a pu partir à la même seconde (mesuré : deux lectures au retour).
+  const provider = gate?.provider ?? null;
+  const lang = gate?.lang ?? "en";
   const refreshIfOlder = useCallback((ms: number) => {
-    const { updatedAt, refetch } = latest.current;
-    if (updatedAt > 0 && Date.now() - updatedAt > ms) void refetch();
-  }, []);
-  // La liste qu'on ouvre se montre à jour.
+    if (!provider || updatedAt.current === 0 || Date.now() - updatedAt.current <= ms) return;
+    void qc.refetchQueries({ queryKey: myTitlesQueryKey(provider, lang), exact: true }, { cancelRefetch: false });
+  }, [qc, provider, lang]);
   useEffect(() => {
-    if (watching && polling) refreshIfOlder(OPEN_STALE_MS);
+    if (polling) refreshIfOlder(watching ? OPEN_STALE_MS : MY_TITLES_REFRESH.staleMs);
   }, [watching, polling, refreshIfOlder]);
-  // Le retour au premier plan, ou sur un écran du rail.
-  useEffect(() => {
-    if (polling) refreshIfOlder(MY_TITLES_REFRESH.staleMs);
-  }, [polling, refreshIfOlder]);
 
   const reading = useMemo<ArrivalReading>(() => ({ at: feed.updatedAt, live: polling }), [feed.updatedAt, polling]);
   return { ...feed, reading };
