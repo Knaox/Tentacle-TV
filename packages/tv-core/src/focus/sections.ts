@@ -1,4 +1,4 @@
-import type { Box } from "./geometry";
+import { onSameRow, type Box } from "./geometry";
 
 /**
  * HAUT / BAS entre SECTIONS — la règle de voisinage verticale.
@@ -13,12 +13,16 @@ import type { Box } from "./geometry";
  * au bout d'un carrousel au-dessus d'une rangée plus courte, sur la dernière
  * ligne incomplète d'une grille, depuis un réglage décalé.
  *
- * DANS une section (le titre d'une rangée et ses cartes), on reste à
- * l'aplomb : ce qui, de la section, est au-delà de l'élément ET dans son axe
- * passe d'abord — l'accessoire d'un en-tête (la pastille du filtre de
- * plateformes) se rejoint par HAUT depuis la carte qui est dessous, sans être
- * une étape obligée depuis le bout de la rangée, ni depuis la rangée
- * d'au-dessus.
+ * DANS la section qu'on quitte d'abord : en descendant, sa ligne suivante
+ * (des pastilles qui passent à la ligne, les cartes sous un en-tête), au plus
+ * proche ; en remontant, seulement ce qui est à l'APLOMB — l'accessoire d'un
+ * en-tête (la pastille du filtre de plateformes) se rejoint par HAUT depuis la
+ * carte qui est dessous, sans être une étape obligée depuis le bout de la
+ * rangée. On écrit dans le sens de la lecture : ce qui coiffe une section est
+ * au-dessus, ce qui la prolonge, au-dessous. Une section qui se déclare
+ * LISTE de lignes (`list` : un panneau de réglages) n'a rien qui la coiffe :
+ * HAUT comme BAS y vont à la ligne voisine, au plus proche — le réglage un peu
+ * trop à gauche de celui du dessus est atteint.
  *
  * Deux exceptions, tranchées le 2026-10-01 : une section peut déclarer son
  * ENTRÉE (`entry`), qui l'emporte quand elle est focalisable — l'onglet de la
@@ -131,29 +135,34 @@ export function nearestByCenter<T>(from: Box, items: Array<SectionItem<T>>, dire
 }
 
 /**
- * À l'aplomb, dans la section qu'on quitte : ses éléments au-delà de `from` et
- * dans son axe ; le plus proche dans la direction, puis au centre.
+ * Dans la section qu'on quitte : ses éléments au-delà de `from` — en
+ * remontant, à l'aplomb seulement, sauf dans une liste — ; la ligne la plus
+ * proche (ce qui partage la hauteur de l'élément le plus proche : des
+ * contrôles de tailles différentes, centrés, sont sur la même ligne), puis
+ * le centre.
  */
-export function inLineWithin<T>(from: Box, siblings: Array<SectionItem<T>>, direction: VerticalDirection): SectionItem<T> | null {
+export function inLineWithin<T>(from: Box, siblings: Array<SectionItem<T>>, direction: VerticalDirection, list = false): SectionItem<T> | null {
   const advance = (box: Box) => (direction === "bas" ? box.top - from.bottom : from.top - box.bottom);
-  const beyond = siblings.filter((item) => overlapX(from, item.box) > 0 && advance(item.box) >= -FRONTIER_SLACK);
+  const inAxis = (box: Box) => list || direction === "bas" || overlapX(from, box) > 0;
+  const beyond = siblings.filter((item) => inAxis(item.box) && advance(item.box) >= -FRONTIER_SLACK);
   if (beyond.length === 0) return null;
-  const closest = Math.min(...beyond.map((item) => advance(item.box)));
-  return nearestByCenter(from, beyond.filter((item) => advance(item.box) - closest <= SAME_EDGE), direction);
+  let closest = beyond[0];
+  for (const item of beyond) if (advance(item.box) < advance(closest.box)) closest = item;
+  return nearestByCenter(from, beyond.filter((item) => onSameRow(closest.box, item.box)), direction);
 }
 
 /**
  * La règle entière : depuis l'élément `item` de la section `section` (dont
- * `siblings` sont les autres éléments), HAUT ou BAS. Rend l'élément visé, ou
- * `null` quand rien n'est au-delà — la plateforme garde alors son
- * comportement (un guide, un bord).
+ * `siblings` sont les autres éléments, `list` sa nature), HAUT ou BAS. Rend
+ * l'élément visé, ou `null` quand rien n'est au-delà — la plateforme garde
+ * alors son comportement (un guide, un bord).
  */
 export function pickSectionNeighbor<T>(
-  from: { section: Box; item: Box; siblings?: Array<SectionItem<T>> },
+  from: { section: Box; item: Box; siblings?: Array<SectionItem<T>>; list?: boolean },
   sections: Array<SectionGeometry<T>>,
   direction: VerticalDirection,
 ): T | null {
-  const within = inLineWithin(from.item, from.siblings ?? [], direction);
+  const within = inLineWithin(from.item, from.siblings ?? [], direction, from.list);
   if (within) return within.element;
   let kept: { section: SectionGeometry<T>; item: SectionItem<T> } | null = null;
   for (const section of adjacentSections(from.section, sections, direction)) {

@@ -139,6 +139,47 @@ describe("accessoire d'en-tête (la pastille du filtre)", () => {
   });
 });
 
+describe("pastilles qui passent à la ligne, dans une section", () => {
+  // Deux lignes de genres : six pastilles, puis deux.
+  const chips = (top: number, count: number) =>
+    Array.from({ length: count }, (_, i) => ({ element: `genre:${top}:${i}`, box: box(136 + i * 250, top, 230, 64) }));
+  const genres: SectionGeometry<string> = { box: box(0, 300, 1920, 160), items: [...chips(300, 6), ...chips(380, 2)] };
+
+  it("BAS depuis le bout de la première ligne : la seconde, plus courte — sa dernière pastille", () => {
+    expect(pickSectionNeighbor(from(genres, "genre:300:5"), [genres], "bas")).toBe("genre:380:1");
+  });
+
+  it("HAUT depuis la seconde ligne : à l'aplomb, dans la première", () => {
+    expect(pickSectionNeighbor(from(genres, "genre:380:1"), [genres], "haut")).toBe("genre:300:1");
+  });
+});
+
+describe("une liste de lignes (un panneau de réglages)", () => {
+  // Un interrupteur à droite, puis deux pilules côte à côte, plus à gauche et
+  // de hauteurs différentes ; puis une pastille seule, à gauche.
+  const panel: SectionGeometry<string> = {
+    box: box(700, 100, 1100, 500),
+    items: [
+      { element: "toggle", box: box(1400, 110, 360, 70) },
+      { element: "server", box: box(720, 230, 300, 70) },
+      { element: "unpair", box: box(1040, 239, 320, 52) },
+      { element: "lang", box: box(720, 360, 120, 52) },
+    ],
+  };
+  const inList = (element: string) => ({ ...from(panel, element), list: true });
+
+  it("HAUT depuis le réglage un peu trop à gauche atteint celui du dessus", () => {
+    expect(pickSectionNeighbor(inList("unpair"), [panel], "haut")).toBe("toggle");
+    // Sans liste, l'aplomb seul : rien au-dessus, la règle ne décide rien.
+    expect(pickSectionNeighbor(from(panel, "unpair"), [panel], "haut")).toBeNull();
+  });
+
+  it("des contrôles de hauteurs différentes, centrés, sont la même ligne", () => {
+    expect(pickSectionNeighbor(inList("toggle"), [panel], "bas")).toBe("unpair");
+    expect(pickSectionNeighbor(inList("lang"), [panel], "haut")).toBe("server");
+  });
+});
+
 describe("colonnes et entrées", () => {
   it("une section d'une autre colonne n'est jamais visée", () => {
     const results: SectionGeometry<string> = { box: box(800, 100, 1000, 300), items: [{ element: "result", box: box(820, 120, 300, 260) }] };
