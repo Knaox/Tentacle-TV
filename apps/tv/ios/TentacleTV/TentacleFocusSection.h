@@ -95,6 +95,14 @@ FOUNDATION_EXPORT BOOL TentacleNeighborExists(TentacleFocusSection *from, UIView
 
 @end
 
+/// Observe la télécommande sur `window` (une fois) : flèches enfoncées, pavé
+/// (`TentacleFocusInput.m`).
+FOUNDATION_EXPORT void TentacleFocusInputObserve(UIWindow *_Nullable window);
+
+/// Le pas du focus en cours vient-il d'une RAFALE — une flèche maintenue (ses
+/// répétitions), un glisser du pavé — plutôt que d'un appui isolé ?
+FOUNDATION_EXPORT BOOL TentacleFocusInputIsBurst(void);
+
 /// Le défilement d'une page : un par ScrollView verticale, créé à la demande
 /// (`TentacleRevealScroller.m`).
 @interface TentacleRevealScroller : NSObject <UIScrollViewDelegate>

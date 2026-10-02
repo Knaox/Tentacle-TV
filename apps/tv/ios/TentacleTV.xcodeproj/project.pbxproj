@@ -33,6 +33,8 @@
 		AB12CD34EF5601234567A101 /* TentacleFocusSection.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A102 /* TentacleFocusSection.m */; };
 		AB12CD34EF5601234567A103 /* TentacleFocusNeighbors.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A104 /* TentacleFocusNeighbors.m */; };
 		AB12CD34EF5601234567A105 /* TentacleRevealScroller.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */; };
+		D3F11E5C0DE0000000000001 /* TentacleFocusInput.m in Sources */ = {isa = PBXBuildFile; fileRef = D3F11E5C0DE0000000000002 /* TentacleFocusInput.m */; };
+		D3F11E5C0DE0000000000003 /* TentacleRevealMotion.m in Sources */ = {isa = PBXBuildFile; fileRef = D3F11E5C0DE0000000000004 /* TentacleRevealMotion.m */; };
 		AB12CD34EF5601234567A108 /* TentacleNeighborGuides.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A109 /* TentacleNeighborGuides.m */; };
 		AB12CD34EF5601234567DE01 /* TentacleDesaturateView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567DE02 /* TentacleDesaturateView.m */; };
 /* End PBXBuildFile section */
@@ -83,6 +85,9 @@
 		AB12CD34EF5601234567A102 /* TentacleFocusSection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleFocusSection.m; path = TentacleTV/TentacleFocusSection.m; sourceTree = "<group>"; };
 		AB12CD34EF5601234567A104 /* TentacleFocusNeighbors.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleFocusNeighbors.m; path = TentacleTV/TentacleFocusNeighbors.m; sourceTree = "<group>"; };
 		AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleRevealScroller.m; path = TentacleTV/TentacleRevealScroller.m; sourceTree = "<group>"; };
+		D3F11E5C0DE0000000000002 /* TentacleFocusInput.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleFocusInput.m; path = TentacleTV/TentacleFocusInput.m; sourceTree = "<group>"; };
+		D3F11E5C0DE0000000000004 /* TentacleRevealMotion.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleRevealMotion.m; path = TentacleTV/TentacleRevealMotion.m; sourceTree = "<group>"; };
+		D3F11E5C0DE0000000000005 /* TentacleRevealScroller+Private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "TentacleRevealScroller+Private.h"; path = "TentacleTV/TentacleRevealScroller+Private.h"; sourceTree = "<group>"; };
 		AB12CD34EF5601234567A109 /* TentacleNeighborGuides.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleNeighborGuides.m; path = TentacleTV/TentacleNeighborGuides.m; sourceTree = "<group>"; };
 		AB12CD34EF5601234567A107 /* TentacleFocusSection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TentacleFocusSection.h; path = TentacleTV/TentacleFocusSection.h; sourceTree = "<group>"; };
 		AB12CD34EF5601234567DE02 /* TentacleDesaturateView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleDesaturateView.m; path = TentacleTV/TentacleDesaturateView.m; sourceTree = "<group>"; };
@@ -143,6 +148,9 @@
 				AB12CD34EF5601234567A102 /* TentacleFocusSection.m */,
 				AB12CD34EF5601234567A104 /* TentacleFocusNeighbors.m */,
 				AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */,
+				D3F11E5C0DE0000000000002 /* TentacleFocusInput.m */,
+				D3F11E5C0DE0000000000004 /* TentacleRevealMotion.m */,
+				D3F11E5C0DE0000000000005 /* TentacleRevealScroller+Private.h */,
 				AB12CD34EF5601234567A109 /* TentacleNeighborGuides.m */,
 				AB12CD34EF5601234567FF02 /* TentacleGlassView.m */,
 				AB12CD34EF5601234567CC0C /* TentacleTV-Bridging-Header.h */,
@@ -492,6 +500,8 @@
 				AB12CD34EF5601234567A101 /* TentacleFocusSection.m in Sources */,
 				AB12CD34EF5601234567A103 /* TentacleFocusNeighbors.m in Sources */,
 				AB12CD34EF5601234567A105 /* TentacleRevealScroller.m in Sources */,
+				D3F11E5C0DE0000000000001 /* TentacleFocusInput.m in Sources */,
+				D3F11E5C0DE0000000000003 /* TentacleRevealMotion.m in Sources */,
 				AB12CD34EF5601234567A108 /* TentacleNeighborGuides.m in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);
