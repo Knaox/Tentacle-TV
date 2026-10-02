@@ -27,6 +27,7 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 | 15. Lumière des fonds et marque (Apple TV) | Fait (2026-10-02) : un fond d'encre éclairé par l'œuvre focalisée, la carte focalisée dans sa propre lumière, la marque mono calée et éclairée — « La lumière des fonds et la marque (Apple TV) » ci-dessous. |
 | 16. Les rangées (Apple TV) | Fait (2026-10-02) : HAUT / BAS vers la section voisine, l'élément au centre le plus proche — partout ; la page qui suit le focus en UN mouvement — « Les rangées (Apple TV) » ci-dessous. |
 | 17. Le logo de l'app (Apple TV) | Fait (2026-10-02) : l'icône en quatre couches (fond, lumière, poulpe, bras avant), le Top Shelf dans le même monde, le lancement = la première image de l'app, plus de noir au démarrage — « Le logo de l'app : icône, Top Shelf, lancement (Apple TV) » ci-dessous. |
+| 18. Saisons manquantes (Apple TV, bureau, mobile) | Fait (2026-10-02) : une série de la bibliothèque à qui il manque des saisons les offre depuis la recherche — en tête de « À demander » et en onglets grisés sur sa fiche (Apple TV), « Demander » au plateau et dans la barre (bureau), dans la feuille d'appui long (mobile) — « Les saisons manquantes » ci-dessous. |
 
 ## La direction retenue
 
@@ -498,7 +499,9 @@ seulement quand le serveur déclare Vigie installé ET activé, et rien d'autre
 - **Les avis brefs** (`showNotice`, `NoticeToast`) : en haut à droite, dans le
   verre des messages de l'administrateur, jamais focalisables, effacés seuls
   (4 s ; 5,5 s avec une phrase de suite).
-- **Garde Vigie ouverte** — trois entrées, rien ailleurs (`redesignWiring/vigie/`) :
+- **Garde Vigie ouverte** — trois entrées (et, depuis, les saisons manquantes d'une
+  série de la bibliothèque : « Les saisons manquantes », plus bas), rien ailleurs
+  (`redesignWiring/vigie/`) :
   - la COLLECTION (`useSagaAbsent`) : l'état de chaque volet absent (sa
     demande — `mine` du socle, « En attente », le camembert d'« En cours » —,
     sinon ce que dit l'extension, « Demandé » par un autre), « OK :
@@ -1746,6 +1749,74 @@ ses demandes Vigie en cours, d'un coup d'œil, en lecture seule.
 2. Fenêtre ouverte, un titre qui arrive : il sort de la liste dans les 30 s.
 3. Compte bloqué dans Vigie, ou Vigie désactivé : rien dans le rail.
 4. Menu et la croix ferment ; « gauche, gauche » mène toujours au profil.
+
+## Les saisons manquantes (Apple TV, bureau, mobile)
+
+Branche `claude/silly-noyce-e03f5d` (lot du 2026-10-02, T8), Vigie
+`feat/saisons-manquantes`. Retour de l'utilisateur : une série qu'on n'a pas
+entière ne proposait, dans la recherche, que sa fiche — jamais de demander la
+saison qui manque, « même dans la barre ».
+
+- **Le contrat** `titles` gagne `gaps` (additif) : `GET gaps?keys=tv:A,tv:B`
+  → pour chaque série que la bibliothèque a EN PARTIE, les saisons qui lui
+  manquent, dans la forme de `seasons` (état, demandable). UNE question pour
+  toute une page (`useTitleGaps`, regroupeur commun avec l'état des cartes,
+  une entrée de cache par série). Vigie ne lit une fiche Jellyseerr que pour
+  une série qu'il dit « en partie » (table des statuts en mémoire) ; la file
+  du compte se relit à chaque fois. Le serveur relaie `gaps`
+  (`readTitlesMeta`) et donne l'identité TMDB de chaque résultat de
+  `/api/search` (`ProviderIds.Tmdb`, tiré de l'index) — sans elle, rien.
+- **La feuille des saisons, un modèle commun** (`seasonPick`, shared) : ce que
+  l'extension offre se coche, sauf ce que la BIBLIOTHÈQUE a déjà — « Dans la
+  bibliothèque », jamais à cocher, même si l'extension n'en sait encore rien
+  (saisons Jellyfin hors « virtuelles ») ; trois saisons numérotées ou plus
+  qu'on a tiennent en une ligne (« Saisons 1–15 »). Bureau (une feuille pour
+  l'app, au-dessus des pages et de l'omnibox), mobile (présentée depuis la
+  recherche, la réponse dite sur place) et Apple TV la rendent.
+- **Apple TV** (garde `useVigieGate` ET `titles.gaps` + `titles.seasons`
+  déclarés, sinon rien) :
+  - recherche : la série paraît AUSSI en tête de « À demander », grisée,
+    « 2 saisons à demander » (`useSearchGaps`) ; OK ouvre la feuille, entrée
+    sur la première à cocher ; plus rien à demander mais une demande du compte
+    en cours → son état et l'invite au téléphone ; l'appui maintenu ouvre le
+    panneau de la série (c'est un titre de la bibliothèque) ;
+  - fiche : les saisons manquantes en onglets GRISÉS au bout de la bande
+    (`useSeriesGapTabs`, `Chip absent` : le verre passe au gris du GPU des
+    titres absents, `NativeDesaturate`, pointillés, « + » ou horloge ; au
+    focus, un gris clair, texte noir). OK ouvre la feuille ENTRÉE sur cette
+    saison, déjà cochée ; sur une saison déjà demandée, entrée sur la
+    première à cocher. Une saison qui a déjà un onglet (même virtuelle) n'en
+    a pas un second ; tant que la bande n'est pas lue, aucun onglet grisé.
+- **Bureau** : « Demander » au dégradé JUSTE APRÈS « Lire » au plateau de la
+  carte (`overlay.request`, `SeriesGapsScope` : la recherche seulement), le
+  hors ligne cédant sa place (cinq boutons au plus) ; « + 2 saisons à
+  demander » sous l'affiche et sur le meilleur résultat ; dans l'omnibox, une
+  section « À demander » (↵ ferme la barre et ouvre la feuille).
+- **Mobile** : la même chose par la feuille d'appui long (« Demander les
+  saisons manquantes », en retrait de « Lire », leur nombre), la légende de la
+  carte et le meilleur résultat. Jamais « téléchargement ».
+- **Le jumeau de Vigie** (`PosterHover`, et sa feuille) suit le nouvel ordre :
+  sur une série de la bibliothèque là en partie, « Regarder » puis « Demander
+  d'autres saisons » au dégradé.
+- **Éprouvé** : au banc (`bench:ui planche saisons-manquantes --focus`) ;
+  dans l'app réelle des trois plateformes sur un faux backend et un faux Vigie
+  (aucune écriture vers un vrai service, chaque demande journalisée) — Apple
+  TV au pavé (agent XCUITest) : DROITE depuis « Saison 15 » atteint les
+  onglets grisés, OK, entrée, BAS, OK, Menu rend le focus à l'onglet ;
+  « Demande envoyée », la carte « En attente » ; bureau (Chrome sans tête) :
+  plateau, feuille au clavier, omnibox ; mobile (simulateur iPhone neuf).
+  Garde : Vigie sans `gaps`, compte bloqué, Vigie éteint → ni carte, ni
+  onglet, ni « Demander ». La demande part avec `seasons: [17]`, rien d'autre.
+
+### Essais (tâche de l'utilisateur)
+
+1. Apple TV : rechercher une série incomplète — la carte en tête de « À
+   demander », OK, la feuille entre sur la saison qui manque ; la fiche, au
+   bout des saisons, les onglets grisés lisibles à trois mètres.
+2. Bureau : la même recherche — le « + » au survol, la feuille, la barre.
+3. Mobile : appui long sur la série dans la recherche.
+4. Livrer ENSEMBLE le serveur (relais de `gaps`, `ProviderIds` de la recherche)
+   et Vigie (`/titles/gaps`), sinon rien ne paraît — voulu.
 
 ## La lumière des fonds et la marque (Apple TV)
 
