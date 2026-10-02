@@ -87,7 +87,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   reportStartRef.current = p.reportStart;
 
   const lifecycle = useTVPlaybackLifecycle({
-    itemId, item, navigation, restartStream: p.restartStream, localStreamUrl: p.isPrismCore ? streamUrl : null,
+    itemId, item, navigation, restartStream: p.restartStream, localStream: p.isPrismCore && streamUrl ? { url: streamUrl, gen: p.prism?.gen ?? 0 } : null,
     reportStop: p.reportStop, stopPromiseRef: p.lastStopPromiseRef, positionRef, pausedStateRef, reportSeekRef, reportStartRef,
     onBackground: () => setPaused(true),
     // Retour : focus sur Lecture, NOMMÉ (le focus natif tvOS meurt au background) — sauf panneau ouvert.

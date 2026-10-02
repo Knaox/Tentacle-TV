@@ -176,16 +176,24 @@ export async function fallbackMuxedPrismCore(gen: number): Promise<PrismStart | 
  * AVPlayer ne le découvrirait qu'au segment suivant, en pleine reprise. Une
  * requête de la playlist, bornée : sur le bouclage, une réponse saine arrive
  * en quelques millisecondes.
+ *
+ * Un bouclage MORT refuse la connexion aussitôt. Un délai dépassé ne dit
+ * qu'une app qui se réveille sous charge : une seconde chance, plus longue —
+ * conclu trop vite, le flux se rouvrait pour rien, indicateur à l'écran.
  */
 export async function prismServing(url: string, timeoutMs = 600): Promise<boolean> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url.replace(/#.*$/, ""), { signal: controller.signal });
-    return res.ok;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timer);
+  const target = url.replace(/#.*$/, "");
+  for (const limit of [timeoutMs, timeoutMs * 4]) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), limit);
+    try {
+      const res = await fetch(target, { signal: controller.signal });
+      return res.ok;
+    } catch {
+      if (!controller.signal.aborted) return false;
+    } finally {
+      clearTimeout(timer);
+    }
   }
+  return false;
 }

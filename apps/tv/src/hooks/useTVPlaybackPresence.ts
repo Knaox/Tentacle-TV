@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { presenceOf, presenceStep, type AppPresence } from "@tentacle-tv/tv-core/playback";
-import { prismServing } from "../utils/prismCoreStart";
+import { prismServing, prismStatus } from "../utils/prismCoreStart";
 import { plog } from "../utils/playerDiag";
 import type { RestartOptions, RestartOutcome } from "./streamRestart";
 
@@ -9,12 +9,24 @@ import type { RestartOptions, RestartOutcome } from "./streamRestart";
  *  réattache lentement — un seul tir part trop tôt. */
 const FOCUS_RETRIES_MS = [400, 1500, 3000];
 
+/** Le flux LOCAL en cours (PrismCore) : son URL et sa session. */
+export interface LocalStream {
+  url: string;
+  gen: number;
+}
+
 /**
  * Le lecteur face à la présence de l'app (AppState), selon la règle partagée
  * `presenceStep` (tv-core) : pause et position à l'inactivité, arrêt à la
  * sortie, focus sur Lecture au retour — et, après une vraie absence, la
  * session rouverte et le flux local contrôlé : s'il ne répond plus, il est
  * relancé PENDANT la pause, avant que l'appui sur Lecture ne bute dessus.
+ *
+ * Le contrôle lit les DEUX moitiés de PrismCore : son serveur de bouclage (la
+ * playlist répond-elle ?) et son producteur (`prismStatus`). Une playlist VOD
+ * planifiée est servie même producteur mort — la source lâchée pendant
+ * l'absence : AVPlayer redemanderait alors ses segments sans fin, sans erreur,
+ * et toute recherche viserait un segment que plus rien ne fabrique.
  *
  * Les refs gardent l'écouteur stable (deps figées) sans capter de closures.
  */
@@ -30,8 +42,8 @@ export function useTVPlaybackPresence(args: {
   /** Rend le focus à Lecture. Idempotent : appelé plusieurs fois au retour. */
   onFocusPlay?: () => void;
   restartStream: (opts?: RestartOptions) => Promise<RestartOutcome>;
-  /** URL du flux LOCAL en cours (PrismCore), sinon null. */
-  localStreamUrl: string | null;
+  /** Le flux LOCAL en cours (PrismCore), sinon null. */
+  localStream: LocalStream | null;
 }): void {
   const { positionRef, pausedStateRef, reportSeekRef, reportStartRef, reportStopRef } = args;
   const onPauseRef = useRef(args.onPause);
@@ -40,18 +52,21 @@ export function useTVPlaybackPresence(args: {
   onFocusPlayRef.current = args.onFocusPlay;
   const restartRef = useRef(args.restartStream);
   restartRef.current = args.restartStream;
-  const localUrlRef = useRef(args.localStreamUrl);
-  localUrlRef.current = args.localStreamUrl;
+  const localRef = useRef(args.localStream);
+  localRef.current = args.localStream;
 
   useEffect(() => {
     let presence: AppPresence = presenceOf(AppState.currentState) ?? "active";
 
     const checkLocalStream = async () => {
-      const url = localUrlRef.current;
-      if (!url) return;
-      const alive = await prismServing(url);
-      plog("presence", `retour : flux local ${alive ? "vivant" : "MORT → relance"}`);
-      if (!alive && localUrlRef.current === url) void restartRef.current({ reason: "resume" });
+      const local = localRef.current;
+      if (!local) return;
+      const alive = await prismServing(local.url);
+      // `null` : le pont ne répond pas — on ne relance pas sur une inconnue.
+      const status = alive ? await prismStatus(local.gen) : null;
+      const producerDead = !!status && (status.failed || !status.known);
+      plog("presence", `retour : flux local ${!alive ? "MORT → relance" : producerDead ? `producteur mort (${status?.code ?? "session close"}) → relance` : "vivant"}`);
+      if ((!alive || producerDead) && localRef.current?.url === local.url) void restartRef.current({ reason: "resume" });
     };
 
     const sub = AppState.addEventListener("change", (state) => {

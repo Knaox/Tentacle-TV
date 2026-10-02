@@ -6,7 +6,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { detailPageOf } from "../navigation/detailPage";
 import type { RootStackParamList } from "../navigation/types";
 import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
-import { useTVPlaybackPresence } from "./useTVPlaybackPresence";
+import { useTVPlaybackPresence, type LocalStream } from "./useTVPlaybackPresence";
 import { useTVPlaybackMarker } from "./useTVPlaybackMarker";
 import type { RestartOptions, RestartOutcome } from "./streamRestart";
 
@@ -45,8 +45,8 @@ export function useTVPlaybackLifecycle(args: {
   onForeground?: () => void;
   /** La relance du flux (`usePlayerStreamPipeline`) — au retour, si le flux local est mort. */
   restartStream: (opts?: RestartOptions) => Promise<RestartOutcome>;
-  /** URL du flux LOCAL en cours (PrismCore), sinon null. */
-  localStreamUrl: string | null;
+  /** Le flux LOCAL en cours (PrismCore) — URL et session —, sinon null. */
+  localStream: LocalStream | null;
 }) {
   const {
     itemId, item, navigation, reportStop, stopPromiseRef, positionRef,
@@ -120,7 +120,7 @@ export function useTVPlaybackLifecycle(args: {
   useTVPlaybackPresence({
     positionRef, pausedStateRef, reportSeekRef, reportStartRef, reportStopRef,
     onPause: onBackground, onFocusPlay: onForeground,
-    restartStream: args.restartStream, localStreamUrl: args.localStreamUrl,
+    restartStream: args.restartStream, localStream: args.localStream,
   });
 
   return { leavePlayer, handleFinished };
