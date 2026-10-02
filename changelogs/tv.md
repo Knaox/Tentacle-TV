@@ -6,36 +6,40 @@ Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [atv-1.10.0]
-<!-- Bloc Apple TV (TestFlight et App Store Connect, 4000 caractères). Pas de bloc nu : Android TV ne part pas en 1.10.0, et le pré-vol ne lui demande ses notes que s'il est livré. -->
+<!-- Bloc Apple TV (TestFlight et App Store Connect, 4000 caractères). Pas de bloc nu : Android TV ne part pas en 1.10.0, et le pré-vol ne lui demande ses notes que s'il est livré. Réécrit pour le second TestFlight 1.10.0 (retours d'essai), sans les fonctions des extensions. -->
 ### FR
-- **Une Apple TV entièrement redessinée** : une navigation de verre qui flotte à gauche et se déplie au focus, un grand bandeau qui fait défiler les titres à la une — seul, ou à la main —, de grandes affiches et un fond qui prend la lumière de l'œuvre. Les cartes grandissent au focus et suivent le pouce sur le pavé tactile. Sur tvOS 26, le verre est le Liquid Glass du système (Réglages › Apparence pour revenir au verre classique)
-- **Toutes les pages refaites** : accueil, fiche, bibliothèques et leurs filtres, Ma liste, Favoris, recherche, Pour vous, réglages, et les pages d'une personne, d'un genre ou d'un studio
-- **Maintenir OK sur une carte ouvre un grand panneau** : votre note sur une échelle de demi-étoiles, Ma liste, favori, vu, Plus d'infos, et Ne plus me proposer sur une recommandation. Chaque carte le rappelle sous sa légende, et le bandeau de l'accueil l'ouvre aussi
-- **Un seul bouton Retour** : une croix en haut à gauche, sur toutes les fiches, les panneaux et le lecteur — jamais sélectionnée à l'arrivée sur une fiche
-- **Beaucoup de bibliothèques, une navigation qui suit** : la liste défile, les réglages restent à deux appuis, et maintenir OK sur une entrée permet de la déplacer ou de la masquer — tout s'organise aussi dans Réglages › Navigation
-- **L'avance rapide du lecteur d'Apple** : un appui saute de 10 s, un appui maintenu défile de plus en plus vite jusqu'au relâcher, un glisser sur le pavé emporte le curseur, avec l'image visée au-dessus ; OK lit depuis là, Menu revient où vous étiez. La frise marque les passages connus — intro, résumé, générique
-- **Quitter l'app ne coûte plus rien** : la lecture se met en pause et reprend aussitôt au retour ; si tvOS a fermé l'app entre-temps, elle rouvre le lecteur en pause, à la position exacte
-- **La reprise au bon endroit** : la fiche propose de reprendre là où vous avez quitté dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard ou la perd
-- **Serveur ou Jellyfin coupé en pleine lecture** : le film continue sur ce qui est chargé, un bandeau dit ce qui se passe, et la lecture reprend seule au retour du serveur ; « Réessayer maintenant » si elle a dû s'arrêter
-- **Une lecture plus sûre** : les MP4 HEVC « hev1 » ont enfin une image, un saut ne fige plus certains films, le son reste synchrone après un saut, une sortie audio perdue (HDMI, ampli) se relance, et un flux refusé dit l'échec, avec Réessayer, au lieu de charger sans fin
-- **Se connecter par identifiant et mot de passe** : « Configurer manuellement », l'adresse du serveur, puis le compte — sans passer par un autre appareil. Le code reste proposé, et Menu recule d'une étape
-- **Déjumeler pour de bon** : « Déjumeler cet appareil », dans les réglages ou sur l'écran hors ligne, coupe l'accès sur-le-champ, même en pleine lecture, et efface de l'Apple TV tout ce qui appartenait au compte
-- **Bandes-annonces** : la bande-annonce dit toujours ce qui se passe — YouTube qui ne la fournit pas, le réseau qu'elle attend — au lieu de charger sans fin
+- **Une Apple TV entièrement redessinée** : une navigation de verre qui flotte à gauche, un grand bandeau qui fait défiler les titres à la une, de grandes affiches, un fond d'encre éclairé par l'œuvre, et des cartes qui grandissent dans leur propre lumière en suivant le pouce sur le pavé tactile. Sur tvOS 26, le verre est le Liquid Glass du système (Réglages › Apparence pour revenir au verre classique)
+- **Toutes les pages refaites** : accueil, fiche, bibliothèques et leurs filtres, Ma liste, Favoris, recherche, Pour vous, réglages, et les pages d'une personne, d'un genre ou d'un studio. « Prochains épisodes » et « Déjà visionné » passent en vignettes 16:9
+- **Maintenir OK sur une carte ouvre un grand panneau** : votre note sur une échelle de demi-étoiles, Ma liste, favori, vu, Plus d'infos, et Ne plus me proposer sur une recommandation
+- **Une navigation qui épouse vos bibliothèques** : compacte et centrée quand il y en a peu, elle défile quand il y en a beaucoup ; maintenir OK sur une entrée permet de la déplacer ou de la masquer, et tout s'organise dans Réglages › Navigation
+- **Plus fluide** : HAUT et BAS mènent à la carte la plus proche, la page suit en un seul mouvement, et les bibliothèques s'ouvrent plus vite avec deux fois moins de mémoire
+- **Un seul bouton Retour** : une croix en haut à gauche, partout. Retour ferme d'abord ce qui est ouvert, sans clignoter, et une suite de fiches ouvertes l'une depuis l'autre se remonte d'un seul Retour
+- **Le défilement du lecteur d'Apple** : un appui saute de 10 s, un appui maintenu défile de plus en plus vite ; sur le pavé, le doigt emporte le curseur, l'image visée au-dessus, et la lecture reprend à la cible après un décompte de 3 s. La frise montre le temps restant, la portion déjà chargée et les passages connus — intro, résumé, générique
+- **Un onglet Réglages dans le lecteur** pour la qualité ; un serveur lent à préparer la vidéo le dit discrètement, sans jamais bloquer la lecture
+- **Quitter l'app ne coûte plus rien** : la lecture se met en pause et reprend au retour ; si tvOS a fermé l'app, elle rouvre sur la fiche, « Reprendre » à la bonne position. La fiche montre où vous en êtes dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard
+- **Serveur ou Jellyfin coupé en pleine lecture** : le film continue sur ce qui est chargé, un bandeau dit ce qui se passe, et la lecture reprend seule au retour du serveur
+- **Une lecture plus sûre** : les MP4 HEVC « hev1 » ont enfin une image, un saut ne fige plus certains films, le son reste synchrone après un saut, une sortie audio perdue (HDMI, ampli) se relance, et un flux refusé le dit, avec Réessayer
+- **Des bandes-annonces qui se lancent à chaque fois**, en une seconde environ, préparées dès l'ouverture de la fiche (avec le serveur Tentacle 1.22.2)
+- **Se connecter par identifiant et mot de passe** : « Configurer manuellement », l'adresse du serveur, puis le compte — sans passer par un autre appareil
+- **Déjumeler pour de bon** : « Déjumeler cet appareil » coupe l'accès sur-le-champ, même en pleine lecture, et efface de l'Apple TV tout ce qui appartenait au compte
+- **Une icône en couches** qui s'anime sous le pouce, un Top Shelf dans le même univers, et plus d'écran noir au lancement
 
 ### EN
-- **A fully redesigned Apple TV app**: a glass navigation floating on the left that unfolds on focus, a large banner cycling through featured titles — on its own, or by hand —, large posters and a backdrop that takes on the artwork's light. Cards grow on focus and follow your thumb on the touch surface. On tvOS 26, the glass is the system's Liquid Glass (Settings › Appearance to go back to classic glass)
-- **Every page redesigned**: home, title page, libraries and their filters, My List, Favorites, search, For you, settings, and the pages of a person, a genre or a studio
-- **Hold OK on a card for a large panel**: your rating on a half-star scale, My List, favorite, watched, More info, and Not for me on a recommendation. Every card reminds you under its caption, and the home banner opens it too
-- **One Back button**: a cross at the top left, on every title page, panel and the player — never selected when a title page opens
-- **Many libraries, a navigation that keeps up**: the list scrolls, settings stay two presses away, and holding OK on an entry lets you move or hide it — everything can also be arranged in Settings › Navigation
-- **Fast-forward like Apple's player**: a press skips 10 s, holding scrubs faster and faster until you let go, a swipe on the touch surface carries the cursor, with the targeted frame above it; OK plays from there, Menu goes back to where you were. The timeline marks known segments — intro, recap, credits
-- **Leaving the app costs nothing**: playback pauses and resumes instantly when you come back; if tvOS closed the app in the meantime, it reopens the player, paused, at the exact position
-- **Resume at the right spot**: the title page offers to resume where you left off as soon as you leave the player, even when Jellyfin 12.1 writes it late or loses it
-- **Server or Jellyfin down mid-playback**: the movie goes on with what is buffered, a banner says what is happening, and playback resumes on its own when the server is back; "Try again now" if it had to stop
-- **Safer playback**: "hev1" HEVC MP4 files finally have a picture, seeking no longer freezes some movies, sound stays in sync after a seek, a lost audio output (HDMI, receiver) starts again, and a refused stream reports the failure, with Retry, instead of loading forever
-- **Sign in with a username and password**: "Configure manually", the server address, then the account — no other device needed. The code is still offered, and Menu steps back one screen
-- **Unpair for good**: "Unpair this device", in settings or on the offline screen, cuts access right away, even mid-playback, and erases from the Apple TV everything that belonged to the account
-- **Trailers**: a trailer always says what is going on — YouTube not providing it, the network it is waiting for — instead of loading forever
+- **A fully redesigned Apple TV app**: a glass navigation floating on the left, a large banner cycling through featured titles, large posters, an ink backdrop lit by the artwork, and cards that grow in their own light while following your thumb on the touch surface. On tvOS 26, the glass is the system's Liquid Glass (Settings › Appearance to go back to classic glass)
+- **Every page redesigned**: home, title page, libraries and their filters, My List, Favorites, search, For you, settings, and the pages of a person, a genre or a studio. "Next episodes" and "Already watched" move to 16:9 thumbnails
+- **Hold OK on a card for a large panel**: your rating on a half-star scale, My List, favorite, watched, More info, and Not for me on a recommendation
+- **A navigation that fits your libraries**: compact and centered when there are few, it scrolls when there are many; holding OK on an entry lets you move or hide it, and everything can be arranged in Settings › Navigation
+- **Smoother**: UP and DOWN go to the nearest card, the page follows in a single motion, and libraries open faster with half the memory
+- **One Back button**: a cross at the top left, everywhere. Back first closes what is open, without flickering, and a chain of title pages opened one from another unwinds with a single Back
+- **Scrubbing like Apple's player**: a press skips 10 s, holding scrubs faster and faster; on the touch surface, your finger carries the cursor, the targeted frame above it, and playback resumes at the target after a 3-second countdown. The timeline shows the time left, the part already loaded and known segments — intro, recap, credits
+- **A Settings tab in the player** for quality; a server slow to prepare the video says so discreetly, without ever blocking playback
+- **Leaving the app costs nothing**: playback pauses and resumes when you come back; if tvOS closed the app, it reopens on the title page, "Resume" at the right position. The title page shows where you are as soon as you leave the player, even when Jellyfin 12.1 writes it late
+- **Server or Jellyfin down mid-playback**: the movie goes on with what is buffered, a banner says what is happening, and playback resumes on its own when the server is back
+- **Safer playback**: "hev1" HEVC MP4 files finally have a picture, seeking no longer freezes some movies, sound stays in sync after a seek, a lost audio output (HDMI, receiver) starts again, and a refused stream says so, with Retry
+- **Trailers that start every time**, in about a second, prepared as soon as the title page opens (with Tentacle server 1.22.2)
+- **Sign in with a username and password**: "Configure manually", the server address, then the account — no other device needed
+- **Unpair for good**: "Unpair this device" cuts access right away, even mid-playback, and erases from the Apple TV everything that belonged to the account
+- **A layered icon** that comes alive under your thumb, a Top Shelf in the same world, and no more black screen at launch
 
 ## [1.4.0]
 <!-- Bloc nu : Google Play, 500 caractères. Le bloc atv- porte la version complète. -->
