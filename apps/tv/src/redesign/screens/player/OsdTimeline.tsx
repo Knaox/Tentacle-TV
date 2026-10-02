@@ -3,19 +3,20 @@ import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { BrandGradient } from "../../brand/BrandGradient";
 import { colors, fonts, white } from "../../theme/tokens";
-import { formatClock, fractionOf } from "./formatClock";
+import { formatClock, formatRemaining, fractionOf } from "./formatClock";
 import type { TimelineSegment } from "./playerTypes";
 
 /**
- * La frise : le temps écoulé, la barre (en mémoire, lu, la pastille) et la
- * durée. Passive — jamais focalisable : le déplacement se pilote aux flèches
- * et au pavé, et se montre sur elle, la vignette visée au-dessus du curseur
- * (`ScrubOverlay`). Le lu porte le dégradé de la
- * marque, violet → rose, comme la barre du lecteur du bureau
- * (`--progress-fill`) : le rose arrive TOUJOURS à la tête de lecture.
+ * La frise : le temps écoulé, la barre (en mémoire, lu, la pastille) et le
+ * temps restant, qui décompte (« −12:34 », comme le lecteur d'Apple).
+ * Passive — jamais focalisable : le déplacement se pilote aux flèches et au
+ * pavé, et se montre sur elle, la vignette visée au-dessus du curseur
+ * (`ScrubOverlay`). Le lu porte le dégradé de la marque, violet → rose, comme
+ * la barre du lecteur du bureau (`--progress-fill`) : le rose arrive TOUJOURS
+ * à la tête de lecture.
  *
  * `ghost` : où l'on vise pendant un déplacement (curseur blanc cerclé), à
- * côté de la position réelle.
+ * côté de la position réelle — le restant est alors celui de la cible.
  *
  * `segments` : les passages connus (intro, résumé, générique) COUPENT la barre
  * à leurs bords, comme des chapitres — une forme, pas une couleur : la coupure
@@ -116,7 +117,8 @@ export const OsdTimeline = memo(function OsdTimeline({
         <View style={[styles.knob, { transform: [{ translateX: played * TRACK_WIDTH - KNOB / 2 }] }]} />
         {aim !== null ? <View style={[styles.ghost, { transform: [{ translateX: aim * TRACK_WIDTH - GHOST / 2 }] }]} /> : null}
       </View>
-      <Text style={[styles.time, styles.total]}>{formatClock(duration)}</Text>
+      {/* Le restant, qui décompte ; en défilement, celui de la cible visée. */}
+      <Text style={[styles.time, styles.total]}>{formatRemaining(ghost ?? position, duration)}</Text>
     </View>
   );
 });
