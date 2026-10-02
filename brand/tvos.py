@@ -1,7 +1,8 @@
 """
-Les compositions de l'Apple TV : l'icône EN COUCHES et le Top Shelf.
-`generate-svg.py` les écrit par `write()` et lui passe les pièces du dessin :
-rien ici ne redessine la mascotte, tout se compose depuis elle.
+Les compositions de l'Apple TV : l'icône EN COUCHES, le Top Shelf et le logo
+de l'écran de lancement. `generate-svg.py` les écrit par `write()` et lui
+passe les pièces du dessin : rien ici ne redessine la mascotte, tout se compose
+depuis elle.
 
 L'icône suit la manière des apps d'Apple sur tvOS 26 (Réglages, Sing) : un
 fond plein, le motif devant, en couches, et AUCUN reflet, ombre ni liseré
@@ -49,6 +50,16 @@ TOP_SHELF = {"banner-topshelf.svg": (1920, 720), "banner-topshelf-wide.svg": (23
 TOP_SHELF_SPAN = 0.60
 # La lumière du Top Shelf s'étire en largeur : une scène, pas une tache.
 TOP_SHELF_LIGHT = (1.25, 0.66)
+
+# Le logo de l'écran de lancement : la PREMIÈRE IMAGE de l'app, pour que le
+# relais soit invisible. `BootView` (apps/tv/src/redesign/screens/overlays)
+# pose la mascotte à 200 points dans une lueur rose de 640 points
+# (`Glow` : l'accent #EC4899, 0,3 au cœur, 0,135 à 45 %, rien au bord) — le
+# storyboard pose cette image au même endroit. À retoucher ENSEMBLE.
+LAUNCH = (640, 640)
+LAUNCH_MASCOT = 200
+LAUNCH_GLOW = (("0", "#EC4899", ".3"), (".45", "#EC4899", ".135"), ("1", "#EC4899", "0"))
+
 
 def _svg(w, h, title, note, defs, body):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img">'
@@ -106,13 +117,21 @@ def _top_shelf(art):
     return out
 
 
+def _launch(art):
+    w, h = LAUNCH
+    glow_defs, glow = _light(w, h, w / 2, h / 2, LAUNCH_GLOW, "glow")
+    mascot = f'<g {_place(w, h, LAUNCH_MASCOT)}>{art["BODY"]}{art["HAT_G"]}{art["FRONT_G"]}</g>'
+    return {"launch-logo.svg": _svg(w, h, "logo de lancement tvOS", art["NOTE"], glow_defs + art["GRADS"],
+                                    glow + mascot)}
+
+
 def write(out, art):
     """
     Écrit les SVG de l'Apple TV dans `out` ; `art` porte les pièces du dessin
     (`GRADS`, `BODY`, `HAT_G`, `FRONT_G`) et la mention `NOTE`. Rend le nombre
     de fichiers écrits.
     """
-    files = {**_icon_layers(art), **_top_shelf(art)}
+    files = {**_icon_layers(art), **_top_shelf(art), **_launch(art)}
     for name, text in files.items():
         (out / name).write_text(text)
     return len(files)

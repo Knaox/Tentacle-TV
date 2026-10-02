@@ -1,7 +1,7 @@
 """
 Génère les dix-neuf SVG de `brand/` ET les constantes TypeScript des clients,
-depuis une seule géométrie. Rien ici ne s'édite à la main. L'icône Apple TV en
-couches et son Top Shelf se composent dans `tvos.py`.
+depuis une seule géométrie. Rien ici ne s'édite à la main. Ceux de l'Apple TV
+(icône en couches, Top Shelf, lancement) se composent dans `tvos.py`.
 
     python3 brand/generate-svg.py            # écrit brand/ + les modules TS
     python3 brand/generate-svg.py /tmp/out   # aperçu ailleurs, sans les TS
@@ -209,7 +209,7 @@ def squircle_bg(span):
     '<rect width="1024" height="1024" fill="url(#bgm)"/><rect width="1024" height="1024" fill="url(#glow)"/>'
     f'<g {PLACE} color="#FFFFFF"><g mask="url(#mCut)" fill="currentColor">{MONO_BODY}</g></g></svg>\n')
 
-# ── Compositions dérivées : bannières, écrans de lancement ─────────────────
+# ── Compositions dérivées : bannières, affiche, logo seul ───────────────────
 def compose(w, h, ratio, with_bg=True, with_hat=True, title=""):
     """
     Place la mascotte dans un cadre w×h, occupant `ratio` de la plus petite
@@ -237,13 +237,11 @@ COMPOSITIONS = {
     "poster-2x3.svg": (720, 1080, 0.62, True, True, " — affiche"),
     # Le logo seul, sur transparent : posé par le système sur sa propre couleur.
     "logo-plain.svg": (1024, 1024, 0.92, False, True, " — logo seul"),
-    # `LaunchLogo` tvOS n'est pas carré : une source carrée y serait étirée.
-    "launch-logo.svg": (330, 360, 0.94, False, True, " — logo de lancement tvOS"),
 }
 for name, (w, h, ratio, bg, hat, title) in COMPOSITIONS.items():
     (OUT / name).write_text(compose(w, h, ratio, bg, hat, title))
 
-# ── Apple TV : l'icône en couches et le Top Shelf ──────────────────────────
+# ── Apple TV : l'icône en couches, le Top Shelf, le logo de lancement ───────
 TVOS_COUNT = tvos.write(OUT, {"GRADS": GRADS, "BODY": BODY, "HAT_G": HAT_G,
                               "FRONT_G": FRONT_G, "NOTE": NOTE})
 

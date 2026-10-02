@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- L'écran de lancement EST la première image de l'app : `BootView`
+     (src/redesign/screens/overlays) pose la mascotte à 200 points dans une
+     lueur rose de 640, centrée 50 points au-dessus du milieu (l'indicateur
+     d'attente vient dessous), sur l'encre de la scène. `LaunchLogo` est cette
+     mascotte dans sa lueur (brand/tvos.py), posée au même endroit ; le fond
+     est l'encre moyenne (#100D17 → #09080E). AppDelegate garde cette vue à
+     l'écran jusqu'au premier rendu de React : aucun noir entre les deux. -->
 <document type="com.apple.InterfaceBuilder.AppleTV.Storyboard" version="3.0" toolsVersion="15702" targetRuntime="AppleTV" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
-    <device id="appleTV" appearance="light"/>
+    <device id="appleTV" appearance="dark"/>
     <dependencies>
         <deployment identifier="tvOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="15704"/>
@@ -16,15 +23,15 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="LGo-01-img">
-                                <rect key="frame" x="795" y="360" width="330" height="360"/>
+                                <rect key="frame" x="640" y="170" width="640" height="640"/>
                             </imageView>
                         </subviews>
-                        <color key="backgroundColor" red="0.0392156862745098" green="0.0392156862745098" blue="0.05882352941176471" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" red="0.050980392156862744" green="0.043137254901960784" blue="0.074509803921568626" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="LGo-01-img" firstAttribute="centerX" secondItem="Bcu-3y-fUS" secondAttribute="centerX" id="c01-cx-aaa"/>
-                            <constraint firstItem="LGo-01-img" firstAttribute="centerY" secondItem="Bcu-3y-fUS" secondAttribute="centerY" id="c02-cy-bbb"/>
-                            <constraint firstItem="LGo-01-img" firstAttribute="width" constant="330" id="c04-ww-ddd"/>
-                            <constraint firstItem="LGo-01-img" firstAttribute="height" constant="360" id="c05-hh-eee"/>
+                            <constraint firstItem="LGo-01-img" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="c01-cx-aaa"/>
+                            <constraint firstItem="LGo-01-img" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-50" id="c02-cy-bbb"/>
+                            <constraint firstItem="LGo-01-img" firstAttribute="width" constant="640" id="c04-ww-ddd"/>
+                            <constraint firstItem="LGo-01-img" firstAttribute="height" constant="640" id="c05-hh-eee"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
                     </view>
@@ -35,6 +42,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="LaunchLogo" width="330" height="360"/>
+        <image name="LaunchLogo" width="640" height="640"/>
     </resources>
 </document>
