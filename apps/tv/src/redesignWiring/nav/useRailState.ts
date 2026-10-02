@@ -9,12 +9,17 @@ import { SHOW_ALL_KEY } from "./useNavEntries";
 
 /**
  * L'état de la navigation refondue d'un écran : ouverte quand l'une de ses
- * entrées a le focus, repliée sinon ; ce que font l'appui et l'appui long
- * (le menu d'organisation, `useRailArrange`).
+ * entrées a le focus, repliée quand le focus se pose ailleurs DANS l'écran ;
+ * ce que font l'appui et l'appui long (le menu d'organisation,
+ * `useRailArrange`).
  *
  * La clé de focus d'une entrée est `nav:<clé>` (`NavItem`). Passer d'une
  * entrée à l'autre ne replie pas la barre : le repli attend un court instant
- * que le focus se soit posé ailleurs.
+ * que le focus se soit posé ailleurs. Parti HORS de l'écran — dans une Modal
+ * ouverte depuis la navigation : la vue des demandes, le menu d'une entrée —,
+ * il la laisse ouverte dessous : repliée sous la Modal, elle se redépliait à
+ * sa fermeture, quand le focus revenait à l'entrée (filmé : la barre repliée
+ * quatre images, puis dépliée).
  */
 
 export const NAV_PREFIX = "nav:";
@@ -31,16 +36,20 @@ export function useRailFocused(focus: FocusStore): boolean {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const unsubscribe = focus.subscribe((key, focused) => {
-      if (!isNavKey(key)) return;
-      if (timer) clearTimeout(timer);
-      timer = null;
       if (focused) {
-        setRailFocused(true);
+        if (timer) clearTimeout(timer);
+        timer = null;
+        // Une entrée l'ouvre ; le contenu de l'écran la replie.
+        setRailFocused(isNavKey(key));
         return;
       }
+      if (!isNavKey(key)) return;
+      if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         timer = null;
-        if (!isNavKey(focus.focusedKey())) setRailFocused(false);
+        const now = focus.focusedKey();
+        // Aucune clé de l'écran : le focus est dans une Modal, la barre reste.
+        if (now !== null && !isNavKey(now)) setRailFocused(false);
       }, COLLAPSE_DELAY_MS);
     });
     return () => {
