@@ -26,7 +26,7 @@ diff --git a/ios/Video/RCTVideo.swift b/ios/Video/RCTVideo.swift
 index 48c4df73a384d2360d940a2270fe171e1685fe4d..5ff19bf4e8bf6da2c9d37d7a88ec14e81b77857f 100644
 --- a/ios/Video/RCTVideo.swift
 +++ b/ios/Video/RCTVideo.swift
-@@ -565,6 +565,17 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
+@@ -565,6 +565,20 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
          if let maxBitRate = _maxBitRate {
              _playerItem?.preferredPeakBitRate = Double(maxBitRate)
          }
@@ -34,13 +34,16 @@ index 48c4df73a384d2360d940a2270fe171e1685fe4d..5ff19bf4e8bf6da2c9d37d7a88ec14e8
 +        // Sans elle, AVPlayer chargeait depuis 0:00 et ne sautait qu'à readyToPlay —
 +        // un HLS de transcodage démarrait deux fois chez le serveur (au début, puis
 +        // au point de reprise). Sans gestionnaire de fin, la demande est admise avant
-+        // readyToPlay ; le saut de readyToPlay (plus bas) reste en filet.
-+        if _startPosition > 0 {
-+            playerItem.seek(
-+                to: CMTime(seconds: _startPosition, preferredTimescale: 1000),
-+                toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: nil
-+            )
-+        }
++        // readyToPlay ; le saut de readyToPlay (plus bas) reste en filet. Apple TV
++        // seulement : c'est là, et là seulement, qu'elle a été éprouvée.
++        #if os(tvOS)
++            if _startPosition > 0 {
++                playerItem.seek(
++                    to: CMTime(seconds: _startPosition, preferredTimescale: 1000),
++                    toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: nil
++                )
++            }
++        #endif
  
          if _player == nil {
              _player = AVPlayer()
