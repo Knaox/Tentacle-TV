@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { networkShortfall } from "./networkShortfall";
 import {
-  decideRecovery, NO_PROGRESS_MS, SLOW_RESTART_AFTER_MS, STALL_GRACE_MS, type RecoveryInput,
+  decideRecovery, NO_PROGRESS_MS, NUDGE_AFTER_MS, SLOW_RESTART_AFTER_MS, STALL_GRACE_MS, type RecoveryInput,
 } from "./playbackRecovery";
 
 const T = 1_000_000;
@@ -15,7 +15,7 @@ function transcodeStalled(ms: number, over: Partial<RecoveryInput> = {}): Recove
     tentacle: "ok", source: "ok", sourceCulprit: null, sourceCheckedAt: T - ms + STALL_GRACE_MS + 100, probing: false,
     downSince: null, downWhat: null,
     restarting: false, lastRestartAt: null, vainRestarts: 0,
-    transcoding: true, lastProgressAt: T - ms, measuredBps: null, neededBps: null, retryAsked: false,
+    transcoding: true, lastProgressAt: T - ms, measuredBps: null, neededBps: null, retryAsked: false, lastReloadAt: null,
     ...over,
   };
 }
@@ -40,12 +40,25 @@ describe("decideRecovery — un transcodage qui se fait attendre", () => {
     expect(d).toEqual({ phase: { kind: "transcoding", since: T - STALL_GRACE_MS }, probe: true, restart: false });
   });
 
-  it("serveur joignable, réseau non accusé : la patience, jamais de relance", () => {
-    for (const ms of [STALL_GRACE_MS, SLOW_RESTART_AFTER_MS, 60_000, NO_PROGRESS_MS - 1]) {
+  it("serveur joignable, réseau non accusé : la patience, jamais de session neuve", () => {
+    for (const ms of [STALL_GRACE_MS, SLOW_RESTART_AFTER_MS, NUDGE_AFTER_MS - 1]) {
       expect(decideRecovery(transcodeStalled(ms))).toEqual({
         phase: { kind: "transcoding", since: T - ms }, probe: false, restart: false,
       });
     }
+    // Plus longue, l'attente reste patiente : au plus la même session, rechargée.
+    for (const ms of [60_000, NO_PROGRESS_MS - 1]) {
+      const d = decideRecovery(transcodeStalled(ms, { lastReloadAt: T - 1000 }));
+      expect(d).toEqual({ phase: { kind: "transcoding", since: T - ms }, probe: false, restart: false });
+    }
+  });
+
+  it("trente secondes sans aucune donnée : la MÊME session rechargée, une fois par période", () => {
+    expect(decideRecovery(transcodeStalled(NUDGE_AFTER_MS))).toMatchObject({ phase: { kind: "transcoding" }, restart: false, reload: true });
+    expect(decideRecovery(transcodeStalled(90_000, { lastReloadAt: T - NUDGE_AFTER_MS + 1 })).reload).toBeUndefined();
+    expect(decideRecovery(transcodeStalled(90_000, { lastReloadAt: T - NUDGE_AFTER_MS })).reload).toBe(true);
+    // Des données qui arrivent : rien à relancer.
+    expect(decideRecovery(transcodeStalled(90_000, { lastProgressAt: T - 5000 })).reload).toBeUndefined();
   });
 
   it("deux minutes sans AUCUNE progression : la main à l'utilisateur, sans relance", () => {
@@ -65,7 +78,7 @@ describe("decideRecovery — un transcodage qui se fait attendre", () => {
   });
 
   it("le réseau MESURÉ sous le palier : « trop lent », chiffres à l'appui, sans relance", () => {
-    const d = decideRecovery(transcodeStalled(30_000, { measuredBps: 3 * MB, neededBps: 8 * MB }));
+    const d = decideRecovery(transcodeStalled(30_000, { measuredBps: 3 * MB, neededBps: 8 * MB, lastProgressAt: T - 2000 }));
     expect(d).toEqual({
       phase: { kind: "waiting", cause: "slow", since: T - 30_000, network: { measuredBps: 3 * MB, neededBps: 8 * MB } },
       probe: false, restart: false,

@@ -14,7 +14,7 @@ function playing(over: Partial<RecoveryInput> = {}): RecoveryInput {
     tentacle: "ok", source: "unknown", sourceCulprit: null, sourceCheckedAt: null, probing: false,
     downSince: null, downWhat: null,
     restarting: false, lastRestartAt: null, vainRestarts: 0,
-    transcoding: false, lastProgressAt: null, measuredBps: null, neededBps: null, retryAsked: false,
+    transcoding: false, lastProgressAt: null, measuredBps: null, neededBps: null, retryAsked: false, lastReloadAt: null,
     ...over,
   };
 }

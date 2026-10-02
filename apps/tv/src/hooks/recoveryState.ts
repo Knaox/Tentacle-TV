@@ -35,6 +35,8 @@ export interface RecoveryState {
   vain: number;
   /** « Réessayer » demandé, pas encore servi. */
   retryAsked: boolean;
+  /** Dernier rechargement de la MÊME session d'un transcodage (`useTranscodeReload`). */
+  lastReloadAt: number | null;
   /** Le producteur de PrismCore : dernière lecture de son état, et sa dernière mort. */
   producerCheckedAt: number | null;
   producerChecking: boolean;
@@ -46,5 +48,5 @@ export const freshRecoveryState = (): RecoveryState => ({
   lastPos: 0, lastProgressAt: null, load: null,
   source: "unknown", culprit: null, checkedAt: null, probing: false, manualProbe: false, stillDown: false,
   downSince: null, downWhat: null, restarting: false, lastRestartAt: null, restartPending: false, vain: 0,
-  retryAsked: false, producerCheckedAt: null, producerChecking: false, producerDeath: null,
+  retryAsked: false, lastReloadAt: null, producerCheckedAt: null, producerChecking: false, producerDeath: null,
 });

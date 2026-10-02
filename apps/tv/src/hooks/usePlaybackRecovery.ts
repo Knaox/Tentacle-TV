@@ -47,6 +47,10 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
   src.current = sources;
   const state = useRef<RecoveryState>(fresh());
   const phaseRef = useRef<RecoveryPhase>({ kind: "none" });
+  // La même session d'un transcodage, rechargée (erreur de segment, ou rien depuis 30 s).
+  const transcode = useTranscodeReload(src, state);
+  const transcodeRef = useRef(transcode);
+  transcodeRef.current = transcode;
   const tickRef = useRef<() => void>(() => {});
 
   const probe = useCallback(async () => {
@@ -189,6 +193,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
       measuredBps: cachedBitrate(),
       neededBps: s.p.streamBitrate,
       retryAsked: st.retryAsked,
+      lastReloadAt: st.lastReloadAt,
     });
     if (decision.phase.kind !== phaseRef.current.kind) {
       plog("recover", `${phaseRef.current.kind} → ${decision.phase.kind}${"cause" in decision.phase ? ` (${decision.phase.cause})` : ""}`);
@@ -205,6 +210,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     });
     if (decision.probe) void probe();
     if (decision.restart) void restart(st.retryAsked ? "manual" : "network");
+    if (decision.reload) transcodeRef.current.reload("aucune donnée depuis 30 s");
     if (shouldCheckProducer({
       prismCore: s.p.isPrismCore, now, stalledSince: st.stalledSince, lastCheckAt: st.producerCheckedAt,
       restarting: st.restarting || st.producerChecking,
@@ -253,7 +259,7 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
   }, []);
 
   useStartupRecovery(sources);
-  useStartupWait(sources);
+  useStartupWait(sources, state, transcode.reload);
 
   /** Confiée en premier par le gestionnaire d'erreurs : `true` = prise en charge. */
   const onSourceLost = useCallback((error: string): boolean => {
@@ -270,8 +276,5 @@ export function usePlaybackRecovery(sources: RecoverySources | undefined) {
     return true;
   }, []);
 
-  // Un segment abandonné sur un transcodage : la même session, rechargée.
-  const onSlowSegment = useTranscodeReload(src, state);
-
-  return { onSourceLost, onSlowSegment };
+  return { onSourceLost, onSlowSegment: transcode.onSlowSegment };
 }

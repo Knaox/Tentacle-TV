@@ -44,7 +44,8 @@ export function useStreamRestart(args: {
     plog("restart", `relance (${opts?.reason ?? "manual"}) à ${Math.round(at)}s`);
     softReloadRef.current = true;
     setReloadFrameSec(at);
-    holdForReload();
+    if (opts?.hold === false) setIsLoading(true);
+    else holdForReload();
     resetLoadedRef.current();
     notifySeekRef.current(at, 8000, true);
     try {

@@ -14,7 +14,7 @@
  */
 
 import { networkShortfall, type NetworkShortfall } from "./networkShortfall";
-import { NO_PROGRESS_MS, type Health } from "./playbackRecovery";
+import { NO_PROGRESS_MS, nudge, type Health } from "./playbackRecovery";
 
 export interface StartupWaitInput {
   now: number;
@@ -34,6 +34,8 @@ export interface StartupWaitInput {
   /** Le réseau mesuré et ce que le flux demande, en b/s. */
   measuredBps: number | null;
   neededBps: number | null;
+  /** Dernier rechargement de la même session (`reload`). */
+  lastReloadAt: number | null;
 }
 
 /** Ce que dit l'écran d'ouverture : le serveur transcode, ou le réseau ne suit pas. */
@@ -44,6 +46,8 @@ export interface StartupWaitDecision {
   probe: boolean;
   /** Conclure à l'échec de l'ouverture. */
   fail: boolean;
+  /** Recharger la MÊME session : AVPlayer n'attend plus rien (cf. `NUDGE_AFTER_MS`). */
+  reload?: boolean;
 }
 
 /** Une ouverture de transcodage ordinaire tient en quelques secondes ; au-delà, on le dit. */
@@ -67,9 +71,10 @@ export function decideStartupWait(input: StartupWaitInput): StartupWaitDecision 
 
   const due = !probed || now - (input.sourceCheckedAt ?? 0) >= STARTUP_PROBE_EVERY_MS;
   const shortfall = networkShortfall(input.measuredBps, input.neededBps);
-  return {
+  const decision: StartupWaitDecision = {
     hint: shortfall ? { kind: "slowNetwork", network: shortfall } : { kind: "transcoding" },
     probe: due && !input.probing,
     fail: false,
   };
+  return nudge(now, quietSince, input.lastReloadAt) ? { ...decision, reload: true } : decision;
 }

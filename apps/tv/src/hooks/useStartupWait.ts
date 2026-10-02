@@ -4,6 +4,7 @@ import { decideStartupWait, type Health } from "@tentacle-tv/tv-core";
 import { publishPlaybackTrouble, readPlaybackTrouble, type StartWait } from "./playbackTroubleStore";
 import { withoutRestartMark } from "./streamRestart";
 import type { RecoverySources } from "./recoverySources";
+import type { RecoveryState } from "./recoveryState";
 import { loadGrew, readPlayerLoad, type PlayerLoad } from "../utils/playerLoadProbe";
 import { probeStreamPath } from "../utils/streamPathProbe";
 import { plog } from "../utils/playerDiag";
@@ -42,10 +43,18 @@ function publishStartWait(next: StartWait | null): void {
  * Commune aux deux téléviseurs, sans `Platform.OS` ; montée par la reprise
  * (`usePlaybackRecovery`).
  */
-export function useStartupWait(sources: RecoverySources | undefined): void {
+export function useStartupWait(
+  sources: RecoverySources | undefined,
+  /** L'état de la reprise : le dernier rechargement de la session y est commun. */
+  recovery: { readonly current: RecoveryState },
+  /** Recharge la MÊME session (`useTranscodeReload`). */
+  reload: (why: string) => void,
+): void {
   const client = useJellyfinClient();
   const src = useRef(sources);
   src.current = sources;
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
   // Une ouverture = un flux, à sa marque de relance près : la même session
   // rechargée (`useTranscodeReload`) ne remet pas l'attente à zéro.
   const streamUrl = sources?.p.streamUrl ? withoutRestartMark(sources.p.streamUrl) : null;
@@ -93,6 +102,7 @@ export function useStartupWait(sources: RecoverySources | undefined): void {
         probing: st.probing,
         measuredBps: cachedBitrate(),
         neededBps: s.p.streamBitrate,
+        lastReloadAt: recovery.current.lastReloadAt,
       });
       if (decision.fail) {
         st.gaveUp = true;
@@ -105,6 +115,7 @@ export function useStartupWait(sources: RecoverySources | undefined): void {
       }
       publishStartWait(decision.hint);
       if (decision.probe) void probe();
+      if (decision.reload) reloadRef.current("ouverture sans aucune donnée depuis 30 s");
     };
     const timer = setInterval(tick, TICK_MS);
     return () => {
@@ -112,5 +123,5 @@ export function useStartupWait(sources: RecoverySources | undefined): void {
       clearInterval(timer);
       publishStartWait(null);
     };
-  }, [opening, streamUrl, client]);
+  }, [opening, streamUrl, client, recovery]);
 }

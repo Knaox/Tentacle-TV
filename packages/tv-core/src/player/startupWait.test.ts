@@ -9,7 +9,7 @@ const MB = 1_000_000;
 function opening(ms: number, over: Partial<StartupWaitInput> = {}): StartupWaitInput {
   return {
     now: T, transcoding: true, emittedAt: T - ms, lastProgressAt: null, failed: false,
-    source: "unknown", sourceCheckedAt: null, probing: false, measuredBps: null, neededBps: null,
+    source: "unknown", sourceCheckedAt: null, probing: false, measuredBps: null, neededBps: null, lastReloadAt: null,
     ...over,
   };
 }
@@ -51,6 +51,13 @@ describe("decideStartupWait — l'ouverture d'un transcodage", () => {
   it("le lecteur prêt, la mémoire qui grossit : l'échéance repart", () => {
     const d = decideStartupWait(opening(NO_PROGRESS_MS + 60_000, { lastProgressAt: T - 20_000 }));
     expect(d).toMatchObject({ hint: { kind: "transcoding" }, fail: false });
+  });
+
+  it("trente secondes sans aucune donnée : la MÊME session rechargée, une fois par période", () => {
+    expect(decideStartupWait(opening(29_999)).reload).toBeUndefined();
+    expect(decideStartupWait(opening(30_000))).toMatchObject({ hint: { kind: "transcoding" }, fail: false, reload: true });
+    expect(decideStartupWait(opening(70_000, { lastReloadAt: T - 10_000 })).reload).toBeUndefined();
+    expect(decideStartupWait(opening(70_000, { lastProgressAt: T - 3000 })).reload).toBeUndefined();
   });
 
   it("le réseau MESURÉ sous le palier : c'est lui qu'on nomme", () => {

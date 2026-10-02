@@ -25,6 +25,9 @@ export interface RestartOptions {
   /** La MÊME session du serveur, rechargée — un transcodage qui tarde : le
    *  travail déjà fait l'attend. Sans session à garder, une relance ordinaire. */
   keepSession?: boolean;
+  /** `false` : pas de pause de rechargement (l'élément sortant ne joue plus
+   *  rien, et un AVPlayer en pause cesse de remplir sa mémoire). */
+  hold?: boolean;
 }
 
 /**

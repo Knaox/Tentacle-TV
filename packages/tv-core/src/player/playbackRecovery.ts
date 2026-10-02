@@ -96,12 +96,17 @@ export interface RecoveryInput {
   neededBps: number | null;
   /** « Réessayer » demandé, pas encore servi : la relance part dès que le chemin répond. */
   retryAsked: boolean;
+  /** Dernier rechargement de la MÊME session d'un transcodage (`reload`). */
+  lastReloadAt: number | null;
 }
 
 export interface RecoveryDecision {
   phase: RecoveryPhase;
   probe: boolean;
+  /** Une session NEUVE (le serveur repart de zéro). */
   restart: boolean;
+  /** Recharger la MÊME session d'un transcodage — AVPlayer qui n'attend plus rien. */
+  reload?: boolean;
 }
 
 /** Un arrêt plus court ne dit rien : un remplissage ordinaire. */
@@ -123,8 +128,22 @@ export const IDLE_PROBE_EVERY_MS = 30_000;
 /** Un transcodage sans AUCUNE progression depuis : la main à l'utilisateur.
  *  Avant, la patience : un serveur lent finit par livrer. */
 export const NO_PROGRESS_MS = 120_000;
+/**
+ * Un transcodage sans aucune donnée depuis : on recharge la MÊME session, au
+ * plus une fois par période. Mesuré (2026-10-02, transcodage simulé à ×0,3) :
+ * après un rechargement, AVPlayer abandonne un segment lent au bout de ~6 s
+ * puis ne le redemande PLUS — aucune erreur, attente sans fin, alors que le
+ * serveur a produit la suite. Un élément neuf la redemande, et le travail
+ * fait l'attend.
+ */
+export const NUDGE_AFTER_MS = 30_000;
 
 const NONE: RecoveryPhase = { kind: "none" };
+
+/** Rien depuis `NUDGE_AFTER_MS`, et pas de rechargement plus récent : recharger la même session. */
+export function nudge(now: number, quietSince: number, lastReloadAt: number | null): boolean {
+  return now - quietSince >= NUDGE_AFTER_MS && (lastReloadAt === null || now - lastReloadAt >= NUDGE_AFTER_MS);
+}
 
 function earliest(...stamps: (number | null)[]): number | null {
   const known = stamps.filter((s): s is number => s !== null);
@@ -197,7 +216,8 @@ export function decideRecovery(input: RecoveryInput): RecoveryDecision {
     // l'utilisateur. Une progression d'avant l'arrêt ne compte pas.
     const quietSince = Math.max(since, input.lastProgressAt ?? since);
     if (now - quietSince >= NO_PROGRESS_MS) return { phase: { kind: "stuck", cause, since, ...net }, probe: false, restart: false };
-    return { phase: cause === "slow" ? waiting : { kind: "transcoding", since }, probe: false, restart: false };
+    const phase: RecoveryPhase = cause === "slow" ? waiting : { kind: "transcoding", since };
+    return nudge(now, quietSince, input.lastReloadAt) ? { phase, probe: false, restart: false, reload: true } : { phase, probe: false, restart: false };
   }
   // Le réseau ne porte pas le flux : une relance n'y changerait rien.
   if (cause === "slow") return { phase: waiting, probe: false, restart: false };
