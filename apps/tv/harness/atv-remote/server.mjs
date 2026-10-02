@@ -1,5 +1,6 @@
-// Côté Mac de l'agent : TCP 8765 pour l'agent XCUITest (sur l'Apple TV),
-// HTTP 8766 (localhost) pour moi : POST /run avec un tableau de commandes.
+// Côté Mac de l'agent : TCP 8765 (`AGENT_TCP`) pour l'agent XCUITest (sur
+// l'Apple TV), HTTP 8766 (`AGENT_HTTP`, localhost) pour moi : POST /run avec
+// un tableau de commandes.
 //   "down", "wait:0.4", "shot", "shot:1280", "hold:1.5", "tree", "focus", "type:dune\n"
 import net from "node:net";
 import http from "node:http";
@@ -11,6 +12,8 @@ import { fileURLToPath } from "node:url";
 // l'URL garde encodés (`%20`) — les captures partaient dans un dossier fantôme.
 const OUT = process.env.AGENT_OUT ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "out");
 fs.mkdirSync(OUT, { recursive: true });
+const AGENT_TCP = Number(process.env.AGENT_TCP ?? 8765);
+const AGENT_HTTP = Number(process.env.AGENT_HTTP ?? 8766);
 
 let agent = null;
 let buf = Buffer.alloc(0);
@@ -56,7 +59,7 @@ net.createServer((sock) => {
   sock.on("data", (d) => { buf = Buffer.concat([buf, d]); pump(); });
   sock.on("close", () => { console.log("agent déconnecté"); if (agent === sock) agent = null; });
   sock.on("error", (e) => console.log("agent erreur", e.message));
-}).listen(8765, "0.0.0.0", () => console.log("TCP 8765 prêt"));
+}).listen(AGENT_TCP, "0.0.0.0", () => console.log(`TCP ${AGENT_TCP} prêt`));
 
 function send(cmd) {
   return new Promise((resolve, reject) => {
@@ -116,4 +119,4 @@ http.createServer(async (req, res) => {
   }
   res.statusCode = 404;
   res.end();
-}).listen(8766, "127.0.0.1", () => console.log("HTTP 8766 prêt"));
+}).listen(AGENT_HTTP, "127.0.0.1", () => console.log(`HTTP ${AGENT_HTTP} prêt`));
