@@ -3,7 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { detailPageOf } from "../navigation/detailPage";
 import type { RootStackParamList } from "../navigation/types";
+import { REDESIGN_ACTIVE } from "../redesignWiring/redesignGate";
 import { useTVPlaybackPresence } from "./useTVPlaybackPresence";
 import { useTVPlaybackMarker } from "./useTVPlaybackMarker";
 import type { RestartOptions, RestartOutcome } from "./streamRestart";
@@ -77,7 +79,7 @@ export function useTVPlaybackLifecycle(args: {
     if (exitingRef.current) return;
     exitingRef.current = true;
     void reportStop();
-    if (seriesId) navigation.replace("MediaDetail", { itemId: seriesId });
+    if (seriesId && !(REDESIGN_ACTIVE && launchedFromDetail(navigation))) navigation.replace("MediaDetail", { itemId: seriesId });
     else navigation.goBack();
   }, [reportStop, navigation, seriesId]);
 
@@ -122,4 +124,16 @@ export function useTVPlaybackLifecycle(args: {
   });
 
   return { leavePlayer, handleFinished };
+}
+
+/**
+ * Le lecteur a-t-il été lancé depuis une page de détail (Apple TV) ? Il y
+ * revient alors à la fin, toujours : remplacé par la fiche de la série, il
+ * en empilait une seconde sur celle d'où il était parti (la suite de fiches,
+ * `detailMove`). Lancé d'ailleurs (accueil, bibliothèque), la fin d'une série
+ * montre sa fiche, comme avant.
+ */
+function launchedFromDetail(navigation: NativeStackNavigationProp<RootStackParamList, "Player">): boolean {
+  const { routes, index } = navigation.getState();
+  return detailPageOf(routes[index - 1]) !== null;
 }

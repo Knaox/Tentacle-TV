@@ -24,6 +24,7 @@ import { sheetLibraryId, sheetVariant, type CardSheetTarget } from "../../compon
 import { useCardSheetPlay, type CardSheetPlay } from "../../components/cards/actions/useCardSheetPlay";
 import { useTVUserScore } from "../../components/cards/actions/useTVUserScore";
 import type { SheetActionKind } from "../../redesign/screens/sheet/ActionSheetView";
+import { useOpenDetail } from "../detail/useOpenDetail";
 
 /**
  * Les actions d'UNE carte, pour le grand panneau de l'appui long
@@ -32,7 +33,9 @@ import type { SheetActionKind } from "../../redesign/screens/sheet/ActionSheetVi
  * `useCardToggles` des bascules, `useCardSheetPlay` de la lecture,
  * `useCardRatingTarget` et `useTVUserScore` de la note. Le panneau en tire
  * ses pictos par `cardActionEntries` (la lecture toujours en tête : le
- * panneau remplace la carte).
+ * panneau remplace la carte). « Plus d'infos » suit la suite de fiches
+ * (`useOpenDetail`) : ouverte sur une fiche, la fiche d'un autre titre la
+ * remplace.
  */
 
 export interface CardActionsOptions {
@@ -58,6 +61,7 @@ export interface CardActions {
 
 export function useCardActions(target: CardSheetTarget, { withActions = true, onLeave }: CardActionsOptions = {}): CardActions {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { openTitle } = useOpenDetail();
   const variant = sheetVariant(target);
   const libraryId = sheetLibraryId(target);
   const inLibrary = libraryId !== null;
@@ -103,8 +107,8 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
     const itemId = play?.itemId ?? (await resolvePlay(face));
     onLeave?.();
     if (itemId) navigation.navigate("Player", { itemId });
-    else navigation.push("MediaDetail", { itemId: face.Id });
-  }, [play?.itemId, resolvePlay, face, onLeave, navigation]);
+    else openTitle(face);
+  }, [play?.itemId, resolvePlay, face, onLeave, navigation, openTitle]);
 
   const { toggle } = toggles;
   const onAction = useCallback(
@@ -121,7 +125,7 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
           return;
         case "details":
           onLeave?.();
-          navigation.push("MediaDetail", { itemId: face.Id });
+          openTitle(face);
           return;
         case "dismiss":
           if (target.kind === "reco") sendFeedback({ itemKey: target.item.key, action: "dismissed" });
@@ -136,7 +140,7 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
           return;
       }
     },
-    [target, startPlay, toggle, onLeave, navigation, face.Id, sendFeedback, saveFilter],
+    [target, startPlay, toggle, onLeave, openTitle, face, sendFeedback, saveFilter],
   );
 
   const { identity, jellyfinItemId } = rating;

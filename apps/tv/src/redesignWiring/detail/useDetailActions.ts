@@ -9,6 +9,7 @@ import type { DetailCallbacks } from "../../redesign/screens/detail/detailTypes"
 import { showNotice } from "../overlays/transientNotice";
 import type { TitleRequests } from "../vigie/useTitleRequests";
 import type { DetailModel } from "./useDetailModel";
+import { useOpenDetail } from "./useOpenDetail";
 
 /**
  * Les gestes de la fiche refondue — ceux de la fiche actuelle :
@@ -17,7 +18,8 @@ import type { DetailModel } from "./useDetailModel";
  * - bande-annonce et extras : une vidéo LOCALE dans le lecteur, une vidéo
  *   YouTube dans l'écran de bande-annonce ;
  * - une personne ouvre sa filmographie, une carte sa fiche, l'appui long la
- *   feuille d'actions (vignette pour un épisode, affiche sinon) ;
+ *   feuille d'actions (vignette pour un épisode, affiche sinon) — la page
+ *   ouverte REMPLACE la fiche (`useOpenDetail`, la suite de fiches) ;
  * - « Noter » ouvre la feuille réduite à la note.
  *
  * Tous STABLES : ils lisent le dernier état au moment du geste. La vue et ses
@@ -42,8 +44,9 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
   const navigation = useNavigation<Navigation>();
   const resolvePlay = useResolvePlayTarget();
   const { t } = useTranslation();
-  const latest = useRef({ ...input, navigation, resolvePlay, t });
-  latest.current = { ...input, navigation, resolvePlay, t };
+  const open = useOpenDetail();
+  const latest = useRef({ ...input, navigation, resolvePlay, t, open });
+  latest.current = { ...input, navigation, resolvePlay, t, open };
   const hasSeries = input.model.item?.Type === "Episode" && !!input.model.item.SeriesId;
 
   return useMemo<DetailCallbacks>(() => {
@@ -78,7 +81,7 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
       onOpenSeries: hasSeries
         ? () => {
             const seriesId = model().item?.SeriesId;
-            if (seriesId) nav().push("MediaDetail", { itemId: seriesId });
+            if (seriesId) latest.current.open.openTitle({ Id: seriesId });
           }
         : undefined,
       onSelectSeason: (seasonId) => model().episodes.select(seasonId),
@@ -88,7 +91,7 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         const found = model().episodes.episodeOf(episode.id);
         if (found) latest.current.openLandscapeSheet(found);
       },
-      onOpenPerson: (person) => nav().push("SearchBrowse", { kind: "person", id: person.id, name: person.name }),
+      onOpenPerson: (person) => latest.current.open.openPerson(person),
       onOpenExtra: (extra) => {
         const { item, extras } = model();
         const entry = extras.entryOf(extra.id);
@@ -98,7 +101,7 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
       },
       onOpenSagaEntry: (entry) => {
         if (entry.current) return;
-        if (!entry.card.absent) return nav().push("MediaDetail", { itemId: entry.card.id });
+        if (!entry.card.absent) return latest.current.open.openTitle(latest.current.cardItemOf(entry.card.id) ?? { Id: entry.card.id });
         // Un volet absent n'a pas de fiche : le demander quand le serveur le
         // permet, sinon dire pourquoi rien ne s'ouvre.
         const { requests, model: current, t } = latest.current;
@@ -113,7 +116,7 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         const found = cardItemOf(entry.card.id);
         if (found) openPosterSheet(found);
       },
-      onOpenCard: (_section, card) => nav().push("MediaDetail", { itemId: card.id }),
+      onOpenCard: (_section, card) => latest.current.open.openTitle(latest.current.cardItemOf(card.id) ?? { Id: card.id }),
       onLongPressCard: (card) => {
         const found = latest.current.cardItemOf(card.id);
         if (found) latest.current.openPosterSheet(found);
