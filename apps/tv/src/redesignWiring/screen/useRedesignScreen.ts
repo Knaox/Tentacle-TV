@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { NavRailProps } from "../../redesign/nav/NavRail";
 import { sameRailGeometry, type NavRailGeometry } from "../../redesign/nav/navGeometry";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
+import { useLibraryPrefetch } from "../library/useLibraryPrefetch";
 import { useNavEntries } from "../nav/useNavEntries";
 import { useRailArrange, type RailArrange } from "../nav/useRailArrange";
 import { navKeyOf, openNavigationSettings, useRailActions, useRailFocused } from "../nav/useRailState";
@@ -66,6 +67,8 @@ export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus:
   const entries = useNavEntries({ previewOrder: arrange.previewOrder, moving: arrange.movingKey !== null });
   const railFocused = useRailFocused(focus);
   const { contentKey } = useEntryFocus(focus, entryKey);
+  // Une bibliothèque focalisée dans la navigation : sa grille se prépare.
+  useLibraryPrefetch(focus);
 
   const focusContent = useCallback(() => {
     const key = contentKey();
