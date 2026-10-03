@@ -8,18 +8,18 @@
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "c9395c1a619df932",
+  "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
     "name": "nav-T3",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T02:51:30.395Z",
+  "recordedAt": "2026-10-03T03:18:50.070Z",
   "scenarios": {
     "hero-beyond-edge": {
-      "hash": "77141dd257d1",
-      "durationMs": 42946,
+      "hash": "e8481fa58e7e",
+      "durationMs": 23886,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -233,8 +233,8 @@
       ]
     },
     "hero-rotation": {
-      "hash": "ca1935f6d6ab",
-      "durationMs": 70467,
+      "hash": "e7d1173c6e8a",
+      "durationMs": 64572,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",

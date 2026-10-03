@@ -8,18 +8,18 @@
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "c9395c1a619df932",
+  "native": "b2ce573070a3d2e4",
   "device": {
     "kind": "simulateur",
     "name": "nav-T3",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T02:31:19.333Z",
+  "recordedAt": "2026-10-03T03:15:38.716Z",
   "scenarios": {
     "home-entry": {
       "hash": "6f4a6ccd45a5",
-      "durationMs": 35581,
+      "durationMs": 31157,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -180,8 +180,8 @@
       ]
     },
     "home-rows": {
-      "hash": "bb81f9f00a18",
-      "durationMs": 64629,
+      "hash": "c516a85d235a",
+      "durationMs": 52000,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -726,8 +726,8 @@
       ]
     },
     "home-row-end": {
-      "hash": "c1c954ede845",
-      "durationMs": 52163,
+      "hash": "797aadb9667e",
+      "durationMs": 56338,
       "start": {
         "app": "foreground",
         "focus": "watched:0",
@@ -922,8 +922,8 @@
       ]
     },
     "home-filter-chip": {
-      "hash": "1d3f6d85b19a",
-      "durationMs": 46686,
+      "hash": "122ed3dd2baa",
+      "durationMs": 40165,
       "start": {
         "app": "foreground",
         "focus": "filter:remove",
@@ -1169,8 +1169,8 @@
       ]
     },
     "home-return": {
-      "hash": "b011eff801a7",
-      "durationMs": 35063,
+      "hash": "61fc3108d7f7",
+      "durationMs": 50929,
       "start": {
         "app": "foreground",
         "focus": "reco:forYou:2",
@@ -1246,8 +1246,8 @@
       ]
     },
     "home-burst": {
-      "hash": "264d79c2a7be",
-      "durationMs": 29510,
+      "hash": "322272b81db6",
+      "durationMs": 32617,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
