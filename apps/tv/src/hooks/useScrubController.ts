@@ -27,9 +27,9 @@ interface ScrubControllerArgs {
   pausedRef: Ref<boolean>;
   onSeekRef: Ref<(seconds: number) => void>;
   onScrubPauseRef: Ref<(paused: boolean) => void>;
-  /** Un SAUT vient de déplacer la cible (appui ←/→, bouton de l'habillage),
-   *  de `deltaSeconds` : le badge d'Android TV le dit (`skipFlash`). */
-  onJumpedRef: Ref<(deltaSeconds: number) => void>;
+  /** Un SAUT INSTANTANÉ hors défilement (appui ←/→ habillage caché) : la
+   *  lecture va aussitôt au saut de son sens, sans ouvrir le défilement. */
+  onSkipRef: Ref<(dir: Dir) => void>;
   overlayVisibleRef: Ref<boolean>;
   panelOpenRef: Ref<boolean>;
   /** Évite que onAnyPress ré-affiche l'OSD sur les events ←/→. */
@@ -47,15 +47,17 @@ interface ScrubControllerArgs {
  *  - l'orchestration de l'OSD (masqué à l'entrée, réaffiché à la sortie) ;
  *  - l'absorption des événements JUMEAUX (un OK émet à la fois l'event TV
  *    global et le press du bouton focusé) et des échos de touches média ;
- *  - les gestes, les mêmes sur toutes les plateformes : un APPUI ←/→ ou un
- *    bouton de saut de l'habillage DÉPLACE LA CIBLE du saut de son sens —
- *    +30 s, −10 s (`seekTuning.ts`) —, ouvrant le défilement s'il ne l'est
- *    pas (`jump`) ; un MAINTIEN défile en accélérant ; la couture
- *    `SCRUB_INPUT` dit seulement comment la plateforme les émet ;
+ *  - les gestes, les mêmes sur toutes les plateformes : hors défilement, un
+ *    APPUI ←/→ SAUTE aussitôt (+30 s, −10 s, `seekTuning.ts`), la lecture
+ *    continue (`onSkipRef`) ; un MAINTIEN ouvre le défilement et défile en
+ *    accélérant ; défilement ouvert, un appui DÉPLACE LA CIBLE du saut de
+ *    son sens (`jump`) ; la couture `SCRUB_INPUT` dit seulement comment la
+ *    plateforme les émet ;
  *  - la TRAPPE du curseur — voir `nudgeScrub` ;
- *  - le DÉCOMPTE (`scrubCountdown.ts`), une règle pour toutes les entrées :
- *    entré en lecture, le défilement reprend à la position visée 5 s après
- *    le dernier geste ; entré en pause, la cible attend OK ou Retour.
+ *  - le DÉCOMPTE (`scrubCountdown.ts`), une règle pour toutes les façons
+ *    d'ouvrir le défilement (⏩, maintien, pavé, touches média) : entré en
+ *    lecture, il reprend à la position visée 5 s après le dernier geste ;
+ *    entré en pause, la cible attend OK ou Retour.
  *
  * **La trappe.** Le glisser du pavé avance par deltas CONTINUS, l'appui d'un
  * saut fixe : la machine ne connaît que ses pas proportionnels. La
@@ -64,7 +66,7 @@ interface ScrubControllerArgs {
  * confirmation seek TOUJOURS sur l'affichage.
  */
 export function useScrubController({
-  showOverlay, hideOverlay, currentTimeRef, durationRef, pausedRef, onSeekRef, onScrubPauseRef, onJumpedRef,
+  showOverlay, hideOverlay, currentTimeRef, durationRef, pausedRef, onSeekRef, onScrubPauseRef, onSkipRef,
   overlayVisibleRef, panelOpenRef, skipAnyPressRef,
 }: ScrubControllerArgs) {
   const [scrubbing, setScrubbing] = useState(false);
@@ -222,24 +224,22 @@ export function useScrubController({
     countdown.release();
   }, [machine, countdown]);
 
-  /** Un SAUT — appui ←/→, bouton de saut de l'habillage : la cible bouge du
-   *  saut de son sens, le défilement s'ouvrant s'il ne l'est pas, et le
-   *  décompte repart ; le badge le dit (`onJumpedRef`). */
+  /** Un appui (ou un bouton de saut) DÉFILEMENT OUVERT : la cible bouge du
+   *  saut de son sens, le décompte repart. Hors défilement, rien : le saut y
+   *  est instantané (`onSkipRef`), il n'ouvre jamais l'avance rapide. */
   const jump = useCallback((dir: Dir) => {
-    if (!machine.isActive()) machine.enter();
-    stepScrub(dir);
-    onJumpedRef.current(jumpSecondsOf(dir));
-  }, [machine, stepScrub, onJumpedRef]);
+    if (machine.isActive()) stepScrub(dir);
+  }, [machine, stepScrub]);
 
   /** Un APPUI ←/→ hors défilement, une fois tranché. Il n'appartient à la
-   *  vidéo — un saut — que habillage caché, fond focalisé : sous la pilule de
-   *  saut ou une carte, il sert leur focus ; habillage visible, la
-   *  navigation. Ailleurs, il (r)allume l'habillage. */
+   *  vidéo — un saut instantané — que habillage caché, fond focalisé : sous
+   *  la pilule de saut ou une carte, il sert leur focus ; habillage visible,
+   *  la navigation. Ailleurs, il (r)allume l'habillage. */
   const tap = useCallback((dir: Dir) => {
     if (panelOpenRef.current || scrubbingRef.current) return;
-    if (!overlayVisibleRef.current && backgroundHoldsFocus()) jump(dir);
+    if (!overlayVisibleRef.current && backgroundHoldsFocus()) onSkipRef.current(dir);
     else showOverlay();
-  }, [panelOpenRef, overlayVisibleRef, jump, showOverlay]);
+  }, [panelOpenRef, overlayVisibleRef, onSkipRef, showOverlay]);
 
   // --- Maintien ←/→ et touches média : l'adaptateur du moteur tv-core. Le
   //     maintien tient la reprise ; son relâchement la relance. ---
