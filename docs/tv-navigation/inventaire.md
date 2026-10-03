@@ -6,7 +6,7 @@ la garde : [`garde.md`](garde.md).
 Pour CHAQUE usage d'une API native de télécommande ou de focus sur le chemin
 Apple TV refondu : où il est (fichier:ligne), qui le traite (T1 à T7) et ce
 qu'il devient. Relevé sur 84f3cedd0 (avant toute extraction), recalé sur
-`3f231223d`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
+`cbe686f9f`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
 qu'une tâche vient de toucher sont celles de main au moment du recalage.
 
 ## Comment il est fait
@@ -30,7 +30,7 @@ qu'une tâche vient de toucher sont celles de main au moment du recalage.
   `useFocusEffect`, `useIsFocused`, `gestureEnabled`) ; le Retour
   (`useBackLayer`), le bus de la télécommande, les Modals (`onRequestClose`),
   les défilements, `.focus()`. Commentaires exclus.
-- **772 occurrences dans 193 fichiers**, chacune lue et classée ; un
+- **766 occurrences dans 193 fichiers**, chacune lue et classée ; un
   script vérifie qu'aucune n'est sans ligne ci-dessous.
 - **Ce que le relevé ne voit pas** et que la lecture a retrouvé : les
   décisions prises PAR le magasin de focus, sans API native visible (annexe C),
@@ -69,13 +69,13 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 | Tâche | fichiers | EXTRAIRE | MIXTE | ADAPTATEUR | DÉJÀ | RESTE | VUE | HORS | ANCIENNE |
 |---|---|---|---|---|---|---|---|---|---|
 | T1 | 6 | — | — | 11 | 13 | 5 | — | — | — |
-| T3 | 21 | 17 | 12 | 55 | 1 | 2 | 28 | — | 6 |
+| T3 | 22 | — | — | 73 | 6 | 2 | 29 | — | 6 |
 | T4 | 18 | 10 | 15 | 22 | 5 | 11 | 16 | 1 | — |
 | T5 | 19 | 39 | 31 | 43 | — | — | 3 | 3 | 20 |
 | T6 | 12 | — | — | 7 | 4 | 4 | 20 | — | — |
-| T7 | 35 | 21 | 8 | 13 | — | 2 | 44 | 1 | 1 |
+| T7 | 34 | 21 | 8 | 13 | — | 2 | 43 | 1 | 1 |
 | pas concernés | 82 | — | — | — | — | — | — | 135 | 143 |
-| **total** | 193 | 87 | 66 | 151 | 23 | 24 | 111 | 140 | 170 |
+| **total** | 193 | 70 | 54 | 169 | 28 | 24 | 111 | 140 | 170 |
 
 ## T1 — le socle : intentions, traduction, entrée unique
 
@@ -104,19 +104,19 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 ## T3 — focus, sections, rangées ; accueil, Pour vous, héros
 
-> Fait (f56e83f30) : les applicateurs du focus sont dans `platform/tvos/focus/` (réexportés aux anciens chemins), les règles dans tv-core `focus/` et `hero/rotation`. MAIS seul `sectionEntry` est branché : les autres applicateurs gardent leur copie de la décision, et quatre durées vivent encore dans l'adaptateur (annexe J). Arbitrage : l'accueil, Pour vous et le héros sont à T3 (spec miroir, fichiers non modifiés).
+> Fait (cbe686f9f) : les applicateurs de `platform/tvos/focus/` appliquent tv-core (suivi, entrée d'écran, de groupe et de section, reprise après restauration, garde dans une surface, au-delà du bord) ; l'accueil, le héros et Pour vous suivent `hero/rotation`, `cards/cardHold` et `cards/cardPress` ; plus aucune durée dans l'adaptateur ; équivalence prouvée par le banc de traces du focus. Restent, PERMANENTES, les portes des vues (`FocusTarget`, `FocusSection`, `nativeFocusSection`).
 >
-> 21 fichiers.
+> 22 fichiers.
 
 #### `hooks/useTvFocusClaim.ts` — partagé Android TV
 - L4, 77, 86–91, 94 · setNativeProps({hasTVPreferredFocus}), setTimeout 40/50/120 ms · **ADAPTATEUR** · branche tvOS de `claimTvFocus` : cycle faux→vrai→faux (contournement RN-tvos #849) — LA primitive de `focusStore.claim` ; mécanique native → `platform/tvos/focus/` (T1 l'emploie aussi)
 - L66, 67, 79, 82 · requestAndroidTvFocus, Platform.OS !== "ios" · **ANCIENNE** · branche Android TV
 
 #### `platform/tvos/focus/claimAfterRestore.ts`
-- L28 · setTimeout · **EXTRAIRE** · re-réclamer UNE fois si tvOS restaure le focus ailleurs dans `RESTORE_WITHIN_MS` = 900 ms → `focus/` (employé par T4 : rail, T7 : réglages) — DÉPLACÉ (f56e83f30) ; la règle est dans tv-core `focus/restoreClaim` mais l'applicateur garde SA copie (constante en double) — pas encore branché
+- L26 · setTimeout(`RESTORE_WITHIN_MS`) · **ADAPTATEUR** · FAIT (dfb021e84) : la règle (`restoreStep`, `watchRestore`) et sa durée viennent de tv-core `focus/restoreClaim` ; l'applicateur ne fait que compter
 
 #### `platform/tvos/focus/entryGuide.tsx`
-- L2, 72, 75–78, 81 · TVFocusGuideView, destinations, focusable, trapFocusLeft/Right · **MIXTE** · guide natif (ADAPTATEUR) ; la visée — dernier visité, sinon l'entrée par défaut, `remember`, pièges latéraux — est une règle (EXTRAIRE `focus/`) — DÉPLACÉ (f56e83f30) ; la visée a sa règle dans tv-core `focus/groupEntry`, pas encore branchée
+- L2, 73, 76–79, 82 · TVFocusGuideView, destinations, focusable, trapFocusLeft/Right · **ADAPTATEUR** · FAIT : le guide natif ; la visée vient de tv-core (`groupEntryKey`)
 
 #### `platform/tvos/focus/focusGuides.tsx`
 - L1, 18, 20, 30–35, 40 · TVFocusGuideView, autoFocus, trapFocus* · **ADAPTATEUR** · guides génériques : mémoire, piège — DÉPLACÉ (f56e83f30)
@@ -125,20 +125,20 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 - L14, 16, 20 · isTVSelectable, setNativeProps · **ADAPTATEUR** · verrou d'une cible, par la liaison et par le nœud — DÉPLACÉ (f56e83f30)
 
 #### `platform/tvos/focus/focusStore.ts`
-- L2, 72, 73, 130, 152, 162, 163 · findNodeHandle, setNativeProps, requestTVFocus · **ADAPTATEUR** · nœuds natifs, réclamation (`claimTvFocus`), focus immédiat — DÉPLACÉ (f56e83f30) ; le suivi courant / dernier a sa règle dans tv-core `focus/focusTrack`
-- L119, 120 · onFocus/onBlur (observation) · **MIXTE** · le magasin (clés, courant, dernier, réclamations en attente, abonnés) est pur → `focus/` ; la forme → effets natifs (L114 : parallaxe, voisinage) reste à l'adaptateur — DÉPLACÉ (f56e83f30) ; le suivi courant / dernier a sa règle dans tv-core `focus/focusTrack`
+- L2, 75, 76, 127, 149, 159, 160 · findNodeHandle, setNativeProps, requestTVFocus · **ADAPTATEUR** · FAIT : nœuds natifs, réclamation, focus immédiat
+- L116, 117 · onFocus/onBlur (observation) · **ADAPTATEUR** · FAIT (29dd64c68) : le suivi courant / dernier est la règle de tv-core (`trackFocus`)
 
 #### `platform/tvos/focus/sectionEntry.ts`
 - L18, 22 · setNativeProps(tvEntry) · **ADAPTATEUR** · entrée déclarée d'une section — DÉPLACÉ et branché sur tv-core `focus/sectionEntry` (f56e83f30)
 
 #### `platform/tvos/focus/useBeyondEdge.ts`
-- L3, 37, 42, 56, 58 · useRemoteEvents, isGestureToward · **EXTRAIRE** · « au-delà du bord » : un geste vers une direction sans issue, focus posé depuis `SETTLE_MS` = 400 ms, appuis longs exclus → `focus/` (seul usage : le héros de l'accueil, T7) — DÉPLACÉ (f56e83f30) ; règle dans tv-core `focus/beyondEdge`, pas encore branchée : `SETTLE_MS` en double
+- L26 · useBeyondEdge · **ADAPTATEUR** · FAIT (29d63e4df) : écoute l'entrée unique (`useRemoteIntents`) et applique tv-core `focus/beyondEdge`
 
 #### `platform/tvos/focus/useEntryFocus.ts`
-- L2, 21, 91 · hasTVPreferredFocus, useFocusEffect · **MIXTE** · préférence pendant l'arrivée, clôture au 1er focus de contenu ou au rail après `USER_RAIL_AFTER_MS` = 600 ms, retour → dernier contenu sinon l'entrée = règle (EXTRAIRE `focus/`) ; `hasTVPreferredFocus` et la réclamation = ADAPTATEUR ; `useFocusEffect` = événement de pile (reste) — DÉPLACÉ (f56e83f30) ; règle dans tv-core `focus/screenEntry` (spec miroir), pas encore branchée : `USER_RAIL_AFTER_MS` reste dans l'adaptateur
+- L2, 33, 101 · hasTVPreferredFocus, useFocusEffect · **ADAPTATEUR** · FAIT (dfb021e84) : applique tv-core `focus/screenEntry` (préférence pendant l'arrivée, clôture, retour au dernier contenu) ; `useFocusEffect` = événement de pile
 
 #### `platform/tvos/focus/useKeepFocusWithin.ts`
-- L22, 33 · setTimeout · **EXTRAIRE** · garder le focus dans une surface : sortie confirmée après `LEAVE_CHECK_MS` = 50 ms, reprise sur la dernière clé → `focus/` (le voile hors ligne, T7) — DÉPLACÉ (f56e83f30) ; règle dans tv-core `focus/keepWithin`, pas encore branchée : `LEAVE_CHECK_MS` reste dans l'adaptateur
+- L19, 30 · setTimeout(`KEEP_WITHIN_CHECK_MS`) · **ADAPTATEUR** · FAIT : règle et durée de tv-core `focus/keepWithin`
 
 #### `redesign/focus/focusBinding.tsx`
 - L42, 43 · onFocus/onBlur (types du port) · **VUE** · le contrat du port du focus
@@ -147,7 +147,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 - L35, 36, 47, 48, 51 · onFocus/onBlur · **VUE** · état visuel du focus : natif dans l'app, figé au banc
 
 #### `redesign/focus/FocusSection.tsx` — garde : `no-native-focus-calls`
-- L5, 56, 64, 79 · NativeFocusSection · **ADAPTATEUR** · la porte des vues vers la section native `TentacleFocusSection` (raté par le relevé : `{...binding?.native}` L66) ; `reveal` est déclaratif (VUE)
+- L6, 55, 63, 78 · NativeFocusSection · **ADAPTATEUR** · la porte des vues vers la section native — exception PERMANENTE de la garde ; la marge et la révélation viennent de tv-core (81dac22ab)
 
 #### `redesign/focus/FocusTarget.tsx` — garde : `no-native-press`
 - L2, 114, 119, 120, 122–125, 132 · Pressable, onPressIn/Out, onLongPress, delayLongPress, onFocus/onBlur · **ADAPTATEUR** · la SEULE porte des vues vers le focus natif (OK, appui long natif à `LONG_PRESS_THRESHOLD_MS` de tv-core, focus, flou) — exception PERMANENTE de la garde (porte des vues) ; raté par le relevé : `{...binding?.native}`
@@ -166,16 +166,19 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 #### `redesign/screens/home/HomeView.tsx`
 - L8, 131, 138, 140, 194, 215 · FocusSection, onHeroLongPress · **VUE** · sections déclaratives, relais
 
+#### `redesign/screens/shared/useForcedFocusReveal.ts`
+- L67 · scrollTo · **VUE** · au banc seulement ; la révélation vient de tv-core (`focus/reveal`, 81dac22ab)
+
 #### `redesignWiring/home/HomeRedesign.tsx`
-- L144 · onHeroLongPress · **VUE** · branchement de prop (la décision est dans useHomeHero.ts:124)
+- L145 · onHeroLongPress · **VUE** · branchement de prop ; l'appui maintenu suit tv-core `cards/cardHold` (342cf4694)
 
 #### `redesignWiring/home/useHeroRotation.ts`
-- L5, 57, 63, 80 · useRemoteEvents, setTimeout · **EXTRAIRE** · rotation du héros toutes les 8 s (16 s en mouvement réduit) ; tout geste ou un pas du focus relance l'attente, un appui maintenu la suspend ; seulement héros affiché, app active, ≥ 2 titres
+- L63, 69 · setTimeout · **ADAPTATEUR** · FAIT (890ab2140) : la rotation est la règle de tv-core `hero/rotation` ; le crochet tient le minuteur et écoute les intentions (`useRemoteIntents`)
 
 #### `redesignWiring/home/useHomeHero.ts`
-- L4, 66 · useIsFocused · **RESTE** · « écran devant » (pile) : alimente la rotation et le geste au-delà du bord
-- L11, 130 · useBeyondEdge · **EXTRAIRE** · DROITE au-delà du dernier bouton du héros (≥ 2 titres, écran devant) → titre suivant, en boucle ; le focus ne bouge pas
-- L40, 124, 137 · onLongPress · **EXTRAIRE** · appui maintenu sur un bouton → panneau du titre AFFICHÉ, en paysage pour une reprise, sinon affiche
+- L4, 68 · useIsFocused · **RESTE** · « écran devant » (pile)
+- L10, 132 · useBeyondEdge · **DÉJÀ** · FAIT : au-delà du bord par tv-core et l'entrée unique
+- L43, 125, 139 · onLongPress · **DÉJÀ** · FAIT (342cf4694) : l'appui maintenu du héros suit tv-core `cards/cardHold`
 
 ## T4 — Retour, rail, menus
 
@@ -389,7 +392,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 > Entrées, croix et retours d'étape, héros (rotation, au-delà du bord), bande-annonce, recherche et clavier système. Les vues de `redesign/screens/` ne font que déclarer (`FocusSection`, rappels) — deux exceptions relevées : `PairingField` (`.focus()`) et le repli de `LibraryView`.
 >
-> 35 fichiers.
+> 34 fichiers.
 
 #### `components/search/searchBarReturn.ts` — partagé Android TV
 - L31 · navigationRef.goBack · **MIXTE** · tourne sur tvOS (le rail l'appelle, useRailState.ts:132 ; la barre s'inscrit, useSystemKeyboard.ts:75) : « Rechercher » choisi de nouveau → sur Parcourir, reculer ; sur la recherche, viser la barre (règle) ; getCurrentRoute/goBack (application) — bug 1
@@ -451,9 +454,6 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 #### `redesign/screens/settings/SettingsView.tsx`
 - L9, 159, 192 · FocusSection list · **VUE** · liste de lignes, déclarative
-
-#### `redesign/screens/shared/useForcedFocusReveal.ts`
-- L66 · scrollTo · **VUE** · sert seulement au banc, inerte dans l'app (bug 11)
 
 #### `redesignWiring/browse/BrowseRedesign.tsx`
 - L49, 112 · navigation.goBack · **MIXTE** · la croix recule d'un écran (règle) ; goBack (application)
@@ -611,8 +611,8 @@ L'entrée unique (`platform/tvos/input/`) devait porter le SEUL abonnement à
 L'API d'avant lit maintenant l'entrée unique ; ses écouteurs passent aux
 intentions (`useRemoteIntents`, `useRemoteContext`) :
 
-- `platform/tvos/focus/useBeyondEdge.ts:56` — « au-delà du bord » (T3, déplacé ; seul usage : `redesignWiring/home/useHomeHero.ts:130`) ;
-- `redesignWiring/home/useHeroRotation.ts:80` — tout geste relance la rotation, un maintien la suspend (T3, arbitrage ; règle : tv-core `hero/rotation`) ;
+- ~~`platform/tvos/focus/useBeyondEdge.ts`~~ — FAIT (29d63e4df) : « au-delà du bord » écoute les intentions (`useRemoteIntents`) ;
+- ~~`redesignWiring/home/useHeroRotation.ts`~~ — FAIT (890ab2140) : la rotation écoute les intentions ;
 - `redesignWiring/trailer/TrailerRedesign.tsx:69` — tout geste rallume le chrome (T7) ;
 - ~~`redesignWiring/vigie/SeasonsSheetRedesign.tsx`~~ — FAIT (00880373c) : Lecture/Pause passe par `useRemoteContext` (contexte « panneau »).
 
@@ -836,15 +836,11 @@ y est dit monté sur Apple TV avec un abonnement permanent et inerte (depuis
 c7aca069b), `useFocusRecovery` y est dit inerte sur tvOS (8ab4c73f2). Les deux
 tableaux se recalent l'un sur l'autre à chaque fusion.
 
-## Annexe J — seuils et durées encore dans l'adaptateur
+## Annexe J — seuils et durées dans l'adaptateur
 
 `docs/TV-NAVIGATION.md` : l'adaptateur n'a pas le droit de contenir un seuil
-ni une durée. L'audit (`node eslint/tvNavigationAudit.mjs`) les liste ; au
-recalage :
-
-| Applicateur | Constante | Dans tv-core |
-|---|---|---|
-| `platform/tvos/focus/claimAfterRestore.ts:4` | `RESTORE_WITHIN_MS` = 900 | `focus/restoreClaim.ts` : la MÊME, en double — pas encore branchée |
-| `platform/tvos/focus/useBeyondEdge.ts:25` | `SETTLE_MS` = 400 | `focus/beyondEdge.ts` : `BEYOND_EDGE_SETTLE_MS`, en double — pas encore branchée |
-| `platform/tvos/focus/useEntryFocus.ts:24` | `USER_RAIL_AFTER_MS` = 600 | `focus/screenEntry.ts` (spec miroir) — pas encore branchée |
-| `platform/tvos/focus/useKeepFocusWithin.ts:6` | `LEAVE_CHECK_MS` = 50 | `focus/keepWithin.ts` — la durée reste dans l'adaptateur |
+ni une durée. L'audit (`node eslint/tvNavigationAudit.mjs`) les liste. Les
+quatre de `platform/tvos/focus/` (`RESTORE_WITHIN_MS`, `SETTLE_MS`,
+`USER_RAIL_AFTER_MS`, `LEAVE_CHECK_MS`) sont parties avec le branchement de
+T3 (cbe686f9f) : les applicateurs lisent leur durée dans tv-core. Au
+recalage : AUCUNE.
