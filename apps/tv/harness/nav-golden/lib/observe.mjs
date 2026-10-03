@@ -92,10 +92,21 @@ export async function settle(ctx, { since, minMs = 0, quietMs = 500, timeoutMs =
 /** Le genre d'une écriture : `watchlist:add @id` → `watchlist:add`. */
 const kindOf = (write) => write.split(" @")[0];
 
-/** Les écritures attendues (un attendu sans `@item` ne compare que le genre). */
+/**
+ * Les écritures attendues d'un pas, comme un multiensemble (l'ordre de deux
+ * requêtes parallèles varie) ; un attendu sans `@item` ne compare que le genre.
+ */
 function writesMatch(expected, observed) {
   if (expected.length !== observed.length) return false;
-  return expected.every((want, i) => (want.includes(" @") ? want === observed[i] : kindOf(observed[i]).startsWith(want) && (kindOf(observed[i]) === want || kindOf(observed[i]).startsWith(`${want}:`))));
+  const left = [...observed];
+  const fits = (want, got) => (want.includes(" @") ? want === got : kindOf(got) === want || kindOf(got).startsWith(`${want}:`));
+  // Les attendus précis d'abord : un attendu de genre ne prend pas la place d'un précis.
+  for (const want of [...expected].sort((a, b) => Number(b.includes(" @")) - Number(a.includes(" @")))) {
+    const at = left.findIndex((got) => fits(want, got));
+    if (at < 0) return false;
+    left.splice(at, 1);
+  }
+  return true;
 }
 
 const near = (want, got) => want === null || (typeof got === "number" && Math.abs(want - got) <= 2);

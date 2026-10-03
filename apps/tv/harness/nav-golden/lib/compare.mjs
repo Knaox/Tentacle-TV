@@ -9,6 +9,10 @@ export const COMPARED = ["app", "focus", "label", "route", "stack", "params", "p
 const FRAME_TOLERANCE = 2;
 
 const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+// Les écritures d'UN pas forment un multiensemble : deux requêtes parties en
+// parallèle arrivent dans un ordre qui varie (PlaybackInfo et préférences à
+// l'ouverture du lecteur, relevé par T5). L'ordre ENTRE les pas compte toujours.
+const sortedWrites = (writes) => (Array.isArray(writes) ? [...writes].sort() : writes ?? null);
 const frameClose = (a, b) => (a === null && b === null) || (Array.isArray(a) && Array.isArray(b) && a.every((v, i) => Math.abs(v - b[i]) <= FRAME_TOLERANCE));
 
 /** Les champs qui diffèrent entre deux relevés (`skip` : champs instables). */
@@ -17,7 +21,9 @@ export function diffObservation(golden, observed, skip = []) {
   for (const field of COMPARED) {
     if (skip.includes(field)) continue;
     if (!(field in golden) && !(field in observed)) continue;
-    const equal = field === "frame" ? frameClose(golden.frame ?? null, observed.frame ?? null) : same(golden[field], observed[field]);
+    const equal = field === "frame" ? frameClose(golden.frame ?? null, observed.frame ?? null)
+      : field === "writes" ? same(sortedWrites(golden.writes), sortedWrites(observed.writes))
+        : same(golden[field], observed[field]);
     if (!equal) diffs.push({ field, golden: golden[field] ?? null, observed: observed[field] ?? null });
   }
   return diffs;
