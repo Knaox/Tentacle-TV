@@ -4,6 +4,7 @@
  * guides, ses pictos, l'échelle de la note — et la garde anti-clic fantôme.
  */
 export * from "./cardHold";
+export * from "./cardPress";
 export * from "./pressGuard";
 export * from "./qualityBadgeStore";
 export * from "./ratingRuler";
