@@ -271,6 +271,9 @@
           "name": "Home"
         },
         "keys": [
+          "wait:1",
+          "left",
+          "right",
           "down",
           "wait:0.9"
         ],
@@ -446,6 +449,9 @@
           "name": "Home"
         },
         "keys": [
+          "wait:1",
+          "left",
+          "right",
           "down",
           "wait:0.9"
         ],
@@ -467,19 +473,16 @@
           }
         },
         {
-          "do": "holdright:2",
-          "settleMs": 500,
-          "expect": {
-            "route": "Player"
-          }
-        },
-        {
-          "do": "menu",
+          "do": [
+            "holdright:2",
+            "menu"
+          ],
           "settleMs": 1500,
           "expect": {
             "route": "Player",
             "focus": "player:playpause"
-          }
+          },
+          "why": "le maintien ouvre le défilement habillage masqué ; Retour, envoyé dans le même pas, l'annule AVANT la reprise automatique (5 s après le relâchement) et l'habillage revient sur lecture/pause. Un relevé entre les deux courait contre ce décompte"
         },
         {
           "do": [

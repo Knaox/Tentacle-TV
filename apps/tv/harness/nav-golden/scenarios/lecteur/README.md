@@ -42,3 +42,15 @@ mkdir -p ~/Library/Caches/tentacle-nav-golden/lecteur && ffmpeg -f lavfi -i "tes
 L'approche passe par l'accueil (`route: Home`, son entrée sur le héros) puis descend sur Reprendre :
 le héros tourne seul (8 s), une approche par le héros jouerait le titre du
 moment.
+
+Sous charge, l'accueil peut perdre son entrée au démarrage (constat 4 de
+`docs/tv-navigation/focus.md`) : le focus tombe sur le rail, et BAS mène
+alors à `nav:Search` au lieu de Reprendre. `lec-04` et `lec-06` partent donc
+de l'approche convergente des scénarios d'accueil (`wait:1`, GAUCHE, DROITE :
+du héros comme du rail, retour sur `hero:primary`), puis BAS.
+
+Deux minuteries du lecteur courent contre les relevés : l'extinction de
+l'habillage (5 s après son dernier allumage) et la reprise automatique du
+défilement (5 s après le dernier geste). Sous charge, un relevé peut tomber
+après leur échéance : `lec-06` envoie donc Retour dans le même pas que le
+maintien, au lieu de relever le défilement entre les deux.
