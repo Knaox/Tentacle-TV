@@ -1,0 +1,219 @@
+{
+  "format": 1,
+  "domain": "ecrans",
+  "suite": "collections",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "c9395c1a619df932",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T7",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T02:26:17.996Z",
+  "scenarios": {
+    "collections-ma-liste": {
+      "hash": "3c848d85d80e",
+      "durationMs": 48113,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "Rick et Morty",
+        "frame": [
+          176,
+          196,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Watchlist",
+        "params": null,
+        "stack": [
+          "Home",
+          "Watchlist"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Rick et Morty",
+          "frame": [
+            176,
+            196,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Watchlist",
+          "params": null,
+          "stack": [
+            "Home",
+            "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:list",
+          "label": "Retirer de ma liste",
+          "frame": [
+            126,
+            674,
+            68,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "c2e997cc19afc07f6310f6f86ba1f648"
+          },
+          "stack": [
+            "Home",
+            "Watchlist",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Rick et Morty",
+          "frame": [
+            176,
+            196,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Watchlist",
+          "params": null,
+          "stack": [
+            "Home",
+            "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Watchlist",
+          "label": "Ma liste",
+          "frame": [
+            56,
+            477,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Watchlist",
+          "params": null,
+          "stack": [
+            "Home",
+            "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "collections-favoris-vides": {
+      "hash": "2b90f1da5f5b",
+      "durationMs": 35545,
+      "start": {
+        "app": "foreground",
+        "focus": "empty:primary",
+        "label": "Parcourir les bibliothèques",
+        "frame": [
+          793,
+          714,
+          414,
+          68
+        ],
+        "groups": [],
+        "route": "Favorites",
+        "params": null,
+        "stack": [
+          "Home",
+          "Favorites"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "empty:primary",
+          "label": "Parcourir les bibliothèques",
+          "frame": [
+            793,
+            714,
+            414,
+            68
+          ],
+          "groups": [],
+          "route": "Favorites",
+          "params": null,
+          "stack": [
+            "Home",
+            "Favorites"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

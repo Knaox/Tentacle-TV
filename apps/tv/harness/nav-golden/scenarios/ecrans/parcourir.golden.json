@@ -1,0 +1,775 @@
+{
+  "format": 1,
+  "domain": "ecrans",
+  "suite": "parcourir",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T7",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:40:31.666Z",
+  "scenarios": {
+    "parcourir-personne": {
+      "hash": "53a166863310",
+      "durationMs": 29538,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "Beauté cachée",
+        "frame": [
+          176,
+          386,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "SearchBrowse",
+        "params": {
+          "id": "9a502d69e1c2d64c451e42406a932f0b",
+          "kind": "person",
+          "name": "Keira Knightley"
+        },
+        "stack": [
+          "Home",
+          "SearchBrowse"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Beauté cachée",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "browse:back",
+          "label": "Retour",
+          "frame": [
+            176,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "browse:header"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Beauté cachée",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "grid:1",
+          "label": "Imitation Game",
+          "frame": [
+            456,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "browse:back",
+          "label": "Retour",
+          "frame": [
+            176,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "browse:header"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Beauté cachée",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "browse:back",
+          "label": "Retour",
+          "frame": [
+            176,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "browse:header"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "parcourir-lent": {
+      "hash": "be7337411a89",
+      "durationMs": 35121,
+      "start": {
+        "app": "foreground",
+        "focus": "browse:back",
+        "label": "Retour",
+        "frame": [
+          176,
+          68,
+          60,
+          60
+        ],
+        "groups": [
+          "browse:header"
+        ],
+        "route": "SearchBrowse",
+        "params": {
+          "id": "9a502d69e1c2d64c451e42406a932f0b",
+          "kind": "person",
+          "name": "Keira Knightley"
+        },
+        "stack": [
+          "Home",
+          "SearchBrowse"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "app": "foreground",
+          "focus": "browse:back",
+          "label": "Retour",
+          "frame": [
+            176,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "browse:header"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:15",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Beauté cachée",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "parcourir-fiche-remplace": {
+      "hash": "2e8256b351e1",
+      "durationMs": 53493,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "Beauté cachée",
+        "frame": [
+          176,
+          386,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "SearchBrowse",
+        "params": {
+          "id": "9a502d69e1c2d64c451e42406a932f0b",
+          "kind": "person",
+          "name": "Keira Knightley"
+        },
+        "stack": [
+          "Home",
+          "SearchBrowse"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Beauté cachée",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "c3b96123efab5ca264060e808d34c384"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "parcourir-genre-empile": {
+      "hash": "a453dade6fe3",
+      "durationMs": 33809,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "9-1-1",
+        "frame": [
+          176,
+          386,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "SearchBrowse",
+        "params": {
+          "kind": "genre",
+          "name": "Action"
+        },
+        "stack": [
+          "Home",
+          "SearchBrowse"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "9-1-1",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "kind": "genre",
+            "name": "Action"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "grid:1",
+          "label": "A Bittersweet Life",
+          "frame": [
+            456,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "kind": "genre",
+            "name": "Action"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            712,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "7bcc4685bf0076af336de7057bf1bd0e"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "grid:1",
+          "label": "A Bittersweet Life",
+          "frame": [
+            456,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "kind": "genre",
+            "name": "Action"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "parcourir-rail-rechercher": {
+      "hash": "5060b2715472",
+      "durationMs": 56592,
+      "start": {
+        "app": "foreground",
+        "focus": "key:A",
+        "label": "A",
+        "frame": [
+          176,
+          197,
+          64,
+          64
+        ],
+        "groups": [
+          "search:input"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "genre:0",
+          "label": "Action",
+          "frame": [
+            672,
+            329,
+            177,
+            60
+          ],
+          "groups": [
+            "section:genre",
+            "search:results"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "9-1-1",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "kind": "genre",
+            "name": "Action"
+          },
+          "stack": [
+            "Home",
+            "Search",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            56,
+            244,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "SearchBrowse",
+          "params": {
+            "kind": "genre",
+            "name": "Action"
+          },
+          "stack": [
+            "Home",
+            "Search",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "Titres, acteurs, genres…",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

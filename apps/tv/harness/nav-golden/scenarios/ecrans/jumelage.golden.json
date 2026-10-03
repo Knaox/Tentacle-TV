@@ -1,0 +1,820 @@
+{
+  "format": 1,
+  "domain": "ecrans",
+  "suite": "jumelage",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T7",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:24:40.428Z",
+  "scenarios": {
+    "jumelage-connexion-refusee": {
+      "hash": "5a6acc115262",
+      "durationMs": 64925,
+      "start": {
+        "app": "foreground",
+        "focus": "pairing:showCode",
+        "label": "Afficher le code de jumelage",
+        "frame": [
+          495,
+          673,
+          473,
+          68
+        ],
+        "groups": [],
+        "route": "PairCode",
+        "params": null,
+        "stack": [
+          "PairCode"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            495,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "pairing:manual",
+          "label": "Configurer manuellement",
+          "frame": [
+            990,
+            673,
+            435,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pairing:url",
+          "label": "Adresse du serveur",
+          "frame": [
+            410,
+            512,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:http://localhost:3107\n",
+          "app": "foreground",
+          "focus": "pairing:username",
+          "label": "Nom d'utilisateur",
+          "frame": [
+            410,
+            436,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:banc\n",
+          "app": "foreground",
+          "focus": "pairing:username",
+          "label": "Nom d'utilisateur",
+          "frame": [
+            410,
+            436,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:password",
+          "label": "Mot de passe",
+          "frame": [
+            410,
+            609,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:faux",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "pairing:password",
+          "label": "Mot de passe",
+          "frame": [
+            410,
+            609,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:signIn",
+          "label": "Se connecter",
+          "frame": [
+            615,
+            757,
+            279,
+            68
+          ],
+          "groups": [
+            "pairing:actions"
+          ],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pairing:password",
+          "label": "Mot de passe",
+          "frame": [
+            410,
+            554,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/auth/login"
+          ]
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:signIn",
+          "label": "Se connecter",
+          "frame": [
+            615,
+            812,
+            279,
+            68
+          ],
+          "groups": [
+            "pairing:actions"
+          ],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "pairing:signIn",
+          "label": "Se connecter",
+          "frame": [
+            615,
+            812,
+            279,
+            68
+          ],
+          "groups": [
+            "pairing:actions"
+          ],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "jumelage-accueil": {
+      "hash": "64ae2394dfc4",
+      "durationMs": 23294,
+      "start": {
+        "app": "foreground",
+        "focus": "pairing:showCode",
+        "label": "Afficher le code de jumelage",
+        "frame": [
+          495,
+          673,
+          473,
+          68
+        ],
+        "groups": [],
+        "route": "PairCode",
+        "params": null,
+        "stack": [
+          "PairCode"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            495,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "pairing:manual",
+          "label": "Configurer manuellement",
+          "frame": [
+            990,
+            673,
+            435,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:lang:en",
+          "label": "English",
+          "frame": [
+            1076,
+            805,
+            131,
+            52
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pairing:manual",
+          "label": "Configurer manuellement",
+          "frame": [
+            990,
+            673,
+            435,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            495,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "jumelage-serveur-et-identifiants": {
+      "hash": "b0ea8a0a4cd3",
+      "durationMs": 43235,
+      "start": {
+        "app": "foreground",
+        "focus": "pairing:showCode",
+        "label": "Afficher le code de jumelage",
+        "frame": [
+          495,
+          673,
+          473,
+          68
+        ],
+        "groups": [],
+        "route": "PairCode",
+        "params": null,
+        "stack": [
+          "PairCode"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            495,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "pairing:manual",
+          "label": "Configurer manuellement",
+          "frame": [
+            990,
+            673,
+            435,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pairing:url",
+          "label": "Adresse du serveur",
+          "frame": [
+            410,
+            512,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pairing:back",
+          "label": "Retour",
+          "frame": [
+            96,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "pairing:top"
+          ],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:url",
+          "label": "Adresse du serveur",
+          "frame": [
+            410,
+            512,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:http://localhost:3107\n",
+          "app": "foreground",
+          "focus": "pairing:username",
+          "label": "Nom d'utilisateur",
+          "frame": [
+            410,
+            436,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pairing:back",
+          "label": "Retour",
+          "frame": [
+            96,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "pairing:top"
+          ],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:username",
+          "label": "Nom d'utilisateur",
+          "frame": [
+            410,
+            436,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:password",
+          "label": "Mot de passe",
+          "frame": [
+            410,
+            609,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:signIn",
+          "label": "Se connecter",
+          "frame": [
+            615,
+            757,
+            279,
+            68
+          ],
+          "groups": [
+            "pairing:actions"
+          ],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "pairing:useCode",
+          "label": "Jumeler avec un code",
+          "frame": [
+            916,
+            757,
+            389,
+            68
+          ],
+          "groups": [
+            "pairing:actions"
+          ],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "pairing:url",
+          "label": "Adresse du serveur",
+          "frame": [
+            410,
+            512,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            495,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

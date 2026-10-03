@@ -1,0 +1,1584 @@
+{
+  "format": 1,
+  "domain": "ecrans",
+  "suite": "bibliotheque",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T7",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:18:23.613Z",
+  "scenarios": {
+    "bibliotheque-liste-annees": {
+      "hash": "1002e77db343",
+      "durationMs": 32613,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pill:status",
+          "label": "Visionnage, Tous",
+          "frame": [
+            176,
+            145,
+            188,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "pill:years",
+          "label": "Année, Toutes",
+          "frame": [
+            933,
+            145,
+            156,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:preset:0",
+          "label": "Toutes",
+          "frame": [
+            348,
+            603,
+            134,
+            60
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:from:prev"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:preset:5",
+          "label": "Années 1980",
+          "frame": [
+            348,
+            677,
+            205,
+            60
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:from:prev"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "pill:years",
+          "label": "Année, Toutes",
+          "frame": [
+            933,
+            145,
+            156,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "bibliotheque-liste-genres": {
+      "hash": "718d4c5c7a9a",
+      "durationMs": 48763,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pill:status",
+          "label": "Visionnage, Tous",
+          "frame": [
+            176,
+            145,
+            188,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "pill:genres",
+          "label": "Genres, Tous",
+          "frame": [
+            567,
+            145,
+            146,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:option:0",
+          "label": "Action",
+          "frame": [
+            288,
+            271,
+            434,
+            72
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:option:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "sheet:option:6",
+          "label": "Drame",
+          "frame": [
+            288,
+            435,
+            434,
+            72
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:option:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:option:6",
+          "label": "Drame",
+          "frame": [
+            288,
+            435,
+            434,
+            72
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:option:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "holddown:4",
+          "app": "foreground",
+          "focus": "sheet:apply",
+          "label": "Voir 18 titres",
+          "frame": [
+            1404,
+            871,
+            228,
+            56
+          ],
+          "groups": [
+            "sheet:footer"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:option:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "pill:genres",
+          "label": "Genres, Drame",
+          "frame": [
+            567,
+            145,
+            154,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "active:clear",
+          "label": "Tout effacer",
+          "frame": [
+            525,
+            247,
+            223,
+            52
+          ],
+          "groups": [
+            "filters:active",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "active:clear",
+          "label": "Tout effacer",
+          "frame": [
+            525,
+            247,
+            223,
+            52
+          ],
+          "groups": [
+            "filters:active",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pill:status",
+          "label": "Visionnage, Tous",
+          "frame": [
+            176,
+            145,
+            188,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "bibliotheque-entree-et-bords": {
+      "hash": "be1dad3e8c0f",
+      "durationMs": 61907,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pill:status",
+          "label": "Visionnage, Tous",
+          "frame": [
+            176,
+            145,
+            188,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "grid:5",
+          "label": "28 Semaines plus tard",
+          "frame": [
+            1576,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "grid:5",
+          "label": "28 Semaines plus tard",
+          "frame": [
+            1576,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "grid:11",
+          "label": "After - Chapitre 1",
+          "frame": [
+            1576,
+            585,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:1"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "grid:5",
+          "label": "28 Semaines plus tard",
+          "frame": [
+            1576,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "left",
+            "left",
+            "left",
+            "left",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            693,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "bibliotheque-defilement": {
+      "hash": "e8f4ef91bd55",
+      "durationMs": 67906,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "#Chef 1",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "#Chef 1",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "holddown:8",
+            "holdup:10"
+          ],
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "#Chef 1",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pill:status",
+          "label": "Visionnage, Tous",
+          "frame": [
+            176,
+            145,
+            188,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "bibliotheque-retirer-filtre": {
+      "hash": "4ea9ce8e291e",
+      "durationMs": 58878,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pill:status",
+          "label": "Visionnage, Tous",
+          "frame": [
+            176,
+            145,
+            188,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "pill:genres",
+          "label": "Genres, Tous",
+          "frame": [
+            567,
+            145,
+            146,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:option:0",
+          "label": "Action",
+          "frame": [
+            288,
+            271,
+            434,
+            72
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:option:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:option:0",
+          "label": "Action",
+          "frame": [
+            288,
+            271,
+            434,
+            72
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:option:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:option:3",
+          "label": "Comédie",
+          "frame": [
+            288,
+            353,
+            434,
+            72
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:option:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:option:3",
+          "label": "Comédie",
+          "frame": [
+            288,
+            353,
+            434,
+            72
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:option:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "pill:genres",
+          "label": "Genres, Action +1",
+          "frame": [
+            567,
+            145,
+            188,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "left",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "pill:status",
+          "label": "Visionnage, Tous",
+          "frame": [
+            176,
+            145,
+            188,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "active:0",
+          "label": "Action",
+          "frame": [
+            327,
+            247,
+            157,
+            52
+          ],
+          "groups": [
+            "filters:active",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "active:0",
+          "label": "Comédie",
+          "frame": [
+            327,
+            247,
+            185,
+            52
+          ],
+          "groups": [
+            "filters:active",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pill:genres",
+          "label": "Genres, Tous",
+          "frame": [
+            567,
+            145,
+            146,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "pill:genres",
+          "label": "Genres, Tous",
+          "frame": [
+            567,
+            145,
+            146,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "bibliotheque-favoris-bascule": {
+      "hash": "e3ef9956975a",
+      "durationMs": 32643,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pill:status",
+          "label": "Visionnage, Tous",
+          "frame": [
+            176,
+            145,
+            188,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "pill:favorites",
+          "label": "Favoris",
+          "frame": [
+            376,
+            145,
+            179,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pill:favorites",
+          "label": "Favoris",
+          "frame": [
+            376,
+            145,
+            179,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pill:favorites",
+          "label": "Favoris",
+          "frame": [
+            376,
+            145,
+            179,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

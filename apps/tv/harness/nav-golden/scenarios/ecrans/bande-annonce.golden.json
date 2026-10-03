@@ -1,0 +1,346 @@
+{
+  "format": 1,
+  "domain": "ecrans",
+  "suite": "bande-annonce",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "c9395c1a619df932",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T7",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T02:11:54.169Z",
+  "scenarios": {
+    "bande-annonce-indisponible": {
+      "hash": "7ef44d73ce29",
+      "durationMs": 55106,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Lecture",
+        "frame": [
+          120,
+          674,
+          207,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailer:close",
+          "label": "Retour",
+          "frame": [
+            96,
+            68,
+            60,
+            60
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "bande-annonce-menu": {
+      "hash": "06355962dcc7",
+      "durationMs": 59781,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Lecture",
+        "frame": [
+          120,
+          674,
+          207,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailer:close",
+          "label": "Retour",
+          "frame": [
+            96,
+            68,
+            60,
+            60
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailer:close",
+          "label": "Retour",
+          "frame": [
+            96,
+            68,
+            60,
+            60
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+            "url": "https://www.youtube.com/watch?v=9sg6pJK3jNc"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:trailer",
+          "label": "Bande-annonce",
+          "frame": [
+            347,
+            674,
+            313,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

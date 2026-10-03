@@ -1,0 +1,1079 @@
+{
+  "format": 1,
+  "domain": "ecrans",
+  "suite": "reglages",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T7",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:35:00.489Z",
+  "scenarios": {
+    "reglages-onglets": {
+      "hash": "1f952d09cb16",
+      "durationMs": 51220,
+      "start": {
+        "app": "foreground",
+        "focus": "settings:tab:account",
+        "label": "Compte",
+        "frame": [
+          176,
+          164,
+          340,
+          100
+        ],
+        "groups": [
+          "settings:tabs"
+        ],
+        "route": "Settings",
+        "params": null,
+        "stack": [
+          "Home",
+          "Settings"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "settings:tab:account",
+          "label": "Compte",
+          "frame": [
+            176,
+            164,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "settings:tab:playback",
+          "label": "Lecture",
+          "frame": [
+            176,
+            278,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:changeServer",
+          "label": "Changer de serveur",
+          "frame": [
+            612,
+            770,
+            362,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:logout",
+          "label": "Déjumeler cet appareil",
+          "frame": [
+            996,
+            770,
+            396,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "settings:changeServer",
+          "label": "Changer de serveur",
+          "frame": [
+            612,
+            770,
+            362,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "settings:tab:account",
+          "label": "Compte",
+          "frame": [
+            176,
+            164,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:changeServer",
+          "label": "Changer de serveur",
+          "frame": [
+            612,
+            770,
+            362,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "settings:tab:account",
+          "label": "Compte",
+          "frame": [
+            176,
+            164,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "settings:tab:playback",
+          "label": "Lecture",
+          "frame": [
+            176,
+            278,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:tab:playback",
+          "label": "Lecture",
+          "frame": [
+            176,
+            278,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:preset:default",
+          "label": "Par défaut",
+          "frame": [
+            612,
+            278,
+            210,
+            60
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "settings:lang:fr",
+          "label": "Français",
+          "frame": [
+            612,
+            626,
+            190,
+            60
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "settings:tab:playback",
+          "label": "Lecture",
+          "frame": [
+            176,
+            278,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "reglages-double-appui": {
+      "hash": "564d8ce9e8e2",
+      "durationMs": 45793,
+      "start": {
+        "app": "foreground",
+        "focus": "settings:tab:account",
+        "label": "Compte",
+        "frame": [
+          176,
+          164,
+          340,
+          100
+        ],
+        "groups": [
+          "settings:tabs"
+        ],
+        "route": "Settings",
+        "params": null,
+        "stack": [
+          "Home",
+          "Settings"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "settings:tab:account",
+          "label": "Compte",
+          "frame": [
+            176,
+            164,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:changeServer",
+          "label": "Changer de serveur",
+          "frame": [
+            612,
+            770,
+            362,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:changeServer",
+          "label": "Confirmer — Changer de serveur",
+          "frame": [
+            612,
+            770,
+            530,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:logout",
+          "label": "Déjumeler cet appareil",
+          "frame": [
+            996,
+            770,
+            396,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:logout",
+          "label": "Confirmer le déjumelage",
+          "frame": [
+            996,
+            770,
+            423,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "settings:changeServer",
+          "label": "Changer de serveur",
+          "frame": [
+            612,
+            770,
+            362,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:logout",
+          "label": "Déjumeler cet appareil",
+          "frame": [
+            996,
+            770,
+            396,
+            68
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "reglages-liste-de-choix": {
+      "hash": "bcb8e5e84a29",
+      "durationMs": 41218,
+      "start": {
+        "app": "foreground",
+        "focus": "settings:tab:playback",
+        "label": "Lecture",
+        "frame": [
+          176,
+          278,
+          340,
+          100
+        ],
+        "groups": [
+          "settings:tabs"
+        ],
+        "route": "Settings",
+        "params": null,
+        "stack": [
+          "Home",
+          "Settings"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "settings:tab:playback",
+          "label": "Lecture",
+          "frame": [
+            176,
+            278,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:preset:default",
+          "label": "Par défaut",
+          "frame": [
+            612,
+            278,
+            210,
+            60
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "settings:lib:0:audio",
+          "label": "Audio : Par défaut",
+          "frame": [
+            641,
+            738,
+            355,
+            108
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:choice:0",
+          "label": "Par défaut",
+          "frame": [
+            1054,
+            233,
+            740,
+            80
+          ],
+          "groups": [],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": [
+            "settings:choice:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "settings:choice:1",
+          "label": "VO (langue originale)",
+          "frame": [
+            1054,
+            319,
+            740,
+            80
+          ],
+          "groups": [],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": [
+            "settings:choice:0"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "settings:lib:0:audio",
+          "label": "Audio : Par défaut",
+          "frame": [
+            641,
+            738,
+            355,
+            108
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "reglages-navigation-deplacer": {
+      "hash": "fbcd8f3e8baa",
+      "durationMs": 45894,
+      "start": {
+        "app": "foreground",
+        "focus": "settings:tab:navigation",
+        "label": "Navigation",
+        "frame": [
+          176,
+          506,
+          340,
+          100
+        ],
+        "groups": [
+          "settings:tabs"
+        ],
+        "route": "Settings",
+        "params": null,
+        "stack": [
+          "Home",
+          "Settings"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "settings:tab:navigation",
+          "label": "Navigation",
+          "frame": [
+            176,
+            506,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:nav:0",
+          "label": "1. Pour vous, Affichée",
+          "frame": [
+            612,
+            394,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:nav:0",
+          "label": "1. Pour vous, Affichée",
+          "frame": [
+            612,
+            394,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "settings:nav:1",
+          "label": "2. Pour vous, Affichée",
+          "frame": [
+            612,
+            488,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:nav:1",
+          "label": "2. Pour vous, Affichée",
+          "frame": [
+            612,
+            488,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "settings:nav:0",
+          "label": "1. Pour vous, Affichée",
+          "frame": [
+            612,
+            394,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:nav:0",
+          "label": "1. Pour vous, Affichée",
+          "frame": [
+            612,
+            394,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "settings:nav:1",
+          "label": "2. Pour vous, Affichée",
+          "frame": [
+            612,
+            488,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:nav:1",
+          "label": "2. Pour vous, Affichée",
+          "frame": [
+            612,
+            550,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "holdup:2",
+          "app": "foreground",
+          "focus": "settings:nav:resetOrder",
+          "label": "Ordre par défaut",
+          "frame": [
+            612,
+            364,
+            273,
+            56
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:nav:0",
+          "label": "1. Pour vous, Affichée",
+          "frame": [
+            612,
+            394,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

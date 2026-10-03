@@ -1,0 +1,1117 @@
+{
+  "format": 1,
+  "domain": "ecrans",
+  "suite": "recherche",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T7",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:43:34.107Z",
+  "scenarios": {
+    "recherche-menu-ferme-clavier": {
+      "hash": "23d7215f0c17",
+      "durationMs": 33954,
+      "start": {
+        "app": "foreground",
+        "focus": "key:A",
+        "label": "A",
+        "frame": [
+          176,
+          197,
+          64,
+          64
+        ],
+        "groups": [
+          "search:input"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "Titres, acteurs, genres…",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:orgueil",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "orgueil",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "recherche-entree": {
+      "hash": "27a369020dea",
+      "durationMs": 40440,
+      "start": {
+        "app": "foreground",
+        "focus": "key:A",
+        "label": "A",
+        "frame": [
+          176,
+          197,
+          64,
+          64
+        ],
+        "groups": [
+          "search:input"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "key:B",
+          "label": "B",
+          "frame": [
+            248,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "key:H",
+          "label": "H",
+          "frame": [
+            248,
+            269,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "key:G",
+          "label": "G",
+          "frame": [
+            176,
+            269,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            56,
+            244,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "Titres, acteurs, genres…",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "key:C",
+          "label": "C",
+          "frame": [
+            320,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "recherche-clavier-systeme": {
+      "hash": "ed9a82fb08cc",
+      "durationMs": 38345,
+      "start": {
+        "app": "foreground",
+        "focus": "key:A",
+        "label": "A",
+        "frame": [
+          176,
+          197,
+          64,
+          64
+        ],
+        "groups": [
+          "search:input"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "Titres, acteurs, genres…",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:orgueil\n",
+          "app": "foreground",
+          "focus": "top",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            672,
+            54,
+            1248,
+            500
+          ],
+          "groups": [
+            "section:top",
+            "search:results"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "top",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            672,
+            54,
+            1248,
+            500
+          ],
+          "groups": [
+            "section:top",
+            "search:results"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "orgueil",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "top",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            672,
+            54,
+            1248,
+            500
+          ],
+          "groups": [
+            "section:top",
+            "search:results"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "recherche-validation-sans-resultat": {
+      "hash": "5923d9ff64e0",
+      "durationMs": 35722,
+      "start": {
+        "app": "foreground",
+        "focus": "key:A",
+        "label": "A",
+        "frame": [
+          176,
+          197,
+          64,
+          64
+        ],
+        "groups": [
+          "search:input"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "Titres, acteurs, genres…",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:zzqxw\n",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "zzqxw",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "recherche-etagere-retour-barre": {
+      "hash": "ccb3e8b8a307",
+      "durationMs": 26928,
+      "start": {
+        "app": "foreground",
+        "focus": "key:A",
+        "label": "A",
+        "frame": [
+          176,
+          197,
+          64,
+          64
+        ],
+        "groups": [
+          "search:input"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "genre:0",
+          "label": "Action",
+          "frame": [
+            672,
+            329,
+            177,
+            60
+          ],
+          "groups": [
+            "section:genre",
+            "search:results"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "9-1-1",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "kind": "genre",
+            "name": "Action"
+          },
+          "stack": [
+            "Home",
+            "Search",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "Titres, acteurs, genres…",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "recherche-rail-rechercher": {
+      "hash": "1af71d51f23b",
+      "durationMs": 25465,
+      "start": {
+        "app": "foreground",
+        "focus": "key:A",
+        "label": "A",
+        "frame": [
+          176,
+          197,
+          64,
+          64
+        ],
+        "groups": [
+          "search:input"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            56,
+            244,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "Titres, acteurs, genres…",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "recherche-resultat-fiche": {
+      "hash": "c767fbf1dc83",
+      "durationMs": 33413,
+      "start": {
+        "app": "foreground",
+        "focus": "key:A",
+        "label": "A",
+        "frame": [
+          176,
+          197,
+          64,
+          64
+        ],
+        "groups": [
+          "search:input"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "key:A",
+          "label": "A",
+          "frame": [
+            176,
+            197,
+            64,
+            64
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "Titres, acteurs, genres…",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:orgueil\n",
+          "app": "foreground",
+          "focus": "top",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            672,
+            54,
+            1248,
+            500
+          ],
+          "groups": [
+            "section:top",
+            "search:results"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Reprendre",
+          "frame": [
+            120,
+            633,
+            339,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Search",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "top",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            672,
+            54,
+            1248,
+            500
+          ],
+          "groups": [
+            "section:top",
+            "search:results"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}
