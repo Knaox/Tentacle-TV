@@ -7,6 +7,7 @@ import {
   noticeAutoHideMs,
   noticeRule,
   pickNotice,
+  suppressedNotices,
   type NoticeContext,
 } from "./noticePolicy";
 
@@ -41,6 +42,16 @@ describe("avertissements surgissants", () => {
 
   it("se tait sur la page qui règle le problème", () => {
     expect(pickNotice([{ id: "tmdbKey", active: true }], { ...admin, suppressed: new Set(["tmdbKey"] as const) })).toBeNull();
+  });
+
+  it("se tait sur la vue d'ensemble de l'administration (page exacte) et là où l'on règle le problème", () => {
+    expect([...suppressedNotices("/admin")].sort()).toEqual(["adminKey", "serverUpdate", "tmdbKey"]);
+    expect([...suppressedNotices("/admin/")].sort()).toEqual(["adminKey", "serverUpdate", "tmdbKey"]);
+    expect([...suppressedNotices("/admin/metadata")]).toEqual(["tmdbKey"]);
+    expect([...suppressedNotices("/admin/services")]).toEqual(["adminKey"]);
+    expect([...suppressedNotices("/admin/sessions")]).toEqual([]);
+    expect([...suppressedNotices("/admin-metadata")]).toEqual([]);
+    expect([...suppressedNotices("/")]).toEqual([]);
   });
 
   it("une recommandation s'efface seule après 6 s ; une panne reste jusqu'à ce qu'on la ferme", () => {

@@ -88,6 +88,8 @@ export * from "./problems/problemTypes";
 export * from "./problems/describeProblem";
 export * from "./problems/classifyProblem";
 export * from "./problems/problemDetails";
+export * from "./problems/engineErrors";
+export * from "./problems/diagnose";
 // Les liens du serveur : le lien public et la lecture directe, sondés par le
 // serveur (contrat de /api/admin/server-links, miroir backend), et leur
 // verdict — lu par la vue d'ensemble et par l'assistant d'installation.

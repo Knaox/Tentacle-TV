@@ -19,6 +19,10 @@
  *   retenir (`known`).
  * - **Un seul à la fois**, le premier par rang ; jamais sur le lecteur ni sur
  *   la barre d'onglets (c'est le rendu qui le garantit).
+ * - **Silence là où le tableau de bord le dit déjà** : la vue d'ensemble de
+ *   l'administration (`/admin`, la page exacte) montre durablement la clé
+ *   d'administration, TMDB et le serveur ; la page qui règle un problème le
+ *   tait aussi (`suppressedNotices`).
  */
 
 import type { DismissibleHint } from "../help/dismissibleHints";
@@ -98,6 +102,25 @@ export function pickNotice(candidates: readonly NoticeCandidate[], context: Noti
     if (candidate?.active && noticeAllowed(rule, context)) return rule.id;
   }
   return null;
+}
+
+/** La page qui RÈGLE chaque avertissement : il s'y tait. */
+const FIXING_PAGES: readonly { prefix: string; ids: readonly NoticeId[] }[] = [
+  { prefix: "/admin/metadata", ids: ["tmdbKey"] },
+  { prefix: "/admin/services", ids: ["adminKey"] },
+];
+
+/** Le tableau de bord, qui les montre tous durablement (la page exacte). */
+const DASHBOARD_PATHS: ReadonlySet<string> = new Set(["/admin", "/admin/"]);
+
+/** Les avertissements à taire sur cette page (chemin du routeur, sans requête). */
+export function suppressedNotices(pathname: string): Set<NoticeId> {
+  if (DASHBOARD_PATHS.has(pathname)) return new Set(NOTICE_RULES.map((rule) => rule.id));
+  const ids = new Set<NoticeId>();
+  for (const page of FIXING_PAGES) {
+    if (pathname === page.prefix || pathname.startsWith(`${page.prefix}/`)) page.ids.forEach((id) => ids.add(id));
+  }
+  return ids;
 }
 
 /** « Ne plus afficher » est-il offert ? Seulement si le serveur sait le retenir. */
