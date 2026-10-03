@@ -24,7 +24,11 @@
 .hero-cta-primary::before {
   content: "";
   position: absolute;
-  inset: 0;
+  /* Pas `inset` : le Chrome 53 des TV LG ne le connaît pas. */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: -1;
   border-radius: inherit;
   background: #000;
