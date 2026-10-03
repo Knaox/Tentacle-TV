@@ -16,7 +16,7 @@ const FORMAT = 1;
  * plus anciennes, « à réenregistrer », au lieu de les comparer à tort.
  */
 export const OBSERVATION_VERSION = 2;
-const KEPT = ["app", "focus", "label", "frame", "groups", "route", "params", "stack", "panel", "panelOwners", "writes", "texts", "storage", "unsettled"];
+const KEPT = ["app", "focus", "label", "frame", "groups", "route", "params", "stack", "panel", "panelOwners", "writes", "texts", "storage", "gestureError", "unsettled"];
 const strip = (obs) => Object.fromEntries(KEPT.filter((k) => obs[k] !== undefined).map((k) => [k, obs[k]]));
 
 export function readGolden(file) {

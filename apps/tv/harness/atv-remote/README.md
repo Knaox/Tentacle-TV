@@ -50,7 +50,10 @@ long sur OK), `holddown:8` (flèche maintenue), `wait:0.5`, `shot` /
 `shot:640` (largeur de la capture), `focus` (l'élément focalisé et son cadre),
 `tree` (l'arbre d'accessibilité), `activate` (ramène l'application au premier
 plan), `type:dune` (saisie au clavier système ouvert ; `\n` y vaut sa touche de
-validation, « Rechercher » sur la barre de recherche), `quit`.
+validation, « Rechercher » sur la barre de recherche — sans champ qui ait le
+clavier, ou app en arrière-plan, l'ordre est refusé : `info` vaut
+`error:no-keyboard-focus` ou `error:background:<état>`, et l'agent reste en
+vie), `quit`.
 
 ## Pièges déjà payés
 

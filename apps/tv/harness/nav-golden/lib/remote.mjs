@@ -6,6 +6,18 @@ import { macIp } from "./device.mjs";
 import { httpJson } from "./processes.mjs";
 import { resolveGesture, substitutionsFor, unknownPlaceholders } from "./substitute.mjs";
 
+/**
+ * Un geste que l'agent a REFUSÉ sans mourir (un `type:` sans clavier ouvert) :
+ * une erreur du pas, relevée comme un écart — pas une erreur du banc.
+ */
+export class GestureError extends BenchError {}
+
+/** Le refus qu'un agent renvoie pour un ordre (`error:…` dans son info), ou `null`. */
+export function gestureRefusal(reply) {
+  const info = String(reply?.info ?? "");
+  return info.startsWith("error:") ? info.slice("error:".length) : null;
+}
+
 /** Les adresses de la place (`{backend}`…), calculées une fois par commande. */
 export function subsOf(ctx) {
   ctx.subs ??= substitutionsFor({ ports: ctx.ports, device: ctx.device, macIp: ctx.device ? macIp() : null });
@@ -99,7 +111,9 @@ export async function perform(ctx, gesture) {
   }
   if (gesture.startsWith("type:")) {
     // L'adresse de la place, résolue AVANT la frappe (`type:http://{backend}`).
-    await agentRun(ctx, [resolveGesture(gesture, subsOf(ctx))]);
+    const [reply] = await agentRun(ctx, [resolveGesture(gesture, subsOf(ctx))]);
+    const refusal = gestureRefusal(reply);
+    if (refusal) throw new GestureError(`« ${gesture.split("\n")[0]} » refusé par l'agent : ${refusal === "no-keyboard-focus" ? "aucun champ n'a le clavier" : refusal}`);
     return 0;
   }
   let match;

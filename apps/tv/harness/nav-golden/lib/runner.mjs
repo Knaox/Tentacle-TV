@@ -4,7 +4,7 @@
 // `verify` (sur le dossier courant) ; seule la suite diffère (golden.mjs).
 import { BenchError, sleep } from "./config.mjs";
 import { checkExpect, journalSeq, settle } from "./observe.mjs";
-import { evaluate, perform } from "./remote.mjs";
+import { GestureError, evaluate, perform } from "./remote.mjs";
 import { coldStart } from "./session.mjs";
 
 const BETWEEN_GESTURES_MS = 150;
@@ -17,13 +17,19 @@ const ENTRY_NULL_QUIET_MS = 10_000;
 const textsOf = (step) => (step?.expect?.text === undefined ? [] : [].concat(step.expect.text));
 const storageOf = (step) => Object.keys(step?.expect?.storage ?? {});
 
+/** Joue les gestes d'un pas ; un geste REFUSÉ par l'agent est rendu, pas levé (le pas le relève). */
 async function play(ctx, gestures) {
   let extra = 0;
   for (const [i, gesture] of gestures.entries()) {
     if (i > 0) await sleep(BETWEEN_GESTURES_MS);
-    extra = await perform(ctx, gesture);
+    try {
+      extra = await perform(ctx, gesture);
+    } catch (error) {
+      if (error instanceof GestureError) return { extra, gestureError: error.message };
+      throw error;
+    }
   }
-  return extra;
+  return { extra, gestureError: null };
 }
 
 /**
@@ -58,7 +64,7 @@ export async function runScenario(ctx, session, suite, scenario) {
   const steps = [];
   for (const step of scenario.steps) {
     const since = await journalSeq(ctx);
-    const extra = await play(ctx, [].concat(step.do));
+    const { extra, gestureError } = await play(ctx, [].concat(step.do));
     const obs = await settle(ctx, {
       since,
       minMs: (step.settleMs ?? suite.defaults?.settleMs ?? 0) + extra,
@@ -66,7 +72,14 @@ export async function runScenario(ctx, session, suite, scenario) {
       texts: textsOf(step),
       storage: storageOf(step),
     });
-    steps.push({ do: step.do, obs, failures: checkExpect(step.expect, obs, textsOf(step)) });
+    // Un geste refusé (agent vivant) : relevé dans le pas — un écart avec la référence,
+    // et un attendu contredit dès l'enregistrement — puis le scénario continue.
+    const failures = checkExpect(step.expect, obs, textsOf(step));
+    if (gestureError) {
+      obs.gestureError = gestureError;
+      failures.push({ field: "geste", want: "joué", got: gestureError });
+    }
+    steps.push({ do: step.do, obs, failures });
   }
   return { start: startObs, steps, preconditions, durationMs: Date.now() - began };
 }

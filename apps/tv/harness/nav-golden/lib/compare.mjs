@@ -5,7 +5,7 @@
 // comptés (une refactorisation peut renommer un groupe sans rien changer).
 // Un champ instable à l'enregistrement (deux passages différents) est ignoré.
 
-export const COMPARED = ["app", "focus", "label", "route", "stack", "params", "panel", "writes", "texts", "storage", "frame"];
+export const COMPARED = ["app", "focus", "label", "route", "stack", "params", "panel", "writes", "texts", "storage", "gestureError", "frame"];
 const FRAME_TOLERANCE = 2;
 
 const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);

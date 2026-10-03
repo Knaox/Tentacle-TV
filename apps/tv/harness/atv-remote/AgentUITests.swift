@@ -52,7 +52,20 @@ final class AgentUITests: XCTestCase {
             case "holddown": remote.press(.down, forDuration: seconds ?? 1.0)
             case "holdup": remote.press(.up, forDuration: seconds ?? 1.0)
             case "activate": app.activate()
-            case "type": app.typeText(obj["t"] as? String ?? "")
+            // Sans clavier ouvert (ou app en arrière-plan), `typeText` lève une
+            // exception que rien ne rattrape : le test finissait, l'agent mourait,
+            // et tout ce qui suivait sortait en « agent absent ». On vérifie
+            // d'abord, et le refus devient une erreur DU GESTE, renvoyée au Mac.
+            case "type" where app.state != .runningForeground:
+                info = "error:background:\(app.state.rawValue)"
+            case "type":
+                let typing = app.descendants(matching: .any)
+                    .matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+                if typing.exists {
+                    app.typeText(obj["t"] as? String ?? "")
+                } else {
+                    info = "error:no-keyboard-focus"
+                }
             case "wait": Thread.sleep(forTimeInterval: seconds ?? 0.5)
             case "shot":
                 let shot = XCUIScreen.main.screenshot()
