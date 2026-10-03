@@ -11,6 +11,7 @@
 export default {
   statusChecking: "Checking the server…",
   statusAllGood: "Everything works",
+  statusUnknown: "Server status unreadable for now",
   statusBlocking_one: "{{count}} thing to fix",
   statusBlocking_other: "{{count}} things to fix",
   statusRecommendations_one: "{{count}} recommendation",
@@ -94,6 +95,7 @@ export default {
   entry_jellyfin_restart: "Jellyfin is waiting for a restart to apply a change.",
   entry_jellyfin_partial: "With Jellyfin {{version}}, some Tentacle features are missing.",
   entry_jellyfin_compatLink: "See compatibility",
+  entry_jellyfin_allSettings: "All Jellyfin settings",
 
   entry_directPlay_off_title: "Turn on direct play",
   entry_directPlay_off_body: "Videos would come straight from Jellyfin instead of through Tentacle: better quality, lighter server.",
@@ -148,7 +150,6 @@ export default {
   updateNoContainer: "This server does not run in a container: update it the way you installed it.",
   copy: "Copy",
   copied: "Copied",
-  copyLabel: "Copy the command",
   copyFailed: "Copying is not possible here: select the command and copy it by hand.",
   watchWaiting: "Run the command on the server's machine: this card will notice by itself when the server is back.",
   watchUpdated: "Update done: Tentacle {{version}} is running.",

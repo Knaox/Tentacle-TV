@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAllTickets } from "@tentacle-tv/api-client";
 import { BACKEND, creds, hdrs } from "../../../pages/adminUtils";
 import { useAdminSessions } from "../../../hooks/useAdminSessions";
+import { readServicesAttention } from "../attention/attentionSources";
 import {
   readServicesHealth,
   summarizeAccounts,
@@ -58,6 +59,11 @@ function part<T>(query: { data?: T | null; isPending: boolean; isError: boolean 
 
 export function useServicesHealth() {
   return part(useOverviewRead("services", "/api/admin/services", readServicesHealth));
+}
+
+/** La même lecture (le cache garde la réponse brute), résumée pour « À régler ». */
+export function useServicesAttention() {
+  return part(useOverviewRead("services", "/api/admin/services", readServicesAttention));
 }
 
 export function useAccountsSummary() {

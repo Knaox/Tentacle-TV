@@ -11,6 +11,7 @@
 export default {
   statusChecking: "Vérification de l'état du serveur…",
   statusAllGood: "Tout fonctionne",
+  statusUnknown: "État du serveur illisible pour l'instant",
   statusBlocking_one: "{{count}} point à régler",
   statusBlocking_other: "{{count}} points à régler",
   statusRecommendations_one: "{{count}} recommandation",
@@ -94,6 +95,7 @@ export default {
   entry_jellyfin_restart: "Jellyfin attend un redémarrage pour appliquer un changement.",
   entry_jellyfin_partial: "Avec Jellyfin {{version}}, certaines fonctions de Tentacle manquent.",
   entry_jellyfin_compatLink: "Voir la compatibilité",
+  entry_jellyfin_allSettings: "Tous les réglages de Jellyfin",
 
   entry_directPlay_off_title: "Activer la lecture directe",
   entry_directPlay_off_body: "Les vidéos partiraient de Jellyfin sans repasser par Tentacle : meilleure qualité, serveur moins chargé.",
@@ -148,7 +150,6 @@ export default {
   updateNoContainer: "Ce serveur ne tourne pas dans un conteneur : mettez-le à jour comme vous l'avez installé.",
   copy: "Copier",
   copied: "Copiée",
-  copyLabel: "Copier la commande",
   copyFailed: "Copie impossible ici : sélectionnez la commande et copiez-la à la main.",
   watchWaiting: "Lancez la commande sur la machine du serveur : cette carte verra d'elle-même le serveur revenir.",
   watchUpdated: "Mise à jour faite : Tentacle {{version}} est en service.",

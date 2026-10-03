@@ -1,51 +1,26 @@
-import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
-import type { SetupActionId } from "@tentacle-tv/shared";
-import { useToast } from "../../../contexts/ToastContext";
 import { AdminNotice, AdminSection } from "../kit";
 import { INSTALLED_FAILURE_KEY } from "./compatPresentation";
-import { JellyfinAdminError, isOutdatedServer, useJellyfinSetup, useSetupApply } from "./jellyfinAdminApi";
-import { SetupCheckRow } from "./SetupCheckRow";
-import { applyErrorKey, languageChoice, setupProgress } from "./setupPresentation";
+import { isOutdatedServer, useJellyfinSetup } from "./jellyfinAdminApi";
+import { SetupRows } from "./SetupRows";
+import { setupProgress } from "./setupPresentation";
 
 /**
  * Les réglages de Jellyfin qui rendent Tentacle complet, chacun avec l'état
  * RÉEL du serveur connecté et son remède : un clic quand l'API de Jellyfin le
  * permet sans risque, sinon la bonne page de son tableau de bord.
  *
- * Un geste à la fois — le serveur le refuse de toute façon (« busy ») — et
- * l'état relu arrive avec la réponse : la ligne passe à « Fait » sans
- * rechargement. Jellyfin n'est jamais redémarré d'ici.
+ * La liste COMPLÈTE vit dans Services (`#jellyfin-setup`) — ce qui est fait
+ * et ses gestes de suite (générer, relancer) compris. La vue d'ensemble n'en
+ * montre que ce qui reste à faire, dans la recommandation « Jellyfin ».
+ * Jellyfin n'est jamais redémarré d'ici.
  */
-export function SetupChecklist() {
-  const { t, i18n } = useTranslation("adminJellyfin");
-  const { show } = useToast();
-  const setup = useJellyfinSetup();
-  const apply = useSetupApply();
-  const [running, setRunning] = useState<SetupActionId | null>(null);
-  const [failed, setFailed] = useState<SetupActionId | null>(null);
-  const language = useMemo(
-    () => languageChoice(i18n.language, typeof navigator === "undefined" ? "" : navigator.language ?? ""),
-    [i18n.language],
-  );
+export const JELLYFIN_SETUP_ANCHOR = "jellyfin-setup";
 
-  const onApply = useCallback(async (action: SetupActionId) => {
-    setRunning(action);
-    setFailed(null);
-    try {
-      await apply.mutateAsync({
-        action,
-        ...(action === "setMetadataLanguage" ? { language: language.language, country: language.country } : {}),
-      });
-      show("success", t("applied"));
-    } catch (error) {
-      setFailed(action);
-      show("error", t(applyErrorKey(error instanceof JellyfinAdminError ? error.code : null)));
-    } finally {
-      setRunning(null);
-    }
-  }, [apply, language, show, t]);
+export function SetupChecklist() {
+  const { t } = useTranslation("adminJellyfin");
+  const setup = useJellyfinSetup();
 
   const report = setup.data;
   const progress = report && !report.error ? setupProgress(report.checks) : null;
@@ -53,6 +28,7 @@ export function SetupChecklist() {
 
   return (
     <AdminSection
+      id={JELLYFIN_SETUP_ANCHOR}
       title={t("setupTitle")}
       description={t("setupDescription")}
       actions={progress && progress.total > 0 ? <Progress done={progress.done} total={progress.total} /> : undefined}
@@ -71,20 +47,7 @@ export function SetupChecklist() {
               </AdminNotice>
             </div>
           )}
-          <ul className="divide-y divide-line-subtle">
-            {report.checks.map((check) => (
-              <SetupCheckRow
-                key={check.id}
-                check={check}
-                dashboardUrl={report.dashboardUrl}
-                jellyfinVersion={report.jellyfinVersion}
-                language={language}
-                running={running}
-                failed={failed}
-                onApply={(action) => void onApply(action)}
-              />
-            ))}
-          </ul>
+          <SetupRows report={report} checks={report.checks} />
         </>
       ) : (
         <div className="p-5">

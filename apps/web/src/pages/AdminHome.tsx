@@ -14,41 +14,54 @@ import {
   TicketsTile,
 } from "../components/admin/home/OverviewTiles";
 import { OVERVIEW_ID, adminSectionPath, useAdminSections } from "../components/admin/adminSections";
+import { AttentionPanel } from "../components/admin/attention/AttentionPanel";
+import { AttentionStatus } from "../components/admin/attention/AttentionStatus";
+import { useAdminAttention } from "../components/admin/attention/useAdminAttention";
 import { JellyfinCompatSection } from "../components/admin/jellyfin/JellyfinCompatSection";
-import { SetupChecklist } from "../components/admin/jellyfin/SetupChecklist";
 import { RecommendedPluginsSection } from "../components/admin/recommended/RecommendedPluginsSection";
-import { ServerLinksSection } from "../components/admin/links/ServerLinksSection";
 import { ServerUpdateCard } from "../components/admin/serverUpdate/ServerUpdateCard";
 import { cls } from "./adminUtils";
 
+/** Ce qui rend Jellyfin inutilisable : tant que l'une de ces entrées est à régler, ce qui en dépend se tait. */
+const JELLYFIN_DOWN = new Set(["jellyfinNotConfigured", "jellyfinUnreachable", "jellyfinKeyRejected"]);
+
 /**
- * La vue d'ensemble de l'administration — l'index `/admin`, qui n'affichait
- * rien sur desktop (un panneau vide à côté du rail).
+ * La vue d'ensemble de l'administration — l'index `/admin`.
  *
- * D'un coup d'œil : l'état de Jellyfin et de la base, ce qui se passe (les
- * sessions en direct), ce qui attend (tickets ouverts, mises à jour de
- * plugins) et l'état des accès (comptes, invitations actives, droit de
- * téléchargement). Chaque tuile mène à sa section ; les raccourcis ouvrent
- * les gestes les plus fréquents.
+ * En tête, l'état en UNE ligne (« Tout fonctionne », « 1 point à régler ·
+ * 3 recommandations »), puis deux familles, dans cet ordre : À RÉGLER
+ * (jamais masquable) et RECOMMANDATIONS (masquables par compte). Chaque
+ * entrée : un titre, une phrase, une action, le détail replié — jamais une
+ * pile de bandeaux qui répètent la même cause : tant que Jellyfin n'est pas
+ * utilisable, ce qui en dépend se tait.
  *
- * Puis ce qui rend Tentacle complet : la compatibilité de Jellyfin (installé
- * et dernier publié), l'accès au serveur (lien public, lecture directe), les
- * extensions recommandées — installées et branchées d'ici — et les réglages
- * de Jellyfin, chacun avec son remède.
+ * Puis l'état (le serveur Tentacle, toujours visible, et sa mise à jour ;
+ * Jellyfin et la base), l'activité (sessions, tickets, plugins, comptes,
+ * invitations, téléchargements), la compatibilité de Jellyfin et les
+ * extensions recommandées. La liste complète des réglages de Jellyfin et
+ * des liens du serveur vit dans Services.
  *
  * Sur mobile, le rail n'est pas affiché : la liste de toutes les sections
  * clôt la page, c'est elle qui sert de navigation.
  */
 export function AdminHome() {
   const { t } = useTranslation("admin");
+  const { attention, context } = useAdminAttention();
+  const jellyfinDown = attention.blocking.some((entry) => JELLYFIN_DOWN.has(entry.id));
 
   return (
-    <AdminPage title={t("navOverview")} description={t("overviewDescription")}>
-      {/* Deux colonnes dès le téléphone (une tuile se lit sur 160 px), quatre
-          sur grand écran : l'état du serveur en occupe deux, en tête. */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <ServerUpdateCard className="col-span-2" />
-        <HealthCard className="col-span-2" />
+    <AdminPage
+      title={t("navOverview")}
+      description={t("overviewDescription")}
+      summary={<AttentionStatus attention={attention} servicesFailed={context.servicesFailed} />}
+    >
+      <AttentionPanel attention={attention} context={context} />
+      <div className="grid gap-3 sm:gap-4 xl:grid-cols-2">
+        <ServerUpdateCard />
+        <HealthCard />
+      </div>
+      {/* Deux colonnes dès le téléphone (une tuile se lit sur 160 px), trois sur grand écran. */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
         <SessionsTile />
         <TicketsTile />
         <PluginsTile />
@@ -56,10 +69,8 @@ export function AdminHome() {
         <InvitesTile />
         <DownloadsTile />
       </div>
-      <JellyfinCompatSection variant="overview" />
-      <ServerLinksSection />
+      {jellyfinDown ? null : <JellyfinCompatSection variant="overview" />}
       <RecommendedPluginsSection />
-      <SetupChecklist />
       <Shortcuts />
       <SectionList />
     </AdminPage>

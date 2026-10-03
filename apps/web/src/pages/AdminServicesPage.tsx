@@ -6,6 +6,8 @@ import { AdminPage } from "../components/admin/kit";
 import { ServicesSummary } from "../components/admin/services/ServicesSummary";
 import { JellyfinSection } from "../components/admin/services/JellyfinSection";
 import { JellyfinCompatSection } from "../components/admin/jellyfin/JellyfinCompatSection";
+import { SetupChecklist } from "../components/admin/jellyfin/SetupChecklist";
+import { useJellyfinSetup } from "../components/admin/jellyfin/jellyfinAdminApi";
 import { DatabaseSection } from "../components/admin/services/DatabaseSection";
 import { PublicUrlSection } from "../components/admin/services/PublicUrlSection";
 import { DirectStreamingSection } from "../components/admin/services/DirectStreamingSection";
@@ -25,7 +27,8 @@ import { cls } from "./adminUtils";
  * Page « Services » (route /admin/services, admin seulement) : l'état des
  * connexions du serveur en tête, puis une section par service — Jellyfin et
  * sa compatibilité (`#compat` : installé, dernier publié, fonctionnalité par
- * fonctionnalité), base, adresse publique, lecture directe, détection des
+ * fonctionnalité), ses réglages conseillés (`#jellyfin-setup`, la liste
+ * complète), base, adresse publique, lecture directe, détection des
  * passages — et la réinitialisation à part, dans sa zone de danger.
  *
  * Les ancres (`#jellyfin`, `#publicurl`…) mènent à leur section et à son
@@ -42,7 +45,7 @@ function ServicesContent() {
   const { recheck, pending } = useRecheck();
   // Les sections ont leur hauteur finale quand leurs lectures ont abouti —
   // réussies ou non : c'est alors qu'une ancre peut viser juste.
-  const ready = [useServicesStatus(), usePublicUrlConfig(), useDirectStreamingConfig(), useAudioAnalysis()]
+  const ready = [useServicesStatus(), usePublicUrlConfig(), useDirectStreamingConfig(), useAudioAnalysis(), useJellyfinSetup()]
     .every((query) => !query.isPending);
   useHashTarget(ready);
 
@@ -60,6 +63,7 @@ function ServicesContent() {
       <ServicesSummary />
       <JellyfinSection />
       <JellyfinCompatSection variant="services" />
+      <SetupChecklist />
       <DatabaseSection />
       <PublicUrlSection />
       <DirectStreamingSection />
