@@ -455,6 +455,34 @@ son écran.
 Android, au SHA de référence et sur l'arbre courant ; `verify` exige des
 traces identiques (et `useBackLayers` = `useBackLayer` sur chaque scénario).
 
+## 16 bis. Déplacer une entrée — l'API commune (rail, Réglages › Navigation)
+
+tv-core `nav/arrange.ts` (pur), pour le rail (T4) et Réglages › Navigation
+(T7) — la même mécanique (O3, O4) :
+
+```ts
+export interface ArrangeMove { key: string; order: string[]; from: number }
+export type ArrangeReading = { kind: "entry"; key: string } | { kind: "inside" } | { kind: "outside" };
+export type ArrangeOutcome = { kind: "reorder"; move: ArrangeMove } | { kind: "drop" } | { kind: "none" };
+
+/** Soulever : l'ordre COMPLET de départ (masquées comprises), la case de départ. */
+export function startArrange(key: string, order: readonly string[], from: number): ArrangeMove;
+/** Le focus se pose : une autre entrée → l'ordre en cours l'y amène ; verrouillé → rien ; hors liste → poser. */
+export function arrangeOnFocus(move: ArrangeMove, reading: ArrangeReading): ArrangeOutcome;
+/** Ce que vise une clé de focus : le rail (`nav:<entrée>`)… */
+export function railArrangeReading(focusKey: string): ArrangeReading;
+/** …ou des lignes `<préfixe><case>`, dont la case i montre `keys[i]` (ordre EN COURS). */
+export function rowsArrangeReading(focusKey: string, prefix: string, keys: readonly string[]): ArrangeReading;
+/** OK sur des lignes : pose seulement sur la ligne soulevée. (Rail : OK pose partout.) */
+export function rowsSelectWhileArranging(move: ArrangeMove, selectedKey: string): "drop" | "none";
+```
+
+Poser = enregistrer `move.order` (`setOrder`) ; annuler = ne rien enregistrer
+et rendre le focus à l'entrée (rail : `nav:<move.key>`) ou à sa case de départ
+(Réglages : `settings:nav:<move.from>`), par `claimAfterRestore`. Les clés du
+rail (`navKeyOf`, `isNavKey`, `navEntryOf`, `isMovableRailKey`,
+`RAIL_LOCKED_WHILE_MOVING`, `libraryRailKey`…) : `nav/railKeys.ts`.
+
 ## 17. Scénarios de référence
 
 `apps/tv/harness/nav-golden/scenarios/retour-rail/scenarios.json` (format de
