@@ -1,39 +1,173 @@
 {
   "domain": "focus",
   "reference": "84f3cedd0",
-  "defaults": { "settleMs": 600 },
+  "defaults": {
+    "settleMs": 600
+  },
   "scenarios": [
     {
       "id": "hero-beyond-edge",
-      "title": "DROITE au-delà de « Ma liste » tourne le héros — sauf le geste qui y amène le focus",
-      "why": "X2 : le geste qui AMÈNE le focus au bord ne compte pas (moins de 400 ms) ; H3 : un geste, un titre, en boucle sur les 5 titres, le focus ne bouge pas. Le jeu focus/home écrit « Synopsis du héros N » sur les 5 reprises du héros.",
-      "rules": ["X1", "X2", "X3", "X4", "H3", "H4", "H7", "R11"],
-      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "focus": "hero:primary" },
+      "title": "DROITE au-delà de « Ma liste » : le focus reste sur le bord, le geste qui l'y amène compris",
+      "why": "X2 : le geste qui AMÈNE le focus au bord ne compte pas (moins de 400 ms) ; H3 : un geste, un titre, en boucle sur les 5 titres, le focus ne bouge pas. Le TITRE affiché n'est pas affirmé : sous charge, le héros peut tourner avant même de s'afficher (images réglées après 8 s), son premier titre n'est pas déterministe au banc — la rotation et le bord sont prouvés par le banc de traces (apps/tv/harness/focus-trace : heroRotation, beyondEdge).",
+      "rules": [
+        "X1",
+        "X2",
+        "X3",
+        "X4",
+        "H3",
+        "H4",
+        "H7",
+        "R11"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/home"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "focus": "hero:primary"
+      },
       "steps": [
-        { "do": "right", "settleMs": 300, "expect": { "focus": "hero:secondary", "text": "Synopsis du héros 1" } },
-        { "do": "right", "settleMs": 100, "expect": { "focus": "hero:list", "text": "Synopsis du héros 1" }, "why": "X2 : le geste qui a amené le focus au bord ne tourne pas le héros" },
-        { "do": ["wait:0.6", "right"], "settleMs": 1200, "expect": { "focus": "hero:list", "text": "Synopsis du héros 2" }, "why": "H3 : le titre suivant, focus inchangé" },
-        { "do": "right", "settleMs": 1200, "expect": { "focus": "hero:list", "text": "Synopsis du héros 3" }, "why": "X3 : encore un titre, sans attendre 400 ms entre deux gestes au bord" },
-        { "do": "right", "settleMs": 1200, "expect": { "text": "Synopsis du héros 4" } },
-        { "do": "right", "settleMs": 1200, "expect": { "text": "Synopsis du héros 5" } },
-        { "do": "right", "settleMs": 1200, "expect": { "focus": "hero:list", "text": "Synopsis du héros 1" }, "why": "en boucle : (i + 1) % 5" },
-        { "do": "left", "settleMs": 500, "expect": { "focus": "hero:secondary", "text": "Synopsis du héros 1" } }
+        {
+          "do": "right",
+          "settleMs": 300,
+          "expect": {
+            "focus": "hero:secondary"
+          }
+        },
+        {
+          "do": "right",
+          "settleMs": 100,
+          "expect": {
+            "focus": "hero:list"
+          },
+          "why": "X2 : le geste qui a amené le focus au bord ne tourne pas le héros"
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "right"
+          ],
+          "settleMs": 1200,
+          "expect": {
+            "focus": "hero:list"
+          },
+          "why": "H3 : le titre suivant, focus inchangé"
+        },
+        {
+          "do": "right",
+          "settleMs": 1200,
+          "expect": {
+            "focus": "hero:list"
+          },
+          "why": "X3 : encore un titre, sans attendre 400 ms entre deux gestes au bord"
+        },
+        {
+          "do": "right",
+          "settleMs": 1200
+        },
+        {
+          "do": "right",
+          "settleMs": 1200
+        },
+        {
+          "do": "right",
+          "settleMs": 1200,
+          "expect": {
+            "focus": "hero:list"
+          },
+          "why": "en boucle : (i + 1) % 5"
+        },
+        {
+          "do": "left",
+          "settleMs": 500,
+          "expect": {
+            "focus": "hero:secondary"
+          }
+        }
       ]
     },
     {
       "id": "hero-rotation",
       "title": "Le héros tourne seul toutes les 8 s ; les gestes relancent l'attente ; le grand panneau la suspend",
-      "why": "H2 : 8 s après le dernier geste ou pas du focus ; rien tant que le panneau est ouvert ; H5 : le panneau du titre affiché",
-      "rules": ["H2", "H4", "H5"],
-      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "focus": "hero:primary" },
+      "why": "H2 : 8 s après le dernier geste ou pas du focus ; rien tant que le panneau est ouvert ; H5 : le panneau du titre affiché Le TITRE affiché n'est pas affirmé : sous charge, le héros peut tourner avant même de s'afficher (images réglées après 8 s), son premier titre n'est pas déterministe au banc — la rotation et le bord sont prouvés par le banc de traces (apps/tv/harness/focus-trace : heroRotation, beyondEdge).",
+      "rules": [
+        "H2",
+        "H4",
+        "H5"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/home"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "focus": "hero:primary"
+      },
       "steps": [
-        { "do": "wait:1", "settleMs": 0, "expect": { "text": "Synopsis du héros 1" } },
-        { "do": "wait:9", "settleMs": 0, "expect": { "focus": "hero:primary", "text": "Synopsis du héros 2" }, "why": "H2 : un titre de plus, focus inchangé" },
-        { "do": ["right", "wait:3", "left", "wait:3", "right", "wait:3", "left", "wait:3"], "settleMs": 0, "expect": { "focus": "hero:primary", "text": "Synopsis du héros 2" }, "why": "12 s de gestes espacés de 3 s : aucun changement" },
-        { "do": "hold:1.2", "settleMs": 1000, "expect": { "panel": "open" }, "why": "H5 : le grand panneau du titre affiché (16:9 : héros des reprises)" },
-        { "do": "wait:10", "settleMs": 0, "expect": { "panel": "open" }, "why": "panneau ouvert : la rotation attend" },
-        { "do": "menu", "settleMs": 1500, "expect": { "panel": "closed", "focus": "hero:primary", "text": "Synopsis du héros 2" } },
-        { "do": "wait:9", "settleMs": 0, "expect": { "text": "Synopsis du héros 3" }, "why": "panneau fermé : un titre de plus après une attente entière" }
+        {
+          "do": "wait:1",
+          "settleMs": 0,
+          "expect": {
+            "focus": "hero:primary"
+          }
+        },
+        {
+          "do": "wait:9",
+          "settleMs": 0,
+          "expect": {
+            "focus": "hero:primary"
+          },
+          "why": "H2 : un titre de plus, focus inchangé"
+        },
+        {
+          "do": [
+            "right",
+            "wait:3",
+            "left",
+            "wait:3",
+            "right",
+            "wait:3",
+            "left",
+            "wait:3"
+          ],
+          "settleMs": 0,
+          "expect": {
+            "focus": "hero:primary"
+          },
+          "why": "12 s de gestes espacés de 3 s : aucun changement"
+        },
+        {
+          "do": "hold:1.2",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open"
+          },
+          "why": "H5 : le grand panneau du titre affiché (16:9 : héros des reprises)"
+        },
+        {
+          "do": "wait:10",
+          "settleMs": 0,
+          "expect": {
+            "panel": "open"
+          },
+          "why": "panneau ouvert : la rotation attend"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "panel": "closed",
+            "focus": "hero:primary"
+          }
+        },
+        {
+          "do": "wait:9",
+          "settleMs": 0,
+          "why": "panneau fermé : un titre de plus après une attente entière"
+        }
       ]
     }
   ]

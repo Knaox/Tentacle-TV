@@ -1,0 +1,325 @@
+{
+  "format": 1,
+  "domain": "focus",
+  "suite": "foryou",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "c9395c1a619df932",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T3",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T02:18:54.203Z",
+  "scenarios": {
+    "foryou-entry-shelves": {
+      "hash": "ae71e51bee09",
+      "durationMs": 71835,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Recommendations",
+        "params": null,
+        "stack": [
+          "Home",
+          "Recommendations"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            883,
+            556,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            883,
+            556,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "forYou:2",
+          "label": "Spider-Man : Homecoming",
+          "frame": [
+            728,
+            451,
+            240,
+            433
+          ],
+          "groups": [
+            "section:forYou"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "left",
+            "wait:0.4",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "forYou:0",
+          "label": "Avatar : De feu et de cendres",
+          "frame": [
+            176,
+            451,
+            240,
+            433
+          ],
+          "groups": [
+            "section:forYou"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "filter:remove",
+          "label": "Netflix · Disney+",
+          "frame": [
+            368,
+            373,
+            273,
+            52
+          ],
+          "groups": [
+            "section:forYou"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "forYou:1",
+          "label": "Iron Man 2",
+          "frame": [
+            452,
+            451,
+            240,
+            433
+          ],
+          "groups": [
+            "section:forYou"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "inLibrary:1",
+          "label": "Avengers : Infinity War",
+          "frame": [
+            452,
+            451,
+            240,
+            433
+          ],
+          "groups": [
+            "section:inLibrary"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "anime:1",
+          "label": "Elfen Lied",
+          "frame": [
+            452,
+            451,
+            240,
+            433
+          ],
+          "groups": [
+            "section:anime"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "inLibrary:1",
+          "label": "Avengers : Infinity War",
+          "frame": [
+            452,
+            126,
+            240,
+            433
+          ],
+          "groups": [
+            "section:inLibrary"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "forYou:1",
+          "label": "Iron Man 2",
+          "frame": [
+            452,
+            134,
+            240,
+            433
+          ],
+          "groups": [
+            "section:forYou"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "filter:remove",
+          "label": "Netflix · Disney+",
+          "frame": [
+            368,
+            56,
+            273,
+            52
+          ],
+          "groups": [
+            "section:forYou"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}
