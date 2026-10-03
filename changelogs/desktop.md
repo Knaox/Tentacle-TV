@@ -13,6 +13,16 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.25.5]
+<!-- Bloc nu pour les trois systèmes : macOS, Windows et Linux partent tous de la 1.25.4. -->
+### FR
+- **Plus d'image en blocs dans les scènes d'action quand la qualité baisse** : une qualité réduite, choisie ou automatique, garde désormais une définition que son débit peut tenir — 1080p, 720p, 540p ou 360p. Avant, un « 1080p » pouvait sortir en 540p à 1 Mb/s et partir en blocs dès que l'image bougeait. Au banc, les pires images d'une scène d'action passent d'un VMAF de 32 à 59, sans perte au calme
+- **La qualité automatique adapte le débit à la connexion** à l'intérieur d'une définition, au lieu de tomber d'un cran entier
+
+### EN
+- **No more blocky picture in action scenes when quality drops**: a reduced quality, chosen or automatic, now keeps a resolution its bitrate can hold — 1080p, 720p, 540p or 360p. Before, a "1080p" could come out as 540p at 1 Mb/s and break into blocks as soon as the picture moved. On the bench, the worst frames of an action scene go from a VMAF of 32 to 59, with no loss in calm scenes
+- **Automatic quality fits the bitrate to the connection** within a resolution, instead of dropping a whole step
+
 ## [1.25.4]
 <!-- Bloc nu pour les trois systèmes : macOS, Windows et Linux partent tous de la 1.25.3. -->
 ### FR
