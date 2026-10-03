@@ -1,6 +1,6 @@
 import { Image, StyleSheet, View } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { RESUME_COUNTDOWN_MS, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../../src/hooks/seekTuning";
+import { RESUME_COUNTDOWN_MS, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "@tentacle-tv/tv-core";
 import { PlayerChromeView, type PlayerChromeViewProps } from "../../../src/redesign/screens/player/PlayerChromeView";
 import { scrubCountdownLabel, seekFlashLabel, skipPillLabel } from "../../../src/redesign/screens/player/playerLabels";
 import type { BenchData } from "../data/benchData";

@@ -1,5 +1,5 @@
 import { i18n, type MediaItem, type SubtitleCue } from "@tentacle-tv/shared";
-import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../../src/hooks/seekTuning";
+import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "@tentacle-tv/tv-core";
 import { playerChromeLabels } from "../../../src/redesign/screens/player/playerLabels";
 import type {
   EndScreenModel,

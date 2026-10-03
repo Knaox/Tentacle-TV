@@ -6,7 +6,7 @@ import {
   PLAYER_GROUP_CONTAINERS,
   PlayerFocusStateProvider,
   type PlayerFocusState,
-} from "../../../src/redesignWiring/player/playerFocusContainers";
+} from "../../../src/platform/tvos/player";
 import type { BenchData } from "../data/benchData";
 import { PLAYER_SCENES } from "./playerScenes";
 import type { BenchScene } from "./types";
