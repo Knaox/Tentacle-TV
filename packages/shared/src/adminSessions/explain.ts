@@ -169,8 +169,13 @@ function changes(session: Pick<AdminSessionDto, "source" | "transcoding">, kind:
     const range = rangeLabel(s?.videoRange);
     const toSdr = t.reasons.includes("VideoRangeTypeNotSupported") || t.videoCodec?.toLowerCase() === "h264";
     if (range && toSdr) out.push(`${range} → SDR`);
-    const sourceRate = s?.bitrate && s.bitrate >= PLAUSIBLE_BITRATE ? formatBitrate(s.bitrate, locale) : null;
-    out.push(arrow(sourceRate, formatBitrate(t.bitrate, locale)));
+    // Le débit de Jellyfin est un PLAFOND : il ne dit quelque chose que s'il
+    // est sous celui de la source (un palier, une limite). Au-dessus, il n'a
+    // rien changé — « 11 Mb/s → 18 Mb/s » se lirait comme un gonflement.
+    const sourceRate = s?.bitrate && s.bitrate >= PLAUSIBLE_BITRATE ? s.bitrate : null;
+    if (t.bitrate && (sourceRate === null || t.bitrate < sourceRate)) {
+      out.push(arrow(sourceRate === null ? null : formatBitrate(sourceRate, locale), formatBitrate(t.bitrate, locale)));
+    }
   }
   if (!t.isAudioDirect) {
     out.push(arrow(

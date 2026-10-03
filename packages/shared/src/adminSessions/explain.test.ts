@@ -94,6 +94,11 @@ describe("ce qui change", () => {
     expect(e.encoder).toBe("NVENC");
   });
 
+  it("un plafond au-dessus de la source ne change rien : il ne se dit pas", () => {
+    const e = explainPlayback(session({ videoCodec: "h264", bitrate: 18_000_000, isAudioDirect: true }, { ...SOURCE, bitrate: 11_000_000 }), "fr");
+    expect(e.changes.some((c) => c.includes("Mb/s"))).toBe(false);
+  });
+
   it("un débit d'en-tête absurde ne sert pas de point de départ", () => {
     const e = explainPlayback(session({ videoCodec: "h264", bitrate: 8_000_000, isAudioDirect: true }, { ...SOURCE, bitrate: 144 }), "fr");
     expect(e.changes).toContain("8,0 Mb/s");
