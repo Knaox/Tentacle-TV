@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { Pressable, type StyleProp, type ViewStyle } from "react-native";
 import { useReducedMotion, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { LONG_PRESS_THRESHOLD_MS } from "@tentacle-tv/tv-core";
+import { usePressGuard } from "../cards/usePressGuard";
 import { motionTo } from "../motion/motion";
 import { PressProgressContext } from "../motion/pressProgress";
 import { useFocusBinding, type FocusForm } from "./focusBinding";
@@ -68,7 +69,7 @@ export const FocusTarget = memo(function FocusTarget({
   const bindingFocus = binding?.onFocus;
   const bindingBlur = binding?.onBlur;
   const guarded = binding?.phantomPressGuard === true;
-  const pressedIn = useRef(false);
+  const guard = usePressGuard();
   const holding = useRef(false);
   const blurred = useRef({ bindingBlur, onFocusChange });
   blurred.current = { bindingBlur, onFocusChange };
@@ -84,11 +85,10 @@ export const FocusTarget = memo(function FocusTarget({
     onBlur();
     // Un appui commencé ici puis emporté ailleurs ne doit pas valider plus
     // tard — et l'élément ne reste pas enfoncé.
-    if (pressedIn.current) press.value = motionTo(0, "press", reduced);
-    pressedIn.current = false;
+    if (guard.blur()) press.value = motionTo(0, "press", reduced);
     bindingBlur?.();
     onFocusChange?.(false);
-  }, [onBlur, bindingBlur, onFocusChange, press, reduced]);
+  }, [onBlur, bindingBlur, onFocusChange, press, reduced, guard]);
   useEffect(
     () => () => {
       if (!holding.current) return;
@@ -99,17 +99,16 @@ export const FocusTarget = memo(function FocusTarget({
     [],
   );
   const handlePressIn = useCallback(() => {
-    pressedIn.current = true;
+    guard.pressIn();
     press.value = motionTo(1, "press", reduced);
-  }, [press, reduced]);
+  }, [press, reduced, guard]);
   const handlePressOut = useCallback(() => {
     press.value = motionTo(0, "press", reduced);
   }, [press, reduced]);
   const handlePress = useCallback(() => {
-    if (guarded && !pressedIn.current) return; // clic fantôme : ignoré
-    pressedIn.current = false;
+    if (!guard.press(guarded)) return; // clic fantôme : ignoré
     onPress?.();
-  }, [guarded, onPress]);
+  }, [guarded, onPress, guard]);
 
   return (
     <Pressable
