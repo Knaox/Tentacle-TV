@@ -1,0 +1,538 @@
+# Le lecteur — navigation et télécommande (Apple TV)
+
+Relevé de la tâche T5 du lot « Extraction de la navigation Apple TV »
+(2026-10-03). Il décrit le lecteur TEL QU'IL EST au SHA de référence
+`84f3cedd0` (main d'origine) : chaque geste de la Siri Remote, dans chaque
+contexte du lecteur, et ce qu'il produit — avec les durées et les seuils tels
+qu'écrits dans le code. C'est la spécification à reproduire À L'IDENTIQUE
+par l'extraction (tv-core) ; un défaut relevé ici se NOTE, il ne se corrige
+pas (« Constats », en fin de page).
+
+Contrat général du lot : `docs/TV-NAVIGATION.md` (T1). Ce relevé parle
+d'« intentions » au sens large ; leurs noms se caleront sur le contrat T1.
+
+## 1. Où vit le comportement aujourd'hui
+
+| Rôle | Fichier | Partagé avec Android TV ? |
+|---|---|---|
+| Orchestrateur des contrôles : habillage, saut, gardes, liaison télécommande | `apps/tv/src/hooks/useTVPlayerControls.ts` | oui (cerveau commun, sans `Platform.OS`) |
+| Défilement : machine, sauts, décompte, routage ←/→ | `hooks/useScrubController.ts` | oui |
+| Maintien ←/→ et touches média (adaptateur du moteur) | `hooks/useScrubHoldMotor.ts` | oui |
+| Décompte de validation (pur) | `hooks/scrubCountdown.ts`, `hooks/useScrubCountdown.ts` | oui |
+| Sauts et délai de validation | `hooks/seekTuning.ts` | oui |
+| Badge des sauts (cumul) | `hooks/useSkipFlash.ts` | oui (Android : `TVSkipBadge`) |
+| Couture des flèches par plateforme | `hooks/scrubInput.ios.ts` / `scrubInput.ts` | profil par plateforme |
+| Pavé tactile (pan) | `hooks/useScrubGestures.ios.ts` (Android : `useScrubGestures.ts`, vide) | tvOS seul |
+| Gains et seuils du pavé (purs) | `hooks/scrubTouchTuning.ts` | tvOS seul (lu par le cerveau) |
+| Pan tenu au compteur | `lib/tvPanGesture.ts` (propriétaire : T1) | tvOS seul |
+| Routage du Retour (états passagers, grâce) | `hooks/useTVPlayerBack.ts` | oui |
+| Couches du Retour du lecteur, épingle de la pause | `redesignWiring/player/usePlayerBackLayers.ts` | Apple TV |
+| Fond focalisable, aiguillage du focus | `redesignWiring/player/PlayerRedesignStage.tsx` | Apple TV |
+| Visibilités (habillage, pilule, carte, fin) | `redesignWiring/player/usePlayerChrome.ts` | Apple TV |
+| Entrées, réclamations, verrous, préférences | `redesignWiring/player/usePlayerFocus.ts`, `endExitLock.ts`, `usePanelReturnFocus.ts` | Apple TV |
+| Guides (ponts, pièges) | `redesignWiring/player/playerFocusContainers.tsx` | Apple TV |
+| Gestes des boutons de l'habillage | `redesignWiring/player/usePlayerChromeActions.ts` | Apple TV (Android : `TVPlayerView`) |
+| Feuille Pistes / Réglages, panneau Épisodes | `redesignWiring/player/usePlayerSheet.ts`, `usePlayerEpisodesPanel.ts` | Apple TV |
+| Message-outil (activation au premier appui) | `redesignWiring/player/usePlaybackTrouble.ts` | Apple TV |
+| Mémoire du dernier bouton, restauration | `components/player/focus/overlayFocusCore.ts` (+ `useOverlayFocus.ios.ts`) | oui (cœur) |
+| Pilule de saut : réclamation, relais | `components/player/focus/useSkipPillFocus.ts`, `osdFocusBus.ts` | oui |
+| Reprise du focus (entrée, réapparition) | `hooks/useTVOsdEntryFocus.ts`, `hooks/useTVPanelControls.ts` | oui |
+| Câblage de l'écran | `screens/PlayerScreen.tsx` | oui (une orchestration, deux rendus) |
+| Machines communes avec la LG | `packages/tv-core/src/player/{scrubMachine,holdMotor,holdTiming,arrowArbiter}.ts` | + webOS |
+
+`arrowArbiter` n'est lu QUE par webOS (`apps/tv-webos/client/src/playback/
+playerKeysTv.ts`, `ControlsTv.tsx`) ; `holdMotor` et `scrubMachine` par
+`apps/tv` ET webOS. Leur comportement ne doit pas bouger.
+
+## 2. Ce que la télécommande envoie (tvOS)
+
+Relu dans `react-native-tvos` 0.80.1-0 (`RCTTVRemoteHandler.m`,
+`RCTTVView.m`) et `components/focus/useTVRemote.ts` :
+
+| Événement natif | Quand | `eventKeyAction` |
+|---|---|---|
+| `left` `right` `up` `down` `playPause` | appui simple, au RELÂCHEMENT (reconnaisseur de tape) | 1 |
+| `select` | appui sur l'élément focalisé (`RCTTVView`) | 1 |
+| `longLeft` `longRight` `longUp` `longDown` `longPlayPause` | appui long : début (~0,5 s), puis fin ; RIEN entre les deux | 0, puis 1 (ou absent si tvOS l'annule) |
+| `longSelect` | appui long sur l'élément focalisé | 0, puis 1 |
+| `pan` | doigt sur le pavé, seulement pendant que le pan est tenu (`acquirePanGesture`) | `body.state` Began / Changed / Ended, `x`/`y` = translation depuis le début (bornée ±1920), `velocityX/Y` |
+| `swipeUp/Down/Left/Right` | glisser rapide, à la fin | — |
+| `pageUp` `pageDown` | tvOS ≥ 14.3 | — |
+| `menu` | JAMAIS en JS (le reconnaisseur Menu n'est pas posé) | — |
+| `rewind` `fastForward` | JAMAIS sur tvOS (aucun reconnaisseur) — Android seulement | — |
+
+- **Menu** arrive par l'intercepteur natif (`MenuPressInterceptor.ios`) de la
+  portée de l'écran (`redesignWiring/back/BackScope.tsx`, T4), qui appelle
+  `layers.back()` : la pile de couches (`tv-core nav/backLayers`), ordre
+  menu > surimpression (`overlay`) > page > rail, la plus récemment ACTIVÉE
+  à rang égal. Le `onBack` de `useTVRemote` du lecteur est du code mort sur
+  tvOS (vivant sur Android, par `BackHandler`).
+- **Tout relâchement** (`eventKeyAction === 1`, n'importe quel type, et la fin
+  d'un appui long, `1` ou absente) appelle d'abord `onKeyUp` →
+  `useTVPlayerControls` : `lastPressAt = maintenant`, puis
+  `onHoldRelease()` (fin de maintien, relance du décompte : § 4.3).
+- Le pan tenu par le lecteur (`usePanGesture(!panelOpen)`) coupe les glissers
+  directionnels du moteur de focus (`lib/tvPanGesture.ts`) : habillage
+  affiché, les boutons se parcourent AU CLIC, le pavé défile.
+- Le moteur de focus natif déplace le focus à l'enfoncement ; l'événement JS
+  arrive au relâchement (~60 ms après). Un appui long sur une flèche, là où le
+  focus peut aller, est répété par tvOS (accélération native).
+
+## 3. Les contextes du lecteur
+
+Un contexte = ce qui reçoit les gestes. Les drapeaux sont ceux du code.
+
+| Contexte | Condition (code) |
+|---|---|
+| **Ouverture** | `phase.kind !== "playing"` (`buildPhase` : `resolving` sans URL, `starting` avant la 1ʳᵉ image sans erreur, `failed`) — écran `PlayerLoading` |
+| **Habillage masqué** | lecture (ou pause désépinglée par Retour), `!overlayShown`, aucun panneau, aucune surface : le FOND tient le focus (`backgroundHoldsFocus()`) |
+| **Habillage affiché** | `osdVisible = (overlayVisible && !autoPlayActive) \|\| (pinned && !scrubbing)` ; focus dans l'habillage |
+| **Défilement** | `scrubbing` (machine active) ; sous-états : entré EN LECTURE (décompte armé) ou EN PAUSE ; geste continu tenu (doigt, maintien) ou relâché |
+| **Pilule de saut** | `overlay.kind` `skip` ou `nextButton`, lecture, ni défilement, ni panneau, ni fin, ni message-outil activé |
+| **Carte « À suivre »** | `overlay.kind === "nextCard" && !final` (`autoPlay.source === "credits"`) |
+| **Affiche de fin** | `nextCard && final` (`autoPlay.source === "eof"`) |
+| **Panneau Épisodes** | `showEpisodes` |
+| **Feuille Pistes / Réglages** | `showSettings` (onglet = pilule pressée, `usePlayerSheet`) |
+| **Message-outil** | bandeau (jamais focalisable) ; panneau `waiting`/`recovering`/`stuck` INACTIF puis ACTIF au premier appui (`usePlaybackTrouble`) |
+| **Erreur** | bandeau `videoError` (non focalisable, par-dessus l'habillage) ; échec d'ouverture = Ouverture `failed` |
+
+Drapeaux dérivés (à reproduire tels quels) :
+
+- `panelOpen` des CONTRÔLES (`PlayerScreen.tsx`) = `showSettings ||
+  showEpisodes || autoPlay.source === "eof"` — la carte « À suivre » et le
+  message-outil N'Y SONT PAS ;
+- `panelOpen` du FOND (`PlayerRedesignStage.tsx`) = `showSettings ||
+  autoPlayActive || showEpisodes || troubleCovers` ;
+- `overlayShown = overlayVisible || (pinned && !scrubbing)` ;
+  `backgroundFocusable = !loading && !overlayShown && !panelOpen(fond)` ; le
+  fond RÉCLAME le focus au front montant de `backgroundFocusable && !(skip ||
+  nextButton)` ;
+- `pinned` (`useOsdPin`) = `paused && !unpinned` ; Retour désépingle ;
+  `overlayVisible` devenu vrai, ou tout changement de `paused`, réépingle ;
+- `osdShown` (couche Retour) = `playing && osdVisible && !panel && !scrub &&
+  !endScreen && !troubleCovers` ;
+- `pillShown` = pilule && `!covered` ; `upNextShown` = carte && `!covered` ;
+  `covered = !playing || scrub || panel || endScreen || troubleCovers`.
+
+## 4. Intention → effet, contexte par contexte
+
+Notation : « saut » = saut INSTANTANÉ (§ 4.1) ; « rallume » = `showOverlay`
+(§ 4.6) ; « défilement » = § 4.2.
+
+### 4.1 Le saut instantané et son badge
+
+`skipBy(delta)` (`useTVPlayerControls.ts`) : cible = `currentTimeRef + delta`,
+bornée à `[0, durée]` (durée inconnue : seulement ≥ 0) ; `currentTimeRef`
+reçoit la cible AVANT le seek (les appuis rapprochés se cumulent depuis la
+dernière cible) ; `onSeek(cible)` ; lecture continue, pause gardée ; badge
+`flash(delta)`. Deltas : → +30 s (`SKIP_FORWARD_SECONDS`), ← −10 s
+(`SKIP_BACK_SECONDS`), `seekTuning.ts`.
+
+Badge (`useSkipFlash.ts`) : même sens dans la fenêtre → cumul (+30 → +60 →
++90 ; −10 → −20), sens opposé ou fenêtre échue → repart du delta seul ;
+affiché 1 500 ms (`SKIP_BADGE_MS`) après le DERNIER saut, puis cumul remis à
+zéro. Apple TV : `SeekFlash` (« +30 s » à droite, « −10 s » à gauche), jamais
+sous la vue du défilement. Android TV : `TVSkipBadge`.
+
+### 4.2 Le défilement (avance rapide)
+
+Machine `createScrubMachine` (tv-core) avec `idleCancelMs: null` (aucun
+abandon sur inactivité dans `apps/tv` ; la LG garde 7 s).
+
+- **Entrée** (`enter`, ou un pas qui amorce) : origine = position bornée ;
+  état de lecture d'avant lu ; `onPause(true)` ; habillage MASQUÉ
+  (`hideOverlay`) ; décompte `begin(entréEnPause)` ; aucun seek.
+- **Pas d'un appui** (`stepScrub`) : la cible bouge du saut de son sens
+  (+30 / −10) — jamais d'accélération ; vitesse effacée.
+- **Tic de maintien** (`tickScrub`) : toutes les 250 ms, `scrubStep(durée) ×
+  palier` ; palier ×1 → ×2 → ×4 → ×8, un cran par seconde de maintien ;
+  libellé de vitesse `">>2x"` / `"<<4x"` au-delà de ×1, sinon rien.
+  `scrubStep` (shared) = 2 % de la durée arrondis à 5 s, bornés [10, 90] s
+  (10 s si durée inconnue).
+- **Trappe** : la position AFFICHÉE fait foi — les pas de la machine s'y
+  appliquent en DELTAS, glisser et appuis directement ; la confirmation
+  cherche la position affichée.
+- **Confirmation** (OK, ▶︎❙❙, décompte échu cible déplacée) : sortie
+  (habillage rallumé), `currentTimeRef` = cible, seek à la cible, PUIS
+  `onPause(false)` (toujours la lecture).
+- **Annulation** (Retour, décompte échu cible inchangée à moins de 1 s,
+  `UNMOVED_SECONDS`) : sortie, aucun seek, état de lecture d'avant rendu.
+- **Sortie** (les deux) : décompte arrêté, moteurs coupés, `scrubEndedAt =
+  maintenant`, vitesse effacée, habillage rallumé (`revealOverlay`).
+
+Décompte (`scrubCountdown.ts`) : entré EN LECTURE, armé ; reprise
+automatique 5 000 ms (`RESUME_COUNTDOWN_MS`) après le dernier geste,
+affichée « Lecture dans 5…1 s » (un rendu par seconde affichée). Tout geste
+(`enter`, `step`, `touch`) le relance en entier (`reportingActivity`) ; un
+geste CONTINU le tient (`hold` : décompte masqué) et son relâchement
+(`release`) le relance en entier. Entré EN PAUSE : jamais armé, la cible
+attend OK ou Retour. `hold`/`release` ne font rien s'il n'est pas armé.
+
+### 4.3 Habillage masqué (fond focalisé)
+
+| Intention | Effet |
+|---|---|
+| ← / → (appui) | **saut** −10 / +30 + badge, habillage NON rallumé (`skipAnyPress`). Seulement si le FOND tient le focus ; sinon (pilule, carte) : rallume. |
+| ← / → maintenu (`longLeft/Right` a=0) | défilement ouvert aussitôt (`onEngage`), décompte tenu, tic 250 ms qui accélère (§ 4.2), sens de la flèche |
+| fin du maintien (a=1 ou absent) | tic arrêté, vitesse effacée, décompte relancé (entré en lecture) ; les appuis ←/→ des 400 ms qui suivent sont ignorés (`isHoldTicking`) |
+| ↑ / ↓ | rallume (aucun autre focalisable : le focus ne bouge pas) |
+| OK (clic au centre) | rallume (`onPress` du fond + `onAnyPress`) |
+| ▶︎❙❙ | bascule lecture/pause + rallume |
+| Menu | couche page → `onBack` : `routeBack()` (rien de passager) → **quitte la lecture** |
+| glisser (pan) | régime `hidden` : engage seulement après 600 ms de contact depuis le début du geste ET course horizontale ≥ 60 pt ET `|dx| ≥ 1,4·|dy|` ET durée connue → défilement ouvert sous le doigt (§ 4.8) |
+| toucher sans glisser engagé | rallume, sauf dans les 600 ms qui suivent un appui ou un relâchement (`TOUCH_AFTER_PRESS_MS`) |
+
+En pause désépinglée (Retour a masqué l'habillage) : mêmes gestes ; le saut
+garde la pause.
+
+### 4.4 Habillage affiché
+
+| Intention | Effet |
+|---|---|
+| ← / → | le moteur de focus parcourt la rangée ; JS : rallume (relance l'extinction) — jamais de saut |
+| ← / → maintenu | rien côté lecteur (`handleLongDirection` sort si l'habillage est affiché) ; tvOS répète le déplacement du focus |
+| ↑ / ↓ | focus natif (ponts § 5.4) ; JS : rallume (deux fois : `onUp/onDown` puis `onAnyPress`) |
+| OK | action du bouton focalisé, GARDÉE (§ 4.5) ; JS : `onSelect` (rien hors défilement), rallume |
+| ▶︎❙❙ | bascule + rallume |
+| Menu | couche `overlay` → masque l'habillage (`hideOverlay`) et désépingle ; la lecture continue (en pause : reste en pause) |
+| glisser | régime `shown` : course horizontale ≥ 60 pt, `|dx| ≥ 1,4·|dy|`, ET (180 ms depuis le début OU ≥ 180 pt) → défilement |
+| toucher | rallume (même exception des 600 ms) |
+| inactivité | extinction 5 000 ms (`OVERLAY_HIDE_MS`) après le dernier `revealOverlay`, seulement en lecture et sans panneau (`pausedRef`, `panelOpen` lus à l'armement) ; en pause, épinglée : jamais |
+
+Boutons (ordre de la rangée : `prev`, `skipback`, `playpause`,
+`skipforward`, `scrub`, `next`, `episodes`, `settings` (Pistes), `options`
+(Réglages) ; `back` sur la barre du haut) :
+
+| Clé | Geste (`usePlayerChromeActions`) |
+|---|---|
+| `player:back` | Retour du lecteur : `routeBack()`, sinon quitte la lecture |
+| `player:prev` / `player:next` | épisode précédent / suivant |
+| `player:seekback` / `player:seekforward` | **saut** −10 / +30 + badge, puis rallume ; défilement ouvert : déplace la cible (`jump`) |
+| `player:playpause` | bascule + rallume |
+| `player:scrub` (⏩) | ouvre le défilement SANS bouger (`enterScrub`) ; décompte armé en lecture ; le « select » jumeau de cet OK est absorbé 400 ms (`pressEntry`) |
+| `player:episodes` | bascule le panneau Épisodes + rallume |
+| `player:tracks` / `player:settings` | ouvre la feuille sur son onglet (`showSettings`) + rallume |
+
+### 4.5 Gardes des appuis
+
+- `guardScrub` (boutons de l'habillage) : en défilement, l'appui VALIDE le
+  défilement au lieu d'agir ; dans les 400 ms (`SCRUB_TWIN_PRESS_MS`) après
+  la fin d'un défilement, l'appui est AVALÉ (le press jumeau d'un OK).
+- `select` / `playPause` globaux en défilement : ignorés dans les 300 ms
+  après une touche média (`MEDIA_KEY_ECHO_MS`, Android) et dans les 400 ms
+  après une entrée par bouton (`scrubStartedAt`).
+- `skipAnyPress` : un ←/→ traité par le lecteur n'est pas suivi du
+  `onAnyPress` qui rallumerait l'habillage.
+- `phantomPressGuard` sur chaque bouton de l'habillage (magasin du focus).
+
+### 4.6 Rallumer l'habillage (`showOverlay`)
+
+`showOverlay` ne fait rien en défilement ; sinon `revealOverlay` :
+`lastShowOverlay = maintenant`, visible, minuterie d'extinction réarmée
+(5 s) si la lecture n'est pas en pause et sans panneau. Chaque changement de
+`paused` (hors défilement) et chaque changement de `panelOpen` (identité de
+`showOverlay`) rappellent `showOverlay` (effet `[paused, showOverlay]`).
+`hideOverlay` : minuterie coupée, masqué tout de suite.
+
+### 4.7 Défilement
+
+| Intention | Effet |
+|---|---|
+| ← / → (appui) | la cible bouge de +30 / −10 (bornée), décompte relancé ; IGNORÉ pendant un maintien et 400 ms après |
+| ← / → maintenu | l'accélération reprend depuis la cible (`startScrubbing` → `touch`), décompte tenu |
+| fin du maintien | décompte relancé en entier |
+| OK | **confirme** (§ 4.2) — sauf jumeau ⏩ (< 400 ms) ou écho média (< 300 ms) ; le fond focalisé reçoit aussi l'appui (`showOverlay`, sans effet en défilement) |
+| ▶︎❙❙ | confirme (mêmes exceptions) |
+| Menu | couche `menu` passagère → `routeBack` → **annule** + grâce 600 ms (`BACK_GRACE_MS`) : un Retour dans la grâce est avalé |
+| ↑ / ↓ | aucun effet propre ; leur relâchement relance le décompte (`onHoldRelease`) |
+| glisser | régime `open` : engage dès 12 pt horizontaux (`|dx| ≥ 1,4·|dy|`) → la cible suit le doigt ; décompte tenu tant que le doigt agit |
+| doigt posé (pan Began) | décompte tenu (`touchStart`) |
+| doigt levé / immobile 450 ms | décompte relancé en entier (`endDrag`), vitesse effacée |
+| décompte échu (entré en lecture) | cible déplacée ≥ 1 s : confirme ; sinon annule (lecture rendue, sans seek) |
+| entré en pause | ni décompte ni abandon : OK ou Retour |
+
+Entrées du défilement : maintien ←/→ habillage masqué, glisser (masqué : 600
+ms ; affiché : 180 ms / 180 pt ; ouvert : 12 pt), bouton ⏩, touches média
+(Android). JAMAIS un appui simple (`jump` hors défilement ne fait rien).
+
+### 4.8 Le pavé (pan) — détail
+
+`useScrubGestures.ios.ts` :
+
+- `Began` : clôt un geste précédent resté sans fin, `touching`, régime lu
+  (`readTouchMode` : `open` en défilement, sinon `shown`/`hidden` selon
+  `overlayVisible`), contact compté d'ici, `onTouchStart`, veille de silence
+  450 ms (`SILENT_END_MS`).
+- `Changed` : hors geste (doigt qui repart après un silence, ou pan pris en
+  cours), un geste repart d'ici (contact depuis la pose si le doigt n'a pas
+  été levé) ; veille relancée ; non engagé : durée connue + `canEngage` →
+  `onStartScrub` (curseur parti de la position du doigt : la zone morte ne
+  déplace rien) ; engagé : `pas × scrubGainFor(|velocityX|)` cumulé, rendu
+  toutes les 33 ms (`FLUSH_MS`).
+- `Ended`, ou 450 ms sans nouvelle : vidage, `onEndScrub` si engagé, sinon
+  `onWake`.
+- Gain (`scrubTouchTuning.ts`) : pavé = 1 920 pt ; lent (≤ 1 largeur/s) :
+  90 s par largeur ; vif (≥ 4 largeurs/s) : 360 s par largeur ; entre les
+  deux, lissage `t²(3−2t)`.
+- Coupé (`enabled` faux : panneau des contrôles ouvert) ou démonté : le geste
+  en cours est oublié, le pan est rendu.
+
+### 4.9 Pilule de saut
+
+| Intention | Effet |
+|---|---|
+| apparition | prend le focus si `grabs` = affichée && `dismissible` (pas encore en sourdine) && pas de feuille : « Masquer » si passage AUTOMATIQUE refusable, sinon « Passer » ; la reprend quand l'habillage s'éteint. En sourdine (ressortie le temps de l'habillage), elle se montre sans prendre le focus |
+| ← / → dans l'îlot, habillage masqué | focus entre « Passer » / « Masquer », RETENU à gauche et à droite pendant un passage automatique (`islandTrap`) ; JS : rallume (le fond n'a pas le focus) |
+| ↑ | habillage masqué : rallume (la pilule GARDE le focus : `skipHoldsFocus`) ; habillage affiché, focus dans l'îlot : vers Retour (`islandUp`) |
+| ← depuis « Passer », habillage affiché | vers Retour (`islandLeft`) |
+| ↓, habillage affiché | vers lecture/pause (`islandExit`) |
+| OK « Passer » | passe le passage, ou rejoint la suite (`nextButton`) ; `onAnyPress` rallume l'habillage |
+| OK « Masquer » | met le passage en sourdine (`dismissOverlay`) |
+| Menu | passage automatique refusable : le met en sourdine + grâce 600 ms ; sinon : Retour ordinaire |
+| départ de la pilule | le focus va : habillage affiché → son dernier bouton ; pilule restée (Masquer parti) → la pilule ; sinon le fond |
+
+### 4.10 Carte « À suivre » (générique)
+
+| Intention | Effet |
+|---|---|
+| apparition | réclame `upnext:play` ; piège `upnext:actions` |
+| ← / → | focus « Lire » ↔ « Masquer » ; JS : `overlayVisible` rallumé SANS effet visible (`!autoPlayActive`) |
+| ← / → maintenu, glisser | habillage masqué : le défilement s'ouvre (la carte se tait pendant) — cf. Constats |
+| OK « Lire » / « Masquer » | épisode suivant tout de suite / carte refusée |
+| ▶︎❙❙ | bascule + rallume |
+| Menu | couche passagère → carte refusée + grâce 600 ms |
+
+### 4.11 Affiche de fin (EOF)
+
+| Intention | Effet |
+|---|---|
+| apparition | réclame `end:play` ; piège d'écran `end:screen` (destination « Lire maintenant ») ; croix `end:leave` infocalisable tant que `end:play` n'a pas eu le focus (`useEndExitLocked`) |
+| ←/→/OK/▶︎❙❙/pan des contrôles | neutralisés (`panelOpen` des contrôles) ; pan rendu |
+| ↑ depuis « Lire maintenant » | la croix, une fois déverrouillée |
+| OK « Lire maintenant » | épisode suivant |
+| OK croix | refus → la coquille sort (`onFinished` : fiche de la série, ou `goBack` si lancé depuis une fiche) |
+| Menu | `routeBack` → refus ; sortie engagée → pas de grâce |
+
+### 4.12 Panneau Épisodes
+
+| Intention | Effet |
+|---|---|
+| ouverture | l'épisode EN COURS prend le focus s'il est dans la saison affichée, sinon la 1ʳᵉ ligne (réclamation) ; chaque ouverture repart de la saison de l'épisode en cours |
+| contrôles du lecteur | neutralisés (←/→, OK, ▶︎❙❙, ↑/↓, pan rendu : le pavé parcourt la liste) |
+| ↑ depuis l'en-tête | vers la croix (`episodes:header`) ; entrée dans la bande des saisons par la saison AFFICHÉE |
+| focus ≥ 200 ms sur une saison | la précharge (`INTENT_MS`) |
+| OK saison | ses épisodes ; la ligne d'entrée reprend le focus |
+| OK épisode | panneau fermé, épisode lancé |
+| OK croix, Menu | fermeture : rallume, restauration NOMMÉE « Épisodes » (220 ms) ; le panneau garde le focus pendant son fondu (240 ms), puis `focusNow("player:episodes")` si l'habillage est visible |
+
+### 4.13 Feuille Pistes / Réglages
+
+| Intention | Effet |
+|---|---|
+| ouverture | entrée : l'option RETENUE de la 1ʳᵉ colonne (piste audio ; qualité), sinon la 1ʳᵉ, sinon la croix — figée tant qu'elle reste ouverte |
+| contrôles du lecteur | neutralisés, pan rendu |
+| ← depuis la 1ʳᵉ colonne | la croix (marge-pont `tracks:back` / `settings:back`) |
+| OK option | appliquée (audio, sous-titres, qualité) + rallume |
+| OK croix, Menu | fermeture : rallume + restauration IMPLICITE (dernier bouton, cède à la pilule) ; fin du fondu : `focusNow` sur la pilule qui l'a ouverte (« Pistes » ou « Réglages ») si l'habillage est visible |
+
+### 4.14 Ouverture, erreur, message-outil
+
+| Contexte / intention | Effet |
+|---|---|
+| Ouverture : apparition | réclame `loading:back` (seule action) — `loading:retry` si l'ouverture a échoué ; piège d'écran (destination vivante : Réessayer, sinon la croix) |
+| Ouverture : OK croix | `onBack` → `routeBack` sinon quitte ; OK Réessayer → `onRetry` |
+| Ouverture : Menu | couche page → quitte |
+| Erreur (`videoError`) | bandeau non focalisable ; tous les gestes comme habillage affiché/masqué |
+| Message-outil, bandeau | aucun effet sur les gestes |
+| Panneau INACTIF : premier appui (`select`, `playPause`, flèches, `longSelect` — pas le pavé) | l'ACTIVE : focus sur « Réessayer maintenant » (la restauration de l'habillage lui cède) ; le même appui passe AUSSI aux contrôles (cf. Constats) |
+| Panneau ACTIF | habillage recule (`covers`), fond infocalisable ; piège `trouble:screen` ; croix verrouillée tant que l'entrée n'a pas eu le focus ; pont croix ↔ panneau ; actions Réessayer / Baisser la qualité / croix (= Retour du lecteur) |
+| Panneau ACTIF : Menu | couche page → quitte |
+| Départ du panneau | focus rendu à l'habillage s'il est là, sinon le fond le réclame |
+
+## 5. Le focus
+
+### 5.1 Entrées et réclamations
+
+| Moment | Cible | Mécanisme |
+|---|---|---|
+| 1ʳᵉ image | `playpause` (nommé) | `useTVOsdEntryFocus` → `bumpOsdFocus("playpause")`, une fois |
+| habillage qui RÉAPPARAÎT (et se montre : ni carte, ni ouverture) | dernier bouton utilisé (implicite) | `bumpOsdFocus()` |
+| retour au premier plan | `playpause` (nommé), sauf panneau ouvert | `onForeground` |
+| fermeture des Épisodes | `episodes` (nommé) | `bumpOsdFocus("episodes")` + `focusNow` en fin de fondu |
+| fermeture de la feuille | implicite | `bumpOsdFocus()` + `focusNow(opener)` en fin de fondu |
+| fond focalisable | le fond | `useTvFocusClaim` (front montant) + `hasTVPreferredFocus` |
+| ouverture, carte, fin, feuille, épisodes, message-outil | leur entrée (§ 4) | `store.claim` au front montant ; préférences `hasTVPreferredFocus` (`preferredFocus`) |
+
+Restauration (`overlayFocusCore.ts`) : 220 ms après le signal ; cible =
+nommée, sinon le dernier bouton, sinon `playpause`. Une restauration
+IMPLICITE cède à la pilule qui a réclamé dans les 200 ms qui précèdent le
+signal (`SKIP_CLAIM_LEAD_MS`) ou qui TIENT le focus. Mémoire gelée pendant la
+restauration (jusqu'à 520 ms) et pendant le défilement. tvOS : cycle
+`hasTVPreferredFocus` faux → 50 ms → vrai → 120 ms → faux. Réclamation
+(`claimTvFocus`) : 40 ms → faux → 50 ms → vrai → 120 ms → faux (Android :
+120 ms, transition faux → vrai).
+
+### 5.2 Verrous de sortie
+
+La croix d'un écran du lecteur n'est jamais son entrée : `end:leave` et
+`trouble:back` restent `isTVSelectable: false` tant que leur entrée
+(`end:play`, `trouble:retry`) n'a pas eu le focus depuis l'apparition
+(`endExitLock.ts`). Sur l'écran d'ouverture, la croix EST l'entrée (seule
+action) — sauf échec : « Réessayer ».
+
+### 5.3 Retour d'un panneau
+
+Le panneau refermé reste monté le temps de son fondu (`handoff`, 240 ms),
+garde le focus (opacité plancher `SWAP_FLOOR`), puis `onPanelExited` →
+`usePanelReturnFocus` : `focusNow` sur le bouton du DERNIER panneau ouvert
+(`player:episodes`, ou la pilule de la feuille), seulement si l'habillage
+est visible ; sinon rien (le fond reprend le focus).
+
+### 5.4 Ponts et pièges
+
+- `player:osd` : mémoire du dernier bouton (`autoFocus`).
+- `player:timeline` (frise) : depuis les commandes, MONTE vers la pilule (si
+  publiée) sinon vers Retour ; depuis Retour, DESCEND vers lecture/pause —
+  sens lu sur le focus.
+- `player:skip-island` : `autoFocus` ; piège gauche/droite pendant un
+  passage automatique habillage masqué ; habillage affiché et focus dans
+  l'îlot : sorties BAS → lecture/pause, HAUT et GAUCHE → Retour.
+- `loading:screen`, `end:screen`, `trouble:screen` : pièges d'écran (quatre
+  directions), destination vivante, jamais d'`autoFocus`.
+- `trouble:bridge` : croix ↔ « Réessayer maintenant », sens lu sur le focus.
+- `episodes:header` → croix ; `episodes:seasons` → saison affichée ;
+  `tracks:back` / `settings:back` → croix ; `upnext:actions`,
+  `tracks:panel`, `settings:panel`, `episodes:panel` : pièges.
+
+## 6. Les couches du Retour du lecteur
+
+`usePlayerBackLayers.ts`, inscrites dans la portée de l'écran (T4) :
+
+| Couche | Active quand | Effet |
+|---|---|---|
+| `menu` | `back.holding` = défilement \|\| surface (carte/fin) \|\| passage auto refusable \|\| grâce | `routeBack()` |
+| `menu` | `showSettings` | ferme la feuille |
+| `menu` | `showEpisodes` | ferme les épisodes |
+| `overlay` | `osdShown` | masque l'habillage + désépingle |
+| `page` | toujours | `onBack` du lecteur : `routeBack()` sinon quitte |
+
+`routeBack()` (`useTVPlayerBack.ts`), dans l'ordre : grâce en cours → avalé ;
+défilement → annulé + grâce ; carte ou fin → refusée (grâce sauf sortie
+engagée) ; passage automatique refusable → sourdine + grâce ; sinon `false`.
+Grâce : 600 ms après chaque Retour consommé. Sur Android, `usePreventRemove`
+(`holdsSystemBack`) retient le bouton système à la place de la pile.
+
+## 7. Durées et seuils (à reprendre À L'IDENTIQUE)
+
+| Valeur | Où |
+|---|---|
+| 5 000 ms extinction de l'habillage | `useTVPlayerControls` `OVERLAY_HIDE_MS` |
+| 400 ms press jumeau après un défilement, ou après une entrée par bouton | `SCRUB_TWIN_PRESS_MS` |
+| 300 ms écho select/playPause après une touche média | `MEDIA_KEY_ECHO_MS` |
+| 600 ms toucher qui accompagne un appui | `TOUCH_AFTER_PRESS_MS` |
+| +30 s / −10 s | `seekTuning` `SKIP_FORWARD_SECONDS` / `SKIP_BACK_SECONDS` |
+| 5 000 ms décompte de validation | `seekTuning` `RESUME_COUNTDOWN_MS` |
+| 1 500 ms badge (et fenêtre de cumul) | `useSkipFlash` `SKIP_BADGE_MS` |
+| 1 s cible « inchangée » | `useScrubController` `UNMOVED_SECONDS` |
+| 400 ms d'appuis ignorés après un tic de maintien | `useScrubHoldMotor` `isHoldTicking` |
+| 400 / 550 ms maintien déduit du key-down (Android) | `HOLD_FROM_DOWN_SCRUB_MS` / `_ENGAGE_MS` |
+| profil tvOS : `tapOnRelease` faux, `holdFromKeyDown` faux, `holdArmMs` 0, `holdEndAnnounced` vrai | `scrubInput.ios.ts` |
+| profil Android : vrai, vrai, 250 ms, faux | `scrubInput.ts` |
+| 250 ms tic ; 1 000 ms par palier ; paliers 1/2/4/8 | tv-core `holdTiming` / `scrubMachine` |
+| silence 700 ms (défaut), 350 ms (plancher), ×2,5 l'intervalle, rebond < 60 ms, répétition ≤ 450 ms, 2 répétitions, cadence de dalle ≤ 200 ms, maintien annoncé plafonné 30 s | tv-core `holdTiming` |
+| pas de base : 2 % de la durée, arrondi à 5 s, [10, 90] s | shared `scrubStep` |
+| 7 000 ms abandon (LG seulement ; `null` sur Apple TV / Android TV) | tv-core `IDLE_CANCEL_MS` |
+| 450 ms silence d'un pan ; 33 ms de rendu du curseur | `useScrubGestures.ios` |
+| pavé 1 920 pt ; 90 s / 360 s par largeur ; 1 et 4 largeurs/s | `scrubTouchTuning` |
+| 600 ms de contact (masqué) ; 60 pt ; rapport 1,4 ; 180 ms ou 180 pt (affiché) ; 12 pt (ouvert) | `scrubTouchTuning` |
+| 600 ms grâce du Retour | `useTVPlayerBack` `BACK_GRACE_MS` |
+| 220 ms restauration ; 520 ms gel de la mémoire ; 200 ms avance de la pilule | `overlayFocusCore` |
+| tvOS : 50 ms / 120 ms (cycle de restauration) ; réclamation 40 / 50 / 120 ms ; Android 120 ms | `useOverlayFocus.ios`, `useTvFocusClaim` |
+| 240 ms fondu d'un panneau refermé | `TV_MOTION.player.handoffMs` |
+| 200 ms avant de précharger une saison | `usePlayerEpisodesPanel` `INTENT_MS` |
+| 4 000 / 8 000 / 14 000 ms notices du message-outil ; 120 ms reprise du focus | `usePlaybackTrouble` |
+| 500 ms reprise du focus perdu (Android) | `useFocusRecovery` |
+
+## 8. Android TV (rien à changer, tout à garder)
+
+Le même cerveau (`useTVPlayerControls` → `useScrubController` →
+`useScrubHoldMotor`, `useTVPlayerBack`, `overlayFocusCore`) sert l'habillage
+d'Android TV (`LegacyPlayerStage` → `TVPlayerView`). Différences, toutes
+dans des coutures :
+
+- `scrubInput.ts` : un appui se tranche au key-UP (`requestDeferredTap`), le
+  maintien se déduit du key-DOWN sans key-up (550 ms habillage masqué, 400 ms
+  en défilement, gardes relues au déclenchement) ou du `longLeft` natif +
+  250 ms ; la fin, du silence des répétitions (`motor.press`) ;
+- `useTVRemote` Android : action au key-DOWN (répétitions comprises), le
+  key-up jumeau n'agit pas, `select`/`up`/`down` orphelins ignorés, Retour par
+  `BackHandler` (LIFO, écran focalisé seulement) ; touches `rewind` /
+  `fastForward` → `handleMediaSeekKey` (défilement direct, pas sec isolé,
+  cadence de répétition → tic) ;
+- `usePreventRemove` retient Menu (`holdsSystemBack` vrai) ; `useFocusRecovery`
+  rend le focus au fond après 500 ms ;
+- `TVSkipBadge` lit `skipFlash` ; `TVScrubFullscreen` n'affiche pas le
+  décompte ; `TVPlayerOverlay` écrit « -10s » / « +30s » en dur.
+
+## 9. webOS
+
+Son propre cerveau (`apps/tv-webos/client/src/playback/playerKeysTv.ts`),
+avec `createArrowArbiter`, `createHoldMotor` (`press` avec `repeat`) et
+`createScrubMachine` (abandon 7 s par défaut). L'extraction ne modifie aucun
+de ces trois modules ; ses tests et son build restent verts.
+
+## 10. Constats (notés, NON corrigés)
+
+Lus dans le code au SHA de référence ; les scénarios (§ 12) les enregistrent
+tels quels, sans les juger.
+
+1. **Tout relâchement relance le décompte.** `onKeyUp` → `onHoldRelease` →
+   `countdown.release()` pour N'IMPORTE quel relâchement (↑, ↓, OK, ▶︎❙❙,
+   fin d'appui long) : en défilement entré en lecture, un clic ↑ relance les
+   5 s ; et un relâchement pendant qu'un doigt reste posé sur le pavé lève la
+   tenue (`held` faux) : le décompte court sous le doigt.
+2. **Message-outil inactif : le premier appui sert deux fois.** Il active le
+   panneau ET passe aux contrôles du lecteur (le fond tenait encore le
+   focus) : → peut SAUTER de +30 s pendant un arrêt, OK rallume l'habillage.
+3. **Ouverture : contrôles vivants.** Pendant l'écran de chargement,
+   `panelOpen` des contrôles est faux : ▶︎❙❙ bascule `paused` ; un glisser
+   (régime `shown`, l'habillage naît visible) avec une durée déjà connue
+   ouvre un défilement invisible (mise en pause comprise).
+4. **Carte « À suivre » hors `panelOpen`.** ←/→ basculent `overlayVisible`
+   sans rien montrer ; maintien et glisser (habillage masqué) ouvrent le
+   défilement sous la carte ; ▶︎❙❙ bascule la pause.
+5. **OK sur « Passer » rallume l'habillage** (`onAnyPress`) en plus du saut
+   de passage.
+6. **OK juste après une reprise automatique** du défilement : l'habillage
+   revient avec le focus restauré sur son dernier bouton (220 ms) ; un OK
+   tardif peut y agir (souvent Lecture/Pause → pause). Constat déjà noté au
+   carnet (`docs/TV-REFONTE.md`, « Constats non corrigés »).
+7. `useTVRemote({ debugTag: "PLAYER" })` journalise encore les transitions
+   (`TODO(diag)`).
+
+## 11. Plan d'extraction (phase B, à caler sur le contrat T1)
+
+Ce qui part dans tv-core (`packages/tv-core/src/player/`), pur et testé :
+
+- la table « intention → effet » du lecteur (§ 4), par contexte, et la
+  dérivation du contexte depuis les drapeaux (§ 3) ;
+- les machines à minuteurs injectables : extinction de l'habillage (5 s),
+  badge (1,5 s), gardes des appuis (400 / 300 / 600 ms), routage des flèches
+  et du maintien (profil de plateforme, appui différé, queue de 400 ms),
+  interprète du pan (silence, rendu, engagement, gain), décompte (déplacé tel
+  quel), grâce du Retour ;
+- les réglages (`seekTuning`, `scrubTouchTuning`), déplacés tels quels ;
+- les règles du focus : entrées par contexte, préférences, verrous, sens des
+  ponts, cible de restauration et règle de cession à la pilule, retour d'un
+  panneau ;
+- les couches du Retour du lecteur (actives par contexte, effet de chacune).
+
+Ce qui reste dans `apps/tv` : l'abonnement natif (entrée unique de T1), le
+pan tenu, les miroirs React, les appels natifs du focus (`claim`,
+`focusNow`, cycles `hasTVPreferredFocus`), les guides `TVFocusGuideView`.
+`arrowArbiter`, `holdMotor`, `scrubMachine` : inchangés.
+
+## 12. Scénarios de référence
+
+`apps/tv/harness/nav-golden/scenarios/lecteur/` — liste et format dans son
+`README.md`. Enregistrés sur `84f3cedd0`.
