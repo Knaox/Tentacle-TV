@@ -91,6 +91,11 @@ export default {
   actionEditAddress: "Modifier l'adresse",
   actionBack: "Retour",
   actionBackToDetails: "Retour à la fiche",
+  // Les gestes défaits faute de serveur — le titre d'un message bref.
+  toastFavoriteFailed: "Les favoris n'ont pas pu être modifiés",
+  toastWatchlistFailed: "Ma liste n'a pas pu être modifiée",
+  toastWatchedFailed: "Le statut « vu » n'a pas été enregistré",
+  toastRatingFailed: "Votre note n'a pas été enregistrée",
   // Les détails techniques, repliés.
   details: "Détails",
   detailsHide: "Masquer les détails",

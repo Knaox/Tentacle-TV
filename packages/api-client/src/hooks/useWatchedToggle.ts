@@ -47,6 +47,8 @@ export function useWatchedToggle(itemId: string | undefined, context?: WatchedTo
 
   const markWatched = useMutation({
     mutationFn: () => client.fetch(`/Users/${userId}/PlayedItems/${itemId}`, { method: "POST" }),
+    // Un échec se DIT (la plateforme écoute son cache de mutations) : le geste est déjà défait.
+    meta: { failureTitle: "errors:toastWatchedFailed" },
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["item", itemId] });
       const snapshot = updateItemUserDataInCache(qc, target, () => ({
@@ -63,6 +65,7 @@ export function useWatchedToggle(itemId: string | undefined, context?: WatchedTo
 
   const markUnwatched = useMutation({
     mutationFn: () => client.fetch(`/Users/${userId}/PlayedItems/${itemId}`, { method: "DELETE" }),
+    meta: { failureTitle: "errors:toastWatchedFailed" },
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["item", itemId] });
       const snapshot = updateItemUserDataInCache(qc, target, () => ({

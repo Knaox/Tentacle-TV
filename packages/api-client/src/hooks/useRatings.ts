@@ -98,6 +98,8 @@ export function useRateItem() {
         method: "PUT",
         body: JSON.stringify(input),
       }),
+    // Un échec se DIT (la plateforme écoute son cache de mutations) : le geste est déjà défait.
+    meta: { failureTitle: "errors:toastRatingFailed", failureTarget: "tentacle" },
     onMutate: async (input) => {
       await qc.cancelQueries({ queryKey: ["ratings"] });
       const previous = qc.getQueryData<UserRatingEntry[]>(["ratings"]);
@@ -145,6 +147,7 @@ export function useDeleteRating() {
       tentacleApiFetch<{ ok: boolean }>(`/api/ratings/item?${identityQuery(identity)}`, {
         method: "DELETE",
       }),
+    meta: { failureTitle: "errors:toastRatingFailed", failureTarget: "tentacle" },
     onMutate: async (identity) => {
       await qc.cancelQueries({ queryKey: ["ratings"] });
       const previous = qc.getQueryData<UserRatingEntry[]>(["ratings"]);

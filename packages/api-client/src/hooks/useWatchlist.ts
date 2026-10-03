@@ -70,6 +70,8 @@ export function useToggleWatchlist(
   const add = useMutation({
     mutationFn: () =>
       client.fetch(`/Users/${userId}/Items/${itemId}/Rating?likes=true`, { method: "POST" }),
+    // Un échec se DIT (la plateforme écoute son cache de mutations) : le geste est déjà défait.
+    meta: { failureTitle: "errors:toastWatchlistFailed" },
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["item", itemId] });
       const snapshot = updateItemUserDataInCache(qc, { matchId: itemId, matchSeriesId: seriesId }, () => ({ Likes: true }));
@@ -98,6 +100,7 @@ export function useToggleWatchlist(
   const remove = useMutation({
     mutationFn: () =>
       client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }),
+    meta: { failureTitle: "errors:toastWatchlistFailed" },
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["item", itemId] });
       const snapshot = updateItemUserDataInCache(qc, { matchId: itemId, matchSeriesId: seriesId }, () => ({ Likes: false }));

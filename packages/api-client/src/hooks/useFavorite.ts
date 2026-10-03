@@ -29,6 +29,8 @@ export function useFavorite(itemId: string | undefined, opts?: { seriesId?: stri
 
   const add = useMutation({
     mutationFn: () => client.fetch(`/Users/${userId}/FavoriteItems/${itemId}`, { method: "POST" }),
+    // Un échec se DIT (la plateforme écoute son cache de mutations) : le geste est déjà défait.
+    meta: { failureTitle: "errors:toastFavoriteFailed" },
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["item", itemId] });
       const snapshot = updateItemUserDataInCache(qc, { matchId: itemId, matchSeriesId: seriesId }, () => ({ IsFavorite: true }));
@@ -47,6 +49,7 @@ export function useFavorite(itemId: string | undefined, opts?: { seriesId?: stri
 
   const remove = useMutation({
     mutationFn: () => client.fetch(`/Users/${userId}/FavoriteItems/${itemId}`, { method: "DELETE" }),
+    meta: { failureTitle: "errors:toastFavoriteFailed" },
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["item", itemId] });
       const snapshot = updateItemUserDataInCache(qc, { matchId: itemId, matchSeriesId: seriesId }, () => ({ IsFavorite: false }));

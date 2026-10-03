@@ -38,7 +38,12 @@ export type FailureTarget =
   /** Le flux vidéo lui-même. */
   | "stream"
   /** La page d'une extension. */
-  | "extension";
+  | "extension"
+  /**
+   * Jellyfin joint PAR LE RELAIS du serveur Tentacle (fiche, gestes) : une
+   * réponse vient de Jellyfin, une panne de transport accuse le serveur.
+   */
+  | "relayed";
 
 /**
  * La joignabilité des serveurs, sondée par l'app au moment de l'échec :
@@ -192,7 +197,10 @@ function fromKind(raw: RawProblem, kind: FailureKind): ProblemCause | null {
  * hors ligne, le verdict de Jellyfin, le statut HTTP, la sonde des serveurs,
  * celle du flux, et enfin la nature de l'échec, déduite au besoin du message.
  */
-export function classifyProblem(raw: RawProblem): ProblemCause {
+export function classifyProblem(input: RawProblem): ProblemCause {
+  const raw = input.target === "relayed"
+    ? { ...input, target: (input.status ?? 0) > 0 ? "jellyfin" as const : "tentacle" as const }
+    : input;
   const kind = raw.kind ?? kindFromText(raw.message, raw.name);
   if (raw.local) {
     if (kind === "notFound") return "offlineFileMissing";

@@ -91,6 +91,11 @@ export default {
   actionEditAddress: "Edit address",
   actionBack: "Back",
   actionBackToDetails: "Back to details",
+  // Gestures undone because the server failed — the title of a short message.
+  toastFavoriteFailed: "Favorites couldn't be updated",
+  toastWatchlistFailed: "My List couldn't be updated",
+  toastWatchedFailed: "The watched status wasn't saved",
+  toastRatingFailed: "Your rating wasn't saved",
   // Technical details, folded.
   details: "Details",
   detailsHide: "Hide details",
