@@ -782,3 +782,102 @@ quatre de `platform/tvos/focus/` (`RESTORE_WITHIN_MS`, `SETTLE_MS`,
 `USER_RAIL_AFTER_MS`, `LEAVE_CHECK_MS`) sont parties avec le branchement de
 T3 (cbe686f9f) : les applicateurs lisent leur durée dans tv-core. Au
 recalage : AUCUNE.
+
+## Annexe K — l'adaptateur Android TV, sur papier
+
+Rien n'est écrit pour Android TV dans ce lot : son code n'est pas touché, et la
+refonte n'y tourne pas (`redesignGate.ts`). Voici ce que son adaptateur devra
+fournir, en face de celui de tvOS. Les COMPORTEMENTS sont déjà là, dans
+tv-core : restent une table, des applicateurs et une pièce native. Les faits
+sont lus dans react-native-tvos 0.80.1-0 (`ReactAndroidHWInputDeviceHelper.java`
+— celui que montent `ReactRootView` et les `Modal` —, `ReactViewGroup.java`,
+`ReactViewManager.kt`) et dans le code partagé d'aujourd'hui ; « à mesurer » :
+aucun appareil ne l'a encore dit.
+
+**La table** — `packages/tv-core/src/remote/bindings/androidtv.ts` (`RemoteBindings`) :
+- chaque touche annonce son enfoncement (`eventKeyAction` 0) PUIS son
+  relâchement (1) — l'app pose `enableKeyDownEvents = true`
+  (`MainApplication.kt`). La table choisit la phase de chaque appui (`on`),
+  sinon il compterait deux fois ; le code partagé agit à l'enfoncement et
+  ignore le relâchement jumeau (`useTVRemote.ts`) : `pressOnRelease: false`.
+- tenue plus de 300 ms (`mLongPressedDelta`), une touche devient `longSelect`,
+  `longUp`… — une fois à l'enfoncement, une fois au relâchement ; avant,
+  l'enfoncement se répète. Ce signal n'arrive pas partout (l'émulateur, clavier
+  de l'hôte, ne l'émet jamais : `hooks/scrubInput.ts` reconnaît le maintien à
+  l'enfoncement resté sans relâchement). `announcedHolds`, `holdThresholdMs`
+  et `RemoteSignal.repeat` : à mesurer.
+- le Retour ne passe PAS par `TVEventHandler` (`KEYCODE_BACK` n'est pas dans la
+  table native) : `BackHandler` (`hardwareBackPress`), pris ou laissé AU MOMENT
+  de l'appui (`return true`) → `backDecidedAhead: false`. `menu`
+  (`KEYCODE_MENU`) est une autre touche.
+- des touches que la Siri Remote n'a pas : `play`, `pause`, `stop`, `record`,
+  `next`, `previous`, `rewind`, `fastForward`, `info`, `captions`, `guide`,
+  `channelUp` / `channelDown`, les chiffres `0`…`9`, `bookmark`, `dvr`,
+  `avrInput`, `avrPower` — chacune une intention (`transport`…) ou du bruit
+  déclaré, jamais oubliée (les tests de la table le vérifient).
+- aucune surface tactile : `touchSurface: false`, `dragOnDemand: false`,
+  `dragUnit: null`, ni `swipes` ni `drags`.
+- `focusMovesBeforeIntent` : la touche part vers le JS, puis le moteur
+  d'Android déplace le focus dans la même distribution
+  (`ReactRootView.dispatchKeyEvent`) ; le JS, asynchrone, l'apprend après —
+  vrai a priori, à mesurer.
+
+**L'entrée** — `platform/androidtv/input/` : un `TVEventHandler` et un
+`BackHandler`, lus en `RemoteSignal`, donnés à
+`createRemoteInput(ANDROIDTV_BINDINGS)` ; le Retour y entre par où `receiveMenu`
+entre sur tvOS. Pas de pan (`panGesture.ts` : tvOS seul).
+
+**Le focus** — `platform/androidtv/focus/` :
+- verrou (`focusLocks.ts`) : `focusable={false}` — Android ignore
+  `isTVSelectable`, tvOS ignore `focusable` ;
+- guides (`focusGuides.tsx`, `entryGuide.tsx`, ponts et raccourcis du rail) :
+  `TVFocusGuideView` existe sur Android (`destinations`, `autoFocus`,
+  `trapFocus*` dans `ReactViewGroup`) — à éprouver tels quels ;
+- préférence : `hasTVPreferredFocus` y demande le focus (`ReactViewManager.kt`) ;
+  le cycle faux → vrai → relâchée (`FOCUS_PREFERENCE_CYCLE`) est une affaire de
+  tvOS ;
+- la SECTION native n'a pas de pendant : `TentacleFocusSection` et
+  `TentacleFocusNeighbors.m` (annexe D) appliquent `focus/sections.ts` au
+  geste. Il faudra un `ViewGroup` qui surcharge `focusSearch` avec la même
+  règle, entrée déclarée comprise (`tvEntry`) — les tests de `sections.ts` en
+  sont le cahier des charges, comme pour l'Objective-C ; à défaut, des
+  `nextFocusUp/Down` posés par élément ;
+- la page qui suit le focus (`TentacleRevealScroller`, pas isolé ou rafale :
+  `TentacleFocusInput.m`) : à refaire ;
+- `claimAfterRestore.ts` répond à une restauration propre à UIKit : à mesurer
+  avant de le porter.
+
+**Le Retour** — `platform/androidtv/back/` : la pile des couches est celle de
+tv-core (`nav/backLayers`, `nav/backResolve`) ; la portée écoute
+`hardwareBackPress` et résout à l'appui — rien à poser d'avance
+(`MenuPressInterceptor.tsx` n'est, sur Android, qu'une `View`).
+`navigation/railNavigate.ts`, la règle recopiée, se retire au portage
+(`retour-rail.md`, § 18).
+
+**Panneaux** — la règle d'entrée est dans tv-core (`panels/choiceEntry`,
+`cards/sheetEntry`) ; l'applicateur verrouille par `focusable`. Le verrou existe
+parce qu'une `Modal` de tvOS n'honore aucune préférence : à mesurer sur
+Android, où il pourrait ne servir à rien — sans changer la règle.
+
+**Lecteur** — `useTVPlayerControls` et `useTVPlayerBack` sont déjà minces sur
+tv-core, l'équivalence Android prouvée par `player-trace`
+(`TRACE_PLATFORM=android`) ; le maintien des flèches suit le profil de
+`scrubInput.ts` ; `PlayerBackground` et les guides du lecteur
+(`playerFocusContainers.tsx`) se portent par guides et préférence.
+
+**Écrans** — le clavier : sur tvOS, un bouton focalise un champ caché
+(`HiddenSearchInput`, `openPairingKeyboard`) ; sur Android, OK sur un
+`TextInput` focalisé ouvre l'IME — à éprouver écran par écran (recherche,
+jumelage).
+
+**Ne se porte pas** — parallaxe (`tvParallaxProperties`), verre natif,
+désaturation, `enableTVPanGesture` : tvOS seulement, et hors navigation.
+
+**La garde** — `TV_NAV_ALLOWED` (`eslint/tvNavigation.mjs`) gagne
+`apps/tv/src/platform/androidtv/**`, `TV_NAV_SCOPE` les `*.android.{ts,tsx}` du
+chemin refondu ; le test de pureté de tv-core ne change pas.
+
+**La preuve** — le banc doré ne joue que tvOS (simulateur, « Chambre ») : il
+lui faudra un mode Android (émulateur ou appareil) avant de brancher la
+refonte. Ses références tvOS serviront de cahier des charges, aux différences
+de plateforme près (Retour à l'appui, pas de pavé tactile).
