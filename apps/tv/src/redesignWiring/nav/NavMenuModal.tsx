@@ -5,7 +5,7 @@ import type { IconName } from "../../redesign/icons/Icon";
 import { FadingModal } from "../../redesign/motion/FadingModal";
 import { NavEntryMenu, type NavMenuItem } from "../../redesign/nav/NavEntryMenu";
 import { withMenuIntent } from "../../platform/tvos/input";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import type { NavMenuAction, RailArrange } from "./useRailArrange";
 
 /**

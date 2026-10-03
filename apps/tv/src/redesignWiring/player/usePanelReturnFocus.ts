@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { panelOpener, panelReturnTarget } from "@tentacle-tv/tv-core";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 
 /**
  * Un panneau du lecteur qui se ferme rend le focus à son bouton À LA FIN DE

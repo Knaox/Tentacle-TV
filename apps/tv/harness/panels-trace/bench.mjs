@@ -59,14 +59,19 @@ const VIEW_STUBS = [
   [/redesignWiring\/vigie\/useAppActive$/, "vigie.ts"],
 ];
 
-/** `@bench/src/…` : le dossier `apps/tv/src` de l'arbre ; `@bench/sheetFocus` : l'applicateur du panneau, où qu'il vive. */
+/**
+ * `@bench/src/…` : le dossier `apps/tv/src` de l'arbre ; `@bench/sheetFocus` : l'applicateur du panneau,
+ * `@bench/focusStore` : le magasin de focus — où qu'ils vivent.
+ */
 function treePlugin(tree) {
   const src = join(tree, "apps/tv/src");
   const sheetFocus = ["platform/tvos/panels/sheetFocus.ts", "redesignWiring/sheet/sheetFocus.ts"].map((p) => join(src, p)).find(existsSync);
+  const focusStore = ["platform/tvos/focus/focusStore.ts", "redesignWiring/focus/focusStore.ts"].map((p) => join(src, p)).find(existsSync);
   return {
     name: "bench-tree",
     setup(b) {
       b.onResolve({ filter: /^@bench\/sheetFocus$/ }, () => ({ path: sheetFocus }));
+      b.onResolve({ filter: /^@bench\/focusStore$/ }, () => ({ path: focusStore }));
       // Les paquets du dépôt, pris dans l'arbre construit (et leurs sous-chemins : `@tentacle-tv/shared/theme`).
       b.onResolve({ filter: /^@tentacle-tv\/(shared|theme|tv-core)(\/.*)?$/ }, (args) => {
         const [, pkg, sub = ""] = /^@tentacle-tv\/([^/]+)(\/.*)?$/.exec(args.path);

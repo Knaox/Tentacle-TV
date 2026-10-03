@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { BROWSE_BACK_KEY, BROWSE_HEADER_KEY, browseClaimOnError, browseClaimOnItems, isGridKey } from "@tentacle-tv/tv-core";
-import { useBackFocus } from "../../../redesignWiring/focus/backFocus";
+import { useBackFocus } from "../back/backFocus";
 import type { FocusStore } from "../focus/focusStore";
 
 /**

@@ -8,8 +8,8 @@ import { requestRowKey } from "../../redesign/requests/RequestRow";
 import { REQUESTS_CLOSE_KEY, RequestsPanelView } from "../../redesign/requests/RequestsPanelView";
 import { withMenuIntent } from "../../platform/tvos/input";
 import { useBackLayers } from "../back/BackScope";
-import { setFocusLocked } from "../focus/focusLocks";
-import { useFocusStore, type FocusStore } from "../focus/focusStore";
+import { setFocusLocked } from "../../platform/tvos/focus/focusLocks";
+import { useFocusStore, type FocusStore } from "../../platform/tvos/focus/focusStore";
 import { STILL_READING, type ArrivalReading } from "./arrivalModels";
 import { requestItemModel, requestsCountText } from "./requestModels";
 

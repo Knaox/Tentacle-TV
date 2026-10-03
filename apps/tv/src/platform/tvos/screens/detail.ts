@@ -11,7 +11,7 @@ import {
   detailSeasonEntryKey,
   isDetailEpisodeKey,
 } from "@tentacle-tv/tv-core";
-import { useBackFocus } from "../../../redesignWiring/focus/backFocus";
+import { useBackFocus } from "../back/backFocus";
 import type { FocusExtras, FocusStore } from "../focus/focusStore";
 import { useFirstVisitEntry, useSectionEntry } from "../focus/sectionEntry";
 import { useEntryFocus } from "../focus/useEntryFocus";

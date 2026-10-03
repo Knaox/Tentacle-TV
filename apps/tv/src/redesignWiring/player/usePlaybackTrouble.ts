@@ -7,7 +7,7 @@ import { useRemoteIntents } from "../../platform/tvos/input";
 import { retryPlaybackNow, usePlaybackTroubleState, useServerFallbackAt } from "../../hooks/playbackTroubleStore";
 import type { Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlaybackTroubleModel, TroubleActionKey } from "../../redesign/screens/player/playbackTroubleTypes";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { lowerQualityKey, noticeOf, panelOf, RESUMED_NOTICE, SERVER_FALLBACK_NOTICE, troubleModelOf } from "./playbackTroubleModel";
 
 /** « La lecture a repris » : le temps de le lire. */

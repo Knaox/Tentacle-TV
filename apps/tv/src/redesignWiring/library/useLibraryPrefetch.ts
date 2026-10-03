@@ -6,7 +6,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { LIBRARY_PREFETCH_DWELL_MS, LIBRARY_PREFETCH_POSTERS, libraryPrefetchTarget } from "@tentacle-tv/tv-core";
 import { rememberedFilters } from "../../hooks/libraryCatalogParams";
 import { posterUriOf } from "../cards/cardArtwork";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { gridCatalogParams } from "./gridCatalogParams";
 
 /**

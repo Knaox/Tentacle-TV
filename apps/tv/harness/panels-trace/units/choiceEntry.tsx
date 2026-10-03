@@ -1,5 +1,5 @@
 import { useChoiceEntry } from "@bench/src/redesignWiring/settings/settingsFocus";
-import { createFocusStore, type FocusStore } from "@bench/src/redesignWiring/focus/focusStore";
+import { createFocusStore, type FocusStore } from "@bench/focusStore";
 import { note } from "../stubs/record";
 import { mount, take } from "./root";
 

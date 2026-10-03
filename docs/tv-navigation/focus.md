@@ -437,15 +437,20 @@ que visent les ponts du rail de T4 — son contrat ne change pas ; la croix
 Retour (`backFocus.tsx`) est à T4, Parcourir et la règle propre à la fiche à
 T7.
 
-### Réexports provisoires
+### Réexports provisoires — retirés
 
-Les applicateurs déplacés gardent leur ancien chemin le temps que leurs
+Les applicateurs déplacés ont gardé leur ancien chemin le temps que leurs
 importateurs (fiche, bibliothèque, réglages, panneaux, lecteur, Vigie,
-surimpressions, jumelage, rail) visent `platform/tvos/focus/` :
+surimpressions, jumelage, rail) visent `platform/tvos/` :
 `redesignWiring/focus/{focusStore, claimAfterRestore, entryGuide,
 focusGuides, focusLocks, sectionEntry, sectionNeighbors, useKeepFocusWithin,
-useKeyFocused}` et `redesignWiring/screen/useEntryFocus`. Un réexport tombe,
-dans un commit à part, quand un `grep` prouve que plus rien ne l'importe.
+useKeyFocused}`, `redesignWiring/screen/useEntryFocus`, et le relais de la
+croix Retour `redesignWiring/focus/backFocus` (T4, vers
+`platform/tvos/back/backFocus`). Tous retirés ensemble au ménage de fin de
+lot : plus aucun import de l'ancien chemin, et le dossier
+`redesignWiring/focus/` n'existe plus. Seuls les bancs de traces citent encore
+les anciens chemins, pour l'arbre de RÉFÉRENCE : `focus-trace` (`variantOf`)
+et `panels-trace` (`@bench/focusStore`, résolu là où le magasin vit).
 
 ### À retirer au portage Android TV
 

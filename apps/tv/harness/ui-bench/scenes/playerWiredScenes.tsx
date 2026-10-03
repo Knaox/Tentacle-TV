@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { FocusBindingProvider, type FocusBinder } from "../../../src/redesign/focus/focusBinding";
-import { useFocusStore } from "../../../src/redesignWiring/focus/focusStore";
+import { useFocusStore } from "../../../src/platform/tvos/focus/focusStore";
 import { END_EXIT_LOCK, useEndExitLocked } from "../../../src/redesignWiring/player/endExitLock";
 import {
   PLAYER_GROUP_CONTAINERS,

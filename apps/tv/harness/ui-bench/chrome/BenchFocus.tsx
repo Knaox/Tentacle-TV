@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import type { View } from "react-native";
 import { FocusBindingProvider, type FocusBinding, type FocusForm } from "../../../src/redesign/focus/focusBinding";
-import { SECTION_NEIGHBORS } from "../../../src/redesignWiring/focus/sectionNeighbors";
+import { SECTION_NEIGHBORS } from "../../../src/platform/tvos/focus/sectionNeighbors";
 import type { SweepRequest } from "../control/benchRemote";
 import { METER_SETTLE_MS } from "./FrameMeter";
 

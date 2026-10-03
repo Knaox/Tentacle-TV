@@ -4,7 +4,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { episodesEntryKey, SEASON_PREFETCH_INTENT_MS } from "@tentacle-tv/tv-core";
 import type { Translate } from "../../redesign/screens/player/playerLabels";
 import type { EpisodesPanelModel } from "../../redesign/screens/player/playerTypes";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import type { ImageUrl } from "./playerArt";
 import { buildEpisodesPanel } from "./playerPanelModels";
 

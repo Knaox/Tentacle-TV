@@ -1,6 +1,6 @@
 import { useLayoutEffect, type ComponentType, type ReactNode } from "react";
 import type { FocusBinder, FocusGroupContainerProps } from "@bench/src/redesign/focus/focusBinding";
-import { useFocusStore, type FocusStore } from "@bench/src/redesignWiring/focus/focusStore";
+import { useFocusStore, type FocusStore } from "@bench/focusStore";
 import { useSheetFocus } from "@bench/sheetFocus";
 import { hosts } from "../stubs/record";
 import { mount, take } from "./root";

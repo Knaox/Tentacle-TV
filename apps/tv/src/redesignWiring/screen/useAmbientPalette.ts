@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import type { ArtworkPalette } from "../../redesign/color/artworkPalette";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 
 /**
  * La lumière du fond d'un écran à rangées : celle de la carte qui a le focus ;

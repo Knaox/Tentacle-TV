@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useRoute } from "@react-navigation/native";
 import { RAIL_PROFILE_FOCUS_KEY, isRailPage, railScreenBackLayers } from "@tentacle-tv/tv-core";
 import { useBackLayers } from "../back/BackScope";
-import { useKeyFocused } from "../focus/useKeyFocused";
+import { useKeyFocused } from "../../platform/tvos/focus/useKeyFocused";
 import type { RedesignScreenModel } from "./useRedesignScreen";
 
 /**

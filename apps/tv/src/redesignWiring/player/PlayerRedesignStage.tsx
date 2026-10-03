@@ -6,7 +6,7 @@ import { TVPlayerEngine } from "../../components/player/TVPlayerEngine";
 import type { TransportKey } from "../../components/player/focus/useOverlayFocus";
 import { useTvFocusClaim } from "../../hooks/useTvFocusClaim";
 import { PlayerBackground, PlayerFocusStateProvider } from "../../platform/tvos/player";
-import { useFocusStore } from "../focus/focusStore";
+import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import type { PlayerRedesignStageProps } from "./playerStageTypes";
 import { usePlayerBackLayers, useOsdPin } from "./usePlayerBackLayers";
 import { usePlayerChrome } from "./usePlayerChrome";

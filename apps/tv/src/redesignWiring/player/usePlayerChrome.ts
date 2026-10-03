@@ -8,7 +8,7 @@ import type { PlayerMedia, PlayerPanel, ScrubModel } from "../../redesign/screen
 import { useAutoCapNotice } from "../../hooks/useAutoCapNotice";
 import { usePlaybackTroubleState } from "../../hooks/playbackTroubleStore";
 import { playerChromeVisibility, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "@tentacle-tv/tv-core";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { backdropUriOf, logoUriOf, paletteOf, type ImageUrl } from "./playerArt";
 import {
   buildEndScreen, buildPhase, buildPlayerMedia, buildScrubCountdown, buildSkipPill, buildUpNext, parseSpeedLabel,

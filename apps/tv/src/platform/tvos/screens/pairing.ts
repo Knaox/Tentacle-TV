@@ -9,7 +9,7 @@ import {
   PAIRING_SIDE_GROUP,
   loginErrorReclaim,
 } from "@tentacle-tv/tv-core";
-import { useBackFocus } from "../../../redesignWiring/focus/backFocus";
+import { useBackFocus } from "../back/backFocus";
 import { AutoFocusGuide } from "../focus/focusGuides";
 import type { FocusStore } from "../focus/focusStore";
 

@@ -6,7 +6,7 @@ import { FadingModal } from "../../redesign/motion/FadingModal";
 import { ChoiceSheet } from "../../redesign/screens/settings/ChoiceSheet";
 import type { ChoiceListModel } from "../../redesign/screens/settings/settingsTypes";
 import { useBackLayer } from "../back/BackScope";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 
 /**
  * La liste de choix d'un réglage, dans une `Modal` : sur tvOS elle a son

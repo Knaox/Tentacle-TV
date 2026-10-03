@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { railBlurDelay, railCollapseAfterBlur, railFocusedAfterFocus, railSelect, type RailSelect } from "@tentacle-tv/tv-core";
-import type { FocusStore } from "../focus/focusStore";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useRailPinning } from "../../components/nav/railPinning";
 import { returnToSearchBar } from "../../components/search/searchBarReturn";
 import { goToRailPage, railRouteOf } from "../../platform/tvos/back/railNavigate";

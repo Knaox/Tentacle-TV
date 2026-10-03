@@ -2,13 +2,13 @@ import { useCallback, useMemo, useState } from "react";
 import { railEntryTarget, railExpanded } from "@tentacle-tv/tv-core";
 import type { NavRailProps } from "../../redesign/nav/NavRail";
 import { sameRailGeometry, type NavRailGeometry } from "../../redesign/nav/navGeometry";
-import { useFocusStore, type FocusStore } from "../focus/focusStore";
+import { useFocusStore, type FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useLibraryPrefetch } from "../library/useLibraryPrefetch";
 import { useNavEntries } from "../nav/useNavEntries";
 import { useRailArrange, type RailArrange } from "../nav/useRailArrange";
 import { openNavigationSettings, useRailActions, useRailFocused } from "../nav/useRailState";
 import { useRequestsAccessory } from "../vigie/RequestsEntry";
-import { useEntryFocus } from "./useEntryFocus";
+import { useEntryFocus } from "../../platform/tvos/focus/useEntryFocus";
 
 /**
  * Ce qu'un écran refondu AVEC navigation demande au socle — l'accueil, « Pour

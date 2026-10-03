@@ -44,17 +44,31 @@ function referenceTree() {
   return tree;
 }
 
-/** Ce que chaque arbre branche à sa façon. */
+/**
+ * Ce que chaque arbre branche à sa façon. Les applicateurs du focus vivent
+ * dans `redesignWiring/` à la référence et dans `platform/tvos/focus/`
+ * depuis l'extraction : leurs anciens chemins ont disparu de l'arbre courant.
+ */
 function variantOf(tree, reference) {
   const src = join(tree, "apps/tv/src");
   return reference
     ? {
+        "@bench/focusStore": join(src, "redesignWiring/focus/focusStore.ts"),
+        "@bench/claimAfterRestore": join(src, "redesignWiring/focus/claimAfterRestore.ts"),
+        "@bench/entryGuide": join(src, "redesignWiring/focus/entryGuide.tsx"),
+        "@bench/keepFocusWithin": join(src, "redesignWiring/focus/useKeepFocusWithin.ts"),
+        "@bench/entryFocus": join(src, "redesignWiring/screen/useEntryFocus.ts"),
         "@bench/beyondEdge": join(src, "redesignWiring/remote/useBeyondEdge.ts"),
         "@bench/detailEntries": join(HERE, "adapters/detailEntriesReference.ts"),
         "@bench/detailGuides": join(src, "redesignWiring/detail/useDetailGuides.ts"),
         "@bench/menu": join(HERE, "adapters/noInput.ts"),
       }
     : {
+        "@bench/focusStore": join(src, "platform/tvos/focus/focusStore.ts"),
+        "@bench/claimAfterRestore": join(src, "platform/tvos/focus/claimAfterRestore.ts"),
+        "@bench/entryGuide": join(src, "platform/tvos/focus/entryGuide.tsx"),
+        "@bench/keepFocusWithin": join(src, "platform/tvos/focus/useKeepFocusWithin.ts"),
+        "@bench/entryFocus": join(src, "platform/tvos/focus/useEntryFocus.ts"),
         "@bench/beyondEdge": join(src, "platform/tvos/focus/useBeyondEdge.ts"),
         "@bench/detailEntries": join(HERE, "adapters/detailEntriesCurrent.ts"),
         "@bench/sectionEntry": join(src, "platform/tvos/focus/sectionEntry.ts"),
@@ -89,11 +103,6 @@ async function bundle(tree) {
     define: { __BENCH_RIGHT__: JSON.stringify(reference ? "right" : "droite") },
     plugins: [railStub],
     alias: {
-      "@bench/focusStore": join(src, "redesignWiring/focus/focusStore.ts"),
-      "@bench/claimAfterRestore": join(src, "redesignWiring/focus/claimAfterRestore.ts"),
-      "@bench/entryGuide": join(src, "redesignWiring/focus/entryGuide.tsx"),
-      "@bench/keepFocusWithin": join(src, "redesignWiring/focus/useKeepFocusWithin.ts"),
-      "@bench/entryFocus": join(src, "redesignWiring/screen/useEntryFocus.ts"),
       "@bench/heroRotation": join(src, "redesignWiring/home/useHeroRotation.ts"),
       ...variantOf(tree, reference),
       "@tentacle-tv/tv-core": join(tree, "packages/tv-core/src"),

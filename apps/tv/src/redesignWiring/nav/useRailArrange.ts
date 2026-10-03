@@ -4,9 +4,9 @@ import {
   railMenuReturnOnClose, railMenuReturnOnFocus, startArrange, type ArrangeMove, type RailMenuAction, type RailMenuModel,
   type RailMenuReturn,
 } from "@tentacle-tv/tv-core";
-import { claimAfterRestore } from "../focus/claimAfterRestore";
-import { setFocusLocked } from "../focus/focusLocks";
-import type { FocusStore } from "../focus/focusStore";
+import { claimAfterRestore } from "../../platform/tvos/focus/claimAfterRestore";
+import { setFocusLocked } from "../../platform/tvos/focus/focusLocks";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useNavCatalog } from "./useNavCatalog";
 
 /**
