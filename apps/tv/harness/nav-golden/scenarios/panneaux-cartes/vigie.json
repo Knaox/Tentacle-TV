@@ -1,0 +1,90 @@
+{
+  "domain": "panneaux-cartes",
+  "reference": "84f3cedd0",
+  "defaults": { "settleMs": 600 },
+  "scenarios": [
+    {
+      "id": "pc-17",
+      "title": "Volet absent d'une saga, Vigie ouverte : le panneau du titre absent, entrée sur « Demander », Retour rend le volet",
+      "why": "ex-pc-15 provisoire. « L'Attaque des titans : La dernière attaque » est le seul volet de sa saga dans la bibliothèque ; le faux Vigie (base/demandes-on) offre les autres à la demande",
+      "start": {
+        "fixtures": ["base/demandes-on"],
+        "route": { "name": "MediaDetail", "params": { "itemId": "f461dd313e49d9bde1d226d22fe4ed08" } },
+        "keys": ["wait:2.5", "down", "down"],
+        "focus": "saga:0"
+      },
+      "steps": [
+        {
+          "do": "wait:0.6",
+          "expect": { "focus": "saga:0", "panel": "closed", "text": ["Maintenir OK : plus d'options", "OK : demander", "Pas dans la bibliothèque"] },
+          "why": "le volet absent dit qu'il se demande, et que l'appui maintenu ouvre ses options"
+        },
+        {
+          "do": "hold:1.2",
+          "settleMs": 900,
+          "expect": { "panel": "open", "focus": "sheet:action:request", "label": "Demander", "writes": [] },
+          "why": "le panneau du titre absent (pas celui d'une affiche) : entrée sur son seul picto ; le relâchement ne demande rien (garde anti-clic fantôme)"
+        },
+        { "do": "up", "expect": { "focus": "sheet:close" }, "why": "pas d'échelle : HAUT va à la croix" },
+        { "do": "down", "expect": { "focus": "sheet:action:request" } },
+        { "do": "left", "expect": { "focus": "sheet:action:request" }, "why": "un seul picto : butées" },
+        { "do": "right", "expect": { "focus": "sheet:action:request" } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "saga:0", "writes": [] }, "why": "Retour ferme sans demander ; le focus revient au volet" }
+      ]
+    },
+    {
+      "id": "pc-18",
+      "title": "Panneau d'un titre absent : « Demander » referme le panneau, puis demande (faux Vigie)",
+      "why": "ex-pc-17 provisoire. La demande part APRÈS la sortie du panneau, vers le faux Vigie du banc (journalisée, jamais relayée)",
+      "start": {
+        "fixtures": ["base/demandes-on"],
+        "route": { "name": "MediaDetail", "params": { "itemId": "f461dd313e49d9bde1d226d22fe4ed08" } },
+        "keys": ["wait:2.5", "down", "down"],
+        "focus": "saga:0"
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "settleMs": 900,
+          "expect": { "panel": "open", "focus": "sheet:action:request", "writes": [] },
+          "why": "le relâchement de l'appui maintenu ne demande rien (garde anti-clic fantôme)"
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": { "panel": "closed", "focus": "saga:0", "writes": ["vigie:request"] },
+          "why": "« Demander » referme le panneau, puis fait le geste d'OK : la demande d'un film, en un geste"
+        }
+      ]
+    },
+    {
+      "id": "pc-19",
+      "title": "Feuille des saisons (série à compléter, depuis la recherche) : entrée, OK coche, BAS jusqu'au pied, « Toutes », Retour",
+      "why": "ex-pc-18 provisoire. GTO n'a que sa saison 1 dans la bibliothèque ; la recherche récente « GTO » (stockage) la met en tête de « À demander » sans clavier",
+      "start": {
+        "fixtures": ["panneaux-cartes/recherche-gto"],
+        "storage": { "tentacle_recent_searches": "[\"GTO\"]" },
+        "route": { "name": "Search", "params": null },
+        "keys": ["wait:2", "right", "right", "right", "right", "right", "right", "select", "wait:3", "right", "down", "down"],
+        "focus": "absent:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": { "panel": "open", "focus": "sheet:season:0", "label": "Spéciaux", "writes": [] },
+          "why": "la feuille des saisons de la série ; entrée sur la première saison à demander"
+        },
+        { "do": "select", "expect": { "focus": "sheet:season:0", "writes": [] }, "why": "OK coche, ne demande rien" },
+        { "do": "down", "expect": { "focus": "sheet:season:2", "label": "Saison 2" }, "why": "la saison 1, dans la bibliothèque, ne se coche pas" },
+        { "do": "down", "expect": { "focus": "sheet:season:3" } },
+        { "do": "down", "expect": { "focus": "sheet:apply", "label": "Demander 1 saison" }, "why": "la saison 4, déjà demandée, est sautée ; le pied compte la coche" },
+        { "do": "down", "expect": { "focus": "sheet:apply" }, "why": "butée du pied" },
+        { "do": ["up", "up", "up", "up"], "expect": { "focus": "sheet:season:all", "label": "Toutes les saisons manquantes" } },
+        { "do": "select", "expect": { "focus": "sheet:season:all", "writes": [] } },
+        { "do": ["down", "down", "down", "down"], "expect": { "focus": "sheet:apply", "label": "Demander 3 saisons" }, "why": "« Toutes » coche les trois saisons à demander" },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "absent:0", "writes": [] }, "why": "Retour ferme sans demander ; le focus revient à la carte" }
+      ]
+    }
+  ]
+}

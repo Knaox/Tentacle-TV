@@ -1,0 +1,653 @@
+{
+  "format": 1,
+  "domain": "panneaux-cartes",
+  "suite": "vigie",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T6",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:19:51.103Z",
+  "scenarios": {
+    "pc-17": {
+      "hash": "6d8ca52ccf1a",
+      "durationMs": 28628,
+      "start": {
+        "app": "foreground",
+        "focus": "saga:0",
+        "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
+        "frame": [
+          120,
+          142,
+          240,
+          360
+        ],
+        "groups": [
+          "detail:saga"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:0.6",
+          "app": "foreground",
+          "focus": "saga:0",
+          "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
+          "frame": [
+            120,
+            142,
+            240,
+            360
+          ],
+          "groups": [
+            "detail:saga"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "texts": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:action:request",
+          "label": "Demander",
+          "frame": [
+            890,
+            572,
+            140,
+            126
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "AbsentSheetRedesign"
+          ],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "sheet:close",
+          "label": "Retour",
+          "frame": [
+            416,
+            382,
+            60,
+            60
+          ],
+          "groups": [
+            "sheet:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "AbsentSheetRedesign"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:request",
+          "label": "Demander",
+          "frame": [
+            890,
+            572,
+            140,
+            126
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "AbsentSheetRedesign"
+          ],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "sheet:action:request",
+          "label": "Demander",
+          "frame": [
+            890,
+            572,
+            140,
+            126
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "AbsentSheetRedesign"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:request",
+          "label": "Demander",
+          "frame": [
+            890,
+            572,
+            140,
+            126
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "AbsentSheetRedesign"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "saga:0",
+          "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
+          "frame": [
+            120,
+            142,
+            240,
+            360
+          ],
+          "groups": [
+            "detail:saga"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-18": {
+      "hash": "81da77f9b040",
+      "durationMs": 23590,
+      "start": {
+        "app": "foreground",
+        "focus": "saga:0",
+        "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
+        "frame": [
+          120,
+          142,
+          240,
+          360
+        ],
+        "groups": [
+          "detail:saga"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:action:request",
+          "label": "Demander",
+          "frame": [
+            890,
+            572,
+            140,
+            126
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "AbsentSheetRedesign"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "saga:0",
+          "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
+          "frame": [
+            120,
+            142,
+            240,
+            360
+          ],
+          "groups": [
+            "detail:saga"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "vigie:request"
+          ]
+        }
+      ]
+    },
+    "pc-19": {
+      "hash": "0d6dfc5979f9",
+      "durationMs": 40385,
+      "start": {
+        "app": "foreground",
+        "focus": "absent:0",
+        "label": "GTO - Great Teacher Onizuka",
+        "frame": [
+          672,
+          527,
+          240,
+          433
+        ],
+        "groups": [
+          "section:absent",
+          "search:results"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:season:0",
+          "label": "Spéciaux",
+          "frame": [
+            558,
+            394,
+            804,
+            72
+          ],
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": [
+            "sheet:season:all"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:season:0",
+          "label": "Spéciaux",
+          "frame": [
+            558,
+            394,
+            804,
+            72
+          ],
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": [
+            "sheet:season:all"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:season:2",
+          "label": "Saison 2",
+          "frame": [
+            558,
+            558,
+            804,
+            72
+          ],
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": [
+            "sheet:season:all"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:season:3",
+          "label": "Saison 3 · Shonan 14 Days",
+          "frame": [
+            558,
+            640,
+            804,
+            72
+          ],
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": [
+            "sheet:season:all"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:apply",
+          "label": "Demander 1 saison",
+          "frame": [
+            1062,
+            830,
+            300,
+            56
+          ],
+          "groups": [
+            "sheet:footer"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": [
+            "sheet:season:all"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:apply",
+          "label": "Demander 1 saison",
+          "frame": [
+            1062,
+            830,
+            300,
+            56
+          ],
+          "groups": [
+            "sheet:footer"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": [
+            "sheet:season:all"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "sheet:season:all",
+          "label": "Toutes les saisons manquantes",
+          "frame": [
+            558,
+            312,
+            804,
+            72
+          ],
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": [
+            "sheet:season:all"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:season:all",
+          "label": "Toutes les saisons manquantes",
+          "frame": [
+            558,
+            312,
+            804,
+            72
+          ],
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": [
+            "sheet:season:all"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "sheet:apply",
+          "label": "Demander 3 saisons",
+          "frame": [
+            1045,
+            830,
+            317,
+            56
+          ],
+          "groups": [
+            "sheet:footer"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": [
+            "sheet:season:all"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "absent:0",
+          "label": "GTO - Great Teacher Onizuka",
+          "frame": [
+            672,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:absent",
+            "search:results"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}
