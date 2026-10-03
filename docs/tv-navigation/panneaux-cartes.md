@@ -446,14 +446,21 @@ les mêmes règles (`cards/`, `panels/`) et n'écrira que son applicateur.
 
 **Le banc de traces** (`apps/tv/harness/panels-trace/`, React sans DOM, sans
 simulateur) monte les vrais modules de 84f3cedd0 et de l'arbre courant sur les
-mêmes doublures et compare neuf unités : le verrou d'entrée, le focus du grand
+mêmes doublures et compare dix unités : le verrou d'entrée, le focus du grand
 panneau (garde, verrous, cible des trois guides), la garde anti-clic fantôme,
 les pictos (96 combinaisons), l'échelle, le double appui du voile, les actions
-d'une carte, le cycle du grand panneau dans la portée du Retour, et la feuille
-des saisons (présentation, verrous, cocher, Lecture/Pause, Menu, filet).
+d'une carte, le cycle du grand panneau dans la portée du Retour, la feuille
+des saisons (présentation, verrous, cocher, Lecture/Pause, Menu, filet), et le
+panneau d'un titre absent (`absentSheet` : présentation sur l'état su ou au
+filet de 900 ms, entrée et verrous, « Demander » noté après la sortie — jamais
+envoyé —, Menu par la Modal et par la portée, la croix ; titre déjà demandé,
+arrivé, sans offre, en échec ; clé et options de la lecture de l'état).
 `node apps/tv/harness/panels-trace/bench.mjs verify` : identiques. Il a
 trouvé un écart de forme (les pictos du salon portaient `detail: null`),
-corrigé. Contre-épreuve faite (README du banc).
+corrigé. Contre-épreuve faite (README du banc) ; pour `absentSheet` : le filet
+à 950 ms, sa couche du Retour coupée pendant la sortie, la croix sortie des
+verrous d'entrée, l'entrée qui n'attend plus le filet font chacun échouer
+`verify`.
 
 **Les scénarios du simulateur** (`apps/tv/harness/nav-golden/scenarios/panneaux-cartes/`,
 format du banc T2, enregistrés sur 84f3cedd0, rejoués en `verify`) :
@@ -462,7 +469,8 @@ format du banc T2, enregistrés sur 84f3cedd0, rejoués en `verify`) :
 |---|---|
 | `scenarios.json` | pc-01 à pc-15 : l'appui maintenu sur une affiche (Films), la vignette de Reprendre, une reco, un épisode, le héros, une cellule de grille ; l'entrée à 5, sur la note posée (jeu `film-note-7`), sur le premier picto (jeu `film-non-notable`) ; les guides, les butées, la croix, Menu ; une bascule et une note qui laissent le panneau ouvert ; « Plus d'infos » ; « Noter » de la fiche (Retour, OK qui note et ferme) ; l'appui court |
 | `voile.json` | pc-16 : le voile hors ligne — entrée, piège, double appui armé puis désarmé (jamais confirmé) |
-| `fixtures.mjs` | `film-note-7`, `film-non-notable` (« The Uprising », premier des derniers ajouts de Films) |
+| `vigie.json` | pc-17 à pc-19, faux Vigie du banc : le panneau d'un volet absent de saga (entrée sur « Demander », croix, butées, Retour) ; « Demander » qui referme puis demande (`vigie:request`) ; la feuille des saisons d'une série à compléter (entrée, OK coche, BAS jusqu'au pied, « Toutes », Retour) |
+| `fixtures.mjs` | `film-note-7`, `film-non-notable` (« 2001 : L'Odyssée de l'espace », premier des derniers ajouts de Films) ; `recherche-gto` (une réponse de recherche complète pour « GTO », série à qui il manque des saisons) |
 
 Enregistrés sur 84f3cedd0 en deux passages stables, puis `verify` sur l'arbre
 courant : 16 identiques (7 min 53 s). Sur l'Apple TV « Chambre » (AppleTV14,1,
@@ -474,25 +482,42 @@ pc-11 n'y ont pas été joués : ils valident une note, et la règle des essais
 sur l'appareil est de n'en valider aucune. L'app de l'utilisateur
 (`com.tentacle.mobile`) est restée intacte, vérifiée avant et après.
 
-**De 21 scénarios provisoires à 16.** La première liste (phase A, avant le
-format du banc) en comptait 21. Seize se jouent ; cinq sont tombés, tous
-du côté de Vigie, faute de données dans le jeu figé du banc :
+`vigie.json`, ajouté ensuite : enregistré sur 84f3cedd0 en deux passages
+stables (3 min 20 s), puis `verify` du domaine entier sur l'arbre courant :
+19 identiques (8 min 58 s). Ces trois scénarios n'ont pas été joués sur
+« Chambre » (rendue avant leur écriture).
 
-| Provisoire | Ce qu'il éprouvait | Pourquoi il est tombé | Ce qui le couvre |
+**De 21 scénarios provisoires à 19.** La première liste (phase A, avant le
+format du banc) en comptait 21. Seize se sont joués d'emblée ; les cinq autres,
+tous du côté de Vigie, étaient tombés faute de données dans le jeu figé du
+banc — trois sont revenus depuis (`vigie.json`) :
+
+| Provisoire | Ce qu'il éprouvait | Aujourd'hui | Ce qui le couvre |
 |---|---|---|---|
-| pc-15 | volet absent d'une saga, Vigie ouverte : panneau d'un titre absent | aucune saga à volet ABSENT dans l'instantané (les sagas y sont complètes ou vides) | `absentSheetEntry` (tests tv-core) et l'applicateur commun `useSheetFocus` (banc de traces, `sheetFocus`) |
-| pc-16 | volet absent, Vigie fermée : pas d'appui maintenu | même raison | `holdPanelOf` (`sagaAbsent` sans `requestable` → rien, tests tv-core) |
-| pc-17 | panneau d'un titre absent : « Demander » referme puis demande | la rangée « À demander » de la recherche exige une saisie au clavier système et des résultats Vigie que le faux backend ne rend pas de façon stable | `absentSheetEntry`, `MODAL_GAP_MS` (tests tv-core) ; aucune trace du panneau absent lui-même — reste à éprouver si le banc gagne un jeu de titres absents |
-| pc-18 | feuille des saisons : entrée, OK coche, « Toutes », BAS vers le pied, Retour | même raison (série absente de la recherche) | banc de traces, unité `seasons` (présentation, verrous, cocher, « Toutes », Menu, fermeture avant présentation, filet) |
-| pc-19 | feuille des saisons : Lecture/Pause demande | même raison | banc de traces, unité `seasons` (Lecture/Pause par l'entrée unique, maintien ignoré) |
+| pc-15 | volet absent d'une saga, Vigie ouverte : panneau d'un titre absent | **pc-17** | « L'Attaque des titans : La dernière attaque », seul volet de sa saga dans la bibliothèque ; `base/demandes-on` |
+| pc-16 | volet absent, Vigie fermée : pas d'appui maintenu | non joué (jouable avec `base/vigie-off`) | `holdPanelOf` (`sagaAbsent` sans `requestable` → rien, tests tv-core) |
+| pc-17 | panneau d'un titre absent : « Demander » referme puis demande | **pc-18** | même fiche ; la demande va au faux Vigie du banc (`vigie:request`) — et banc de traces, `absentSheet` |
+| pc-18 | feuille des saisons : entrée, OK coche, « Toutes », BAS vers le pied, Retour | **pc-19** | GTO, série de la bibliothèque à qui il manque des saisons, en tête de « À demander » de la recherche ; jeu `recherche-gto`, recherche récente posée dans le stockage (aucun clavier) |
+| pc-19 | feuille des saisons : Lecture/Pause demande | non joué (jouable sur le chemin de pc-19) | banc de traces, unité `seasons` (Lecture/Pause par l'entrée unique, maintien ignoré) |
 
 Les autres ont été gardés, renumérotés : l'ancien pc-20 (voile) est pc-16,
 l'ancien pc-21 (appui court) est pc-15 ; pc-09 (reco) ne vérifie plus
 « Toutes les plateformes », que le faux backend ne déclenche pas (constat 7)
-— l'ordre des pictos sous un filtre l'est au banc de traces (`sheetRows`). Le panneau d'un titre absent et la
-feuille des saisons (Vigie) ne sont éprouvés qu'au banc de traces : le jeu de
-données du banc ne porte ni saga à volet absent ni recherche « À demander »
-stable.
+— l'ordre des pictos sous un filtre l'est au banc de traces (`sheetRows`).
+
+**Correction du relevé de la phase A.** Il disait l'instantané sans saga à
+volet absent : c'est faux. Trois sagas y ont des volets absents (« L'Attaque
+des titans », quatre sur cinq ; « Avatar Aang » et « Michael », un sur deux),
+et le faux Vigie sert leur `/api/sagas`. La recherche « À demander », elle,
+n'était vraiment pas jouable telle quelle : le faux backend rend ses résultats
+sans `match` et l'écran de recherche plante (constat 8) ; le jeu `recherche-gto`
+sert une réponse complète, et la requête vient des recherches récentes
+(`tentacle_recent_searches`), sans saisie.
+
+**Pas de `base/vigie-vivant`** : ses demandes avancent avec l'horloge (libellés
+de progression non déterministes, dit sa description). Les trois scénarios
+tournent sur le faux Vigie IMMOBILE de la base, `base/demandes-on` pour
+l'offre « Demander ».
 
 ## 6. Constats (relevés, NON corrigés)
 
@@ -502,7 +527,8 @@ stable.
    opacité plancher), puis retirée au rendu suivant. La feuille des saisons,
    elle, ferme tout de suite dans ce cas. Confirmé par le banc de traces
    (`actionSheet`, « Menu par la portée pendant l'attente » : Modal présentée
-   en sortie, puis `onClose`).
+   en sortie, puis `onClose`). Le panneau d'un titre absent fait de même au
+   filet de 900 ms (`absentSheet`, même scénario).
 2. **« Lire » qui disparaît sous le focus** (lu dans le code, à éprouver) :
    le bouton d'une SÉRIE est là pendant la résolution de son épisode
    (`useCardSheetPlay`) et disparaît si elle se révèle terminée. L'entrée étant
@@ -530,3 +556,11 @@ stable.
    `{ providers: [] }`, que l'app lit comme `data.providerFilter` — une
    `TypeError` dans la console à chaque lecture des réglages reco (sans
    effet sur les scénarios : « Toutes les plateformes » n'y paraît pas).
+8. **Faux backend du banc : la recherche sans `match`.** `GET /api/search`
+   rend ses résultats (`movies`, `series`, `top`) sans le champ `match` de
+   `SearchItemHit`, que l'écran lit (`matchReason`) : `TypeError: Cannot read
+   property 'field' of undefined`, et l'écran de recherche tombe dans sa
+   frontière d'erreur dès qu'une requête trouve un titre — hors celle que
+   l'instantané a capturée (« Orgueil »), servie telle quelle.
+   `GET /api/search/episodes` n'est pas servi. Contourné dans ce domaine (jeu
+   `recherche-gto`) ; à reporter dans la base (`server/tentacle.mjs`).
