@@ -15,6 +15,17 @@ héros ; `focus/foryou` : le filtre sur la 1re étagère), par-dessus le jeu de
 base du banc (Reprendre ×12, À suivre ×12, Déjà vus ×16, Ma liste ×1) ; les
 `*.golden.json` ne s'écrivent jamais à la main : `record` les produit.
 
+**L'approche convergente** (`"keys": ["wait:1", "left", "right", …]`) : sous
+charge, l'accueil peut perdre son entrée au démarrage — tvOS donne le focus au
+rail plus de 600 ms après le premier rendu, ce qui clôt l'arrivée (constat 4 de
+`docs/tv-navigation/focus.md`, mesuré aussi par T4 sur la référence). Tout
+scénario qui part de l'accueil sans tester son entrée commence donc par un
+aller-retour au rail : du héros, GAUCHE mène à `nav:Home` ; du rail, à
+`nav:Settings` ; DROITE ramène dans les deux cas à `hero:primary`. Seul
+`home-entry` part sans approche : son relevé de départ EST l'entrée, et un
+départ relevé sur `nav:Home` y est cette course, pas une régression.
+`foryou` part déjà par le rail.
+
 Couverts par d'autres domaines : C1 `claimAfterRestore` (T4 : déplacement
 annulé dans le rail ; T7 : réglages › navigation), G1 `createEntryGuide`
 (T6 : panneaux ; T7 : bibliothèque), K1 `useKeepFocusWithin` (T6 : voile

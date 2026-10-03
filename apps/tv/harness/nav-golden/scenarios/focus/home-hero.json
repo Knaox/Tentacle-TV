@@ -26,6 +26,11 @@
         "route": {
           "name": "Home"
         },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
         "focus": "hero:primary"
       },
       "steps": [
@@ -104,6 +109,11 @@
         "route": {
           "name": "Home"
         },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
         "focus": "hero:primary"
       },
       "steps": [
