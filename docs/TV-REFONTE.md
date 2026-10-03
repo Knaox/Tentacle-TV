@@ -1027,6 +1027,38 @@ glisser, OK puis Retour pendant le décompte, la même chose en pause ; après
 « +30 s » et la reprise, le focus doit revenir sur le bouton (mémoire de
 l'habillage, que le banc ne monte pas).
 
+### Le saut redevient instantané (2026-10-03)
+
+Retour de l'essai suivant : la flèche droite sautait bien de 30 s, mais
+DANS l'avance rapide (cible, « Lecture dans 5 s ») — plus le saut rapide
+d'avant. La règle ci-dessus est corrigée ainsi (décisions du coordinateur) :
+
+- **Hors défilement, un appui ←/→ (habillage caché, fond focalisé) et les
+  boutons « +30 s » / « −10 s » SAUTENT aussitôt** — `skipBy` dans
+  `useTVPlayerControls` (le saut d'avant la v3, rétabli), appelé par le `tap`
+  de `useScrubController` (`onSkipRef`) et par les boutons (`skipOrJump`).
+  La lecture continue à la nouvelle position ; en pause, elle y reste. Les
+  appuis rapprochés se cumulent : la base (`currentTimeRef`) part de la
+  dernière cible.
+- **Le badge revient sur Apple TV** : `SeekFlash` (revert de 87da413ab),
+  « +30 s », « +60 s », « −10 s » cumulés, 1,5 s — jamais sous le
+  défilement. Le cumul vit dans `hooks/useSkipFlash.ts` (extrait pour tenir
+  `useTVPlayerControls` sous 300 lignes) ; Android TV le lit comme avant.
+- **L'avance rapide garde tout** : bouton ⏩, MAINTIEN ←/→, glisser au pavé,
+  touches média ; cible, « Lecture dans 5 s », OK lit, Retour annule, rien
+  ne part en pause. Défilement ouvert, un appui ou un bouton de saut y
+  déplace la cible (+30/−10) — `jump`, qui n'ouvre plus jamais le
+  défilement à lui seul, et sans badge (la vue dit l'écart).
+- Cerveau partagé, aucun écran Android TV ni webOS touché.
+
+Contrôles : typecheck racine, lint TV, tests tv-core (431), bundle de
+production. Pas de banc cette fois : l'utilisateur essaie la Release
+autonome installée sur « Chambre » par
+`apps/tv/harness/launcher/install-appletv-release.sh` (dont le marqueur
+Hermes `.last_build_configuration` va dans `Pods/`, là où React Native le
+lit — ailleurs, la phase « Replace Hermes » réextrait et casse sur l'espace
+du chemin).
+
 ## Le lecteur — quitter et reprendre (Apple TV, Android TV)
 
 Branche `refonte/tv-lecteur-reprise`. Demande de l'utilisateur (2026-10-01) :
