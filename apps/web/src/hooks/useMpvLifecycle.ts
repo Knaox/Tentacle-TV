@@ -55,7 +55,7 @@ export interface MpvLifecycleCtx {
    * chargement est MORT, inutile d'attendre le watchdog — le hook décide
    * (retry immédiat, puis classement média/lecteur).
    */
-  onEndFileFailure: (event: MpvEndFileEvent) => void;
+  onEndFileFailure: (event: MpvEndFileEvent, loading: boolean) => void;
 }
 
 /**
@@ -360,16 +360,15 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
             const endFile = event as unknown as MpvEndFileEvent;
             wtLog("mpv", `end-file (reason=${endFile.reason} error=${endFile.error ?? "-"})`, { pos: positionRef.current.toFixed(1) });
             setState((prev) => ({ ...prev, playing: false, eof: endFile.reason === MPV_END_FILE_REASON.EOF }));
-            // Chargement mort — SEULEMENT reason=ERROR et watchdog armé. Jamais
-            // sur STOP (un rebuild de source émet le end-file(stop) de l'ANCIEN
-            // fichier juste après l'armement du watchdog du nouveau) ; jamais en
-            // pleine lecture (watchdog désarmé — une coupure à mi-film garde le
-            // comportement d'aujourd'hui, hors périmètre).
-            if (endFile.reason === MPV_END_FILE_REASON.ERROR && playbackWatchdogRef.current !== null) {
-              clearTimeout(playbackWatchdogRef.current);
-              playbackWatchdogRef.current = null;
+            // SEULEMENT reason=ERROR — jamais STOP (un rebuild de source émet le
+            // end-file(stop) de l'ANCIEN fichier). Watchdog armé : le chargement
+            // est mort ; désarmé : la lecture s'est arrêtée en plein film, et
+            // l'image restait figée sans un mot — le hook le dit désormais.
+            if (endFile.reason === MPV_END_FILE_REASON.ERROR) {
+              const loading = playbackWatchdogRef.current !== null;
+              if (loading) { clearTimeout(playbackWatchdogRef.current!); playbackWatchdogRef.current = null; }
               if (wakeupRef.current) { clearTimeout(wakeupRef.current); wakeupRef.current = null; }
-              onEndFileFailure(endFile);
+              onEndFileFailure(endFile, loading);
             }
             break;
           }

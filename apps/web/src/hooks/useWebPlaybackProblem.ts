@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import type { JellyfinClient } from "@tentacle-tv/api-client";
 import {
-  describeProblem, diagnosePlaybackFailure, lowerQualityTier, nextVersionId, transcodeAllowedOf, VERSION_QUERY_PARAM,
+  describeProblem, diagnosePlaybackFailure, isPlayerFault, lowerQualityTier, nextVersionId, transcodeAllowedOf, VERSION_QUERY_PARAM,
   type DiagnosedFailure, type MediaItem, type PlaybackFailure, type ProblemActionKey, type ProblemModel,
   type QualityKey, type QualityPreset,
 } from "@tentacle-tv/shared";
@@ -47,7 +47,7 @@ function appLabel(): string {
 }
 
 /**
- * Les échecs du lecteur web, réunis : la fiche, la négociation, les moteurs
+ * Les échecs du lecteur web (et de mpv sur le bureau), réunis : la fiche, la négociation, les moteurs
  * (hls.js et `<video>`, signalés par `report`). Chacun devient UN message du
  * modèle commun, diagnostiqué par la chaîne partagée (sondes des serveurs,
  * du flux, du fichier source) — et ses gestes passent ici : réessayer là où
@@ -67,9 +67,15 @@ export function useWebPlaybackProblem(args: WebPlaybackProblemArgs) {
   const argsRef = useRef(args);
   argsRef.current = args;
 
-  const report = useCallback((failure: PlaybackFailure) => {
+  /**
+   * Un échec à dire. `fallback` (bureau) : si la cause accuse le LECTEUR, la
+   * bascule vers le lecteur web a sa chance — rien n'est dit ; sinon le message
+   * part, au lieu d'un lecteur de secours qui échouerait pareil.
+   */
+  const report = useCallback((failure: PlaybackFailure, extra: { started?: boolean; fallback?: () => void } = {}) => {
     const id = ++seq.current;
     const a = argsRef.current;
+    if (extra.started) startedRef.current = true;
     setDiagnosing(true);
     void diagnosePlaybackFailure(failure, {
       streamUrl: absolute(a.streamUrl),
@@ -85,8 +91,9 @@ export function useWebPlaybackProblem(args: WebPlaybackProblemArgs) {
       app: appLabel(),
     }).then((next) => {
       if (seq.current !== id) return;
-      setDiagnosed(next);
       setDiagnosing(false);
+      if (extra.fallback && isPlayerFault(next.cause)) extra.fallback();
+      else setDiagnosed(next);
     });
   }, []);
 

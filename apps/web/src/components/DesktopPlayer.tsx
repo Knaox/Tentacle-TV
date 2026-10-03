@@ -232,7 +232,7 @@ export function DesktopPlayer({
   useEffect(() => {
     if (!failure) return;
     if (failure.kind === "media" && onMediaMissing) { onMediaMissing(); return; }
-    if (onFallbackToWeb) onFallbackToWeb();
+    if (onFallbackToWeb) onFallbackToWeb(failure);
   }, [failure, onFallbackToWeb, onMediaMissing]);
 
   // Pas encore d'image : le repli occupe seul l'écran (cf. DesktopPlayerFallback).

@@ -5,7 +5,8 @@ import {
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
 import { useMpvCommands } from "./useMpvCommands";
-import { classifyEndFileFailure, type PlaybackFailure } from "./playbackFailure";
+import type { PlaybackFailure } from "./playbackFailure";
+import { useEndFileFailure } from "./useEndFileFailure";
 import type { LocalMediaProbe } from "./useLocalMediaProbe";
 import type { MpvEndFileEvent } from "../lib/mpvTypes";
 import { noteAid, noteSid, forgetRequestedTracks } from "./mpvTrackIntent";
@@ -77,14 +78,14 @@ export function useDesktopPlayer(opts?: {
   const lastPlayRef = useRef<{ options: PlayOptions; attempt: number } | null>(null);
   // Trampoline : le ctx du cycle de vie est construit AVANT que `play` (donc le
   // vrai gestionnaire) n'existe — la ref se remplit plus bas, par effet.
-  const endFileFailureRef = useRef<(endFile: MpvEndFileEvent) => void>(() => {});
+  const endFileFailureRef = useRef<(endFile: MpvEndFileEvent, loading: boolean) => void>(() => {});
 
   // Init mpv + observers + destroy (sérialisé) au montage/démontage.
   useMpvLifecycle({
     setState, setReady, setFailure, setFileLoaded, setMediaReady,
     positionRef, positionAtRef, audioPtsRef, audioPtsAtRef, restartCountRef, restartAtRef, bufferedRef,
     bufferingRef, mutedRef, fileLoadedRef, playbackWatchdogRef, wakeupRef, loadfileAtRef,
-    onEndFileFailure: (endFile) => endFileFailureRef.current(endFile),
+    onEndFileFailure: (endFile, loading) => endFileFailureRef.current(endFile, loading),
   });
   // Les refs de l'horloge, en un bundle stable pour le transport et le suivi
   // des seeks (identité constante : créé une fois par montage).
@@ -267,31 +268,8 @@ export function useDesktopPlayer(opts?: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // end-file(ERROR) pendant un chargement (le cycle de vie a déjà désarmé le
-  // watchdog) : même sémantique deux-tentatives que le watchdog, mais SANS les
-  // attentes mortes — l'échec est explicite, 2×8 s n'apporteraient rien.
-  // Mesuré (rejeu du 28.08) : fichier local illisible = end-file(4) immédiat,
-  // deux fois, puis 16 s de watchdog avant la bascule. Désormais < 1 s.
-  const handleEndFileFailure = useCallback((endFile: MpvEndFileEvent) => {
-    const last = lastPlayRef.current;
-    if (last !== null && last.attempt === 1) {
-      wtLog("mpv", `end-file en erreur pendant le chargement (error=${endFile.error ?? "-"}) — retry immédiat`);
-      traceCommand("retry loadfile (end-file en erreur)", `error=${endFile.error ?? "-"}`);
-      void play(last.options, 2);
-      return;
-    }
-    wtLog("mpv", `end-file en erreur après retry (error=${endFile.error ?? "-"}) — échec définitif, classement`);
-    setFileLoaded(true); // débloque l'UI, comme le watchdog
-    const probe = opts?.probeLocalMedia;
-    void (async () => {
-      const present = probe !== undefined ? await probe() : null;
-      setFailure(classifyEndFileFailure({
-        errorCode: endFile.error,
-        isLocalPlayback: probe !== undefined,
-        localFilePresent: present,
-      }));
-    })();
-  }, [play, setFileLoaded, opts?.probeLocalMedia]);
+  // end-file(ERROR) : retry immédiat au chargement, puis classement (cf. le hook).
+  const handleEndFileFailure = useEndFileFailure({ lastPlayRef, play, setFileLoaded, setFailure, probeLocalMedia: opts?.probeLocalMedia });
   useEffect(() => { endFileFailureRef.current = handleEndFileFailure; }, [handleEndFileFailure]);
 
   const commands = useMpvCommands({ state, setState, mutedRef });

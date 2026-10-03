@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
+import { usePlaybackReporting } from "@tentacle-tv/api-client";
 import { formatEpisodeCode, TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
@@ -10,6 +10,11 @@ import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { MediaMissingScreen } from "../components/player/MediaMissingScreen";
+import { PlaybackProblemScreen } from "../components/problems/PlaybackProblemScreen";
+import { useWebPlaybackProblem } from "../hooks/useWebPlaybackProblem";
+import { useWatchStopCleanup } from "../hooks/useWatchStopCleanup";
+import { desktopPlaybackReport, type PlaybackFailure } from "../hooks/playbackFailure";
+import { playbackTitles } from "../hooks/watchSessionMedia";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { invoke } from "../desktop/bridge";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
@@ -42,7 +47,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     segments, maxResumePct, getPositionTicks,
-    isLocalPlayback, localSource,
+    isLocalPlayback, localSource, itemError,
   } = useWatchSession({ isDesktop: true, checkAudioTranscode: () => false });
   const { t: tDownloads } = useTranslation("downloads");
 
@@ -135,33 +140,8 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   // (zéro réseau), Jellyfin en streaming.
   const nextArtwork = useNextEpisodeArtwork(nextEpisode, client, !online || isLocalPlayback);
 
-  const runStopInvalidation = useWatchStopInvalidation();
-  const itemRef = useRef(item);
-  itemRef.current = item;
-
-  useEffect(() => {
-    return () => {
-      const id = itemId;
-      const snap = itemRef.current;
-      // Lue MAINTENANT : l'effet [itemId] de useWatchSession remet la position
-      // à zéro juste après ces cleanups — dans le microtask, elle vaudrait 0.
-      const stopPositionSeconds = positionRef.current;
-      const stoppedAt = Date.now();
-      queryClient.removeQueries({ queryKey: ["item", id] });
-      // Cleanups React s'exécutent en ordre inverse d'enregistrement : ce
-      // cleanup tourne AVANT celui de usePlaybackReporting qui assigne le vrai
-      // stop promise. On défère donc la lecture du ref à un microtask pour
-      // chaîner l'invalidation APRÈS le /Sessions/Playing/Stopped (Jellyfin a
-      // alors mis à jour Played/DatePlayed → décision « 100% vu » fiable).
-      queueMicrotask(() => {
-        void runStopInvalidation({
-          itemId: id, seriesId: snap?.SeriesId, itemType: snap?.Type,
-          stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
-          stoppedAt, stopped: lastStopPromiseRef.current,
-        });
-      });
-    };
-  }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation, positionRef]);
+  // À la sortie : la fiche relue, et « vu » décidé APRÈS l'arrêt signalé (cf. le hook).
+  useWatchStopCleanup({ itemId, item, positionRef, lastStopPromiseRef });
 
   const handleAudioChange = useCallback(async (idx: number) => {
     audioOverrideRef.current = true;
@@ -215,30 +195,39 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     if (online && !isLocalPlayback) updatePosition(seconds, paused);
   }, [updatePosition, positionRef, online, isLocalPlayback]);
 
-  // Titre : DTO serveur, sinon méta locale (démarrage 100 % hors ligne).
-  const title = item
-    ? (item.Type === "Episode" ? item.SeriesName ?? item.Name : item.Name ?? "")
-    : (localSource?.seriesName ?? localSource?.title ?? "");
-  // Sous-titre : DTO serveur, sinon numéros de la méta locale (hors ligne).
-  // Sans numéros connus, on n'invente pas de « S00E00 » — titre seul.
-  const epSubtitle = (() => {
-    if (item?.Type === "Episode") {
-      return `${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}`;
-    }
-    if (item || !localSource?.seriesName) return undefined;
-    const code = localSource.parentIndexNumber != null && localSource.indexNumber != null
-      ? formatEpisodeCode(localSource.parentIndexNumber, localSource.indexNumber, { style: "padded" })
-      : null;
-    const name = localSource.title ?? "";
-    return code ? `${code} — ${name}` : name || undefined;
-  })();
+  // Un échec que plus rien ne rattrape : dit, avec ses gestes ; un défaut du
+  // LECTEUR seul bascule encore vers le lecteur web (useWebPlaybackProblem).
+  const [attempt, setAttempt] = useState(0);
+  const playback = useWebPlaybackProblem({
+    client, itemId, item, itemError: isLocalPlayback ? null : itemError, negotiationError: null, streamUrl, isDirectPlay,
+    burningSubtitles: burnInSubtitleIndex != null, subtitlesActive: subtitleIndex != null,
+    mediaSourceId, qualityKey, qualityPresets, positionRef,
+    restartAt: (seconds) => { setStartTicks(Math.floor(seconds * TICKS_PER_SECOND)); setAttempt((n) => n + 1); },
+    setQuality: (key) => { void handleQualityChange(key); }, dropSubtitles: () => { void handleSubtitleChange(null); },
+    leave: () => { void handleMediaBack(); },
+  });
+  const handlePlayerFailure = useCallback((failure: PlaybackFailure) => {
+    if (isLocalPlayback) { onFallbackToWeb?.(); return; }
+    playback.report(desktopPlaybackReport(failure), { started: failure.started, fallback: onFallbackToWeb });
+  }, [isLocalPlayback, onFallbackToWeb, playback.report]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Titre et épisode : DTO serveur, sinon méta locale (démarrage 100 % hors ligne).
+  const { title, epSubtitle } = playbackTitles(item, localSource);
 
   // Lecture locale + hors ligne : le DTO serveur ne viendra pas — on ne
   // l'attend pas (titre, durée, position et pistes viennent du local, la page
   // est conçue pour). En ligne, on l'attend : position de reprise cross-device
   // et pistes serveur doivent être là au montage.
   const waitForServerItem = isLoading && !(isLocalPlayback && !online);
-  if (waitForServerItem || !streamUrl) {
+  if (playback.problem) {
+    return (
+      <PlaybackProblemScreen
+        model={playback.problem} posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle}
+        onAction={playback.onAction} onBack={() => { void handleMediaBack(); }}
+      />
+    );
+  }
+  if (waitForServerItem || !streamUrl || playback.diagnosing) {
     return (
       <PlayerLoadingScreen
         posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle}
@@ -265,8 +254,8 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   return (
     <div className="relative h-screen w-screen">
       <DesktopPlayer
-        key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
-        startPositionSeconds={group.groupStartPositionSeconds ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
+        key={`${itemId}:${attempt}`} src={streamUrl} title={title} subtitle={epSubtitle}
+        startPositionSeconds={group.groupStartPositionSeconds ?? playback.resumeAt ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
         audioTracks={audioTracks} subtitleTracks={subtitleTracks}
         currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality} autoQualityActive={autoModeArmed}
         qualityPresets={qualityPresets}
@@ -278,7 +267,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         isLocalPlayback={isLocalPlayback} offline={!online}
         localLibraryId={localSource?.libraryId ?? null}
         localSubtitleFiles={localSource?.subtitleFiles}
-        onProgress={handleProgress} onStarted={() => { if (online && !isLocalPlayback) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
+        onProgress={handleProgress} onStarted={() => { playback.markStarted(); if (online && !isLocalPlayback) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
         nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextArtwork.imageUrl}
         nextSeriesBackdropUrl={nextArtwork.seriesBackdropUrl} nextEpisodeThumbUrl={nextArtwork.thumbUrl}
@@ -287,7 +276,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
         segments={segments.segments} runtimeMs={segments.runtimeMs} libraryId={segments.libraryId}
         itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
-        onFallbackToWeb={onFallbackToWeb} onMediaMissing={handleMediaMissing}
+        onFallbackToWeb={handlePlayerFailure} onMediaMissing={handleMediaMissing}
         transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
         onBufferingChange={groupSync.notifyBuffering}
         onSeekComplete={(seconds, _paused, explicit) => groupSync.notifySeek(seconds, { explicit })}

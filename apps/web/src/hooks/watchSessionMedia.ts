@@ -1,6 +1,7 @@
 import type { JellyfinClient } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, formatEpisodeCode } from "@tentacle-tv/shared";
 import { stripOverviewHtml } from "../lib/overviewHtml";
+import type { LocalSource } from "../downloads/playbackApi";
 import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/player/videoPlayer.types";
 
@@ -121,4 +122,24 @@ export function nextEpisodeCard(client: JellyfinClient, next: MediaItem | null |
     imageUrl: client.getImageUrl(backdropId, imageType, { width: 720, quality: 85 }),
     description: overview ? (overview.length > 120 ? overview.slice(0, 120) + "…" : overview) : undefined,
   };
+}
+
+/**
+ * Le titre et l'épisode d'une lecture : le DTO serveur, sinon la méta locale
+ * (démarrage 100 % hors ligne). Sans numéros connus, on n'invente pas de
+ * « S00E00 » — titre seul.
+ */
+export function playbackTitles(item: MediaItem | undefined, local: LocalSource | null | undefined): { title: string; epSubtitle?: string } {
+  const title = item
+    ? (item.Type === "Episode" ? item.SeriesName ?? item.Name : item.Name ?? "")
+    : (local?.seriesName ?? local?.title ?? "");
+  if (item?.Type === "Episode") {
+    return { title, epSubtitle: `${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}` };
+  }
+  if (item || !local?.seriesName) return { title };
+  const code = local.parentIndexNumber != null && local.indexNumber != null
+    ? formatEpisodeCode(local.parentIndexNumber, local.indexNumber, { style: "padded" })
+    : null;
+  const name = local.title ?? "";
+  return { title, epSubtitle: code ? `${code} — ${name}` : name || undefined };
 }

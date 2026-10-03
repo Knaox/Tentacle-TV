@@ -9,6 +9,7 @@ import type { AudioTrack, SubtitleTrack } from "../VideoPlayer";
 import type { LocalSubtitleFile } from "../../downloads/playbackApi";
 import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
+import type { PlaybackFailure } from "../../hooks/playbackFailure";
 
 /** Référence stable : une valeur par défaut inline relancerait les mémos. */
 export const EMPTY_SUBTITLE_FILES: LocalSubtitleFile[] = [];
@@ -47,7 +48,9 @@ export interface DesktopPlayerProps {
   itemId?: string;
   item?: MediaItem;
   mediaSourceId?: string;
-  onNextEpisode?: () => void; onPreviousEpisode?: () => void; onFallbackToWeb?: () => void;
+  onNextEpisode?: () => void; onPreviousEpisode?: () => void;
+  /** Un échec du LECTEUR : le parent le diagnostique — bascule web, ou message (`useDesktopPlaybackProblem`). */
+  onFallbackToWeb?: (failure: PlaybackFailure) => void;
   /**
    * Erreur de MÉDIA (fichier local disparu, prouvé par la sonde) : le parent
    * démonte le lecteur et affiche l'écran dédié — la bascule de secours n'est
