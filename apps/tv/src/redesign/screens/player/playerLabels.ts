@@ -46,6 +46,12 @@ export function skipPillLabel(t: Translate, labelKey: SkipLabelKey, countdownSec
   return t(`player:${labelKey}In`, { seconds: countdownSeconds });
 }
 
+/** Le badge d'un saut OSD caché : « +30 s », « −10 s » (cumulés). */
+export function seekFlashLabel(t: Translate, deltaSeconds: number): string {
+  const seconds = Math.abs(Math.round(deltaSeconds));
+  return t(deltaSeconds >= 0 ? "player:seekFlashForward" : "player:seekFlashBack", { seconds });
+}
+
 /** Le décompte du défilement : la lecture repartira à la position visée. */
 export function scrubCountdownLabel(t: Translate, seconds: number): string {
   return t("player:scrubPlayIn", { seconds });

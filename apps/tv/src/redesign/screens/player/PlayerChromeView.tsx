@@ -23,6 +23,7 @@ import type {
   SkipPillModel, SubtitleCue, UpNextModel,
 } from "./playerTypes";
 import { ScrubOverlay } from "./ScrubOverlay";
+import { SeekFlash } from "./SeekFlash";
 import { SettingsPanel } from "./SettingsPanel";
 import { SkipPill } from "./SkipPill";
 import { SubtitleLayer } from "./SubtitleLayer";
@@ -37,9 +38,8 @@ import { UpNextCard } from "./UpNextCard";
  * - `usePlayerMediaState` : `paused`, `timeline` (displayTime, bufferedTime),
  *   `buffering` (isLoading && hasStarted), `error` (videoError, 8 s) ;
  * - `useTVPlayerControls` : `osdVisible` (overlayVisible, ou pause hors
- *   défilement), `scrub` (scrubbing, scrubPosition, speedLabel, décompte),
- *   et les gestes du transport — un saut ouvre le défilement, dont la vue
- *   dit l'écart : pas de badge ici ;
+ *   défilement), `scrub` (scrubbing, scrubPosition, speedLabel), `seekFlash`
+ *   (skipFlash), et les gestes du transport ;
  * - `useTVTrickplay` : `scrub.frame`, `reloadFrame` (vignette de la position) ;
  * - `useTVPlaybackOverlay` (arbitre partagé) : `skip` (overlay skip ou
  *   nextButton, libellé par `skipPillLabel`), `upNext` (nextCard du
@@ -80,6 +80,7 @@ export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport
   osdVisible: boolean;
   buffering?: boolean;
   scrub?: ScrubModel | null;
+  seekFlash?: { forward: boolean; label: string } | null;
   skip?: SkipPillModel | null;
   upNext?: UpNextModel | null;
   endScreen?: EndScreenModel | null;
@@ -195,6 +196,9 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
       </Animated.View>
       {(props.buffering || props.reloadFrame) && !troublePanel ? <BufferingBadge hint={props.bufferingHint} /> : null}
       <PlaybackTrouble model={trouble} onAction={props.onTroubleAction} />
+      <Presented value={props.seekFlash && !scrub ? props.seekFlash : null} motion="reveal">
+        {(flash, appear) => <SeekFlash forward={flash.forward} label={flash.label} appear={appear} />}
+      </Presented>
       {props.notice && playing && !trouble ? <QualityNotice text={props.notice} /> : null}
       {props.error && !troublePanel ? <ErrorBanner title={props.error.title} message={props.error.message} /> : null}
       {skip && playing && !scrub && !panel && !endScreen && !covers ? (

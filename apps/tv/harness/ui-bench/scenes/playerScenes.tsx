@@ -2,7 +2,7 @@ import { Image, StyleSheet, View } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { RESUME_COUNTDOWN_MS, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "../../../src/hooks/seekTuning";
 import { PlayerChromeView, type PlayerChromeViewProps } from "../../../src/redesign/screens/player/PlayerChromeView";
-import { scrubCountdownLabel, skipPillLabel } from "../../../src/redesign/screens/player/playerLabels";
+import { scrubCountdownLabel, seekFlashLabel, skipPillLabel } from "../../../src/redesign/screens/player/playerLabels";
 import type { BenchData } from "../data/benchData";
 import {
   byName, endScreenOf, episodeAt, imageList, mediaOf, neighbours, playerLabels, subtitleCue, t, timelineOf, transportOf,
@@ -175,12 +175,14 @@ export const PLAYER_SCENES: BenchScene[] = [
   // les entrées : en lecture, la lecture repart à la cible ; en pause, rien.
   scene("decompte-lecture", "Défilement · lecture dans 5 s", patch(film, aimedWith(5, 212))),
   scene("decompte-lecture-1s", "Défilement · lecture dans 1 s", patch(film, aimedWith(1, 212))),
-  scene("decompte-saut", "Saut d'un appui → (ou bouton) · lecture dans 5 s", patch(film, aimedWith(5, SKIP_FORWARD_SECONDS))),
-  scene("decompte-recul", "Saut d'un appui ← (ou bouton) · lecture dans 5 s", patch(episode, aimedWith(5, -SKIP_BACK_SECONDS))),
+  scene("decompte-saut", "Avance rapide · un appui → pousse la cible, lecture dans 5 s", patch(film, aimedWith(5, SKIP_FORWARD_SECONDS))),
+  scene("decompte-recul", "Avance rapide · un appui ← recule la cible, lecture dans 5 s", patch(episode, aimedWith(5, -SKIP_BACK_SECONDS))),
   scene("decompte-pause", "Défilement en pause · aucun décompte", patch(film, aimedWith(null, 1800, true))),
   scene("decompte-sans-vignette", "Défilement · sans vignettes, lecture dans 5 s", patch(film, aimedWith(5, 212, false, false))),
   scene("decompte-fin", "Défilement · tout à la fin, lecture dans 1 s", patch(film, (data, stage) =>
     aimedWith(1, stage.props.timeline.duration - 6 - stage.props.timeline.position)(data, stage))),
+  scene("saut-avant", `Saut +${SKIP_FORWARD_SECONDS} s (un appui →, habillage caché)`, patch(film, () => ({ osdVisible: false, seekFlash: { forward: true, label: seekFlashLabel(t, SKIP_FORWARD_SECONDS) } }))),
+  scene("saut-arriere", `Saut −${2 * SKIP_BACK_SECONDS} s cumulé (deux appuis ←)`, patch(film, () => ({ osdVisible: false, seekFlash: { forward: false, label: seekFlashLabel(t, -2 * SKIP_BACK_SECONDS) } }))),
   scene("intro-manuelle", "Passer l'intro · manuel", patch(episode, skip("skipIntro", "segment", null)), ["player:skip"]),
   scene("intro-auto", "Passer l'intro · auto, décompte", patch(episode, skip("skipIntro", "segment", 5)), ["player:skip-dismiss", "player:skip"]),
   scene("intro-sourdine", "Passer l'intro · en sourdine (habillage)", patch(episode, skip("skipIntro", "segment", null, true)), ["player:playpause", "player:skip"]),

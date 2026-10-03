@@ -105,9 +105,12 @@ export default {
   prismPreparing: "Préparation…",
   prismStarting: "Démarrage de la lecture…",
   // Refonte de l'habillage TV : ce qui s'écrivait en dur (« -10s », « +30s »,
-  // « E01 »). La légende d'un bouton de saut, le numéro d'une ligne d'épisode.
+  // « E01 »). La légende d'un bouton de saut, le badge d'un saut OSD caché,
+  // le numéro d'une ligne d'épisode.
   seekBackBy: "Reculer de {{seconds}} s",
   seekForwardBy: "Avancer de {{seconds}} s",
+  seekFlashBack: "−{{seconds}} s",
+  seekFlashForward: "+{{seconds}} s",
   previousEpisodeLabel: "Épisode précédent",
   episodeNumber: "Épisode {{number}}",
   // Le message-outil du lecteur, quand un serveur ne répond plus : ce qui se

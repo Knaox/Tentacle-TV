@@ -104,6 +104,8 @@ export default {
   // « E01 »).
   seekBackBy: "Back {{seconds}}s",
   seekForwardBy: "Forward {{seconds}}s",
+  seekFlashBack: "−{{seconds}}s",
+  seekFlashForward: "+{{seconds}}s",
   previousEpisodeLabel: "Previous episode",
   episodeNumber: "Episode {{number}}",
   // The player's trouble tool, when a server stops answering: what is
