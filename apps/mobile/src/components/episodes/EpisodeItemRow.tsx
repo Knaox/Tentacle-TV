@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -21,8 +21,12 @@ interface Props {
   client: ReturnType<typeof useJellyfinClient>;
   onPlay: (ep: MediaItem) => void;
   isCurrent?: boolean;
-  /** Avant le « ⋯ » : le bouton « Garder hors ligne » de l'épisode. */
-  leading?: ReactNode;
+  /**
+   * Avant le « ⋯ » : le bouton « Garder hors ligne » de l'épisode. Une
+   * fonction STABLE, appelée ici : un élément neuf par ligne ferait céder le
+   * `memo` de toutes les lignes à chaque lot monté.
+   */
+  renderLeading?: (ep: MediaItem) => ReactNode;
   /** L'appui long, et le « ⋯ » : la feuille des cartes (variante 16:9) sur la fiche ; rien dans le lecteur. */
   onLongPress?: (ep: MediaItem) => void;
 }
@@ -39,7 +43,7 @@ interface Props {
  * doublait la pastille, et n'était pas celui du modèle. Dans le lecteur, sans
  * feuille, la ligne ne porte que son état.
  */
-export function EpisodeItemRow({ ep, seriesId, client, onPlay, isCurrent, leading, onLongPress }: Props) {
+export const EpisodeItemRow = memo(function EpisodeItemRow({ ep, seriesId, client, onPlay, isCurrent, renderLeading, onLongPress }: Props) {
   const { t } = useTranslation(["common", "cards"]);
   const { colors, isDark } = useTheme();
   const st = useThemedStyles(makeEpisodeRowStyles);
@@ -89,7 +93,7 @@ export function EpisodeItemRow({ ep, seriesId, client, onPlay, isCurrent, leadin
         </View>
       </Pressable>
 
-      {leading}
+      {renderLeading?.(ep)}
 
       {/* Le « ⋯ » : la feuille des actions — vu, garder hors ligne, fiche,
           note —, la même que l'appui long, rendue visible. */}
@@ -110,7 +114,7 @@ export function EpisodeItemRow({ ep, seriesId, client, onPlay, isCurrent, leadin
       )}
     </View>
   );
-}
+});
 
 // Propre à la ligne en ligne : sa jumelle hors ligne garde, pour l'instant,
 // la piste des styles partagés (`episodeRowStyles`).

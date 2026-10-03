@@ -95,7 +95,7 @@ export function EpisodeItems({ seriesId, seasonId, episodes, withSources, onPlay
                 client={client}
                 onPlay={onPlay}
                 isCurrent={isCurrent}
-                leading={rowLeading?.(ep)}
+                renderLeading={rowLeading}
                 onLongPress={onLongPressEpisode}
               />
             </View>

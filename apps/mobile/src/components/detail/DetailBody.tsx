@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -14,14 +14,15 @@ import { landscapeSheetTarget } from "@/components/cards/sheet/cardSheetTarget";
 import { EpisodeKeepOfflineButton } from "@/offline/entry/EpisodeKeepOfflineButton";
 import { SeasonKeepOfflinePill } from "@/offline/entry/SeasonKeepOfflinePill";
 import { CastRow } from "../CastRow";
-import { LicenseAttribution } from "../LicenseAttribution";
 import { MobileExtrasSection } from "./MobileExtrasSection";
 import { DetailRating } from "./DetailRating";
-import { DetailFacts } from "./DetailFacts";
-import { SagaRow } from "./SagaRow";
-import { IncludedInRow } from "./IncludedInRow";
+import { DetailTail } from "./DetailTail";
 import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
 import { useOpenMedia } from "@/hooks/useOpenMedia";
+
+/** Les rendus des épisodes, fixes : les lignes mémoïsées ne cèdent pas à chaque lot. */
+const renderSeasonTrailing = (episodes: MediaItem[]) => <SeasonKeepOfflinePill episodes={episodes} />;
+const renderEpisodeLeading = (ep: MediaItem) => <EpisodeKeepOfflineButton episode={ep} />;
 
 interface Props {
   item: MediaItem;
@@ -55,6 +56,11 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
   // pas à chaque rendu de la fiche.
   const openMedia = useOpenMedia();
   const renderMediaCard = useCallback((c: MediaItem) => <MobileMediaCard item={c} onPress={openMedia} />, [openMedia]);
+  const playEpisode = useCallback((ep: MediaItem) => router.push(`/watch/${ep.Id}`), [router]);
+  const longPressEpisode = useMemo(
+    () => (openSheet ? (ep: MediaItem) => openSheet(landscapeSheetTarget(ep)) : undefined),
+    [openSheet],
+  );
 
   return (
     <View>
@@ -112,23 +118,16 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
             initialSeasonId={highlightSeasonId}
             openSeasonId={openSeasonId}
             followResume={item.Type === "Series"}
-            onPlay={(ep) => router.push(`/watch/${ep.Id}`)}
-            seasonTrailing={(episodes) => <SeasonKeepOfflinePill episodes={episodes} />}
-            rowLeading={(ep) => <EpisodeKeepOfflineButton episode={ep} />}
-            onLongPressEpisode={openSheet ? (ep) => openSheet(landscapeSheetTarget(ep)) : undefined}
+            onPlay={playEpisode}
+            seasonTrailing={renderSeasonTrailing}
+            rowLeading={renderEpisodeLeading}
+            onLongPressEpisode={longPressEpisode}
           />
         </>
       )}
 
-      <DetailFacts item={item} />
-
-      <LicenseAttribution item={item} />
-      {/* La saga d'un film, comme au bureau : juste avant les similaires. */}
-      {item.Type === "Movie" && <SagaRow item={item} />}
-      <IncludedInRow itemId={item.Id} />
-      {similar && similar.length > 0 && (
-        <MediaRow title={t("recommendations")} data={similar} renderItem={renderMediaCard} />
-      )}
+      {/* Le pied (sous le pli) : monté à l'arrivée de l'écran. */}
+      <DetailTail item={item} similar={similar} renderCard={renderMediaCard} />
     </View>
   );
 }
