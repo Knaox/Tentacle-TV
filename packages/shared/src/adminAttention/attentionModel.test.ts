@@ -100,6 +100,14 @@ describe("ce qui demande l'attention de l'administrateur", () => {
     ]);
   });
 
+  it("un réglage en attente de redémarrage se dit, même sans redémarrage signalé par Jellyfin", () => {
+    const attention = buildAdminAttention({
+      ...healthy,
+      jellyfinSetup: { restartPending: false, checks: [{ id: "segmentsProvider", level: "recommended", state: "pending-restart" }] },
+    });
+    expect(attention.recommendations).toEqual([{ id: "jellyfin", hint: "adminJellyfin", variant: null, items: ["restart"] }]);
+  });
+
   it("six entrées à la fois : à régler d'abord, puis les recommandations dans leur ordre", () => {
     const attention = buildAdminAttention({
       ...healthy,

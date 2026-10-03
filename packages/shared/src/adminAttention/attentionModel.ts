@@ -135,12 +135,17 @@ function linkEntry(check: LinkCheck | undefined): { variant: string; items: stri
 function jellyfinItems(s: AttentionSources): { variant: string | null; items: string[] } | null {
   const items: string[] = [];
   let essential = false;
+  // Un réglage fait mais pas encore appliqué (greffon installé ou coupé) attend lui
+  // aussi le redémarrage de Jellyfin, même quand Jellyfin ne le signale pas encore.
+  let restart = s.jellyfinSetup?.restartPending === true;
   for (const check of s.jellyfinSetup?.checks ?? []) {
-    if (check.state !== "todo" || check.level === "optional") continue;
+    if (check.level === "optional") continue;
+    restart ||= check.state === "pending-restart";
+    if (check.state !== "todo") continue;
     items.push(`setup:${check.id}`);
     essential ||= check.level === "essential";
   }
-  if (s.jellyfinSetup?.restartPending) items.push("restart");
+  if (restart) items.push("restart");
   if (s.jellyfinVersion === "partial") items.push("partial");
   return items.length > 0 ? { variant: essential ? "essential" : null, items } : null;
 }
