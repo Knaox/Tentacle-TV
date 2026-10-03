@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CHOICE_ENTRY_RELEASE_MS, createChoiceEntry } from "@tentacle-tv/tv-core";
-import { setFocusLocked } from "../../../redesignWiring/focus/focusLocks";
-import type { FocusStore } from "../../../redesignWiring/focus/focusStore";
+import { setFocusLocked } from "../focus/focusLocks";
+import type { FocusStore } from "../focus/focusStore";
 
 /**
  * Applique le verrou d'entrée d'une liste en `Modal` (tv-core

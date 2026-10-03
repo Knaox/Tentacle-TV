@@ -8,7 +8,7 @@ import { useSheetFocus } from "../../platform/tvos/panels/sheetFocus";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView } from "../../redesign/screens/sheet/ActionSheetView";
 import { useBackLayers } from "../back/BackScope";
-import { useFocusStore } from "../focus/focusStore";
+import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { useSheetModel } from "./useSheetModel";
 
 /**

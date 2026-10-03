@@ -5,9 +5,9 @@ import { OFFLINE_VEIL, OFFLINE_VEIL_FOCUS, OFFLINE_VEIL_KEYS } from "@tentacle-t
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { OfflineOverlay } from "../../redesign/screens/overlays/OfflineOverlay";
 import { useUnpairDevice } from "../../hooks/useUnpairDevice";
-import { useFocusStore } from "../focus/focusStore";
-import { TrapFocusGuide } from "../focus/focusGuides";
-import { useKeepFocusWithin } from "../focus/useKeepFocusWithin";
+import { useFocusStore } from "../../platform/tvos/focus/focusStore";
+import { TrapFocusGuide } from "../../platform/tvos/focus/focusGuides";
+import { useKeepFocusWithin } from "../../platform/tvos/focus/useKeepFocusWithin";
 
 /**
  * Le voile hors ligne de la refonte (Apple TV), monté par `OfflineBanner`

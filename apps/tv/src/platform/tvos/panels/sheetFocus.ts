@@ -16,8 +16,8 @@ import {
   type SheetRating,
 } from "@tentacle-tv/tv-core";
 import type { FocusBinder, FocusBinding } from "../../../redesign/focus/focusBinding";
-import { createEntryGuide } from "../../../redesignWiring/focus/entryGuide";
-import type { FocusStore } from "../../../redesignWiring/focus/focusStore";
+import { createEntryGuide } from "../focus/entryGuide";
+import type { FocusStore } from "../focus/focusStore";
 import { useChoiceEntry } from "./useChoiceEntry";
 
 /**

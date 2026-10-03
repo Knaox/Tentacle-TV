@@ -11,7 +11,7 @@ import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView, type SheetActionKind, type SheetActionModel } from "../../redesign/screens/sheet/ActionSheetView";
 import { useBackLayers } from "../back/BackScope";
 import { tvPosterUri } from "../cards/absentCards";
-import { useFocusStore } from "../focus/focusStore";
+import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { absentOf } from "./absentStates";
 import type { AbsentTitle } from "./absentTitle";
 import { useArrivals, useLiveRefresh } from "./liveRequests";

@@ -6,7 +6,7 @@ import { ScreenErrorView } from "../../redesign/screens/overlays/ScreenErrorView
 import { routeRailKey, type RouteLike } from "../../navigation/routeRailKey";
 import { REDESIGN_ROUTES } from "../redesignGate";
 import { useBackFocus } from "../focus/backFocus";
-import { useFocusStore } from "../focus/focusStore";
+import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 
