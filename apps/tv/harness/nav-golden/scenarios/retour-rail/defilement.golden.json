@@ -1,0 +1,128 @@
+{
+  "format": 1,
+  "domain": "retour-rail",
+  "suite": "defilement",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T4",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:01:56.676Z",
+  "scenarios": {
+    "rail-24-bibliotheques": {
+      "hash": "bbb7864ca9f5",
+      "durationMs": 35138,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "rr000000000000000000000000000017",
+          "libraryName": "Bibliothèque 21"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Library_rr000000000000000000000000000017",
+          "label": "Bibliothèque 21",
+          "frame": [
+            56,
+            682,
+            289,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "rr000000000000000000000000000017",
+            "libraryName": "Bibliothèque 21"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "holddown:3",
+          "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            56,
+            60,
+            289,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "rr000000000000000000000000000017",
+            "libraryName": "Bibliothèque 21"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "holdup:5",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            321,
+            289,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "rr000000000000000000000000000017",
+            "libraryName": "Bibliothèque 21"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

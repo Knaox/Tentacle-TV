@@ -1,0 +1,186 @@
+{
+  "format": 1,
+  "domain": "retour-rail",
+  "suite": "demandes",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T4",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:02:45.757Z",
+  "scenarios": {
+    "fenetre-des-demandes": {
+      "hash": "39eac48ed4f4",
+      "durationMs": 25898,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "wait:0.7",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nav:Requests",
+          "label": "Mes demandes, 1 demande",
+          "frame": [
+            56,
+            892,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "requests:close",
+          "label": "Retour",
+          "frame": [
+            356,
+            407,
+            60,
+            60
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "requests:close"
+          ],
+          "panelOwners": [
+            "RequestsPanel"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Requests",
+          "label": "Mes demandes, 1 demande",
+          "frame": [
+            56,
+            892,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

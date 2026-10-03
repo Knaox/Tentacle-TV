@@ -1,0 +1,2550 @@
+{
+  "format": 1,
+  "domain": "retour-rail",
+  "suite": "organiser",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T4",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:28:46.931Z",
+  "scenarios": {
+    "menu-entree-retour": {
+      "hash": "59eaa18d4ac1",
+      "durationMs": 25803,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:menu:up",
+          "label": "Monter",
+          "frame": [
+            394,
+            485,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:menu:down",
+          "label": "Descendre",
+          "frame": [
+            394,
+            567,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:menu:hide",
+          "label": "Masquer",
+          "frame": [
+            394,
+            649,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:menu:settings",
+          "label": "Réglages de la navigation",
+          "frame": [
+            394,
+            731,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "monter-x2-puis-retour": {
+      "hash": "98f78143207d",
+      "durationMs": 25402,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:menu:up",
+          "label": "Monter",
+          "frame": [
+            394,
+            485,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:menu:up",
+          "label": "Monter",
+          "frame": [
+            394,
+            485,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:menu:up",
+          "label": "Monter",
+          "frame": [
+            394,
+            485,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+          }
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            477,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nav:Recommendations",
+          "label": "Pour vous",
+          "frame": [
+            56,
+            405,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nav:Watchlist",
+          "label": "Ma liste",
+          "frame": [
+            56,
+            549,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "monter-puis-double-retour": {
+      "hash": "3f405ab37c59",
+      "durationMs": 25850,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:menu:up",
+          "label": "Monter",
+          "frame": [
+            394,
+            485,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:menu:up",
+          "label": "Monter",
+          "frame": [
+            394,
+            485,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "menu",
+            "wait:0.06",
+            "menu"
+          ],
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "masquer-puis-tout-afficher": {
+      "hash": "be66f4e3223e",
+      "durationMs": 24493,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nav:menu:hide",
+          "label": "Masquer",
+          "frame": [
+            394,
+            649,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": "{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"]}"
+          }
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nav:RailShowAll",
+          "label": "Tout afficher",
+          "frame": [
+            56,
+            765,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            693,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": "{\"masquees\":[]}"
+          }
+        }
+      ]
+    },
+    "tout-afficher-du-menu": {
+      "hash": "797d4c6a4be9",
+      "durationMs": 28254,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nav:menu:hide",
+          "label": "Masquer",
+          "frame": [
+            394,
+            649,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            362,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nav:menu:showAll",
+          "label": "Tout afficher",
+          "frame": [
+            394,
+            690,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            693,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": "{\"masquees\":[]}"
+          }
+        }
+      ]
+    },
+    "deplacer-puis-poser": {
+      "hash": "e2ef2a92c14e",
+      "durationMs": 27866,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "texts": [
+            true
+          ]
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            693,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            765,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": null
+          }
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            765,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"]}"
+          }
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nav:Library_d565273fd114d77bdf349a2896867069",
+          "label": "Séries",
+          "frame": [
+            56,
+            693,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "deplacer-puis-annuler": {
+      "hash": "51bb6191c676",
+      "durationMs": 25167,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            693,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": null
+          }
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nav:Favorites",
+          "label": "Mes favoris",
+          "frame": [
+            56,
+            549,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "deplacer-puis-sortir": {
+      "hash": "9ce169e37e2f",
+      "durationMs": 24886,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            549,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+          }
+        }
+      ]
+    },
+    "deplacer-butee-en-tete": {
+      "hash": "771dd68a283a",
+      "durationMs": 24391,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            405,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            405,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+          }
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            333,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "appui-long-accueil": {
+      "hash": "2b6eea423e90",
+      "durationMs": 19791,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up",
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            333,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            333,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "appui-long-rechercher": {
+      "hash": "8d53c414068e",
+      "durationMs": 22306,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up",
+            "up",
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            56,
+            244,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            56,
+            244,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "appui-long-profil": {
+      "hash": "a70ae37bcecb",
+      "durationMs": 23413,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "wait:0.7",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "menu-vers-reglages-navigation": {
+      "hash": "3e1b62d065b6",
+      "durationMs": 24925,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.5",
+          "app": "foreground",
+          "focus": "nav:menu:move",
+          "label": "Déplacer",
+          "frame": [
+            394,
+            403,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nav:menu:settings",
+          "label": "Réglages de la navigation",
+          "frame": [
+            394,
+            731,
+            516,
+            76
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "nav:menu:move"
+          ],
+          "panelOwners": [
+            "FadingModal"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:tab:navigation",
+          "label": "Navigation",
+          "frame": [
+            176,
+            506,
+            340,
+            100
+          ],
+          "groups": [
+            "settings:tabs"
+          ],
+          "route": "Settings",
+          "params": {
+            "tab": "navigation"
+          },
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "reglages-navigation-deplacer": {
+      "hash": "7a408fbd606d",
+      "durationMs": 36303,
+      "start": {
+        "app": "foreground",
+        "focus": "settings:tab:navigation",
+        "label": "Navigation",
+        "frame": [
+          176,
+          506,
+          340,
+          100
+        ],
+        "groups": [
+          "settings:tabs"
+        ],
+        "route": "Settings",
+        "params": {
+          "tab": "navigation"
+        },
+        "stack": [
+          "Home",
+          "Settings"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "settings:nav:0",
+          "label": "1. Pour vous, Affichée",
+          "frame": [
+            612,
+            394,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": {
+            "tab": "navigation"
+          },
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:nav:0",
+          "label": "1. Pour vous, Affichée",
+          "frame": [
+            612,
+            394,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": {
+            "tab": "navigation"
+          },
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "settings:nav:1",
+          "label": "2. Pour vous, Affichée",
+          "frame": [
+            612,
+            488,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": {
+            "tab": "navigation"
+          },
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "settings:nav:0",
+          "label": "1. Pour vous, Affichée",
+          "frame": [
+            612,
+            394,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": {
+            "tab": "navigation"
+          },
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": null
+          }
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:nav:0",
+          "label": "1. Pour vous, Affichée",
+          "frame": [
+            612,
+            394,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": {
+            "tab": "navigation"
+          },
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "settings:nav:1",
+          "label": "2. Pour vous, Affichée",
+          "frame": [
+            612,
+            488,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": {
+            "tab": "navigation"
+          },
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:nav:1",
+          "label": "2. Pour vous, Affichée",
+          "frame": [
+            612,
+            550,
+            914,
+            84
+          ],
+          "groups": [
+            "settings:lines",
+            "settings:panel"
+          ],
+          "route": "Settings",
+          "params": {
+            "tab": "navigation"
+          },
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Watchlist\",\"Recommendations\",\"Favorites\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+          }
+        }
+      ]
+    }
+  }
+}

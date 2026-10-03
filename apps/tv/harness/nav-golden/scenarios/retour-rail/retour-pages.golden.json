@@ -1,0 +1,445 @@
+{
+  "format": 1,
+  "domain": "retour-rail",
+  "suite": "retour-pages",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T4",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:36:50.441Z",
+  "scenarios": {
+    "accueil-retour-x3": {
+      "hash": "5b8382e3de8f",
+      "durationMs": 30656,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            333,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "background",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": null,
+          "params": null,
+          "stack": [],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "activate",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "bibliotheque-retour-x3": {
+      "hash": "1499391cbb31",
+      "durationMs": 31069,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "\"Omae Gotoki ga Maou ni Kateru to Omou na\" to Yuusha Party o Tsuihou Sareta node, Outo de Kimama ni Kurashitai",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
+          "libraryName": "Animés"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
+            "libraryName": "Animés"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
+            "libraryName": "Animés"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "background",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": null,
+          "params": null,
+          "stack": [],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "activate",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
+            "libraryName": "Animés"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "reglages-retour-x2": {
+      "hash": "a288dc37d9f8",
+      "durationMs": 34261,
+      "start": {
+        "app": "foreground",
+        "focus": "settings:tab:account",
+        "label": "Compte",
+        "frame": [
+          176,
+          164,
+          340,
+          100
+        ],
+        "groups": [
+          "settings:tabs"
+        ],
+        "route": "Settings",
+        "params": null,
+        "stack": [
+          "Home",
+          "Settings"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "background",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": null,
+          "params": null,
+          "stack": [],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "activate",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Settings",
+          "params": null,
+          "stack": [
+            "Home",
+            "Settings"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rail-entree-vers-profil": {
+      "hash": "c0a06744b641",
+      "durationMs": 19493,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            693,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Watchlist",
+          "label": "Ma liste",
+          "frame": [
+            56,
+            477,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Profil et réglages",
+          "frame": [
+            56,
+            964,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

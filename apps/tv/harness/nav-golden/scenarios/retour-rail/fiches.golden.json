@@ -1,0 +1,798 @@
+{
+  "format": 1,
+  "domain": "retour-rail",
+  "suite": "fiches",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T4",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:07:39.692Z",
+  "scenarios": {
+    "fiche-retour": {
+      "hash": "7fddcc953048",
+      "durationMs": 23581,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Reprendre",
+          "frame": [
+            120,
+            633,
+            339,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "07626251a61ed52563be9f9d132c7eec"
+          },
+          "stack": [
+            "Home",
+            "Library",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "suite-de-fiches-similaires": {
+      "hash": "cc8e2f72bc73",
+      "durationMs": 34061,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Lecture",
+        "frame": [
+          120,
+          674,
+          207,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "similar:0",
+          "label": "Interstellar",
+          "frame": [
+            120,
+            142,
+            240,
+            433
+          ],
+          "groups": [
+            "detail:similar"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "17b127393b3e3210a5358a58e9fa8ee6"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:2",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "cast:0",
+          "label": "Matthew McConaughey, Cooper",
+          "frame": [
+            102,
+            144,
+            212,
+            283
+          ],
+          "groups": [
+            "detail:cast"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "17b127393b3e3210a5358a58e9fa8ee6"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "#Chef",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "3e78201ac317a3c42c21f9c9aea296e2",
+            "kind": "person",
+            "name": "Matthew McConaughey"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "5ab70916a8b769b87b97f531c8ee97f3"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "casting-puis-film": {
+      "hash": "62483137ac86",
+      "durationMs": 27920,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Lecture",
+        "frame": [
+          120,
+          674,
+          207,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "cast:0",
+          "label": "Ryan Gosling, Ryland Grace",
+          "frame": [
+            102,
+            144,
+            212,
+            283
+          ],
+          "groups": [
+            "detail:cast"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "#Chef",
+          "frame": [
+            176,
+            386,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "60d9dcd84264970fd4d34306c23b409c",
+            "kind": "person",
+            "name": "Ryan Gosling"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "5ab70916a8b769b87b97f531c8ee97f3"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "episode-vers-sa-serie": {
+      "hash": "6f1ca5919c06",
+      "durationMs": 38651,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Reprendre S2 · E3",
+        "frame": [
+          120,
+          633,
+          432,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "episode:1",
+          "label": "Le Plat d'étain (Brou)",
+          "frame": [
+            372,
+            240,
+            460,
+            438
+          ],
+          "groups": [
+            "detail:episodes"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            542,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "sheet:action:details",
+          "label": "Plus d'infos",
+          "frame": [
+            1198,
+            721,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Reprendre",
+          "frame": [
+            120,
+            633,
+            339,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "e014279fece9beeb2d9b8941ef5aa984"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:2",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "detail:series",
+          "label": "Cauchemar en cuisine avec Philippe Etchebest — S2 · E3",
+          "frame": [
+            120,
+            481,
+            738,
+            52
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "e014279fece9beeb2d9b8941ef5aa984"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "episode:1",
+          "label": "Le Plat d'étain (Brou)",
+          "frame": [
+            372,
+            240,
+            460,
+            438
+          ],
+          "groups": [
+            "detail:episodes"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "croix-de-la-fiche": {
+      "hash": "9362b2f0f5c7",
+      "durationMs": 22787,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Lecture",
+        "frame": [
+          120,
+          674,
+          207,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "detail:back",
+          "label": "Retour",
+          "frame": [
+            120,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "detail:top"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "detail:back",
+          "label": "Retour",
+          "frame": [
+            120,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "detail:top"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,587 @@
+{
+  "format": 1,
+  "domain": "retour-rail",
+  "suite": "navigation",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T4",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T03:16:22.506Z",
+  "scenarios": {
+    "page-puis-accueil": {
+      "hash": "7653de6ed665",
+      "durationMs": 27487,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "\"Omae Gotoki ga Maou ni Kateru to Omou na\" to Yuusha Party o Tsuihou Sareta node, Outo de Kimama ni Kurashitai",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
+            "libraryName": "Animés"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+          "label": "Animés",
+          "frame": [
+            56,
+            621,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
+            "libraryName": "Animés"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            333,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
+            "libraryName": "Animés"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "reselectionner-la-page": {
+      "hash": "6a4b50565c23",
+      "durationMs": 22753,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "grid:6",
+          "label": "1917",
+          "frame": [
+            176,
+            585,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:1"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            693,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "grid:6",
+          "label": "1917",
+          "frame": [
+            176,
+            585,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:1"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rechercher-depuis-etagere": {
+      "hash": "d3db606ca40a",
+      "durationMs": 18790,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "#Chef",
+        "frame": [
+          176,
+          386,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "SearchBrowse",
+        "params": {
+          "id": "ce06903d834d2c3417e0889dd4049f3b",
+          "kind": "genre",
+          "name": "Action"
+        },
+        "stack": [
+          "Home",
+          "SearchBrowse"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            56,
+            244,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "ce06903d834d2c3417e0889dd4049f3b",
+            "kind": "genre",
+            "name": "Action"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rechercher-sur-la-recherche": {
+      "hash": "0ce6135964f6",
+      "durationMs": 14831,
+      "start": {
+        "app": "foreground",
+        "focus": "key:A",
+        "label": "A",
+        "frame": [
+          176,
+          197,
+          64,
+          64
+        ],
+        "groups": [
+          "search:input"
+        ],
+        "route": "Search",
+        "params": null,
+        "stack": [
+          "Home",
+          "Search"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            56,
+            244,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "search:field",
+          "label": "Titres, acteurs, genres…",
+          "frame": [
+            176,
+            54,
+            424,
+            80
+          ],
+          "groups": [
+            "search:input"
+          ],
+          "route": "Search",
+          "params": null,
+          "stack": [
+            "Home",
+            "Search"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "etagere-retour": {
+      "hash": "3db495b87b0c",
+      "durationMs": 17274,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "#Chef",
+        "frame": [
+          176,
+          386,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "SearchBrowse",
+        "params": {
+          "id": "9a502d69e1c2d64c451e42406a932f0b",
+          "kind": "person",
+          "name": "Keira Knightley"
+        },
+        "stack": [
+          "Home",
+          "SearchBrowse"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "etagere-retour-rail-ouvert": {
+      "hash": "d5a497fe755b",
+      "durationMs": 16839,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "#Chef",
+        "frame": [
+          176,
+          386,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "SearchBrowse",
+        "params": {
+          "id": "9a502d69e1c2d64c451e42406a932f0b",
+          "kind": "person",
+          "name": "Keira Knightley"
+        },
+        "stack": [
+          "Home",
+          "SearchBrowse"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            56,
+            244,
+            276,
+            64
+          ],
+          "groups": [],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}
