@@ -16,10 +16,10 @@ import {
   filterSheetFocusKeys,
   type FilterSheetShape,
 } from "@tentacle-tv/tv-core";
-import { useChoiceEntry } from "../../../redesignWiring/settings/settingsFocus";
 import { createEntryGuide } from "../focus/entryGuide";
 import { AutoFocusGuide } from "../focus/focusGuides";
 import type { FocusStore } from "../focus/focusStore";
+import { useChoiceEntry } from "../panels/useChoiceEntry";
 
 /**
  * L'applicateur tvOS de la BIBLIOTHÈQUE — les décisions sont celles de

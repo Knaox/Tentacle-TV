@@ -17,7 +17,8 @@
  *   la plateforme, la garde d'une surface plein écran ;
  * - `beyondEdge.ts` : un geste au-delà du bord ;
  * - les écrans (T7) : `detailFocus.ts` (la fiche), `gridFocus.ts` (les grilles,
- *   Ma liste, Favoris, Parcourir), `libraryFocus.ts` (la bibliothèque). */
+ *   Ma liste, Favoris, Parcourir), `libraryFocus.ts` (la bibliothèque),
+ *   `settingsFocus.ts` (les réglages). */
 export * from "./geometry";
 export * from "./sections";
 export * from "./sectionEntry";
@@ -33,3 +34,4 @@ export * from "./beyondEdge";
 export * from "./detailFocus";
 export * from "./gridFocus";
 export * from "./libraryFocus";
+export * from "./settingsFocus";

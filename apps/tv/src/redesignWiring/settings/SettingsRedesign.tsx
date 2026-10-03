@@ -1,17 +1,18 @@
 import { useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useJellyfinClient, useResumeItems } from "@tentacle-tv/api-client";
+import { SETTINGS_DEFAULT_TAB, settingsEntryKey } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
+import { useFocusStore } from "../../platform/tvos/focus/focusStore";
+import { TabDestinationProvider, useActiveTabDestination, useSettingsGroups } from "../../platform/tvos/screens/settings";
 import { SettingsView } from "../../redesign/screens/settings/SettingsView";
 import type { SettingsTab } from "../../redesign/screens/settings/settingsTypes";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { backdropUriOf, paletteOfItem } from "../cards/cardArtwork";
-import { useFocusStore } from "../focus/focusStore";
 import { useBackLayer } from "../back/BackScope";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { ChoiceModal } from "./ChoiceModal";
-import { TabDestinationProvider, tabFocusKey, useActiveTabDestination, useSettingsGroups } from "./settingsFocus";
 import { useNavigationSettings } from "./useNavigationSettings";
 import { useSettingsModel } from "./useSettingsModel";
 
@@ -27,14 +28,16 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
  * entrée du rail), et Retour ne remonte pas les onglets parcourus — il annule
  * d'abord un déplacement en cours dans l'onglet Navigation. La liste de choix s'ouvre dans
  * une `Modal` (`ChoiceModal`), pas dans la vue. Le fond et l'aperçu du verre
- * prennent l'œuvre en cours de lecture, quand il y en a une.
+ * prennent l'œuvre en cours de lecture, quand il y en a une. Le focus est
+ * décidé par tv-core (`focus/settingsFocus.ts`, `nav/arrange.ts`) et posé par
+ * l'applicateur `platform/tvos/screens/settings.tsx`.
  */
 export function SettingsRedesign({ route }: Props) {
   const model = useSettingsModel();
-  const [tab, setTab] = useState<SettingsTab>(route.params?.tab ?? "account");
+  const [tab, setTab] = useState<SettingsTab>(route.params?.tab ?? SETTINGS_DEFAULT_TAB);
   const focus = useFocusStore();
   const nav = useNavigationSettings(focus);
-  const screen = useRedesignScreen({ railKey: "Settings", entryKey: tabFocusKey(tab), focus });
+  const screen = useRedesignScreen({ railKey: "Settings", entryKey: settingsEntryKey(tab), focus });
   // Retour annule d'abord un déplacement en cours dans l'onglet Navigation.
   useBackLayer("menu", nav.navigation.movingKey !== null, nav.cancelNavMove);
   useSettingsGroups(screen.focus);

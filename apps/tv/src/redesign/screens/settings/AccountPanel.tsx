@@ -1,6 +1,7 @@
 import { memo, useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { confirmBlur, confirmPress } from "@tentacle-tv/tv-core";
 import { Icon } from "../../icons/Icon";
 import { colors, text, white } from "../../theme/tokens";
 import { ConfirmPill } from "./ConfirmPill";
@@ -33,17 +34,15 @@ export const AccountPanel = memo(function AccountPanel({ account, initialArmed =
   const { t } = useTranslation(["pairing", "nav", "common", "preferences"]);
   const [armed, setArmed] = useState<AccountAction | null>(initialArmed);
 
+  // Le double appui : la règle de tv-core (`panels/confirmPress`).
   const press = useCallback((action: AccountAction) => {
-    if (armed !== action) {
-      setArmed(action);
-      return;
-    }
-    setArmed(null);
-    (action === "logout" ? onLogout : onChangeServer)?.();
+    const step = confirmPress(armed, action);
+    setArmed(step.armed);
+    if (step.run) (action === "logout" ? onLogout : onChangeServer)?.();
   }, [armed, onChangeServer, onLogout]);
 
   const leave = useCallback((action: AccountAction) => (focused: boolean) => {
-    if (!focused) setArmed((current) => (current === action ? null : current));
+    if (!focused) setArmed((current) => confirmBlur(current, action));
   }, []);
 
   const confirm = (label: string) => `${t("common:confirm")} — ${label}`;
