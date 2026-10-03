@@ -675,10 +675,12 @@ enregistrées sur 84f3cedd0 (observation 2), deux passages identiques pour
 chacun. La couverture et les identifiants de l'instantané : `README.md` du
 dossier.
 
-Preuves de l'extraction (branche rebasée sur eb555c51a) :
+Preuves de l'extraction :
 
 - **Simulateur** : `verify --slot 7 ecrans socle` — 62/62 identiques à la
-  référence au premier essai (41 écrans, 21 du socle transverse).
+  référence au premier essai (41 écrans, 21 du socle transverse), deux fois :
+  sur la branche rebasée sur eb555c51a, puis sur 2222973cd (après le
+  branchement du Retour de T4).
 - **Apple TV « Chambre »** (tvOS 26.6, app de test `navtest`, faux backend
   du Mac), 2026-10-03 06:14-06:29 : recherche 7/7, jumelage (accueil) 1/1,
   échantillon d'un ou deux scénarios par écran 10/10 — identiques aux
