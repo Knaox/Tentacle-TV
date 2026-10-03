@@ -1,0 +1,1051 @@
+{
+  "domain": "retour-rail",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "menu-entree-retour",
+      "title": "Appui long sur une bibliothèque : son menu ; Retour le ferme, focus sur l'entrée",
+      "rules": [
+        "O1.1",
+        "O1.2",
+        "R0.6",
+        "R1.1",
+        "R2.5",
+        "F4"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:menu:up",
+            "label": "Monter"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:menu:down",
+            "label": "Descendre"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:menu:hide",
+            "label": "Masquer"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:menu:settings",
+            "label": "Réglages de la navigation"
+          },
+          "why": "rien de masqué : pas de « Tout afficher »"
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "panel": "closed",
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1"
+          },
+          "settleMs": 1000
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "monter-x2-puis-retour",
+      "title": "Monter ×2 laisse le menu ouvert ; Retour : le focus suit l'entrée déplacée",
+      "rules": [
+        "O2.1",
+        "O2.6",
+        "O5",
+        "C4"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:menu:up"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:up"
+          },
+          "settleMs": 600
+        },
+        {
+          "do": "select",
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:up",
+            "storage": {
+              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+            }
+          },
+          "settleMs": 600
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "panel": "closed",
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "settleMs": 1200,
+          "why": "tvOS rend le focus à la CASE ; il est redirigé vers l'entrée du menu"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "label": "Pour vous"
+          }
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "expect": {
+            "label": "Ma liste"
+          }
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "monter-puis-double-retour",
+      "title": "Écart B2 : Monter, puis deux Retour rapprochés — le focus relevé tel quel",
+      "rules": [
+        "O2.6"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "select",
+          "settleMs": 600
+        },
+        {
+          "do": [
+            "menu",
+            "wait:0.06",
+            "menu"
+          ],
+          "expect": {
+            "panel": "closed"
+          },
+          "settleMs": 1200,
+          "why": "B2 : d'après le code, le focus reste sur la CASE (relevé)"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "masquer-puis-tout-afficher",
+      "title": "Masquer : la suivante prend sa case ; « Tout afficher » (entrée) rend tout, focus sur l'entrée active",
+      "rules": [
+        "O2.2",
+        "N2.1",
+        "C2",
+        "O5"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "nav:menu:hide"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "panel": "closed",
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+            "label": "Films",
+            "storage": {
+              "tentacle_webos_rail": "{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"]}"
+            }
+          },
+          "settleMs": 1200
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "nav:RailShowAll",
+            "label": "Tout afficher"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+            "storage": {
+              "tentacle_webos_rail": "{\"masquees\":[]}"
+            }
+          },
+          "settleMs": 900,
+          "why": "« Tout afficher » : le focus va à l'entrée de la page (Films)"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "tout-afficher-du-menu",
+      "title": "« Tout afficher » du menu d'une entrée : tout revient, le focus retrouve l'entrée du menu",
+      "rules": [
+        "O1.2",
+        "O2.3",
+        "O2.6",
+        "O5"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "nav:menu:hide"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          },
+          "settleMs": 1200
+        },
+        {
+          "do": "hold:1.5",
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move"
+          },
+          "settleMs": 1000
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "nav:menu:showAll",
+            "label": "Tout afficher"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "panel": "closed",
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+            "storage": {
+              "tentacle_webos_rail": "{\"masquees\":[]}"
+            }
+          },
+          "settleMs": 1200,
+          "why": "Films a changé de case : le focus la suit"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "deplacer-puis-poser",
+      "title": "Déplacer : BAS ×2 puis OK pose l'entrée deux crans plus bas, enregistrée",
+      "rules": [
+        "O2.5",
+        "O3.1",
+        "O3.2",
+        "O3.3",
+        "F6",
+        "O5"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "panel": "closed",
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "text": "Haut, bas : déplacer"
+          },
+          "settleMs": 1000
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "storage": {
+              "tentacle_webos_rail": null
+            }
+          },
+          "why": "rien d'enregistré avant la pose"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "storage": {
+              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"]}"
+            }
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "label": "Séries"
+          }
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "deplacer-puis-annuler",
+      "title": "Déplacer puis Retour : annulé, rien d'enregistré, focus sur l'entrée à sa place",
+      "rules": [
+        "O3.5",
+        "R1.1",
+        "R2.6"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": "select",
+          "settleMs": 1000
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1"
+          }
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "route": "Library",
+            "storage": {
+              "tentacle_webos_rail": null
+            }
+          },
+          "settleMs": 1200
+        },
+        {
+          "do": "up",
+          "expect": {
+            "label": "Mes favoris"
+          }
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "deplacer-puis-sortir",
+      "title": "Déplacer puis DROITE : l'entrée est posée là où elle est",
+      "rules": [
+        "O3.4",
+        "S2",
+        "F2"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": "select",
+          "settleMs": 1000
+        },
+        {
+          "do": "up"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "grid:0",
+            "storage": {
+              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+            }
+          },
+          "why": "le pont de sortie : la dernière cible de contenu ; l'entrée est posée"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "deplacer-butee-en-tete",
+      "title": "Déplacer vers le haut : bute sous Accueil (Rechercher, Accueil, profil verrouillés)",
+      "rules": [
+        "O3.1",
+        "O3.3"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": "select",
+          "settleMs": 1000
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1"
+          },
+          "why": "HAUT ne sort pas de la liste"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "storage": {
+              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+            }
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "nav:Home"
+          },
+          "why": "posée : les verrous sont levés"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "appui-long-accueil",
+      "title": "Appui long sur Accueil : aucun menu",
+      "rules": [
+        "O1.1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up",
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Home"
+          }
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "closed"
+          },
+          "why": "aucun menu ; le focus relevé tel quel"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "appui-long-rechercher",
+      "title": "Appui long sur Rechercher : aucun menu",
+      "rules": [
+        "O1.1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up",
+            "up",
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Search"
+          }
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "closed"
+          },
+          "why": "aucun menu ; le focus relevé tel quel"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "appui-long-profil",
+      "title": "Appui long sur le profil : aucun menu",
+      "rules": [
+        "O1.1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "wait:0.7",
+            "left"
+          ],
+          "expect": {
+            "focus": "nav:Settings"
+          }
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "closed"
+          },
+          "why": "aucun menu ; le focus relevé tel quel"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "menu-vers-reglages-navigation",
+      "title": "« Réglages de la navigation » du menu : Réglages, onglet Navigation",
+      "rules": [
+        "O2.4",
+        "N1.2"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          },
+          "why": "GAUCHE : l'entrée de la page (Films) ; HAUT : Animés"
+        },
+        {
+          "do": "hold:1.5",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "nav:menu:move",
+            "label": "Déplacer"
+          },
+          "why": "O1.2 : tvOS focalise la ligne du haut ; le relâchement n'agit pas (garde anti-clic fantôme)"
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "nav:menu:settings"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "route": "Settings",
+            "focus": "settings:tab:navigation"
+          },
+          "settleMs": 1500
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "reglages-navigation-deplacer",
+      "title": "Réglages › Navigation : soulever, Retour annule (case de départ) ; soulever, BAS, OK pose",
+      "rules": [
+        "O4",
+        "O5"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3",
+          "left",
+          "up",
+          "hold:1.5",
+          "down",
+          "down",
+          "down",
+          "down",
+          "select"
+        ],
+        "focus": "settings:tab:navigation"
+      },
+      "steps": [
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:nav:0"
+          }
+        },
+        {
+          "do": "select"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "settings:nav:1"
+          }
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "settings:nav:0",
+            "route": "Settings",
+            "storage": {
+              "tentacle_webos_rail": null
+            }
+          },
+          "settleMs": 1200
+        },
+        {
+          "do": "select"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "settings:nav:1",
+            "storage": {
+              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Watchlist\",\"Recommendations\",\"Favorites\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

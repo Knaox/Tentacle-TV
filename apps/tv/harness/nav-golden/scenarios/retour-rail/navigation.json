@@ -1,0 +1,275 @@
+{
+  "domain": "retour-rail",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "page-puis-accueil",
+      "title": "Choisir une bibliothèque, puis Accueil : rail replié, focus dans le contenu, jamais l'ancienne page",
+      "rules": [
+        "N1.2",
+        "N2.1",
+        "N2.2",
+        "N2.3",
+        "F2"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "route": "Library",
+            "focus": "grid:0"
+          },
+          "settleMs": 1500
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1"
+          }
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Home"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "route": "Home",
+            "focus": "hero:primary"
+          },
+          "settleMs": 1500,
+          "why": "N2.2 : l'accueil, gardé monté, a retenu son contenu"
+        }
+      ]
+    },
+    {
+      "id": "reselectionner-la-page",
+      "title": "OK sur l'entrée de la page courante : le focus revient à la dernière cible du contenu",
+      "rules": [
+        "N2.1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": "down",
+          "why": "une affiche de la deuxième rangée (relevée)"
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "route": "Library"
+          },
+          "why": "N2.1 : la page reprend le focus, sur la dernière affiche (relevée)"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "rechercher-depuis-etagere",
+      "title": "Rechercher dans le rail depuis une étagère : la page recule (returnToSearchBar)",
+      "rules": [
+        "N2.1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "retour-rail/filmographies"
+        ],
+        "route": {
+          "name": "SearchBrowse",
+          "params": {
+            "kind": "genre",
+            "id": "ce06903d834d2c3417e0889dd4049f3b",
+            "name": "Action"
+          }
+        },
+        "focus": "grid:0",
+        "keys": [
+          "wait:3"
+        ]
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Search",
+            "label": "Rechercher"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "why": "recule d'une page (pile [Home, étagère] : l'accueil)"
+        }
+      ]
+    },
+    {
+      "id": "rechercher-sur-la-recherche",
+      "title": "Rechercher dans le rail, sur la recherche : sa barre reprend le focus",
+      "rules": [
+        "N2.1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "left",
+          "up",
+          "select"
+        ],
+        "focus": "key:A"
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Search"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "search:field",
+            "route": "Search"
+          },
+          "settleMs": 1200
+        }
+      ]
+    },
+    {
+      "id": "etagere-retour",
+      "title": "Étagère d'une personne (page poussée avec rail) : Retour recule",
+      "rules": [
+        "R1.5",
+        "R2.8"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "retour-rail/filmographies"
+        ],
+        "route": {
+          "name": "SearchBrowse",
+          "params": {
+            "kind": "person",
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "name": "Keira Knightley"
+          }
+        },
+        "focus": "grid:0",
+        "keys": [
+          "wait:3"
+        ]
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "expect": {
+            "route": "Home"
+          },
+          "settleMs": 1500
+        }
+      ]
+    },
+    {
+      "id": "etagere-retour-rail-ouvert",
+      "title": "Étagère, rail ouvert : Retour recule quand même d'une page",
+      "rules": [
+        "R2.8"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "retour-rail/filmographies"
+        ],
+        "route": {
+          "name": "SearchBrowse",
+          "params": {
+            "kind": "person",
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "name": "Keira Knightley"
+          }
+        },
+        "focus": "grid:0",
+        "keys": [
+          "wait:3"
+        ]
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Search"
+          }
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "route": "Home"
+          },
+          "settleMs": 1500
+        }
+      ]
+    }
+  ]
+}

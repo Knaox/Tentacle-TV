@@ -1,0 +1,369 @@
+{
+  "domain": "retour-rail",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "fiche-retour",
+      "title": "Fiche ouverte depuis une bibliothèque : Retour recule, focus sur la carte d'origine",
+      "rules": [
+        "R2.9",
+        "D1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "left",
+          "down",
+          "down",
+          "down",
+          "down",
+          "down",
+          "select"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "expect": {
+            "route": "MediaDetail"
+          },
+          "settleMs": 2000
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "route": "Library",
+            "focus": "grid:0"
+          },
+          "settleMs": 2000
+        }
+      ]
+    },
+    {
+      "id": "suite-de-fiches-similaires",
+      "title": "Une suite de fiches — similaire, personne du casting, film : chacune REMPLACE la précédente, un Retour suffit",
+      "rules": [
+        "R2.10",
+        "D1",
+        "D2",
+        "D3"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "retour-rail/filmographies"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "detail:primary"
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "similar:0",
+            "label": "Interstellar"
+          },
+          "why": "casting, bandes-annonces, puis les similaires"
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "MediaDetail",
+            "stack": [
+              "Home",
+              "MediaDetail"
+            ]
+          },
+          "why": "le similaire REMPLACE la fiche"
+        },
+        {
+          "do": [
+            "wait:2",
+            "down"
+          ],
+          "expect": {
+            "focus": "cast:0"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "expect": {
+            "route": "SearchBrowse",
+            "stack": [
+              "Home",
+              "SearchBrowse"
+            ],
+            "focus": "grid:0"
+          },
+          "why": "la personne remplace la fiche"
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "MediaDetail",
+            "stack": [
+              "Home",
+              "MediaDetail"
+            ]
+          },
+          "why": "une affiche de la personne remplace sa page"
+        },
+        {
+          "do": "menu",
+          "settleMs": 2000,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ]
+          },
+          "why": "un seul Retour : avant la première fiche"
+        }
+      ]
+    },
+    {
+      "id": "casting-puis-film",
+      "title": "Fiche → personne du casting → film : chaque page remplace la précédente",
+      "rules": [
+        "D1",
+        "D2",
+        "D3"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "retour-rail/filmographies"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "detail:primary"
+      },
+      "steps": [
+        {
+          "do": "down",
+          "expect": {
+            "focus": "cast:0"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "expect": {
+            "route": "SearchBrowse",
+            "stack": [
+              "Home",
+              "SearchBrowse"
+            ],
+            "focus": "grid:0"
+          },
+          "why": "la page de la personne, son entrée : sa première affiche"
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "MediaDetail",
+            "stack": [
+              "Home",
+              "MediaDetail"
+            ]
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 2000,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "episode-vers-sa-serie",
+      "title": "« Plus d'infos » d'un épisode depuis sa série EMPILE ; la pastille de la série RECULE",
+      "rules": [
+        "D1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "detail:primary"
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "episode:1"
+          },
+          "why": "les saisons, puis les épisodes de la saison affichée"
+        },
+        {
+          "do": "hold:1.2",
+          "settleMs": 1000,
+          "expect": {
+            "panel": "open",
+            "focus": "sheet:scale:5"
+          }
+        },
+        {
+          "do": [
+            "down",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "expect": {
+            "focus": "sheet:action:details",
+            "label": "Plus d'infos"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "MediaDetail",
+            "stack": [
+              "Home",
+              "MediaDetail",
+              "MediaDetail"
+            ]
+          },
+          "why": "l'épisode de la série EMPILE"
+        },
+        {
+          "do": [
+            "wait:2",
+            "up"
+          ],
+          "expect": {
+            "focus": "detail:series"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "MediaDetail",
+            "stack": [
+              "Home",
+              "MediaDetail"
+            ]
+          },
+          "why": "sa série, juste dessous : on y recule"
+        },
+        {
+          "do": "menu",
+          "settleMs": 2000,
+          "expect": {
+            "route": "Home",
+            "stack": [
+              "Home"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "croix-de-la-fiche",
+      "title": "Croix Retour d'une fiche : jamais l'entrée ; HAUT y mène, BAS en revient, OK recule",
+      "rules": [
+        "K1",
+        "K2",
+        "K3",
+        "K4",
+        "K5"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+          }
+        },
+        "focus": "detail:primary",
+        "keys": [
+          "wait:3"
+        ]
+      },
+      "steps": [
+        {
+          "do": "up",
+          "expect": {
+            "focus": "detail:back",
+            "label": "Retour"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "detail:primary"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "detail:back"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "route": "Home"
+          },
+          "settleMs": 2000
+        }
+      ]
+    }
+  ]
+}

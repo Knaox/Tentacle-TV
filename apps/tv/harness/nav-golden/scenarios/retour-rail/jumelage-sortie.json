@@ -1,0 +1,176 @@
+{
+  "domain": "retour-rail",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "jumelage-retour",
+      "title": "Jumelage sans session : le serveur saisi à la main → Retour → l'accueil du jumelage → Retour quitte",
+      "rules": [
+        "R2.11",
+        "R2.12",
+        "X2",
+        "N1.1",
+        "K1"
+      ],
+      "start": {
+        "session": "none",
+        "focus": "pairing:showCode"
+      },
+      "steps": [
+        {
+          "do": "right",
+          "expect": {
+            "focus": "pairing:manual"
+          },
+          "why": "« Configurer manuellement », à droite de « Afficher le code »"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "pairing:url",
+            "route": "PairCode"
+          },
+          "settleMs": 1200
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "pairing:showCode",
+            "route": "PairCode"
+          },
+          "settleMs": 1200,
+          "why": "R2.11 : l'étape précédente"
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "app": "background"
+          },
+          "settleMs": 1500,
+          "why": "R2.12 : jumelage à la racine, aucune couche"
+        },
+        {
+          "do": "activate",
+          "expect": {
+            "app": "foreground"
+          },
+          "settleMs": 1500
+        }
+      ]
+    },
+    {
+      "id": "changer-de-serveur-puis-retour",
+      "title": "Écart B1 : « Changer de serveur » remet la pile au jumelage ; Retour y QUITTE",
+      "rules": [
+        "N1.4",
+        "R2.12",
+        "X2"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3",
+          "left",
+          "wait:0.7",
+          "left",
+          "select"
+        ],
+        "focus": "settings:tab:account"
+      },
+      "steps": [
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:changeServer",
+            "label": "Changer de serveur"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "settings:changeServer",
+            "label": "Confirmer — Changer de serveur"
+          },
+          "why": "une confirmation : le second OK agit"
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "PairCode",
+            "stack": [
+              "PairCode"
+            ],
+            "focus": "pairing:showCode"
+          },
+          "why": "unpair : la pile est REMISE au jumelage (aucune page précédente)"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "app": "background"
+          },
+          "why": "B1 : à la racine, Menu QUITTE"
+        },
+        {
+          "do": "activate",
+          "settleMs": 1500,
+          "expect": {
+            "app": "foreground"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bandeau-hors-ligne-sortie",
+      "title": "Bandeau hors ligne (serveur coupé) : Retour quitte l'application",
+      "rules": [
+        "R0.8",
+        "R2.16",
+        "X2"
+      ],
+      "start": {
+        "fixtures": [
+          "base/serveur-coupe"
+        ],
+        "route": {
+          "name": "Home"
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:14",
+          "settleMs": 0,
+          "why": "le bandeau paraît après 12 s d'échecs"
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "app": "background"
+          },
+          "settleMs": 1500
+        },
+        {
+          "do": "activate",
+          "expect": {
+            "app": "foreground"
+          },
+          "settleMs": 1500
+        }
+      ]
+    }
+  ]
+}

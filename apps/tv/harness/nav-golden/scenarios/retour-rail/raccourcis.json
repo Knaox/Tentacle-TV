@@ -1,0 +1,231 @@
+{
+  "domain": "retour-rail",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "rail-boucle",
+      "title": "HAUT depuis Rechercher → profil ; BAS depuis le profil → Rechercher ; BAS depuis la dernière entrée → profil",
+      "rules": [
+        "S3",
+        "S4",
+        "S5",
+        "C2",
+        "Q1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+            "label": "Films"
+          }
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Search",
+            "label": "Rechercher"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "nav:Settings"
+          },
+          "why": "S3 : la navigation boucle"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Search"
+          },
+          "why": "S4"
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "nav:Library_d565273fd114d77bdf349a2896867069",
+            "label": "Séries"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Settings"
+          },
+          "why": "S5 : sans Vigie, rien entre la dernière entrée et le profil"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "gauche-arme",
+      "title": "GAUCHE, puis GAUCHE après un temps dans le rail : le profil",
+      "rules": [
+        "S1",
+        "S6"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          }
+        },
+        {
+          "do": [
+            "wait:0.7",
+            "left"
+          ],
+          "expect": {
+            "focus": "nav:Settings"
+          },
+          "why": "S6 : armé 450 ms après un appui isolé"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "gauche-maintenu",
+      "title": "GAUCHE maintenu depuis une rangée : s'arrête sur l'entrée de la page, jamais sur le profil",
+      "rules": [
+        "S6"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": "right",
+          "expect": {
+            "focus": "grid:1"
+          }
+        },
+        {
+          "do": "holdleft:1.0",
+          "settleMs": 300,
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          },
+          "why": "S6 : arrivé en rafale, le guide attend 1,1 s — on s'arrête sur l'entrée de la page"
+        },
+        {
+          "do": [
+            "wait:1.3",
+            "left"
+          ],
+          "expect": {
+            "focus": "nav:Settings"
+          }
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    },
+    {
+      "id": "pont-rail-contenu",
+      "title": "GAUCHE ouvre le rail sur la page ; DROITE rend le focus à la dernière cible",
+      "rules": [
+        "S1",
+        "S2",
+        "F1",
+        "F2"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          },
+          "why": "S1 : le pont d'entrée vise l'entrée ACTIVE"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "grid:0"
+          },
+          "why": "S2 : le pont de sortie vise la dernière cible de contenu"
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    }
+  ]
+}

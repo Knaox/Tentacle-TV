@@ -1,0 +1,235 @@
+{
+  "domain": "retour-rail",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "accueil-retour-x3",
+      "title": "Accueil : Retour ×3 — le rail s'ouvre sur Accueil, puis le profil, puis la sortie",
+      "rules": [
+        "R0.1",
+        "R0.2",
+        "R0.3",
+        "R0.4",
+        "R0.5",
+        "R1.5",
+        "R1.6",
+        "R2.1",
+        "R2.2",
+        "R2.3",
+        "F1",
+        "X1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Home",
+            "label": "Accueil",
+            "route": "Home"
+          },
+          "why": "R2.1 : le focus dans la page, le rail s'ouvre sur l'entrée de la page"
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Settings",
+            "route": "Home"
+          },
+          "why": "R2.2 : rail ouvert, le profil"
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "app": "background"
+          },
+          "settleMs": 1500,
+          "why": "R2.3, X1 : aucune couche, page du rail — UIKit quitte"
+        },
+        {
+          "do": "activate",
+          "expect": {
+            "app": "foreground"
+          },
+          "settleMs": 1500
+        }
+      ]
+    },
+    {
+      "id": "bibliotheque-retour-x3",
+      "title": "Bibliothèque choisie dans le rail : Retour ×3 — rail sur la bibliothèque, profil, sortie",
+      "rules": [
+        "R0.7",
+        "R2.1",
+        "R2.2",
+        "R2.3",
+        "X1",
+        "N1.2"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
+            "libraryName": "Animés"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés",
+            "route": "Library"
+          }
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Settings",
+            "route": "Library"
+          }
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "app": "background"
+          },
+          "settleMs": 1500
+        },
+        {
+          "do": "activate",
+          "expect": {
+            "app": "foreground"
+          },
+          "settleMs": 1500
+        }
+      ]
+    },
+    {
+      "id": "reglages-retour-x2",
+      "title": "Réglages : Retour ×2 — le rail s'ouvre sur le profil, entrée de la page, puis la sortie",
+      "rules": [
+        "R2.4",
+        "X1"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3",
+          "left",
+          "wait:0.7",
+          "left",
+          "select"
+        ],
+        "focus": "settings:tab:account"
+      },
+      "steps": [
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Settings",
+            "route": "Settings"
+          }
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "app": "background"
+          },
+          "settleMs": 1500,
+          "why": "déjà sur le profil : deux appuis au lieu de trois"
+        },
+        {
+          "do": "activate",
+          "expect": {
+            "app": "foreground"
+          },
+          "settleMs": 1500
+        }
+      ]
+    },
+    {
+      "id": "rail-entree-vers-profil",
+      "title": "Rail ouvert sur une entrée : Retour va au profil, sans changer de page",
+      "rules": [
+        "R2.2",
+        "F4"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          }
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Watchlist",
+            "label": "Ma liste"
+          }
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Settings",
+            "route": "Library"
+          }
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    }
+  ]
+}

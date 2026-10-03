@@ -1,0 +1,60 @@
+{
+  "domain": "retour-rail",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "rail-24-bibliotheques",
+      "title": "24 bibliothèques : replié, l'entrée de la page en vue ; ouvert, BAS maintenu s'arrête sur la dernière",
+      "rules": [
+        "C1",
+        "C3",
+        "C4",
+        "C5",
+        "C6"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "retour-rail/24-bibliotheques"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "rr000000000000000000000000000017",
+            "libraryName": "Bibliothèque 21"
+          }
+        },
+        "focus": "grid:0",
+        "keys": [
+          "wait:3"
+        ]
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_rr000000000000000000000000000017",
+            "label": "Bibliothèque 21"
+          }
+        },
+        {
+          "do": "holddown:3",
+          "expect": {
+            "focus": "nav:Search",
+            "label": "Rechercher"
+          },
+          "settleMs": 1000,
+          "why": "relevé B6 : la flèche maintenue passe la dernière entrée et le profil, puis boucle sur Rechercher (le carnet disait l'inverse)"
+        },
+        {
+          "do": "holdup:5",
+          "settleMs": 1000,
+          "why": "jusqu'où remonte la flèche maintenue (relevé)"
+        }
+      ]
+    }
+  ]
+}

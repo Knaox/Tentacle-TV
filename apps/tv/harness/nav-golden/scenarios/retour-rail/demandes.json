@@ -1,0 +1,76 @@
+{
+  "domain": "retour-rail",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "fenetre-des-demandes",
+      "title": "Aperçu des demandes : OK ouvre la fenêtre (la croix) ; Retour la ferme, rail resté ouvert ; Retour → profil",
+      "rules": [
+        "Q2",
+        "Q3",
+        "R2.7",
+        "R2.2",
+        "F3"
+      ],
+      "start": {
+        "fixtures": [],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:3"
+        ],
+        "focus": "grid:0"
+      },
+      "steps": [
+        {
+          "do": [
+            "left",
+            "wait:0.7",
+            "left"
+          ],
+          "expect": {
+            "focus": "nav:Settings"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "nav:Requests"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "panel": "open",
+            "focus": "requests:close",
+            "label": "Retour"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1200,
+          "expect": {
+            "panel": "closed",
+            "focus": "nav:Requests"
+          }
+        },
+        {
+          "do": "menu",
+          "expect": {
+            "focus": "nav:Settings"
+          }
+        }
+      ],
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+    }
+  ]
+}
