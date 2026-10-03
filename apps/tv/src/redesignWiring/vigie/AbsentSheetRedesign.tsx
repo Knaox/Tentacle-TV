@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { loadTitleState, tentacleApiFetch, titleStateQueryKey, useMyTitles } from "@tentacle-tv/api-client";
 import type { TitleState } from "@tentacle-tv/shared";
 import { ABSENT_SHEET_ENTRY_WAIT_MS, absentSheetEntry, isAdvancing, panelBackLayers, panelPresented } from "@tentacle-tv/tv-core";
+import { withMenuIntent } from "../../platform/tvos/input";
 import { useSheetFocus } from "../../platform/tvos/panels/sheetFocus";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView, type SheetActionKind, type SheetActionModel } from "../../redesign/screens/sheet/ActionSheetView";
@@ -104,8 +105,11 @@ export function AbsentSheetRedesign({ gate, title, onRequest, onClose }: Props) 
   if (entry.current === null) entry.current = absentSheetEntry(actions, known, waited);
   const bind = useSheetFocus(focus, { rating: null, actions, entry: entry.current });
 
+  // Menu dans la Modal passe par l'entrée unique, puis ferme.
+  const onMenu = useMemo(() => withMenuIntent(requestClose), [requestClose]);
+
   return (
-    <Modal visible={panelPresented(entry.current)} transparent animationType="none" onRequestClose={requestClose}>
+    <Modal visible={panelPresented(entry.current)} transparent animationType="none" onRequestClose={onMenu}>
       <FocusBindingProvider bind={bind}>
         <ActionSheetView header={header} actions={actions} rating={null} onAction={onAction} onClose={requestClose} closing={closing} onClosed={closed} />
       </FocusBindingProvider>

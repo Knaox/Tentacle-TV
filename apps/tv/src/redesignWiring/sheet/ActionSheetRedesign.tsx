@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Modal } from "react-native";
 import { useRecoSettings } from "@tentacle-tv/api-client";
 import { SHEET_ENTRY_WAIT_MS, panelBackLayers, panelPresented, ratingClosesSheet, sheetEntryNow, type SheetMode } from "@tentacle-tv/tv-core";
 import type { CardSheetTarget } from "../../components/cards/actions/cardSheetTarget";
+import { withMenuIntent } from "../../platform/tvos/input";
 import { useSheetFocus } from "../../platform/tvos/panels/sheetFocus";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView } from "../../redesign/screens/sheet/ActionSheetView";
@@ -91,8 +92,11 @@ function SheetBody({ target, mode, providerFilterActive, onClose }: Required<Pro
     [onRate, closesOnRate, requestClose],
   );
 
+  // Menu dans la Modal passe par l'entrée unique, puis ferme.
+  const onMenu = useMemo(() => withMenuIntent(requestClose), [requestClose]);
+
   return (
-    <Modal visible={panelPresented(entry.current)} transparent animationType="none" onRequestClose={requestClose}>
+    <Modal visible={panelPresented(entry.current)} transparent animationType="none" onRequestClose={onMenu}>
       <FocusBindingProvider bind={bind}>
         <ActionSheetView {...model} onRate={rate} closing={closing} onClosed={onClose} />
       </FocusBindingProvider>

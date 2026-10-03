@@ -15,12 +15,14 @@ import {
   panelPresented,
   seasonsSheetEntry,
   seasonsSheetFocusOf,
+  seasonsSheetIntent,
   seasonsSheetKeys,
   seasonsSheetReady,
-  shortcutSeasons,
   toggleAllSeasons,
   toggleSeason,
+  type SeasonsSheetDecision,
 } from "@tentacle-tv/tv-core";
+import { useRemoteContext, withMenuIntent } from "../../platform/tvos/input";
 import { useChoiceEntry } from "../../platform/tvos/panels/useChoiceEntry";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { FadingModal } from "../../redesign/motion/FadingModal";
@@ -28,7 +30,6 @@ import { SeasonsSheet } from "../../redesign/screens/requests/SeasonsSheet";
 import { useBackLayer } from "../back/BackScope";
 import { createEntryGuide } from "../focus/entryGuide";
 import { useFocusStore } from "../focus/focusStore";
-import { useRemoteEvents } from "../remote/remoteEvents";
 import type { AbsentTitle } from "./absentTitle";
 import { useLiveRefresh } from "./liveRequests";
 import { requestableNumbers, seasonsSheetModel } from "./seasonsSheetModel";
@@ -149,16 +150,21 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
   }, [requestSeasons, title, onAnswer, requestClose]);
   const onSubmit = useCallback(() => void submit(checkedSeasons(numbers, checked)), [submit, numbers, checked]);
 
-  // Lecture/Pause : la feuille ouverte, un appui simple (jamais l'appui maintenu).
-  const ticked = useRef(checked);
-  ticked.current = checked;
-  useRemoteEvents((event) => {
-    if (event.kind !== "press" || event.button !== "playPause" || event.long) return;
-    void submit(shortcutSeasons(numbers, ticked.current, seasonsSheetFocusOf(focus.focusedKey())));
-  }, panelPresented(entry.current) && !closing);
+  // Lecture/Pause : la feuille présentée, un appui simple (jamais l'appui
+  // maintenu) — un contexte « panneau » de l'entrée unique, qui PREND
+  // l'intention (tv-core `seasonsSheetIntent`).
+  useRemoteContext<SeasonsSheetDecision>({
+    kind: "panel",
+    name: "seasonsSheet",
+    active: panelPresented(entry.current) && !closing,
+    decide: (intent) => seasonsSheetIntent(intent, numbers, checked, seasonsSheetFocusOf(focus.focusedKey())),
+    apply: (decision) => void submit(decision.seasons),
+  });
+  // Menu dans la Modal passe par l'entrée unique, puis la ferme.
+  const onMenu = useMemo(() => withMenuIntent(requestClose), [requestClose]);
 
   return (
-    <FadingModal value={panelPresented(entry.current) && !closing ? sheet : null} onRequestClose={requestClose} onExited={closed}>
+    <FadingModal value={panelPresented(entry.current) && !closing ? sheet : null} onRequestClose={onMenu} onExited={closed}>
       {(shown, leaving) => (
         <FocusBindingProvider bind={focus.binder}>
           <SeasonsSheet
