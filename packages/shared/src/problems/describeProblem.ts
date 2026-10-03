@@ -54,13 +54,15 @@ export function describeProblem(input: DescribeProblemInput): ProblemModel {
     .slice(0, MAX_PROBLEM_ACTIONS)
     .map((key) => ({ key, labelKey: actionLabel(key, input.context) }));
   const measured = input.cause === "bandwidthTooLow" && values.measured !== undefined && values.needed !== undefined;
-  const hint = PLAYBACK_CONTEXTS.has(input.context) && entry.playbackHint ? entry.playbackHint : entry.hint;
+  const playback = PLAYBACK_CONTEXTS.has(input.context);
+  const hint = playback && entry.playbackHint ? entry.playbackHint : entry.hint;
+  const reason = playback && entry.playbackReason ? entry.playbackReason : entry.reason;
   return {
     cause: input.cause,
     context: input.context,
     icon: entry.icon,
     titleKey: NS + CONTEXT_TITLES[input.context],
-    reasonKey: NS + (measured ? "reasonBandwidthMeasured" : entry.reason),
+    reasonKey: NS + (measured ? "reasonBandwidthMeasured" : reason),
     hintKey: hint ? NS + hint : null,
     values,
     actions,

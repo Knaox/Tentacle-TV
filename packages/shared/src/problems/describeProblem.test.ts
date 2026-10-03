@@ -96,6 +96,11 @@ describe("le modèle commun des messages d'erreur", () => {
     expect(describeProblem({ cause: "connectionLost", context: "page" }).hintKey).toBe("errors:hintConnectionLost");
   });
 
+  it("une erreur de Jellyfin ne parle d'un titre qu'en lecture", () => {
+    expect(describeProblem({ cause: "jellyfinError", context: "playbackStart" }).reasonKey).toBe("errors:reasonJellyfinErrorPlayback");
+    expect(describeProblem({ cause: "jellyfinError", context: "action" }).reasonKey).toBe("errors:reasonJellyfinError");
+  });
+
   it("hors de la lecture, « Retour » ne parle pas de la fiche", () => {
     expect(describeProblem({ cause: "serverError", context: "page" }).actions.at(-1)).toEqual({ key: "back", labelKey: "errors:actionBack" });
   });

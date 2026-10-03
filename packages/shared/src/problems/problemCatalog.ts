@@ -13,6 +13,8 @@ export interface CauseEntry {
   hint: string | null;
   /** Une aide propre à la lecture (« La lecture reprendra où elle s'est arrêtée »). */
   playbackHint?: string;
+  /** Une phrase propre à la lecture, quand la générale ne parle pas d'un titre. */
+  playbackReason?: string;
   actions: readonly ProblemActionKey[];
   /** Peut se réparer seule : réseau, serveur qui redémarre. */
   transient: boolean;
@@ -56,7 +58,7 @@ export const CAUSES: Record<ProblemCause, CauseEntry> = {
     actions: ["retry", "back"], transient: true,
   },
   jellyfinError: {
-    icon: "server", reason: "reasonJellyfinError", hint: "hintServerError",
+    icon: "server", reason: "reasonJellyfinError", playbackReason: "reasonJellyfinErrorPlayback", hint: "hintServerError",
     actions: ["retry", "otherVersion", "back"], transient: false,
   },
   sessionExpired: {
