@@ -99,6 +99,8 @@ export * from "./adminSessions/delivery";
 export * from "./adminSessions/commandFeedback";
 export * from "./adminSessions/format";
 export * from "./adminSessions/sessionApp";
+export * from "./adminSessions/nowPlaying";
+export * from "./adminSessions/explain";
 // Les invitations : le contrat de `/api/invites`, ses bornes, le statut et le lien.
 export * from "./adminInvites/invites";
 export * from "./types/watchTogether";
