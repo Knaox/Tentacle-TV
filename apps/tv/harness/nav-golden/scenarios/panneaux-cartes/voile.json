@@ -1,0 +1,76 @@
+{
+  "domain": "panneaux-cartes",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 600
+  },
+  "scenarios": [
+    {
+      "id": "pc-16",
+      "title": "Voile hors ligne : entrée sur Réessayer, piège, double appui armé puis désarmé (jamais confirmé)",
+      "rules": [
+        "3.13",
+        "3.14"
+      ],
+      "start": {
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "backend:health=down",
+          "why": "le serveur tombe en cours de route"
+        },
+        {
+          "do": "wait:15",
+          "settleMs": 1000,
+          "expect": {
+            "focus": "offline:retry",
+            "label": "Réessayer la connexion"
+          },
+          "why": "le voile paraît après ~12 s d'échecs, entrée sur Réessayer"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "offline:retry"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "offline:retry"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "offline:unpair",
+            "label": "Déjumeler cet appareil"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "offline:unpair",
+            "label": "Confirmer le déjumelage"
+          },
+          "why": "premier OK : armé — jamais un second"
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "offline:retry"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "offline:unpair",
+            "label": "Déjumeler cet appareil"
+          },
+          "why": "quitter le bouton a désarmé"
+        }
+      ]
+    }
+  ]
+}
