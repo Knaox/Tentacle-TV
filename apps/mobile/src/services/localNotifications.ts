@@ -1,10 +1,7 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
-import { i18n } from "@tentacle-tv/shared";
+import { ensureOfflineChannel } from "./notificationChannels";
 import { ensureNotificationPermission } from "./pushNotifications";
-
-/** Le canal Android des notifications locales du hors ligne. */
-const CHANNEL_ID = "offline";
 
 export interface LocalNotificationData {
   [key: string]: unknown;
@@ -19,16 +16,12 @@ export interface LocalNotificationData {
 export async function presentLocalNotification(title: string, body: string, data: LocalNotificationData): Promise<boolean> {
   try {
     if (!(await ensureNotificationPermission())) return false;
-    if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-        name: i18n.t("offline:tabOnDevice"),
-        importance: Notifications.AndroidImportance.DEFAULT,
-      });
-    }
+    // Android : le canal (HIGH, pour le bandeau) se donne par le déclencheur —
+    // seul, il vaut « tout de suite ».
+    const channelId = Platform.OS === "android" ? await ensureOfflineChannel() : null;
     await Notifications.scheduleNotificationAsync({
       content: { title, body, data },
-      // Android : le canal se donne par le déclencheur — seul, il vaut « tout de suite ».
-      trigger: Platform.OS === "android" ? { channelId: CHANNEL_ID } : null,
+      trigger: channelId ? { channelId } : null,
     });
     return true;
   } catch {

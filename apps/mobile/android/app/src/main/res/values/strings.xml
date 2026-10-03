@@ -1,5 +1,8 @@
 <resources>
-  <string name="app_name">Tentacle TV</string>
+  <string name="app_name" translatable="false">Tentacle TV</string>
+  <!-- Le canal des push (src/services/notificationChannels.ts) : le canal de
+       repli d'expo-notifications, créé en importance HIGH (bandeau). -->
+  <string name="expo_notifications_fallback_channel_name">General</string>
   <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
   <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
 </resources>

@@ -1,7 +1,7 @@
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { retireLegacyChannels } from "./notificationChannels";
 
 // Côté client Expo : permissions, obtention de l'ExpoPushToken, handler
 // d'affichage au premier plan, et écoute des taps. Aucune logique métier ici.
@@ -25,13 +25,9 @@ export function configureNotificationHandler(): void {
 export async function registerForPushToken(): Promise<string | null> {
   if (!Device.isDevice) return null; // le simulateur iOS ne reçoit pas de push
 
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "Général",
-      importance: Notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 250, 250, 250],
-    });
-  }
+  // Android : aucun canal à créer pour les push — elles prennent le canal de
+  // repli d'expo-notifications, en HIGH (`notificationChannels.ts`).
+  await retireLegacyChannels();
 
   const { status: existing } = await Notifications.getPermissionsAsync();
   let status = existing;

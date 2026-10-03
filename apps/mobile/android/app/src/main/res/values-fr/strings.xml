@@ -1,0 +1,3 @@
+<resources>
+  <string name="expo_notifications_fallback_channel_name">Général</string>
+</resources>
