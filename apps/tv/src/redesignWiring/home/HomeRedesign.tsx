@@ -109,7 +109,7 @@ export function HomeRedesign({ navigation }: Props) {
     (rowKey: string, card: CardModel) => {
       const target = targetOf(rowKey, card.id);
       if (!target) return;
-      if (target.kind === "play") play(target.item);
+      if (target.press === "play") play(target.item);
       else detail(target.item);
     },
     [targetOf, play, detail],
