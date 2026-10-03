@@ -31,13 +31,6 @@ export const TV_NAV_EXCEPTIONS = [
   { file: "redesignWiring/screen/RailShortcuts.tsx", rules: ["no-focus-guides", "no-platform-branch"], owner: "T4", why: "raccourcis du rail vers le profil, armés après un temps (guides natifs)" },
 
   // T5 — le lecteur.
-  { file: "redesignWiring/player/PlayerRedesignStage.tsx", rules: ["no-native-press", "no-focus-props"], owner: "T5", why: "fond focalisable du lecteur (TouchableOpacity, préférence, focusable)" },
-  { file: "redesignWiring/player/playerFocusContainers.tsx", rules: ["no-focus-guides", "no-focus-props"], owner: "T5", why: "guides et pièges de l'habillage, des îlots et des panneaux" },
-  { file: "redesignWiring/player/usePlayerFocus.ts", rules: ["no-focus-props"], owner: "T5", why: "préférence de focus des commandes de l'habillage" },
-  { file: "redesignWiring/player/endExitLock.ts", rules: ["no-focus-props"], owner: "T5", why: "verrou de sortie de l'écran de fin (isTVSelectable)" },
-  { file: "redesignWiring/player/usePlaybackTrouble.ts", rules: ["no-remote-events"], owner: "T5", why: "écoute native directe (useTVEventHandler) du panneau des pannes" },
-  { file: "components/player/focus/useOverlayFocus.ios.ts", rules: ["no-focus-props", "no-native-focus-calls"], owner: "T5", why: "focus de l'habillage : bascule de hasTVPreferredFocus (RN-tvos #849)" },
-  { file: "hooks/useScrubGestures.ios.ts", rules: ["no-remote-events"], owner: "T5", why: "glisser du pavé (pan) pour parcourir la vidéo — écoute native directe" },
 
   // T7 — les écrans.
   { file: "redesignWiring/detail/useDetailGuides.ts", rules: ["no-focus-guides"], owner: "T7", why: "pièges latéraux des rangées de la fiche (trapFocusLeft/Right)" },
