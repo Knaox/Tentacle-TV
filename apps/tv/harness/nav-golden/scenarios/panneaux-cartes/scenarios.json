@@ -609,7 +609,7 @@
             "panel": "closed",
             "route": "MediaDetail",
             "params": {
-              "itemId": "fc152eff617de3f78aeb07db87431ba3"
+              "itemId": "49ec99b03dd4d7ccb318d78d84a5172c"
             }
           }
         },
@@ -698,6 +698,7 @@
           }
         },
         "keys": [
+          "wait:2.5",
           "right",
           "right",
           "right",
@@ -759,6 +760,7 @@
           }
         },
         "keys": [
+          "wait:2.5",
           "right",
           "right",
           "right",
@@ -809,6 +811,7 @@
           }
         },
         "keys": [
+          "wait:2.5",
           "down",
           "down"
         ],
@@ -907,7 +910,10 @@
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba"
           }
         },
-        "focus": "grid:0"
+        "focus": "grid:0",
+        "keys": [
+          "wait:2.5"
+        ]
       },
       "steps": [
         {
@@ -953,7 +959,7 @@
             "panel": "closed",
             "route": "MediaDetail",
             "params": {
-              "itemId": "fc152eff617de3f78aeb07db87431ba3"
+              "itemId": "49ec99b03dd4d7ccb318d78d84a5172c"
             }
           }
         },
