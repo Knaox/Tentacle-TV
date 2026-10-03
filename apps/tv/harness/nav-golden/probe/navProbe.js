@@ -80,8 +80,11 @@ function textsOf(fiber, limit = 12) {
   const stack = fiber && fiber.child ? [fiber.child] : [];
   while (stack.length && out.length < limit) {
     const node = stack.pop();
-    if (node.type === "RCTRawText" && typeof propsOf(node).text === "string") {
-      const text = propsOf(node).text.replace(/\s+/g, " ").trim();
+    // Un texte de React Native est une fibre HOTE TEXTE (tag 6) dont les props sont la chaîne.
+    const raw = node.tag === 6 && typeof node.memoizedProps === "string" ? node.memoizedProps
+      : node.type === "RCTRawText" && typeof propsOf(node).text === "string" ? propsOf(node).text : null;
+    if (raw) {
+      const text = raw.replace(/\s+/g, " ").trim();
       if (text) out.push(text);
     }
     if (node.sibling) stack.push(node.sibling);
@@ -154,7 +157,12 @@ function modalFibers() {
       return false;
     });
   }
-  return out;
+  // Une Modal en enveloppe une autre du même nom (composant et classe) : on garde la plus haute.
+  const inside = (node) => {
+    for (let up = node.return; up; up = up.return) if (out.includes(up)) return true;
+    return false;
+  };
+  return out.filter((node) => !inside(node));
 }
 const modalsOf = (fibers) => fibers.map((node) => {
   const first = walk(node.child, (inner) => typeof propsOf(inner).focusKey === "string");
