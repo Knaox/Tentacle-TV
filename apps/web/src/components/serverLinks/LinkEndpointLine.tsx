@@ -44,8 +44,12 @@ interface Props {
 
 export function LinkEndpointLine({ endpoint, showRole = true, hideIssues }: Props) {
   const { t } = useTranslation("serverLinks");
-  const Icon = ICON[endpoint.tone];
   const issues = hideIssues ? endpoint.issues.filter((issue) => !hideIssues.includes(issue)) : endpoint.issues;
+  // Ses soucis déjà dits ailleurs, l'adresse ne garde que ce que la sonde a trouvé — et son ton.
+  const tone: LinkTone = issues.length === endpoint.issues.length
+    ? endpoint.tone
+    : issues.length > 0 ? "warning" : endpoint.probe?.result === "ok" ? "success" : "neutral";
+  const Icon = ICON[tone];
   const lines = issues.length > 0 ? issues.map((issue) => issueText(t, issue, endpoint)) : [statusText(t, endpoint)];
 
   return (
@@ -58,7 +62,7 @@ export function LinkEndpointLine({ endpoint, showRole = true, hideIssues }: Prop
       )}
       <ul className={showRole ? "mt-1 space-y-1" : "space-y-1"}>
         {lines.map((line) => (
-          <li key={line} className={`flex items-start gap-1.5 text-xs leading-relaxed ${COLOR[endpoint.tone]}`}>
+          <li key={line} className={`flex items-start gap-1.5 text-xs leading-relaxed ${COLOR[tone]}`}>
             <Icon aria-hidden size={14} className="mt-px flex-shrink-0" />
             <span>{line}</span>
           </li>
