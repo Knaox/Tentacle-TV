@@ -8,8 +8,9 @@ qu'écrits dans le code. C'est la spécification à reproduire À L'IDENTIQUE
 par l'extraction (tv-core) ; un défaut relevé ici se NOTE, il ne se corrige
 pas (« Constats », en fin de page).
 
-Contrat général du lot : `docs/TV-NAVIGATION.md` (T1). Ce relevé parle
-d'« intentions » au sens large ; leurs noms se caleront sur le contrat T1.
+Contrat général du lot : `docs/TV-NAVIGATION.md` (T1). Les §§ 1 à 10
+relèvent le code d'origine ; le § 11 dit où chaque décision vit après
+l'extraction, le § 12 comment l'équivalence se prouve.
 
 ## 1. Où vit le comportement aujourd'hui
 
@@ -508,31 +509,88 @@ tels quels, sans les juger.
    tardif peut y agir (souvent Lecture/Pause → pause). Constat déjà noté au
    carnet (`docs/TV-REFONTE.md`, « Constats non corrigés »).
 7. `useTVRemote({ debugTag: "PLAYER" })` journalise encore les transitions
-   (`TODO(diag)`).
+   (`TODO(diag)`) — sur Android TV ; Apple TV passe désormais par l'entrée
+   unique, sans ce journal.
+8. **La sortie du défilement rallume l'habillage avec l'état du panneau du
+   PREMIER rendu du lecteur** : la machine du défilement, créée une fois,
+   gardait le `showOverlay` de ce rendu-là (fermeture figée). Sans effet
+   connu (un défilement ne s'ouvre pas sous un panneau) ; repris tel quel
+   (`createPlayerControls({ initialPanelOpen })`).
+9. **Android TV (modèle d'événements supposé, non éprouvé)** : un maintien
+   engagé par le signal natif (`longRight` + 250 ms) ne reçoit plus de
+   répétitions du moteur — elles vont au défilement, qui les ignore pendant
+   le tic —, et le chien de garde de silence (700 ms) arrête l'avance ;
+   `isHoldTicking` reste vrai jusqu'au relâchement. Trace `and-02`.
+10. **L'accueil, pour un banc** : OK sur « Reprendre » du héros lance le titre
+    du MOMENT (le héros tourne seul toutes les 8 s) — les scénarios
+    passent par la rangée Reprendre.
 
-## 11. Plan d'extraction (phase B, à caler sur le contrat T1)
+## 11. Après l'extraction : où vit chaque décision
 
-Ce qui part dans tv-core (`packages/tv-core/src/player/`), pur et testé :
+**tv-core `player/`** (pur, testé, minuteurs INJECTÉS — `PlayerTimers`) :
 
-- la table « intention → effet » du lecteur (§ 4), par contexte, et la
-  dérivation du contexte depuis les drapeaux (§ 3) ;
-- les machines à minuteurs injectables : extinction de l'habillage (5 s),
-  badge (1,5 s), gardes des appuis (400 / 300 / 600 ms), routage des flèches
-  et du maintien (profil de plateforme, appui différé, queue de 400 ms),
-  interprète du pan (silence, rendu, engagement, gain), décompte (déplacé tel
-  quel), grâce du Retour ;
-- les réglages (`seekTuning`, `scrubTouchTuning`), déplacés tels quels ;
-- les règles du focus : entrées par contexte, préférences, verrous, sens des
-  ponts, cible de restauration et règle de cession à la pilule, retour d'un
-  panneau ;
-- les couches du Retour du lecteur (actives par contexte, effet de chacune).
+| Module | Ce qu'il décide |
+|---|---|
+| `seekTuning` | +30 / −10 s, validation 5 s |
+| `scrubTouchTuning` | gains du pavé, seuils d'engagement (`canEngage`, `scrubGainFor`) |
+| `scrubCountdown` | le décompte de validation (5 s, tenu, relancé) |
+| `skipFlash` | le badge des sauts (cumul, 1,5 s) |
+| `pressGuards` | jumeaux (400 ms), échos média (300 ms), toucher après appui (600 ms), queue d'un maintien (400 ms) |
+| `overlayAutoHide` | l'extinction de l'habillage (5 s ; jamais en pause ni panneau ouvert) |
+| `arrowHold` | le maintien des flèches et des touches média, selon le profil (`ScrubInputProfile`) |
+| `scrubController` | le défilement : machine, trappe, sauts en défilement, saut instantané hors défilement, reprise |
+| `playerControls` | le cerveau entier (§ 4.3 à 4.7) et ses gestes de télécommande (`remote`) |
+| `playerRemote` | LA TABLE intention → gestes du lecteur (`playerRemoteSteps`, `applyPlayerRemoteSteps`) |
+| `touchScrub` | l'interprète du glisser (régimes, silence 450 ms, rendu 33 ms) |
+| `playerBack` | le Retour des états passagers (grâce 600 ms), `playerBackLayers`, `isOsdPinned` |
+| `playerStage` | ce que l'habillage montre, quand le fond tient le focus |
+| `playerFocus` | pilule, préférences, réclamations, croix verrouillées, ponts, îlot, retour d'un panneau, entrées de la feuille et des épisodes, cycle de la préférence native |
+| `troublePanel` | l'activation du message-outil au premier appui, sa reprise du focus |
 
-Ce qui reste dans `apps/tv` : l'abonnement natif (entrée unique de T1), le
-pan tenu, les miroirs React, les appels natifs du focus (`claim`,
-`focusNow`, cycles `hasTVPreferredFocus`), les guides `TVFocusGuideView`.
-`arrowArbiter`, `holdMotor`, `scrubMachine` : inchangés.
+`holdMotor`, `scrubMachine`, `arrowArbiter` (communs avec webOS) : inchangés.
 
-## 12. Scénarios de référence
+**Apple TV** — l'entrée unique de T1 (`platform/tvos/input`) : la
+télécommande (`hooks/usePlayerRemoteBinding.ios.ts` → `useRemoteIntents` →
+`playerRemoteSteps`), le pavé (`useScrubGestures.ios.ts`, intentions
+`drag`, pan tenu par `usePanGesture`), le message-outil
+(`usePlaybackTrouble`). Retour : la pile de T4 (`usePlayerBackLayers` →
+`useBackLayers(playerBackLayers(…))`) ; `retour` n'est jamais un geste du
+lecteur. Les applicateurs : `platform/tvos/player` (fond focalisable,
+guides, préférence native et croix verrouillée, cycle de restauration).
 
-`apps/tv/harness/nav-golden/scenarios/lecteur/` — liste et format dans son
-`README.md`. Enregistrés sur `84f3cedd0`.
+**Partagé avec Android TV, rendu mince sur tv-core (API inchangée)** :
+`hooks/useTVPlayerControls`, `useTVPlayerBack`, `scrubGestureTypes`,
+`scrubInput(.ios)`, `playerTimers` (neuf) ; fondus dans tv-core et retirés :
+`useScrubController`, `useScrubHoldMotor`, `useScrubCountdown`,
+`useSkipFlash`, `hooks/scrubCountdown`, `hooks/scrubTouchTuning`
+(`hooks/seekTuning` ne reste qu'en relais pour le banc UI).
+
+**À retirer au portage Android TV** (copies temporaires d'un chemin
+partagé, que le banc de traces couvre) :
+- `hooks/usePlayerRemoteBinding.ts` : `useTVRemote` traduit encore les
+  événements Android (key-down qui agit, key-up qui relâche, BackHandler,
+  touches média) vers `playerControls.remote` ; Android TV passera par sa
+  table (`remote/bindings/`) et `playerRemoteSteps`, comme Apple TV ;
+- `hooks/scrubInput.ts` : le profil des flèches d'Android TV, à dériver de
+  ses `RemoteTraits`.
+
+**Encore dans des fichiers partagés, non extrait** (aucun banc ne couvre
+leur chemin Android — règle du lot : pas de modification sans preuve) :
+`components/player/focus/overlayFocusCore.ts` (cible de la restauration,
+cession à la pilule, 220 / 520 / 200 ms, voisins Android), `useSkipPillFocus`
+(réclamation et relais de la pilule), `hooks/useTVOsdEntryFocus`,
+`hooks/useTVPanelControls`. Leurs décisions sont relevées (§ 5) ; elles
+rejoindront tv-core avec un banc qui monte ces crochets (nœuds factices).
+
+## 12. Les preuves d'équivalence
+
+- **Banc de traces** (`apps/tv/harness/player-trace`, README) : les vrais
+  crochets dans React sans DOM, horloge factice ; 33 scénarios tvOS et 16
+  Android enregistrés sur `84f3cedd0`, rejoués à l'identique, à la
+  milliseconde, à chaque commit de l'extraction.
+- **Banc du simulateur** (`apps/tv/harness/nav-golden/scenarios/lecteur`,
+  README) : neuf parcours dans l'app réelle (une vraie vidéo servie par le jeu
+  `flux-mp4`), enregistrés sur `84f3cedd0`, vérifiés sur la branche.
+- **Apple TV « Chambre »** : appuis et maintiens réels par l'agent, pans
+  injectés par CDP dans le JS de l'appareil. Le vrai glisser du doigt reste un
+  essai de l'utilisateur.
