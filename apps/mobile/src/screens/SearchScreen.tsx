@@ -20,6 +20,8 @@ import { SearchResults, type SearchActions } from "@/components/search/SearchRes
 import { useMobileExternalSearch } from "@/components/search/useMobileExternalSearch";
 import { useRecentSearches } from "@/components/search/useRecentSearches";
 import { useSearchNavigation } from "@/components/search/useSearchNavigation";
+import { ProblemState } from "@/components/problems/ProblemState";
+import { usePageProblem } from "@/components/problems/usePageProblem";
 import { completionFor, suggestionsFrom } from "@/components/search/searchSuggestionModel";
 import { IS_TABLET_DEVICE, spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
@@ -69,6 +71,10 @@ export function SearchScreen() {
 
   const searching = debounced.length > 0 && browse === null;
   const search = useTentacleSearch(debounced, { limit: filter === "all" ? 10 : 48, enabled: searching });
+  // Une recherche en échec n'est pas « aucun résultat » : le dire, et réessayer.
+  const failure = usePageProblem(search.data ? null : search.error, {
+    target: "tentacle", availability: { canGoBack: false }, onRetry: () => void search.refetch(),
+  });
   const episodes = useSearchEpisodes(debounced, { limit: filter === "episodes" ? 30 : 8, enabled: searching });
   const external = useMobileExternalSearch(debounced, { limit: 10, enabled: searching });
   const episodeList = useMemo(() => episodes.data?.episodes ?? [], [episodes.data]);
@@ -205,7 +211,9 @@ export function SearchScreen() {
                   layout="rail"
                 />
               )}
-              <SearchResults
+              {failure.model ? (
+                <ProblemState embedded model={failure.model} onAction={failure.onAction} busy={search.isRefetching ? "retry" : null} />
+              ) : <SearchResults
                 query={debounced}
                 response={search.data}
                 episodes={episodeList}
@@ -214,7 +222,7 @@ export function SearchScreen() {
                 onFilter={setFilter}
                 onRetry={pick}
                 actions={actions}
-              />
+              />}
             </>
           )}
         </ScrollView>

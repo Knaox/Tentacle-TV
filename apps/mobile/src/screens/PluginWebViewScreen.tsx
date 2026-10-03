@@ -6,6 +6,7 @@ import { backOrHome } from "@/utils/backOrHome";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "../hooks/useActivePlugins";
+import { ExtensionProblem } from "@/components/problems/ExtensionProblem";
 import { shortPluginName } from "../hooks/useExtensionSections";
 import { usePluginBundle, useSharedDeps } from "../plugins/usePluginBundle";
 import { buildPluginHtml } from "../plugins/pluginHtmlTemplate";
@@ -36,11 +37,11 @@ export function PluginWebViewScreen() {
   const { storage } = useTentacleConfig();
   const { i18n, t } = useTranslation("errors");
   const { t: tc } = useTranslation("common");
-  const { data: plugins } = useActivePlugins();
+  const { data: plugins, isLoading: pluginsLoading } = useActivePlugins();
 
   const plugin = plugins?.find((p) => p.pluginId === pluginId);
-  const { data: bundleCode, isLoading: bundleLoading, error: bundleError } = usePluginBundle(pluginId);
-  const { data: sharedDepsCode, isLoading: depsLoading, error: depsError } = useSharedDeps();
+  const { data: bundleCode, isLoading: bundleLoading, error: bundleError, refetch: refetchBundle } = usePluginBundle(pluginId);
+  const { data: sharedDepsCode, isLoading: depsLoading, error: depsError, refetch: refetchDeps } = useSharedDeps();
 
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const token = storage.getItem("tentacle_token") ?? "";
@@ -79,20 +80,20 @@ export function PluginWebViewScreen() {
     [router],
   );
 
-  if (!plugin || bundleLoading || depsLoading) {
+  // Extension absente de la liste active : le dire, plutôt qu'un chargement sans fin.
+  const back = () => backOrHome(router);
+  if (!plugin && !pluginsLoading) return <ExtensionProblem kind="missing" canGoBack onAction={back} />;
+  if (bundleError || depsError) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator color={colors.brand.violet} />
-      </View>
+      <ExtensionProblem kind="load" error={bundleError ?? depsError} canGoBack onAction={back}
+        onRetry={() => { void refetchBundle(); void refetchDeps(); }} />
     );
   }
 
-  if (bundleError || depsError || !htmlContent) {
+  if (!plugin || bundleLoading || depsLoading || !htmlContent) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.text.secondary, textAlign: "center" }}>
-          {t("pluginLoadFailed") ?? "Failed to load plugin"}
-        </Text>
+      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator color={colors.brand.violet} />
       </View>
     );
   }

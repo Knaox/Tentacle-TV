@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from "react";
-import { RefreshControl, View, Text, StyleSheet } from "react-native";
+import { RefreshControl, View } from "react-native";
 import Animated, { useComposedEventHandler } from "react-native-reanimated";
-import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,8 +9,7 @@ import {
   useWatchlist,
   useHomeWebSocket, usePreferencesLive, useRecoLive, useTentacleConfig,
 } from "@tentacle-tv/api-client";
-import { latestAdditionsDetailQuery, type MediaItem } from "@tentacle-tv/shared";
-import { useTranslation } from "react-i18next";
+import { describeProblem, latestAdditionsDetailQuery, type MediaItem } from "@tentacle-tv/shared";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
 import { useHeroMetrics } from "@/components/heroMetrics";
@@ -26,7 +24,8 @@ import { CardDensityProvider } from "@/contexts/CardDensityContext";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { useRecoNavigation } from "@/hooks/useRecoNavigation";
 import { useRecoFilterChipRow } from "@/components/reco/useRecoFilterChipRow";
-import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { ProblemState } from "@/components/problems/ProblemState";
+import { spacing, useTheme } from "@/theme";
 
 /** Les caches que « tirer pour rafraîchir » renouvelle, au-delà des requêtes
  *  déjà tenues par l'écran : la mise en page et les rangées auto-alimentées. */
@@ -41,9 +40,9 @@ const REFRESH_KEYS: string[][] = [
  * rendu de chaque clé vit dans `homeRowRegistry`.
  */
 export function HomeScreen() {
-  const { t: te } = useTranslation("errors");
+  // La session perdue (plus de compte lu) : le message du modèle commun.
+  const sessionLost = useMemo(() => describeProblem({ cause: "sessionExpired", context: "page", availability: { canGoBack: false } }), []);
   const theme = useTheme();
-  const st = useThemedStyles(makeErrStyles);
   const router = useRouter();
   const queryClient = useQueryClient();
   const headerH = useHeaderHeight();
@@ -135,14 +134,10 @@ export function HomeScreen() {
     );
   }
 
+  // Plus de compte lu : la session est perdue — le dire, et proposer de se
+  // reconnecter (jamais un message de développeur).
   if (!userId) {
-    return (
-      <SubtleBackground ambient style={{ justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Feather name="alert-circle" size={36} color={theme.colors.brand.light} style={{ marginBottom: spacing.md }} />
-        <Text style={st.errTitle}>{te("sessionNotInitialized")}</Text>
-        <Text style={st.errMsg}>{te("sessionNotInitializedMessage")}</Text>
-      </SubtleBackground>
-    );
+    return <ProblemState model={sessionLost} onAction={() => router.replace("/(auth)/login")} />;
   }
 
   return (
@@ -178,8 +173,3 @@ export function HomeScreen() {
     </SubtleBackground>
   );
 }
-
-const makeErrStyles = (t: AppTheme) => StyleSheet.create({
-  errTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, marginBottom: 8, textAlign: "center" as const },
-  errMsg: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary, textAlign: "center" as const, maxWidth: 320 },
-});

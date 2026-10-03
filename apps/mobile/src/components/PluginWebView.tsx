@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
@@ -10,7 +10,8 @@ import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
 import { usePluginOverlay } from "@/plugins/usePluginOverlay";
 import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
-import { typography, FONT_FAMILY, RADIUS, useTheme, useResponsive } from "@/theme";
+import { ExtensionProblem } from "./problems/ExtensionProblem";
+import { typography, useTheme, useResponsive } from "@/theme";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
 import { useScrollChromeSetter } from "@/components/navigation/scrollChrome";
@@ -69,7 +70,7 @@ export function PluginWebView({
   const chromeBottom = Math.round(bottomBar + chromeBottomExtra);
   const chromeRef = useRef(chromeBottom);
   const { storage } = useTentacleConfig();
-  const { i18n, t: tc } = useTranslation("common");
+  const { i18n } = useTranslation("common");
   const { t: te } = useTranslation("errors");
   const { data: plugins, isLoading: pluginsLoading } = useActivePlugins();
 
@@ -93,8 +94,8 @@ export function PluginWebView({
   // Le plugin est adressé par son identifiant : un emplacement par index
   // n'est pas une identité (l'ordre des pages change avec le manifeste).
   const plugin = plugins?.find((p) => p.pluginId === pluginId);
-  const { data: bundleCode, error: bundleError } = usePluginBundle(plugin ? pluginId : undefined);
-  const { data: sharedDepsCode, error: depsError } = useSharedDeps();
+  const { data: bundleCode, error: bundleError, refetch: refetchBundle } = usePluginBundle(plugin ? pluginId : undefined);
+  const { data: sharedDepsCode, error: depsError, refetch: refetchDeps } = useSharedDeps();
 
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const token = storage.getItem("tentacle_token") ?? "";
@@ -185,53 +186,12 @@ export function PluginWebView({
     resetOverlay();
   }, [resetOverlay]);
 
-  if (webViewError) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.text.secondary, textAlign: "center", marginBottom: 16 }}>
-          {te("pluginLoadFailed") ?? "Plugin crashed"}
-        </Text>
-        <TouchableOpacity
-          onPress={handleRetry}
-          activeOpacity={0.88}
-          style={{
-            paddingHorizontal: 24, paddingVertical: 12, minHeight: 44,
-            backgroundColor: colors.cta.primaryBg, borderRadius: RADIUS.md,
-            alignItems: "center", justifyContent: "center",
-            shadowColor: colors.brand.violet,
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.45,
-            shadowRadius: 18,
-            elevation: 8,
-          }}
-        >
-          <Text style={{ ...typography.body, fontFamily: FONT_FAMILY.bold, color: colors.cta.primaryFg, letterSpacing: 0.1 }}>
-            {tc("retry") ?? "Réessayer"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // Plugin absent de la liste active (désactivé, désinstallé, ou pas encore chargé)
-  if (!plugin && !pluginsLoading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.text.tertiary, textAlign: "center" }}>
-          {tc("noPlugins")}
-        </Text>
-      </View>
-    );
-  }
-
+  // Plantage, extension désactivée, code introuvable : le modèle commun le dit.
+  if (webViewError) return <ExtensionProblem kind="crashed" detail={webViewError} onRetry={handleRetry} />;
+  // Plugin absent de la liste active (désactivé, désinstallé)
+  if (!plugin && !pluginsLoading) return <ExtensionProblem kind="missing" />;
   if (bundleError || depsError) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
-        <Text style={{ ...typography.body, color: colors.text.secondary, textAlign: "center" }}>
-          {te("pluginLoadFailed") ?? "Failed to load plugin"}
-        </Text>
-      </View>
-    );
+    return <ExtensionProblem kind="load" error={bundleError ?? depsError} onRetry={() => { void refetchBundle(); void refetchDeps(); }} />;
   }
 
   const WebViewComponent = getWebView();
