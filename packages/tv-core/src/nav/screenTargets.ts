@@ -1,7 +1,8 @@
 /**
- * OK sur un élément d'un écran : où l'on va — la lecture, une fiche, une
- * demande. Module pur : la plateforme navigue (et la suite de fiches,
- * `detailChain.ts`, dit si une fiche s'empile ou remplace la page).
+ * OK sur un élément d'un écran qui n'est pas une carte : ce que joue la pilule
+ * de lecture d'une fiche. Module pur : la plateforme navigue. (OK sur une
+ * carte : `cards/cardPress` ; une fiche qui s'empile ou remplace la page :
+ * `detailChain.ts`.)
  */
 
 /** Ce que joue la pilule de lecture d'une fiche. */
@@ -24,21 +25,4 @@ export function detailPlayPress(item: { id: string; isSeries: boolean }, watch: 
   if (!item.isSeries) return { kind: "play", itemId: item.id };
   if (!watch) return { kind: "resolve" };
   return watch.completed ? { kind: "none" } : { kind: "play", itemId: watch.episodeId };
-}
-
-/** OK sur un volet de la saga d'un film. */
-export type SagaEntryPress =
-  /** « Cette fiche » : on y est. */
-  | "none"
-  /** Un volet de la bibliothèque : sa fiche. */
-  | "open"
-  /** Un volet absent, la garde des demandes ouverte : le demander. */
-  | "request"
-  /** Un volet absent sans garde : dire qu'il n'est pas dans la bibliothèque. */
-  | "notInLibrary";
-
-export function sagaEntryPress(entry: { current: boolean; absent: boolean; canRequest: boolean }): SagaEntryPress {
-  if (entry.current) return "none";
-  if (!entry.absent) return "open";
-  return entry.canRequest ? "request" : "notInLibrary";
 }

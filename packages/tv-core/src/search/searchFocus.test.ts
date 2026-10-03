@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   SEARCH_ENTRY_KEY,
   SEARCH_KEYBOARD_CLOSED_KEY,
-  searchCardPress,
   searchFirstResultKey,
   searchRemembers,
   searchTopPress,
@@ -40,14 +39,6 @@ describe("premier résultat", () => {
 });
 
 describe("OK sur un résultat", () => {
-  it("une vignette d'épisode lit, une affiche ouvre sa fiche, « À demander » demande", () => {
-    expect(searchCardPress("episodes")).toBe("play");
-    expect(searchCardPress("movies")).toBe("detail");
-    expect(searchCardPress("series")).toBe("detail");
-    expect(searchCardPress("collections")).toBe("detail");
-    expect(searchCardPress("absent")).toBe("request");
-  });
-
   it("le meilleur résultat : une personne, sa filmographie ; un titre, sa fiche", () => {
     expect(searchTopPress("person")).toBe("browse");
     expect(searchTopPress("item")).toBe("detail");

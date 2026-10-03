@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useResolvePlayTarget } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { detailPlayPress, holdPanelOf, sagaEntryPress, type HoldPanel } from "@tentacle-tv/tv-core";
+import { cardPressOf, detailPlayPress, holdPanelOf, type HoldPanel } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { DetailCallbacks } from "../../redesign/screens/detail/detailTypes";
 import { showNotice } from "../overlays/transientNotice";
@@ -96,7 +96,9 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         : undefined,
       onSelectSeason: (seasonId) => model().episodes.select(seasonId),
       onFocusSeason: (seasonId) => model().episodes.prefetch(seasonId),
-      onPlayEpisode: (episode) => play(episode.id),
+      onPlayEpisode: (episode) => {
+        if (cardPressOf({ surface: "detail", card: "episode" }) === "play") play(episode.id);
+      },
       onLongPressEpisode: (episode) => openPanel(holdPanelOf({ surface: "detail", card: "episode" }), model().episodes.episodeOf(episode.id)),
       onOpenPerson: (person) => latest.current.open.openPerson(person),
       onOpenExtra: (extra) => {
@@ -107,13 +109,15 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         else nav().navigate("Trailer", { url: entry.trailer.Url, name: entry.title, itemId: item?.Id });
       },
       onOpenSagaEntry: (entry) => {
-        // Un volet absent n'a pas de fiche : le demander quand le serveur le
-        // permet, sinon dire pourquoi rien ne s'ouvre (`sagaEntryPress`).
+        // « Cette fiche » : on y est. Un volet absent n'a pas de fiche : le
+        // demander quand le serveur le permet, sinon dire pourquoi rien ne
+        // s'ouvre (`cardPressOf`).
+        if (entry.current) return;
         const { requests, model: current, t } = latest.current;
         const absent = !!entry.card.absent;
-        const title = absent && !entry.current ? current.cards.absentOf(entry.key) : undefined;
-        const press = sagaEntryPress({ current: !!entry.current, absent, canRequest: !!requests && !!title });
-        if (press === "open") return latest.current.open.openTitle(latest.current.cardItemOf(entry.card.id) ?? { Id: entry.card.id });
+        const title = absent ? current.cards.absentOf(entry.key) : undefined;
+        const press = cardPressOf({ surface: "detail", card: absent ? "sagaAbsent" : "sagaPresent", requestable: !!requests && !!title });
+        if (press === "detail") return latest.current.open.openTitle(latest.current.cardItemOf(entry.card.id) ?? { Id: entry.card.id });
         if (press === "request" && requests && title) return requests.open(title);
         if (press === "notInLibrary") showNotice({ kind: "info", title: t("cards:notInLibraryNotice") });
       },
@@ -125,7 +129,9 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         if (panel?.kind === "absent") return title ? requests?.hold(title) : undefined;
         openPanel(panel, cardItemOf(entry.card.id));
       },
-      onOpenCard: (_section, card) => latest.current.open.openTitle(latest.current.cardItemOf(card.id) ?? { Id: card.id }),
+      onOpenCard: (_section, card) => {
+        if (cardPressOf({ surface: "detail", card: "similar" }) === "detail") latest.current.open.openTitle(latest.current.cardItemOf(card.id) ?? { Id: card.id });
+      },
       // La collection et les similaires : des affiches de la bibliothèque.
       onLongPressCard: (card) => openPanel(holdPanelOf({ surface: "detail", card: "similar" }), latest.current.cardItemOf(card.id)),
       onRetry: () => model().refetch(),

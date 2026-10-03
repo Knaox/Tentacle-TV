@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detailPlayPress, sagaEntryPress } from "./screenTargets";
+import { detailPlayPress } from "./screenTargets";
 
 describe("la pilule de lecture", () => {
   it("un film, un épisode : lui-même", () => {
@@ -16,17 +16,5 @@ describe("la pilule de lecture", () => {
 
   it("une série dont l'état se résout encore : le résoudre au geste", () => {
     expect(detailPlayPress({ id: "s1", isSeries: true }, undefined)).toEqual({ kind: "resolve" });
-  });
-});
-
-describe("les volets de la saga", () => {
-  it("« Cette fiche » : rien ; un volet de la bibliothèque : sa fiche", () => {
-    expect(sagaEntryPress({ current: true, absent: false, canRequest: true })).toBe("none");
-    expect(sagaEntryPress({ current: false, absent: false, canRequest: false })).toBe("open");
-  });
-
-  it("un volet absent se demande quand la garde est ouverte, sinon l'avis", () => {
-    expect(sagaEntryPress({ current: false, absent: true, canRequest: true })).toBe("request");
-    expect(sagaEntryPress({ current: false, absent: true, canRequest: false })).toBe("notInLibrary");
   });
 });

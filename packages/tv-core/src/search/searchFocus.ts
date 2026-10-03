@@ -1,6 +1,7 @@
 /**
  * Le focus de la recherche d'un téléviseur — ses clés, son entrée, où mènent
- * la validation et la fermeture du clavier, ce que fait OK sur un résultat.
+ * la validation et la fermeture du clavier, ce que fait OK sur le meilleur
+ * résultat (OK sur une carte : `cards/cardPress`).
  * Module pur : la plateforme pose le focus, ouvre le clavier, navigue.
  *
  * La page, façon Netflix : à gauche la SAISIE (le champ, qui ouvre le clavier
@@ -37,20 +38,6 @@ export function searchFirstResultKey(sectionKeys: readonly string[]): string | n
   const first = sectionKeys[0];
   if (first === undefined) return null;
   return first === "top" ? "top" : `${first}:0`;
-}
-
-/** Ce que fait OK sur une carte d'une rangée de résultats (RE-10). */
-export type SearchCardPress =
-  /** Une vignette d'épisode : la LECTURE. */
-  | "play"
-  /** Une affiche (film, série, collection) : sa fiche, empilée. */
-  | "detail"
-  /** La rangée « À demander » : demander (une série incomplète : ses saisons). */
-  | "request";
-
-export function searchCardPress(section: string): SearchCardPress {
-  if (section === "absent") return "request";
-  return section === "episodes" ? "play" : "detail";
 }
 
 /** OK sur le meilleur résultat : une personne → sa filmographie, un titre → sa fiche. */

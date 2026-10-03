@@ -5,8 +5,8 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   SEARCH_ENTRY_KEY,
   SEARCH_FIELD_KEY,
+  cardPressOf,
   holdPanelOf,
-  searchCardPress,
   searchTopPress,
   type SearchCardKind,
 } from "@tentacle-tv/tv-core";
@@ -44,12 +44,12 @@ const isInputKey = (key: string) => key === SEARCH_FIELD_KEY || key.startsWith("
  * aller aux résultats mène au meilleur, puis au dernier visité ; revenir au
  * clavier rend la dernière touche. Le focus, le clavier système et ce que fait
  * OK sont décidés par tv-core (`search/`) et posés par l'applicateur tvOS
- * (`platform/tvos/screens/search.ts`) ; l'appui maintenu par la règle de T6
- * (`holdPanelOf`).
+ * (`platform/tvos/screens/search.ts`) ; OK et l'appui maintenu sur une carte
+ * par les règles des cartes (`cardPressOf`, `holdPanelOf`).
  */
 
-/** Le genre d'une carte de résultat, pour l'appui maintenu. */
-function holdCardOf(section: string, librarySeries: boolean): SearchCardKind {
+/** Le genre d'une carte de résultat, pour les règles des cartes. */
+function searchCardKindOf(section: string, librarySeries: boolean): SearchCardKind {
   if (section === "absent") return librarySeries ? "librarySeries" : "absentTitle";
   return section === "episodes" ? "episode" : "title";
 }
@@ -111,7 +111,7 @@ export function SearchRedesign() {
   const hold = requests?.hold;
   const onPressCard = useCallback((section: string, card: CardModel) => {
     remember();
-    const press = searchCardPress(section);
+    const press = cardPressOf({ surface: "search", card: searchCardKindOf(section, false) });
     if (press === "request") {
       const gap = gapOf(card.id);
       if (gap && requests) return openSearchGap(requests, gap, t);
@@ -124,7 +124,7 @@ export function SearchRedesign() {
     // Une série incomplète est un titre de la bibliothèque : son panneau.
     const gap = section === "absent" ? gapOf(card.id) : undefined;
     const series = gap ? itemOf(gap.seriesId) : undefined;
-    const panel = holdPanelOf({ surface: "search", card: holdCardOf(section, series !== undefined) });
+    const panel = holdPanelOf({ surface: "search", card: searchCardKindOf(section, series !== undefined) });
     if (panel?.kind === "absent") {
       const title = absentOf(card.id);
       if (title) hold?.(title);
