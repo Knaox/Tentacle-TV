@@ -20,6 +20,8 @@ import {
   useDeleteNotificationsMobile,
   useDeleteAllNotificationsMobile,
 } from "@/hooks/useNotificationsMobile";
+import { ProblemState } from "@/components/problems/ProblemState";
+import { usePageProblem } from "@/components/problems/usePageProblem";
 import { toNotifPluginMeta, useActivePlugins } from "@/hooks/useActivePlugins";
 import { openNotificationRoute } from "@/utils/openNotificationRoute";
 import { BottomSheet } from "./ui";
@@ -55,7 +57,11 @@ export function NotificationBell() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: unread } = useUnreadCountMobile();
-  const { data: notifications } = useNotificationsMobile();
+  const { data: notifications, error: notifError, refetch: refetchNotifs, isRefetching } = useNotificationsMobile();
+  // Une liste qui n'a pas pu se lire n'est pas « aucune notification ».
+  const failure = usePageProblem(notifications ? null : notifError, {
+    target: "tentacle", availability: { canGoBack: false }, onRetry: () => void refetchNotifs(),
+  });
   const markAll = useMarkAllReadMobile();
   const markOne = useMarkReadMobile();
   const deleteOne = useDeleteNotificationMobile();
@@ -138,12 +144,14 @@ export function NotificationBell() {
           data={notifications ?? []}
           keyExtractor={(n) => n.id}
           contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, paddingTop: 12 }}
-          ListEmptyComponent={
+          ListEmptyComponent={failure.model ? (
+            <ProblemState embedded model={failure.model} onAction={failure.onAction} busy={isRefetching ? "retry" : null} />
+          ) : (
             <View style={{ alignItems: "center", marginTop: 48 }}>
               <Feather name="bell-off" size={40} color={colors.text.quaternary} />
               <Text style={{ ...typography.body, color: colors.text.tertiary, textAlign: "center", marginTop: 16 }}>{t("noNotifications")}</Text>
             </View>
-          }
+          )}
           renderItem={({ item: n }) => (
             <SwipeableNotifRow
               notif={n}

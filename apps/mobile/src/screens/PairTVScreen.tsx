@@ -1,11 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ActivityIndicator,
-  ScrollView,
-} from "react-native";
+import { useState, useCallback, useRef } from "react";
+import { View, Text, Pressable, ActivityIndicator, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
@@ -26,6 +20,10 @@ import {
 import { SubtleBackground, GlassCard, FadeIn, IconButton } from "../components/ui";
 import { PairCodeInputs, type PairCodeInputsHandle } from "../components/pair/PairCodeInputs";
 import { PairUnavailableCard } from "../components/pair/PairUnavailableCard";
+import { PairTvMedallion } from "../components/pair/PairTvMedallion";
+import { ProblemState } from "../components/problems/ProblemState";
+import { usePageProblem } from "../components/problems/usePageProblem";
+import { pairingErrorKey, usePairingAvailability } from "../hooks/usePairingAvailability";
 
 export function PairTVScreen() {
   const { t } = useTranslation("pairing");
@@ -42,23 +40,12 @@ export function PairTVScreen() {
   const [errorMsg, setErrorMsg] = useState("");
   const codeInputsRef = useRef<PairCodeInputsHandle>(null);
 
-  // État réel du backend : le jumelage n'est possible que si l'URL publique du
-  // serveur Tentacle TV est définie. null = en cours de vérification.
-  const [available, setAvailable] = useState<boolean | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const base = storage.getItem("tentacle_server_url") ?? "";
-        const res = base ? await fetch(`${base}/api/config`) : null;
-        const cfg = res && res.ok ? await res.json() : null;
-        if (!cancelled) setAvailable(!!cfg?.publicUrl);
-      } catch {
-        if (!cancelled) setAvailable(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [storage]);
+  // Le jumelage exige l'URL publique du serveur ; une panne se dit à part.
+  const pairing = usePairingAvailability(storage);
+  const { available } = pairing;
+  const pairingFailure = usePageProblem(pairing.error, {
+    target: "tentacle", context: "pairing", availability: { canGoBack: false }, onRetry: pairing.retry,
+  });
 
   const code = chars.join("");
   const canSubmit = code.length === 4 && status === "idle";
@@ -102,14 +89,7 @@ export function PairTVScreen() {
       setStatus("success");
     } catch (err) {
       setStatus("error");
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("404") || msg.includes("invalide") || msg.includes("expire")) {
-        setErrorMsg(t("codeInvalid"));
-      } else if (msg.includes("409") || msg.includes("utilise")) {
-        setErrorMsg(t("codeInvalid"));
-      } else {
-        setErrorMsg(t("relayError"));
-      }
+      setErrorMsg(t(pairingErrorKey(err)));
     }
   }, [canSubmit, code, tvTokenMut, relayConfirmMut, storage, t, te]);
 
@@ -147,25 +127,7 @@ export function PairTVScreen() {
           />
         </View>
 
-        <FadeIn delay={0} translateY={10} style={{ alignItems: "center", marginTop: 8, marginBottom: 16 }}>
-          <View style={{
-            width: 96,
-            height: 96,
-            borderRadius: 48,
-            backgroundColor: theme.colors.brand.soft,
-            borderWidth: 1,
-            borderColor: withAlpha(theme.colors.brand.violet, 0.4, theme.colors.brand.glow),
-            justifyContent: "center",
-            alignItems: "center",
-            shadowColor: theme.colors.brand.violet,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.5,
-            shadowRadius: 20,
-            elevation: 10,
-          }}>
-            <Feather name="tv" size={48} color={theme.colors.brand.light} />
-          </View>
-        </FadeIn>
+        <PairTvMedallion />
 
         <FadeIn delay={80} translateY={10}>
           <Text style={{
@@ -194,7 +156,9 @@ export function PairTVScreen() {
 
         <FadeIn delay={140} translateY={12} style={{ paddingHorizontal: contentPad }}>
           <GlassCard style={{ padding: 24 }}>
-            {available !== true ? (
+            {pairingFailure.model ? (
+              <ProblemState embedded model={pairingFailure.model} onAction={pairingFailure.onAction} />
+            ) : available !== true ? (
               <PairUnavailableCard loading={available === null} />
             ) : status === "success" ? (
               <View style={{ alignItems: "center", paddingVertical: 12 }}>
