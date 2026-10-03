@@ -67,7 +67,9 @@ export const SearchResults = memo(function SearchResults({ query, response, epis
   const correction = r?.correction && foldForSearch(r.correction) !== foldForSearch(query) ? r.correction : null;
 
   const grid = (hits: SearchItemHit[]) => (
-    <ProgressiveCardGrid items={hits.map((hit) => asMediaItem(hit.item))} onPress={openCard} resetKey={`${filter}:${query}`} />
+    // La clé suit la RÉPONSE affichée, pas la frappe : tant que les résultats
+    // restent les mêmes, la grille ne repart pas de son premier lot.
+    <ProgressiveCardGrid items={hits.map((hit) => asMediaItem(hit.item))} onPress={openCard} resetKey={`${filter}:${r?.query ?? ""}`} />
   );
 
   return (
