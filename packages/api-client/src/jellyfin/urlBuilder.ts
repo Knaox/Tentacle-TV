@@ -1,4 +1,4 @@
-import { transcodeTarget, type TranscodeTarget } from "@tentacle-tv/shared";
+import { TRANSCODE_TIERS, bestTierForBudget, transcodeTarget, type MediaSource, type TranscodeTarget } from "@tentacle-tv/shared";
 import { buildQuery } from "./types";
 import { imageBudget } from "../net/dataSaver";
 import { pixelDensity } from "../net/pixelDensity";
@@ -185,6 +185,37 @@ export function applyTranscodeTarget(url: string, target: TranscodeTarget): stri
   );
   if (target.maxHeight) kept.push(`MaxHeight=${target.maxHeight}`);
   return `${url.slice(0, q)}?${kept.join("&")}`;
+}
+
+/** Sous ce débit vidéo, Jellyfin quitte le 1080p et choisit seul une définition qu'il affame. */
+const STARVING_BELOW = TRANSCODE_TIERS.find((t) => t.key === "quality1080p")?.floor ?? 6_500_000;
+
+/** Un paramètre numérique d'une URL de transcodage, quelle que soit sa casse. */
+function numericParam(url: string, name: string): number | null {
+  const match = new RegExp(`[?&]${name}=(\\d+)`, "i").exec(url);
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * Le transcodage que JELLYFIN a plafonné de lui-même, en « Originale » : la
+ * limite de débit du streaming Internet (du serveur ou du compte) s'applique
+ * aux lecteurs distants sans qu'aucun palier n'ait été choisi. Jellyfin écrit
+ * alors `VideoBitrate = limite − audio` et choisit seul la définition — le
+ * 720p à 1,2 Mb/s qui part en blocs dans l'action. Quand le débit permis est
+ * sous celui de la source ET sous le plancher du 1080p — la zone où Jellyfin
+ * affame l'encodeur —, on y pose le meilleur palier qui tient dans cette
+ * limite (`bestTierForBudget`, shared). Sinon l'URL reste celle de Jellyfin :
+ * copie, remux, transcodage de codec à plein débit, ou plafond assez haut pour
+ * qu'il garde lui-même le 1080p, voire la 4K d'un téléviseur.
+ */
+export function fitServerCappedTranscode(url: string, source: MediaSource | null | undefined): string {
+  const videoBitrate = numericParam(url, "VideoBitrate");
+  const video = source?.MediaStreams?.find((s) => s.Type === "Video");
+  const sourceVideoBitrate = video?.BitRate ?? source?.Bitrate;
+  if (!videoBitrate || !sourceVideoBitrate || videoBitrate >= sourceVideoBitrate) return url;
+  if (videoBitrate >= STARVING_BELOW) return url;
+  const tier = bestTierForBudget(source, videoBitrate + (numericParam(url, "AudioBitrate") ?? 0));
+  return tier?.bitrate ? applyTranscodeTarget(url, transcodeTarget(tier.bitrate, tier.height)) : url;
 }
 
 export function buildHlsUrl(

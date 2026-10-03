@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { transcodeTarget } from "@tentacle-tv/shared";
-import { applyTranscodeTarget, buildStreamUrl, type StreamUrlContext } from "./urlBuilder";
+import { transcodeTarget, type MediaSource } from "@tentacle-tv/shared";
+import { applyTranscodeTarget, buildStreamUrl, fitServerCappedTranscode, type StreamUrlContext } from "./urlBuilder";
 
 const ctx: StreamUrlContext = {
   baseUrl: "http://jf.test",
@@ -79,3 +79,35 @@ describe("applyTranscodeTarget", () => {
     expect(applyTranscodeTarget("/videos/abc/stream", transcodeTarget(1_000_000, 360))).toBe("/videos/abc/stream");
   });
 });
+
+describe("fitServerCappedTranscode — la limite de débit Internet de Jellyfin", () => {
+  const source = (bitrate: number, height = 1080): MediaSource => ({
+    Id: "ms", Name: "test", Bitrate: bitrate, Container: "mkv",
+    SupportsDirectPlay: true, SupportsDirectStream: true, SupportsTranscoding: true,
+    MediaStreams: [{ Type: "Video", Codec: "hevc", Index: 0, IsDefault: true, Height: height, BitRate: bitrate - 200_000 }],
+  });
+  const jellyfin = (videoBitrate: number, audioBitrate = 192_000) =>
+    `/videos/abc/master.m3u8?&DeviceId=d&VideoCodec=h264&VideoBitrate=${videoBitrate}&AudioBitrate=${audioBitrate}&PlaySessionId=ps`;
+
+  it("une limite à 3 Mb/s sur un film 4K : 540p tenu dans la limite, plus le 720p affamé", () => {
+    const q = params(fitServerCappedTranscode(jellyfin(2_808_000), source(60_000_000, 2160)));
+    expect(q.get("MaxHeight")).toBe("540");
+    expect(Number(q.get("VideoBitrate")) + Number(q.get("AudioBitrate"))).toBeLessThanOrEqual(2_808_000 + 192_000);
+  });
+
+  it("transcodage de codec à plein débit (aucune limite) : l'URL de Jellyfin, intacte", () => {
+    const url = jellyfin(149_808_000);
+    expect(fitServerCappedTranscode(url, source(4_600_000))).toBe(url);
+  });
+
+  it("limite assez haute pour que Jellyfin garde le 1080p (ou la 4K) : intacte", () => {
+    const url = jellyfin(39_808_000);
+    expect(fitServerCappedTranscode(url, source(60_000_000, 2160))).toBe(url);
+  });
+
+  it("source inconnue ou URL sans débit : intacte", () => {
+    expect(fitServerCappedTranscode(jellyfin(2_000_000), undefined)).toBe(jellyfin(2_000_000));
+    expect(fitServerCappedTranscode("/videos/abc/master.m3u8?&DeviceId=d", source(9_000_000))).toBe("/videos/abc/master.m3u8?&DeviceId=d");
+  });
+});
+

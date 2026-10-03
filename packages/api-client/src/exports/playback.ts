@@ -34,8 +34,9 @@ export { buildTrickplayTileUrl } from "../jellyfin/trickplayUrl";
 // Parler à Jellyfin EN DIRECT (streaming direct) : `Authorization` et `ApiKey`,
 // les seules formes que Jellyfin 12 garde (cf. directAuth).
 export { directJellyfinHeaders, withDirectApiKey } from "../jellyfin/directAuth";
-// Un palier de qualité posé sur l'URL de transcodage rendue par Jellyfin (web, mobile).
-export { applyTranscodeTarget } from "../jellyfin/urlBuilder";
+// Un palier de qualité posé sur l'URL de transcodage rendue par Jellyfin (web, mobile) —
+// choisi par l'utilisateur, ou imposé par la limite de débit Internet du serveur.
+export { applyTranscodeTarget, fitServerCappedTranscode } from "../jellyfin/urlBuilder";
 
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le
 // cap automatique de qualité des clients TV.
