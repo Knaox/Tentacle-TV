@@ -18,6 +18,7 @@ import { JellyfinCompatSection } from "../components/admin/jellyfin/JellyfinComp
 import { SetupChecklist } from "../components/admin/jellyfin/SetupChecklist";
 import { RecommendedPluginsSection } from "../components/admin/recommended/RecommendedPluginsSection";
 import { ServerLinksSection } from "../components/admin/links/ServerLinksSection";
+import { ServerUpdateCard } from "../components/admin/serverUpdate/ServerUpdateCard";
 import { cls } from "./adminUtils";
 
 /**
@@ -46,6 +47,7 @@ export function AdminHome() {
       {/* Deux colonnes dès le téléphone (une tuile se lit sur 160 px), quatre
           sur grand écran : l'état du serveur en occupe deux, en tête. */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <ServerUpdateCard className="col-span-2" />
         <HealthCard className="col-span-2" />
         <SessionsTile />
         <TicketsTile />
