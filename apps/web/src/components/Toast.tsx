@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { memo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { useMessageCountdown } from "./session/useMessageCountdown";
 
 interface ToastProps {
+  id: number;
   type: "success" | "error" | "info";
+  title?: string;
   message: string;
-  onDismiss: () => void;
+  onDismiss: (id: number) => void;
 }
 
 const COLORS = {
@@ -25,40 +28,51 @@ const COLORS = {
   },
 };
 
-export function Toast({ type, message, onDismiss }: ToastProps) {
-  const [progress, setProgress] = useState(100);
-  const c = COLORS[type];
+/** Une erreur explique (titre et cause) : un peu plus de temps pour la lire. */
+const DURATION_MS = { success: 4000, info: 4000, error: 6000 } as const;
 
-  useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const remaining = Math.max(0, 100 - (elapsed / 4000) * 100);
-      setProgress(remaining);
-      if (remaining <= 0) clearInterval(id);
-    }, 50);
-    return () => clearInterval(id);
-  }, []);
+/**
+ * Un message bref. Il s'efface seul — sauf tant qu'on le survole ou qu'on y
+ * a mis le focus, ou fenêtre cachée (`useMessageCountdown`) ; un clic le
+ * ferme. La barre qui se vide est une animation CSS de `transform`, suspendue
+ * en même temps : plus de rendu React vingt fois par seconde pour la tenir.
+ */
+export const Toast = memo(function Toast({ id, type, title, message, onDismiss }: ToastProps) {
+  const reduced = useReducedMotion() ?? false;
+  const [held, setHeld] = useState(false);
+  const durationMs = DURATION_MS[type];
+  const countdown = useMessageCountdown(durationMs, held, () => onDismiss(id));
+  const c = COLORS[type];
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 50 }}
+      initial={{ opacity: 0, x: reduced ? 0 : 50 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 50 }}
+      exit={{ opacity: 0, x: reduced ? 0 : 50, transition: { duration: 0.14 } }}
       transition={{ duration: 0.2 }}
+      role={type === "error" ? "alert" : "status"}
       /* `backdrop-blur-md` en classe et non en style en ligne : un attribut
          `style` échappe à la passe de verre du portage téléviseur, où un flou
          d'arrière-plan coûte une recopie et un recalcul par image sans rien
          apporter. La classe rend le même flou sur le web. */
       className="relative min-w-[280px] max-w-sm cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-sm text-content-primary shadow-lg backdrop-blur-md"
       style={{ background: c.bg, border: `1px solid ${c.border}` }}
-      onClick={onDismiss}
+      onClick={() => onDismiss(id)}
+      onPointerEnter={() => setHeld(true)}
+      onPointerLeave={() => setHeld(false)}
     >
-      {message}
-      <div
-        className="absolute bottom-0 left-0 h-0.5 transition-none"
-        style={{ width: `${progress}%`, background: c.bar }}
-      />
+      {title && <p className="font-semibold">{title}</p>}
+      <p className={title ? "mt-0.5 text-content-secondary" : undefined}>{message}</p>
+      <span aria-hidden className="absolute bottom-0 left-0 block h-0.5 w-full motion-reduce:hidden">
+        <span
+          className="block h-full origin-left animate-countdown"
+          style={{
+            background: c.bar,
+            animationDuration: `${durationMs}ms`,
+            animationPlayState: countdown?.running ? "running" : "paused",
+          }}
+        />
+      </span>
     </motion.div>
   );
-}
+});

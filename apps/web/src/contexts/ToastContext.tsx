@@ -1,9 +1,17 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from "react";
+import { AnimatePresence } from "framer-motion";
 import { Toast } from "../components/Toast";
 
 type ToastType = "success" | "error" | "info";
-interface ToastItem { id: number; type: ToastType; message: string }
-interface ToastContextValue { show: (type: ToastType, message: string) => void }
+interface ToastOptions {
+  /** Ce qui n'a pas marché, au-dessus du message (qui dit alors pourquoi). */
+  title?: string;
+}
+interface ToastItem { id: number; type: ToastType; message: string; title?: string }
+interface ToastContextValue { show: (type: ToastType, message: string, options?: ToastOptions) => void }
+
+/** Au-delà, les plus anciens cèdent la place : l'écran reste lisible. */
+const MAX_VISIBLE = 4;
 
 const Ctx = createContext<ToastContextValue>({ show: () => {} });
 
@@ -13,10 +21,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const idRef = useRef(0);
 
-  const show = useCallback((type: ToastType, message: string) => {
+  const show = useCallback((type: ToastType, message: string, options?: ToastOptions) => {
     const id = ++idRef.current;
-    setToasts((prev) => [...prev, { id, type, message }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+    setToasts((prev) => [...prev, { id, type, message, title: options?.title }].slice(-MAX_VISIBLE));
   }, []);
 
   const dismiss = useCallback((id: number) => {
@@ -26,10 +33,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ show }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-        {toasts.map((t) => (
-          <Toast key={t.id} type={t.type} message={t.message} onDismiss={() => dismiss(t.id)} />
-        ))}
+      {/* Une région vivante unique : un lecteur d'écran dit chaque message sans
+          prendre le focus. Chaque toast compte son temps lui-même (pause au
+          survol et au focus). */}
+      <div aria-live="polite" className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+        <AnimatePresence initial={false}>
+          {toasts.map((t) => (
+            <Toast key={t.id} id={t.id} type={t.type} title={t.title} message={t.message} onDismiss={dismiss} />
+          ))}
+        </AnimatePresence>
       </div>
     </Ctx.Provider>
   );

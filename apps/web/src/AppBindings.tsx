@@ -8,6 +8,7 @@ import {
   primeBitrateMeasure,
 } from "@tentacle-tv/api-client";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
+import { MutationFailureBinding } from "./components/notices/MutationFailureBinding";
 import { RecoLiveBinding } from "./components/reco/RecoLiveBinding";
 import { PreferencesLiveBinding } from "./components/reco/PreferencesLiveBinding";
 import { RecoFilterBinding } from "./components/reco/RecoFilterBinding";
@@ -73,6 +74,8 @@ export function AppBindings({ authed, offlineMode }: AppBindingsProps) {
           naissance de sa sortie vidéo (desktop/playerWarmup.ts). */}
       {authed && <PlayerWarmupBinding />}
       {authed && <ImpersonationBanner />}
+      {/* Un geste de carte qui échoue (favori, Ma liste, vu, note) le dit. */}
+      {authed && <MutationFailureBinding />}
       {/* Fil temps réel des recommandations : la page en cache se rafraîchit
           en silence quand le serveur l'a reconstruite. */}
       {authed && <RecoLiveBinding />}
