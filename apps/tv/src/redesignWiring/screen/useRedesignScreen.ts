@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { railExpanded } from "@tentacle-tv/tv-core";
 import type { NavRailProps } from "../../redesign/nav/NavRail";
 import { sameRailGeometry, type NavRailGeometry } from "../../redesign/nav/navGeometry";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
@@ -103,7 +104,7 @@ export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus:
 
   // Le menu d'une entrée ou un déplacement gardent la navigation ouverte.
   const { heldKey, movingKey } = arrange;
-  const expanded = railFocused || heldKey !== null || movingKey !== null;
+  const expanded = railExpanded({ railFocused, heldKey, movingKey });
   // Les demandes en cours (Vigie), dans le bloc du profil — ou rien.
   const accessory = useRequestsAccessory(focus, movingKey !== null);
   const nav = useMemo<NavRailProps>(

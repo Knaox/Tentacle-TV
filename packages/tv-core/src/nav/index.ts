@@ -8,6 +8,7 @@ export * from "./backResolve";
 export * from "./railPages";
 export * from "./railKeys";
 export * from "./arrange";
+export * from "./railFocus";
 export * from "./detailChain";
 export * from "./railPinning";
 export * from "./railOrder";

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLibraries } from "@tentacle-tv/api-client";
+import { navKeyOf, railBlurDelay, railCollapseAfterBlur, railFocusedAfterFocus } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../focus/focusStore";
 import { useRailPinning } from "../../components/nav/railPinning";
 import { returnToSearchBar } from "../../components/search/searchBarReturn";
@@ -22,15 +23,10 @@ import { SHOW_ALL_KEY } from "./useNavEntries";
  * quatre images, puis dépliée).
  */
 
-export const NAV_PREFIX = "nav:";
+/** Les clés du rail : tv-core (`nav/railKeys`), réexportées pour les importateurs d'ici. */
+export { NAV_PREFIX, isNavKey, navKeyOf } from "@tentacle-tv/tv-core";
 
-export const navKeyOf = (entryKey: string) => `${NAV_PREFIX}${entryKey}`;
-
-export const isNavKey = (focusKey: string | null | undefined): boolean => !!focusKey?.startsWith(NAV_PREFIX);
-
-const COLLAPSE_DELAY_MS = 30;
-
-/** Vrai quand le focus est dans la navigation. */
+/** Vrai quand le focus est dans la navigation — la règle : tv-core `nav/railFocus`. */
 export function useRailFocused(focus: FocusStore): boolean {
   const [railFocused, setRailFocused] = useState(false);
   useEffect(() => {
@@ -39,18 +35,16 @@ export function useRailFocused(focus: FocusStore): boolean {
       if (focused) {
         if (timer) clearTimeout(timer);
         timer = null;
-        // Une entrée l'ouvre ; le contenu de l'écran la replie.
-        setRailFocused(isNavKey(key));
+        setRailFocused(railFocusedAfterFocus(key));
         return;
       }
-      if (!isNavKey(key)) return;
+      const delay = railBlurDelay(key);
+      if (delay === null) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         timer = null;
-        const now = focus.focusedKey();
-        // Aucune clé de l'écran : le focus est dans une Modal, la barre reste.
-        if (now !== null && !isNavKey(now)) setRailFocused(false);
-      }, COLLAPSE_DELAY_MS);
+        if (railCollapseAfterBlur(focus.focusedKey())) setRailFocused(false);
+      }, delay);
     });
     return () => {
       unsubscribe();
