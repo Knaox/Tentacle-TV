@@ -11,6 +11,8 @@ import type { ProblemDetail, ProblemModel } from "./problemTypes";
 export interface ProblemFacts {
   /** Le statut HTTP de la réponse en échec. */
   status?: number;
+  /** La réponse de la sonde du fichier source (404 : plus sur le disque). */
+  sourceStatus?: number;
   /** Le moteur de lecture (« mpv », « AVPlayer », « ExoPlayer », « hls.js », « HTML5 »). */
   engine?: string;
   /** Le code natif (« -1009 », « 2001 », « MEDIA_ERR_DECODE »). */
@@ -53,6 +55,7 @@ const STREAM_KEYS = { direct: "errors:streamDirect", transcode: "errors:streamTr
 export function problemDetails(facts: ProblemFacts): ProblemDetail[] {
   const lines: ProblemDetail[] = [];
   if (facts.status !== undefined) lines.push({ key: "errors:detailHttp", values: { status: facts.status } });
+  if (facts.sourceStatus !== undefined) lines.push({ key: "errors:detailSource", values: { status: facts.sourceStatus } });
   if (facts.jellyfinErrorCode) lines.push({ key: "errors:detailJellyfin", values: { code: facts.jellyfinErrorCode } });
   if (facts.engine) lines.push({ key: "errors:detailEngine", values: { engine: facts.engine } });
   if (facts.stream) lines.push({ key: "errors:detailStream", values: { stream: STREAM_KEYS[facts.stream] } });

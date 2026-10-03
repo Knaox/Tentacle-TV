@@ -79,6 +79,8 @@ export interface RawProblem {
   reachability?: Reachability;
   /** La sonde du flux a reçu une réponse 2xx : le flux existe, c'est sa lecture qui a échoué. */
   streamAnswered?: boolean;
+  /** La sonde du FICHIER source (flux statique) a reçu 404 : il n'est plus sur le disque du serveur. */
+  sourceMissing?: boolean;
 }
 
 const NETWORK_TEXT = /network request failed|failed to fetch|networkerror|load failed|network connection was lost|econnrefused|econnreset|enotfound|ehostunreach|enetunreach|getaddrinfo|could not connect|connection refused|no route to host|socket hang up|internet connection appears to be offline|unable to resolve host|failed to connect/i;
@@ -101,7 +103,9 @@ export function kindFromText(text: string | undefined, name?: string): FailureKi
 
 function fromMarker(raw: RawProblem): ProblemCause | null {
   switch (raw.marker) {
-    case "startTimeout": return raw.deviceOffline ? "deviceOffline" : "startTimeout";
+    // Un délai dépassé est un SYMPTÔME : un refus HTTP ou un serveur muet,
+    // sondés, le disent mieux — il ne vaut qu'en dernier (cf. classifyProblem).
+    case "startTimeout": return null;
     case "engineFailed": return "engineFailed";
     case "subtitleBurn": return "subtitleBurnFailed";
     case "bandwidth": return "bandwidthTooLow";
@@ -212,12 +216,20 @@ export function classifyProblem(input: RawProblem): ProblemCause {
   if (raw.deviceOffline || raw.reachability === "network") return "deviceOffline";
   const jellyfin = fromJellyfinCode(raw);
   if (jellyfin) return jellyfin;
+  // Le fichier n'est plus sur le disque : la cause RACINE d'une conversion
+  // qui échoue ou d'un flux qui ne vient pas.
+  if (raw.sourceMissing) return "fileMissing";
   if (raw.status !== undefined && raw.status > 0) {
     const byStatus = fromStatus(raw, raw.status);
     if (byStatus) return byStatus;
   }
   const unreachable = fromReachability(raw);
   if (unreachable) return unreachable;
+  if (raw.marker === "startTimeout") {
+    // Un flux DIRECT qui répond mais n'arrive pas à temps : la connexion ne
+    // suit pas le débit du fichier. Converti, c'est le serveur qui peine.
+    return raw.streamAnswered && !raw.transcoding && !raw.local ? "bandwidthTooLow" : "startTimeout";
+  }
   if (raw.streamAnswered && kind !== "tls" && kind !== "cleartext") return fromAnsweredStream(raw, kind);
   if (kind) return fromKind(raw, kind) ?? "unknown";
   return "unknown";

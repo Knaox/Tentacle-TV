@@ -91,6 +91,10 @@ export default {
   actionEditAddress: "Modifier l'adresse",
   actionBack: "Retour",
   actionBackToDetails: "Retour à la fiche",
+  // Une lecture qui cale : rien ne s'arrête, on dit pourquoi.
+  stallTitle: "La vidéo se fait attendre",
+  stallNetwork: "La connexion est trop lente pour cette qualité.",
+  stallTranscode: "Le serveur ne convertit pas la vidéo assez vite.",
   // Les gestes défaits faute de serveur — le titre d'un message bref.
   toastFavoriteFailed: "Les favoris n'ont pas pu être modifiés",
   toastWatchlistFailed: "Ma liste n'a pas pu être modifiée",
@@ -102,6 +106,7 @@ export default {
   copyDetails: "Copier",
   detailsCopied: "Copié",
   detailHttp: "Réponse HTTP {{status}}",
+  detailSource: "Fichier sur le serveur : réponse {{status}}",
   detailEngine: "Lecteur : {{engine}}",
   detailCode: "Code : {{code}}",
   detailJellyfin: "Jellyfin : {{code}}",

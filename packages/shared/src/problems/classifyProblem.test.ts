@@ -16,6 +16,12 @@ describe("la cause d'un échec", () => {
   it("ce que l'app a constaté prime ; hors ligne, un démarrage qui tarde est le réseau de l'appareil", () => {
     expect(classifyProblem({ marker: "startTimeout" })).toBe("startTimeout");
     expect(classifyProblem({ marker: "startTimeout", deviceOffline: true })).toBe("deviceOffline");
+    // Le délai est un symptôme : le flux sondé (404) ou le serveur muet le disent mieux.
+    expect(classifyProblem({ marker: "startTimeout", status: 404, target: "stream" })).toBe("fileMissing");
+    expect(classifyProblem({ marker: "startTimeout", reachability: "jellyfin" })).toBe("jellyfinUnreachable");
+    expect(classifyProblem({ marker: "startTimeout", reachability: "ok", streamAnswered: true, transcoding: true })).toBe("startTimeout");
+    // Direct, le flux répond mais n'arrive pas à temps : la connexion ne suit pas.
+    expect(classifyProblem({ marker: "startTimeout", reachability: "ok", streamAnswered: true })).toBe("bandwidthTooLow");
     expect(classifyProblem({ marker: "engineFailed", status: 500 })).toBe("engineFailed");
     expect(classifyProblem({ marker: "subtitleBurn" })).toBe("subtitleBurnFailed");
     expect(classifyProblem({ marker: "bandwidth" })).toBe("bandwidthTooLow");

@@ -91,6 +91,10 @@ export default {
   actionEditAddress: "Edit address",
   actionBack: "Back",
   actionBackToDetails: "Back to details",
+  // Playback that stalls: nothing stops, we say why.
+  stallTitle: "The video is taking a while",
+  stallNetwork: "The connection is too slow for this quality.",
+  stallTranscode: "The server isn't converting the video fast enough.",
   // Gestures undone because the server failed — the title of a short message.
   toastFavoriteFailed: "Favorites couldn't be updated",
   toastWatchlistFailed: "My List couldn't be updated",
@@ -102,6 +106,7 @@ export default {
   copyDetails: "Copy",
   detailsCopied: "Copied",
   detailHttp: "HTTP response {{status}}",
+  detailSource: "File on the server: response {{status}}",
   detailEngine: "Player: {{engine}}",
   detailCode: "Code: {{code}}",
   detailJellyfin: "Jellyfin: {{code}}",
