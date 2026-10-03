@@ -114,5 +114,21 @@ export function usePlaybackControls({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPlaybackInfo, state.isDirectPlay, state.streamUrl, quality, onRetry]);
 
-  return { changeAudio, changeSubtitle, changeQuality, retry };
+  /**
+   * Relance À L'IDENTIQUE — même moteur, même palier, à la position : une
+   * coupure ou un serveur qui redémarre ne sont pas un format refusé, et
+   * « Réessayer » ne doit pas imposer un transcodage. `withoutSubtitles` :
+   * la même chose sans sous-titres (incrustation impossible).
+   */
+  const restart = useCallback((opts?: { withoutSubtitles?: boolean }) => {
+    if (opts?.withoutSubtitles) {
+      subtitleIndexRef.current = -1;
+      setSubtitleIndex(-1);
+    }
+    onRetry();
+    fetchPlaybackInfo({ startTimeTicks: startTicks() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPlaybackInfo, onRetry]);
+
+  return { changeAudio, changeSubtitle, changeQuality, retry, restart };
 }

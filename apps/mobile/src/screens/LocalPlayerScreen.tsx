@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { StatusBar } from "react-native";
+import { useRouter } from "expo-router";
+import type { ProblemActionKey } from "@tentacle-tv/shared";
 import type { PlayerEngineHandle } from "../player/engine/types";
-import { useTranslation } from "react-i18next";
 import { useLocalPlayerPlayback } from "../hooks/offline/useLocalPlayerPlayback";
 import { useLocalSnapshotItem, useLocalSnapshotJson } from "../hooks/offline/useLocalSnapshot";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -13,18 +14,15 @@ import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
-import { classifyLocalPlaybackFailure } from "@tentacle-tv/offline-core";
 import { LocalPlaybackBadge } from "../components/player/LocalPlaybackBadge";
-import { MediaMissingView } from "../components/player/MediaMissingView";
-import { PlayerErrorView } from "../components/player/PlayerErrorView";
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
+import { PlaybackProblemView } from "../components/problems/PlaybackProblemView";
 import { localExists, type OfflineLocalSource } from "../offline/engineApi";
+import { usePlaybackFailure, usePlaybackProblemModel } from "../player/problems/usePlaybackFailure";
 
 interface Props {
   itemId: string;
   localSource: OfflineLocalSource;
-  /** Le fichier a disparu : la route re-résout la source (flux serveur s'il répond). */
-  onMediaMissing: () => void;
 }
 
 /**
@@ -36,8 +34,8 @@ interface Props {
  * lecteur avancé lit le MKV et ses pistes tel quel, le lecteur système garde
  * ce qu'il lit le mieux.
  */
-export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props) {
-  const { t } = useTranslation("player");
+export function LocalPlayerScreen({ itemId, localSource }: Props) {
+  const router = useRouter();
   const engineRef = useRef<PlayerEngineHandle>(null);
 
   const snapshotItem = useLocalSnapshotItem(itemId, localSource);
@@ -59,8 +57,11 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
   const retryCount = useRef(0);
   const retryingRef = useRef(false);
   const hasEverPlayed = useRef(false);
-  const [playerError, setPlayerError] = useState<string | null>(null);
-  const [playerDetail, setPlayerDetail] = useState<string | null>(null);
+  // L'échec d'un fichier de l'appareil : absent, abîmé, ou que l'appareil ne décode pas.
+  const failure = usePlaybackFailure({
+    streamUrl: localSource.fileUri, headers: {}, started: videoReady, transcoding: false, burningSubtitles: false, local: true,
+  });
+  const failed = failure.diagnosed !== null || failure.diagnosing;
   const [isAirPlaying, setIsAirPlaying] = useState(false);
   const [ended, setEnded] = useState(false);
   const [scrubbing, setScrubbing] = useState(false);
@@ -83,25 +84,30 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
   useEffect(() => {
     setVideoReady(false);
     retryingRef.current = false;
-    setPlayerError(null);
   }, [pb.fetchNonce]);
 
-  // Rien après 20 s : une relance (le fichier a-t-il disparu ?), puis l'erreur.
+  // Le fichier a disparu (relance, ou dès l'ouverture) : le dire.
+  const { report } = failure;
   useEffect(() => {
-    if (videoReady) return;
+    if (pb.mediaMissing) report({ from: "missingFile" });
+  }, [pb.mediaMissing, report]);
+
+  // Rien après 20 s : une relance (le fichier a-t-il disparu ?), puis le message.
+  useEffect(() => {
+    if (videoReady || failed) return;
     const timer = setTimeout(() => {
-      if (!videoReady && !playerError && !retryingRef.current) {
+      if (!videoReady && !retryingRef.current) {
         if (retryCount.current < 1) {
           retryCount.current++;
           retryingRef.current = true;
           pb.retry();
         } else {
-          setPlayerError(t("playbackError"));
+          report({ from: "marker", marker: "startTimeout" });
         }
       }
     }, 20_000);
     return () => clearTimeout(timer);
-  }, [pb.fetchNonce, videoReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pb.fetchNonce, videoReady, failed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Un moteur a calé sur le fichier : l'autre, s'il est plausible — même
   // fichier, même position ; personne ne transcode un titre déjà sur l'appareil.
@@ -118,7 +124,9 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
   } = usePlayerHandlers({
     itemId, pb, engineRef, paused,
     resumeApplied, retryCount, retryingRef, hasEverPlayed,
-    setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError, setPlayerDetail,
+    setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady,
+    // Les deux moteurs ont calé : absent si le fichier a disparu, sinon le diagnostic.
+    onFailure: (error) => report(localExists(localSource.fileUri) ? { from: "engine", engine: eng.engine, error } : { from: "missingFile" }),
     onDirectPlayFailed,
     onEnded: () => { setEnded(true); },
   });
@@ -153,30 +161,20 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
 
-  // Échec classé : le fichier a disparu (« Fichier introuvable », relance par la
-  // route — flux serveur s'il répond) ou le lecteur a calé (relance locale).
-  if (pb.mediaMissing || playerError) {
-    const failure = classifyLocalPlaybackFailure({
-      isLocalPlayback: true,
-      localFilePresent: pb.mediaMissing ? false : localExists(localSource.fileUri),
-    });
-    if (failure.kind === "media") return <MediaMissingView onRetry={onMediaMissing} onBack={leavePlayer} />;
-  }
-  if (playerError) {
-    return (
-      <PlayerErrorView
-        message={playerError}
-        details={[`${eng.engine} · ${eng.reason}`, playerDetail].filter(Boolean).join("\n")}
-        onRetry={() => {
-          setPlayerError(null);
-          setPlayerDetail(null);
-          retryCount.current = 0;
-          retryingRef.current = false;
-          pb.retry();
-        }}
-        onBack={leavePlayer}
-      />
-    );
+  // Le message : réessayer sur l'appareil, ou regarder en ligne (le serveur
+  // convertit ce que l'appareil ne lit pas) — la route est contournée.
+  const problem = usePlaybackProblemModel(failure.diagnosed, { canPlayOnline: pb.online });
+  const onProblemAction = (key: ProblemActionKey) => {
+    if (key === "retry") {
+      failure.clear();
+      retryCount.current = 0;
+      retryingRef.current = false;
+      pb.retry();
+    } else if (key === "playOnline") router.replace(`/watch/${itemId}?source=server`);
+    else leavePlayer();
+  };
+  if (problem) {
+    return <PlaybackProblemView model={problem} item={pb.item} onAction={onProblemAction} onBack={leavePlayer} />;
   }
 
   if (!snapshotReady) return null;

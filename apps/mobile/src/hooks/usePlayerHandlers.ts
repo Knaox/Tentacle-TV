@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
 import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { EngineLoadData, EngineProgressData, PlayerEngineHandle } from "@/player/engine/types";
@@ -33,9 +32,11 @@ export interface PlayerHandlersOptions {
   setBufferedTime: (v: number) => void;
   setIsBuffering: (v: boolean) => void;
   setVideoReady: (v: boolean) => void;
-  setPlayerError: (v: string | null) => void;
-  /** Le détail brut de la dernière erreur, pour le panneau « Détails ». */
-  setPlayerDetail?: (v: string | null) => void;
+  /**
+   * Les replis épuisés : l'erreur brute du moteur, que l'écran fait
+   * diagnostiquer et dire (modèle d'erreur commun).
+   */
+  onFailure: (error: unknown) => void;
   /**
    * Une lecture DIRECTE a échoué : l'écran peut basculer sur l'autre moteur
    * (vrai) au lieu de demander un transcodage. Sinon, ou en cas de second
@@ -49,10 +50,9 @@ export interface PlayerHandlersOptions {
 export function usePlayerHandlers({
   itemId, pb, engineRef, paused,
   resumeApplied, retryCount, retryingRef, hasEverPlayed,
-  setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError, setPlayerDetail,
+  setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, onFailure,
   onDirectPlayFailed, onEnded,
 }: PlayerHandlersOptions) {
-  const { t } = useTranslation("player");
   const router = useRouter();
   const queryClient = useQueryClient();
   const runStopInvalidation = useWatchStopInvalidation();
@@ -133,14 +133,13 @@ export function usePlayerHandlers({
   /**
    * Un échec de lecture, dans l'ordre : l'autre moteur si une lecture directe a
    * échoué et qu'il est plausible, puis le transcodage (chemin de repli
-   * existant), puis l'écran d'erreur. Le motif est journalisé et gardé pour
-   * « Détails ».
+   * existant), puis le message — l'erreur brute part au diagnostic de
+   * l'écran, qui en tire la cause et les gestes utiles.
    */
   const handleError = useCallback((e: unknown) => {
     // Guard against duplicate onError from ExoPlayer or race with retryingRef
     if (retryingRef.current) return;
     const errorDetail = e && typeof e === "object" ? JSON.stringify(e) : String(e);
-    setPlayerDetail?.(errorDetail);
     const budget = onDirectPlayFailed ? 2 : 1;
     if (retryCount.current < budget) {
       retryCount.current++;
@@ -153,11 +152,11 @@ export function usePlayerHandlers({
       console.log("[Tentacle:Player] onError — retrying with transcode fallback", errorDetail);
       pb.retry();
     } else {
-      // All retries exhausted — show error screen
+      // Replis épuisés : le diagnostic, puis le message.
       console.error("[Tentacle:Player] onError — all retries exhausted", errorDetail);
-      setPlayerError(t("playbackError"));
+      onFailure(e);
     }
-  }, [pb, t, onDirectPlayFailed]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pb, onFailure, onDirectPlayFailed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSeek = useCallback((seconds: number) => {
     const dur = pb.jellyfinDuration || 0;

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import {
   useJellyfinClient, useUserId, useMediaItem, useItemAncestors,
   usePlaybackReporting, usePlaybackSegments, useEpisodeNavigation,
@@ -14,7 +14,8 @@ import {
 } from "./usePlaybackInfoFetch";
 import { usePlaybackControls } from "./usePlaybackControls";
 import { usePlayerQuality } from "./usePlayerQuality";
-import { recordEncodingSession } from "../lib/transcodeSession";
+import { useSupersededSessionRelease } from "./useSupersededSessionRelease";
+import type { PlaybackFailureReport } from "../player/problems/playbackFailure";
 
 const DBG = "[Tentacle:Playback]";
 
@@ -30,7 +31,8 @@ export interface PlaybackState {
   isDirectStream: boolean;
   streamOffset: number;
   isLoading: boolean;
-  error: string | null;
+  /** La négociation a échoué : ce qu'on en sait, pour le modèle d'erreur commun. */
+  error: PlaybackFailureReport | null;
   textTracks: TextTrackEntry[];
   /** Sous-titres que le lecteur avancé ajoute lui-même, au format d'origine. */
   externalSubtitles: ExternalSubtitleSource[];
@@ -158,7 +160,12 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
       if (fetchIdRef.current !== currentFetch) return;
 
       const ms = result.MediaSources?.[0];
-      if (!ms) { setState((prev) => ({ ...prev, isLoading: false, error: "No media source" })); return; }
+      if (!ms) {
+        // Le refus de Jellyfin (`ErrorCode`) dit pourquoi ; sans lui, aucune source.
+        const error: PlaybackFailureReport = { from: "marker", marker: "noMediaSource", jellyfinErrorCode: result.ErrorCode };
+        setState((prev) => ({ ...prev, isLoading: false, error }));
+        return;
+      }
 
       const directPlay = ms.SupportsDirectPlay && !ms.TranscodingUrl;
       const directStream = ms.SupportsDirectStream && !directPlay;
@@ -169,7 +176,12 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
         itemId, ms, directPlay, ds: ds ?? null, quality: bitrate > 0 ? { bitrate, height: maxHeight } : null,
         baseUrl: client.getBaseUrl(), accessToken: client.getAccessToken(), subIdx,
       });
-      if (!url) { setState((prev) => ({ ...prev, isLoading: false, error: "No stream URL" })); return; }
+      if (!url) {
+        // Ni lecture directe ni conversion proposées : rien de lisible ici.
+        const error: PlaybackFailureReport = { from: "marker", marker: "noMediaSource", jellyfinErrorCode: result.ErrorCode ?? "NoCompatibleStream" };
+        setState((prev) => ({ ...prev, isLoading: false, error }));
+        return;
+      }
 
       const actualOffsetTicks = directPlay ? 0 : extractActualStartTicks(ms);
       const streamOffset = actualOffsetTicks > 0 ? actualOffsetTicks / 10_000_000 : 0;
@@ -215,7 +227,14 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
     } catch (err) {
       if (fetchIdRef.current !== currentFetch) return;
       console.error(DBG, "PlaybackInfo failed", err);
-      setState((prev) => ({ ...prev, isLoading: false, error: "Playback error" }));
+      // Une réponse (statut) vient de Jellyfin, direct ou relayé ; une panne de
+      // transport finit toujours par le relais du serveur Tentacle.
+      const status = (err as { status?: unknown } | null)?.status;
+      const error: PlaybackFailureReport = {
+        from: "request", error: err, target: typeof status === "number" ? "jellyfin" : "tentacle",
+        request: `POST /Items/${itemId}/PlaybackInfo`,
+      };
+      setState((prev) => ({ ...prev, isLoading: false, error }));
     }
   }, [client, userId, itemId, mediaSourceId, quality]);
 
@@ -228,32 +247,8 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
     subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
   });
 
-  /**
-   * Une session en supplante une autre à CHAQUE `fetchPlaybackInfo` : palier de
-   * qualité, piste audio en transcodage, sous-titre bitmap à incruster, reprise
-   * après erreur de codec, épisode suivant. Jellyfin ouvre alors un nouvel
-   * encodage sans fermer le précédent — l'ancien ffmpeg continue d'écrire ses
-   * fichiers jusqu'au bout du film. On le libère à l'instant où son remplaçant
-   * apparaît, comme le fait le web (cf. `WatchWeb.tsx`).
-   *
-   * La comparaison porte sur DEUX identifiants explicites, jamais sur un ref
-   * partagé : c'est ce qui garantit qu'on ne tue pas la session qui vient de
-   * naître.
-   */
-  const { killTranscode } = reporting;
-  const previousSessionRef = useRef<string | null>(null);
-  useEffect(() => {
-    const currentSession = state.playSessionId;
-    if (!currentSession) return;
-    const previousSession = previousSessionRef.current;
-    previousSessionRef.current = currentSession;
-    // Trace sur disque, relue au lancement suivant : c'est le seul recours
-    // contre une application tuée en pleine lecture (cf. transcodeSession).
-    recordEncodingSession(currentSession, client.getBaseUrl());
-    if (!previousSession || previousSession === currentSession) return;
-    console.log(DBG, "session supplantée — ancien transcodage libéré", { previousSession, currentSession });
-    void killTranscode(previousSession);
-  }, [state.playSessionId, killTranscode, client]);
+  // L'encodage d'une session supplantée est libéré dès que son remplaçant naît.
+  useSupersededSessionRelease(state.playSessionId, client.getBaseUrl(), reporting.killTranscode);
 
   const controls = usePlaybackControls({
     state, streams, quality, positionRef, fetchPlaybackInfo,

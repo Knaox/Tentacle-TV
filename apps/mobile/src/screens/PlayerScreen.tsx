@@ -2,8 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, StatusBar } from "react-native";
 import { PLAYER } from "@/theme";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
-import { useTranslation } from "react-i18next";
-import { useMediaItem } from "@tentacle-tv/api-client";
+import { useMediaItem, useUserId } from "@tentacle-tv/api-client";
 import { usePlayerPlayback, startTicksOf } from "../hooks/usePlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
@@ -22,17 +21,19 @@ import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { AutoCapBadge } from "../components/player/AutoCapBadge";
 import { PlayerLoadingScreen } from "../components/player/loading/PlayerLoadingScreen";
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
-import { PlayerErrorView } from "../components/player/PlayerErrorView";
+import { PlaybackProblemView } from "../components/problems/PlaybackProblemView";
+import type { PlaybackFailureReport } from "../player/problems/playbackFailure";
+import { usePlayerProblem } from "../player/problems/usePlayerProblem";
 
 interface Props { itemId: string; version?: string }
 
 export function PlayerScreen({ itemId, version }: Props) {
-  const { t } = useTranslation("player");
   const engineRef = useRef<PlayerEngineHandle>(null);
+  const userId = useUserId();
 
   // Le moteur se décide sur les flux de l'élément, AVANT PlaybackInfo : le
   // profil envoyé à Jellyfin est celui du moteur qui lira.
-  const { data: routedItem } = useMediaItem(itemId);
+  const { data: routedItem, error: itemError } = useMediaItem(itemId);
   const eng = usePlayerEngine(routedItem, version);
   const engineSettings = useEngineSettings();
   const pb = usePlayerPlayback(itemId, eng.engine, version);
@@ -48,18 +49,15 @@ export function PlayerScreen({ itemId, version }: Props) {
   const retryCount = useRef(0);
   const retryingRef = useRef(false);
   const hasEverPlayed = useRef(false);
-  const [playerError, setPlayerError] = useState<string | null>(null);
-  const [playerDetail, setPlayerDetail] = useState<string | null>(null);
+  // Le signalement d'un échec, posé une fois le diagnostic monté (plus bas).
+  const reportRef = useRef<(report: PlaybackFailureReport) => void>(() => undefined);
   /** Le flux est allé au bout — donné à l'arbitre, qui en tire l'écran de fin. */
   const [ended, setEnded] = useState(false);
   /** Un scrub est en cours — l'arbitre suspend décomptes et surcouches. */
   const [scrubbing, setScrubbing] = useState(false);
 
-  // Orientation: handled declaratively at the Stack.Screen level in
-  // `app/_layout.tsx` (`watch/[itemId]` has `orientation: "all"` while the
-  // app default is `portrait_up`). React-native-screens applies the mask at
-  // the UIViewController level, which is more reliable than imperative
-  // `ScreenOrientation.lockAsync` for per-route rotation control.
+  // Orientation : déclarée au niveau du Stack.Screen (`app/_layout.tsx`, `watch/[itemId]`
+  // en "all") — react-native-screens l'applique au UIViewController, plus sûr qu'un lockAsync.
 
   // StatusBar: hide/show
   useEffect(() => {
@@ -88,13 +86,12 @@ export function PlayerScreen({ itemId, version }: Props) {
   }, [itemId, pb.item?.Id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset videoReady when stream URL changes (avoids selectedTextTrack crash)
-  // Also clear retryingRef + playerError so the new stream can report errors.
+  // Also clear retryingRef so the new stream can report errors.
   // `fetchNonce` : une relance peut rendre une URL IDENTIQUE — sans lui, les
   // gardes restaient armées et le lecteur tournait en spinner pour toujours.
   useEffect(() => {
     setVideoReady(false);
     retryingRef.current = false;
-    setPlayerError(null);
   }, [pb.streamUrl, pb.fetchNonce]);
 
   // La relance transcodée vise le lecteur système : un flux HLS h264/aac se
@@ -105,12 +102,6 @@ export function PlayerScreen({ itemId, version }: Props) {
     if (eng.engine === "mpv") eng.forceEngine("native", "fallback");
     pb.retry({ engine: "native" });
   }, [eng, pb.retry]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Rien de chargé en 20 s : relance transcodée, puis l'écran d'erreur.
-  usePlayerLoadingWatchdog({
-    streamUrl: pb.streamUrl, videoReady, playerError, retryCount, retryingRef, retryTranscoded,
-    fail: () => setPlayerError(t("playbackError")),
-  });
 
   // Auto-apply language preferences
   usePlayerPreferences({
@@ -151,9 +142,29 @@ export function PlayerScreen({ itemId, version }: Props) {
   } = usePlayerHandlers({
     itemId, pb: { ...pb, retry: retryTranscoded }, engineRef, paused,
     resumeApplied, retryCount, retryingRef, hasEverPlayed,
-    setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError, setPlayerDetail,
+    setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady,
+    onFailure: (error) => reportRef.current({ from: "engine", engine: pb.engine, error }),
     onDirectPlayFailed,
     onEnded: () => { setEnded(true); },
+  });
+
+  // Chaque échec — négociation, fiche, moteur, attente sans fin — devient UN
+  // message du modèle commun, diagnostiqué (serveurs, flux), et ses gestes.
+  const failure = usePlayerProblem({
+    itemId, item: pb.item ?? routedItem, itemError, missingUser: !userId,
+    streamUrl: pb.streamUrl, headers: pb.headers, isLoading: pb.isLoading, negotiationError: pb.error,
+    isDirectPlay: pb.isDirectPlay, burnInSubIndex: pb.burnInSubIndex, subtitleIndex: pb.subtitleIndex,
+    mediaSourceId: pb.mediaSourceId, qualityKey: pb.qualityKey, qualityPresets: pb.qualityPresets,
+    started, videoReady, paused, restart: pb.restart, retryTranscoded, leavePlayer,
+    resetGuards: () => { retryCount.current = 0; retryingRef.current = false; },
+  });
+  reportRef.current = failure.report;
+
+  // Rien de chargé en 20 s : relance transcodée, puis le message.
+  usePlayerLoadingWatchdog({
+    streamUrl: pb.streamUrl, videoReady, suspended: failure.problem !== null || failure.diagnosing,
+    retryCount, retryingRef, retryTranscoded,
+    fail: () => failure.report({ from: "marker", marker: "startTimeout" }),
   });
 
   // L'arbitre partagé — mêmes règles que le web, le bureau et le téléviseur.
@@ -191,26 +202,15 @@ export function PlayerScreen({ itemId, version }: Props) {
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
 
-  // Error screen — from playback hook (HTTP error) or player (codec/stream error)
-  if ((pb.error || playerError) && !pb.isLoading) {
+  // Le message — quoi, pourquoi, quoi faire —, une fois l'échec diagnostiqué.
+  if (failure.problem) {
     return (
-      <PlayerErrorView
-        message={playerError ?? t("playbackError")}
-        details={[`${pb.engine} · ${eng.reason}`, pb.error, playerDetail].filter(Boolean).join("\n")}
-        onRetry={() => {
-          setPlayerError(null);
-          setPlayerDetail(null);
-          retryCount.current = 0;
-          retryingRef.current = false;
-          retryTranscoded();
-        }}
-        onBack={leavePlayer}
-      />
+      <PlaybackProblemView model={failure.problem} item={pb.item ?? routedItem} onAction={failure.onAction} onBack={leavePlayer} />
     );
   }
 
-  // Pas encore de flux : l'écran de chargement, Retour compris.
-  if (!pb.streamUrl) {
+  // Pas encore de flux, ou un échec en cours de diagnostic : l'écran de chargement, Retour compris.
+  if (!pb.streamUrl || failure.diagnosing) {
     return (
       <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
         <PlayerLoadingScreen item={pb.item ?? routedItem} onCancel={leavePlayer} />

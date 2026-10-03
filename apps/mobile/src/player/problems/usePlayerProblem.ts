@@ -1,0 +1,126 @@
+import { useCallback, useEffect, useMemo } from "react";
+import { useRouter } from "expo-router";
+import type { MediaItem, ProblemActionKey, QualityPreset } from "@tentacle-tv/shared";
+import { setManualOffline } from "@/offline/connectivityStore";
+import type { PlaybackFailureReport } from "./playbackFailure";
+import { nextVersionId } from "./playbackFailure";
+import { usePlaybackFailure, usePlaybackProblemModel } from "./usePlaybackFailure";
+
+/** Une ouverture qui n'aboutit à rien (négociation, ou média chargé qui ne part pas) : au-delà, on le dit. */
+const STALL_MS = 30_000;
+
+export interface PlayerProblemArgs {
+  itemId: string;
+  item: MediaItem | undefined;
+  /** La fiche du titre n'a pas pu se lire (404, 401, réseau). */
+  itemError: unknown;
+  /** Pas de compte : la session n'existe plus. */
+  missingUser: boolean;
+  streamUrl: string | null;
+  headers: Record<string, string>;
+  isLoading: boolean;
+  /** L'échec de la négociation, tel que la session le décrit. */
+  negotiationError: PlaybackFailureReport | null;
+  isDirectPlay: boolean;
+  burnInSubIndex: number;
+  subtitleIndex: number;
+  mediaSourceId: string;
+  qualityKey: string;
+  qualityPresets: readonly QualityPreset[];
+  started: boolean;
+  videoReady: boolean;
+  paused: boolean;
+  /** La relance À L'IDENTIQUE (même moteur, même palier). */
+  restart: (opts?: { withoutSubtitles?: boolean }) => void;
+  /** La relance transcodée, sur le lecteur système, un palier plus bas. */
+  retryTranscoded: () => void;
+  /** Les gardes de relance de l'écran, remises à zéro avant un geste. */
+  resetGuards: () => void;
+  leavePlayer: () => void;
+}
+
+/**
+ * Les échecs du lecteur serveur, réunis : la négociation, la fiche, les
+ * moteurs (signalés par `report`), et deux attentes qui ne finissaient
+ * jamais — une négociation qui ne répond pas, un média chargé qui ne
+ * démarre pas. Chacun devient UN message du modèle commun, et ses gestes
+ * passent ici : réessayer à l'identique, qualité réduite, autre version,
+ * sans sous-titres, retour à la fiche.
+ */
+export function usePlayerProblem(args: PlayerProblemArgs) {
+  const router = useRouter();
+  const failure = usePlaybackFailure({
+    streamUrl: args.streamUrl,
+    headers: args.headers,
+    started: args.started,
+    transcoding: !!args.streamUrl && !args.isDirectPlay,
+    burningSubtitles: args.burnInSubIndex >= 0,
+  });
+  const { report, clear } = failure;
+
+  // La négociation a échoué : un message, une fois par échec.
+  useEffect(() => {
+    if (args.negotiationError) report(args.negotiationError);
+  }, [args.negotiationError, report]);
+
+  // La fiche n'a pas pu se lire : sans elle, rien ne se négocie.
+  useEffect(() => {
+    if (args.itemError) report({ from: "request", error: args.itemError, target: "jellyfin", request: `GET /Items/${args.itemId}` });
+  }, [args.itemError, args.itemId, report]);
+  useEffect(() => {
+    if (args.missingUser) report({ from: "request", error: { status: 401 }, target: "tentacle" });
+  }, [args.missingUser, report]);
+
+  // Les deux attentes sans fin : une négociation muette, un média chargé
+  // qui ne part pas (lecture demandée, rien n'avance).
+  const negotiating = args.isLoading && !args.streamUrl && !args.negotiationError;
+  const stuckReady = args.videoReady && !args.started && !args.paused;
+  useEffect(() => {
+    if (!negotiating && !stuckReady) return undefined;
+    const timer = setTimeout(() => report({ from: "marker", marker: "startTimeout" }), STALL_MS);
+    return () => clearTimeout(timer);
+  }, [negotiating, stuckReady, report]);
+
+  const lowerTier = useMemo(() => {
+    const index = args.qualityPresets.findIndex((preset) => preset.key === args.qualityKey);
+    return args.qualityPresets.slice(index + 1).some((preset) => preset.bitrate != null);
+  }, [args.qualityPresets, args.qualityKey]);
+  const otherVersion = nextVersionId(args.item?.MediaSources, args.mediaSourceId);
+
+  const problem = usePlaybackProblemModel(failure.diagnosed, {
+    canLowerQuality: args.isDirectPlay || lowerTier,
+    hasOtherVersion: otherVersion !== null,
+    subtitlesActive: args.subtitleIndex >= 0,
+  });
+
+  const { restart, retryTranscoded, resetGuards, leavePlayer } = args;
+  const onAction = useCallback((key: ProblemActionKey) => {
+    switch (key) {
+      case "retry":
+        clear(); resetGuards(); restart();
+        return;
+      case "lowerQuality":
+        clear(); resetGuards(); retryTranscoded();
+        return;
+      case "withoutSubtitles":
+        clear(); resetGuards(); restart({ withoutSubtitles: true });
+        return;
+      case "otherVersion":
+        if (otherVersion) router.replace(`/watch/${args.itemId}?version=${encodeURIComponent(otherVersion)}`);
+        return;
+      case "signIn":
+        router.replace("/(auth)/login");
+        return;
+      case "offlineLibrary":
+        router.replace("/on-device");
+        return;
+      case "goOnline":
+        setManualOffline(false);
+        return;
+      default:
+        leavePlayer();
+    }
+  }, [clear, resetGuards, restart, retryTranscoded, otherVersion, router, args.itemId, leavePlayer]);
+
+  return { problem, diagnosing: failure.diagnosing, report, onAction };
+}

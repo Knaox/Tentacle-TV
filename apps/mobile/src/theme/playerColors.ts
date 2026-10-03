@@ -32,7 +32,7 @@ interface PlayerColors {
   readonly fillSoft: string;
   /** Remplissage sombre translucide sur surface CLAIRE (piste d'anneau). */
   readonly fillInverse: string;
-  /** Statuts — rouge erreur (PlayerErrorView) et ambre (chips HDR/Atmos). */
+  /** Statuts — rouge erreur (PlaybackProblemView) et ambre (chips HDR/Atmos). */
   readonly error: string;
   readonly errorSoft: string;
   readonly warning: string;
