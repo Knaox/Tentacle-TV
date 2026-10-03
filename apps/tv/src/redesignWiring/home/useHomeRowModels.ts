@@ -16,6 +16,7 @@ import {
   type RecoRowItem,
 } from "@tentacle-tv/api-client";
 import { missingSeriesRatingIds, type MediaItem } from "@tentacle-tv/shared";
+import { holdPanelOf, type HoldPanel, type HomeRowKind as HoldRowKind } from "@tentacle-tv/tv-core";
 import type { HomeRowModel } from "../../redesign/screens/home/HomeView";
 import { useTVHomeRows } from "../../components/home/useTVHomeRows";
 import { useCardLists } from "../cards/cardModels";
@@ -34,7 +35,8 @@ import { useHomeRecoSource } from "./useHomeRecoSource";
  * d'horizontal comme desktop »).
  *
  * Chaque carte garde l'item qu'elle montre (`targetOf`) : l'appui, l'appui
- * long et la lumière du fond en partent.
+ * long et la lumière du fond en partent. Le panneau de l'appui maintenu est la
+ * règle de tv-core (`cards/cardHold`, `holdPanelOf`), selon la rangée.
  */
 
 export type HomeRowKind = "play" | "detail" | "reco";
@@ -45,9 +47,12 @@ export interface HomeCardTarget {
   reco?: RecoRowItem;
   /** Ce que fait OK : lire (vignettes 16:9), ouvrir la fiche, ou la fiche d'une reco. */
   kind: HomeRowKind;
-  /** La variante de la feuille d'actions (appui long). */
-  sheet: "landscape" | "poster" | "reco";
+  /** Le panneau qu'ouvre l'appui maintenu ; `null` : pas d'appui maintenu. */
+  panel: HoldPanel | null;
 }
+
+/** Le panneau de l'appui maintenu sur une carte de cette rangée. */
+const panelOf = (row: HoldRowKind) => holdPanelOf({ surface: "homeRow", row });
 
 export interface HomeRowsModel {
   rows: HomeRowModel[];
@@ -109,19 +114,19 @@ export function useHomeRowModels(): HomeRowsModel {
         const items = resume ?? [];
         const subtitle = (item: MediaItem) => resumeSubtitle(item, t);
         rows.push({ key, title: t("common:resumeWatching"), variant: "landscape", cards: lists(key, items, { variant: "landscape", subtitle }) });
-        register(key, items, { kind: "play", sheet: "landscape" });
+        register(key, items, { kind: "play", panel: panelOf("resume") });
       } else if (key === "nextUp" || key === "watched") {
         // La vignette de l'ÉPISODE (repli : son fond, puis celui de la série —
         // `resolveBannerImage`, la règle du bureau) ; sa note, pas celle de la série.
         const items = (key === "nextUp" ? nextUp : watched) ?? [];
         const title = key === "nextUp" ? t("common:nextEpisodes") : t("common:alreadyWatched");
         rows.push({ key, title, variant: "landscape", cards: lists(key, items, { variant: "landscape", subtitle: episodeRowSubtitle }) });
-        register(key, items, { kind: "play", sheet: "landscape" });
+        register(key, items, { kind: "play", panel: panelOf(key) });
       } else if (key === "watchlist" || key === "favorites") {
         const items = (key === "watchlist" ? watchlist : favorites) ?? [];
         const title = key === "watchlist" ? t("common:myList") : t("common:myFavorites");
         rows.push({ key, title, variant: "poster", cards: lists(key, items, { variant: "poster", subtitle: (item) => itemSubtitle(item) }) });
-        register(key, items, { kind: "detail", sheet: "poster" });
+        register(key, items, { kind: "detail", panel: panelOf(key) });
       } else if (key.startsWith("library:")) {
         const index = libraryRows.findIndex((lib) => lib.key === key);
         const items = index >= 0 ? latestData[index] ?? [] : [];
@@ -132,7 +137,7 @@ export function useHomeRowModels(): HomeRowsModel {
           variant: "poster",
           cards: lists(key, items, { variant: "poster", subtitle: (item) => latestSubtitle(item, t) }, latestCardLines),
         });
-        register(key, items, { kind: "detail", sheet: "poster" });
+        register(key, items, { kind: "detail", panel: panelOf("library") });
       } else if (key.startsWith("reco:")) {
         const source = recoRows.find((row) => row.layoutKey === key);
         if (!source) continue;
@@ -143,7 +148,7 @@ export function useHomeRowModels(): HomeRowsModel {
           byItem.get(item.Id)?.exploration ? { ...card, badge: t("reco:explorationBadge") } : card,
         );
         rows.push({ key, title: t(`reco:${title.key}`, title.params), variant: "poster", cards });
-        targets.set(key, new Map(source.entries.map((entry) => [entry.item.Id, { item: entry.item, reco: entry.reco, kind: "reco", sheet: "reco" }])));
+        targets.set(key, new Map(source.entries.map((entry) => [entry.item.Id, { item: entry.item, reco: entry.reco, kind: "reco", panel: panelOf("reco") }])));
       }
     }
     const targetOf = (rowKey: string, cardId: string) => targets.get(rowKey)?.get(cardId);

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
 import { useCardToggles, useFeaturedItems, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { heroEdgeKey, heroItemsOf, heroShown, nextHeroIndex } from "@tentacle-tv/tv-core";
+import { heroEdgeKey, heroItemsOf, heroShown, holdPanelOf, nextHeroIndex } from "@tentacle-tv/tv-core";
 import type { HeroModel } from "../../redesign/hero/HeroBanner";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useBeyondEdge } from "../../platform/tvos/focus/useBeyondEdge";
@@ -123,7 +123,9 @@ export function useHomeHero(
   }, []);
   const onLongPress = useCallback(() => {
     const { current: item, actions: act, fromResume: resumed } = live.current;
-    if (item) act.sheet(item, resumed ? "landscape" : "poster");
+    // Le panneau du titre affiché, dans la forme de sa source (tv-core `cards/cardHold`).
+    const panel = holdPanelOf({ surface: "hero", fromResume: resumed });
+    if (item && panel?.kind === "media") act.sheet(item, panel.variant);
   }, []);
 
   useBeyondEdge(focus, {

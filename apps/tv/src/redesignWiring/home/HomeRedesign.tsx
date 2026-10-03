@@ -117,9 +117,10 @@ export function HomeRedesign({ navigation }: Props) {
   const onLongPressCard = useCallback(
     (rowKey: string, card: CardModel) => {
       const target = targetOf(rowKey, card.id);
-      if (!target) return;
-      if (target.sheet === "landscape") openLandscape(target.item);
-      else if (target.sheet === "reco" && target.reco) openReco(target.reco);
+      if (!target?.panel) return;
+      const { panel } = target;
+      if (panel.kind === "media" && panel.variant === "landscape") openLandscape(target.item);
+      else if (panel.kind === "reco" && target.reco) openReco(target.reco);
       else openPoster(target.item);
     },
     [targetOf, openLandscape, openPoster, openReco],

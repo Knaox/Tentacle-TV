@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCardToggles, useJellyfinClient, useMediaItem, useRecoLive, useSeriesWatchState, useTentacleConfig } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { forYouEntryKey } from "@tentacle-tv/tv-core";
+import { forYouEntryKey, holdPanelOf } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
 import { ForYouView } from "../../redesign/screens/forYou/ForYouView";
@@ -129,7 +129,8 @@ export function ForYouRedesign({ navigation }: Props) {
   const onLongPressCard = useCallback(
     (shelfKey: string, card: CardModel) => {
       const target = targetOf(shelfKey, card.id);
-      if (target) openReco(target.reco);
+      // Toute carte de « Pour vous » ouvre le panneau d'une reco (tv-core `cards/cardHold`).
+      if (target && holdPanelOf({ surface: "forYou" })?.kind === "reco") openReco(target.reco);
     },
     [targetOf, openReco],
   );
