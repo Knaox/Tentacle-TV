@@ -22,7 +22,7 @@ préfixé par l'écran), `title`, `rules` (les règles du relevé couvertes),
 Chaque scénario attend, dans son approche (`start.keys`), que l'écran ait
 fini de se charger avant le relevé de l'entrée — sauf les deux qui relèvent
 justement le chargement (`fiche-lente`, `parcourir-lent`, sur une réponse de
-15 s).
+20 s).
 
 Les `expect` ne disent que ce que le code GARANTIT (le relevé) ; tout le
 reste — clé focalisée, libellé, route et pile, Modal, écritures, après CHAQUE
@@ -40,9 +40,9 @@ domaine (`fixtures.mjs`) :
 | Jeu | Ce qu'il change |
 |---|---|
 | `ecrans/recherche` | sert Parcourir (filmographie d'une personne d'après les crédits de l'instantané, titres d'un genre, studio vide) et les épisodes de la recherche (aucun) — la base ne les a pas |
-| `ecrans/parcourir-lent` | comme `ecrans/recherche`, la filmographie d'une personne répond après 15 s |
+| `ecrans/parcourir-lent` | comme `ecrans/recherche`, la filmographie d'une personne répond après 20 s |
 | `ecrans/fiche-en-erreur` | la fiche de « Les Évadés » répond 500 |
-| `ecrans/fiche-lente` | la fiche de « Les Évadés » répond après 15 s |
+| `ecrans/fiche-lente` | la fiche de « Les Évadés » répond après 20 s |
 | `ecrans/favoris-vides` | Favoris vide |
 | `ecrans/grande-bibliotheque` | « Films » porte 1 200 titres (copies des films de l'instantané, identifiants neufs) |
 | `ecrans/jumelage` | sans session : la connexion par identifiants est refusée (401) ; le serveur saisi est le faux backend `http://localhost:3107` |

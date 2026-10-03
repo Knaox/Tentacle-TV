@@ -653,17 +653,14 @@
       },
       "steps": [
         {
-          "do": "wait:3",
-          "why": "en chargement (la fiche répond après 15 s) : relevé — la croix verrouillée n'a pas le focus"
-        },
-        {
           "do": "wait:12",
           "expect": {
             "focus": "detail:primary"
           },
-          "why": "la fiche arrivée : Lecture prend l'entrée"
+          "why": "la fiche arrivée : Lecture prend l'entrée ; la croix ne l'a jamais eue"
         }
-      ]
+      ],
+      "why": "la fiche répond après 20 s : l'entrée, relevée sans focus après 10 s d'attente, est l'état de chargement"
     }
   ]
 }

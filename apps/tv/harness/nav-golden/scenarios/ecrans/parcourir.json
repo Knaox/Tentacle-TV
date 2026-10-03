@@ -210,17 +210,17 @@
           "expect": {
             "focus": "browse:back"
           },
-          "why": "en chargement (la page répond après 15 s) : la croix tient le focus"
+          "why": "toujours en chargement : la croix tient le focus"
         },
         {
-          "do": "wait:12",
+          "do": "wait:15",
           "expect": {
             "focus": "grid:0"
           },
           "why": "les affiches arrivées, la première reprend le focus à la croix"
         }
       ],
-      "why": "l'entrée est relevée 4 s après l'arrivée, en plein chargement (la page répond après 15 s) : la croix a le focus"
+      "why": "l'entrée est relevée 4 s après l'arrivée, en plein chargement (la page répond après 20 s) : la croix a le focus"
     },
     {
       "id": "parcourir-rail-rechercher",
