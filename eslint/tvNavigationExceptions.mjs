@@ -30,9 +30,6 @@ export const TV_NAV_EXCEPTIONS = [
   // T5 — le lecteur.
 
   // T7 — les écrans.
-  { file: "redesignWiring/detail/useDetailGuides.ts", rules: ["no-focus-guides"], owner: "T7", why: "pièges latéraux des rangées de la fiche (trapFocusLeft/Right)" },
-  { file: "redesignWiring/search/useSystemKeyboard.ts", rules: ["no-native-press", "no-native-focus-calls"], owner: "T7", why: "champ de recherche : clavier système (.focus()) et ses props natives" },
-  { file: "redesignWiring/settings/settingsFocus.tsx", rules: ["no-focus-guides"], owner: "T7", why: "guide des onglets des réglages (destinations)" },
   { file: "redesignWiring/trailer/TrailerRedesign.tsx", rules: ["no-focus-props"], owner: "T7", why: "entrée de la bande-annonce (hasTVPreferredFocus)" },
   { file: "redesign/screens/pairing/PairingField.tsx", rules: ["no-native-press"], owner: "T7", why: "une VUE qui ouvre le clavier système (.focus() / .blur() d'un TextInput)" },
 
