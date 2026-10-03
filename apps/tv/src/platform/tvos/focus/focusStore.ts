@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { findNodeHandle, type View } from "react-native";
+import { EMPTY_FOCUS_TRACK, trackFocus, type FocusTrack } from "@tentacle-tv/tv-core";
 import type { FocusBinder, FocusBinding } from "../../../redesign/focus/focusBinding";
 import { claimTvFocus } from "../../../hooks/useTvFocusClaim";
 import { parallaxOf } from "../../../redesignWiring/remote/parallax";
@@ -17,7 +18,9 @@ import { SECTION_NEIGHBORS } from "./sectionNeighbors";
  * retour, viser un guide ou une destination, sans qu'une vue le sache.
  *
  * Un magasin par écran (`useFocusStore`) : la pile garde plusieurs écrans
- * montés, et leurs clés se ressemblent.
+ * montés, et leurs clés se ressemblent. Le suivi des clés (la courante, la
+ * dernière) est la règle de tv-core (`focus/focusTrack.ts`) ; le magasin tient
+ * les nœuds natifs et applique les réclamations.
  *
  * Il traduit aussi la FORME qu'une cible déclare (`FocusTarget form`) en
  * effets natifs du focus — la parallaxe au pouce (`remote/parallax.ts`) —, et
@@ -80,8 +83,7 @@ export function createFocusStore(): FocusStore {
   const nodeListeners = new Set<NodeListener>();
   /** Réclamations en attente du montage de leur cible. */
   const pending = new Map<string, Set<() => void>>();
-  let current: string | null = null;
-  let last: string | null = null;
+  let track: FocusTrack = EMPTY_FOCUS_TRACK;
 
   const attach = (key: string, node: View | null) => {
     if (node) nodes.set(key, node);
@@ -95,12 +97,7 @@ export function createFocusStore(): FocusStore {
   };
 
   const changed = (key: string, focused: boolean) => {
-    if (focused) {
-      current = key;
-      last = key;
-    } else if (current === key) {
-      current = null;
-    }
+    track = trackFocus(track, key, focused);
     for (const listener of [...listeners]) listener(key, focused);
   };
 
@@ -163,8 +160,8 @@ export function createFocusStore(): FocusStore {
       node.requestTVFocus();
       return true;
     },
-    focusedKey: () => current,
-    lastFocusedKey: () => last,
+    focusedKey: () => track.current,
+    lastFocusedKey: () => track.last,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => {
