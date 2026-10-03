@@ -1,0 +1,230 @@
+{
+  "domain": "socle",
+  "reference": "84f3cedd0",
+  "scenarios": [
+    {
+      "id": "rail-01",
+      "title": "Le rail de haut en bas : l'ordre des entrées, et HAUT depuis Recherche",
+      "why": "L'ordre du rail et ses bords : ce que voit l'utilisateur qui le parcourt.",
+      "start": {
+        "keys": [
+          "left"
+        ],
+        "focus": "nav:Home"
+      },
+      "steps": [
+        {
+          "do": "up",
+          "expect": {
+            "focus": "nav:Search"
+          }
+        },
+        {
+          "do": "up",
+          "why": "au-dessus de Recherche : ce que fait la référence"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Recommendations"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Watchlist"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Favorites"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
+            "label": "Animés"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+            "label": "Films"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Library_d565273fd114d77bdf349a2896867069",
+            "label": "Séries"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Requests"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "nav:Settings"
+          }
+        },
+        {
+          "do": "down",
+          "why": "sous le profil : la butée"
+        }
+      ]
+    },
+    {
+      "id": "rail-02",
+      "title": "Accueil → rail → Accueil par DROITE : le focus revient au héros",
+      "start": {
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Home"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "hero:primary",
+            "route": "Home"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rail-03",
+      "title": "Depuis une rangée de l'accueil : GAUCHE au bord entre dans le rail, DROITE rend la carte quittée",
+      "start": {
+        "keys": [
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Home"
+          }
+        },
+        {
+          "do": "right",
+          "why": "la carte d'où l'on venait, ou une autre : la référence le dit"
+        },
+        {
+          "do": "right"
+        },
+        {
+          "do": "left"
+        },
+        {
+          "do": "left"
+        }
+      ]
+    },
+    {
+      "id": "rail-04",
+      "title": "Rail → Films : la grille prend le focus ; GAUCHE au bord rentre dans le rail sur Films ; DROITE rend la grille",
+      "start": {
+        "keys": [
+          "left",
+          "down",
+          "down",
+          "down",
+          "down",
+          "down"
+        ],
+        "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 800,
+          "expect": {
+            "route": "Library",
+            "focus": "grid:0"
+          }
+        },
+        {
+          "do": "right"
+        },
+        {
+          "do": "left"
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "route": "Library"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rail-05",
+      "title": "Rail → Accueil depuis Films : l'accueil reprend son focus d'entrée",
+      "start": {
+        "keys": [
+          "left",
+          "down",
+          "down",
+          "down",
+          "down",
+          "down",
+          "select"
+        ],
+        "screen": "Library"
+      },
+      "steps": [
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          }
+        },
+        {
+          "do": [
+            "up",
+            "up",
+            "up",
+            "up",
+            "up"
+          ],
+          "expect": {
+            "focus": "nav:Home"
+          },
+          "why": "Films → Animés → Favoris → Ma liste → Pour vous → Accueil"
+        },
+        {
+          "do": "select",
+          "settleMs": 800,
+          "expect": {
+            "route": "Home"
+          }
+        }
+      ]
+    }
+  ]
+}

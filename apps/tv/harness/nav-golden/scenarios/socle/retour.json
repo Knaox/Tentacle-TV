@@ -1,0 +1,106 @@
+{
+  "domain": "socle",
+  "reference": "84f3cedd0",
+  "scenarios": [
+    {
+      "id": "retour-accueil",
+      "title": "Retour depuis l'accueil : le rail, puis le profil, puis la sortie de l'app",
+      "why": "La racine : Retour ne dépile rien, il remonte le rail puis rend la main à tvOS.",
+      "start": { "focus": "hero:primary" },
+      "steps": [
+        { "do": "menu", "expect": { "focus": "nav:Home", "route": "Home" } },
+        { "do": "menu", "expect": { "focus": "nav:Settings", "route": "Home" } },
+        { "do": "menu", "expect": { "app": "background" } }
+      ]
+    },
+    {
+      "id": "retour-pour-vous",
+      "title": "Retour depuis « Pour vous »",
+      "start": { "keys": ["left", "down", "select"], "screen": "Recommendations" },
+      "steps": [
+        { "do": "menu", "settleMs": 600 },
+        { "do": "menu", "settleMs": 600 },
+        { "do": "menu", "settleMs": 600 }
+      ]
+    },
+    {
+      "id": "retour-ma-liste",
+      "title": "Retour depuis « Ma liste » : l'entrée du rail, le profil, la sortie",
+      "start": { "keys": ["left", "down", "down", "select"], "screen": "Watchlist" },
+      "steps": [
+        { "do": "menu", "expect": { "focus": "nav:Watchlist", "route": "Watchlist" } },
+        { "do": "menu", "expect": { "focus": "nav:Settings", "route": "Watchlist" } },
+        { "do": "menu", "expect": { "app": "background" } }
+      ]
+    },
+    {
+      "id": "retour-favoris",
+      "title": "Retour depuis « Favoris »",
+      "start": { "keys": ["left", "down", "down", "down", "select"], "screen": "Favorites" },
+      "steps": [
+        { "do": "menu", "expect": { "focus": "nav:Favorites", "route": "Favorites" } },
+        { "do": "menu" },
+        { "do": "menu" }
+      ]
+    },
+    {
+      "id": "retour-animes",
+      "title": "Retour depuis la bibliothèque Animés",
+      "start": { "keys": ["left", "down", "down", "down", "down", "select"], "screen": "Library" },
+      "steps": [
+        { "do": "menu", "expect": { "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1" } },
+        { "do": "menu" },
+        { "do": "menu" }
+      ]
+    },
+    {
+      "id": "retour-series",
+      "title": "Retour depuis la bibliothèque Séries, après un pas dans la grille",
+      "start": { "keys": ["left", "down", "down", "down", "down", "down", "down", "select"], "screen": "Library" },
+      "steps": [
+        { "do": "right" },
+        { "do": "menu", "expect": { "focus": "nav:Library_d565273fd114d77bdf349a2896867069" } },
+        { "do": "menu" },
+        { "do": "menu" }
+      ]
+    },
+    {
+      "id": "retour-recherche",
+      "title": "Retour depuis la recherche : le clavier, puis le rail",
+      "start": { "keys": ["left", "up", "select"], "screen": "Search" },
+      "steps": [
+        { "do": "menu", "expect": { "focus": "nav:Search", "route": "Search" } },
+        { "do": "menu" },
+        { "do": "menu" }
+      ]
+    },
+    {
+      "id": "retour-reglages",
+      "title": "Retour depuis les réglages",
+      "start": { "keys": ["left", "up", "up", "select"], "screen": "Settings" },
+      "steps": [
+        { "do": "menu", "settleMs": 600 },
+        { "do": "menu", "settleMs": 600 },
+        { "do": "menu", "settleMs": 600 }
+      ]
+    },
+    {
+      "id": "retour-fiche",
+      "title": "Retour depuis une fiche ouverte d'une carte de l'accueil : la carte reprend le focus",
+      "start": { "route": { "name": "MediaDetail", "params": { "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae" } }, "screen": "MediaDetail" },
+      "steps": [
+        { "do": "menu", "settleMs": 600, "expect": { "route": "Home", "stack": ["Home"] } },
+        { "do": "menu" }
+      ]
+    },
+    {
+      "id": "retour-lecteur",
+      "title": "Reprendre depuis l'accueil puis Retour : le lecteur se ferme, la carte reprend le focus",
+      "start": { "keys": ["down"], "focus": "resume:0" },
+      "steps": [
+        { "do": "select", "settleMs": 1500, "expect": { "route": "Player" } },
+        { "do": "menu", "settleMs": 800, "expect": { "route": "Home", "focus": "resume:0" } }
+      ]
+    }
+  ]
+}

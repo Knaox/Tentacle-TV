@@ -1,0 +1,92 @@
+{
+  "domain": "socle",
+  "reference": "84f3cedd0",
+  "scenarios": [
+    {
+      "id": "demarrage-jumelage",
+      "title": "Démarrage sans session : l'écran de jumelage, focus d'entrée sur « Afficher le code »",
+      "start": {
+        "session": "none",
+        "screen": "PairCode"
+      },
+      "steps": [
+        {
+          "do": "wait:0.5",
+          "expect": {
+            "route": "PairCode",
+            "focus": "pairing:showCode",
+            "label": "Afficher le code de jumelage",
+            "panel": "closed",
+            "writes": []
+          }
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "up"
+        }
+      ]
+    },
+    {
+      "id": "demarrage-serveur-coupe",
+      "title": "Serveur perdu sur l'accueil immobile : 20 s sans une requête, rien ne bouge ; Retour ouvre le rail",
+      "start": {
+        "screen": "Home",
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "backend:health=down"
+        },
+        {
+          "do": "wait:20",
+          "timeoutMs": 15000,
+          "expect": {
+            "focus": "hero:primary",
+            "route": "Home"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 800,
+          "expect": {
+            "focus": "nav:Home"
+          }
+        }
+      ],
+      "why": "L'app ne découvre la perte du serveur qu'à sa prochaine requête : sur un accueil immobile, ni voile ni focus déplacé (constaté sur la référence). Le voile au démarrage dépend de l'horloge : non relevé."
+    },
+    {
+      "id": "demarrage-fiche-directe",
+      "title": "Une fiche ouverte par la navigation (pile [Home, MediaDetail]) : son focus d'entrée",
+      "start": {
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "bc82e0bf6d59b1bf4586bb189ae305ae"
+          }
+        },
+        "screen": "MediaDetail"
+      },
+      "steps": [
+        {
+          "do": "wait:0.5",
+          "expect": {
+            "route": "MediaDetail",
+            "stack": [
+              "Home",
+              "MediaDetail"
+            ]
+          }
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "up"
+        }
+      ]
+    }
+  ]
+}
