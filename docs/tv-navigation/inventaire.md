@@ -6,7 +6,7 @@ la garde : [`garde.md`](garde.md).
 Pour CHAQUE usage d'une API native de télécommande ou de focus sur le chemin
 Apple TV refondu : où il est (fichier:ligne), qui le traite (T1 à T7) et ce
 qu'il devient. Relevé sur 84f3cedd0 (avant toute extraction), recalé sur
-`fecc655c6`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
+`b27e71330`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
 qu'une tâche vient de toucher sont celles de main au moment du recalage.
 
 ## Comment il est fait
@@ -30,7 +30,7 @@ qu'une tâche vient de toucher sont celles de main au moment du recalage.
   `useFocusEffect`, `useIsFocused`, `gestureEnabled`) ; le Retour
   (`useBackLayer`), le bus de la télécommande, les Modals (`onRequestClose`),
   les défilements, `.focus()`. Commentaires exclus.
-- **740 occurrences dans 190 fichiers**, chacune lue et classée ; un
+- **731 occurrences dans 190 fichiers**, chacune lue et classée ; un
   script vérifie qu'aucune n'est sans ligne ci-dessous.
 - **Ce que le relevé ne voit pas** et que la lecture a retrouvé : les
   décisions prises PAR le magasin de focus, sans API native visible (annexe C),
@@ -70,12 +70,12 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 |---|---|---|---|---|---|---|---|---|---|
 | T1 | 5 | — | — | 11 | 13 | 4 | — | — | — |
 | T3 | 22 | — | — | 73 | 6 | 2 | 29 | — | 6 |
-| T4 | 17 | 4 | 15 | 22 | 5 | 11 | 16 | 1 | — |
+| T4 | 17 | — | — | 35 | 2 | 11 | 16 | 1 | — |
 | T5 | 19 | 13 | 16 | 66 | 1 | 4 | 3 | 3 | 18 |
 | T6 | 12 | — | — | 7 | 4 | 4 | 20 | — | — |
 | T7 | 34 | 21 | 8 | 13 | — | 2 | 43 | 1 | 1 |
 | pas concernés | 81 | — | — | — | — | — | — | 133 | 141 |
-| **total** | 190 | 38 | 39 | 192 | 29 | 27 | 111 | 138 | 166 |
+| **total** | 190 | 34 | 24 | 205 | 26 | 27 | 111 | 138 | 166 |
 
 ## T1 — le socle : intentions, traduction, entrée unique
 
@@ -179,7 +179,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 ## T4 — Retour, rail, menus
 
-> Fait (5a12cb255) : l'applicateur du Retour (`platform/tvos/back/`), règles dans tv-core `nav/`, Menu des Modals par l'entrée unique ; `nav/arrange` et `railKeys` (dbd9ad386). Reste : la croix Retour (`backFocus`), les ponts et raccourcis du rail, le repli du rail, `gestureEnabled`, l'aperçu et la fenêtre des demandes (arbitrage).
+> Fait (b27e71330) : le Retour et le rail sont sur tv-core `nav/` (couches, croix Retour, ponts et raccourcis, OK et menu d'une entrée, pile en onglets, repli, fenêtre des demandes), leurs applicateurs dans `platform/tvos/back/` ; Menu des Modals par l'entrée unique ; équivalence prouvée par `back-trace` et les 38 références de retour-rail. Reste, inerte et décidé tel : l'ancien rail monté sur tvOS (annexe A).
 >
 > 17 fichiers.
 
@@ -191,9 +191,19 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 - L92 · gestureEnabled: !REDESIGN_ACTIVE · **ADAPTATEUR** · Menu ne dépile jamais un écran de lui-même (react-native-screens) — c'est le fait `backDecidedAhead` de la table tvOS
 - L120 · usePreventRemove (commentaire JSX) · **HORS** · faux positif du relevé
 
+#### `platform/tvos/back/backFocus.tsx`
+- L2, 152, 155, 156, 159 · TVFocusGuideView, destinations, focusable · **ADAPTATEUR** · FAIT (7a9c3ea59) : le guide de la bande de la croix Retour ; la décision est dans tv-core (`nav/backCross`)
+- L55, 102 · setNativeProps(nextFocusDown) · **ADAPTATEUR** · FAIT : BAS depuis la croix, vers la cible que tv-core désigne
+
 #### `platform/tvos/back/BackScope.tsx`
 - L4, 62, 64 · MenuPressInterceptor · **ADAPTATEUR** · FAIT (5a12cb255) : l'applicateur du Retour monte la vue native ; `enabled` = `takesBack` (tv-core)
 - L34, 44, 54 · canGoBack, goBack · **ADAPTATEUR** · FAIT : applique `isPushedPage` (tv-core) — sans couche, une page poussée recule
+
+#### `platform/tvos/back/RailBridges.tsx`
+- L2, 55 · TVFocusGuideView, destinations · **ADAPTATEUR** · FAIT (edba3344e) : les ponts natifs entre navigation et contenu ; quel pont et vers quoi : tv-core (`railBridge`, `railEntryTarget`)
+
+#### `platform/tvos/back/RailShortcuts.tsx`
+- L2, 42, 63–65 · TVFocusGuideView, setTimeout(`railLeftArmDelay`) · **ADAPTATEUR** · FAIT : les raccourcis natifs du rail ; boucle et armement décidés par tv-core (`nav/railShortcuts`)
 
 #### `platform/tvos/back/useBackLayers.ts`
 - L3, 19 · useBackLayer · **ADAPTATEUR** · FAIT : l'inscription des couches dans la pile de tv-core
@@ -214,33 +224,22 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 #### `redesignWiring/back/BackScope.tsx`
 - L1, 4, 26 · BackScope, useBackLayer (réexport) · **RESTE** · FAIT (5a12cb255) : il ne reste que l'aiguillage de la portée ; l'applicateur vit dans `platform/tvos/back/`, la règle dans tv-core (`nav/backLayers`, `nav/backResolve`)
 
-#### `redesignWiring/focus/backFocus.tsx` — garde : `no-focus-guides`, `no-focus-props`, `no-native-focus-calls`
-- L2, 148, 151, 152, 155 · TVFocusGuideView, destinations, focusable · **ADAPTATEUR** · guide de la bande de la croix Retour
-- L51, 98 · setNativeProps(nextFocusDown) · **ADAPTATEUR** · BAS depuis la croix
-- L53–112 · décision de la croix · **EXTRAIRE** · jamais l'entrée sauf seule action, reverrouillée à chaque arrivée ; bande armée seulement croix libre et hors rail ; BAS → dernière cible de contenu sinon l'entrée → `focus/` (T3 pour le guide générique)
-
 #### `redesignWiring/nav/NavMenuModal.tsx`
-- L50 · FadingModal onRequestClose={withMenuIntent(closeMenu)} · **ADAPTATEUR** · FAIT (5a12cb255) : Menu dans le menu d'organisation passe par l'entrée unique (`withMenuIntent`) → `closeMenu` (couche « menu »)
+- L55 · FadingModal onRequestClose={withMenuIntent(closeMenu)} · **ADAPTATEUR** · FAIT : Menu dans le menu d'une entrée passe par l'entrée unique ; le menu lui-même est une règle de tv-core (`nav/railMenu`, dc88358de)
 
 #### `redesignWiring/nav/useRailState.ts`
-- L37, 48 · setTimeout · **EXTRAIRE** · repli du rail : attendre `COLLAPSE_DELAY_MS` = 30 ms que le focus se pose ; focus hors de l'écran (une Modal) → la barre reste ouverte → `nav/`
-- L91, 143 · onLongPress · **RESTE** · l'appui long d'une entrée ouvre le menu d'organisation (`useRailArrange`)
-
-#### `redesignWiring/screen/RailBridges.tsx` — garde : `no-focus-guides`, `no-platform-branch`
-- L2, 40, 48, 51 · TVFocusGuideView, destinations, Platform.OS · **MIXTE** · guides natifs (ADAPTATEUR) ; quel pont, vers quoi (l'entrée active ; le dernier contenu, sinon l'entrée) = règle (EXTRAIRE `nav/`)
-
-#### `redesignWiring/screen/RailShortcuts.tsx` — garde : `no-focus-guides`, `no-platform-branch`
-- L2, 58, 72, 78–80 · TVFocusGuideView, setTimeout, Platform.OS · **MIXTE** · guides (ADAPTATEUR) ; boucle HAUT/BAS profil ↔ Rechercher, GAUCHE → profil armé après `ARM_AFTER_MS` = 450 ms, ou 1 100 ms au sortir d'une rafale (`STREAM_MS` = 350) = règle (EXTRAIRE `nav/`)
+- L32, 43 · setTimeout(`railBlurDelay`) · **ADAPTATEUR** · FAIT (72ea1ab61) : le repli du rail ; règle et délai dans tv-core (`nav/railFocus` : `railBlurDelay`, `railCollapseAfterBlur`)
+- L65, 127 · onLongPress · **RESTE** · l'appui long d'une entrée ouvre le menu d'organisation (règle : tv-core `nav/railMenu`)
 
 #### `redesignWiring/screen/useRailBackLayers.ts`
-- L5, 38–41 · useBackLayer · **DÉJÀ** · la règle est dans tv-core (`railBackStep`, `createBackLayers`) ; les inscriptions restent au câblage
+- L4 · `useBackLayers` · **DÉJÀ** · FAIT (07030ff6d) : les couches du Retour d'un écran à rail sont déclarées par tv-core (`nav/railBack`)
 
 #### `redesignWiring/screen/useRedesignScreen.ts`
 - L94, 110, 111 · onLongPress (relais du rail) · **RESTE** · câblage de la vue du rail
 
 #### `redesignWiring/vigie/RequestsPanel.tsx`
-- L9, 47 · `useBackLayer("menu", !closing, requestClose)` · **EXTRAIRE** · couche « menu » de « Mes demandes »
-- L59 · `Modal … onRequestClose={withMenuIntent(requestClose)}` · **ADAPTATEUR** · Modal native toujours présentée ; son Menu passe déjà par l'entrée unique (T4, 5a12cb255)
+- L10 · `useBackLayers` · **DÉJÀ** · FAIT (5a973c072) : la couche du Retour et la croix gardée de la fenêtre des demandes viennent de tv-core (`nav/railRequests`)
+- L60 · `Modal … onRequestClose={withMenuIntent(requestClose)}` · **ADAPTATEUR** · FAIT : Modal native ; son Menu passe par l'entrée unique
 
 ## T5 — le lecteur
 
@@ -579,7 +578,7 @@ le panneau des pannes, le pavé). Deux abonnements y échappent encore :
 | Abonnement | Par où il tourne sur tvOS | Tâche | Garde |
 |---|---|---|---|
 | `components/focus/useTVRemote.ts:81` ⇄ | `components/search/useSearchSubmit.ts:85-89` (l'atterrissage de la recherche) — le lecteur ne l'emploie plus que sur Android TV (`usePlayerRemoteBinding.ts`) | T7 | hors portée (partagé) |
-| `hooks/useContentFocusCapture.ts:101` ⇄ | `components/nav/TVNavChrome.tsx`, l'ancien rail, MONTÉ par `App.tsx` sur tvOS alors qu'il n'y rend rien : un abonnement à vide toute la session | T4 | hors portée (ancienne UI) |
+| `hooks/useContentFocusCapture.ts:101` ⇄ | `components/nav/TVNavChrome.tsx`, l'ancien rail, MONTÉ par `App.tsx` sur tvOS alors qu'il n'y rend rien : un abonnement à vide toute la session — il RESTE, inerte (décision de T4, retour-rail.md, ab64999ad) | T4 | hors portée (ancienne UI) |
 
 ## Annexe B — les écouteurs de l'API d'avant (`remoteEvents.ts`)
 
@@ -609,9 +608,9 @@ qui doit rejoindre tv-core comme les autres.
 | `redesignWiring/library/LibraryRedesign.tsx` | 83, 86, 110 | T7 |
 | `redesignWiring/library/useLibraryFilterBar.ts` | 40, 46 | T7 |
 | `redesignWiring/library/useLibrarySheets.ts` | 91, 94, 115 | T7 |
-| `redesignWiring/nav/NavMenuModal.tsx` | 30 | T4 |
-| `redesignWiring/nav/useRailArrange.ts` | 117, 173, 204 | T4 |
-| `redesignWiring/nav/useRailState.ts` | 129 | T4 |
+| `redesignWiring/nav/NavMenuModal.tsx` | 39 | T4 |
+| `redesignWiring/nav/useRailArrange.ts` | 82, 137, 163 | T4 |
+| `redesignWiring/nav/useRailState.ts` | 108 | T4 |
 | `redesignWiring/overlays/OfflineRedesign.tsx` | 43, 44 | T6 |
 | `redesignWiring/overlays/ScreenErrorRedesign.tsx` | 50, 61, 62, 74 | T6 |
 | `redesignWiring/pairing/loginFocus.ts` | 26 | T7 |
@@ -620,8 +619,8 @@ qui doit rejoindre tv-core comme les autres.
 | `redesignWiring/player/usePlaybackTrouble.ts` | 77, 133 | T5 |
 | `redesignWiring/player/usePlayerEpisodesPanel.ts` | 77 | T5 |
 | `redesignWiring/player/usePlayerFocus.ts` | 78, 121 | T5 |
-| `redesignWiring/screen/useRailBackLayers.ts` | 34 | T4 |
-| `redesignWiring/screen/useRedesignScreen.ts` | 69, 75, 80, 91 | T4 |
+| `redesignWiring/screen/useRailBackLayers.ts` | 19 | T4 |
+| `redesignWiring/screen/useRedesignScreen.ts` | 70, 76, 80, 91 | T4 |
 | `redesignWiring/search/SearchRedesign.tsx` | 53, 54 | T7 |
 | `redesignWiring/search/useSystemKeyboard.ts` | 42, 68, 69 | T7 |
 | `redesignWiring/settings/ChoiceModal.tsx` | 26 | T7 |
@@ -630,7 +629,7 @@ qui doit rejoindre tv-core comme les autres.
 | `redesignWiring/sheet/ActionSheetRedesign.tsx` | 84 | T6 |
 | `redesignWiring/vigie/AbsentSheetRedesign.tsx` | 105 | T6 |
 | `redesignWiring/vigie/RequestsEntry.tsx` | 41, 42 | T4 |
-| `redesignWiring/vigie/RequestsPanel.tsx` | 54, 86, 91 | T4 |
+| `redesignWiring/vigie/RequestsPanel.tsx` | 55, 87, 92 | T4 |
 | `redesignWiring/vigie/SeasonsSheetRedesign.tsx` | 118, 130 | T6 |
 
 ## Annexe D — le natif : Objective-C et correctifs
