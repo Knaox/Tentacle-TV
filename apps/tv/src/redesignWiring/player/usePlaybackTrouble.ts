@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo } from "react-native";
 import type { QualityPreset } from "@tentacle-tv/shared";
+import { activatesTroublePanel, focusInTrouble, TROUBLE_REFOCUS_MS, troubleLeaveReturnsToOsd } from "@tentacle-tv/tv-core";
 import { noteSkipFocusClaim, returnFocusToOsd } from "../../components/player/focus/osdFocusBus";
+import { useRemoteIntents } from "../../platform/tvos/input";
 import { retryPlaybackNow, usePlaybackTroubleState, useServerFallbackAt } from "../../hooks/playbackTroubleStore";
 import type { Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlaybackTroubleModel, TroubleActionKey } from "../../redesign/screens/player/playbackTroubleTypes";
 import type { FocusStore } from "../focus/focusStore";
 import { lowerQualityKey, noticeOf, panelOf, RESUMED_NOTICE, SERVER_FALLBACK_NOTICE, troubleModelOf } from "./playbackTroubleModel";
-
-// react-native-tvos exporte useTVEventHandler en hook (cf. useTVRemote).
-const { useTVEventHandler } = require("react-native") as {
-  useTVEventHandler: (callback: (evt: { eventType: string; eventKeyAction?: number }) => void) => void;
-};
 
 /** « La lecture a repris » : le temps de le lire. */
 const RESUMED_NOTICE_MS = 4000;
@@ -19,9 +16,6 @@ const RESUMED_NOTICE_MS = 4000;
 const TENTACLE_NOTICE_MS = 8000;
 /** Le serveur a pris le relais : le temps d'ouvrir son flux, puis de le lire. */
 const SERVER_FALLBACK_NOTICE_MS = 14000;
-/** Les gestes qui ACTIVENT le panneau : des appuis — pas un pouce posé sur le pavé. */
-const GESTURES = new Set(["select", "playPause", "up", "down", "left", "right", "longSelect"]);
-
 const PANEL_KINDS = new Set(["waiting", "recovering", "stuck"]);
 
 /** Vrai jusqu'à `until`, puis faux — un rendu à l'échéance, pas de minuterie à vide. */
@@ -64,13 +58,14 @@ export function usePlaybackTrouble(args: {
   const { phase } = trouble;
   const panelPhase = PANEL_KINDS.has(phase.kind);
 
-  // L'ACTIVATION, au premier appui pendant que le panneau est là.
+  // L'ACTIVATION, au premier APPUI pendant que le panneau est là (tv-core
+  // `activatesTroublePanel` : ni le pavé, ni Retour) — vu passer à l'entrée unique.
   const [active, setActive] = useState(false);
   const watching = useRef({ panelPhase, active });
   watching.current = { panelPhase, active };
-  useTVEventHandler((evt) => {
+  useRemoteIntents((event) => {
     const w = watching.current;
-    if (!w.panelPhase || w.active || !GESTURES.has(evt?.eventType)) return;
+    if (!w.panelPhase || w.active || !activatesTroublePanel(event.intent)) return;
     setActive(true);
   });
   // Le même appui rallume l'habillage, dont la restauration IMPLICITE (au
@@ -89,7 +84,7 @@ export function usePlaybackTrouble(args: {
     if (wasPanel.current && !panelPhase) {
       setActive(false);
       if (phase.kind === "none") setResumedUntil(Date.now() + RESUMED_NOTICE_MS);
-      if (store.focusedKey()?.startsWith("trouble:") && osdVisible) returnFocusToOsd();
+      if (troubleLeaveReturnsToOsd(store.focusedKey(), osdVisible)) returnFocusToOsd();
     }
     if (panelPhase) setResumedUntil(null);
     wasPanel.current = panelPhase;
@@ -135,8 +130,8 @@ export function usePlaybackTrouble(args: {
   useEffect(() => {
     if (!active || !actionsKey) return undefined;
     const timer = setTimeout(() => {
-      if (!store.focusedKey()?.startsWith("trouble:")) store.claim("trouble:retry");
-    }, 120);
+      if (!focusInTrouble(store.focusedKey())) store.claim("trouble:retry");
+    }, TROUBLE_REFOCUS_MS);
     return () => clearTimeout(timer);
   }, [actionsKey, active, store]);
 
