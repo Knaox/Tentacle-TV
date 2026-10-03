@@ -29,6 +29,30 @@ export interface SheetRating {
   pending?: boolean;
 }
 
+/** Ce que le panneau sait de la note d'une carte. */
+export interface SheetRatingFacts {
+  /** La cible de la note est connue (l'identité TMDB du titre, ou de sa série). */
+  target: boolean;
+  /** Elle se résout encore (la série d'un épisode). */
+  resolving: boolean;
+  /** La fiche complète d'une carte de la bibliothèque est en route : on ne SAIT pas encore. */
+  itemLoading: boolean;
+  /** La note posée sur 10, `null` : aucune ; `undefined` : la liste des notes n'est pas là. */
+  score: number | null | undefined;
+}
+
+/**
+ * La note du panneau, ou `null` : rien à noter. « Pas encore su » (la fiche
+ * complète en route, la cible en résolution) n'est pas « non notable » : la
+ * note reste EN ATTENTE, et le panneau n'entre pas avant de savoir — décidée
+ * trop tôt, l'entrée tombait sur « Lire » (mesuré en réel).
+ */
+export function sheetRatingOf(facts: SheetRatingFacts): Required<SheetRating> | null {
+  const rateable = facts.target || facts.resolving || facts.itemLoading;
+  if (!rateable) return null;
+  return { current: facts.score ?? null, pending: !facts.target || facts.score === undefined };
+}
+
 /** Un picto, réduit à ce que les règles du focus en lisent. */
 export interface SheetPicto {
   kind: string;

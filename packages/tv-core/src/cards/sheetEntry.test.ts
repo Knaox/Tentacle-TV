@@ -8,6 +8,7 @@ import {
   sheetEntryOf,
   sheetHeaderTarget,
   sheetLockKeys,
+  sheetRatingOf,
   sheetScaleTarget,
 } from "./sheetEntry";
 import { SCALE_FOCUS_KEYS, isSheetGuardedKey, scaleAimOf, scaleFocusKey, sheetActionKey } from "./sheetKeys";
@@ -79,6 +80,28 @@ describe("l'entrée du grand panneau", () => {
     const keys = sheetLockKeys(PICTOS);
     expect(keys).toHaveLength(11 + 3 + 1);
     expect(keys.slice(11)).toEqual(["sheet:action:play", "sheet:action:watchlist", "sheet:action:favorite", "sheet:close"]);
+  });
+});
+
+describe("la note du panneau", () => {
+  const known = { target: true, resolving: false, itemLoading: false };
+
+  it("est la note posée, ou aucune, une fois sa cible et la liste des notes connues", () => {
+    expect(sheetRatingOf({ ...known, score: 7 })).toEqual({ current: 7, pending: false });
+    expect(sheetRatingOf({ ...known, score: null })).toEqual({ current: null, pending: false });
+  });
+
+  it("attend la liste des notes", () => {
+    expect(sheetRatingOf({ ...known, score: undefined })).toEqual({ current: null, pending: true });
+  });
+
+  it("attend sa cible : « pas encore su » n'est pas « non notable »", () => {
+    expect(sheetRatingOf({ target: false, resolving: true, itemLoading: false, score: null })).toEqual({ current: null, pending: true });
+    expect(sheetRatingOf({ target: false, resolving: false, itemLoading: true, score: 6 })).toEqual({ current: 6, pending: true });
+  });
+
+  it("n'existe pas quand rien ne se note", () => {
+    expect(sheetRatingOf({ target: false, resolving: false, itemLoading: false, score: undefined })).toBeNull();
   });
 });
 
