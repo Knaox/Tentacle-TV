@@ -1,3 +1,6 @@
+import { createRemoteContexts, type RemoteContextHandle } from "../remote/contexts";
+import type { RemoteIntent } from "../remote/intents";
+
 /**
  * La touche RETOUR d'une télévision, en couches — module pur : ni React, ni
  * plateforme ; les tests n'ont besoin de rien d'autre.
@@ -13,7 +16,12 @@
  * ouvert dans un panneau se ferme avant lui). Aucune couche active : la
  * plateforme reprend la main — une page poussée recule ; sinon, sur Apple TV,
  * c'est la SORTIE de l'application, que seul UIKit sait faire (la règle
- * d'Apple : Menu finit par quitter).
+ * d'Apple : Menu finit par quitter). Voir `backResolve.ts`.
+ *
+ * Cette règle est celle de la pile des contextes de la télécommande
+ * (`remote/contexts.ts`) : la pile du Retour EN EST UNE, à ses propres rangs,
+ * où chaque couche active décide l'intention `retour`. Une seule copie de la
+ * règle « rang, puis le plus récemment activé ».
  *
  * Une couche se DÉCLARE active d'avance, au lieu de dire « pris / pas pris »
  * au moment de l'appui : sur Apple TV, l'application doit savoir AVANT
@@ -50,61 +58,76 @@ export interface BackLayers {
   subscribe(listener: () => void): () => void;
 }
 
-interface Entry extends BackLayer {
-  /** Le rang d'activation : à rang égal, la plus récente répond la première. */
-  seq: number;
-}
+/** L'intention que la pile résout. */
+export const BACK_INTENT: RemoteIntent = { type: "retour" };
 
-const rankOf = (kind: BackLayerKind): number => BACK_LAYER_ORDER.indexOf(kind);
-
-/** La couche qui répond, parmi des couches données — l'ordre, puis la plus récente. */
-function pick(entries: ReadonlyMap<string, Entry>): BackTarget | null {
-  let best: { id: string; entry: Entry } | null = null;
-  for (const [id, entry] of entries) {
-    if (!entry.active) continue;
-    if (!best) {
-      best = { id, entry };
-      continue;
-    }
-    const rank = rankOf(entry.kind) - rankOf(best.entry.kind);
-    if (rank < 0 || (rank === 0 && entry.seq > best.entry.seq)) best = { id, entry };
-  }
-  return best ? { id: best.id, kind: best.entry.kind } : null;
+interface Slot {
+  kind: BackLayerKind;
+  /** La couche telle qu'inscrite en dernier : son gestionnaire est relu à l'appui. */
+  layer: BackLayer;
+  handle: RemoteContextHandle<string>;
 }
 
 const sameTarget = (a: BackTarget | null, b: BackTarget | null): boolean =>
   a === b || (a !== null && b !== null && a.id === b.id && a.kind === b.kind);
 
 export function createBackLayers(): BackLayers {
-  const entries = new Map<string, Entry>();
+  const stack = createRemoteContexts<BackLayerKind>(BACK_LAYER_ORDER);
+  const slots = new Map<string, Slot>();
   const listeners = new Set<() => void>();
-  let seq = 0;
   let current: BackTarget | null = null;
 
+  const pick = (): BackTarget | null => {
+    const found = stack.resolve(BACK_INTENT);
+    return found ? { id: found.decision as string, kind: found.kind } : null;
+  };
+
   const refresh = () => {
-    const next = pick(entries);
+    const next = pick();
     if (sameTarget(next, current)) return;
     current = next;
     for (const listener of [...listeners]) listener();
   };
 
+  const register = (id: string, layer: BackLayer): Slot => {
+    const slot = { kind: layer.kind, layer } as Slot;
+    slot.handle = stack.register<string>({
+      kind: layer.kind,
+      name: id,
+      active: layer.active,
+      // Une couche active prend Retour, sous son identifiant.
+      decide: (intent) => (intent.type === "retour" ? id : null),
+      apply: () => slot.layer.onBack(),
+    });
+    return slot;
+  };
+
   return {
     set(id, layer) {
-      const previous = entries.get(id);
-      // Le rang ne bouge qu'à l'activation : une couche déjà active qui se met
-      // à jour (un nouveau gestionnaire) ne repasse pas devant les autres.
-      const activated = layer.active && !(previous?.active ?? false);
-      entries.set(id, { ...layer, seq: activated ? ++seq : previous?.seq ?? 0 });
+      const previous = slots.get(id);
+      if (previous && previous.kind === layer.kind) {
+        // Le rang ne bouge qu'à l'activation : une couche déjà active qui se met
+        // à jour (un nouveau gestionnaire) ne repasse pas devant les autres.
+        previous.layer = layer;
+        previous.handle.setActive(layer.active);
+      } else {
+        previous?.handle.remove();
+        slots.set(id, register(id, layer));
+      }
       refresh();
     },
     remove(id) {
-      if (entries.delete(id)) refresh();
+      const slot = slots.get(id);
+      if (!slot) return;
+      slots.delete(id);
+      slot.handle.remove();
+      refresh();
     },
     target: () => current,
     back() {
-      const target = pick(entries);
+      const target = pick();
       if (!target) return false;
-      entries.get(target.id)?.onBack();
+      slots.get(target.id)?.layer.onBack();
       return true;
     },
     subscribe(listener) {
