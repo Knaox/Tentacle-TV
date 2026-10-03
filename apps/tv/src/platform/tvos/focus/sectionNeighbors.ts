@@ -11,6 +11,6 @@
  *
  * Une section peut déclarer son ENTRÉE (`tvEntry`, le numéro natif d'un de ses
  * éléments, posé sur son nœud) : l'onglet de la saison affichée, l'épisode à
- * reprendre — `detail/useDetailGuides.ts`.
+ * reprendre — la fiche, par `sectionEntry.ts`.
  */
 export const SECTION_NEIGHBORS: Readonly<Record<string, unknown>> = Object.freeze({ tvNeighbors: true });

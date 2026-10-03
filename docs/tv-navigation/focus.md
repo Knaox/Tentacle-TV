@@ -375,36 +375,74 @@ Source : `TentacleRevealScroller.m`, `TentacleRevealMotion.m`,
 4. **A3 compte depuis le premier rendu** de l'écran, pas depuis le dernier
    changement d'entrée.
 
-## Plan d'extraction (phase B)
+## L'extraction (phase B) — ce qui est dans tv-core, ce que l'adaptateur garde
 
-À figer sur le contrat de T1 (`docs/TV-NAVIGATION.md`) : rangement des
-règles dans `packages/tv-core/src/focus/` (et `hero/` pour la rotation),
-adaptateur tvOS qui ne fait plus qu'appliquer.
+Contrat : `docs/TV-NAVIGATION.md`. Les règles sont pures (ni React, ni
+minuteur : l'horloge est passée), testées par vitest ; les applicateurs
+vivent dans `apps/tv/src/platform/tvos/focus/` et ne décident plus.
 
-| Décision | Règle pure (tv-core) | Application (tvOS) |
+| Décision | Règle (`@tentacle-tv/tv-core`) | Applicateur (tvOS) |
 |---|---|---|
-| R1-R8 voisin vertical | `focus/sections.ts` (existe) | natif inchangé + `sectionNeighbors` |
-| V1-V8 cible et rafale | `focus/reveal.ts` (spec miroir, testée) | natif inchangé + commentaire de renvoi |
-| E1-E3 entrée de section | `focus/sectionEntry.ts` (« première visite ») | `useSectionEntry`, `useFirstVisitEntry` |
-| S1 suivi, S5 attente du montage | `focus/focusTracker.ts` | `focusStore` (nœuds, `claimTvFocus`) |
-| A1-A5 entrée d'écran, retour | `focus/screenEntry.ts` | `useEntryFocus` |
-| A6 entrées de l'accueil, « Pour vous » | fonctions pures d'entrée | les écrans |
-| G1 guide d'entrée | `focus/groupEntry.ts` | `entryGuide.tsx` |
-| C1 reprise après restauration | `focus/restoreClaim.ts` | `claimAfterRestore.ts` |
-| K1 garder dedans | `focus/keepWithin.ts` | `useKeepFocusWithin.ts` |
-| X1-X4 au-delà du bord | `focus/beyondEdge.ts` (intentions de T1) | `useBeyondEdge.ts` |
-| H2-H3 rotation du héros | `hero/rotation.ts` | `useHeroRotation`, `useHomeHero` |
+| R1-R8 voisin vertical | `focus/sections.ts` (existait) | la section native, inchangée ; `sectionNeighbors.ts` |
+| E1-E3 entrée de section | `focus/sectionEntry.ts` | `sectionEntry.ts` : `useSectionEntry`, `useFirstVisitEntry` |
+| V1-V12 cible, bornes, compensation | `focus/reveal.ts` (spécification miroir) | le natif, inchangé (`TentacleRevealScroller.m`) |
+| V6-V8 rafale, ressort | `focus/revealMotion.ts` (spécification miroir) | le natif, inchangé (`TentacleRevealMotion.m`, `TentacleFocusInput.m`) |
+| V13 révélation du banc | `focus/reveal.ts` : `benchRevealOffset` | `useForcedFocusReveal` (vue du banc) |
+| P5 marge par défaut | `focus/reveal.ts` : `REVEAL_NEAREST_MARGIN` | `FocusSection` (vue) |
+| S1 clé courante, dernière | `focus/focusTrack.ts` | `focusStore.ts` (nœuds, réclamations, liaisons) |
+| A1-A5 arrivée, retour | `focus/screenEntry.ts` (600 ms) | `useEntryFocus.ts` (préférence, réclamation, `useFocusEffect`) |
+| A6 entrées de l'accueil, « Pour vous » | `focus/homeEntry.ts` | `HomeRedesign`, `ForYouRedesign` |
+| G1 entrée d'un groupe | `focus/groupEntry.ts` | `entryGuide.tsx` (le guide natif) |
+| C1 reprise après restauration | `focus/restoreClaim.ts` (900 ms) | `claimAfterRestore.ts` |
+| K1 garder dedans | `focus/keepWithin.ts` (50 ms) | `useKeepFocusWithin.ts` |
+| X1-X4 au-delà du bord | `focus/beyondEdge.ts` (400 ms, faits de la table) | `useBeyondEdge.ts` (intentions de l'entrée unique) |
+| H1-H4 titres, rotation, bord, titre affiché | `hero/rotation.ts` (5 titres, 8 s) | `useHeroRotation.ts` (minuteur), `useHomeHero.ts` |
+| H5, W4 appui maintenu → panneau | `cards/cardHold.ts` (T6) | `useHomeRowModels`, `useHomeHero`, `ForYouRedesign` |
+| W4 OK sur une carte | `cards/cardPress.ts` (écrit par T3, accord de T6) | `useHomeRowModels`, `ForYouRedesign` |
 
-Arbitrages du coordinateur (2026-10-03) : P2, la garde anti-clic fantôme, est
-extraite par T6 (sa machine tv-core, une retouche minimale de `FocusTarget`
-— je ne touche pas ce bloc) ; « appui maintenu sur une carte → quel
-panneau » (W4, H5) est une règle de T6 (`panels/cardHold`), que j'applique
-dans l'accueil, le héros et « Pour vous » une fois publiée. `contentKey()`
-(A4) est ce que visent les ponts du rail de T4 : son contrat ne change pas.
+Aucune durée ni aucun seuil ne reste dans `platform/tvos/focus/`
+(`node eslint/tvNavigationAudit.mjs` n'en liste plus).
 
-Les signatures exportées par `redesignWiring/focus/*` ne changent pas : les
-autres domaines (fiche, bibliothèque, réglages, panneaux, lecteur, Vigie,
-surimpressions, jumelage) continuent de les appeler.
+**Ce que l'adaptateur garde** : les nœuds natifs et leurs liaisons (le port),
+la réclamation tvOS (`claimTvFocus` de `hooks/useTvFocusClaim.ts`, cycle
+40 / 50 / 120 ms, contournement RN-tvos #849 — partagé avec Android TV, non
+modifié), `focusNow` (`requestTVFocus`), les guides natifs (`TVFocusGuideView`,
+`AutoFocusGuide`, `TrapFocusGuide`), les verrous (`isTVSelectable`), la
+parallaxe par forme (rendu : `redesignWiring/remote/parallax.ts`), les
+minuteurs dont tv-core donne les durées.
+
+**Exceptions de la garde qui restent à T3** (`eslint/tvNavigationExceptions.mjs`) :
+`FocusTarget` (le seul `Pressable` de la refonte, la porte des vues vers le
+focus natif), `FocusSection` et `nativeFocusSection` (la section native). Une
+vue n'importe que `redesign/` et les paquets partagés : la détection de la
+section native ne peut pas rejoindre `platform/tvos/` (essayé, refusé par le
+lint des imports).
+
+**Arbitrages** : P2, la garde anti-clic fantôme de `FocusTarget`, est
+extraite par T6 (sa machine `cards/pressGuard`) ; `contentKey()` (A4) est ce
+que visent les ponts du rail de T4 — son contrat ne change pas ; la croix
+Retour (`backFocus.tsx`) est à T4, Parcourir et la règle propre à la fiche à
+T7.
+
+### Réexports provisoires
+
+Les applicateurs déplacés gardent leur ancien chemin le temps que leurs
+importateurs (fiche, bibliothèque, réglages, panneaux, lecteur, Vigie,
+surimpressions, jumelage, rail) visent `platform/tvos/focus/` :
+`redesignWiring/focus/{focusStore, claimAfterRestore, entryGuide,
+focusGuides, focusLocks, sectionEntry, sectionNeighbors, useKeepFocusWithin,
+useKeyFocused}` et `redesignWiring/screen/useEntryFocus`. Un réexport tombe,
+dans un commit à part, quand un `grep` prouve que plus rien ne l'importe.
+
+### À retirer au portage Android TV
+
+Aucune copie temporaire : `hooks/useTvFocusClaim.ts`, `useFocusRecovery.ts` et
+`useContentFocusCapture.ts` (partagés avec Android TV) ne sont pas touchés.
+Au portage, Android TV lit les mêmes règles (`focus/`, `hero/rotation`,
+`cards/cardPress`, `cards/cardHold`) et n'écrit que son applicateur ; la
+révélation et le voisinage des sections n'existent chez lui qu'une fois une
+section native écrite (ses tests sont dans `focus/sections.test.ts`,
+`reveal.test.ts`, `revealMotion.test.ts`).
 
 ## API publiée — l'entrée d'une section (pour T7)
 
