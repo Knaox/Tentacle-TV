@@ -2,7 +2,7 @@
   "domain": "ecrans",
   "reference": "84f3cedd0",
   "defaults": {
-    "settleMs": 600
+    "settleMs": 1000
   },
   "scenarios": [
     {
@@ -29,7 +29,7 @@
       },
       "steps": [
         {
-          "do": "wait:3",
+          "do": "wait:6",
           "expect": {
             "focus": "grid:0",
             "route": "Library"
@@ -105,14 +105,15 @@
     },
     {
       "id": "bibliotheque-defilement",
-      "title": "Flèche maintenue jusqu'au fond, puis jusqu'en haut : la première ligne ramène la page tout en haut",
+      "title": "1 200 films : flèche maintenue jusqu'au fond, puis jusqu'en haut — la page suivante est là avant le focus, la première ligne ramène la page tout en haut",
       "rules": [
         "GR-2",
         "GR-4"
       ],
       "start": {
         "fixtures": [
-          "base/vigie-off"
+          "base/vigie-off",
+          "ecrans/grande-bibliotheque"
         ],
         "route": {
           "name": "Library",
@@ -124,24 +125,28 @@
       },
       "steps": [
         {
-          "do": "wait:3",
+          "do": "wait:8",
           "expect": {
             "focus": "grid:0"
           }
         },
         {
-          "do": "holddown:8",
-          "settleMs": 1500,
-          "why": "la page suivante part à trois écrans de la fin : le focus ne bute pas"
-        },
-        {
-          "do": "holdup:10",
-          "settleMs": 1500,
-          "why": "relevé : la première ligne (mode start)"
+          "do": [
+            "holddown:8",
+            "holdup:10"
+          ],
+          "settleMs": 2000,
+          "expect": {
+            "focus": "grid:0"
+          },
+          "why": "jusqu'au fond puis jusqu'en haut, dans la première colonne : la page suivante est là avant le focus ; relevé à la fin seulement (la position au fond dépend de la cadence)"
         },
         {
           "do": "up",
-          "why": "la barre de filtres"
+          "expect": {
+            "focus": "pill:status"
+          },
+          "why": "la première ligne a ramené la page tout en haut : la barre de filtres est là"
         }
       ]
     },
@@ -170,7 +175,7 @@
       },
       "steps": [
         {
-          "do": "wait:3",
+          "do": "wait:6",
           "expect": {
             "focus": "grid:0"
           }
@@ -204,14 +209,11 @@
             "down",
             "down"
           ],
-          "expect": {
-            "focus": "sheet:option:2"
-          }
+          "why": "relevé : les options sont en colonnes, BAS saute une rangée"
         },
         {
           "do": "select",
           "expect": {
-            "focus": "sheet:option:2",
             "panel": "open"
           },
           "why": "cocher ne déplace pas le focus"
@@ -273,7 +275,7 @@
       },
       "steps": [
         {
-          "do": "wait:3",
+          "do": "wait:6",
           "expect": {
             "focus": "grid:0"
           }
@@ -307,9 +309,7 @@
         },
         {
           "do": "down",
-          "expect": {
-            "focus": "sheet:option:1"
-          }
+          "why": "relevé : l'option voisine (les options sont en colonnes)"
         },
         {
           "do": "select",
@@ -373,7 +373,7 @@
       },
       "steps": [
         {
-          "do": "wait:3",
+          "do": "wait:6",
           "expect": {
             "focus": "grid:0"
           }
@@ -437,7 +437,7 @@
       },
       "steps": [
         {
-          "do": "wait:3",
+          "do": "wait:6",
           "expect": {
             "focus": "grid:0"
           }

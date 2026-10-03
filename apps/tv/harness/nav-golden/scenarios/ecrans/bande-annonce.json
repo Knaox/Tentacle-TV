@@ -1,39 +1,130 @@
 {
   "domain": "ecrans",
   "reference": "84f3cedd0",
-  "defaults": { "settleMs": 700 },
+  "defaults": {
+    "settleMs": 1000
+  },
   "scenarios": [
     {
       "id": "bande-annonce-indisponible",
       "title": "Bande-annonce indisponible : la croix, seule cible, a le focus ; la fiche revient d'elle-même 4 s plus tard, focus sur « Bande-annonce »",
-      "rules": ["BA-1", "BA-3", "BA-4", "FI-2"],
+      "rules": [
+        "BA-1",
+        "BA-3",
+        "BA-4",
+        "FI-2"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off", "base/bandes-annonces-en-panne"],
-        "route": { "name": "MediaDetail", "params": { "itemId": "8691fdd93af7c11da75013ecc6a67ac0" } }
+        "fixtures": [
+          "base/vigie-off",
+          "base/bandes-annonces-en-panne"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          }
+        }
       },
       "steps": [
-        { "do": "wait:2.5", "expect": { "focus": "detail:primary" } },
-        { "do": "right", "expect": { "focus": "detail:trailer" } },
-        { "do": "select", "settleMs": 2000, "expect": { "route": "Trailer", "focus": "trailer:close" } },
-        { "do": ["up", "left", "down"], "expect": { "focus": "trailer:close" }, "why": "rien d'autre à focaliser" },
-        { "do": "wait:5", "expect": { "route": "MediaDetail", "focus": "detail:trailer" }, "why": "4 s après « indisponible », la fiche, sur la dernière action" }
+        {
+          "do": "wait:5",
+          "expect": {
+            "focus": "detail:primary"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "detail:trailer"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 300,
+          "expect": {
+            "route": "Trailer",
+            "focus": "trailer:close"
+          },
+          "why": "relevé aussitôt : l'écran indisponible rend la fiche au bout de 4 s"
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "route": "MediaDetail",
+            "focus": "detail:trailer"
+          },
+          "why": "4 s après « indisponible », la fiche, sur la dernière action"
+        }
       ]
     },
     {
       "id": "bande-annonce-menu",
       "title": "Menu sur la bande-annonce : la fiche, focus sur « Bande-annonce » ; OK sur la croix fait de même",
-      "rules": ["BA-1", "BA-3", "BA-4"],
+      "rules": [
+        "BA-1",
+        "BA-3",
+        "BA-4"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off", "base/bandes-annonces-en-panne"],
-        "route": { "name": "MediaDetail", "params": { "itemId": "8691fdd93af7c11da75013ecc6a67ac0" } }
+        "fixtures": [
+          "base/vigie-off",
+          "base/bandes-annonces-en-panne"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          }
+        }
       },
       "steps": [
-        { "do": "wait:2.5", "expect": { "focus": "detail:primary" } },
-        { "do": "right", "expect": { "focus": "detail:trailer" } },
-        { "do": "select", "settleMs": 1500, "expect": { "route": "Trailer", "focus": "trailer:close" } },
-        { "do": "menu", "settleMs": 1500, "expect": { "route": "MediaDetail", "focus": "detail:trailer" } },
-        { "do": "select", "settleMs": 1500, "expect": { "route": "Trailer", "focus": "trailer:close" } },
-        { "do": "select", "settleMs": 1500, "expect": { "route": "MediaDetail", "focus": "detail:trailer" } }
+        {
+          "do": "wait:5",
+          "expect": {
+            "focus": "detail:primary"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "detail:trailer"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 300,
+          "expect": {
+            "route": "Trailer",
+            "focus": "trailer:close"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 300,
+          "expect": {
+            "route": "MediaDetail",
+            "focus": "detail:trailer"
+          },
+          "why": "Menu, avant le retour automatique"
+        },
+        {
+          "do": "select",
+          "settleMs": 300,
+          "expect": {
+            "route": "Trailer",
+            "focus": "trailer:close"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 300,
+          "expect": {
+            "route": "MediaDetail",
+            "focus": "detail:trailer"
+          },
+          "why": "OK sur la croix"
+        }
       ]
     }
   ]

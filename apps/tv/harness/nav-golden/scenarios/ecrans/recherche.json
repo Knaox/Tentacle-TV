@@ -1,121 +1,360 @@
 {
   "domain": "ecrans",
   "reference": "84f3cedd0",
-  "defaults": { "settleMs": 600 },
+  "defaults": {
+    "settleMs": 1000
+  },
   "scenarios": [
     {
       "id": "recherche-entree",
       "title": "Recherche : l'arrivée va sur la première touche du clavier à l'écran ; le champ au-dessus, la colonne qui mémorise",
-      "rules": ["RE-1", "RE-2"],
+      "rules": [
+        "RE-1",
+        "RE-2"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off"],
-        "route": { "name": "Search" }
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/recherche"
+        ],
+        "route": {
+          "name": "Search"
+        }
       },
       "steps": [
-        { "do": "wait:2.5", "expect": { "focus": "key:A", "route": "Search" } },
-        { "do": "right", "expect": { "focus": "key:B" } },
-        { "do": "down", "expect": { "focus": "key:H" } },
-        { "do": "left", "expect": { "focus": "key:G" } },
-        { "do": "up", "expect": { "focus": "key:A" } },
-        { "do": "left", "why": "au-delà de la colonne : le rail (T4), relevé" },
-        { "do": "right", "expect": { "focus": "key:A" }, "why": "retour au contenu : la dernière touche visitée" },
-        { "do": "up", "expect": { "focus": "search:field" } },
-        { "do": "down", "why": "du champ vers le clavier : la géométrie de tvOS (relevé)" }
+        {
+          "do": "wait:5",
+          "expect": {
+            "focus": "key:A",
+            "route": "Search"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "key:B"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "key:H"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "key:G"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "key:A"
+          }
+        },
+        {
+          "do": "left",
+          "why": "au-delà de la colonne : le rail (T4), relevé"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "key:A"
+          },
+          "why": "retour au contenu : la dernière touche visitée"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "search:field"
+          }
+        },
+        {
+          "do": "down",
+          "why": "du champ vers le clavier : la géométrie de tvOS (relevé)"
+        }
       ]
     },
     {
       "id": "recherche-clavier-systeme",
       "title": "Le champ ouvre le clavier système ; « Rechercher » y mène au PREMIER résultat une fois le clavier parti",
-      "rules": ["RE-4", "RE-5"],
+      "rules": [
+        "RE-4",
+        "RE-5"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off"],
-        "route": { "name": "Search" }
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/recherche"
+        ],
+        "route": {
+          "name": "Search"
+        }
       },
       "steps": [
-        { "do": "wait:2.5", "expect": { "focus": "key:A" } },
-        { "do": "up", "expect": { "focus": "search:field" } },
-        { "do": "select", "settleMs": 1500, "why": "le clavier plein écran de tvOS (et sa dictée)" },
-        { "do": "type:orgueil\n", "settleMs": 3500, "expect": { "focus": "top" }, "why": "la réponse à « orgueil » est là : le meilleur résultat" },
-        { "do": "down", "why": "la rangée suivante, au plus proche (relevé)" },
-        { "do": "left", "why": "retour dans la saisie : le champ, dernier élément visité de la colonne" },
-        { "do": "right", "why": "les résultats : le dernier visité, pas le premier" }
+        {
+          "do": "wait:5",
+          "expect": {
+            "focus": "key:A"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "search:field"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "why": "le clavier plein écran de tvOS (et sa dictée)"
+        },
+        {
+          "do": "type:orgueil\n",
+          "settleMs": 3500,
+          "expect": {
+            "focus": "top"
+          },
+          "why": "la réponse à « orgueil » est là : le meilleur résultat"
+        },
+        {
+          "do": "down",
+          "why": "la rangée suivante, au plus proche (relevé)"
+        },
+        {
+          "do": "left",
+          "why": "retour dans la saisie : le champ, dernier élément visité de la colonne"
+        },
+        {
+          "do": "right",
+          "why": "les résultats : le dernier visité, pas le premier"
+        }
       ]
     },
     {
       "id": "recherche-menu-ferme-clavier",
       "title": "Menu ferme le clavier système sans valider : le focus à la première touche",
-      "rules": ["RE-4", "RE-6"],
+      "rules": [
+        "RE-4",
+        "RE-6"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off"],
-        "route": { "name": "Search" }
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/recherche"
+        ],
+        "route": {
+          "name": "Search"
+        }
       },
       "steps": [
-        { "do": "wait:2.5", "expect": { "focus": "key:A" } },
-        { "do": "up", "expect": { "focus": "search:field" } },
-        { "do": "select", "settleMs": 1500 },
-        { "do": "type:dune", "settleMs": 800 },
-        { "do": "menu", "settleMs": 2000, "expect": { "focus": "key:A", "route": "Search" } }
+        {
+          "do": "wait:5",
+          "expect": {
+            "focus": "key:A"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "search:field"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:dune",
+          "settleMs": 800
+        },
+        {
+          "do": "menu",
+          "settleMs": 2000,
+          "expect": {
+            "focus": "key:A",
+            "route": "Search"
+          }
+        }
       ]
     },
     {
       "id": "recherche-validation-sans-resultat",
       "title": "« Rechercher » sans résultat : le focus reste du côté de la saisie",
-      "rules": ["RE-5"],
+      "rules": [
+        "RE-5"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off"],
-        "route": { "name": "Search" }
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/recherche"
+        ],
+        "route": {
+          "name": "Search"
+        }
       },
       "steps": [
-        { "do": "wait:2.5" },
-        { "do": "up", "expect": { "focus": "search:field" } },
-        { "do": "select", "settleMs": 1500 },
-        { "do": "type:zzqxw\n", "settleMs": 4000, "why": "aucune réponse : tvOS rend le focus à la barre (relevé)" }
+        {
+          "do": "wait:5"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "search:field"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:zzqxw\n",
+          "settleMs": 4000,
+          "why": "aucune réponse : tvOS rend le focus à la barre (relevé)"
+        }
       ]
     },
     {
       "id": "recherche-etagere-retour-barre",
       "title": "Un genre de la découverte ouvre Parcourir ; Menu y recule et la recherche rend sa BARRE",
-      "rules": ["RE-7", "RE-10", "PA-4"],
+      "rules": [
+        "RE-7",
+        "RE-10",
+        "PA-4"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off"],
-        "route": { "name": "Search" }
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/recherche"
+        ],
+        "route": {
+          "name": "Search"
+        }
       },
       "steps": [
-        { "do": "wait:2.5", "expect": { "focus": "key:A" } },
-        { "do": ["right", "right", "right", "right", "right", "right"], "why": "au-delà de la dernière touche : la colonne de droite (le repos : genres)" },
-        { "do": "select", "settleMs": 2500, "expect": { "route": "SearchBrowse" } },
-        { "do": "menu", "settleMs": 2500, "expect": { "route": "Search", "focus": "search:field" } }
+        {
+          "do": "wait:5",
+          "expect": {
+            "focus": "key:A"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "why": "au-delà de la dernière touche : la colonne de droite (le repos : genres)"
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "SearchBrowse"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 2500,
+          "expect": {
+            "route": "Search",
+            "focus": "search:field"
+          }
+        }
       ]
     },
     {
       "id": "recherche-rail-rechercher",
       "title": "« Rechercher » rechoisi dans le rail, depuis la recherche : la barre",
-      "rules": ["RE-8"],
+      "rules": [
+        "RE-8"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off"],
-        "route": { "name": "Search" }
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/recherche"
+        ],
+        "route": {
+          "name": "Search"
+        }
       },
       "steps": [
-        { "do": "wait:2.5", "expect": { "focus": "key:A" } },
-        { "do": "left", "why": "le rail s'ouvre sur « Rechercher »" },
-        { "do": "select", "settleMs": 1500, "expect": { "focus": "search:field", "route": "Search" } }
+        {
+          "do": "wait:5",
+          "expect": {
+            "focus": "key:A"
+          }
+        },
+        {
+          "do": "left",
+          "why": "le rail s'ouvre sur « Rechercher »"
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "search:field",
+            "route": "Search"
+          }
+        }
       ]
     },
     {
       "id": "recherche-resultat-fiche",
       "title": "OK sur un film trouvé : sa fiche s'EMPILE ; Menu ramène la recherche, le focus sur le résultat",
-      "rules": ["RE-9", "RE-10"],
+      "rules": [
+        "RE-9",
+        "RE-10"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off"],
-        "route": { "name": "Search" }
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/recherche"
+        ],
+        "route": {
+          "name": "Search"
+        }
       },
       "steps": [
-        { "do": "wait:2.5" },
-        { "do": "up", "expect": { "focus": "search:field" } },
-        { "do": "select", "settleMs": 1500 },
-        { "do": "type:orgueil\n", "settleMs": 3500, "expect": { "focus": "top" } },
-        { "do": "select", "settleMs": 2500, "expect": { "route": "MediaDetail" } },
-        { "do": "menu", "settleMs": 2000, "expect": { "route": "Search", "focus": "top" } }
+        {
+          "do": "wait:5"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "search:field"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:orgueil\n",
+          "settleMs": 3500,
+          "expect": {
+            "focus": "top"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "MediaDetail"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 2000,
+          "expect": {
+            "route": "Search",
+            "focus": "top"
+          }
+        }
       ]
     }
   ]

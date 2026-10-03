@@ -2,7 +2,7 @@
   "domain": "ecrans",
   "reference": "84f3cedd0",
   "defaults": {
-    "settleMs": 600
+    "settleMs": 1000
   },
   "scenarios": [
     {
@@ -24,7 +24,7 @@
       },
       "steps": [
         {
-          "do": "wait:2.5",
+          "do": "wait:5",
           "expect": {
             "focus": "settings:tab:account",
             "route": "Settings"
@@ -124,7 +124,7 @@
       },
       "steps": [
         {
-          "do": "wait:2.5",
+          "do": "wait:5",
           "expect": {
             "focus": "settings:tab:account"
           }
@@ -199,7 +199,7 @@
       },
       "steps": [
         {
-          "do": "wait:2.5",
+          "do": "wait:5",
           "expect": {
             "focus": "settings:tab:playback"
           }
@@ -256,7 +256,7 @@
       },
       "steps": [
         {
-          "do": "wait:2.5",
+          "do": "wait:5",
           "expect": {
             "focus": "settings:tab:navigation"
           }

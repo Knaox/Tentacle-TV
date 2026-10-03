@@ -2,16 +2,16 @@
   "domain": "ecrans",
   "reference": "84f3cedd0",
   "defaults": {
-    "settleMs": 700
+    "settleMs": 1000
   },
   "scenarios": [
     {
-      "id": "jumelage-code-du-relais",
-      "title": "Accueil du jumelage : entrée sur « Afficher le code » ; le code du relais donne l'entrée à la croix, seule action ; Menu recule d'une étape",
+      "id": "jumelage-accueil",
+      "title": "Accueil du jumelage : entrée sur « Afficher le code » ; les deux actions côte à côte, la langue dessous ; Menu n'est pas pris (l'app quitterait) — on ne l'appuie pas",
+      "why": "le code du relais (croix seule action) n'est pas joué : il interrogerait le VRAI relais de jumelage — règle JU-1 éprouvée par les tests de tv-core",
       "rules": [
         "JU-1",
-        "JU-2",
-        "JU-7"
+        "JU-3"
       ],
       "start": {
         "session": "none",
@@ -21,33 +21,29 @@
       },
       "steps": [
         {
-          "do": "wait:3",
+          "do": "wait:5",
           "expect": {
             "focus": "pairing:showCode",
             "route": "PairCode"
           }
         },
         {
-          "do": "select",
-          "settleMs": 1500,
+          "do": "right",
           "expect": {
-            "focus": "pairing:back",
-            "label": "Retour"
-          },
-          "why": "code en chargement ou actif : la croix est la seule chose à faire"
+            "focus": "pairing:manual"
+          }
         },
         {
           "do": "down",
-          "why": "relevé : la croix garde le focus s'il n'y a rien dessous"
+          "why": "la langue (relevé)"
         },
         {
-          "do": "menu",
-          "settleMs": 1200,
-          "expect": {
-            "focus": "pairing:showCode",
-            "route": "PairCode"
-          },
-          "why": "couche « page » : l'étape précédente"
+          "do": "up",
+          "why": "retour aux actions (relevé)"
+        },
+        {
+          "do": "left",
+          "why": "relevé"
         }
       ]
     },
@@ -69,7 +65,7 @@
       },
       "steps": [
         {
-          "do": "wait:3",
+          "do": "wait:5",
           "expect": {
             "focus": "pairing:showCode"
           }
@@ -180,7 +176,7 @@
       },
       "steps": [
         {
-          "do": "wait:3",
+          "do": "wait:5",
           "expect": {
             "focus": "pairing:showCode"
           }

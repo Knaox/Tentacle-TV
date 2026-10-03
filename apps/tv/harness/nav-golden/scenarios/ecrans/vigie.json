@@ -1,59 +1,181 @@
 {
   "domain": "ecrans",
   "reference": "84f3cedd0",
-  "defaults": { "settleMs": 700 },
+  "defaults": {
+    "settleMs": 1000
+  },
   "scenarios": [
     {
       "id": "vigie-onglets-grises",
       "title": "Série incomplète : DROITE au bout de la bande mène aux onglets grisés ; OK sur un « + » demande la saison sans bouger le focus ; une saison demandée ailleurs ne se redemande pas",
-      "rules": ["FI-9", "VI-2", "FI-5"],
+      "rules": [
+        "FI-9",
+        "VI-2",
+        "FI-5"
+      ],
       "start": {
-        "fixtures": ["base/demandes-on"],
-        "route": { "name": "MediaDetail", "params": { "itemId": "52665ab1c968caf9c32b3ef48f69b3f0" } }
+        "fixtures": [
+          "base/demandes-on"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "52665ab1c968caf9c32b3ef48f69b3f0"
+          }
+        }
       },
       "steps": [
-        { "do": "wait:3.5" },
-        { "do": "down", "expect": { "focus": "season:0" }, "why": "la saison affichée (la seule de la bibliothèque)" },
-        { "do": "right", "expect": { "focus": "season:1" }, "why": "le premier onglet grisé" },
-        { "do": "select", "settleMs": 2000, "expect": { "focus": "season:1", "writes": ["vigie:request"] }, "why": "demandée seule ; l'onglet passe « En attente », le focus reste" },
-        { "do": ["right", "right", "right"], "why": "jusqu'à la saison demandée par quelqu'un d'autre (relevé)" },
-        { "do": "select", "settleMs": 1500, "expect": { "writes": [] }, "why": "déjà demandée : un avis, aucune demande" },
-        { "do": "right", "why": "le bout de la bande retient le focus (relevé)" },
-        { "do": "menu", "settleMs": 1200, "expect": { "route": "Home" } }
+        {
+          "do": "wait:5"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "season:0"
+          },
+          "why": "la saison affichée (la seule de la bibliothèque)"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "season:1"
+          },
+          "why": "le premier onglet grisé"
+        },
+        {
+          "do": "select",
+          "settleMs": 2000,
+          "expect": {
+            "focus": "season:1",
+            "writes": [
+              "vigie:request"
+            ]
+          },
+          "why": "demandée seule ; l'onglet passe « En attente », le focus reste"
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right"
+          ],
+          "why": "jusqu'à la saison demandée par quelqu'un d'autre (relevé)"
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "writes": []
+          },
+          "why": "déjà demandée : un avis, aucune demande"
+        },
+        {
+          "do": "right",
+          "why": "le bout de la bande retient le focus (relevé)"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1200,
+          "expect": {
+            "route": "Home"
+          }
+        }
       ]
     },
     {
       "id": "vigie-saga-sans-vigie",
       "title": "Saga, garde Vigie FERMÉE : OK sur un volet absent ne demande rien (l'avis « pas disponible »), le focus ne bouge pas",
-      "rules": ["FI-10", "VI-1"],
+      "rules": [
+        "FI-10",
+        "VI-1"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off"],
-        "route": { "name": "MediaDetail", "params": { "itemId": "f461dd313e49d9bde1d226d22fe4ed08" } }
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          }
+        }
       },
       "steps": [
-        { "do": "wait:3" },
-        { "do": "holddown:2", "settleMs": 900, "why": "jusqu'à la rangée de la saga (relevé)" },
-        { "do": "right", "why": "un volet voisin (relevé : absent ou « Cette fiche »)" },
-        { "do": "select", "settleMs": 1500, "expect": { "writes": [], "route": "MediaDetail" }, "why": "jamais une demande ; un volet de la bibliothèque, lui, ouvrirait sa fiche (relevé)" }
+        {
+          "do": "wait:5"
+        },
+        {
+          "do": "holddown:2",
+          "settleMs": 900,
+          "why": "jusqu'à la rangée de la saga (relevé)"
+        },
+        {
+          "do": "right",
+          "why": "un volet voisin (relevé : absent ou « Cette fiche »)"
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "writes": [],
+            "route": "MediaDetail"
+          },
+          "why": "jamais une demande ; un volet de la bibliothèque, lui, ouvrirait sa fiche (relevé)"
+        }
       ]
     },
     {
       "id": "vigie-saga-demande",
       "title": "Saga, garde Vigie OUVERTE : OK sur un volet libre le demande en un geste ; sur un volet déjà demandé par le compte, l'avis seulement",
-      "rules": ["FI-10", "VI-1"],
+      "rules": [
+        "FI-10",
+        "VI-1"
+      ],
       "start": {
-        "fixtures": ["base/demandes-on"],
-        "route": { "name": "MediaDetail", "params": { "itemId": "f461dd313e49d9bde1d226d22fe4ed08" } }
+        "fixtures": [
+          "base/demandes-on"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
+          }
+        }
       },
       "steps": [
-        { "do": "wait:3.5" },
-        { "do": "holddown:2", "settleMs": 900, "why": "jusqu'à la rangée de la saga (relevé)" },
-        { "do": "left", "why": "relevé : le premier volet" },
-        { "do": "select", "settleMs": 2000, "why": "relevé : demande (vigie:request) ou avis selon l'état du volet" },
-        { "do": "right" },
-        { "do": "select", "settleMs": 2000, "why": "relevé" },
-        { "do": "right" },
-        { "do": "select", "settleMs": 2000, "why": "relevé" }
+        {
+          "do": "wait:5"
+        },
+        {
+          "do": "holddown:2",
+          "settleMs": 900,
+          "why": "jusqu'à la rangée de la saga (relevé)"
+        },
+        {
+          "do": "left",
+          "why": "relevé : le premier volet"
+        },
+        {
+          "do": "select",
+          "settleMs": 2000,
+          "why": "relevé : demande (vigie:request) ou avis selon l'état du volet"
+        },
+        {
+          "do": "right"
+        },
+        {
+          "do": "select",
+          "settleMs": 2000,
+          "why": "relevé"
+        },
+        {
+          "do": "right"
+        },
+        {
+          "do": "select",
+          "settleMs": 2000,
+          "why": "relevé"
+        }
       ]
     }
   ]
