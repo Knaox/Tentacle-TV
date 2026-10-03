@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import type { FocusStore } from "../focus/focusStore";
-import { useRemoteEvents, type RemoteDirection, type RemoteEvent } from "./remoteEvents";
+import type { FocusStore } from "./focusStore";
+import { useRemoteEvents, type RemoteDirection, type RemoteEvent } from "../../../redesignWiring/remote/remoteEvents";
 
 /**
  * « Au-delà du bord » : un geste vers une direction où le focus ne va nulle

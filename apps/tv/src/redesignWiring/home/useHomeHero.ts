@@ -8,7 +8,7 @@ import type { HeroModel } from "../../redesign/hero/HeroBanner";
 import { backdropUriOf } from "../cards/cardArtwork";
 import type { FocusStore } from "../focus/focusStore";
 import { heroModelOf } from "../hero/heroModel";
-import { useBeyondEdge } from "../remote/useBeyondEdge";
+import { useBeyondEdge } from "../../platform/tvos/focus/useBeyondEdge";
 import { HERO_MAX_ITEMS, useHeroArts } from "./useHeroArts";
 import { useHeroRotation } from "./useHeroRotation";
 
