@@ -174,6 +174,13 @@ essai » s'il passe alors ; un enregistrement instable est repris une fois. Les
 écritures d'UN pas se comparent sans leur ordre (deux requêtes parallèles
 arrivent dans un ordre qui varie) ; l'ordre entre les pas compte.
 
+**Attente du focus à l'entrée** : depuis `e4ff50fc0` (cherry-pick de
+« l'entrée d'un écran lent attend son focus jusqu'à 10 s »), le relevé
+d'entrée attend jusqu'à 10 s qu'un focus se pose. Une référence enregistrée
+AVANT, dont l'entrée disait « focus absent » (∅) parce que l'écran chargeait
+encore, peut diverger en `verify` sur ce seul champ : c'est ce changement du
+banc, pas l'app — réenregistrer ce scénario.
+
 **Un scénario instable** (`≈`) ne prouve rien : son relevé dépend du moment.
 Les causes vues : un écran qui charge encore (le focus se pose tard — donner
 `settleMs` au pas qui l'ouvre), une horloge de l'app (voile hors ligne après
@@ -297,11 +304,18 @@ au point près ; trois Retour à la racine quittent l'app (`app: background`)
 comme au simulateur. Le cinquième (`rail-03`) n'a pas été joué : l'agent est
 resté muet le temps d'un `activate` — un accroc du lien, d'où le renvoi
 automatique de cet ordre et la reprise d'un scénario en échec. Les appuis MAINTENUS dépendent
-du temps : sur l'appareil, `holddown:2` depuis « Accueil » descend de cinq
-entrées du rail (jusqu'à Films), `holdup:2` en remonte quatre, `holddown:3`
-dans la grille Séries va de `grid:0` à `grid:36` et `holdright:2` avance de
-cinq cartes ; un scénario qui maintient une touche ne fige pas la case
-atteinte s'il veut passer sur les deux. Le balayage et le glissé RÉELS du pavé
+du temps, et diffèrent d'un cran :
+
+| Geste maintenu | Simulateur | Apple TV |
+|---|---|---|
+| `holddown:2` depuis « Accueil », dans le rail | 4 entrées (Animés) | 5 entrées (Films) |
+| `holdup:2` dans le rail | 4 entrées | 4 entrées |
+| `holddown:3` dans une grille (6 colonnes) | 7 rangées (`grid:42`) | 6 rangées (`grid:36`) |
+| `holdright:2` dans la grille | 5 cartes | 5 cartes |
+
+Un scénario qui maintient une touche ne fige donc pas la case atteinte s'il
+veut passer sur les deux (le simulateur seul, lui, reste stable d'un passage à
+l'autre). Le balayage et le glissé RÉELS du pavé
 ne se rejouent pas sans une main sur la télécommande : `swipe:` et `pan:`
 n'éprouvent que le chemin JS, identique sur les deux.
 
