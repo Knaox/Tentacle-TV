@@ -442,14 +442,31 @@ Aucune copie temporaire : `useTVCardActions.tsx` et `cardSheetTarget.ts`
 `CardActionSheetTv` (webOS) gardent leur logique. Au portage, Android TV lira
 les mêmes règles (`cards/`, `panels/`) et n'écrira que son applicateur.
 
-## 5. Les scénarios de référence
+## 5. Les preuves : banc de traces et scénarios de référence
 
-Dans `apps/tv/harness/nav-golden/scenarios/panneaux-cartes/`, en données pures
-(le format du banc T2 les reprendra) : `scenarios.json`. Gestes : ceux de
-l'agent `harness/atv-remote` (`hold:1.2` pour l'appui maintenu). Attendus : la
-clé focalisée du port, le panneau ouvert ou fermé, les écritures vues par le
-faux backend. Enregistrés sur `84f3cedd0`, rejoués en `verify` après
-l'extraction.
+**Le banc de traces** (`apps/tv/harness/panels-trace/`, React sans DOM, sans
+simulateur) monte les vrais modules de 84f3cedd0 et de l'arbre courant sur les
+mêmes doublures et compare neuf unités : le verrou d'entrée, le focus du grand
+panneau (garde, verrous, cible des trois guides), la garde anti-clic fantôme,
+les pictos (96 combinaisons), l'échelle, le double appui du voile, les actions
+d'une carte, le cycle du grand panneau dans la portée du Retour, et la feuille
+des saisons (présentation, verrous, cocher, Lecture/Pause, Menu, filet).
+`node apps/tv/harness/panels-trace/bench.mjs verify` : identiques. Il a
+trouvé un écart de forme (les pictos du salon portaient `detail: null`),
+corrigé. Contre-épreuve faite (README du banc).
+
+**Les scénarios du simulateur** (`apps/tv/harness/nav-golden/scenarios/panneaux-cartes/`,
+format du banc T2, enregistrés sur 84f3cedd0, rejoués en `verify`) :
+
+| Fichier | Scénarios |
+|---|---|
+| `scenarios.json` | pc-01 à pc-15 : l'appui maintenu sur une affiche (Films), la vignette de Reprendre, une reco, un épisode, le héros, une cellule de grille ; l'entrée à 5, sur la note posée (jeu `film-note-7`), sur le premier picto (jeu `film-non-notable`) ; les guides, les butées, la croix, Menu ; une bascule et une note qui laissent le panneau ouvert ; « Plus d'infos » ; « Noter » de la fiche (Retour, OK qui note et ferme) ; l'appui court |
+| `voile.json` | pc-16 : le voile hors ligne — entrée, piège, double appui armé puis désarmé (jamais confirmé) |
+| `fixtures.mjs` | `film-note-7`, `film-non-notable` (« The Uprising », premier des derniers ajouts de Films) |
+
+Le panneau d'un titre absent et la feuille des saisons (Vigie) ne sont
+éprouvés qu'au banc de traces : le jeu de données du banc ne porte ni saga à
+volet absent ni recherche « À demander » stable.
 
 ## 6. Constats (relevés, NON corrigés)
 
@@ -457,7 +474,9 @@ l'extraction.
    fermeture ne part qu'à la décision de l'entrée (note sue, ou filet de
    1,2 s) — la `Modal` est alors PRÉSENTÉE, invisible (panneau jamais montré,
    opacité plancher), puis retirée au rendu suivant. La feuille des saisons,
-   elle, ferme tout de suite dans ce cas.
+   elle, ferme tout de suite dans ce cas. Confirmé par le banc de traces
+   (`actionSheet`, « Menu par la portée pendant l'attente » : Modal présentée
+   en sortie, puis `onClose`).
 2. **« Lire » qui disparaît sous le focus** (lu dans le code, à éprouver) :
    le bouton d'une SÉRIE est là pendant la résolution de son épisode
    (`useCardSheetPlay`) et disparaît si elle se révèle terminée. L'entrée étant
