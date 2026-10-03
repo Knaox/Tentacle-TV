@@ -648,14 +648,20 @@ chemin partagé reste tel quel tant qu'Android TV n'est pas porté.
    validation contourne en attendant le départ du clavier, pas Menu. Un premier relevé disait « l'app passe en
    arrière-plan » : c'était la recherche plantée par le faux backend de base
    (aucun champ `match` hors de la requête capturée — constat de T6), pas
-   l'app. Gardé tel quel ; à confirmer sur l'appareil.
+   l'app. **Confirmé sur l'Apple TV « Chambre »** (tvOS 26.6, 2026-10-03) :
+   même relevé, au point près. Gardé tel quel.
 5. **Le Retour du clavier SÉCURISÉ (mot de passe du jumelage) ne valide
    pas**, au simulateur, à la référence : « \n » tapé par l'agent XCUITest
    n'envoie rien et ne ferme pas le clavier, quand il valide les champs
    non sécurisés (serveur, identifiant). Le texte, lui, est bien saisi.
    Probablement une limite de la frappe synthétisée sur un champ sécurisé ;
-   la connexion se rejoue par « Se connecter » (JU-4 éprouvé ainsi). À
-   essayer à la main sur l'appareil : « Terminé » du clavier du mot de passe.
+   la connexion se rejoue par « Se connecter » (JU-4 éprouvé ainsi).
+   **Même chose sur l'Apple TV « Chambre »** (vers le faux backend du Mac) :
+   le Retour de l'agent ne valide pas le clavier sécurisé ; Menu le ferme
+   sans rien envoyer ; « Se connecter » envoie, le refus (401) rend le focus
+   au mot de passe vidé. Reste à essayer d'une VRAIE main : « Terminé » du
+   clavier du mot de passe — l'agent ne sait pas départager sa frappe
+   synthétisée et l'app.
 
 
 ---
@@ -668,6 +674,18 @@ fichiers, au format figé du banc, chacun citant les règles qu'il couvre
 enregistrées sur 84f3cedd0 (observation 2), deux passages identiques pour
 chacun. La couverture et les identifiants de l'instantané : `README.md` du
 dossier.
+
+Preuves de l'extraction (branche rebasée sur eb555c51a) :
+
+- **Simulateur** : `verify --slot 7 ecrans socle` — 62/62 identiques à la
+  référence au premier essai (41 écrans, 21 du socle transverse).
+- **Apple TV « Chambre »** (tvOS 26.6, app de test `navtest`, faux backend
+  du Mac), 2026-10-03 06:14-06:29 : recherche 7/7, jumelage (accueil) 1/1,
+  échantillon d'un ou deux scénarios par écran 10/10 — identiques aux
+  références du simulateur. Deux scénarios de jumelage n'y valent rien :
+  `localhost:3107`, tapé comme adresse du serveur, y désigne l'Apple TV
+  elle-même ; le chemin a été rejoué à la main vers l'IP du Mac (constat 5).
+  La dictée demande une voix : à essayer par l'utilisateur.
 
 Ce que l'enregistrement a appris, et que les scénarios respectent :
 
