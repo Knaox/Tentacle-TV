@@ -11,7 +11,7 @@ import {
   useRequestTitleSeasons,
 } from "@tentacle-tv/api-client";
 import { parseTitleKey, withMyTitle, type MyTitle, type TitleRequestOutcome, type TitleState } from "@tentacle-tv/shared";
-import { TV_TITLE_ORIGIN } from "@tentacle-tv/tv-core";
+import { MODAL_GAP_MS, TV_TITLE_ORIGIN, absentPressAfterState, absentPressFirst } from "@tentacle-tv/tv-core";
 import { showNotice } from "../overlays/transientNotice";
 import { AbsentSheetRedesign } from "./AbsentSheetRedesign";
 import { mineLabel, sayable } from "./absentStates";
@@ -67,8 +67,6 @@ export interface TitleRequests {
 }
 
 const fetcher = (url: string) => tentacleApiFetch(url);
-/** Entre le retrait d'une `Modal` et la présentation de la suivante. */
-const MODAL_GAP_MS = 320;
 
 export function useTitleRequests(): TitleRequests | null {
   const { t } = useTranslation();
@@ -117,10 +115,13 @@ export function useTitleRequests(): TitleRequests | null {
 
   const open = useCallback(async (title: AbsentTitle) => {
     const { gate: g, mine: m, t: tr, arrivals: arrived } = latest.current;
-    if (!g || busy.current.has(title.key)) return;
+    if (!g) return;
     const already = m?.find((x) => x.key === title.key);
-    if (already) return showNotice({ kind: "info", title: mineLabel(tr, already), text: tr("requests:followOnPhone") });
-    if (arrived.has(title.key)) return showNotice({ kind: "success", title: tr(ARRIVED_LABEL_KEY) });
+    // Ce que fait OK : la règle de tv-core (`titles/absentActions`).
+    const first = absentPressFirst({ busy: busy.current.has(title.key), mine: already !== undefined, arrived: arrived.has(title.key) });
+    if (first === "busy") return;
+    if (first === "noticeMine" && already) return showNotice({ kind: "info", title: mineLabel(tr, already), text: tr("requests:followOnPhone") });
+    if (first === "noticeArrived") return showNotice({ kind: "success", title: tr(ARRIVED_LABEL_KEY) });
     busy.current.add(title.key);
     try {
       const state = await qc.fetchQuery<TitleState | null>({
@@ -128,11 +129,16 @@ export function useTitleRequests(): TitleRequests | null {
         queryFn: () => loadTitleState(g.provider, title.key, g.lang, fetcher),
         staleTime: 60_000,
       });
-      const offer = state?.request;
-      if (offer?.mode === "direct") return answer(title, await requestTitle(title.key), null);
-      const series = parseTitleKey(title.key)?.mediaType === "tv";
-      if (offer?.mode === "open" && series && g.provider.seasonsPath !== null) return setSeasonsOf({ title });
-      if (state?.badge) return showNotice({ kind: "info", title: state.badge.label, text: tr("requests:followOnPhone") });
+      const mode = state?.request?.mode;
+      const press = absentPressAfterState({
+        offer: mode === "direct" || mode === "open" ? mode : null,
+        series: parseTitleKey(title.key)?.mediaType === "tv",
+        seasons: g.provider.seasonsPath !== null,
+        badge: !!state?.badge,
+      });
+      if (press === "request") return answer(title, await requestTitle(title.key), null);
+      if (press === "seasonsSheet") return setSeasonsOf({ title });
+      if (press === "noticeBadge" && state?.badge) return showNotice({ kind: "info", title: state.badge.label, text: tr("requests:followOnPhone") });
       showNotice({ kind: "info", title: tr("cards:notInLibraryNotice") });
     } catch {
       showNotice({ kind: "error", title: tr("cards:requestFailed") });

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
 import { useJellyfinClient, useMyTitles, useSeasons, useTitleGaps } from "@tentacle-tv/api-client";
 import { MY_TITLE_STATE_KEYS, seriesTitleKey, type MediaItem, type TitleKey } from "@tentacle-tv/shared";
-import { isAdvancing, seasonTitle } from "@tentacle-tv/tv-core";
+import { gapTabPress, isAdvancing, seasonTitle } from "@tentacle-tv/tv-core";
 import type { MissingSeasonTabModel } from "../../redesign/screens/detail/detailTypes";
 import { showNotice } from "../overlays/transientNotice";
 import { arrivalOf, type ArrivalReading } from "./arrivalModels";
@@ -84,7 +84,7 @@ export function useSeriesGapTabs(requests: TitleRequests | null, item: MediaItem
   const onRequestSeason = useCallback((number: number) => {
     const tab = latest.current?.find((season) => season.number === number);
     if (!tab || !requestSeasons || !series || !key) return;
-    if (!tab.requestable) {
+    if (gapTabPress(tab) === "noticeState") {
       showNotice({ kind: "info", title: tab.status || t("requests:statePending"), text: t("requests:followOnPhone") });
       return;
     }

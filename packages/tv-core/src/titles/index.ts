@@ -6,3 +6,4 @@ export * from "./seasonsSheet";
 export * from "./seasonsShortcut";
 export * from "./titlesGate";
 export * from "./tvOrigin";
+export * from "./absentActions";

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useMyTitles, useSeriesGaps } from "@tentacle-tv/api-client";
 import { seriesTitleKey, type MyTitle, type SearchMediaItem, type SearchResponse } from "@tentacle-tv/shared";
+import { seriesGapPress } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { absentCard } from "../cards/absentCards";
 import { showNotice } from "../overlays/transientNotice";
@@ -108,6 +109,7 @@ export function useSearchGaps(
  * sur la première à cocher ; plus rien à demander, sa demande en cours le dit.
  */
 export function openSearchGap(requests: TitleRequests, gap: SearchGap, t: TFunction): void {
-  if (gap.count > 0) return requests.openSeasons(gap.title, { seriesId: gap.seriesId });
-  if (gap.mine) showNotice({ kind: "info", title: mineLabel(t, gap.mine), text: t("requests:followOnPhone") });
+  const press = seriesGapPress({ missing: gap.count, mine: gap.mine !== undefined });
+  if (press === "seasonsSheet") return requests.openSeasons(gap.title, { seriesId: gap.seriesId });
+  if (press === "noticeMine" && gap.mine) showNotice({ kind: "info", title: mineLabel(t, gap.mine), text: t("requests:followOnPhone") });
 }
