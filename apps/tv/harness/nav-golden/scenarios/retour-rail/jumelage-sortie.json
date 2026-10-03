@@ -71,7 +71,8 @@
       ],
       "start": {
         "fixtures": [
-          "base/vigie-off"
+          "base/vigie-off",
+          "retour-rail/revocation-acceptee"
         ],
         "route": {
           "name": "Library",
@@ -113,9 +114,12 @@
             "stack": [
               "PairCode"
             ],
-            "focus": "pairing:showCode"
+            "focus": "pairing:showCode",
+            "writes": [
+              "POST /api/pair/self/revoke"
+            ]
           },
-          "why": "unpair : la pile est REMISE au jumelage (aucune page précédente)"
+          "why": "unpair : la pile est REMISE au jumelage (aucune page précédente) ; la révocation part aussitôt, acceptée (jeu revocation-acceptee : pas de nouvelle tentative)"
         },
         {
           "do": "menu",
@@ -148,29 +152,30 @@
         ],
         "route": {
           "name": "Home"
-        }
+        },
+        "keys": [
+          "wait:15"
+        ],
+        "focus": "offline:retry"
       },
       "steps": [
         {
-          "do": "wait:14",
-          "settleMs": 0,
-          "why": "le bandeau paraît après 12 s d'échecs"
-        },
-        {
           "do": "menu",
+          "settleMs": 1500,
           "expect": {
             "app": "background"
           },
-          "settleMs": 1500
+          "why": "R0.8 : le bandeau est hors des écrans — Menu quitte"
         },
         {
           "do": "activate",
+          "settleMs": 1500,
           "expect": {
             "app": "foreground"
-          },
-          "settleMs": 1500
+          }
         }
-      ]
+      ],
+      "why": "le départ attend le bandeau (il paraît après 12 s d'échecs)"
     }
   ]
 }

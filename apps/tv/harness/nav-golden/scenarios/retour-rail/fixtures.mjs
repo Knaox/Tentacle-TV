@@ -39,6 +39,10 @@ function browseRoute(data) {
 }
 
 export default {
+  "revocation-acceptee": {
+    description: "le serveur accepte la révocation d'un appareil déjumelé (POST /api/pair/self/revoke → 200) : aucune nouvelle tentative",
+    apply: (data) => data.route("POST", /^\/api\/pair\/self\/revoke$/, (req, res, { json }) => json(res, 200, { revoked: true })),
+  },
   filmographies: {
     description: "la page d'une personne, d'un genre ou d'un studio montre les douze premiers films du banc",
     apply: browseRoute,
