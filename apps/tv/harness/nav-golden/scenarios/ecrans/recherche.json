@@ -140,7 +140,7 @@
     },
     {
       "id": "recherche-menu-ferme-clavier",
-      "title": "Menu sur le clavier système ouvert, sans valider (relevé : RE-6 dit la fermeture du clavier et la première touche)",
+      "title": "Menu ferme le clavier système sans valider : le focus à la première touche",
       "rules": [
         "RE-4",
         "RE-6"
@@ -175,15 +175,21 @@
           "settleMs": 1500
         },
         {
-          "do": "type:dune",
-          "settleMs": 800
+          "do": "type:orgueil",
+          "settleMs": 800,
+          "why": "tapé sans valider : les résultats arrivent derrière le clavier"
         },
         {
           "do": "menu",
           "settleMs": 2000,
-          "why": "relevé — à la référence, au simulateur, l'app passe en arrière-plan (constat 4 du relevé) ; RE-6 dit : le clavier se ferme, le focus va à la première touche. À confirmer sur l'appareil"
+          "why": "le clavier se ferme sans valider : la première touche (RE-6)",
+          "expect": {
+            "focus": "key:A",
+            "route": "Search"
+          }
         }
-      ]
+      ],
+      "why": "« orgueil » : la seule requête dont le faux backend de base sert la forme RÉELLE (le champ `match` de chaque résultat) — sur une autre, la recherche de la référence plante (`'field' of undefined`) et le relevé ne prouverait rien"
     },
     {
       "id": "recherche-validation-sans-resultat",
