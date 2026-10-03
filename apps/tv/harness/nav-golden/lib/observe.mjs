@@ -7,6 +7,7 @@ import { httpJson } from "./processes.mjs";
 import { agentRun, tryEvaluate } from "./remote.mjs";
 
 const POLL_MS = 150;
+const NULL_FOCUS_QUIET_MS = 4000;
 
 /** Numéro courant du journal du faux backend. */
 export async function journalSeq(ctx) {
@@ -75,7 +76,9 @@ export async function settle(ctx, { since, minMs = 0, quietMs = 500, timeoutMs =
     const sig = raw ? signature(obs) : null;
     const now = Date.now();
     if (sig !== null && sig === lastSig) {
-      if (now - stableSince >= quietMs && now - start >= minMs) return { ...obs, settleMs: now - start };
+      // Aucun focus (écran qui charge encore) : on le confirme plus longtemps avant d'y croire.
+      const quiet = obs.focus === null ? Math.max(quietMs, NULL_FOCUS_QUIET_MS) : quietMs;
+      if (now - stableSince >= quiet && now - start >= minMs) return { ...obs, settleMs: now - start };
     } else {
       lastSig = sig;
       stableSince = now;

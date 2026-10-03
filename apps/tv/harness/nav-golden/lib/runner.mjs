@@ -37,9 +37,17 @@ export async function runScenario(ctx, session, suite, scenario) {
     if (!done) throw new BenchError(`start.route : navigation impossible vers ${start.route.name}`);
   }
   const seq0 = await journalSeq(ctx);
-  const approachExtra = start.keys?.length ? await play(ctx, start.keys) : 0;
+  // L'approche, geste par geste : chacun attend une app immobile (300 ms), pour
+  // qu'un appui ne parte jamais vers un écran qui n'est pas encore là.
+  let approachExtra = 0;
+  for (const gesture of start.keys ?? []) {
+    approachExtra = await perform(ctx, gesture);
+    await settle(ctx, { since: seq0, minMs: approachExtra, quietMs: 300, timeoutMs: 6000 });
+  }
   const startObs = start.route || start.keys?.length
-    ? await settle(ctx, { since: seq0, minMs: 600 + approachExtra, quietMs: 800, timeoutMs: 30_000 })
+    // Une page poussée ou atteinte par l'approche charge encore ses données : son focus
+    // d'entrée peut se poser tard — on le veut immobile 1,5 s avant d'y croire.
+    ? await settle(ctx, { since: seq0, minMs: 800 + approachExtra, quietMs: 1500, timeoutMs: 30_000 })
     : await settle(ctx, { since: seq0, quietMs: 600, timeoutMs: 15_000 });
   if (start.focus && startObs.focus !== start.focus) preconditions.push({ field: "start.focus", want: start.focus, got: startObs.focus });
   if (start.screen && startObs.route !== start.screen) preconditions.push({ field: "start.screen", want: start.screen, got: startObs.route });

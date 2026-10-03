@@ -80,7 +80,13 @@ export async function referenceCheckout(rev) {
 function ensureLink(target, at) {
   if (fs.lstatSync(at, { throwIfNoEntry: false })) return false;
   fs.mkdirSync(path.dirname(at), { recursive: true });
-  fs.symlinkSync(target, at);
+  try {
+    fs.symlinkSync(target, at);
+  } catch (error) {
+    // Une autre session l'a posé au même instant (checkout de référence partagé).
+    if (error.code === "EEXIST") return false;
+    throw error;
+  }
   return true;
 }
 
