@@ -9,7 +9,10 @@ Chacun cite dans `rules` les identifiants du relevé
 Les attentes de géométrie absentes (une carte « au centre le plus proche »)
 se relèvent à l'enregistrement, et se relisent : le `why` de l'étape dit ce
 que la valeur relevée doit être. Les jeux de données
-vivent dans `fixtures.mjs` (`focus/home-standard`, `focus/foryou-standard`) ; les
+vivent dans `fixtures.mjs` (`focus/home` : un filtre de plateformes sur la rangée
+« Pour vous » de l'accueil et « Synopsis du héros N » sur les cinq reprises du
+héros ; `focus/foryou` : le filtre sur la 1re étagère), par-dessus le jeu de
+base du banc (Reprendre ×12, À suivre ×12, Déjà vus ×16, Ma liste ×1) ; les
 `*.golden.json` ne s'écrivent jamais à la main : `record` les produit.
 
 Couverts par d'autres domaines : C1 `claimAfterRestore` (T4 : déplacement

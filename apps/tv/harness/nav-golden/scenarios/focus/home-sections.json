@@ -6,9 +6,9 @@
     {
       "id": "home-entry",
       "title": "Entrée de l'accueil sur Lire du héros ; le rail ouvert puis refermé rend le focus au contenu",
-      "why": "A1-A4, A6 : l'arrivée pose la préférence sur l'entrée, se clôt au premier focus de contenu ; contentKey() est ce que vise le pont du rail",
+      "why": "A1-A4, A6 : l'arrivée pose la préférence sur l'entrée et se clôt au premier focus de contenu ; contentKey() est ce que vise le pont du rail",
       "rules": ["A1", "A2", "A3", "A4", "A6", "H7", "W3"],
-      "start": { "fixtures": ["focus/home-standard"], "route": { "name": "Home" }, "focus": "hero:primary" },
+      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "focus": "hero:primary" },
       "steps": [
         { "do": "left", "expect": { "focus": "nav:Home" }, "why": "le pont du rail (T4) mène à l'entrée active" },
         { "do": "right", "expect": { "focus": "hero:primary" }, "why": "A4 : la dernière clé de contenu encore montée" },
@@ -20,25 +20,30 @@
     },
     {
       "id": "home-rows",
-      "title": "BAS / HAUT de section en section, au centre le plus proche",
-      "why": "R1-R6 : la section voisine, l'élément au centre le plus proche ; V : la page suit en un mouvement",
+      "title": "BAS / HAUT de section en section, au centre le plus proche, vignettes et affiches mêlées",
+      "why": "R1-R6 : la section voisine, l'élément au centre le plus proche (vignettes centrées à 366, 782, 1198… ; affiches à 296, 572, 848…) ; V : la page suit en un mouvement (cadre relevé)",
       "rules": ["R1", "R3", "R4", "R5", "R6", "V1", "V2", "V4", "V5", "V6", "W1", "H7"],
-      "start": { "fixtures": ["focus/home-standard"], "route": { "name": "Home" }, "focus": "hero:primary" },
+      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "focus": "hero:primary" },
       "steps": [
-        { "do": "down", "expect": { "focus": "resume:0" }, "why": "vignettes centrées à 366, 782, 1198 : la plus proche de Lire" },
-        { "do": "down", "why": "R6 : depuis 366, l'affiche centrée à 296 (index 0) de la rangée reco filtrée" },
-        { "do": "down", "why": "affiches alignées : l'index 0 de la rangée des films" },
+        { "do": "down", "expect": { "focus": "resume:0" }, "why": "la vignette la plus proche de Lire" },
+        { "do": "down", "expect": { "focus": "nextUp:0" }, "why": "vignettes alignées" },
+        { "do": "down", "expect": { "focus": "reco:forYou:0" }, "why": "R6 : depuis 366, l'affiche centrée à 296" },
+        { "do": "down", "expect": { "focus": "watched:0" }, "why": "R6 : depuis 296, la vignette centrée à 366" },
         { "do": "down", "expect": { "focus": "watchlist:0" } },
-        { "do": "up", "why": "R6 : 296 → l'affiche d'index 0" },
-        { "do": "up" },
+        { "do": "down", "expect": { "focus": "watchlist:0" }, "why": "R8 : rien au-delà, le focus reste" },
+        { "do": "up", "expect": { "focus": "watched:0" } },
+        { "do": "up", "expect": { "focus": "reco:forYou:0" } },
+        { "do": "up", "expect": { "focus": "nextUp:0" } },
         { "do": "up", "expect": { "focus": "resume:0" } },
         { "do": "up", "expect": { "focus": "hero:primary" }, "why": "V4 : le héros se montre page tout en haut" },
         { "do": ["right", "wait:0.4", "right"], "settleMs": 500, "expect": { "focus": "hero:list" } },
-        { "do": "down", "why": "R6 : la vignette au centre le plus proche du rond « Ma liste »" },
-        { "do": ["right", "wait:0.4", "right"], "settleMs": 500, "expect": { "focus": "resume:2" } },
-        { "do": "down", "why": "R6 : depuis 1198, l'affiche centrée à 1124 (index 3)" },
-        { "do": "up", "expect": { "focus": "resume:2" }, "why": "R6 : depuis 1124, la vignette centrée à 1198" },
-        { "do": "up", "expect": { "focus": "hero:list" }, "why": "R5/R6 : tous les boutons font face ; le plus proche de 1198 est le dernier" }
+        { "do": "down", "why": "R6 : la vignette de Reprendre au centre le plus proche du rond « Ma liste »" },
+        { "do": ["right", "wait:0.4", "right"], "settleMs": 600, "why": "deux vignettes plus loin ; la rangée défile" },
+        { "do": "down", "why": "R6 : la vignette d'À suivre au centre le plus proche, rangées défilées différemment" },
+        { "do": "down", "why": "R6 : l'affiche de la reco au centre le plus proche" },
+        { "do": "up", "why": "R6 : retour au plus proche, pas forcément d'où l'on vient" },
+        { "do": "up" },
+        { "do": "up", "why": "R5/R6 : le bouton du héros au centre le plus proche" }
       ]
     },
     {
@@ -46,30 +51,29 @@
       "title": "Au bout d'un carrousel, BAS atteint la rangée plus courte ; HAUT revient au plus proche",
       "why": "R3-R6, R8 : jamais « rien » quand quelque chose existe plus bas ; R11/W3 : DROITE au bout ne fait rien",
       "rules": ["R3", "R4", "R5", "R6", "R8", "R11", "W3"],
-      "start": { "fixtures": ["focus/home-standard"], "route": { "name": "Home" }, "keys": ["down", "wait:0.9", "down", "wait:0.9", "down", "wait:0.9"] },
+      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "keys": ["down", "wait:0.9", "down", "wait:0.9", "down", "wait:0.9", "down", "wait:0.9"], "focus": "watched:0" },
       "steps": [
-        { "do": ["right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right"], "why": "la dernière affiche de la rangée des films (12)" },
-        { "do": "right", "settleMs": 600, "why": "R11/W3 : aucun piège, aucune cible : le focus reste" },
-        { "do": "down", "expect": { "focus": "watchlist:0" }, "why": "R3-R6 : la seule carte de la rangée courte, même loin à gauche" },
-        { "do": "up", "why": "R6 : l'affiche de la rangée défilée dont le centre est le plus proche de 296" },
-        { "do": "down", "expect": { "focus": "watchlist:0" } },
-        { "do": "down", "why": "R6 : la rangée sous « Ma liste », index 0" }
+        { "do": ["right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right"], "expect": { "focus": "watched:15" }, "why": "la dernière vignette des 16 Déjà vus" },
+        { "do": "right", "settleMs": 600, "expect": { "focus": "watched:15" }, "why": "R11/W3 : aucun piège, aucune cible" },
+        { "do": "down", "expect": { "focus": "watchlist:0" }, "why": "R3-R6 : la seule carte de la rangée courte, loin à gauche" },
+        { "do": "up", "why": "R6 : la vignette de la rangée défilée dont le centre est le plus proche de 296" },
+        { "do": "down", "expect": { "focus": "watchlist:0" } }
       ]
     },
     {
       "id": "home-filter-chip",
       "title": "La pastille du filtre se rejoint par HAUT depuis la carte dessous, jamais depuis le bout de la rangée",
-      "why": "R2 : en remontant, seulement l'aplomb ; la pastille n'est jamais une étape obligée",
+      "why": "R2 : en remontant, seulement l'aplomb ; la pastille n'est jamais une étape obligée (filtre posé par le jeu focus/home)",
       "rules": ["R1", "R2", "W2"],
-      "start": { "fixtures": ["focus/home-standard"], "route": { "name": "Home" }, "keys": ["down", "wait:0.9", "down", "wait:0.9"] },
+      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "keys": ["down", "wait:0.9", "down", "wait:0.9", "down", "wait:0.9"], "focus": "reco:forYou:0" },
       "steps": [
-        { "do": "up", "expect": { "focus": "resume:0" }, "why": "R2 : la 1re affiche n'est pas sous la pastille (titre de rangée long) → la section du dessus" },
-        { "do": "down" },
-        { "do": ["right", "wait:0.4", "right"], "settleMs": 500, "why": "une affiche sous la pastille" },
-        { "do": "up", "expect": { "focus": "filter:remove" }, "why": "R2 : à l'aplomb dans la section → la pastille (jamais validée ici)" },
+        { "do": "up", "why": "R2 : la pastille si elle est à l'aplomb de la 1re affiche, sinon nextUp au plus proche" },
+        { "do": "down", "expect": { "focus": "reco:forYou:0" } },
+        { "do": ["right", "wait:0.4", "right"], "settleMs": 500, "expect": { "focus": "reco:forYou:2" } },
+        { "do": "up", "why": "R2 : la pastille si elle est à l'aplomb (à droite du titre de la rangée)" },
         { "do": "down", "why": "R1 : la ligne suivante de la section, au centre le plus proche" },
-        { "do": ["right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right"], "settleMs": 600, "why": "le bout de la rangée filtrée (8 affiches)" },
-        { "do": "up", "why": "R2 : depuis le bout, la rangée du dessus — JAMAIS la pastille" }
+        { "do": ["right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right"], "settleMs": 600, "why": "loin dans la rangée" },
+        { "do": "up", "why": "R2 : depuis loin dans la rangée, la rangée du dessus — JAMAIS la pastille" }
       ]
     },
     {
@@ -77,10 +81,10 @@
       "title": "Retour d'une fiche : le focus revient sur la carte d'où l'on est parti",
       "why": "A5 : au retour sur l'écran, claim(contentKey()) — jamais au premier passage",
       "rules": ["A4", "A5", "W4", "N1"],
-      "start": { "fixtures": ["focus/home-standard"], "route": { "name": "Home" }, "keys": ["down", "wait:0.9", "down", "wait:0.9", "down", "wait:0.9", "right", "wait:0.4", "right", "wait:0.4"] },
+      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "keys": ["down", "wait:0.9", "down", "wait:0.9", "down", "wait:0.9", "right", "wait:0.4", "right", "wait:0.4"], "focus": "reco:forYou:2" },
       "steps": [
         { "do": "select", "settleMs": 2500, "expect": { "route": "MediaDetail" }, "why": "W4 : OK sur une affiche ouvre la fiche" },
-        { "do": "menu", "settleMs": 2000, "expect": { "route": "Home" }, "why": "A5 : la carte quittée reprend le focus" }
+        { "do": "menu", "settleMs": 2000, "expect": { "route": "Home", "focus": "reco:forYou:2" }, "why": "A5 : la carte quittée reprend le focus, la page où elle était (cadre relevé)" }
       ]
     },
     {
@@ -88,10 +92,10 @@
       "title": "Flèche maintenue : la rafale descend jusqu'au bout et remonte au héros",
       "why": "V7-V9 : pendant une rafale tvOS défile vers nos cibles ; seul l'état final est comparé (la cadence de répétition varie)",
       "rules": ["V7", "V8", "V9", "R1", "R6"],
-      "start": { "fixtures": ["focus/home-standard"], "route": { "name": "Home" }, "focus": "hero:primary" },
+      "start": { "fixtures": ["focus/home"], "route": { "name": "Home" }, "focus": "hero:primary" },
       "steps": [
-        { "do": "holddown:7", "settleMs": 1500, "why": "la dernière rangée, carte au plus proche" },
-        { "do": "holdup:7", "settleMs": 1500, "why": "retour au héros" }
+        { "do": "holddown:7", "settleMs": 1500, "expect": { "focus": "watchlist:0" }, "why": "la dernière rangée" },
+        { "do": "holdup:7", "settleMs": 1500, "why": "retour au héros, page en haut" }
       ]
     }
   ]
