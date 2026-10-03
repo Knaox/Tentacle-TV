@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useGenres, useLibraries } from "@tentacle-tv/api-client";
+import { libraryEntryKey } from "@tentacle-tv/tv-core";
 import { hasPlatformFilter } from "../../hooks/libraryCatalogParams";
 import { useLibraryFilters } from "../../hooks/useLibraryFilters";
 import { railNavigate } from "../../navigation/railNavigate";
 import type { RootStackParamList } from "../../navigation/types";
+import { useLibraryGroups, useLibraryLoadReprise } from "../../platform/tvos/screens/library";
 import { LibraryView } from "../../redesign/screens/library/LibraryView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
-import { createEntryGuide } from "../focus/entryGuide";
-import { AutoFocusGuide } from "../focus/focusGuides";
 import { usePosterGrid } from "../grid/usePosterGrid";
-import { isNavKey } from "../nav/useRailState";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { gridCatalogParams } from "./gridCatalogParams";
@@ -27,8 +26,6 @@ type Params = RootStackParamList["Library"];
  *  tout le catalogue avant de dire « aucun titre ». */
 const PLATFORM_SCAN_BELOW = 18;
 
-const LOADING_ENTRY = "pill:status";
-const isEmptyKey = (key: string) => key.startsWith("empty:");
 const goHome = () => railNavigate("Home");
 
 /**
@@ -41,7 +38,8 @@ const goHome = () => railNavigate("Home");
  *
  * L'arrivée vise la première affiche ; pendant un premier chargement, la
  * première pastille tient le focus, et la première affiche le reprend à son
- * arrivée si personne n'a bougé entre-temps.
+ * arrivée si personne n'a bougé entre-temps. Décidé par tv-core
+ * (`focus/libraryFocus.ts`), posé par `platform/tvos/screens/library.ts`.
  */
 export function LibraryRedesign({ libraryId, libraryName }: Params) {
   const { t } = useTranslation();
@@ -74,18 +72,10 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
 
   const screen = useRedesignScreen({
     railKey: `Library_${libraryId}`,
-    entryKey: status ? "status:primary" : loading ? LOADING_ENTRY : items.length > 0 ? "grid:0" : noResults ? "empty:primary" : LOADING_ENTRY,
+    entryKey: libraryEntryKey({ status: status !== null, loading, items: items.length, noResults: noResults !== null }),
   });
   const { focus } = screen;
-  // Lié dès le premier rendu, avant que la vue ne monte son groupe.
-  const bound = useRef(false);
-  if (!bound.current) {
-    focus.bind("filters", { container: AutoFocusGuide });
-    // Le vide des filtres trop serrés : « bas » depuis n'importe quelle puce
-    // entre par son bouton, « Tout effacer », même loin sous la barre.
-    focus.bind("library:empty", { container: createEntryGuide(focus, { owns: isEmptyKey, fallback: () => "empty:primary" }) });
-    bound.current = true;
-  }
+  useLibraryGroups(focus);
 
   const span = useMemo(() => yearSpanOf(catalog.loaded), [catalog.loaded]);
   const context = useMemo(() => ({ genres, resultCount: catalog.total ?? items.length, span }), [genres, catalog.total, items.length, span]);
@@ -99,16 +89,7 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
     if (platforms && hasMore && !loadingMore && items.length < PLATFORM_SCAN_BELOW) loadMore();
   }, [platforms, hasMore, loadingMore, items.length, loadMore]);
 
-  // Premier chargement : la pastille de tête a tenu le focus ; les affiches
-  // arrivées, la première le reprend — si personne n'a bougé entre-temps.
-  const moved = useRef(false);
-  useEffect(() => focus.subscribe((key, focused) => {
-    if (focused && key !== LOADING_ENTRY && !isNavKey(key)) moved.current = true;
-  }), [focus]);
-  useEffect(() => {
-    if (loading || items.length === 0 || moved.current || focus.focusedKey() !== LOADING_ENTRY) return;
-    return focus.claim("grid:0");
-  }, [loading, items.length, focus]);
+  useLibraryLoadReprise(focus, { loading, items: items.length });
 
   const onEndReached = useCallback(() => loadMore(), [loadMore]);
 

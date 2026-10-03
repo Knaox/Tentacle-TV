@@ -8,8 +8,8 @@ import {
   libraryEntryKey,
   libraryFocusMoved,
   libraryPrefetchTarget,
-  sheetEntryKey,
-  sheetFocusKeys,
+  filterSheetEntryKey,
+  filterSheetFocusKeys,
   type FilterSheetShape,
 } from "./libraryFocus";
 
@@ -70,21 +70,21 @@ describe("barre de filtres", () => {
 
 describe("grandes listes", () => {
   it("entrent par ce qui est retenu, sinon le premier", () => {
-    expect(sheetEntryKey({ kind: "choice", options: [off, on, off] })).toBe("sheet:option:1");
-    expect(sheetEntryKey({ kind: "choice", options: [off, off] })).toBe("sheet:option:0");
-    expect(sheetEntryKey({ kind: "sort", criteria: [off, off, on], orders: [1, 2] })).toBe("sheet:option:2");
-    expect(sheetEntryKey({ kind: "rating", stops: [off, on] })).toBe("sheet:stop:1");
+    expect(filterSheetEntryKey({ kind: "choice", options: [off, on, off] })).toBe("sheet:option:1");
+    expect(filterSheetEntryKey({ kind: "choice", options: [off, off] })).toBe("sheet:option:0");
+    expect(filterSheetEntryKey({ kind: "sort", criteria: [off, off, on], orders: [1, 2] })).toBe("sheet:option:2");
+    expect(filterSheetEntryKey({ kind: "rating", stops: [off, on] })).toBe("sheet:stop:1");
   });
 
   it("les années : la décennie retenue, sinon la flèche « De »", () => {
-    expect(sheetEntryKey({ kind: "years", presets: [off, on] })).toBe("sheet:preset:1");
-    expect(sheetEntryKey({ kind: "years", presets: [off, off] })).toBe("sheet:from:prev");
+    expect(filterSheetEntryKey({ kind: "years", presets: [off, on] })).toBe("sheet:preset:1");
+    expect(filterSheetEntryKey({ kind: "years", presets: [off, off] })).toBe("sheet:from:prev");
   });
 
   it("toutes les clés focalisables, « Effacer » s'il existe, « Voir N titres » au bout", () => {
     const sort: FilterSheetShape = { kind: "sort", criteria: [on, off], orders: [1, 2], clearLabel: "Effacer" };
-    expect(sheetFocusKeys(sort)).toEqual(["sheet:option:0", "sheet:option:1", "sheet:order:0", "sheet:order:1", "sheet:clear", "sheet:apply"]);
-    expect(sheetFocusKeys({ kind: "years", presets: [off] })).toEqual([
+    expect(filterSheetFocusKeys(sort)).toEqual(["sheet:option:0", "sheet:option:1", "sheet:order:0", "sheet:order:1", "sheet:clear", "sheet:apply"]);
+    expect(filterSheetFocusKeys({ kind: "years", presets: [off] })).toEqual([
       "sheet:from:prev", "sheet:from:next", "sheet:to:prev", "sheet:to:next", "sheet:preset:0", "sheet:apply",
     ]);
   });

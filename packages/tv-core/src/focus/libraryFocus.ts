@@ -91,7 +91,7 @@ export const isSheetFooterKey = (key: string): boolean => key === SHEET_APPLY_KE
  * cochée, le critère de tri, la décennie, le palier —, sinon le premier ; un
  * intervalle d'années sur mesure : ses flèches.
  */
-export function sheetEntryKey(sheet: FilterSheetShape): string {
+export function filterSheetEntryKey(sheet: FilterSheetShape): string {
   const first = (index: number) => Math.max(0, index);
   switch (sheet.kind) {
     case "choice":
@@ -108,7 +108,7 @@ export function sheetEntryKey(sheet: FilterSheetShape): string {
 }
 
 /** Tous les éléments focalisables d'une liste (BI-6), dans leur ordre. */
-export function sheetFocusKeys(sheet: FilterSheetShape): string[] {
+export function filterSheetFocusKeys(sheet: FilterSheetShape): string[] {
   const keys: string[] = [];
   const add = (prefix: string, count: number) => {
     for (let index = 0; index < count; index++) keys.push(`${prefix}:${index}`);

@@ -1,63 +1,14 @@
 import { useCallback, useRef, useState } from "react";
 import type { TFunction } from "i18next";
+import { filterSheetEntryKey } from "@tentacle-tv/tv-core";
 import type { LibraryFilterState } from "../../hooks/libraryCatalogParams";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
+import { useFilterSheetFocus } from "../../platform/tvos/screens/library";
 import type { FilterSheetHandlers, FilterSheetModel, LibraryFilterKey } from "../../redesign/screens/library/libraryTypes";
 import { useBackLayer } from "../back/BackScope";
-import { createEntryGuide } from "../focus/entryGuide";
-import type { FocusStore } from "../focus/focusStore";
-import { useChoiceEntry } from "../settings/settingsFocus";
 import { applyOption, clearCriterion, selectRating, sheetOf, stepYear, type SheetContext } from "./libraryFilterSheets";
 
 type Update = (effect: (f: LibraryFilterState) => LibraryFilterState) => void;
-
-/** L'élément qui reçoit le focus à l'ouverture d'une liste : ce qui est
- *  retenu (option cochée, critère, décennie, palier), sinon le premier. */
-export function sheetEntryKey(sheet: FilterSheetModel): string {
-  const first = (index: number) => Math.max(0, index);
-  switch (sheet.kind) {
-    case "choice":
-      return `sheet:option:${first(sheet.options.findIndex((o) => o.selected))}`;
-    case "sort":
-      return `sheet:option:${first(sheet.criteria.findIndex((o) => o.selected))}`;
-    case "years": {
-      const preset = sheet.presets.findIndex((o) => o.selected);
-      // Un intervalle sur mesure : ses flèches.
-      return preset >= 0 ? `sheet:preset:${preset}` : "sheet:from:prev";
-    }
-    case "rating":
-      return `sheet:stop:${first(sheet.stops.findIndex((s) => s.selected))}`;
-  }
-}
-
-/** Tous les éléments focalisables d'une liste (en-têtes des vues des listes). */
-export function sheetFocusKeys(sheet: FilterSheetModel): string[] {
-  const keys: string[] = [];
-  const add = (prefix: string, count: number) => {
-    for (let index = 0; index < count; index++) keys.push(`${prefix}:${index}`);
-  };
-  switch (sheet.kind) {
-    case "choice":
-      add("sheet:option", sheet.options.length);
-      break;
-    case "sort":
-      add("sheet:option", sheet.criteria.length);
-      add("sheet:order", sheet.orders.length);
-      break;
-    case "years":
-      keys.push("sheet:from:prev", "sheet:from:next", "sheet:to:prev", "sheet:to:next");
-      add("sheet:preset", sheet.presets.length);
-      break;
-    case "rating":
-      add("sheet:stop", sheet.stops.length);
-      break;
-  }
-  if (sheet.clearLabel) keys.push("sheet:clear");
-  keys.push("sheet:apply");
-  return keys;
-}
-
-const NO_KEYS: string[] = [];
-const isFooterKey = (key: string) => key === "sheet:apply" || key === "sheet:clear";
 
 export interface LibrarySheets extends Required<FilterSheetHandlers> {
   /** La liste ouverte, mise en mots ; rien quand aucune ne l'est. */
@@ -87,33 +38,31 @@ export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, upda
   const latest = useRef({ t, filters, context });
   latest.current = { t, filters, context };
 
-  // Le pied de la liste, lié avant le premier rendu d'une liste.
-  useState(() => focus.bind("sheet:footer", { container: createEntryGuide(focus, { owns: isFooterKey, fallback: () => "sheet:apply" }) }));
-
   const sheet = open ? sheetOf(t, open.filter, filters, context) : null;
-  useChoiceEntry(focus, sheet ? sheetFocusKeys(sheet) : NO_KEYS, open?.entry ?? null);
+  // Le pied de la liste, son entrée verrouillée, la pastille rendue (applicateur tvOS).
+  const { returnToPill } = useFilterSheetFocus(focus, sheet, open?.entry ?? null);
 
   const openSheet = useCallback((key: LibraryFilterKey) => {
     const { t: tr, filters: f, context: ctx } = latest.current;
     const initial = sheetOf(tr, key, f, ctx);
-    if (initial) setOpen({ filter: key, entry: sheetEntryKey(initial) });
+    if (initial) setOpen({ filter: key, entry: filterSheetEntryKey(initial) });
   }, []);
 
   const openRef = useRef(open);
   openRef.current = open;
-  // La pastille à qui rendre le focus, une fois la liste effacée.
-  const closedPill = useRef<string | null>(null);
+  // Le critère dont la pastille reprend le focus, une fois la liste effacée.
+  const closedFilter = useRef<string | null>(null);
   const closeSheet = useCallback(() => {
     const current = openRef.current;
     if (!current) return;
     setOpen(null);
-    closedPill.current = `pill:${current.filter}`;
+    closedFilter.current = current.filter;
   }, []);
   const onSheetExited = useCallback(() => {
-    const pill = closedPill.current;
-    closedPill.current = null;
-    if (pill) focus.claim(pill);
-  }, [focus]);
+    const filter = closedFilter.current;
+    closedFilter.current = null;
+    if (filter) returnToPill(filter);
+  }, [returnToPill]);
   // Retour, liste ouverte : la refermer (la Modal le reçoit, `onSheetClose`).
   useBackLayer("menu", open !== null, closeSheet);
 
@@ -122,7 +71,7 @@ export function useLibrarySheets(t: TFunction, filters: LibraryFilterState, upda
     const { t: tr, filters: f, context: ctx } = latest.current;
     const cleared = sheetOf(tr, filter, clearCriterion(f, filter), ctx);
     update((current) => clearCriterion(current, filter));
-    if (cleared) setOpen((current) => (current ? { ...current, entry: sheetEntryKey(cleared) } : current));
+    if (cleared) setOpen((current) => (current ? { ...current, entry: filterSheetEntryKey(cleared) } : current));
   }, [update]);
   const onYearStep = useCallback(
     (bound: "from" | "to", delta: -1 | 1) => update((f) => stepYear(f, bound, delta, latest.current.context.span)),
