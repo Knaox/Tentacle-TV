@@ -15,6 +15,8 @@ interface Props {
   onAction: (key: ProblemActionKey) => void;
   /** Le geste en cours (« Réessayer » qui tourne) : son bouton attend, les autres aussi. */
   busy?: ProblemActionKey | null;
+  /** Faux sous la mascotte : elle dit déjà qu'il y a un souci. */
+  showIcon?: boolean;
 }
 
 /**
@@ -24,7 +26,7 @@ interface Props {
  * repliés. Deux tons : `player`, toujours sombre (sur l'image du titre), et
  * `page`, celui du thème.
  */
-export const ProblemPanel = memo(function ProblemPanel({ model, tone, align = "start", onAction, busy = null }: Props) {
+export const ProblemPanel = memo(function ProblemPanel({ model, tone, align = "start", onAction, busy = null, showIcon = true }: Props) {
   const text = useProblemText(model);
   const theme = useTheme();
   const player = tone === "player";
@@ -45,9 +47,11 @@ export const ProblemPanel = memo(function ProblemPanel({ model, tone, align = "s
         accessibilityLabel={text.announcement}
         style={[st.head, centered && st.centered]}
       >
-        <View style={[st.chip, { backgroundColor: chipBg }]}>
-          <Feather name={PROBLEM_ICONS[model.icon]} size={20} color={chipFg} />
-        </View>
+        {showIcon ? (
+          <View style={[st.chip, { backgroundColor: chipBg }]}>
+            <Feather name={PROBLEM_ICONS[model.icon]} size={20} color={chipFg} />
+          </View>
+        ) : null}
         <Text style={[st.title, { color: titleColor }, centered && st.textCenter]}>{text.title}</Text>
         <Text style={[st.reason, { color: reasonColor }, centered && st.textCenter]}>{text.reason}</Text>
         {text.hint ? <Text style={[st.hint, { color: hintColor }, centered && st.textCenter]}>{text.hint}</Text> : null}

@@ -12,6 +12,8 @@ import { motion, spacing, useGrid, useResponsive, useThemedStyles, type AppTheme
 import { CatalogEmpty, CatalogGridSkeleton } from "./CatalogGridStates";
 import { GridRowView, useGridRows } from "./GridRowView";
 import { gridRowKey, type GridRow } from "./gridRows";
+import { ProblemState } from "@/components/problems/ProblemState";
+import { usePageProblem } from "@/components/problems/usePageProblem";
 
 /** En hauteurs d'écran : au-delà, le bouton « revenir en haut » se montre. */
 const SCROLL_TOP_SCREENS = 1.5;
@@ -136,15 +138,22 @@ export const CatalogGrid = memo(function CatalogGrid({
   }, [catalog.isFetchingNextPage, styles]);
 
   // Pendant le premier chargement, la grille montre sa propre silhouette
-  // (même colonnes, même gouttière) ; ensuite, un état vide qui propose une
-  // sortie quand un filtre en est la cause.
+  // (même colonnes, même gouttière) ; une erreur se DIT (jamais « bibliothèque
+  // vide ») ; ensuite, un état vide qui propose une sortie quand un filtre en
+  // est la cause.
+  const failure = usePageProblem(catalog.data ? null : catalog.error, {
+    onRetry: () => void catalogRef.current.refetch(), availability: { canGoBack: false },
+  });
   const emptyComponent = useMemo(() => {
     if (empty !== undefined) return empty;
     if (catalog.isLoading) {
       return <CatalogGridSkeleton columns={numColumns} itemWidth={itemWidth} gutter={gutter} padding={padding} />;
     }
+    if (failure.model) {
+      return <ProblemState embedded model={failure.model} onAction={failure.onAction} busy={catalog.isRefetching ? "retry" : null} />;
+    }
     return <CatalogEmpty filtered={filtered} onReset={onReset} />;
-  }, [empty, catalog.isLoading, numColumns, itemWidth, gutter, padding, filtered, onReset]);
+  }, [empty, catalog.isLoading, catalog.isRefetching, failure, numColumns, itemWidth, gutter, padding, filtered, onReset]);
 
   return (
     <FadeIn delay={100} style={{ flex: 1 }}>

@@ -11,6 +11,8 @@ import { useMediaItem, useSimilarItems, useJellyfinClient, useFavorite, useToggl
 import { spacing, DETAIL_MAX_WIDTH, useResponsive, useTheme, withAlpha } from "../theme";
 import { GradientOverlay, IconButton } from "../components/ui";
 import { DetailSkeleton } from "../components/detail/DetailSkeleton";
+import { ProblemState } from "../components/problems/ProblemState";
+import { usePageProblem } from "../components/problems/usePageProblem";
 import { DetailHeader } from "../components/detail/DetailHeader";
 import { DetailTopBar } from "../components/detail/DetailTopBar";
 import { DetailBody } from "../components/detail/DetailBody";
@@ -43,7 +45,7 @@ export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const client = useJellyfinClient();
-  const { data: item, refetch, isRefetching } = useMediaItem(itemId);
+  const { data: item, error: itemError, refetch, isRefetching } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
   const { data: parentSeries } = useMediaItem(isEpisode ? item?.SeriesId : undefined);
   const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
@@ -70,8 +72,14 @@ export function MediaDetailScreen({ itemId, openSeasonId }: Props) {
   const closeViewer = useCallback(() => setViewerIndex(null), []);
 
   const anims = useMediaDetailAnimations(itemId, item, BACKDROP_H);
+  // La fiche n'a pas pu se lire : le dire (titre retiré, serveur muet, session…),
+  // jamais un squelette qui attend pour toujours.
+  const failure = usePageProblem(item ? null : itemError, { onRetry: onRefresh });
 
-  if (!item) return <DetailSkeleton top={insets.top} />;
+  if (!item) {
+    if (failure.model) return <ProblemState model={failure.model} onAction={failure.onAction} busy={isRefetching ? "retry" : null} />;
+    return <DetailSkeleton top={insets.top} />;
+  }
 
   const backdrop = client.getImageUrl(item.ParentBackdropItemId ?? item.Id, "Backdrop", { width: 1200, quality: 85 });
   const isSeries = item.Type === "Series";

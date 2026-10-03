@@ -16,6 +16,8 @@ import { CollectionControls } from "@/components/collection/CollectionControls";
 import { CollectionHero } from "@/components/collection/CollectionHero";
 import { QuickChip, QuickChipText } from "@/components/collection/QuickChip";
 import { FavoritesEmptyState } from "@/components/favorites/FavoritesEmptyState";
+import { ProblemState } from "@/components/problems/ProblemState";
+import { usePageProblem } from "@/components/problems/usePageProblem";
 import { FavoritesQuickRow } from "@/components/favorites/FavoritesQuickRow";
 import { FavoritesSectionHeader } from "@/components/favorites/FavoritesSectionHeader";
 import { FloatingBackButton } from "@/components/navigation/FloatingBackButton";
@@ -52,7 +54,9 @@ export function FavoritesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: windowH } = useWindowDimensions();
-  const { data: raw, isLoading, refetch, isRefetching } = useFavoritesAll();
+  const { data: raw, isLoading, error, refetch, isRefetching } = useFavoritesAll();
+  // Une erreur n'est pas une liste vide : le dire, et réessayer.
+  const failure = usePageProblem(raw ? null : error, { onRetry: () => void refetch(), availability: { canGoBack: false } });
   const batchRemove = useBatchRemoveFavorites();
   const filters = useCollectionFilters(raw);
   const assist = useSearchAssist(filters.input, filters.setInput);
@@ -208,7 +212,9 @@ export function FavoritesScreen() {
             showsVerticalScrollIndicator={false}
           >
             {hero}
-            {isLoading ? skeleton : <FavoritesEmptyState />}
+            {isLoading ? skeleton : failure.model
+              ? <ProblemState embedded model={failure.model} onAction={failure.onAction} busy={isRefetching ? "retry" : null} />
+              : <FavoritesEmptyState />}
           </ScrollView>
         ) : (
           <SectionList

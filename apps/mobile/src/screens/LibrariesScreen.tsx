@@ -11,6 +11,8 @@ import { LIBRARY_HERO_HEIGHT, collectionIcon } from "@/components/library/Librar
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
+import { ProblemState } from "@/components/problems/ProblemState";
+import { usePageProblem } from "@/components/problems/usePageProblem";
 import { FONT_FAMILY, RADIUS, spacing, typography, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /** La bibliothèque choisie survit au changement d'onglet (le temps de la session). */
@@ -31,7 +33,9 @@ export function LibrariesScreen() {
   const { t } = useTranslation("common");
   const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
-  const { data, isLoading } = useLibraries();
+  const { data, isLoading, error, refetch, isRefetching } = useLibraries();
+  // Racine d'onglet : pas de « Retour ».
+  const failure = usePageProblem(data ? null : error, { onRetry: () => void refetch(), availability: { canGoBack: false } });
   const [selectedId, setSelectedId] = useState<string | null>(lastLibraryId);
   const libraries = data ?? [];
   const current = libraries.find((lib) => lib.Id === selectedId) ?? libraries[0] ?? null;
@@ -42,6 +46,10 @@ export function LibrariesScreen() {
   }, []);
 
   if (isLoading) return <LibrariesSkeleton />;
+  // Une erreur n'est pas « aucune bibliothèque » : le dire, et réessayer.
+  if (!current && failure.model) {
+    return <ProblemState model={failure.model} onAction={failure.onAction} busy={isRefetching ? "retry" : null} />;
+  }
   if (!current) {
     return (
       <SubtleBackground ambient>

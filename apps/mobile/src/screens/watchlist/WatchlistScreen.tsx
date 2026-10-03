@@ -24,6 +24,8 @@ import { ResumeRail } from "@/components/watchlist/ResumeRail";
 import { WatchlistListRow } from "@/components/watchlist/WatchlistListRow";
 import { UndoBar, WatchlistEmptyState } from "@/components/watchlist/WatchlistFeedback";
 import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
+import { ProblemState } from "@/components/problems/ProblemState";
+import { usePageProblem } from "@/components/problems/usePageProblem";
 import { SearchAssistPane } from "@/components/search/SearchAssistPane";
 import { useSearchAssist } from "@/components/search/useSearchAssist";
 import { useMultiSelect } from "@/hooks/useMultiSelect";
@@ -50,7 +52,9 @@ export function WatchlistScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: windowH } = useWindowDimensions();
-  const { data: raw, isLoading, refetch, isRefetching } = useWatchlistAll();
+  const { data: raw, isLoading, error, refetch, isRefetching } = useWatchlistAll();
+  // Une erreur n'est pas une liste vide : le dire, et réessayer.
+  const failure = usePageProblem(raw ? null : error, { onRetry: () => void refetch(), availability: { canGoBack: false } });
   const batchRemove = useBatchRemoveWatchlist();
   const page = useWatchlistScreen(raw);
   const { filters, stage, visible: data } = page;
@@ -205,7 +209,9 @@ export function WatchlistScreen() {
             showsVerticalScrollIndicator={false}
           >
             {hero}
-            {isLoading ? skeleton : <WatchlistEmptyState />}
+            {isLoading ? skeleton : failure.model
+              ? <ProblemState embedded model={failure.model} onAction={failure.onAction} busy={isRefetching ? "retry" : null} />
+              : <WatchlistEmptyState />}
           </ScrollView>
         ) : (
           <FlatList

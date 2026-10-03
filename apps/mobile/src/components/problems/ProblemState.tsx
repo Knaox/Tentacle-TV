@@ -39,7 +39,7 @@ export const ProblemState = memo(function ProblemState({ model, onAction, busy =
       <View style={st.mascot} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         <CryingTentacle size={96} />
       </View>
-      <ProblemPanel model={model} tone="page" align="center" onAction={onAction} busy={busy} />
+      <ProblemPanel model={model} tone="page" align="center" onAction={onAction} busy={busy} showIcon={false} />
     </ScrollView>
   );
 });
