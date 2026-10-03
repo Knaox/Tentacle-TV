@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { spacing, useThemedStyles, type AppTheme } from "@/theme";
 import { RowHeader } from "@/components/RowHeader";
+import { useRailWindow } from "@/hooks/useRailWindow";
 import { RecoCard } from "./RecoCard";
 import { firstReasonText } from "./RecoReasonList";
 
@@ -29,6 +30,7 @@ interface Props {
 export const RecoRow = memo(function RecoRow({ title, items, accessory, showReasons, onSeeAll, canOpen, onItemPress }: Props) {
   const st = useThemedStyles(makeStyles);
   const { t } = useTranslation("reco");
+  const railWindow = useRailWindow();
   const renderItem = useCallback(
     ({ item }: { item: RecoRowItem }) => (
       <RecoCard
@@ -52,6 +54,7 @@ export const RecoRow = memo(function RecoRow({ title, items, accessory, showReas
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={st.list}
         decelerationRate="fast"
+        {...railWindow}
       />
     </View>
   );

@@ -4,6 +4,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { spacing, useThemedStyles, type AppTheme } from "@/theme";
 import { RowHeader } from "@/components/RowHeader";
 import { SeriesRatingScope } from "@/contexts/SeriesRatingContext";
+import { useRailWindow } from "@/hooks/useRailWindow";
 
 interface Props {
   title: string;
@@ -20,6 +21,7 @@ interface Props {
  */
 export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeAll }: Props) {
   const st = useThemedStyles(makeStyles);
+  const railWindow = useRailWindow();
   const renderFlatItem = useCallback(
     ({ item }: { item: MediaItem }) => <View>{renderItem(item)}</View>,
     [renderItem],
@@ -40,6 +42,7 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
           contentContainerStyle={st.list}
           decelerationRate="fast"
           scrollEventThrottle={16}
+          {...railWindow}
         />
       </SeriesRatingScope>
     </View>
