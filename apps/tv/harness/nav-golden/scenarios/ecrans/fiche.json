@@ -393,7 +393,7 @@
         "route": {
           "name": "MediaDetail",
           "params": {
-            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+            "itemId": "c04c7103cb08371950ca5c68a534e05d"
           }
         },
         "keys": [
@@ -402,41 +402,121 @@
       },
       "steps": [
         {
-          "do": "wait:1"
-        },
-        {
-          "do": "holddown:3",
-          "settleMs": 800,
-          "why": "jusqu'à la dernière rangée : les similaires"
-        },
-        {
-          "do": "select",
-          "settleMs": 2500,
+          "do": "wait:1",
           "expect": {
-            "route": "MediaDetail"
-          },
-          "why": "pile : Home, MediaDetail (remplacée)"
-        },
-        {
-          "do": "holddown:3",
-          "settleMs": 800
-        },
-        {
-          "do": "select",
-          "settleMs": 2500,
-          "expect": {
-            "route": "MediaDetail"
+            "focus": "detail:primary"
           }
         },
         {
+          "do": "down",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "extra:0"
+          },
+          "why": "pas de casting : la bande-annonce, puis les similaires"
+        },
+        {
+          "do": "down",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "similar:0"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "settleMs": 800
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "settleMs": 800
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right"
+          ],
+          "settleMs": 800,
+          "expect": {
+            "focus": "similar:11"
+          },
+          "why": "Avatar, le dernier similaire"
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "MediaDetail"
+          },
+          "why": "la fiche d'Avatar REMPLACE la précédente (pile : Home, MediaDetail)"
+        },
+        {
+          "do": "wait:5",
+          "expect": {
+            "focus": "detail:primary"
+          },
+          "why": "la fiche arrivée : son entrée"
+        },
+        {
+          "do": "down",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "cast:0"
+          }
+        },
+        {
+          "do": "down",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "extra:0"
+          }
+        },
+        {
+          "do": "down",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "saga:0"
+          }
+        },
+        {
+          "do": "down",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "similar:0"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 2500,
+          "expect": {
+            "route": "MediaDetail"
+          },
+          "why": "et la suivante remplace celle-ci"
+        },
+        {
+          "do": "wait:5",
+          "why": "la troisième fiche arrivée (relevé)"
+        },
+        {
           "do": "menu",
-          "settleMs": 1200,
+          "settleMs": 1500,
           "expect": {
             "route": "Home"
           },
-          "why": "un seul Retour"
+          "why": "un seul Retour : avant la PREMIÈRE fiche"
         }
-      ]
+      ],
+      "why": "« GTA VI : un large aperçu » → son douzième similaire, Avatar → le premier similaire d'Avatar : la seule chaîne de similaires de l'instantané. Appuis comptés, jamais maintenus : la case atteinte par un appui maintenu dépend de la vitesse"
     },
     {
       "id": "fiche-personne-remplace",
@@ -454,7 +534,7 @@
         "route": {
           "name": "MediaDetail",
           "params": {
-            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
           }
         },
         "keys": [
@@ -467,7 +547,7 @@
         },
         {
           "do": "down",
-          "why": "la rangée du casting, sous l'en-tête d'un film sans saga",
+          "why": "la rangée du casting, sous l'en-tête d'un film sans saga : Keira Knightley en tête",
           "settleMs": 1500
         },
         {
@@ -497,7 +577,8 @@
             "route": "Home"
           }
         }
-      ]
+      ],
+      "why": "« Orgueil et Préjugés » : sa première personne du casting, Keira Knightley, est l'une des quatre dont l'instantané a la filmographie (quatre titres) — celles des autres films seraient des pages vides"
     },
     {
       "id": "fiche-erreur",

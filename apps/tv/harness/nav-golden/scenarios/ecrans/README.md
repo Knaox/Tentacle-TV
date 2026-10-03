@@ -56,8 +56,10 @@ Identifiants de l'instantané employés :
 | Titre | Identifiant | Pourquoi |
 |---|---|---|
 | Avatar Aang, le dernier maître de l'air (film) | `8691fdd93af7c11da75013ecc6a67ac0` | bande-annonce, saga, similaires |
+| Grand Theft Auto VI : un large aperçu (film) | `c04c7103cb08371950ca5c68a534e05d` | la seule chaîne de similaires de l'instantané : son 12ᵉ similaire, Avatar, a les siens |
 | L'Attaque des titans : La dernière attaque (film) | `f461dd313e49d9bde1d226d22fe4ed08` | saga aux volets absents (Vigie) |
 | Les Évadés (film) | `fcfbd7a81518be2f40de85b0d1ccd46f` | bandes-annonces, casting, similaires, pas de saga |
+| Orgueil et Préjugés (film) | `e86346a08c2bb2900795777307b0a32d` | son casting a les seules filmographies de l'instantané (Keira Knightley en tête) |
 | Les Kassos (série, 8 saisons) | `29ee5c86d39a9e0dc425acfa34609fa1` | un épisode « À suivre » : l'ancre des épisodes |
 | Cauchemar en cuisine (série, 15 saisons) | `cb8aef1fd75cb53ac7aa4fe86fa25453` | sa saison 1, épisode 1 : `425337b52d897ae647dcba206585d35f` |
 | One Piece (série, 15 saisons) | `1e98cd83a1295aeb9336e87a46afe1d6` | longue bande de saisons |
