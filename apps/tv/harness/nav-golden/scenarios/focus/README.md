@@ -1,15 +1,16 @@
 # Scénarios de référence — focus, sections et rangées (T3)
 
-`scenarios.json` : les scénarios du domaine « focus », au format de T6 que
-reprend le banc nav-golden de T2 (`do` / `expect` / `settleMs` / `why`).
+`home-sections.json`, `home-hero.json`, `foryou.json` : les scénarios du
+domaine « focus », au format figé par T2 (`.claude/nav-lot/FORMAT-SCENARIOS.md`).
 Chacun cite dans `rules` les identifiants du relevé
 (`docs/tv-navigation/focus.md`). Ils s'enregistrent sur le SHA de référence
 `84f3cedd0`, puis doivent repasser à l'identique après l'extraction.
 
 Les attentes de géométrie absentes (une carte « au centre le plus proche »)
 se relèvent à l'enregistrement, et se relisent : le `why` de l'étape dit ce
-que la valeur relevée doit être. Les jeux de données (`fixtures` du JSON)
-vivent dans `fixtures.mjs`, à écrire au format du banc de T2.
+que la valeur relevée doit être. Les jeux de données
+vivent dans `fixtures.mjs` (`focus/home-standard`, `focus/foryou-standard`) ; les
+`*.golden.json` ne s'écrivent jamais à la main : `record` les produit.
 
 Couverts par d'autres domaines : C1 `claimAfterRestore` (T4 : déplacement
 annulé dans le rail ; T7 : réglages › navigation), G1 `createEntryGuide`

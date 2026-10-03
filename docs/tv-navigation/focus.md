@@ -431,22 +431,22 @@ anchorKey: episode, resetKey: seasonId }))`.
 
 ## Scénarios de référence
 
-Dans `apps/tv/harness/nav-golden/scenarios/focus/scenarios.json` (format de T6, repris par le banc de T2),
+Dans `apps/tv/harness/nav-golden/scenarios/focus/*.json` (format figé par T2),
 enregistrés sur `84f3cedd0`. Chacun liste les comportements qu'il couvre ;
 ce qu'un pavé ne sait pas montrer (glisser, pan) se lit au natif ou se joue
 sur l'Apple TV « Chambre ».
 
-| Scénario | Couvre |
+| Fichier · scénario | Couvre |
 |---|---|
-| `f-01` entrée de l'accueil, rail aller-retour | A1-A4, A6, H7, W3 |
-| `f-02` au-delà du bord du héros | X1-X4, H3, H4, H7, R11 |
-| `f-03` rotation du héros | H2, H4, H5 |
-| `f-04` BAS / HAUT entre rangées | R1, R3-R6, V1, V2, V4-V6, W1, H7 |
-| `f-05` bout d'un carrousel, rangée courte | R3-R6, R8, R11, W3 |
-| `f-06` pastille du filtre | R1, R2, W2 |
-| `f-07` retour d'une fiche | A4, A5, W4, N1 |
-| `f-08` rafale (flèche maintenue) | V7-V9, R1, R6 |
-| `f-09` « Pour vous » | A1, A3, A6, H6, R1, R2, R6, W1, W2, V2, V4 |
+| `home-sections` · `home-entry` (rail aller-retour) | A1-A4, A6, H7, W3 |
+| `home-sections` · `home-rows` (BAS / HAUT entre rangées) | R1, R3-R6, V1, V2, V4-V6, W1, H7 |
+| `home-sections` · `home-row-end` (bout d'un carrousel, rangée courte) | R3-R6, R8, R11, W3 |
+| `home-sections` · `home-filter-chip` (pastille du filtre) | R1, R2, W2 |
+| `home-sections` · `home-return` (retour d'une fiche) | A4, A5, W4, N1 |
+| `home-sections` · `home-burst` (flèche maintenue) | V7-V9, R1, R6 |
+| `home-hero` · `hero-beyond-edge` (au-delà du bord) | X1-X4, H3, H4, H7, R11 |
+| `home-hero` · `hero-rotation` (rotation, panneau) | H2, H4, H5 |
+| `foryou` · `foryou-entry-shelves` | A1, A3, A6, H6, R1, R2, R6, W1, W2, V2, V4 |
 
 Couverts ailleurs : C1 (T4, T7), G1 (T6, T7), K1 (le voile hors ligne, T6),
 E1-E3 (la fiche, T7). Format, jeux de données et relevés :

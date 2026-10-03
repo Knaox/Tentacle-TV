@@ -1,0 +1,37 @@
+{
+  "domain": "focus",
+  "reference": "84f3cedd0",
+  "defaults": { "settleMs": 600 },
+  "scenarios": [
+    {
+      "id": "hero-beyond-edge",
+      "title": "DROITE au-delà de « Ma liste » tourne le héros — sauf le geste qui y amène le focus",
+      "why": "X2 : le geste qui AMÈNE le focus au bord ne compte pas (moins de 400 ms) ; H3 : un geste, un titre, en boucle, le focus ne bouge pas",
+      "rules": ["X1", "X2", "X3", "X4", "H3", "H4", "H7", "R11"],
+      "start": { "fixtures": ["focus/home-standard"], "route": { "name": "Home" }, "focus": "hero:primary" },
+      "steps": [
+        { "do": "right", "settleMs": 300, "expect": { "focus": "hero:secondary" } },
+        { "do": "right", "settleMs": 100, "expect": { "focus": "hero:list" }, "why": "le titre affiché ne change pas (relevé par le texte)" },
+        { "do": ["wait:0.6", "right"], "settleMs": 1200, "expect": { "focus": "hero:list" }, "why": "H3 : le titre suivant" },
+        { "do": "right", "settleMs": 1200, "expect": { "focus": "hero:list" }, "why": "X3 : encore un titre" },
+        { "do": "right", "settleMs": 1200, "expect": { "focus": "hero:list" }, "why": "en boucle : de retour au premier" },
+        { "do": "left", "settleMs": 500, "expect": { "focus": "hero:secondary" } }
+      ]
+    },
+    {
+      "id": "hero-rotation",
+      "title": "Le héros tourne seul toutes les 8 s ; les gestes relancent l'attente ; le grand panneau la suspend",
+      "why": "H2 : 8 s après le dernier geste ou pas du focus ; rien tant que le panneau est ouvert",
+      "rules": ["H2", "H4", "H5"],
+      "start": { "fixtures": ["focus/home-standard"], "route": { "name": "Home" }, "focus": "hero:primary" },
+      "steps": [
+        { "do": "wait:9", "settleMs": 0, "why": "un titre de plus, focus inchangé" },
+        { "do": ["right", "wait:3", "left", "wait:3", "right", "wait:3", "left", "wait:3"], "settleMs": 0, "expect": { "focus": "hero:primary" }, "why": "12 s de gestes espacés de 3 s : aucun changement" },
+        { "do": "hold:1.2", "settleMs": 1000, "expect": { "panel": "open" }, "why": "H5 : le grand panneau du titre affiché (variante 16:9 : héros des reprises)" },
+        { "do": "wait:10", "settleMs": 0, "expect": { "panel": "open" }, "why": "panneau ouvert : la rotation attend" },
+        { "do": "menu", "settleMs": 1500, "expect": { "panel": "closed", "focus": "hero:primary" } },
+        { "do": "wait:9", "settleMs": 0, "why": "panneau fermé : un titre de plus après une attente entière" }
+      ]
+    }
+  ]
+}
