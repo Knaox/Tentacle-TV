@@ -27,7 +27,7 @@ import { useChoiceEntry } from "../../platform/tvos/panels/useChoiceEntry";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { FadingModal } from "../../redesign/motion/FadingModal";
 import { SeasonsSheet } from "../../redesign/screens/requests/SeasonsSheet";
-import { useBackLayer } from "../back/BackScope";
+import { useBackLayers } from "../back/BackScope";
 import { createEntryGuide } from "../focus/entryGuide";
 import { useFocusStore } from "../focus/focusStore";
 import type { AbsentTitle } from "./absentTitle";
@@ -111,8 +111,7 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
   }, [closed]);
   // Une couche « menu » de la pile du Retour : la Modal reçoit Menu elle-même
   // (`onRequestClose`), mais l'écran sait qu'un menu est ouvert.
-  const [back] = panelBackLayers("seasons", closing);
-  useBackLayer(back.kind, back.active, requestClose);
+  useBackLayers(panelBackLayers("seasons", closing), { close: requestClose });
 
   const focus = useFocusStore();
   // Le pied de la liste, lié avant le premier rendu de la vue.

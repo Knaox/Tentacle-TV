@@ -9,7 +9,7 @@ import { withMenuIntent } from "../../platform/tvos/input";
 import { useSheetFocus } from "../../platform/tvos/panels/sheetFocus";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView, type SheetActionKind, type SheetActionModel } from "../../redesign/screens/sheet/ActionSheetView";
-import { useBackLayer } from "../back/BackScope";
+import { useBackLayers } from "../back/BackScope";
 import { tvPosterUri } from "../cards/absentCards";
 import { useFocusStore } from "../focus/focusStore";
 import { absentOf } from "./absentStates";
@@ -82,8 +82,7 @@ export function AbsentSheetRedesign({ gate, title, onRequest, onClose }: Props) 
   const requestClose = useCallback(() => setClosing(true), []);
   // Une couche « menu » de la pile du Retour : la Modal reçoit Menu elle-même
   // (`onRequestClose`), mais l'écran sait qu'un menu est ouvert.
-  const [back] = panelBackLayers("absent", closing);
-  useBackLayer(back.kind, back.active, requestClose);
+  useBackLayers(panelBackLayers("absent", closing), { close: requestClose });
   const closed = useCallback(() => {
     onClose();
     after.current?.();

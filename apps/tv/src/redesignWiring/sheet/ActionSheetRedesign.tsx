@@ -7,7 +7,7 @@ import { withMenuIntent } from "../../platform/tvos/input";
 import { useSheetFocus } from "../../platform/tvos/panels/sheetFocus";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView } from "../../redesign/screens/sheet/ActionSheetView";
-import { useBackLayer } from "../back/BackScope";
+import { useBackLayers } from "../back/BackScope";
 import { useFocusStore } from "../focus/focusStore";
 import { useSheetModel } from "./useSheetModel";
 
@@ -17,9 +17,10 @@ import { useSheetModel } from "./useSheetModel";
  *
  * - La `Modal` PIÈGE le focus (contrôleur présenté sur tvOS) et reçoit le
  *   bouton Menu par `onRequestClose` ; Menu ferme — c'est la couche « menu »
- *   du Retour (`useBackLayer`), active dès l'appui maintenu : un Retour parti
- *   avant que le panneau ne paraisse l'annule aussi. À la fermeture, tvOS
- *   rend le focus à la carte d'où il vient.
+ *   du Retour (`useBackLayers`, tv-core `panelBackLayers`), active dès
+ *   l'appui maintenu : un Retour parti avant que le panneau ne paraisse
+ *   l'annule aussi. À la fermeture, tvOS rend le focus à la carte d'où il
+ *   vient.
  * - Le FOCUS — l'entrée, les guides des groupes, la garde anti-clic
  *   fantôme — est décidé par tv-core (`cards/sheetEntry`) et appliqué par
  *   `platform/tvos/panels/sheetFocus` (commun avec le banc). L'entrée se
@@ -70,8 +71,7 @@ function SheetBody({ target, mode, providerFilterActive, onClose }: Required<Pro
   // Fermer, c'est d'abord jouer la sortie ; `onClose` ne part qu'à sa fin.
   const [closing, setClosing] = useState(false);
   const requestClose = useCallback(() => setClosing(true), []);
-  const [back] = panelBackLayers("card", closing);
-  useBackLayer(back.kind, back.active, requestClose);
+  useBackLayers(panelBackLayers("card", closing), { close: requestClose });
   const model = useSheetModel({ target, mode, providerFilterActive, onClose: requestClose });
   const focus = useFocusStore();
   const closesOnRate = ratingClosesSheet(mode);
