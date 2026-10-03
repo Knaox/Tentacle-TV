@@ -93,6 +93,7 @@ export {
 } from "./schemes";
 
 export { darken, hexToRgb, mixHex, withAlpha, type Rgb } from "./utils/color";
+export { contrastRatio, minContrastOnGradient, relativeLuminance } from "./utils/contrast";
 
 // ─── Couche téléviseur ──────────────────────────────────────────────────────
 //
