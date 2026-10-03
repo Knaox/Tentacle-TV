@@ -75,12 +75,12 @@ s'arme puis se désarme), aucun identifiant réel tapé au jumelage.
 | Fichier | Écran | Règles |
 |---|---|---|
 | `fiche.json` | la fiche | FI-1 à FI-8, FI-10, FI-11, FI-13, PA-5 |
-| `recherche.json` | la recherche | RE-1 à RE-10 (RE-11 et RE-12 : tests unitaires) |
+| `recherche.json` | la recherche | RE-1 à RE-10 — RE-6 en relevé seulement (constat 4 du relevé : au simulateur, Menu sur le clavier ouvert quitte l'app) ; RE-11 et RE-12 : tests unitaires |
 | `parcourir.json` | Parcourir | PA-1 à PA-4 |
 | `bibliotheque.json` | bibliothèque et grilles | BI-1 à BI-3, BI-5 à BI-8, BI-10, BI-12, GR-1 à GR-4 (BI-4, BI-9, BI-11 : tests unitaires) |
 | `collections.json` | Ma liste et Favoris | CO-1, CO-2 |
-| `reglages.json` | réglages | RG-1 à RG-12 |
-| `jumelage.json` | jumelage | JU-1 à JU-7 |
+| `reglages.json` | réglages, atteints par le rail (GAUCHE, GAUCHE, OK) | RG-1 à RG-12 |
+| `jumelage.json` | jumelage | JU-1 à JU-7 — la connexion refusée part par « Se connecter » (constat 5 : le Retour tapé par l'agent ne valide pas le clavier sécurisé) |
 | `bande-annonce.json` | bande-annonce | BA-1, BA-3, BA-4 (BA-2, le chrome en lecture : test unitaire, aucune bande-annonce ne se lit au banc) |
 | `vigie.json` | « demander » hors feuilles | VI-1, VI-2, FI-9, FI-10 |
 
