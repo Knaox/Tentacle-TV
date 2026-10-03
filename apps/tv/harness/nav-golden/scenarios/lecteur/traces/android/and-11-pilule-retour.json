@@ -1,0 +1,78 @@
+{
+ "id": "and-11-pilule-retour",
+ "title": "Android : Retour sur une pilule automatique : sourdine + grâce",
+ "platform": "android",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "preventRemove",
+   "v": true
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": true,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:androidBack"
+  },
+  {
+   "t": 5650,
+   "ev": "dismissSegment"
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "bg": true
+   }
+  },
+  {
+   "t": 5950,
+   "ev": "in:androidBack"
+  },
+  {
+   "t": 6250,
+   "ev": "preventRemove",
+   "v": false
+  },
+  {
+   "t": 6250,
+   "ev": "state",
+   "v": {
+    "transient": false
+   }
+  },
+  {
+   "t": 6750,
+   "ev": "in:androidBack"
+  },
+  {
+   "t": 6750,
+   "ev": "leave"
+  }
+ ]
+}

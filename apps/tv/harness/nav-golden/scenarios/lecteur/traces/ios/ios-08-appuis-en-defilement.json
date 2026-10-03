@@ -1,0 +1,188 @@
+{
+ "id": "ios-08-appuis-en-defilement",
+ "title": "En défilement : appui ignoré 400 ms après le maintien, puis ±30/−10, décompte relancé",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "longRight/0"
+  },
+  {
+   "t": 5650,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true,
+    "scrub": true,
+    "target": 1205.5,
+    "transient": true
+   }
+  },
+  {
+   "t": 5900,
+   "ev": "state",
+   "v": {
+    "target": 1265.5
+   }
+  },
+  {
+   "t": 6150,
+   "ev": "state",
+   "v": {
+    "target": 1325.5
+   }
+  },
+  {
+   "t": 6400,
+   "ev": "state",
+   "v": {
+    "target": 1385.5
+   }
+  },
+  {
+   "t": 6650,
+   "ev": "state",
+   "v": {
+    "target": 1505.5,
+    "speed": ">>2x"
+   }
+  },
+  {
+   "t": 6750,
+   "ev": "in:key",
+   "v": "longRight/1"
+  },
+  {
+   "t": 6750,
+   "ev": "state",
+   "v": {
+    "speed": null,
+    "cd": 5
+   }
+  },
+  {
+   "t": 6950,
+   "ev": "in:key",
+   "v": "right/1"
+  },
+  {
+   "t": 7450,
+   "ev": "in:key",
+   "v": "right/1"
+  },
+  {
+   "t": 7450,
+   "ev": "state",
+   "v": {
+    "target": 1535.5
+   }
+  },
+  {
+   "t": 8050,
+   "ev": "in:key",
+   "v": "left/1"
+  },
+  {
+   "t": 8050,
+   "ev": "state",
+   "v": {
+    "target": 1525.5
+   }
+  },
+  {
+   "t": 9050,
+   "ev": "state",
+   "v": {
+    "cd": 4
+   }
+  },
+  {
+   "t": 10050,
+   "ev": "state",
+   "v": {
+    "cd": 3
+   }
+  },
+  {
+   "t": 11050,
+   "ev": "state",
+   "v": {
+    "cd": 2
+   }
+  },
+  {
+   "t": 12050,
+   "ev": "state",
+   "v": {
+    "cd": 1
+   }
+  },
+  {
+   "t": 13050,
+   "ev": "seek",
+   "v": 1525.5
+  },
+  {
+   "t": 13050,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 13050,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "cd": null,
+    "transient": false,
+    "bg": false
+   }
+  },
+  {
+   "t": 14100,
+   "ev": "pan:off"
+  }
+ ]
+}

@@ -1,0 +1,100 @@
+{
+ "id": "ios-16-bouton-avance-pause",
+ "title": "Bouton ⏩ en pause : aucune reprise seule ; Menu annule",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 50,
+   "ev": "in:key",
+   "v": "playPause/1"
+  },
+  {
+   "t": 50,
+   "ev": "playPause"
+  },
+  {
+   "t": 50,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true
+   }
+  },
+  {
+   "t": 550,
+   "ev": "in:button",
+   "v": "onScrub"
+  },
+  {
+   "t": 550,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 550,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "scrub": true,
+    "target": 1200,
+    "transient": true,
+    "bg": true
+   }
+  },
+  {
+   "t": 9550,
+   "ev": "in:menu"
+  },
+  {
+   "t": 9550,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 9550,
+   "ev": "state",
+   "v": {
+    "osd": true,
+    "osdShown": true,
+    "scrub": false,
+    "target": null,
+    "bg": false
+   }
+  },
+  {
+   "t": 10150,
+   "ev": "state",
+   "v": {
+    "transient": false
+   }
+  },
+  {
+   "t": 11100,
+   "ev": "pan:off"
+  }
+ ]
+}

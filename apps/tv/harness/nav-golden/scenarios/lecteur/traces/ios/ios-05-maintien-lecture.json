@@ -1,0 +1,202 @@
+{
+ "id": "ios-05-maintien-lecture",
+ "title": "Maintien → 2,5 s en lecture : défilement, paliers, décompte, reprise à la cible",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "longRight/0"
+  },
+  {
+   "t": 5650,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true,
+    "scrub": true,
+    "target": 1205.5,
+    "transient": true
+   }
+  },
+  {
+   "t": 5900,
+   "ev": "state",
+   "v": {
+    "target": 1265.5
+   }
+  },
+  {
+   "t": 6150,
+   "ev": "state",
+   "v": {
+    "target": 1325.5
+   }
+  },
+  {
+   "t": 6400,
+   "ev": "state",
+   "v": {
+    "target": 1385.5
+   }
+  },
+  {
+   "t": 6650,
+   "ev": "state",
+   "v": {
+    "target": 1505.5,
+    "speed": ">>2x"
+   }
+  },
+  {
+   "t": 6900,
+   "ev": "state",
+   "v": {
+    "target": 1625.5
+   }
+  },
+  {
+   "t": 7150,
+   "ev": "state",
+   "v": {
+    "target": 1745.5
+   }
+  },
+  {
+   "t": 7400,
+   "ev": "state",
+   "v": {
+    "target": 1865.5
+   }
+  },
+  {
+   "t": 7650,
+   "ev": "state",
+   "v": {
+    "target": 2105.5,
+    "speed": ">>4x"
+   }
+  },
+  {
+   "t": 7900,
+   "ev": "state",
+   "v": {
+    "target": 2345.5
+   }
+  },
+  {
+   "t": 8150,
+   "ev": "state",
+   "v": {
+    "target": 2585.5
+   }
+  },
+  {
+   "t": 8150,
+   "ev": "in:key",
+   "v": "longRight/1"
+  },
+  {
+   "t": 8150,
+   "ev": "state",
+   "v": {
+    "speed": null,
+    "cd": 5
+   }
+  },
+  {
+   "t": 9150,
+   "ev": "state",
+   "v": {
+    "cd": 4
+   }
+  },
+  {
+   "t": 10150,
+   "ev": "state",
+   "v": {
+    "cd": 3
+   }
+  },
+  {
+   "t": 11150,
+   "ev": "state",
+   "v": {
+    "cd": 2
+   }
+  },
+  {
+   "t": 12150,
+   "ev": "state",
+   "v": {
+    "cd": 1
+   }
+  },
+  {
+   "t": 13150,
+   "ev": "seek",
+   "v": 2585.5
+  },
+  {
+   "t": 13150,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 13150,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "cd": null,
+    "transient": false,
+    "bg": false
+   }
+  },
+  {
+   "t": 14700,
+   "ev": "pan:off"
+  }
+ ]
+}

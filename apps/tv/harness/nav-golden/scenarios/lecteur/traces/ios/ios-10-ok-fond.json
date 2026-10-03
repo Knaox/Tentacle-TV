@@ -1,0 +1,71 @@
+{
+ "id": "ios-10-ok-fond",
+ "title": "Habillage masqué : OK rallume ; habillage affiché : OK n'agit pas",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "select/1"
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "osd": true,
+    "osdShown": true,
+    "bg": false
+   }
+  },
+  {
+   "t": 7650,
+   "ev": "in:key",
+   "v": "select/1"
+  },
+  {
+   "t": 12650,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 13700,
+   "ev": "pan:off"
+  }
+ ]
+}

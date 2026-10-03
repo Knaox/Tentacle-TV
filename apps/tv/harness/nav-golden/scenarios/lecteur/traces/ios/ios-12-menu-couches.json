@@ -1,0 +1,59 @@
+{
+ "id": "ios-12-menu-couches",
+ "title": "Menu : habillage masqué (lecture continue), puis sortie",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 1050,
+   "ev": "in:menu"
+  },
+  {
+   "t": 1050,
+   "ev": "hideOverlay"
+  },
+  {
+   "t": 1050,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 2050,
+   "ev": "in:menu"
+  },
+  {
+   "t": 2050,
+   "ev": "leave"
+  },
+  {
+   "t": 2600,
+   "ev": "pan:off"
+  }
+ ]
+}

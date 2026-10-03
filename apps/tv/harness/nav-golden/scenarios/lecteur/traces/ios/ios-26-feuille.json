@@ -1,0 +1,69 @@
+{
+ "id": "ios-26-feuille",
+ "title": "Feuille Pistes : contrôles neutralisés, Menu ferme",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": false,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": true,
+    "episodes": false
+   }
+  },
+  {
+   "t": 550,
+   "ev": "in:key",
+   "v": "left/1"
+  },
+  {
+   "t": 850,
+   "ev": "in:key",
+   "v": "playPause/1"
+  },
+  {
+   "t": 1150,
+   "ev": "in:menu"
+  },
+  {
+   "t": 1150,
+   "ev": "closeSettings"
+  },
+  {
+   "t": 1150,
+   "ev": "pan:on"
+  },
+  {
+   "t": 1150,
+   "ev": "state",
+   "v": {
+    "osdShown": true,
+    "settings": false
+   }
+  },
+  {
+   "t": 6150,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 7200,
+   "ev": "pan:off"
+  }
+ ]
+}

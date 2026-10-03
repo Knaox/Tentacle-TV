@@ -1,0 +1,167 @@
+{
+ "id": "and-07-boutons",
+ "title": "Android : boutons +30 / ⏩ (jumeau select absorbé), OK valide, boutons avalés 400 ms",
+ "platform": "android",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 550,
+   "ev": "in:button",
+   "v": "onSeekForward"
+  },
+  {
+   "t": 550,
+   "ev": "seek",
+   "v": 1230.5
+  },
+  {
+   "t": 550,
+   "ev": "state",
+   "v": {
+    "flash": 30
+   }
+  },
+  {
+   "t": 1150,
+   "ev": "in:button",
+   "v": "onScrub"
+  },
+  {
+   "t": 1150,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 1150,
+   "ev": "preventRemove",
+   "v": true
+  },
+  {
+   "t": 1150,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "osd": false,
+    "osdShown": false,
+    "pinned": true,
+    "scrub": true,
+    "target": 1231,
+    "cd": 5,
+    "transient": true,
+    "bg": true
+   }
+  },
+  {
+   "t": 2050,
+   "ev": "state",
+   "v": {
+    "flash": null
+   }
+  },
+  {
+   "t": 2150,
+   "ev": "state",
+   "v": {
+    "cd": 4
+   }
+  },
+  {
+   "t": 2350,
+   "ev": "in:key",
+   "v": "right/0"
+  },
+  {
+   "t": 2350,
+   "ev": "state",
+   "v": {
+    "target": 1261,
+    "cd": 5
+   }
+  },
+  {
+   "t": 2440,
+   "ev": "in:key",
+   "v": "right/1"
+  },
+  {
+   "t": 2940,
+   "ev": "in:key",
+   "v": "select/0"
+  },
+  {
+   "t": 2940,
+   "ev": "seek",
+   "v": 1261
+  },
+  {
+   "t": 2940,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 2940,
+   "ev": "preventRemove",
+   "v": false
+  },
+  {
+   "t": 2940,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "cd": null,
+    "transient": false,
+    "bg": false
+   }
+  },
+  {
+   "t": 3030,
+   "ev": "in:key",
+   "v": "select/1"
+  },
+  {
+   "t": 3130,
+   "ev": "in:button",
+   "v": "onPlayPause"
+  },
+  {
+   "t": 3730,
+   "ev": "in:button",
+   "v": "onPlayPause"
+  },
+  {
+   "t": 3730,
+   "ev": "playPause"
+  },
+  {
+   "t": 3730,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true
+   }
+  }
+ ]
+}

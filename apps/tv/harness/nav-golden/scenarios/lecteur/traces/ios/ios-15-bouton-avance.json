@@ -1,0 +1,131 @@
+{
+ "id": "ios-15-bouton-avance",
+ "title": "Bouton ⏩ : défilement sans bouger, jumeau absorbé, OK valide, boutons avalés 400 ms",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 550,
+   "ev": "in:button",
+   "v": "onScrub"
+  },
+  {
+   "t": 550,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 550,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "osd": false,
+    "osdShown": false,
+    "pinned": true,
+    "scrub": true,
+    "target": 1200.5,
+    "cd": 5,
+    "transient": true,
+    "bg": true
+   }
+  },
+  {
+   "t": 1550,
+   "ev": "state",
+   "v": {
+    "cd": 4
+   }
+  },
+  {
+   "t": 2050,
+   "ev": "in:key",
+   "v": "right/1"
+  },
+  {
+   "t": 2050,
+   "ev": "state",
+   "v": {
+    "target": 1230.5,
+    "cd": 5
+   }
+  },
+  {
+   "t": 2550,
+   "ev": "in:key",
+   "v": "select/1"
+  },
+  {
+   "t": 2550,
+   "ev": "seek",
+   "v": 1230.5
+  },
+  {
+   "t": 2550,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 2550,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "cd": null,
+    "transient": false,
+    "bg": false
+   }
+  },
+  {
+   "t": 2650,
+   "ev": "in:button",
+   "v": "onPlayPause"
+  },
+  {
+   "t": 3250,
+   "ev": "in:button",
+   "v": "onPlayPause"
+  },
+  {
+   "t": 3250,
+   "ev": "playPause"
+  },
+  {
+   "t": 3250,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true
+   }
+  },
+  {
+   "t": 4300,
+   "ev": "pan:off"
+  }
+ ]
+}

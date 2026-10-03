@@ -1,0 +1,587 @@
+{
+ "id": "ios-30-ouverture",
+ "title": "Constat : écran d'ouverture, contrôles vivants (▶︎❙❙, glisser)",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": false,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 550,
+   "ev": "in:key",
+   "v": "playPause/1"
+  },
+  {
+   "t": 550,
+   "ev": "playPause"
+  },
+  {
+   "t": 550,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true
+   }
+  },
+  {
+   "t": 850,
+   "ev": "in:pan",
+   "v": {
+    "state": "Began",
+    "x": 0,
+    "y": 0,
+    "velocityX": 0,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 866,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 11,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 882,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 21,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 898,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 32,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 914,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 42,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 930,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 53,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 946,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 63,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 962,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 74,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 978,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 84,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 994,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 95,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1010,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 105,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1026,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 116,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1042,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 126,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1042,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 1042,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "scrub": true,
+    "target": 1200,
+    "transient": true
+   }
+  },
+  {
+   "t": 1058,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 137,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1074,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 147,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1090,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 158,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1091,
+   "ev": "state",
+   "v": {
+    "target": 1201.5
+   }
+  },
+  {
+   "t": 1106,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 168,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1122,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 179,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1138,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 189,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1139,
+   "ev": "state",
+   "v": {
+    "target": 1202.953
+   }
+  },
+  {
+   "t": 1154,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 200,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1170,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 211,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1186,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 221,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1187,
+   "ev": "state",
+   "v": {
+    "target": 1204.453
+   }
+  },
+  {
+   "t": 1202,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 232,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1218,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 242,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1234,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 253,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1235,
+   "ev": "state",
+   "v": {
+    "target": 1205.953
+   }
+  },
+  {
+   "t": 1250,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 263,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1266,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 274,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1282,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 284,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1283,
+   "ev": "state",
+   "v": {
+    "target": 1207.406
+   }
+  },
+  {
+   "t": 1298,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 295,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1314,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 305,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1330,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 316,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1331,
+   "ev": "state",
+   "v": {
+    "target": 1208.906
+   }
+  },
+  {
+   "t": 1346,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 326,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1362,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 337,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1378,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 347,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1379,
+   "ev": "state",
+   "v": {
+    "target": 1210.359
+   }
+  },
+  {
+   "t": 1394,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 358,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1410,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 368,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1426,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 379,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1427,
+   "ev": "state",
+   "v": {
+    "target": 1211.859
+   }
+  },
+  {
+   "t": 1442,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 389,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1458,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": 400,
+    "y": 0,
+    "velocityX": 666.6666666666667,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1458,
+   "ev": "in:pan",
+   "v": {
+    "state": "Ended",
+    "x": 400,
+    "y": 0,
+    "velocityX": 0,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 1458,
+   "ev": "state",
+   "v": {
+    "target": 1212.844
+   }
+  },
+  {
+   "t": 3458,
+   "ev": "in:menu"
+  },
+  {
+   "t": 3458,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 3458,
+   "ev": "state",
+   "v": {
+    "osd": true,
+    "scrub": false,
+    "target": null
+   }
+  },
+  {
+   "t": 4008,
+   "ev": "pan:off"
+  }
+ ]
+}

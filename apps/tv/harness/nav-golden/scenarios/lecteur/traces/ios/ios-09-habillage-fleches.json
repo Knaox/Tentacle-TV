@@ -1,0 +1,63 @@
+{
+ "id": "ios-09-habillage-fleches",
+ "title": "Habillage affiché : ←/→/↑/↓ ne sautent pas, relancent l'extinction",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 2050,
+   "ev": "in:key",
+   "v": "right/1"
+  },
+  {
+   "t": 5050,
+   "ev": "in:key",
+   "v": "left/1"
+  },
+  {
+   "t": 8050,
+   "ev": "in:key",
+   "v": "up/1"
+  },
+  {
+   "t": 12050,
+   "ev": "in:key",
+   "v": "down/1"
+  },
+  {
+   "t": 17050,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 18100,
+   "ev": "pan:off"
+  }
+ ]
+}

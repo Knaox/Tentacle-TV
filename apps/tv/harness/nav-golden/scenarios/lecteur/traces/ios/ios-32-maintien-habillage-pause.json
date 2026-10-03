@@ -1,0 +1,173 @@
+{
+ "id": "ios-32-maintien-habillage-pause",
+ "title": "Pause épinglée : maintien → ne défile pas (habillage affiché) ; Retour masque, puis maintien défile",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 50,
+   "ev": "in:key",
+   "v": "playPause/1"
+  },
+  {
+   "t": 50,
+   "ev": "playPause"
+  },
+  {
+   "t": 50,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true
+   }
+  },
+  {
+   "t": 550,
+   "ev": "in:key",
+   "v": "longRight/0"
+  },
+  {
+   "t": 1750,
+   "ev": "in:key",
+   "v": "longRight/1"
+  },
+  {
+   "t": 2250,
+   "ev": "in:menu"
+  },
+  {
+   "t": 2250,
+   "ev": "hideOverlay"
+  },
+  {
+   "t": 2250,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "pinned": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 2750,
+   "ev": "in:key",
+   "v": "longRight/0"
+  },
+  {
+   "t": 2750,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 2750,
+   "ev": "state",
+   "v": {
+    "scrub": true,
+    "target": 1200,
+    "transient": true
+   }
+  },
+  {
+   "t": 3000,
+   "ev": "state",
+   "v": {
+    "target": 1260
+   }
+  },
+  {
+   "t": 3250,
+   "ev": "state",
+   "v": {
+    "target": 1320
+   }
+  },
+  {
+   "t": 3500,
+   "ev": "state",
+   "v": {
+    "target": 1380
+   }
+  },
+  {
+   "t": 3750,
+   "ev": "state",
+   "v": {
+    "target": 1500,
+    "speed": ">>2x"
+   }
+  },
+  {
+   "t": 3950,
+   "ev": "in:key",
+   "v": "longRight/1"
+  },
+  {
+   "t": 3950,
+   "ev": "state",
+   "v": {
+    "speed": null
+   }
+  },
+  {
+   "t": 5950,
+   "ev": "in:menu"
+  },
+  {
+   "t": 5950,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 5950,
+   "ev": "state",
+   "v": {
+    "osd": true,
+    "osdShown": true,
+    "scrub": false,
+    "target": null,
+    "bg": false
+   }
+  },
+  {
+   "t": 5950,
+   "ev": "state",
+   "v": {
+    "pinned": true
+   }
+  },
+  {
+   "t": 6550,
+   "ev": "state",
+   "v": {
+    "transient": false
+   }
+  },
+  {
+   "t": 7500,
+   "ev": "pan:off"
+  }
+ ]
+}

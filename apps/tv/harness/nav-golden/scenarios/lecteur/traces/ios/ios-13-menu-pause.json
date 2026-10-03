@@ -1,0 +1,116 @@
+{
+ "id": "ios-13-menu-pause",
+ "title": "Pause : Menu désépingle, OK réépingle, Menu, Menu sort",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 50,
+   "ev": "in:key",
+   "v": "playPause/1"
+  },
+  {
+   "t": 50,
+   "ev": "playPause"
+  },
+  {
+   "t": 50,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true
+   }
+  },
+  {
+   "t": 550,
+   "ev": "in:menu"
+  },
+  {
+   "t": 550,
+   "ev": "hideOverlay"
+  },
+  {
+   "t": 550,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "pinned": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 1050,
+   "ev": "in:key",
+   "v": "select/1"
+  },
+  {
+   "t": 1050,
+   "ev": "state",
+   "v": {
+    "osd": true,
+    "osdShown": true,
+    "bg": false
+   }
+  },
+  {
+   "t": 1050,
+   "ev": "state",
+   "v": {
+    "pinned": true
+   }
+  },
+  {
+   "t": 1550,
+   "ev": "in:menu"
+  },
+  {
+   "t": 1550,
+   "ev": "hideOverlay"
+  },
+  {
+   "t": 1550,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "pinned": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 2050,
+   "ev": "in:menu"
+  },
+  {
+   "t": 2050,
+   "ev": "leave"
+  },
+  {
+   "t": 2600,
+   "ev": "pan:off"
+  }
+ ]
+}

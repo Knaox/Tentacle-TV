@@ -1,0 +1,84 @@
+{
+ "id": "ios-03-saut-gauche-puis-droite",
+ "title": "← −10 puis → : le badge repart de +30",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "left/1"
+  },
+  {
+   "t": 5650,
+   "ev": "seek",
+   "v": 1195.5
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "flash": -10
+   }
+  },
+  {
+   "t": 6350,
+   "ev": "in:key",
+   "v": "right/1"
+  },
+  {
+   "t": 6350,
+   "ev": "seek",
+   "v": 1226.25
+  },
+  {
+   "t": 6350,
+   "ev": "state",
+   "v": {
+    "flash": 30
+   }
+  },
+  {
+   "t": 7850,
+   "ev": "state",
+   "v": {
+    "flash": null
+   }
+  },
+  {
+   "t": 8400,
+   "ev": "pan:off"
+  }
+ ]
+}

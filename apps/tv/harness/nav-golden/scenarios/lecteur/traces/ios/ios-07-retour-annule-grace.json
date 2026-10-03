@@ -1,0 +1,172 @@
+{
+ "id": "ios-07-retour-annule-grace",
+ "title": "Défilement puis Menu : annulé, grâce 600 ms, puis habillage masqué, puis sortie",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "longLeft/0"
+  },
+  {
+   "t": 5650,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true,
+    "scrub": true,
+    "target": 1205.5,
+    "transient": true
+   }
+  },
+  {
+   "t": 5900,
+   "ev": "state",
+   "v": {
+    "target": 1145.5
+   }
+  },
+  {
+   "t": 6150,
+   "ev": "state",
+   "v": {
+    "target": 1085.5
+   }
+  },
+  {
+   "t": 6400,
+   "ev": "state",
+   "v": {
+    "target": 1025.5
+   }
+  },
+  {
+   "t": 6650,
+   "ev": "state",
+   "v": {
+    "target": 905.5,
+    "speed": "<<2x"
+   }
+  },
+  {
+   "t": 6850,
+   "ev": "in:key",
+   "v": "longLeft/1"
+  },
+  {
+   "t": 6850,
+   "ev": "state",
+   "v": {
+    "speed": null,
+    "cd": 5
+   }
+  },
+  {
+   "t": 7850,
+   "ev": "state",
+   "v": {
+    "cd": 4
+   }
+  },
+  {
+   "t": 7850,
+   "ev": "in:menu"
+  },
+  {
+   "t": 7850,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 7850,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "cd": null,
+    "bg": false
+   }
+  },
+  {
+   "t": 8150,
+   "ev": "in:menu"
+  },
+  {
+   "t": 8450,
+   "ev": "state",
+   "v": {
+    "transient": false
+   }
+  },
+  {
+   "t": 8650,
+   "ev": "in:menu"
+  },
+  {
+   "t": 8650,
+   "ev": "hideOverlay"
+  },
+  {
+   "t": 8650,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 8950,
+   "ev": "in:menu"
+  },
+  {
+   "t": 8950,
+   "ev": "leave"
+  },
+  {
+   "t": 9500,
+   "ev": "pan:off"
+  }
+ ]
+}

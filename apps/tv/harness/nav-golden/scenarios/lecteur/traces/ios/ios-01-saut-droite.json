@@ -1,0 +1,67 @@
+{
+ "id": "ios-01-saut-droite",
+ "title": "Habillage masqué : → saute de +30, badge, rien ne se rallume",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "right/1"
+  },
+  {
+   "t": 5650,
+   "ev": "seek",
+   "v": 1235.5
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "flash": 30
+   }
+  },
+  {
+   "t": 7150,
+   "ev": "state",
+   "v": {
+    "flash": null
+   }
+  },
+  {
+   "t": 7700,
+   "ev": "pan:off"
+  }
+ ]
+}

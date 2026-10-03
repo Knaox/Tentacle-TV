@@ -1,0 +1,107 @@
+{
+ "id": "ios-17-bouton-avance-decompte",
+ "title": "Bouton ⏩ en lecture sans geste : reprise à l'origine sans seek",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 550,
+   "ev": "in:button",
+   "v": "onScrub"
+  },
+  {
+   "t": 550,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 550,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "osd": false,
+    "osdShown": false,
+    "pinned": true,
+    "scrub": true,
+    "target": 1200.5,
+    "cd": 5,
+    "transient": true,
+    "bg": true
+   }
+  },
+  {
+   "t": 1550,
+   "ev": "state",
+   "v": {
+    "cd": 4
+   }
+  },
+  {
+   "t": 2550,
+   "ev": "state",
+   "v": {
+    "cd": 3
+   }
+  },
+  {
+   "t": 3550,
+   "ev": "state",
+   "v": {
+    "cd": 2
+   }
+  },
+  {
+   "t": 4550,
+   "ev": "state",
+   "v": {
+    "cd": 1
+   }
+  },
+  {
+   "t": 5550,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 5550,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "cd": null,
+    "transient": false,
+    "bg": false
+   }
+  },
+  {
+   "t": 7600,
+   "ev": "pan:off"
+  }
+ ]
+}

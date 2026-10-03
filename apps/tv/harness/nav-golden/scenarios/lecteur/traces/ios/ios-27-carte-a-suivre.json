@@ -1,0 +1,190 @@
+{
+ "id": "ios-27-carte-a-suivre",
+ "title": "Constat : carte « À suivre » hors panelOpen ; Menu la refuse + grâce",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": false,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": true,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "right/1"
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "osd": true
+   }
+  },
+  {
+   "t": 10650,
+   "ev": "state",
+   "v": {
+    "osd": false
+   }
+  },
+  {
+   "t": 11250,
+   "ev": "in:key",
+   "v": "longRight/0"
+  },
+  {
+   "t": 11250,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 11250,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true,
+    "scrub": true,
+    "target": 1211.25
+   }
+  },
+  {
+   "t": 11500,
+   "ev": "state",
+   "v": {
+    "target": 1271.25
+   }
+  },
+  {
+   "t": 11750,
+   "ev": "state",
+   "v": {
+    "target": 1331.25
+   }
+  },
+  {
+   "t": 12000,
+   "ev": "state",
+   "v": {
+    "target": 1391.25
+   }
+  },
+  {
+   "t": 12250,
+   "ev": "state",
+   "v": {
+    "target": 1511.25,
+    "speed": ">>2x"
+   }
+  },
+  {
+   "t": 12450,
+   "ev": "in:key",
+   "v": "longRight/1"
+  },
+  {
+   "t": 12450,
+   "ev": "state",
+   "v": {
+    "speed": null,
+    "cd": 5
+   }
+  },
+  {
+   "t": 12950,
+   "ev": "in:menu"
+  },
+  {
+   "t": 12950,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 12950,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "cd": null
+   }
+  },
+  {
+   "t": 13250,
+   "ev": "in:menu"
+  },
+  {
+   "t": 13650,
+   "ev": "in:menu"
+  },
+  {
+   "t": 13650,
+   "ev": "dismissAutoPlay"
+  },
+  {
+   "t": 13650,
+   "ev": "state",
+   "v": {
+    "osdShown": true
+   }
+  },
+  {
+   "t": 13950,
+   "ev": "in:menu"
+  },
+  {
+   "t": 14250,
+   "ev": "state",
+   "v": {
+    "transient": false
+   }
+  },
+  {
+   "t": 14650,
+   "ev": "in:menu"
+  },
+  {
+   "t": 14650,
+   "ev": "hideOverlay"
+  },
+  {
+   "t": 14650,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 15700,
+   "ev": "pan:off"
+  }
+ ]
+}

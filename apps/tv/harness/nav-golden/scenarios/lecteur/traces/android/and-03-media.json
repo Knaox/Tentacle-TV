@@ -1,0 +1,154 @@
+{
+ "id": "and-03-media",
+ "title": "Android : touches média ⏩ isolée puis répétée",
+ "platform": "android",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "fastForward/0"
+  },
+  {
+   "t": 5650,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 5650,
+   "ev": "preventRemove",
+   "v": true
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true,
+    "scrub": true,
+    "target": 1235.5,
+    "cd": 5,
+    "transient": true
+   }
+  },
+  {
+   "t": 5730,
+   "ev": "in:key",
+   "v": "fastForward/1"
+  },
+  {
+   "t": 6730,
+   "ev": "state",
+   "v": {
+    "cd": 4
+   }
+  },
+  {
+   "t": 6730,
+   "ev": "in:key",
+   "v": "fastForward/0"
+  },
+  {
+   "t": 6730,
+   "ev": "state",
+   "v": {
+    "target": 1265.5,
+    "cd": 5
+   }
+  },
+  {
+   "t": 6830,
+   "ev": "in:key",
+   "v": "fastForward/0"
+  },
+  {
+   "t": 6930,
+   "ev": "in:key",
+   "v": "fastForward/0"
+  },
+  {
+   "t": 7030,
+   "ev": "in:key",
+   "v": "fastForward/0"
+  },
+  {
+   "t": 7080,
+   "ev": "state",
+   "v": {
+    "target": 1325.5
+   }
+  },
+  {
+   "t": 7110,
+   "ev": "in:key",
+   "v": "fastForward/1"
+  },
+  {
+   "t": 7510,
+   "ev": "in:key",
+   "v": "select/0"
+  },
+  {
+   "t": 7510,
+   "ev": "seek",
+   "v": 1325.5
+  },
+  {
+   "t": 7510,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 7510,
+   "ev": "preventRemove",
+   "v": false
+  },
+  {
+   "t": 7510,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "cd": null,
+    "transient": false,
+    "bg": false
+   }
+  },
+  {
+   "t": 7590,
+   "ev": "in:key",
+   "v": "select/1"
+  }
+ ]
+}

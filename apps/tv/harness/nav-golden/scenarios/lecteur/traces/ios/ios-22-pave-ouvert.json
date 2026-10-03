@@ -1,0 +1,526 @@
+{
+ "id": "ios-22-pave-ouvert",
+ "title": "Défilement ouvert : le doigt reprend dès 12 pt, tient le décompte",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "longRight/0"
+  },
+  {
+   "t": 5650,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true,
+    "scrub": true,
+    "target": 1205.5,
+    "transient": true
+   }
+  },
+  {
+   "t": 5900,
+   "ev": "state",
+   "v": {
+    "target": 1265.5
+   }
+  },
+  {
+   "t": 6150,
+   "ev": "state",
+   "v": {
+    "target": 1325.5
+   }
+  },
+  {
+   "t": 6400,
+   "ev": "state",
+   "v": {
+    "target": 1385.5
+   }
+  },
+  {
+   "t": 6650,
+   "ev": "state",
+   "v": {
+    "target": 1505.5,
+    "speed": ">>2x"
+   }
+  },
+  {
+   "t": 6750,
+   "ev": "in:key",
+   "v": "longRight/1"
+  },
+  {
+   "t": 6750,
+   "ev": "state",
+   "v": {
+    "speed": null,
+    "cd": 5
+   }
+  },
+  {
+   "t": 7750,
+   "ev": "state",
+   "v": {
+    "cd": 4
+   }
+  },
+  {
+   "t": 8250,
+   "ev": "in:pan",
+   "v": {
+    "state": "Began",
+    "x": 0,
+    "y": 0,
+    "velocityX": 0,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8250,
+   "ev": "state",
+   "v": {
+    "cd": null
+   }
+  },
+  {
+   "t": 8266,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -2,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8282,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -5,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8298,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -7,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8314,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -10,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8330,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -12,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8346,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -14,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8362,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -17,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8378,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -19,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8379,
+   "ev": "state",
+   "v": {
+    "target": 1505.172
+   }
+  },
+  {
+   "t": 8394,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -22,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8410,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -24,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8426,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -26,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8427,
+   "ev": "state",
+   "v": {
+    "target": 1504.844
+   }
+  },
+  {
+   "t": 8442,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -29,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8458,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -31,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8474,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -34,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8475,
+   "ev": "state",
+   "v": {
+    "target": 1504.469
+   }
+  },
+  {
+   "t": 8490,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -36,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8506,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -38,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8522,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -41,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8523,
+   "ev": "state",
+   "v": {
+    "target": 1504.141
+   }
+  },
+  {
+   "t": 8538,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -43,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8554,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -46,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8570,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -48,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8571,
+   "ev": "state",
+   "v": {
+    "target": 1503.813
+   }
+  },
+  {
+   "t": 8586,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -50,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8602,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -53,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8618,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -55,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8619,
+   "ev": "state",
+   "v": {
+    "target": 1503.484
+   }
+  },
+  {
+   "t": 8634,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -58,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8650,
+   "ev": "in:pan",
+   "v": {
+    "state": "Changed",
+    "x": -60,
+    "y": 0,
+    "velocityX": -150,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 8667,
+   "ev": "state",
+   "v": {
+    "target": 1503.25
+   }
+  },
+  {
+   "t": 9100,
+   "ev": "state",
+   "v": {
+    "cd": 5
+   }
+  },
+  {
+   "t": 10100,
+   "ev": "state",
+   "v": {
+    "cd": 4
+   }
+  },
+  {
+   "t": 10650,
+   "ev": "in:pan",
+   "v": {
+    "state": "Ended",
+    "x": -60,
+    "y": 0,
+    "velocityX": 0,
+    "velocityY": 0
+   }
+  },
+  {
+   "t": 11100,
+   "ev": "state",
+   "v": {
+    "cd": 3
+   }
+  },
+  {
+   "t": 12100,
+   "ev": "state",
+   "v": {
+    "cd": 2
+   }
+  },
+  {
+   "t": 13100,
+   "ev": "state",
+   "v": {
+    "cd": 1
+   }
+  },
+  {
+   "t": 14100,
+   "ev": "seek",
+   "v": 1503.25
+  },
+  {
+   "t": 14100,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 14100,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "cd": null,
+    "transient": false,
+    "bg": false
+   }
+  },
+  {
+   "t": 17700,
+   "ev": "pan:off"
+  }
+ ]
+}

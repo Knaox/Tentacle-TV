@@ -1,0 +1,135 @@
+{
+ "id": "ios-33-select-pendant-maintien",
+ "title": "OK pendant un maintien (défilement) : valide et coupe le tic",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "pan:on"
+  },
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": false,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 5000,
+   "ev": "state",
+   "v": {
+    "osd": false,
+    "osdShown": false,
+    "bg": true
+   }
+  },
+  {
+   "t": 5650,
+   "ev": "in:key",
+   "v": "longRight/0"
+  },
+  {
+   "t": 5650,
+   "ev": "scrubPause",
+   "v": true
+  },
+  {
+   "t": 5650,
+   "ev": "state",
+   "v": {
+    "paused": true,
+    "pinned": true,
+    "scrub": true,
+    "target": 1205.5,
+    "transient": true
+   }
+  },
+  {
+   "t": 5900,
+   "ev": "state",
+   "v": {
+    "target": 1265.5
+   }
+  },
+  {
+   "t": 6150,
+   "ev": "state",
+   "v": {
+    "target": 1325.5
+   }
+  },
+  {
+   "t": 6400,
+   "ev": "state",
+   "v": {
+    "target": 1385.5
+   }
+  },
+  {
+   "t": 6650,
+   "ev": "state",
+   "v": {
+    "target": 1505.5,
+    "speed": ">>2x"
+   }
+  },
+  {
+   "t": 6900,
+   "ev": "state",
+   "v": {
+    "target": 1625.5
+   }
+  },
+  {
+   "t": 6950,
+   "ev": "in:key",
+   "v": "select/1"
+  },
+  {
+   "t": 6950,
+   "ev": "seek",
+   "v": 1625.5
+  },
+  {
+   "t": 6950,
+   "ev": "scrubPause",
+   "v": false
+  },
+  {
+   "t": 6950,
+   "ev": "state",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": true,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "transient": false,
+    "bg": false
+   }
+  },
+  {
+   "t": 7350,
+   "ev": "in:key",
+   "v": "longRight/1"
+  },
+  {
+   "t": 9400,
+   "ev": "pan:off"
+  }
+ ]
+}

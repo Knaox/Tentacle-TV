@@ -1,0 +1,70 @@
+{
+ "id": "ios-28-fin",
+ "title": "Affiche de fin : contrôles neutralisés ; Menu la refuse (sortie, sans grâce)",
+ "platform": "ios",
+ "trace": [
+  {
+   "t": 0,
+   "ev": "init",
+   "v": {
+    "paused": false,
+    "osd": true,
+    "osdShown": false,
+    "pinned": false,
+    "scrub": false,
+    "target": null,
+    "speed": null,
+    "cd": null,
+    "flash": null,
+    "transient": true,
+    "bg": false,
+    "settings": false,
+    "episodes": false
+   }
+  },
+  {
+   "t": 550,
+   "ev": "in:key",
+   "v": "right/1"
+  },
+  {
+   "t": 850,
+   "ev": "in:key",
+   "v": "playPause/1"
+  },
+  {
+   "t": 1150,
+   "ev": "in:key",
+   "v": "longLeft/0"
+  },
+  {
+   "t": 2350,
+   "ev": "in:key",
+   "v": "longLeft/1"
+  },
+  {
+   "t": 2650,
+   "ev": "in:menu"
+  },
+  {
+   "t": 2650,
+   "ev": "dismissAutoPlay"
+  },
+  {
+   "t": 2650,
+   "ev": "pan:on"
+  },
+  {
+   "t": 2650,
+   "ev": "state",
+   "v": {
+    "osdShown": true,
+    "transient": false
+   }
+  },
+  {
+   "t": 3700,
+   "ev": "pan:off"
+  }
+ ]
+}
