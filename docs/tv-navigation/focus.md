@@ -408,26 +408,28 @@ surimpressions, jumelage) continuent de les appeler.
 
 ## API publiée — l'entrée d'une section (pour T7)
 
-Brouillon, figé à la phase B (noms et chemin selon le contrat de T1) :
+Livrée (figée) :
 
 ```ts
 // @tentacle-tv/tv-core — focus/sectionEntry.ts
 export interface FirstVisitEntryState { readonly armed: boolean }
 export const FIRST_VISIT_ARMED: FirstVisitEntryState; // { armed: true }
+export const FIRST_VISIT_DONE: FirstVisitEntryState;  // { armed: false }, valeur unique
 /** Un focus posé : désarme si la clé est de la section. */
-export function firstVisitAfterFocus(state: FirstVisitEntryState, focusedKey: string, owns: (key: string) => boolean): FirstVisitEntryState;
+export function firstVisitAfterFocus(state, focusedKey: string, owns: (key: string) => boolean): FirstVisitEntryState;
 /** L'entrée à déclarer : l'ancre tant que c'est armé, sinon aucune (le plus proche). */
-export function firstVisitEntry(state: FirstVisitEntryState, anchorKey: string | null): string | null;
+export function firstVisitEntry(state, anchorKey: string | null): string | null;
 
-// apps/tv — l'adaptateur
-useSectionEntry(focus, sectionKey, entryKey | null);                 // inchangé
-useFirstVisitEntry(focus, { owns, anchorKey, resetKey }): string | null; // nouveau
+// apps/tv/src/platform/tvos/focus/sectionEntry.ts — l'applicateur
+useSectionEntry(focus, sectionKey, entryKey | null);                       // inchangé
+useFirstVisitEntry(focus, { owns, anchorKey, resetKey }): string | null;   // nouveau
 ```
 
 La fiche s'écrit alors (T7) : `useSectionEntry(focus, "detail:seasons",
 season)` ; `useSectionEntry(focus, "detail:episodes",
 useFirstVisitEntry(focus, { owns: (k) => k.startsWith("episode:"),
-anchorKey: episode, resetKey: seasonId }))`.
+anchorKey: episode, resetKey: seasonId }))` — les mêmes rendus qu'avant :
+réarmer une entrée déjà armée, ou désarmer deux fois, ne redessine rien.
 
 ## Scénarios de référence
 

@@ -27,6 +27,9 @@ export interface FirstVisitEntryState {
 
 /** Armée : à l'arrivée, et à chaque réarmement. */
 export const FIRST_VISIT_ARMED: FirstVisitEntryState = Object.freeze({ armed: true });
+/** Désarmée : la section a eu le focus. Une valeur unique — un état React qui
+ *  la reçoit deux fois ne se redessine pas deux fois. */
+export const FIRST_VISIT_DONE: FirstVisitEntryState = Object.freeze({ armed: false });
 
 /** Un focus posé dans l'écran : désarme si la clé est de la section. */
 export function firstVisitAfterFocus(
@@ -34,7 +37,7 @@ export function firstVisitAfterFocus(
   focusedKey: string,
   owns: (key: string) => boolean,
 ): FirstVisitEntryState {
-  return state.armed && owns(focusedKey) ? { armed: false } : state;
+  return state.armed && owns(focusedKey) ? FIRST_VISIT_DONE : state;
 }
 
 /** L'entrée à déclarer : l'ancre tant que c'est armé, sinon aucune (le plus proche). */

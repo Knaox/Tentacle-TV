@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FIRST_VISIT_ARMED, firstVisitAfterFocus, firstVisitEntry } from "./sectionEntry";
+import { FIRST_VISIT_ARMED, FIRST_VISIT_DONE, firstVisitAfterFocus, firstVisitEntry } from "./sectionEntry";
 
 const episodes = (key: string) => key.startsWith("episode:");
 
@@ -11,7 +11,7 @@ describe("sectionEntry — l'entrée « première visite » d'une section", () =
 
   it("le premier focus d'une clé de la section la désarme : plus d'entrée (le plus proche)", () => {
     const after = firstVisitAfterFocus(FIRST_VISIT_ARMED, "episode:2", episodes);
-    expect(after.armed).toBe(false);
+    expect(after).toBe(FIRST_VISIT_DONE);
     expect(firstVisitEntry(after, "episode:4")).toBeNull();
   });
 
