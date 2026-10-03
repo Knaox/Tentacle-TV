@@ -17,10 +17,10 @@ export interface SheetRowsInput extends SheetActionsInput {
  * mêmes pictos.
  */
 export function sheetRows(input: SheetRowsInput, t: Translate): SheetActionModel[] {
-  return sheetActionEntries(input).map((entry) => ({
-    kind: entry.kind,
-    label: t(entry.labelKey),
-    active: entry.active,
-    detail: entry.kind === "play" ? input.playDetail ?? null : null,
-  }));
+  return sheetActionEntries(input).map((entry) =>
+    // Un picto du salon n'a ni état ni complément : sa forme reste la sienne.
+    entry.origin === "salon"
+      ? { kind: entry.kind, label: t(entry.labelKey) }
+      : { kind: entry.kind, label: t(entry.labelKey), active: entry.active, detail: entry.kind === "play" ? input.playDetail ?? null : null },
+  );
 }
