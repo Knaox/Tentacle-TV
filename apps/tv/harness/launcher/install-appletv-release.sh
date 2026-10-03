@@ -25,7 +25,9 @@ if [ "${1:-}" != "--js-only" ]; then
   # Hermes Release à la main : le script « Replace Hermes » casse sur l'espace du chemin.
   cd "$IOS/Pods" && rm -rf hermes-engine && mkdir hermes-engine
   tar -xf "$PWD/hermes-engine-artifacts/hermes-ios-0.80.1-release.tar.gz" -C hermes-engine
-  printf Release > hermes-engine/.last_build_configuration
+  # Le script de React Native lit ce marqueur dans Pods/ (son dossier courant),
+  # pas dans hermes-engine/ : ailleurs, il réextrairait — et casserait.
+  printf Release > .last_build_configuration
 fi
 
 cd "$IOS"
@@ -39,4 +41,4 @@ xcrun devicectl device install app --device "$DEVICE" "$APP"
 xcrun devicectl device process launch --device "$DEVICE" --terminate-existing com.tentacle.mobile
 echo "Installée et lancée sur $DEVICE."
 # Note : Hermes reste en Release ; avant une build Debug au simulateur, refaire
-# l'extraction avec hermes-ios-0.80.1-debug.tar.gz et « printf Debug ».
+# l'extraction avec hermes-ios-0.80.1-debug.tar.gz et « printf Debug » (dans Pods/).
