@@ -17,7 +17,8 @@
     "./session": "./src/session/index.ts",
     "./playback": "./src/playback/index.ts",
     "./titles": "./src/titles/index.ts",
-    "./cards": "./src/cards/index.ts"
+    "./cards": "./src/cards/index.ts",
+    "./panels": "./src/panels/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
