@@ -100,7 +100,8 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
               <TabIndicator width={PANEL_W - 2 * PANEL_PAD_H} height={ROW_H} style={indicator.style} />
               {items.map((item) => {
                 const active = isActive(item);
-                const tint = active ? theme.colors.brand.violet : theme.colors.text.tertiary;
+                // Sur la pastille au dégradé de marque : icône et libellé BLANCS.
+                const tint = active ? theme.colors.cta.brandFg : theme.colors.text.secondary;
                 return (
                   <RailMenuRow
                     key={itemKey(item)}
@@ -127,7 +128,6 @@ function RailMenuRow({ label, active, icon, onLayout, onPress }: {
   onLayout: (e: LayoutChangeEvent) => void;
   onPress: () => void;
 }) {
-  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const press = useTabPressFeedback({ scale: 0.97 });
   return (
@@ -143,7 +143,7 @@ function RailMenuRow({ label, active, icon, onLayout, onPress }: {
     >
       <Animated.View style={[st.rowInner, press.bounceStyle]}>
         {icon}
-        <Text style={[st.rowLabel, active && { color: theme.colors.brand.violet }]} numberOfLines={1}>
+        <Text style={[st.rowLabel, active && st.rowLabelActive]} numberOfLines={1}>
           {label}
         </Text>
       </Animated.View>
@@ -194,5 +194,6 @@ const makeStyles = (t: AppTheme) =>
       color: t.colors.text.secondary,
       flex: 1,
     },
+    rowLabelActive: { color: t.colors.cta.brandFg, fontFamily: FONT_FAMILY.bold },
     pressed: { backgroundColor: t.colors.fill.subtle },
   });

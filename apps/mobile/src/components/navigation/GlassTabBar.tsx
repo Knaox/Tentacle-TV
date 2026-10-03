@@ -17,8 +17,16 @@ import { useSlidingIndicator } from "./useSlidingIndicator";
  * réfracte à travers le verre (c'est là que le Liquid Glass se voit vraiment,
  * contrairement à un bandeau opaque). Le verre réel est rendu par GlassSurface
  * (bascule expo-glass-effect ↔ fallback blur). L'onglet actif est marqué par
- * UNE pilule neutre qui glisse d'un onglet à l'autre (TabIndicator) — pas de
+ * UNE pastille au dégradé de marque qui glisse d'un onglet à l'autre
+ * (TabIndicator), icône blanche, libellé plein et gras — pas de
  * verre-sur-verre, déconseillé par Apple.
+ *
+ * Lisible sur N'IMPORTE quel contenu : un voile couvre le verre, sous les
+ * onglets (`scrim`). Le verre natif d'iOS 26 s'éclaircit sur une affiche
+ * claire, et rien n'y tenait le contraste (retour de Damien : « on voit mal
+ * l'onglet sélectionné »). Au pire — une affiche BLANCHE dessous en sombre,
+ * NOIRE en clair — le libellé actif tient ≥ 4,5:1 et l'icône ≥ 3:1 ; les
+ * inactifs restent au-dessus de 3:1 (mesuré au simulateur).
  */
 /** Marge basse minimale sous la pilule, sur un appareil sans encoche. */
 const MIN_BOTTOM_INSET = 10;
@@ -103,6 +111,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
         tintColor={theme.isDark ? undefined : "rgba(255, 255, 255, 0.18)"}
         style={st.bar}
       >
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, st.scrim]} />
         <View style={st.row}>
           {/* La piste : sans marge, le même repère pour les `onLayout` des
               items et le `left/top: 0` de l'indicateur. */}
@@ -116,7 +125,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   route={route}
                   descriptor={descriptors[route.key]}
                   focused={focused}
-                  tint={focused ? theme.colors.brand.violet : theme.colors.text.tertiary}
+                  iconTint={focused ? theme.colors.cta.brandFg : theme.colors.text.secondary}
+                  labelTint={focused ? theme.colors.text.primary : theme.colors.text.secondary}
                   navigation={navigation}
                   onLayout={indicator.onItemLayout(route.key)}
                   iconStyle={iconShift}
@@ -148,6 +158,9 @@ const makeStyles = (t: AppTheme) =>
       shadowRadius: 24,
       elevation: 12,
     },
+    // Le voile qui garantit le contraste : au pire (blanc sous la barre en
+    // sombre), 62 % de noir bleuté laisse le libellé blanc à 5,7:1.
+    scrim: { backgroundColor: t.isDark ? "rgba(10, 10, 16, 0.62)" : "rgba(255, 255, 255, 0.72)" },
     row: {
       paddingVertical: ROW_PAD_V,
       paddingHorizontal: 6,

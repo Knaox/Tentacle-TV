@@ -1,6 +1,7 @@
 import { StyleSheet, type StyleProp, type ViewStyle } from "react-native";
 import Animated from "react-native-reanimated";
-import { useThemedStyles, type AppTheme } from "@/theme";
+import { LinearGradient } from "expo-linear-gradient";
+import { ctaGradient, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 interface Props {
   width: number;
@@ -10,7 +11,7 @@ interface Props {
 }
 
 /**
- * La pilule qui marque l'onglet actif — TOUJOURS montée, TOUJOURS avec son
+ * La pastille qui marque l'onglet actif — TOUJOURS montée, TOUJOURS avec son
  * fond : elle ne fait que glisser d'un onglet à l'autre.
  *
  * Mesuré sur Android (Fabric, RN 0.81) : une capsule à `borderRadius` dont
@@ -20,11 +21,16 @@ interface Props {
  * Un indicateur unique et permanent n'emprunte jamais ce chemin ;
  * `collapsable={false}` en ceinture.
  *
- * Neutre (`fill.soft`, la pilule glissante de la nav web) : la couleur de
- * marque va à l'icône et au libellé, pas au fond.
+ * Au dégradé de marque (`ctaGradient`, celui du bouton de lecture) : l'icône
+ * active s'y pose en BLANC, ≥ 4,5:1 quel que soit le contenu sous la barre.
+ * C'était une pastille neutre et une icône violette, illisibles sur une
+ * affiche — et c'est la FORME qui dit « ici », pas la seule couleur. Le
+ * dégradé est figé : seule la translation de la pastille s'anime.
  */
 export function TabIndicator({ width, height, style }: Props) {
+  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
+  const gradient = ctaGradient(theme.colors.brand);
   return (
     <Animated.View
       collapsable={false}
@@ -32,7 +38,9 @@ export function TabIndicator({ width, height, style }: Props) {
       importantForAccessibility="no"
       accessibilityElementsHidden
       style={[st.pill, { width, height }, style]}
-    />
+    >
+      <LinearGradient colors={gradient.colors} start={gradient.start} end={gradient.end} style={StyleSheet.absoluteFill} />
+    </Animated.View>
   );
 }
 
@@ -43,8 +51,8 @@ const makeStyles = (t: AppTheme) =>
       left: 0,
       top: 0,
       borderRadius: 999,
-      backgroundColor: t.colors.fill.soft,
+      overflow: "hidden" as const,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: t.colors.border.subtle,
+      borderColor: t.isDark ? "rgba(255, 255, 255, 0.22)" : "rgba(255, 255, 255, 0.4)",
     },
   });

@@ -64,7 +64,8 @@ export function TabRail({ state, descriptors, navigation, onOpenMenu }: TabRailP
               focused={focused}
               icon={options.tabBarIcon?.({
                 focused,
-                color: focused ? theme.colors.brand.violet : theme.colors.text.tertiary,
+                // Blanc sur la pastille au dégradé de marque (TabIndicator).
+                color: focused ? theme.colors.cta.brandFg : theme.colors.text.secondary,
                 size: 22,
               })}
               onLayout={indicator.onItemLayout(route.key)}

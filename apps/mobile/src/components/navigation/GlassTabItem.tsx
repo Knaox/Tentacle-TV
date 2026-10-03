@@ -16,7 +16,9 @@ interface Props {
   route: Route;
   descriptor: Descriptor;
   focused: boolean;
-  tint: string;
+  /** Blanc sur la pastille quand l'onglet est actif. */
+  iconTint: string;
+  labelTint: string;
   navigation: BottomTabBarProps["navigation"];
   onLayout: (e: LayoutChangeEvent) => void;
   /** Styles animés de la barre (repli au défilement). */
@@ -31,7 +33,7 @@ interface Props {
  * sous le doigt (useTabPressFeedback) — l'`Animated.View` vit DANS le
  * Pressable, la cible ne rétrécit pas.
  */
-export function GlassTabItem({ route, descriptor, focused, tint, navigation, onLayout, iconStyle, labelStyle }: Props) {
+export function GlassTabItem({ route, descriptor, focused, iconTint, labelTint, navigation, onLayout, iconStyle, labelStyle }: Props) {
   const { options } = descriptor;
   const label = options.tabBarAccessibilityLabel ?? options.title ?? route.name;
   const press = useTabPressFeedback();
@@ -56,14 +58,14 @@ export function GlassTabItem({ route, descriptor, focused, tint, navigation, onL
     >
       <Animated.View style={[st.pill, iconStyle]}>
         <Animated.View style={press.bounceStyle}>
-          {options.tabBarIcon?.({ focused, color: tint, size: 22 })}
+          {options.tabBarIcon?.({ focused, color: iconTint, size: 22 })}
         </Animated.View>
       </Animated.View>
       {/* Étiré sur la largeur de l'onglet et centré par le texte : mesuré au
           premier rendu à sa largeur naturelle, Android coupait « Profil » en
           « Pro… » quel que soit l'espace libre. Police non agrandie : la
           hauteur de la barre est un contrat (useGlassTabBarHeight). */}
-      <Animated.Text numberOfLines={1} allowFontScaling={false} style={[st.label, { color: tint }, labelStyle]}>
+      <Animated.Text numberOfLines={1} allowFontScaling={false} style={[st.label, focused && st.labelActive, { color: labelTint }, labelStyle]}>
         {options.title ?? route.name}
       </Animated.Text>
     </Pressable>
@@ -91,4 +93,6 @@ const st = StyleSheet.create({
     lineHeight: LABEL_LINE_HEIGHT,
     fontFamily: FONT_FAMILY.semibold,
   },
+  // L'actif se lit aussi à la graisse, pas seulement à la couleur.
+  labelActive: { fontFamily: FONT_FAMILY.bold },
 });
