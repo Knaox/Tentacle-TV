@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useResolvePlayTarget } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { detailPlayPress, sagaEntryPress } from "@tentacle-tv/tv-core";
+import { detailPlayPress, holdPanelOf, sagaEntryPress, type HoldPanel } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { DetailCallbacks } from "../../redesign/screens/detail/detailTypes";
 import { showNotice } from "../overlays/transientNotice";
@@ -20,8 +20,9 @@ import { useOpenDetail } from "./useOpenDetail";
  * - bande-annonce et extras : une vidéo LOCALE dans le lecteur, une vidéo
  *   YouTube dans l'écran de bande-annonce ;
  * - une personne ouvre sa filmographie, une carte sa fiche, l'appui long la
- *   feuille d'actions (vignette pour un épisode, affiche sinon) — la page
- *   ouverte REMPLACE la fiche (`useOpenDetail`, la suite de fiches) ;
+ *   feuille d'actions que dit la règle de T6 (`holdPanelOf` : vignette pour
+ *   un épisode, affiche sinon, panneau d'un titre absent) — la page ouverte
+ *   REMPLACE la fiche (`useOpenDetail`, la suite de fiches) ;
  * - « Noter » ouvre la feuille réduite à la note.
  *
  * Tous STABLES : ils lisent le dernier état au moment du geste. La vue et ses
@@ -55,6 +56,12 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
     const nav = () => latest.current.navigation;
     const model = () => latest.current.model;
     const play = (itemId: string) => nav().navigate("Player", { itemId });
+    // Le panneau d'un titre de la bibliothèque, dans la variante que dit la règle.
+    const openPanel = (panel: HoldPanel | null, item: MediaItem | undefined) => {
+      if (!item || panel?.kind !== "media") return;
+      if (panel.variant === "landscape") latest.current.openLandscapeSheet(item);
+      else latest.current.openPosterSheet(item);
+    };
     return {
       onPlay: () => {
         const { item, watch } = model();
@@ -90,10 +97,7 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
       onSelectSeason: (seasonId) => model().episodes.select(seasonId),
       onFocusSeason: (seasonId) => model().episodes.prefetch(seasonId),
       onPlayEpisode: (episode) => play(episode.id),
-      onLongPressEpisode: (episode) => {
-        const found = model().episodes.episodeOf(episode.id);
-        if (found) latest.current.openLandscapeSheet(found);
-      },
+      onLongPressEpisode: (episode) => openPanel(holdPanelOf({ surface: "detail", card: "episode" }), model().episodes.episodeOf(episode.id)),
       onOpenPerson: (person) => latest.current.open.openPerson(person),
       onOpenExtra: (extra) => {
         const { item, extras } = model();
@@ -114,17 +118,16 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         if (press === "notInLibrary") showNotice({ kind: "info", title: t("cards:notInLibraryNotice") });
       },
       onLongPressSagaEntry: (entry) => {
-        const { requests, model: current, cardItemOf, openPosterSheet } = latest.current;
+        const { requests, model: current, cardItemOf } = latest.current;
         const title = entry.card.absent ? current.cards.absentOf(entry.key) : undefined;
-        if (title) return requests?.hold(title);
-        const found = cardItemOf(entry.card.id);
-        if (found) openPosterSheet(found);
+        const card = entry.card.absent ? "sagaAbsent" : "sagaPresent";
+        const panel = holdPanelOf({ surface: "detail", card, requestable: !!requests && !!title });
+        if (panel?.kind === "absent") return title ? requests?.hold(title) : undefined;
+        openPanel(panel, cardItemOf(entry.card.id));
       },
       onOpenCard: (_section, card) => latest.current.open.openTitle(latest.current.cardItemOf(card.id) ?? { Id: card.id }),
-      onLongPressCard: (card) => {
-        const found = latest.current.cardItemOf(card.id);
-        if (found) latest.current.openPosterSheet(found);
-      },
+      // La collection et les similaires : des affiches de la bibliothèque.
+      onLongPressCard: (card) => openPanel(holdPanelOf({ surface: "detail", card: "similar" }), latest.current.cardItemOf(card.id)),
       onRetry: () => model().refetch(),
       onBack: () => nav().goBack(),
     };

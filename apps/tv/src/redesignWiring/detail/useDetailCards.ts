@@ -9,6 +9,7 @@ import {
   type ExternalSearchItem,
   type MediaItem,
 } from "@tentacle-tv/shared";
+import { holdPanelOf } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import type { SagaModel } from "../../redesign/screens/detail/detailTypes";
 import { absentCard, tmdbPosterUri } from "../cards/absentCards";
@@ -98,7 +99,9 @@ export function useDetailCards(item: MediaItem | undefined, series: MediaItem | 
         const { title, year, imageUrl } = entry.item;
         const face = absent.faceOf(entry);
         const card = { ...absentCard({ id: entry.key, title, year, posterUri: imageUrl ?? undefined, absent: face.absent }), focusNote: face.focusNote };
-        return { key: entry.key, card, rank, cue, holdable: face.holdable };
+        // Sans appui maintenu (garde fermée), aucune indication « Maintenir OK » (règle de T6).
+        const holdable = holdPanelOf({ surface: "detail", card: "sagaAbsent", requestable: face.holdable }) !== null;
+        return { key: entry.key, card, rank, cue, holdable };
       }),
     };
   }, [view, t, factory, absent]);

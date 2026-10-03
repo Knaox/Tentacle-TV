@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { detailEntryKey } from "@tentacle-tv/tv-core";
+import { detailEntryKey, rateTargetVariant } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { CardSheetTarget } from "../../components/cards/actions/cardSheetTarget";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
@@ -81,7 +81,7 @@ export function MediaDetailRedesign({ route }: Props) {
   // « Noter » : la note seule. La note d'un épisode est la sienne (vignette),
   // celle d'un film, d'une série ou d'une collection l'affiche.
   const ratingTarget = useMemo<CardSheetTarget | null>(
-    () => (item ? { kind: "media", item, variant: item.Type === "Episode" ? "landscape" : "poster" } : null),
+    () => (item ? { kind: "media", item, variant: rateTargetVariant(item.Type ?? "") } : null),
     [item],
   );
 
