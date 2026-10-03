@@ -407,10 +407,11 @@ Une règle de domaine rend ses couches en pur — par exemple
 `playerBackLayers(state): BackLayerSpec<PlayerBackAction>[]` (T5) — et se
 teste sans React : `resolveBack(playerBackLayers(s), { pushed: true })`.
 
-La pile vivante (`createBackLayers`) EST une pile de contextes de T1
-(`createRemoteContexts(BACK_LAYER_ORDER)`) où chaque couche active décide
-`retour` : une seule copie de la règle « rang, puis le plus récemment
-activé ». `resolveBack` la rejoue sur une liste. Pages du rail :
+`resolveBack` résout une liste par la pile des contextes de T1
+(`createRemoteContexts(BACK_LAYER_ORDER)`, chaque couche active décide
+`retour`). La pile VIVANTE (`createBackLayers`) garde son compteur d'origine :
+une couche qui change de rang sous le même identifiant y garde son rang
+d'activation (épinglé par un test et par le banc de traces). Pages du rail :
 `RAIL_PAGES`, `isRailPage`, `isPushedPage` (`nav/railPages.ts`).
 
 ### Applicateur tvOS (`apps/tv/src/platform/tvos/back/`)
@@ -485,28 +486,30 @@ rail (`navKeyOf`, `isNavKey`, `navEntryOf`, `isMovableRailKey`,
 
 ## 17. Scénarios de référence
 
-`apps/tv/harness/nav-golden/scenarios/retour-rail/scenarios.json` (format de
-T6, repris par le banc T2 : `do`, `expect`, `settleMs`, `why`) et ses jeux de
-données nommés `fixtures.mjs`, enregistrés au SHA de référence. 37 scénarios
-(`rr-01` à `rr-37`) ; chacun dit les comportements qu'il couvre (`rules`).
+`apps/tv/harness/nav-golden/scenarios/retour-rail/*.json`, au format figé du
+banc (T2), sur le jeu de données du banc (bibliothèques Animés, Films, Séries ;
+« Projet Dernière Chance », « Cauchemar en cuisine », Keira Knightley…) ; le
+jeu propre au domaine (`retour-rail/24-bibliotheques`) dans `fixtures.mjs`.
+38 scénarios, chacun dit ce qu'il couvre (`rules`) ; ils s'enregistrent au SHA
+de référence et repassent à l'identique après l'extraction.
 
-| Scénarios | Ce qu'ils éprouvent |
+| Fichier | Ce qu'il éprouve |
 |---|---|
-| rr-01 à rr-05 | Retour sur les pages du rail : rail, profil, sortie ; Réglages en deux appuis |
-| rr-06 à rr-08 | Choisir une page, l'entrée courante, Rechercher (étagère, barre) |
-| rr-09 à rr-14 | Pages poussées, fiche, suite de fiches, épisode → série, casting |
-| rr-15 à rr-17 | Raccourcis et ponts : boucle, GAUCHE armé, GAUCHE maintenu |
-| rr-18 à rr-28, rr-37 | Organiser : menu, Monter, Masquer, Tout afficher, Déplacer (poser, annuler, sortir, butée), Réglages › Navigation |
-| rr-29 | 24 bibliothèques : défilement, captures |
-| rr-30 | Demandes : aperçu, fenêtre, Retour |
-| rr-31, rr-33 | Jumelage et sortie ; écart B1 |
-| rr-32 | La croix Retour d'une fiche |
-| rr-20, rr-34, rr-35, rr-36 | Optionnels : écart B2, erreurs provoquées, serveur coupé |
+| `retour-pages.json` | Retour sur les pages du rail : rail, profil, sortie ; Réglages en deux appuis |
+| `navigation.json` | choisir une page, l'entrée courante, Rechercher (étagère, barre), étagères poussées |
+| `fiches.json` | fiche, suite de fiches (similaires, casting), épisode → série, croix Retour |
+| `raccourcis.json` | la boucle du rail, GAUCHE armé, GAUCHE maintenu, ponts rail ↔ contenu |
+| `organiser.json` | menu d'une entrée, Monter, Masquer, Tout afficher, Déplacer (poser, annuler, sortir, butée), appuis longs sans menu, Réglages › Navigation ; écart B2 |
+| `defilement.json` | 24 bibliothèques : défilement, flèche maintenue |
+| `demandes.json` | l'aperçu des demandes, sa fenêtre, Retour |
+| `jumelage-sortie.json` | jumelage et sortie ; écart B1 ; bandeau hors ligne |
 
 Hors banc : R1.2 et R1.4 (rang d'activation, appui avalé) et O3.6 (démontage
-en plein déplacement) se prouvent par vitest ; F5 et N1.3 (mouvements) par les
-captures ; R2.15 (chargement) ne se laisse pas viser au pavé — même cadre que
-la page (`RedesignScreen`) ; R2.17 : scénarios de T6.
+en plein déplacement) se prouvent par vitest et par le banc de traces ; F5 et
+N1.3 (mouvements) par les captures ; R2.13 et R2.14 (erreur d'un écran : une
+erreur de rendu ne se provoque pas au pavé) par le banc de traces — même
+portée, même cadre (`RedesignScreen`) ; R2.15 (chargement) ne se laisse pas
+viser ; R2.17 : scénarios de T6.
 
 ## 18. À retirer au portage Android TV
 
