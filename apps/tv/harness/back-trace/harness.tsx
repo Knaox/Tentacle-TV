@@ -179,6 +179,19 @@ const SCENARIOS: Record<string, Scenario> = {
       { press: "b réactivée" },
     ],
   },
+  "changement-de-rang": {
+    route: "Home",
+    canGoBack: false,
+    steps: [
+      { render: [L("a", "page", true), L("b", "menu", true)] },
+      { press: "a page, b menu" },
+      { render: [L("a", "menu", true), L("b", "menu", true)] },
+      { press: "a devient un menu sans être désactivée : elle reste la plus ancienne" },
+      { render: [L("a", "menu", false), L("b", "menu", true)] },
+      { render: [L("a", "menu", true), L("b", "menu", true)] },
+      { press: "a réactivée : la plus récente" },
+    ],
+  },
   "jumelage-racine": {
     route: "PairCode",
     canGoBack: false,

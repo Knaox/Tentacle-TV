@@ -66,6 +66,18 @@ describe("createBackLayers — la pile de couches du Retour", () => {
     expect(log).toEqual(["b"]);
   });
 
+  it("une couche qui CHANGE DE RANG garde son rang d'activation (même identifiant)", () => {
+    const layers = createBackLayers();
+    const log: string[] = [];
+    layers.set("a", layer("page", true, log, "a"));
+    layers.set("b", layer("menu", true, log, "b"));
+    // `a` devient un menu sans avoir été désactivée : elle reste plus ANCIENNE que `b`.
+    layers.set("a", layer("menu", true, log, "a"));
+    expect(layers.target()).toEqual({ id: "b", kind: "menu" });
+    layers.back();
+    expect(log).toEqual(["b"]);
+  });
+
   it("le gestionnaire appelé est le DERNIER inscrit", () => {
     const layers = createBackLayers();
     const log: string[] = [];

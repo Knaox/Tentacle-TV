@@ -306,6 +306,69 @@
           "interceptor": null
         }
       ],
+      "changement-de-rang": [
+        {
+          "render": [
+            "a:page:on",
+            "b:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "a page, b menu",
+          "to": "app",
+          "effects": [
+            "layer:b"
+          ]
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "a devient un menu sans être désactivée : elle reste la plus ancienne",
+          "to": "app",
+          "effects": [
+            "layer:b"
+          ]
+        },
+        {
+          "render": [
+            "a:menu:off",
+            "b:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "a réactivée : la plus récente",
+          "to": "app",
+          "effects": [
+            "layer:a"
+          ]
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
       "jumelage-racine": [
         {
           "render": [
@@ -623,6 +686,55 @@
         },
         {
           "press": "b réactivée",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "changement-de-rang": [
+        {
+          "render": [
+            "a:page:on",
+            "b:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "a page, b menu",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "a devient un menu sans être désactivée : elle reste la plus ancienne",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "a:menu:off",
+            "b:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "a réactivée : la plus récente",
           "to": "platform",
           "effects": []
         },
