@@ -32,7 +32,6 @@ export const TV_NAV_EXCEPTIONS = [
   { file: "redesignWiring/screen/useEntryFocus.ts", rules: ["no-focus-props"], owner: "T3", why: "entrée d'un écran : hasTVPreferredFocus pendant l'arrivée" },
 
   // T4 — Retour, rail, menus.
-  { file: "redesignWiring/back/BackScope.tsx", rules: ["no-native-focus-calls"], owner: "T4", why: "la portée du Retour monte MenuPressInterceptor" },
   { file: "components/focus/MenuPressInterceptor.ios.tsx", rules: ["no-native-focus-calls"], owner: "T4", why: "la vue native qui prend Menu (TVMenuPressInterceptor)" },
   { file: "redesignWiring/focus/backFocus.tsx", rules: ["no-focus-guides", "no-focus-props", "no-native-focus-calls"], owner: "T4", why: "croix Retour : guide de sa bande, BAS vers le dernier contenu (nextFocusDown), verrou — T3 pour le guide" },
   { file: "redesignWiring/screen/RailBridges.tsx", rules: ["no-focus-guides", "no-platform-branch"], owner: "T4", why: "ponts navigation ↔ contenu (guides natifs)" },
