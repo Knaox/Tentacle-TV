@@ -166,7 +166,7 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
 
       const ds = client.getDirectStreaming();
       const url = buildStreamUrl({
-        itemId, ms, directPlay, ds: ds ?? null,
+        itemId, ms, directPlay, ds: ds ?? null, quality: bitrate > 0 ? { bitrate, height: maxHeight } : null,
         baseUrl: client.getBaseUrl(), accessToken: client.getAccessToken(), subIdx,
       });
       if (!url) { setState((prev) => ({ ...prev, isLoading: false, error: "No stream URL" })); return; }
