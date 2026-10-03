@@ -429,9 +429,28 @@ recule seule. La portée reste la seule à parler à UIKit.
 
 ## 17. Scénarios de référence
 
-Dans `apps/tv/harness/nav-golden/scenarios/retour-rail/`, en données pures
-(format du banc T2 adopté à sa fusion), enregistrés au SHA de référence.
-La liste et ce que chacun couvre : `README.md` du dossier.
+`apps/tv/harness/nav-golden/scenarios/retour-rail/scenarios.json` (format de
+T6, repris par le banc T2 : `do`, `expect`, `settleMs`, `why`) et ses jeux de
+données nommés `fixtures.mjs`, enregistrés au SHA de référence. 37 scénarios
+(`rr-01` à `rr-37`) ; chacun dit les comportements qu'il couvre (`rules`).
+
+| Scénarios | Ce qu'ils éprouvent |
+|---|---|
+| rr-01 à rr-05 | Retour sur les pages du rail : rail, profil, sortie ; Réglages en deux appuis |
+| rr-06 à rr-08 | Choisir une page, l'entrée courante, Rechercher (étagère, barre) |
+| rr-09 à rr-14 | Pages poussées, fiche, suite de fiches, épisode → série, casting |
+| rr-15 à rr-17 | Raccourcis et ponts : boucle, GAUCHE armé, GAUCHE maintenu |
+| rr-18 à rr-28, rr-37 | Organiser : menu, Monter, Masquer, Tout afficher, Déplacer (poser, annuler, sortir, butée), Réglages › Navigation |
+| rr-29 | 24 bibliothèques : défilement, captures |
+| rr-30 | Demandes : aperçu, fenêtre, Retour |
+| rr-31, rr-33 | Jumelage et sortie ; écart B1 |
+| rr-32 | La croix Retour d'une fiche |
+| rr-20, rr-34, rr-35, rr-36 | Optionnels : écart B2, erreurs provoquées, serveur coupé |
+
+Hors banc : R1.2 et R1.4 (rang d'activation, appui avalé) et O3.6 (démontage
+en plein déplacement) se prouvent par vitest ; F5 et N1.3 (mouvements) par les
+captures ; R2.15 (chargement) ne se laisse pas viser au pavé — même cadre que
+la page (`RedesignScreen`) ; R2.17 : scénarios de T6.
 
 ## 18. À retirer au portage Android TV
 
