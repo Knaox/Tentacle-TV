@@ -19,17 +19,10 @@ export const TV_NAV_EXCEPTIONS = [
   // T1 — le socle : fait (756ed8bc7), l'entrée unique vit dans platform/tvos/input/.
   { file: "redesignWiring/redesignGate.ts", rules: ["no-platform-branch"], owner: null, why: "l'aiguillage de la refonte : le seul choix de plateforme du chemin refondu" },
 
-  // T3 — focus, sections, rangées.
+  // T3 — focus, sections, rangées : les applicateurs sont dans platform/tvos/focus/ (f56e83f30).
   { file: "redesign/focus/FocusTarget.tsx", rules: ["no-native-press"], owner: "T3", why: "la porte des vues vers le focus natif : le seul Pressable de la refonte (OK, appui long, focus)" },
   { file: "redesign/focus/FocusSection.tsx", rules: ["no-native-focus-calls"], owner: "T3", why: "la porte des vues vers la section native (TentacleFocusSection)" },
   { file: "redesign/focus/nativeFocusSection.ts", rules: ["no-native-focus-calls", "no-platform-branch"], owner: "T3", why: "détection et requireNativeComponent de la section native" },
-  { file: "redesignWiring/focus/focusStore.ts", rules: ["no-native-focus-calls"], owner: "T3", why: "magasin de focus : nœuds natifs, findNodeHandle, requestTVFocus, réclamation" },
-  { file: "redesignWiring/focus/entryGuide.tsx", rules: ["no-focus-guides", "no-focus-props"], owner: "T3", why: "guide d'entrée d'un groupe : dernier visité, sinon l'entrée par défaut" },
-  { file: "redesignWiring/focus/focusGuides.tsx", rules: ["no-focus-guides"], owner: "T3", why: "guides génériques : mémoire (autoFocus), piège (trapFocus*)" },
-  { file: "redesignWiring/focus/focusLocks.ts", rules: ["no-focus-props", "no-native-focus-calls"], owner: "T3", why: "verrou d'une cible (isTVSelectable), par la liaison et par setNativeProps" },
-  { file: "redesignWiring/focus/sectionEntry.ts", rules: ["no-focus-props", "no-native-focus-calls"], owner: "T3", why: "entrée déclarée d'une section (tvEntry)" },
-  { file: "redesignWiring/focus/sectionNeighbors.ts", rules: ["no-focus-props"], owner: "T3", why: "règle de voisinage des sections, appliquée en natif (tvNeighbors)" },
-  { file: "redesignWiring/screen/useEntryFocus.ts", rules: ["no-focus-props"], owner: "T3", why: "entrée d'un écran : hasTVPreferredFocus pendant l'arrivée" },
 
   // T4 — Retour, rail, menus.
   { file: "components/focus/MenuPressInterceptor.ios.tsx", rules: ["no-native-focus-calls"], owner: "T4", why: "la vue native qui prend Menu (TVMenuPressInterceptor)" },
