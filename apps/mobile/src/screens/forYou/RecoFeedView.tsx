@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { RefreshControl, View, StyleSheet } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { useComposedEventHandler } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { activeFamilyCount, buildPlatformCatalog, useJellyfinClient, useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
+import { useHeroMetrics } from "@/components/heroMetrics";
+import { useHeroInView } from "@/components/hero/useHeroInView";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
@@ -21,6 +23,9 @@ import { RecoStatusBanner } from "@/components/reco/page/RecoStatusBanner";
 import { useRecoPageModel } from "@/components/reco/page/useRecoPageModel";
 import { useRecoNavigation } from "@/hooks/useRecoNavigation";
 import { spacing, useTheme } from "@/theme";
+
+/** La hauteur, au plus, du segment « Pour vous · Affiner » au-dessus du héros. */
+const SECTION_SWITCH_ALLOWANCE = 72;
 
 interface Props {
   /** Le segment « Pour vous · Affiner », en tête de page (il défile avec elle). */
@@ -42,6 +47,11 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
   const headerH = useHeaderHeight();
   const tabBarH = useGlassTabBarHeight();
   const onScrollChrome = useScrollChromeHandler();
+  // Le héros défilé hors de la vue suspend sa rotation (le segment le
+  // précède : sa hauteur s'ajoute, à une marge près).
+  const { bannerH } = useHeroMetrics();
+  const hero = useHeroInView(bannerH + SECTION_SWITCH_ALLOWANCE);
+  const onScroll = useComposedEventHandler([onScrollChrome, hero.handler]);
   const model = useRecoPageModel();
   const recoNav = useRecoNavigation();
   const client = useJellyfinClient();
@@ -116,7 +126,7 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: tabBarH + spacing.xl }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        onScroll={onScrollChrome}
+        onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
@@ -128,7 +138,7 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
         }
       >
         {sectionSwitch}
-        {heroSlides.length > 0 && <HeroBanner slides={heroSlides} />}
+        {heroSlides.length > 0 && <HeroBanner slides={heroSlides} inView={hero.inView} />}
         <RecoPageHeader showTitle={heroSlides.length === 0} filterCount={activeCount} onOpenFilters={openFilters} />
         <RecoStatusBanner
           page={page}

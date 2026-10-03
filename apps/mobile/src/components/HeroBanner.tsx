@@ -4,6 +4,7 @@ import {
   type NativeScrollEvent, type NativeSyntheticEvent,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { runOnJS, useAnimatedReaction, type SharedValue } from "react-native-reanimated";
 import { useFocusEffect } from "expo-router";
 import { GradientOverlay } from "@/components/ui";
 import { useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
@@ -16,6 +17,13 @@ import { slideHalo, type HeroSlide } from "./hero/heroSlides";
 interface HeroBannerProps {
   /** Les diapositives — voir `hero/heroSlides` ; mémoïsées par l'appelant. */
   slides: HeroSlide[];
+  /**
+   * Le héros est-il dans la vue de sa page (`useHeroInView`, 1 ou 0) ? Hors
+   * de la vue, la rotation se suspend — ni fondu, ni nouveau halo, ni rendu
+   * — et reprend où elle s'était arrêtée. Lu sur le fil UI : basculer ne
+   * coûte aucun rendu. Absent : toujours dans la vue.
+   */
+  inView?: SharedValue<number>;
 }
 
 /**
@@ -24,7 +32,7 @@ interface HeroBannerProps {
  * Swipe pagingEnabled + Ken Burns synchronisé sur l'auto-rotation. Le bandeau
  * ne sait pas ce qu'il montre : chaque diapositive rend son propre contenu.
  */
-export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) {
+export const HeroBanner = memo(function HeroBanner({ slides, inView }: HeroBannerProps) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const { bannerH, slideW, margin, radius, portrait } = useHeroMetrics();
@@ -69,19 +77,57 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
     }, HERO_ROTATE_MS);
   }, [slides.length, slideW]);
 
+  // La rotation tourne quand l'écran a le focus ET que le héros est dans la
+  // vue ; sinon elle s'arrête là où elle est.
+  const focusedRef = useRef(false);
+  const visibleRef = useRef(true);
+  const syncTimer = useCallback(() => {
+    if (focusedRef.current && visibleRef.current) {
+      startTimer();
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = undefined;
+    }
+  }, [startTimer]);
+  const onVisibility = useCallback((visible: boolean) => {
+    visibleRef.current = visible;
+    syncTimer();
+  }, [syncTimer]);
+  useAnimatedReaction(
+    () => (inView ? inView.value : 1),
+    (visible, previous) => {
+      if (previous !== null && visible !== previous) runOnJS(onVisibility)(visible === 1);
+    },
+    [inView, onVisibility],
+  );
+
   // Resync scroll on focus via indexRef — reading `index` directly would re-run
   // this effect on every auto-advance, killing the FlatList's animated scroll.
   useFocusEffect(useCallback(() => {
     const raf = requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: indexRef.current * slideW, animated: false }));
-    startTimer();
-    return () => { cancelAnimationFrame(raf); if (timerRef.current) clearInterval(timerRef.current); };
-  }, [startTimer, slideW]));
+    focusedRef.current = true;
+    syncTimer();
+    return () => {
+      focusedRef.current = false;
+      cancelAnimationFrame(raf);
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = undefined;
+    };
+  }, [syncTimer, slideW]));
+
+  // Des props stables pour la liste des diapositives : seule l'active change.
+  const renderSlide = useCallback(({ item, index: i }: { item: HeroSlide; index: number }) => (
+    <View style={[st.slide, { width: slideW, height: bannerH }]}>
+      <View style={st.contentInner}>{item.render(i === safeIndex)}</View>
+    </View>
+  ), [st, slideW, bannerH, safeIndex]);
+  const slideLayout = useCallback((_: unknown, i: number) => ({ length: slideW, offset: slideW * i, index: i }), [slideW]);
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const newIndex = Math.round(e.nativeEvent.contentOffset.x / slideW);
     setIndex(newIndex);
     userScrollingRef.current = false;
-    startTimer();
+    syncTimer();
   };
 
   if (!slides.length) return <View style={{ height: bannerH }} />;
@@ -141,13 +187,9 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
           decelerationRate="fast"
           onScrollBeginDrag={() => { userScrollingRef.current = true; if (timerRef.current) clearInterval(timerRef.current); }}
           onMomentumScrollEnd={onScrollEnd}
-          getItemLayout={(_, i) => ({ length: slideW, offset: slideW * i, index: i })}
+          getItemLayout={slideLayout}
           style={StyleSheet.absoluteFillObject}
-          renderItem={({ item, index: i }) => (
-            <View style={[st.slide, { width: slideW, height: bannerH }]}>
-              <View style={st.contentInner}>{item.render(i === safeIndex)}</View>
-            </View>
-          )}
+          renderItem={renderSlide}
         />
 
         {slides.length > 1 && (

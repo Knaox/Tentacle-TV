@@ -41,5 +41,6 @@ export function useRecoNavigation() {
     [router, vigie],
   );
 
-  return { open, canOpen, vigieAvailable: vigie !== null };
+  // Un objet stable : l'accueil le passe à ses rangées mémoïsées.
+  return useMemo(() => ({ open, canOpen, vigieAvailable: vigie !== null }), [open, canOpen, vigie]);
 }

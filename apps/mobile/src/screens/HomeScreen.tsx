@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { RefreshControl, View, Text, StyleSheet } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { useComposedEventHandler } from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,8 @@ import { latestAdditionsDetailQuery, type MediaItem } from "@tentacle-tv/shared"
 import { useTranslation } from "react-i18next";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
+import { useHeroMetrics } from "@/components/heroMetrics";
+import { useHeroInView } from "@/components/hero/useHeroInView";
 import { useHomeHero } from "@/components/home/useHomeHero";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
@@ -47,6 +49,10 @@ export function HomeScreen() {
   const headerH = useHeaderHeight();
   // La nav se replie au défilement — le signal part d'ici (fil UI seul).
   const onScrollChrome = useScrollChromeHandler();
+  // Le héros défilé hors de la vue suspend sa rotation (fondus, halo).
+  const { bannerH } = useHeroMetrics();
+  const hero = useHeroInView(bannerH);
+  const onScroll = useComposedEventHandler([onScrollChrome, hero.handler]);
   const userId = useUserId();
   const { storage } = useTentacleConfig();
   const token = storage.getItem("tentacle_token");
@@ -148,7 +154,7 @@ export function HomeScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
-        onScroll={onScrollChrome}
+        onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
@@ -160,7 +166,7 @@ export function HomeScreen() {
         }
       >
         {/* Le bandeau : le mode du compte, la reprise en repli — jamais vide. */}
-        {heroLoading ? <SkeletonHero /> : heroSlides.length > 0 && <HeroBanner slides={heroSlides} />}
+        {heroLoading ? <SkeletonHero /> : heroSlides.length > 0 && <HeroBanner slides={heroSlides} inView={hero.inView} />}
 
         {/* Les rangées, dans l'ordre du compte (mise en page partagée avec le
             web et la TV) ; chaque clé se rend depuis le registre. */}
