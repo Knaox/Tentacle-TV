@@ -75,6 +75,12 @@ export * from "./plugins/pluginSetup";
 export * from "./help/trailerGuide";
 export * from "./help/dismissibleHints";
 export * from "./help/trailerHint";
+// Les avertissements surgissants des clients : leur politique (gravité,
+// public, effacement seul, « Ne plus afficher » du compte, un seul à la fois)
+// et la règle « serveur à mettre à jour » — masquée jusqu'à la prochaine
+// exigence plus haute, lue aussi par le tableau de bord.
+export * from "./notices/noticePolicy";
+export * from "./notices/serverUpdateNotice";
 // Les liens du serveur : le lien public et la lecture directe, sondés par le
 // serveur (contrat de /api/admin/server-links, miroir backend), et leur
 // verdict — lu par la vue d'ensemble et par l'assistant d'installation.
