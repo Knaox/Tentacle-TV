@@ -23,12 +23,13 @@ suivi : ils sont désormais le filet de non-régression des trois plateformes.
 - **Le rendu.** Une carte, un panneau, une barre de progression se dessinent
   différemment en DOM et en React Native ; seule leur *spécification* peut être
   partagée, et elle vit dans `@tentacle-tv/theme`.
-- **La résolution du signal d'entrée.** Reconstituer « appui court » ou
-  « maintien » depuis un flux `keydown`/`keyup` DOM peu fiable, lire les
-  événements sémantiques d'Android, ou dériver une vitesse du trackpad de la
-  Siri Remote : trois problèmes différents, trois adaptateurs par plateforme.
-  Ce qu'ils produisent — l'intention — est en revanche commun, et c'est ce que
-  consomment les machines d'ici.
+- **L'abonnement au signal d'entrée.** Écouter un flux `keydown`/`keyup` DOM
+  peu fiable, les événements sémantiques d'Android, ou le pavé tactile de la
+  Siri Remote : un adaptateur par plateforme. Ce qu'il lit passe ensuite par
+  ce qui est commun et vit ici (`remote/`, cf. `docs/TV-NAVIGATION.md`) : la
+  table de traduction de sa plateforme, données seulement (`remote/bindings/`),
+  l'intention qu'elle produit (`remote/intents.ts`), et la résolution de
+  cette intention selon le contexte actif (`remote/contexts.ts`).
 - **Le décodage.** Profils de codec, remux, HDR : irréductiblement natif.
 - **La navigation au focus.** Apple TV et Android TV la résolvent nativement ;
   seule la LG doit la calculer, faute de navigation spatiale dans un navigateur.
