@@ -39,7 +39,7 @@ export function collectionIcon(type?: string): "film" | "tv" | "layers" {
  * L'image tourne lentement tant que l'onglet est devant, que le héros est dans
  * la vue (`inView`, `useHeroInView` : la grille l'a peut-être fait défiler
  * plus haut) et que le mouvement n'est pas réduit ; sinon, plus rien ne
- * tourne — ni image neuve à télécharger, ni fondu hors de la vue.
+ * tourne — ni image neuve à faire venir, ni fondu hors de la vue.
  */
 export const LibraryHero = memo(function LibraryHero({ library, topInset, inView }: {
   library: LibraryView;
