@@ -30,7 +30,7 @@ const videoOf = (p: { bitrate: number | null; height: number | null }) => (p.bit
 describe("buildQualityLadder", () => {
   it("un remux 4K reçoit tous les paliers, à leur cible", () => {
     const ladder = buildQualityLadder(source({ bitrate: 60_000_000, height: 2160, codec: "hevc" }));
-    expect(keys(ladder)).toEqual(["original", "quality1080pHigh", "quality1080p", "quality720p", "quality480p", "quality360p"]);
+    expect(keys(ladder)).toEqual(["original", "quality1080pHigh", "quality1080p", "quality720p", "quality540p", "quality360p"]);
     for (const p of ladder.slice(1)) expect(videoOf(p)).toBe(tier(p.key).nominal);
   });
 
@@ -109,7 +109,7 @@ describe("buildQualityLadder", () => {
 
 describe("QUALITY_PRESETS (repli)", () => {
   it("rend les cibles des paliers, audio compris, sans « 1080p Haut »", () => {
-    expect(keys(QUALITY_PRESETS)).toEqual(["original", "quality1080p", "quality720p", "quality480p", "quality360p"]);
+    expect(keys(QUALITY_PRESETS)).toEqual(["original", "quality1080p", "quality720p", "quality540p", "quality360p"]);
     for (const p of QUALITY_PRESETS.slice(1)) expect(videoOf(p)).toBe(tier(p.key).nominal);
   });
 });
@@ -152,7 +152,7 @@ describe("capForBitrate", () => {
 
   it("adapte le débit à la connexion à l'intérieur d'une définition", () => {
     // Un lien un peu court pour le 720p du menu : l'ancienne règle tombait en
-    // 480p ; le 720p à son plancher tient, avec tout le budget.
+    // la définition du dessous ; le 720p à son plancher tient, avec tout le budget.
     const src = source({ bitrate: 25_000_000, height: 2160 });
     const menu720 = findPreset("quality720p", buildQualityLadder(src));
     const measured = Math.floor((menu720.bitrate! - 100_000) / 0.8);

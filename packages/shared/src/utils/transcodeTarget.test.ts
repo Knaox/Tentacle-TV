@@ -8,7 +8,7 @@ import {
  * en dessous, il réduit la définition demandée. Un plancher de palier doit les
  * dépasser, sinon le palier affiché ne serait pas celui produit.
  */
-const JELLYFIN_KEEPS_WIDTH: Record<number, number> = { 1920: 6_000_000, 1280: 1_200_000, 854: 275_000, 640: 92_000 };
+const JELLYFIN_KEEPS_WIDTH: Record<number, number> = { 1920: 6_000_000, 1280: 1_200_000, 960: 275_000, 640: 92_000 };
 
 describe("TRANSCODE_TIERS", () => {
   it("chaque plancher garde la définition que Jellyfin produirait", () => {
@@ -30,9 +30,9 @@ describe("transcodeTarget", () => {
     });
   });
 
-  it("un palier 480p passe en stéréo à 128 kb/s, largeur 854", () => {
-    expect(transcodeTarget(1_928_000, 480)).toEqual({
-      videoBitrate: 1_800_000, audioBitrate: 128_000, audioChannels: 2, maxWidth: 854, maxHeight: 480,
+  it("un palier 540p passe en stéréo à 128 kb/s, largeur 960", () => {
+    expect(transcodeTarget(2_528_000, 540)).toEqual({
+      videoBitrate: 2_400_000, audioBitrate: 128_000, audioChannels: 2, maxWidth: 960, maxHeight: 540,
     });
   });
 
@@ -66,14 +66,14 @@ describe("briques", () => {
   it("audio : 5.1 à partir du 720p, stéréo en dessous", () => {
     expect(reservedAudioBitrate(1080)).toBe(384_000);
     expect(audioChannelsFor(720)).toBe(6);
-    expect(reservedAudioBitrate(480)).toBe(128_000);
+    expect(reservedAudioBitrate(540)).toBe(128_000);
     expect(audioChannelsFor(360)).toBe(2);
   });
 
   it("largeur d'un palier, et 16:9 hors tableau", () => {
     expect(tierWidth(1080)).toBe(1920);
+    expect(tierWidth(540)).toBe(960);
     expect(tierWidth(480)).toBe(854);
-    expect(tierWidth(576)).toBe(1024);
     expect(tierWidth(undefined)).toBe(1920);
   });
 });

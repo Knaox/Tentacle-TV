@@ -17,7 +17,7 @@ export default {
   quality1080pHigh: "1080p High",
   quality1080p: "1080p",
   quality720p: "720p",
-  quality480p: "480p",
+  quality540p: "540p",
   quality360p: "360p",
   previousEpisode: "Previous episode (P)",
   nextEpisode: "Next episode (N)",

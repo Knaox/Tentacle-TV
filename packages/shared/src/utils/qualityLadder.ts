@@ -129,7 +129,7 @@ export const APPLY_MARGIN = 0.8;
  * APPLY_MARGIN) porte AU-DESSUS de son plancher, avec tout ce budget : le
  * débit s'adapte à la connexion à l'intérieur d'une définition, il ne saute
  * pas d'un palier fixe au suivant. Sans cela, un lien un peu court pour le
- * 720p du menu tombait en 480p alors qu'un 720p à son plancher tenait. Si
+ * 720p du menu tombait d'une définition entière alors qu'un 720p à son plancher tenait. Si
  * rien ne tient, le palier le plus bas : mieux vaut une image modeste qu'un
  * lecteur qui bufferise.
  */

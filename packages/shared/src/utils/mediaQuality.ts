@@ -42,7 +42,7 @@ export interface SourceQuality {
 
 export interface QualityPreset {
   /** Clé i18n stable (`original`, `quality1080p`, …) */
-  key: "original" | "quality1080pHigh" | "quality1080p" | "quality720p" | "quality480p" | "quality360p";
+  key: "original" | "quality1080pHigh" | "quality1080p" | "quality720p" | "quality540p" | "quality360p";
   /** Débit max envoyé au serveur Jellyfin (bps). `null` = pas de cap (direct play). */
   bitrate: number | null;
   /** Largeur max pour le cap visuel (px). `null` = pas de redimensionnement. */

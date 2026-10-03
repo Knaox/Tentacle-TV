@@ -13,11 +13,11 @@ const ctx: StreamUrlContext = {
 const params = (url: string) => new URLSearchParams(url.slice(url.indexOf("?") + 1));
 
 describe("buildStreamUrl — transcodage de qualité", () => {
-  it("un palier 480p impose sa largeur (854), son débit vidéo et l'audio stéréo", () => {
-    const q = params(buildStreamUrl(ctx, "item", { directPlay: false, maxBitrate: 1_928_000, maxHeight: 480 }));
-    expect(q.get("MaxWidth")).toBe("854");
-    expect(q.get("MaxHeight")).toBe("480");
-    expect(q.get("VideoBitrate")).toBe("1800000");
+  it("un palier 540p impose sa largeur (960), son débit vidéo et l'audio stéréo", () => {
+    const q = params(buildStreamUrl(ctx, "item", { directPlay: false, maxBitrate: 2_528_000, maxHeight: 540 }));
+    expect(q.get("MaxWidth")).toBe("960");
+    expect(q.get("MaxHeight")).toBe("540");
+    expect(q.get("VideoBitrate")).toBe("2400000");
     expect(q.get("AudioBitrate")).toBe("128000");
     expect(q.get("TranscodingMaxAudioChannels")).toBe("2");
     expect(q.get("VideoCodec")).toBe("h264");
@@ -52,12 +52,12 @@ describe("applyTranscodeTarget", () => {
     "&TranscodingMaxAudioChannels=6&hevc-level=120&h264-level=51&TranscodeReasons=VideoCodecNotSupported";
 
   it("pose débit, définition et audio du palier", () => {
-    const q = params(applyTranscodeTarget(JELLYFIN, transcodeTarget(1_928_000, 480)));
-    expect(q.get("VideoBitrate")).toBe("1800000");
+    const q = params(applyTranscodeTarget(JELLYFIN, transcodeTarget(2_528_000, 540)));
+    expect(q.get("VideoBitrate")).toBe("2400000");
     expect(q.get("AudioBitrate")).toBe("128000");
     expect(q.get("TranscodingMaxAudioChannels")).toBe("2");
-    expect(q.get("MaxWidth")).toBe("854");
-    expect(q.get("MaxHeight")).toBe("480");
+    expect(q.get("MaxWidth")).toBe("960");
+    expect(q.get("MaxHeight")).toBe("540");
   });
 
   it("garde tout le reste à l'octet près, et chaque paramètre une seule fois", () => {
