@@ -28,3 +28,6 @@ export * from "./playerControls";
 export * from "./playerRemote";
 export * from "./touchScrub";
 export * from "./playerBack";
+export * from "./playerStage";
+export * from "./playerFocus";
+export * from "./troublePanel";
