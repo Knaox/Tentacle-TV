@@ -81,6 +81,13 @@ export * from "./help/trailerHint";
 // exigence plus haute, lue aussi par le tableau de bord.
 export * from "./notices/noticePolicy";
 export * from "./notices/serverUpdateNotice";
+// Le modèle commun des messages d'erreur : une cause en mots de spectateur
+// (quoi, pourquoi, une à trois actions, détails repliés), classée d'un échec
+// brut — une seule source pour le web, le bureau, le mobile et la tablette.
+export * from "./problems/problemTypes";
+export * from "./problems/describeProblem";
+export * from "./problems/classifyProblem";
+export * from "./problems/problemDetails";
 // Les liens du serveur : le lien public et la lecture directe, sondés par le
 // serveur (contrat de /api/admin/server-links, miroir backend), et leur
 // verdict — lu par la vue d'ensemble et par l'assistant d'installation.
