@@ -10,16 +10,16 @@ describe("keepWithin — garder le focus dans une surface plein écran", () => {
   });
 
   it("une clé de la surface qui prend le focus devient la dernière ; la vérification s'annule", () => {
-    expect(keepWithinStep(startKeepWithin("offline:retry"), "offline:unpair", true, own)).toEqual({ kind: "held", state: { last: "offline:unpair" } });
+    expect(keepWithinStep("offline:unpair", true, own)).toEqual({ kind: "held", state: { last: "offline:unpair" } });
   });
 
   it("une clé de la surface qui le perd : vérifier", () => {
-    expect(keepWithinStep(startKeepWithin("offline:retry"), "offline:retry", false, own)).toEqual({ kind: "check" });
+    expect(keepWithinStep("offline:retry", false, own)).toEqual({ kind: "check" });
   });
 
   it("une clé d'ailleurs : rien", () => {
-    expect(keepWithinStep(startKeepWithin("offline:retry"), "status:primary", true, own)).toEqual({ kind: "ignore" });
-    expect(keepWithinStep(startKeepWithin("offline:retry"), "status:primary", false, own)).toEqual({ kind: "ignore" });
+    expect(keepWithinStep("status:primary", true, own)).toEqual({ kind: "ignore" });
+    expect(keepWithinStep("status:primary", false, own)).toEqual({ kind: "ignore" });
   });
 
   it("à la vérification : le focus ailleurs, ou nulle part, ramène la dernière clé", () => {

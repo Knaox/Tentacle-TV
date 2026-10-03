@@ -37,7 +37,7 @@ export function startKeepWithin(entryKey: string): KeepWithin {
   return { last: entryKey };
 }
 
-export function keepWithinStep(state: KeepWithin, key: string, focused: boolean, owns: (key: string) => boolean): KeepWithinStep {
+export function keepWithinStep(key: string, focused: boolean, owns: (key: string) => boolean): KeepWithinStep {
   if (!owns(key)) return { kind: "ignore" };
   return focused ? { kind: "held", state: { last: key } } : { kind: "check" };
 }
