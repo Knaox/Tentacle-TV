@@ -1,0 +1,7397 @@
+{
+ "reference": "84f3cedd0",
+ "units": {
+  "choiceEntry": {
+   "sans entrée": [
+    {
+     "releases": 0
+    },
+    {
+     "locked": []
+    }
+   ],
+   "entrée c": [
+    {
+     "native": "a",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "native": "b",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "native": "d",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "releases": 0
+    },
+    {
+     "locked": [
+      "a",
+      "b",
+      "d"
+     ]
+    }
+   ],
+   "focus sur a": [
+    {
+     "locked": [
+      "a",
+      "b",
+      "d"
+     ]
+    }
+   ],
+   "focus sur c : libéré": [
+    {
+     "native": "a",
+     "props": {
+      "isTVSelectable": true
+     }
+    },
+    {
+     "native": "b",
+     "props": {
+      "isTVSelectable": true
+     }
+    },
+    {
+     "native": "d",
+     "props": {
+      "isTVSelectable": true
+     }
+    },
+    {
+     "releases": 1
+    },
+    {
+     "locked": []
+    }
+   ],
+   "même entrée, liste qui change": [
+    {
+     "releases": 1
+    },
+    {
+     "locked": []
+    }
+   ],
+   "nouvelle entrée a": [
+    {
+     "native": "b",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "native": "c",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "native": "d",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "releases": 1
+    },
+    {
+     "locked": [
+      "b",
+      "c",
+      "d"
+     ]
+    }
+   ],
+   "799 ms": [
+    {
+     "locked": [
+      "b",
+      "c",
+      "d"
+     ]
+    }
+   ],
+   "800 ms : le filet libère": [
+    {
+     "native": "b",
+     "props": {
+      "isTVSelectable": true
+     }
+    },
+    {
+     "native": "c",
+     "props": {
+      "isTVSelectable": true
+     }
+    },
+    {
+     "native": "d",
+     "props": {
+      "isTVSelectable": true
+     }
+    },
+    {
+     "releases": 2
+    },
+    {
+     "locked": []
+    }
+   ],
+   "entrée b": [
+    {
+     "native": "a",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "native": "c",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "native": "d",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "releases": 2
+    },
+    {
+     "locked": [
+      "a",
+      "c",
+      "d"
+     ]
+    }
+   ],
+   "entrée retombée": [
+    {
+     "native": "a",
+     "props": {
+      "isTVSelectable": true
+     }
+    },
+    {
+     "native": "c",
+     "props": {
+      "isTVSelectable": true
+     }
+    },
+    {
+     "native": "d",
+     "props": {
+      "isTVSelectable": true
+     }
+    },
+    {
+     "releases": 2
+    },
+    {
+     "locked": []
+    }
+   ],
+   "entrée d puis démontage": [
+    {
+     "native": "a",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "native": "b",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "native": "c",
+     "props": {
+      "isTVSelectable": false
+     }
+    },
+    {
+     "releases": 2
+    },
+    {
+     "locked": [
+      "a",
+      "b",
+      "c"
+     ]
+    }
+   ],
+   "le filet après le démontage": [
+    {
+     "locked": [
+      "a",
+      "b",
+      "c"
+     ]
+    }
+   ]
+  },
+  "sheetFocus": {
+   "note qui se résout, puis entrée à 5": [
+    {
+     "step": "note en attente",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": null
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [],
+       "focusable": false
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:5"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:play"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "entrée décidée",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": false
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [],
+       "focusable": false
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:5"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:play"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "premier focus sur l'entrée",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": null
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [
+        "sheet:close"
+       ],
+       "focusable": null
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:5"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:play"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "un autre cran",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": null
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [
+        "sheet:close"
+       ],
+       "focusable": null
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:5"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:play"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "un picto visité",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": null
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [
+        "sheet:close"
+       ],
+       "focusable": null
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:5"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:favorite"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "note posée à 7",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": null
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [
+        "sheet:close"
+       ],
+       "focusable": null
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:7"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:favorite"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    }
+   ],
+   "note posée à l'ouverture, libérée par le filet": [
+    {
+     "step": "entrée sur 8",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": false
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [],
+       "focusable": false
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:8"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:play"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "799 ms",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": false
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [],
+       "focusable": false
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:8"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:play"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "800 ms",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": null
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [
+        "sheet:close"
+       ],
+       "focusable": null
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:8"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:play"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    }
+   ],
+   "rien à noter : entrée sur le premier picto": [
+    {
+     "step": "entrée sur Lire",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": false
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [],
+       "focusable": false
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:5"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:play"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "premier focus",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:play": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:watchlist": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:favorite": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:action:details": {
+       "guard": true,
+       "selectable": null
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [
+        "sheet:close"
+       ],
+       "focusable": null
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:5"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [
+        "sheet:action:play"
+       ],
+       "focusable": null
+      }
+     },
+     "events": []
+    }
+   ],
+   "ni note ni picto : la croix": [
+    {
+     "step": "entrée sur la croix",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": false
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": false
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [],
+       "focusable": false
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:5"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [],
+       "focusable": false
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "premier focus",
+     "targets": {
+      "sheet:close": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:1": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:2": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:3": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:4": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:5": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:6": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:7": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:8": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:9": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:10": {
+       "guard": true,
+       "selectable": null
+      },
+      "sheet:scale:remove": {
+       "guard": true,
+       "selectable": null
+      }
+     },
+     "guides": {
+      "sheet:header": {
+       "to": [
+        "sheet:close"
+       ],
+       "focusable": null
+      },
+      "sheet:scale": {
+       "to": [
+        "sheet:scale:5"
+       ],
+       "focusable": null
+      },
+      "sheet:actions": {
+       "to": [],
+       "focusable": false
+      }
+     },
+     "events": []
+    }
+   ]
+  },
+  "focusTarget": {
+   "gardé — OK sans appui commencé": [
+    {
+     "gesture": "onPress",
+     "press": 0,
+     "events": []
+    }
+   ],
+   "gardé — appui, relâché, OK": [
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onPressOut",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPress",
+     "press": 0,
+     "events": [
+      {
+       "pressed": true
+      }
+     ]
+    }
+   ],
+   "gardé — appui emporté ailleurs": [
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onBlur",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPress",
+     "press": 0,
+     "events": []
+    }
+   ],
+   "gardé — deux OK pour un appui": [
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onPress",
+     "press": 1,
+     "events": [
+      {
+       "pressed": true
+      }
+     ]
+    },
+    {
+     "gesture": "onPress",
+     "press": 1,
+     "events": []
+    }
+   ],
+   "gardé — appui, flou, retour, appui": [
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onBlur",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onPress",
+     "press": 1,
+     "events": [
+      {
+       "pressed": true
+      }
+     ]
+    }
+   ],
+   "libre — OK sans appui commencé": [
+    {
+     "gesture": "onPress",
+     "press": 0,
+     "events": [
+      {
+       "pressed": true
+      }
+     ]
+    }
+   ],
+   "libre — appui, relâché, OK": [
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onPressOut",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPress",
+     "press": 0,
+     "events": [
+      {
+       "pressed": true
+      }
+     ]
+    }
+   ],
+   "libre — appui emporté ailleurs": [
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onBlur",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPress",
+     "press": 0,
+     "events": [
+      {
+       "pressed": true
+      }
+     ]
+    }
+   ],
+   "libre — deux OK pour un appui": [
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onPress",
+     "press": 1,
+     "events": [
+      {
+       "pressed": true
+      }
+     ]
+    },
+    {
+     "gesture": "onPress",
+     "press": 1,
+     "events": [
+      {
+       "pressed": true
+      }
+     ]
+    }
+   ],
+   "libre — appui, flou, retour, appui": [
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onBlur",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onFocus",
+     "press": 0,
+     "events": []
+    },
+    {
+     "gesture": "onPressIn",
+     "press": 1,
+     "events": []
+    },
+    {
+     "gesture": "onPress",
+     "press": 1,
+     "events": [
+      {
+       "pressed": true
+      }
+     ]
+    }
+   ]
+  },
+  "sheetRows": {
+   "poster/biblio/lisible/debut/-/-": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/lisible/debut/-/liste": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/lisible/debut/filtre/-": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/lisible/debut/filtre/liste": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/lisible/reprise/-/-": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/lisible/reprise/-/liste": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/lisible/reprise/filtre/-": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/lisible/reprise/filtre/liste": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/rien/debut/-/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/rien/debut/-/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/rien/debut/filtre/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/rien/debut/filtre/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/rien/reprise/-/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/rien/reprise/-/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/rien/reprise/filtre/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/biblio/rien/reprise/filtre/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "poster/hors/lisible/debut/-/-": [],
+   "poster/hors/lisible/debut/-/liste": [],
+   "poster/hors/lisible/debut/filtre/-": [],
+   "poster/hors/lisible/debut/filtre/liste": [],
+   "poster/hors/lisible/reprise/-/-": [],
+   "poster/hors/lisible/reprise/-/liste": [],
+   "poster/hors/lisible/reprise/filtre/-": [],
+   "poster/hors/lisible/reprise/filtre/liste": [],
+   "poster/hors/rien/debut/-/-": [],
+   "poster/hors/rien/debut/-/liste": [],
+   "poster/hors/rien/debut/filtre/-": [],
+   "poster/hors/rien/debut/filtre/liste": [],
+   "poster/hors/rien/reprise/-/-": [],
+   "poster/hors/rien/reprise/-/liste": [],
+   "poster/hors/rien/reprise/filtre/-": [],
+   "poster/hors/rien/reprise/filtre/liste": [],
+   "landscape/biblio/lisible/debut/-/-": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo",
+     "detail": null
+    }
+   ],
+   "landscape/biblio/lisible/debut/-/liste": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo",
+     "detail": null
+    }
+   ],
+   "landscape/biblio/lisible/debut/filtre/-": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo",
+     "detail": null
+    }
+   ],
+   "landscape/biblio/lisible/debut/filtre/liste": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo",
+     "detail": null
+    }
+   ],
+   "landscape/biblio/lisible/reprise/-/-": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo",
+     "detail": null
+    }
+   ],
+   "landscape/biblio/lisible/reprise/-/liste": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo",
+     "detail": null
+    }
+   ],
+   "landscape/biblio/lisible/reprise/filtre/-": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo",
+     "detail": null
+    }
+   ],
+   "landscape/biblio/lisible/reprise/filtre/liste": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo",
+     "detail": null
+    }
+   ],
+   "landscape/biblio/rien/debut/-/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "landscape/biblio/rien/debut/-/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "landscape/biblio/rien/debut/filtre/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "landscape/biblio/rien/debut/filtre/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "landscape/biblio/rien/reprise/-/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "landscape/biblio/rien/reprise/-/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "landscape/biblio/rien/reprise/filtre/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "landscape/biblio/rien/reprise/filtre/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    }
+   ],
+   "landscape/hors/lisible/debut/-/-": [],
+   "landscape/hors/lisible/debut/-/liste": [],
+   "landscape/hors/lisible/debut/filtre/-": [],
+   "landscape/hors/lisible/debut/filtre/liste": [],
+   "landscape/hors/lisible/reprise/-/-": [],
+   "landscape/hors/lisible/reprise/-/liste": [],
+   "landscape/hors/lisible/reprise/filtre/-": [],
+   "landscape/hors/lisible/reprise/filtre/liste": [],
+   "landscape/hors/rien/debut/-/-": [],
+   "landscape/hors/rien/debut/-/liste": [],
+   "landscape/hors/rien/debut/filtre/-": [],
+   "landscape/hors/rien/debut/filtre/liste": [],
+   "landscape/hors/rien/reprise/-/-": [],
+   "landscape/hors/rien/reprise/-/liste": [],
+   "landscape/hors/rien/reprise/filtre/-": [],
+   "landscape/hors/rien/reprise/filtre/liste": [],
+   "reco/biblio/lisible/debut/-/-": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/biblio/lisible/debut/-/liste": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/biblio/lisible/debut/filtre/-": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/biblio/lisible/debut/filtre/liste": [
+    {
+     "kind": "play",
+     "label": "cards:play",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/biblio/lisible/reprise/-/-": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/biblio/lisible/reprise/-/liste": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/biblio/lisible/reprise/filtre/-": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/biblio/lisible/reprise/filtre/liste": [
+    {
+     "kind": "play",
+     "label": "cards:resume",
+     "detail": "12:34"
+    },
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/biblio/rien/debut/-/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/biblio/rien/debut/-/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/biblio/rien/debut/filtre/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/biblio/rien/debut/filtre/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/biblio/rien/reprise/-/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/biblio/rien/reprise/-/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/biblio/rien/reprise/filtre/-": [
+    {
+     "kind": "watchlist",
+     "label": "cards:addToWatchlist",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:addToFavorites",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/biblio/rien/reprise/filtre/liste": [
+    {
+     "kind": "watchlist",
+     "label": "cards:removeFromWatchlist",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "favorite",
+     "label": "cards:removeFromFavorites",
+     "active": true,
+     "detail": null
+    },
+    {
+     "kind": "watched",
+     "label": "cards:markWatched",
+     "active": false,
+     "detail": null
+    },
+    {
+     "kind": "details",
+     "label": "cards:moreInfo"
+    },
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/hors/lisible/debut/-/-": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/hors/lisible/debut/-/liste": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/hors/lisible/debut/filtre/-": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/hors/lisible/debut/filtre/liste": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/hors/lisible/reprise/-/-": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/hors/lisible/reprise/-/liste": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/hors/lisible/reprise/filtre/-": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/hors/lisible/reprise/filtre/liste": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/hors/rien/debut/-/-": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/hors/rien/debut/-/liste": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/hors/rien/debut/filtre/-": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/hors/rien/debut/filtre/liste": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/hors/rien/reprise/-/-": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/hors/rien/reprise/-/liste": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    }
+   ],
+   "reco/hors/rien/reprise/filtre/-": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ],
+   "reco/hors/rien/reprise/filtre/liste": [
+    {
+     "kind": "dismiss",
+     "label": "cards:dismiss",
+     "detail": null
+    },
+    {
+     "kind": "providersAll",
+     "label": "reco:providersAll"
+    }
+   ]
+  },
+  "ratingPanel": {
+   "sans note": [
+    {
+     "step": "en attente",
+     "stars": {
+      "score": 0,
+      "size": 54,
+      "gap": 8,
+      "dim": true
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 4,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 3,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 2,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 1,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 0,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 1,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 2,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 3,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 4,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 5,
+       "current": false,
+       "disabled": true,
+       "focusKey": "sheet:scale:10"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "…"
+      },
+      {
+       "text": ""
+      },
+      {
+       "translateX": 36
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "sue : aucune",
+     "stars": {
+      "score": 0,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "—"
+      },
+      {
+       "text": "cards:notRatedYet"
+      },
+      {
+       "translateX": 36
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "vise 6",
+     "stars": {
+      "score": 6,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "reco:ratingValue{\"score\":6}"
+      },
+      {
+       "text": "reco:rateAria{\"score\":6}"
+      },
+      {
+       "translateX": 36
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "6 → 7",
+     "stars": {
+      "score": 7,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "—"
+      },
+      {
+       "text": "cards:notRatedYet"
+      },
+      {
+       "translateX": -78
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      },
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "reco:ratingValue{\"score\":7}"
+      },
+      {
+       "text": "reco:rateAria{\"score\":7}"
+      },
+      {
+       "translateX": 36
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "flou tardif de 6",
+     "stars": {
+      "score": 7,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      }
+     },
+     "events": []
+    },
+    {
+     "step": "7 quitté",
+     "stars": {
+      "score": 0,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "—"
+      },
+      {
+       "text": "cards:notRatedYet"
+      },
+      {
+       "translateX": -192
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    }
+   ],
+   "note 7, retrait, puis retirée": [
+    {
+     "step": "posée à 7",
+     "stars": {
+      "score": 7,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 0,
+       "current": true,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      },
+      "sheet:scale:remove": {
+       "score": null,
+       "label": "cards:removeRating",
+       "distance": 4,
+       "disabled": false,
+       "focusKey": "sheet:scale:remove"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "reco:ratingValue{\"score\":7}"
+      },
+      {
+       "text": "cards:currentRating"
+      },
+      {
+       "translateX": -192
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "vise le retrait",
+     "stars": {
+      "score": 7,
+      "size": 54,
+      "gap": 8,
+      "dim": true
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 10,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 9,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 8,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 7,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 4,
+       "current": true,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      },
+      "sheet:scale:remove": {
+       "score": null,
+       "label": "cards:removeRating",
+       "distance": 0,
+       "disabled": false,
+       "focusKey": "sheet:scale:remove"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "—"
+      },
+      {
+       "text": "reco:removeRatingAria{\"score\":7}"
+      },
+      {
+       "translateX": -192
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "note retirée",
+     "stars": {
+      "score": 0,
+      "size": 54,
+      "gap": 8,
+      "dim": true
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 10,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 9,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 8,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 7,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      },
+      "sheet:scale:remove": {
+       "score": null,
+       "label": "cards:removeRating",
+       "distance": 0,
+       "disabled": true,
+       "focusKey": "sheet:scale:remove"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "—"
+      },
+      {
+       "text": "reco:removeRatingAria{\"score\":null}"
+      },
+      {
+       "translateX": -716
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "vise 3",
+     "stars": {
+      "score": 3,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 7,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      },
+      "sheet:scale:remove": {
+       "score": null,
+       "label": "cards:removeRating",
+       "distance": 8,
+       "disabled": true,
+       "focusKey": "sheet:scale:remove"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "—"
+      },
+      {
+       "text": "cards:notRatedYet"
+      },
+      {
+       "translateX": -716
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      },
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "reco:ratingValue{\"score\":3}"
+      },
+      {
+       "text": "reco:rateAria{\"score\":3}"
+      },
+      {
+       "translateX": 36
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "vise 7 (l'ancienne)",
+     "stars": {
+      "score": 7,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      },
+      "sheet:scale:remove": {
+       "score": null,
+       "label": "cards:removeRating",
+       "distance": 4,
+       "disabled": true,
+       "focusKey": "sheet:scale:remove"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "—"
+      },
+      {
+       "text": "cards:notRatedYet"
+      },
+      {
+       "translateX": 264
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      },
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "reco:ratingValue{\"score\":7}"
+      },
+      {
+       "text": "reco:rateAria{\"score\":7}"
+      },
+      {
+       "translateX": 36
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    }
+   ],
+   "note posée pendant que l'on vise": [
+    {
+     "step": "aucune",
+     "stars": {
+      "score": 0,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "—"
+      },
+      {
+       "text": "cards:notRatedYet"
+      },
+      {
+       "translateX": 36
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "vise 9",
+     "stars": {
+      "score": 9,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 8,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 7,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "reco:ratingValue{\"score\":9}"
+      },
+      {
+       "text": "reco:rateAria{\"score\":9}"
+      },
+      {
+       "translateX": 36
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    },
+    {
+     "step": "posée à 9",
+     "stars": {
+      "score": 9,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 8,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 7,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 0,
+       "current": true,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 1,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      },
+      "sheet:scale:remove": {
+       "score": null,
+       "label": "cards:removeRating",
+       "distance": 2,
+       "disabled": false,
+       "focusKey": "sheet:scale:remove"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "reco:ratingValue{\"score\":9}"
+      },
+      {
+       "text": "cards:currentRating"
+      },
+      {
+       "translateX": -420
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      },
+      {
+       "translateX": -420
+      }
+     ]
+    },
+    {
+     "step": "vise 10",
+     "stars": {
+      "score": 10,
+      "size": 54,
+      "gap": 8,
+      "dim": false
+     },
+     "cells": {
+      "sheet:scale:1": {
+       "score": 1,
+       "label": "reco:rateAria{\"score\":1}",
+       "distance": 9,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:1"
+      },
+      "sheet:scale:2": {
+       "score": 2,
+       "label": "reco:rateAria{\"score\":2}",
+       "distance": 8,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:2"
+      },
+      "sheet:scale:3": {
+       "score": 3,
+       "label": "reco:rateAria{\"score\":3}",
+       "distance": 7,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:3"
+      },
+      "sheet:scale:4": {
+       "score": 4,
+       "label": "reco:rateAria{\"score\":4}",
+       "distance": 6,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:4"
+      },
+      "sheet:scale:5": {
+       "score": 5,
+       "label": "reco:rateAria{\"score\":5}",
+       "distance": 5,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:5"
+      },
+      "sheet:scale:6": {
+       "score": 6,
+       "label": "reco:rateAria{\"score\":6}",
+       "distance": 4,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:6"
+      },
+      "sheet:scale:7": {
+       "score": 7,
+       "label": "reco:rateAria{\"score\":7}",
+       "distance": 3,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:7"
+      },
+      "sheet:scale:8": {
+       "score": 8,
+       "label": "reco:rateAria{\"score\":8}",
+       "distance": 2,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:8"
+      },
+      "sheet:scale:9": {
+       "score": 9,
+       "label": "reco:rateAria{\"score\":9}",
+       "distance": 1,
+       "current": true,
+       "disabled": false,
+       "focusKey": "sheet:scale:9"
+      },
+      "sheet:scale:10": {
+       "score": 10,
+       "label": "reco:rateAria{\"score\":10}",
+       "distance": 0,
+       "current": false,
+       "disabled": false,
+       "focusKey": "sheet:scale:10"
+      },
+      "sheet:scale:remove": {
+       "score": null,
+       "label": "cards:removeRating",
+       "distance": 1,
+       "disabled": false,
+       "focusKey": "sheet:scale:remove"
+      }
+     },
+     "events": [
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "reco:ratingValue{\"score\":9}"
+      },
+      {
+       "text": "cards:currentRating"
+      },
+      {
+       "translateX": -420
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      },
+      {
+       "text": "reco:yourRating"
+      },
+      {
+       "text": "reco:ratingValue{\"score\":10}"
+      },
+      {
+       "text": "reco:rateAria{\"score\":10}"
+      },
+      {
+       "translateX": -420
+      },
+      {
+       "text": "cards:ratingRulerHint"
+      }
+     ]
+    }
+   ]
+  },
+  "offline": {
+   "arme puis exécute": [
+    {
+     "step": "ouvert",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    },
+    {
+     "step": "revient",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": []
+    },
+    {
+     "step": "ok",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": true,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    },
+    {
+     "step": "ok",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "unpair": true
+      },
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    }
+   ],
+   "arme, part, revient : désarmé": [
+    {
+     "step": "ouvert",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    },
+    {
+     "step": "revient",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": []
+    },
+    {
+     "step": "ok",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": true,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    },
+    {
+     "step": "part",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    },
+    {
+     "step": "revient",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": []
+    },
+    {
+     "step": "ok",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": true,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    }
+   ],
+   "armé à l'ouverture (banc)": [
+    {
+     "step": "ouvert",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": true,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    },
+    {
+     "step": "ok",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "unpair": true
+      },
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    }
+   ],
+   "trois OK": [
+    {
+     "step": "ouvert",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    },
+    {
+     "step": "ok",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": true,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    },
+    {
+     "step": "ok",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": false,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "unpair": true
+      },
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    },
+    {
+     "step": "ok",
+     "unpair": {
+      "label": "pairing:tvUnpairDevice",
+      "icon": "logout",
+      "tone": "danger",
+      "armed": true,
+      "armedLabel": "pairing:tvUnpairConfirm",
+      "focusKey": "offline:unpair"
+     },
+     "retry": {
+      "variant": "primary",
+      "icon": "refresh",
+      "label": "retryConnection",
+      "focusKey": "offline:retry"
+     },
+     "events": [
+      {
+       "text": "offlineTitle"
+      },
+      {
+       "text": "offlineMessage"
+      },
+      {
+       "text": "offlineHint"
+      },
+      {
+       "text": "pairing:tvUnpairHint"
+      },
+      {
+       "text": "http://serveur"
+      }
+     ]
+    }
+   ]
+  },
+  "cardActions": {
+   "film de la bibliothèque": [
+    {
+     "step": "fiche en route",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": {
+      "current": null,
+      "pending": true
+     },
+     "events": []
+    },
+    {
+     "step": "fiche là, cible inconnue",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": false,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": null,
+     "events": []
+    },
+    {
+     "step": "cible en résolution",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": {
+      "current": null,
+      "pending": true
+     },
+     "events": []
+    },
+    {
+     "step": "cible sue, notes en route",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": {
+      "current": null,
+      "pending": true
+     },
+     "events": []
+    },
+    {
+     "step": "notes sues, aucune",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": []
+    },
+    {
+     "step": "Ma liste",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": [
+      {
+       "toggle": "watchlist"
+      }
+     ]
+    },
+    {
+     "step": "noter 7",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": [
+      {
+       "rate": {
+        "tmdbId": 42,
+        "mediaType": "movie",
+        "jellyfinItemId": "m1",
+        "score": 7
+       }
+      }
+     ]
+    },
+    {
+     "step": "retirer",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": [
+      {
+       "removeRating": {
+        "tmdbId": 42,
+        "mediaType": "movie"
+       }
+      }
+     ]
+    },
+    {
+     "step": "la fiche",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": [
+      {
+       "leave": true
+      },
+      {
+       "push": "MediaDetail",
+       "params": {
+        "itemId": "m1"
+       }
+      }
+     ]
+    },
+    {
+     "step": "demander : rien",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": true,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": []
+    }
+   ],
+   "rien à noter": [
+    {
+     "step": "fiche là, aucune cible",
+     "variant": "landscape",
+     "overlay": {
+      "variant": "landscape",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": false,
+      "open": "play",
+      "request": false,
+      "rate": false,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": [
+       "details"
+      ]
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": null,
+     "events": []
+    },
+    {
+     "step": "lire",
+     "variant": "landscape",
+     "overlay": {
+      "variant": "landscape",
+      "play": {
+       "labelKey": "play"
+      },
+      "playInTray": false,
+      "open": "play",
+      "request": false,
+      "rate": false,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": [
+       "details"
+      ]
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": {
+      "resume": false,
+      "detail": null,
+      "itemId": "m1"
+     },
+     "rating": null,
+     "events": [
+      {
+       "leave": true
+      },
+      {
+       "navigate": "Player",
+       "params": {
+        "itemId": "m1"
+       }
+      }
+     ]
+    }
+   ],
+   "série, note seule (« Noter »)": [
+    {
+     "step": "fiche en route",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": null,
+      "playInTray": false,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": null,
+     "rating": {
+      "current": null,
+      "pending": true
+     },
+     "events": []
+    },
+    {
+     "step": "fiche là",
+     "variant": "poster",
+     "overlay": {
+      "variant": "poster",
+      "play": null,
+      "playInTray": false,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [
+       "watchlist",
+       "favorite",
+       "watched"
+      ],
+      "extras": []
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": null,
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": []
+    }
+   ],
+   "reco hors bibliothèque": [
+    {
+     "step": "rien de su",
+     "variant": "reco",
+     "overlay": {
+      "variant": "reco",
+      "play": null,
+      "playInTray": false,
+      "open": "details",
+      "request": false,
+      "rate": false,
+      "toggles": [],
+      "extras": [
+       "dismiss"
+      ]
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": null,
+     "rating": null,
+     "events": []
+    },
+    {
+     "step": "cible sue",
+     "variant": "reco",
+     "overlay": {
+      "variant": "reco",
+      "play": null,
+      "playInTray": false,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [],
+      "extras": [
+       "dismiss"
+      ]
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": null,
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": []
+    },
+    {
+     "step": "ne plus me proposer",
+     "variant": "reco",
+     "overlay": {
+      "variant": "reco",
+      "play": null,
+      "playInTray": false,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [],
+      "extras": [
+       "dismiss"
+      ]
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": null,
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": [
+      {
+       "feedback": {
+        "itemKey": "movie:9",
+        "action": "dismissed"
+       }
+      },
+      {
+       "leave": true
+      }
+     ]
+    },
+    {
+     "step": "toutes les plateformes",
+     "variant": "reco",
+     "overlay": {
+      "variant": "reco",
+      "play": null,
+      "playInTray": false,
+      "open": "details",
+      "request": false,
+      "rate": true,
+      "toggles": [],
+      "extras": [
+       "dismiss"
+      ]
+     },
+     "states": {
+      "watchlist": false,
+      "favorite": false,
+      "watched": false
+     },
+     "play": null,
+     "rating": {
+      "current": null,
+      "pending": false
+     },
+     "events": [
+      {
+       "leave": true
+      },
+      {
+       "providerFilter": []
+      }
+     ]
+    }
+   ]
+  },
+  "actionSheet": {
+   "note qui se résout, Menu dans la Modal": [
+    {
+     "step": "note en attente",
+     "modal": false,
+     "closing": null,
+     "rating": null,
+     "actions": null,
+     "takesMenu": true,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "note sue",
+     "modal": true,
+     "closing": false,
+     "rating": {
+      "current": null
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": true,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "Menu (Modal)",
+     "modal": true,
+     "closing": true,
+     "rating": {
+      "current": null
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": false,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "fin de la sortie",
+     "modal": true,
+     "closing": true,
+     "rating": {
+      "current": null
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": false,
+     "mode": "actions",
+     "events": [
+      {
+       "closed": true
+      }
+     ]
+    }
+   ],
+   "filet : la note tarde": [
+    {
+     "step": "note en attente",
+     "modal": false,
+     "closing": null,
+     "rating": null,
+     "actions": null,
+     "takesMenu": true,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "1 199 ms",
+     "modal": false,
+     "closing": null,
+     "rating": null,
+     "actions": null,
+     "takesMenu": true,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "1 200 ms",
+     "modal": true,
+     "closing": false,
+     "rating": {
+      "current": null,
+      "pending": true
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": true,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "la note arrive (entrée figée)",
+     "modal": true,
+     "closing": false,
+     "rating": {
+      "current": 6
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": true,
+     "mode": "actions",
+     "events": []
+    }
+   ],
+   "la croix": [
+    {
+     "step": "note 8",
+     "modal": true,
+     "closing": false,
+     "rating": {
+      "current": 8
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": true,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "croix",
+     "modal": true,
+     "closing": true,
+     "rating": {
+      "current": 8
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": false,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "fin de la sortie",
+     "modal": true,
+     "closing": true,
+     "rating": {
+      "current": 8
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": false,
+     "mode": "actions",
+     "events": [
+      {
+       "closed": true
+      }
+     ]
+    }
+   ],
+   "rien à noter, Menu par la portée pendant l'attente": [
+    {
+     "step": "attente (pending)",
+     "modal": false,
+     "closing": null,
+     "rating": null,
+     "actions": null,
+     "takesMenu": true,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "Menu (portée)",
+     "modal": false,
+     "closing": null,
+     "rating": null,
+     "actions": null,
+     "takesMenu": false,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "la note arrive",
+     "modal": true,
+     "closing": true,
+     "rating": {
+      "current": null
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": false,
+     "mode": "actions",
+     "events": [
+      {
+       "closed": true
+      }
+     ]
+    }
+   ],
+   "« Noter » : OK note et ferme": [
+    {
+     "step": "note sue",
+     "modal": true,
+     "closing": false,
+     "rating": {
+      "current": null
+     },
+     "actions": [],
+     "takesMenu": true,
+     "mode": "rate",
+     "events": []
+    },
+    {
+     "step": "OK sur 6",
+     "modal": true,
+     "closing": true,
+     "rating": {
+      "current": null
+     },
+     "actions": [],
+     "takesMenu": false,
+     "mode": "rate",
+     "events": [
+      {
+       "rated": 6
+      }
+     ]
+    },
+    {
+     "step": "fin de la sortie",
+     "modal": true,
+     "closing": true,
+     "rating": {
+      "current": null
+     },
+     "actions": [],
+     "takesMenu": false,
+     "mode": "rate",
+     "events": [
+      {
+       "closed": true
+      }
+     ]
+    }
+   ],
+   "grand panneau : OK note sans fermer": [
+    {
+     "step": "note sue",
+     "modal": true,
+     "closing": false,
+     "rating": {
+      "current": 4
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": true,
+     "mode": "actions",
+     "events": []
+    },
+    {
+     "step": "OK sur 9",
+     "modal": true,
+     "closing": false,
+     "rating": {
+      "current": 4
+     },
+     "actions": [
+      "play",
+      "watchlist"
+     ],
+     "takesMenu": true,
+     "mode": "actions",
+     "events": [
+      {
+       "rated": 9
+      }
+     ]
+    }
+   ]
+  },
+  "seasons": {
+   "saisons sues, cocher, Lecture/Pause demande ce qui est coché": [
+    {
+     "step": "saisons en route",
+     "open": false,
+     "sheet": null,
+     "keys": {},
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "Lecture/Pause avant la présentation",
+     "open": false,
+     "sheet": null,
+     "keys": {},
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "saisons sues",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "common:close",
+       "kind": "close"
+      }
+     },
+     "keys": {
+      "sheet:season:all": false,
+      "sheet:season:1": null,
+      "sheet:season:2": false,
+      "sheet:season:3": false,
+      "sheet:apply": false
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "premier focus sur l'entrée",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "common:close",
+       "kind": "close"
+      }
+     },
+     "keys": {
+      "sheet:season:all": null,
+      "sheet:season:1": null,
+      "sheet:season:2": null,
+      "sheet:season:3": null,
+      "sheet:apply": null
+     },
+     "takesMenu": true,
+     "events": [
+      {
+       "native": "sheet:season:all",
+       "props": {
+        "isTVSelectable": true
+       }
+      },
+      {
+       "native": "sheet:season:2",
+       "props": {
+        "isTVSelectable": true
+       }
+      },
+      {
+       "native": "sheet:season:3",
+       "props": {
+        "isTVSelectable": true
+       }
+      },
+      {
+       "native": "sheet:apply",
+       "props": {
+        "isTVSelectable": true
+       }
+      }
+     ]
+    },
+    {
+     "step": "focus sur la saison 2",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "common:close",
+       "kind": "close"
+      }
+     },
+     "keys": {
+      "sheet:season:all": null,
+      "sheet:season:1": null,
+      "sheet:season:2": null,
+      "sheet:season:3": null,
+      "sheet:apply": null
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "coche la 3",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": true
+       }
+      ],
+      "submit": {
+       "label": "requests:seasonsSubmit{\"count\":1}",
+       "kind": "request"
+      }
+     },
+     "keys": {
+      "sheet:season:all": null,
+      "sheet:season:1": null,
+      "sheet:season:2": null,
+      "sheet:season:3": null,
+      "sheet:apply": null
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "Lecture/Pause maintenu : rien",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": true
+       }
+      ],
+      "submit": {
+       "label": "requests:seasonsSubmit{\"count\":1}",
+       "kind": "request"
+      }
+     },
+     "keys": {
+      "sheet:season:all": null,
+      "sheet:season:1": null,
+      "sheet:season:2": null,
+      "sheet:season:3": null,
+      "sheet:apply": null
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "Lecture/Pause",
+     "open": false,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": true
+       }
+      ],
+      "submit": {
+       "label": "requests:seasonsSubmit{\"count\":1}",
+       "kind": "request"
+      }
+     },
+     "keys": {
+      "sheet:season:all": null,
+      "sheet:season:1": null,
+      "sheet:season:2": null,
+      "sheet:season:3": null,
+      "sheet:apply": null
+     },
+     "takesMenu": false,
+     "events": [
+      {
+       "requestSeasons": {
+        "key": "tv:100",
+        "seasons": [
+         3
+        ]
+       }
+      },
+      {
+       "fadingExited": true
+      },
+      {
+       "closed": true
+      },
+      {
+       "answer": {
+        "kind": "done",
+        "ok": true,
+        "message": null,
+        "state": null
+       },
+       "seasons": [
+        3
+       ]
+      }
+     ]
+    }
+   ],
+   "rien de coché : la saison focalisée ; « Toutes »": [
+    {
+     "step": "saisons sues, entrée sur la 2",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": true
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "requests:seasonsSubmit{\"count\":1}",
+       "kind": "request"
+      }
+     },
+     "keys": {
+      "sheet:season:all": false,
+      "sheet:season:1": false,
+      "sheet:season:2": null,
+      "sheet:season:3": false,
+      "sheet:apply": false
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "focus sur « Toutes »",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": true
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "requests:seasonsSubmit{\"count\":1}",
+       "kind": "request"
+      }
+     },
+     "keys": {
+      "sheet:season:all": null,
+      "sheet:season:1": null,
+      "sheet:season:2": null,
+      "sheet:season:3": null,
+      "sheet:apply": null
+     },
+     "takesMenu": true,
+     "events": [
+      {
+       "native": "sheet:season:all",
+       "props": {
+        "isTVSelectable": true
+       }
+      },
+      {
+       "native": "sheet:season:1",
+       "props": {
+        "isTVSelectable": true
+       }
+      },
+      {
+       "native": "sheet:season:3",
+       "props": {
+        "isTVSelectable": true
+       }
+      },
+      {
+       "native": "sheet:apply",
+       "props": {
+        "isTVSelectable": true
+       }
+      }
+     ]
+    },
+    {
+     "step": "OK sur « Toutes »",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": true
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": true
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": true
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": true
+       }
+      ],
+      "submit": {
+       "label": "requests:seasonsSubmit{\"count\":3}",
+       "kind": "request"
+      }
+     },
+     "keys": {
+      "sheet:season:all": null,
+      "sheet:season:1": null,
+      "sheet:season:2": null,
+      "sheet:season:3": null,
+      "sheet:apply": null
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "OK de nouveau",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "common:close",
+       "kind": "close"
+      }
+     },
+     "keys": {
+      "sheet:season:all": null,
+      "sheet:season:1": null,
+      "sheet:season:2": null,
+      "sheet:season:3": null,
+      "sheet:apply": null
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "Lecture/Pause sur « Toutes »",
+     "open": false,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "common:close",
+       "kind": "close"
+      }
+     },
+     "keys": {
+      "sheet:season:all": null,
+      "sheet:season:1": null,
+      "sheet:season:2": null,
+      "sheet:season:3": null,
+      "sheet:apply": null
+     },
+     "takesMenu": false,
+     "events": [
+      {
+       "requestSeasons": {
+        "key": "tv:100",
+        "seasons": [
+         1,
+         2,
+         3
+        ]
+       }
+      },
+      {
+       "fadingExited": true
+      },
+      {
+       "closed": true
+      },
+      {
+       "answer": {
+        "kind": "done",
+        "ok": true,
+        "message": null,
+        "state": null
+       },
+       "seasons": [
+        1,
+        2,
+        3
+       ]
+      }
+     ]
+    }
+   ],
+   "Menu dans la feuille": [
+    {
+     "step": "saisons sues",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "common:close",
+       "kind": "close"
+      }
+     },
+     "keys": {
+      "sheet:season:all": false,
+      "sheet:season:1": null,
+      "sheet:season:2": false,
+      "sheet:season:3": false,
+      "sheet:apply": false
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "Menu (Modal)",
+     "open": false,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "common:close",
+       "kind": "close"
+      }
+     },
+     "keys": {
+      "sheet:season:all": false,
+      "sheet:season:1": null,
+      "sheet:season:2": false,
+      "sheet:season:3": false,
+      "sheet:apply": false
+     },
+     "takesMenu": false,
+     "events": [
+      {
+       "fadingExited": true
+      },
+      {
+       "closed": true
+      }
+     ]
+    }
+   ],
+   "fermée avant d'avoir paru": [
+    {
+     "step": "saisons en route",
+     "open": false,
+     "sheet": null,
+     "keys": {},
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "Menu par la portée",
+     "open": false,
+     "sheet": null,
+     "keys": {},
+     "takesMenu": true,
+     "events": [
+      {
+       "closed": true
+      }
+     ]
+    }
+   ],
+   "filet : les saisons tardent": [
+    {
+     "step": "saisons en route",
+     "open": false,
+     "sheet": null,
+     "keys": {},
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "1 499 ms",
+     "open": false,
+     "sheet": null,
+     "keys": {},
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "1 500 ms",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "seasons": null,
+      "message": "requests:seasonsLoading",
+      "submit": {
+       "label": "common:close",
+       "kind": "close"
+      }
+     },
+     "keys": {
+      "sheet:apply": null
+     },
+     "takesMenu": true,
+     "events": []
+    }
+   ],
+   "la pilule demande les saisons cochées": [
+    {
+     "step": "saisons sues",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": false
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "common:close",
+       "kind": "close"
+      }
+     },
+     "keys": {
+      "sheet:season:all": false,
+      "sheet:season:1": null,
+      "sheet:season:2": false,
+      "sheet:season:3": false,
+      "sheet:apply": false
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "coche 2 et 1",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": false
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": true
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "requests:seasonsSubmit{\"count\":1}",
+       "kind": "request"
+      }
+     },
+     "keys": {
+      "sheet:season:all": false,
+      "sheet:season:1": null,
+      "sheet:season:2": false,
+      "sheet:season:3": false,
+      "sheet:apply": false
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "coche 1",
+     "open": true,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": true
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": true
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "requests:seasonsSubmit{\"count\":2}",
+       "kind": "request"
+      }
+     },
+     "keys": {
+      "sheet:season:all": false,
+      "sheet:season:1": null,
+      "sheet:season:2": false,
+      "sheet:season:3": false,
+      "sheet:apply": false
+     },
+     "takesMenu": true,
+     "events": []
+    },
+    {
+     "step": "Demander",
+     "open": false,
+     "sheet": {
+      "title": "Série",
+      "subtitle": "requests:seasonsSubtitle",
+      "all": {
+       "label": "requests:seasonsAll",
+       "detail": "requests:missingSeasons{\"count\":3}",
+       "selected": false
+      },
+      "shortcut": "requests:seasonsShortcut",
+      "seasons": [
+       {
+        "number": 1,
+        "label": "requests:seasonFallback{\"number\":1}",
+        "detail": "requests:seasonEpisodes{\"count\":10}",
+        "selected": true
+       },
+       {
+        "number": 2,
+        "label": "requests:seasonFallback{\"number\":2}",
+        "detail": "requests:seasonEpisodes{\"count\":8}",
+        "selected": true
+       },
+       {
+        "number": 3,
+        "label": "requests:seasonFallback{\"number\":3}",
+        "detail": "requests:seasonEpisodes{\"count\":6}",
+        "selected": false
+       }
+      ],
+      "submit": {
+       "label": "requests:seasonsSubmit{\"count\":2}",
+       "kind": "request"
+      }
+     },
+     "keys": {
+      "sheet:season:all": false,
+      "sheet:season:1": null,
+      "sheet:season:2": false,
+      "sheet:season:3": false,
+      "sheet:apply": false
+     },
+     "takesMenu": false,
+     "events": [
+      {
+       "requestSeasons": {
+        "key": "tv:100",
+        "seasons": [
+         1,
+         2
+        ]
+       }
+      },
+      {
+       "fadingExited": true
+      },
+      {
+       "closed": true
+      },
+      {
+       "answer": {
+        "kind": "done",
+        "ok": true,
+        "message": null,
+        "state": null
+       },
+       "seasons": [
+        1,
+        2
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
+}
