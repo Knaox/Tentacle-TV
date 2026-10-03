@@ -6,17 +6,56 @@ Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
 ## [1.10.3]
+<!-- Bloc nu : Google Play (500 caractères), qui a déjà la 1.10.2. L'App Store, resté à la 1.8.2, a son bloc ios-. -->
 ### FR
-- **Plus d'image en blocs dans les scènes d'action** quand la qualité baisse
-- **Plus de vibration en faisant défiler** : seulement quand une action est validée
-- **Notifications Android en bandeau**, en haut de l'écran
-- **Navigation plus fluide**, surtout sur iPad et Android
+- **Des erreurs claires** : pourquoi la lecture échoue, et quoi faire
+- **Plus d'image en blocs** dans l'action quand la qualité baisse
+- **Barre d'onglets plus lisible**, bouton des bannières aux couleurs Tentacle
+- **Avertissements discrets**, à masquer pour de bon
+- Réinstaller l'app rouvre bien la connexion
+- Navigation plus fluide, plus de vibration en défilant
 
 ### EN
-- **No more blocky picture in action scenes** when quality drops
-- **No more vibration while scrolling**: only when an action is confirmed
-- **Android notifications as banners**, at the top of the screen
-- **Smoother navigation**, especially on iPad and Android
+- **Clear errors**: why playback fails, and what to do
+- **No more blocky picture** in action scenes when quality drops
+- **Clearer tab bar**, banner button in Tentacle colors
+- **Discreet warnings**, hideable for good
+- Reinstalling the app now shows the sign-in screen
+- Smoother navigation, no more vibration while scrolling
+
+## [ios-1.10.3]
+<!-- Bloc iOS (App Store Connect, 4000 caractères) : l'App Store en est resté à la 1.8.2 (les 1.10.x n'y ont pas été publiées) — tout depuis. -->
+### FR
+- **Quand une lecture ou une page échoue, l'app dit pourquoi** et propose quoi faire : Réessayer, Qualité réduite, Autre version, Sans sous-titres. Serveur injoignable, connexion perdue, fichier introuvable, session expirée : chaque cause a ses mots, et les détails techniques restent repliés
+- **Vos statistiques** : temps devant l'écran, genres, films et acteurs préférés, records, « VF ou VO ? » — à partager par un lien public, révocable à tout moment
+- **La saga d'un film** sur sa fiche, et **des saisons bien plus rapides** : la saison en cours s'ouvre d'emblée
+- **Bande-annonce** : un bouton sur la fiche, les bandes-annonces de saison, les bonus, et un guide dans Aide › Bandes-annonces
+- **Un appui long, les mêmes actions partout** : cartes, recherche, Ma liste, épisodes ; « Sur cet appareil » pour ce que vous gardez hors ligne
+- **Hors ligne** : un titre gardé s'ouvre dans la nouvelle fiche, et l'accueil hors ligne propose Reprendre, À suivre et la place utilisée
+- **Avec Jellyfin 12** : le choix de la version, « Fait partie de », les filtres par langue et la VO parmi vos langues préférées
+- **Les vidéos HEVC « hev1 » ont une image** sur iPhone et iPad
+- **Plus d'image en blocs dans les scènes d'action quand la qualité baisse**, et la qualité automatique suit enfin le vrai débit du réseau
+- **La reprise au bon endroit**, même quand Jellyfin 12.1 écrit la position en retard ; la lecture directe tient pendant une panne du serveur et marche dès l'ouverture de l'app
+- **Une barre d'onglets plus lisible** sur tous les fonds, et le bouton principal des bannières aux couleurs de Tentacle
+- **Les avertissements d'administration s'effacent seuls** et se masquent pour de bon
+- **Navigation plus fluide**, surtout sur iPad ; la vibration ne vient plus qu'à l'action validée
+- Réinstaller l'app ouvre bien l'écran de connexion, et l'app s'ouvre directement sur l'adresse du serveur
+
+### EN
+- **When playback or a page fails, the app says why** and what to do: Retry, Lower quality, Other version, No subtitles. Server unreachable, connection lost, file not found, session expired: each cause has its own words, and technical details stay folded away
+- **Your stats**: screen time, genres, favorite movies and actors, records, "Dubbed or original?" — shareable through a public link, revocable at any time
+- **A movie's saga** on its page, and **much faster seasons**: the current season opens right away
+- **Trailer**: a button on the title page, season trailers, extras, and a guide in Help › Trailers
+- **One long press, the same actions everywhere**: cards, search, My list, episodes; "On this device" for what you keep offline
+- **Offline**: a kept title opens in the new title page, and the offline home offers Resume, Up next and the space used
+- **With Jellyfin 12**: version choice, "Part of", language filters and original language among your preferred ones
+- **"hev1" HEVC videos have a picture** on iPhone and iPad
+- **No more blocky picture in action scenes when quality drops**, and automatic quality finally follows the real network bandwidth
+- **Resume at the right spot**, even when Jellyfin 12.1 writes the position late; direct streaming holds through a server outage and works as soon as the app opens
+- **A clearer tab bar** on any background, and the main banner button in Tentacle colors
+- **Admin warnings fade on their own** and can be hidden for good
+- **Smoother navigation**, especially on iPad; vibration now only comes when an action is confirmed
+- Reinstalling the app now shows the sign-in screen, and the app opens straight on the server address
 
 ## [1.10.2]
 ### FR

@@ -15,13 +15,29 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Plus d'image en blocs dans les scènes d'action quand la qualité baisse** (lecteur web) : une qualité réduite, choisie ou automatique, garde désormais une définition que son débit peut tenir — 1080p, 720p, 540p ou 360p. Avant, un « 1080p » pouvait sortir en 540p, ou en 720p à 1,2 Mb/s, et partir en blocs dès que l'image bougeait. Au banc, les pires images d'une scène d'action passent d'un VMAF de 21 à 59, sans perte au calme
 - **La limite de débit Internet de Jellyfin ne pixellise plus l'action** : quand elle plafonne une lecture à distance, le lecteur web choisit lui aussi une définition qui tient dans la limite, au lieu d'un 1080p affamé
 - **Notifications Android en bandeau** : le serveur les envoie en priorité haute, sans canal nommé — elles s'affichent en haut de l'écran sur toutes les versions de l'app, anciennes comprises
-- La version minimale exigée des clients reste 1.22.1
+- **Un tableau de bord qui dit l'essentiel** : en tête, « Tout fonctionne » ou « 1 point à régler · 3 recommandations » ; ce qui est cassé d'abord, puis les recommandations (HTTPS, clé TMDB, réglages Jellyfin, lecture directe), chacune masquable pour votre compte et retrouvable sous « N masquées ». Quand Jellyfin est injoignable, une seule entrée le dit, au lieu d'une pile d'avertissements ; la liste complète des réglages Jellyfin conseillés passe dans Services
+- **La carte « Serveur Tentacle »** montre la version en service, la dernière publiée et ses nouveautés, dit si la mise à jour est conseillée ou obligatoire, donne la commande Docker à copier, et voit d'elle-même le serveur revenu à jour
+- **Les sessions disent pourquoi elles transcodent** : lecture directe, remux ou transcodage, la raison en clair (conteneur, codec, sous-titres incrustés, limite de débit…), ce qui change (HEVC → H.264, HDR → SDR, 1080p → 720p) et l'encodeur. Un épisode s'affiche « Série — S1 E1 · Titre »
+- **Les messages envoyés aux sessions** restent visibles quand la vidéo est en plein écran (lecteur web), et un message sans titre n'affiche plus « Message from Server »
+- **Le lecteur web et les pages disent pourquoi ils échouent**, et quoi faire — Réessayer, Qualité réduite, Autre version —, les détails techniques repliés
+- **Les avertissements d'administration** (clé d'administration Jellyfin, serveur à mettre à jour, clé TMDB) : un seul à la fois, qui s'efface seul après quelques secondes et se masque pour de bon depuis le compte — « jusqu'à la prochaine mise à jour obligatoire » pour celui du serveur. Ils se taisent sur le tableau de bord, qui les montre déjà
+- **Le bouton principal des bannières** prend le dégradé violet → rose de Tentacle
+- **Plus de mention légale au premier lancement** : l'application s'ouvre directement sur l'adresse du serveur
+- La version minimale exigée des clients passe à 1.22.3
 
 ### EN
 - **No more blocky picture in action scenes when quality drops** (web player): a reduced quality, chosen or automatic, now keeps a resolution its bitrate can hold — 1080p, 720p, 540p or 360p. Before, a "1080p" could come out as 540p, or 720p at 1.2 Mb/s, and break into blocks as soon as the picture moved. On the bench, the worst frames of an action scene go from a VMAF of 21 to 59, with no loss in calm scenes
 - **Jellyfin's internet bitrate limit no longer pixelates action**: when it caps a remote playback, the web player also picks a resolution that fits the limit, instead of a starved 1080p
 - **Android notifications as banners**: the server sends them with high priority, without a named channel — they show at the top of the screen on every version of the app, older ones included
-- The minimum required client version stays 1.22.1
+- **A dashboard that says what matters**: "Everything works" or "1 thing to fix · 3 recommendations" at the top; what's broken first, then recommendations (HTTPS, TMDB key, Jellyfin settings, direct play), each hideable for your account and found again under "N hidden". When Jellyfin can't be reached, a single entry says so instead of a pile of warnings; the full list of recommended Jellyfin settings moves to Services
+- **The "Tentacle server" card** shows the running version, the latest release and what's new, says whether updating is recommended or required, gives the Docker command to copy, and notices by itself when the server is back up to date
+- **Sessions say why they transcode**: direct play, remux or transcode, the reason in plain words (container, codec, burned-in subtitles, bitrate limit…), what changes (HEVC → H.264, HDR → SDR, 1080p → 720p) and the encoder. An episode reads "Series — S1 E1 · Title"
+- **Messages sent to sessions** stay visible when the video is full screen (web player), and an untitled message no longer shows "Message from Server"
+- **The web player and pages say why they fail**, and what to do — Retry, Lower quality, Other version — with technical details folded away
+- **Admin warnings** (Jellyfin admin key, server to update, TMDB key): one at a time, fading on its own after a few seconds and hideable for good from the account — "until the next required update" for the server one. They stay quiet on the dashboard, which already shows them
+- **The main banner button** takes Tentacle's purple → pink gradient
+- **No more legal notice at first launch**: the app opens straight on the server address
+- The minimum required client version moves to 1.22.3
 
 ## [1.22.2]
 ### FR

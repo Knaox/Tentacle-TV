@@ -14,14 +14,46 @@ ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macO
 et Linux reçoivent l'ensemble.
 
 ## [1.25.5]
-<!-- Bloc nu pour les trois systèmes : macOS, Windows et Linux partent tous de la 1.25.4. -->
+<!-- Bloc nu : Windows (Microsoft Store, 1500 caractères) et Linux partent de la 1.25.4. Le Mac App Store, resté à la 1.25.0, a son bloc mac-. -->
 ### FR
-- **Plus d'image en blocs dans les scènes d'action quand la qualité baisse** : une qualité réduite, choisie ou automatique, garde désormais une définition que son débit peut tenir — 1080p, 720p, 540p ou 360p. Avant, un « 1080p » pouvait sortir en 540p à 1 Mb/s et partir en blocs dès que l'image bougeait. Au banc, les pires images d'une scène d'action passent d'un VMAF de 32 à 59, sans perte au calme
-- **La qualité automatique adapte le débit à la connexion** à l'intérieur d'une définition, au lieu de tomber d'un cran entier
+- **Quand une lecture ou une page échoue, l'application dit pourquoi** et propose quoi faire : Réessayer, Qualité réduite, Autre version. Un fichier manquant ne bascule plus vers un lecteur de secours, et une lecture qui échoue dès le départ ne reste plus en chargement sans fin
+- **Plus d'image en blocs dans les scènes d'action quand la qualité baisse** : une qualité réduite garde une définition que son débit peut tenir, et l'automatique adapte le débit à la connexion au lieu de tomber d'un cran entier
+- **Administration** : un tableau de bord plus lisible, des avertissements qui s'effacent seuls et se masquent pour de bon, la commande de mise à jour du serveur à copier, et la raison du transcodage en clair dans les sessions (« S1 E1 » pour un épisode)
+- Les messages de l'administrateur restent visibles en plein écran
+- Le bouton principal des bannières aux couleurs de Tentacle, et plus de mention légale au premier lancement
 
 ### EN
-- **No more blocky picture in action scenes when quality drops**: a reduced quality, chosen or automatic, now keeps a resolution its bitrate can hold — 1080p, 720p, 540p or 360p. Before, a "1080p" could come out as 540p at 1 Mb/s and break into blocks as soon as the picture moved. On the bench, the worst frames of an action scene go from a VMAF of 32 to 59, with no loss in calm scenes
-- **Automatic quality fits the bitrate to the connection** within a resolution, instead of dropping a whole step
+- **When playback or a page fails, the app says why** and what to do: Retry, Lower quality, Other version. A missing file no longer falls back to a backup player, and playback that fails right away no longer loads forever
+- **No more blocky picture in action scenes when quality drops**: a reduced quality keeps a resolution its bitrate can hold, and automatic quality fits the bitrate to the connection instead of dropping a whole step
+- **Administration**: a clearer dashboard, warnings that fade on their own and can be hidden for good, the server update command to copy, and transcoding reasons in plain words in sessions ("S1 E1" for an episode)
+- Admin messages stay visible in full screen
+- The main banner button in Tentacle colors, and no more legal notice at first launch
+
+## [mac-1.25.5]
+<!-- App Store Connect (4000 caractères) : le Mac App Store en est resté à la 1.25.0 (les 1.25.3 et 1.25.4 n'y ont pas été publiées) — tout depuis. -->
+### FR
+- **Quand une lecture ou une page échoue, l'application dit pourquoi** et propose quoi faire : Réessayer, Qualité réduite, Autre version, les détails techniques repliés. Un fichier manquant ne bascule plus vers un lecteur de secours, et une lecture qui échoue dès le départ ne reste plus en chargement sans fin
+- **L'image ne vibre plus en plein écran** sur les écrans sans encoche — MacBook Air, MacBook Pro 13 pouces, Mac mini, iMac et écrans externes
+- **Plus d'image en blocs dans les scènes d'action quand la qualité baisse** : une qualité réduite garde une définition que son débit peut tenir — 1080p, 720p, 540p ou 360p —, et la qualité automatique adapte le débit à la connexion au lieu de tomber d'un cran entier
+- **Un titre que le serveur n'a jamais lu démarre presque aussi vite qu'un autre** : 0,25 à 0,38 s du clic à l'image, au lieu de 0,55 à 1 s
+- **La reprise au bon endroit** : la fiche montre la position quittée dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard ; un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture »
+- **La lecture directe tient pendant une panne** du serveur Tentacle ou de Jellyfin, au lieu de se couper jusqu'au redémarrage
+- **« Derniers ajouts », une carte par série** : « 4 nouveaux épisodes », « Nouvelle saison · 8 épisodes », « Nouvelle série », ouverte sur la saison du dernier ajout
+- **La bannière d'accueil montre le logo des films et des séries**, et son bouton principal prend les couleurs de Tentacle
+- **Administration** : un tableau de bord qui dit l'essentiel, des avertissements qui s'effacent seuls et se masquent pour de bon, la commande de mise à jour du serveur à copier, et la raison du transcodage en clair dans les sessions (« S1 E1 » pour un épisode)
+- Les messages de l'administrateur restent visibles en plein écran ; plus de mention légale au premier lancement ; « 1 saison », et non plus « 1 saisons »
+
+### EN
+- **When playback or a page fails, the app says why** and what to do: Retry, Lower quality, Other version, with technical details folded away. A missing file no longer falls back to a backup player, and playback that fails right away no longer loads forever
+- **The picture no longer shakes in full screen** on displays without a notch — MacBook Air, 13-inch MacBook Pro, Mac mini, iMac and external displays
+- **No more blocky picture in action scenes when quality drops**: a reduced quality keeps a resolution its bitrate can hold — 1080p, 720p, 540p or 360p — and automatic quality fits the bitrate to the connection instead of dropping a whole step
+- **A title the server has never read starts almost as fast as any other**: 0.25 to 0.38 s from the click to the picture, instead of 0.55 to 1 s
+- **Resume at the right spot**: the title page shows the position you left as soon as you leave the player, even when Jellyfin 12.1 writes it late; a title already watched, played again then left partway, comes back in "Continue watching"
+- **Direct streaming holds through an outage** of the Tentacle server or Jellyfin, instead of turning off until a restart
+- **"Latest additions", one card per series**: "4 new episodes", "New season · 8 episodes", "New series", opening on the season of the latest addition
+- **The home banner shows the logo of movies and series**, and its main button takes Tentacle's colors
+- **Administration**: a dashboard that says what matters, warnings that fade on their own and can be hidden for good, the server update command to copy, and transcoding reasons in plain words in sessions ("S1 E1" for an episode)
+- Admin messages stay visible in full screen; no more legal notice at first launch; "1 season", no longer "1 seasons"
 
 ## [1.25.4]
 <!-- Bloc nu pour les trois systèmes : macOS, Windows et Linux partent tous de la 1.25.3. -->
