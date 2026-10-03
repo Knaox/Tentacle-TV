@@ -10,9 +10,21 @@ import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { SeriesRatingScope } from "@/contexts/SeriesRatingContext";
 import { motion, spacing, useGrid, useResponsive, useThemedStyles, type AppTheme } from "@/theme";
 import { CatalogEmpty, CatalogGridSkeleton } from "./CatalogGridStates";
+import { GridRowView, useGridRows } from "./GridRowView";
+import { gridRowKey, type GridRow } from "./gridRows";
 
 /** En hauteurs d'écran : au-delà, le bouton « revenir en haut » se montre. */
 const SCROLL_TOP_SCREENS = 1.5;
+/**
+ * La fenêtre de la grille, en hauteurs d'écran : 3 au-dessus, 3 au-dessous.
+ * Celle de React Native (21) gardait jusqu'à 840 cartes montées sur un iPad
+ * en paysage — ce qui n'est pas à l'écran ne doit rien coûter.
+ */
+const WINDOW_SCREENS = 7;
+/** Rangées montées par lot pendant le défilement : de petites tâches, sans accroc. */
+const ROWS_PER_BATCH = 2;
+/** Sous l'affiche d'une carte : titre, ligne secondaire et marge de la cellule. */
+const CARD_TEXT_HEIGHT = 56;
 
 interface Props {
   catalog: UseInfiniteQueryResult<{ pages: Array<{ Items: MediaItem[]; TotalRecordCount: number }> }>;
@@ -86,22 +98,35 @@ export const CatalogGrid = memo(function CatalogGrid({
     [overrideItems, catalog.data],
   );
 
-  const renderItem = useCallback(
-    ({ item }: { item: MediaItem }) => (
+  // Des rangées découpées ici, stables d'un rendu à l'autre (`gridRows.ts`) :
+  // une mise à jour de la fenêtre ne retravaille que celles qui entrent.
+  const rows = useGridRows(items, numColumns);
+  const renderCell = useCallback(
+    (item: MediaItem) => (
       <View style={styles.cell}>
-        <MobileMediaCard item={item} width={itemWidth} onPress={() => onItemPress(item)} />
+        <MobileMediaCard item={item} width={itemWidth} onPress={onItemPress} />
       </View>
     ),
     [itemWidth, onItemPress, styles.cell],
   );
+  const rowStyle = useMemo(() => [styles.row, { gap: gutter, paddingHorizontal: padding }], [styles.row, gutter, padding]);
+  const renderItem = useCallback(
+    ({ item: row }: { item: GridRow<MediaItem> }) => <GridRowView row={row} style={rowStyle} renderCell={renderCell} />,
+    [rowStyle, renderCell],
+  );
 
-  const keyExtractor = useCallback((item: MediaItem) => item.Id, []);
-
+  // Lu par une référence : le résultat de la requête change à chaque étape
+  // du chargement, et la liste recevrait un gestionnaire neuf à chacune.
+  const catalogRef = useRef(catalog);
+  catalogRef.current = catalog;
   const handleEndReached = useCallback(() => {
-    if (catalog.hasNextPage && !catalog.isFetchingNextPage) {
-      catalog.fetchNextPage();
+    const current = catalogRef.current;
+    if (current.hasNextPage && !current.isFetchingNextPage) {
+      current.fetchNextPage();
     }
-  }, [catalog]);
+  }, []);
+  // Le premier rendu se borne à ce qui tient à l'écran (+1 rangée).
+  const initialRows = Math.ceil(windowH / (itemWidth * 1.5 + CARD_TEXT_HEIGHT)) + 1;
 
   const footer = useMemo(() => {
     if (catalog.isFetchingNextPage) {
@@ -127,19 +152,12 @@ export const CatalogGrid = memo(function CatalogGrid({
         <Animated.FlatList
           ref={setRefs as never}
           key={`catalog-${numColumns}`}
-          data={items}
-          numColumns={numColumns}
-          keyExtractor={keyExtractor}
+          data={rows}
+          keyExtractor={gridRowKey}
           renderItem={renderItem}
           // La marge latérale va aux RANGÉES, pas au contenu : l'en-tête (l'ambiance
-          // de l'onglet Bibliothèque) court d'un bord à l'autre. Une seule colonne
-          // n'accepte pas `columnWrapperStyle` : la marge y reste au contenu.
-          contentContainerStyle={[
-            styles.gridContent,
-            { paddingTop: topInset, paddingBottom: spacing.xxl + bottomInset },
-            numColumns > 1 ? null : { paddingHorizontal: padding },
-          ]}
-          columnWrapperStyle={numColumns > 1 ? { gap: gutter, paddingHorizontal: padding } : undefined}
+          // de l'onglet Bibliothèque) court d'un bord à l'autre.
+          contentContainerStyle={[styles.gridContent, { paddingTop: topInset, paddingBottom: spacing.xxl + bottomInset }]}
           ListHeaderComponent={header}
           onScroll={composedScroll}
           scrollEventThrottle={16}
@@ -149,6 +167,9 @@ export const CatalogGrid = memo(function CatalogGrid({
           automaticallyAdjustKeyboardInsets
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.5}
+          initialNumToRender={initialRows}
+          maxToRenderPerBatch={ROWS_PER_BATCH}
+          windowSize={WINDOW_SCREENS}
           ListFooterComponent={footer}
           ListEmptyComponent={emptyComponent}
           onRefresh={catalog.refetch}
@@ -165,4 +186,5 @@ const makeStyles = (_t: AppTheme) => StyleSheet.create({
   gridContent: { paddingBottom: spacing.xxl },
   loader: { paddingVertical: spacing.xl },
   cell: { marginBottom: spacing.md },
+  row: { flexDirection: "row" },
 });
