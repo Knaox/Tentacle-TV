@@ -9,6 +9,7 @@ import {
   seasonsSheetEntry,
   seasonsSheetFocusOf,
   seasonsSheetKeys,
+  seasonsSheetIntent,
   seasonsSheetReady,
   toggleSeason,
 } from "./seasonsSheet";
@@ -80,5 +81,21 @@ describe("cocher et demander", () => {
     expect(canSubmitSeasons([2], false)).toBe(true);
     expect(canSubmitSeasons([], false)).toBe(false);
     expect(canSubmitSeasons([2], true)).toBe(false);
+  });
+});
+
+describe("la feuille et la télécommande", () => {
+  it("prend Lecture/Pause et demande ce que dit le raccourci", () => {
+    expect(seasonsSheetIntent({ type: "playPause" }, [1, 2], new Set([2]), { kind: "season", number: 1 })).toEqual({ seasons: [2] });
+    expect(seasonsSheetIntent({ type: "playPause" }, [1, 2], new Set(), { kind: "season", number: 1 })).toEqual({ seasons: [1] });
+    expect(seasonsSheetIntent({ type: "playPause" }, [1, 2], new Set(), { kind: "other" })).toEqual({ seasons: [] });
+  });
+
+  it("laisse passer le maintien de Lecture/Pause, OK, les directions et Retour", () => {
+    const focus = { kind: "season", number: 1 } as const;
+    expect(seasonsSheetIntent({ type: "hold", key: "playPause", phase: "start" }, [1], new Set(), focus)).toBeNull();
+    expect(seasonsSheetIntent({ type: "select" }, [1], new Set(), focus)).toBeNull();
+    expect(seasonsSheetIntent({ type: "move", direction: "bas" }, [1], new Set(), focus)).toBeNull();
+    expect(seasonsSheetIntent({ type: "retour" }, [1], new Set(), focus)).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
-import { hasAllSeasonsRow, type SeasonsSheetFocus } from "./seasonsShortcut";
+import type { RemoteIntent } from "../remote/intents";
+import { hasAllSeasonsRow, shortcutSeasons, type SeasonsSheetFocus } from "./seasonsShortcut";
 
 /**
  * Le FOCUS de la feuille des saisons d'une TV — ses cibles, son entrée, et
@@ -84,6 +85,26 @@ export function checkedSeasons(requestable: readonly number[], checked: Readonly
 /** Une demande part avec au moins une saison, et une seule à la fois. */
 export function canSubmitSeasons(seasons: readonly number[], sending: boolean): boolean {
   return !sending && seasons.length > 0;
+}
+
+/** Ce que la feuille fait d'une intention : Lecture/Pause demande. */
+export interface SeasonsSheetDecision {
+  /** Les saisons à demander ; vide : rien ne part. */
+  seasons: number[];
+}
+
+/**
+ * La feuille PREND Lecture/Pause — l'appui simple, jamais le maintien — et
+ * demande ce que dit le raccourci (`shortcutSeasons`) ; vide, rien ne part.
+ * Toute autre intention suit son cours (le focus natif, Retour).
+ */
+export function seasonsSheetIntent(
+  intent: RemoteIntent,
+  requestable: readonly number[],
+  checked: ReadonlySet<number>,
+  focus: SeasonsSheetFocus,
+): SeasonsSheetDecision | null {
+  return intent.type === "playPause" ? { seasons: shortcutSeasons(requestable, checked, focus) } : null;
 }
 
 /** Le pied ne retient que sa pilule. */
