@@ -51,10 +51,10 @@
           "expect": {
             "focus": "season:1",
             "writes": [
-              "vigie:request"
+              "vigie:request#0"
             ]
           },
-          "why": "demandée seule ; l'onglet passe « En attente », le focus reste"
+          "why": "demandée SEULE (une saison dans la demande, celle de l'onglet), journalisée par le faux Vigie ; l'onglet passe « En attente », le focus reste"
         },
         {
           "do": [
