@@ -1,7 +1,14 @@
-import { type ReactNode } from "react";
-import { Pressable, type ViewStyle, type AccessibilityRole, type AccessibilityState } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
+import { useState, type ReactNode } from "react";
+import { Animated, Pressable, type ViewStyle, type AccessibilityRole, type AccessibilityState } from "react-native";
 import { haptic as playHaptic } from "@/utils/haptics";
+
+/**
+ * Le ressort de la carte : mêmes paramètres physiques que l'ancien `withSpring`
+ * de Reanimated, joué par le pilote natif d'Animated. Une carte n'enregistre
+ * plus de worklet ni de style animé sur le fil UI en se montant — une grille
+ * qui défile en monte des centaines — et le ressort ne coûte qu'à l'appui.
+ */
+const SPRING = { damping: 18, stiffness: 280, mass: 0.7, useNativeDriver: true } as const;
 
 interface Props {
   children: ReactNode;
@@ -18,7 +25,7 @@ interface Props {
 }
 
 /**
- * Wrapper pressable avec animation scale spring (Reanimated 3). Effet "card
+ * Wrapper pressable avec animation scale spring. Effet "card
  * tap" Netflix : scale 0.97 sur press, retour spring natural. Le retour
  * haptique attend l'action validée (`utils/hapticCues.ts`) : le doigt qui se
  * pose pour faire défiler une rangée ne fait que contracter la carte.
@@ -27,15 +34,14 @@ export function PressableCard({
   children, onPress, onLongPress, style, scaleValue = 0.97,
   accessibilityRole, accessibilityLabel, accessibilityState, haptic = true,
 }: Props) {
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const [scale] = useState(() => new Animated.Value(1));
 
   const handlePressIn = () => {
-    scale.value = withSpring(scaleValue, { damping: 18, stiffness: 280, mass: 0.7 });
+    Animated.spring(scale, { toValue: scaleValue, ...SPRING }).start();
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 18, stiffness: 280, mass: 0.7 });
+    Animated.spring(scale, { toValue: 1, ...SPRING }).start();
   };
 
   // Absent, l'appui long le reste : un Pressable sans `onLongPress` laisse un
@@ -59,7 +65,7 @@ export function PressableCard({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={accessibilityState}
     >
-      <Animated.View style={[animStyle, style]}>{children}</Animated.View>
+      <Animated.View style={[{ transform: [{ scale }] }, style]}>{children}</Animated.View>
     </Pressable>
   );
 }
