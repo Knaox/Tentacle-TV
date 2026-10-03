@@ -169,11 +169,12 @@ export async function agentProducts({ physical = false } = {}) {
  * au simulateur `device`, ou à l'Apple TV physique (`target.physical` :
  * `{ udid, host, bundle }`, l'agent y vise l'app de TEST).
  */
-export async function ensureAgent(ctx, target) {
+export async function ensureAgent(ctx, target, { relaunchNote = false } = {}) {
   await ensureAgentServer(ctx);
   const connected = async () => (await httpJson(`http://127.0.0.1:${ctx.ports.agentHttp}/status`))?.json?.connected === true;
   const state = loadState(ctx.stateFile);
   if (isAlive(state.agent) && state.agent.udid === target.udid && (await connected())) return state.agent;
+  if (relaunchNote) note(`agent XCUITest absent (${isAlive(state.agent) ? "déconnecté" : "test terminé"}) : relancé une fois`);
   if (isAlive(state.agent)) await stopProcess(state.agent);
   const physical = Boolean(target.physical);
   const xctestrun = await agentProducts({ physical });

@@ -52,7 +52,7 @@ export async function prepare(ctx, { at = null, erase = true } = {}) {
   // L'app du simulateur DE LA PLACE (RN-tvOS y donne le nom du simulateur à l'inspecteur).
   await ensureCdpd(ctx, { appId: BUNDLE_ID, deviceName: device.name });
   await ensureAgent(ctx, device);
-  return { checkout, snapshot, device, fingerprint, deviceInfo: describeDevice(device) };
+  return { checkout, snapshot, device, agentTarget: device, fingerprint, deviceInfo: describeDevice(device) };
 }
 
 /**
@@ -71,8 +71,9 @@ async function preparePhysical(ctx, checkout, snapshot) {
   // L'app de TEST seulement : l'app du simulateur de la place, reconnectée au même
   // Metro, n'est jamais prise pour elle (passage de T5, 2026-10-03).
   await ensureCdpd(ctx, { appId: TEST_BUNDLE });
-  await ensureAgent(ctx, { udid, physical: true, host: macIp(), bundle: TEST_BUNDLE });
-  return { checkout, snapshot, device: { udid, physical: true }, fingerprint, deviceInfo: describePhysical() };
+  const agentTarget = { udid, physical: true, host: macIp(), bundle: TEST_BUNDLE };
+  await ensureAgent(ctx, agentTarget);
+  return { checkout, snapshot, device: { udid, physical: true }, agentTarget, fingerprint, deviceInfo: describePhysical() };
 }
 
 /**
@@ -109,6 +110,9 @@ export async function applyFixtures(ctx, sets = []) {
  * stable. Rend le relevé d'entrée.
  */
 export async function coldStart(ctx, session, start = {}) {
+  // L'agent mort entre deux scénarios (un test XCUITest fini sur une exception) :
+  // relancé UNE fois ici, avant de conclure « agent absent ».
+  await ensureAgent(ctx, session.agentTarget, { relaunchNote: true });
   await applyFixtures(ctx, start.fixtures ?? []);
   if (session.device.physical) {
     // L'app de TEST relancée ; la sonde remet son état à zéro sur ses arguments.

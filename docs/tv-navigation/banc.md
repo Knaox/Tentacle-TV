@@ -127,6 +127,14 @@ ramenée à `{backend}`, et un attendu s'écrit de même. Un nom inconnu est
 refusé par `check`. (Vécu au passage final : `http://localhost:3107` en dur ne
 passait que sur la place 7.)
 
+**Un geste refusé** — un `type:` sans champ qui ait le clavier (étapes
+décalées, adresse injoignable) — est une erreur DU PAS : relevée
+(`gestureError`, un écart avec la référence ; un attendu contredit dès
+l'enregistrement), et le scénario continue. L'agent XCUITest n'en meurt plus
+(il mourait : `typeText` levait une exception qui finissait son test, et tout
+ce qui suivait sortait en « agent absent »). Un agent absent au début d'un
+scénario est relancé une fois avant de conclure.
+
 **`settleMs`** : attente minimale avant le relevé (fondus, entrées décidées
 après un délai) ; le banc attend de toute façon que le relevé soit STABLE
 (identique 500 ms d'affilée), au plus `timeoutMs` (8 s par défaut).
