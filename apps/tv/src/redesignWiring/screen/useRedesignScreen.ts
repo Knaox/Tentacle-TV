@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
-import { railExpanded } from "@tentacle-tv/tv-core";
+import { railEntryTarget, railExpanded } from "@tentacle-tv/tv-core";
 import type { NavRailProps } from "../../redesign/nav/NavRail";
 import { sameRailGeometry, type NavRailGeometry } from "../../redesign/nav/navGeometry";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
 import { useLibraryPrefetch } from "../library/useLibraryPrefetch";
 import { useNavEntries } from "../nav/useNavEntries";
 import { useRailArrange, type RailArrange } from "../nav/useRailArrange";
-import { navKeyOf, openNavigationSettings, useRailActions, useRailFocused } from "../nav/useRailState";
+import { openNavigationSettings, useRailActions, useRailFocused } from "../nav/useRailState";
 import { useRequestsAccessory } from "../vigie/RequestsEntry";
 import { useEntryFocus } from "./useEntryFocus";
 
@@ -77,8 +77,7 @@ export function useRedesignScreen({ railKey, entryKey = null, onReselect, focus:
   }, [focus, contentKey]);
 
   const focusRail = useCallback(() => {
-    const active = navKeyOf(railKey);
-    focus.claim(focus.node(active) ? active : navKeyOf("Home"));
+    focus.claim(railEntryTarget(railKey, (key) => focus.node(key) !== null));
   }, [focus, railKey]);
 
   // Quitter l'accueil par le rail (la règle : tv-core `railSelect`) : son
