@@ -129,7 +129,7 @@ export function useHomeHero(
   const lastAction = hero?.listToggle?.focusKey ?? hero?.secondary?.focusKey ?? hero?.primary.focusKey ?? null;
   useBeyondEdge(focus, {
     edgeKey: items.length > 1 ? lastAction : null,
-    direction: "right",
+    direction: "droite",
     enabled: screenFocused,
     onBeyond: advance,
   });
