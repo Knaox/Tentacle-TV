@@ -8,6 +8,7 @@
  * Voir `README.md` pour ce qui n'entre volontairement pas ici.
  */
 export * from "./input";
+export * from "./remote";
 export * from "./focus";
 export * from "./hero";
 export * from "./nav";

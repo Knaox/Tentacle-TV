@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./input": "./src/input/index.ts",
+    "./remote": "./src/remote/index.ts",
     "./focus": "./src/focus/index.ts",
     "./hero": "./src/hero/index.ts",
     "./player": "./src/player/index.ts",
