@@ -1,0 +1,38 @@
+{
+  "domain": "socle",
+  "reference": "84f3cedd0",
+  "scenarios": [
+    {
+      "id": "socle-01",
+      "title": "Démarrage à froid : le focus entre sur le bouton principal du héros de l'accueil",
+      "why": "Le focus d'entrée de l'app jumelée : la première chose que voit l'utilisateur.",
+      "start": { "screen": "Home" },
+      "steps": [
+        { "do": "wait:0.5", "expect": { "route": "Home", "stack": ["Home"], "focus": "hero:primary", "panel": "closed", "writes": [] } }
+      ]
+    },
+    {
+      "id": "socle-02",
+      "title": "Accueil → rail : GAUCHE entre dans le rail sur « Accueil », BAS le descend, DROITE revient au contenu",
+      "why": "Le passage contenu ↔ rail, dans les deux sens, sans changer d'écran.",
+      "start": { "screen": "Home", "focus": "hero:primary" },
+      "steps": [
+        { "do": "left", "expect": { "focus": "nav:Home", "label": "Accueil", "route": "Home" } },
+        { "do": "down", "expect": { "focus": "nav:Recommendations" } },
+        { "do": "down", "expect": { "focus": "nav:Watchlist" } },
+        { "do": "right", "expect": { "route": "Home", "stack": ["Home"] }, "why": "le contenu reprend le focus ; où exactement : la référence le dit" }
+      ]
+    },
+    {
+      "id": "socle-03",
+      "title": "Rail → Films → Retour : la bibliothèque s'ouvre sur sa grille, Retour rouvre le rail sur son entrée",
+      "why": "Un écran du rail, puis le premier Retour : la couche du rail, pas la sortie de l'écran.",
+      "start": { "screen": "Home", "keys": ["left", "down", "down", "down", "down", "down"], "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba" },
+      "steps": [
+        { "do": "select", "settleMs": 800, "expect": { "route": "Library", "params": { "libraryId": "db4c1708cbb5dd1676284a40f2950aba" }, "focus": "grid:0" } },
+        { "do": "menu", "expect": { "route": "Library", "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba" } },
+        { "do": "menu", "why": "le deuxième Retour : ce que fait la référence" }
+      ]
+    }
+  ]
+}
