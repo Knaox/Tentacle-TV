@@ -37,7 +37,7 @@ function Actionable({ text, cta }: { text: string; cta: ReactNode }) {
  * UN bandeau d'état à la fois — le premier vrai gagne. L'ordre porte le sens :
  * la perso coupée PAR L'UTILISATEUR prime (le nag de configuration serait du
  * bruit) ; la clé TMDB absente ne dit RIEN ici — l'admin a son bandeau global
- * (TmdbKeyBanner), les autres n'y peuvent rien et ne voient rien ; puis les
+ * (l'avertissement surgissant, `NoticeHost`), les autres n'y peuvent rien et ne voient rien ; puis les
  * états de calcul du profil et du pool.
  */
 export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart }: RecoStatusBannerProps) {

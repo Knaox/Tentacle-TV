@@ -4,9 +4,7 @@ import { TopNav } from "./nav/TopNav";
 import { TopNavMobile } from "./nav/TopNavMobile";
 import { MobileTabBar } from "./MobileTabBar";
 import { useIsMobile } from "../hooks/useIsMobile";
-import { VersionBanner } from "./VersionBanner";
-import { AdminKeyBanner } from "./AdminKeyBanner";
-import { TmdbKeyBanner } from "./TmdbKeyBanner";
+import { NoticeHost } from "./notices/NoticeHost";
 import { useLeaderboardOpen, closeLeaderboard } from "./easterEggs/logoEggStore";
 import { useMirror } from "../mirror/useFormFactor";
 
@@ -69,11 +67,11 @@ function DesktopLayout() {
           paddingRight: "env(safe-area-inset-right, 0px)",
         } : undefined}
       >
-        <VersionBanner />
-        <AdminKeyBanner />
-        <TmdbKeyBanner />
         <Outlet />
       </div>
+
+      {/* Les avertissements surgissants (serveur, clé admin, TMDB), sous l'en-tête. */}
+      <NoticeHost top={isMobile ? "68px" : "80px"} />
 
       {isMobile && <MobileTabBar />}
 

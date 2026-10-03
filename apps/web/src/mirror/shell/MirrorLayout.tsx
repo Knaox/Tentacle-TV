@@ -1,8 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { VersionBanner } from "../../components/VersionBanner";
-import { AdminKeyBanner } from "../../components/AdminKeyBanner";
-import { TmdbKeyBanner } from "../../components/TmdbKeyBanner";
+import { NoticeHost } from "../../components/notices/NoticeHost";
 import { useLeaderboardOpen, closeLeaderboard } from "../../components/easterEggs/logoEggStore";
 import { RAIL_WIDTH } from "../responsive";
 import { useSideNav } from "../useFormFactor";
@@ -108,11 +106,10 @@ function TabsLayout() {
             paddingLeft: sideNav ? `calc(${RAIL_WIDTH}px + env(safe-area-inset-left, 0px))` : undefined,
           }}
         >
-          <VersionBanner />
-          <AdminKeyBanner />
-          <TmdbKeyBanner />
           <Outlet />
         </div>
+
+        <NoticeHost top={`calc(${HEADER_TOTAL} + 12px)`} />
 
         <MirrorHeader collapsed={!sideNav && collapsed} />
         {sideNav ? (

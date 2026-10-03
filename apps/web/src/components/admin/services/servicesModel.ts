@@ -93,7 +93,7 @@ export const SERVICES_KEYS = {
   publicUrl: ["admin", "services", "public-url"],
   directStreaming: ["admin", "services", "direct-streaming"],
   audioAnalysis: ["admin", "services", "audio-analysis"],
-  /** Partagée avec `AdminKeyBanner`, et son lecteur avec : un enregistrement réussi y efface l'alerte. */
+  /** Partagée avec l'avertissement des clients (`useAdminKeyHealth`), et son lecteur avec : un enregistrement réussi y efface l'alerte. */
   jellyfinKey: ADMIN_KEY_HEALTH_KEY,
 } as const;
 
