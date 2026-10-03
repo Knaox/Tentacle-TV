@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useResolvePlayTarget } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { detailPlayPress, sagaEntryPress } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { DetailCallbacks } from "../../redesign/screens/detail/detailTypes";
 import { showNotice } from "../overlays/transientNotice";
@@ -12,9 +13,10 @@ import type { DetailModel } from "./useDetailModel";
 import { useOpenDetail } from "./useOpenDetail";
 
 /**
- * Les gestes de la fiche refondue — ceux de la fiche actuelle :
+ * Les gestes de la fiche refondue — ceux de la fiche actuelle ; où mène OK
+ * est la règle de tv-core (`nav/screenTargets.ts`, FI-10) :
  * - Lecture : l'item ; pour une série, l'épisode résolu (jamais l'identifiant
- *   de la série), au geste s'il se résout encore ;
+ *   de la série), au geste s'il se résout encore (`detailPlayPress`) ;
  * - bande-annonce et extras : une vidéo LOCALE dans le lecteur, une vidéo
  *   YouTube dans l'écran de bande-annonce ;
  * - une personne ouvre sa filmographie, une carte sa fiche, l'appui long la
@@ -57,11 +59,12 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
       onPlay: () => {
         const { item, watch } = model();
         if (!item) return;
-        if (item.Type !== "Series") return play(item.Id);
-        if (watch) {
-          if (watch.type !== "completed") play(watch.episode.Id);
-          return;
-        }
+        const press = detailPlayPress(
+          { id: item.Id, isSeries: item.Type === "Series" },
+          watch ? (watch.type === "completed" ? { completed: true } : { completed: false, episodeId: watch.episode.Id }) : undefined,
+        );
+        if (press.kind === "play") return play(press.itemId);
+        if (press.kind === "none") return;
         // L'état de visionnage se résout encore : le geste le résout, sur la même clé.
         void latest.current.resolvePlay(item).then((itemId) => {
           if (itemId) play(itemId);
@@ -100,14 +103,15 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         else nav().navigate("Trailer", { url: entry.trailer.Url, name: entry.title, itemId: item?.Id });
       },
       onOpenSagaEntry: (entry) => {
-        if (entry.current) return;
-        if (!entry.card.absent) return latest.current.open.openTitle(latest.current.cardItemOf(entry.card.id) ?? { Id: entry.card.id });
         // Un volet absent n'a pas de fiche : le demander quand le serveur le
-        // permet, sinon dire pourquoi rien ne s'ouvre.
+        // permet, sinon dire pourquoi rien ne s'ouvre (`sagaEntryPress`).
         const { requests, model: current, t } = latest.current;
-        const title = current.cards.absentOf(entry.key);
-        if (requests && title) requests.open(title);
-        else showNotice({ kind: "info", title: t("cards:notInLibraryNotice") });
+        const absent = !!entry.card.absent;
+        const title = absent && !entry.current ? current.cards.absentOf(entry.key) : undefined;
+        const press = sagaEntryPress({ current: !!entry.current, absent, canRequest: !!requests && !!title });
+        if (press === "open") return latest.current.open.openTitle(latest.current.cardItemOf(entry.card.id) ?? { Id: entry.card.id });
+        if (press === "request" && requests && title) return requests.open(title);
+        if (press === "notInLibrary") showNotice({ kind: "info", title: t("cards:notInLibraryNotice") });
       },
       onLongPressSagaEntry: (entry) => {
         const { requests, model: current, cardItemOf, openPosterSheet } = latest.current;

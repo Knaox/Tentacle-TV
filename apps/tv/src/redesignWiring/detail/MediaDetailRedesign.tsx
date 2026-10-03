@@ -1,18 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { detailEntryKey } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { CardSheetTarget } from "../../components/cards/actions/cardSheetTarget";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
+import { useFocusStore } from "../../platform/tvos/focus/focusStore";
+import { useDetailFocus } from "../../platform/tvos/screens/detail";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { DetailView } from "../../redesign/screens/detail/DetailView";
-import { useBackFocus } from "../focus/backFocus";
-import { useFocusStore } from "../focus/focusStore";
-import { useEntryFocus } from "../screen/useEntryFocus";
 import { ActionSheetRedesign } from "../sheet/ActionSheetRedesign";
 import { useTitleRequests } from "../vigie/useTitleRequests";
 import { useSeriesGapTabs } from "../vigie/useSeriesGapTabs";
 import { useDetailActions } from "./useDetailActions";
-import { useDetailGuides } from "./useDetailGuides";
 import { useDetailModel, type DetailModel } from "./useDetailModel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
@@ -21,32 +20,28 @@ type Props = NativeStackScreenProps<RootStackParamList, "MediaDetail">;
  * La fiche refondue (Apple TV) : `DetailView` sur les hooks de la fiche
  * actuelle — film, série, épisode, collection.
  *
- * Le focus, par le magasin de l'écran (`useFocusStore`) :
- * - l'ENTRÉE sur Lecture (sinon la bande-annonce, sinon Ma liste), et
- *   « Réessayer » sur une fiche en erreur (`useEntryFocus`) — JAMAIS sur la
- *   croix Retour, en haut à gauche : verrouillée jusqu'à ce que l'entrée ait
- *   le focus, puis atteinte par HAUT depuis l'en-tête (`useBackFocus`) ;
- * - le RETOUR du lecteur, de la bande-annonce ou d'une autre fiche rend le
- *   focus au dernier élément qui l'avait ;
- * - HAUT / BAS d'une section à l'autre par la règle commune, et ses deux
- *   exceptions : la saison affichée, l'épisode à reprendre (`useDetailGuides`) ;
- * - une série qui se révèle terminée perd sa pilule de lecture : si elle
- *   avait le focus, il passe à l'action suivante.
+ * Le focus — décidé par tv-core (`focus/detailFocus.ts`), posé par
+ * l'applicateur tvOS (`platform/tvos/screens/detail.ts`) : l'entrée sur
+ * Lecture (sinon la bande-annonce, sinon Ma liste), « Réessayer » en erreur,
+ * jamais la croix Retour ; le retour du lecteur, de la bande-annonce ou d'une
+ * autre fiche sur le dernier élément ; HAUT / BAS par la règle commune et ses
+ * deux exceptions (la saison affichée, l'épisode à reprendre) ; la pilule de
+ * lecture perdue sous le focus rend la main à l'entrée suivante.
  * Une série incomplète montre ses saisons manquantes en onglets GRISÉS au bout
  * de la bande (`useSeriesGapTabs`, garde Vigie ouverte) : OK sur un « + »
  * demande cette saison, et l'onglet prend son état sans que le focus bouge.
  * Menu dépile l'écran (pile native) ; les feuilles le reçoivent elles-mêmes.
  */
 
-/** La croix Retour de la fiche (`DetailView`). */
-const DETAIL_BACK_KEY = "detail:back";
-
+/** L'entrée de la fiche : l'état de la vue, mis dans les mots de la règle. */
 function entryKeyOf({ props }: DetailModel): string | null {
-  if (props.error) return "status:primary";
   const actions = props.actions;
-  if (!props.header || !actions) return null;
-  if (actions.play) return "detail:primary";
-  return actions.trailer ? "detail:trailer" : "detail:list";
+  return detailEntryKey({
+    error: !!props.error,
+    ready: !!props.header && !!actions,
+    play: !!actions?.play,
+    trailer: !!actions?.trailer,
+  });
 }
 
 export function MediaDetailRedesign({ route }: Props) {
@@ -74,21 +69,14 @@ export function MediaDetailRedesign({ route }: Props) {
   });
 
   const focus = useFocusStore();
-  const entryKey = entryKeyOf(model);
-  useEntryFocus(focus, entryKey);
-  useBackFocus(focus, { backKey: DETAIL_BACK_KEY, barKey: "detail:top", entryKey });
-  useDetailGuides(focus, model.props.episodes);
-
-  // La pilule de lecture qui disparaît sous le focus (série terminée, apprise
-  // après l'arrivée) ne laisse pas l'écran sans focus.
-  const hasPlay = !!model.props.actions?.play;
-  const hadPlay = useRef(hasPlay);
-  useEffect(() => {
-    const lost = hadPlay.current && !hasPlay;
-    hadPlay.current = hasPlay;
-    if (lost && focus.lastFocusedKey() === "detail:primary" && entryKey) return focus.claim(entryKey);
-    return undefined;
-  }, [hasPlay, entryKey, focus]);
+  useDetailFocus(focus, {
+    entryKey: entryKeyOf(model),
+    seasonIds: shown?.seasons.map((season) => season.id) ?? [],
+    selectedSeasonId: shown?.selectedSeasonId,
+    episodeCount: shown?.episodes?.length ?? 0,
+    anchorIndex: shown?.anchorIndex,
+    hasPlay: !!model.props.actions?.play,
+  });
 
   // « Noter » : la note seule. La note d'un épisode est la sienne (vignette),
   // celle d'un film, d'une série ou d'une collection l'affiche.
