@@ -9,20 +9,20 @@
     }
   },
   "microsoftStore": {
-    "version": "1.25.3",
+    "version": "1.25.4",
     "notes": {
-      "fr": "• Un titre jamais lu démarre presque aussi vite qu'un autre : le serveur lit d'avance le début et la fin du fichier dès que sa fiche s'ouvre ou qu'une carte est survolée — 0,25 à 0,38 s du clic à l'image, au lieu de 0,55 à 1 s\n• La reprise au bon endroit : la fiche montre la position quittée dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard ou la perd\n• La lecture directe tient pendant une panne du serveur Tentacle ou de Jellyfin, au lieu de se couper jusqu'au redémarrage\n• La bannière d'accueil montre le logo des films et des séries ; une série sans logo affiche son titre\n• « 1 saison », et non plus « 1 saisons »\n• Un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture »",
-      "en": "• A title never read before starts almost as fast as any other: the server reads the start and the end of the file ahead of time as soon as its page opens or a card is hovered — 0.25 to 0.38 s from the click to the picture, instead of 0.55 to 1 s\n• Resume at the right spot: the title page shows the position you left as soon as you leave the player, even when Jellyfin 12.1 writes it late or loses it\n• Direct streaming holds through an outage of the Tentacle server or Jellyfin, instead of turning off until a restart\n• The home banner shows the logo of movies and series; a series without a logo shows its title\n• \"1 season\", no longer \"1 seasons\"\n• A title already watched, played again then left partway, comes back in \"Continue watching\""
+      "fr": "• « Derniers ajouts », une carte par série : les épisodes et les saisons d'une même série arrivés ensemble ne remplissent plus la rangée. Une seule carte, celle de la série, dit à la place de l'année ce qu'elle apporte — « 4 nouveaux épisodes », « Nouvelle saison · 8 épisodes », « Nouvelle série » — et s'ouvre sur la saison du dernier ajout. La rangée reste variée et va jusqu'à 20 cartes\n• Sur une affiche étroite, cette ligne passe sur deux lignes plutôt que de couper le nombre d'épisodes",
+      "en": "• \"Latest additions\", one card per series: episodes and seasons of the same series that arrived together no longer fill the row. A single card, the series', says what it brings in place of the year — \"4 new episodes\", \"New season · 8 episodes\", \"New series\" — and opens on the season of the latest addition. The row stays varied and goes up to 20 cards\n• On a narrow poster, that line wraps onto two lines instead of cutting the episode count"
     }
   },
   "playMobile": {
     "$comment": "Version Android (téléphone/tablette) RÉELLEMENT servie par la piste de PRODUCTION de la fiche Play. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (.github/scripts/store-live.mjs : API de rapports Play en lecture seule, recoupée avec la fiche publique ; puis patch-store-manifest.mjs --only=play-mobile --track=production), comme le bloc macAppStore — jamais à l’envoi : mobile.yml le patchait dès la publication, cran test compris, et le site annonçait une version de piste fermée. Ne PAS le déduire de versions.json → mobile, qui porte l’intention et non la publication.",
-    "version": "1.10.1",
+    "version": "1.10.2",
     "packageName": "com.tentacletv.mobile",
     "track": "production",
     "notes": {
-      "fr": "• La reprise au bon endroit : la fiche montre la position quittée dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard\n• La lecture directe tient pendant une panne du serveur\n• Le logo des films et des séries dans la bannière d'accueil ; s'il ne se charge pas, le titre reprend sa place\n• Un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture »",
-      "en": "• Resume at the right spot: the title page shows the position you left as soon as you leave the player, even when Jellyfin 12.1 writes it late\n• Direct streaming holds through a server outage\n• The logo of movies and series in the home banner; if it fails to load, the title takes its place back\n• A title already watched, played again then left partway, comes back in \"Continue watching\""
+      "fr": "• La qualité automatique suit enfin le vrai débit : la mesure du réseau était fausse, la qualité ne baissait jamais sur une connexion lente\n• La lecture directe marche dès l'ouverture de l'app, sans attendre un retour au premier plan\n• Demander les saisons qui manquent à une série depuis la recherche, par l'appui long\n• Corrections et stabilité",
+      "en": "• Automatic quality finally follows the real bandwidth: the network measurement was wrong, so quality never dropped on a slow connection\n• Direct streaming works as soon as the app opens, without waiting to come back to the foreground\n• Request the seasons a series is missing from search, with a long press\n• Fixes and stability"
     }
   },
   "playTv": {
@@ -37,28 +37,28 @@
   },
   "linux": {
     "$comment": "Auto-updater Linux (custom, aucun store). MAINTENU AUTOMATIQUEMENT par .github/workflows/desktop.yml (job « manifest ») à chaque release desktop-v*. `version`==version desktop courante ⇒ aucune MAJ proposée. `assets.<format>.name` = nom exact du fichier sur la Release `<tag>`, `.sha256` = son empreinte (vérifiée avant install).",
-    "version": "1.25.3",
-    "tag": "desktop-v1.25.3",
+    "version": "1.25.4",
+    "tag": "desktop-v1.25.4",
     "notes": {
-      "fr": "• La fiche montre la position quittée dès la sortie du lecteur, même quand Jellyfin 12.1 l'écrit en retard ou la perd : « Reprendre » repart du bon endroit, avec une seule réécriture si la position manque encore 20 s plus tard\n• La lecture directe tient pendant une panne : une coupure passagère du serveur Tentacle ou de Jellyfin la coupait jusqu'au redémarrage de l'application ; elle reprend désormais dès que le serveur répond\n• La bannière d'accueil montre le logo des films et des séries, et celui de la série sur un épisode ; une série sans logo affiche son titre au lieu d'une image cassée\n• La fiche d'une série d'une seule saison dit « 1 saison », et non plus « 1 saisons »\n• Un titre déjà vu, relancé puis quitté en cours de route, revient dans « Reprendre la lecture », même quand la lecture passe par le serveur Tentacle",
-      "en": "• The title page shows the position you left as soon as you leave the player, even when Jellyfin 12.1 writes it late or loses it: \"Resume\" starts from the right spot, with a single rewrite if the position is still missing 20 s later\n• Direct streaming holds through an outage: a brief Tentacle server or Jellyfin outage turned it off until the app was restarted; it now comes back as soon as the server answers\n• The home banner shows the logo of movies and series, and the series' logo on an episode; a series without a logo shows its title instead of a broken image\n• A series with a single season says \"1 season\", no longer \"1 seasons\"\n• A title already watched, played again then left partway, comes back in \"Continue watching\", even when playback goes through the Tentacle server"
+      "fr": "• « Derniers ajouts », une carte par série : les épisodes et les saisons d'une même série arrivés ensemble ne remplissent plus la rangée. Une seule carte, celle de la série, dit à la place de l'année ce qu'elle apporte — « 4 nouveaux épisodes », « Nouvelle saison · 8 épisodes », « Nouvelle série » — et s'ouvre sur la saison du dernier ajout. La rangée reste variée et va jusqu'à 20 cartes\n• Sur une affiche étroite, cette ligne passe sur deux lignes plutôt que de couper le nombre d'épisodes",
+      "en": "• \"Latest additions\", one card per series: episodes and seasons of the same series that arrived together no longer fill the row. A single card, the series', says what it brings in place of the year — \"4 new episodes\", \"New season · 8 episodes\", \"New series\" — and opens on the season of the latest addition. The row stays varied and goes up to 20 cards\n• On a narrow poster, that line wraps onto two lines instead of cutting the episode count"
     },
     "assets": {
       "appimage": {
-        "name": "tentacle-tv_1.25.3_x86_64.AppImage",
-        "sha256": "75d538d4dabf3dc4865adf5070efde1cca3a109dba1308245f60c828e5fcee0c"
+        "name": "tentacle-tv_1.25.4_x86_64.AppImage",
+        "sha256": "c05d719a4301696e758e0ab272e1b3d6b3fb8bb824cac9231e7bae9525451fd8"
       },
       "deb": {
-        "name": "tentacle-tv_1.25.3_amd64.deb",
-        "sha256": "eace872597e125b3a812463037c9abbf96a5f27351987d01630147733a825aff"
+        "name": "tentacle-tv_1.25.4_amd64.deb",
+        "sha256": "fe6f99cfd3429e0b7bd2f6f87a3ab88c20011087a4cfc50215ade98df2ca0555"
       },
       "rpm": {
-        "name": "tentacle-tv_1.25.3_x86_64.rpm",
-        "sha256": "0c9f9bc412e4c5aa84505f25cd363af2c0f0433a7f82fadc76901ddd1d2fcf04"
+        "name": "tentacle-tv_1.25.4_x86_64.rpm",
+        "sha256": "ce4e2a8c16499a8c45522c31c303f57fc8cd8630256df3d0dad0cf40bd9a583c"
       },
       "pacman": {
-        "name": "tentacle-tv_1.25.3_x64.pkg.tar.zst",
-        "sha256": "ccb6016d1705f855e4e68cf6dca5a7a1bcf6eb9d21083a05f5d64644763f318c"
+        "name": "tentacle-tv_1.25.4_x64.pkg.tar.zst",
+        "sha256": "fb710c12faf1b60b953002ee0050f1244a95cc09c941c1d954fc15f0a01b4c9e"
       }
     }
   }
