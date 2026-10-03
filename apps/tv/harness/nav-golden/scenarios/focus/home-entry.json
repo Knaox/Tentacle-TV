@@ -1,0 +1,16 @@
+{
+  "id": "focus/home-entry",
+  "title": "L'accueil entre sur Lire du héros ; le rail ouvert puis refermé rend le focus au contenu",
+  "covers": ["A1", "A2", "A3", "A4", "A6", "H7", "W3"],
+  "fixture": "home-standard",
+  "start": { "route": "Home", "cold": true },
+  "steps": [
+    "wait:4", "probe:focusKey", "focus", "probe:scrollY",
+    "left", "wait:0.8", "probe:focusKey", "focus",
+    "right", "wait:0.8", "probe:focusKey", "focus",
+    "right", "wait:0.6", "probe:focusKey",
+    "left", "wait:0.6", "left", "wait:0.8", "probe:focusKey",
+    "right", "wait:0.8", "probe:focusKey"
+  ],
+  "expect": "Arrivée : hero:primary, page en haut (0). GAUCHE : nav:Home (rail ouvert). DROITE : retour sur hero:primary (dernière clé de contenu). DROITE : hero:secondary. GAUCHE ×2 : hero:primary puis le rail ; DROITE : de nouveau hero:primary (contentKey = la dernière de contenu)."
+}

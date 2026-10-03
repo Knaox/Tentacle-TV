@@ -1,0 +1,22 @@
+{
+  "id": "focus/home-rows-down-up",
+  "title": "BAS / HAUT de section en section, au centre le plus proche, la page en un mouvement",
+  "covers": ["R1", "R3", "R4", "R5", "R6", "V1", "V2", "V4", "V5", "V6", "W1", "H7"],
+  "fixture": "home-standard",
+  "start": { "route": "Home", "cold": true },
+  "steps": [
+    "wait:4", "probe:focusKey", "probe:scrollY",
+    "down", "wait:0.9", "probe:focusKey", "probe:scrollY", "focus",
+    "down", "wait:0.9", "probe:focusKey", "probe:scrollY", "focus",
+    "down", "wait:0.9", "probe:focusKey", "probe:scrollY", "focus",
+    "down", "wait:0.9", "probe:focusKey", "probe:scrollY", "focus",
+    "up", "wait:0.9", "probe:focusKey", "probe:scrollY",
+    "up", "wait:0.9", "probe:focusKey", "probe:scrollY",
+    "up", "wait:0.9", "probe:focusKey", "probe:scrollY",
+    "up", "wait:0.9", "probe:focusKey", "probe:scrollY", "focus",
+    "right", "wait:0.4", "right", "wait:0.4", "down", "wait:0.9", "probe:focusKey", "probe:scrollY",
+    "right", "wait:0.4", "right", "wait:0.4", "down", "wait:0.9", "probe:focusKey", "probe:scrollY",
+    "up", "wait:0.9", "probe:focusKey", "up", "wait:0.9", "probe:focusKey", "probe:scrollY"
+  ],
+  "expect": "BAS depuis hero:primary : la carte de la 1re rangée au centre le plus proche (pas forcément sous le bouton) ; chaque BAS : la rangée suivante, au plus proche ; la page montre la rangée ENTIÈRE à 56 des bords (scrollY stable au relevé). HAUT jusqu'au héros : page en haut (0). Depuis hero:list puis BAS : l'élément au centre le plus proche de hero:list. Le retour HAUT : au plus proche, jamais rien."
+}

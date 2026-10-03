@@ -1,0 +1,19 @@
+{
+  "id": "focus/home-filter-chip",
+  "title": "La pastille du filtre se rejoint par HAUT depuis la carte dessous, jamais depuis le bout de la rangée",
+  "covers": ["R1", "R2", "W2"],
+  "fixture": "home-standard",
+  "start": { "route": "Home", "cold": true },
+  "steps": [
+    "wait:4", "down", "wait:0.9", "down", "wait:0.9", "probe:focusKey",
+    "up", "wait:0.9", "probe:focusKey",
+    "down", "wait:0.9", "probe:focusKey",
+    "right", "wait:0.35", "right", "wait:0.35", "probe:focusKey", "focus",
+    "up", "wait:0.9", "probe:focusKey", "focus",
+    "down", "wait:0.9", "probe:focusKey",
+    "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35", "right", "wait:0.35",
+    "right", "wait:0.35", "right", "wait:0.5", "probe:focusKey",
+    "up", "wait:0.9", "probe:focusKey"
+  ],
+  "expect": "Dans la rangée filtrée (reco:*, pastille filter:remove dans son en-tête) : HAUT depuis la 1re carte (pas sous la pastille) → la rangée du dessus. Depuis une carte SOUS la pastille : HAUT → filter:remove ; BAS depuis la pastille → la carte au centre le plus proche (ligne suivante de la section). Depuis le bout de la rangée : HAUT → la rangée du dessus, jamais la pastille. Ne JAMAIS valider sur la pastille."
+}

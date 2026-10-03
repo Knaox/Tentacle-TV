@@ -394,7 +394,13 @@ adaptateur tvOS qui ne fait plus qu'appliquer.
 | K1 garder dedans | `focus/keepWithin.ts` | `useKeepFocusWithin.ts` |
 | X1-X4 au-delà du bord | `focus/beyondEdge.ts` (intentions de T1) | `useBeyondEdge.ts` |
 | H2-H3 rotation du héros | `hero/rotation.ts` | `useHeroRotation`, `useHomeHero` |
-| P2 garde anti-clic fantôme | règle pure (selon T1 : « valider ») | `FocusTarget` |
+
+Arbitrages du coordinateur (2026-10-03) : P2, la garde anti-clic fantôme, est
+extraite par T6 (sa machine tv-core, une retouche minimale de `FocusTarget`
+— je ne touche pas ce bloc) ; « appui maintenu sur une carte → quel
+panneau » (W4, H5) est une règle de T6 (`panels/cardHold`), que j'applique
+dans l'accueil, le héros et « Pour vous » une fois publiée. `contentKey()`
+(A4) est ce que visent les ponts du rail de T4 : son contrat ne change pas.
 
 Les signatures exportées par `redesignWiring/focus/*` ne changent pas : les
 autres domaines (fiche, bibliothèque, réglages, panneaux, lecteur, Vigie,
@@ -432,15 +438,16 @@ sur l'Apple TV « Chambre ».
 
 | Scénario | Couvre |
 |---|---|
-| `home-entry` | A1-A3, A6, H7 |
-| `home-hero-buttons` | R11, H7, X2 (le geste qui amène au bord ne compte pas) |
-| `home-hero-beyond-edge` | H3, X1-X4 |
-| `home-hero-rotation` | H2 (8 s, remise à zéro par un pas, suspension à l'appui long) |
-| `home-rows-down-up` | R1-R6, V2, V4, V6, W1 |
-| `home-row-end-nearest` | R4-R6 (bout d'un carrousel au-dessus d'une rangée plus courte) |
-| `home-filter-chip` | R2, W2 |
-| `home-row-left-to-rail` | W3, A4, A5 (retour au contenu) |
-| `home-return-from-detail` | A4, A5, N1 |
-| `home-burst-down` | V7, V8 (flèche maintenue) |
-| `foryou-entry-and-shelves` | A6, H6, R1-R6, W2 |
-| `keep-within-offline` | K1 (le voile hors ligne garde le focus) |
+| `home-entry` | A1-A4, A6, H7, W3 (rail ouvert puis refermé : retour au contenu) |
+| `home-hero-beyond-edge` | X1-X4, H3, H4, R11 (le geste qui amène au bord ne compte pas) |
+| `home-hero-rotation` | H2 (8 s, remise à zéro par les gestes, panneau ouvert), H5 |
+| `home-rows-down-up` | R1, R3-R6, V1, V2, V4-V6, W1 |
+| `home-row-end-nearest` | R3-R6, R8, R11 (bout d'un carrousel au-dessus d'une rangée plus courte) |
+| `home-filter-chip` | R1, R2, W2 |
+| `home-return-from-detail` | A4, A5, W4, N1 |
+| `home-burst` | V7-V9 (flèche maintenue, état final seulement) |
+| `foryou-entry-and-shelves` | A1, A3, A6, H6, R1, R2, R6, W1, W2, V2, V4 |
+
+Couverts ailleurs : C1 (T4, T7), G1 (T6, T7), K1 (le voile hors ligne, T6),
+E1-E3 (la fiche, T7). Format, jeux de données et relevés :
+`apps/tv/harness/nav-golden/scenarios/focus/README.md`.

@@ -1,0 +1,12 @@
+{
+  "id": "focus/home-burst",
+  "title": "Flèche maintenue : la rafale défile jusqu'au bout et revient, sans perdre le focus",
+  "covers": ["V7", "V8", "V9", "R1", "R6"],
+  "fixture": "home-standard",
+  "start": { "route": "Home", "cold": true },
+  "steps": [
+    "wait:4", "holddown:7", "wait:1.5", "probe:focusKey", "probe:scrollY", "focus",
+    "holdup:7", "wait:1.5", "probe:focusKey", "probe:scrollY", "focus"
+  ],
+  "expect": "BAS maintenu 7 s depuis le héros : le focus atteint la DERNIÈRE rangée (carte au plus proche), la page en bas (scrollY maximal). HAUT maintenu 7 s : retour au héros (hero:primary ou le bouton au plus proche), page en haut (0). L'état final seul est comparé : la cadence de répétition varie."
+}

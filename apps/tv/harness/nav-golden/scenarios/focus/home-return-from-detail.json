@@ -1,0 +1,14 @@
+{
+  "id": "focus/home-return-from-detail",
+  "title": "Retour d'une fiche : le focus revient sur la carte d'où l'on est parti",
+  "covers": ["A4", "A5", "W4", "N1"],
+  "fixture": "home-standard",
+  "start": { "route": "Home", "cold": true },
+  "steps": [
+    "wait:4", "down", "wait:0.9", "down", "wait:0.9", "down", "wait:0.9",
+    "right", "wait:0.4", "right", "wait:0.4", "probe:focusKey", "probe:scrollY",
+    "select", "wait:2.5", "probe:route",
+    "menu", "wait:2", "probe:route", "probe:focusKey", "probe:scrollY", "focus"
+  ],
+  "expect": "OK sur une affiche (library:<films>:2) ouvre la fiche (MediaDetail). Menu : retour à l'accueil, focus sur library:<films>:2, la page là où elle était."
+}
