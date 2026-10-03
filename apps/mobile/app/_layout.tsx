@@ -5,18 +5,16 @@ import { Stack, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
-import { setPreferencesBackendUrl, fetchInterfaceLanguage, useAdminMetadataStatus } from "@tentacle-tv/api-client";
+import { setPreferencesBackendUrl, fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
 import { ServerUrlContext } from "@/providers/ServerUrlContext";
 import { BrandSpinner } from "@/components/ui";
-import { ServerOutdatedBanner } from "@/components/ServerOutdatedBanner";
-import { TmdbKeyBanner } from "@/components/TmdbKeyBanner";
-import { useServerCompat } from "@/hooks/useServerCompat";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { AuthRedirect } from "@/auth/AuthRedirect";
 import { OfflineShell } from "@/offline/OfflineShell";
 import { SessionMessageHost } from "@/session/SessionMessageHost";
+import { NoticeHost } from "@/notices/NoticeHost";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
@@ -34,24 +32,6 @@ const uuid = new RNUuidGenerator();
 // français en dur — la mention légale s'affichait en français sur un
 // téléphone anglais.
 initI18n({ lng: detectLanguage() });
-
-/** Bandeaux serveur — admins uniquement, masquables en mémoire, UN à la
- *  fois : « serveur à mettre à jour » prime sur « clé TMDB manquante ».
- *  Nécessite AppProviders (React Query, ServerUrlContext). */
-function ServerNoticeOverlay() {
-  const { incompatible, serverVersion, isAdmin } = useServerCompat();
-  const metadata = useAdminMetadataStatus({ enabled: isAdmin });
-  const [dismissedOutdated, setDismissedOutdated] = useState(false);
-  const [dismissedTmdb, setDismissedTmdb] = useState(false);
-  if (!isAdmin) return null;
-  if (incompatible && !dismissedOutdated) {
-    return <ServerOutdatedBanner serverVersion={serverVersion} onDismiss={() => setDismissedOutdated(true)} />;
-  }
-  if (metadata.data?.tmdb.configured === false && !dismissedTmdb) {
-    return <TmdbKeyBanner onDismiss={() => setDismissedTmdb(true)} />;
-  }
-  return null;
-}
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
@@ -197,7 +177,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         </Stack>
       </CardSheetScope>
       <OfflineShell />
-      <ServerNoticeOverlay />
+      {/* Les avertissements (serveur, TMDB, clé d'administration) : un à la fois, jamais sur le lecteur. */}
+      <NoticeHost />
       {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
       <SessionMessageHost />
       {showLoading && (

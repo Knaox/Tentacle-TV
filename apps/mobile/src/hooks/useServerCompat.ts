@@ -10,7 +10,7 @@ import { useServerUrl } from "@/providers/ServerUrlContext";
  * `extra.minServer` et qu'expo-constants embarque au build natif. Rien à
  * recopier à la main. Fallback très bas = jamais d'alerte si la valeur manque.
  */
-const MIN_SERVER_VERSION: string =
+export const MIN_SERVER_VERSION: string =
   (Constants.expoConfig?.extra?.minServer as string | undefined) ?? "0.0.0";
 
 /** Comparateur semver simplifié `x.y.z` → -1 | 0 | 1 (comme apps/web). */
