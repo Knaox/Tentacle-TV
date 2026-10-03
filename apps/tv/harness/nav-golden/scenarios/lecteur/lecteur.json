@@ -1,0 +1,685 @@
+{
+  "domain": "lecteur",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "lec-01",
+      "title": "Entrée dans la vidéo, habillage qui s'éteint, saut → et ←, Retour quitte",
+      "why": "§ 4.3 et § 5.1 de lecteur.md : focus sur lecture/pause à la première image ; habillage masqué, les flèches sautent sans rien rallumer ; Menu (couche page) quitte",
+      "start": {
+        "fixtures": [
+          "lecteur/flux-mp4"
+        ],
+        "keys": [
+          "wait:6",
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "le lecteur s'ouvre sur « Orgueil et Préjugés » (MP4 du banc)"
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "route": "Player"
+          },
+          "why": "extinction à 5 s : le fond reprend le focus"
+        },
+        {
+          "do": "right",
+          "settleMs": 400,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "saut +30 s, habillage NON rallumé"
+        },
+        {
+          "do": "left",
+          "settleMs": 400,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home",
+            "focus": "resume:0"
+          },
+          "why": "habillage masqué : Retour quitte la lecture, focus rendu à la carte"
+        }
+      ]
+    },
+    {
+      "id": "lec-02",
+      "title": "Habillage : la rangée au clic, HAUT vers Retour, BAS vers lecture/pause, Menu masque puis quitte",
+      "why": "§ 4.4 et § 5.4 : ←/→ parcourent les boutons sans sauter ; la frise-pont monte vers Retour (pas de pilule) et redescend vers lecture/pause ; couche surimpression puis page",
+      "start": {
+        "fixtures": [
+          "lecteur/flux-mp4"
+        ],
+        "keys": [
+          "wait:6",
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "le lecteur s'ouvre sur « Orgueil et Préjugés » (MP4 du banc)"
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "route": "Player"
+          },
+          "why": "l'habillage s'éteint (5 s) : le fond reprend le focus"
+        },
+        {
+          "do": "up",
+          "settleMs": 900,
+          "expect": {
+            "focus": "player:playpause"
+          },
+          "why": "HAUT, habillage masqué : il se rallume, le focus revient au dernier bouton (lecture/pause)"
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "player:seekback"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "player:playpause"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "player:seekforward"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "player:scrub"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "player:tracks"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "player:settings"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "player:back"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "player:playpause"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1000,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "l'habillage se masque, la lecture continue"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home",
+            "focus": "resume:0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lec-03",
+      "title": "Feuille Pistes : entrée sur la piste retenue, GAUCHE vers la croix, Menu rend le focus à « Pistes »",
+      "why": "§ 4.13 et § 5.3 : entrée figée sur l'option retenue ; marge-pont vers la croix ; couche menu ; le focus revient au bouton qui a ouvert, à la fin du fondu",
+      "start": {
+        "fixtures": [
+          "lecteur/flux-mp4"
+        ],
+        "keys": [
+          "wait:6",
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "le lecteur s'ouvre sur « Orgueil et Préjugés » (MP4 du banc)"
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "route": "Player"
+          },
+          "why": "l'habillage s'éteint (5 s) : le fond reprend le focus"
+        },
+        {
+          "do": "up",
+          "settleMs": 900,
+          "expect": {
+            "focus": "player:playpause"
+          },
+          "why": "HAUT, habillage masqué : il se rallume, le focus revient au dernier bouton (lecture/pause)"
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right"
+          ],
+          "expect": {
+            "focus": "player:tracks"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "la feuille s'ouvre dans l'habillage (pas de route modale)"
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "tracks:close"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "player:tracks"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1000,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lec-04",
+      "title": "Feuille Réglages : entrée sur la qualité retenue, Menu rend le focus à « Réglages »",
+      "why": "§ 4.13 : l'onglet Réglages, son entrée, et le retour du focus à SA pilule (jamais « Pistes »)",
+      "start": {
+        "fixtures": [
+          "lecteur/flux-mp4"
+        ],
+        "keys": [
+          "wait:6",
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "le lecteur s'ouvre sur « Orgueil et Préjugés » (MP4 du banc)"
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "route": "Player"
+          },
+          "why": "l'habillage s'éteint (5 s) : le fond reprend le focus"
+        },
+        {
+          "do": "up",
+          "settleMs": 900,
+          "expect": {
+            "focus": "player:playpause"
+          },
+          "why": "HAUT, habillage masqué : il se rallume, le focus revient au dernier bouton (lecture/pause)"
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "expect": {
+            "focus": "player:settings"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "player:settings"
+          }
+        },
+        {
+          "do": [
+            "menu",
+            "wait:1",
+            "menu"
+          ],
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lec-05",
+      "title": "Bouton ⏩ : défilement, → déplace la cible, OK valide ; rouvert, Retour l'annule",
+      "why": "§ 4.4, § 4.7 : le jumeau de l'OK qui ouvre est avalé ; OK valide ; Retour (couche passagère) annule et rend l'habillage",
+      "start": {
+        "fixtures": [
+          "lecteur/flux-mp4"
+        ],
+        "keys": [
+          "wait:6",
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "le lecteur s'ouvre sur « Orgueil et Préjugés » (MP4 du banc)"
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "route": "Player"
+          },
+          "why": "l'habillage s'éteint (5 s) : le fond reprend le focus"
+        },
+        {
+          "do": "up",
+          "settleMs": 900,
+          "expect": {
+            "focus": "player:playpause"
+          },
+          "why": "HAUT, habillage masqué : il se rallume, le focus revient au dernier bouton (lecture/pause)"
+        },
+        {
+          "do": [
+            "right",
+            "right"
+          ],
+          "expect": {
+            "focus": "player:scrub"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 900,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "défilement ouvert, habillage masqué : le fond tient le focus"
+        },
+        {
+          "do": "right",
+          "settleMs": 500
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "validé : seek à la cible, l'habillage revient sur son dernier bouton"
+        },
+        {
+          "do": "select",
+          "settleMs": 900,
+          "why": "« ⏩ » de nouveau"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1200,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "annulé, sans seek"
+        },
+        {
+          "do": [
+            "menu",
+            "wait:1",
+            "menu"
+          ],
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lec-06",
+      "title": "Maintien → (2 s) habillage masqué : avance rapide, puis Retour l'annule et rend l'habillage",
+      "why": "§ 4.3 : le maintien ouvre le défilement et accélère ; Retour l'annule (grâce de 600 ms), l'habillage revient sur lecture/pause",
+      "start": {
+        "fixtures": [
+          "lecteur/flux-mp4"
+        ],
+        "keys": [
+          "wait:6",
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "le lecteur s'ouvre sur « Orgueil et Préjugés » (MP4 du banc)"
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "holdright:2",
+          "settleMs": 500,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Player",
+            "focus": "player:playpause"
+          }
+        },
+        {
+          "do": [
+            "wait:1",
+            "menu"
+          ],
+          "settleMs": 1000,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lec-07",
+      "title": "Lecture/Pause : la pause épingle l'habillage ; Menu le masque en pause ; → saute en pause ; OK le rallume",
+      "why": "§ 4.3, § 4.4, § 6 : épingle de la pause, désépinglée par Retour ; le saut garde la pause",
+      "start": {
+        "fixtures": [
+          "lecteur/flux-mp4"
+        ],
+        "keys": [
+          "wait:6",
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "le lecteur s'ouvre sur « Orgueil et Préjugés » (MP4 du banc)"
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "route": "Player"
+          },
+          "why": "l'habillage s'éteint (5 s) : le fond reprend le focus"
+        },
+        {
+          "do": "up",
+          "settleMs": 900,
+          "expect": {
+            "focus": "player:playpause"
+          },
+          "why": "HAUT, habillage masqué : il se rallume, le focus revient au dernier bouton (lecture/pause)"
+        },
+        {
+          "do": "play",
+          "settleMs": 800,
+          "expect": {
+            "focus": "player:playpause"
+          }
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "focus": "player:playpause"
+          },
+          "why": "en pause, l'habillage ne s'éteint pas"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1000,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "right",
+          "settleMs": 500,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": [
+            "menu",
+            "wait:1",
+            "menu"
+          ],
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lec-08",
+      "title": "Pavé : un glisser habillage masqué ouvre le défilement ; Retour l'annule",
+      "why": "§ 4.8 : le pan (chemin JS de RN-tvOS) — 600 ms de contact et 60 points habillage caché",
+      "start": {
+        "fixtures": [
+          "lecteur/flux-mp4"
+        ],
+        "keys": [
+          "wait:6",
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": {
+            "route": "Player"
+          },
+          "why": "le lecteur s'ouvre sur « Orgueil et Préjugés » (MP4 du banc)"
+        },
+        {
+          "do": "wait:6",
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "pan:400,0,1500",
+          "settleMs": 800,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Player",
+            "focus": "player:playpause"
+          }
+        },
+        {
+          "do": [
+            "wait:1",
+            "menu"
+          ],
+          "settleMs": 1000
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lec-09",
+      "title": "Ouverture en échec (aucun flux) : l'écran retient le focus, Menu quitte",
+      "why": "§ 4.14 : piège d'écran de l'ouverture (directions sans issue), « Réessayer », la sortie",
+      "start": {
+        "keys": [
+          "wait:6",
+          "down"
+        ],
+        "focus": "resume:0"
+      },
+      "steps": [
+        {
+          "do": "select",
+          "settleMs": 4000,
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "route": "Player"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "route": "Home",
+            "focus": "resume:0"
+          }
+        }
+      ]
+    }
+  ]
+}
