@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import { TVFocusGuideView, type View } from "react-native";
-import type { FocusGroupContainerProps } from "../../redesign/focus/focusBinding";
-import { isNavKey } from "../nav/useRailState";
-import { setFocusLocked } from "./focusLocks";
-import type { FocusStore } from "./focusStore";
+import {
+  backCrossBandArmed, backCrossDownTarget, backCrossFreedBy, backCrossLockedOnArrival, backCrossRemembers,
+} from "@tentacle-tv/tv-core";
+import type { FocusGroupContainerProps } from "../../../redesign/focus/focusBinding";
+import { setFocusLocked } from "../focus/focusLocks";
+import type { FocusStore } from "../focus/focusStore";
 
 /**
  * Le focus de la croix Retour d'un écran (`BackButton`, posée par sa vue en
  * haut à gauche), commun à tous les écrans de la refonte — hors lecteur, qui a
- * ses propres guides, et grand panneau (`sheetFocus`).
+ * ses propres guides, et grand panneau (`sheetFocus`). L'APPLICATEUR tvOS :
+ * les règles sont dans tv-core (`nav/backCross`), on les pose en verrou, en
+ * guide de bande et en `nextFocusDown`.
  *
  * - JAMAIS L'ENTRÉE, sauf seule action. À l'arrivée — et à chaque nouvelle
  *   étape (`arrival`) —, la croix reste infocalisable tant que le focus ne
@@ -75,7 +79,7 @@ export function useBackFocus(focus: FocusStore, { backKey, barKey, entryKey, arr
   if (arrived.current === null || arrived.current.value !== arrival) {
     if (arrived.current === null && barKey) focus.bind(barKey, { container: createBackGuide(focus, backKey, lock) });
     arrived.current = { value: arrival };
-    if (entryKey !== backKey) setLocked(true, false);
+    if (backCrossLockedOnArrival(entryKey, backKey)) setLocked(true, false);
   }
   useEffect(() => {
     for (const listener of [...lock.listeners]) listener();
@@ -83,22 +87,22 @@ export function useBackFocus(focus: FocusStore, { backKey, barKey, entryKey, arr
 
   // Devenue la seule action : libre — l'écran la vise.
   useEffect(() => {
-    if (entryKey === backKey) setLocked(false);
+    if (!backCrossLockedOnArrival(entryKey, backKey)) setLocked(false);
   }, [entryKey, backKey, setLocked]);
 
   useEffect(
     () =>
       focus.subscribe((key, focused) => {
         if (!focused) return;
-        if (key === backKey) {
+        if (!backCrossFreedBy(key, backKey)) {
           // BAS depuis la croix : la dernière cible de contenu encore montée, sinon l'entrée.
           const last = lastContent.current;
-          const target = last && focus.node(last) ? last : entry.current;
-          const handle = target && target !== backKey ? focus.handle(target) : null;
+          const target = backCrossDownTarget({ lastContent: last, lastContentMounted: !!last && !!focus.node(last), entryKey: entry.current, backKey });
+          const handle = target ? focus.handle(target) : null;
           (focus.node(backKey) as Settable | null)?.setNativeProps?.({ nextFocusDown: handle });
           return;
         }
-        if (!isNavKey(key)) lastContent.current = key;
+        if (backCrossRemembers(key)) lastContent.current = key;
         setLocked(false);
       }),
     [focus, backKey, setLocked],
@@ -125,7 +129,7 @@ function createBackGuide(store: FocusStore, backKey: string, lock: BackLock): Co
     const [target, setTarget] = useState<View[]>(NONE);
 
     const aim = useCallback(() => {
-      const armed = !lock.locked && !isNavKey(store.focusedKey());
+      const armed = backCrossBandArmed(lock.locked, store.focusedKey());
       const node = armed ? store.node(backKey) : null;
       setTarget((prev) => (node ? (prev[0] === node ? prev : [node]) : NONE));
     }, []);
