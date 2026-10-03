@@ -4,3 +4,4 @@
 export * from "./unpairJournal";
 export * from "./revocationDrain";
 export * from "./passwordPairing";
+export * from "./loginForm";

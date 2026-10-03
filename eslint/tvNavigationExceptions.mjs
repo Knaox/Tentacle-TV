@@ -30,7 +30,6 @@ export const TV_NAV_EXCEPTIONS = [
   // T5 — le lecteur.
 
   // T7 — les écrans.
-  { file: "redesign/screens/pairing/PairingField.tsx", rules: ["no-native-press"], owner: "T7", why: "une VUE qui ouvre le clavier système (.focus() / .blur() d'un TextInput)" },
 
   // Hors navigation — exceptions permanentes.
   { file: "components/player/AVPlayerSurface.tsx", rules: ["no-focus-props"], owner: null, why: "rendu : surface de rendu, jamais focalisable ; inerte sur tvOS, gardé tel quel (arbitrage du lot)" },

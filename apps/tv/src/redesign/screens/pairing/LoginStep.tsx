@@ -2,6 +2,7 @@ import { memo, useRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { loginKeyboardSubmits, loginSubmitPress } from "@tentacle-tv/tv-core";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { Icon } from "../../icons/Icon";
@@ -54,17 +55,15 @@ export const LoginStep = memo(function LoginStep({
   const { t } = useTranslation(["auth", "pairing"]);
   const usernameField = useRef<PairingFieldHandle>(null);
   const passwordField = useRef<PairingFieldHandle>(null);
-  const hasUsername = username.trim().length > 0;
-  const hasPassword = password.length > 0;
-
+  // « Se connecter » et la validation d'un clavier : la règle de tv-core (`session/loginForm`).
   const submit = () => {
-    if (!hasUsername) usernameField.current?.open();
-    else if (!hasPassword) passwordField.current?.open();
+    const press = loginSubmitPress({ username, password });
+    if (press === "openUsername") usernameField.current?.open();
+    else if (press === "openPassword") passwordField.current?.open();
     else onSubmit?.();
   };
-  // Un clavier validé n'envoie que le formulaire complet.
   const submitIfComplete = () => {
-    if (hasUsername && hasPassword) onSubmit?.();
+    if (loginKeyboardSubmits({ username, password })) onSubmit?.();
   };
 
   return (

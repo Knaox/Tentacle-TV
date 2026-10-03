@@ -6,6 +6,7 @@ import { useFocusProgress } from "../../focus/useFocusProgress";
 import { GlassSurface } from "../../glass/GlassSurface";
 import { Icon, type IconName } from "../../icons/Icon";
 import { colors, fonts, scrim } from "../../theme/tokens";
+import { useKeyboardOpener } from "./keyboardOpener";
 
 /**
  * Un champ du jumelage — l'adresse du serveur, l'identifiant, le mot de passe :
@@ -22,9 +23,9 @@ import { colors, fonts, scrim } from "../../theme/tokens";
  * libellé se lit AU-DESSUS du champ, toujours visible ; l'invite, elle,
  * titre aussi le clavier système.
  *
- * L'ouverture commence par oublier un focus périmé : un clavier qui n'a pas
- * paru laisse React Native croire le champ focalisé, et `focus()` n'y faisait
- * plus RIEN — OK sur le champ ne rouvrait plus le clavier (mesuré).
+ * Le geste natif d'ouverture n'est pas ici : la plateforme le fournit
+ * (`useKeyboardOpener`, son applicateur) — il oublie d'abord un focus périmé
+ * du champ, qu'un clavier qui n'a pas paru laisse derrière lui.
  */
 
 export interface PairingFieldHandle {
@@ -59,12 +60,11 @@ export const PairingField = memo(
     ref,
   ) {
     const input = useRef<TextInput>(null);
+    const openKeyboard = useKeyboardOpener();
     const open = useCallback(() => {
       const field = input.current;
-      if (!field) return;
-      if (field.isFocused()) field.blur();
-      field.focus();
-    }, []);
+      if (field) openKeyboard?.(field);
+    }, [openKeyboard]);
     useImperativeHandle(ref, () => ({ open }), [open]);
     const shown = secure ? "•".repeat(Math.min(value.length, MAX_DOTS)) : value;
     return (

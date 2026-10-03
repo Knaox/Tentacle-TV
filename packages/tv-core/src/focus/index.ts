@@ -18,7 +18,7 @@
  * - `beyondEdge.ts` : un geste au-delà du bord ;
  * - les écrans (T7) : `detailFocus.ts` (la fiche), `gridFocus.ts` (les grilles,
  *   Ma liste, Favoris, Parcourir), `libraryFocus.ts` (la bibliothèque),
- *   `settingsFocus.ts` (les réglages). */
+ *   `settingsFocus.ts` (les réglages), `pairingFocus.ts` (le jumelage). */
 export * from "./geometry";
 export * from "./sections";
 export * from "./sectionEntry";
@@ -35,3 +35,4 @@ export * from "./detailFocus";
 export * from "./gridFocus";
 export * from "./libraryFocus";
 export * from "./settingsFocus";
+export * from "./pairingFocus";

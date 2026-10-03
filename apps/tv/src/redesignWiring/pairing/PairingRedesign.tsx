@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { pairingBackAction, pairingEntryKey, type PairingBackAction } from "@tentacle-tv/tv-core";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../navigation/types";
+import { useFocusStore } from "../../platform/tvos/focus/focusStore";
+import { openPairingKeyboard, useLoginErrorFocus, usePairingFocus, usePairingGroups } from "../../platform/tvos/screens/pairing";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
+import { KeyboardOpenerProvider } from "../../redesign/screens/pairing/keyboardOpener";
 import { PairingView } from "../../redesign/screens/pairing/PairingView";
 import { usePairingFlow, type PairingFlow, type PairingFlowOptions } from "../../hooks/usePairingFlow";
 import { useRelayPairingCode, useServerPairingCode } from "../../hooks/usePairingCode";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { useBackLayer } from "../back/BackScope";
-import { useBackFocus } from "../focus/backFocus";
-import { useFocusStore } from "../focus/focusStore";
-import { AutoFocusGuide } from "../focus/focusGuides";
-import { useLoginErrorFocus } from "./loginFocus";
-import { PAIRING_BACK_KEY, entryKeyOf, toPairingStep } from "./pairingModel";
+import { toPairingStep } from "./pairingModel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PairCode">;
 
@@ -23,19 +23,15 @@ const PORTRAIT = 64;
 /** Sur Apple TV, le serveur vérifié mène à l'identifiant et au mot de passe. */
 const FLOW_OPTIONS: PairingFlowOptions = { afterServer: "login" };
 
-/** La sortie d'une étape, que portent la croix Retour ET le bouton Menu. */
+/** La sortie d'une étape, que portent la croix Retour ET le bouton Menu (`pairingBackAction`, tv-core). */
 function exitOf(flow: PairingFlow): (() => void) | null {
-  switch (flow.step) {
-    case "relayCode":
-    case "manualServer":
-      return flow.backToWelcome;
-    case "manualLogin":
-      return flow.backToServer;
-    case "manualCode":
-      return flow.backToLogin;
-    default:
-      return null;
-  }
+  const exits: Record<PairingBackAction, () => void> = {
+    toWelcome: flow.backToWelcome,
+    toServer: flow.backToServer,
+    toLogin: flow.backToLogin,
+  };
+  const action = pairingBackAction(flow.step);
+  return action ? exits[action] : null;
 }
 
 /**
@@ -46,7 +42,7 @@ function exitOf(flow: PairingFlow): (() => void) | null {
  *
  * Le focus, que la vue ne décide pas : à chaque étape — et quand l'état du
  * code change (échec, expiration), ou qu'une connexion est refusée — il va à
- * l'action principale (`entryKeyOf`) ; la colonne et la carte de l'écran du
+ * l'action principale (`pairingEntryKey`, tv-core) ; la colonne et la carte de l'écran du
  * code sont des guides, pour que GAUCHE et DROITE passent de l'une à l'autre,
  * et les boutons des identifiants un guide où BAS entre par « Se connecter ».
  * La croix Retour n'a l'entrée que seule action — le code du relais affiché
@@ -55,9 +51,13 @@ function exitOf(flow: PairingFlow): (() => void) | null {
  * encore de compte.
  *
  * Le bouton Menu recule d'une étape, comme la croix (la couche « page » du
- * Retour) ; sur l'accueil et le succès, il reste à UIKit — qui quitte
- * l'application à la racine, la règle tvOS —, ou recule d'une page quand le
- * jumelage a été ouvert depuis les réglages (`BackScope`).
+ * Retour) ; sur l'accueil et le succès, il reste à UIKit, qui quitte
+ * l'application — le jumelage n'est jamais une page poussée : tout chemin qui
+ * y mène remet la pile à lui seul (`auth/unpair.ts`).
+ *
+ * Décidé par tv-core (`focus/pairingFocus.ts`, `session/loginForm.ts`,
+ * `nav/screenBack.ts`), posé par l'applicateur `platform/tvos/screens/pairing.ts`
+ * — qui fournit aussi aux champs le geste natif d'ouverture du clavier.
  */
 export function PairingRedesign({ navigation }: Props) {
   const onPaired = useCallback(() => navigation.replace("Home"), [navigation]);
@@ -80,19 +80,8 @@ export function PairingRedesign({ navigation }: Props) {
   const step = toPairingStep(flow, relay, server, serverUrl, portrait);
 
   const store = useFocusStore();
-  // Les guides naissent avec l'écran, avant son premier rendu : un groupe se
-  // lie dès qu'il paraît, jamais en cours de route.
-  useState(() => {
-    store.bind("pairing:side", { container: AutoFocusGuide });
-    store.bind("pairing:card", { container: AutoFocusGuide });
-    // BAS depuis le mot de passe : « Se connecter » d'abord. Laissé à la
-    // géométrie, tvOS prenait le bouton le plus proche du centre du champ —
-    // le recours (un `nextFocusDown` posé sur le champ n'y fait rien, mesuré).
-    store.bind("pairing:actions", { container: AutoFocusGuide });
-  });
-  const entryKey = entryKeyOf(step);
-  useBackFocus(store, { backKey: PAIRING_BACK_KEY, barKey: "pairing:top", entryKey, arrival: step.kind });
-  useEffect(() => (entryKey ? store.claim(entryKey) : undefined), [entryKey, store]);
+  usePairingGroups(store);
+  usePairingFocus(store, { entryKey: pairingEntryKey(step), arrival: step.kind });
   useLoginErrorFocus(store, step.kind === "manualLogin" ? step.error : null);
 
   // Réessayer comme Générer un nouveau code : le code de l'étape affichée.
@@ -103,6 +92,7 @@ export function PairingRedesign({ navigation }: Props) {
   return (
     <View style={styles.fill}>
       <FocusBindingProvider bind={store.binder}>
+        <KeyboardOpenerProvider value={openPairingKeyboard}>
         <PairingView
           step={step}
           language={flow.language}
@@ -122,6 +112,7 @@ export function PairingRedesign({ navigation }: Props) {
           onLoginBack={flow.backToServer}
           onServerCodeBack={flow.backToLogin}
         />
+        </KeyboardOpenerProvider>
       </FocusBindingProvider>
     </View>
   );
