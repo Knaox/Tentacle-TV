@@ -6,7 +6,7 @@ la garde : [`garde.md`](garde.md).
 Pour CHAQUE usage d'une API native de télécommande ou de focus sur le chemin
 Apple TV refondu : où il est (fichier:ligne), qui le traite (T1 à T7) et ce
 qu'il devient. Relevé sur 84f3cedd0 (avant toute extraction), recalé sur
-`cbe686f9f`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
+`fecc655c6`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
 qu'une tâche vient de toucher sont celles de main au moment du recalage.
 
 ## Comment il est fait
@@ -30,7 +30,7 @@ qu'une tâche vient de toucher sont celles de main au moment du recalage.
   `useFocusEffect`, `useIsFocused`, `gestureEnabled`) ; le Retour
   (`useBackLayer`), le bus de la télécommande, les Modals (`onRequestClose`),
   les défilements, `.focus()`. Commentaires exclus.
-- **766 occurrences dans 193 fichiers**, chacune lue et classée ; un
+- **740 occurrences dans 190 fichiers**, chacune lue et classée ; un
   script vérifie qu'aucune n'est sans ligne ci-dessous.
 - **Ce que le relevé ne voit pas** et que la lecture a retrouvé : les
   décisions prises PAR le magasin de focus, sans API native visible (annexe C),
@@ -68,23 +68,20 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 | Tâche | fichiers | EXTRAIRE | MIXTE | ADAPTATEUR | DÉJÀ | RESTE | VUE | HORS | ANCIENNE |
 |---|---|---|---|---|---|---|---|---|---|
-| T1 | 6 | — | — | 11 | 13 | 5 | — | — | — |
+| T1 | 5 | — | — | 11 | 13 | 4 | — | — | — |
 | T3 | 22 | — | — | 73 | 6 | 2 | 29 | — | 6 |
-| T4 | 18 | 10 | 15 | 22 | 5 | 11 | 16 | 1 | — |
-| T5 | 19 | 39 | 31 | 43 | — | — | 3 | 3 | 20 |
+| T4 | 17 | 4 | 15 | 22 | 5 | 11 | 16 | 1 | — |
+| T5 | 19 | 13 | 16 | 66 | 1 | 4 | 3 | 3 | 18 |
 | T6 | 12 | — | — | 7 | 4 | 4 | 20 | — | — |
 | T7 | 34 | 21 | 8 | 13 | — | 2 | 43 | 1 | 1 |
-| pas concernés | 82 | — | — | — | — | — | — | 135 | 143 |
-| **total** | 193 | 70 | 54 | 169 | 28 | 24 | 111 | 140 | 170 |
+| pas concernés | 81 | — | — | — | — | — | — | 133 | 141 |
+| **total** | 190 | 38 | 39 | 192 | 29 | 27 | 111 | 138 | 166 |
 
 ## T1 — le socle : intentions, traduction, entrée unique
 
 > Fait (756ed8bc7, 54b02445d) : l'entrée unique `platform/tvos/input/` porte l'abonnement natif du chemin refondu et la prise du pan ; Menu des Modals y passe (`withMenuIntent`). Reste : l'API d'avant (`remoteEvents.ts`) et ses quatre écouteurs (annexe B), et quatre abonnements natifs encore HORS de l'entrée unique (annexe A).
 >
-> 6 fichiers.
-
-#### `lib/tvPanGesture.ts`
-- L6 · réexport de `acquirePanGesture` / `usePanGesture` · **RESTE** · ne fait plus que réexporter la prise du pan de l'entrée unique, le temps que `hooks/useScrubGestures.ios.ts` (T5) migre
+> 5 fichiers.
 
 #### `platform/tvos/input/index.ts`
 - L9 · réexport de la prise du pan · **ADAPTATEUR** · FAIT (756ed8bc7) : l'entrée unique de la télécommande
@@ -184,7 +181,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 > Fait (5a12cb255) : l'applicateur du Retour (`platform/tvos/back/`), règles dans tv-core `nav/`, Menu des Modals par l'entrée unique ; `nav/arrange` et `railKeys` (dbd9ad386). Reste : la croix Retour (`backFocus`), les ponts et raccourcis du rail, le repli du rail, `gestureEnabled`, l'aperçu et la fenêtre des demandes (arbitrage).
 >
-> 18 fichiers.
+> 17 fichiers.
 
 #### `components/focus/MenuPressInterceptor.ios.tsx` — garde : `no-native-focus-calls`
 - L1, 6, 22 · requireNativeComponent (TVMenuPressInterceptor) · **ADAPTATEUR** · la vue native qui prend Menu → `platform/tvos/back/` (signal `menu` de la table tvOS)
@@ -229,9 +226,6 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 - L37, 48 · setTimeout · **EXTRAIRE** · repli du rail : attendre `COLLAPSE_DELAY_MS` = 30 ms que le focus se pose ; focus hors de l'écran (une Modal) → la barre reste ouverte → `nav/`
 - L91, 143 · onLongPress · **RESTE** · l'appui long d'une entrée ouvre le menu d'organisation (`useRailArrange`)
 
-#### `redesignWiring/player/usePlayerBackLayers.ts`
-- L2, 41–43, 49, 50 · `useBackLayer` · **EXTRAIRE** · couches du Retour du lecteur : menu (état transitoire → routeBack ; feuille ; épisodes) > surimpression (masquer + désépingler) > page (quitter) ; le registre est déjà dans tv-core (`createBackLayers`)
-
 #### `redesignWiring/screen/RailBridges.tsx` — garde : `no-focus-guides`, `no-platform-branch`
 - L2, 40, 48, 51 · TVFocusGuideView, destinations, Platform.OS · **MIXTE** · guides natifs (ADAPTATEUR) ; quel pont, vers quoi (l'entrée active ; le dernier contenu, sinon l'entrée) = règle (EXTRAIRE `nav/`)
 
@@ -250,7 +244,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 ## T5 — le lecteur
 
-> Beaucoup de fichiers PARTAGÉS avec Android TV : on ne les amincit sur tv-core qu'avec le banc de traces (`apps/tv/harness/player-trace/`, `nav-golden/scenarios/lecteur/traces/`). L'abonnement principal du lecteur passe encore par `useTVRemote` (annexe A).
+> Fait (fecc655c6) : le lecteur est sur tv-core `player/` (contrôles, saut et avance rapide, maintien, pavé, Retour, focus de l'habillage, panneau des pannes), ses applicateurs dans `platform/tvos/player/`, sa télécommande par l'entrée unique ; minuteurs injectés (`hooks/playerTimers.ts`) ; les crochets partagés avec Android TV sont devenus de minces adaptateurs, équivalence prouvée par le banc de traces du lecteur ; `verify` 9/9 au simulateur et sur « Chambre ». Reste au lecteur : `AVPlayerSurface` (exception permanente « rendu »).
 >
 > 19 fichiers.
 
@@ -270,19 +264,14 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 - L23–26, 229, 230, 239 · `nextFocus*` · **ANCIENNE** · voisins, verrou de défilement, montée vers la pilule : jamais appliqués sur tvOS refondu
 - L2, 89, 127, 209 · `findNodeHandle`, `queueMicrotask` · **ANCIENNE** · handles pour les seuls `nextFocus*` — exécutés sur tvOS sans usage (bug 8)
 
-#### `components/player/focus/useOverlayFocus.ios.ts` — garde : `no-focus-props`, `no-native-focus-calls`
-- L32–35, 39 · `setNativeProps({ hasTVPreferredFocus })` faux→vrai→faux, setTimeout 50 / 120 ms · **ADAPTATEUR** · primitive native de prise de focus (RN-tvos #849), doublon de `claimTvFocus` (bug 3)
-
 #### `components/player/focus/useSkipPillFocus.ts` — partagé Android TV
 - L6, 92, 93 · onFocus/onBlur de Passer / Masquer · **EXTRAIRE** · qui tient le focus dans la pilule, publié sur le bus : cession de la restauration implicite, relais quand le bouton disparaît
 
-#### `hooks/scrubCountdown.ts` — partagé Android TV
-- L31, 37, 38, 88 · minuteurs injectables (`CountdownTimers`, `REAL_TIMERS`) · **EXTRAIRE** · décompte de reprise du défilement (5 s, suspendu pendant un geste continu) — déjà pur, prêt à migrer
+#### `hooks/playerTimers.ts` — partagé Android TV
+- L11, 12 · setTimeout / clearTimeout (`PLAYER_TIMERS`) · **ADAPTATEUR** · les minuteurs du moteur JS, injectés aux machines du lecteur de tv-core (qui n'en arment aucun)
 
-#### `hooks/useScrubGestures.ios.ts` — garde : `no-remote-events`
-- L10, 11, 125 · `useTVEventHandler` · **ADAPTATEUR** · abonnement natif DIRECT à la télécommande, hors de l'entrée unique (annexe A) : il passe à `useRemoteIntents` (T1)
-- L126 · `eventType === "pan"` + `body` · **EXTRAIRE** · traduction tvOS du pan (state, x, y, velocityX) en geste du pavé — la table `TVOS_BINDINGS` la porte déjà ; la garde `enabled` (panneau ouvert) relève de T5
-- L68, 69, 97, 157 · setTimeout silence 450 ms / regroupement 33 ms · **EXTRAIRE** · machine pan → défilement : un pan annulé se clôt sur silence, les pas sont regroupés (minuteurs à injecter)
+#### `hooks/usePlayerRemoteBinding.ios.ts`
+- L1, 15 · useIsFocused · **ADAPTATEUR** · FAIT (819571cc0) : la télécommande du lecteur Apple TV par l'entrée unique (`useRemoteIntents`) → `playerRemoteSteps` (tv-core), écran devant
 
 #### `hooks/useTVEpisodeNav.ts` — partagé Android TV
 - L37 · setTimeout(…, 0) + `navigation.replace` · **MIXTE** · ouvrir l'épisode (arrêt signalé, invalidations, lecteur remplacé) = règle ; replace différé d'un tick pour passer `usePreventRemove`, sans objet sur tvOS refondu
@@ -294,46 +283,35 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 #### `hooks/useTVPlaybackPresence.ts` — partagé Android TV
 - L85 · setTimeout ×3 (400 / 1 500 / 3 000 ms) · **MIXTE** · focus sur Lecture au retour au premier plan (`presenceStep.focusPlay`, déjà dans tv-core) ; signal répété parce que la scène UIKit se réattache lentement (bug 2)
 
-#### `hooks/useTVPlayerBack.ts` — partagé Android TV
-- L88, 93 · setTimeout BACK_GRACE_MS 600 · **EXTRAIRE** · fenêtre de grâce après un Retour consommé (le double appui est avalé), active sur tvOS via la couche « menu » (`back.transient`)
-- L2, 126 · `usePreventRemove` · **ANCIENNE** · T4 · coupé sur tvOS refondu (`holdsSystemBack: false`)
+#### `platform/tvos/player/overlayFocusRestore.ts`
+- L11–15 · setNativeProps(hasTVPreferredFocus), setTimeout · **ADAPTATEUR** · FAIT : le cycle de la préférence native ; ses durées viennent de tv-core (`FOCUS_PREFERENCE_CYCLE`)
 
-#### `hooks/useTVPlayerControls.ts` — partagé Android TV
-- L87, 103 · setTimeout OVERLAY_HIDE_MS 5 s · **EXTRAIRE** · masquage automatique de l'habillage hors pause et hors panneau : rend le fond focalisable, retire la couche « surimpression » ; raté : L2, 218-275 `useTVRemote({…})` = l'abonnement principal du lecteur et toute sa traduction (fenêtres `SCRUB_TWIN_PRESS_MS` 400, `MEDIA_KEY_ECHO_MS` 300, `TOUCH_AFTER_PRESS_MS` 600, `guardScrub`)
+#### `platform/tvos/player/PlayerBackground.tsx`
+- L2, 13, 20, 26, 27, 32 · TouchableOpacity, hasTVPreferredFocus, focusable · **ADAPTATEUR** · FAIT (6bf9971a3) : le fond focalisable du lecteur ; quand il l'est, c'est tv-core qui le dit (`playerStage`)
+
+#### `platform/tvos/player/playerFocusBindings.ts`
+- L11, 15 · isTVSelectable, hasTVPreferredFocus (`native: {…}`) · **ADAPTATEUR** · FAIT : verrou de sortie et préférence des commandes, décidés par tv-core (`playerFocus`)
+
+#### `platform/tvos/player/playerFocusContainers.tsx`
+- L2, 62, 66, 68, 77, 86, 97, 99–105, 110, 117, 123, 129, 139, 141–143, 148, 169, 192, 194–197, 215, 220, 226, 232, 237 · TVFocusGuideView, destinations, focusable, trapFocus*, autoFocus · **ADAPTATEUR** · FAIT (6bf9971a3) : guides, pièges et ponts natifs de l'habillage, des îlots et des panneaux ; les destinations sont décidées par tv-core (`player/playerFocus`)
 
 #### `redesign/screens/player/PlayerChromeView.tsx`
 - L112, 136 · `onPanelExited` (useExit « handoff ») · **VUE** · rappel de fin du fondu d'un panneau ; raté : L130, 168 `pointerEvents={chrome ? "box-none" : "none"}` rend l'habillage caché infocalisable sur tvOS — une décision de focus PRISE DANS LA VUE
 
-#### `redesignWiring/player/endExitLock.ts` — garde : `no-focus-props`
-- L33 · `native: { isTVSelectable: false }` · **ADAPTATEUR** · prop native de la croix verrouillée ; la décision (verrou jusqu'au 1er focus de l'entrée) est dans `useExitLocked` L12-25, commune à toutes les croix
+#### `redesignWiring/player/PlayerRedesignStage.tsx`
+- L74 · `holdsFocus` (prop de `PlayerBackground`) · **RESTE** · câblage : le fond focalisable est décidé par tv-core (`player/playerStage`), appliqué par `platform/tvos/player/PlayerBackground`
+- L80 · `onPanelExited` · **VUE** · relais du rappel de la vue
 
-#### `redesignWiring/player/playerFocusContainers.tsx` — garde : `no-focus-guides`, `no-focus-props`
-- L2, 95–103, 108, 140–144, 149 · `TVFocusGuideView` (ScreenTrap, BridgeGuide), `trapFocus*`, `focusable={…? undefined : false}` · **ADAPTATEUR** · guides natifs (piège 4 directions, pont) ; `focusable={false}` contourne RN-tvos (un guide sans destination devenait focalisable)
-- L60, 64, 66 · `useStoreDestination` · **ADAPTATEUR** · clé → nœud natif du magasin, relu après chaque rendu (bug 11)
-- L75, 84 · `useLiveDestination` · **MIXTE** · la 1re clé montée d'une liste ordonnée, jamais un nœud parti (règle) ; abonnement aux montages (application)
-- L116, 123, 130 · destinations d'entrée · **EXTRAIRE** · entrée d'un écran qui couvre la vidéo : chargement → « Réessayer » sinon la croix ; fin → « Lire maintenant » ; message-outil → « Réessayer maintenant »
-- L169 · destinations de la frise · **EXTRAIRE** · sens du pont lu sur le focus : depuis Retour → lecture/pause ; sinon → la pilule de saut, à défaut Retour
-- L192, 194 · `TVFocusGuideView autoFocus trapFocusLeft/Right` · **ADAPTATEUR** · mémoire et piège de l'îlot (la décision `islandTrap` est dans usePlayerFocus.ts:174)
-- L195–197 · guides de sortie de l'îlot · **MIXTE** · BAS → lecture/pause, HAUT et GAUCHE → Retour, habillage visible et focus dans l'îlot (règle) ; guides positionnés (application)
-- L215 · destinations du pont du message-outil · **EXTRAIRE** · depuis la croix → « Réessayer » ; sinon → la croix
-- L220, 226, 232, 237 · destinations de l'en-tête, des marges, des saisons · **EXTRAIRE** · en-tête des épisodes et marges Pistes / Réglages → leur croix ; bande des saisons → saison affichée
+#### `redesignWiring/player/usePlaybackTrouble.ts`
+- L29, 102 · setTimeout / setInterval · **HORS** · échéances d'affichage, décompte « nouvelle vérification »
+- L132 · setTimeout(`TROUBLE_REFOCUS_MS`) + `store.claim` · **ADAPTATEUR** · FAIT : panneau actif mais focus sorti → « Réessayer » ; la règle et la durée viennent de tv-core (`focusInTrouble`, `TROUBLE_REFOCUS_MS`) ; l'activation voit passer les intentions de l'entrée unique (669a5261f)
 
-#### `redesignWiring/player/PlayerRedesignStage.tsx` — garde : `no-native-press`, `no-focus-props`
-- L1, 70, 82 · `TouchableOpacity` du fond · **ADAPTATEUR** · vue native focalisable plein écran ; OK réveille l'habillage
-- L76, 77 · `hasTVPreferredFocus` / `focusable` = backgroundFocusable · **MIXTE** · le fond n'est focalisable que chargement fini, habillage caché et rien par-dessus (règle) ; `focusable` est INERTE sur tvOS (ancienne architecture) : c'est `accessible` (L78) qui pose `isTVSelectable` (bug 6)
-- L85 · `onPanelExited={focus.onPanelExited}` · **VUE** · branche le rappel de la vue
+#### `redesignWiring/player/usePlayerBackLayers.ts`
+- L3 · `useBackLayers` · **DÉJÀ** · FAIT (63f8dc099) : les couches du Retour du lecteur (états passagers, grâce, habillage, page) sont des règles de tv-core (`player/playerBack`)
 
-#### `redesignWiring/player/usePlaybackTrouble.ts` — garde : `no-remote-events`
-- L12, 13, 71 · `useTVEventHandler` · **ADAPTATEUR** · T1 · abonnement natif DIRECT (hors du bus)
-- L23 · `GESTURES` (select, playPause, flèches, longSelect) · **EXTRAIRE** · quels événements comptent pour « un appui » (pas le pan) ; règle T5 : le 1er appui active le panneau (bug 5)
-- L35, 107 · setTimeout (useUntil) / setInterval 1 s · **HORS** · échéances d'affichage, décompte « nouvelle vérification »
-- L137 · setTimeout 120 ms + `store.claim` · **MIXTE** · panneau actif mais focus sorti après réordonnancement → rendre le focus à « Réessayer » (règle) ; délai UIKit et réclamation (application) — bug 4
-
-#### `redesignWiring/player/usePlayerFocus.ts` — garde : `no-focus-props`
-- L130 · onFocus des clés de l'habillage · **EXTRAIRE** · mémoire du dernier bouton (table pure `OSD_KEYS`, L32-43)
-- L142, 143 · onFocus/onBlur de la pilule · **EXTRAIRE** · qui tient le focus de la pilule (cession, relais)
-- L162 · `native: { hasTVPreferredFocus }` · **MIXTE** · `preferredFocus` L187-200 : Masquer si le passage part seul, sinon Passer ; Retour ou Réessayer selon l'échec ; carte, affiche, entrée de feuille (règle) ; prop native (application)
-- L89, 170, 179 · `onPanelExited` (usePanelReturnFocus) · **MIXTE** · rendre le focus au bouton qui a ouvert le dernier panneau, en fin de fondu, habillage visible (règle) ; `store.focusNow` → `requestTVFocus` (application)
+#### `redesignWiring/player/usePlayerFocus.ts`
+- L120, 132, 133 · onFocus/onBlur (relais vers la mémoire de l'habillage et la pilule) · **ADAPTATEUR** · l'observation seule ; mémoire, préférences, croix, ponts et îlot sont des règles de tv-core (`player/playerFocus` : `preferredFocusOf`, `playerFocusClaims`, `skipIslandGuides`, `skipPillFocus`)
+- L82, 163, 170 · `onPanelExited` · **RESTE** · relais vers `usePanelReturnFocus`, qui applique tv-core (`panelOpener`, `panelReturnTarget`)
 
 #### `screens/PlayerScreen.tsx` — partagé Android TV
 - L2, 54 · réf. `TouchableOpacity` (backgroundRef) · **ADAPTATEUR** · référence de la vue native du fond, visée par les réclamations (tvOS) et par useFocusRecovery (Android) ; ratés : L129-145 `onBack` (ordre du Retour doublé, bug 9), L290-292 cibles de focus des panneaux
@@ -504,7 +482,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 ## Pas concernés — hors navigation, ancienne UI, props inertes
 
-82 fichiers sur le chemin, sans rien à extraire : réseau, stockage, moteur vidéo, rendu, corps `Legacy*` des aiguillages, branches Android, props sans effet sur tvOS. `⇄` : partagé avec Android TV.
+81 fichiers sur le chemin, sans rien à extraire : réseau, stockage, moteur vidéo, rendu, corps `Legacy*` des aiguillages, branches Android, props sans effet sur tvOS. `⇄` : partagé avec Android TV.
 
 | Fichier | Lignes | API | État | Pourquoi |
 |---|---|---|---|---|
@@ -529,18 +507,16 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 | `hooks/usePlaybackRecovery.ts` ⇄ | 238 | setInterval | HORS | tic de la reprise réseau |
 | `hooks/usePlayerItem.ts` ⇄ | 60 | setTimeout | HORS | délai avant le recours à la fiche (réseau) |
 | `hooks/usePlayerMediaState.ts` ⇄ | 39, 44 | setTimeout 8 s | HORS | effacement du bandeau d'erreur |
-| `hooks/useScrubHoldMotor.ts` ⇄ | 104, 118 | setTimeout(holdArmMs) | ANCIENNE | armement après l'appui long natif : jamais armé sur tvOS (`holdArmMs` = 0) ; Android : 250 ms |
-| `hooks/useScrubHoldMotor.ts` ⇄ | 126, 135 | setTimeout 400 / 550 ms | ANCIENNE | maintien déduit d'un key-down sans key-up : faux sur tvOS (useScrubController.ts:257) |
 | `hooks/useSeasonEpisodes.ts` ⇄ | 2, 26 | InteractionManager | HORS | préchargement réseau des saisons |
 | `hooks/useServerReachable.ts` ⇄ | 32, 36, 46, 79, 120 | setTimeout/setInterval | HORS | joignabilité du serveur |
 | `hooks/useSessionMessages.ts` ⇄ | 34, 56 | setTimeout | HORS | échéance des messages de l'administrateur |
-| `hooks/useSkipFlash.ts` ⇄ | 16, 25 | setTimeout 1,5 s | HORS | durée et cumul du badge « ±N s » (le saut part sans attendre) |
 | `hooks/useStartupRecovery.ts` ⇄ | 34, 41 | setTimeout | HORS | sondes de reprise de l'ouverture |
 | `hooks/useStartupWait.ts` ⇄ | 120 | setInterval | HORS | surveillance de l'ouverture du transcodage |
 | `hooks/useStoredToken.ts` ⇄ | 20 | setInterval | HORS | relecture du jeton |
 | `hooks/useTVPanelControls.ts` ⇄ | 2, 18 | type `TouchableOpacity` (backgroundRef) | ANCIENNE | ne sert qu'à useFocusRecovery (Android) |
 | `hooks/useTVPanelControls.ts` ⇄ | 4, 63 | `usePreventRemove` | ANCIENNE | coupé sur tvOS refondu (`holdsSystemBack: !REDESIGN_ACTIVE`) : là, le panneau est une couche de BackScope |
 | `hooks/useTVPlaybackMarker.ts` ⇄ | 46 | setInterval 30 s | HORS | marqueur de relance à froid |
+| `hooks/useTVPlayerBack.ts` ⇄ | 2, 58 | usePreventRemove | ANCIENNE | coupé sur tvOS refondu (`holdsSystemBack: false`) ; la grâce et l'ordre du Retour du lecteur sont dans tv-core `player/playerBack` (63f8dc099) |
 | `hooks/useTVPlayerEventHandlers.ts` ⇄ | 155 | setInterval 1 s | HORS | chien de garde du rebuffering |
 | `hooks/useTVPrismProgress.ts` ⇄ | 56 | `Platform.OS !== "ios"` | HORS | jalons PrismCore de l'écran de chargement |
 | `hooks/useTVReloadHold.ts` ⇄ | 23, 29 | setTimeout 35 s | HORS | levée de sécurité du gel de rechargement |
@@ -562,7 +538,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 | `redesign/requests/useLeavingItems.ts` | 75 | `setTimeout` | HORS | phases visuelles d'une demande qui part |
 | `redesignWiring/library/useLibraryPrefetch.ts` | 37, 53 | setTimeout 300 ms | HORS | préchargement quand le focus s'arrête sur une bibliothèque du rail (données) |
 | `redesignWiring/overlays/transientNotice.ts` | 21, 34 | setTimeout | HORS | échéance d'un avis bref, jamais focalisable |
-| `redesignWiring/player/usePlayerEpisodesPanel.ts` | 87, 92 | setTimeout INTENT_MS 200 | HORS | précharge une saison quand le focus s'y attarde (données) |
+| `redesignWiring/player/usePlayerEpisodesPanel.ts` | 85, 90 | setTimeout(`SEASON_PREFETCH_INTENT_MS`) | HORS | précharge une saison quand le focus s'y attarde (données) |
 | `redesignWiring/remote/parallax.ts` | 29, 61, 64, 65 | Platform.OS, tvParallaxProperties | HORS | RENDU (docs/tv-navigation/remote.md) : l'inclinaison au pouce par forme, coupée au mouvement réduit ; elle reste dans `redesignWiring/remote/` — exception permanente de la garde |
 | `redesignWiring/search/useSearchInput.ts` | 19 | setTimeout DEBOUNCE_MS | HORS | debounce de la recherche |
 | `redesignWiring/settings/useSettingsModel.ts` | 72 | Platform.OS | HORS | réglages propres à Android TV — branche morte (la refonte ne tourne que sur tvOS) |
@@ -596,14 +572,13 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 ## Annexe A — abonnements natifs encore HORS de l'entrée unique
 
-L'entrée unique (`platform/tvos/input/`) devait porter le SEUL abonnement à
-`TVEventHandler` du chemin refondu. Quatre lui échappent encore :
+L'entrée unique (`platform/tvos/input/`) porte l'abonnement natif du chemin
+refondu. Le lecteur y est passé (fecc655c6 : `usePlayerRemoteBinding.ios.ts`,
+le panneau des pannes, le pavé). Deux abonnements y échappent encore :
 
 | Abonnement | Par où il tourne sur tvOS | Tâche | Garde |
 |---|---|---|---|
-| `hooks/useScrubGestures.ios.ts:125` — `useTVEventHandler` direct (`pan`) | le défilement au pavé du lecteur | T5 | `no-remote-events` |
-| `redesignWiring/player/usePlaybackTrouble.ts:71` — `useTVEventHandler` direct | l'activation du panneau de panne | T5 | `no-remote-events` |
-| `components/focus/useTVRemote.ts:81` ⇄ | `hooks/useTVPlayerControls.ts:218-275` (l'abonnement PRINCIPAL du lecteur, T5) et `components/search/useSearchSubmit.ts:85-89` (l'atterrissage de la recherche, T7) | T5, T7 | hors portée (partagé) |
+| `components/focus/useTVRemote.ts:81` ⇄ | `components/search/useSearchSubmit.ts:85-89` (l'atterrissage de la recherche) — le lecteur ne l'emploie plus que sur Android TV (`usePlayerRemoteBinding.ts`) | T7 | hors portée (partagé) |
 | `hooks/useContentFocusCapture.ts:101` ⇄ | `components/nav/TVNavChrome.tsx`, l'ancien rail, MONTÉ par `App.tsx` sur tvOS alors qu'il n'y rend rien : un abonnement à vide toute la session | T4 | hors portée (ancienne UI) |
 
 ## Annexe B — les écouteurs de l'API d'avant (`remoteEvents.ts`)
@@ -641,10 +616,10 @@ qui doit rejoindre tv-core comme les autres.
 | `redesignWiring/overlays/ScreenErrorRedesign.tsx` | 50, 61, 62, 74 | T6 |
 | `redesignWiring/pairing/loginFocus.ts` | 26 | T7 |
 | `redesignWiring/pairing/PairingRedesign.tsx` | 86, 87, 91, 94, 95 | T7 |
-| `redesignWiring/player/usePanelReturnFocus.ts` | 42 | T5 |
-| `redesignWiring/player/usePlaybackTrouble.ts` | 82, 138 | T5 |
-| `redesignWiring/player/usePlayerEpisodesPanel.ts` | 79 | T5 |
-| `redesignWiring/player/usePlayerFocus.ts` | 85, 131 | T5 |
+| `redesignWiring/player/usePanelReturnFocus.ts` | 39 | T5 |
+| `redesignWiring/player/usePlaybackTrouble.ts` | 77, 133 | T5 |
+| `redesignWiring/player/usePlayerEpisodesPanel.ts` | 77 | T5 |
+| `redesignWiring/player/usePlayerFocus.ts` | 78, 121 | T5 |
 | `redesignWiring/screen/useRailBackLayers.ts` | 34 | T4 |
 | `redesignWiring/screen/useRedesignScreen.ts` | 69, 75, 80, 91 | T4 |
 | `redesignWiring/search/SearchRedesign.tsx` | 53, 54 | T7 |
@@ -739,8 +714,9 @@ Ils restent natifs : ce sont l'adaptateur, côté UIKit.
 
 ## Annexe F — bugs relevés, NON corrigés (règle du lot)
 
-Relevés à la lecture, pour mémoire : aucun n'est corrigé dans ce lot. « À
-vérifier » : déduit du code, pas reproduit.
+Relevés à la lecture sur 84f3cedd0, pour mémoire : aucun n'est corrigé dans
+ce lot (l'extraction a pu déplacer le code en cause, jamais changer ce qu'il
+fait). « À vérifier » : déduit du code, pas reproduit.
 
 **Panneaux et cartes**
 
@@ -800,31 +776,21 @@ Android (règle du lot) ; le rapport final les liste s'ils ont été touchés.
 - `components/player/focus/useSkipPillFocus.ts` (T5)
 - `components/search/searchBarReturn.ts` (T7)
 - `components/search/useSearchSubmit.ts` (T7)
-- `hooks/scrubCountdown.ts` (T5)
+- `hooks/playerTimers.ts` (T5)
 - `hooks/usePairingFlow.ts` (T7)
 - `hooks/useTVEpisodeNav.ts` (T5)
 - `hooks/useTvFocusClaim.ts` (T3)
 - `hooks/useTVPlaybackLifecycle.ts` (T5)
 - `hooks/useTVPlaybackPresence.ts` (T5)
-- `hooks/useTVPlayerBack.ts` (T5)
-- `hooks/useTVPlayerControls.ts` (T5)
 - `navigation/AppNavigator.tsx` (T4)
 - `screens/PlayerScreen.tsx` (T5)
 
 ## Annexe H — attributions proposées
 
 Les arbitrages du coordinateur (`.claude/nav-lot/STATUS.md`) font foi et sont
-appliqués ci-dessus (« arbitrage »). Restent des PROPOSITIONS, pour ce qu'ils
-ne couvrent pas :
+appliqués ci-dessus (« arbitrage »). Les propositions faites pour le lecteur
+sont devenues sans objet avec son branchement (fecc655c6). Restent :
 
-- `components/player/focus/useOverlayFocus.ios.ts` → T5 (dans le périmètre autorisé de T5 : `components/player/focus/*`) ; c'est une primitive de réclamation, doublon de `claimTvFocus` (T3).
-- `hooks/useScrubGestures.ios.ts` (abonnement direct et traduction du pan) → T5 (son périmètre autorisé) ; la table et l'entrée unique : T1.
-- `hooks/useTVEpisodeNav.ts`, `hooks/useTVPlaybackLifecycle.ts:75` → T5 ; candidat : T7.
-- `hooks/useTVPlayerBack.ts:88` (grâce de 600 ms) → T5 ; l'API des couches : T4.
-- `redesignWiring/player/endExitLock.ts` → T5 ; la règle des croix est commune (T3, T4).
-- `redesignWiring/player/playerFocusContainers.tsx` (destinations, `useStoreDestination`, `useLiveDestination`) → T5 ; règle générique : T3 ; saisons : T6.
-- `redesignWiring/player/usePlaybackTrouble.ts:23` (`GESTURES`) → T5 ; la traduction : T1.
-- `redesignWiring/player/usePlayerFocus.ts` (`onPanelExited`) → T5 ; candidat : T6.
 - `redesignWiring/settings/SettingsRedesign.tsx` (`useBackLayer`) → T7 ; les couches : T4.
 - `redesignWiring/remote/parallax.ts` → rendu, il reste (remote.md) : exception permanente de la garde.
 
