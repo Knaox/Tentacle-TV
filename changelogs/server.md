@@ -10,6 +10,19 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.22.3]
+### FR
+- **Plus d'image en blocs dans les scènes d'action quand la qualité baisse** (lecteur web) : une qualité réduite, choisie ou automatique, garde désormais une définition que son débit peut tenir — 1080p, 720p, 540p ou 360p. Avant, un « 1080p » pouvait sortir en 540p, ou en 720p à 1,2 Mb/s, et partir en blocs dès que l'image bougeait. Au banc, les pires images d'une scène d'action passent d'un VMAF de 21 à 59, sans perte au calme
+- **La limite de débit Internet de Jellyfin ne pixellise plus l'action** : quand elle plafonne une lecture à distance, le lecteur web choisit lui aussi une définition qui tient dans la limite, au lieu d'un 1080p affamé
+- **Notifications Android en bandeau** : le serveur les envoie en priorité haute, sans canal nommé — elles s'affichent en haut de l'écran sur toutes les versions de l'app, anciennes comprises
+- La version minimale exigée des clients reste 1.22.1
+
+### EN
+- **No more blocky picture in action scenes when quality drops** (web player): a reduced quality, chosen or automatic, now keeps a resolution its bitrate can hold — 1080p, 720p, 540p or 360p. Before, a "1080p" could come out as 540p, or 720p at 1.2 Mb/s, and break into blocks as soon as the picture moved. On the bench, the worst frames of an action scene go from a VMAF of 21 to 59, with no loss in calm scenes
+- **Jellyfin's internet bitrate limit no longer pixelates action**: when it caps a remote playback, the web player also picks a resolution that fits the limit, instead of a starved 1080p
+- **Android notifications as banners**: the server sends them with high priority, without a named channel — they show at the top of the screen on every version of the app, older ones included
+- The minimum required client version stays 1.22.1
+
 ## [1.22.2]
 ### FR
 - **Les bandes-annonces de l'Apple TV passent par le serveur** : elles échouaient presque toujours (2 lectures sur 20 au banc), car le serveur demandait à YouTube un flux où image et son sont mêlés, qu'il ne sert presque plus, et le repli se coupait après un mégaoctet. Il choisit désormais le flux HLS que YouTube destine à visionOS (H.264 jusqu'en 1080p) et le relaie lui-même. Avec l'Apple TV 1.10.0, qui la prépare dès l'ouverture de la fiche : 32 lectures sur 32 au banc, la première image en 0,3 s en médiane. Les Apple TV déjà installées lisent le relais sans mise à jour
