@@ -1,0 +1,1520 @@
+{
+  "reference": "84f3cedd0",
+  "scenarios": {
+    "storeTracking": [
+      [
+        0,
+        "state",
+        null,
+        null
+      ],
+      [
+        0,
+        "listener",
+        "a",
+        true
+      ],
+      [
+        0,
+        "state",
+        "a",
+        "a"
+      ],
+      [
+        0,
+        "listener",
+        "a",
+        false
+      ],
+      [
+        0,
+        "listener",
+        "b",
+        true
+      ],
+      [
+        0,
+        "state",
+        "b",
+        "b"
+      ],
+      [
+        0,
+        "listener",
+        "a",
+        false
+      ],
+      [
+        0,
+        "state",
+        "b",
+        "b"
+      ],
+      [
+        0,
+        "listener",
+        "b",
+        false
+      ],
+      [
+        0,
+        "state",
+        null,
+        "b"
+      ]
+    ],
+    "storeClaims": [
+      [
+        40,
+        "native",
+        "mounted",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        90,
+        "native",
+        "mounted",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        210,
+        "native",
+        "mounted",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        300,
+        "—",
+        "réclamation en attente du montage"
+      ],
+      [
+        840,
+        "native",
+        "later",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        890,
+        "native",
+        "later",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        1010,
+        "native",
+        "later",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1100,
+        "—",
+        "annulée avant le montage"
+      ],
+      [
+        1400,
+        "—",
+        "annulée en route"
+      ],
+      [
+        1440,
+        "native",
+        "mounted",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1760,
+        "requestTVFocus",
+        "mounted"
+      ],
+      [
+        1760,
+        "focusNow",
+        true,
+        false
+      ],
+      [
+        1760,
+        "handle",
+        true,
+        null
+      ]
+    ],
+    "restoreClaims": [
+      [
+        0,
+        "—",
+        "restauration ailleurs dans le délai"
+      ],
+      [
+        40,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        90,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        210,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        340,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        390,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        510,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1900,
+        "—",
+        "ailleurs juste avant la fin du délai"
+      ],
+      [
+        1940,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1990,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        2110,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        2790,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        2840,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        2960,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        4250,
+        "—",
+        "ailleurs juste après le délai"
+      ],
+      [
+        4290,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        4340,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        4460,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        6700,
+        "—",
+        "la cible d'abord, puis ailleurs"
+      ],
+      [
+        6740,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        6790,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        6910,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        7140,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        7190,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        7310,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        8600,
+        "—",
+        "une perte seulement"
+      ],
+      [
+        8640,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        8690,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        8810,
+        "native",
+        "target",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ]
+    ],
+    "entryGuides": [
+      [
+        0,
+        "—",
+        "remember=true"
+      ],
+      [
+        0,
+        "guide",
+        "monté, rien d'attaché",
+        {
+          "to": [],
+          "focusable": false,
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "après rendu",
+        {
+          "to": [
+            "episode:0"
+          ],
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "épisode 3 visité",
+        {
+          "to": [
+            "episode:3"
+          ],
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "focus hors du groupe",
+        {
+          "to": [
+            "episode:3"
+          ],
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "le visité démonté",
+        {
+          "to": [
+            "episode:0"
+          ],
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "plus d'entrée par défaut",
+        {
+          "to": [],
+          "focusable": false,
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "—",
+        "remember=false"
+      ],
+      [
+        0,
+        "guide",
+        "monté, rien d'attaché",
+        {
+          "to": [],
+          "focusable": false,
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "après rendu",
+        {
+          "to": [
+            "episode:0"
+          ],
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "épisode 3 visité",
+        {
+          "to": [
+            "episode:0"
+          ],
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "focus hors du groupe",
+        {
+          "to": [
+            "episode:0"
+          ],
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "le visité démonté",
+        {
+          "to": [
+            "episode:0"
+          ],
+          "left": true,
+          "right": false
+        }
+      ],
+      [
+        0,
+        "guide",
+        "plus d'entrée par défaut",
+        {
+          "to": [],
+          "focusable": false,
+          "left": true,
+          "right": false
+        }
+      ]
+    ],
+    "keepWithin": [
+      [
+        40,
+        "native",
+        "offline:retry",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        90,
+        "native",
+        "offline:retry",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        210,
+        "native",
+        "offline:retry",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        300,
+        "—",
+        "le voisin reçoit le focus dans les 50 ms"
+      ],
+      [
+        620,
+        "—",
+        "le voisin l'annonce trop tard (70 ms)"
+      ],
+      [
+        710,
+        "native",
+        "offline:unpair",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        760,
+        "native",
+        "offline:unpair",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        880,
+        "native",
+        "offline:unpair",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        990,
+        "—",
+        "un écran d'en dessous le réclame"
+      ],
+      [
+        1080,
+        "native",
+        "offline:retry",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1130,
+        "native",
+        "offline:retry",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        1250,
+        "native",
+        "offline:retry",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1290,
+        "—",
+        "le focus part nulle part (Modal)"
+      ],
+      [
+        1380,
+        "native",
+        "offline:retry",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1430,
+        "native",
+        "offline:retry",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        1550,
+        "native",
+        "offline:retry",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ]
+    ],
+    "entryFocus": [
+      [
+        0,
+        "—",
+        "navigation tôt (400 ms après l'arrivée)"
+      ],
+      [
+        0,
+        "préférence",
+        "chargement",
+        []
+      ],
+      [
+        0,
+        "préférence",
+        "erreur",
+        [
+          "status:primary"
+        ]
+      ],
+      [
+        40,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        90,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        210,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        300,
+        "préférence",
+        "héros",
+        [
+          "hero:primary"
+        ]
+      ],
+      [
+        340,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        390,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        400,
+        "préférence",
+        "navigation à +100 ms",
+        [
+          "hero:primary"
+        ]
+      ],
+      [
+        510,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        600,
+        "préférence",
+        "contenu",
+        []
+      ],
+      [
+        600,
+        "contentKey",
+        "resume:0"
+      ],
+      [
+        600,
+        "préférence",
+        "entrée changée après l'arrivée",
+        []
+      ],
+      [
+        900,
+        "—",
+        "retour sur l'écran"
+      ],
+      [
+        1040,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1090,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        1210,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1300,
+        "contentKey (démontée)",
+        "status:primary"
+      ],
+      [
+        1340,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1390,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        1510,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1900,
+        "—",
+        "navigation juste avant 600 ms (550 ms)"
+      ],
+      [
+        1900,
+        "préférence",
+        "chargement",
+        []
+      ],
+      [
+        1900,
+        "préférence",
+        "erreur",
+        [
+          "status:primary"
+        ]
+      ],
+      [
+        1940,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        1990,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        2110,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        2200,
+        "préférence",
+        "héros",
+        [
+          "hero:primary"
+        ]
+      ],
+      [
+        2240,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        2290,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        2410,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        2450,
+        "préférence",
+        "navigation à +250 ms",
+        [
+          "hero:primary"
+        ]
+      ],
+      [
+        2650,
+        "préférence",
+        "contenu",
+        []
+      ],
+      [
+        2650,
+        "contentKey",
+        "resume:0"
+      ],
+      [
+        2650,
+        "préférence",
+        "entrée changée après l'arrivée",
+        []
+      ],
+      [
+        2950,
+        "—",
+        "retour sur l'écran"
+      ],
+      [
+        3090,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        3140,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        3260,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        3350,
+        "contentKey (démontée)",
+        "status:primary"
+      ],
+      [
+        3390,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        3440,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        3560,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        3950,
+        "—",
+        "navigation juste après 600 ms (650 ms)"
+      ],
+      [
+        3950,
+        "préférence",
+        "chargement",
+        []
+      ],
+      [
+        3950,
+        "préférence",
+        "erreur",
+        [
+          "status:primary"
+        ]
+      ],
+      [
+        3990,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        4040,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        4160,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        4250,
+        "préférence",
+        "héros",
+        [
+          "hero:primary"
+        ]
+      ],
+      [
+        4290,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        4340,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        4460,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        4600,
+        "préférence",
+        "navigation à +350 ms",
+        []
+      ],
+      [
+        4800,
+        "préférence",
+        "contenu",
+        []
+      ],
+      [
+        4800,
+        "contentKey",
+        "resume:0"
+      ],
+      [
+        4800,
+        "préférence",
+        "entrée changée après l'arrivée",
+        []
+      ],
+      [
+        5100,
+        "—",
+        "retour sur l'écran"
+      ],
+      [
+        5240,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        5290,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        5410,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        5500,
+        "contentKey (démontée)",
+        "status:primary"
+      ],
+      [
+        5540,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        5590,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        5710,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        6100,
+        "—",
+        "navigation tard (1 200 ms)"
+      ],
+      [
+        6100,
+        "préférence",
+        "chargement",
+        []
+      ],
+      [
+        6100,
+        "préférence",
+        "erreur",
+        [
+          "status:primary"
+        ]
+      ],
+      [
+        6140,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        6190,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        6310,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        6400,
+        "préférence",
+        "héros",
+        [
+          "hero:primary"
+        ]
+      ],
+      [
+        6440,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        6490,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        6610,
+        "native",
+        "hero:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        7300,
+        "préférence",
+        "navigation à +900 ms",
+        []
+      ],
+      [
+        7500,
+        "préférence",
+        "contenu",
+        []
+      ],
+      [
+        7500,
+        "contentKey",
+        "resume:0"
+      ],
+      [
+        7500,
+        "préférence",
+        "entrée changée après l'arrivée",
+        []
+      ],
+      [
+        7800,
+        "—",
+        "retour sur l'écran"
+      ],
+      [
+        7940,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        7990,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        8110,
+        "native",
+        "resume:0",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        8200,
+        "contentKey (démontée)",
+        "status:primary"
+      ],
+      [
+        8240,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ],
+      [
+        8290,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": true
+        }
+      ],
+      [
+        8410,
+        "native",
+        "status:primary",
+        {
+          "hasTVPreferredFocus": false
+        }
+      ]
+    ],
+    "beyondEdge": [
+      [
+        500,
+        "—",
+        "le geste qui amène au bord"
+      ],
+      [
+        860,
+        "—",
+        "posé depuis plus de 400 ms"
+      ],
+      [
+        1060,
+        "au-delà"
+      ],
+      [
+        1060,
+        "au-delà"
+      ],
+      [
+        1060,
+        "au-delà"
+      ],
+      [
+        1060,
+        "—",
+        "le focus ailleurs"
+      ],
+      [
+        1560,
+        "—",
+        "désactivé, puis sans bord"
+      ],
+      [
+        2060,
+        "au-delà"
+      ]
+    ],
+    "heroRotation": [
+      [
+        0,
+        "index",
+        0
+      ],
+      [
+        8000,
+        "index",
+        1
+      ],
+      [
+        8500,
+        "—",
+        "les gestes relancent l'attente",
+        1008500
+      ],
+      [
+        31500,
+        "index",
+        2
+      ],
+      [
+        32000,
+        "—",
+        "un pas du focus la relance"
+      ],
+      [
+        42000,
+        "—",
+        "un maintien la suspend, sa suite ou sa fin la libère"
+      ],
+      [
+        70000,
+        "index",
+        0
+      ],
+      [
+        82000,
+        "index",
+        1
+      ],
+      [
+        83000,
+        "—",
+        "hors champ, application inactive, un seul titre"
+      ],
+      [
+        83000,
+        "index",
+        1
+      ],
+      [
+        103000,
+        "index",
+        1
+      ],
+      [
+        111000,
+        "index",
+        2
+      ],
+      [
+        112000,
+        "index",
+        2
+      ],
+      [
+        132000,
+        "index",
+        2
+      ],
+      [
+        140000,
+        "index",
+        0
+      ],
+      [
+        141000,
+        "index",
+        0
+      ]
+    ],
+    "detailEntries": [
+      [
+        0,
+        "—",
+        "les sections se montent, puis leurs éléments"
+      ],
+      [
+        0,
+        "native",
+        "detail:seasons",
+        {
+          "tvEntry": null
+        }
+      ],
+      [
+        0,
+        "native",
+        "detail:episodes",
+        {
+          "tvEntry": null
+        }
+      ],
+      [
+        0,
+        "native",
+        "detail:seasons",
+        {
+          "tvEntry": null
+        }
+      ],
+      [
+        0,
+        "native",
+        "detail:episodes",
+        {
+          "tvEntry": null
+        }
+      ],
+      [
+        0,
+        "native",
+        "detail:seasons",
+        {
+          "tvEntry": "#season:1"
+        }
+      ],
+      [
+        0,
+        "native",
+        "detail:episodes",
+        {
+          "tvEntry": "#episode:3"
+        }
+      ],
+      [
+        0,
+        "—",
+        "un focus hors des épisodes ne désarme pas"
+      ],
+      [
+        0,
+        "—",
+        "le premier focus d'un épisode désarme"
+      ],
+      [
+        0,
+        "native",
+        "detail:episodes",
+        {
+          "tvEntry": null
+        }
+      ],
+      [
+        0,
+        "—",
+        "une autre saison choisie réarme"
+      ],
+      [
+        0,
+        "native",
+        "detail:seasons",
+        {
+          "tvEntry": "#season:2"
+        }
+      ],
+      [
+        0,
+        "native",
+        "detail:episodes",
+        {
+          "tvEntry": "#episode:0"
+        }
+      ],
+      [
+        0,
+        "native",
+        "detail:episodes",
+        {
+          "tvEntry": null
+        }
+      ],
+      [
+        0,
+        "—",
+        "une saison sans épisode, puis la fiche sans épisodes"
+      ],
+      [
+        0,
+        "native",
+        "detail:seasons",
+        {
+          "tvEntry": "#season:0"
+        }
+      ],
+      [
+        0,
+        "native",
+        "detail:seasons",
+        {
+          "tvEntry": null
+        }
+      ]
+    ]
+  }
+}
