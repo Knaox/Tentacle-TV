@@ -1,0 +1,2716 @@
+{
+  "format": 1,
+  "domain": "panneaux-cartes",
+  "suite": "scenarios",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "c9395c1a619df932",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T6",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T02:28:19.455Z",
+  "scenarios": {
+    "pc-12": {
+      "hash": "bb36e6f5e228",
+      "durationMs": 32762,
+      "start": {
+        "app": "foreground",
+        "focus": "episode:1",
+        "label": "La casa du papier A4",
+        "frame": [
+          120,
+          240,
+          460,
+          342
+        ],
+        "groups": [
+          "detail:episodes"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:0.6",
+          "app": "foreground",
+          "focus": "episode:1",
+          "label": "La casa du papier A4",
+          "frame": [
+            120,
+            240,
+            460,
+            342
+          ],
+          "groups": [
+            "detail:episodes"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "texts": [
+            true
+          ]
+        },
+        {
+          "do": "hold:2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            544,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Lire",
+          "frame": [
+            582,
+            723,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "sheet:action:details",
+          "label": "Plus d'infos",
+          "frame": [
+            1198,
+            723,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "episode:1",
+          "label": "La casa du papier A4",
+          "frame": [
+            120,
+            240,
+            460,
+            342
+          ],
+          "groups": [
+            "detail:episodes"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-01": {
+      "hash": "d9e57f43bef5",
+      "durationMs": 49463,
+      "start": {
+        "app": "foreground",
+        "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+        "label": "2001 : L'Odyssée de l'espace",
+        "frame": [
+          176,
+          527,
+          240,
+          433
+        ],
+        "groups": [
+          "section:library:db4c1708cbb5dd1676284a40f2950aba"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:0.6",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            176,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "texts": [
+            true
+          ]
+        },
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:scale:6",
+          "label": "Noter 6 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "sheet:scale:4",
+          "label": "Noter 4 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "sheet:close",
+          "label": "Retour",
+          "frame": [
+            416,
+            190,
+            60,
+            60
+          ],
+          "groups": [
+            "sheet:header"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Lire",
+          "frame": [
+            582,
+            738,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:watchlist",
+          "label": "Ajouter à ma liste",
+          "frame": [
+            736,
+            738,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:watchlist",
+          "label": "Ajouter à ma liste",
+          "frame": [
+            736,
+            738,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            176,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-02": {
+      "hash": "87042157ad8a",
+      "durationMs": 40504,
+      "start": {
+        "app": "foreground",
+        "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+        "label": "2001 : L'Odyssée de l'espace",
+        "frame": [
+          176,
+          527,
+          240,
+          433
+        ],
+        "groups": [
+          "section:library:db4c1708cbb5dd1676284a40f2950aba"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:7",
+          "label": "Noter 7 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "sheet:scale:10",
+          "label": "Noter 10 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:scale:remove",
+          "label": "Retirer la note",
+          "frame": [
+            840,
+            559,
+            240,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:scale:remove",
+          "label": "Retirer la note",
+          "frame": [
+            840,
+            559,
+            240,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "sheet:close",
+          "label": "Retour",
+          "frame": [
+            416,
+            190,
+            60,
+            60
+          ],
+          "groups": [
+            "sheet:header"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:scale:7",
+          "label": "Noter 7 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "left",
+            "left",
+            "left",
+            "left",
+            "left",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "sheet:scale:1",
+          "label": "Noter 1 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "sheet:scale:1",
+          "label": "Noter 1 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            176,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-03": {
+      "hash": "1c8df9a05e83",
+      "durationMs": 37356,
+      "start": {
+        "app": "foreground",
+        "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+        "label": "2001 : L'Odyssée de l'espace",
+        "frame": [
+          176,
+          527,
+          240,
+          433
+        ],
+        "groups": [
+          "section:library:db4c1708cbb5dd1676284a40f2950aba"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Lire",
+          "frame": [
+            582,
+            559,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "sheet:close",
+          "label": "Retour",
+          "frame": [
+            416,
+            369,
+            60,
+            60
+          ],
+          "groups": [
+            "sheet:header"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Lire",
+          "frame": [
+            582,
+            559,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:watchlist",
+          "label": "Ajouter à ma liste",
+          "frame": [
+            736,
+            559,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "sheet:close",
+          "label": "Retour",
+          "frame": [
+            416,
+            369,
+            60,
+            60
+          ],
+          "groups": [
+            "sheet:header"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:watchlist",
+          "label": "Ajouter à ma liste",
+          "frame": [
+            736,
+            559,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            176,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-04": {
+      "hash": "503634d2629f",
+      "durationMs": 30788,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            542,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Reprendre, 0:46",
+          "frame": [
+            582,
+            721,
+            140,
+            156
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:watchlist",
+          "label": "Ajouter à ma liste",
+          "frame": [
+            736,
+            721,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:favorite",
+          "label": "Ajouter aux favoris",
+          "frame": [
+            890,
+            721,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:watched",
+          "label": "Marquer comme vu",
+          "frame": [
+            1044,
+            721,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:details",
+          "label": "Plus d'infos",
+          "frame": [
+            1198,
+            721,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:details",
+          "label": "Plus d'infos",
+          "frame": [
+            1198,
+            721,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-05": {
+      "hash": "4431bd7eb05b",
+      "durationMs": 28687,
+      "start": {
+        "app": "foreground",
+        "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+        "label": "2001 : L'Odyssée de l'espace",
+        "frame": [
+          176,
+          527,
+          240,
+          433
+        ],
+        "groups": [
+          "section:library:db4c1708cbb5dd1676284a40f2950aba"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "sheet:close",
+          "label": "Retour",
+          "frame": [
+            416,
+            190,
+            60,
+            60
+          ],
+          "groups": [
+            "sheet:header"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            176,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-06": {
+      "hash": "167dc72594f6",
+      "durationMs": 42021,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            542,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Reprendre, 0:46",
+          "frame": [
+            582,
+            721,
+            140,
+            156
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:watchlist",
+          "label": "Ajouter à ma liste",
+          "frame": [
+            736,
+            721,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:action:watchlist",
+          "label": "Retirer de ma liste",
+          "frame": [
+            736,
+            721,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": [
+            "watchlist:add @e86346a08c2bb2900795777307b0a32d"
+          ]
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:action:watchlist",
+          "label": "Ajouter à ma liste",
+          "frame": [
+            736,
+            721,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": [
+            "watchlist:remove @e86346a08c2bb2900795777307b0a32d"
+          ]
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-07": {
+      "hash": "ddadb71f4d21",
+      "durationMs": 55298,
+      "start": {
+        "app": "foreground",
+        "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+        "label": "2001 : L'Odyssée de l'espace",
+        "frame": [
+          176,
+          527,
+          240,
+          433
+        ],
+        "groups": [
+          "section:library:db4c1708cbb5dd1676284a40f2950aba"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:scale:6",
+          "label": "Noter 6 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:scale:6",
+          "label": "Noter 6 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": [
+            "rating:6 @49ec99b03dd4d7ccb318d78d84a5172c"
+          ]
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "sheet:scale:10",
+          "label": "Noter 10 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:scale:remove",
+          "label": "Retirer la note",
+          "frame": [
+            840,
+            559,
+            240,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:scale:remove",
+          "label": "Retirer la note",
+          "frame": [
+            840,
+            559,
+            240,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": [
+            "rating:remove"
+          ]
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:scale:remove",
+          "label": "Retirer la note",
+          "frame": [
+            840,
+            559,
+            240,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            176,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-08": {
+      "hash": "8b0adcbfc02e",
+      "durationMs": 55926,
+      "start": {
+        "app": "foreground",
+        "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+        "label": "2001 : L'Odyssée de l'espace",
+        "frame": [
+          176,
+          527,
+          240,
+          433
+        ],
+        "groups": [
+          "section:library:db4c1708cbb5dd1676284a40f2950aba"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            559,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Lire",
+          "frame": [
+            582,
+            738,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "sheet:action:details",
+          "label": "Plus d'infos",
+          "frame": [
+            1198,
+            738,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "49ec99b03dd4d7ccb318d78d84a5172c"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            176,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-09": {
+      "hash": "d6087765a650",
+      "durationMs": 40543,
+      "start": {
+        "app": "foreground",
+        "focus": "reco:forYou:0",
+        "label": "Spider-Man : No Way Home",
+        "frame": [
+          176,
+          527,
+          240,
+          433
+        ],
+        "groups": [
+          "section:reco:forYou"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            557,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Reprendre, 0:35",
+          "frame": [
+            505,
+            736,
+            140,
+            156
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "sheet:action:dismiss",
+          "label": "Ne plus me proposer",
+          "frame": [
+            1275,
+            736,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:action:dismiss",
+          "label": "Ne plus me proposer",
+          "frame": [
+            1275,
+            736,
+            140,
+            152
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
+          "frame": [
+            176,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-10": {
+      "hash": "fd263d13ed4b",
+      "durationMs": 50866,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:rate",
+        "label": "Noter ce titre",
+        "frame": [
+          944,
+          674,
+          68,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            652,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            652,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "sheet:close",
+          "label": "Retour",
+          "frame": [
+            416,
+            283,
+            60,
+            60
+          ],
+          "groups": [
+            "sheet:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            652,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "detail:rate",
+          "label": "Noter ce titre",
+          "frame": [
+            944,
+            674,
+            68,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-11": {
+      "hash": "5880b7f77b8b",
+      "durationMs": 59016,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:rate",
+        "label": "Noter ce titre",
+        "frame": [
+          944,
+          674,
+          68,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            652,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "sheet:scale:6",
+          "label": "Noter 6 sur 10",
+          "frame": [
+            908,
+            652,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:rate",
+          "label": "Votre note : 6/10",
+          "frame": [
+            944,
+            674,
+            68,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "rating:6 @fcfbd7a81518be2f40de85b0d1ccd46f"
+          ]
+        }
+      ]
+    },
+    "pc-13": {
+      "hash": "5ca1573045bb",
+      "durationMs": 23979,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:0.6",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "texts": [
+            true
+          ]
+        },
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            542,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-14": {
+      "hash": "77f20dce02ae",
+      "durationMs": 19792,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          265,
+          244,
+          439
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "hold:1.2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            557,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            265,
+            244,
+            439
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "pc-15": {
+      "hash": "ea237119c866",
+      "durationMs": 20365,
+      "start": {
+        "app": "foreground",
+        "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+        "label": "2001 : L'Odyssée de l'espace",
+        "frame": [
+          176,
+          527,
+          240,
+          433
+        ],
+        "groups": [
+          "section:library:db4c1708cbb5dd1676284a40f2950aba"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "49ec99b03dd4d7ccb318d78d84a5172c"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            176,
+            527,
+            240,
+            433
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

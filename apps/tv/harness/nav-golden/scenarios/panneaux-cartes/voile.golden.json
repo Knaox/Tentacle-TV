@@ -1,0 +1,237 @@
+{
+  "format": 1,
+  "domain": "panneaux-cartes",
+  "suite": "voile",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "c9395c1a619df932",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T6",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T02:29:36.481Z",
+  "scenarios": {
+    "pc-16": {
+      "hash": "d1df32c125f3",
+      "durationMs": 37542,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "backend:health=down",
+            "home",
+            "activate"
+          ],
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:14",
+          "app": "foreground",
+          "focus": "offline:retry",
+          "label": "Réessayer la connexion",
+          "frame": [
+            545,
+            722,
+            412,
+            68
+          ],
+          "groups": [
+            "offline:panel"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "offline:retry",
+          "label": "Réessayer la connexion",
+          "frame": [
+            545,
+            722,
+            412,
+            68
+          ],
+          "groups": [
+            "offline:panel"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "offline:retry",
+          "label": "Réessayer la connexion",
+          "frame": [
+            545,
+            722,
+            412,
+            68
+          ],
+          "groups": [
+            "offline:panel"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "offline:unpair",
+          "label": "Déjumeler cet appareil",
+          "frame": [
+            978,
+            722,
+            396,
+            68
+          ],
+          "groups": [
+            "offline:panel"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "offline:unpair",
+          "label": "Confirmer le déjumelage",
+          "frame": [
+            965,
+            722,
+            423,
+            68
+          ],
+          "groups": [
+            "offline:panel"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "offline:retry",
+          "label": "Réessayer la connexion",
+          "frame": [
+            545,
+            722,
+            412,
+            68
+          ],
+          "groups": [
+            "offline:panel"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "offline:unpair",
+          "label": "Déjumeler cet appareil",
+          "frame": [
+            978,
+            722,
+            396,
+            68
+          ],
+          "groups": [
+            "offline:panel"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}

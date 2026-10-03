@@ -17,11 +17,15 @@
       },
       "steps": [
         {
-          "do": "backend:health=down",
-          "why": "le serveur tombe en cours de route"
+          "do": [
+            "backend:health=down",
+            "home",
+            "activate"
+          ],
+          "why": "le serveur tombe ; le voile se décide au retour de l'app au premier plan"
         },
         {
-          "do": "wait:15",
+          "do": "wait:14",
           "settleMs": 1000,
           "expect": {
             "focus": "offline:retry",

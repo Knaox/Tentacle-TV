@@ -825,14 +825,14 @@
           }
         },
         {
-          "do": "hold:1.2",
+          "do": "hold:2",
           "settleMs": 900,
           "expect": {
             "panel": "open",
             "focus": "sheet:scale:5",
             "writes": []
           },
-          "why": "le relâchement de l'appui maintenu ne valide rien (garde anti-clic fantôme)"
+          "why": "maintenu 2 s : sous forte charge, le minuteur JS de l'appui long (550 ms) peut rater un maintien de 1,2 s — le relâchement ne valide rien (garde anti-clic fantôme)"
         },
         {
           "do": "down",
