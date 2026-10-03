@@ -62,6 +62,7 @@ export const CSS_VAR_NAMES: CssVarNameMap<CssEmittedTokens> = {
       accent: "--brand-accent",
       accentRgb: "--brand-accent-rgb",
       accentLight: "--brand-accent-light",
+      accentDark: "--brand-accent-dark",
     },
     text: {
       primary: "--text-primary",

@@ -75,7 +75,7 @@ export const TopResultHero = memo(function TopResultHero({ top, terms, onOpen }:
           {reason && <p className="mt-1 text-sm font-medium text-[var(--brand-light)]">{reason}</p>}
           <div className="mt-5 flex flex-wrap gap-3">
             {item.Type === "Movie" && (
-              <button type="button" onClick={() => onOpen(`/watch/${item.Id}`)} className="inline-flex items-center gap-2 rounded-full border border-cta-primary-border bg-cta-primary-bg px-5 py-2.5 text-sm font-bold text-cta-primary-fg transition-transform hover:scale-[1.03] active:scale-95">
+              <button type="button" onClick={() => onOpen(`/watch/${item.Id}`)} className="hero-cta-primary inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-transform hover:scale-[1.03] active:scale-95">
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden><path d="M8 5v14l11-7z" /></svg>
                 {progress > 0 && !item.UserData?.Played ? t("resume") : t("play")}
               </button>

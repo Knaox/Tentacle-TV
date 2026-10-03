@@ -13,7 +13,7 @@ interface Props {
 }
 
 const PRIMARY =
-  "inline-flex h-12 items-center gap-2.5 rounded-xl px-6 text-sm font-bold text-cta-brand-fg shadow-[0_8px_24px_-8px_rgba(var(--brand-rgb),0.55)] transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 motion-reduce:hover:translate-y-0";
+  "hero-cta-primary inline-flex h-12 items-center gap-2.5 rounded-xl px-6 text-sm font-bold shadow-[0_8px_24px_-8px_rgba(var(--brand-rgb),0.55)] transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 motion-reduce:hover:translate-y-0";
 
 /**
  * Les actions de la fiche partagée, à la place de « Lecture » : un seul geste
@@ -28,7 +28,6 @@ export const SharedItemActions = memo(function SharedItemActions({ itemId, authe
       <Link
         to={authed ? `/media/${itemId}` : loginPath}
         className={PRIMARY}
-        style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
       >
         <PlayIcon />
         {authed ? t("openDetail") : t("signInToWatch")}

@@ -7,11 +7,10 @@ import { PlayIcon } from "../media/MediaDetailIcons";
 import { PressableScale } from "../ui/PressableScale";
 import { DETAIL_COLLECTION_ANCHOR } from "./detailStageGeometry";
 
-const PRIMARY_CLASS = "group/play relative flex h-14 items-center gap-3 overflow-hidden rounded-full pr-7 text-left text-cta-brand-fg ring-1 ring-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)]";
-const PRIMARY_STYLE = {
-  background: "linear-gradient(120deg, var(--brand) 0%, var(--brand-accent) 100%)",
-  boxShadow: "0 12px 34px rgba(var(--brand-rgb), 0.42)",
-};
+// `hero-cta-primary` : le dégradé de marque profond (libellé blanc ≥ 4,6:1),
+// ses voiles d'appui et son anneau de focus — le même que les bannières.
+const PRIMARY_CLASS = "hero-cta-primary flex h-14 items-center gap-3 overflow-hidden rounded-full pr-7 text-left";
+const PRIMARY_STYLE = { boxShadow: "0 12px 34px rgba(var(--brand-rgb), 0.42)" };
 
 /**
  * L'action principale de la fiche — la seule en couleur, au dégradé de marque
@@ -52,7 +51,6 @@ export function DetailPlayButton({ item, collectionCount = 0, version = null }: 
         className={`${PRIMARY_CLASS} pl-6`}
         style={PRIMARY_STYLE}
       >
-        <span aria-hidden className="pointer-events-none absolute inset-0 bg-white/15 opacity-0 transition-opacity duration-200 group-hover/play:opacity-100" />
         <svg className="relative h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 6h16M4 12h16M4 18h10" /></svg>
         <span className="relative whitespace-nowrap text-base font-bold">{t("media:detailBrowseCollection", { count: collectionCount })}</span>
       </PressableScale>
@@ -102,12 +100,10 @@ export function DetailPlayPill({ label, remaining, progress, ariaLabel, onClick 
       className={`${PRIMARY_CLASS} pl-4`}
       style={PRIMARY_STYLE}
     >
-      {/* Éclat au survol : un calque en fondu d'OPACITÉ, jamais un fond animé. */}
-      <span aria-hidden className="pointer-events-none absolute inset-0 bg-white/15 opacity-0 transition-opacity duration-200 group-hover/play:opacity-100" />
       <ProgressRing progress={progress} />
       <span className="relative flex flex-col leading-tight">
         <span className="whitespace-nowrap text-base font-bold">{label}</span>
-        {remaining && <span className="whitespace-nowrap text-xs font-medium opacity-85">{remaining}</span>}
+        {remaining && <span className="whitespace-nowrap text-xs font-medium">{remaining}</span>}
       </span>
     </PressableScale>
   );

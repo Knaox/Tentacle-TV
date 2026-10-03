@@ -13,8 +13,10 @@ import { CardDownloadAction } from "../../downloads/CardDownloadAction";
  * Les deux boutons de la bannière, partagés avec le bandeau de l'accueil hors
  * ligne : même poids, même verre, à la classe près.
  */
+// `hero-cta-primary` : le dégradé de marque de l'Apple TV, ses voiles d'appui
+// et son anneau de focus (theme/heroCta.css).
 export const HERO_PLAY_CLASS =
-  "flex items-center gap-2.5 rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 py-3 text-base font-bold text-cta-primary-fg transition-colors duration-200 hover:bg-cta-primary-bg-hover";
+  "hero-cta-primary flex items-center gap-2.5 rounded-full px-7 py-3 text-base font-bold";
 export const HERO_PLAY_STYLE = { boxShadow: "var(--elev-2)" };
 /** Posé sur l'affiche : verre sombre + texte blanc constants, jamais les tokens `--cta-ghost-*` du fond de PAGE. */
 export const HERO_INFO_CLASS =
@@ -74,7 +76,8 @@ export function HeroActions({ item, onPlay, resuming, episodeCode }: HeroActions
       <PressableScale onClick={onPlay} className={HERO_PLAY_CLASS} style={HERO_PLAY_STYLE}>
         <PlayIcon />
         {resuming ? t("common:resume") : t("common:play")}
-        {episodeCode && <span className="font-semibold opacity-60">{episodeCode}</span>}
+        {/* Blanc plein, graisse moindre : une opacité réduite passait sous 3:1 sur le dégradé. */}
+        {episodeCode && <span className="font-medium">{episodeCode}</span>}
       </PressableScale>
 
       <PressableScale onClick={openDetail} className={HERO_INFO_CLASS}>

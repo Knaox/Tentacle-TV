@@ -155,7 +155,7 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
             <button
               type="button"
               onClick={openDetail}
-              className="rounded-full border border-cta-primary-border bg-cta-primary-bg px-6 py-2.5 font-bold text-cta-primary-fg transition-colors hover:bg-cta-primary-bg-hover"
+              className="hero-cta-primary rounded-full px-6 py-2.5 font-bold"
               style={{ boxShadow: "var(--elev-2)" }}
             >
               {item.jellyfinItemId ? t("heroOpenDetail") : t("heroOpenVigie")}

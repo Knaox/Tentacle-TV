@@ -26,6 +26,9 @@
   --brand-accent: #EC4899;
   --brand-accent-rgb: 236, 72, 153;
   --brand-accent-light: #F472B6;
+  /* Le rose PROFOND — `brand.accentDark` de la palette partagée (mobile) : la
+   * fin du dégradé des boutons de lecture, lisible sous un libellé blanc. */
+  --brand-accent-dark: #DB2777;
 
   /* ── Arrêts intermédiaires du dégradé de marque ─────────────────
    *
@@ -109,6 +112,12 @@
   /* Texte sur aplat/dégradé de marque — blanc dans les DEUX schémas (c'est la
    * lisibilité sur l'accent qui commande, pas le thème). Non redéclaré en clair. */
   --cta-brand-fg: #FFFFFF;
+  /* Le bouton de LECTURE (héros, fiche) : le dégradé de marque de l'Apple TV,
+   * un cran plus profond. Le vif (`--brand` → `--brand-accent`) tombe à 3,5:1
+   * sous un libellé blanc de 16 px ; celui-ci tient 4,6:1 d'un bout à l'autre
+   * (5,7:1 au départ) — l'Apple TV garde le vif, ses libellés de 26 pt sont du
+   * « grand texte ». Mêmes arrêts que `ctaGradient` du mobile. */
+  --cta-brand-gradient: linear-gradient(120deg, var(--brand-dark) 0%, var(--brand-accent-dark) 100%);
 
   /* ── Borders ────────────────────────────────────────────────── */
   --border-subtle: rgba(255, 255, 255, 0.08);
@@ -268,6 +277,7 @@
   --brand-accent: #DB2777;
   --brand-accent-rgb: 219, 39, 119;
   --brand-accent-light: #EC4899;
+  --brand-accent-dark: #B42062;
 
   /* ── Texte ──────────────────────────────────────────────────── */
   --text-primary: #0B0B10;

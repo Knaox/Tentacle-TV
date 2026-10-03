@@ -28,6 +28,7 @@ export const DEFAULT_COLOR_TOKENS: ColorTokens = {
     accent: "#EC4899",
     accentRgb: "236, 72, 153",
     accentLight: "#F472B6",
+    accentDark: "#DB2777",
   },
   text: {
     primary: "#FFFFFF",

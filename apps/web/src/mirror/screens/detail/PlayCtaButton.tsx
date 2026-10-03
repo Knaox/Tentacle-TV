@@ -35,13 +35,12 @@ export const PlayCtaButton = memo(function PlayCtaButton({ cta, title, maxWidth,
       type="button"
       onClick={onPress ?? (() => navigate(`/watch/${cta.targetId}`))}
       aria-label={`${cta.label} ${title}`}
-      // L'estompe sous le doigt en classes, pas par `mirror-detail-fade-press` :
-      // la feuille des cartes le monte hors de la fiche, sans `detail.css`.
-      className="relative flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-full px-6 text-cta-brand-fg transition-opacity duration-[120ms] ease-out active:opacity-[0.85]"
+      // Dégradé et voile d'appui par `hero-cta-primary` (feuille GLOBALE) : la
+      // feuille des cartes le monte hors de la fiche, sans `detail.css`.
+      className="hero-cta-primary flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-full px-6"
       style={{
         maxWidth,
         WebkitTapHighlightColor: "transparent",
-        background: "linear-gradient(120deg, var(--brand) 0%, var(--brand-accent) 100%)",
         boxShadow: "0 10px 26px rgba(var(--brand-rgb), 0.4)",
       }}
     >

@@ -1,0 +1,52 @@
+/* ── Le bouton de LECTURE des bannières et de la fiche ───────────────────
+ *
+ * « Lecture », « Reprendre », « Voir dans le catalogue » : l'action principale
+ * d'un héros porte le dégradé de marque, comme sur l'Apple TV — il était
+ * blanc, et se lisait comme un bouton système posé sur l'affiche. Le dégradé
+ * (`--cta-brand-gradient`) est la version profonde : libellé blanc ≥ 4,6:1
+ * d'un bout à l'autre (cf. tokens.css).
+ *
+ * Survol et appui : un voile NOIR dont seule l'opacité change. Il approfondit
+ * le dégradé — le contraste monte — au lieu de l'éclaircir, et ne repeint
+ * rien (règle de `cards.css` : jamais un fond ni une ombre animés).
+ *
+ * ⚠️ Le nom contient « cta-primary » à dessein : le client des TV LG pose son
+ * focus d'entrée sur `[class*="cta-primary"]` (apps/tv-webos, focus/default.ts). */
+
+.hero-cta-primary {
+  position: relative;
+  isolation: isolate;
+  background-image: var(--cta-brand-gradient);
+  color: var(--cta-brand-fg);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.hero-cta-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .hero-cta-primary:hover::before {
+    opacity: 0.1;
+  }
+}
+
+.hero-cta-primary:active::before {
+  opacity: 0.2;
+}
+
+/* Le focus clavier : un anneau BLANC détaché du bouton — le violet de
+ * `--border-focus` se perdrait contre le dégradé ; posé sur l'affiche
+ * (toujours voilée), le blanc garde son contraste. */
+.hero-cta-primary:focus-visible {
+  outline: 2px solid var(--on-media-primary);
+  outline-offset: 3px;
+}

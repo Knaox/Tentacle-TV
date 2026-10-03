@@ -43,6 +43,11 @@ export interface BrandColorTokens {
   accentRgb: string;
   /** Lighter variant of the accent (used in some gradients and badges). */
   accentLight: string;
+  /**
+   * Deeper variant of the accent : la fin du dégradé des boutons de lecture
+   * (`--cta-brand-gradient`), lisible sous un libellé blanc (≥ 4,5:1).
+   */
+  accentDark: string;
 }
 
 export interface TextColorTokens {
