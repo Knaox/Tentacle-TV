@@ -259,8 +259,11 @@ export function useDesktopPlayer(opts?: {
       openStartup(`${isHls ? "HLS/transcode" : "lecture directe"} · départ ${
         options.startPosition != null && options.startPosition > 0
           ? `${options.startPosition.toFixed(0)} s` : "début"}`);
-      await api.command("loadfile", [options.url]);
+      // L'échec précédent s'efface AVANT l'ouverture, jamais après : un
+      // end-file(ERROR) peut arriver avant que `loadfile` ne rende la main, et
+      // l'effacer ensuite avalait l'échec — un chargement sans fin.
       setFailure(null);
+      await api.command("loadfile", [options.url]);
     } catch (e) {
       wtLog("mpv", "play() FAILED (commande mpv en erreur)", { error: String(e) });
       setFailure({ kind: "player", detail: String(e) });
