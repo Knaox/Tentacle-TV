@@ -1,12 +1,12 @@
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { playerBackgroundFocus } from "@tentacle-tv/tv-core";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { PlayerChromeView } from "../../redesign/screens/player/PlayerChromeView";
 import { TVPlayerEngine } from "../../components/player/TVPlayerEngine";
-import { BACKGROUND_FOCUS } from "../../components/player/focus/osdFocusBus";
 import type { TransportKey } from "../../components/player/focus/useOverlayFocus";
 import { useTvFocusClaim } from "../../hooks/useTvFocusClaim";
+import { PlayerBackground, PlayerFocusStateProvider } from "../../platform/tvos/player";
 import { useFocusStore } from "../focus/focusStore";
-import { PlayerFocusStateProvider } from "./playerFocusContainers";
 import type { PlayerRedesignStageProps } from "./playerStageTypes";
 import { usePlayerBackLayers, useOsdPin } from "./usePlayerBackLayers";
 import { usePlayerChrome } from "./usePlayerChrome";
@@ -36,13 +36,15 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
   usePlayerBackLayers(props, { shown: chrome.osdShown, unpin: pin.unpin });
 
   // Le fond : focalisable seulement quand l'habillage est caché et que rien
-  // ne le recouvre — OK ou une direction le rallume (`TVPlayerView`).
-  const overlayShown = controls.overlayVisible || (pin.pinned && !controls.scrubbing);
-  const panelOpen = props.showSettings || props.autoPlayActive || !!props.showEpisodes || chrome.troubleCovers;
-  const backgroundFocusable = !chrome.loading && !overlayShown && !panelOpen;
-  // Un bouton de saut monté garde le focus, sinon c'est le fond qui le reprend.
-  const skipActive = props.overlay.kind === "skip" || props.overlay.kind === "nextButton";
-  useTvFocusClaim(props.backgroundRef as unknown as React.RefObject<unknown>, backgroundFocusable && !skipActive);
+  // ne le recouvre — OK ou une direction le rallume (la règle : tv-core
+  // `playerBackgroundFocus`). Un bouton de saut monté garde le focus, sinon
+  // c'est le fond qui le reprend.
+  const background = playerBackgroundFocus({
+    loading: chrome.loading, overlayVisible: controls.overlayVisible, pinned: pin.pinned, scrubbing: controls.scrubbing,
+    showSettings: props.showSettings, showEpisodes: !!props.showEpisodes, autoPlayActive: props.autoPlayActive,
+    troubleCovers: chrome.troubleCovers, overlayKind: props.overlay.kind,
+  });
+  useTvFocusClaim(props.backgroundRef as unknown as React.RefObject<unknown>, background.claims);
 
   const focus = usePlayerFocus({
     store,
@@ -67,19 +69,12 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
   return (
     <View style={styles.root}>
       {props.streamUrl ? <TVPlayerEngine {...props} streamUrl={props.streamUrl} /> : null}
-      <TouchableOpacity
-        ref={props.backgroundRef}
-        {...BACKGROUND_FOCUS}
-        activeOpacity={1}
-        style={StyleSheet.absoluteFill}
+      <PlayerBackground
+        backgroundRef={props.backgroundRef}
+        holdsFocus={background.focusable}
+        covered={background.panelOpen}
         onPress={controls.showOverlay}
-        hasTVPreferredFocus={backgroundFocusable}
-        focusable={backgroundFocusable}
-        accessible={backgroundFocusable}
-        importantForAccessibility={panelOpen ? "no-hide-descendants" : "auto"}
-      >
-        <View style={styles.fill} />
-      </TouchableOpacity>
+      />
       <FocusBindingProvider bind={focus.binder}>
         <PlayerFocusStateProvider value={focus.state}>
           <PlayerChromeView {...chrome.view} onPanelExited={focus.onPanelExited} />
@@ -91,5 +86,4 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" },
-  fill: { flex: 1 },
 });

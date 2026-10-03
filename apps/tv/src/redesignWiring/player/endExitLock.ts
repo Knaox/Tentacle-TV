@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { FocusExtras, FocusStore } from "../focus/focusStore";
+import { exitLocked } from "@tentacle-tv/tv-core";
+import type { FocusStore } from "../focus/focusStore";
 
 /**
  * La croix d'un écran du lecteur n'est jamais son entrée : tant que l'entrée
@@ -21,7 +22,7 @@ export function useExitLocked(store: FocusStore, shown: boolean, entryKey: strin
       }),
     [store, entryKey],
   );
-  return shown && !entered;
+  return exitLocked(shown, entered);
 }
 
 /** La croix de l'affiche de fin (`end:leave`) : son entrée est « Lire maintenant » (`end:play`). */
@@ -29,5 +30,5 @@ export function useEndExitLocked(store: FocusStore, endShown: boolean): boolean 
   return useExitLocked(store, endShown, "end:play");
 }
 
-/** Ce que le port pose sur la croix verrouillée (sur tvOS, `isTVSelectable` décide). */
-export const END_EXIT_LOCK: FocusExtras = { native: { isTVSelectable: false } };
+/** Ce que le port pose sur la croix verrouillée : l'applicateur tvOS. */
+export { END_EXIT_LOCK } from "../../platform/tvos/player";

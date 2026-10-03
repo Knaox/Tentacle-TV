@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Component, type Ref } from "react";
 import type { View } from "react-native";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
+import { PLAYER_OSD_KEYS, playerFocusClaims, preferredFocusOf, skipIslandGuides, skipPillFocus } from "@tentacle-tv/tv-core";
 import type { FocusBinder, FocusBinding } from "../../redesign/focus/focusBinding";
 import { setSkipNode } from "../../components/player/focus/osdFocusBus";
 import { useOverlayFocus, type TransportKey } from "../../components/player/focus/useOverlayFocus";
 import { useSkipPillFocus } from "../../components/player/focus/useSkipPillFocus";
+import { PLAYER_GROUP_CONTAINERS, withExitLock, withPreferredFocus, type PlayerFocusState } from "../../platform/tvos/player";
 import type { FocusStore } from "../focus/focusStore";
-import { END_EXIT_LOCK, useEndExitLocked, useExitLocked } from "./endExitLock";
-import { PLAYER_GROUP_CONTAINERS, type PlayerFocusState } from "./playerFocusContainers";
+import { useEndExitLocked, useExitLocked } from "./endExitLock";
 import { usePanelReturnFocus } from "./usePanelReturnFocus";
 
 /**
@@ -27,20 +28,12 @@ import { usePanelReturnFocus } from "./usePanelReturnFocus";
  *   l'affiche de fin et du message-outil restent infocalisables tant que leur
  *   entrée n'a pas eu le focus (`useExitLocked`).
  * Le reste des clés passe par le magasin de l'écran (nœud, focus, réclamation).
+ * Qui prend le focus, quelle préférence, quelle croix reste verrouillée : les
+ * règles de tv-core (`player/playerFocus.ts`) ; leur application native :
+ * `platform/tvos/player`.
  */
 
-const OSD_KEYS: Readonly<Record<string, TransportKey>> = {
-  "player:back": "back",
-  "player:prev": "prev",
-  "player:seekback": "skipback",
-  "player:playpause": "playpause",
-  "player:seekforward": "skipforward",
-  "player:scrub": "scrub",
-  "player:next": "next",
-  "player:episodes": "episodes",
-  "player:tracks": "settings",
-  "player:settings": "options",
-};
+const OSD_KEYS: Readonly<Record<string, TransportKey>> = PLAYER_OSD_KEYS;
 
 export interface PlayerFocusArgs {
   store: FocusStore;
@@ -98,12 +91,9 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
   // La pilule : ses deux boutons, lus dans le magasin au moment où il le faut.
   const skipRef = useMemo(() => ({ get current() { return store.node("player:skip"); } }), [store]);
   const dismissRef = useMemo(() => ({ get current() { return store.node("player:skip-dismiss"); } }), [store]);
-  const skip = overlay.kind === "skip" ? overlay : null;
-  const refusable = skip?.auto === true && skip.dismissible;
-  const dismissible = (overlay.kind === "skip" || overlay.kind === "nextButton") && overlay.dismissible;
   // Ce qui revient par l'habillage a déjà été refusé : il se montre, il ne
   // s'impose pas.
-  const grabs = pillShown && dismissible && !showSettings;
+  const { refusable, grabs } = skipPillFocus({ overlay, pillShown, showSettings });
   const pill = useSkipPillFocus({
     skipRef, dismissRef, shown: pillShown, grabs, refusable, overlayVisible: args.overlayVisible,
     focusOwnedElsewhere: overlay.kind === "nextCard" || showSettings || showEpisodes,
@@ -156,45 +146,26 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
     if (group) return group;
     const binding = stableBinding(key);
     if ((key === "end:leave" && endExitLocked) || (key === "trouble:back" && troubleExitLocked)) {
-      return { ...binding, ...END_EXIT_LOCK };
+      return withExitLock(binding);
     }
-    const preferred = preferredFocus(key, { grabs, refusable, failed, sheetEntryKey });
-    return preferred === undefined ? binding : { ...binding, native: { hasTVPreferredFocus: preferred } };
+    return withPreferredFocus(binding, preferredFocusOf(key, { grabs, refusable, failed, sheetEntryKey }));
   }, [stableBinding, grabs, refusable, failed, sheetEntryKey, endExitLocked, troubleExitLocked]);
 
-  useClaimOnRise(store, failed ? "loading:retry" : "loading:back", args.loading);
-  useClaimOnRise(store, "upnext:play", args.upNextShown);
-  useClaimOnRise(store, "end:play", args.endShown);
-  useClaimOnRise(store, sheetEntryKey, sheetEntryKey !== null);
+  // Quatre réclamations, toujours dans le même ordre (règle des crochets).
+  const [loadingClaim, upNextClaim, endClaim, sheetClaim] = playerFocusClaims({
+    loading: args.loading, failed, upNextShown: args.upNextShown, endShown: args.endShown, sheetEntryKey,
+  });
+  useClaimOnRise(store, loadingClaim.key, loadingClaim.active);
+  useClaimOnRise(store, upNextClaim.key, upNextClaim.active);
+  useClaimOnRise(store, endClaim.key, endClaim.active);
+  useClaimOnRise(store, sheetClaim.key, sheetClaim.active);
   // Un panneau refermé rend le focus à son bouton, à la fin de son fondu.
   const onPanelExited = usePanelReturnFocus(store, showSettings, showEpisodes, args.sheetOpener, args.overlayVisible);
 
-  const state = useMemo<PlayerFocusState>(() => ({
-    store,
-    islandTrap: refusable && !args.overlayVisible,
-    islandExit: args.overlayVisible && pill.islandFocused,
-    activeSeasonIndex: args.activeSeasonIndex,
-  }), [store, refusable, args.overlayVisible, pill.islandFocused, args.activeSeasonIndex]);
+  const state = useMemo<PlayerFocusState>(() => {
+    const island = skipIslandGuides({ refusable, overlayVisible: args.overlayVisible, islandFocused: pill.islandFocused });
+    return { store, islandTrap: island.trap, islandExit: island.exits, activeSeasonIndex: args.activeSeasonIndex };
+  }, [store, refusable, args.overlayVisible, pill.islandFocused, args.activeSeasonIndex]);
 
   return { binder, state, onPanelExited };
-}
-
-/**
- * La préférence d'origine de chaque entrée — celle de l'habillage actuel. La
- * pilule préfère le geste UTILE : « Masquer » quand le passage part tout seul,
- * « Passer » quand il faut le demander.
- */
-function preferredFocus(
-  key: string,
-  s: { grabs: boolean; refusable: boolean; failed: boolean; sheetEntryKey: string | null },
-): boolean | undefined {
-  switch (key) {
-    case "player:skip": return s.grabs && !s.refusable;
-    case "player:skip-dismiss": return s.grabs;
-    case "loading:back": return !s.failed;
-    case "loading:retry": return s.failed;
-    case "upnext:play":
-    case "end:play": return true;
-    default: return key === s.sheetEntryKey ? true : undefined;
-  }
 }

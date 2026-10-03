@@ -1,9 +1,6 @@
 import { useCallback, useRef } from "react";
+import { panelOpener, panelReturnTarget } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../focus/focusStore";
-
-/** Le bouton de l'habillage qui ouvre le panneau des épisodes ; la feuille,
- *  elle, a deux pilules (« Pistes », « Réglages ») et dit laquelle l'a ouverte. */
-const EPISODES_OPENER = "player:episodes";
 
 /**
  * Un panneau du lecteur qui se ferme rend le focus à son bouton À LA FIN DE
@@ -20,7 +17,8 @@ const EPISODES_OPENER = "player:episodes";
  *
  * La restauration différée de l'habillage (`overlayFocusCore`, signal de la
  * fermeture) reste le filet : elle vise le même bouton. Habillage masqué
- * entre-temps (un second Retour), rien : le fond reprend le focus.
+ * entre-temps (un second Retour), rien : le fond reprend le focus. Les
+ * règles : tv-core (`panelOpener`, `panelReturnTarget`).
  */
 export function usePanelReturnFocus(
   store: FocusStore,
@@ -31,14 +29,13 @@ export function usePanelReturnFocus(
 ): () => void {
   // Le bouton à qui rendre le focus : celui du dernier panneau ouvert.
   const opener = useRef<string | null>(null);
-  if (showSettings) opener.current = sheetOpener;
-  else if (showEpisodes) opener.current = EPISODES_OPENER;
+  opener.current = panelOpener({ showSettings, showEpisodes, sheetOpener, previous: opener.current });
   const visible = useRef(overlayVisible);
   visible.current = overlayVisible;
 
   return useCallback(() => {
-    const key = opener.current;
+    const key = panelReturnTarget(opener.current, visible.current);
     opener.current = null;
-    if (key && visible.current) store.focusNow(key);
+    if (key) store.focusNow(key);
   }, [store]);
 }

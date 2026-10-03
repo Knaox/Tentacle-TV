@@ -1,10 +1,5 @@
-import { useCallback } from "react";
-import {
-  useOverlayFocusCore,
-  type FocusNode,
-  type OverlayFocusControl,
-  type TransportKey,
-} from "./overlayFocusCore";
+import { restoreOverlayFocus } from "../../../platform/tvos/player/overlayFocusRestore";
+import { useOverlayFocusCore, type OverlayFocusControl, type TransportKey } from "./overlayFocusCore";
 
 export type { TransportKey, OverlayFocusControl, OverlayButtonProps } from "./overlayFocusCore";
 
@@ -28,16 +23,6 @@ interface UseOverlayFocusArgs {
  * causait le « saut » de focus sur Apple TV).
  */
 export function useOverlayFocus({ focusSignal, scrubbing, focusTargetRef }: UseOverlayFocusArgs): OverlayFocusControl {
-  const restore = useCallback((node: FocusNode) => {
-    if (!node?.setNativeProps) return;
-    node.setNativeProps({ hasTVPreferredFocus: false });
-    setTimeout(() => {
-      node.setNativeProps?.({ hasTVPreferredFocus: true });
-      // RELÂCHER, et c'est ce qui manquait : une préférence laissée à `true`
-      // retient le focus — le moteur y ramène la sélection à chaque occasion,
-      // et l'utilisateur ne peut plus s'en éloigner durablement.
-      setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: false }), 120);
-    }, 50);
-  }, []);
-  return useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef });
+  // Le cycle natif (faux → vrai → relâché) : l'applicateur tvOS du lecteur.
+  return useOverlayFocusCore({ focusSignal, scrubbing, restore: restoreOverlayFocus, focusTargetRef });
 }

@@ -7,7 +7,7 @@ import { playerChromeLabels, seekFlashLabel, type Translate } from "../../redesi
 import type { PlayerMedia, PlayerPanel, ScrubModel } from "../../redesign/screens/player/playerTypes";
 import { useAutoCapNotice } from "../../hooks/useAutoCapNotice";
 import { usePlaybackTroubleState } from "../../hooks/playbackTroubleStore";
-import { SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "@tentacle-tv/tv-core";
+import { playerChromeVisibility, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../focus/focusStore";
 import { backdropUriOf, logoUriOf, paletteOf, type ImageUrl } from "./playerArt";
 import {
@@ -174,15 +174,23 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
 
   // L'habillage : affiché, ou épinglé par la pause hors défilement (tant que
   // Retour ne l'a pas masqué, `useOsdPin`) ; il se tait devant une carte « à
-  // suivre » (comme l'actuel), la vue devant le reste.
-  const osdVisible = (controls.overlayVisible && !p.autoPlayActive) || (osdPinned && !scrubbing);
+  // suivre » (comme l'actuel), la vue devant le reste (tv-core
+  // `playerChromeVisibility`, la même règle que `PlayerChromeView`).
+  const shownBefore = playerChromeVisibility({
+    playing, overlayVisible: controls.overlayVisible, pinned: osdPinned, scrubbing, autoPlayActive: p.autoPlayActive,
+    panelShown: !!panel, endScreenShown: !!endScreen, troubleCovers: false, skipShown: skip !== null, upNextShown: upNext !== null,
+  });
+  const osdVisible = shownBefore.osdVisible;
   // Le message-outil quand un serveur ne répond plus (cf. usePlaybackTrouble).
   const trouble = usePlaybackTrouble({
     t: translate, store, position: p.displayTime, osdVisible, qualityKey: p.qualityKey,
     qualityPresets: p.qualityPresets, onSelectQuality: actions.onSelectQuality, onBack: actions.onBack,
   });
-  // La même règle que `PlayerChromeView` : ce qui recouvre fait taire le reste.
-  const covered = !playing || !!scrub || !!panel || !!endScreen || trouble.covers;
+  const shown = playerChromeVisibility({
+    playing, overlayVisible: controls.overlayVisible, pinned: osdPinned, scrubbing, autoPlayActive: p.autoPlayActive,
+    panelShown: !!panel, endScreenShown: !!endScreen, troubleCovers: trouble.covers, skipShown: skip !== null,
+    upNextShown: upNext !== null,
+  });
 
   return {
     view: {
@@ -193,10 +201,10 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
       trouble: trouble.model, troubleCovers: trouble.covers, onTroubleAction: trouble.onAction,
     },
     troubleCovers: trouble.covers,
-    osdShown: playing && osdVisible && !panel && !scrub && !endScreen && !trouble.covers,
+    osdShown: shown.osdShown,
     loading: !playing,
-    pillShown: skip !== null && !covered,
-    upNextShown: upNext !== null && !covered,
+    pillShown: shown.pillShown,
+    upNextShown: shown.upNextShown,
     endShown: endScreen !== null,
     sheetEntryKey: sheet.entryKey,
     sheetOpener: sheet.opener,

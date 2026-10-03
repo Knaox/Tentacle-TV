@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSeasonBrowser } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { episodesEntryKey, SEASON_PREFETCH_INTENT_MS } from "@tentacle-tv/tv-core";
 import type { Translate } from "../../redesign/screens/player/playerLabels";
 import type { EpisodesPanelModel } from "../../redesign/screens/player/playerTypes";
 import type { FocusStore } from "../focus/focusStore";
 import type { ImageUrl } from "./playerArt";
 import { buildEpisodesPanel } from "./playerPanelModels";
 
-/** Focus maintenu sur une saison avant de la précharger : balayer la bande ne charge rien. */
-const INTENT_MS = 200;
 const SEASON_KEY = "episodes:season:";
 
 /**
@@ -72,8 +71,7 @@ export function usePlayerEpisodesPanel(args: {
 
   // L'entrée : l'épisode en cours s'il est dans la saison affichée, sinon la
   // première ligne — à l'ouverture, puis à chaque saison choisie.
-  const current = episodes?.findIndex((episode) => episode.Id === item?.Id) ?? -1;
-  const entryKey = open && episodes ? `episodes:episode:${Math.max(0, current)}` : null;
+  const entryKey = episodesEntryKey(open, episodes?.map((episode) => episode.Id), item?.Id);
   useEffect(() => {
     if (!entryKey) return;
     return store.claim(entryKey);
@@ -89,7 +87,7 @@ export function usePlayerEpisodesPanel(args: {
       if (!key.startsWith(SEASON_KEY)) return;
       clearTimeout(timer);
       const season = focused ? seasonsRef.current?.[Number(key.slice(SEASON_KEY.length))] : undefined;
-      if (season) timer = setTimeout(() => prefetch(season.Id), INTENT_MS);
+      if (season) timer = setTimeout(() => prefetch(season.Id), SEASON_PREFETCH_INTENT_MS);
     });
     return () => { stop(); clearTimeout(timer); };
   }, [open, store, prefetch]);

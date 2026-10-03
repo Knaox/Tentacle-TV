@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { sheetEntryKey } from "@tentacle-tv/tv-core";
 import type { Translate } from "../../redesign/screens/player/playerLabels";
 import type { PlayerPanel } from "../../redesign/screens/player/playerTypes";
 import { buildSettingsPanel, buildTracksPanel } from "./playerPanelModels";
@@ -21,14 +22,10 @@ export interface PlayerSheet {
 /** La pilule de l'habillage qui ouvre chaque onglet. */
 const OPENERS: Readonly<Record<SheetTab, string>> = { tracks: "player:tracks", settings: "player:settings" };
 
-/** Le choix retenu de la première colonne, sinon la croix. */
+/** Le choix retenu de la première colonne, sinon la croix (tv-core `sheetEntryKey`). */
 function entryKeyOf(panel: NonNullable<PlayerSheet["panel"]>): string {
-  if (panel.kind === "settings") {
-    const quality = panel.settings.quality.find((option) => option.selected) ?? panel.settings.quality[0];
-    return quality ? `settings:quality:${quality.key}` : "settings:close";
-  }
-  const audio = panel.tracks.audio.find((option) => option.selected) ?? panel.tracks.audio[0];
-  return audio ? `tracks:audio:${audio.key}` : "tracks:close";
+  if (panel.kind === "settings") return sheetEntryKey("settings", "quality", panel.settings.quality);
+  return sheetEntryKey("tracks", "audio", panel.tracks.audio);
 }
 
 /**

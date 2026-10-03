@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType } from "react";
 import { StyleSheet, TVFocusGuideView, View, type FocusDestination } from "react-native";
-import type { FocusGroupContainerProps } from "../../redesign/focus/focusBinding";
-import { osdPlayPauseNodeRef, useSkipNode } from "../../components/player/focus/osdFocusBus";
+import { PLAYER_SCREEN_ENTRIES, timelineBridgeTarget, troubleBridgeTarget } from "@tentacle-tv/tv-core";
+import type { FocusGroupContainerProps } from "../../../redesign/focus/focusBinding";
+import { osdPlayPauseNodeRef, useSkipNode } from "../../../components/player/focus/osdFocusBus";
 import { AutoFocusGuide, TrapFocusGuide } from "../focus/focusGuides";
 import type { FocusStore } from "../focus/focusStore";
 
@@ -28,7 +29,8 @@ import type { FocusStore } from "../focus/focusStore";
  * Chaque conteneur est un composant de MODULE (identité stable, exigée par le
  * port) ; ce qui varie se lit dans `PlayerFocusState`. La mémoire et le piège
  * sont ceux de tous les écrans (`focus/focusGuides`) ; seuls les ponts sont
- * propres au lecteur.
+ * propres au lecteur. Où mènent-ils, qui retient : les règles de tv-core
+ * (`player/playerFocus.ts`) ; ici, leur application native.
  */
 
 export interface PlayerFocusState {
@@ -110,24 +112,21 @@ function ScreenTrap({ destinations, style, pointerEvents, children }: FocusGroup
 }
 
 /** L'ouverture : « Réessayer » quand elle a échoué, sinon la croix — la seule action. */
-const LOADING_ENTRIES = ["loading:retry", "loading:back"] as const;
 function LoadingScreenGroup(props: FocusGroupContainerProps) {
   const { store } = usePlayerFocusState();
-  return <ScreenTrap {...props} destinations={useLiveDestination(store, LOADING_ENTRIES)} />;
+  return <ScreenTrap {...props} destinations={useLiveDestination(store, PLAYER_SCREEN_ENTRIES.loading)} />;
 }
 
 /** L'affiche de fin : « Lire maintenant » ; la croix s'atteint par HAUT. */
-const END_ENTRIES = ["end:play"] as const;
 function EndScreenGroup(props: FocusGroupContainerProps) {
   const { store } = usePlayerFocusState();
-  return <ScreenTrap {...props} destinations={useLiveDestination(store, END_ENTRIES)} />;
+  return <ScreenTrap {...props} destinations={useLiveDestination(store, PLAYER_SCREEN_ENTRIES.end)} />;
 }
 
 /** Le message-outil : « Réessayer maintenant » ; la croix s'atteint par HAUT. */
-const TROUBLE_ENTRIES = ["trouble:retry"] as const;
 function TroubleScreenGroup(props: FocusGroupContainerProps) {
   const { store } = usePlayerFocusState();
-  return <ScreenTrap {...props} destinations={useLiveDestination(store, TROUBLE_ENTRIES)} />;
+  return <ScreenTrap {...props} destinations={useLiveDestination(store, PLAYER_SCREEN_ENTRIES.trouble)} />;
 }
 
 /**
@@ -165,8 +164,9 @@ function TimelineGroup(props: FocusGroupContainerProps) {
   const skipNode = useSkipNode();
   const back = useStoreDestination(store, "player:back");
   const playPause = useStoreDestination(store, "player:playpause");
-  const up = useMemo(() => (skipNode ? [skipNode] : back), [skipNode, back]);
-  return <BridgeGuide {...props} destinations={focusedKey === "player:back" ? playPause : up} />;
+  const skip = useMemo(() => (skipNode ? [skipNode] : []), [skipNode]);
+  const target = timelineBridgeTarget(focusedKey, skipNode !== null);
+  return <BridgeGuide {...props} destinations={target === "player:playpause" ? playPause : target === "player:skip" ? skip : back} />;
 }
 
 /**
@@ -212,7 +212,7 @@ function TroubleBridgeGroup(props: FocusGroupContainerProps) {
   const focusedKey = useSyncExternalStore(subscribe, store.focusedKey, store.focusedKey);
   const back = useStoreDestination(store, "trouble:back");
   const retry = useStoreDestination(store, "trouble:retry");
-  return <BridgeGuide {...props} destinations={focusedKey === "trouble:back" ? retry : back} />;
+  return <BridgeGuide {...props} destinations={troubleBridgeTarget(focusedKey) === "trouble:retry" ? retry : back} />;
 }
 
 function EpisodesHeaderGroup(props: FocusGroupContainerProps) {
