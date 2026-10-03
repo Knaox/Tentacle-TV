@@ -37,6 +37,7 @@ export function GlassTabItem({ route, descriptor, focused, tint, navigation, onL
   const press = useTabPressFeedback();
 
   const onPress = () => {
+    press.confirm();
     const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
     if (!focused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
   };

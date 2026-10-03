@@ -5,9 +5,8 @@ import { Feather } from "@expo/vector-icons";
 import { useBatchWatchedToggle } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { haptic } from "@/utils/haptics";
 
-let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: { Medium: unknown } } | null = null;
-try { Haptics = require("expo-haptics"); } catch { /* module natif absent */ }
 
 interface Props {
   seriesId: string;
@@ -29,7 +28,7 @@ export function SeasonActionBar({ seriesId, seasonId, episodes, trailing }: Prop
   const isBusy = markWatched.isPending || markUnwatched.isPending;
 
   const handleToggle = useCallback(() => {
-    Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptic("commit");
     if (allWatched) markUnwatched.mutate(episodeIds);
     else markWatched.mutate(episodeIds);
   }, [allWatched, episodeIds, markWatched, markUnwatched]);

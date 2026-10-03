@@ -6,9 +6,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { keepOffline } from "../engineApi";
 import { buildKeepItem, type KeepOptions } from "../keepTargets";
 import { closeKeepOffline } from "./keepOfflineStore";
+import { haptic } from "@/utils/haptics";
 
-let Haptics: { notificationAsync: (type: unknown) => Promise<void>; NotificationFeedbackType: { Success: unknown } } | null = null;
-try { Haptics = require("expo-haptics"); } catch { /* module natif absent */ }
 
 export interface SpaceError {
   needed: number;
@@ -36,7 +35,7 @@ export function useKeepOfflineSubmit(items: readonly MediaItem[], options: KeepO
         setSpaceError({ needed: outcome.neededBytes, free: outcome.freeBytes });
         return;
       }
-      Haptics?.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+      haptic("success");
       closeKeepOffline();
     } catch {
       Alert.alert(t("dialogTitle"), t("startFailed"));

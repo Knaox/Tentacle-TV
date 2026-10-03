@@ -4,9 +4,8 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-na
 import { LinearGradient } from "expo-linear-gradient";
 import { IconButton } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, ctlGradient, motion, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { haptic } from "@/utils/haptics";
 
-let Haptics: { selectionAsync?: () => void } | null = null;
-try { Haptics = require("expo-haptics"); } catch { /* optionnel */ }
 
 const THUMB = 24;
 const TRACK_H = 6;
@@ -88,7 +87,7 @@ export function SteppedSlider({
     // Mémorisé ici même : pour un simple appui, le relâcher arrive avant le
     // rendu qui porterait la nouvelle valeur — il sauvegarderait l'ancienne.
     r.value = next;
-    Haptics?.selectionAsync?.();
+    haptic("select");
     r.onChange(next);
   }
 

@@ -3,12 +3,12 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from "react-native";
 import Animated, { FadeInUp, FadeOutUp, LinearTransition } from "react-native-reanimated";
 import { FullWindowOverlay } from "react-native-screens";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { onSessionMessage, type SessionMessage } from "@tentacle-tv/api-client";
 import { SHEET_MAX_WIDTH, spacing } from "@/theme";
 import { MessageBanner } from "./MessageBanner";
 import { useMessageCountdown } from "./useMessageCountdown";
+import { haptic } from "@/utils/haptics";
 
 /**
  * Les messages que l'administrateur envoie à cet appareil — depuis le tableau
@@ -53,7 +53,7 @@ export function SessionMessageHost() {
       ? null
       : Math.min(Math.max(message.timeoutMs, MIN_TIMEOUT_MS), MAX_TIMEOUT_MS);
     setMessages((current) => [...current, { ...message, id, durationMs }].slice(-MAX_VISIBLE));
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    haptic("notice");
     AccessibilityInfo.announceForAccessibility([t("messageFrom"), message.header, message.text].filter(Boolean).join(". "));
   }), [t]);
 

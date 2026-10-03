@@ -94,7 +94,7 @@ function RailItem({ label, focused, icon, onLayout, onPress, onLongPress }: {
   const press = useTabPressFeedback();
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => { press.confirm(); onPress(); }}
       onLongPress={onLongPress}
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}

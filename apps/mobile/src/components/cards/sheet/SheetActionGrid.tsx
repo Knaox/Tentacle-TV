@@ -14,10 +14,8 @@ import { ActionCell } from "@/components/ActionCell";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "@/components/cards/cardGlyphs";
 import { KeepOfflineActionCell } from "@/offline/entry/KeepOfflineActionCell";
 import { SHEET_MAX_WIDTH, spacing, useTheme } from "@/theme";
+import { haptic } from "@/utils/haptics";
 
-// expo-haptics optionnel (absent d'Expo Go).
-let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: { Medium: unknown } } | null = null;
-try { Haptics = require("expo-haptics"); } catch { /* module natif absent */ }
 
 const GAP = 10;
 const COLUMNS = 3;
@@ -148,7 +146,7 @@ function ToggleCells({ toggles, states, onToggle, cell }: ToggleCellsProps) {
             activeColor={kind === "favorite" ? colors.brand.accent : colors.brand.violet}
             renderIcon={(color) => <ToggleGlyph kind={kind} color={color} filled={active} />}
             onPress={() => {
-              Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              haptic("commit");
               onToggle(kind);
             }}
             style={cell}

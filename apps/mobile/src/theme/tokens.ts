@@ -66,22 +66,6 @@ export {
 
 // ─── Mobile-only additions ──────────────────────────────────────────────────
 
-/**
- * Haptic feedback intensities — wrapped by `useHapticFeedback`.
- * Matches `expo-haptics` ImpactFeedbackStyle + NotificationFeedbackType names.
- */
-export const HAPTICS = {
-  light: "Light",
-  medium: "Medium",
-  heavy: "Heavy",
-  success: "Success",
-  warning: "Warning",
-  error: "Error",
-  selection: "Selection",
-} as const;
-
-export type HapticKind = keyof typeof HAPTICS;
-
 /** Safe area defaults (fallback before `useSafeAreaInsets` resolves). */
 export const SAFE_AREA = {
   statusBarMin: 20,

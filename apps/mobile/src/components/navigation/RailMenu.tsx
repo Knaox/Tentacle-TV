@@ -132,7 +132,7 @@ function RailMenuRow({ label, active, icon, onLayout, onPress }: {
   const press = useTabPressFeedback({ scale: 0.97 });
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => { press.confirm(); onPress(); }}
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}
       onLayout={onLayout}

@@ -2,12 +2,7 @@ import { Pressable, StyleSheet, type ViewStyle } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../../theme";
-
-// expo-haptics may not be available in all Expo Go builds
-let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
-try {
-  Haptics = require("expo-haptics");
-} catch { /* ignore */ }
+import { haptic as playHaptic } from "../../utils/haptics";
 
 const ICON_MAP: Record<string, keyof typeof Feather.glyphMap> = {
   "←": "arrow-left",
@@ -56,7 +51,7 @@ export function IconButton({
     <Animated.View style={animStyle}>
       <Pressable
         onPress={() => {
-          if (haptic) Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (haptic) playHaptic("tap");
           onPress();
         }}
         onPressIn={() => { scale.value = withSpring(0.9, { damping: 14, stiffness: 320 }); }}

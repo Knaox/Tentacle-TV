@@ -4,9 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import type { AppNotification } from "@tentacle-tv/api-client";
 import { FONT_FAMILY, typography, useTheme, withAlpha } from "@/theme";
+import { haptic } from "@/utils/haptics";
 
-let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
-try { Haptics = require("expo-haptics"); } catch {}
 
 interface SwipeableNotifRowProps {
   notif: AppNotification;
@@ -51,7 +50,7 @@ export function SwipeableNotifRow({
       onPanResponderRelease: (_evt, gestureState) => {
         const { width: w, onDelete: remove } = live.current;
         if (gestureState.dx < -w * SWIPE_RATIO) {
-          Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          haptic("commit");
           Animated.timing(translateX, { toValue: -w, duration: 200, useNativeDriver: true }).start(() => {
             remove();
           });

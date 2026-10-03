@@ -3,9 +3,8 @@ import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { ctlGradient, motion, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { haptic } from "@/utils/haptics";
 
-let Haptics: { selectionAsync?: () => void } | null = null;
-try { Haptics = require("expo-haptics"); } catch { /* optionnel */ }
 
 const TRACK_W = 44;
 const TRACK_H = 24;
@@ -44,7 +43,7 @@ export function BrandSwitch({ value, onValueChange, disabled, accessibilityLabel
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: pressed.value }] }));
 
   const toggle = () => {
-    Haptics?.selectionAsync?.();
+    haptic("select");
     onValueChange(!value);
   };
 

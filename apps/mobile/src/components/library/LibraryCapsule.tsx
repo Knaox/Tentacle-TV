@@ -2,9 +2,9 @@ import { memo, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Haptics from "expo-haptics";
 import { Feather } from "@expo/vector-icons";
 import { ctlGradient, FONT_FAMILY, motion, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { haptic } from "@/utils/haptics";
 
 export interface CapsuleItem {
   id: string;
@@ -59,7 +59,7 @@ export const LibraryCapsule = memo(function LibraryCapsule({ items, selected, on
 
   const choose = (id: string) => {
     if (id === selected) return;
-    void Haptics.selectionAsync().catch(() => {});
+    haptic("select");
     onSelect(id);
   };
 

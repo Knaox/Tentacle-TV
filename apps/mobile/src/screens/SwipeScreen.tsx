@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AccessibilityInfo, StyleSheet, View } from "react-native";
-import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { swipeLangOf, useSwipeCardDetails, useSwipeDeck } from "@tentacle-tv/api-client";
 import type { SwipeVerdict } from "@tentacle-tv/api-client";
@@ -12,12 +11,13 @@ import { SwipeDeckView, type ExitingCard } from "@/components/swipe/SwipeDeckVie
 import { SwipeHeaderNative } from "@/components/swipe/SwipeHeaderNative";
 import { SwipeEmptyNative, SwipeErrorNative, SwipeSaveFailedNative } from "@/components/swipe/SwipeStatesNative";
 import { motion, useTheme } from "@/theme";
+import { haptic, type HapticCue } from "@/utils/haptics";
 
-const HAPTIC: Record<SwipeVerdict, () => Promise<void>> = {
-  like: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
-  dislike: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
-  superlike: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-  skip: () => Haptics.selectionAsync(),
+const HAPTIC: Record<SwipeVerdict, HapticCue> = {
+  like: "tap",
+  dislike: "tap",
+  superlike: "success",
+  skip: "select",
 };
 
 /**
@@ -58,7 +58,7 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
   // elle-même finit son mouvement par-dessus, avec sa face du moment.
   const commit = useCallback((verdict: SwipeVerdict) => {
     if (!top) return;
-    void HAPTIC[verdict]().catch(() => {});
+    haptic(HAPTIC[verdict]);
     setExiting((list) => [...list, { id: nextId.current++, card: top, verdict, details, infoOpen }]);
     AccessibilityInfo.announceForAccessibility(`${t(verdict)} — ${top.title}`);
     judge(verdict);
@@ -73,7 +73,7 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
     });
   }, [cards]);
   const onUndo = useCallback(() => {
-    void Haptics.selectionAsync().catch(() => {});
+    haptic("select");
     AccessibilityInfo.announceForAccessibility(t("undone"));
     undo();
   }, [undo, t]);

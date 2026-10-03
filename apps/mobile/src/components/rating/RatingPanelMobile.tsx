@@ -4,10 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useDeleteRating, useItemRating, useRateItem, type RatingIdentity } from "@tentacle-tv/api-client";
 import { FONT_FAMILY, RADIUS, progressGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { StarRatingMobile } from "./StarRatingMobile";
+import { haptic } from "@/utils/haptics";
 
-// expo-haptics optionnel, comme dans la feuille d'appui long.
-let Haptics: { selectionAsync: () => void } | null = null;
-try { Haptics = require("expo-haptics"); } catch { /* ignore */ }
 
 interface Props {
   /** Identité de notation (`ratingIdentityForItem`, `episodeRatingIdentityFor`). Null : rien n'est rendu. */
@@ -60,11 +58,11 @@ export function RatingPanelMobile({ identity, jellyfinItemId, variant = "detail"
         size={variant === "sheet" ? 34 : 30}
         outlineColor={theme.colors.text.tertiary}
         onRate={(score) => {
-          Haptics?.selectionAsync();
+          haptic("select");
           rate.mutate({ ...identity, jellyfinItemId: jellyfinItemId ?? undefined, score });
         }}
         onClear={() => {
-          Haptics?.selectionAsync();
+          haptic("select");
           remove.mutate(identity);
         }}
       />

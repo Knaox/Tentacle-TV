@@ -26,9 +26,8 @@ import { BottomSheet } from "./ui";
 import { SwipeableNotifRow } from "./notifications/SwipeableNotifRow";
 import { NotifSheetHeader } from "./notifications/NotifSheetHeader";
 import { spacing, typography, useTheme } from "@/theme";
+import { haptic } from "@/utils/haptics";
 
-let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
-try { Haptics = require("expo-haptics"); } catch {}
 
 // ── Helpers ──
 // Le titre vient du formatage PARTAGÉ (api-client/utils/notificationText),
@@ -87,7 +86,7 @@ export function NotificationBell() {
   }, []);
 
   const openSheet = useCallback(() => {
-    Haptics?.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptic("tap");
     setVisible(true);
   }, []);
 

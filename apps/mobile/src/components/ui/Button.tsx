@@ -3,14 +3,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-na
 
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme } from "../../theme";
 import type { AppTheme } from "../../theme";
-
-// expo-haptics may not be available in all Expo Go builds
-let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Record<string, unknown> } | null = null;
-try {
-  Haptics = require("expo-haptics");
-} catch {
-  // native module not available
-}
+import { haptic } from "../../utils/haptics";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
 
@@ -86,7 +79,7 @@ export function Button({ title, onPress, variant = "primary", loading, disabled,
     scale.value = withSpring(1, { damping: 18, stiffness: 280, mass: 0.7 });
   };
   const handlePress = () => {
-    Haptics?.impactAsync(variant === "danger" ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
+    haptic(variant === "danger" ? "destructive" : "tap");
     onPress();
   };
 
