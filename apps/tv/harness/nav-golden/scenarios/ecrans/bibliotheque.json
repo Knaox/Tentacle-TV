@@ -25,11 +25,14 @@
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
             "libraryName": "Films"
           }
-        }
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
         {
-          "do": "wait:6",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0",
             "route": "Library"
@@ -121,11 +124,14 @@
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
             "libraryName": "Films"
           }
-        }
+        },
+        "keys": [
+          "wait:8"
+        ]
       },
       "steps": [
         {
-          "do": "wait:8",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0"
           }
@@ -171,11 +177,14 @@
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
             "libraryName": "Films"
           }
-        }
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
         {
-          "do": "wait:6",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0"
           }
@@ -271,11 +280,14 @@
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
             "libraryName": "Films"
           }
-        }
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
         {
-          "do": "wait:6",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0"
           }
@@ -369,11 +381,14 @@
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
             "libraryName": "Films"
           }
-        }
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
         {
-          "do": "wait:6",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0"
           }
@@ -433,11 +448,14 @@
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
             "libraryName": "Films"
           }
-        }
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
         {
-          "do": "wait:6",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0"
           }

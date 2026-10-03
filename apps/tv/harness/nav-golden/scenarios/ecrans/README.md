@@ -19,6 +19,11 @@ préfixé par l'écran), `title`, `rules` (les règles du relevé couvertes),
 `wait:<s>`, `type:<texte>` avec `\n` pour la validation du clavier système ;
 `settleMs` ; `expect` : `focus`, `label`, `route`, `panel`, `writes` ; `why`).
 
+Chaque scénario attend, dans son approche (`start.keys`), que l'écran ait
+fini de se charger avant le relevé de l'entrée — sauf les deux qui relèvent
+justement le chargement (`fiche-lente`, `parcourir-lent`, sur une réponse de
+15 s).
+
 Les `expect` ne disent que ce que le code GARANTIT (le relevé) ; tout le
 reste — clé focalisée, libellé, route et pile, Modal, écritures, après CHAQUE
 geste — est relevé par `record` dans `<nom>.golden.json` (jamais écrit à la
@@ -34,11 +39,17 @@ domaine (`fixtures.mjs`) :
 
 | Jeu | Ce qu'il change |
 |---|---|
+| `ecrans/recherche` | sert Parcourir (filmographie d'une personne d'après les crédits de l'instantané, titres d'un genre, studio vide) et les épisodes de la recherche (aucun) — la base ne les a pas |
+| `ecrans/parcourir-lent` | comme `ecrans/recherche`, la filmographie d'une personne répond après 15 s |
 | `ecrans/fiche-en-erreur` | la fiche de « Les Évadés » répond 500 |
-| `ecrans/fiche-lente` | la fiche de « Les Évadés » répond après 3 s |
-| `ecrans/parcourir-lent` | la filmographie de Keira Knightley répond après 3 s |
+| `ecrans/fiche-lente` | la fiche de « Les Évadés » répond après 15 s |
 | `ecrans/favoris-vides` | Favoris vide |
-| `ecrans/jumelage` | sans session : code du relais en attente, le serveur `http://localhost:3107` se vérifie, la connexion est refusée (401) |
+| `ecrans/grande-bibliotheque` | « Films » porte 1 200 titres (copies des films de l'instantané, identifiants neufs) |
+| `ecrans/jumelage` | sans session : la connexion par identifiants est refusée (401) ; le serveur saisi est le faux backend `http://localhost:3107` |
+
+Le code du RELAIS de jumelage n'est jamais affiché : il interrogerait le vrai
+relais (https://pair.tentacletv.app). Sa règle (JU-1, la croix seule action)
+est éprouvée par les tests de tv-core.
 
 Identifiants de l'instantané employés :
 

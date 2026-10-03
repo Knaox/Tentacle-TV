@@ -17,11 +17,14 @@
         "session": "none",
         "fixtures": [
           "ecrans/jumelage"
+        ],
+        "keys": [
+          "wait:5"
         ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "pairing:showCode",
             "route": "PairCode"
@@ -61,11 +64,14 @@
         "session": "none",
         "fixtures": [
           "ecrans/jumelage"
+        ],
+        "keys": [
+          "wait:5"
         ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "pairing:showCode"
           }
@@ -172,11 +178,14 @@
         "session": "none",
         "fixtures": [
           "ecrans/jumelage"
+        ],
+        "keys": [
+          "wait:5"
         ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "pairing:showCode"
           }

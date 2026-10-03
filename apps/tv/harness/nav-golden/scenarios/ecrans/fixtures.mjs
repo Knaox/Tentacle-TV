@@ -6,6 +6,13 @@
 const FILM = "fcfbd7a81518be2f40de85b0d1ccd46f"; // Les Évadés
 const FILMS = "db4c1708cbb5dd1676284a40f2950aba"; // la bibliothèque « Films »
 
+/**
+ * Une réponse LENTE : assez pour que l'état de chargement soit relevé à coup
+ * sûr, même sous charge (l'entrée est relevée après 1,5 s d'immobilité, 4 s
+ * sans focus), et bien en deçà du délai d'abandon du client (30 s).
+ */
+const SLOW_MS = 15_000;
+
 const itemPath = (id) => new RegExp(`^/api/jellyfin/(?:Users/[^/]+/)?Items/${id}$`, "i");
 const later = (ms, run) => setTimeout(run, ms);
 
@@ -50,16 +57,16 @@ export default {
     apply: (data) => searchRoutes(data),
   },
   "parcourir-lent": {
-    description: "comme « recherche », la filmographie d'une personne répond après 3 s",
-    apply: (data) => searchRoutes(data, { personDelayMs: 3000 }),
+    description: "comme « recherche », la filmographie d'une personne répond après 15 s",
+    apply: (data) => searchRoutes(data, { personDelayMs: SLOW_MS }),
   },
   "fiche-en-erreur": {
     description: "la fiche de « Les Évadés » répond 500",
     apply: (data) => data.route("GET", itemPath(FILM), (req, res, { json }) => json(res, 500, { error: "banc : fiche en erreur" })),
   },
   "fiche-lente": {
-    description: "la fiche de « Les Évadés » répond après 3 s",
-    apply: (data) => data.route("GET", itemPath(FILM), (req, res, { json }) => later(3000, () => json(res, 200, data.item(FILM)))),
+    description: "la fiche de « Les Évadés » répond après 15 s",
+    apply: (data) => data.route("GET", itemPath(FILM), (req, res, { json }) => later(SLOW_MS, () => json(res, 200, data.item(FILM)))),
   },
   "favoris-vides": {
     description: "aucun favori",

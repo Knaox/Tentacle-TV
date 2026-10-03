@@ -19,11 +19,14 @@
         ],
         "route": {
           "name": "Watchlist"
-        }
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
         {
-          "do": "wait:6",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0",
             "route": "Watchlist"
@@ -67,11 +70,14 @@
         ],
         "route": {
           "name": "Favorites"
-        }
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
         {
-          "do": "wait:6",
+          "do": "wait:1",
           "expect": {
             "focus": "empty:primary",
             "route": "Favorites"

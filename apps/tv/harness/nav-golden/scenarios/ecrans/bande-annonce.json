@@ -24,11 +24,14 @@
           "params": {
             "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "detail:primary"
           }
@@ -76,11 +79,14 @@
           "params": {
             "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "detail:primary"
           }

@@ -19,11 +19,14 @@
         ],
         "route": {
           "name": "Search"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "key:A",
             "route": "Search"
@@ -90,11 +93,14 @@
         ],
         "route": {
           "name": "Search"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "key:A"
           }
@@ -146,11 +152,14 @@
         ],
         "route": {
           "name": "Search"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "key:A"
           }
@@ -192,11 +201,14 @@
         ],
         "route": {
           "name": "Search"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "up",
@@ -230,11 +242,14 @@
         ],
         "route": {
           "name": "Search"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "key:A"
           }
@@ -280,11 +295,14 @@
         ],
         "route": {
           "name": "Search"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "key:A"
           }
@@ -317,11 +335,14 @@
         ],
         "route": {
           "name": "Search"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "up",

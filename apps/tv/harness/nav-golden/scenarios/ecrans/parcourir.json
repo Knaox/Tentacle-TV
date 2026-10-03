@@ -25,11 +25,14 @@
             "id": "9a502d69e1c2d64c451e42406a932f0b",
             "name": "Keira Knightley"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0",
             "route": "SearchBrowse"
@@ -98,11 +101,14 @@
             "id": "9a502d69e1c2d64c451e42406a932f0b",
             "name": "Keira Knightley"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0"
           }
@@ -139,11 +145,14 @@
             "kind": "genre",
             "name": "Action"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "grid:0"
           }
@@ -194,16 +203,18 @@
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:3",
           "expect": {
             "focus": "browse:back"
-          }
+          },
+          "why": "en chargement (la page répond après 15 s) : la croix tient le focus"
         },
         {
-          "do": "wait:4",
+          "do": "wait:12",
           "expect": {
             "focus": "grid:0"
-          }
+          },
+          "why": "les affiches arrivées, la première reprend le focus à la croix"
         }
       ]
     },
@@ -222,11 +233,14 @@
         ],
         "route": {
           "name": "Search"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "key:A"
           }

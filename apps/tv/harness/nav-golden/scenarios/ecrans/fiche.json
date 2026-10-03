@@ -23,11 +23,14 @@
           "params": {
             "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "detail:primary",
             "route": "MediaDetail"
@@ -91,11 +94,14 @@
           "params": {
             "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "detail:primary"
           }
@@ -166,11 +172,14 @@
           "params": {
             "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "down",
@@ -253,11 +262,14 @@
           "params": {
             "itemId": "1e98cd83a1295aeb9336e87a46afe1d6"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "down",
@@ -295,11 +307,14 @@
           "params": {
             "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "down",
@@ -380,11 +395,14 @@
           "params": {
             "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "holddown:3",
@@ -438,11 +456,14 @@
           "params": {
             "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "down",
@@ -495,11 +516,14 @@
           "params": {
             "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "status:primary"
           }
@@ -548,14 +572,15 @@
       },
       "steps": [
         {
-          "do": "wait:5",
-          "why": "en chargement : relevé (la croix verrouillée n'a pas le focus)"
+          "do": "wait:3",
+          "why": "en chargement (la fiche répond après 15 s) : relevé — la croix verrouillée n'a pas le focus"
         },
         {
-          "do": "wait:4",
+          "do": "wait:12",
           "expect": {
             "focus": "detail:primary"
-          }
+          },
+          "why": "la fiche arrivée : Lecture prend l'entrée"
         }
       ]
     }

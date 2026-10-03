@@ -22,11 +22,14 @@
           "params": {
             "itemId": "52665ab1c968caf9c32b3ef48f69b3f0"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "down",
@@ -98,11 +101,14 @@
           "params": {
             "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "holddown:2",
@@ -140,11 +146,14 @@
           "params": {
             "itemId": "f461dd313e49d9bde1d226d22fe4ed08"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5"
+          "do": "wait:1"
         },
         {
           "do": "holddown:2",

@@ -20,11 +20,14 @@
         ],
         "route": {
           "name": "Settings"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "settings:tab:account",
             "route": "Settings"
@@ -120,11 +123,14 @@
         ],
         "route": {
           "name": "Settings"
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "settings:tab:account"
           }
@@ -195,11 +201,14 @@
           "params": {
             "tab": "playback"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "settings:tab:playback"
           }
@@ -252,11 +261,14 @@
           "params": {
             "tab": "navigation"
           }
-        }
+        },
+        "keys": [
+          "wait:5"
+        ]
       },
       "steps": [
         {
-          "do": "wait:5",
+          "do": "wait:1",
           "expect": {
             "focus": "settings:tab:navigation"
           }
