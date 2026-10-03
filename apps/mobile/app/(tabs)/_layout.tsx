@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Tabs } from "expo-router";
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
@@ -48,6 +49,21 @@ export default function TabsLayout() {
   const homeLabel = offline ? to("tabOnDevice") : t("home");
   const homeIcon: keyof typeof Feather.glyphMap = offline ? "smartphone" : "home";
 
+  // Des props stables pour le navigateur : la mise en page se re-rend à
+  // chaque navigation (`usePathname`, l'onglet des extensions), la barre
+  // d'onglets n'a pas à se refaire pour autant.
+  const openMenu = useCallback(() => setMenuOpen(true), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const tabBar = useCallback(
+    (props: BottomTabBarProps) => (sideNav ? <TabRail {...props} onOpenMenu={openMenu} /> : <GlassTabBar {...props} />),
+    [sideNav, openMenu],
+  );
+  const screenOptions = useMemo(() => ({
+    headerShown: false,
+    // iPad paysage : rail gauche custom ; sinon barre basse.
+    tabBarPosition: sideNav ? "left" as const : "bottom" as const,
+  }), [sideNav]);
+
   const menuItems = useMemo<RailMenuItem[]>(() => [
     { href: "/", icon: homeIcon, label: homeLabel },
     ...(offline ? [] : [
@@ -64,16 +80,10 @@ export default function TabsLayout() {
     <ScrollChromeProvider>
     <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }}>
     <Tabs
-      tabBar={sideNav
-        ? (props) => <TabRail {...props} onOpenMenu={() => setMenuOpen(true)} />
-        : (props) => <GlassTabBar {...props} />}
+      tabBar={tabBar}
       // Les barres sont maison (GlassTabBar, TabRail) : elles ne lisent aucune
       // option `tabBar*` de react-navigation — seule la position compte.
-      screenOptions={{
-        headerShown: false,
-        // iPad paysage : rail gauche custom ; sinon barre basse.
-        tabBarPosition: sideNav ? "left" : "bottom",
-      }}
+      screenOptions={screenOptions}
     >
       {/* Accueil — ou « Sur cet appareil » hors ligne */}
       <Tabs.Screen
@@ -144,7 +154,7 @@ export default function TabsLayout() {
         onClose={extNav.closePicker}
       />
     )}
-    {sideNav && <RailMenu open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} />}
+    {sideNav && <RailMenu open={menuOpen} onClose={closeMenu} items={menuItems} />}
     </View>
     </ScrollChromeProvider>
     </RailWidthContext.Provider>

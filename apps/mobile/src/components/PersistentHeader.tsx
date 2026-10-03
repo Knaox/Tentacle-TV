@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,7 +44,9 @@ export function useHeaderHeight(): number {
  * le logo lisibles malgré le contenu sombre qui défile derrière le verre. En
  * SOMBRE, verre tel quel (icônes claires déjà lisibles).
  */
-export function PersistentHeader() {
+// Mémoïsé : la mise en page des onglets se re-rend à chaque navigation
+// (`usePathname`) ; l'en-tête, sans props, n'a rien à en recevoir.
+export const PersistentHeader = memo(function PersistentHeader() {
   const { t } = useTranslation("nav");
   const insets = useSafeAreaInsets();
   const headerH = useHeaderHeight();
@@ -119,7 +122,7 @@ export function PersistentHeader() {
     <ChromeVeilLayer />
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 20 },
