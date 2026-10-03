@@ -42,14 +42,20 @@ describe("les pictos du grand panneau", () => {
     expect(kinds("poster", { playable: false })).toEqual(["watchlist", "favorite", "watched", "details"]);
   });
 
+  it("dit d'où vient chaque picto : le modèle partagé ou le salon", () => {
+    const origins = sheetActionEntries({ overlay: overlayOf("reco"), states: NONE, inLibrary: true, providerFilterActive: true }).map((e) => `${e.kind}:${e.origin}`);
+    expect(origins).toEqual(["play:model", "watchlist:model", "favorite:model", "watched:model", "details:salon", "dismiss:model", "providersAll:salon"]);
+    expect(sheetActionEntries({ overlay: overlayOf("landscape"), states: NONE, inLibrary: true }).find((e) => e.kind === "details")?.origin).toBe("model");
+  });
+
   it("dit l'état des bascules et le geste qu'elles feront", () => {
     const entries = sheetActionEntries({
       overlay: overlayOf("poster"),
       states: { watchlist: true, favorite: false, watched: false },
       inLibrary: true,
     });
-    expect(entries[1]).toEqual({ kind: "watchlist", labelKey: "cards:removeFromWatchlist", active: true });
-    expect(entries[2]).toEqual({ kind: "favorite", labelKey: "cards:addToFavorites", active: false });
-    expect(entries[4]).toEqual({ kind: "details", labelKey: "cards:moreInfo" });
+    expect(entries[1]).toEqual({ kind: "watchlist", labelKey: "cards:removeFromWatchlist", active: true, origin: "model" });
+    expect(entries[2]).toEqual({ kind: "favorite", labelKey: "cards:addToFavorites", active: false, origin: "model" });
+    expect(entries[4]).toEqual({ kind: "details", labelKey: "cards:moreInfo", origin: "salon" });
   });
 });

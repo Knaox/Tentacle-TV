@@ -27,6 +27,8 @@ export interface SheetActionEntry {
   labelKey: string;
   /** Une bascule posée : son glyphe se remplit. */
   active?: boolean;
+  /** D'où vient le picto : le modèle partagé du survol, ou le salon (« Plus d'infos », « Toutes les plateformes »). */
+  origin: "model" | "salon";
 }
 
 export interface SheetActionsInput {
@@ -43,13 +45,14 @@ export function sheetActionEntries(input: SheetActionsInput): SheetActionEntry[]
     kind: entry.kind,
     labelKey: `cards:${entry.labelKey}`,
     active: entry.active,
+    origin: "model",
   }));
   if (input.inLibrary && !rows.some((row) => row.kind === "details")) {
     const dismiss = rows.findIndex((row) => row.kind === "dismiss");
-    rows.splice(dismiss === -1 ? rows.length : dismiss, 0, { kind: "details", labelKey: "cards:moreInfo" });
+    rows.splice(dismiss === -1 ? rows.length : dismiss, 0, { kind: "details", labelKey: "cards:moreInfo", origin: "salon" });
   }
   if (input.overlay.variant === "reco" && input.providerFilterActive) {
-    rows.push({ kind: "providersAll", labelKey: "reco:providersAll" });
+    rows.push({ kind: "providersAll", labelKey: "reco:providersAll", origin: "salon" });
   }
   return rows;
 }
