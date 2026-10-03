@@ -194,6 +194,8 @@ describe("SessionRegistry — commandes de Jellyfin", () => {
       type: "session:message", header: "Admin", text: "Bonsoir", timeoutMs: 5000,
     });
     expect(generalMessage("DisplayMessage", { Text: "x".repeat(5_000) })).toMatchObject({ header: "", text: "x".repeat(2_000) });
+    // Sans titre, Jellyfin pose « Message from Server » : nos bandeaux ont le leur.
+    expect(generalMessage("DisplayMessage", { Header: "Message from Server", Text: "Bonsoir" })).toMatchObject({ header: "", text: "Bonsoir" });
     expect(generalMessage("SetVolume", { Volume: "40" })).toEqual({ type: "session:general", name: "SetVolume", arguments: { Volume: "40" } });
   });
 
