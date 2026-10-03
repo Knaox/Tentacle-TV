@@ -657,13 +657,35 @@ chemin partagé reste tel quel tant qu'Android TV n'est pas porté.
    la connexion se rejoue par « Se connecter » (JU-4 éprouvé ainsi). À
    essayer à la main sur l'appareil : « Terminé » du clavier du mot de passe.
 
-(La liste s'allonge à l'enregistrement des scénarios.)
 
 ---
 
 ## Scénarios dorés
 
-Dans `apps/tv/harness/nav-golden/scenarios/ecrans/`, au format du banc (celui
-de T6 : `do`, `expect`, `settleMs`, `why`), chacun citant les règles qu'il
-couvre (`rules`) ; enregistrés sur 84f3cedd0, rejoués en `verify` après
-l'extraction. La couverture : `README.md` du dossier.
+Dans `apps/tv/harness/nav-golden/scenarios/ecrans/` : 41 scénarios en 9
+fichiers, au format figé du banc, chacun citant les règles qu'il couvre
+(`rules`) ; jeux de données du domaine dans `fixtures.mjs`. Références
+enregistrées sur 84f3cedd0 (observation 2), deux passages identiques pour
+chacun. La couverture et les identifiants de l'instantané : `README.md` du
+dossier.
+
+Ce que l'enregistrement a appris, et que les scénarios respectent :
+
+- **Attendre la fin du chargement** avant de relever l'entrée d'un écran
+  (`start.keys` : `wait:<s>`) ; sous charge, une fiche ou une grille encore
+  vide donnait une entrée différente d'un passage à l'autre. Les deux
+  scénarios qui relèvent le chargement lui-même (`fiche-lente`,
+  `parcourir-lent`) le font sur une réponse de 20 s.
+- **Des appuis comptés, pas maintenus**, dès qu'une case précise compte :
+  la case atteinte par un appui maintenu dépend de la vitesse (et le rail
+  BOUCLE : sous le profil, on revient en haut). Un appui maintenu ne sert
+  qu'à aller en butée (le pied d'une liste, le bout d'une grille).
+- **Les réglages s'atteignent par le rail** : GAUCHE, GAUCHE, OK — ouverts
+  par une navigation directe, ils n'ont aucun focus à la référence (B8 de
+  T4) ; GAUCHE dans le rail ouvert mène au profil, ce qui tient même quand
+  l'accueil encore en chargement a laissé le focus au rail (B7 de T4).
+- **Des données que l'instantané a vraiment** : la recherche tape
+  « orgueil » (la seule requête servie sous sa forme réelle, `match`
+  compris) ou « zzqxw » (aucun résultat) ; la seule chaîne de similaires
+  part de « GTA VI : un large aperçu » ; les seules filmographies sont
+  celles du casting d'« Orgueil et Préjugés ».
