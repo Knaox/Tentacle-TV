@@ -27,6 +27,20 @@ const DOM_GLOBALS = /\b(document|window|navigator|localStorage|sessionStorage)\s
 
 const SPECIFIERS = /\bfrom\s+["']([^"']+)["']|\bimport\s*\(\s*["']([^"']+)["']\s*\)|\brequire\(\s*["']([^"']+)["']\s*\)|^\s*import\s+["']([^"']+)["']/gm;
 
+/**
+ * La règle de rangement (docs/TV-NAVIGATION.md) : une règle lit des
+ * `RemoteIntent`, jamais un `eventType` ; des `RemoteTraits`, jamais
+ * `Platform.OS`. Seules les tables de traduction lisent l'événement natif.
+ */
+const NATIVE_READS = /\beventType\b|\bPlatform\s*\.\s*(OS|isTV|isTVOS|select)\b/;
+const TRANSLATION_TABLES = "src/remote/bindings/";
+
+/** Ni React ni minuteur caché (horloge injectable) — sauf ce qui l'était déjà avant le lot de la navigation. */
+const REACT_IMPORT = /\bfrom\s+["']react["']/;
+const REACT_BEFORE_LOT = ["src/nav/railPinning.ts", "src/player/playerState.ts"];
+const HIDDEN_TIMER = /(^|[^.\w])(setTimeout|setInterval|requestAnimationFrame)\s*\(/;
+const TIMERS_BEFORE_LOT = ["src/input/keyLock.ts", "src/input/longPress.ts", "src/player/holdMotor.ts", "src/player/playerState.ts", "src/player/scrubMachine.ts"];
+
 function sourcesUnder(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
@@ -104,6 +118,29 @@ describe("tv-core reste pur : ni React Native, ni DOM", () => {
     const manifest = JSON.parse(readFileSync(join(PACKAGE, "package.json"), "utf8")) as Record<string, Record<string, string> | undefined>;
     const declared = ["dependencies", "peerDependencies", "devDependencies"].flatMap((field) => Object.keys(manifest[field] ?? {}));
     expect(declared.filter((name) => FORBIDDEN.test(name))).toEqual([]);
+  });
+
+  /** Les lignes d'un module (hors tests, hors commentaires) qui répondent à `pattern`. */
+  const linesMatching = (pattern: RegExp, skip: (relative: string) => boolean): string[] =>
+    sourcesUnder(join(PACKAGE, "src"))
+      .map((file) => ({ file, relative: file.replace(`${PACKAGE}/`, "") }))
+      .filter(({ relative }) => !relative.endsWith(".test.ts") && !skip(relative))
+      .flatMap(({ file, relative }) =>
+        withoutComments(readFileSync(file, "utf8"))
+          .split("\n")
+          .flatMap((line, i) => (pattern.test(line) ? [`${relative}:${i + 1}`] : [])),
+      );
+
+  it("ses règles ne lisent ni eventType ni Platform.OS — seules les tables de traduction lisent le natif", () => {
+    expect(linesMatching(NATIVE_READS, (relative) => relative.startsWith(TRANSLATION_TABLES))).toEqual([]);
+  });
+
+  it("aucun module nouveau ne s'appuie sur React", () => {
+    expect(linesMatching(REACT_IMPORT, (relative) => REACT_BEFORE_LOT.includes(relative))).toEqual([]);
+  });
+
+  it("aucun module nouveau n'arme de minuteur caché : l'horloge s'injecte", () => {
+    expect(linesMatching(HIDDEN_TIMER, (relative) => TIMERS_BEFORE_LOT.includes(relative))).toEqual([]);
   });
 
   it("compile sans la bibliothèque du DOM (tsconfig)", () => {
