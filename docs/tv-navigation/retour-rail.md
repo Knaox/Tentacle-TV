@@ -513,5 +513,18 @@ viser ; R2.17 : scénarios de T6.
 
 ## 18. À retirer au portage Android TV
 
-(Copies temporaires d'une règle de code partagé avec Android TV — vide pour
-l'instant.)
+Ce que le chemin Apple TV n'utilise plus, ou n'utilise qu'à vide, gardé parce
+que le fichier sert aussi Android TV (règle du lot : un fichier partagé ne
+s'amincit qu'avec une preuve d'équivalence Android) :
+
+- **`components/nav/TVNavChrome.tsx` et `hooks/useContentFocusCapture.ts`**
+  (inventaire, annexe A) — DÉCISION : ils RESTENT, documentés comme inertes
+  sur tvOS. `App.tsx` monte l'ancien rail sur les deux téléviseurs ; sur Apple
+  TV, toutes les routes sont refondues ou plein écran (`deriveRailKey` rend
+  `null`) : il ne rend rien. Ses crochets tournent quand même, dont un
+  `useTVEventHandler` toute la session ; son gestionnaire ne fait rien tant
+  que rien n'est ARMÉ, et seul `TVSideRail` arme (`handleNavigate`), jamais
+  rendu sur tvOS — l'effet de pose du focus ne part pas davantage. Le retirer
+  du chemin tvOS demanderait de toucher `App.tsx` ou `TVNavChrome` (partagés)
+  pour un écouteur vide : pas cette nuit. Au portage d'Android TV sur la
+  refonte, l'ancien rail part en entier.
