@@ -229,10 +229,8 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
       console.error(DBG, "PlaybackInfo failed", err);
       // Une réponse (statut) vient de Jellyfin, direct ou relayé ; une panne de
       // transport finit toujours par le relais du serveur Tentacle.
-      const status = (err as { status?: unknown } | null)?.status;
       const error: PlaybackFailureReport = {
-        from: "request", error: err, target: typeof status === "number" ? "jellyfin" : "tentacle",
-        request: `POST /Items/${itemId}/PlaybackInfo`,
+        from: "request", error: err, target: "relayed", request: `POST /Items/${itemId}/PlaybackInfo`,
       };
       setState((prev) => ({ ...prev, isLoading: false, error }));
     }

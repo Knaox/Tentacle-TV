@@ -1,5 +1,5 @@
 import {
-  mpvFailure, nativeVideoFailure,
+  mpvFailure, nativeVideoFailure, rawFromError,
   type EngineFailure, type FailureMarker, type FailureTarget, type ProblemFacts, type RawProblem,
 } from "@tentacle-tv/shared";
 
@@ -34,12 +34,6 @@ function messageOf(error: unknown): string | undefined {
   return undefined;
 }
 
-/** Le statut d'une réponse en échec (JellyfinError, TentacleApiError) — `undefined` sur une panne de transport. */
-export function statusOf(error: unknown): number | undefined {
-  const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
-  return typeof status === "number" && status > 0 ? status : undefined;
-}
-
 function engineFailureOf(engine: PlaybackEngineKind, error: unknown): EngineFailure {
   if (engine === "mpv") return mpvFailure(messageOf(error) ?? "", "mpv");
   return nativeVideoFailure(error);
@@ -56,13 +50,8 @@ export function collectFailure(report: PlaybackFailureReport): CollectedFailure 
       };
     }
     case "request": {
-      const status = statusOf(report.error);
-      const message = messageOf(report.error);
-      const name = report.error instanceof Error ? report.error.name : undefined;
-      return {
-        raw: { status, message, name, target: report.target },
-        facts: { status, request: report.request, message },
-      };
+      const raw = rawFromError(report.error, report.target);
+      return { raw, facts: { status: raw.status, request: report.request, message: raw.message } };
     }
     case "marker":
       return {

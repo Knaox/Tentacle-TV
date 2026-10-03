@@ -15,6 +15,7 @@ import { AuthRedirect } from "@/auth/AuthRedirect";
 import { OfflineShell } from "@/offline/OfflineShell";
 import { SessionMessageHost } from "@/session/SessionMessageHost";
 import { NoticeHost } from "@/notices/NoticeHost";
+import { MutationFailureBinding } from "@/notices/MutationFailureBinding";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
@@ -179,6 +180,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       <OfflineShell />
       {/* Les avertissements (serveur, TMDB, clé d'administration) : un à la fois, jamais sur le lecteur. */}
       <NoticeHost />
+      <MutationFailureBinding />
       {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
       <SessionMessageHost />
       {showLoading && (

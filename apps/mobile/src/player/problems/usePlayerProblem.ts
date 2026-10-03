@@ -65,7 +65,7 @@ export function usePlayerProblem(args: PlayerProblemArgs) {
 
   // La fiche n'a pas pu se lire : sans elle, rien ne se négocie.
   useEffect(() => {
-    if (args.itemError) report({ from: "request", error: args.itemError, target: "jellyfin", request: `GET /Items/${args.itemId}` });
+    if (args.itemError) report({ from: "request", error: args.itemError, target: "relayed", request: `GET /Items/${args.itemId}` });
   }, [args.itemError, args.itemId, report]);
   useEffect(() => {
     if (args.missingUser) report({ from: "request", error: { status: 401 }, target: "tentacle" });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { classifyProblem } from "@tentacle-tv/shared";
-import { collectFailure, nextVersionId, statusOf, transcodeAllowedOf } from "./playbackFailure";
+import { collectFailure, nextVersionId, transcodeAllowedOf } from "./playbackFailure";
 
 /**
  * Ce que le lecteur mobile sait d'un échec, dans la forme du modèle commun :
@@ -48,10 +48,7 @@ describe("échecs du lecteur mobile", () => {
     expect(classifyProblem({ ...collectFailure({ from: "missingFile" }).raw, local: true })).toBe("offlineFileMissing");
   });
 
-  it("lit le statut d'une erreur de requête, et le droit de faire convertir", () => {
-    expect(statusOf({ status: 500 })).toBe(500);
-    expect(statusOf({ status: 0 })).toBeUndefined();
-    expect(statusOf(new TypeError("x"))).toBeUndefined();
+  it("lit le droit de faire convertir dans le profil gardé", () => {
     expect(transcodeAllowedOf('{"Policy":{"EnableVideoPlaybackTranscoding":false}}')).toBe(false);
     expect(transcodeAllowedOf('{"Policy":{}}')).toBeUndefined();
     expect(transcodeAllowedOf("pas du json")).toBeUndefined();

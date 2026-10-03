@@ -12,9 +12,11 @@ export interface NoticeCardAction {
   onPress: () => void;
 }
 
+export type NoticeIcon = "server" | "key" | "check" | "alert-triangle";
+
 interface Props {
   severity: NoticeSeverity;
-  icon: "server" | "key" | "check";
+  icon: NoticeIcon;
   title?: string;
   lines: string[];
   primary?: NoticeCardAction;

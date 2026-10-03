@@ -15,7 +15,8 @@ import { useServerUrl } from "@/providers/ServerUrlContext";
 import { useMessageCountdown } from "@/session/useMessageCountdown";
 import { SHEET_MAX_WIDTH, spacing } from "@/theme";
 import { haptic } from "@/utils/haptics";
-import { NoticeCard, type NoticeCardAction } from "./NoticeCard";
+import { NoticeCard, type NoticeCardAction, type NoticeIcon } from "./NoticeCard";
+import { dismissToast, useToasts } from "./toastStore";
 import { useSwipeDismiss } from "./useSwipeDismiss";
 
 /** Une fois masqué pour de bon : la phrase qui le dit, et « Annuler ». */
@@ -45,6 +46,7 @@ export function NoticeHost() {
   const screenReader = useScreenReaderEnabled();
   const { mutate } = useSetHintDismissed();
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const toasts = useToasts();
 
   const open = useCallback((path: string) => {
     if (serverUrl) void Linking.openURL(`${serverUrl}${path}`).catch(() => undefined);
@@ -112,9 +114,21 @@ export function NoticeHost() {
       />
     );
   }
-  if (!banner) return null;
+  if (!banner && toasts.length === 0) return null;
   return (
     <View pointerEvents="box-none" style={[st.layer, { top: Math.max(insets.top, 12) + spacing.sm }]}>
+      {/* Les gestes défaits d'abord (ce qui vient d'arriver), puis l'avertissement. */}
+      {toasts.map((toast) => (
+        <Banner
+          key={`toast-${toast.id}`}
+          severity="blocking"
+          icon="alert-triangle"
+          title={toast.title}
+          lines={toast.text ? [toast.text] : []}
+          durationMs={NOTICE_AUTO_HIDE_MS}
+          onDone={() => dismissToast(toast.id)}
+        />
+      ))}
       {banner}
     </View>
   );
@@ -122,7 +136,7 @@ export function NoticeHost() {
 
 interface BannerProps {
   severity: ClientNotice["rule"]["severity"];
-  icon: "server" | "key" | "check";
+  icon: NoticeIcon;
   title?: string;
   lines: string[];
   primary?: NoticeCardAction;
@@ -169,6 +183,6 @@ const Banner = memo(function Banner({ severity, icon, title, lines, primary, sec
 });
 
 const st = StyleSheet.create({
-  layer: { position: "absolute", left: spacing.md, right: spacing.md, alignItems: "center", zIndex: 900, elevation: 20 },
+  layer: { position: "absolute", left: spacing.md, right: spacing.md, alignItems: "center", gap: spacing.sm, zIndex: 900, elevation: 20 },
   item: { width: "100%", maxWidth: SHEET_MAX_WIDTH },
 });
