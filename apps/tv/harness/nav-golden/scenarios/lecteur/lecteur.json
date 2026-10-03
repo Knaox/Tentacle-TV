@@ -13,9 +13,12 @@
         "fixtures": [
           "lecteur/flux-mp4"
         ],
+        "route": {
+          "name": "Home"
+        },
         "keys": [
-          "wait:6",
-          "down"
+          "down",
+          "wait:0.9"
         ],
         "focus": "resume:0"
       },
@@ -69,9 +72,12 @@
         "fixtures": [
           "lecteur/flux-mp4"
         ],
+        "route": {
+          "name": "Home"
+        },
         "keys": [
-          "wait:6",
-          "down"
+          "down",
+          "wait:0.9"
         ],
         "focus": "resume:0"
       },
@@ -173,9 +179,12 @@
         "fixtures": [
           "lecteur/flux-mp4"
         ],
+        "route": {
+          "name": "Home"
+        },
         "keys": [
-          "wait:6",
-          "down"
+          "down",
+          "wait:0.9"
         ],
         "focus": "resume:0"
       },
@@ -258,9 +267,12 @@
         "fixtures": [
           "lecteur/flux-mp4"
         ],
+        "route": {
+          "name": "Home"
+        },
         "keys": [
-          "wait:6",
-          "down"
+          "down",
+          "wait:0.9"
         ],
         "focus": "resume:0"
       },
@@ -334,9 +346,12 @@
         "fixtures": [
           "lecteur/flux-mp4"
         ],
+        "route": {
+          "name": "Home"
+        },
         "keys": [
-          "wait:6",
-          "down"
+          "down",
+          "wait:0.9"
         ],
         "focus": "resume:0"
       },
@@ -427,9 +442,12 @@
         "fixtures": [
           "lecteur/flux-mp4"
         ],
+        "route": {
+          "name": "Home"
+        },
         "keys": [
-          "wait:6",
-          "down"
+          "down",
+          "wait:0.9"
         ],
         "focus": "resume:0"
       },
@@ -490,9 +508,12 @@
         "fixtures": [
           "lecteur/flux-mp4"
         ],
+        "route": {
+          "name": "Home"
+        },
         "keys": [
-          "wait:6",
-          "down"
+          "down",
+          "wait:0.9"
         ],
         "focus": "resume:0"
       },
@@ -576,9 +597,12 @@
         "fixtures": [
           "lecteur/flux-mp4"
         ],
+        "route": {
+          "name": "Home"
+        },
         "keys": [
-          "wait:6",
-          "down"
+          "down",
+          "wait:0.9"
         ],
         "focus": "resume:0"
       },
@@ -633,9 +657,12 @@
       "title": "Ouverture en échec (aucun flux) : l'écran retient le focus, Menu quitte",
       "why": "§ 4.14 : piège d'écran de l'ouverture (directions sans issue), « Réessayer », la sortie",
       "start": {
+        "route": {
+          "name": "Home"
+        },
         "keys": [
-          "wait:6",
-          "down"
+          "down",
+          "wait:0.9"
         ],
         "focus": "resume:0"
       },

@@ -39,6 +39,6 @@ fois par machine :
 mkdir -p ~/Library/Caches/tentacle-nav-golden/lecteur && ffmpeg -f lavfi -i "testsrc2=size=640x360:rate=24:duration=600" -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=600" -c:v libx264 -profile:v main -preset veryfast -b:v 300k -g 48 -pix_fmt yuv420p -c:a aac -b:a 64k -ac 2 -movflags +faststart ~/Library/Caches/tentacle-nav-golden/lecteur/banc-600s.mp4
 ```
 
-L'approche attend la fin du démarrage (`wait:6`) puis descend sur Reprendre :
+L'approche passe par l'accueil (`route: Home`, son entrée sur le héros) puis descend sur Reprendre :
 le héros tourne seul (8 s), une approche par le héros jouerait le titre du
 moment.
