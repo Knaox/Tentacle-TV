@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
-import { applyTranscodeTarget, useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
+import { applyTranscodeTarget, fitServerCappedTranscode, useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
 import { directPlayUrl } from "../lib/directPlayUrl";
 import { transcodeTarget, type MediaSource } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
@@ -213,10 +213,12 @@ export function usePlaybackInfo(nativePlayer = false) {
         const baseUrl = ds && !hlsWithoutCors ? ds.mediaBaseUrl : client.getBaseUrl();
         // Un palier de qualité impose son débit, sa définition et son audio :
         // Jellyfin n'écrit aucune définition dans l'URL et la recalculait seul
-        // (cf. `applyTranscodeTarget`). « Originale » garde l'URL telle quelle.
+        // (cf. `applyTranscodeTarget`). En « Originale », seule la limite de
+        // débit Internet du serveur peut avoir plafonné le flux : la même règle
+        // s'y applique (`fitServerCappedTranscode`), sinon l'URL reste intacte.
         const transcodingPath = opts.maxStreamingBitrate != null
           ? applyTranscodeTarget(ms.TranscodingUrl, transcodeTarget(opts.maxStreamingBitrate, opts.maxHeight))
-          : ms.TranscodingUrl;
+          : fitServerCappedTranscode(ms.TranscodingUrl, ms);
         // TranscodingUrl from proxy contains the admin API key (from token swap).
         // Replace it with the user's own Jellyfin token for direct streaming.
         url = ds && !hlsWithoutCors
