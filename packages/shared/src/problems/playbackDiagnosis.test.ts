@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { hlsFailure, mediaElementFailure } from "./engineErrors";
-import { collectPlaybackFailure, diagnosePlaybackFailure, lowerQualityTier, type PlaybackFailureContext } from "./playbackDiagnosis";
+import { collectPlaybackFailure, diagnosePlaybackFailure, isPlayerFault, lowerQualityTier, type PlaybackFailureContext } from "./playbackDiagnosis";
 
 /**
  * La chaîne commune d'un échec de lecture : du signalement (moteur, requête,
@@ -105,5 +105,13 @@ describe("diagnostic d'un échec de lecture", () => {
     expect(lowerQualityTier(presets, "original")).toBe("quality1080p");
     expect(lowerQualityTier(presets, "quality1080p")).toBe("quality720p");
     expect(lowerQualityTier(presets, "quality720p")).toBeNull();
+  });
+
+  it("seul un défaut du lecteur justifie un lecteur de secours", () => {
+    expect(isPlayerFault("decodeFailed")).toBe(true);
+    expect(isPlayerFault("startTimeout")).toBe(true);
+    expect(isPlayerFault("serverUnreachable")).toBe(false);
+    expect(isPlayerFault("sessionExpired")).toBe(false);
+    expect(isPlayerFault("fileMissing")).toBe(false);
   });
 });

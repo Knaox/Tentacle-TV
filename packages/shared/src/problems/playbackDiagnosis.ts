@@ -80,6 +80,18 @@ export function lowerQualityTier<K extends string>(
   return presets.slice(index + 1).find((preset) => preset.bitrate != null)?.key ?? null;
 }
 
+/**
+ * Les causes qui accusent le LECTEUR (son décodeur, son moteur) plutôt que le
+ * réseau, le serveur ou le titre : là seulement, un lecteur de secours a une
+ * chance de réussir — sur le bureau, la bascule de mpv vers le lecteur web.
+ * Ailleurs, basculer cacherait la vraie cause derrière un second échec.
+ */
+const PLAYER_FAULTS: ReadonlySet<ProblemCause> = new Set(["decodeFailed", "engineFailed", "unknown", "startTimeout"]);
+
+export function isPlayerFault(cause: ProblemCause): boolean {
+  return PLAYER_FAULTS.has(cause);
+}
+
 /** Ce que le lecteur sait de sa lecture au moment de l'échec. */
 export interface PlaybackFailureContext {
   streamUrl: string | null;

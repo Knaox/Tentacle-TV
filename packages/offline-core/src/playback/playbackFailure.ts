@@ -19,6 +19,8 @@ export interface PlaybackFailure {
   messageKey?: string;
   /** Détail brut du lecteur — injecté dans un message générique en dernier recours. */
   detail?: string;
+  /** L'échec est survenu EN PLEINE lecture (la première image était passée). */
+  started?: boolean;
 }
 
 export function classifyLocalPlaybackFailure(input: {
