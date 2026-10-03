@@ -19,6 +19,7 @@ export const TV_NAV_EXCEPTIONS = [
   // T1 — le socle : l'abonnement natif à la télécommande et sa traduction.
   { file: "redesignWiring/remote/remoteEvents.ts", rules: ["no-remote-events", "no-platform-branch"], owner: "T1", why: "abonnement natif unique (TVEventHandler) et traduction tvOS des événements → tv-core remote/ + adaptateur" },
   { file: "redesignWiring/redesignGate.ts", rules: ["no-platform-branch"], owner: null, why: "l'aiguillage de la refonte : le seul choix de plateforme du chemin refondu" },
+  { file: "lib/tvPanGesture.ts", rules: ["no-remote-events", "no-platform-branch"], owner: "T1", why: "la prise du pan (TVEventControl.enableTVPanGesture, drapeau global compté) → platform/tvos/input/" },
 
   // T3 — focus, sections, rangées.
   { file: "redesign/focus/FocusTarget.tsx", rules: ["no-native-press"], owner: "T3", why: "la porte des vues vers le focus natif : le seul Pressable de la refonte (OK, appui long, focus)" },
@@ -31,7 +32,6 @@ export const TV_NAV_EXCEPTIONS = [
   { file: "redesignWiring/focus/sectionEntry.ts", rules: ["no-focus-props", "no-native-focus-calls"], owner: "T3", why: "entrée déclarée d'une section (tvEntry)" },
   { file: "redesignWiring/focus/sectionNeighbors.ts", rules: ["no-focus-props"], owner: "T3", why: "règle de voisinage des sections, appliquée en natif (tvNeighbors)" },
   { file: "redesignWiring/screen/useEntryFocus.ts", rules: ["no-focus-props"], owner: "T3", why: "entrée d'un écran : hasTVPreferredFocus pendant l'arrivée" },
-  { file: "redesignWiring/remote/parallax.ts", rules: ["no-focus-props", "no-platform-branch"], owner: "T3", why: "parallaxe au pouce par forme (tvParallaxProperties), coupée au mouvement réduit — T6 si elle suit les cartes" },
 
   // T4 — Retour, rail, menus.
   { file: "redesignWiring/back/BackScope.tsx", rules: ["no-native-focus-calls"], owner: "T4", why: "la portée du Retour monte MenuPressInterceptor" },
@@ -48,7 +48,6 @@ export const TV_NAV_EXCEPTIONS = [
   { file: "redesignWiring/player/usePlaybackTrouble.ts", rules: ["no-remote-events"], owner: "T5", why: "écoute native directe (useTVEventHandler) du panneau des pannes" },
   { file: "components/player/focus/useOverlayFocus.ios.ts", rules: ["no-focus-props", "no-native-focus-calls"], owner: "T5", why: "focus de l'habillage : bascule de hasTVPreferredFocus (RN-tvos #849)" },
   { file: "hooks/useScrubGestures.ios.ts", rules: ["no-remote-events"], owner: "T5", why: "glisser du pavé (pan) pour parcourir la vidéo — écoute native directe" },
-  { file: "lib/tvPanGesture.ts", rules: ["no-remote-events", "no-platform-branch"], owner: "T5", why: "TVEventControl.enableTVPanGesture, compté par détenteur" },
   { file: "components/player/AVPlayerSurface.tsx", rules: ["no-focus-props"], owner: "T5", why: "surface vidéo jamais focalisable (focusable={false})" },
 
   // T7 — les écrans.
@@ -63,6 +62,7 @@ export const TV_NAV_EXCEPTIONS = [
   { file: "redesign/motion/motion.ts", rules: ["no-platform-branch"], owner: null, why: "rendu : le mouvement n'est joué que sur Apple TV" },
   { file: "redesign/glass/nativeGlass.ts", rules: ["no-platform-branch"], owner: null, why: "rendu : détection du verre natif de tvOS 26" },
   { file: "redesign/cards/nativeDesaturate.ts", rules: ["no-platform-branch"], owner: null, why: "rendu : détection de la vue native de désaturation" },
+  { file: "redesignWiring/remote/parallax.ts", rules: ["no-focus-props", "no-platform-branch"], owner: null, why: "rendu : l'inclinaison au pouce par forme (tvParallaxProperties), coupée au mouvement réduit — docs/tv-navigation/remote.md" },
   { file: "redesignWiring/vigie/useVigieGate.ts", rules: ["no-platform-branch"], owner: null, why: "libellé : la plateforme déclarée à Vigie (appletv / androidtv)" },
   { file: "redesignWiring/settings/useSettingsModel.ts", rules: ["no-platform-branch"], owner: null, why: "réglages d'appareil d'Android TV : branche morte (la refonte ne tourne que sur tvOS)" },
 ];
