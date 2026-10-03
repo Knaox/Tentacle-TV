@@ -22,8 +22,8 @@ ou de focus :
 | `no-platform-branch` | `Platform.OS`, `Platform.isTV`, `Platform.isTVOS`, `Platform.select` |
 
 **Portée** — le chemin refondu : `apps/tv/src/redesign/`, `apps/tv/src/redesignWiring/`,
-les fichiers `*.ios.ts(x)` d'apps/tv, et deux fichiers tvOS seuls sans suffixe
-(`components/player/AVPlayerSurface.tsx`, et `lib/tvPanGesture.ts` jusqu'à son retrait en fin de lot). **Permis** :
+les fichiers `*.ios.ts(x)` d'apps/tv, et un fichier tvOS seul sans suffixe
+(`components/player/AVPlayerSurface.tsx`). **Permis** :
 `apps/tv/src/platform/tvos/**` et les tests.
 
 **Pas concernés** (et pourquoi) : l'ancienne UI et le code d'Android TV ; les

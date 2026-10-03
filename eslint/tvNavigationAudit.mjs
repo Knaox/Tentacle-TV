@@ -28,6 +28,8 @@ const ADAPTER_TIMING = /\bconst\s+[A-Z][A-Z0-9_]*\s*=\s*-?\d|\b(setTimeout|setIn
 
 const eslint = new ESLint({
   cwd: ROOT,
+  // Un motif de la portée qui ne trouve plus rien (un fichier retiré) n'est pas une faute de l'audit.
+  errorOnUnmatchedPattern: false,
   overrideConfigFile: true,
   overrideConfig: [
     {

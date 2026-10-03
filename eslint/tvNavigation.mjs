@@ -98,14 +98,13 @@ const SRC = "apps/tv/src/";
 /**
  * Le chemin refondu : la refonte, et ce qui ne tourne que sur tvOS — les
  * fichiers `.ios`, et ceux qui n'ont que du code tvOS pour importateurs, sans
- * le suffixe (relevé de l'inventaire : seuls ces deux-là portent une API
- * native de télécommande ou de focus).
+ * le suffixe (relevé de l'inventaire : seul celui-ci porte encore une API
+ * native de focus ; `lib/tvPanGesture.ts` est parti avec le code de transition).
  */
 export const TV_NAV_SCOPE = [
   `${SRC}redesign/**/*.{ts,tsx}`,
   `${SRC}redesignWiring/**/*.{ts,tsx}`,
   `${SRC}**/*.ios.{ts,tsx}`,
-  `${SRC}lib/tvPanGesture.ts`,
   `${SRC}components/player/AVPlayerSurface.tsx`,
 ];
 
