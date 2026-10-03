@@ -18,7 +18,6 @@ import { SessionMessageHost } from "./components/session/SessionMessageHost";
 import { OmniboxHost } from "./components/search/OmniboxHost";
 import { SeasonRequestProvider } from "./components/seasons/SeasonRequestProvider";
 import { isDesktopApp } from "./desktop/bridge";
-import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
@@ -70,9 +69,6 @@ export function App() {
   const authed = useIsAuthenticated();
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
-  const [disclaimerAccepted, setDisclaimerAccepted] = useState(
-    () => localStorage.getItem("disclaimer_accepted") === "true",
-  );
   // Desktop app: need server URL before anything else
   const [needsServerUrl, setNeedsServerUrl] = useState(
     isDesktopApp() && !localStorage.getItem("tentacle_server_url")
@@ -92,20 +88,14 @@ export function App() {
     if (authed) refreshPlugins();
   }, [authed, refreshPlugins]);
 
-  // Desktop app: show disclaimer before server URL input (first launch only)
+  // Bureau : l'adresse du serveur avant tout le reste. La mention légale qui
+  // la précédait a été retirée (demande de Damien, 2026-10-03) ; la clé
+  // `disclaimer_accepted` d'une installation existante reste en place, inerte.
   if (needsServerUrl) {
-    if (!disclaimerAccepted) {
-      return <Disclaimer onAccepted={() => setDisclaimerAccepted(true)} />;
-    }
     return <AppConnect onConnected={() => { setNeedsServerUrl(false); window.location.reload(); }} />;
   }
 
   if (setupRequired === null) return <PageSpinner />;
-
-  // Web first setup: show disclaimer before setup wizard
-  if (setupRequired && !disclaimerAccepted) {
-    return <Disclaimer onAccepted={() => setDisclaimerAccepted(true)} />;
-  }
 
   // Backend unreachable (502/503/crash) — show crying tentacle, reload on reconnect
   if (backendDown) {
@@ -272,7 +262,7 @@ export function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
-      <StartupOverlays authed={authed} disclaimerAccepted={disclaimerAccepted} />
+      <StartupOverlays authed={authed} />
       {/* La recherche de toute l'application (⌘K, « / », la barre) — au-dessus
           des pages avec ou sans navigation, jamais pendant la lecture. */}
       <OmniboxHost enabled={authed && !offlineMode} />

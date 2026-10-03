@@ -9,7 +9,6 @@ import { UpdateModal } from "./UpdateModal";
 
 interface StartupOverlaysProps {
   authed: boolean;
-  disclaimerAccepted: boolean;
 }
 
 /**
@@ -17,15 +16,15 @@ interface StartupOverlaysProps {
  * d'abord, la pop-up de mise à jour attend sa fermeture (`available` est un
  * état du hook, il persiste). Et l'inverse : une mise à jour en cours de
  * téléchargement ou d'installation n'est pas recouverte par des nouveautés.
- * Jamais sur /watch, jamais avant la session ni le disclaimer.
+ * Jamais sur /watch, jamais avant la session.
  */
-export function StartupOverlays({ authed, disclaimerAccepted }: StartupOverlaysProps) {
+export function StartupOverlays({ authed }: StartupOverlaysProps) {
   const update = useAutoUpdate();
   const { pathname } = useLocation();
   const desktopLike = useMemo(whatsNewGateForced, []);
   const updateAtRest = update.phase === "idle" || update.phase === "available";
   const gate = useWhatsNewGate({
-    enabled: authed && disclaimerAccepted && !pathname.startsWith("/watch") && updateAtRest,
+    enabled: authed && !pathname.startsWith("/watch") && updateAtRest,
     desktopLike,
   });
 
