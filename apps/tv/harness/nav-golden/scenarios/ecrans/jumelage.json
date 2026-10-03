@@ -167,7 +167,7 @@
     },
     {
       "id": "jumelage-connexion-refusee",
-      "title": "Connexion refusée : le mot de passe vidé reprend le focus ; « Se connecter » sans identifiant ouvre son clavier",
+      "title": "Connexion refusée : « Se connecter » envoie, le mot de passe vidé reprend le focus ; mot de passe vide : « Se connecter » ouvre son clavier",
       "rules": [
         "JU-1",
         "JU-4",
@@ -224,6 +224,7 @@
           "do": "type:banc\n",
           "settleMs": 2000,
           "expect": {
+            "focus": "pairing:username",
             "writes": []
           },
           "why": "mot de passe vide : valider n'envoie rien, le clavier se ferme"
@@ -236,15 +237,39 @@
         },
         {
           "do": "select",
-          "settleMs": 1500
+          "settleMs": 1500,
+          "why": "le clavier sécurisé du mot de passe"
         },
         {
-          "do": "type:faux\n",
-          "settleMs": 4000,
+          "do": "type:faux",
+          "settleMs": 1500,
+          "why": "relevé : le clavier reste ouvert"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
           "expect": {
-            "focus": "pairing:password"
+            "focus": "pairing:password",
+            "writes": []
           },
-          "why": "les deux champs remplis : envoyé, refusé (401) ; le mot de passe vidé reprend le focus"
+          "why": "Menu ferme le clavier, sans rien envoyer ; le mot de passe est gardé"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:signIn"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "expect": {
+            "focus": "pairing:password",
+            "writes": [
+              "POST /api/auth/login"
+            ]
+          },
+          "why": "les deux champs remplis : envoyé au faux backend, refusé (401) ; le mot de passe vidé reprend le focus (JU-4)"
         },
         {
           "do": "down",
@@ -255,14 +280,18 @@
         {
           "do": "select",
           "settleMs": 1500,
-          "why": "mot de passe vide : « Se connecter » ouvre SON clavier, rien n'est envoyé"
+          "expect": {
+            "writes": []
+          },
+          "why": "mot de passe vide : « Se connecter » ouvre SON clavier, rien n'est envoyé (JU-6)"
         },
         {
           "do": "menu",
           "settleMs": 1500,
           "why": "Menu ferme le clavier (relevé du focus rendu par tvOS)"
         }
-      ]
+      ],
+      "why": "le Retour (« \\n ») tapé par l'agent ne valide pas le clavier SÉCURISÉ du mot de passe (constat 5) : la connexion part par « Se connecter », vers le faux backend, avec de faux identifiants"
     }
   ]
 }

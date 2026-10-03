@@ -644,6 +644,14 @@ chemin partagé reste tel quel tant qu'Android TV n'est pas porté.
    ferme bien. Gardé tel quel (scénario en relevé) ; passage sur l'appareil
    pour départager le simulateur et l'app.
 
+5. **Le Retour du clavier SÉCURISÉ (mot de passe du jumelage) ne valide
+   pas**, au simulateur, à la référence : « \n » tapé par l'agent XCUITest
+   n'envoie rien et ne ferme pas le clavier, quand il valide les champs
+   non sécurisés (serveur, identifiant). Le texte, lui, est bien saisi.
+   Probablement une limite de la frappe synthétisée sur un champ sécurisé ;
+   la connexion se rejoue par « Se connecter » (JU-4 éprouvé ainsi). À
+   essayer à la main sur l'appareil : « Terminé » du clavier du mot de passe.
+
 (La liste s'allonge à l'enregistrement des scénarios.)
 
 ---
