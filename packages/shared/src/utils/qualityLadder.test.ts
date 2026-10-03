@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MediaSource, MediaStream } from "../types/media";
-import { capForBitrate, buildQualityLadder, isPresetOffered, findPreset, RELIEF_SHARE } from "./qualityLadder";
+import { bestTierForBudget, capForBitrate, buildQualityLadder, isPresetOffered, findPreset, RELIEF_SHARE } from "./qualityLadder";
 import { QUALITY_PRESETS } from "./mediaQuality";
 import { TRANSCODE_TIERS, reservedAudioBitrate } from "./transcodeTarget";
 
@@ -178,3 +178,27 @@ describe("capForBitrate", () => {
     expect(capForBitrate(source({ bitrate: 500_000, height: 480 }), 450_000)).toBeNull();
   });
 });
+
+describe("bestTierForBudget", () => {
+  const remux4k = source({ bitrate: 60_000_000, height: 2160, codec: "hevc" });
+
+  it("ne dépasse jamais le budget, et ne passe jamais sous un plancher", () => {
+    for (const budget of [700_000, 1_500_000, 2_800_000, 3_300_000, 5_000_000, 7_000_000, 9_000_000]) {
+      const tierFor = bestTierForBudget(remux4k, budget);
+      if (!tierFor) continue;
+      expect(tierFor.bitrate!).toBeLessThanOrEqual(budget);
+      expect(videoOf(tierFor)).toBeGreaterThanOrEqual(tier(tierFor.key).floor);
+    }
+  });
+
+  it("une limite à 3 Mb/s donne du 540p — jamais du 720p affamé", () => {
+    // Le mécanisme exact de Jellyfin sous une limite de débit : 720p à 1,2 Mb/s
+    // au plus bas, qui part en blocs dans l'action.
+    expect(bestTierForBudget(remux4k, 3_000_000)?.height).toBe(540);
+  });
+
+  it("rien qui tienne : null, pas de palier au rabais", () => {
+    expect(bestTierForBudget(remux4k, 500_000)).toBeNull();
+  });
+});
+

@@ -118,39 +118,45 @@ export const TRIGGER_MARGIN = 1.2;
 export const APPLY_MARGIN = 0.8;
 
 /**
+ * La plus haute définition de l'échelle qu'un BUDGET (débit total, audio
+ * compris) porte au-dessus de son plancher, avec tout ce budget : le débit
+ * s'adapte à l'intérieur d'une définition, il ne saute pas d'un palier fixe au
+ * suivant. Sans cela, un budget un peu court pour le 720p du menu tombait
+ * d'une définition entière alors qu'un 720p à son plancher tenait. `null` :
+ * aucun palier ne tient dans ce budget.
+ */
+export function bestTierForBudget(source: MediaSource | null | undefined, budgetBps: number): QualityPreset | null {
+  const boost = frameRateFactor(readSource(source).fps);
+  for (const preset of buildQualityLadder(source)) {
+    if (preset.bitrate == null) continue;
+    const floor = (TRANSCODE_TIERS.find((t) => t.key === preset.key)?.floor ?? 0) * boost;
+    const audio = reservedAudioBitrate(preset.height);
+    const video = Math.floor((Math.min(preset.bitrate, budgetBps) - audio) / ROUNDING) * ROUNDING;
+    if (video >= floor) return { ...preset, bitrate: video + audio };
+  }
+  return null;
+}
+
+/**
  * Palier à imposer quand la connexion MESURÉE ne porte pas le fichier.
  *
  * `null` = aucun cap : mesure absente (échec, serveur sans BitrateTest — la
  * dégradation gracieuse par excellence), débit source inconnu, connexion
  * assez large (≥ source × TRIGGER_MARGIN), ou aucun palier plus léger que la
- * source.
- *
- * Sinon, la plus haute définition de l'échelle que le budget (mesure ×
- * APPLY_MARGIN) porte AU-DESSUS de son plancher, avec tout ce budget : le
- * débit s'adapte à la connexion à l'intérieur d'une définition, il ne saute
- * pas d'un palier fixe au suivant. Sans cela, un lien un peu court pour le
- * 720p du menu tombait d'une définition entière alors qu'un 720p à son plancher tenait. Si
- * rien ne tient, le palier le plus bas : mieux vaut une image modeste qu'un
- * lecteur qui bufferise.
+ * source. Sinon, le meilleur palier pour mesure × APPLY_MARGIN
+ * (`bestTierForBudget`) — et si rien ne tient, le palier le plus bas : mieux
+ * vaut une image modeste qu'un lecteur qui bufferise.
  */
 export function capForBitrate(
   source: MediaSource | null | undefined,
   measuredBps: number | null,
 ): QualityPreset | null {
   if (measuredBps == null) return null;
-  const { total, fps } = readSource(source);
+  const { total } = readSource(source);
   if (total == null) return null;
   if (measuredBps >= total * TRIGGER_MARGIN) return null;
 
   const tiers = buildQualityLadder(source).filter((p) => p.bitrate != null);
   if (tiers.length === 0) return null;
-  const budget = measuredBps * APPLY_MARGIN;
-  const boost = frameRateFactor(fps);
-  for (const preset of tiers) {
-    const floor = (TRANSCODE_TIERS.find((t) => t.key === preset.key)?.floor ?? 0) * boost;
-    const audio = reservedAudioBitrate(preset.height);
-    const video = Math.floor((Math.min(preset.bitrate ?? 0, budget) - audio) / ROUNDING) * ROUNDING;
-    if (video >= floor) return { ...preset, bitrate: video + audio };
-  }
-  return tiers[tiers.length - 1];
+  return bestTierForBudget(source, measuredBps * APPLY_MARGIN) ?? tiers[tiers.length - 1];
 }
