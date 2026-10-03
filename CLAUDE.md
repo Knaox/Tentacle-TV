@@ -429,6 +429,42 @@ bande-annonce (`/prepare`) ; chaque lecture rend compte au serveur (`/report`,
 `docker logs … | grep '\[trailers\]'`). Mesures, banc et fragilités :
 `docs/BANDES-ANNONCES.md`.
 
+## Navigation TV — une seule source
+
+L'Apple TV refondue est la référence de la navigation. Ce qui DÉCIDE — focus,
+voisins, entrées, Retour, appui maintenu, raccourcis, lecteur, panneaux — vit
+dans `packages/tv-core`, en trois couches : les INTENTIONS (`remote/intents.ts` :
+aller vers, valider, maintenir, revenir, lecture/pause, glisser), les TABLES de
+traduction de chaque télécommande (`remote/bindings/tvos.ts`, des données), et
+les COMPORTEMENTS purs, rangés dans le dossier de domaine qui en parle
+(`focus/`, `nav/`, `player/`, `cards/`, `panels/`, `input/`). L'adaptateur tvOS
+(`apps/tv/src/platform/tvos/` : `input/`, `focus/`, `back/`, `player/`,
+`panels/`…) ne fait qu'APPLIQUER : guides de focus, préférences, sections
+natives, `MenuPressInterceptor`. Contrat et règle de rangement :
+`docs/TV-NAVIGATION.md` ; ce qui reste, ligne à ligne :
+`docs/tv-navigation/inventaire.md`.
+
+- **Une règle lit des intentions et des traits, jamais un `eventType` ni
+  `Platform.OS`** : module pur, horloge injectée, ni React ni React Native
+  (`packages/tv-core/src/purity.test.ts` le vérifie).
+- **Un seul abonnement natif à la télécommande** : `platform/tvos/input/`. On
+  y observe une intention (`useRemoteIntents`) ou on y inscrit un contexte
+  (`useRemoteContext`) — jamais un `TVEventHandler` de plus.
+- **L'adaptateur n'a ni seuil ni durée** : ce qui décide va dans tv-core
+  (l'audit liste ce qui y traîne).
+- **Le lint le tient, en ERREUR** (`eslint/tvNavigation.mjs`) : hors de
+  `platform/tvos/`, le chemin refondu n'emploie aucune API native de
+  télécommande ni de focus. Les exceptions sont explicites, par famille, et
+  justifiées (`eslint/tvNavigationExceptions.mjs`) ; jamais un `eslint-disable`.
+  Audit : `node eslint/tvNavigationAudit.mjs`.
+- **Un fichier partagé avec Android TV** ne s'amincit sur tv-core qu'avec un
+  banc qui prouve l'équivalence Android (`apps/tv/harness/back-trace/`,
+  `player-trace/`) ; sinon, un adaptateur Apple TV à part.
+- **Brancher une plateforme** (Android TV, le jour venu) : sa table
+  (`remote/bindings/<plateforme>.ts`), son adaptateur
+  (`apps/tv/src/platform/<plateforme>/`), la portée du lint étendue à son
+  chemin. Aucun comportement à réécrire : ceux de tv-core sont déjà les siens.
+
 ## Coding Standards
 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded
