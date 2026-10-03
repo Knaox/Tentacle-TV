@@ -25,7 +25,7 @@ l'extraction, le § 12 comment l'équivalence se prouve.
 | Couture des flèches par plateforme | `hooks/scrubInput.ios.ts` / `scrubInput.ts` | profil par plateforme |
 | Pavé tactile (pan) | `hooks/useScrubGestures.ios.ts` (Android : `useScrubGestures.ts`, vide) | tvOS seul |
 | Gains et seuils du pavé (purs) | `hooks/scrubTouchTuning.ts` | tvOS seul (lu par le cerveau) |
-| Pan tenu au compteur | `lib/tvPanGesture.ts` (propriétaire : T1) | tvOS seul |
+| Pan tenu au compteur | `platform/tvos/input/panGesture.ts` (propriétaire : T1) | tvOS seul |
 | Routage du Retour (états passagers, grâce) | `hooks/useTVPlayerBack.ts` | oui |
 | Couches du Retour du lecteur, épingle de la pause | `redesignWiring/player/usePlayerBackLayers.ts` | Apple TV |
 | Fond focalisable, aiguillage du focus | `redesignWiring/player/PlayerRedesignStage.tsx` | Apple TV |
@@ -73,7 +73,7 @@ Relu dans `react-native-tvos` 0.80.1-0 (`RCTTVRemoteHandler.m`,
   `useTVPlayerControls` : `lastPressAt = maintenant`, puis
   `onHoldRelease()` (fin de maintien, relance du décompte : § 4.3).
 - Le pan tenu par le lecteur (`usePanGesture(!panelOpen)`) coupe les glissers
-  directionnels du moteur de focus (`lib/tvPanGesture.ts`) : habillage
+  directionnels du moteur de focus (`platform/tvos/input/panGesture.ts`) : habillage
   affiché, les boutons se parcourent AU CLIC, le pavé défile.
 - Le moteur de focus natif déplace le focus à l'enfoncement ; l'événement JS
   arrive au relâchement (~60 ms après). Un appui long sur une flèche, là où le

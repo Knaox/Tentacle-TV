@@ -82,7 +82,7 @@ volume, anneau du pavé) est listé dans `TVOS_BINDINGS.system`.
 `createRemoteInput(bindings)` est l'entrée unique : l'adaptateur lui donne
 chaque signal (`receive`), une fois, et elle les fait passer dans cet ordre :
 
-1. `observeSignals` — le signal brut (diagnostic ; écouteurs d'avant la migration) ;
+1. `observeSignals` — le signal brut (diagnostic) ;
 2. la table le traduit ; pas d'intention : on s'arrête ;
 3. `observe` — chaque intention, sans la prendre : réveiller un habillage,
    relancer une attente. Les observateurs voient l'état d'AU MOMENT du geste ;

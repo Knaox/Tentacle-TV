@@ -23,7 +23,7 @@ ou de focus :
 
 **Portée** — le chemin refondu : `apps/tv/src/redesign/`, `apps/tv/src/redesignWiring/`,
 les fichiers `*.ios.ts(x)` d'apps/tv, et deux fichiers tvOS seuls sans suffixe
-(`lib/tvPanGesture.ts`, `components/player/AVPlayerSurface.tsx`). **Permis** :
+(`components/player/AVPlayerSurface.tsx`, et `lib/tvPanGesture.ts` jusqu'à son retrait en fin de lot). **Permis** :
 `apps/tv/src/platform/tvos/**` et les tests.
 
 **Pas concernés** (et pourquoi) : l'ancienne UI et le code d'Android TV ; les

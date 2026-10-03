@@ -57,7 +57,7 @@ l'anneau du pavé de 3e génération).
 Un seul abonnement à `TVEventHandler` pour le chemin refondu
 (`remoteInput.ts`). Chaque événement natif est lu (`readTvosEvent`) et donné à
 l'entrée commune (`tvosInput = createRemoteInput(TVOS_BINDINGS)`), dans cet
-ordre : écouteurs bruts de la transition, observateurs, pile des contextes.
+ordre : observateurs, puis pile des contextes.
 L'abonnement naît avec le premier écouteur et part avec le dernier ; hors
 Apple TV, rien ne s'abonne. Tout s'importe de `platform/tvos/input` :
 
@@ -69,22 +69,23 @@ Apple TV, rien ne s'abonne. Tout s'importe de `platform/tvos/input` :
 | `receiveMenu` | `() => IntentEvent \| null` | Menu, rendu par `MenuPressInterceptor` : il passe par l'entrée unique (`retour`). |
 | `withMenuIntent` | `(close: () => void) => () => void` | `Modal.onRequestClose={withMenuIntent(close)}` : Menu passe par l'entrée unique, puis la modale se ferme comme avant. |
 | `acquirePanGesture`, `usePanGesture` | `() => () => void`, `(enabled: boolean) => void` | Tenir le pan (au compteur, drapeau global du natif) ; ses événements arrivent en `drag`. |
-| `tvosInput` | `RemoteInput` | L'instance unique (essais, diagnostic). |
-| `subscribeNativeRemote` | `(listener: (event: HWEvent, at: number) => void) => () => void` | TRANSITION seulement : l'événement brut, pour `redesignWiring/remote/remoteEvents.ts`. |
+| `tvosInput` | `RemoteInput` | L'instance unique (essais, diagnostic ; `tvosInput.observeSignals` pour le signal brut). |
 
 `retour` n'est décidé par aucun contexte de cette pile : chaque écran le
 résout par SA pile de couches (`TV-NAVIGATION.md`, « Retour : la pile de
 chaque écran »).
 
-`redesignWiring/remote/remoteEvents.ts` garde son API (`useRemoteEvents`,
-`subscribeRemote`, `RemoteEvent`) le temps que ses écouteurs migrent : il n'a
-plus d'abonnement natif à lui et lit l'événement brut de l'entrée unique —
-mêmes événements, même date, même ordre. `lib/tvPanGesture.ts` réexporte la
-prise du pan pour la même raison.
+L'API d'avant l'extraction — `redesignWiring/remote/remoteEvents.ts`
+(`useRemoteEvents`, `subscribeRemote`, `RemoteEvent`) et la réexportation
+`lib/tvPanGesture.ts` — a servi de transition le temps que ses écouteurs
+migrent (rotation du héros et « au-delà du bord » : T3 ; feuille des saisons :
+T6 ; bande-annonce : T7 ; pan du lecteur : T5). Plus rien ne l'important, elles
+sont RETIRÉES (fin du lot, 2026-10-03), avec l'événement brut qu'elles lisaient
+(`subscribeNativeRemote`).
 
-### Équivalences pour migrer un écouteur
+### Équivalences d'une migration (pour mémoire, et pour Android TV)
 
-| Aujourd'hui | En intentions (tvOS) |
+| Avant | En intentions (tvOS) |
 |---|---|
 | `useRemoteEvents(fn)` « tout geste » | `useRemoteIntents(fn)` — mais Menu y passe désormais (`retour`), ce que `useRemoteEvents` ne voyait jamais : l'exclure pour rester identique |
 | `press` simple vers une direction, ou `swipe` (`isGestureToward`) | `directionOf(intent) === direction` |
@@ -101,8 +102,8 @@ qui le migre vers les intentions :
 
 | Point d'entrée | Fichier | Ce qu'il lit | Tâche |
 |---|---|---|---|
-| L'abonnement partagé de la refonte | `redesignWiring/remote/remoteEvents.ts` | tout `TVEventHandler` → appui · glisser · pan | T1 — FAIT : lit l'entrée unique |
-| La prise du pan | `lib/tvPanGesture.ts` | `TVEventControl` | T1 — FAIT : `platform/tvos/input/panGesture.ts` |
+| L'abonnement partagé de la refonte | `redesignWiring/remote/remoteEvents.ts` | tout `TVEventHandler` → appui · glisser · pan | T1 — FAIT : l'entrée unique ; RETIRÉ à la fin du lot |
+| La prise du pan | `lib/tvPanGesture.ts` | `TVEventControl` | T1 — FAIT : `platform/tvos/input/panGesture.ts` ; réexportation RETIRÉE |
 | « Au-delà du bord » | `redesignWiring/remote/useBeyondEdge.ts` (accueil : `useHomeHero`) | glissers et appuis simples vers un bord | T3 (règle), T7 (accueil) |
 | Rotation du héros | `redesignWiring/home/useHeroRotation.ts` | tout geste ; un maintien la suspend | T7 |
 | Réveil de la bande-annonce | `redesignWiring/trailer/TrailerRedesign.tsx` | tout geste | T7 |

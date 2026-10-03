@@ -56,8 +56,8 @@ l'adaptateur tvOS doit continuer d'appliquer tel quel.
   `FocusTarget` — qui appelle `onLongPress` TOUCHE ENCORE ENFONCÉE ; au
   `pressOut`, `onPress` n'est pas appelé si l'appui long est parti. Le
   `longSelect` natif (0,5 s) n'ouvre rien : seuls les écouteurs de
-  `TVEventHandler` (`redesignWiring/remote/remoteEvents.ts`) le voient
-  (`press`, `long: true`, phases `down`/`up`).
+  `TVEventHandler` (l'entrée unique, `platform/tvos/input`) le voient
+  (intention `hold` sur `select`, phases `start`/`end`).
 - **Le panneau s'ouvre sous un OK encore enfoncé.** Le relâchement arrive à la
   carte (sa vue a reçu le début) ; un élément du panneau, focalisé entre-temps,
   ne doit RIEN valider sur ce relâchement : la garde anti-clic fantôme (§ 3.8)

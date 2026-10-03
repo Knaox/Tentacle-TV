@@ -801,7 +801,9 @@ et ce que la refonte y ajoute — Apple TV seulement.
   abonnement à `TVEventHandler`, traduit en événements typés (`press` avec
   sa phase, `swipe`, `pan`) ; `lib/tvPanGesture.ts` — le pan continu à
   compteur (`acquirePanGesture`, `usePanGesture`), pour le lecteur ;
-  `remote/useBeyondEdge.ts`.
+  `remote/useBeyondEdge.ts`. Depuis l'extraction de la navigation
+  (2026-10-03) : l'entrée unique `platform/tvos/input/` (intentions, pan au
+  compteur) les remplace — `docs/TV-NAVIGATION.md`.
 - **Écarté** : le pan continu hors du lecteur — `enableTVPanGesture` pose UN
   reconnaisseur sur la vue racine, pour toute l'app, et coupe les glissers
   directionnels tant qu'il est posé (constat du lecteur) ; l'échelle de note
@@ -883,7 +885,7 @@ validation (« Saut de 30 s et validation en 5 s »).
   lecteur) : sous la pilule ou la carte « À suivre », la flèche sert leur
   focus.
 - **Le pavé** (`useScrubGestures.ios.ts`) : pan au compteur
-  (`lib/tvPanGesture.ts`), zone morte de 60 pts horizontaux, gain en secondes
+  (`lib/tvPanGesture.ts`, aujourd'hui `platform/tvos/input/panGesture.ts`), zone morte de 60 pts horizontaux, gain en secondes
   par point selon la vitesse du doigt (`scrubGainFor`) — réglages dans
   `hooks/scrubTouchTuning.ts`, à reprendre à la Siri Remote réelle, le
   simulateur ne glisse pas (mesures faites par des pans injectés dans le
