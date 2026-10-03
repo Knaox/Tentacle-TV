@@ -6,7 +6,7 @@ la garde : [`garde.md`](garde.md).
 Pour CHAQUE usage d'une API native de télécommande ou de focus sur le chemin
 Apple TV refondu : où il est (fichier:ligne), qui le traite (T1 à T7) et ce
 qu'il devient. Relevé sur 84f3cedd0 (avant toute extraction), recalé sur
-`8ab4c73f2`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
+`56518fb10`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
 qu'une tâche vient de toucher sont celles de main au moment du recalage.
 
 ## Comment il est fait
@@ -515,7 +515,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 | `components/ForegroundDataRefresher.tsx` | 2, 33 | InteractionManager | HORS | rafraîchissement des données au retour au premier plan |
 | `components/nav/TVNavChrome.tsx` ⇄ | 30, 84–86, 97, 98 | canGoBack, goBack | ANCIENNE | rail de l'ancienne UI : rend `null` sur toutes les routes de tvOS, MAIS il est monté (App.tsx) et ses crochets tournent — dont `useContentFocusCapture` (abonnement `useTVEventHandler` inerte, voir hooks/) |
 | `components/OfflineBanner.tsx` ⇄ | 2, 59–61, 99–101, 107, 117 | BackHandler, TVFocusGuideView, autoFocus, trapFocus*, hasTVPreferredFocus | ANCIENNE | corps `LegacyOfflineBanner` ; sur tvOS, `OfflineRedesign` |
-| `components/player/AVPlayerSurface.tsx` | 254 | `focusable={false}` sur `<Video>` | ANCIENNE | prop Android seulement (react-native-video) : INERTE sur tvOS ; la surface AVPlayer n'est de toute façon pas focalisable (bug 6) |
+| `components/player/AVPlayerSurface.tsx` | 254 | `focusable={false}` sur `<Video>` | ANCIENNE | prop Android seulement (react-native-video) : INERTE sur tvOS ; la surface AVPlayer n'est de toute façon pas focalisable (bug 6) — exception PERMANENTE de la garde (arbitrage : gardé tel quel) |
 | `components/TVColdStartLanding.tsx` ⇄ | 86, 102, 105 | setTimeout | HORS | navigation de PILE au démarrage à froid (essais de `navigate`, attente de la file) ; ni télécommande ni focus (règle déjà dans tv-core `playback/coldStart`) |
 | `components/TVPlaybackOutbox.tsx` | 2, 38, 39, 46 | InteractionManager, setTimeout | HORS | file des rapports de lecture |
 | `hooks/useAudioErrorRetry.ts` ⇄ | 36, 81 | setTimeout | HORS | relance du flux après une erreur audio AVPlayer |
@@ -580,7 +580,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 | `screens/SearchScreen.tsx` ⇄ | 2, 63, 98, 109–111, 121, 201, 203, 226, 228, 231, 257 | TVFocusGuideView, setNativeProps, minuteries | ANCIENNE | import + corps Legacy |
 | `screens/SettingsScreen.tsx` ⇄ | 2, 39, 56, 58–60, 62, 72 | TVFocusGuideView autoFocus, goBack | ANCIENNE | import + corps Legacy (L56-60 : commentaire) |
 | `screens/trailer/resolveTrailerStream.ts` | 54, 56 | setTimeout | HORS | borne réseau (45 s) de la résolution du flux |
-| `screens/trailer/TrailerWebView.ios.tsx` | 96 | focusable={false} | ANCIENNE | le fichier tourne sur tvOS, mais la prop n'existe que sur Android dans react-native-video 6.19.3 : INERTE (bug 7) |
+| `screens/trailer/TrailerWebView.ios.tsx` | 96 | focusable={false} | ANCIENNE | le fichier tourne sur tvOS, mais la prop n'existe que sur Android dans react-native-video 6.19.3 : INERTE (bug 7) — exception PERMANENTE de la garde (arbitrage : gardé tel quel) |
 | `screens/trailer/useTrailerPlaybackWatch.ts` | 53, 92, 95, 96 | setTimeout | HORS | chien de garde du flux ; ses verdicts ne deviennent un retour que dans TrailerRedesign |
 | `screens/trailer/useTrailerPreparation.ios.ts` | 24 | setTimeout 300 ms | HORS | préchauffage serveur de la bande-annonce |
 | `screens/TrailerScreen.tsx` ⇄ | 43, 72, 86, 87, 90 | goBack, hasTVPreferredFocus, onFocus | ANCIENNE | corps Legacy |
