@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LayoutChangeEvent, ScrollView } from "react-native";
+import { benchRevealOffset, REVEAL_NEAREST_MARGIN } from "@tentacle-tv/tv-core";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 
 /**
- * Montrer ce qui a l'air focalisé AU BANC — la section entière.
+ * Montrer ce qui a l'air focalisé AU BANC — la section entière, à la cible
+ * de tv-core (`focus/reveal.ts`, `benchRevealOffset`).
  *
  * Dans l'app, c'est la section native qui le fait (`FocusSection` : la page
  * suit le focus en un seul mouvement, à la place du défilement de tvOS). Le
@@ -26,7 +28,7 @@ interface Box {
 const covers = (prefixes: string[], key: string) =>
   prefixes.some((prefix) => key === prefix || key.startsWith(`${prefix}:`));
 
-export function useForcedFocusReveal(margin = 56) {
+export function useForcedFocusReveal(margin = REVEAL_NEAREST_MARGIN) {
   const forced = useForcedFocusKey();
   const scrollRef = useRef<ScrollView>(null);
   const boxes = useRef(new Map<string, Box>());
@@ -61,9 +63,8 @@ export function useForcedFocusReveal(margin = 56) {
     if (!forced || viewport.current === 0) return;
     for (const box of boxes.current.values()) {
       if (!covers(box.prefixes, forced) || box.height === 0) continue;
-      const bottom = box.y + box.height;
-      const y = bottom > viewport.current - margin ? bottom - viewport.current + margin : 0;
-      scrollRef.current?.scrollTo({ y: Math.max(0, Math.min(y, box.y - margin)), animated: false });
+      const y = benchRevealOffset({ top: box.y, height: box.height }, viewport.current, margin);
+      scrollRef.current?.scrollTo({ y, animated: false });
       return;
     }
   }, [forced, layoutTick, margin]);

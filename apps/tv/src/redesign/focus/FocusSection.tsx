@@ -1,6 +1,7 @@
 import { memo, type ReactNode, type Ref } from "react";
 import { View, type LayoutChangeEvent, type StyleProp, type ViewProps, type ViewStyle } from "react-native";
 import { TV_MOTION } from "@tentacle-tv/theme";
+import { REVEAL_NEAREST_MARGIN } from "@tentacle-tv/tv-core";
 import { useFocusBinding } from "./focusBinding";
 import { NativeFocusSection } from "./nativeFocusSection";
 
@@ -15,7 +16,8 @@ import { NativeFocusSection } from "./nativeFocusSection";
  *   `focus/sections.ts`) — et, s'il le faut, son entrée déclarée ;
  * - COMMENT la page la montre quand le focus y entre (`reveal`) : `nearest`
  *   (le moins de défilement possible pour la voir entière, à `margin` des
- *   bords — 56 par défaut), `anchor` (son haut à `top` du haut de l'écran),
+ *   bords — `REVEAL_NEAREST_MARGIN`, 56, par défaut ; la règle :
+ *   `@tentacle-tv/tv-core`, `focus/reveal.ts`), `anchor` (son haut à `top` du haut de l'écran),
  *   `start` (la page tout en haut). Sur Apple TV, la page y va en UN mouvement,
  *   sur le ressort `TV_MOTION.spring.scroll`, à la place du défilement de
  *   tvOS — jamais par-dessus (`ios/TentacleTV/TentacleRevealScroller.m`).
@@ -48,9 +50,6 @@ export interface FocusSectionProps {
   children?: ReactNode;
 }
 
-/** La marge aux bords de `nearest` : la légende et l'indication de l'appui long restent hors de la marge de sécurité. */
-const NEAREST_MARGIN = 56;
-
 export const FocusSection = memo(function FocusSection({ focusKey, reveal, list, style, pointerEvents, onLayout, children }: FocusSectionProps) {
   const binding = useFocusBinding(focusKey, "section");
   if (!NativeFocusSection) {
@@ -69,7 +68,7 @@ export const FocusSection = memo(function FocusSection({ focusKey, reveal, list,
       pointerEvents={pointerEvents}
       onLayout={onLayout}
       revealMode={reveal?.mode ?? "none"}
-      revealMargin={reveal?.mode === "nearest" ? (reveal.margin ?? NEAREST_MARGIN) : undefined}
+      revealMargin={reveal?.mode === "nearest" ? (reveal.margin ?? REVEAL_NEAREST_MARGIN) : undefined}
       revealTop={reveal?.mode === "anchor" ? reveal.top : undefined}
       revealResponse={TV_MOTION.spring.scroll.response}
       revealDamping={TV_MOTION.spring.scroll.dampingFraction}
