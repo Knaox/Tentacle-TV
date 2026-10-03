@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   SEASONS_ALL_KEY,
   SEASONS_APPLY_KEY,
+  canSubmitSeasons,
+  checkedSeasons,
   isSeasonsFooterKey,
   seasonFocusKey,
   seasonsSheetEntry,
   seasonsSheetFocusOf,
   seasonsSheetKeys,
   seasonsSheetReady,
+  toggleSeason,
 } from "./seasonsSheet";
 
 describe("les cibles de la feuille des saisons", () => {
@@ -58,5 +61,24 @@ describe("ce que le raccourci lit du focus", () => {
   it("le pied ne retient que sa pilule", () => {
     expect(isSeasonsFooterKey(SEASONS_APPLY_KEY)).toBe(true);
     expect(isSeasonsFooterKey("sheet:season:1")).toBe(false);
+  });
+});
+
+describe("cocher et demander", () => {
+  it("OK coche une saison, puis la décoche", () => {
+    const once = toggleSeason(new Set([1]), 3);
+    expect([...once].sort()).toEqual([1, 3]);
+    expect([...toggleSeason(once, 1)]).toEqual([3]);
+  });
+
+  it("la pilule demande les saisons cochées, dans l'ordre de la feuille", () => {
+    expect(checkedSeasons([0, 2, 3], new Set([3, 0]))).toEqual([0, 3]);
+    expect(checkedSeasons([0, 2, 3], new Set([5]))).toEqual([]);
+  });
+
+  it("une demande part avec au moins une saison, et une seule à la fois", () => {
+    expect(canSubmitSeasons([2], false)).toBe(true);
+    expect(canSubmitSeasons([], false)).toBe(false);
+    expect(canSubmitSeasons([2], true)).toBe(false);
   });
 });

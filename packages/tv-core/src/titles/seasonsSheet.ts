@@ -68,6 +68,24 @@ export function seasonsSheetFocusOf(key: string | null): SeasonsSheetFocus {
   return season ? { kind: "season", number: Number(season[1]) } : { kind: "other" };
 }
 
+/** OK sur une saison : cochée, ou décochée si elle l'était. */
+export function toggleSeason(checked: ReadonlySet<number>, number: number): Set<number> {
+  const next = new Set(checked);
+  if (next.has(number)) next.delete(number);
+  else next.add(number);
+  return next;
+}
+
+/** Ce que demande la pilule « Demander N saisons » : les saisons cochées, dans leur ordre. */
+export function checkedSeasons(requestable: readonly number[], checked: ReadonlySet<number>): number[] {
+  return requestable.filter((number) => checked.has(number));
+}
+
+/** Une demande part avec au moins une saison, et une seule à la fois. */
+export function canSubmitSeasons(seasons: readonly number[], sending: boolean): boolean {
+  return !sending && seasons.length > 0;
+}
+
 /** Le pied ne retient que sa pilule. */
 export function isSeasonsFooterKey(key: string): boolean {
   return key === SEASONS_APPLY_KEY;
