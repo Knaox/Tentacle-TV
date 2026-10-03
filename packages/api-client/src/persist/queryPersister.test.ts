@@ -233,6 +233,47 @@ describe("sauvegarde paresseuse", () => {
     }
   });
 
+  it("une donnée inchangée n'est pas resérialisée, et l'écriture reste la même", () => {
+    vi.useFakeTimers();
+    try {
+      let serialized = 0;
+      // `toJSON` compte chaque sérialisation de la donnée.
+      const heavy = { toJSON: () => { serialized += 1; return [{ Id: "lourd" }]; } };
+      const queries = [
+        { queryKey: ["resume-items"], state: { status: "success", data: heavy as unknown, dataUpdatedAt: 1 } },
+      ];
+      let listener: ((event: { type: string; action?: { type?: string } }) => void) | null = null;
+      const writes: string[] = [];
+      const store: PersistStorage = { getItem: () => null, setItem: (_k, v) => { writes.push(v); }, removeItem: () => {} };
+      const qc = {
+        setQueryData: (): unknown => undefined,
+        getQueryCache: () => ({
+          findAll: () => queries,
+          subscribe: (l: (event: { type: string; action?: { type?: string } }) => void) => {
+            listener = l;
+            return () => { listener = null; };
+          },
+        }),
+      };
+      const detach = attachQueryPersister(qc, store, { whitelist: WHITELIST, owner: ADMIN, saveInterval: 1000 });
+      vi.advanceTimersByTime(1000);
+      listener!({ type: "updated", action: { type: "success" } });
+      vi.advanceTimersByTime(1000);
+      expect(writes).toHaveLength(2);
+      expect(serialized).toBe(1);
+      expect(writes[1]).toBe(writes[0]);
+      expect(writes[0]).toBe(JSON.stringify({ owner: ADMIN, entries: { '["resume-items"]': { data: [{ Id: "lourd" }], dataUpdatedAt: 1 } } }));
+      // Une donnée NEUVE (nouvel objet) est sérialisée.
+      queries[0].state.data = [{ Id: "neuf" }];
+      listener!({ type: "updated", action: { type: "success" } });
+      vi.advanceTimersByTime(1000);
+      expect(JSON.parse(writes[2]).entries['["resume-items"]'].data).toEqual([{ Id: "neuf" }]);
+      detach();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("une requête hors de la liste ne relance pas la sauvegarde", () => {
     vi.useFakeTimers();
     try {

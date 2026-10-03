@@ -236,6 +236,22 @@ export function attachQueryPersister(
     return !opts.shouldPersist || opts.shouldPersist(queryKey);
   };
 
+  // La donnée déjà sérialisée, par objet de données. Le cache de requêtes ne
+  // modifie jamais une donnée en place (une réponse, un patch de mutation :
+  // toujours un objet neuf) : une requête inchangée depuis la sauvegarde
+  // précédente garde son JSON. Sans lui, chaque sauvegarde resérialisait TOUT
+  // — la liste « à suivre », sources comprises, pèse vite ses 2 Mo — dès
+  // qu'une seule requête persistée avait bougé.
+  const dataJsonCache = new WeakMap<object, string>();
+  const dataJson = (data: unknown): string => {
+    if (data === null || typeof data !== "object") return JSON.stringify(data);
+    const cached = dataJsonCache.get(data);
+    if (cached !== undefined) return cached;
+    const json = JSON.stringify(data);
+    dataJsonCache.set(data, json);
+    return json;
+  };
+
   const save = async (): Promise<void> => {
     try {
       const all = qc.getQueryCache().findAll();
@@ -256,7 +272,9 @@ export function attachQueryPersister(
           // La paire telle qu'elle sera ÉCRITE : `keyJson` re-échappé en clé
           // d'objet. Sérialisée une seule fois — elle sert au budget puis,
           // telle quelle, à la charge (plus de seconde sérialisation du tout).
-          candidates.push({ keyJson, entry, json: `${JSON.stringify(keyJson)}:${JSON.stringify(entry)}` });
+          // Même texte que `JSON.stringify(entry)`, la donnée venant du cache.
+          const entryJson = `{"data":${dataJson(state.data)},"dataUpdatedAt":${JSON.stringify(state.dataUpdatedAt)}}`;
+          candidates.push({ keyJson, entry, json: `${JSON.stringify(keyJson)}:${entryJson}` });
         } catch {
           // Entrée non sérialisable — ignorée, le reste est conservé
         }
