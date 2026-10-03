@@ -109,7 +109,7 @@
           "why": "OK sur le champ : le clavier système"
         },
         {
-          "do": "type:http://localhost:3107\n",
+          "do": "type:http://{backend}\n",
           "settleMs": 4000,
           "expect": {
             "focus": "pairing:username"
@@ -209,7 +209,7 @@
           "settleMs": 1500
         },
         {
-          "do": "type:http://localhost:3107\n",
+          "do": "type:http://{backend}\n",
           "settleMs": 4000,
           "expect": {
             "focus": "pairing:username"

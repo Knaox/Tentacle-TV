@@ -45,7 +45,7 @@ domaine (`fixtures.mjs`) :
 | `ecrans/fiche-lente` | la fiche de « Les Évadés » répond après 20 s |
 | `ecrans/favoris-vides` | Favoris vide |
 | `ecrans/grande-bibliotheque` | « Films » porte 1 200 titres (copies des films de l'instantané, identifiants neufs) |
-| `ecrans/jumelage` | sans session : la connexion par identifiants est refusée (401) ; le serveur saisi est le faux backend `http://localhost:3107` |
+| `ecrans/jumelage` | sans session : la connexion par identifiants est refusée (401) ; le serveur saisi est le faux backend de la place qui joue, `http://{backend}` (substitué par le banc : `localhost:310n` au simulateur, l'IP du Mac sur l'Apple TV) |
 
 Le code du RELAIS de jumelage n'est jamais affiché : il interrogerait le vrai
 relais (https://pair.tentacletv.app). Sa règle (JU-1, la croix seule action)

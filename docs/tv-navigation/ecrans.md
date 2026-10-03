@@ -684,10 +684,13 @@ Preuves de l'extraction :
 - **Apple TV « Chambre »** (tvOS 26.6, app de test `navtest`, faux backend
   du Mac), 2026-10-03 06:14-06:29 : recherche 7/7, jumelage (accueil) 1/1,
   échantillon d'un ou deux scénarios par écran 10/10 — identiques aux
-  références du simulateur. Deux scénarios de jumelage n'y valent rien :
-  `localhost:3107`, tapé comme adresse du serveur, y désigne l'Apple TV
-  elle-même ; le chemin a été rejoué à la main vers l'IP du Mac (constat 5).
-  La dictée demande une voix : à essayer par l'utilisateur.
+  références du simulateur. Deux scénarios de jumelage n'y valaient rien :
+  `localhost:3107`, tapé en dur comme adresse du serveur, y désigne l'Apple
+  TV elle-même ; le chemin a été rejoué à la main vers l'IP du Mac (constat
+  5). Depuis, ils tapent `http://{backend}`, l'adresse du faux backend de la
+  place qui joue, substituée par le banc (simulateur comme appareil) —
+  réenregistrés sur 84f3cedd0, place 7. La dictée demande une voix : à
+  essayer par l'utilisateur.
 
 Ce que l'enregistrement a appris, et que les scénarios respectent :
 
