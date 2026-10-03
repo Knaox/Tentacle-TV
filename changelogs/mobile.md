@@ -5,6 +5,19 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.10.3]
+### FR
+- **Plus d'image en blocs dans les scènes d'action** quand la qualité baisse
+- **Plus de vibration en faisant défiler** : seulement quand une action est validée
+- **Notifications Android en bandeau**, en haut de l'écran
+- **Navigation plus fluide**, surtout sur iPad et Android
+
+### EN
+- **No more blocky picture in action scenes** when quality drops
+- **No more vibration while scrolling**: only when an action is confirmed
+- **Android notifications as banners**, at the top of the screen
+- **Smoother navigation**, especially on iPad and Android
+
 ## [1.10.2]
 ### FR
 - **La qualité automatique suit enfin le vrai débit** : la mesure du réseau était fausse, la qualité ne baissait jamais sur une connexion lente
