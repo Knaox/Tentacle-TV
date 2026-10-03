@@ -81,12 +81,12 @@ export const NoticeCard = memo(function NoticeCard({
         {primary || secondary ? (
           <View style={st.actions}>
             {primary ? (
-              <Pressable onPress={primary.onPress} accessibilityRole="button" style={({ pressed }) => [st.action, st.actionPrimary, pressed && st.pressed]}>
+              <Pressable onPress={primary.onPress} accessibilityRole="button" accessibilityLabel={primary.label} style={({ pressed }) => [st.action, st.actionPrimary, pressed && st.pressed]}>
                 <Text style={st.actionPrimaryTxt}>{primary.label}</Text>
               </Pressable>
             ) : null}
             {secondary ? (
-              <Pressable onPress={secondary.onPress} accessibilityRole="button" style={({ pressed }) => [st.action, pressed && st.pressed]}>
+              <Pressable onPress={secondary.onPress} accessibilityRole="button" accessibilityLabel={secondary.label} style={({ pressed }) => [st.action, pressed && st.pressed]}>
                 <Text style={st.actionTxt}>{secondary.label}</Text>
               </Pressable>
             ) : null}
