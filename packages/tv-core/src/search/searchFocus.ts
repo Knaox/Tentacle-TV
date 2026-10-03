@@ -54,7 +54,7 @@ export function searchCardPress(section: string): SearchCardPress {
 }
 
 /** OK sur le meilleur résultat : une personne → sa filmographie, un titre → sa fiche. */
-export function searchTopPress(kind: "person" | "item"): "browse" | "detail" {
+export function searchTopPress(kind: string): "browse" | "detail" {
   return kind === "person" ? "browse" : "detail";
 }
 

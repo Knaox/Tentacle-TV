@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { searchRemembers } from "@tentacle-tv/tv-core";
 import { pushRecentSearch, readRecentSearches } from "../../storage/recentSearches";
 
 /** Le moteur répond en quelques millisecondes : on n'attend que la frappe. */
@@ -28,7 +29,7 @@ export function useSearchInput() {
   // Mémorisée à la SÉLECTION d'un résultat, pas à la frappe (parité LG) : une
   // requête abandonnée en route n'a rien donné, la ressortir serait un mauvais conseil.
   const remember = useCallback(() => {
-    if (debounced.length >= 2) setRecents(pushRecentSearch(debounced));
+    if (searchRemembers("result", debounced)) setRecents(pushRecentSearch(debounced));
   }, [debounced]);
 
   return { query, setQuery, debounced, recents, remember, onKey, onSpace, onDelete, onClear };

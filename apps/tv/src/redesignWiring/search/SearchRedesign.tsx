@@ -1,14 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {
+  SEARCH_ENTRY_KEY,
+  SEARCH_FIELD_KEY,
+  holdPanelOf,
+  searchCardPress,
+  searchTopPress,
+  type SearchCardKind,
+} from "@tentacle-tv/tv-core";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
 import type { RootStackParamList } from "../../navigation/types";
+import { useSearchGroups, useSearchKeyboard } from "../../platform/tvos/screens/search";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import type { ArtworkPalette } from "../../redesign/color/artworkPalette";
 import { SearchView } from "../../redesign/screens/search/SearchView";
 import type { SearchFacetModel, SearchPersonModel } from "../../redesign/screens/search/searchViewModel";
-import { AutoFocusGuide } from "../focus/focusGuides";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { useTitleRequests } from "../vigie/useTitleRequests";
@@ -18,25 +26,33 @@ import { searchInputLabels } from "./searchModels";
 import { useSearchInput } from "./useSearchInput";
 import { useSearchResults } from "./useSearchResults";
 import { useSearchSources } from "./useSearchSources";
-import { FIELD_KEY, FIRST_KEY, useSystemKeyboard } from "./useSystemKeyboard";
 
 type Browse = RootStackParamList["SearchBrowse"];
 
 /** Une clé de la saisie : la lumière revient à celle de la réponse. */
-const isInputKey = (key: string) => key === FIELD_KEY || key.startsWith("key:") || key.startsWith("suggestion:");
+const isInputKey = (key: string) => key === SEARCH_FIELD_KEY || key.startsWith("key:") || key.startsWith("suggestion:");
 
 /**
  * La recherche, refondue (Apple TV), façon Netflix : à gauche le champ, le
  * clavier en grille et les suggestions ; à droite les résultats en rangées,
  * sur le moteur de Tentacle — la bibliothèque, et, quand le serveur sait
  * demander des titres, la rangée « À demander » (`useSearchAbsent`). Dictée : celle du
- * clavier système, qu'ouvre le champ (`useSystemKeyboard`) — jamais le micro,
+ * clavier système, qu'ouvre le champ (`useSearchKeyboard`) — jamais le micro,
  * que tvOS refuse aux apps.
  *
  * Chaque colonne garde sa place (groupes `search:input` et `search:results`) :
  * aller aux résultats mène au meilleur, puis au dernier visité ; revenir au
- * clavier rend la dernière touche.
+ * clavier rend la dernière touche. Le focus, le clavier système et ce que fait
+ * OK sont décidés par tv-core (`search/`) et posés par l'applicateur tvOS
+ * (`platform/tvos/screens/search.ts`) ; l'appui maintenu par la règle de T6
+ * (`holdPanelOf`).
  */
+
+/** Le genre d'une carte de résultat, pour l'appui maintenu. */
+function holdCardOf(section: string, librarySeries: boolean): SearchCardKind {
+  if (section === "absent") return librarySeries ? "librarySeries" : "absentTitle";
+  return section === "episodes" ? "episode" : "title";
+}
 export function SearchRedesign() {
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -45,16 +61,10 @@ export function SearchRedesign() {
   // Demander un titre hors bibliothèque — rien tant que la garde Vigie est fermée.
   const requests = useTitleRequests();
   const results = useSearchResults(sources, input, requests?.gate ?? null);
-  const screen = useRedesignScreen({ railKey: "Search", entryKey: FIRST_KEY });
+  const screen = useRedesignScreen({ railKey: "Search", entryKey: SEARCH_ENTRY_KEY });
   const { focus } = screen;
-  // Liés dès le premier rendu, avant que la vue ne monte ses groupes.
-  const bound = useRef(false);
-  if (!bound.current) {
-    focus.bind("search:input", { container: AutoFocusGuide });
-    focus.bind("search:results", { container: AutoFocusGuide });
-    bound.current = true;
-  }
-  const keyboard = useSystemKeyboard(focus, results.submitAnswer, results.firstKey, navigation);
+  useSearchGroups(focus);
+  const keyboard = useSearchKeyboard(focus, results.submitAnswer, results.firstKey, navigation);
   const { openPoster, openLandscape, sheet } = useTVCardActions();
   const labels = useMemo(() => searchInputLabels(t), [t]);
 
@@ -85,8 +95,8 @@ export function SearchRedesign() {
   const top = content.kind === "results" ? content.sections.find((section) => section.key === "top") : undefined;
   const onOpenTop = useCallback(() => {
     if (!top || top.key !== "top") return;
-    if (top.top.kind === "person") {
-      openBrowse({ kind: "person", id: top.top.id, name: top.top.name });
+    if (searchTopPress(top.top.kind) === "browse") {
+      if (top.top.kind === "person") openBrowse({ kind: "person", id: top.top.id, name: top.top.name });
       return;
     }
     remember();
@@ -101,27 +111,28 @@ export function SearchRedesign() {
   const hold = requests?.hold;
   const onPressCard = useCallback((section: string, card: CardModel) => {
     remember();
-    if (section === "absent") {
+    const press = searchCardPress(section);
+    if (press === "request") {
       const gap = gapOf(card.id);
       if (gap && requests) return openSearchGap(requests, gap, t);
       const title = absentOf(card.id);
       if (title) open?.(title);
-    } else if (section === "episodes") navigation.navigate("Player", { itemId: card.id });
+    } else if (press === "play") navigation.navigate("Player", { itemId: card.id });
     else navigation.navigate("MediaDetail", { itemId: card.id });
   }, [remember, navigation, absentOf, gapOf, open, requests, t]);
   const onLongPressCard = useCallback((section: string, card: CardModel) => {
-    if (section === "absent") {
-      // Une série incomplète est un titre de la bibliothèque : son panneau.
-      const gap = gapOf(card.id);
-      const series = gap ? itemOf(gap.seriesId) : undefined;
-      if (series) return openPoster(series);
+    // Une série incomplète est un titre de la bibliothèque : son panneau.
+    const gap = section === "absent" ? gapOf(card.id) : undefined;
+    const series = gap ? itemOf(gap.seriesId) : undefined;
+    const panel = holdPanelOf({ surface: "search", card: holdCardOf(section, series !== undefined) });
+    if (panel?.kind === "absent") {
       const title = absentOf(card.id);
       if (title) hold?.(title);
       return;
     }
-    const item = itemOf(card.id);
-    if (!item) return;
-    if (section === "episodes") openLandscape(item);
+    const item = series ?? (section === "absent" ? undefined : itemOf(card.id));
+    if (!item || panel?.kind !== "media") return;
+    if (panel.variant === "landscape") openLandscape(item);
     else openPoster(item);
   }, [itemOf, absentOf, gapOf, hold, openLandscape, openPoster]);
 

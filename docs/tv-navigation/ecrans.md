@@ -609,7 +609,7 @@ chemin partagé reste tel quel tant qu'Android TV n'est pas porté.
 
 | Ancien chemin (gardé pour Android TV) | Remplacé sur Apple TV par | Note |
 |---|---|---|
-| (à remplir en phase B) | | |
+| `components/search/useSearchSubmit.ts` — le déroulé de la validation écrit en ligne, presses lues par `useTVRemote` | tv-core `search/searchSubmitFlow.ts` (`searchSubmitStep`), appliqué par `platform/tvos/screens/search.ts` (presses : `move` · `select` de l'entrée unique) | même règle, à l'identique (tests) ; Android TV : rendre le crochet mince sur `searchSubmitStep` à son portage |
 
 ---
 

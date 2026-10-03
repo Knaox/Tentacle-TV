@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from "react";
 import { useSearchDiscover, useSearchEpisodes, useTentacleSearch } from "@tentacle-tv/api-client";
 import { foldForSearch, type MediaItem, type SearchMediaItem, type SearchResponse } from "@tentacle-tv/shared";
-import { searchSubmitAnswer, type SearchSubmitAnswer } from "@tentacle-tv/tv-core";
+import { searchFirstResultKey, searchSubmitAnswer, type SearchSubmitAnswer } from "@tentacle-tv/tv-core";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../redesign/color/artworkPalette";
-import type { SearchContentModel, SearchSectionModel, SearchSuggestionModel } from "../../redesign/screens/search/searchViewModel";
+import type { SearchContentModel, SearchSuggestionModel } from "../../redesign/screens/search/searchViewModel";
 import { searchDiscover, searchNotice, searchPalette, searchSections, searchSuggestions, type SearchModelSources } from "./searchModels";
 import type { AbsentTitle } from "../vigie/absentTitle";
 import { useSearchAbsent } from "../vigie/useSearchAbsent";
@@ -33,12 +33,6 @@ export interface SearchResults {
 
 const NO_ABSENT = () => undefined;
 const NO_GAP = () => undefined;
-
-function firstKeyOf(sections: SearchSectionModel[]): string | null {
-  const first = sections[0];
-  if (!first) return null;
-  return first.key === "top" ? "top" : `${first.key}:0`;
-}
 
 /** Tous les titres d'une réponse, par identifiant : ce qu'une carte désigne. */
 function titlesOf(data: SearchResponse | undefined, episodes: SearchMediaItem[]): Map<string, SearchMediaItem> {
@@ -112,7 +106,7 @@ export function useSearchResults(src: SearchModelSources, input: SearchInput, ga
     submitAnswer: searchSubmitAnswer({
       typed: query, debounced, current, fetching: search.isFetching, failed: search.isError, sections: sections.length,
     }),
-    firstKey: firstKeyOf(sections),
+    firstKey: searchFirstResultKey(sections.map((section) => section.key)),
     itemOf,
     absentOf: absent?.titleOf ?? NO_ABSENT,
     gapOf: gaps?.gapOf ?? NO_GAP,

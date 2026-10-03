@@ -51,6 +51,7 @@ describe("OK sur un résultat", () => {
   it("le meilleur résultat : une personne, sa filmographie ; un titre, sa fiche", () => {
     expect(searchTopPress("person")).toBe("browse");
     expect(searchTopPress("item")).toBe("detail");
+    expect(searchTopPress("title")).toBe("detail");
   });
 });
 
