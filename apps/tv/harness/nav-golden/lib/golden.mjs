@@ -9,6 +9,13 @@ import { hashScenario } from "./scenarios.mjs";
 import { runScenario } from "./runner.mjs";
 
 const FORMAT = 1;
+/**
+ * La version de ce que la sonde RELÈVE. À monter à chaque changement de la
+ * sonde ou du relevé qui peut changer une valeur enregistrée (v2 : les textes
+ * des fibres hôtes texte, 2026-10-03) : `verify` refuse alors les références
+ * plus anciennes, « à réenregistrer », au lieu de les comparer à tort.
+ */
+export const OBSERVATION_VERSION = 2;
 const KEPT = ["app", "focus", "label", "frame", "groups", "route", "params", "stack", "panel", "panelOwners", "writes", "texts", "storage", "unsettled"];
 const strip = (obs) => Object.fromEntries(KEPT.filter((k) => obs[k] !== undefined).map((k) => [k, obs[k]]));
 
@@ -72,6 +79,7 @@ export async function recordSuites(ctx, session, suites, { repeat = 2, onResult 
       domain: suite.domain,
       suite: suite.name,
       reference: { sha: session.checkout.sha, label: session.checkout.label },
+      observation: OBSERVATION_VERSION,
       dataset: session.snapshot.hash,
       native: session.fingerprint,
       device: session.deviceInfo,
@@ -92,6 +100,7 @@ export async function verifySuites(ctx, session, suites, { onResult }) {
       warn(`${suite.domain}/${suite.name} : référence enregistrée sur les données ${golden.dataset}, banc sur ${session.snapshot.hash} — comparaison sans valeur`);
     }
     if (golden?.device?.model && golden.device.model !== session.deviceInfo.model) warn(`${suite.domain}/${suite.name} : référence prise sur ${golden.device.model}, rejouée sur ${session.deviceInfo.model}`);
+    const obsolete = golden && (golden.observation ?? 1) !== OBSERVATION_VERSION;
     for (const scenario of suite.scenarios) {
       const entry = golden?.scenarios?.[scenario.id];
       if (scenario.skip) {
@@ -100,6 +109,11 @@ export async function verifySuites(ctx, session, suites, { onResult }) {
       }
       if (!entry) {
         results.push(onResult({ suite, scenario, status: "missing" }));
+        continue;
+      }
+      if (obsolete) {
+        const reason = `référence prise par une sonde plus ancienne (relevé v${golden.observation ?? 1}, banc v${OBSERVATION_VERSION}) : à réenregistrer`;
+        results.push(onResult({ suite, scenario, status: "obsolete", reason }));
         continue;
       }
       let run;

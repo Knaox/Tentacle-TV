@@ -6,7 +6,7 @@ import path from "node:path";
 import { OUT_DIR, duration, say } from "./config.mjs";
 
 const MARK = {
-  ok: "✓", recorded: "●", diff: "✗", expect: "≠", stale: "~", missing: "∅", error: "!", flaky: "≈", precondition: "?", skipped: "-",
+  ok: "✓", recorded: "●", diff: "✗", expect: "≠", stale: "~", missing: "∅", error: "!", flaky: "≈", precondition: "?", skipped: "-", obsolete: "⌀",
 };
 const LABEL = {
   ok: "identique à la référence",
@@ -18,9 +18,10 @@ const LABEL = {
   error: "le banc n'a pas pu le jouer",
   flaky: "INSTABLE : deux passages diffèrent sur la clé, la route ou les écritures",
   precondition: "approche ratée (start.focus / start.screen)",
+  obsolete: "référence d'une sonde plus ancienne : à réenregistrer",
   skipped: "ignoré",
 };
-export const FAILING = new Set(["diff", "expect", "missing", "error", "flaky", "precondition"]);
+export const FAILING = new Set(["diff", "expect", "missing", "error", "flaky", "precondition", "obsolete"]);
 
 const show = (value) => (value === null || value === undefined ? "∅" : typeof value === "string" ? value : JSON.stringify(value));
 const gesture = (g) => (g === undefined ? "" : ` « ${[].concat(g).join(" ")} »`);
