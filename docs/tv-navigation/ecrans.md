@@ -330,8 +330,10 @@ mémoire de session).
   `sheet:apply`.
 - **BI-7** L'entrée, figée à l'ouverture (`sheetEntryKey`) : ce qui est
   retenu — `choice` : `sheet:option:<option cochée, sinon 0>` ; `sort` :
-  `sheet:option:<critère retenu, sinon 0>` ; `years` :
-  `sheet:preset:<décennie retenue>`, sinon `sheet:from:prev` ; `rating` :
+  `sheet:option:<critère retenu, sinon 0>` ; `years` : le préréglage
+  retenu, `sheet:preset:<i>` — « Toutes les années » (0) tant qu'aucun
+  intervalle n'est posé, sinon la décennie —, et `sheet:from:prev` pour un
+  intervalle sur mesure ; `rating` :
   `sheet:stop:<palier retenu, sinon 0>`. Seule l'entrée est focalisable à
   l'ouverture (`useChoiceEntry`, règle T6). Cocher en série ne déplace pas le
   focus.

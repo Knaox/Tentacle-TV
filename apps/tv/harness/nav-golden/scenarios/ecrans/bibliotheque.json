@@ -366,7 +366,7 @@
     },
     {
       "id": "bibliotheque-liste-annees",
-      "title": "Liste des années sans décennie retenue : entrée sur la flèche « De » ; Menu ferme et rend la pastille",
+      "title": "Liste des années sans intervalle posé : entrée sur « Toutes les années », le préréglage retenu ; Menu ferme et rend la pastille",
       "rules": [
         "BI-7",
         "BI-10"
@@ -415,8 +415,9 @@
           "settleMs": 1200,
           "expect": {
             "panel": "open",
-            "focus": "sheet:from:prev"
-          }
+            "focus": "sheet:preset:0"
+          },
+          "why": "« Toutes les années » (préréglage 0) est retenu tant qu'aucun intervalle n'est posé ; la flèche « De » n'est l'entrée que d'un intervalle sur mesure"
         },
         {
           "do": "down",

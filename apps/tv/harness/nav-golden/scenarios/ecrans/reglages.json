@@ -18,10 +18,11 @@
         "fixtures": [
           "base/vigie-off"
         ],
-        "route": {
-          "name": "Settings"
-        },
         "keys": [
+          "wait:4",
+          "menu",
+          "menu",
+          "select",
           "wait:5"
         ]
       },
@@ -109,7 +110,8 @@
           "do": "left",
           "why": "au-delà de la colonne des onglets : le rail (relevé)"
         }
-      ]
+      ],
+      "why": "Réglages atteints par le rail, comme l'utilisateur : Menu ouvre le rail, Menu mène au profil, OK ouvre les réglages — ouverts par une navigation directe, ils n'ont aucun focus à la référence"
     },
     {
       "id": "reglages-double-appui",
@@ -121,10 +123,11 @@
         "fixtures": [
           "base/vigie-off"
         ],
-        "route": {
-          "name": "Settings"
-        },
         "keys": [
+          "wait:4",
+          "menu",
+          "menu",
+          "select",
           "wait:5"
         ]
       },
@@ -182,7 +185,8 @@
           },
           "why": "désarmé en le quittant : JAMAIS un second OK ici"
         }
-      ]
+      ],
+      "why": "Réglages atteints par le rail, comme l'utilisateur : Menu ouvre le rail, Menu mène au profil, OK ouvre les réglages — ouverts par une navigation directe, ils n'ont aucun focus à la référence"
     },
     {
       "id": "reglages-liste-de-choix",
@@ -196,14 +200,15 @@
         "fixtures": [
           "base/vigie-off"
         ],
-        "route": {
-          "name": "Settings",
-          "params": {
-            "tab": "playback"
-          }
-        },
         "keys": [
-          "wait:5"
+          "wait:4",
+          "menu",
+          "menu",
+          "select",
+          "wait:5",
+          "down",
+          "select",
+          "wait:2"
         ]
       },
       "steps": [
@@ -240,7 +245,8 @@
           },
           "why": "rien de choisi ; le focus retrouve la tuile (relevé)"
         }
-      ]
+      ],
+      "why": "Réglages atteints par le rail, comme l'utilisateur : Menu ouvre le rail, Menu mène au profil, OK ouvre les réglages, puis l'onglet « playback » montré par OK — ouverts par une navigation directe, ils n'ont aucun focus à la référence"
     },
     {
       "id": "reglages-navigation-deplacer",
@@ -256,14 +262,17 @@
         "fixtures": [
           "base/vigie-off"
         ],
-        "route": {
-          "name": "Settings",
-          "params": {
-            "tab": "navigation"
-          }
-        },
         "keys": [
-          "wait:5"
+          "wait:4",
+          "menu",
+          "menu",
+          "select",
+          "wait:5",
+          "down",
+          "down",
+          "down",
+          "select",
+          "wait:2"
         ]
       },
       "steps": [
@@ -343,7 +352,8 @@
           },
           "why": "« Ordre par défaut » disparaît sous le doigt : la première ligne"
         }
-      ]
+      ],
+      "why": "Réglages atteints par le rail, comme l'utilisateur : Menu ouvre le rail, Menu mène au profil, OK ouvre les réglages, puis l'onglet « navigation » montré par OK — ouverts par une navigation directe, ils n'ont aucun focus à la référence"
     }
   ]
 }
