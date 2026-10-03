@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createScrubCountdown, type ScrubCountdown, type ScrubCountdownState } from "./scrubCountdown";
+import { createScrubCountdown, type ScrubCountdown, type ScrubCountdownState } from "@tentacle-tv/tv-core";
+import { PLAYER_TIMERS } from "./playerTimers";
 
 /**
  * Le décompte du défilement (`scrubCountdown.ts`) en état React : le
@@ -14,7 +15,7 @@ export function useScrubCountdown(onResume: () => void): {
   const resumeRef = useRef(onResume);
   resumeRef.current = onResume;
   const countdown = useMemo(
-    () => createScrubCountdown({ onChange: setCountdownState, onResume: () => resumeRef.current() }),
+    () => createScrubCountdown({ onChange: setCountdownState, onResume: () => resumeRef.current(), timers: PLAYER_TIMERS }),
     [],
   );
   useEffect(() => () => countdown.destroy(), [countdown]);

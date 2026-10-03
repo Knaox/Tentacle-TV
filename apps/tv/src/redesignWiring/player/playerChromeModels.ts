@@ -1,7 +1,7 @@
 import {
   extractMediaQuality, formatEpisodeCode, type MediaItem, type PlayerOverlay, type ResolvedSegment,
 } from "@tentacle-tv/shared";
-import type { ScrubCountdownState } from "../../hooks/scrubCountdown";
+import type { ScrubCountdownState } from "@tentacle-tv/tv-core";
 import type { MetaItem } from "../../redesign/hero/MetaLine";
 import {
   nextCountdownLabel, scrubCountdownLabel, skipPillLabel, type Translate,

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
-import { createScrubMachine, jumpSecondsOf } from "@tentacle-tv/tv-core";
+import { createScrubMachine, jumpSecondsOf, reportingActivity } from "@tentacle-tv/tv-core";
 import { backgroundHoldsFocus } from "../components/player/focus/osdFocusBus";
-import { reportingActivity } from "./scrubCountdown";
 import { SCRUB_INPUT } from "./scrubInput";
 import { useScrubCountdown } from "./useScrubCountdown";
 import { useScrubHoldMotor } from "./useScrubHoldMotor";

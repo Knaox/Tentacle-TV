@@ -1,6 +1,6 @@
 import type { QualityPreset } from "@tentacle-tv/shared";
 import type { TVPlayerViewProps } from "../../components/player/TVPlayerView";
-import type { ScrubCountdownState } from "../../hooks/scrubCountdown";
+import type { ScrubCountdownState } from "@tentacle-tv/tv-core";
 import type { PrismStep } from "../../hooks/useTVPrismProgress";
 
 /**

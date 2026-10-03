@@ -1,4 +1,6 @@
-import { RESUME_COUNTDOWN_MS, type ScrubMachine } from "@tentacle-tv/tv-core";
+import type { ScrubMachine } from "./scrubMachine";
+import type { PlayerTimers } from "./playerTimers";
+import { RESUME_COUNTDOWN_MS } from "./seekTuning";
 
 /**
  * Le DÉCOMPTE de validation du défilement — une seule règle, quelle que soit
@@ -12,7 +14,8 @@ import { RESUME_COUNTDOWN_MS, type ScrubMachine } from "@tentacle-tv/tv-core";
  *    machine n'a plus d'abandon sur inactivité, `idleCancelMs: null`).
  *
  * OK valide aussitôt et Retour annule : c'est le contrôleur qui ferme
- * (`end`). Module pur, horloge et minuteurs injectables. Un seul minuteur,
+ * (`end`). Module pur, horloge et minuteurs injectables (Apple TV et Android
+ * TV le lisent par `apps/tv` `useScrubCountdown`). Un seul minuteur,
  * posé à la prochaine seconde affichée : l'état ne change qu'une fois par
  * seconde, et un glisser qui repousse l'échéance à chaque image n'en repose
  * aucun.
@@ -25,17 +28,8 @@ export interface ScrubCountdownState {
   total: number;
 }
 
-export interface CountdownTimers {
-  now: () => number;
-  setTimeout: (fn: () => void, ms: number) => unknown;
-  clearTimeout: (handle: unknown) => void;
-}
-
-const REAL_TIMERS: CountdownTimers = {
-  now: () => Date.now(),
-  setTimeout: (fn, ms) => setTimeout(fn, ms),
-  clearTimeout: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
-};
+/** Les minuteurs du décompte (`playerTimers.ts`). */
+export type CountdownTimers = PlayerTimers;
 
 export interface ScrubCountdown {
   /** Un défilement s'ouvre ; `paused` : la lecture était en pause — rien ne
@@ -52,11 +46,11 @@ export interface ScrubCountdown {
   destroy: () => void;
 }
 
-export function createScrubCountdown({ onChange, onResume, timers = REAL_TIMERS }: {
+export function createScrubCountdown({ onChange, onResume, timers }: {
   onChange: (state: ScrubCountdownState | null) => void;
   /** La reprise est échue : lire depuis la position visée. */
   onResume: () => void;
-  timers?: CountdownTimers;
+  timers: CountdownTimers;
 }): ScrubCountdown {
   /** Un défilement entré en lecture court : il reprendra seul. */
   let armed = false;
