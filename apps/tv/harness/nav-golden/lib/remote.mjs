@@ -2,7 +2,15 @@
 // appuis UIKit) et le runtime JS (démon CDP, la sonde du banc). Et le
 // vocabulaire des gestes d'un scénario, traduit en ordres.
 import { BenchError, sleep } from "./config.mjs";
+import { macIp } from "./device.mjs";
 import { httpJson } from "./processes.mjs";
+import { resolveGesture, substitutionsFor, unknownPlaceholders } from "./substitute.mjs";
+
+/** Les adresses de la place (`{backend}`…), calculées une fois par commande. */
+export function subsOf(ctx) {
+  ctx.subs ??= substitutionsFor({ ports: ctx.ports, device: ctx.device, macIp: ctx.device ? macIp() : null });
+  return ctx.subs;
+}
 
 /** Évalue une expression dans le runtime de l'app ; rend sa valeur (JSON). */
 export async function evaluate(ctx, expression, { timeoutMs = 15_000 } = {}) {
@@ -49,7 +57,10 @@ export function gestureError(gesture) {
   if (typeof gesture !== "string") return "un geste est une chaîne";
   if (KEYS.has(gesture) || HOLDS.test(gesture)) return null;
   if (/^wait:\d+(\.\d+)?$/.test(gesture)) return null;
-  if (/^type:.+/s.test(gesture)) return null;
+  if (/^type:.+/s.test(gesture)) {
+    const unknown = unknownPlaceholders(gesture);
+    return unknown.length ? `adresse inconnue dans « ${gesture} » : {${unknown.join("}, {")}} (connues : {backend})` : null;
+  }
   if (/^swipe:(up|down|left|right)$/.test(gesture)) return null;
   if (/^pan:-?\d+(\.\d+)?,-?\d+(\.\d+)?(,\d+)?$/.test(gesture)) return null;
   if (/^backend:[a-zA-Z]+=[\w-]+$/.test(gesture)) return null;
@@ -82,8 +93,13 @@ function panScript(dx, dy, ms) {
 
 /** Joue un geste ; rend la durée à attendre en plus (glissé en cours). */
 export async function perform(ctx, gesture) {
-  if (KEYS.has(gesture) || HOLDS.test(gesture) || gesture.startsWith("type:")) {
+  if (KEYS.has(gesture) || HOLDS.test(gesture)) {
     await agentRun(ctx, [gesture]);
+    return 0;
+  }
+  if (gesture.startsWith("type:")) {
+    // L'adresse de la place, résolue AVANT la frappe (`type:http://{backend}`).
+    await agentRun(ctx, [resolveGesture(gesture, subsOf(ctx))]);
     return 0;
   }
   let match;

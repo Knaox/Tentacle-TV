@@ -4,7 +4,8 @@
 // `minMs`. Un relevé qui ne se stabilise pas est rendu tel quel, marqué.
 import { sleep } from "./config.mjs";
 import { httpJson } from "./processes.mjs";
-import { agentRun, tryEvaluate } from "./remote.mjs";
+import { agentRun, subsOf, tryEvaluate } from "./remote.mjs";
+import { normalizeObservation } from "./substitute.mjs";
 
 const POLL_MS = 150;
 const NULL_FOCUS_QUIET_MS = 4000;
@@ -72,7 +73,8 @@ export async function settle(ctx, { since, minMs = 0, quietMs = 500, timeoutMs =
     } else {
       silentSince = null;
     }
-    const obs = normalize(raw, await writesSince(ctx, since));
+    // Les adresses de la place ramenées à leur nom : la référence ne dépend pas de la place.
+    const obs = normalizeObservation(normalize(raw, await writesSince(ctx, since)), subsOf(ctx));
     const sig = raw ? signature(obs) : null;
     const now = Date.now();
     if (sig !== null && sig === lastSig) {

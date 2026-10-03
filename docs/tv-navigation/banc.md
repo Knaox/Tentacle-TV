@@ -118,6 +118,15 @@ maintenu) · `holdup|holddown|holdleft|holdright:<s>` · `wait:<s>` ·
 de RN-tvOS — voir les limites) · `backend:<mode>=<valeur>` (change un mode du
 faux backend en cours de route, ex. `backend:health=down`).
 
+**Jamais une adresse de place en dur.** Le faux backend de la place qui joue
+s'écrit `{backend}` dans un geste `type:` — `type:http://{backend}\n` part
+vers `localhost:310n` au simulateur et vers `<IP du Mac>:310n` sur l'Apple TV
+(où localhost est la télévision elle-même). L'adresse est résolue avant la
+frappe ; si elle reparaît dans un relevé (libellé, stockage), elle y est
+ramenée à `{backend}`, et un attendu s'écrit de même. Un nom inconnu est
+refusé par `check`. (Vécu au passage final : `http://localhost:3107` en dur ne
+passait que sur la place 7.)
+
 **`settleMs`** : attente minimale avant le relevé (fondus, entrées décidées
 après un délai) ; le banc attend de toute façon que le relevé soit STABLE
 (identique 500 ms d'affilée), au plus `timeoutMs` (8 s par défaut).
