@@ -407,25 +407,53 @@ Une règle de domaine rend ses couches en pur — par exemple
 `playerBackLayers(state): BackLayerSpec<PlayerBackAction>[]` (T5) — et se
 teste sans React : `resolveBack(playerBackLayers(s), { pushed: true })`.
 
-### Adaptateur tvOS (`apps/tv/src/redesignWiring/back/BackScope.tsx`)
+La pile vivante (`createBackLayers`) EST une pile de contextes de T1
+(`createRemoteContexts(BACK_LAYER_ORDER)`) où chaque couche active décide
+`retour` : une seule copie de la règle « rang, puis le plus récemment
+activé ». `resolveBack` la rejoue sur une liste. Pages du rail :
+`RAIL_PAGES`, `isRailPage`, `isPushedPage` (`nav/railPages.ts`).
+
+### Applicateur tvOS (`apps/tv/src/platform/tvos/back/`)
 
 ```ts
+// useBackLayers.ts
 /** Inchangé : une couche, son gestionnaire relu à chaque appui. */
 export function useBackLayer(kind: BackLayerKind, active: boolean, onBack: () => void): void;
 
 /** Nouveau : les couches d'une règle pure, inscrites d'un appel, dans l'ordre
- *  de la liste ; `actions` relues à chaque appui. Ids préfixés par instance. */
+ *  de la liste ; `actions` relues à chaque appui. Ids uniques dans la liste. */
 export function useBackLayers<A extends string>(
   specs: readonly BackLayerSpec<A>[],
   actions: Readonly<Record<A, () => void>>,
 ): void;
+
+// BackScope.tsx — la portée d'un écran : MenuPressInterceptor.enabled = takesBack,
+// au relâchement backOutcome appliqué (couche, goBack, ou rien).
+export function TvosBackScope(props: BackScopeProps): JSX.Element;
 ```
+
+`redesignWiring/back/BackScope.tsx` ne garde que l'aiguillage
+(`BackScope` = l'applicateur sur Apple TV, rien sur Android TV) et réexporte
+`useBackLayer` / `useBackLayers` : les imports existants (écrans, lecteur,
+panneaux, `AppNavigator`) restent valables.
 
 Règles d'usage, inchangées : une vue, un menu ou un panneau qui a quelque
 chose à faire au Retour s'inscrit (`menu` pour tout ce qui se ferme) ; une
 Modal ajoute `onRequestClose` vers la MÊME fonction ; jamais
 `usePreventRemove` ni d'intercepteur à soi sur Apple TV ; une route poussée
-recule seule. La portée reste la seule à parler à UIKit.
+recule seule. La portée reste la seule à parler à UIKit. Et : **aucun
+contexte de la pile globale de la télécommande (T1) ne décide `retour`** —
+Retour se prend par une couche, jamais par un contexte (la pile globale ne
+sait pas de quel écran vient l'appui ; il y aurait double action). Le signal
+`menu` passe à l'entrée unique de T1 (`receiveMenu`, `withMenuIntent` pour
+une Modal) pour ses observateurs, puis la portée applique la résolution de
+son écran.
+
+### Preuve : le banc de traces
+
+`apps/tv/harness/back-trace` monte la portée sans simulateur, pour iOS et
+Android, au SHA de référence et sur l'arbre courant ; `verify` exige des
+traces identiques (et `useBackLayers` = `useBackLayer` sur chaque scénario).
 
 ## 17. Scénarios de référence
 

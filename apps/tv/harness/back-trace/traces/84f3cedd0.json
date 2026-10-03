@@ -1,0 +1,703 @@
+{
+  "reference": "84f3cedd0",
+  "ios": {
+    "scenarios": {
+      "accueil-racine": [
+        {
+          "render": [],
+          "interceptor": {
+            "enabled": false
+          }
+        },
+        {
+          "press": "sans couche",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "ouvrirRail:page:on",
+            "versReglages:rail:off"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "focus dans la page",
+          "to": "app",
+          "effects": [
+            "layer:ouvrirRail"
+          ]
+        },
+        {
+          "render": [
+            "ouvrirRail:page:off",
+            "versReglages:rail:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "rail ouvert",
+          "to": "app",
+          "effects": [
+            "layer:versReglages"
+          ]
+        },
+        {
+          "render": [
+            "ouvrirRail:page:off",
+            "versReglages:rail:off"
+          ],
+          "interceptor": {
+            "enabled": false
+          }
+        },
+        {
+          "press": "sur le profil",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "bibliotheque-sur-accueil": [
+        {
+          "render": [],
+          "interceptor": {
+            "enabled": false
+          }
+        },
+        {
+          "press": "page du rail, sans couche",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "ouvrirRail:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "focus dans la page",
+          "to": "app",
+          "effects": [
+            "layer:ouvrirRail"
+          ]
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "fiche-poussee": [
+        {
+          "render": [],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "sans couche",
+          "to": "app",
+          "effects": [
+            "goBack"
+          ]
+        },
+        {
+          "render": [
+            "panneau:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "panneau ouvert",
+          "to": "app",
+          "effects": [
+            "layer:panneau"
+          ]
+        },
+        {
+          "render": [
+            "panneau:menu:off"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "panneau fermé",
+          "to": "app",
+          "effects": [
+            "goBack"
+          ]
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "etagere-poussee-avec-rail": [
+        {
+          "render": [
+            "deplacement:menu:off",
+            "menuEntree:menu:off"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "rail ouvert ou non",
+          "to": "app",
+          "effects": [
+            "goBack"
+          ]
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "lecteur": [
+        {
+          "render": [
+            "pistes:menu:on",
+            "habillage:overlay:on",
+            "quitter:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "pistes ouvertes",
+          "to": "app",
+          "effects": [
+            "layer:pistes"
+          ]
+        },
+        {
+          "render": [
+            "pistes:menu:off",
+            "habillage:overlay:on",
+            "quitter:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "habillage",
+          "to": "app",
+          "effects": [
+            "layer:habillage"
+          ]
+        },
+        {
+          "render": [
+            "pistes:menu:off",
+            "habillage:overlay:off",
+            "quitter:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "rien à l'écran",
+          "to": "app",
+          "effects": [
+            "layer:quitter"
+          ]
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "rang-egal": [
+        {
+          "render": [
+            "a:menu:off",
+            "b:menu:off"
+          ],
+          "interceptor": {
+            "enabled": false
+          }
+        },
+        {
+          "render": [
+            "a:menu:off",
+            "b:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "a activée en dernier",
+          "to": "app",
+          "effects": [
+            "layer:a"
+          ]
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "a mise à jour garde son rang",
+          "to": "app",
+          "effects": [
+            "layer:a2"
+          ]
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:off"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "b réactivée",
+          "to": "app",
+          "effects": [
+            "layer:b"
+          ]
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "jumelage-racine": [
+        {
+          "render": [
+            "etape:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "étape intermédiaire",
+          "to": "app",
+          "effects": [
+            "layer:etape"
+          ]
+        },
+        {
+          "render": [
+            "etape:page:off"
+          ],
+          "interceptor": {
+            "enabled": false
+          }
+        },
+        {
+          "press": "accueil du jumelage",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "appui-avale": [
+        {
+          "render": [
+            "ouvrirRail:page:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "couche désactivée avant le relâchement",
+          "to": "app",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "demontage": [
+        {
+          "render": [
+            "panneau:menu:on"
+          ],
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "unmountLayers": true,
+          "interceptor": {
+            "enabled": true
+          }
+        },
+        {
+          "press": "couche démontée",
+          "to": "app",
+          "effects": [
+            "goBack"
+          ]
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ]
+    },
+    "calls": []
+  },
+  "android": {
+    "scenarios": {
+      "accueil-racine": [
+        {
+          "render": [],
+          "interceptor": null
+        },
+        {
+          "press": "sans couche",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "ouvrirRail:page:on",
+            "versReglages:rail:off"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "focus dans la page",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "ouvrirRail:page:off",
+            "versReglages:rail:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "rail ouvert",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "ouvrirRail:page:off",
+            "versReglages:rail:off"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "sur le profil",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "bibliotheque-sur-accueil": [
+        {
+          "render": [],
+          "interceptor": null
+        },
+        {
+          "press": "page du rail, sans couche",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "ouvrirRail:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "focus dans la page",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "fiche-poussee": [
+        {
+          "render": [],
+          "interceptor": null
+        },
+        {
+          "press": "sans couche",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "panneau:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "panneau ouvert",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "panneau:menu:off"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "panneau fermé",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "etagere-poussee-avec-rail": [
+        {
+          "render": [
+            "deplacement:menu:off",
+            "menuEntree:menu:off"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "rail ouvert ou non",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "lecteur": [
+        {
+          "render": [
+            "pistes:menu:on",
+            "habillage:overlay:on",
+            "quitter:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "pistes ouvertes",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "pistes:menu:off",
+            "habillage:overlay:on",
+            "quitter:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "habillage",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "pistes:menu:off",
+            "habillage:overlay:off",
+            "quitter:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "rien à l'écran",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "rang-egal": [
+        {
+          "render": [
+            "a:menu:off",
+            "b:menu:off"
+          ],
+          "interceptor": null
+        },
+        {
+          "render": [
+            "a:menu:off",
+            "b:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "a activée en dernier",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "a mise à jour garde son rang",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:off"
+          ],
+          "interceptor": null
+        },
+        {
+          "render": [
+            "a:menu:on",
+            "b:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "b réactivée",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "jumelage-racine": [
+        {
+          "render": [
+            "etape:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "étape intermédiaire",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "render": [
+            "etape:page:off"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "accueil du jumelage",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "appui-avale": [
+        {
+          "render": [
+            "ouvrirRail:page:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "press": "couche désactivée avant le relâchement",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ],
+      "demontage": [
+        {
+          "render": [
+            "panneau:menu:on"
+          ],
+          "interceptor": null
+        },
+        {
+          "unmountLayers": true,
+          "interceptor": null
+        },
+        {
+          "press": "couche démontée",
+          "to": "platform",
+          "effects": []
+        },
+        {
+          "end": true,
+          "interceptor": null
+        }
+      ]
+    },
+    "calls": []
+  }
+}
