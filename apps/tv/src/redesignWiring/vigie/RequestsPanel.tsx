@@ -5,6 +5,7 @@ import type { MyTitle } from "@tentacle-tv/shared";
 import { FocusBindingProvider, type FocusBinder } from "../../redesign/focus/focusBinding";
 import { requestRowKey } from "../../redesign/requests/RequestRow";
 import { REQUESTS_CLOSE_KEY, REQUESTS_VISIBLE_ROWS, RequestsPanelView } from "../../redesign/requests/RequestsPanelView";
+import { withMenuIntent } from "../../platform/tvos/input";
 import { useBackLayer } from "../back/BackScope";
 import { setFocusLocked } from "../focus/focusLocks";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
@@ -25,7 +26,8 @@ import { requestItemModel, requestsCountText } from "./requestModels";
  *   voit) ; une demande arrivée prend toute sa couleur, puis sort.
  * - Menu ferme : la fenêtre est une couche « menu » de la pile du Retour
  *   (`useBackLayer`), et sa `Modal`, qui reçoit Menu dans son propre
- *   contrôleur, ferme par la même fonction (`onRequestClose`) ; la croix
+ *   contrôleur, ferme par la même fonction (`onRequestClose`, par l'entrée
+ *   unique : `withMenuIntent`) ; la croix
  *   aussi. La sortie se joue (`closing`) avant que la Modal ne se retire, et
  *   tvOS rend le focus à l'aperçu du rail.
  */
@@ -54,7 +56,7 @@ export function RequestsPanel({
     [focus],
   );
   return (
-    <Modal visible transparent animationType="none" onRequestClose={requestClose}>
+    <Modal visible transparent animationType="none" onRequestClose={withMenuIntent(requestClose)}>
       <FocusBindingProvider bind={bind}>
         <RequestsPanelView
           title={t("requests:dockLabel")}

@@ -56,3 +56,16 @@ export const BackHandler = {
     bench.__calls.push("BackHandler.exitApp");
   },
 };
+
+/** L'entrée unique de la télécommande (`platform/tvos/input`) s'abonne au natif à la demande. */
+export const TVEventHandler = {
+  addListener() {
+    bench.__calls.push("TVEventHandler.addListener");
+    return { remove: () => bench.__calls.push("TVEventHandler.remove") };
+  },
+};
+
+export const TVEventControl = {
+  enableTVPanGesture: () => bench.__calls.push("TVEventControl.enableTVPanGesture"),
+  disableTVPanGesture: () => bench.__calls.push("TVEventControl.disableTVPanGesture"),
+};

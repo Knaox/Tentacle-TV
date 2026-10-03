@@ -2,6 +2,7 @@ import { createContext, useCallback, useRef, useState, useSyncExternalStore, typ
 import { StyleSheet } from "react-native";
 import { backOutcome, createBackLayers, isPushedPage, takesBack, type BackLayers } from "@tentacle-tv/tv-core";
 import { MenuPressInterceptor } from "../../../components/focus/MenuPressInterceptor";
+import { receiveMenu } from "../input";
 
 /**
  * L'APPLICATEUR du Retour sur Apple TV — il applique, il ne décide pas.
@@ -15,7 +16,9 @@ import { MenuPressInterceptor } from "../../../components/focus/MenuPressInterce
  * - D'AVANCE : sur tvOS, un appui Menu est pris ou laissé à UIKit dès qu'il
  *   commence. La portée est donc un `MenuPressInterceptor` dont `enabled`
  *   vaut `takesBack` — une couche est active, ou la page est poussée ;
- * - AU GESTE, au relâchement : `backOutcome` — la couche visée répond, la page
+ * - AU GESTE, au relâchement : Menu passe d'abord par l'entrée unique
+ *   (`receiveMenu` : ses observateurs voient `retour` ; aucun contexte global
+ *   ne le décide), puis `backOutcome` — la couche visée répond, la page
  *   poussée recule (`goBack`), ou rien (l'appui était pris, plus rien ne le
  *   veut : relevé B3 de `docs/tv-navigation/retour-rail.md`). Sans prise,
  *   UIKit QUITTE l'application — la règle d'Apple, que lui seul sait faire.
@@ -42,6 +45,7 @@ export function TvosBackScope({ route, navigation, children }: BackScopeProps) {
   const latest = useRef({ navigation, pushed });
   latest.current = { navigation, pushed };
   const onMenuPress = useCallback(() => {
+    receiveMenu();
     switch (backOutcome({ layered: layers.target() !== null, pushed: latest.current.pushed })) {
       case "layer":
         layers.back();

@@ -2,15 +2,17 @@ import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FadingModal } from "../../redesign/motion/FadingModal";
 import { NavEntryMenu, type NavMenuItem } from "../../redesign/nav/NavEntryMenu";
+import { withMenuIntent } from "../../platform/tvos/input";
 import type { FocusStore } from "../focus/focusStore";
 import type { NavMenuAction, RailArrange } from "./useRailArrange";
 
 /**
  * Le menu d'organisation d'une entrée, dans une `Modal` : sur tvOS elle a son
  * propre contrôleur, le focus n'en sort pas, et Retour la referme
- * (`onRequestClose`) sans passer par l'écran — le focus retrouve alors la case
- * de l'entrée, ou celle qui l'a remplacée (après « Masquer », la suivante :
- * on enchaîne). tvOS y focalise l'élément du haut : « Déplacer ». Refermé, le
+ * (`onRequestClose`, par l'entrée unique : `withMenuIntent`) sans passer par
+ * l'écran — le focus retrouve alors la case de l'entrée, ou celle qui l'a
+ * remplacée (après « Masquer », la suivante : on enchaîne). tvOS y focalise
+ * l'élément du haut : « Déplacer ». Refermé, le
  * menu s'efface d'un seul fondu avant que la Modal ne se retire
  * (`FadingModal`).
  *
@@ -45,7 +47,7 @@ export function NavMenuModal({ arrange, focus, railWidth }: { arrange: RailArran
   }, [shownMenu, t]);
 
   return (
-    <FadingModal value={menu} onRequestClose={closeMenu}>
+    <FadingModal value={menu} onRequestClose={withMenuIntent(closeMenu)}>
       {(shown, leaving) => (
         <NavEntryMenu
           title={shown.label}
