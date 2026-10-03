@@ -2,6 +2,7 @@ import { memo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { MY_TITLE_PERCENT_KEY } from "@tentacle-tv/shared";
+import { SEASONS_ALL_KEY, seasonFocusKey } from "@tentacle-tv/tv-core";
 import { Icon, type IconName } from "../../icons/Icon";
 import { ArrivalSign } from "../../requests/ArrivalSign";
 import type { ArrivalModel, ArrivalState } from "../../requests/arrivalTypes";
@@ -23,8 +24,8 @@ import { OPTION_ROW_HEIGHT, OptionRow } from "../library/OptionRow";
  * loin (`shortcut` : la touche Lecture/Pause dessinée, « Lecture/Pause :
  * demander »).
  *
- * Vue pure. Clés de focus : `sheet:season:all`, `sheet:season:<numéro>`, puis
- * `sheet:apply` (groupe `sheet:footer`).
+ * Vue pure. Clés de focus (tv-core `titles/seasonsSheet`) : `sheet:season:all`,
+ * `sheet:season:<numéro>`, puis `sheet:apply` (groupe `sheet:footer`).
  */
 
 export type SeasonStatusTone = "pending" | "ready" | "neutral";
@@ -57,10 +58,6 @@ export interface SeasonsSheetModel {
    *  sinon « Fermer » — jamais un bouton qui ne ferait rien. */
   submit: { label: string; kind: "request" | "close" };
 }
-
-export const seasonFocusKey = (number: number) => `sheet:season:${number}`;
-/** La ligne « Toutes les saisons manquantes ». */
-export const SEASONS_ALL_KEY = "sheet:season:all";
 
 const WIDTH = 900;
 const INNER = WIDTH - 96;

@@ -2,15 +2,33 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMyTitles, useRequestTitleSeasons, useSeasons, useTitleSeasons } from "@tentacle-tv/api-client";
 import { librarySeasonNumbers, type TitleRequestOutcome } from "@tentacle-tv/shared";
-import { hasAllSeasonsRow, isAdvancing, shortcutSeasons, toggleAllSeasons, type SeasonsSheetFocus } from "@tentacle-tv/tv-core";
+import {
+  SEASONS_APPLY_KEY,
+  SEASONS_FOOTER_GROUP,
+  SEASONS_SHEET_ENTRY_WAIT_MS,
+  canSubmitSeasons,
+  checkedSeasons,
+  closesAtOnce,
+  isAdvancing,
+  isSeasonsFooterKey,
+  panelBackLayers,
+  panelPresented,
+  seasonsSheetEntry,
+  seasonsSheetFocusOf,
+  seasonsSheetKeys,
+  seasonsSheetReady,
+  shortcutSeasons,
+  toggleAllSeasons,
+  toggleSeason,
+} from "@tentacle-tv/tv-core";
+import { useChoiceEntry } from "../../platform/tvos/panels/useChoiceEntry";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { FadingModal } from "../../redesign/motion/FadingModal";
-import { SEASONS_ALL_KEY, SeasonsSheet, seasonFocusKey } from "../../redesign/screens/requests/SeasonsSheet";
+import { SeasonsSheet } from "../../redesign/screens/requests/SeasonsSheet";
 import { useBackLayer } from "../back/BackScope";
 import { createEntryGuide } from "../focus/entryGuide";
 import { useFocusStore } from "../focus/focusStore";
 import { useRemoteEvents } from "../remote/remoteEvents";
-import { useChoiceEntry } from "../settings/settingsFocus";
 import type { AbsentTitle } from "./absentTitle";
 import { useLiveRefresh } from "./liveRequests";
 import { requestableNumbers, seasonsSheetModel } from "./seasonsSheetModel";
@@ -36,24 +54,13 @@ import type { VigieGate } from "./useVigieGate";
  * qu'à sa fin. On y ENTRE par la saison choisie (`focus` : l'onglet grisé de
  * la fiche, déjà cochée), sinon par la première à cocher, sinon par la pilule
  * (`useChoiceEntry`) ; BAS depuis n'importe quelle ligne mène au pied
- * (`sheet:footer`). Un filet la présente quand même, sur sa lecture.
+ * (`sheet:footer`). Un filet la présente quand même, sur sa lecture. Ces
+ * règles sont celles de tv-core (`titles/seasonsSheet`, `seasonsShortcut`,
+ * `panels/panelLifecycle`) ; ce câblage les applique.
  *
  * Les saisons de la demande du compte en cours disent son état et son
  * avancement, en direct (`useLiveRefresh` tant qu'elle avance).
  */
-
-const APPLY_KEY = "sheet:apply";
-const isFooterKey = (key: string) => key === APPLY_KEY;
-const SEASON_KEY = /^sheet:season:(\d+)$/;
-
-/** Ce qui a le focus, tel que la règle du raccourci le lit. */
-function sheetFocusOf(key: string | null): SeasonsSheetFocus {
-  if (key === SEASONS_ALL_KEY) return { kind: "all" };
-  const season = key ? SEASON_KEY.exec(key) : null;
-  return season ? { kind: "season", number: Number(season[1]) } : { kind: "other" };
-}
-/** Le filet : des saisons qui tardent ne retiennent pas la feuille. */
-const ENTRY_WAIT_MS = 1500;
 
 interface Props {
   gate: VigieGate;
@@ -98,47 +105,37 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
   }, [onClose]);
   const entry = useRef<string | null>(null);
   const requestClose = useCallback(() => {
-    if (entry.current === null) closed();
+    if (closesAtOnce("seasons", panelPresented(entry.current))) closed();
     else setClosing(true);
   }, [closed]);
   // Une couche « menu » de la pile du Retour : la Modal reçoit Menu elle-même
   // (`onRequestClose`), mais l'écran sait qu'un menu est ouvert.
-  useBackLayer("menu", !closing, requestClose);
+  const [back] = panelBackLayers("seasons", closing);
+  useBackLayer(back.kind, back.active, requestClose);
 
   const focus = useFocusStore();
   // Le pied de la liste, lié avant le premier rendu de la vue.
-  useState(() => focus.bind("sheet:footer", { container: createEntryGuide(focus, { owns: isFooterKey, fallback: () => APPLY_KEY }) }));
+  useState(() => focus.bind(SEASONS_FOOTER_GROUP, { container: createEntryGuide(focus, { owns: isSeasonsFooterKey, fallback: () => SEASONS_APPLY_KEY }) }));
   const [waited, setWaited] = useState(false);
   useEffect(() => {
-    const timer = setTimeout(() => setWaited(true), ENTRY_WAIT_MS);
+    const timer = setTimeout(() => setWaited(true), SEASONS_SHEET_ENTRY_WAIT_MS);
     return () => clearTimeout(timer);
   }, []);
   const numbers = useMemo(() => (ownedKnown ? requestableNumbers(answer, owned) : []), [ownedKnown, answer, owned]);
-  const keys = useMemo(
-    () => [...(hasAllSeasonsRow(numbers) ? [SEASONS_ALL_KEY] : []), ...numbers.map(seasonFocusKey), APPLY_KEY],
-    [numbers],
-  );
+  const keys = useMemo(() => seasonsSheetKeys(numbers), [numbers]);
   // L'entrée : décidée une fois les saisons sues (ou le filet écoulé), figée ensuite.
-  if (entry.current === null && ((answer !== null && ownedKnown) || failed || waited)) {
-    const first = focusSeason !== undefined && numbers.includes(focusSeason) ? focusSeason : numbers[0];
-    entry.current = first !== undefined ? seasonFocusKey(first) : APPLY_KEY;
+  if (entry.current === null && seasonsSheetReady({ answered: answer !== null, ownedKnown, failed, waited })) {
+    entry.current = seasonsSheetEntry(numbers, focusSeason);
   }
   useChoiceEntry(focus, keys, entry.current);
 
-  const onToggle = useCallback((number: number) => {
-    setChecked((current) => {
-      const next = new Set(current);
-      if (next.has(number)) next.delete(number);
-      else next.add(number);
-      return next;
-    });
-  }, []);
+  const onToggle = useCallback((number: number) => setChecked((current) => toggleSeason(current, number)), []);
 
   const onToggleAll = useCallback(() => setChecked((current) => toggleAllSeasons(numbers, current)), [numbers]);
 
   const sending = useRef(false);
   const submit = useCallback(async (seasons: number[]) => {
-    if (sending.current || seasons.length === 0) return;
+    if (!canSubmitSeasons(seasons, sending.current)) return;
     sending.current = true;
     try {
       const outcome = await requestSeasons({ key: title.key, seasons });
@@ -150,18 +147,18 @@ export function SeasonsSheetRedesign({ gate, title, seriesId, focus: focusSeason
     }
     requestClose();
   }, [requestSeasons, title, onAnswer, requestClose]);
-  const onSubmit = useCallback(() => void submit(numbers.filter((n) => checked.has(n))), [submit, numbers, checked]);
+  const onSubmit = useCallback(() => void submit(checkedSeasons(numbers, checked)), [submit, numbers, checked]);
 
   // Lecture/Pause : la feuille ouverte, un appui simple (jamais l'appui maintenu).
   const ticked = useRef(checked);
   ticked.current = checked;
   useRemoteEvents((event) => {
     if (event.kind !== "press" || event.button !== "playPause" || event.long) return;
-    void submit(shortcutSeasons(numbers, ticked.current, sheetFocusOf(focus.focusedKey())));
-  }, entry.current !== null && !closing);
+    void submit(shortcutSeasons(numbers, ticked.current, seasonsSheetFocusOf(focus.focusedKey())));
+  }, panelPresented(entry.current) && !closing);
 
   return (
-    <FadingModal value={entry.current !== null && !closing ? sheet : null} onRequestClose={requestClose} onExited={closed}>
+    <FadingModal value={panelPresented(entry.current) && !closing ? sheet : null} onRequestClose={requestClose} onExited={closed}>
       {(shown, leaving) => (
         <FocusBindingProvider bind={focus.binder}>
           <SeasonsSheet
