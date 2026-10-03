@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
+import { REQUESTS_VISIBLE_ROWS } from "@tentacle-tv/tv-core";
 import { BackButton } from "../controls/BackButton";
 import { GlassSurface } from "../glass/GlassSurface";
 import { useNativeGlassBacking } from "../glass/glassBacking";
@@ -32,12 +33,11 @@ import { useLeavingItems } from "./useLeavingItems";
  *
  * Focus (câblage) : la croix `requests:close`, seule action — elle prend
  * l'entrée ; les lignes `requests:row:<clé>` ne deviennent focalisables que
- * pour faire défiler une liste qui dépasse (`REQUESTS_VISIBLE_ROWS`).
+ * pour faire défiler une liste qui dépasse (`REQUESTS_VISIBLE_ROWS`, tv-core :
+ * la liste en montre quatre et demie).
  */
 
 export const REQUESTS_CLOSE_KEY = "requests:close";
-/** Au-delà de ce nombre de lignes, la liste défile : elle en montre quatre et demie. */
-export const REQUESTS_VISIBLE_ROWS = 4;
 
 const WIDTH = 1320;
 const PAD = 56;

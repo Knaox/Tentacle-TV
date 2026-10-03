@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
-import { TV_TITLE_ORIGIN } from "@tentacle-tv/tv-core";
+import { TV_TITLE_ORIGIN, requestsDockLocked } from "@tentacle-tv/tv-core";
 import type { NavAccessory } from "../../redesign/nav/NavRail";
 import { REQUESTS_DOCK_HEIGHT, REQUESTS_DOCK_KEY, RequestsDock } from "../../redesign/requests/RequestsDock";
 import { setFocusLocked } from "../focus/focusLocks";
@@ -38,7 +38,7 @@ export function useRequestsAccessory(focus: FocusStore, moving: boolean): NavAcc
   const open = gate !== null;
   useEffect(() => {
     if (!open) return undefined;
-    setFocusLocked(focus, REQUESTS_DOCK_KEY, moving);
+    setFocusLocked(focus, REQUESTS_DOCK_KEY, requestsDockLocked(moving));
     return () => setFocusLocked(focus, REQUESTS_DOCK_KEY, false);
   }, [focus, moving, open]);
   return useMemo(

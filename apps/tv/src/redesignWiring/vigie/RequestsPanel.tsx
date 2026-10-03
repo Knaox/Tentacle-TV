@@ -2,11 +2,12 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { Modal } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { MyTitle } from "@tentacle-tv/shared";
+import { REQUESTS_CLOSE_GUARDED, requestsPanelBackLayers, requestsRowsFocusable } from "@tentacle-tv/tv-core";
 import { FocusBindingProvider, type FocusBinder } from "../../redesign/focus/focusBinding";
 import { requestRowKey } from "../../redesign/requests/RequestRow";
-import { REQUESTS_CLOSE_KEY, REQUESTS_VISIBLE_ROWS, RequestsPanelView } from "../../redesign/requests/RequestsPanelView";
+import { REQUESTS_CLOSE_KEY, RequestsPanelView } from "../../redesign/requests/RequestsPanelView";
 import { withMenuIntent } from "../../platform/tvos/input";
-import { useBackLayer } from "../back/BackScope";
+import { useBackLayers } from "../back/BackScope";
 import { setFocusLocked } from "../focus/focusLocks";
 import { useFocusStore, type FocusStore } from "../focus/focusStore";
 import { STILL_READING, type ArrivalReading } from "./arrivalModels";
@@ -20,12 +21,12 @@ import { requestItemModel, requestsCountText } from "./requestModels";
  *   l'entrée (l'élément du haut, que tvOS choisit dans une Modal), sous la
  *   garde anti-clic fantôme — la fenêtre s'ouvre sous un OK encore enfoncé.
  * - LECTURE SEULE : les lignes ne sont focalisables que pour faire défiler une
- *   liste qui dépasse (`REQUESTS_VISIBLE_ROWS`) ; OK n'y fait rien.
+ *   liste qui dépasse (`requestsRowsFocusable`, tv-core) ; OK n'y fait rien.
  * - EN DIRECT : chaque affiche se colore au fil de son avancement, qui bouge
  *   d'une seconde à l'autre (`reading` : l'heure de la lecture, et si on la
  *   voit) ; une demande arrivée prend toute sa couleur, puis sort.
  * - Menu ferme : la fenêtre est une couche « menu » de la pile du Retour
- *   (`useBackLayer`), et sa `Modal`, qui reçoit Menu dans son propre
+ *   (`requestsPanelBackLayers`, tv-core), et sa `Modal`, qui reçoit Menu dans son propre
  *   contrôleur, ferme par la même fonction (`onRequestClose`, par l'entrée
  *   unique : `withMenuIntent`) ; la croix
  *   aussi. La sortie se joue (`closing`) avant que la Modal ne se retire, et
@@ -44,14 +45,14 @@ export function RequestsPanel({
   const { t } = useTranslation();
   const [closing, setClosing] = useState(false);
   const requestClose = useCallback(() => setClosing(true), []);
-  useBackLayer("menu", !closing, requestClose);
+  useBackLayers(requestsPanelBackLayers(closing), { close: requestClose });
   const focus = useFocusStore();
   const items = useMemo(() => titles?.map((title) => requestItemModel(title, t, reading)) ?? null, [titles, t, reading]);
   useRowLocks(focus, items ? items.map((item) => requestRowKey(item.key)) : []);
   const bind = useCallback<FocusBinder>(
     (key, form) => {
       const binding = focus.binder(key, form);
-      return key === REQUESTS_CLOSE_KEY ? { ...binding, phantomPressGuard: true } : binding;
+      return key === REQUESTS_CLOSE_KEY ? { ...binding, phantomPressGuard: REQUESTS_CLOSE_GUARDED } : binding;
     },
     [focus],
   );
@@ -80,7 +81,7 @@ export function RequestsPanel({
  */
 function useRowLocks(focus: FocusStore, keys: readonly string[]): void {
   const locked = useRef(new Set<string>());
-  const wanted = new Set(keys.length > REQUESTS_VISIBLE_ROWS ? [] : keys);
+  const wanted = new Set(requestsRowsFocusable(keys.length) ? [] : keys);
   for (const key of [...locked.current]) {
     if (wanted.has(key)) continue;
     setFocusLocked(focus, key, false);
