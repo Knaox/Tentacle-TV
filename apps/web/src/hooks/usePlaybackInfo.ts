@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { applyTranscodeTarget, fitServerCappedTranscode, useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
 import { directPlayUrl } from "../lib/directPlayUrl";
-import { transcodeTarget, type MediaSource } from "@tentacle-tv/shared";
+import { transcodeTarget, type MediaSource, type PlaybackFailure } from "@tentacle-tv/shared";
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
   buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
@@ -76,6 +76,8 @@ export interface PlaybackInfoState {
    * `null` tant qu'aucune lecture n'a été négociée.
    */
   verdict: Verdict | null;
+  /** La négociation a échoué (statut gardé) : l'écran le dit au lieu d'attendre. */
+  error: PlaybackFailure | null;
 }
 
 /**
@@ -98,6 +100,7 @@ export function usePlaybackInfo(nativePlayer = false) {
     streamOffset: 0,
     isLoading: false,
     verdict: null,
+    error: null,
   });
 
   // Le profil AVFoundation servait la WKWebView de la coquille Tauri macOS. Il
@@ -152,10 +155,12 @@ export function usePlaybackInfo(nativePlayer = false) {
      */
     sourceDolbyVision?: boolean;
   }) => {
-    if (!userId) return;
+    const fail = (error: PlaybackFailure) => setState((prev) => ({ ...prev, isLoading: false, error }));
+    // Sans compte, rien ne se négocie : la session n'existe plus.
+    if (!userId) return fail({ from: "request", error: { status: 401 }, target: "tentacle" });
 
     const currentFetch = ++fetchId.current;
-    setState((prev) => ({ ...prev, isLoading: true }));
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       // Le profil mémoïsé ne convient que si rien de propre à CETTE lecture ne
@@ -189,8 +194,7 @@ export function usePlaybackInfo(nativePlayer = false) {
       const ms = result.MediaSources?.[0];
       if (!ms) {
         console.warn(DBG, "no media source returned");
-        setState((prev) => ({ ...prev, isLoading: false }));
-        return;
+        return fail({ from: "marker", marker: "noMediaSource", jellyfinErrorCode: result.ErrorCode });
       }
 
       const directPlay = ms.SupportsDirectPlay && !ms.TranscodingUrl;
@@ -226,8 +230,7 @@ export function usePlaybackInfo(nativePlayer = false) {
           : `${baseUrl}${transcodingPath}`;
       } else {
         console.warn(DBG, "no TranscodingUrl and not direct play");
-        setState((prev) => ({ ...prev, isLoading: false }));
-        return;
+        return fail({ from: "marker", marker: "noMediaSource", jellyfinErrorCode: result.ErrorCode ?? "NoCompatibleStream" });
       }
 
       const offsetTicks = opts.startTimeTicks ?? 0;
@@ -260,6 +263,7 @@ export function usePlaybackInfo(nativePlayer = false) {
         streamOffset,
         isLoading: false,
         verdict,
+        error: null,
       });
 
       // Relevé synthétique pour l'inspecteur d'une dalle (cf. playbackLog).
@@ -270,7 +274,7 @@ export function usePlaybackInfo(nativePlayer = false) {
     } catch (err) {
       if (fetchId.current !== currentFetch) return;
       console.error(DBG, "PlaybackInfo failed", err);
-      setState((prev) => ({ ...prev, isLoading: false }));
+      fail({ from: "request", error: err, target: "relayed", request: `POST /Items/${opts.itemId}/PlaybackInfo` });
     }
   }, [client, userId, deviceProfile, profileOptions]);
 
@@ -278,7 +282,7 @@ export function usePlaybackInfo(nativePlayer = false) {
     ++fetchId.current; // Invalidate in-flight fetches
     setState({
       streamUrl: null, playSessionId: null, mediaSource: null,
-      isDirectPlay: false, isDirectStream: false, streamOffset: 0, isLoading: false, verdict: null,
+      isDirectPlay: false, isDirectStream: false, streamOffset: 0, isLoading: false, verdict: null, error: null,
     });
   }, []);
 

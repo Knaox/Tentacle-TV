@@ -1,4 +1,5 @@
 import { useMemo, type MutableRefObject, type SyntheticEvent } from "react";
+import { mediaElementFailure, type PlaybackFailure } from "@tentacle-tv/shared";
 import { wtLog } from "../watchTogether/wtLog";
 import { LOADING_MS } from "./seekLanding";
 import { bufferedFraction } from "./bufferedProgress";
@@ -38,6 +39,12 @@ interface UseVideoEventsArgs {
   onPlayStateChange?: (paused: boolean) => void;
   onBufferingChange?: (buffering: boolean) => void;
   onFatalError?: () => void;
+  /**
+   * L'échec, dit par la page — fourni pour une source que l'élément lit SEUL
+   * (lecture directe, HLS du système) : sous hls.js, c'est hls.js qui tente
+   * de réparer puis le dit (`hlsErrorRecovery`).
+   */
+  onFailure?: (failure: PlaybackFailure) => void;
 }
 
 /**
@@ -156,22 +163,22 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       // MEDIA_ERR_DECODE / MEDIA_ERR_SRC_NOT_SUPPORTED : ce client ne peut
       // pas lire ce média (Watch Together : ne pas geler le groupe).
       if (err && (err.code === 3 || err.code === 4)) a.onFatalError?.();
-      // Échec PENDANT le chargement : rendre la main tout de suite. Aucun
-      // événement ne viendra plus de cet élément, et laisser tourner le spinner
-      // jusqu'aux 15 s du failsafe — voire indéfiniment si un repli l'a
-      // désarmé — donnait un écran noir muet, sans rien à quoi se raccrocher.
-      // En lecture établie on ne touche à rien : hls.js sait se remettre d'une
-      // erreur réseau passagère, et un bouton de lecture surgi en plein film
-      // serait un remède pire que le mal.
+      // L'élément ne dira plus rien : la page dit pourquoi (au chargement
+      // comme en plein film) et propose la suite. Un abandon voulu (code 1) ou
+      // une source vidée n'est pas un échec.
+      const report = err && err.code !== 1 && !/empty src/i.test(err.message) ? a.onFailure : undefined;
+      // Échec PENDANT le chargement : rendre la main tout de suite, sans
+      // laisser tourner le spinner jusqu'au failsafe.
       if (a.sourceChangingRef.current) {
         a.sourceChangingRef.current = false;
         a.setLoading(false);
-        a.setShowPlayButton(true);
+        if (!report) a.setShowPlayButton(true);
       }
+      if (err && report) report({ from: "engine", failure: mediaElementFailure(err.code, err.message) });
     },
     onEnded: () => {
       a.onPlaybackEnded();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [a.src, a.itemId, a.isDirectPlay, a.startPositionSeconds, a.jellyfinDuration, a.onPlaybackEnded, a.onProgress, a.onStarted, a.onPlayStateChange, a.onBufferingChange, a.onFatalError]);
+  }), [a.src, a.itemId, a.isDirectPlay, a.startPositionSeconds, a.jellyfinDuration, a.onPlaybackEnded, a.onProgress, a.onStarted, a.onPlayStateChange, a.onBufferingChange, a.onFatalError, a.onFailure]);
 }

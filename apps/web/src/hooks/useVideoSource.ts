@@ -1,12 +1,14 @@
 import { useRef, useState, useEffect, type MutableRefObject } from "react";
 import Hls from "hls.js";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import type { PlaybackFailure } from "@tentacle-tv/shared";
 
 import {
-  attemptPlay, BUFFER_GATE_TIMEOUT, configHls, DIRECT_PLAY_GUARD_MS, HAS_NATIVE_HLS, isMseSource,
+  attemptPlay, BUFFER_GATE_TIMEOUT, configHls, DIRECT_PLAY_GUARD_MS, HAS_NATIVE_HLS, isMseSource, START_FAILSAFE_MS,
 } from "./videoSourceHelpers";
 import { attachHlsTimeline } from "./hlsTimelineAttach";
 import { hlsSessionStart } from "./hlsTimeline";
+import { watchHlsErrors } from "./hlsErrorRecovery";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -41,6 +43,8 @@ interface UseVideoSourceOptions {
    * Son absence désarme la garde : un mp4 lent à charger ne déclenche rien.
    */
   onDirectPlayNonFiable?: (seconds: number) => void;
+  /** Un échec que plus rien ne rattrape : la page le dit (cf. `useWebPlaybackProblem`). */
+  onFailure?: (failure: PlaybackFailure) => void;
 }
 
 export function useVideoSource({
@@ -48,7 +52,7 @@ export function useVideoSource({
   effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
   seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
   lastKnownPositionRef, currentTimeRef, onSeekRequest, onSeekComplete, hlsRunStartRef, hlsLandingRef, containerBaseRef,
-  onDirectPlayNonFiable,
+  onDirectPlayNonFiable, onFailure,
 }: UseVideoSourceOptions) {
   const hlsRef = useRef<Hls | null>(null);
   // Base d'horodatage du conteneur apprise sur CE média (session partie du
@@ -118,14 +122,20 @@ export function useVideoSource({
       v.load();
     }
 
+    // Rien de chargé : la page le DIT (démarrage trop long, cause sondée) ;
+    // « Appuyez pour lire » ne sert qu'à la lecture automatique refusée.
+    const giveUp = (failure: PlaybackFailure) => {
+      clearTimeout(failsafe);
+      sourceChangingRef.current = false;
+      setLoading(false);
+      if (onFailure) onFailure(failure);
+      else setShowPlayButton(true);
+    };
     const failsafe = setTimeout(() => {
-      if (sourceChangingRef.current) {
-        console.error(DBG, "loadedmetadata timeout — recovery");
-        sourceChangingRef.current = false;
-        setLoading(false);
-        setShowPlayButton(true);
-      }
-    }, 15_000);
+      if (!sourceChangingRef.current) return;
+      console.error(DBG, "loadedmetadata timeout");
+      giveUp({ from: "marker", marker: "startTimeout" });
+    }, START_FAILSAFE_MS);
 
     // Même schéma que le repli CORS plus bas : on désactive la capacité fautive
     // pour la session, puis on demande au parent de relancer la lecture. Ici le
@@ -208,35 +218,23 @@ export function useVideoSource({
       } else {
         v.addEventListener("canplay", onReady, { once: true });
       }
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          console.error(DBG, "HLS fatal error:", data.type, data.details);
-          // CORS / cross-origin direct streaming blocked the manifest fetch.
-          // Disable DS for this session (admin config stays ON) and ask the
-          // parent to re-fetch PlaybackInfo, which will now go through the
-          // same-origin proxy at /api/jellyfin/* (no CORS).
-          //
-          // Ce chemin ne sert plus qu'au serveur qui autorise `PlaybackInfo`
-          // mais pas `/Videos` : quand les deux sont refuses, le verrou est
-          // deja pose par `getPlaybackInfo` et l'URL est arrivee en proxy.
-          if (
-            data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR &&
-            jfClient.getDirectStreaming()
-          ) {
-            jfClient.signalDirectStreamingBlocked("manifeste HLS direct refuse");
-            // `failsafe` conservé : hls.js est détruit juste après, plus aucun
-            // événement ne viendra de l'élément vidéo. Si la relance échoue,
-            // c'est lui — et lui seul — qui sortira du spinner.
-            sourceChangingRef.current = false;
-            hls.destroy();
-            hlsRef.current = null;
-            onSeekRequest?.(currentTimeRef.current);
-            return;
-          }
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-          else { clearTimeout(failsafe); sourceChangingRef.current = false; setLoading(false); setShowPlayButton(true); }
-        }
+      watchHlsErrors(hls, {
+        // CORS / cross-origin direct streaming blocked the manifest fetch.
+        // Disable DS for this session (admin config stays ON) and ask the
+        // parent to re-fetch PlaybackInfo, which will now go through the
+        // same-origin proxy at /api/jellyfin/* (no CORS). Ne sert plus qu'au
+        // serveur qui autorise `PlaybackInfo` mais pas `/Videos`.
+        onManifestRefused: () => {
+          if (!jfClient.getDirectStreaming()) return false;
+          jfClient.signalDirectStreamingBlocked("manifeste HLS direct refuse");
+          // `failsafe` conservé : si la relance échoue, c'est lui qui le dira.
+          sourceChangingRef.current = false;
+          hls.destroy();
+          hlsRef.current = null;
+          onSeekRequest?.(currentTimeRef.current);
+          return true;
+        },
+        onFail: giveUp,
       });
       hls.loadSource(src);
       hls.attachMedia(v);

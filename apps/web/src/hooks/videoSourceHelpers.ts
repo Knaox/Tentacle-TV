@@ -32,11 +32,18 @@ export function isMseSource(src: string, useNativeHls?: boolean): boolean {
 export const BUFFER_GATE_TIMEOUT = 8_000;
 
 /**
+ * Au-delà, un démarrage qui n'a rien chargé est un échec qu'on DIT (cause
+ * sondée), au lieu d'un spinner. Trente secondes, comme le mobile : une
+ * conversion lourde peut mettre plus de quinze secondes à livrer son premier
+ * segment.
+ */
+export const START_FAILSAFE_MS = 30_000;
+
+/**
  * Filet de la lecture directe : Chromium accepte parfois un conteneur qu'il ne
  * sait pas démuxer et se fige sur une image noire, sans erreur ni événement —
  * le mode d'échec de jellyfin-web #7651. Trois secondes de silence valent donc
- * échec, très en amont du `failsafe` de 15 s qui, lui, se contente d'afficher
- * un bouton de lecture à un utilisateur déjà perdu.
+ * échec, très en amont du `failsafe` de démarrage (`START_FAILSAFE_MS`).
  */
 export const DIRECT_PLAY_GUARD_MS = 3_000;
 

@@ -167,6 +167,15 @@ async function runProbe(latencyOnly: boolean): Promise<ProbeResult> {
   }
 }
 
+/**
+ * Une sonde ponctuelle, SANS toucher à l'état : qui ne répond pas, pour
+ * expliquer un échec (le lecteur, une page). `"ok"` : les deux répondent.
+ */
+export async function probeReachability(): Promise<"ok" | "backend" | "jellyfin"> {
+  const result = await runProbe(false);
+  return result.ok ? "ok" : result.reason ?? "backend";
+}
+
 async function probe(latencyOnly = false): Promise<void> {
   if (probing) return;
   probing = true;

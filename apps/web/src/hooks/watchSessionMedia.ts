@@ -1,5 +1,6 @@
 import type { JellyfinClient } from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, formatEpisodeCode } from "@tentacle-tv/shared";
+import { stripOverviewHtml } from "../lib/overviewHtml";
 import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/player/videoPlayer.types";
 
@@ -100,4 +101,24 @@ export function buildPosterUrl(client: JellyfinClient, item: MediaItem | undefin
     return client.getImageUrl(item.SeriesId, "Backdrop", { width: 1920, quality: 80 });
   }
   return undefined;
+}
+
+/** L'épisode suivant, tel que la carte de fin le présente : code et titre, image, résumé court. */
+export function nextEpisodeCard(client: JellyfinClient, next: MediaItem | null | undefined): {
+  title?: string; imageUrl?: string; description?: string;
+} {
+  if (!next?.Id) return {};
+  const hasOwnBackdrop = (next.BackdropImageTags?.length ?? 0) > 0;
+  const hasParentBackdrop = (next.ParentBackdropImageTags?.length ?? 0) > 0;
+  const backdropId = next.Type === "Episode"
+    ? (hasOwnBackdrop ? next.Id : (next.ParentBackdropItemId ?? next.SeriesId ?? next.Id))
+    : next.Id;
+  const imageType = (hasOwnBackdrop || hasParentBackdrop) ? "Backdrop" : "Primary";
+  // stripOverviewHtml AVANT le slice : couper du HTML brut sectionnerait une balise.
+  const overview = next.Overview ? stripOverviewHtml(next.Overview) : undefined;
+  return {
+    title: `${formatEpisodeCode(next.ParentIndexNumber, next.IndexNumber, { style: "padded" })} — ${next.Name}`,
+    imageUrl: client.getImageUrl(backdropId, imageType, { width: 720, quality: 85 }),
+    description: overview ? (overview.length > 120 ? overview.slice(0, 120) + "…" : overview) : undefined,
+  };
 }

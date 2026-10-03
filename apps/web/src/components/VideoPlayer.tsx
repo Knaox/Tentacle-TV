@@ -44,7 +44,7 @@ export function VideoPlayer({
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   onNextEpisode, onPreviousEpisode,
   segments = [], runtimeMs = 0, libraryId = null, posterUrl,
-  transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss, onRequestPlay,
+  transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss, onRequestPlay, onFailure,
   inGroupSession, onControlsVisibilityChange, applyToSeries,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -94,7 +94,7 @@ export function VideoPlayer({
     effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
     seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
     lastKnownPositionRef, currentTimeRef, onSeekRequest, onSeekComplete, hlsRunStartRef, hlsLandingRef, containerBaseRef,
-    onDirectPlayNonFiable,
+    onDirectPlayNonFiable, onFailure,
   });
 
   const { volume, handleVolumeChange, handleToggleMute } = usePlayerVolume({ videoRef, elementKey: mediaKind });
@@ -209,7 +209,7 @@ export function VideoPlayer({
     src, itemId, isDirectPlay, startPositionSeconds, jellyfinDuration,
     setPlaying, setHasStarted, setLoading, setShowPlayButton, setBuffered, setVideoDuration,
     onPlaybackEnded: () => setEnded(true),
-    onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError,
+    onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError, onFailure: mediaKind === "native" ? onFailure : undefined,
   });
 
   const controls = {

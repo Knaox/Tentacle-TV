@@ -20,9 +20,11 @@ export function useLocalFirstMedia({
 }): {
   item: MediaItem | undefined;
   isLoading: boolean;
+  /** La fiche n'a pas pu se lire (404, 401, réseau) : le lecteur le dit au lieu d'attendre. */
+  error: unknown;
 } {
   const server = useMediaItem(itemId, { enabled: !waitingLocal && !isLocalPlayback });
   const localItem = useLocalMediaItem(itemId, isLocalPlayback);
-  if (isLocalPlayback) return { item: localItem ?? undefined, isLoading: false };
-  return { item: server.data, isLoading: waitingLocal || server.isLoading };
+  if (isLocalPlayback) return { item: localItem ?? undefined, isLoading: false, error: null };
+  return { item: server.data, isLoading: waitingLocal || server.isLoading, error: server.error };
 }

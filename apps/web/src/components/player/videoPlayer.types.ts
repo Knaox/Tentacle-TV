@@ -1,4 +1,4 @@
-import type { MediaItem, ResolvedSegment, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, PlaybackFailure, ResolvedSegment, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 
@@ -105,6 +105,8 @@ export interface VideoPlayerProps {
   onBufferingChange?: (buffering: boolean) => void;
   /** Watch Together — erreur média fatale (decode/src) : le membre ne peut pas lire. */
   onFatalError?: () => void;
+  /** Un échec que plus rien ne rattrape (moteur, démarrage) : la page le dit. */
+  onFailure?: (failure: PlaybackFailure) => void;
   /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
   onAutoNextDismiss?: () => void;
   /** Watch Together — lecture demandée : vrai si le moteur la prend en charge

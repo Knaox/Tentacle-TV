@@ -54,7 +54,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // bande passante, en ligne comme hors ligne.
   const offlineMode = useOfflineMode();
   const { localSource, isLocalPlayback, waitingLocal } = useLocalSource({ isDesktop, itemId });
-  const { item, isLoading } = useLocalFirstMedia({ itemId, isLocalPlayback, waitingLocal });
+  const { item, isLoading, error: itemError } = useLocalFirstMedia({ itemId, isLocalPlayback, waitingLocal });
   // Config auto-play : pollée pendant une lecture STREAMING (seuil MaxResumePct
   // à jour en ≤ ~60 s) ; en lecture locale, dernier état connu (localStorage).
   const autoplayConfig = useAutoplayConfigLocalFirst(true, isLocalPlayback);
@@ -292,5 +292,6 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     segments, maxResumePct, getPositionTicks,
     isLocalPlayback, localSource,
+    itemError, negotiationError: isDesktop ? null : pbInfo.error, mediaSource,
   };
 }

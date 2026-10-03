@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
-import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
+import { usePlaybackReporting } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
+import { PlaybackProblemScreen } from "../components/problems/PlaybackProblemScreen";
+import { useWebPlaybackProblem } from "../hooks/useWebPlaybackProblem";
 import { useWatchSession } from "../hooks/useWatchSession";
+import { useSupersededSessionKill } from "../hooks/useSupersededSessionKill";
+import { useWatchStopCleanup } from "../hooks/useWatchStopCleanup";
+import { nextEpisodeCard } from "../hooks/watchSessionMedia";
 import { needsBurnIn } from "../hooks/useWebPlaybackFallbacks";
 import { preferNativeHls } from "../hooks/useNativeHlsPreference";
 import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
@@ -19,7 +23,6 @@ import { useApplyToSeries } from "../hooks/useApplyToSeries";
 import { useRememberItemTracks } from "../hooks/useRememberItemTracks";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
-import { stripOverviewHtml } from "../lib/overviewHtml";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { useMirror } from "../mirror/useFormFactor";
 import { MirrorPlayerLoadingScreen } from "../mirror/player";
@@ -27,7 +30,6 @@ import { MirrorPlayerLoadingScreen } from "../mirror/player";
 export function WatchWeb() {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   // La sortie de l'écran de chargement — le MÊME geste que le bouton Retour du
   // lecteur (`VideoPlayer`), qui n'est pas encore monté à ce moment-là.
   const cancelLoading = useCallback(() => { markPlayerExit(); navigate(-1); }, [navigate]);
@@ -44,7 +46,7 @@ export function WatchWeb() {
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
-    segments, getPositionTicks,
+    segments, getPositionTicks, itemError, negotiationError,
   } = useWatchSession({ isDesktop: false });
 
   // Décidé par `useNativeHlsPreference` : les coquilles dont le décodage passe
@@ -88,39 +90,8 @@ export function WatchWeb() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);
 
-  // Une session de lecture qui en supplante une autre laisse un ffmpeg orphelin.
-  //
-  // Le serveur attribue un PlaySessionId NEUF à chaque PlaybackInfo, et y
-  // accroche un transcodage distinct. Le lecteur, lui, n'en lit qu'un : dès que
-  // `streamUrl` change, hls.js est détruit et repart sur la nouvelle URL. Le
-  // précédent ffmpeg n'a alors plus un seul client — mais Jellyfin ne le sait
-  // pas, et le garde vivant jusqu'à son minuteur d'inactivité (« Transcoding
-  // kill timer », de l'ordre de la minute). Pendant tout ce temps le serveur
-  // compte DEUX flux actifs pour un seul spectateur, avec deux ffmpeg sur le
-  // dos — c'est le « 2 appareils au lieu d'1 » du tableau de bord.
-  //
-  // WatchDesktop tue l'ancien encodage à la main dans chacun de ses handlers.
-  // Ici on le fait à la source : ce n'est pas le changement de qualité qui rend
-  // un transcodage caduc, c'est le fait qu'un autre ait pris sa place. Une
-  // seule garde couvre donc TOUS les chemins de reconstruction — qualité, piste
-  // audio, incrustation de sous-titre, replis MKV et PGS, et le second
-  // PlaybackInfo du démarrage quand les préférences arrivent après coup.
-  //
-  // Les effets des enfants s'exécutent AVANT ceux du parent : quand celui-ci
-  // tourne, `useVideoSource` a déjà basculé sur la nouvelle source. On ne tue
-  // jamais un encodage encore en cours de lecture.
-  const previousSessionRef = useRef<string | null>(null);
-  useEffect(() => {
-    // Seul un identifiant RÉEL est mémorisé : `pbInfo.reset()` (changement
-    // d'épisode) repasse par la chaîne vide, et l'oublier ici perdrait la trace
-    // de l'encodage à tuer juste avant qu'il ne le soit.
-    if (!playSessionId) return;
-    const previous = previousSessionRef.current;
-    previousSessionRef.current = playSessionId;
-    if (!previous || previous === playSessionId) return;
-    wtLog("session", "session supplantée → ancien transcodage tué", { previous, playSessionId });
-    void killTranscode(previous);
-  }, [playSessionId, killTranscode]);
+  // Une session supplantée par une autre : son ffmpeg orphelin est tué (cf. le hook).
+  useSupersededSessionKill(playSessionId, killTranscode);
 
   // Épisode : case « Appliquer à cette série » (préférence de langues par série).
   const applyToSeries = useApplyToSeries({
@@ -136,35 +107,8 @@ export function WatchWeb() {
   // La bulle de chat de groupe suit le même fondu que les contrôles.
   useReportPlayerOverlay(controlsVisible);
 
-  const runStopInvalidation = useWatchStopInvalidation();
-  // Snapshot de l'item lu pour le cleanup, sans le mettre en dépendance de
-  // l'effet (sinon le cleanup tournerait à chaque maj UserData de l'item).
-  const itemRef = useRef(item);
-  itemRef.current = item;
-
-  useEffect(() => {
-    return () => {
-      const id = itemId;
-      const snap = itemRef.current;
-      // Lue MAINTENANT : l'effet [itemId] de useWatchSession remet la position
-      // à zéro juste après ces cleanups — dans le microtask, elle vaudrait 0.
-      const stopPositionSeconds = positionRef.current;
-      const stoppedAt = Date.now();
-      queryClient.removeQueries({ queryKey: ["item", id] });
-      // Cleanups React s'exécutent en ordre inverse d'enregistrement : ce
-      // cleanup tourne AVANT celui de usePlaybackReporting qui assigne le vrai
-      // stop promise. On défère donc la lecture du ref à un microtask pour
-      // chaîner l'invalidation APRÈS le /Sessions/Playing/Stopped (Jellyfin a
-      // alors mis à jour Played/DatePlayed → décision « 100% vu » fiable).
-      queueMicrotask(() => {
-        void runStopInvalidation({
-          itemId: id, seriesId: snap?.SeriesId, itemType: snap?.Type,
-          stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
-          stoppedAt, stopped: lastStopPromiseRef.current,
-        });
-      });
-    };
-  }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation, positionRef]);
+  // À la sortie : la fiche relue, et « vu » décidé APRÈS l'arrêt signalé (cf. le hook).
+  useWatchStopCleanup({ itemId, item, positionRef, lastStopPromiseRef });
 
   // `releaseEncoding` vient de `useWatchSession` : les gestes ci-dessous et les
   // filets de lecture renégocient la même session, et doivent la libérer de la
@@ -258,10 +202,18 @@ export function WatchWeb() {
     groupSync.notifySeek(seconds, { explicit: true });
   }, [reportSeek, positionRef, groupSync.notifySeek]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Un échec que plus rien ne rattrape (fiche, négociation, moteur) : dit, avec ses gestes.
+  const playback = useWebPlaybackProblem({
+    client, itemId, item, itemError, negotiationError, streamUrl, isDirectPlay,
+    burningSubtitles: burnInSubtitleIndex != null, subtitlesActive: subtitleIndex != null,
+    mediaSourceId, qualityKey, qualityPresets, positionRef,
+    restartAt: handleSeekRequest, setQuality: handleQualityChange, dropSubtitles: () => handleSubtitleChange(null), leave: cancelLoading,
+  });
+
   const [showResumeIndicator, setShowResumeIndicator] = useState(false);
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const showPlayer = !isLoading && !!streamUrl;
+  const showPlayer = !isLoading && !!streamUrl && !playback.problem;
 
   useEffect(() => {
     if (showPlayer && startPositionSeconds && startPositionSeconds > 0 && !group.groupActive) {
@@ -274,23 +226,7 @@ export function WatchWeb() {
   const title = item?.Type === "Episode" ? item.SeriesName ?? item.Name : item?.Name ?? "";
   const epSubtitle = item?.Type === "Episode"
     ? `${formatEpisodeCode(item.ParentIndexNumber, item.IndexNumber, { style: "padded" })} — ${item.Name}` : undefined;
-  const nextEpTitle = nextEpisode
-    ? `${formatEpisodeCode(nextEpisode.ParentIndexNumber, nextEpisode.IndexNumber, { style: "padded" })} — ${nextEpisode.Name}` : undefined;
-  const nextEpisodeImageUrl = (() => {
-    if (!nextEpisode?.Id) return undefined;
-    const hasOwnBackdrop = (nextEpisode.BackdropImageTags?.length ?? 0) > 0;
-    const hasParentBackdrop = (nextEpisode.ParentBackdropImageTags?.length ?? 0) > 0;
-    const isEpisode = nextEpisode.Type === "Episode";
-    const backdropId = isEpisode
-      ? (hasOwnBackdrop ? nextEpisode.Id : (nextEpisode.ParentBackdropItemId ?? nextEpisode.SeriesId ?? nextEpisode.Id))
-      : nextEpisode.Id;
-    const imageType = (hasOwnBackdrop || hasParentBackdrop) ? "Backdrop" : "Primary";
-    return client.getImageUrl(backdropId, imageType, { width: 720, quality: 85 });
-  })();
-  // stripOverviewHtml AVANT le slice : couper du HTML brut sectionnerait une balise.
-  const nextOverviewText = nextEpisode?.Overview ? stripOverviewHtml(nextEpisode.Overview) : undefined;
-  const nextEpisodeDescription = nextOverviewText
-    ? (nextOverviewText.length > 120 ? nextOverviewText.slice(0, 120) + "…" : nextOverviewText) : undefined;
+  const nextCard = nextEpisodeCard(client, nextEpisode);
 
   const resumeTimeFormatted = startPositionSeconds && startPositionSeconds > 0
     ? formatDuration(Math.round(startPositionSeconds) * 10_000_000) : null;
@@ -312,18 +248,23 @@ export function WatchWeb() {
           {t("common:resumeAt", { time: resumeTimeFormatted })}
         </div>
       )}
-      {showPlayer ? (
+      {playback.problem ? (
+        <PlaybackProblemScreen
+          model={playback.problem} posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle}
+          onAction={playback.onAction} onBack={cancelLoading}
+        />
+      ) : showPlayer ? (
         <VideoPlayer
           key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
-          startPositionSeconds={group.groupStartPositionSeconds ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
+          startPositionSeconds={group.groupStartPositionSeconds ?? playback.resumeAt ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality} autoQualityActive={autoModeArmed}
           qualityPresets={qualityPresets}
           onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
-          onProgress={handleProgress} onStarted={() => reportStart(group.groupStartPositionSeconds ?? startPositionSeconds)}
+          onProgress={handleProgress} onStarted={() => { playback.markStarted(); reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
-          nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
-          nextEpisodeDescription={nextEpisodeDescription}
+          nextEpisodeTitle={nextCard.title} nextEpisodeImageUrl={nextCard.imageUrl}
+          nextEpisodeDescription={nextCard.description}
           onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
           itemId={itemId!} item={item} mediaSourceId={mediaSourceId} posterUrl={posterUrl}
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
@@ -333,7 +274,7 @@ export function WatchWeb() {
           pgsSubtitleUrl={pgsSubtitleUrl} onPgsFailure={reportPgsFailure}
           segments={segments.segments} runtimeMs={segments.runtimeMs} libraryId={segments.libraryId}
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
-          onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}
+          onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError} onFailure={playback.report}
           onAutoNextDismiss={groupSync.notifyAutoNextDismiss} onRequestPlay={groupSync.requestPlay}
           inGroupSession={group.groupActive}
           onControlsVisibilityChange={setControlsVisible}
