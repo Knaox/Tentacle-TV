@@ -16,10 +16,8 @@
  * PERMANENTE (rendu, libellé, aiguillage de la refonte).
  */
 export const TV_NAV_EXCEPTIONS = [
-  // T1 — le socle : l'abonnement natif à la télécommande et sa traduction.
-  { file: "redesignWiring/remote/remoteEvents.ts", rules: ["no-remote-events", "no-platform-branch"], owner: "T1", why: "abonnement natif unique (TVEventHandler) et traduction tvOS des événements → tv-core remote/ + adaptateur" },
+  // T1 — le socle : fait (756ed8bc7), l'entrée unique vit dans platform/tvos/input/.
   { file: "redesignWiring/redesignGate.ts", rules: ["no-platform-branch"], owner: null, why: "l'aiguillage de la refonte : le seul choix de plateforme du chemin refondu" },
-  { file: "lib/tvPanGesture.ts", rules: ["no-remote-events", "no-platform-branch"], owner: "T1", why: "la prise du pan (TVEventControl.enableTVPanGesture, drapeau global compté) → platform/tvos/input/" },
 
   // T3 — focus, sections, rangées.
   { file: "redesign/focus/FocusTarget.tsx", rules: ["no-native-press"], owner: "T3", why: "la porte des vues vers le focus natif : le seul Pressable de la refonte (OK, appui long, focus)" },
