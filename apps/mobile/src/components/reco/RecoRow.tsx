@@ -34,7 +34,7 @@ export const RecoRow = memo(function RecoRow({ title, items, accessory, showReas
       <RecoCard
         item={item}
         canOpen={canOpen(item)}
-        onPress={() => onItemPress(item)}
+        onPress={onItemPress}
         reason={showReasons ? firstReasonText(item.reasons, t) : undefined}
       />
     ),

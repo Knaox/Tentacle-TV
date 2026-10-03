@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Animated, Easing, View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
@@ -21,7 +21,8 @@ interface Props {
   /** Faux : nulle part où aller (hors bibliothèque, sans catalogue Vigie) —
    *  la carte le dit, l'appui ne fait rien. */
   canOpen: boolean;
-  onPress: () => void;
+  /** L'appui rend SON titre : l'appelant passe une fonction stable (le `memo` tient). */
+  onPress: (item: RecoRowItem) => void;
   /** L'appui long ; absent, la feuille des cartes de la portée (variante `reco`). */
   onLongPress?: () => void;
   /** La raison verbalisée (« Parce que vous avez aimé… »), sous le titre — la page Pour vous. */
@@ -70,7 +71,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const leaving = useIsRecoLeaving(item.key);
   // Un Animated.Value par carte, sans rien animer au repos : le pilote natif
   // ne prend la main que pendant le fondu (opacité + échelle).
-  const presence = useRef(new Animated.Value(1)).current;
+  const [presence] = useState(() => new Animated.Value(1));
   const scale = useMemo(() => presence.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }), [presence]);
   useEffect(() => {
     if (!leaving) {
@@ -86,6 +87,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
     fade.start();
     return () => fade.stop();
   }, [leaving, presence]);
+  const handlePress = useCallback(() => onPress(item), [onPress, item]);
   const handleLongPress = onLongPress ?? (openSheet ? () => openSheet(recoSheetTarget(item)) : undefined);
   const subtitle = onDemand && !canOpen
     ? [item.year, t("unavailableHint")].filter(Boolean).join(" — ")
@@ -94,7 +96,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   return (
     <Animated.View style={{ opacity: presence, transform: [{ scale }] }} pointerEvents={leaving ? "none" : "auto"}>
       <PressableCard
-        onPress={canOpen ? onPress : undefined}
+        onPress={canOpen ? handlePress : undefined}
         onLongPress={handleLongPress}
         style={{ width, opacity: canOpen ? 1 : 0.7 }}
         accessibilityRole="button"
