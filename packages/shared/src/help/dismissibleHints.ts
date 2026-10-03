@@ -22,8 +22,13 @@
  *
  * - `trailerHelp` : « Vous ne voyez pas les bandes-annonces ? », sur la fiche
  *   d'un titre sans bande-annonce quand le serveur est mal réglé.
+ * - `adminPublicUrl`, `adminDirectPlay`, `adminTmdbKey`, `adminJellyfin` : les
+ *   RECOMMANDATIONS du tableau de bord d'administration (lien public et HTTPS,
+ *   lecture directe, clé TMDB, réglages conseillés de Jellyfin). Une
+ *   recommandation masquée se retrouve sous « N recommandations masquées ».
+ *   Distinctes des fenêtres des clients : masquer l'une ne masque pas l'autre.
  */
-export const DISMISSIBLE_HINTS = ["trailerHelp"] as const;
+export const DISMISSIBLE_HINTS = ["trailerHelp", "adminPublicUrl", "adminDirectPlay", "adminTmdbKey", "adminJellyfin"] as const;
 
 export type DismissibleHint = (typeof DISMISSIBLE_HINTS)[number];
 
