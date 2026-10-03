@@ -1,0 +1,331 @@
+{
+  "domain": "panneaux-cartes",
+  "task": "T6",
+  "reference": "84f3cedd0",
+  "doc": "docs/tv-navigation/panneaux-cartes.md",
+  "format": {
+    "status": "provisoire : données pures, en attendant le format du banc nav-golden (T2), qui les reprendra telles quelles ou par conversion",
+    "do": "gestes de l'agent apps/tv/harness/atv-remote : up, down, left, right, select, menu, play, hold:<s> (OK tenu), wait:<s>",
+    "expect.focus": "clé du port de focus (redesign/focus/focusBinding) qui porte le focus natif après le geste",
+    "expect.label": "libellé d'accessibilité attendu (français), pour un banc qui lit l'élément focalisé par XCUITest",
+    "expect.panel": "open | closed — le grand panneau (ou la feuille) présenté dans sa Modal",
+    "expect.writes": "écritures vues par le faux backend depuis le geste précédent ; [] = aucune",
+    "expect.hint": "« Maintenir OK : plus d'options » visible sous la carte focalisée",
+    "settleMs": "attente avant de lire l'attendu (fondus, entrée décidée)"
+  },
+  "fixtures": {
+    "home.watchlist": "rangée Ma liste de l'accueil (affiches) : [0] film notable SANS note ; [1] film notable noté 7/10 ; [2] film SANS note possible (aucune cible de note)",
+    "home.resume": "rangée Reprendre (vignettes 16:9) : [0] épisode entamé, notable, sans note",
+    "home.hero": "héros de l'accueil présent, issu de Reprendre",
+    "forYou": "Pour vous : un filtre de plateformes ACTIF ; étagère [0] carte [0] reco EN bibliothèque, notable",
+    "detail.movie": "fiche d'un film notable sans note (bouton detail:rate présent) ; une saga dont un volet est ABSENT (garde Vigie ouverte ET fermée)",
+    "detail.series": "fiche d'une série : saison affichée avec au moins deux épisodes",
+    "library": "grille d'une bibliothèque de films",
+    "search.absent": "recherche dont la rangée « À demander » contient [0] un film absent que Vigie offre de demander, [1] une série absente à 3 saisons demandables",
+    "vigie": "Vigie factice (modes on / off), aucune demande relayée : chaque POST journalisé",
+    "offline": "santé du serveur commutable (/api/health coupé)",
+    "never": "aucune note réelle : les écritures de note ne se font QUE sur le faux backend"
+  },
+  "scenarios": [
+    {
+      "id": "pc-01",
+      "title": "Appui maintenu sur une affiche sans note : entrée à 5, guides, Retour",
+      "rules": ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.8"],
+      "start": { "screen": "Home", "focus": "watchlist:0", "data": "home.watchlist[0]" },
+      "steps": [
+        { "do": "wait:0.6", "expect": { "focus": "watchlist:0", "hint": true, "panel": "closed" } },
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5", "label": "Noter 5 sur 10", "writes": [] }, "why": "entrée à 5/10 ; le relâchement de l'appui maintenu ne note rien (garde anti-clic fantôme)" },
+        { "do": "right", "expect": { "focus": "sheet:scale:6" } },
+        { "do": "left", "expect": { "focus": "sheet:scale:5" } },
+        { "do": "left", "expect": { "focus": "sheet:scale:4" } },
+        { "do": "up", "expect": { "focus": "sheet:close", "label": "Retour" } },
+        { "do": "down", "expect": { "focus": "sheet:scale:5" }, "why": "le cran RETENU (aucune note : 5), jamais le cran quitté" },
+        { "do": "down", "expect": { "focus": "sheet:action:play" }, "why": "première visite des pictos : la lecture" },
+        { "do": "right", "expect": { "focus": "sheet:action:watchlist" } },
+        { "do": "up", "expect": { "focus": "sheet:scale:5" } },
+        { "do": "down", "expect": { "focus": "sheet:action:watchlist" }, "why": "le dernier picto visité" },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "watchlist:0", "writes": [] } }
+      ]
+    },
+    {
+      "id": "pc-02",
+      "title": "Note posée à 7 : entrée sur 7, butées de l'échelle, cran retenu = la note",
+      "rules": ["3.3", "3.5", "3.6", "3.9"],
+      "start": { "screen": "Home", "focus": "watchlist:1", "data": "home.watchlist[1]" },
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:7", "writes": [] } },
+        { "do": "right", "expect": { "focus": "sheet:scale:8" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:9" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:10" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:remove", "label": "Retirer la note" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:remove" }, "why": "DROITE bute sur le retrait" },
+        { "do": "up", "expect": { "focus": "sheet:close" } },
+        { "do": "down", "expect": { "focus": "sheet:scale:7" }, "why": "le cran retenu est la note posée" },
+        { "do": "left", "expect": { "focus": "sheet:scale:6" } },
+        { "do": "left", "expect": { "focus": "sheet:scale:5" } },
+        { "do": "left", "expect": { "focus": "sheet:scale:4" } },
+        { "do": "left", "expect": { "focus": "sheet:scale:3" } },
+        { "do": "left", "expect": { "focus": "sheet:scale:2" } },
+        { "do": "left", "expect": { "focus": "sheet:scale:1" } },
+        { "do": "left", "expect": { "focus": "sheet:scale:1" }, "why": "GAUCHE bute sur 1" },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "watchlist:1", "writes": [] } }
+      ]
+    },
+    {
+      "id": "pc-03",
+      "title": "Titre sans note possible : pas d'échelle, entrée sur Lire, la croix directement",
+      "rules": ["3.3", "3.5", "3.6"],
+      "start": { "screen": "Home", "focus": "watchlist:2", "data": "home.watchlist[2]" },
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:action:play" } },
+        { "do": "up", "expect": { "focus": "sheet:close" }, "why": "sans échelle, HAUT depuis les pictos va à la croix" },
+        { "do": "down", "expect": { "focus": "sheet:action:play" } },
+        { "do": "right", "expect": { "focus": "sheet:action:watchlist" } },
+        { "do": "up", "expect": { "focus": "sheet:close" } },
+        { "do": "down", "expect": { "focus": "sheet:action:watchlist" } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "watchlist:2" } }
+      ]
+    },
+    {
+      "id": "pc-04",
+      "title": "Vignette 16:9 de Reprendre : panneau de la vignette, ordre des pictos",
+      "rules": ["3.1", "3.7"],
+      "start": { "screen": "Home", "focus": "resume:0", "data": "home.resume[0]" },
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "down", "expect": { "focus": "sheet:action:play" } },
+        { "do": "right", "expect": { "focus": "sheet:action:watchlist" } },
+        { "do": "right", "expect": { "focus": "sheet:action:favorite" } },
+        { "do": "right", "expect": { "focus": "sheet:action:watched" } },
+        { "do": "right", "expect": { "focus": "sheet:action:details" } },
+        { "do": "right", "expect": { "focus": "sheet:action:details" }, "why": "butée : pas de « Ne plus me proposer » hors reco" },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "resume:0" } }
+      ]
+    },
+    {
+      "id": "pc-05",
+      "title": "OK sur la croix ferme, le focus revient à la carte",
+      "rules": ["3.2", "3.7"],
+      "start": { "screen": "Home", "focus": "watchlist:0", "data": "home.watchlist[0]" },
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "up", "expect": { "focus": "sheet:close" } },
+        { "do": "select", "settleMs": 900, "expect": { "panel": "closed", "focus": "watchlist:0", "writes": [] } }
+      ]
+    },
+    {
+      "id": "pc-06",
+      "title": "OK sur une bascule : le panneau reste ouvert, le focus ne bouge pas (faux backend)",
+      "rules": ["3.7"],
+      "start": { "screen": "Home", "focus": "resume:0", "data": "home.resume[0]" },
+      "fakeBackendOnly": true,
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "down", "expect": { "focus": "sheet:action:play" } },
+        { "do": "right", "expect": { "focus": "sheet:action:watchlist" } },
+        { "do": "select", "settleMs": 600, "expect": { "panel": "open", "focus": "sheet:action:watchlist", "writes": ["watchlist:add"] } },
+        { "do": "select", "settleMs": 600, "expect": { "panel": "open", "focus": "sheet:action:watchlist", "writes": ["watchlist:remove"] } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "resume:0" } }
+      ]
+    },
+    {
+      "id": "pc-07",
+      "title": "OK sur un cran : la note est posée, le panneau reste, le retrait paraît (faux backend)",
+      "rules": ["3.7", "3.9"],
+      "start": { "screen": "Home", "focus": "watchlist:0", "data": "home.watchlist[0]" },
+      "fakeBackendOnly": true,
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:6" } },
+        { "do": "select", "settleMs": 600, "expect": { "panel": "open", "focus": "sheet:scale:6", "writes": ["rating:6"] } },
+        { "do": "right", "expect": { "focus": "sheet:scale:7" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:8" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:9" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:10" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:remove" }, "why": "le retrait est paru avec la note" },
+        { "do": "select", "settleMs": 600, "expect": { "panel": "open", "focus": "sheet:scale:remove", "writes": ["rating:remove"] }, "why": "le retrait reste à sa place" },
+        { "do": "select", "settleMs": 600, "expect": { "panel": "open", "focus": "sheet:scale:remove", "writes": [] }, "why": "plus rien à retirer" },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "watchlist:0" } }
+      ]
+    },
+    {
+      "id": "pc-08",
+      "title": "Plus d'infos : le panneau se ferme, la fiche s'ouvre ; Retour rend la carte",
+      "rules": ["3.7"],
+      "start": { "screen": "Home", "focus": "watchlist:0", "data": "home.watchlist[0]" },
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "down", "expect": { "focus": "sheet:action:play" } },
+        { "do": "right", "expect": { "focus": "sheet:action:watchlist" } },
+        { "do": "right", "expect": { "focus": "sheet:action:favorite" } },
+        { "do": "right", "expect": { "focus": "sheet:action:watched" } },
+        { "do": "right", "expect": { "focus": "sheet:action:details" } },
+        { "do": "select", "settleMs": 1500, "expect": { "panel": "closed", "screen": "MediaDetail", "focus": "detail:primary" } },
+        { "do": "menu", "settleMs": 1200, "expect": { "screen": "Home", "focus": "watchlist:0" } }
+      ]
+    },
+    {
+      "id": "pc-09",
+      "title": "Pour vous : panneau d'une reco sous un filtre de plateformes",
+      "rules": ["3.1", "3.7"],
+      "start": { "screen": "Recommendations", "focus": "<étagère 0>:0", "data": "forYou" },
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "down", "expect": { "focus": "sheet:action:play" } },
+        { "do": "right", "expect": { "focus": "sheet:action:watchlist" } },
+        { "do": "right", "expect": { "focus": "sheet:action:favorite" } },
+        { "do": "right", "expect": { "focus": "sheet:action:watched" } },
+        { "do": "right", "expect": { "focus": "sheet:action:details" } },
+        { "do": "right", "expect": { "focus": "sheet:action:dismiss" } },
+        { "do": "right", "expect": { "focus": "sheet:action:providersAll" } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "<étagère 0>:0" } }
+      ]
+    },
+    {
+      "id": "pc-10",
+      "title": "« Noter » de la fiche : la note seule, Retour rend « Noter »",
+      "rules": ["3.10"],
+      "start": { "screen": "MediaDetail", "focus": "detail:rate", "data": "detail.movie" },
+      "steps": [
+        { "do": "select", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "down", "expect": { "focus": "sheet:scale:5" }, "why": "aucun picto sous l'échelle" },
+        { "do": "up", "expect": { "focus": "sheet:close" } },
+        { "do": "down", "expect": { "focus": "sheet:scale:5" } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "detail:rate", "writes": [] } }
+      ]
+    },
+    {
+      "id": "pc-11",
+      "title": "« Noter » : OK sur un cran note ET ferme (faux backend)",
+      "rules": ["3.10"],
+      "start": { "screen": "MediaDetail", "focus": "detail:rate", "data": "detail.movie" },
+      "fakeBackendOnly": true,
+      "steps": [
+        { "do": "select", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "right", "expect": { "focus": "sheet:scale:6" } },
+        { "do": "select", "settleMs": 900, "expect": { "panel": "closed", "focus": "detail:rate", "writes": ["rating:6"] } }
+      ]
+    },
+    {
+      "id": "pc-12",
+      "title": "Épisode de la fiche : panneau de la vignette, Retour rend l'épisode",
+      "rules": ["3.1"],
+      "start": { "screen": "MediaDetail", "focus": "<épisode 0>", "data": "detail.series" },
+      "steps": [
+        { "do": "wait:0.6", "expect": { "hint": true } },
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "<épisode 0>" } }
+      ]
+    },
+    {
+      "id": "pc-13",
+      "title": "Héros de l'accueil : l'appui maintenu sur un bouton ouvre le panneau du titre",
+      "rules": ["3.1"],
+      "start": { "screen": "Home", "focus": "hero:primary", "data": "home.hero" },
+      "steps": [
+        { "do": "wait:0.6", "expect": { "hint": true } },
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "hero:primary" } }
+      ]
+    },
+    {
+      "id": "pc-14",
+      "title": "Grille de bibliothèque : panneau de l'affiche, Retour rend la cellule",
+      "rules": ["3.1"],
+      "start": { "screen": "Library", "focus": "<grille>:0", "data": "library" },
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "open", "focus": "sheet:scale:5" } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "<grille>:0" } }
+      ]
+    },
+    {
+      "id": "pc-15",
+      "title": "Volet absent d'une saga, Vigie ouverte : panneau d'un titre absent",
+      "rules": ["3.1", "3.11"],
+      "start": { "screen": "MediaDetail", "focus": "<volet absent>", "data": "detail.movie + vigie:on" },
+      "steps": [
+        { "do": "wait:0.6", "expect": { "hint": true } },
+        { "do": "hold:1.2", "settleMs": 1200, "expect": { "panel": "open", "focus": "sheet:action:request" } },
+        { "do": "up", "expect": { "focus": "sheet:close" } },
+        { "do": "down", "expect": { "focus": "sheet:action:request" } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "<volet absent>", "writes": [] } }
+      ]
+    },
+    {
+      "id": "pc-16",
+      "title": "Volet absent, Vigie fermée : pas d'appui maintenu, pas d'indication",
+      "rules": ["3.1"],
+      "start": { "screen": "MediaDetail", "focus": "<volet absent>", "data": "detail.movie + vigie:off" },
+      "steps": [
+        { "do": "wait:0.6", "expect": { "hint": false } },
+        { "do": "hold:1.2", "settleMs": 900, "expect": { "panel": "closed", "focus": "<volet absent>" } }
+      ]
+    },
+    {
+      "id": "pc-17",
+      "title": "Panneau d'un titre absent : « Demander » referme, puis demande (faux backend)",
+      "rules": ["3.11"],
+      "start": { "screen": "Search", "focus": "absent:0", "data": "search.absent[0] + vigie:on" },
+      "fakeBackendOnly": true,
+      "steps": [
+        { "do": "hold:1.2", "settleMs": 1200, "expect": { "panel": "open", "focus": "sheet:action:request" } },
+        { "do": "select", "settleMs": 1500, "expect": { "panel": "closed", "focus": "absent:0", "writes": ["vigie:request"] }, "why": "la demande part après la sortie du panneau, 320 ms plus tard" }
+      ]
+    },
+    {
+      "id": "pc-18",
+      "title": "Feuille des saisons : entrée, OK coche, « Toutes », BAS vers le pied, Retour",
+      "rules": ["3.12"],
+      "start": { "screen": "Search", "focus": "absent:1", "data": "search.absent[1] + vigie:on" },
+      "steps": [
+        { "do": "select", "settleMs": 1500, "expect": { "panel": "open", "focus": "sheet:season:1" }, "why": "la première saison à cocher, jamais « Toutes »" },
+        { "do": "select", "expect": { "focus": "sheet:season:1" }, "why": "cochée ; la pilule dit « Demander 1 saison »" },
+        { "do": "up", "expect": { "focus": "sheet:season:all" } },
+        { "do": "select", "expect": { "focus": "sheet:season:all" }, "why": "tout coché" },
+        { "do": "select", "expect": { "focus": "sheet:season:all" }, "why": "tout décoché" },
+        { "do": "down", "expect": { "focus": "sheet:season:1" } },
+        { "do": "down", "expect": { "focus": "sheet:season:2" } },
+        { "do": "down", "expect": { "focus": "sheet:season:3" } },
+        { "do": "down", "expect": { "focus": "sheet:apply" } },
+        { "do": "menu", "settleMs": 900, "expect": { "panel": "closed", "focus": "absent:1", "writes": [] } }
+      ]
+    },
+    {
+      "id": "pc-19",
+      "title": "Feuille des saisons : Lecture/Pause demande la saison focalisée (faux backend)",
+      "rules": ["3.12"],
+      "start": { "screen": "Search", "focus": "absent:1", "data": "search.absent[1] + vigie:on" },
+      "fakeBackendOnly": true,
+      "steps": [
+        { "do": "select", "settleMs": 1500, "expect": { "panel": "open", "focus": "sheet:season:1" } },
+        { "do": "down", "expect": { "focus": "sheet:season:2" } },
+        { "do": "play", "settleMs": 1500, "expect": { "panel": "closed", "focus": "absent:1", "writes": ["vigie:request:seasons=2"] } }
+      ]
+    },
+    {
+      "id": "pc-20",
+      "title": "Voile hors ligne : entrée sur Réessayer, piège, double appui armé puis désarmé",
+      "rules": ["3.13", "3.14"],
+      "start": { "screen": "Home", "data": "offline", "setup": "couper /api/health ; le voile paraît après ~12 s d'échecs" },
+      "steps": [
+        { "do": "wait:1", "expect": { "focus": "offline:retry" } },
+        { "do": "up", "expect": { "focus": "offline:retry" } },
+        { "do": "left", "expect": { "focus": "offline:retry" } },
+        { "do": "right", "expect": { "focus": "offline:unpair", "label": "Déjumeler cet appareil" } },
+        { "do": "select", "expect": { "focus": "offline:unpair", "label": "Confirmer le déjumelage" }, "why": "premier OK : armé, jamais un second" },
+        { "do": "left", "expect": { "focus": "offline:retry" } },
+        { "do": "right", "expect": { "focus": "offline:unpair", "label": "Déjumeler cet appareil" }, "why": "quitter le bouton a désarmé" }
+      ]
+    },
+    {
+      "id": "pc-21",
+      "title": "Appui COURT sur une affiche : la fiche, jamais le panneau",
+      "rules": ["3.1"],
+      "start": { "screen": "Home", "focus": "watchlist:0", "data": "home.watchlist[0]" },
+      "steps": [
+        { "do": "select", "settleMs": 1500, "expect": { "panel": "closed", "screen": "MediaDetail", "focus": "detail:primary" } },
+        { "do": "menu", "settleMs": 1200, "expect": { "screen": "Home", "focus": "watchlist:0" } }
+      ]
+    }
+  ]
+}
