@@ -17,7 +17,7 @@ détaillé dans le terminal et dans `apps/tv/harness/nav-golden/out/`.
 
 ## Ce que le banc fait tourner
 
-- **L'app réelle**, au simulateur tvOS (et sur l'Apple TV physique, voir plus
+- **L'app réelle**, au simulateur tvOS (et sur l'Apple TV physique, plus
   bas) : la vraie navigation, de vrais appuis UIKit par l'agent XCUITest
   d'`atv-remote` — jamais un composant isolé.
 - **Un faux backend** (`server/`) : faux Tentacle, faux Jellyfin (mode proxy),
@@ -143,6 +143,7 @@ node …/nav-golden.mjs start --slot 2 socle/accueil-rail#socle-01   # démarrag
 node …/nav-golden.mjs do --slot 2 left down down select            # gestes, clé après chacun, relevé final
 node …/nav-golden.mjs obs --slot 2                                 # le relevé courant
 node …/nav-golden.mjs check                                        # validation, sans simulateur
+node …/nav-golden.mjs show socle/rail                              # relit une référence, pas par pas
 ```
 
 ## Ce que le banc relève, et compare
@@ -162,8 +163,23 @@ ignoré par `verify` ; si c'est la clé, la route, la pile, la Modal ou les
 
 Statuts : `✓` identique · `●` enregistré · `✗` écart · `≠` attendu de l'auteur
 contredit · `~` identique mais le scénario a changé depuis sa référence
-(réenregistrer) · `∅` pas de référence · `≈` instable · `?` approche ratée ·
-`!` le banc n'a pas pu le jouer · `-` ignoré (`"skip": "<raison>"`).
+(réenregistrer) · `∅` pas de référence · `⌀` référence d'une sonde plus
+ancienne (à réenregistrer) · `≈` instable · `?` approche ratée · `!` le banc
+n'a pas pu le jouer · `-` ignoré (`"skip": "<raison>"`).
+
+Chaque référence porte la version du relevé (`observation`, 2 depuis la
+lecture des textes) : `verify` refuse une référence plus ancienne. Un scénario
+en échec est rejoué une fois (`--retries 1`, `0` pour aucune) et dit « au 2e
+essai » s'il passe alors ; un enregistrement instable est repris une fois. Les
+écritures d'UN pas se comparent sans leur ordre (deux requêtes parallèles
+arrivent dans un ordre qui varie) ; l'ordre entre les pas compte.
+
+**Un scénario instable** (`≈`) ne prouve rien : son relevé dépend du moment.
+Les causes vues : un écran qui charge encore (le focus se pose tard — donner
+`settleMs` au pas qui l'ouvre), une horloge de l'app (voile hors ligne après
+~12 s, héros qui tourne, reconnexion après « Réessayer » : ne garder que la
+partie stable), le faux Vigie vivant (`base/vigie-vivant`). `show` relit ce
+qui a été enregistré ; on corrige le scénario, jamais l'app.
 
 Un attendu contredit À L'ENREGISTREMENT n'empêche pas d'écrire la référence
 (elle dit ce que fait le code d'origine) : c'est l'auteur qui se trompe, ou un
@@ -216,6 +232,74 @@ manquante se voit dans `GET localhost:310n/__unknown`.
 | `verify` de 3 scénarios (bascule de Metro comprise) | 49 s |
 
 Compter ~12 s par scénario de 4 à 6 pas en `verify`, le double en `record`.
+
+## Apple TV physique (`--device`)
+
+```bash
+node apps/tv/harness/nav-golden/nav-golden.mjs verify --slot <n> --device [domaine]
+```
+
+Le même banc, sur l'Apple TV « Chambre » (UDID xcodebuild
+`00008110-0015181621EB601E`, CoreDevice `DA96352F-A2B7-55A9-86B0-D087B44828B8` ;
+une autre : `NAV_GOLDEN_DEVICE_UDID`, `NAV_GOLDEN_DEVICE_COREDEVICE`). Un
+créneau à la fois : le demander au coordinateur, le rendre.
+
+- **L'app de l'utilisateur n'est jamais touchée.** Le banc installe À CÔTÉ une
+  app de TEST, `com.tentacle.mobile.navtest` : le même natif (build Debug
+  appareil, `SKIP_BUNDLING=1`, signature automatique, équipe `96K3M57W49`),
+  rangée dans le cache sous l'empreinte du natif — une build pour tout le
+  lot, que chaque place réutilise. Avant le passage et après, le banc vérifie
+  (`devicectl device info apps`) que `com.tentacle.mobile` est toujours là.
+- **Jamais la vraie session** : Metro (`--host 0.0.0.0`) et le faux backend
+  (toutes interfaces) sur l'IP du Mac (`ipconfig getifaddr en0`, ou
+  `NAV_GOLDEN_MAC_IP`). L'app de test est lancée par `devicectl device process
+  launch --terminate-existing` avec `-RCT_jsLocation <ip>:818n` (pas besoin
+  d'`ip.txt` : l'argument vaut pour le port de la place) et
+  `-navGoldenSession paired|none -navGoldenServer http://<ip>:310n
+  [-navGoldenStorage <base64>]` : la sonde efface les clés `tentacle_*` de
+  l'app de TEST et pose la session du banc avant que l'app ne lise son
+  stockage. Ses autres fichiers (caches) ne sont pas effacés, contrairement
+  au simulateur.
+- **L'agent XCUITest** d'`atv-remote` est compilé et signé pour l'appareil
+  (cache de la machine) et vise `com.tentacle.mobile.navtest`
+  (`TEST_RUNNER_AGENT_BUNDLE`) ; il se connecte au serveur de la place sur
+  l'IP du Mac.
+- Les références restent celles du SIMULATEUR : `verify --device` dit les
+  écarts appareil / simulateur, sans rien réenregistrer. Pour comparer le
+  matériel seul, jouer le code de la référence : `--at 84f3cedd0`.
+- L'agent installe aussi son lanceur (`com.damienrouge.atvagent.uitests.xctrunner`).
+  L'app de test s'affiche « Tentacle TV », comme celle de l'utilisateur : une
+  prochaine build appareil lui donnera un nom distinct (« Tentacle NAV test »).
+
+Mesuré le 2026-10-03 sur « Chambre » (AppleTV14,1, tvOS 26.6), Mac sur le même
+réseau (Wi-Fi) :
+
+| Étape | Durée |
+|---|---|
+| `up --slot n --device` la première fois (installation 98 Mo, agent signé, Metro sur le réseau) | 1 min 05 |
+| Démarrage à froid d'un scénario (le paquet de 16 Mo redescend du Mac à chaque fois) | 10 à 12 s |
+| Un scénario de 3 à 5 pas | 12 à 20 s (rail-01, 13 pas : 59 s) |
+
+Écarts appareil / simulateur (code de la référence, références du simulateur) :
+`socle/accueil-rail` 3/3, `socle/demarrage#demarrage-jumelage` 1/1,
+`socle/rail` 4/5 — clés, libellés, routes, piles, Modals et cadres identiques
+au point près ; trois Retour à la racine quittent l'app (`app: background`)
+comme au simulateur. Le cinquième (`rail-03`) n'a pas été joué : l'agent est
+resté muet le temps d'un `activate` — un accroc du lien, d'où le renvoi
+automatique de cet ordre et la reprise d'un scénario en échec. Les appuis MAINTENUS dépendent
+du temps : sur l'appareil, `holddown:2` depuis « Accueil » descend de cinq
+entrées du rail (jusqu'à Films), `holdup:2` en remonte quatre, `holddown:3`
+dans la grille Séries va de `grid:0` à `grid:36` et `holdright:2` avance de
+cinq cartes ; un scénario qui maintient une touche ne fige pas la case
+atteinte s'il veut passer sur les deux. Le balayage et le glissé RÉELS du pavé
+ne se rejouent pas sans une main sur la télécommande : `swipe:` et `pan:`
+n'éprouvent que le chemin JS, identique sur les deux.
+
+En fin de lot, retirer l'app de test (l'app de l'utilisateur reste) :
+
+```bash
+xcrun devicectl device uninstall app --device DA96352F-A2B7-55A9-86B0-D087B44828B8 com.tentacle.mobile.navtest
+```
 
 ## Limites connues
 
