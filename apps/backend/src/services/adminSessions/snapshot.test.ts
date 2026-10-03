@@ -27,11 +27,12 @@ function rawSession(overrides: Record<string, unknown> = {}): Record<string, unk
     NowPlayingItem: {
       Id: "ep1", Name: "Pilote", Type: "Episode", SeriesName: "Série", SeriesId: "ser1",
       SeriesPrimaryImageTag: "tag-serie", ParentIndexNumber: 1, IndexNumber: 2, RunTimeTicks: 2_400 * 10_000_000,
+      Container: "mkv",
       MediaStreams: [
-        { Type: "Video", Index: 0, Codec: "hevc", Width: 3840, Height: 2160, VideoRangeType: "DOVI", BitRate: 40_000_000 },
+        { Type: "Video", Index: 0, Codec: "hevc", Profile: "Main 10", BitDepth: 10, Width: 3840, Height: 2160, VideoRangeType: "DOVI", BitRate: 40_000_000 },
         { Type: "Audio", Index: 1, Codec: "eac3", Channels: 6, Language: "fre" },
         { Type: "Audio", Index: 2, Codec: "aac", Channels: 2, Language: "eng" },
-        { Type: "Subtitle", Index: 3, DisplayTitle: "Français - SRT" },
+        { Type: "Subtitle", Index: 3, Codec: "subrip", DisplayTitle: "Français - SRT" },
       ],
     },
     PlayState: { PositionTicks: 600 * 10_000_000, IsPaused: false, AudioStreamIndex: 2, SubtitleStreamIndex: 3, PlayMethod: "Transcode" },
@@ -66,7 +67,10 @@ describe("toAdminSession", () => {
       id: "s1", userName: "Alice", client: "Tentacle TV - Web", supportsRemoteControl: true, viaTentacle: false,
       playMethod: "Transcode", positionTicks: 600 * 10_000_000, positionAt: NOW - 60_000,
       nowPlaying: { itemId: "ep1", seriesName: "Série", seasonNumber: 1, episodeNumber: 2, imageItemId: "ser1", imageTag: "tag-serie" },
-      source: { videoCodec: "hevc", videoRange: "DOVI", audioCodec: "aac", audioChannels: 2, audioLanguage: "eng", subtitle: "Français - SRT" },
+      source: {
+        container: "mkv", videoCodec: "hevc", videoProfile: "Main 10", videoBitDepth: 10, videoRange: "DOVI",
+        audioCodec: "aac", audioChannels: 2, audioLanguage: "eng", subtitle: "Français - SRT", subtitleCodec: "subrip",
+      },
       transcoding: { videoCodec: "h264", isVideoDirect: false, isAudioDirect: true, hardwareAccelerationType: "videotoolbox" },
     });
     expect(s?.transcoding?.reasons).toEqual(["VideoCodecNotSupported", "VideoRangeTypeNotSupported"]);

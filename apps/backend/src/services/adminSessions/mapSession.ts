@@ -49,6 +49,8 @@ interface RawItem {
   ProductionYear?: number;
   RunTimeTicks?: number;
   ImageTags?: Record<string, string>;
+  /** `mkv`, ou la liste `mov,mp4,m4a,…` qu'écrit Jellyfin pour un MP4. */
+  Container?: string;
   MediaStreams?: RawStream[];
 }
 
@@ -56,6 +58,8 @@ interface RawStream {
   Type?: string;
   Index?: number;
   Codec?: string;
+  Profile?: string;
+  BitDepth?: number;
   Width?: number;
   Height?: number;
   VideoRangeType?: string;
@@ -120,7 +124,10 @@ function source(item: RawItem, audioIndex: number | undefined, subtitleIndex: nu
     ? streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex)
     : undefined;
   return {
+    container: str(item.Container),
     videoCodec: str(video?.Codec),
+    videoProfile: str(video?.Profile),
+    videoBitDepth: num(video?.BitDepth),
     width: num(video?.Width),
     height: num(video?.Height),
     videoRange: str(video?.VideoRangeType),
@@ -128,6 +135,7 @@ function source(item: RawItem, audioIndex: number | undefined, subtitleIndex: nu
     audioChannels: num(audio?.Channels),
     audioLanguage: str(audio?.Language),
     subtitle: str(subtitle?.DisplayTitle),
+    subtitleCodec: str(subtitle?.Codec),
     bitrate: num(video?.BitRate),
   };
 }

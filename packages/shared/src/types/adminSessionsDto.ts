@@ -30,7 +30,13 @@ export interface AdminNowPlayingDto {
 
 /** Ce que le média source est — pistes choisies par le lecteur. */
 export interface AdminSourceDto {
+  /** Conteneur du fichier (`mkv`, ou la liste `mov,mp4,…` qu'écrit Jellyfin) — ce qu'un remux réécrit. */
+  container?: string;
   videoCodec?: string;
+  /** Profil vidéo (`Main 10`, `High 10`…). */
+  videoProfile?: string;
+  /** Profondeur de couleur de l'image (8, 10…). */
+  videoBitDepth?: number;
   width?: number;
   height?: number;
   /** `SDR`, `HDR10`, `DOVI`… (`VideoRangeType` de Jellyfin). */
@@ -40,6 +46,8 @@ export interface AdminSourceDto {
   audioLanguage?: string;
   /** Titre affiché de la piste de sous-titres choisie. */
   subtitle?: string;
+  /** Format de cette piste (`PGSSUB`, `DVDSUB`, `subrip`…) : une image s'incruste, un texte non. */
+  subtitleCodec?: string;
   bitrate?: number;
 }
 
