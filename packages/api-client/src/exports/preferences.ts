@@ -10,6 +10,7 @@ export {
 // Les rappels masqués pour de bon par le compte — « Vous ne voyez pas les
 // bandes-annonces ? »… (cf. hooks/useDismissedHints)
 export {
-  useDismissedHints, useIsHintDismissed, useSetHintDismissed, fetchDismissedHints, applyHintChange,
-  DISMISSED_HINTS_KEY, SET_HINT_DISMISSED_KEY, type SetHintDismissedInput,
+  useDismissedHints, useIsHintDismissed, useSetHintDismissed, useHintDismissal, useHintSupported,
+  fetchDismissedHints, applyHintChange, hintsStateOf,
+  DISMISSED_HINTS_KEY, SET_HINT_DISMISSED_KEY, type SetHintDismissedInput, type DismissedHintsState,
 } from "../hooks/useDismissedHints";
