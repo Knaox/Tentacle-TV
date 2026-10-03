@@ -3,6 +3,7 @@ import { Image } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { getLibraryCatalogKey, prefetchLibraryCatalog, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { LIBRARY_PREFETCH_DWELL_MS, LIBRARY_PREFETCH_POSTERS, libraryPrefetchTarget } from "@tentacle-tv/tv-core";
 import { rememberedFilters } from "../../hooks/libraryCatalogParams";
 import { posterUriOf } from "../cards/cardArtwork";
 import type { FocusStore } from "../focus/focusStore";
@@ -16,16 +17,12 @@ import { gridCatalogParams } from "./gridCatalogParams";
  * grille se dessine de ce qu'elle a déjà : plus d'aller-retour au serveur sur
  * le chemin de l'ouverture.
  *
- * Temporisé : traverser la navigation flèche maintenue ne précharge pas tout
- * le serveur. Rien de retenu en mémoire en dehors du cache de requêtes (la
+ * Temporisé (`LIBRARY_PREFETCH_DWELL_MS`, tv-core `focus/libraryFocus`) :
+ * traverser la navigation flèche maintenue ne précharge pas tout le serveur. Rien de retenu en mémoire en dehors du cache de requêtes (la
  * page) et du cache HTTP du système (les affiches, sur disque) : une affiche
  * préchargée n'est pas décodée pour l'écran.
  */
 
-const PREFETCH_DWELL_MS = 300;
-/** Deux lignes de six : ce que montre la grille à l'ouverture. */
-const PREFETCH_POSTERS = 12;
-const LIBRARY_ENTRY = "nav:Library_";
 
 type CatalogPages = { pages?: { Items?: MediaItem[] }[] };
 
@@ -39,21 +36,21 @@ export function useLibraryPrefetch(focus: FocusStore): void {
       const params = gridCatalogParams(rememberedFilters(libraryId));
       await prefetchLibraryCatalog(queryClient, client, userId, libraryId, params);
       const data = queryClient.getQueryData<CatalogPages>(getLibraryCatalogKey(libraryId, params));
-      for (const item of data?.pages?.[0]?.Items?.slice(0, PREFETCH_POSTERS) ?? []) {
+      for (const item of data?.pages?.[0]?.Items?.slice(0, LIBRARY_PREFETCH_POSTERS) ?? []) {
         const uri = posterUriOf(client, item);
         if (uri) void Image.prefetch(uri).catch(() => undefined);
       }
     };
     const unsubscribe = focus.subscribe((key, focused) => {
-      if (!key.startsWith(LIBRARY_ENTRY)) return;
+      const libraryId = libraryPrefetchTarget(key);
+      if (libraryId === null) return;
       if (timer) clearTimeout(timer);
       timer = null;
       if (!focused) return;
-      const libraryId = key.slice(LIBRARY_ENTRY.length);
       timer = setTimeout(() => {
         timer = null;
         void prefetch(libraryId).catch(() => undefined);
-      }, PREFETCH_DWELL_MS);
+      }, LIBRARY_PREFETCH_DWELL_MS);
     });
     return () => {
       unsubscribe();
