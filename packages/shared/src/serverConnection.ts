@@ -1,3 +1,6 @@
+import { classifyProblem, type RawProblem } from "./problems/classifyProblem";
+import type { ProblemCause } from "./problems/problemTypes";
+
 /**
  * Shared server connection utilities.
  * Used by Desktop (Tauri), Mobile (Expo), and TV apps to verify
@@ -13,6 +16,33 @@ export interface ServerCheckResult {
   errorKey?: string;
   /** Interpolation params for the i18n error message */
   errorParams?: Record<string, string>;
+  /**
+   * La cause, dans le vocabulaire du modèle commun des erreurs (certificat
+   * refusé, HTTP bloqué, adresse qui n'est pas un serveur Tentacle…) — plus
+   * fine que `errorKey`, que les clients d'avant gardent.
+   */
+  cause?: ProblemCause;
+}
+
+/** Ce qu'une tentative a vu : de quoi classer son échec. */
+interface HealthAttempt {
+  ok: boolean;
+  status?: number;
+  isTimeout?: boolean;
+  /** Une réponse 2xx qui n'est pas celle d'un serveur Tentacle (page HTML, Jellyfin…). */
+  notTentacle?: boolean;
+  message?: string;
+  name?: string;
+}
+
+/** La cause d'une tentative manquée, pour le modèle commun. */
+function causeOf(attempt: HealthAttempt): ProblemCause {
+  if (attempt.notTentacle) return "notTentacle";
+  const raw: RawProblem = {
+    status: attempt.status, message: attempt.message, name: attempt.name, target: "health",
+    kind: attempt.isTimeout ? "timeout" : undefined,
+  };
+  return classifyProblem(raw);
 }
 
 /** Strip redundant default ports (:443 for HTTPS, :80 for HTTP) */
@@ -39,7 +69,7 @@ export function normalizeServerUrl(raw: string): string {
 async function tryHealth(
   baseUrl: string,
   timeoutMs: number,
-): Promise<{ ok: boolean; status?: number; isTimeout?: boolean }> {
+): Promise<HealthAttempt> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -50,7 +80,8 @@ async function tryHealth(
     });
     clearTimeout(timer);
     if (!res.ok) return { ok: false, status: res.status };
-    const data: unknown = await res.json();
+    // Une page qui répond 200 sans être notre santé (HTML, Jellyfin) : pas un serveur Tentacle.
+    const data: unknown = await res.json().catch(() => null);
     if (
       typeof data === "object" &&
       data !== null &&
@@ -59,13 +90,13 @@ async function tryHealth(
     ) {
       return { ok: true };
     }
-    return { ok: false, status: res.status };
+    return { ok: false, status: res.status, notTentacle: true };
   } catch (err: unknown) {
     clearTimeout(timer);
     if (err instanceof Error && err.name === "AbortError") {
       return { ok: false, isTimeout: true };
     }
-    return { ok: false };
+    return { ok: false, message: err instanceof Error ? err.message : String(err), name: err instanceof Error ? err.name : undefined };
   }
 }
 
@@ -112,7 +143,7 @@ export async function verifyServer(rawUrl: string): Promise<ServerCheckResult> {
       return { success: true, url: normalized };
     }
     const err = classifyError(result.status, result.isTimeout === true);
-    return { success: false, url: normalized, ...err };
+    return { success: false, url: normalized, ...err, cause: causeOf(result) };
   }
 
   // No protocol specified — try HTTPS first, then HTTP
@@ -134,5 +165,14 @@ export async function verifyServer(rawUrl: string): Promise<ServerCheckResult> {
     httpResult.status ?? httpsResult.status,
     httpResult.isTimeout === true && httpsResult.isTimeout === true,
   );
-  return { success: false, url: httpUrl, ...err };
+  // La cause la plus parlante des deux essais : une réponse (statut, page
+  // étrangère), puis un certificat refusé en HTTPS, puis ce qu'a vu le HTTP.
+  const httpsCause = causeOf(httpsResult);
+  const httpCause = causeOf(httpResult);
+  const answered = (a: HealthAttempt) => a.status !== undefined || a.notTentacle;
+  const cause = answered(httpsResult) ? httpsCause
+    : answered(httpResult) ? httpCause
+      : httpsCause === "certificate" ? httpsCause
+        : httpCause;
+  return { success: false, url: httpUrl, ...err, cause };
 }

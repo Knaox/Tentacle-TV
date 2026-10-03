@@ -100,6 +100,8 @@ export default {
   toastWatchlistFailed: "Ma liste n'a pas pu être modifiée",
   toastWatchedFailed: "Le statut « vu » n'a pas été enregistré",
   toastRatingFailed: "Votre note n'a pas été enregistrée",
+  // Trop d'essais de connexion d'affilée.
+  loginRateLimited: "Trop d'essais de connexion d'affilée. Patientez une minute, puis réessayez.",
   // Les détails techniques, repliés.
   details: "Détails",
   detailsHide: "Masquer les détails",

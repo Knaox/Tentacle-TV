@@ -100,6 +100,8 @@ export default {
   toastWatchlistFailed: "My List couldn't be updated",
   toastWatchedFailed: "The watched status wasn't saved",
   toastRatingFailed: "Your rating wasn't saved",
+  // Too many sign-in attempts in a row.
+  loginRateLimited: "Too many sign-in attempts in a row. Wait a minute, then try again.",
   // Technical details, folded.
   details: "Details",
   detailsHide: "Hide details",
