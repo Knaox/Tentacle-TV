@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { MY_TITLE_PERCENT_KEY } from "@tentacle-tv/shared";
+import { SHEET_CLOSE_KEY, SHEET_HEADER_GROUP } from "@tentacle-tv/tv-core";
 import { BackButton } from "../../controls/BackButton";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { ArrivalArtwork } from "../../requests/ArrivalArtwork";
@@ -37,9 +38,9 @@ export const SheetHeader = memo(function SheetHeader({
   onClose?: () => void;
 }) {
   return (
-    <FocusGroup focusKey="sheet:header" style={styles.header}>
+    <FocusGroup focusKey={SHEET_HEADER_GROUP} style={styles.header}>
       <View style={styles.back}>
-        <BackButton focusKey="sheet:close" onPress={onClose} />
+        <BackButton focusKey={SHEET_CLOSE_KEY} onPress={onClose} />
       </View>
       {header.arrival ? <Arriving header={header} arrival={header.arrival} /> : <Still header={header} />}
     </FocusGroup>

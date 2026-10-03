@@ -1,21 +1,14 @@
-import type { CardStatusKind } from "@tentacle-tv/shared";
+import type { SheetActionKind } from "@tentacle-tv/tv-core";
 import type { ArrivalModel } from "../../requests/arrivalTypes";
 
 /**
- * Ce que fait un picto du panneau : les actions du modèle partagé
- * (`cardActionEntries`, `externalCardActionEntries`), dans leur ordre, plus
- * celles propres au salon — « Plus d'infos » sur toute carte de la
- * bibliothèque, « Toutes les plateformes » sous un filtre actif. La note n'en
- * est pas une : elle a son échelle, au-dessus.
+ * Ce que fait un picto du panneau : les actions du modèle partagé, dans leur
+ * ordre, plus celles propres au salon — « Plus d'infos » sur toute carte de
+ * la bibliothèque, « Toutes les plateformes » sous un filtre actif (tv-core
+ * `cards/sheetActions`). La note n'en est pas une : elle a son échelle,
+ * au-dessus.
  */
-export type SheetActionKind =
-  | "play"
-  | "request"
-  | CardStatusKind
-  | "details"
-  | "dismiss"
-  | "offline"
-  | "providersAll";
+export type { SheetActionKind } from "@tentacle-tv/tv-core";
 
 export interface SheetActionModel {
   kind: SheetActionKind;

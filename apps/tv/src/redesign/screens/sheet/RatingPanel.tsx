@@ -1,12 +1,12 @@
 import { memo, useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { rulerAimAfter, rulerReading, scaleAimOf, type RulerAim } from "@tentacle-tv/tv-core";
 import { useForcedFocusKey } from "../../focus/focusPreview";
 import { Icon } from "../../icons/Icon";
 import { RatingStars } from "../../rating/RatingStars";
 import { colors, fonts, text } from "../../theme/tokens";
 import { RatingRuler } from "./RatingRuler";
-import { scaleAimOf } from "./ratingScaleKeys";
 import type { SheetRatingModel } from "./sheetTypes";
 
 /**
@@ -17,8 +17,20 @@ import type { SheetRatingModel } from "./sheetTypes";
  * puis l'échelle horizontale (`RatingRuler`) et sa légende.
  *
  * Vue pure : la valeur visée vient du focus de l'échelle (natif, ou figé au
- * banc) ; `onRate(note | null)`.
+ * banc) ; ce qu'elle dit de la note est la règle de tv-core
+ * (`cards/ratingRuler`) ; `onRate(note | null)`.
  */
+
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+/** La ligne, mise en mots, de chaque sens que tv-core lui donne. */
+const LINES: Record<ReturnType<typeof rulerReading>["line"], (t: Translate, aim: RulerAim | null, current: number | null) => string> = {
+  pending: () => "",
+  remove: (t, _aim, current) => t("reco:removeRatingAria", { score: current }),
+  rate: (t, aim) => t("reco:rateAria", { score: aim }),
+  current: (t) => t("cards:currentRating"),
+  unrated: (t) => t("cards:notRatedYet"),
+};
 
 export const RatingPanel = memo(function RatingPanel({
   rating,
@@ -31,37 +43,26 @@ export const RatingPanel = memo(function RatingPanel({
   onRate?: (score: number | null) => void;
 }) {
   const { t } = useTranslation();
-  const [nativeAim, setNativeAim] = useState<number | "remove" | null>(null);
+  const [nativeAim, setNativeAim] = useState<RulerAim | null>(null);
   const forced = useForcedFocusKey();
   const aim = forced !== null ? scaleAimOf(forced) : nativeAim;
-  const onAim = useCallback((next: number | "remove", focused: boolean) => {
-    setNativeAim((now) => (focused ? next : now === next ? null : now));
+  const onAim = useCallback((next: RulerAim, focused: boolean) => {
+    setNativeAim((now) => rulerAimAfter(now, next, focused));
   }, []);
 
   const { current, pending = false } = rating;
-  const removing = aim === "remove";
-  const aimed = typeof aim === "number" ? aim : null;
-  // Retirer la note : on voit ce qui part, pâli.
-  const shown = aimed ?? current ?? 0;
-  const big = pending ? "…" : removing || shown === 0 ? "—" : t("reco:ratingValue", { score: shown });
-  const line = pending
-    ? ""
-    : removing
-      ? t("reco:removeRatingAria", { score: current })
-      : aimed !== null && aimed !== current
-        ? t("reco:rateAria", { score: aimed })
-        : current !== null
-          ? t("cards:currentRating")
-          : t("cards:notRatedYet");
+  const reading = rulerReading(aim, current, pending);
+  const big = reading.value === "pending" ? "…" : reading.value === "none" ? "—" : t("reco:ratingValue", { score: reading.value });
+  const line = LINES[reading.line](t, aim, current);
 
   return (
     <View style={styles.block}>
       <Text style={text.kicker}>{t("reco:yourRating")}</Text>
       <View style={styles.value}>
-        <RatingStars score={shown} size={54} gap={8} dim={removing || pending} />
+        <RatingStars score={reading.stars} size={54} gap={8} dim={reading.dim} />
         <Text style={styles.big}>{big}</Text>
       </View>
-      <Text style={[styles.line, removing && styles.danger]} numberOfLines={1}>{line}</Text>
+      <Text style={[styles.line, reading.line === "remove" && styles.danger]} numberOfLines={1}>{line}</Text>
       <RatingRuler current={current} pending={pending} aim={aim} width={width} onAim={onAim} onRate={onRate} />
       <View style={styles.hint}>
         <Icon name="chevronLeft" size={22} color={colors.textTertiary} strokeWidth={2.4} />

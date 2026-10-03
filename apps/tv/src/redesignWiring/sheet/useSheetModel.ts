@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { sheetShowsActions, type SheetMode } from "@tentacle-tv/tv-core";
 import { sheetLibraryId, type CardSheetTarget } from "../../components/cards/actions/cardSheetTarget";
 import type { ActionSheetViewProps } from "../../redesign/screens/sheet/ActionSheetView";
 import { useCardActions } from "../cards/useCardActions";
@@ -21,8 +22,6 @@ import { sheetRows } from "./sheetRows";
  * fiche, qui a déjà ses propres boutons de lecture et de bascule.
  */
 
-export type SheetMode = "actions" | "rate";
-
 export interface SheetModelInput {
   target: CardSheetTarget;
   mode: SheetMode;
@@ -34,7 +33,7 @@ export interface SheetModelInput {
 export function useSheetModel({ target, mode, providerFilterActive, onClose }: SheetModelInput): ActionSheetViewProps {
   const { t } = useTranslation();
   const client = useJellyfinClient();
-  const actionsShown = mode === "actions";
+  const actionsShown = sheetShowsActions(mode);
   const card = useCardActions(target, { withActions: actionsShown, onLeave: onClose });
 
   const header = useMemo(

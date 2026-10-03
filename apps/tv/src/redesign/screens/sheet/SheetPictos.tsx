@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { SHEET_ACTIONS_GROUP, sheetActionKey } from "@tentacle-tv/tv-core";
 import { BrandPill } from "../../brand/BrandPill";
 import { FocusGroup } from "../../focus/FocusGroup";
 import { FocusTarget } from "../../focus/FocusTarget";
@@ -37,12 +38,12 @@ export const SheetPictos = memo(function SheetPictos({
   onAction?: (kind: SheetActionKind) => void;
 }) {
   return (
-    <FocusGroup focusKey="sheet:actions" style={styles.row}>
+    <FocusGroup focusKey={SHEET_ACTIONS_GROUP} style={styles.row}>
       {actions.map((action) => (
         <SheetPicto
           key={action.kind}
           action={action}
-          focusKey={`sheet:action:${action.kind}`}
+          focusKey={sheetActionKey(action.kind)}
           onPress={onAction ? () => onAction(action.kind) : undefined}
         />
       ))}

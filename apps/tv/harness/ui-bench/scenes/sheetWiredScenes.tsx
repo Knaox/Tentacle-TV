@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
 import { Modal } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { sheetEntryOf } from "@tentacle-tv/tv-core";
+import { useSheetFocus } from "../../../src/platform/tvos/panels/sheetFocus";
 import { FocusBindingProvider } from "../../../src/redesign/focus/focusBinding";
 import { ActionSheetView } from "../../../src/redesign/screens/sheet/ActionSheetView";
 import { useFocusStore } from "../../../src/redesignWiring/focus/focusStore";
-import { sheetEntryOf, useSheetFocus } from "../../../src/redesignWiring/sheet/sheetFocus";
 import type { BenchData } from "../data/benchData";
 import { librarySheet, type SheetSceneModel } from "../data/sheetModels";
 import { HOME_SCENES } from "./homeScenes";

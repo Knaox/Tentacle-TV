@@ -13,7 +13,6 @@ import { SheetPictos } from "./SheetPictos";
 import type { SheetActionKind, SheetActionModel, SheetHeaderModel, SheetRatingModel } from "./sheetTypes";
 
 export type { SheetActionKind, SheetActionModel, SheetHeaderModel, SheetRatingModel } from "./sheetTypes";
-export { RATING_ENTRY, SCALE_FOCUS_KEYS, scaleFocusKey } from "./ratingScaleKeys";
 
 /**
  * Le GRAND PANNEAU d'une carte — l'appui maintenu (OK tenu), sur toutes les
@@ -46,8 +45,9 @@ export { RATING_ENTRY, SCALE_FOCUS_KEYS, scaleFocusKey } from "./ratingScaleKeys
  * présentée sans animation système — un seul fondu, le nôtre, à l'entrée
  * comme à la sortie.
  *
- * Focus (câblage) : ENTRÉE sur l'échelle, à la note posée, sinon à 5/10
- * (`RATING_ENTRY`) — sans échelle, sur le premier picto ; le focus est piégé
+ * Focus (câblage, règles de tv-core `cards/`) : ENTRÉE sur l'échelle, à la
+ * note posée, sinon à 5/10 (`RATING_ENTRY`) — sans échelle, sur le premier
+ * picto ; le focus est piégé
  * dans le panneau ; Menu ferme. HAUT depuis l'échelle atteint la croix, BAS
  * l'en ramène au cran retenu. Le panneau s'ouvre sous un OK encore enfoncé :
  * la garde anti-clic fantôme couvre l'échelle, les pictos et la croix.

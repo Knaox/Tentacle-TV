@@ -2,8 +2,16 @@ import { memo, useCallback, useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
+import {
+  RATING_SCORES,
+  RULER_REMOVE_INDEX,
+  SHEET_SCALE_GROUP,
+  rulerCenterIndex,
+  rulerRemovable,
+  scaleFocusKey,
+  type RulerAim,
+} from "@tentacle-tv/tv-core";
 import { FocusGroup } from "../../focus/FocusGroup";
-import { RATING_ENTRY, RATING_SCORES, scaleFocusKey } from "./ratingScaleKeys";
 import { RULER_CELL, RulerCell } from "./RulerCell";
 
 /**
@@ -13,9 +21,10 @@ import { RULER_CELL, RulerCell } from "./RulerCell";
  * « Retirer la note » au bout quand une note est posée. OK note.
  *
  * Vue pure. `aim` : ce que vise le focus (un cran, le retrait) ; sans focus
- * dans l'échelle, elle se centre sur la note posée, sinon sur 5
- * (`RATING_ENTRY`). Seul `transform` s'anime : la règle glisse, les crans
- * pâlissent avec la distance (`RulerCell`).
+ * dans l'échelle, elle se centre sur la note posée, sinon sur 5 — le centre
+ * et le retrait qui reste sont la règle de tv-core (`cards/ratingRuler`).
+ * Seul `transform` s'anime : la règle glisse, les crans pâlissent avec la
+ * distance (`RulerCell`).
  *
  * Focus (câblage) : groupe `sheet:scale`, crans `sheet:scale:<1…10>` et
  * `sheet:scale:remove`. Chaque cran touche ses voisins : GAUCHE / DROITE
@@ -23,12 +32,11 @@ import { RULER_CELL, RulerCell } from "./RulerCell";
  */
 
 const STEP = RULER_CELL.width + RULER_CELL.gap;
-const REMOVE_INDEX = RATING_SCORES.length;
 const HEIGHT = RULER_CELL.height + 24;
 
 /** Le milieu du cran `index` dans la règle. */
 function middleOf(index: number): number {
-  return index === REMOVE_INDEX ? index * STEP + RULER_CELL.removeWidth / 2 : index * STEP + RULER_CELL.width / 2;
+  return index === RULER_REMOVE_INDEX ? index * STEP + RULER_CELL.removeWidth / 2 : index * STEP + RULER_CELL.width / 2;
 }
 
 export const RatingRuler = memo(function RatingRuler({
@@ -41,23 +49,23 @@ export const RatingRuler = memo(function RatingRuler({
 }: {
   current: number | null;
   pending?: boolean;
-  aim: number | "remove" | null;
+  aim: RulerAim | null;
   /** La largeur visible de la règle : le cran visé se pose en son milieu. */
   width: number;
   /** Le focus arrive sur un cran, ou le quitte. */
-  onAim: (aim: number | "remove", focused: boolean) => void;
+  onAim: (aim: RulerAim, focused: boolean) => void;
   onRate?: (score: number | null) => void;
 }) {
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   // Le retrait reste à sa place une fois paru : une note retirée depuis
   // l'ouverture ne fait pas disparaître le cran qui a le focus.
-  const [removable, setRemovable] = useState(current !== null);
+  const [removable, setRemovable] = useState(() => rulerRemovable(false, current));
   useEffect(() => {
-    if (current !== null) setRemovable(true);
+    setRemovable((shown) => rulerRemovable(shown, current));
   }, [current]);
 
-  const center = aim === "remove" ? REMOVE_INDEX : (typeof aim === "number" ? aim : current ?? RATING_ENTRY) - 1;
+  const center = rulerCenterIndex(aim, current);
   const target = width / 2 - middleOf(center);
   const x = useSharedValue(target);
   useEffect(() => {
@@ -65,13 +73,13 @@ export const RatingRuler = memo(function RatingRuler({
   }, [target, reduced, x]);
   const slide = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
 
-  const aimAt = useCallback((next: number | "remove") => (focused: boolean) => onAim(next, focused), [onAim]);
+  const aimAt = useCallback((next: RulerAim) => (focused: boolean) => onAim(next, focused), [onAim]);
   const remove = useCallback(() => {
     if (current !== null) onRate?.(null);
   }, [current, onRate]);
 
   return (
-    <FocusGroup focusKey="sheet:scale" style={[styles.window, { width }]}>
+    <FocusGroup focusKey={SHEET_SCALE_GROUP} style={[styles.window, { width }]}>
       <Animated.View style={[styles.strip, slide]}>
         {RATING_SCORES.map((score, index) => (
           <RulerCell
@@ -90,7 +98,7 @@ export const RatingRuler = memo(function RatingRuler({
           <RulerCell
             score={null}
             label={t("cards:removeRating")}
-            distance={Math.abs(REMOVE_INDEX - center)}
+            distance={Math.abs(RULER_REMOVE_INDEX - center)}
             disabled={current === null}
             focusKey={scaleFocusKey(null)}
             onPress={remove}

@@ -4,13 +4,13 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { loadTitleState, tentacleApiFetch, titleStateQueryKey, useMyTitles } from "@tentacle-tv/api-client";
 import type { TitleState } from "@tentacle-tv/shared";
-import { isAdvancing } from "@tentacle-tv/tv-core";
+import { ABSENT_SHEET_ENTRY_WAIT_MS, absentSheetEntry, isAdvancing, panelBackLayers, panelPresented } from "@tentacle-tv/tv-core";
+import { useSheetFocus } from "../../platform/tvos/panels/sheetFocus";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ActionSheetView, type SheetActionKind, type SheetActionModel } from "../../redesign/screens/sheet/ActionSheetView";
 import { useBackLayer } from "../back/BackScope";
 import { tvPosterUri } from "../cards/absentCards";
 import { useFocusStore } from "../focus/focusStore";
-import { sheetEntryOf, useSheetFocus } from "../sheet/sheetFocus";
 import { absentOf } from "./absentStates";
 import type { AbsentTitle } from "./absentTitle";
 import { useArrivals, useLiveRefresh } from "./liveRequests";
@@ -27,11 +27,11 @@ import type { VigieGate } from "./useVigieGate";
  *
  * Il ne se présente qu'une fois l'état du titre SU (le plus souvent déjà là :
  * la carte l'a lu pour son badge) — dans une `Modal`, rien ne déplace plus le
- * focus après coup ; un filet le présente quand même. Menu ou la croix
- * ferment ; « Demander » referme et fait le geste d'OK (`onRequest`).
+ * focus après coup ; un filet le présente quand même (tv-core
+ * `absentSheetEntry`). Menu ou la croix ferment ; « Demander » referme et
+ * fait le geste d'OK (`onRequest`).
  */
 
-const ENTRY_WAIT_MS = 900;
 const fetcher = (url: string) => tentacleApiFetch(url);
 
 interface Props {
@@ -81,7 +81,8 @@ export function AbsentSheetRedesign({ gate, title, onRequest, onClose }: Props) 
   const requestClose = useCallback(() => setClosing(true), []);
   // Une couche « menu » de la pile du Retour : la Modal reçoit Menu elle-même
   // (`onRequestClose`), mais l'écran sait qu'un menu est ouvert.
-  useBackLayer("menu", true, requestClose);
+  const [back] = panelBackLayers("absent", closing);
+  useBackLayer(back.kind, back.active, requestClose);
   const closed = useCallback(() => {
     onClose();
     after.current?.();
@@ -95,16 +96,16 @@ export function AbsentSheetRedesign({ gate, title, onRequest, onClose }: Props) 
   const focus = useFocusStore();
   const [waited, setWaited] = useState(false);
   useEffect(() => {
-    const timer = setTimeout(() => setWaited(true), ENTRY_WAIT_MS);
+    const timer = setTimeout(() => setWaited(true), ABSENT_SHEET_ENTRY_WAIT_MS);
     return () => clearTimeout(timer);
   }, []);
   const known = query.isFetched || query.isError;
   const entry = useRef<string | null>(null);
-  if (entry.current === null && (known || waited)) entry.current = sheetEntryOf(null, actions);
+  if (entry.current === null) entry.current = absentSheetEntry(actions, known, waited);
   const bind = useSheetFocus(focus, { rating: null, actions, entry: entry.current });
 
   return (
-    <Modal visible={entry.current !== null} transparent animationType="none" onRequestClose={requestClose}>
+    <Modal visible={panelPresented(entry.current)} transparent animationType="none" onRequestClose={requestClose}>
       <FocusBindingProvider bind={bind}>
         <ActionSheetView header={header} actions={actions} rating={null} onAction={onAction} onClose={requestClose} closing={closing} onClosed={closed} />
       </FocusBindingProvider>
