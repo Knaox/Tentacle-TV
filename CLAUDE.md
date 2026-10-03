@@ -416,6 +416,26 @@ COMPTE (`/api/preferences/hints`, liste FERMÉE `help/dismissibleHints.ts`,
 miroir backend verrouillé, suivie en direct par la portée `hints`) : un
 nouveau rappel masquable s'y ajoute, jamais une clé de stockage d'appareil.
 
+## Tableau de bord d'administration — « À régler », puis « Recommandations »
+
+La vue d'ensemble (`/admin`) dit l'état en UNE ligne, puis deux familles, dans
+cet ordre : À RÉGLER (cassé : Jellyfin pas relié ou injoignable, clé
+d'administration absente ou refusée, base en panne, Jellyfin incompatible,
+mise à jour obligatoire — jamais masquable) et RECOMMANDATIONS (lien public et
+HTTPS, clé TMDB, réglages de Jellyfin groupés en UNE entrée, lecture directe —
+masquables par le COMPTE, rappels `admin*` de `help/dismissibleHints.ts`).
+Une seule règle : `packages/shared/src/adminAttention/attentionModel.ts`. Une
+nouvelle alerte du tableau de bord s'y ajoute (et sa clé dans la liste fermée
+si elle se masque) — jamais un bandeau de plus. Tant que Jellyfin n'est pas
+utilisable, ce qui en dépend se tait : une entrée dit la cause.
+
+La carte « Serveur Tentacle » est TOUJOURS là (un état, pas une alerte) :
+version en service, dernière publiée (`/api/admin/server-update`, tags
+`server-v*` lus au plus toutes les six heures), « conseillée » ou
+« obligatoire » (`serverUpdate/serverUpdateStatus.ts`). **Le serveur ne parle
+jamais à Docker** (ni socket, ni API du démon — décision du 2026-10-03) : la
+carte donne la commande à copier et constate seule le serveur revenu (`bootId`).
+
 ## Bandes-annonces (Apple TV) — le serveur relaie, il ne prête pas d'URL
 
 L'Apple TV n'a pas de WebView : `GET /api/trailers/resolve` extrait la

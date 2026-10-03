@@ -199,6 +199,16 @@ Open `http://<your-server>:3000` in your browser. The setup wizard will guide yo
 
 That's it. You're ready to stream.
 
+### Update
+
+The admin overview (`/admin`) shows the running version, the latest published release and, when a newer one is out, the command to copy. With Docker Compose, run it in the folder of your `docker-compose.yml`:
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+If your file pins a version (`ghcr.io/knaox/tentacle-tv:v1.22.3`), change the tag to the new one first — `pull` would fetch nothing new otherwise. With `docker run`, pull the image (`docker pull ghcr.io/knaox/tentacle-tv:latest`), then recreate the container with the same options: your data stays in its volume. Tentacle never talks to Docker itself; the overview notices the restarted server on its own.
+
 ---
 
 ## Reverse Proxy (Nginx Proxy Manager)
@@ -500,6 +510,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 | `HOST` | Server bind address | `0.0.0.0` | No |
 | `RATE_LIMIT` | Max requests per minute per IP | `1000` | No |
 | `CORS_ORIGIN` | Allowed CORS origin (dev only) | — | No |
+| `TENTACLE_IMAGE` | The image you deploy (e.g. `ghcr.io/knaox/tentacle-tv:v1.22.3`): the admin overview then gives the exact update command for a pinned tag | — | No |
+| `TENTACLE_INSTALL_RUNTIME` | `docker`, `podman` or `none`: forces container detection where its marker file is missing (Kubernetes, LXC…) | auto | No |
+| `TENTACLE_SERVER_UPDATE_REPO` | `off` turns off the update check (GitHub, at most every six hours) | Knaox/Tentacle-TV | No |
 
 > Jellyfin URL and API key are configured through the web setup wizard and stored in the database — not in environment variables.
 
