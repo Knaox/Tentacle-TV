@@ -1,4 +1,4 @@
-import { useChoiceEntry } from "@bench/src/redesignWiring/settings/settingsFocus";
+import { useChoiceEntry } from "@bench/choiceEntry";
 import { createFocusStore, type FocusStore } from "@bench/focusStore";
 import { note } from "../stubs/record";
 import { mount, take } from "./root";
