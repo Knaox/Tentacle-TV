@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFavoritesAll, useWatchlistAll } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { collectionEntryKey } from "@tentacle-tv/tv-core";
 import { railNavigate } from "../../navigation/railNavigate";
 import { CollectionView, type CollectionEmptyModel } from "../../redesign/screens/collection/CollectionView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
@@ -57,7 +58,7 @@ function CollectionRedesign({ kind, query }: { kind: Kind; query: CollectionQuer
 
   const screen = useRedesignScreen({
     railKey: watchlist ? "Watchlist" : "Favorites",
-    entryKey: status ? "status:primary" : empty ? "empty:primary" : grid.cards.length > 0 ? "grid:0" : null,
+    entryKey: collectionEntryKey({ failed: status !== null, empty: empty !== null, cards: grid.cards.length }),
   });
 
   return (

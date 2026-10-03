@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useJellyfinClient, useSearchBrowse, type SearchBrowseTarget } from "@tentacle-tv/api-client";
 import { initials, personMeta, type MediaItem } from "@tentacle-tv/shared";
+import { browseEntryKey } from "@tentacle-tv/tv-core";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import type { RootStackParamList } from "../../navigation/types";
+import { useBrowseFocus } from "../../platform/tvos/screens/browse";
 import { BrowseView } from "../../redesign/screens/browse/BrowseView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
-import { useBackFocus } from "../focus/backFocus";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
@@ -30,7 +31,8 @@ const PORTRAIT_HEIGHT = TV_STAGE.card.person.size * 2;
  * reprend à son arrivée, tant qu'aucune affiche ne l'a eu ; « Réessayer »
  * aussi, si l'erreur arrive. Arrivée sur une page déjà là, la croix ne le
  * prend jamais (`useBackFocus`) ; « haut », depuis n'importe quelle affiche
- * de la première rangée, la rend (groupe `browse:header`).
+ * de la première rangée, la rend (groupe `browse:header`). Décidé par tv-core
+ * (`focus/gridFocus.ts`), posé par `platform/tvos/screens/browse.ts`.
  */
 export function BrowseRedesign({ kind, id, name }: Params) {
   const { t } = useTranslation();
@@ -68,31 +70,11 @@ export function BrowseRedesign({ kind, id, name }: Params) {
     ? client.getImageUrl(data.person.id, "Primary", { height: PORTRAIT_HEIGHT, tag: data.person.imageTag, quality: 85 })
     : undefined;
 
-  const entryKey = status ? "status:primary" : items.length > 0 ? "grid:0" : "browse:back";
+  const entryKey = browseEntryKey({ failed: status !== null, items: items.length });
   // Une page poussée : Retour y recule, rail ouvert ou non (`BackScope`).
   const screen = useRedesignScreen({ railKey: "Search", entryKey, onReselect: goBack });
   const { focus } = screen;
-  // L'en-tête (ou, sur l'erreur, la bande de la croix) mène à la croix : un
-  // guide à destination — un guide `autoFocus` n'y menait que si elle avait
-  // déjà eu le focus (mesuré : jamais, arrivé sur une page déjà là).
-  useBackFocus(focus, { backKey: "browse:back", barKey: "browse:header", entryKey });
-
-  // tvOS pose d'abord le focus en haut à gauche — Retour —, et Retour le
-  // garde pendant un chargement : la première affiche le reprend en arrivant,
-  // tant qu'aucune affiche ne l'a eu.
-  const posterSeen = useRef(false);
-  useEffect(() => focus.subscribe((key, focused) => {
-    if (focused && key.startsWith("grid:")) posterSeen.current = true;
-  }), [focus]);
-  useEffect(() => {
-    if (items.length === 0 || posterSeen.current || focus.focusedKey() !== "browse:back") return;
-    return focus.claim("grid:0");
-  }, [items.length, focus]);
-  // L'erreur après un chargement : la croix avait le focus (seule action), « Réessayer » le reprend.
-  useEffect(() => {
-    if (!failed || posterSeen.current || focus.focusedKey() !== "browse:back") return;
-    return focus.claim("status:primary");
-  }, [failed, focus]);
+  useBrowseFocus(focus, { entryKey, items: items.length, failed });
 
   return (
     <RedesignScreen screen={screen}>

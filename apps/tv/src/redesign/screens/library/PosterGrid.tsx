@@ -2,6 +2,7 @@ import { memo, useCallback, useMemo, useRef, type ReactElement } from "react";
 import { StyleSheet, View } from "react-native";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, gridLineReveal } from "@tentacle-tv/tv-core";
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
@@ -53,8 +54,6 @@ export const GRID_GAP = 36;
  *  légende de l'affiche focalisée, qui descend de la moitié de son
  *  agrandissement (~15) — sans quoi la rangée suivante mord la ligne. */
 export const GRID_ROW_GAP = 52;
-/** À combien d'écrans de la fin la page suivante est demandée. */
-const END_REACHED_SCREENS = 3;
 
 /** La largeur d'une affiche pour `columns` colonnes. */
 export function posterWidth(columns: number): number {
@@ -91,14 +90,12 @@ const Cell = memo(function Cell({ card, index, width, focusPrefix, onPressCard, 
 
 const Separator = () => <View style={styles.separator} />;
 
-/** La ligne entière à l'écran, au plus près : 56 des bords, la place de
- *  « Maintenir OK » sous la légende. */
-const LINE_REVEAL: FocusSectionReveal = { mode: "nearest" };
-/** La PREMIÈRE ligne : la page tout en haut, son titre et ses filtres avec
- *  elle. Revenir sur la première ligne, c'est revenir en haut — y compris au
- *  bout d'une remontée maintenue ou d'un glisser vif, où tvOS pose la page où
- *  son défilement rapide s'arrête (le titre restait masqué). */
-const FIRST_LINE_REVEAL: FocusSectionReveal = { mode: "start" };
+/** Comment la page montre une ligne (`gridLineReveal`, tv-core) : la PREMIÈRE
+ *  ramène la page tout en haut, son titre et ses filtres avec elle ; les
+ *  autres viennent entières à l'écran, au plus près (56 des bords, la place
+ *  de « Maintenir OK » sous la légende). Des objets stables : la section est
+ *  mémoïsée. */
+const LINE_REVEALS: Record<"start" | "nearest", FocusSectionReveal> = { start: { mode: "start" }, nearest: { mode: "nearest" } };
 
 interface Line {
   start: number;
@@ -124,7 +121,7 @@ function useLines(cards: CardModel[], columns: number): Line[] {
 
 const GridLine = memo(function GridLine({ line, index, ...cell }: { line: Line; index: number } & Omit<CellProps, "card" | "index">) {
   return (
-    <FocusSection focusKey={`${cell.focusPrefix}:line:${index}`} reveal={index === 0 ? FIRST_LINE_REVEAL : LINE_REVEAL} style={styles.columns}>
+    <FocusSection focusKey={`${cell.focusPrefix}:line:${index}`} reveal={LINE_REVEALS[gridLineReveal(index)]} style={styles.columns}>
       {line.cards.map((card, i) => (
         // Clé de PLACE : recyclée, la ligne garde ses cartes (cf. en-tête).
         <Cell key={i} card={card} index={line.start + i} {...cell} />
@@ -139,7 +136,7 @@ export const PosterGrid = memo(function PosterGrid({
   header,
   empty,
   footer,
-  focusPrefix = "grid",
+  focusPrefix = GRID_KEY_PREFIX,
   onPressCard,
   onLongPressCard,
   onFocusCard,
@@ -191,7 +188,7 @@ export const PosterGrid = memo(function PosterGrid({
         onEndReached={onEndReached}
         // La page suivante part à trois écrans de la fin : quand le focus
         // dévale (flèche maintenue, glisser vif), elle est là avant lui.
-        onEndReachedThreshold={END_REACHED_SCREENS}
+        onEndReachedThreshold={GRID_END_REACHED_SCREENS}
       />
     </View>
   );
