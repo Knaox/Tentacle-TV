@@ -67,9 +67,9 @@
         {
           "do": "down",
           "expect": {
-            "focus": "grid:1"
+            "focus": "grid:0"
           },
-          "why": "BAS depuis la croix : la dernière affiche visitée"
+          "why": "BAS depuis la croix : l'affiche la plus proche, sous elle — pas la dernière visitée"
         },
         {
           "do": "up"

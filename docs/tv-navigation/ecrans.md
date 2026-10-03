@@ -244,7 +244,9 @@ résultat.
   croix — chargement ou vide : seule action, donc jamais verrouillée).
 - **PA-2** Croix : `useBackFocus(focus, { backKey: "browse:back", barKey:
   "browse:header", entryKey })` (T4) ; `browse:header` est l'en-tête de la
-  page (en tête de la grille), ou, en erreur, une bande en haut.
+  page (en tête de la grille), ou, en erreur, une bande en haut. BAS depuis
+  la croix : l'affiche la plus proche (`grid:0`), jamais la dernière visitée
+  (relevé du banc).
 - **PA-3** Reprise : tant qu'aucune affiche (`grid:*`) n'a eu le focus et que
   la croix l'a, l'arrivée des affiches réclame `grid:0` ; une erreur arrivée
   après un chargement réclame `status:primary`.
