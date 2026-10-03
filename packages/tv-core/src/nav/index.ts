@@ -13,6 +13,7 @@ export * from "./railMenu";
 export * from "./railSelect";
 export * from "./railStack";
 export * from "./railBack";
+export * from "./railShortcuts";
 export * from "./detailChain";
 export * from "./railPinning";
 export * from "./railOrder";
