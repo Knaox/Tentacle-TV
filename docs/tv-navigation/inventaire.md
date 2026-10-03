@@ -739,6 +739,16 @@ fait). « À vérifier » : déduit du code, pas reproduit.
 1. `redesignWiring/settings/useSettingsModel.ts:72` — `Platform.OS === "android"` dans le câblage refondu : branche morte, la refonte ne tourne que sur tvOS.
 2. `components/nav/TVNavChrome.tsx` — l'ancien rail est monté sur tvOS (App.tsx) et ses crochets tournent pour rien (`useLibraries`, `useContentFocusCapture` et son abonnement natif — annexe A).
 
+**Ailleurs dans le lot** — chaque tâche a tenu sa liste, non corrigée elle aussi :
+`focus.md` (« Constats »), `retour-rail.md` (§ 15, B1 à B8), `lecteur.md`
+(§ 10), `panneaux-cartes.md` (§ 6), `ecrans.md` (« Constats »). Ce qui ne
+s'écrit nulle part ailleurs dans le dépôt :
+
+1. Socle (rapport final de T1) — la rotation du héros relancée par un maintien « Changed » (phase nulle) ; `useTVRemote` lit un `longLeft` / `longRight` « Changed » comme un relâchement ; deux seuils d'OK maintenu (500 ms au `longSelect` natif, 550 ms au `Pressable`) ; un second abonnement natif inerte hors de l'entrée unique, `BackHandler.ios.js` de react-native-tvos (le premier : annexe A) ; plus tard, le rang d'activation des contextes (`setKind`, `remote/contexts.ts`) pour y fondre `nav/backLayers`.
+2. Banc (passage final) — `ecrans/jumelage.json` tapait `http://localhost:3107` en dur : ses deux scénarios ne passaient que sur la place 7, et sur l'Apple TV « localhost » est l'Apple TV (corrigé par T2 : `{backend}`, df1563bbe). Sur l'appareil, un `type:` sans clavier ouvert met fin au test de l'agent XCUITest (`AgentUITests.swift:55`) : tout ce qui suit sort « agent absent » — transmis à T2.
+3. Faux backend (T6, T7) — `/api/preferences/reco` sans `settings`, `/api/search` sans `match`, `/api/search/episodes` non servi.
+4. Tests instables sous forte charge — webOS `searchState` / zones (plus de 5 s au-delà d'une charge de 40), api-client `bitrateMeasure` : à rejouer seuls.
+
 ## Annexe G — partagés avec Android TV qui portent une décision
 
 Ceux-là ne s'amincissent sur tv-core qu'avec un banc qui prouve l'équivalence
@@ -756,6 +766,19 @@ Android (règle du lot) ; le rapport final les liste s'ils ont été touchés.
 - `hooks/useTVPlaybackPresence.ts` (T5)
 - `navigation/AppNavigator.tsx` (T4)
 - `screens/PlayerScreen.tsx` (T5)
+
+**Touchés pendant le lot** (git, 84f3cedd0 → 73b3839d1) — tous par T5, et
+l'équivalence Android prouvée par `player-trace` (`TRACE_PLATFORM=android`,
+rejoué au passage final) :
+
+- amincis sur tv-core : `hooks/useTVPlayerControls.ts`, `hooks/useTVPlayerBack.ts` ; modifié : `hooks/scrubGestureTypes.ts` ;
+- ajoutés : `hooks/playerTimers.ts`, `hooks/usePlayerRemoteBinding.ts` (et son pendant `.ios`) ;
+- retirés, leurs règles parties dans tv-core (`player/`) : `useScrubController`, `useScrubHoldMotor`, `useScrubCountdown`, `scrubCountdown`, `scrubTouchTuning`, `seekTuning`, `useSkipFlash`.
+
+Hors `apps/tv`, tv-core `nav/backLayers.ts` (T4) n'a gagné que des
+commentaires et `BACK_INTENT` : comportement identique, `back-trace` identique
+sur iOS et Android. Aucun autre fichier partagé n'a bougé ; `lib/tvPanGesture.ts`,
+lu par le seul chemin tvOS, est devenu `platform/tvos/input/panGesture.ts`.
 
 ## Annexe H — attributions proposées
 
