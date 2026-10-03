@@ -374,7 +374,7 @@ changent ni de nom ni de comportement.
 
 ## 16. L'API commune du Retour (publiée pour T5, T6, T7)
 
-Validée par le coordinateur. Les noms ci-dessous sont ceux qui seront livrés.
+Validée par le coordinateur, livrée (fusionnée le 2026-10-03, `5a12cb255`).
 
 ### tv-core `nav/backLayers` (pur, sans React)
 
@@ -402,6 +402,8 @@ export function resolveBack<A extends string>(
   context: { pushed: boolean },
 ): BackResolution<A>;
 
+/** L'issue d'un Retour : « layer », « pop » ou « exit ». */
+export function backOutcome(context: { layered: boolean; pushed: boolean }): BackOutcome;
 /** La plateforme doit-elle prendre l'appui d'avance ? (tvOS : `enabled` de la portée). */
 export function takesBack(context: { layered: boolean; pushed: boolean }): boolean;
 
