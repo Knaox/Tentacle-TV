@@ -1,3 +1,4 @@
+import { transcodeTarget, type TranscodeTarget } from "@tentacle-tv/shared";
 import { buildQuery } from "./types";
 import { imageBudget } from "../net/dataSaver";
 import { pixelDensity } from "../net/pixelDensity";
@@ -134,19 +135,56 @@ export function buildStreamUrl(
     return buildHlsUrl(ctx.baseUrl, itemId, p, ctx.resolveMediaUrl);
   }
 
-  // Quality transcode via HLS — full re-encode with bitrate limit.
+  // Transcodage de qualité (palier, ou repli codec) en HLS : débit vidéo,
+  // définition et audio décidés ENSEMBLE par `transcodeTarget` (shared) — la
+  // règle même qu'applique `applyTranscodeTarget` aux URL que Jellyfin rend aux
+  // lecteurs web et mobiles. `MaxWidth` suit le palier : figé à 1920, il
+  // laissait Jellyfin choisir seul la définition (un « 480p » servi en 540p).
+  const target = transcodeTarget(options.maxBitrate, options.maxHeight);
   p.AllowVideoStreamCopy = "false";
   p.AllowAudioStreamCopy = "false";
   p.EnableAudioVbrEncoding = "true";
   p.CopyTimestamps = "true";
   p.VideoCodec = "h264";
   p.AudioCodec = "aac";
-  const audioBitrate = 384000;
-  p.VideoBitrate = String(Math.max(options.maxBitrate - audioBitrate, 500000));
-  p.AudioBitrate = String(audioBitrate);
-  p.MaxWidth = "1920";
-  if (options?.maxHeight) p.MaxHeight = String(options.maxHeight);
+  p.VideoBitrate = String(target.videoBitrate);
+  p.AudioBitrate = String(target.audioBitrate);
+  p.TranscodingMaxAudioChannels = String(target.audioChannels);
+  p.MaxWidth = String(target.maxWidth);
+  if (target.maxHeight) p.MaxHeight = String(target.maxHeight);
   return buildHlsUrl(ctx.baseUrl, itemId, p, ctx.resolveMediaUrl);
+}
+
+/** Les paramètres qu'un palier impose à une URL de transcodage, quelle que soit leur casse d'origine. */
+const TARGET_PARAMS = ["VideoBitrate", "AudioBitrate", "TranscodingMaxAudioChannels", "MaxWidth", "MaxHeight"];
+
+/**
+ * Pose un palier de qualité sur l'URL de transcodage que Jellyfin a rendue
+ * (`TranscodingUrl` de PlaybackInfo, lecteurs web et mobiles).
+ *
+ * Jellyfin y écrit `VideoBitrate = plafond − audio` mais aucune définition :
+ * au moment du manifeste, il la recalcule d'après ce débit et sert du 720p à
+ * 1,2 Mb/s, qui part en blocs à la première scène d'action. On y impose donc
+ * le débit, la définition et l'audio du palier — les mêmes que `buildStreamUrl`
+ * pose sur les URL des lecteurs natifs. Le reste de l'URL est rendu tel quel,
+ * à l'octet près : session, pistes, profils de codecs.
+ */
+export function applyTranscodeTarget(url: string, target: TranscodeTarget): string {
+  const q = url.indexOf("?");
+  if (q < 0) return url;
+  const replaced = new Set(TARGET_PARAMS.map((k) => k.toLowerCase()));
+  const kept = url
+    .slice(q + 1)
+    .split("&")
+    .filter((pair) => pair !== "" && !replaced.has(pair.split("=")[0].toLowerCase()));
+  kept.push(
+    `VideoBitrate=${target.videoBitrate}`,
+    `AudioBitrate=${target.audioBitrate}`,
+    `TranscodingMaxAudioChannels=${target.audioChannels}`,
+    `MaxWidth=${target.maxWidth}`,
+  );
+  if (target.maxHeight) kept.push(`MaxHeight=${target.maxHeight}`);
+  return `${url.slice(0, q)}?${kept.join("&")}`;
 }
 
 export function buildHlsUrl(
