@@ -27,3 +27,4 @@ export * from "./scrubController";
 export * from "./playerControls";
 export * from "./playerRemote";
 export * from "./touchScrub";
+export * from "./playerBack";
