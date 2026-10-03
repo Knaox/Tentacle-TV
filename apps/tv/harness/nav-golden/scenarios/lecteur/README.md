@@ -45,12 +45,14 @@ moment.
 
 Sous charge, l'accueil peut perdre son entrée au démarrage (constat 4 de
 `docs/tv-navigation/focus.md`) : le focus tombe sur le rail, et BAS mène
-alors à `nav:Search` au lieu de Reprendre. `lec-04` et `lec-06` partent donc
+alors à `nav:Search` au lieu de Reprendre. Tous les scénarios partent donc
 de l'approche convergente des scénarios d'accueil (`wait:1`, GAUCHE, DROITE :
 du héros comme du rail, retour sur `hero:primary`), puis BAS.
 
 Deux minuteries du lecteur courent contre les relevés : l'extinction de
 l'habillage (5 s après son dernier allumage) et la reprise automatique du
-défilement (5 s après le dernier geste). Sous charge, un relevé peut tomber
-après leur échéance : `lec-06` envoie donc Retour dans le même pas que le
-maintien, au lieu de relever le défilement entre les deux.
+défilement (5 s après le dernier geste). Or un relevé SANS focus n'est
+accepté qu'après 4 s de calme (`NULL_FOCUS_QUIET_MS` du banc) : pendant un
+défilement, il tombe au bord de la reprise automatique. Les défilements
+(`lec-05` au bouton ⏩, `lec-06` au maintien, `lec-08` au pavé) s'ouvrent et se
+ferment donc dans le même pas, sans relevé entre les gestes.

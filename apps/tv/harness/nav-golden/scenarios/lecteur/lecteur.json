@@ -17,6 +17,9 @@
           "name": "Home"
         },
         "keys": [
+          "wait:1",
+          "left",
+          "right",
           "down",
           "wait:0.9"
         ],
@@ -76,6 +79,9 @@
           "name": "Home"
         },
         "keys": [
+          "wait:1",
+          "left",
+          "right",
           "down",
           "wait:0.9"
         ],
@@ -183,6 +189,9 @@
           "name": "Home"
         },
         "keys": [
+          "wait:1",
+          "left",
+          "right",
           "down",
           "wait:0.9"
         ],
@@ -353,6 +362,9 @@
           "name": "Home"
         },
         "keys": [
+          "wait:1",
+          "left",
+          "right",
           "down",
           "wait:0.9"
         ],
@@ -392,37 +404,32 @@
           }
         },
         {
-          "do": "select",
-          "settleMs": 900,
-          "expect": {
-            "route": "Player"
-          },
-          "why": "défilement ouvert, habillage masqué : le fond tient le focus"
-        },
-        {
-          "do": "right",
-          "settleMs": 500
-        },
-        {
-          "do": "select",
+          "do": [
+            "select",
+            "wait:1",
+            "right",
+            "wait:1",
+            "select"
+          ],
           "settleMs": 1200,
           "expect": {
-            "route": "Player"
+            "route": "Player",
+            "focus": "player:scrub"
           },
-          "why": "validé : seek à la cible, l'habillage revient sur son dernier bouton"
+          "why": "⏩ ouvre le défilement (le jumeau de l'OK est avalé), → déplace la cible, OK valide : seek, l'habillage revient sur ⏩. Sans relevé entre les gestes : un relevé sans focus attend 4 s de calme, et la reprise automatique (5 s) courait contre lui"
         },
         {
-          "do": "select",
-          "settleMs": 900,
-          "why": "« ⏩ » de nouveau"
-        },
-        {
-          "do": "menu",
+          "do": [
+            "select",
+            "wait:1",
+            "menu"
+          ],
           "settleMs": 1200,
           "expect": {
-            "route": "Player"
+            "route": "Player",
+            "focus": "player:scrub"
           },
-          "why": "annulé, sans seek"
+          "why": "⏩ de nouveau, puis Retour (couche passagère) annule, sans seek ; l'habillage revient sur ⏩"
         },
         {
           "do": [
@@ -515,6 +522,9 @@
           "name": "Home"
         },
         "keys": [
+          "wait:1",
+          "left",
+          "right",
           "down",
           "wait:0.9"
         ],
@@ -604,6 +614,9 @@
           "name": "Home"
         },
         "keys": [
+          "wait:1",
+          "left",
+          "right",
           "down",
           "wait:0.9"
         ],
@@ -625,19 +638,17 @@
           }
         },
         {
-          "do": "pan:400,0,1500",
-          "settleMs": 800,
-          "expect": {
-            "route": "Player"
-          }
-        },
-        {
-          "do": "menu",
+          "do": [
+            "pan:400,0,1500",
+            "wait:2.5",
+            "menu"
+          ],
           "settleMs": 1500,
           "expect": {
             "route": "Player",
             "focus": "player:playpause"
-          }
+          },
+          "why": "le glisser ouvre le défilement habillage masqué ; Retour, une fois le glisser fini, l'annule AVANT la reprise automatique (5 s après la fin du geste) et l'habillage revient sur lecture/pause"
         },
         {
           "do": [
@@ -664,6 +675,9 @@
           "name": "Home"
         },
         "keys": [
+          "wait:1",
+          "left",
+          "right",
           "down",
           "wait:0.9"
         ],
