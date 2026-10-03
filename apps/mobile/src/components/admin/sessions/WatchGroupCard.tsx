@@ -6,7 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import {
-  buttonStatus, deliveryOf, formatClock, joinParts, livePositionTicks,
+  buttonStatus, deliveryOf, formatClock, joinParts, livePositionTicks, nowPlayingTitle,
   type AdminSessionDto, type AdminWatchGroupDto, type Feedback,
 } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -42,7 +42,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
     .map((m) => (m.sessionId ? sessionsById.get(m.sessionId)?.nowPlaying : undefined))
     .find((n) => n != null);
   const position = livePositionTicks(group.positionTicks, group.positionAt, group.isPaused, now, clockOffsetMs, item?.runTimeTicks);
-  const title = item ? item.seriesName ?? item.name : "—";
+  const label = item ? nowPlayingTitle(item) : null;
 
   const confirmStop = () => Alert.alert(
     t("stopAllConfirm"),
@@ -54,7 +54,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
   );
 
   return (
-    <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(160)} style={st.card} accessibilityLabel={`${t("sectionGroups")} — ${title}`}>
+    <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(160)} style={st.card} accessibilityLabel={`${t("sectionGroups")} — ${label?.full ?? "—"}`}>
       <View style={st.head}>
         {item && (
           <View style={st.poster}>
@@ -67,8 +67,10 @@ export const WatchGroupCard = memo(function WatchGroupCard({
           </View>
         )}
         <View style={st.headText}>
-          <Text style={st.title} numberOfLines={1}>{title}</Text>
-          {item?.seriesName && <Text style={st.subtitle} numberOfLines={1}>{item.name}</Text>}
+          <Text style={st.title} numberOfLines={2}>
+            {label?.title ?? "—"}
+            {label?.episode != null && <Text style={st.episode}> — {label.episode}</Text>}
+          </Text>
           <View style={st.meta}>
             <View style={st.metaItem}>
               <Feather name="users" size={12} color={theme.colors.text.tertiary} />
@@ -147,7 +149,7 @@ const makeStyles = (t: AppTheme) =>
     poster: { width: 52, height: 78, borderRadius: RADIUS.sm, overflow: "hidden" as const, backgroundColor: t.colors.surface.s3 },
     headText: { flex: 1, minWidth: 0, gap: 3 },
     title: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary },
-    subtitle: { fontSize: 13, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
+    episode: { fontFamily: FONT_FAMILY.medium, color: t.colors.text.secondary },
     meta: { flexDirection: "row" as const, flexWrap: "wrap" as const, alignItems: "center" as const, columnGap: 12, rowGap: 4, marginTop: 4 },
     metaItem: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4 },
     metaTxt: { fontSize: 12, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, fontVariant: ["tabular-nums"] },

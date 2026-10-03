@@ -6,7 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import {
-  buttonStatus, formatClock, joinParts, livePositionTicks, sessionApp, sessionDeviceName,
+  buttonStatus, formatClock, livePositionTicks, nowPlayingTitle, sessionApp, sessionDeviceName,
   type AdminPlaystateCommand, type AdminSessionDto, type Feedback,
 } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -45,15 +45,10 @@ export const SessionCard = memo(function SessionCard({ session, now, clockOffset
 
   const position = livePositionTicks(session.positionTicks, session.positionAt, session.isPaused, now, clockOffsetMs, item.runTimeTicks);
   const fraction = item.runTimeTicks ? Math.min(1, position / item.runTimeTicks) : 0;
-  const title = item.seriesName ?? item.name;
-  const subtitle = item.seriesName
-    ? joinParts([
-        item.seasonNumber !== undefined && item.episodeNumber !== undefined
-          ? t("episodeCode", { season: item.seasonNumber, episode: item.episodeNumber })
-          : null,
-        item.name,
-      ])
-    : item.productionYear !== undefined ? String(item.productionYear) : "";
+  // « Breaking Bad — S1 E1 · Chute libre » : la règle partagée, sur deux
+  // lignes au plus plutôt que de couper le titre de l'épisode.
+  const label = nowPlayingTitle(item);
+  const year = label.episode === null && item.productionYear !== undefined ? String(item.productionYear) : "";
   const poster = client.getImageUrl(item.imageItemId, "Primary", { width: 180, quality: 80, tag: item.imageTag });
   const device = sessionDeviceName(sessionApp(session));
 
@@ -71,15 +66,18 @@ export const SessionCard = memo(function SessionCard({ session, now, clockOffset
       entering={FadeIn.duration(220)}
       exiting={FadeOut.duration(160)}
       style={st.card}
-      accessibilityLabel={`${session.userName} — ${title}`}
+      accessibilityLabel={`${session.userName} — ${label.full}`}
     >
       <View style={st.top}>
         <View style={st.poster}>
           <Image source={{ uri: poster }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} accessible={false} />
         </View>
         <View style={st.info}>
-          <Text style={st.title} numberOfLines={1}>{title}</Text>
-          {subtitle !== "" && <Text style={st.subtitle} numberOfLines={1}>{subtitle}</Text>}
+          <Text style={st.title} numberOfLines={2}>
+            {label.title}
+            {label.episode !== null && <Text style={st.episode}> — {label.episode}</Text>}
+          </Text>
+          {year !== "" && <Text style={st.subtitle} numberOfLines={1}>{year}</Text>}
           <View style={st.who}>
             <UserAvatar userId={session.userId} name={session.userName} hasAvatar={session.userImageTag !== null} imageTag={session.userImageTag} size={22} />
             <Text style={st.user} numberOfLines={1}>{session.userName}</Text>
@@ -161,6 +159,7 @@ const makeStyles = (t: AppTheme) =>
     poster: { width: 64, height: 96, borderRadius: RADIUS.md, overflow: "hidden" as const, backgroundColor: t.colors.surface.s3 },
     info: { flex: 1, minWidth: 0, gap: 3 },
     title: { fontSize: 16, lineHeight: 21, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary },
+    episode: { fontFamily: FONT_FAMILY.medium, color: t.colors.text.secondary },
     subtitle: { fontSize: 13, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary },
     who: { flexDirection: "row" as const, alignItems: "center" as const, gap: 6, marginTop: 6 },
     user: { flexShrink: 1, fontSize: 14, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },

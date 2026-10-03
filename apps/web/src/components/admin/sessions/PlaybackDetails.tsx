@@ -1,15 +1,13 @@
-import { useId, useState } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown } from "lucide-react";
 import {
-  acceleratorLabel,
   channelsLabel,
   codecLabel,
-  deliveryOf,
-  formatBitrate,
+  explainPlayback,
   humanizeReason,
   joinParts,
   rangeLabel,
+  reasonKey,
   resolutionLabel,
   type AdminSessionDto,
   type DeliveryKind,
@@ -17,25 +15,38 @@ import {
 import { DeliveryChip } from "./DeliveryChip";
 
 /**
- * Comment le média arrive à l'appareil : lecture directe, remux, transcodage
- * audio ou transcodage — la source, ce qui est envoyé, et pourquoi le serveur
- * travaille. La sorte se lit dans le libellé et l'icône, pas dans la seule
- * couleur (`DeliveryChip`).
+ * Comment le média arrive à l'appareil, dit en clair — la règle est partagée
+ * (`explainPlayback`), le bureau et le mobile ne font que l'afficher :
+ *
+ * - la sorte (pastille) et ce qu'elle veut dire (« conteneur seulement, sans
+ *   perte »), l'encodeur quand l'image est réencodée ;
+ * - POURQUOI : chaque raison de Jellyfin en mots d'administrateur, toujours
+ *   visible — c'était un dépliant, et la question qu'on se pose d'abord ;
+ * - ce qui change (« HEVC → H.264 · 4K → 1080p ») ;
+ * - la source.
  */
 
-const REASONS_KEY: Record<Exclude<DeliveryKind, "direct">, string> = {
-  remux: "reasonsRemux",
-  audio: "reasonsAudio",
-  video: "reasons",
+const SHORT: Record<DeliveryKind, string> = {
+  direct: "directPlayShort",
+  remux: "remuxShort",
+  audio: "audioTranscodeShort",
+  video: "transcodeShort",
 };
+
+function Row({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[minmax(4.5rem,auto)_1fr] gap-x-3">
+      <dt className="text-content-tertiary">{label}</dt>
+      <dd className="min-w-0 break-words text-content-secondary">{children}</dd>
+    </div>
+  );
+}
 
 export function PlaybackDetails({ session }: { session: AdminSessionDto }) {
   const { t, i18n } = useTranslation("sessions");
-  const [showReasons, setShowReasons] = useState(false);
-  const reasonsId = useId();
-  const { source, transcoding } = session;
-  const kind = deliveryOf(session);
-  const locale = i18n.language;
+  const { kind, reasons, changes, encoder } = explainPlayback(session, i18n.language);
+  const { source } = session;
+  const completion = session.transcoding?.completionPercentage;
 
   const sourceLine = source
     ? joinParts([
@@ -45,68 +56,38 @@ export function PlaybackDetails({ session }: { session: AdminSessionDto }) {
       ])
     : "";
 
-  // Un remux ne change QUE le conteneur : c'est lui qu'on nomme.
-  const outputLine = transcoding
-    ? kind === "remux"
-      ? joinParts([t("streamsCopied"), transcoding.container ? t("container", { name: transcoding.container.toUpperCase() }) : null])
-      : joinParts([
-          transcoding.isVideoDirect
-            ? kind === "audio" ? t("videoDirect") : null
-            : joinParts([codecLabel(transcoding.videoCodec), resolutionLabel(transcoding.width, transcoding.height)]),
-          transcoding.isAudioDirect
-            ? t("audioDirect")
-            : joinParts([codecLabel(transcoding.audioCodec), channelsLabel(transcoding.audioChannels)]),
-          formatBitrate(transcoding.bitrate, locale),
-          kind === "video" ? acceleratorLabel(transcoding.hardwareAccelerationType) ?? t("software") : null,
-        ])
-    : "";
-
-  const reasons = transcoding?.reasons ?? [];
-  const completion = transcoding?.completionPercentage;
+  const what = joinParts([
+    t(SHORT[kind]),
+    encoder === null ? null : encoder === "software" ? t("software") : t("encoderHardware", { name: encoder }),
+    completion !== undefined && kind !== "direct" ? t("completion", { percent: Math.round(completion) }) : null,
+  ]);
+  const reasonTexts = reasons.map((line) =>
+    t(reasonKey(line), { ...line.params, defaultValue: humanizeReason(line.reason) }),
+  );
 
   return (
     <div className="space-y-2 text-sm">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <DeliveryChip kind={kind} />
-        {completion !== undefined && kind !== "direct" && (
-          <span className="text-xs tabular-nums text-content-tertiary">
-            {t("completion", { percent: Math.round(completion) })}
-          </span>
-        )}
+        <span className="text-xs text-content-tertiary">{what}</span>
       </div>
-      {sourceLine && (
-        <p className="break-words text-content-secondary">
-          <span className="text-content-tertiary">{t("source")} · </span>
-          {sourceLine}
-        </p>
-      )}
-      {outputLine && (
-        <p className="break-words text-content-secondary">
-          <span className="text-content-tertiary">{t("output")} · </span>
-          {outputLine}
-        </p>
-      )}
-      {reasons.length > 0 && kind !== "direct" && (
-        <div>
-          <button
-            type="button"
-            aria-expanded={showReasons}
-            aria-controls={reasonsId}
-            onClick={() => setShowReasons((open) => !open)}
-            className="-ml-1 inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-md px-1 text-xs font-medium text-content-tertiary outline-none transition-colors hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
-          >
-            {t(REASONS_KEY[kind])}
-            <ChevronDown size={14} aria-hidden className={`transition-transform duration-200 ${showReasons ? "rotate-180" : ""}`} />
-          </button>
-          {showReasons && (
-            <ul id={reasonsId} className="list-disc space-y-0.5 pl-5 text-xs text-content-secondary">
-              {reasons.map((reason) => (
-                <li key={reason}>{t(`reason.${reason}`, { defaultValue: humanizeReason(reason) })}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      <dl className="space-y-1">
+        {kind !== "direct" && (
+          <Row label={t("why")}>
+            {reasonTexts.length === 0 ? (
+              <span className="text-content-tertiary">{t("whyUnknown")}</span>
+            ) : reasonTexts.length === 1 ? (
+              reasonTexts[0]
+            ) : (
+              <ul className="list-disc space-y-0.5 pl-4">
+                {reasonTexts.map((text, i) => <li key={reasons[i].reason}>{text}</li>)}
+              </ul>
+            )}
+          </Row>
+        )}
+        {changes.length > 0 && <Row label={t("changes")}>{changes.join(" · ")}</Row>}
+        {sourceLine && <Row label={t("source")}>{sourceLine}</Row>}
+      </dl>
     </div>
   );
 }

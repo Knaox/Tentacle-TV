@@ -8,6 +8,7 @@ import {
   formatClock,
   joinParts,
   livePositionTicks,
+  nowPlayingTitle,
   type AdminSessionDto,
   type AdminWatchGroupDto,
   type Feedback,
@@ -55,12 +56,11 @@ export const WatchGroupCard = memo(function WatchGroupCard({
     .map((m) => (m.sessionId ? sessionsById.get(m.sessionId)?.nowPlaying : undefined))
     .find((n) => n != null);
   const position = livePositionTicks(group.positionTicks, group.positionAt, group.isPaused, now, clockOffsetMs, item?.runTimeTicks);
-  const title = item ? item.seriesName ?? item.name : "—";
-  const subtitle = item?.seriesName ? item.name : undefined;
+  const label = item ? nowPlayingTitle(item) : null;
 
   return (
     <motion.article
-      aria-label={`${t("sectionGroups")} — ${title}`}
+      aria-label={`${t("sectionGroups")} — ${label?.full ?? "—"}`}
       initial={reduced ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easeOut } }}
       exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, transition: { duration: 0.16 } }}
@@ -76,8 +76,10 @@ export const WatchGroupCard = memo(function WatchGroupCard({
           />
         )}
         <div className="min-w-0 flex-1 space-y-1">
-          <h3 className="truncate text-base font-semibold text-content-primary" title={title}>{title}</h3>
-          {subtitle && <p className="truncate text-sm text-content-tertiary">{subtitle}</p>}
+          <h3 className="line-clamp-2 text-base font-semibold text-content-primary" title={label?.full}>
+            {label?.title ?? "—"}
+            {label?.episode != null && <span className="font-medium text-content-secondary"> — {label.episode}</span>}
+          </h3>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums text-content-tertiary">
             <span className="inline-flex items-center gap-1"><Users size={12} aria-hidden />{t("groupOf", { count: group.members.length })}</span>
             <CommandStatus isPaused={group.isPaused} feedback={feedback} />

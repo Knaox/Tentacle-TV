@@ -5,8 +5,8 @@ import { Lock, MessageSquare, Pause, Play, Radio } from "lucide-react";
 import {
   buttonStatus,
   formatClock,
-  joinParts,
   livePositionTicks,
+  nowPlayingTitle,
   sessionApp,
   sessionDeviceName,
   type AdminSessionDto,
@@ -58,21 +58,16 @@ export const SessionCard = memo(function SessionCard({
 
   const position = livePositionTicks(session.positionTicks, session.positionAt, session.isPaused, now, clockOffsetMs, item.runTimeTicks);
   const fraction = item.runTimeTicks ? Math.min(1, position / item.runTimeTicks) : 0;
-  const title = item.seriesName ?? item.name;
-  const subtitle = item.seriesName
-    ? joinParts([
-        item.seasonNumber !== undefined && item.episodeNumber !== undefined
-          ? t("episodeCode", { season: item.seasonNumber, episode: item.episodeNumber })
-          : null,
-        item.name,
-      ])
-    : item.productionYear !== undefined ? String(item.productionYear) : "";
+  // « Breaking Bad — S1 E1 · Chute libre » : la règle partagée, une seule ligne
+  // qui passe à la suivante plutôt que de couper le titre de l'épisode.
+  const label = nowPlayingTitle(item);
+  const year = label.episode === null && item.productionYear !== undefined ? String(item.productionYear) : "";
   const poster = client.getImageUrl(item.imageItemId, "Primary", { width: 160, quality: 80, tag: item.imageTag });
   const device = sessionDeviceName(sessionApp(session));
 
   return (
     <motion.article
-      aria-label={`${session.userName} — ${title}`}
+      aria-label={`${session.userName} — ${label.full}`}
       initial={reduced ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easeOut } }}
       exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, transition: { duration: 0.16 } }}
@@ -81,8 +76,11 @@ export const SessionCard = memo(function SessionCard({
       <Poster src={poster} width={80} height={120} className="h-[120px] w-20 shrink-0 rounded-lg bg-fill-soft" />
       <div className="min-w-0 flex-1 space-y-3">
         <header className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-content-primary" title={title}>{title}</h3>
-          {subtitle && <p className="truncate text-sm text-content-tertiary" title={subtitle}>{subtitle}</p>}
+          <h3 className="line-clamp-2 text-base font-semibold text-content-primary" title={label.full}>
+            {label.title}
+            {label.episode !== null && <span className="font-medium text-content-secondary"> — {label.episode}</span>}
+          </h3>
+          {year && <p className="truncate text-sm text-content-tertiary">{year}</p>}
         </header>
 
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-content-secondary">
@@ -106,7 +104,7 @@ export const SessionCard = memo(function SessionCard({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(fraction * 100)}
-            aria-label={title}
+            aria-label={label.full}
             className="h-1.5 overflow-hidden rounded-full bg-fill-soft"
           >
             {/* `scaleX` et non `width` : la barre avance chaque seconde, une

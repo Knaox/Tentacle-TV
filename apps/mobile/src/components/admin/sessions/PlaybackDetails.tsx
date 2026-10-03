@@ -1,34 +1,32 @@
-import { memo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { memo, type ReactNode } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
-  acceleratorLabel, channelsLabel, codecLabel, deliveryOf, formatBitrate, humanizeReason,
-  joinParts, rangeLabel, resolutionLabel,
+  channelsLabel, codecLabel, explainPlayback, humanizeReason, joinParts, rangeLabel, reasonKey, resolutionLabel,
   type AdminSessionDto, type DeliveryKind,
 } from "@tentacle-tv/shared";
-import { FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { DeliveryChip } from "./DeliveryChip";
 
-const REASONS_KEY: Record<Exclude<DeliveryKind, "direct">, string> = {
-  remux: "reasonsRemux",
-  audio: "reasonsAudio",
-  video: "reasons",
+const SHORT: Record<DeliveryKind, string> = {
+  direct: "directPlayShort",
+  remux: "remuxShort",
+  audio: "audioTranscodeShort",
+  video: "transcodeShort",
 };
 
 /**
- * Comment le média arrive à l'appareil : la sorte (pastille), la source, ce
- * qui est envoyé, et pourquoi le serveur travaille — les raisons se déplient
- * d'un geste. Les mêmes lignes que le bureau, calculées par les mêmes
- * fonctions partagées.
+ * Comment le média arrive à l'appareil, dit en clair — la même règle que le
+ * bureau (`explainPlayback`) : la sorte et ce qu'elle veut dire, l'encodeur,
+ * POURQUOI (chaque raison de Jellyfin en mots d'administrateur, toujours
+ * visible), ce qui change, la source.
  */
 export const PlaybackDetails = memo(function PlaybackDetails({ session }: { session: AdminSessionDto }) {
   const { t, i18n } = useTranslation("sessions");
-  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const [showReasons, setShowReasons] = useState(false);
-  const { source, transcoding } = session;
-  const kind = deliveryOf(session);
+  const { kind, reasons, changes, encoder } = explainPlayback(session, i18n.language);
+  const { source } = session;
+  const completion = session.transcoding?.completionPercentage;
 
   const sourceLine = source
     ? joinParts([
@@ -37,63 +35,38 @@ export const PlaybackDetails = memo(function PlaybackDetails({ session }: { sess
         source.subtitle,
       ])
     : "";
+  const what = joinParts([
+    t(SHORT[kind]),
+    encoder === null ? null : encoder === "software" ? t("software") : t("encoderHardware", { name: encoder }),
+    completion !== undefined && kind !== "direct" ? t("completion", { percent: Math.round(completion) }) : null,
+  ]);
+  const reasonTexts = reasons.map((line) =>
+    t(reasonKey(line), { ...line.params, defaultValue: humanizeReason(line.reason) }),
+  );
 
-  // Un remux ne change QUE le conteneur : c'est lui qu'on nomme.
-  const outputLine = transcoding
-    ? kind === "remux"
-      ? joinParts([t("streamsCopied"), transcoding.container ? t("container", { name: transcoding.container.toUpperCase() }) : null])
-      : joinParts([
-          transcoding.isVideoDirect
-            ? kind === "audio" ? t("videoDirect") : null
-            : joinParts([codecLabel(transcoding.videoCodec), resolutionLabel(transcoding.width, transcoding.height)]),
-          transcoding.isAudioDirect
-            ? t("audioDirect")
-            : joinParts([codecLabel(transcoding.audioCodec), channelsLabel(transcoding.audioChannels)]),
-          formatBitrate(transcoding.bitrate, i18n.language),
-          kind === "video" ? acceleratorLabel(transcoding.hardwareAccelerationType) ?? t("software") : null,
-        ])
-    : "";
-
-  const reasons = transcoding?.reasons ?? [];
-  const completion = transcoding?.completionPercentage;
+  const row = (label: string, children: ReactNode) => (
+    <View style={st.row}>
+      <Text style={st.label}>{label}</Text>
+      <View style={st.value}>{children}</View>
+    </View>
+  );
 
   return (
     <View style={st.root}>
       <View style={st.chipRow}>
         <DeliveryChip kind={kind} />
-        {completion !== undefined && kind !== "direct" && (
-          <Text style={st.completion}>{t("completion", { percent: Math.round(completion) })}</Text>
-        )}
+        <Text style={st.what}>{what}</Text>
       </View>
-      {sourceLine !== "" && (
-        <Text style={st.line}>
-          <Text style={st.lineLabel}>{t("source")} · </Text>
-          {sourceLine}
-        </Text>
+      {kind !== "direct" && row(
+        t("why"),
+        reasonTexts.length === 0
+          ? <Text style={[st.text, st.muted]}>{t("whyUnknown")}</Text>
+          : reasonTexts.map((text, i) => (
+              <Text key={reasons[i].reason} style={st.text}>{reasonTexts.length > 1 ? `• ${text}` : text}</Text>
+            )),
       )}
-      {outputLine !== "" && (
-        <Text style={st.line}>
-          <Text style={st.lineLabel}>{t("output")} · </Text>
-          {outputLine}
-        </Text>
-      )}
-      {reasons.length > 0 && kind !== "direct" && (
-        <View>
-          <Pressable
-            onPress={() => setShowReasons((open) => !open)}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: showReasons }}
-            hitSlop={8}
-            style={st.reasonsToggle}
-          >
-            <Text style={st.reasonsTxt}>{t(REASONS_KEY[kind])}</Text>
-            <Feather name={showReasons ? "chevron-up" : "chevron-down"} size={14} color={theme.colors.text.tertiary} />
-          </Pressable>
-          {showReasons && reasons.map((reason) => (
-            <Text key={reason} style={st.reason}>• {t(`reason.${reason}`, { defaultValue: humanizeReason(reason) })}</Text>
-          ))}
-        </View>
-      )}
+      {changes.length > 0 && row(t("changes"), <Text style={st.text}>{changes.join(" · ")}</Text>)}
+      {sourceLine !== "" && row(t("source"), <Text style={st.text}>{sourceLine}</Text>)}
     </View>
   );
 });
@@ -102,10 +75,10 @@ const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     root: { gap: 6 },
     chipRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, flexWrap: "wrap" as const },
-    completion: { fontSize: 12, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, fontVariant: ["tabular-nums"] },
-    line: { fontSize: 13, lineHeight: 18, fontFamily: FONT_FAMILY.regular, color: t.colors.text.secondary },
-    lineLabel: { color: t.colors.text.tertiary },
-    reasonsToggle: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, minHeight: 32, alignSelf: "flex-start" as const },
-    reasonsTxt: { fontSize: 12, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.tertiary },
-    reason: { fontSize: 12, lineHeight: 17, fontFamily: FONT_FAMILY.regular, color: t.colors.text.secondary, paddingLeft: 4 },
+    what: { flexShrink: 1, fontSize: 12, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, fontVariant: ["tabular-nums"] },
+    row: { flexDirection: "row" as const, gap: 10 },
+    label: { width: 74, fontSize: 13, lineHeight: 18, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary },
+    value: { flex: 1, minWidth: 0, gap: 2 },
+    text: { fontSize: 13, lineHeight: 18, fontFamily: FONT_FAMILY.regular, color: t.colors.text.secondary },
+    muted: { color: t.colors.text.tertiary },
   });
