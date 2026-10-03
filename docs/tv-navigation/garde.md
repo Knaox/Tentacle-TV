@@ -34,13 +34,14 @@ minuteries de navigation et les décisions prises par le magasin de focus (le
 « second cercle ») — illisibles pour un lint sans types, l'inventaire les suit.
 
 **Exceptions** — `eslint/tvNavigationExceptions.mjs` : un fichier, les familles
-qu'il garde, la tâche qui le traite, et pourquoi. Une exception vise UNE
+qu'il garde, la tâche qui le traitait, et pourquoi. Une exception vise UNE
 famille d'un fichier, jamais le fichier entier. `owner: null` = exception
-PERMANENTE, hors navigation (rendu, libellé, aiguillage de la refonte).
+PERMANENTE : toutes le sont depuis la fin du lot.
 
-**Gravité** — en avertissement pendant l'extraction ; elle passe en ERREUR à la
-fin du lot, la liste réduite à ce qui se justifie. Elle tourne dans `pnpm lint`
-(`pnpm --filter @tentacle-tv/tv lint`). La garde pre-push ne joue pas le lint,
+**Gravité** — en ERREUR depuis la fin du lot : la liste ne garde que des
+exceptions PERMANENTES (les portes des vues, la vue native du Retour,
+l'aiguillage de la refonte, le rendu, un libellé, un réglage d'appareil). Elle
+tourne dans `pnpm lint` (`pnpm --filter @tentacle-tv/tv lint`). La garde pre-push ne joue pas le lint,
 et la CI non plus : les ajouter ensemble est un choix de processus de livraison
 (proposition : branche `nav/t8-prepush-lint`, à compléter de `quality.yml`).
 

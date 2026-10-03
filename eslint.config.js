@@ -130,11 +130,10 @@ export default tseslint.config(
 
   // La navigation TV, une seule source (docs/TV-NAVIGATION.md) : hors de
   // l'adaptateur tvOS, le chemin refondu n'emploie aucune API native de
-  // télécommande ni de focus (`eslint/tvNavigation.mjs`). En AVERTISSEMENT
-  // pendant l'extraction : les exceptions (`eslint/tvNavigationExceptions.mjs`)
-  // fondent à chaque fusion, et la règle passera en erreur sur ce qui se
-  // justifie encore.
-  ...tvNavigationConfigs("warn"),
+  // télécommande ni de focus (`eslint/tvNavigation.mjs`). En ERREUR : les
+  // seules exceptions sont permanentes et justifiées, une par famille
+  // (`eslint/tvNavigationExceptions.mjs`) — jamais un `eslint-disable`.
+  ...tvNavigationConfigs("error"),
 
   // Gabarits qui portent du HTML dans une chaîne JavaScript : `<\/script>` y est
   // OBLIGATOIRE. Sans l'échappement, l'analyseur du document hôte referme la
