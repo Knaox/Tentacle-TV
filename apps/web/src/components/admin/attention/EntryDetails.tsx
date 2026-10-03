@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { ExternalLink } from "lucide-react";
+import type { LinkIssue } from "@tentacle-tv/shared";
 import { AdminNotice } from "../kit";
 import { JELLYFIN_SETUP_ANCHOR } from "../jellyfin/SetupChecklist";
 import { SetupRows } from "../jellyfin/SetupRows";
@@ -43,7 +44,9 @@ export function EntryDetails({ id, variant, items, context, values }: Props) {
       <div className="max-w-3xl space-y-2">
         {endpoints.length > 0 ? (
           <div className="grid gap-2 md:grid-cols-2">
-            {endpoints.map((endpoint) => <LinkEndpointLine key={endpoint.role} endpoint={endpoint} />)}
+            {endpoints.map((endpoint) => (
+              <LinkEndpointLine key={endpoint.role} endpoint={endpoint} hideIssues={variant ? [variant as LinkIssue] : undefined} />
+            ))}
           </div>
         ) : null}
         {check.notes.map((note) => (

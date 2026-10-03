@@ -38,12 +38,15 @@ interface Props {
   endpoint: LinkEndpointVerdict;
   /** Le libellé du rôle au-dessus de l'adresse — l'assistant l'a déjà dans son champ. */
   showRole?: boolean;
+  /** Les soucis déjà dits ailleurs (la phrase d'une recommandation) : la ligne ne les répète pas. */
+  hideIssues?: readonly LinkIssue[];
 }
 
-export function LinkEndpointLine({ endpoint, showRole = true }: Props) {
+export function LinkEndpointLine({ endpoint, showRole = true, hideIssues }: Props) {
   const { t } = useTranslation("serverLinks");
   const Icon = ICON[endpoint.tone];
-  const lines = endpoint.issues.length > 0 ? endpoint.issues.map((issue) => issueText(t, issue, endpoint)) : [statusText(t, endpoint)];
+  const issues = hideIssues ? endpoint.issues.filter((issue) => !hideIssues.includes(issue)) : endpoint.issues;
+  const lines = issues.length > 0 ? issues.map((issue) => issueText(t, issue, endpoint)) : [statusText(t, endpoint)];
 
   return (
     <div className="min-w-0 rounded-lg bg-fill-subtle px-3 py-2">

@@ -72,15 +72,14 @@ export const AttentionEntry = memo(function AttentionEntry({ id, variant, items,
   const foldable = action.kind !== "toggle" && detailsKind(id) !== "none";
 
   return (
-    <li className="flex gap-3 px-5 py-4">
+    <li className="relative flex gap-3 px-5 py-4">
       <span aria-hidden="true" className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${TILE[hidden ? "hidden" : family]}`}>
         <Icon size={18} />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className={`pt-1.5 text-sm font-semibold ${hidden ? "text-content-secondary" : "text-content-primary"}`}>{title}</h3>
-          {hint ? <DismissButton hint={hint} hidden={hidden} title={title} /> : null}
-        </div>
+        {/* « Masquer » posé dans le coin : la phrase garde le même rythme qu'une entrée à régler. */}
+        <h3 className={`pt-1.5 text-sm font-semibold ${hint ? "pr-28" : ""} ${hidden ? "text-content-secondary" : "text-content-primary"}`}>{title}</h3>
+        {hint ? <DismissButton hint={hint} hidden={hidden} title={title} /> : null}
         <p className="mt-1 max-w-3xl text-sm leading-relaxed text-content-tertiary">{t(entryKeys(id, variant, "body"), values)}</p>
         {hidden ? null : (
           <>
@@ -153,7 +152,7 @@ function DismissButton({ hint, hidden, title }: { hint: DismissibleHint; hidden:
       title={label}
       disabled={setDismissed.isPending}
       onClick={() => setDismissed.mutate({ hint, dismissed: !hidden }, { onError: () => show("error", t("saveError")) })}
-      className={`${QUIET} flex-shrink-0 text-xs disabled:opacity-50`}
+      className={`${QUIET} absolute right-3 top-3 text-xs disabled:opacity-50`}
     >
       {hidden ? <Eye size={14} aria-hidden="true" /> : <EyeOff size={14} aria-hidden="true" />}
       {hidden ? t("restore") : t("dismiss")}

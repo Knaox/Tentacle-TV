@@ -51,7 +51,8 @@ export function UpdateCommand({ commands, current, target, onCopied }: Props) {
         </AdminNotice>
       ) : null}
       <TabPanel idPrefix={idPrefix} id={variant} active className="mt-3">
-        <CommandLine command={variant === "compose" ? commands.compose : commands.run} onCopied={onCopied} />
+        {/* Une ligne par variante : « Copiée » ne survit pas au changement d'onglet. */}
+        <CommandLine key={variant} command={variant === "compose" ? commands.compose : commands.run} onCopied={onCopied} />
         <p className="mt-2 text-xs leading-relaxed text-content-tertiary">
           {variant === "compose" ? t("updateComposeHint") : t("updateRunHint")}
         </p>
@@ -69,10 +70,10 @@ function CommandLine({ command, onCopied }: { command: string; onCopied: () => v
   const code = useRef<HTMLElement>(null);
 
   const onCopy = async () => {
-    if (await copy(command)) {
-      onCopied();
-      return;
-    }
+    const copied = await copy(command);
+    // Copiée ou à copier à la main, elle va être lancée : la carte guette le serveur revenu.
+    onCopied();
+    if (copied) return;
     // La copie à la main : la commande sélectionnée, prête pour ⌘C.
     const selection = window.getSelection();
     if (code.current && selection) selection.selectAllChildren(code.current);
