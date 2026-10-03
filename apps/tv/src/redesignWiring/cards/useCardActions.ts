@@ -19,6 +19,7 @@ import {
   type CardToggleStates,
   type MediaItem,
 } from "@tentacle-tv/shared";
+import { sheetRatingOf } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import { sheetLibraryId, sheetVariant, type CardSheetTarget } from "../../components/cards/actions/cardSheetTarget";
 import { useCardSheetPlay, type CardSheetPlay } from "../../components/cards/actions/useCardSheetPlay";
@@ -88,15 +89,20 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
   const { mutate: saveFilter } = useSaveRecoProviderFilter();
 
   // « Pas encore su » (la fiche complète en route) n'est pas « non notable » :
-  // la note reste en attente — le panneau n'entre pas avant de savoir.
-  const ratingUnknown = inLibrary && full === undefined && fullLoading;
-  const rateable = rating.identity !== null || rating.pending || ratingUnknown;
+  // la note reste en attente — le panneau n'entre pas avant de savoir
+  // (tv-core `sheetRatingOf`).
+  const sheetRating = sheetRatingOf({
+    target: rating.identity !== null,
+    resolving: rating.pending,
+    itemLoading: inLibrary && full === undefined && fullLoading,
+    score,
+  });
   const overlay = resolveCardOverlay({
     variant,
     inLibrary,
     playable: play !== null,
     resume: play?.resume,
-    rateable,
+    rateable: sheetRating !== null,
     // Rien ne se garde hors ligne sur un téléviseur.
     offline: false,
   });
@@ -163,7 +169,7 @@ export function useCardActions(target: CardSheetTarget, { withActions = true, on
     overlay,
     states: toggles.states,
     play,
-    rating: rateable ? { current: score ?? null, pending: identity === null || score === undefined } : null,
+    rating: sheetRating,
     onAction,
     onRate,
   };
