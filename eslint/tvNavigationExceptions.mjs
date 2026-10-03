@@ -38,7 +38,6 @@ export const TV_NAV_EXCEPTIONS = [
   { file: "redesignWiring/player/usePlaybackTrouble.ts", rules: ["no-remote-events"], owner: "T5", why: "écoute native directe (useTVEventHandler) du panneau des pannes" },
   { file: "components/player/focus/useOverlayFocus.ios.ts", rules: ["no-focus-props", "no-native-focus-calls"], owner: "T5", why: "focus de l'habillage : bascule de hasTVPreferredFocus (RN-tvos #849)" },
   { file: "hooks/useScrubGestures.ios.ts", rules: ["no-remote-events"], owner: "T5", why: "glisser du pavé (pan) pour parcourir la vidéo — écoute native directe" },
-  { file: "components/player/AVPlayerSurface.tsx", rules: ["no-focus-props"], owner: "T5", why: "surface vidéo jamais focalisable (focusable={false})" },
 
   // T7 — les écrans.
   { file: "redesignWiring/detail/useDetailGuides.ts", rules: ["no-focus-guides"], owner: "T7", why: "pièges latéraux des rangées de la fiche (trapFocusLeft/Right)" },
@@ -46,9 +45,10 @@ export const TV_NAV_EXCEPTIONS = [
   { file: "redesignWiring/settings/settingsFocus.tsx", rules: ["no-focus-guides"], owner: "T7", why: "guide des onglets des réglages (destinations)" },
   { file: "redesignWiring/trailer/TrailerRedesign.tsx", rules: ["no-focus-props"], owner: "T7", why: "entrée de la bande-annonce (hasTVPreferredFocus)" },
   { file: "redesign/screens/pairing/PairingField.tsx", rules: ["no-native-press"], owner: "T7", why: "une VUE qui ouvre le clavier système (.focus() / .blur() d'un TextInput)" },
-  { file: "screens/trailer/TrailerWebView.ios.tsx", rules: ["no-focus-props"], owner: "T7", why: "la WebView de la bande-annonce n'est jamais focalisable" },
 
   // Hors navigation — exceptions permanentes.
+  { file: "components/player/AVPlayerSurface.tsx", rules: ["no-focus-props"], owner: null, why: "rendu : surface de rendu, jamais focalisable ; inerte sur tvOS, gardé tel quel (arbitrage du lot)" },
+  { file: "screens/trailer/TrailerWebView.ios.tsx", rules: ["no-focus-props"], owner: null, why: "rendu : surface de rendu, jamais focalisable ; inerte sur tvOS, gardé tel quel (arbitrage du lot)" },
   { file: "redesign/motion/motion.ts", rules: ["no-platform-branch"], owner: null, why: "rendu : le mouvement n'est joué que sur Apple TV" },
   { file: "redesign/glass/nativeGlass.ts", rules: ["no-platform-branch"], owner: null, why: "rendu : détection du verre natif de tvOS 26" },
   { file: "redesign/cards/nativeDesaturate.ts", rules: ["no-platform-branch"], owner: null, why: "rendu : détection de la vue native de désaturation" },
