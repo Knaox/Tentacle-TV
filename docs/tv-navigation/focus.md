@@ -374,6 +374,12 @@ Source : `TentacleRevealScroller.m`, `TentacleRevealMotion.m`,
    les 900 ms qui suivent est repris une fois.
 4. **A3 compte depuis le premier rendu** de l'écran, pas depuis le dernier
    changement d'entrée.
+5. **« Pour vous » poussée par-dessus l'accueil arrive parfois sans focus**
+   (banc de référence, deux passages différents) : ouverte par une
+   navigation programmée (`navigate`, pile `[Home, Recommendations]`), elle
+   n'a pas toujours de focus à l'arrivée ; par le rail (`railNavigate`), si.
+   Aucun chemin de l'app ne la pousse ainsi aujourd'hui — à surveiller si un
+   lien profond le fait un jour.
 
 ## L'extraction (phase B) — ce qui est dans tv-core, ce que l'adaptateur garde
 
@@ -411,7 +417,8 @@ modifié), `focusNow` (`requestTVFocus`), les guides natifs (`TVFocusGuideView`,
 parallaxe par forme (rendu : `redesignWiring/remote/parallax.ts`), les
 minuteurs dont tv-core donne les durées.
 
-**Exceptions de la garde qui restent à T3** (`eslint/tvNavigationExceptions.mjs`) :
+**Exceptions de la garde** (`eslint/tvNavigationExceptions.mjs`, la garde :
+`docs/tv-navigation/garde.md`) — PERMANENTES depuis la fusion :
 `FocusTarget` (le seul `Pressable` de la refonte, la porte des vues vers le
 focus natif), `FocusSection` et `nativeFocusSection` (la section native). Une
 vue n'importe que `redesign/` et les paquets partagés : la détection de la
@@ -469,6 +476,35 @@ useFirstVisitEntry(focus, { owns: (k) => k.startsWith("episode:"),
 anchorKey: episode, resetKey: seasonId }))` — les mêmes rendus qu'avant :
 réarmer une entrée déjà armée, ou désarmer deux fois, ne redessine rien.
 
+## Les preuves d'équivalence
+
+**Banc de traces** (`apps/tv/harness/focus-trace`, React sans DOM, horloge
+factice) : les applicateurs de la référence `84f3cedd0` et ceux de l'arbre
+courant, rejoués sur les mêmes neuf scénarios — magasin (suivi, réclamations),
+reprise après restauration, guide d'entrée, garde d'une surface, arrivée et
+retour d'un écran, au-delà du bord, rotation du héros, entrées de la fiche
+(règle d'origine contre `useFirstVisitEntry`) : **traces identiques**. Huit
+contre-épreuves (reprise à 800 ms, garde à 100 ms, arrivée à 700 ms, bord à
+300 ms, Retour qui relance la rotation, première visite jamais désarmée,
+groupe sans mémoire, puis l'ensemble) font toutes échouer `verify`.
+
+**Banc de référence** (nav-golden de T2, app réelle au simulateur, place 3) :
+les scénarios de `scenarios/focus/` enregistrés sur `84f3cedd0` puis rejoués
+sur la branche. Ce que l'enregistrement a appris de la référence (attentes
+d'auteur corrigées, jamais le code) :
+
+- depuis « À suivre », BAS arrive sur la pastille du filtre et non sur la
+  1re affiche : les deux premières affiches sont SOUS la pastille, elles ne
+  font pas face (R5) ; depuis la pastille, BAS va à la 2e affiche (R1) ;
+- la base du banc a une rangée « Derniers ajouts — Films » entre « Pour
+  vous » et « Déjà vus » ;
+- « Pour vous » ouverte par une navigation programmée par-dessus l'accueil
+  arrive parfois SANS focus (deux passages différents) ; ouverte par le rail,
+  comme l'utilisateur ;
+- la sonde du banc ne trouvait aucun texte (elle cherchait des fibres
+  `RCTRawText`, ce sont des `HostText`) : signalé à T2, corrigé (2f7d20f0b) ; la
+  rotation du héros se reconnaît au synopsis que le jeu `focus/home` écrit.
+
 ## Scénarios de référence
 
 Dans `apps/tv/harness/nav-golden/scenarios/focus/*.json` (format figé par T2),
@@ -479,14 +515,14 @@ sur l'Apple TV « Chambre ».
 | Fichier · scénario | Couvre |
 |---|---|
 | `home-sections` · `home-entry` (rail aller-retour) | A1-A4, A6, H7, W3 |
-| `home-sections` · `home-rows` (BAS / HAUT entre rangées) | R1, R3-R6, V1, V2, V4-V6, W1, H7 |
+| `home-sections` · `home-rows` (BAS / HAUT : vignettes, pastille, affiches) | R1-R6, V1, V2, V4-V6, W1, W2, H7 |
 | `home-sections` · `home-row-end` (bout d'un carrousel, rangée courte) | R3-R6, R8, R11, W3 |
-| `home-sections` · `home-filter-chip` (pastille du filtre) | R1, R2, W2 |
+| `home-sections` · `home-filter-chip` (pastille du filtre) | R1, R2, R5, R11, W2 |
 | `home-sections` · `home-return` (retour d'une fiche) | A4, A5, W4, N1 |
 | `home-sections` · `home-burst` (flèche maintenue) | V7-V9, R1, R6 |
 | `home-hero` · `hero-beyond-edge` (au-delà du bord) | X1-X4, H3, H4, H7, R11 |
 | `home-hero` · `hero-rotation` (rotation, panneau) | H2, H4, H5 |
-| `foryou` · `foryou-entry-shelves` | A1, A3, A6, H6, R1, R2, R6, W1, W2, V2, V4 |
+| `foryou` · `foryou-entry-shelves` (ouverte par le rail) | A1, A3, A6, H6, R1, R2, R6, W1, W2, V2, V4 |
 
 Couverts ailleurs : C1 (T4, T7), G1 (T6, T7), K1 (le voile hors ligne, T6),
 E1-E3 (la fiche, T7). Format, jeux de données et relevés :
