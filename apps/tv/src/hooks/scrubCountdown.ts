@@ -1,5 +1,4 @@
-import type { ScrubMachine } from "@tentacle-tv/tv-core";
-import { RESUME_COUNTDOWN_MS } from "./seekTuning";
+import { RESUME_COUNTDOWN_MS, type ScrubMachine } from "@tentacle-tv/tv-core";
 
 /**
  * Le DÉCOMPTE de validation du défilement — une seule règle, quelle que soit

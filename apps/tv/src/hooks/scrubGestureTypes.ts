@@ -1,5 +1,5 @@
 import type { MutableRefObject } from "react";
-import type { TouchMode } from "./scrubTouchTuning";
+import type { TouchMode } from "@tentacle-tv/tv-core";
 
 export type ScrubDir = "forward" | "backward";
 

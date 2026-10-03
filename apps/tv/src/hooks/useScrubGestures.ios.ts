@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { usePanGesture } from "../lib/tvPanGesture";
 import type { ScrubGestureHandlers } from "./scrubGestureTypes";
-import { canEngage, scrubGainFor, type TouchMode } from "./scrubTouchTuning";
+import { canEngage, scrubGainFor, type TouchMode } from "@tentacle-tv/tv-core";
 
 export type { ScrubGestureHandlers, ScrubDir } from "./scrubGestureTypes";
 

@@ -1,11 +1,12 @@
 /**
- * Les RÉGLAGES du défilement au pavé tactile de la Siri Remote (Apple TV) —
+ * Les RÉGLAGES du défilement au pavé tactile (la Siri Remote d'Apple TV, et
+ * toute télécommande à surface tactile que lira une table de traduction) —
  * l'unique endroit où ils se retouchent, après l'essai sur l'appareil : le
  * simulateur ne glisse pas, aucune de ces valeurs n'a vu un vrai doigt.
  *
- * Unités : le pan de tvOS rend une TRANSLATION en points, comptée depuis le
- * centre (un toucher commence toujours au milieu de la vue focalisée) et
- * bornée à ±1920 horizontalement : toute la largeur du pavé vaut donc
+ * Unités : le glisser (`drag`) rend une TRANSLATION en points, comptée depuis
+ * le centre (un toucher commence toujours au milieu de la vue focalisée) et
+ * bornée à ±1920 horizontalement sur tvOS : toute la largeur du pavé vaut donc
  * ~1920 points. Les gains se disent en LARGEURS DE PAVÉ — ce que sent le
  * pouce —, plus en fraction de la durée : un même geste fait le même chemin
  * dans un épisode de vingt minutes et dans un film de trois heures.

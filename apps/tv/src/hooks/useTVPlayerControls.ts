@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTVRemote } from "../components/focus/useTVRemote";
-import type { TouchMode } from "./scrubTouchTuning";
-import { jumpSecondsOf } from "./seekTuning";
+import { jumpSecondsOf, type TouchMode } from "@tentacle-tv/tv-core";
 import { useScrubGestures } from "./useScrubGestures";
 import { useScrubController } from "./useScrubController";
 import { useSkipFlash } from "./useSkipFlash";
