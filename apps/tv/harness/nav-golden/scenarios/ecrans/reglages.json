@@ -19,9 +19,9 @@
           "base/vigie-off"
         ],
         "keys": [
-          "wait:4",
-          "menu",
-          "menu",
+          "wait:6",
+          "left",
+          "left",
           "select",
           "wait:5"
         ]
@@ -111,7 +111,7 @@
           "why": "au-delà de la colonne des onglets : le rail (relevé)"
         }
       ],
-      "why": "Réglages atteints par le rail, comme l'utilisateur : Menu ouvre le rail, Menu mène au profil, OK ouvre les réglages — ouverts par une navigation directe, ils n'ont aucun focus à la référence"
+      "why": "Réglages atteints par le rail, comme l'utilisateur : GAUCHE ouvre le rail (ou, si l'accueil encore en chargement y a laissé le focus — B7 de T4 —, mène déjà au profil), GAUCHE dans le rail mène au profil et y reste, OK ouvre les réglages. Ouverts par une navigation directe, ils n'ont aucun focus à la référence (B8)"
     },
     {
       "id": "reglages-double-appui",
@@ -124,9 +124,9 @@
           "base/vigie-off"
         ],
         "keys": [
-          "wait:4",
-          "menu",
-          "menu",
+          "wait:6",
+          "left",
+          "left",
           "select",
           "wait:5"
         ]
@@ -186,7 +186,7 @@
           "why": "désarmé en le quittant : JAMAIS un second OK ici"
         }
       ],
-      "why": "Réglages atteints par le rail, comme l'utilisateur : Menu ouvre le rail, Menu mène au profil, OK ouvre les réglages — ouverts par une navigation directe, ils n'ont aucun focus à la référence"
+      "why": "Réglages atteints par le rail, comme l'utilisateur : GAUCHE ouvre le rail (ou, si l'accueil encore en chargement y a laissé le focus — B7 de T4 —, mène déjà au profil), GAUCHE dans le rail mène au profil et y reste, OK ouvre les réglages. Ouverts par une navigation directe, ils n'ont aucun focus à la référence (B8)"
     },
     {
       "id": "reglages-liste-de-choix",
@@ -201,9 +201,9 @@
           "base/vigie-off"
         ],
         "keys": [
-          "wait:4",
-          "menu",
-          "menu",
+          "wait:6",
+          "left",
+          "left",
           "select",
           "wait:5",
           "down",
@@ -219,12 +219,19 @@
           }
         },
         {
-          "do": "right"
+          "do": "right",
+          "why": "le panneau Lecture, premier élément (relevé)"
         },
         {
-          "do": "holddown:3",
+          "do": [
+            "down",
+            "down"
+          ],
           "settleMs": 900,
-          "why": "jusqu'aux préférences des bibliothèques (relevé de la tuile)"
+          "expect": {
+            "focus": "settings:lib:0:audio"
+          },
+          "why": "la première préférence de bibliothèque — appuis comptés : un appui maintenu s'arrête où sa vitesse le mène"
         },
         {
           "do": "select",
@@ -241,12 +248,13 @@
           "do": "menu",
           "settleMs": 1500,
           "expect": {
-            "panel": "closed"
+            "panel": "closed",
+            "focus": "settings:lib:0:audio"
           },
-          "why": "rien de choisi ; le focus retrouve la tuile (relevé)"
+          "why": "rien de choisi ; la tuile reprend le focus"
         }
       ],
-      "why": "Réglages atteints par le rail, comme l'utilisateur : Menu ouvre le rail, Menu mène au profil, OK ouvre les réglages, puis l'onglet « playback » montré par OK — ouverts par une navigation directe, ils n'ont aucun focus à la référence"
+      "why": "Réglages atteints par le rail, comme l'utilisateur : GAUCHE ouvre le rail (ou, si l'accueil encore en chargement y a laissé le focus — B7 de T4 —, mène déjà au profil), GAUCHE dans le rail mène au profil et y reste, OK ouvre les réglages, puis OK montre l'onglet voulu. Ouverts par une navigation directe, ils n'ont aucun focus à la référence (B8)"
     },
     {
       "id": "reglages-navigation-deplacer",
@@ -263,9 +271,9 @@
           "base/vigie-off"
         ],
         "keys": [
-          "wait:4",
-          "menu",
-          "menu",
+          "wait:6",
+          "left",
+          "left",
           "select",
           "wait:5",
           "down",
@@ -353,7 +361,7 @@
           "why": "« Ordre par défaut » disparaît sous le doigt : la première ligne"
         }
       ],
-      "why": "Réglages atteints par le rail, comme l'utilisateur : Menu ouvre le rail, Menu mène au profil, OK ouvre les réglages, puis l'onglet « navigation » montré par OK — ouverts par une navigation directe, ils n'ont aucun focus à la référence"
+      "why": "Réglages atteints par le rail, comme l'utilisateur : GAUCHE ouvre le rail (ou, si l'accueil encore en chargement y a laissé le focus — B7 de T4 —, mène déjà au profil), GAUCHE dans le rail mène au profil et y reste, OK ouvre les réglages, puis OK montre l'onglet voulu. Ouverts par une navigation directe, ils n'ont aucun focus à la référence (B8)"
     }
   ]
 }
