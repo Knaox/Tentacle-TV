@@ -1,0 +1,263 @@
+{
+  "domain": "ecrans",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 700
+  },
+  "scenarios": [
+    {
+      "id": "jumelage-code-du-relais",
+      "title": "Accueil du jumelage : entrée sur « Afficher le code » ; le code du relais donne l'entrée à la croix, seule action ; Menu recule d'une étape",
+      "rules": [
+        "JU-1",
+        "JU-2",
+        "JU-7"
+      ],
+      "start": {
+        "session": "none",
+        "fixtures": [
+          "ecrans/jumelage"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "expect": {
+            "focus": "pairing:showCode",
+            "route": "PairCode"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pairing:back",
+            "label": "Retour"
+          },
+          "why": "code en chargement ou actif : la croix est la seule chose à faire"
+        },
+        {
+          "do": "down",
+          "why": "relevé : la croix garde le focus s'il n'y a rien dessous"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1200,
+          "expect": {
+            "focus": "pairing:showCode",
+            "route": "PairCode"
+          },
+          "why": "couche « page » : l'étape précédente"
+        }
+      ]
+    },
+    {
+      "id": "jumelage-serveur-et-identifiants",
+      "title": "Serveur saisi à la main puis identifiants : entrée par étape, croix atteinte par HAUT, Menu recule d'une étape à chaque fois",
+      "rules": [
+        "JU-1",
+        "JU-2",
+        "JU-5",
+        "JU-6",
+        "JU-7"
+      ],
+      "start": {
+        "session": "none",
+        "fixtures": [
+          "ecrans/jumelage"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "expect": {
+            "focus": "pairing:showCode"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "pairing:manual"
+          },
+          "why": "les deux actions de l'accueil, côte à côte"
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pairing:url"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "pairing:back"
+          },
+          "why": "la croix, libérée par le premier focus de l'étape"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:url"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "why": "OK sur le champ : le clavier système"
+        },
+        {
+          "do": "type:http://localhost:3107\n",
+          "settleMs": 4000,
+          "expect": {
+            "focus": "pairing:username"
+          },
+          "why": "serveur vérifié : les identifiants, entrée sur l'identifiant"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "pairing:back"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:username"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:password"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:signIn"
+          },
+          "why": "le groupe pairing:actions entre par « Se connecter »"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "pairing:useCode"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pairing:url"
+          },
+          "why": "identifiants → serveur"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pairing:showCode"
+          },
+          "why": "serveur → accueil ; un Menu de plus quitterait l'application"
+        }
+      ]
+    },
+    {
+      "id": "jumelage-connexion-refusee",
+      "title": "Connexion refusée : le mot de passe vidé reprend le focus ; « Se connecter » sans identifiant ouvre son clavier",
+      "rules": [
+        "JU-1",
+        "JU-4",
+        "JU-5",
+        "JU-6"
+      ],
+      "start": {
+        "session": "none",
+        "fixtures": [
+          "ecrans/jumelage"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "expect": {
+            "focus": "pairing:showCode"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "pairing:manual"
+          },
+          "why": "les deux actions de l'accueil, côte à côte"
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pairing:url"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:http://localhost:3107\n",
+          "settleMs": 4000,
+          "expect": {
+            "focus": "pairing:username"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "why": "le clavier de l'identifiant"
+        },
+        {
+          "do": "type:banc\n",
+          "settleMs": 2000,
+          "expect": {
+            "writes": []
+          },
+          "why": "mot de passe vide : valider n'envoie rien, le clavier se ferme"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:password"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500
+        },
+        {
+          "do": "type:faux\n",
+          "settleMs": 4000,
+          "expect": {
+            "focus": "pairing:password"
+          },
+          "why": "les deux champs remplis : envoyé, refusé (401) ; le mot de passe vidé reprend le focus"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "pairing:signIn"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "why": "mot de passe vide : « Se connecter » ouvre SON clavier, rien n'est envoyé"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "why": "Menu ferme le clavier (relevé du focus rendu par tvOS)"
+        }
+      ]
+    }
+  ]
+}

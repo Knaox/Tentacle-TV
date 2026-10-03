@@ -1,0 +1,35 @@
+{
+  "domain": "ecrans",
+  "reference": "84f3cedd0",
+  "defaults": { "settleMs": 600 },
+  "scenarios": [
+    {
+      "id": "collections-ma-liste",
+      "title": "Ma liste : entrée sur la première affiche ; OK ouvre la fiche, Menu y revient sur l'affiche",
+      "rules": ["CO-1", "GR-5", "FI-2"],
+      "start": {
+        "fixtures": ["base/vigie-off"],
+        "route": { "name": "Watchlist" }
+      },
+      "steps": [
+        { "do": "wait:3", "expect": { "focus": "grid:0", "route": "Watchlist" } },
+        { "do": "select", "settleMs": 2500, "expect": { "route": "MediaDetail" } },
+        { "do": "menu", "settleMs": 2000, "expect": { "route": "Watchlist", "focus": "grid:0" } },
+        { "do": "left", "expect": { "focus": "nav:Watchlist" }, "why": "l'entrée active du rail (T4)" }
+      ]
+    },
+    {
+      "id": "collections-favoris-vides",
+      "title": "Favoris vides : entrée sur « Parcourir les bibliothèques », qui mène à l'accueil",
+      "rules": ["CO-1", "CO-2"],
+      "start": {
+        "fixtures": ["base/vigie-off", "ecrans/favoris-vides"],
+        "route": { "name": "Favorites" }
+      },
+      "steps": [
+        { "do": "wait:3", "expect": { "focus": "empty:primary", "route": "Favorites" } },
+        { "do": "select", "settleMs": 2500, "expect": { "route": "Home" } }
+      ]
+    }
+  ]
+}

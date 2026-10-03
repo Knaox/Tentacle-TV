@@ -1,0 +1,476 @@
+{
+  "domain": "ecrans",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 600
+  },
+  "scenarios": [
+    {
+      "id": "bibliotheque-entree-et-bords",
+      "title": "Films : entrée sur la première affiche ; HAUT vers la barre de filtres ; les bords de la grille ne mènent nulle part",
+      "rules": [
+        "BI-1",
+        "BI-2",
+        "BI-3",
+        "GR-1",
+        "GR-3"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "expect": {
+            "focus": "grid:0",
+            "route": "Library"
+          }
+        },
+        {
+          "do": "up",
+          "why": "la barre de filtres (section filters:pills, au plus proche)"
+        },
+        {
+          "do": "down",
+          "why": "la première ligne, au plus proche (relevé)"
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "settleMs": 800,
+          "expect": {
+            "focus": "grid:5"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "grid:5"
+          },
+          "why": "le bout droit d'une ligne : rien à atteindre"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "grid:11"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "grid:5"
+          }
+        },
+        {
+          "do": [
+            "left",
+            "left",
+            "left",
+            "left",
+            "left"
+          ],
+          "settleMs": 800,
+          "expect": {
+            "focus": "grid:0"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba"
+          },
+          "why": "au-delà du bord gauche : l'entrée active du rail (T4)"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "grid:0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bibliotheque-defilement",
+      "title": "Flèche maintenue jusqu'au fond, puis jusqu'en haut : la première ligne ramène la page tout en haut",
+      "rules": [
+        "GR-2",
+        "GR-4"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "expect": {
+            "focus": "grid:0"
+          }
+        },
+        {
+          "do": "holddown:8",
+          "settleMs": 1500,
+          "why": "la page suivante part à trois écrans de la fin : le focus ne bute pas"
+        },
+        {
+          "do": "holdup:10",
+          "settleMs": 1500,
+          "why": "relevé : la première ligne (mode start)"
+        },
+        {
+          "do": "up",
+          "why": "la barre de filtres"
+        }
+      ]
+    },
+    {
+      "id": "bibliotheque-liste-genres",
+      "title": "Liste des genres : entrée sur le premier choix, cocher sans bouger, BAS vers « Voir N titres », Menu ferme et rend la pastille",
+      "rules": [
+        "BI-5",
+        "BI-6",
+        "BI-7",
+        "BI-8",
+        "BI-10",
+        "BI-12"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "expect": {
+            "focus": "grid:0"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "pill:status"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "right"
+          ],
+          "expect": {
+            "focus": "pill:genres"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "panel": "open",
+            "focus": "sheet:option:0"
+          },
+          "why": "rien de retenu : le premier choix"
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "sheet:option:2"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "sheet:option:2",
+            "panel": "open"
+          },
+          "why": "cocher ne déplace pas le focus"
+        },
+        {
+          "do": "holddown:4",
+          "settleMs": 800,
+          "expect": {
+            "focus": "sheet:apply"
+          },
+          "why": "le pied, par « Voir N titres »"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "panel": "closed",
+            "focus": "pill:genres"
+          }
+        },
+        {
+          "do": "down",
+          "why": "la rangée des filtres actifs (relevé : le filtre ou « Tout effacer », au plus proche)"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "active:clear"
+          },
+          "why": "« Tout effacer », au bout de la rangée"
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "focus": "pill:status"
+          },
+          "why": "« Tout effacer » rend la pastille de tête"
+        }
+      ]
+    },
+    {
+      "id": "bibliotheque-retirer-filtre",
+      "title": "Retirer un filtre : le focus va au filtre qui prend sa place, puis à la pastille du critère quand il n'en reste plus",
+      "rules": [
+        "BI-5"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "expect": {
+            "focus": "grid:0"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "pill:status"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "right"
+          ],
+          "expect": {
+            "focus": "pill:genres"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "panel": "open",
+            "focus": "sheet:option:0"
+          }
+        },
+        {
+          "do": "select",
+          "why": "le 1er genre coché"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "sheet:option:1"
+          }
+        },
+        {
+          "do": "select",
+          "why": "le 2e genre coché"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "panel": "closed",
+            "focus": "pill:genres"
+          }
+        },
+        {
+          "do": [
+            "left",
+            "left"
+          ],
+          "expect": {
+            "focus": "pill:status"
+          }
+        },
+        {
+          "do": "down",
+          "why": "la rangée des filtres actifs, au plus proche de la 1re pastille (relevé)"
+        },
+        {
+          "do": "select",
+          "settleMs": 1000,
+          "why": "retiré : le filtre suivant prend la place (relevé de la clé réclamée)"
+        },
+        {
+          "do": "select",
+          "settleMs": 1000,
+          "why": "retiré encore (relevé)"
+        },
+        {
+          "do": "wait:1",
+          "why": "plus aucun filtre : la pastille du critère retiré (relevé)"
+        }
+      ]
+    },
+    {
+      "id": "bibliotheque-liste-annees",
+      "title": "Liste des années sans décennie retenue : entrée sur la flèche « De » ; Menu ferme et rend la pastille",
+      "rules": [
+        "BI-7",
+        "BI-10"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "expect": {
+            "focus": "grid:0"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "pill:status"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "expect": {
+            "focus": "pill:years"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "panel": "open",
+            "focus": "sheet:from:prev"
+          }
+        },
+        {
+          "do": "down",
+          "why": "les décennies (relevé)"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "panel": "closed",
+            "focus": "pill:years"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bibliotheque-favoris-bascule",
+      "title": "La pastille Favoris bascule sans ouvrir de liste ; le focus reste sur elle",
+      "rules": [
+        "BI-5"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:3",
+          "expect": {
+            "focus": "grid:0"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "pill:status"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "pill:favorites"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pill:favorites",
+            "panel": "closed"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pill:favorites"
+          },
+          "why": "rebasculé : la bibliothèque entière"
+        }
+      ]
+    }
+  ]
+}

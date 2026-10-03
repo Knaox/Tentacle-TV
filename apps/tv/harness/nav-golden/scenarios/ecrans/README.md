@@ -9,35 +9,36 @@ feuilles. Enregistrés sur le SHA de référence **84f3cedd0**, rejoués en
 
 ## Format
 
-Celui du banc (repris de T6) : un fichier par écran, `{ domain: "ecrans",
-screen, scenarios: [...] }`. Un scénario :
-
-| Champ | Sens |
-|---|---|
-| `id` | `ec-<écran>-<n>` (`fi` fiche, `re` recherche, `pa` Parcourir, `bi` bibliothèque et grilles, `co` Ma liste et Favoris, `rg` réglages, `ju` jumelage, `ba` bande-annonce, `vi` Vigie) |
-| `title` | ce que le scénario éprouve, en une phrase |
-| `rules` | les règles du relevé couvertes (`FI-3`, `RE-5`…) |
-| `start` | `session` (`paired` : session factice vers le faux backend ; `none` : rien, l'app s'ouvre sur le jumelage), `fixtures` (jeux de données nommés, ci-dessous), `stack` (la pile posée avant le premier geste) ou `route`, `focus` (une clé à réclamer avant de commencer) |
-| `steps` | `do` (geste de l'agent `atv-remote` : `up` `down` `left` `right` `select` `menu` `play`, `hold:<s>` OK tenu, `holddown:<s>` / `holdup:<s>` / `holdleft:<s>` / `holdright:<s>` flèche tenue, `type:<texte>` au clavier système ouvert, `\n` = sa validation, `wait:<s>`), `settleMs` (attente avant le relevé), `expect`, `why` |
-| `expect` | `focus` (clé du magasin de focus de l'écran devant), `label` (libellé d'accessibilité), `route`, `stack` (noms de la pile), `panel` (`open` / `closed`), `keyboard` (clavier système ouvert), `writes` (écritures vues par le faux backend depuis le geste précédent ; `[]` = aucune), `unchanged` (le focus n'a pas bougé) |
+Celui du banc, figé par T2 (`.claude/nav-lot/FORMAT-SCENARIOS.md`) : un
+fichier par écran, à la racine de ce dossier, `{ domain: "ecrans", reference,
+defaults, scenarios: [...] }`. Un scénario : `id` (unique dans le domaine,
+préfixé par l'écran), `title`, `rules` (les règles du relevé couvertes),
+`start` (`session` `paired` ou `none`, `fixtures`, `route` de départ), `steps`
+(`do` : un geste de l'agent `atv-remote` ou une liste de gestes — `up` `down`
+`left` `right` `select` `menu` `play`, `hold:<s>`, `holdup|holddown|holdleft|holdright:<s>`,
+`wait:<s>`, `type:<texte>` avec `\n` pour la validation du clavier système ;
+`settleMs` ; `expect` : `focus`, `label`, `route`, `panel`, `writes` ; `why`).
 
 Les `expect` ne disent que ce que le code GARANTIT (le relevé) ; tout le
-reste — la clé focalisée, la route, la pile après CHAQUE geste — est relevé
-à l'enregistrement et doit revenir à l'identique en `verify`.
+reste — clé focalisée, libellé, route et pile, Modal, écritures, après CHAQUE
+geste — est relevé par `record` dans `<nom>.golden.json` (jamais écrit à la
+main) et doit revenir à l'identique en `verify`. Un pas sans `expect` dont le
+`why` dit « relevé » n'affirme rien : c'est la référence qui fait foi.
 
-## Jeux de données (`fixtures.mjs`, à brancher sur le banc de T2)
+## Jeux de données
 
-| Nom | Ce qu'il sert |
+Ceux du banc : `base/vigie-off` (Vigie éteint), `base/demandes-on` (faux Vigie
+qui accepte les demandes, chacune JOURNALISÉE, jamais relayée),
+`base/bandes-annonces-en-panne` (bande-annonce indisponible). Ceux de ce
+domaine (`fixtures.mjs`) :
+
+| Jeu | Ce qu'il change |
 |---|---|
-| `base` | l'instantané du banc UI (compte de test, lecture seule) : accueil, fiches, séries, saisons, épisodes, casting, similaires, sagas ; Vigie éteint |
-| `vigie.on` | le faux Vigie du banc des demandes (`../../../live-requests`) : contrat `titles` complet (`access`, `mine`, `state`, `seasons`, `gaps`, `search`), chaque `POST titles/request` JOURNALISÉ, jamais relayé |
-| `library.large` | les 1 200 films du banc des bibliothèques dans « Films » (`db4c1708cbb5dd1676284a40f2950aba`), ses genres |
-| `search` | `/api/search` (la réponse « Orgueil » de l'instantané), découverte, épisodes, Parcourir (`/api/search/person|genre|studio`) |
-| `fail.item:<id>` | la fiche `<id>` répond 500 |
-| `slow.item:<id>:<ms>` | la fiche `<id>` répond après `<ms>` |
-| `favorites.empty` | Favoris vide |
-| `unpaired` | aucune session : santé du serveur, `pair/device/generate|status` (code en attente), vérification du serveur saisi, connexion refusée (401) |
-| `trailer.unavailable` | la résolution de la bande-annonce échoue |
+| `ecrans/fiche-en-erreur` | la fiche de « Les Évadés » répond 500 |
+| `ecrans/fiche-lente` | la fiche de « Les Évadés » répond après 3 s |
+| `ecrans/parcourir-lent` | la filmographie de Keira Knightley répond après 3 s |
+| `ecrans/favoris-vides` | Favoris vide |
+| `ecrans/jumelage` | sans session : code du relais en attente, le serveur `http://localhost:3107` se vérifie, la connexion est refusée (401) |
 
 Identifiants de l'instantané employés :
 
@@ -60,15 +61,15 @@ s'arme puis se désarme), aucun identifiant réel tapé au jumelage.
 
 | Fichier | Écran | Règles |
 |---|---|---|
-| `fiche.json` | la fiche | FI-1 à FI-13, PA-5 |
-| `recherche.json` | la recherche | RE-1 à RE-12 |
+| `fiche.json` | la fiche | FI-1 à FI-8, FI-10, FI-11, FI-13, PA-5 |
+| `recherche.json` | la recherche | RE-1 à RE-10 (RE-11 et RE-12 : tests unitaires) |
 | `parcourir.json` | Parcourir | PA-1 à PA-4 |
-| `bibliotheque.json` | bibliothèque et grilles | BI-1 à BI-12, GR-1 à GR-5 |
+| `bibliotheque.json` | bibliothèque et grilles | BI-1 à BI-3, BI-5 à BI-8, BI-10, BI-12, GR-1 à GR-4 (BI-4, BI-9, BI-11 : tests unitaires) |
 | `collections.json` | Ma liste et Favoris | CO-1, CO-2 |
 | `reglages.json` | réglages | RG-1 à RG-12 |
 | `jumelage.json` | jumelage | JU-1 à JU-7 |
-| `bande-annonce.json` | bande-annonce | BA-1 à BA-4 |
-| `vigie.json` | « demander » hors feuilles | VI-1 à VI-4, FI-9 |
+| `bande-annonce.json` | bande-annonce | BA-1, BA-3, BA-4 (BA-2, le chrome en lecture : test unitaire, aucune bande-annonce ne se lit au banc) |
+| `vigie.json` | « demander » hors feuilles | VI-1, VI-2, FI-9, FI-10 |
 
 Hors banc (un appui ne sait pas les montrer) : le glisser du pavé, la dictée,
 le clavier système sur l'appareil — passage sur l'Apple TV « Chambre ».

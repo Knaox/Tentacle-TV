@@ -1,0 +1,337 @@
+{
+  "domain": "ecrans",
+  "reference": "84f3cedd0",
+  "defaults": {
+    "settleMs": 600
+  },
+  "scenarios": [
+    {
+      "id": "reglages-onglets",
+      "title": "Réglages : entrée sur l'onglet affiché ; le focus seul ne change pas d'onglet ; GAUCHE depuis le panneau revient à l'onglet AFFICHÉ",
+      "rules": [
+        "RG-1",
+        "RG-2",
+        "RG-3",
+        "RG-5"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Settings"
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:2.5",
+          "expect": {
+            "focus": "settings:tab:account",
+            "route": "Settings"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "settings:tab:playback"
+          },
+          "why": "survolé, pas montré"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:changeServer"
+          },
+          "why": "le panneau de l'onglet AFFICHÉ (Compte), premier élément"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:logout"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "settings:changeServer"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "settings:tab:account"
+          },
+          "why": "l'onglet affiché, jamais celui qu'on survolait"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:changeServer"
+          },
+          "why": "le panneau rend l'élément quitté"
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "settings:tab:account"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "settings:tab:playback"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 900,
+          "expect": {
+            "focus": "settings:tab:playback"
+          },
+          "why": "OK montre l'onglet"
+        },
+        {
+          "do": "right",
+          "why": "le panneau Lecture, premier élément (relevé)"
+        },
+        {
+          "do": "down",
+          "why": "la liste : la ligne voisine, au plus proche (relevé)"
+        },
+        {
+          "do": "left",
+          "why": "relevé : l'onglet affiché si rien n'est à gauche dans le panneau"
+        },
+        {
+          "do": "left",
+          "why": "au-delà de la colonne des onglets : le rail (relevé)"
+        }
+      ]
+    },
+    {
+      "id": "reglages-double-appui",
+      "title": "Compte : le premier OK arme « Changer de serveur », quitter le bouton désarme ; aucun déjumelage exécuté",
+      "rules": [
+        "RG-6"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Settings"
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:2.5",
+          "expect": {
+            "focus": "settings:tab:account"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:changeServer",
+            "label": "Changer de serveur"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "settings:changeServer",
+            "label": "Confirmer — Changer de serveur",
+            "writes": []
+          },
+          "why": "armé, rien d'exécuté"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:logout",
+            "label": "Déjumeler cet appareil"
+          },
+          "why": "quitter le bouton armé le désarme"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "settings:logout",
+            "label": "Confirmer le déjumelage",
+            "writes": []
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "settings:changeServer",
+            "label": "Changer de serveur"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:logout",
+            "label": "Déjumeler cet appareil"
+          },
+          "why": "désarmé en le quittant : JAMAIS un second OK ici"
+        }
+      ]
+    },
+    {
+      "id": "reglages-liste-de-choix",
+      "title": "Lecture : une préférence de bibliothèque ouvre sa liste de choix sur la valeur retenue ; Menu la ferme et rend la tuile",
+      "rules": [
+        "RG-4",
+        "RG-11",
+        "RG-12"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Settings",
+          "params": {
+            "tab": "playback"
+          }
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:2.5",
+          "expect": {
+            "focus": "settings:tab:playback"
+          }
+        },
+        {
+          "do": "right"
+        },
+        {
+          "do": "holddown:3",
+          "settleMs": 900,
+          "why": "jusqu'aux préférences des bibliothèques (relevé de la tuile)"
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "panel": "open"
+          },
+          "why": "entrée sur la valeur retenue (relevé : settings:choice:<i>)"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "panel": "closed"
+          },
+          "why": "rien de choisi ; le focus retrouve la tuile (relevé)"
+        }
+      ]
+    },
+    {
+      "id": "reglages-navigation-deplacer",
+      "title": "Navigation : OK soulève une entrée, BAS la déplace, Retour annule (l'entrée et le focus reviennent) ; poser puis « Ordre par défaut »",
+      "rules": [
+        "RG-7",
+        "RG-8",
+        "RG-9",
+        "RG-10",
+        "RG-12"
+      ],
+      "start": {
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Settings",
+          "params": {
+            "tab": "navigation"
+          }
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:2.5",
+          "expect": {
+            "focus": "settings:tab:navigation"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:nav:0"
+          },
+          "why": "ordre par défaut, rien de masqué : la première ligne"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "settings:nav:0"
+          },
+          "why": "soulevée"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "settings:nav:1"
+          },
+          "why": "l'entrée soulevée suit le focus"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "settings:nav:1"
+          },
+          "why": "la pastille de la ligne est verrouillée pendant le déplacement"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1200,
+          "expect": {
+            "focus": "settings:nav:0",
+            "route": "Settings"
+          },
+          "why": "annulé : l'entrée revient à sa case, le focus avec elle"
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "settings:nav:0"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "settings:nav:1"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 900,
+          "expect": {
+            "focus": "settings:nav:1"
+          },
+          "why": "posée : l'ordre est enregistré, « Ordre par défaut » paraît"
+        },
+        {
+          "do": "holdup:2",
+          "settleMs": 900,
+          "why": "jusqu'aux boutons du haut (relevé)"
+        },
+        {
+          "do": "select",
+          "settleMs": 900,
+          "expect": {
+            "focus": "settings:nav:0"
+          },
+          "why": "« Ordre par défaut » disparaît sous le doigt : la première ligne"
+        }
+      ]
+    }
+  ]
+}

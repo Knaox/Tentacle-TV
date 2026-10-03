@@ -1,0 +1,84 @@
+{
+  "domain": "ecrans",
+  "reference": "84f3cedd0",
+  "defaults": { "settleMs": 600 },
+  "scenarios": [
+    {
+      "id": "parcourir-personne",
+      "title": "La filmographie d'une personne : entrée sur la première affiche ; HAUT vers la croix de l'en-tête, BAS en revient ; la croix recule",
+      "rules": ["PA-1", "PA-2", "GR-1"],
+      "start": {
+        "fixtures": ["base/vigie-off"],
+        "route": { "name": "SearchBrowse", "params": { "kind": "person", "id": "9a502d69e1c2d64c451e42406a932f0b", "name": "Keira Knightley" } }
+      },
+      "steps": [
+        { "do": "wait:3", "expect": { "focus": "grid:0", "route": "SearchBrowse" } },
+        { "do": "up", "expect": { "focus": "browse:back", "label": "Retour" }, "why": "le groupe browse:header mène à la croix" },
+        { "do": "down", "expect": { "focus": "grid:0" } },
+        { "do": "right", "expect": { "focus": "grid:1" } },
+        { "do": "up", "expect": { "focus": "browse:back" } },
+        { "do": "down", "expect": { "focus": "grid:1" }, "why": "BAS depuis la croix : la dernière affiche visitée" },
+        { "do": "up" },
+        { "do": "select", "settleMs": 1500, "why": "la croix recule (relevé de la route)" }
+      ]
+    },
+    {
+      "id": "parcourir-fiche-remplace",
+      "title": "OK sur une affiche de la page d'une personne : la fiche REMPLACE la page ; Retour ramène avant elle",
+      "rules": ["PA-5", "GR-5", "FI-11"],
+      "start": {
+        "fixtures": ["base/vigie-off"],
+        "route": { "name": "SearchBrowse", "params": { "kind": "person", "id": "9a502d69e1c2d64c451e42406a932f0b", "name": "Keira Knightley" } }
+      },
+      "steps": [
+        { "do": "wait:3", "expect": { "focus": "grid:0" } },
+        { "do": "select", "settleMs": 2500, "expect": { "route": "MediaDetail" } },
+        { "do": "menu", "settleMs": 1500, "why": "un seul Retour : la page d'avant la personne (relevé)" }
+      ]
+    },
+    {
+      "id": "parcourir-genre-empile",
+      "title": "Un genre : la fiche s'EMPILE sur la page du genre ; Retour y revient, focus sur l'affiche d'origine",
+      "rules": ["PA-5", "GR-5"],
+      "start": {
+        "fixtures": ["base/vigie-off"],
+        "route": { "name": "SearchBrowse", "params": { "kind": "genre", "name": "Action" } }
+      },
+      "steps": [
+        { "do": "wait:3", "expect": { "focus": "grid:0" } },
+        { "do": "right", "expect": { "focus": "grid:1" } },
+        { "do": "select", "settleMs": 2500, "expect": { "route": "MediaDetail" } },
+        { "do": "menu", "settleMs": 2000, "expect": { "route": "SearchBrowse", "focus": "grid:1" } }
+      ]
+    },
+    {
+      "id": "parcourir-lent",
+      "title": "Page lente : la croix, seule action, tient le focus pendant le chargement ; la première affiche le reprend à son arrivée",
+      "rules": ["PA-1", "PA-3"],
+      "start": {
+        "fixtures": ["base/vigie-off", "ecrans/parcourir-lent"],
+        "route": { "name": "SearchBrowse", "params": { "kind": "person", "id": "9a502d69e1c2d64c451e42406a932f0b", "name": "Keira Knightley" } }
+      },
+      "steps": [
+        { "do": "wait:1.2", "expect": { "focus": "browse:back" } },
+        { "do": "wait:4", "expect": { "focus": "grid:0" } }
+      ]
+    },
+    {
+      "id": "parcourir-rail-rechercher",
+      "title": "Depuis Parcourir ouvert par la recherche, « Rechercher » dans le rail recule, et la recherche rend sa barre",
+      "rules": ["PA-4", "RE-7", "RE-8"],
+      "start": {
+        "fixtures": ["base/vigie-off"],
+        "route": { "name": "Search" }
+      },
+      "steps": [
+        { "do": "wait:2.5", "expect": { "focus": "key:A" } },
+        { "do": ["right", "right", "right", "right", "right", "right"], "why": "la colonne de droite : les genres du repos" },
+        { "do": "select", "settleMs": 3000, "expect": { "route": "SearchBrowse", "focus": "grid:0" } },
+        { "do": "left", "why": "le rail s'ouvre (« Rechercher » actif)" },
+        { "do": "select", "settleMs": 2500, "expect": { "route": "Search", "focus": "search:field" } }
+      ]
+    }
+  ]
+}
