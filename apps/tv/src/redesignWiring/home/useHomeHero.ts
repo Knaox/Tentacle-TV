@@ -16,8 +16,9 @@ import { useHeroRotation } from "./useHeroRotation";
 /**
  * Le héros de l'accueil : les visionnages à REPRENDRE d'abord (cinq au plus),
  * sinon une sélection au hasard du serveur — les règles de tv-core
- * (`hero/rotation.ts` : les titres, le suivant, le titre affiché, le bord). Il tourne seul, en fondu, même
- * focalisé — le minuteur repart à chaque geste, rien ne tourne hors champ
+ * (`hero/rotation.ts` : les titres, le suivant, le titre affiché, le bord).
+ * Il tourne seul, en fondu, même focalisé — le minuteur repart à chaque
+ * geste, rien ne tourne hors champ
  * (`useHeroRotation`). Et on le tourne à la main : DROITE au-delà du dernier
  * bouton — clic sur le bord du pavé ou glisser, là où le focus ne va nulle
  * part, vers les points de la rotation — passe au titre suivant, en boucle,
