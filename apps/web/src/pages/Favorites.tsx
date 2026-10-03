@@ -16,6 +16,7 @@ import { useFavoritesGroupMode } from "../components/favorites/useFavoritesGroup
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { PageTransition } from "../components/PageTransition";
 import { ShareMyListButton } from "../components/share/ShareMyListButton";
+import { QueryProblem } from "../components/problems/PageProblem";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 
 /**
@@ -36,7 +37,7 @@ import { useMultiSelect } from "../hooks/useMultiSelect";
  */
 export function Favorites() {
   const { t } = useTranslation(["common", "favorites"]);
-  const { data: items, isLoading } = useFavoritesAll();
+  const { data: items, isLoading, isError, error, isFetching, refetch } = useFavoritesAll();
   const sel = useMultiSelect();
   const batchRemove = useBatchRemoveFavorites();
   const filteredIdsRef = useRef<string[]>([]);
@@ -95,7 +96,9 @@ export function Favorites() {
   return (
     <PageTransition>
       <div className="min-h-screen pb-20">
-        {isLoading ? (
+        {isError && !items ? (
+          <QueryProblem error={error} target="relayed" retrying={isFetching} onRetry={() => void refetch()} />
+        ) : isLoading ? (
           <CollectionSkeleton label={title} />
         ) : !hasItems ? (
           <FavoritesEmpty extra={<ShareMyListButton kind="likes" />} />

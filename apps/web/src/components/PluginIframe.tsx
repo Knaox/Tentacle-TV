@@ -8,6 +8,7 @@ import { setHostChromeVeil } from "./pluginIframe/hostChromeVeil";
 import { markPluginNavigation } from "./detail/detailTransition";
 import { openExternal } from "../lib/openExternal";
 import { TrailerModal } from "./detail/TrailerModal";
+import { PluginLoader, PluginLoadProblem, usePluginDeps } from "./pluginIframe/pluginLoad";
 
 interface PluginTrailer {
   Url: string;
@@ -25,39 +26,6 @@ function sanitizeTrailers(input: unknown): PluginTrailer[] {
     .slice(0, 50);
 }
 
-const LOADER_TEXTS = {
-  fr: { loading: "Chargement du plugin…", error: "Erreur de chargement" },
-  en: { loading: "Loading plugin…", error: "Loading error" },
-} as const;
-
-function PluginLoader({ lang, error }: { lang: string; error?: string }) {
-  const t = LOADER_TEXTS[lang === "fr" ? "fr" : "en"];
-  return (
-    <div className="flex min-h-[calc(100vh-64px)] flex-col items-center justify-center gap-6 bg-surface-1">
-      <div className={`relative ${error ? "" : "animate-pulse"}`}>
-        <img
-          src="/tentacle-logo-pirate.svg"
-          alt="Tentacle"
-          className="h-16 w-16 drop-shadow-[0_0_20px_rgba(var(--brand-rgb), 0.5)]"
-        />
-        {!error && (
-          <div className="absolute -inset-3 animate-spin rounded-full border-2 border-transparent border-t-purple-500/60"
-            style={{ animationDuration: "1.2s" }}
-          />
-        )}
-      </div>
-      {error ? (
-        <div className="text-center">
-          <p className="text-sm font-medium text-status-error-fg">{t.error}</p>
-          <p className="mt-1 max-w-xs text-xs text-status-error-fg">{error}</p>
-        </div>
-      ) : (
-        <p className="text-sm text-gray-400/80">{t.loading}</p>
-      )}
-    </div>
-  );
-}
-
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("tentacle_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -67,40 +35,6 @@ interface PluginIframeProps {
   pluginId: string;
   bundleUrl: string;
   pluginPath: string;
-}
-
-// Module-level cache for shared-deps.js (fetched once, reused across renders/mounts)
-let sharedDepsPromise: Promise<string> | null = null;
-function fetchSharedDeps(baseUrl: string): Promise<string> {
-  if (!sharedDepsPromise) {
-    sharedDepsPromise = fetch(`${baseUrl}/api/plugins/shared-deps.js?v=2`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`shared-deps.js fetch failed: ${r.status}`);
-        return r.text();
-      })
-      .catch((err) => {
-        sharedDepsPromise = null; // allow retry on failure
-        throw err;
-      });
-  }
-  return sharedDepsPromise;
-}
-
-// Module-level cache for Tailwind runtime (served from backend to avoid CORS/CSP issues in Tauri)
-let tailwindPromise: Promise<string> | null = null;
-function fetchTailwind(baseUrl: string): Promise<string> {
-  if (!tailwindPromise) {
-    tailwindPromise = fetch(`${baseUrl}/api/plugins/tailwind.js`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`Tailwind fetch failed: ${r.status}`);
-        return r.text();
-      })
-      .catch((err) => {
-        tailwindPromise = null;
-        throw err;
-      });
-  }
-  return tailwindPromise;
 }
 
 /**
@@ -125,23 +59,8 @@ export function PluginIframe({
 
   const lang = localStorage.getItem("tentacle_language") || "fr";
 
-  // Fetch shared-deps.js + Tailwind CDN
-  const [deps, setDeps] = useState<{
-    status: "loading" | "ready" | "error";
-    sharedDepsCode?: string;
-    tailwindCode?: string;
-    error?: string;
-  }>({ status: "loading" });
-
-  useEffect(() => {
-    Promise.all([fetchSharedDeps(backendUrl), fetchTailwind(backendUrl)])
-      .then(([sharedDepsCode, tailwindCode]) =>
-        setDeps({ status: "ready", sharedDepsCode, tailwindCode }),
-      )
-      .catch((err) =>
-        setDeps({ status: "error", error: (err as Error).message }),
-      );
-  }, [pluginId]);
+  // shared-deps.js + Tailwind, puis le bundle : un échec se DIT (pluginLoad.tsx).
+  const { deps, failBundle, retry } = usePluginDeps(pluginId, () => { bundleFetched.current = false; });
 
   // Build HTML for iframe srcDoc
   const htmlContent = useMemo(() => {
@@ -175,14 +94,14 @@ export function PluginIframe({
               credentials: "include",
               headers: getAuthHeaders(),
             });
-            if (!res.ok) throw new Error(`Bundle fetch failed: ${res.status}`);
+            if (!res.ok) throw Object.assign(new Error(`Bundle fetch failed: ${res.status}`), { status: res.status });
             const code = await res.text();
             iframe.contentWindow?.postMessage(
               { type: "INJECT_BUNDLE", code },
               "*",
             );
-          } catch {
-            // Bundle fetch failed — iframe will show its own error via retry timeout
+          } catch (error) {
+            failBundle(error);
           }
           break;
         }
@@ -279,7 +198,7 @@ export function PluginIframe({
           break;
       }
     },
-    [bundleUrl, navigate, pluginId],
+    [bundleUrl, navigate, pluginId, failBundle],
   );
 
   useEffect(() => {
@@ -322,15 +241,9 @@ export function PluginIframe({
   // page. Voir `desktop/pluginDocument.ts`.
   const mount = usePluginMount(pluginId, htmlContent);
 
-  if (deps.status === "loading" || mount === null) {
-    return <PluginLoader lang={lang} />;
-  }
-
-  if (deps.status === "error") {
-    return (
-      <PluginLoader lang={lang} error={deps.error} />
-    );
-  }
+  // L'échec D'ABORD : sans dépendances, `mount` reste nul pour toujours.
+  if (deps.status === "error") return <PluginLoadProblem error={deps.error} onRetry={retry} />;
+  if (deps.status === "loading" || mount === null) return <PluginLoader lang={lang} />;
 
   return (
     <>

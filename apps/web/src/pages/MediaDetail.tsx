@@ -31,7 +31,7 @@ export function MediaDetail() {
   // Une carte regroupée des « Derniers ajouts » ouvre la série sur une saison.
   const [searchParams] = useSearchParams();
   const client = useJellyfinClient();
-  const { data: item, isLoading, isError, isFetching, refetch } = useMediaItem(itemId);
+  const { data: item, isLoading, isError, error, isFetching, refetch } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
   const { data: parentSeries } = useMediaItem(isEpisode ? item?.SeriesId : undefined);
   // Note TMDB de l'épisode (fiche épisode) : lue par saison, cache partagé
@@ -132,7 +132,7 @@ export function MediaDetail() {
     return (
       <>
         {/* L'attente, ou l'échec : une requête en erreur ne tourne plus à vide. */}
-        <DetailPlaceholder failed={isError && !item} retrying={isFetching} onRetry={() => void refetch()} />
+        <DetailPlaceholder failed={isError && !item} error={error} retrying={isFetching} onRetry={() => void refetch()} />
         {/* Le calque d'ouverture couvre l'écran pendant le chargement : sans
             lui ici, un aller-retour spinner → fiche crevait l'animation. */}
         {openOverlay}

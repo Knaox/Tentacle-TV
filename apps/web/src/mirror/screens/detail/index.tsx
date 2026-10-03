@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useMediaItem, useSeriesWatchState, useSimilarItems } from "@tentacle-tv/api-client";
 import { DETAIL_SEASON_PARAM, detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { DetailImageViewer } from "../../../components/detail/DetailImageViewer";
+import { DetailPlaceholder } from "../../../components/detail/DetailPlaceholder";
 import { CardSheetProvider } from "../../cards/CardSheetProvider";
 import { useViewport } from "../../useFormFactor";
 import { DETAIL_MAX_WIDTH } from "../../responsive";
@@ -51,7 +52,7 @@ function DetailScreen({ itemId }: { itemId: string }) {
   // Une carte regroupée des « Derniers ajouts » ouvre la série sur une saison.
   const [searchParams] = useSearchParams();
 
-  const { data: item } = useMediaItem(itemId);
+  const { data: item, isError, error, isFetching, refetch } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
   const { data: parentSeries } = useMediaItem(isEpisode ? item?.SeriesId : undefined);
   const similarId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
@@ -67,7 +68,8 @@ function DetailScreen({ itemId }: { itemId: string }) {
   const gallery = useMemo(() => (item ? detailGallery(item) : []), [item]);
   const closeViewer = useCallback(() => setViewerIndex(null), []);
 
-  if (!item) return <DetailSkeleton />;
+  // Un échec n'est pas une attente : il se dit, avec sa cause (cf. DetailPlaceholder).
+  if (!item) return isError ? <DetailPlaceholder failed error={error} retrying={isFetching} onRetry={() => void refetch()} /> : <DetailSkeleton />;
 
   const backdrop = client.getImageUrl(item.ParentBackdropItemId ?? item.Id, "Backdrop", { width: 1200, quality: 85 });
   const isSeries = item.Type === "Series";

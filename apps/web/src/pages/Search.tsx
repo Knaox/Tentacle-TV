@@ -17,6 +17,7 @@ import { SearchPageHeader } from "../components/search/page/SearchPageHeader";
 import { SearchResultsView } from "../components/search/page/SearchResultsView";
 import { readSearchParams, searchHref, type SearchTab } from "../components/search/page/searchParams";
 import { useExternalSearch } from "../components/search/external/useExternalSearch";
+import { QueryProblem } from "../components/problems/PageProblem";
 import { SeriesGapsScope } from "../components/seasons/SeriesGapsScope";
 
 export function Search() {
@@ -75,6 +76,9 @@ export function Search() {
           <>
             <SearchPageHeader query={state.query} tab={state.tab} counts={counts} onQuery={setQuery} onTab={setTab} />
             {!searching && <SearchPageEmpty onQuery={setQuery} onGenre={(name) => openFacet("genre", name)} />}
+            {searching && search.isError && !search.data && (
+              <QueryProblem error={search.error} target="tentacle" retrying={search.isFetching} onRetry={() => void search.refetch()} />
+            )}
             {searching && search.data && (
               <SeriesGapsScope items={series}>
               <SearchResultsView

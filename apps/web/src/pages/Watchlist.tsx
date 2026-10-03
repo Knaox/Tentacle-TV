@@ -19,6 +19,7 @@ import { WatchlistResumeShelf } from "../components/watchlist/WatchlistResumeShe
 import { WatchlistListBody } from "../components/watchlist/WatchlistListBody";
 import { WatchlistEmpty, WatchlistStageEmpty } from "../components/watchlist/WatchlistStates";
 import { WatchlistUndoToast } from "../components/watchlist/WatchlistUndoToast";
+import { QueryProblem } from "../components/problems/PageProblem";
 import { useSummaryLine } from "../components/watchlist/useSummaryLine";
 
 /**
@@ -36,7 +37,7 @@ import { useSummaryLine } from "../components/watchlist/useSummaryLine";
 export function Watchlist() {
   const { t } = useTranslation(["common", "watchlist"]);
   const navigate = useNavigate();
-  const { data: items, isLoading } = useWatchlistAll();
+  const { data: items, isLoading, isError, error, isFetching, refetch } = useWatchlistAll();
   const page = useWatchlistPage(items);
   const { filters, stage, visible } = page;
   const sel = useMultiSelect();
@@ -97,7 +98,9 @@ export function Watchlist() {
   return (
     <PageTransition>
       <div className="min-h-screen pb-20">
-        {isLoading ? (
+        {isError && !items ? (
+          <QueryProblem error={error} target="relayed" retrying={isFetching} onRetry={() => void refetch()} />
+        ) : isLoading ? (
           <CollectionSkeleton view={page.view} label={t("common:myList")} />
         ) : !hasItems ? (
           <WatchlistEmpty />

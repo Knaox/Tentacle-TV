@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { describeProblem } from "@tentacle-tv/shared";
+import { PageProblem } from "../../../components/problems/PageProblem";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle } from "lucide-react";
 import {
   notifyUserChange,
   useFeaturedItems,
@@ -28,6 +28,9 @@ import { useHomeHero } from "./useHomeHero";
 import { useHomeRows } from "./useHomeRows";
 import "../../mirror.css";
 
+/** Le compte n'est plus là (profil absent) : la session a expiré. */
+const SESSION_GONE = describeProblem({ cause: "sessionExpired", context: "page", availability: { canGoBack: false } });
+
 /**
  * L'onglet Accueil de l'app (`HomeScreen`) : l'orbe ambiant, la bannière
  * (mode du compte, la reprise en repli), puis les rangées dans l'ordre de la
@@ -36,7 +39,6 @@ import "../../mirror.css";
  * Hors ligne, le routeur sert `OfflineCatalog` à la place de cet écran.
  */
 export function MirrorHome() {
-  const { t: te } = useTranslation("errors");
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const queryClient = useQueryClient();
@@ -119,14 +121,11 @@ export function MirrorHome() {
     );
   }
 
+  // Sans compte, rien ne se charge : la session n'existe plus — on le dit, et on propose de se reconnecter.
   if (!userId) {
     return (
       <SubtleBackground>
-        <div className="flex min-h-[60vh] flex-col items-center justify-center p-8 text-center">
-          <AlertCircle size={36} className="mb-3 text-brand-light" aria-hidden />
-          <p className="mb-2 text-lg font-bold text-content-primary">{te("sessionNotInitialized")}</p>
-          <p className="max-w-[320px] text-[13px] text-content-tertiary">{te("sessionNotInitializedMessage")}</p>
-        </div>
+        <PageProblem model={SESSION_GONE} onAction={() => navigate("/login")} />
       </SubtleBackground>
     );
   }

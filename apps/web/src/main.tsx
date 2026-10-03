@@ -49,6 +49,7 @@ import { installStaleBuildReload } from "./lib/staleBuildReload";
 import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import { HostTitleBar } from "./desktop/HostTitleBar";
+import { AppErrorBoundary } from "./components/problems/AppErrorBoundary";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -261,7 +262,9 @@ function renderApp() {
           <JellyfinClientContext.Provider value={jellyfinClient}>
             <PluginProvider backendUrl={backendUrl}>
               <HistoryRouter history={appHistory}>
-                <App />
+                <AppErrorBoundary>
+                  <App />
+                </AppErrorBoundary>
               </HistoryRouter>
             </PluginProvider>
           </JellyfinClientContext.Provider>
