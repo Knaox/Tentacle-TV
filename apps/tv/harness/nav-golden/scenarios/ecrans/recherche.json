@@ -140,7 +140,7 @@
     },
     {
       "id": "recherche-menu-ferme-clavier",
-      "title": "Menu ferme le clavier système sans valider : le focus à la première touche",
+      "title": "Menu sur le clavier système ouvert, sans valider (relevé : RE-6 dit la fermeture du clavier et la première touche)",
       "rules": [
         "RE-4",
         "RE-6"
@@ -181,10 +181,7 @@
         {
           "do": "menu",
           "settleMs": 2000,
-          "expect": {
-            "focus": "key:A",
-            "route": "Search"
-          }
+          "why": "relevé — à la référence, au simulateur, l'app passe en arrière-plan (constat 4 du relevé) ; RE-6 dit : le clavier se ferme, le focus va à la première touche. À confirmer sur l'appareil"
         }
       ]
     },

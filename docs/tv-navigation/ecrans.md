@@ -637,6 +637,13 @@ chemin partagé reste tel quel tant qu'Android TV n'est pas porté.
    (phase B) ; la ligne du carnet (`docs/TV-REFONTE.md`, « Le Retour ») est
    l'écart B1 tenu par T4 (`retour-rail.md`).
 
+4. **Menu sur le clavier système de la recherche quitte l'application**, au
+   simulateur, à la référence, aux deux passages (`recherche-menu-ferme-clavier`,
+   `app: background`) — RE-6 dit : le clavier se ferme, le focus va à la
+   première touche. Le même Menu sur le clavier d'un champ du jumelage le
+   ferme bien. Gardé tel quel (scénario en relevé) ; passage sur l'appareil
+   pour départager le simulateur et l'app.
+
 (La liste s'allonge à l'enregistrement des scénarios.)
 
 ---
