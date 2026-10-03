@@ -552,55 +552,63 @@ aucune navigation.
 
 ## Délais propres aux écrans
 
-| Délai | Valeur | Où |
+Tous dans tv-core depuis la phase B ; l'applicateur ne fait que compter.
+
+| Délai | Valeur | tv-core |
 |---|---|---|
-| Frappe débattue | 150 ms | `useSearchInput` |
-| Seconde réclamation de la barre | 400 ms | `useSystemKeyboard` (`SECOND_CLAIM_MS`) |
-| Fenêtre du retour d'une étagère | 1,5 s | `useSystemKeyboard` (`BROWSE_RETURN_MS`) |
-| Filet « clavier parti » | 800 ms | `useSearchSubmit` (`KEYBOARD_GONE_MS`) |
-| Fermeture suite d'une validation | 1 s | `useSearchSubmit` (`CLOSE_AFTER_SUBMIT_MS`) |
-| Réponse qui emmène encore le focus | 3 s | tv-core `SEARCH_SUBMIT_WAIT_MS` |
-| Préchargement d'une bibliothèque | 300 ms de focus, 12 affiches | `useLibraryPrefetch` |
-| Refus de connexion → mot de passe | 1,2 s | `loginFocus` (`RESTORE_WINDOW_MS`) |
-| Reprise après restauration (réglages) | 900 ms | `claimAfterRestore` |
-| Chrome de la bande-annonce | 3 s | `useIdleChrome` (`IDLE_MS`) |
-| Indisponible → fiche | 4 s | `TrailerRedesign` (`UNAVAILABLE_RETURN_MS`) |
-| Panneau absent → geste d'OK | 320 ms | `useTitleRequests` (`MODAL_GAP_MS`) |
+| Frappe débattue | 150 ms | (donnée, pas navigation : `useSearchInput`) |
+| Les deux poses de la barre | 0 puis 400 ms | `search/searchShelfReturn` (`SEARCH_BAR_CLAIMS_MS`) |
+| Fenêtre du retour d'une étagère | 1,5 s | `search/searchShelfReturn` (`SEARCH_SHELF_RETURN_MS`) |
+| Filet « clavier parti » | 800 ms | `search/searchSubmitFlow` (`KEYBOARD_GONE_MS`) |
+| Fermeture suite d'une validation | 1 s | `search/searchSubmitFlow` (`CLOSE_AFTER_SUBMIT_MS`) |
+| Réponse qui emmène encore le focus | 3 s | `search/searchSubmit` (`SEARCH_SUBMIT_WAIT_MS`) |
+| Préchargement d'une bibliothèque | 300 ms de focus, 12 affiches | `focus/libraryFocus` (`LIBRARY_PREFETCH_DWELL_MS`, `LIBRARY_PREFETCH_POSTERS`) |
+| Refus de connexion → mot de passe | 1,2 s | `focus/pairingFocus` (`LOGIN_ERROR_RESTORE_MS`) |
+| Reprise après restauration (réglages) | 900 ms | T3 (`focus/restoreClaim`) |
+| Chrome de la bande-annonce | 3 s | `player/trailerChrome` (`TRAILER_IDLE_MS`) |
+| Indisponible → fiche | 4 s | `player/trailerChrome` (`TRAILER_UNAVAILABLE_RETURN_MS`) |
+| Panneau absent → geste d'OK | 320 ms | T6 (`panels/panelLifecycle`, `MODAL_GAP_MS`) |
 
 ---
 
-## Ce qui sortira dans tv-core (phase B, après le contrat T1)
+## Où vivent les règles (phase B, faite)
 
-Règles PURES, testées par vitest, placées selon le contrat T1 ; l'adaptateur
-tvOS ne fait plus que les appliquer (réclamer, poser l'entrée d'une section,
-verrouiller, ouvrir le clavier, naviguer, inscrire une couche du Retour).
+Règles PURES dans tv-core, testées par vitest ; l'applicateur tvOS
+(`apps/tv/src/platform/tvos/screens/<écran>`) ne fait que les poser — réclamer,
+lier un guide, poser l'entrée d'une section, verrouiller, ouvrir le clavier,
+compter une attente dont la durée vient de tv-core. Le câblage
+(`redesignWiring/`) garde les données et la composition.
 
-| Règles | Aujourd'hui |
-|---|---|
-| FI-1, FI-4 | `entryKeyOf`, effet de la pilule perdue (`MediaDetailRedesign`) |
-| FI-5, FI-6, FI-7 | `useDetailGuides` (sur la primitive d'entrée de section de T3) |
-| FI-10 (OK, route visée) | `useDetailActions` |
-| RE-5 (premier résultat), RE-6 | `firstKeyOf` (`useSearchResults`), `useSearchSubmit` (partagé Android TV) |
-| RE-7, RE-8 | `useSystemKeyboard` |
-| RE-10, RE-11 | `SearchRedesign` |
-| PA-1, PA-3 | `BrowseRedesign` |
-| BI-1, BI-2 | `LibraryRedesign` |
-| BI-5 | `useLibraryFilterBar` |
-| BI-6 à BI-10 | `useLibrarySheets` |
-| BI-11 | `useLibraryPrefetch` |
-| CO-1 | `CollectionRedesign` |
-| RG-1, RG-7 à RG-10 | `SettingsRedesign`, `useNavigationSettings` |
-| RG-6 | `AccountPanel` (règle de T6) |
-| JU-1, JU-4, JU-6, JU-7 | `pairingModel`, `PairingRedesign`, `LoginStep`, `loginFocus` |
-| BA-2, BA-3 | `useIdleChrome`, `TrailerRedesign` |
-| VI-1 à VI-4 | `useTitleRequests`, `useSeriesGapTabs`, `useSearchGaps` |
+| Règles | tv-core | Applicateur tvOS |
+|---|---|---|
+| FI-1, FI-4 à FI-8 | `focus/detailFocus` (`detailEntryKey`, `detailEntryAfterPlayLost`, `detailSeasonEntryKey`, `detailEpisodeAnchorKey`, `detailAnchorIndex`, `DETAIL_ROWS`, `DETAIL_ROW_EDGES`) ; l'entrée « première visite » de T3 (`focus/sectionEntry`) | `screens/detail.ts` (`useDetailFocus`) |
+| FI-10 | `nav/screenTargets` (`detailPlayPress`) ; OK sur une carte : `cards/cardPress` (T3) ; l'appui maintenu : `cards/cardHold` (T6) ; la suite de fiches : `nav/detailChain` (T4) | `useDetailActions` |
+| RE-1 à RE-8, RE-11 | `search/searchFocus` (clés, entrée, première touche après Menu, premier résultat, meilleur résultat, recherches récentes), `search/searchSubmitFlow` (`searchSubmitStep`), `search/searchShelfReturn` (`shelfReturnStep`, `SEARCH_BAR_CLAIMS_MS`) | `screens/search.ts` (`useSearchGroups`, `useSearchKeyboard`) |
+| RE-10 | `cards/cardPress`, `cards/cardHold` | `SearchRedesign` |
+| PA-1 à PA-3, GR-1 à GR-4, CO-1 | `focus/gridFocus` | `screens/browse.ts` ; la vue `PosterGrid` lit `gridLineReveal`, `GRID_END_REACHED_SCREENS` |
+| GR-5 | `cards/cardPress`, `cards/cardHold` | `usePosterGrid` |
+| BI-1 à BI-11 | `focus/libraryFocus` (dont `filterSheetEntryKey`, `filterSheetFocusKeys`, `libraryPrefetchTarget`, `LIBRARY_PREFETCH_DWELL_MS`) ; l'entrée d'une liste en Modal : `panels/choiceEntry` (T6) | `screens/library.ts` |
+| RG-1 à RG-5, RG-10, RG-11 | `focus/settingsFocus` | `screens/settings.tsx` |
+| RG-6 | `panels/confirmPress` (T6) | la vue `AccountPanel` |
+| RG-7 à RG-9 | `nav/arrange` (T4 : `startArrange`, `arrangeOnFocus`, `rowsArrangeReading`, `rowsSelectWhileArranging`) | `screens/settings.tsx` (`useNavSettingsFocus`) |
+| JU-1, JU-4 | `focus/pairingFocus` | `screens/pairing.ts` |
+| JU-6 | `session/loginForm` | la vue `LoginStep` ; l'ouverture native du clavier : `screens/pairing.ts` (`openPairingKeyboard`, fourni par `KeyboardOpenerProvider`) |
+| JU-7 | `nav/screenBack` (`pairingBackAction`) | `PairingRedesign` (une couche « page », `useBackLayer`) |
+| BA-1 à BA-3 | `player/trailerChrome` (dont `trailerWakes` : toute intention SAUF Retour) | `screens/trailer.ts` |
+| VI-1 à VI-4 | `titles/absentActions` ; `MODAL_GAP_MS` : `panels/panelLifecycle` (T6) | `useTitleRequests`, `useSeriesGapTabs`, `openSearchGap` |
 
-Ce qui reste NATIF ou à l'adaptateur : `TextInput` hors écran et
-`blur()`/`focus()` (clavier système), `requestTVFocus` / `claim`, les guides
-`TVFocusGuideView`, l'entrée native d'une section, `isTVSelectable`,
-`transitionEnd`, les Modal.
+Disparus : `redesignWiring/detail/useDetailGuides.ts`,
+`redesignWiring/search/useSystemKeyboard.ts`,
+`redesignWiring/settings/settingsFocus.tsx`, `redesignWiring/pairing/loginFocus.ts`,
+`redesignWiring/trailer/useIdleChrome.ts` — et leurs exceptions de la garde
+(`eslint/tvNavigationExceptions.mjs`) : plus aucune pour T7.
 
----
+Ce qui reste NATIF ou à l'adaptateur, par nature : le `TextInput` hors écran
+de la recherche et sa `focus()`, le `blur()` puis `focus()` d'un champ du
+jumelage, `requestTVFocus` / `claim`, les guides `TVFocusGuideView`, l'entrée
+native d'une section (`tvEntry`), `isTVSelectable`, `transitionEnd`, les Modal.
+`screens/trailer/TrailerWebView.ios.tsx` garde son `focusable={false}` :
+exception permanente « rendu » (décision du coordinateur).
 
 ## À retirer au portage Android TV
 
