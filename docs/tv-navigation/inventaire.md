@@ -6,7 +6,7 @@ la garde : [`garde.md`](garde.md).
 Pour CHAQUE usage d'une API native de télécommande ou de focus sur le chemin
 Apple TV refondu : où il est (fichier:ligne), qui le traite (T1 à T7) et ce
 qu'il devient. Relevé sur 84f3cedd0 (avant toute extraction), recalé sur
-`a01ffe11e`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
+`3cd7a5d19`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
 qu'une tâche vient de toucher sont celles de main au moment du recalage.
 
 ## Comment il est fait
@@ -30,7 +30,7 @@ qu'une tâche vient de toucher sont celles de main au moment du recalage.
   `useFocusEffect`, `useIsFocused`, `gestureEnabled`) ; le Retour
   (`useBackLayer`), le bus de la télécommande, les Modals (`onRequestClose`),
   les défilements, `.focus()`. Commentaires exclus.
-- **716 occurrences dans 187 fichiers**, chacune lue et classée ; un
+- **700 occurrences dans 186 fichiers**, chacune lue et classée ; un
   script vérifie qu'aucune n'est sans ligne ci-dessous.
 - **Ce que le relevé ne voit pas** et que la lecture a retrouvé : les
   décisions prises PAR le magasin de focus, sans API native visible (annexe C),
@@ -68,36 +68,32 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 | Tâche | fichiers | EXTRAIRE | MIXTE | ADAPTATEUR | DÉJÀ | RESTE | VUE | HORS | ANCIENNE |
 |---|---|---|---|---|---|---|---|---|---|
-| T1 | 5 | — | — | 11 | 13 | 4 | — | — | — |
+| T1 | 4 | — | — | 11 | — | 1 | — | — | — |
 | T3 | 22 | — | — | 73 | 6 | 2 | 29 | — | 6 |
 | T4 | 17 | — | — | 35 | 2 | 11 | 16 | 1 | — |
 | T5 | 18 | 13 | 9 | 66 | 1 | 4 | 3 | 2 | 13 |
 | T6 | 12 | — | — | 7 | 4 | 4 | 20 | — | — |
 | T7 | 32 | 2 | 2 | 24 | 8 | 6 | 43 | 1 | 1 |
 | pas concernés | 81 | — | — | — | — | — | — | 133 | 141 |
-| **total** | 187 | 15 | 11 | 216 | 34 | 31 | 111 | 137 | 161 |
+| **total** | 186 | 15 | 11 | 216 | 21 | 28 | 111 | 137 | 161 |
 
 ## T1 — le socle : intentions, traduction, entrée unique
 
-> Fait (756ed8bc7, 54b02445d) : l'entrée unique `platform/tvos/input/` porte l'abonnement natif du chemin refondu et la prise du pan ; Menu des Modals y passe (`withMenuIntent`). Reste : l'API d'avant (`remoteEvents.ts`) et ses quatre écouteurs (annexe B), et quatre abonnements natifs encore HORS de l'entrée unique (annexe A).
+> Fait (756ed8bc7, 54b02445d, 3cd7a5d19) : l'entrée unique `platform/tvos/input/` porte l'UNIQUE abonnement natif du chemin refondu (à l'ancien rail près, annexe A) et la prise du pan ; Menu des Modals y passe (`withMenuIntent`) ; tous les écouteurs lisent des intentions ; le code de transition (`remoteEvents.ts`, `lib/tvPanGesture.ts`) est retiré.
 >
-> 5 fichiers.
+> 4 fichiers.
 
 #### `platform/tvos/input/index.ts`
-- L9 · réexport de la prise du pan · **ADAPTATEUR** · FAIT (756ed8bc7) : l'entrée unique de la télécommande
+- L7 · réexport de la prise du pan · **ADAPTATEUR** · FAIT (756ed8bc7) : l'entrée unique de la télécommande
 
 #### `platform/tvos/input/panGesture.ts`
 - L2, 24, 32, 38 · `TVEventControl.enable/disableTVPanGesture`, `Platform.OS` · **ADAPTATEUR** · FAIT (756ed8bc7) : la prise du pan, drapeau global compté — dans l'adaptateur, permis par la garde
 
 #### `platform/tvos/input/remoteInput.ts`
-- L1, 24, 45 · `TVEventHandler.addListener`, `Platform.OS` · **ADAPTATEUR** · FAIT (756ed8bc7) : L'abonnement natif du chemin refondu, `readTvosEvent` → `createRemoteInput` — dans l'adaptateur, permis par la garde
+- L1, 24, 38 · `TVEventHandler.addListener`, `Platform.OS` · **ADAPTATEUR** · FAIT (756ed8bc7) : L'abonnement natif du chemin refondu, `readTvosEvent` → `createRemoteInput` — dans l'adaptateur, permis par la garde
 
 #### `redesignWiring/redesignGate.ts` — garde : `no-platform-branch`
 - L19 · Platform.OS · **RESTE** · l'aiguillage de la refonte — exception permanente
-
-#### `redesignWiring/remote/remoteEvents.ts`
-- L52, 65–68, 74–79, 92, 96 · swipe*, long*, pan · **DÉJÀ** · l'API d'AVANT, gardée le temps que ses écouteurs migrent ; elle lit l'entrée unique (`subscribeNativeRemote`, 756ed8bc7) et sa traduction est réécrite dans tv-core (`remote/bindings/tvos.ts`)
-- L118, 135, 138 · subscribeRemote, useRemoteEvents · **RESTE** · le bus d'avant, sans abonnement natif à lui ; ses écouteurs (useBeyondEdge, useHeroRotation, TrailerRedesign, SeasonsSheetRedesign) passent à `useRemoteIntents` / `useRemoteContext` (T3, T6, T7)
 
 ## T3 — focus, sections, rangées ; accueil, Pour vous, héros
 
@@ -573,13 +569,13 @@ servent plus qu'à Android TV). Un seul abonnement y échappe encore :
 |---|---|---|---|
 | `hooks/useContentFocusCapture.ts:101` ⇄ | `components/nav/TVNavChrome.tsx`, l'ancien rail, MONTÉ par `App.tsx` sur tvOS alors qu'il n'y rend rien : un abonnement à vide toute la session — il RESTE, inerte (décision de T4, retour-rail.md, ab64999ad) | T4 | hors portée (ancienne UI) |
 
-## Annexe B — l'API d'avant (`redesignWiring/remote/remoteEvents.ts`)
+## Annexe B — l'API d'avant (`remoteEvents.ts`) : retirée
 
-Tous ses écouteurs sont passés aux intentions (`useRemoteIntents`,
+Tous ses écouteurs étaient passés aux intentions (`useRemoteIntents`,
 `useRemoteContext`) : « au-delà du bord » et la rotation du héros (T3), la
-feuille des saisons (T6), la bande-annonce (T7). Elle n'a plus AUCUN
-importateur : du code mort, sans effet sur le comportement — à retirer au
-prochain ménage (T1).
+feuille des saisons (T6), la bande-annonce (T7). Devenue code mort, elle est
+retirée avec le reste du code de transition — `lib/tvPanGesture.ts`,
+`subscribeNativeRemote` — par T1 (3cd7a5d19).
 
 ## Annexe C — le second cercle : décisions prises PAR le magasin de focus
 
@@ -632,7 +628,7 @@ Ils restent natifs : ce sont l'adaptateur, côté UIKit.
 
 - `redesign/focus/FocusTarget.tsx:118` et `redesign/focus/FocusSection.tsx:66` — `{...binding?.native}` : LE point où toutes les props natives de focus posées par le câblage (`native: {…}`) atteignent une vue native. Invisibles au relevé, vues par la garde quand elles sont écrites en clair (`no-focus-props`).
 - `platform/tvos/focus/sectionNeighbors.ts` (déplacé par T3) — `tvNeighbors: true`, la règle des sections appliquée en natif (la garde la voit).
-- `redesignWiring/focus/backFocus.tsx:53-112` — la décision de la croix Retour (jamais l'entrée sauf seule action ; bande armée hors rail ; BAS → dernier contenu, sinon l'entrée).
+- `redesignWiring/focus/backFocus.tsx:53-112` (à 84f3cedd0 ; aujourd'hui `platform/tvos/back/backFocus.tsx`, la décision dans tv-core `nav/backCross`) — la décision de la croix Retour (jamais l'entrée sauf seule action ; bande armée hors rail ; BAS → dernier contenu, sinon l'entrée).
 
 **Panneaux et cartes (T6)**
 
