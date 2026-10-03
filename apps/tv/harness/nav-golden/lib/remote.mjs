@@ -26,7 +26,14 @@ export async function tryEvaluate(ctx, expression) {
 
 /** Des ordres à l'agent (`down`, `hold:1.2`, `activate`, `focus`…). */
 export async function agentRun(ctx, commands, { timeoutMs = 60_000 } = {}) {
-  const res = await httpJson(`http://127.0.0.1:${ctx.ports.agentHttp}/run`, { method: "POST", body: commands, timeoutMs });
+  const send = () => httpJson(`http://127.0.0.1:${ctx.ports.agentHttp}/run`, { method: "POST", body: commands, timeoutMs });
+  let res = await send();
+  // Un ordre sans effet de bord (ramener l'app, lire le focus) se renvoie une fois :
+  // l'agent de l'Apple TV physique reste parfois muet le temps d'un ordre.
+  if ((!res || res.status !== 200) && commands.every((c) => c === "activate" || c === "focus")) {
+    await sleep(2000);
+    res = await send();
+  }
   if (!res || res.status !== 200) throw new BenchError(`agent : ${res?.text ?? "pas de réponse"} (ordres ${JSON.stringify(commands)})`);
   return res.json;
 }

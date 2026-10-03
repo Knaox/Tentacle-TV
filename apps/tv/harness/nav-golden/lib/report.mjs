@@ -44,7 +44,7 @@ function detailLines(result) {
 
 /** La ligne d'un scénario, au moment où il finit. */
 export function printResult(result) {
-  const time = result.durationMs ? ` (${duration(result.durationMs)})` : "";
+  const time = `${result.durationMs ? ` (${duration(result.durationMs)})` : ""}${result.retried ? " [au 2e essai]" : ""}`;
   say(`  ${MARK[result.status] ?? "?"} ${result.suite.domain}/${result.suite.name}#${result.scenario.id}${time} — ${LABEL[result.status] ?? result.status}`);
   if (result.status !== "ok" && result.status !== "recorded") for (const line of detailLines(result)) say(`      ${line}`);
   return result;

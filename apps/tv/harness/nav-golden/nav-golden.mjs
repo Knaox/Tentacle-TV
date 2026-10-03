@@ -6,8 +6,10 @@
 //
 //   record  [cibles] [--at <rév>] [--repeat 2]  enregistre la référence (défaut : la `reference` des fichiers)
 //   verify  [cibles] [--at <rév>]               rejoue le dossier courant (ou <rév>) et compare
+//           [--retries 1]                       une reprise d'un scénario en échec (0 : aucune)
 //   check   [cibles]                            valide les scénarios, sans simulateur
 //   list                                        domaines, fichiers, scénarios, références
+//   show    <cibles>                            relit les références : chaque pas, clé, libellé, route
 //   sets                                        les jeux de données (base et domaines)
 //   up      [--at <rév>]  /  down [--sim-off]   prépare / arrête la place
 //   start   <cible#id>                          démarre à froid sur l'entrée d'un scénario, affiche le relevé
@@ -84,8 +86,8 @@ async function runSuites(mode, options, targets) {
   if (mode === "verify" && at === null && session.checkout.dirty) warn("le dossier courant a des modifications non commitées : elles sont rejouées telles quelles");
   const onResult = printResult;
   const results = mode === "record"
-    ? await recordSuites(ctx, session, suites, { repeat: Number(options.repeat ?? 2), onResult })
-    : await verifySuites(ctx, session, suites, { onResult });
+    ? await recordSuites(ctx, session, suites, { repeat: Number(options.repeat ?? 2), retries: Number(options.retries ?? 1), onResult })
+    : await verifySuites(ctx, session, suites, { retries: Number(options.retries ?? 1), onResult });
   const failing = writeReport(mode, results, { session, startedAt });
   if (ctx.device) checkUserApp("après le passage");
   process.exitCode = failing ? 1 : 0;
@@ -136,6 +138,24 @@ async function main() {
         const golden = readGolden(s.golden);
         const recorded = s.scenarios.filter((sc) => golden?.scenarios?.[sc.id]).length;
         say(`  ${s.name} : ${s.scenarios.length} scénario(s), ${recorded} enregistré(s)${golden ? ` sur ${golden.reference?.sha?.slice(0, 9)}` : ""}`);
+      }
+    }
+    return undefined;
+  }
+  if (command === "show") {
+    for (const suite of selectSuites(positional)) {
+      const golden = readGolden(suite.golden);
+      say(`${suite.domain}/${suite.name} — ${golden ? `référence ${golden.reference?.sha?.slice(0, 9)}, données ${golden.dataset}, ${golden.device?.model}` : "aucune référence"}`);
+      for (const scenario of suite.scenarios) {
+        const entry = golden?.scenarios?.[scenario.id];
+        say(`  ${scenario.id} — ${scenario.title}${entry ? "" : " (non enregistré)"}`);
+        if (!entry) continue;
+        const line = (o) => `${o.app === "background" ? "[arrière-plan]" : `${o.focus ?? "∅"} « ${o.label ?? ""} »`} · ${o.route ?? "∅"}${o.panel ? ` · Modal ${o.panel.join(",")}` : ""}${o.writes?.length ? ` · ${o.writes.join(", ")}` : ""}`;
+        say(`     entrée → ${line(entry.start)}`);
+        entry.steps.forEach((step, i) => {
+          const unstable = entry.unstable?.steps?.[i];
+          say(`     ${String(i + 1).padStart(2)}. ${[].concat(step.do).join(" ").padEnd(10)} → ${line(step)}${unstable ? `  (instable : ${unstable.join(", ")})` : ""}`);
+        });
       }
     }
     return undefined;

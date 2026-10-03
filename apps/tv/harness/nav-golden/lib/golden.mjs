@@ -39,7 +39,27 @@ function instability(runs) {
   return { start, steps };
 }
 
-export async function recordSuites(ctx, session, suites, { repeat = 2, onResult }) {
+/**
+ * Les passages d'un enregistrement. S'ils divergent sur l'essentiel (ou si le
+ * banc échoue), une REPRISE de tout le jeu de passages (`retries`) : un Mac
+ * chargé, une autre session qui rouvre Simulator.app, et l'app passe derrière
+ * l'accueil de tvOS le temps d'un passage.
+ */
+async function recordRuns(ctx, session, suite, scenario, repeat, retries) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const runs = [];
+      for (let r = 0; r < repeat; r++) runs.push(await runScenario(ctx, session, suite, scenario));
+      const unstable = instability(runs);
+      const critical = [...unstable.start, ...Object.values(unstable.steps).flat()].filter((f) => CRITICAL.has(f));
+      if (!critical.length || attempt >= retries) return { runs, unstable, critical, attempts: attempt + 1 };
+    } catch (error) {
+      if (attempt >= retries) throw error;
+    }
+  }
+}
+
+export async function recordSuites(ctx, session, suites, { repeat = 2, retries = 1, onResult }) {
   const results = [];
   for (const suite of suites) {
     const golden = readGolden(suite.golden) ?? {};
@@ -49,15 +69,14 @@ export async function recordSuites(ctx, session, suites, { repeat = 2, onResult 
         results.push(onResult({ suite, scenario, status: "skipped", reason: scenario.skip }));
         continue;
       }
-      const runs = [];
+      let recorded;
       try {
-        for (let r = 0; r < repeat; r++) runs.push(await runScenario(ctx, session, suite, scenario));
+        recorded = await recordRuns(ctx, session, suite, scenario, repeat, retries);
       } catch (error) {
         results.push(onResult({ suite, scenario, status: "error", error: error.message }));
         continue;
       }
-      const unstable = instability(runs);
-      const critical = [...unstable.start, ...Object.values(unstable.steps).flat()].filter((f) => CRITICAL.has(f));
+      const { runs, unstable, critical, attempts } = recorded;
       const [run] = runs;
       const expectFailures = run.steps.flatMap((s, i) => s.failures.map((f) => ({ step: i + 1, ...f })));
       entries[scenario.id] = {
@@ -70,7 +89,7 @@ export async function recordSuites(ctx, session, suites, { repeat = 2, onResult 
         ...(run.preconditions.length ? { preconditions: run.preconditions } : {}),
       };
       const status = critical.length ? "flaky" : run.preconditions.length ? "precondition" : expectFailures.length ? "expect" : "recorded";
-      results.push(onResult({ suite, scenario, status, durationMs: run.durationMs, unstable, expectFailures, preconditions: run.preconditions }));
+      results.push(onResult({ suite, scenario, status, durationMs: run.durationMs, unstable, expectFailures, preconditions: run.preconditions, retried: attempts > 1 }));
     }
     const ordered = Object.fromEntries(suite.scenarios.map((s) => [s.id, entries[s.id]]).filter(([, v]) => v));
     for (const [id, value] of Object.entries(entries)) if (!(id in ordered)) ordered[id] = value;
@@ -92,7 +111,33 @@ export async function recordSuites(ctx, session, suites, { repeat = 2, onResult 
   return results;
 }
 
-export async function verifySuites(ctx, session, suites, { onResult }) {
+const FAILED = new Set(["diff", "expect", "error"]);
+
+/** Un passage de vérification d'un scénario contre sa référence. */
+async function verifyOnce(ctx, session, suite, scenario, entry) {
+  let run;
+  try {
+    run = await runScenario(ctx, session, suite, scenario);
+  } catch (error) {
+    return { status: "error", error: error.message };
+  }
+  const diffs = [];
+  const notes = [];
+  for (const d of diffObservation(entry.start, run.start, entry.unstable?.start ?? [])) diffs.push({ step: 0, ...d });
+  run.steps.forEach((s, i) => {
+    const ref = entry.steps[i];
+    if (!ref) return diffs.push({ step: i + 1, field: "pas", golden: null, observed: "pas absent de la référence" });
+    for (const d of diffObservation(ref, s.obs, entry.unstable?.steps?.[i] ?? [])) diffs.push({ step: i + 1, do: s.do, ...d });
+    for (const n of notesOf(ref, s.obs)) notes.push({ step: i + 1, ...n });
+  });
+  const known = new Set((entry.expectFailures ?? []).map((f) => `${f.step}:${f.field}`));
+  const expectFailures = run.steps.flatMap((s, i) => s.failures.map((f) => ({ step: i + 1, ...f }))).filter((f) => !known.has(`${f.step}:${f.field}`));
+  const stale = entry.hash !== hashScenario(scenario);
+  const status = diffs.length ? "diff" : expectFailures.length ? "expect" : stale ? "stale" : "ok";
+  return { status, durationMs: run.durationMs, diffs, notes, expectFailures, stale };
+}
+
+export async function verifySuites(ctx, session, suites, { retries = 1, onResult }) {
   const results = [];
   for (const suite of suites) {
     const golden = readGolden(suite.golden);
@@ -116,27 +161,11 @@ export async function verifySuites(ctx, session, suites, { onResult }) {
         results.push(onResult({ suite, scenario, status: "obsolete", reason }));
         continue;
       }
-      let run;
-      try {
-        run = await runScenario(ctx, session, suite, scenario);
-      } catch (error) {
-        results.push(onResult({ suite, scenario, status: "error", error: error.message }));
-        continue;
+      let outcome = null;
+      for (let attempt = 0; attempt <= retries && (!outcome || FAILED.has(outcome.status)); attempt++) {
+        outcome = { ...(await verifyOnce(ctx, session, suite, scenario, entry)), retried: attempt > 0 };
       }
-      const diffs = [];
-      const notes = [];
-      for (const d of diffObservation(entry.start, run.start, entry.unstable?.start ?? [])) diffs.push({ step: 0, ...d });
-      run.steps.forEach((s, i) => {
-        const ref = entry.steps[i];
-        if (!ref) return diffs.push({ step: i + 1, field: "pas", golden: null, observed: "pas absent de la référence" });
-        for (const d of diffObservation(ref, s.obs, entry.unstable?.steps?.[i] ?? [])) diffs.push({ step: i + 1, do: s.do, ...d });
-        for (const n of notesOf(ref, s.obs)) notes.push({ step: i + 1, ...n });
-      });
-      const known = new Set((entry.expectFailures ?? []).map((f) => `${f.step}:${f.field}`));
-      const expectFailures = run.steps.flatMap((s, i) => s.failures.map((f) => ({ step: i + 1, ...f }))).filter((f) => !known.has(`${f.step}:${f.field}`));
-      const stale = entry.hash !== hashScenario(scenario);
-      const status = diffs.length ? "diff" : expectFailures.length ? "expect" : stale ? "stale" : "ok";
-      results.push(onResult({ suite, scenario, status, durationMs: run.durationMs, diffs, notes, expectFailures, stale }));
+      results.push(onResult({ suite, scenario, ...outcome }));
     }
   }
   return results;
