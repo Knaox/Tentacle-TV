@@ -464,9 +464,11 @@ format du banc T2, enregistrés sur 84f3cedd0, rejoués en `verify`) :
 | `voile.json` | pc-16 : le voile hors ligne — entrée, piège, double appui armé puis désarmé (jamais confirmé) |
 | `fixtures.mjs` | `film-note-7`, `film-non-notable` (« The Uprising », premier des derniers ajouts de Films) |
 
-Le panneau d'un titre absent et la feuille des saisons (Vigie) ne sont
-éprouvés qu'au banc de traces : le jeu de données du banc ne porte ni saga à
-volet absent ni recherche « À demander » stable.
+Enregistrés sur 84f3cedd0 en deux passages stables, puis `verify` sur l'arbre
+courant : 16 identiques (7 min 53 s). Le panneau d'un titre absent et la
+feuille des saisons (Vigie) ne sont éprouvés qu'au banc de traces : le jeu de
+données du banc ne porte ni saga à volet absent ni recherche « À demander »
+stable.
 
 ## 6. Constats (relevés, NON corrigés)
 
@@ -493,3 +495,14 @@ volet absent ni recherche « À demander » stable.
 5. **« Noter » sur un titre que rien ne note** n'existe pas (bouton absent),
    mais le mode `rate` sans note possible ouvrirait un panneau avec la croix
    seule (entrée sur la croix).
+6. **Un appui maintenu peut être pris pour un appui court quand le fil JS est
+   chargé** (vu au banc, référence 84f3cedd0, machine à ~60 de charge) : le
+   seuil de 550 ms est une minuterie JS de `Pressability`, et le relâchement
+   natif (1,2 s plus tard) l'a devancée — sur un épisode de la fiche, la
+   lecture s'est lancée au lieu du panneau. Le `longSelect` natif (0,5 s),
+   lui, ne se trompe pas. Le scénario pc-12 maintient 2 s pour rester
+   déterministe.
+7. **Faux backend du banc** : `GET /api/preferences/reco` rend
+   `{ providers: [] }`, que l'app lit comme `data.providerFilter` — une
+   `TypeError` dans la console à chaque lecture des réglages reco (sans
+   effet sur les scénarios : « Toutes les plateformes » n'y paraît pas).
