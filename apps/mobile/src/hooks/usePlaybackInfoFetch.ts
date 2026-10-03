@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 import { TextTrackType } from "react-native-video";
 import { transcodeTarget, type MediaSource, type MediaStream as JfStream, type PlaybackInfoResponse } from "@tentacle-tv/shared";
-import { applyTranscodeTarget, withDirectApiKey } from "@tentacle-tv/api-client";
+import { applyTranscodeTarget, fitServerCappedTranscode, withDirectApiKey } from "@tentacle-tv/api-client";
 import { supportsAv1HardwareDecode } from "../../modules/mpv-player";
 import { externalSubtitleFormat } from "@/player/engine/trackMapping";
 import type { ExternalSubtitleSource, PlayerEngineKind } from "@/player/engine/types";
@@ -110,10 +110,12 @@ export function buildStreamUrl(opts: {
 
   const root = ds ? ds.mediaBaseUrl : baseUrl;
   // Un palier impose son débit, sa définition et son audio : Jellyfin n'écrit
-  // aucune définition dans l'URL (cf. `applyTranscodeTarget`, api-client).
+  // aucune définition dans l'URL (cf. `applyTranscodeTarget`, api-client). En
+  // « Originale », la même règle si la limite de débit Internet du serveur a
+  // plafonné le flux (`fitServerCappedTranscode`).
   let transcodingPath = quality
     ? applyTranscodeTarget(ms.TranscodingUrl, transcodeTarget(quality.bitrate, quality.height || undefined))
-    : ms.TranscodingUrl;
+    : fitServerCappedTranscode(ms.TranscodingUrl, ms);
 
   if (ds) {
     transcodingPath = withDirectApiKey(transcodingPath, ds.jellyfinToken);
