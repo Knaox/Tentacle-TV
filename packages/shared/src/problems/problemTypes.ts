@@ -57,6 +57,7 @@ export type ProblemCause =
   | "engineFailed"
   | "offlineFileMissing"
   | "offlineFileDamaged"
+  | "offlineMode"
   // Le reste
   | "extensionMissing"
   | "unknown";
@@ -69,6 +70,7 @@ export type ProblemActionKey =
   | "withoutSubtitles"
   | "playOnline"
   | "offlineLibrary"
+  | "goOnline"
   | "signIn"
   | "editAddress"
   | "back";

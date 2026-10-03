@@ -123,6 +123,10 @@ export const CAUSES: Record<ProblemCause, CauseEntry> = {
     icon: "file", reason: "reasonOfflineFileDamaged", hint: "hintOfflineFile",
     actions: ["playOnline", "back"], transient: false,
   },
+  offlineMode: {
+    icon: "wifiOff", reason: "reasonOfflineMode", hint: "hintOfflineMode",
+    actions: ["goOnline", "offlineLibrary", "back"], transient: false,
+  },
   extensionMissing: {
     icon: "puzzle", reason: "reasonExtensionMissing", hint: "hintExtensionMissing",
     actions: ["back"], transient: false,
@@ -155,6 +159,7 @@ export const ACTION_LABELS: Record<ProblemActionKey, string> = {
   withoutSubtitles: "actionWithoutSubtitles",
   playOnline: "actionPlayOnline",
   offlineLibrary: "actionOfflineLibrary",
+  goOnline: "actionGoOnline",
   signIn: "actionSignIn",
   editAddress: "actionEditAddress",
   back: "actionBack",

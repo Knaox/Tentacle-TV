@@ -194,7 +194,11 @@ function fromKind(raw: RawProblem, kind: FailureKind): ProblemCause | null {
  */
 export function classifyProblem(raw: RawProblem): ProblemCause {
   const kind = raw.kind ?? kindFromText(raw.message, raw.name);
-  if (raw.local) return kind === "notFound" ? "offlineFileMissing" : "offlineFileDamaged";
+  if (raw.local) {
+    if (kind === "notFound") return "offlineFileMissing";
+    // Le fichier est là, entier : c'est l'appareil qui ne le décode pas.
+    return kind === "decode" ? "decodeFailed" : "offlineFileDamaged";
+  }
   const marked = fromMarker(raw);
   if (marked) return marked;
   if (raw.deviceOffline || raw.reachability === "network") return "deviceOffline";

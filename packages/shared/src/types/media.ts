@@ -135,6 +135,8 @@ export interface MediaSource {
 export interface PlaybackInfoResponse {
   MediaSources: MediaSource[];
   PlaySessionId: string;
+  /** Le refus de Jellyfin : « NotAllowed », « NoCompatibleStream », « RateLimitExceeded ». */
+  ErrorCode?: string;
 }
 
 export interface MediaStream {

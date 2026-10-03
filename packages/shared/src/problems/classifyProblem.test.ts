@@ -9,7 +9,8 @@ import { classifyProblem, kindFromText } from "./classifyProblem";
 describe("la cause d'un échec", () => {
   it("un fichier gardé sur l'appareil : absent ou abîmé, rien du réseau", () => {
     expect(classifyProblem({ local: true, message: "ENOENT: no such file", status: 500 })).toBe("offlineFileMissing");
-    expect(classifyProblem({ local: true, kind: "decode" })).toBe("offlineFileDamaged");
+    expect(classifyProblem({ local: true, kind: "decode" })).toBe("decodeFailed");
+    expect(classifyProblem({ local: true, message: "loading failed" })).toBe("offlineFileDamaged");
   });
 
   it("ce que l'app a constaté prime ; hors ligne, un démarrage qui tarde est le réseau de l'appareil", () => {

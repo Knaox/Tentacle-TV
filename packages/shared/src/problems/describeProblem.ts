@@ -19,6 +19,7 @@ function available(key: ProblemActionKey, context: ProblemContext, can: ProblemA
     case "withoutSubtitles": return can.subtitlesActive === true;
     case "playOnline": return can.canPlayOnline === true;
     case "offlineLibrary": return can.hasOfflineLibrary === true;
+    case "goOnline": return true;
     case "signIn": return true;
     case "editAddress": return ADDRESS_CONTEXTS.has(context);
     case "back": return can.canGoBack !== false;
