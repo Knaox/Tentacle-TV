@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useMediaItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { HERO_MAX_ITEMS } from "@tentacle-tv/tv-core";
 
 /**
  * L'art des titres du héros, chargé d'avance : la fiche de chacun (la série
@@ -9,10 +10,9 @@ import type { MediaItem } from "@tentacle-tv/shared";
  * chaque fond prêts à leur tour, au lieu d'écrire le titre en lettres puis de
  * le remplacer par son logo sous les yeux.
  *
- * Cinq au plus, comme le héros : cinq appels fixes, un par place.
+ * Cinq au plus, comme le héros (`HERO_MAX_ITEMS`, tv-core) : cinq appels
+ * fixes, un par place.
  */
-
-export const HERO_MAX_ITEMS = 5;
 
 export const artIdOf = (item: MediaItem | null | undefined): string | undefined =>
   item?.Type === "Episode" && item.SeriesId ? item.SeriesId : item?.Id;

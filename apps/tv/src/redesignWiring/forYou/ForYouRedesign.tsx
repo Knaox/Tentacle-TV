@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCardToggles, useJellyfinClient, useMediaItem, useRecoLive, useSeriesWatchState, useTentacleConfig } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { forYouEntryKey } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
 import { ForYouView } from "../../redesign/screens/forYou/ForYouView";
@@ -90,7 +91,7 @@ export function ForYouRedesign({ navigation }: Props) {
   );
 
   const firstShelf = models.shelves[0];
-  const entryKey = status ? (status.primary ? "status:primary" : null) : hero ? "hero:primary" : firstShelf ? `${firstShelf.key}:0` : null;
+  const entryKey = forYouEntryKey({ status: status ? { withAction: !!status.primary } : null, hasHero: hero !== null, firstShelfKey: firstShelf?.key ?? null });
   const screen = useRedesignScreen({ railKey: "Recommendations", entryKey });
   const { focusedPalette, onFocusCard } = useAmbientPalette(screen.focus);
   const cardActions = useTVCardActions();

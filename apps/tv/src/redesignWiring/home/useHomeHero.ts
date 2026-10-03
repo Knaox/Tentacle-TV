@@ -4,17 +4,19 @@ import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
 import { useCardToggles, useFeaturedItems, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { heroEdgeKey, heroItemsOf, heroShown, nextHeroIndex } from "@tentacle-tv/tv-core";
 import type { HeroModel } from "../../redesign/hero/HeroBanner";
-import { backdropUriOf } from "../cards/cardArtwork";
-import type { FocusStore } from "../focus/focusStore";
-import { heroModelOf } from "../hero/heroModel";
+import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useBeyondEdge } from "../../platform/tvos/focus/useBeyondEdge";
-import { HERO_MAX_ITEMS, useHeroArts } from "./useHeroArts";
+import { backdropUriOf } from "../cards/cardArtwork";
+import { heroModelOf } from "../hero/heroModel";
+import { useHeroArts } from "./useHeroArts";
 import { useHeroRotation } from "./useHeroRotation";
 
 /**
  * Le héros de l'accueil : les visionnages à REPRENDRE d'abord (cinq au plus),
- * sinon une sélection au hasard du serveur. Il tourne seul, en fondu, même
+ * sinon une sélection au hasard du serveur — les règles de tv-core
+ * (`hero/rotation.ts` : les titres, le suivant, le titre affiché, le bord). Il tourne seul, en fondu, même
  * focalisé — le minuteur repart à chaque geste, rien ne tourne hors champ
  * (`useHeroRotation`). Et on le tourne à la main : DROITE au-delà du dernier
  * bouton — clic sur le bord du pavé ou glisser, là où le focus ne va nulle
@@ -58,13 +60,12 @@ export function useHomeHero(
   const { t } = useTranslation();
   const client = useJellyfinClient();
   const featured = useFeaturedItems().data;
-  const fromResume = !!resume && resume.length > 0;
-  const items = useMemo(() => (fromResume ? resume!.slice(0, HERO_MAX_ITEMS) : (featured ?? []).slice(0, HERO_MAX_ITEMS)), [fromResume, resume, featured]);
+  const { items, fromResume } = useMemo(() => heroItemsOf(resume, featured), [resume, featured]);
 
   const [index, setIndex] = useState(0);
   const safeIndex = items.length > 0 ? index % items.length : 0;
   const screenFocused = useIsFocused();
-  const advance = useCallback(() => setIndex((i) => (i + 1) % Math.max(1, items.length)), [items.length]);
+  const advance = useCallback(() => setIndex((i) => nextHeroIndex(i, items.length)), [items.length]);
   useHeroRotation({ focus, count: items.length, index, shown: screenFocused && inView, onAdvance: advance });
 
   // Les fonds en cache avant leur tour : le fondu n'attend pas le réseau.
@@ -81,8 +82,7 @@ export function useHomeHero(
   // la place à son logo — et les boutons visent toujours ce qui est affiché.
   const candidate = items[safeIndex] ?? null;
   const shown = useRef<MediaItem | null>(null);
-  if (items.length === 0) shown.current = null;
-  else if (candidate && arts.settled(candidate)) shown.current = candidate;
+  shown.current = heroShown(shown.current, candidate, items.length, arts.settled);
   const current = shown.current;
   const face = current ? arts.artOf(current) ?? current : null;
   const toggles = useCardToggles(face ?? ({ Id: "" } as MediaItem));
@@ -126,9 +126,8 @@ export function useHomeHero(
     if (item) act.sheet(item, resumed ? "landscape" : "poster");
   }, []);
 
-  const lastAction = hero?.listToggle?.focusKey ?? hero?.secondary?.focusKey ?? hero?.primary.focusKey ?? null;
   useBeyondEdge(focus, {
-    edgeKey: items.length > 1 ? lastAction : null,
+    edgeKey: heroEdgeKey([hero?.primary.focusKey, hero?.secondary?.focusKey, hero?.listToggle?.focusKey], items.length),
     direction: "droite",
     enabled: screenFocused,
     onBeyond: advance,

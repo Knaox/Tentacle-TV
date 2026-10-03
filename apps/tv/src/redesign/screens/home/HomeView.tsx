@@ -1,6 +1,7 @@
 import { memo, useCallback, useRef } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { heroInView } from "@tentacle-tv/tv-core";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
@@ -77,8 +78,6 @@ export interface HomeViewProps {
 
 const LEFT = TV_STAGE.contentLeft;
 const HERO_WIDTH = 1920 - LEFT - 56;
-/** Au-delà de ce défilement, plus de la moitié du héros est hors de l'écran. */
-const HERO_HIDDEN_AFTER = TV_STAGE.hero.top + TV_STAGE.hero.height / 2;
 /** Le héros se montre la page tout en haut ; une rangée, entière, au plus près. */
 const HERO_REVEAL: FocusSectionReveal = { mode: "start" };
 const ROW_REVEAL: FocusSectionReveal = { mode: "nearest" };
@@ -105,7 +104,8 @@ export const HomeView = memo(function HomeView({
   const heroVisible = useRef(true);
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const visible = event.nativeEvent.contentOffset.y < HERO_HIDDEN_AFTER;
+      // Plus de la moitié du héros hors de l'écran : il n'est plus dans le champ (tv-core).
+      const visible = heroInView(event.nativeEvent.contentOffset.y, TV_STAGE.hero.top, TV_STAGE.hero.height);
       if (visible === heroVisible.current) return;
       heroVisible.current = visible;
       onHeroVisibleChange?.(visible);

@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFeaturedItems, useLibraries } from "@tentacle-tv/api-client";
 import { latestAdditionsSeasonId, type MediaItem } from "@tentacle-tv/shared";
+import { homeEntryKey } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
 import { HomeView } from "../../redesign/screens/home/HomeView";
@@ -15,7 +16,7 @@ import { useRecoFilterChipRow } from "../../components/reco/useRecoFilterChipRow
 import { useHomeLifecycle } from "../../hooks/useHomeLifecycle";
 import type { RootStackParamList } from "../../navigation/types";
 import { useRecoFilter } from "../reco/useRecoFilter";
-import { useFocusStore } from "../focus/focusStore";
+import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useAmbientPalette } from "../screen/useAmbientPalette";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
@@ -74,8 +75,7 @@ export function HomeRedesign({ navigation }: Props) {
   const loading =
     !failed && (((featuredQuery.isLoading || librariesQuery.isLoading) && !featuredQuery.data && !librariesQuery.data) || hero.pending);
   const empty = !loading && !failed && featuredQuery.data?.length === 0 && home.rows.length === 0 && !home.resume?.length;
-  const firstCard = home.rows[0] ? `${home.rows[0].key}:0` : null;
-  const entryKey = failed ? "status:primary" : loading || empty ? null : hero.hero ? "hero:primary" : firstCard;
+  const entryKey = homeEntryKey({ failed, loading, empty, hasHero: hero.hero !== null, firstRowKey: home.rows[0]?.key ?? null });
 
   const screen = useRedesignScreen({ railKey: "Home", entryKey, focus });
   const { focusedPalette, onFocusCard } = useAmbientPalette(focus);
