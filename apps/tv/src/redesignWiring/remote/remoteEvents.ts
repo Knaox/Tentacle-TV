@@ -1,10 +1,15 @@
 import { useEffect, useRef } from "react";
-import { Platform, TVEventHandler, type HWEvent } from "react-native";
+import type { HWEvent } from "react-native";
+import { subscribeNativeRemote, TVOS_REMOTE_SUPPORTED } from "../../platform/tvos/input";
 
 /**
- * La télécommande d'Apple TV, pour le branchement de la refonte : UN
- * abonnement aux événements natifs (`TVEventHandler`), partagé par tous les
- * écouteurs, et traduit en événements TYPÉS.
+ * La télécommande d'Apple TV, pour le branchement de la refonte — l'API
+ * d'AVANT l'extraction de la navigation, gardée le temps que ses écouteurs
+ * migrent vers les intentions (`platform/tvos/input` : `useRemoteIntents`,
+ * `useRemoteContext` ; `docs/TV-NAVIGATION.md`). Elle n'a plus d'abonnement
+ * natif à elle : elle lit l'événement brut de l'ENTRÉE UNIQUE
+ * (`subscribeNativeRemote`), partagé par tous ses écouteurs, et le traduit
+ * en événements TYPÉS, comme avant.
  *
  * Trois sortes :
  * - `press` : un bouton — flèche (bord cliquable du pavé ; flèches du clavier
@@ -97,27 +102,26 @@ export function toRemoteEvent(raw: HWEvent, at: number): RemoteEvent | null {
   return { kind: "press", button, long: long !== undefined, phase, at };
 }
 
-const SUPPORTED = Platform.OS === "ios";
 const listeners = new Set<RemoteListener>();
-let native: { remove(): void } | null = null;
+let native: (() => void) | null = null;
 
-function dispatch(raw: HWEvent): void {
-  const event = toRemoteEvent(raw, Date.now());
+function dispatch(raw: HWEvent, at: number): void {
+  const event = toRemoteEvent(raw, at);
   if (!event) return;
   for (const listener of [...listeners]) listener(event);
 }
 
 /**
- * Écoute la télécommande ; rend le désabonnement. L'abonnement natif naît
- * avec le premier écouteur et part avec le dernier.
+ * Écoute la télécommande ; rend le désabonnement. L'écoute de l'entrée unique
+ * naît avec le premier écouteur et part avec le dernier.
  */
 export function subscribeRemote(listener: RemoteListener): () => void {
-  if (!SUPPORTED) return () => {};
+  if (!TVOS_REMOTE_SUPPORTED) return () => {};
   listeners.add(listener);
-  native ??= TVEventHandler.addListener(dispatch) ?? null;
+  native ??= subscribeNativeRemote(dispatch);
   return () => {
     if (!listeners.delete(listener) || listeners.size > 0) return;
-    native?.remove();
+    native?.();
     native = null;
   };
 }
