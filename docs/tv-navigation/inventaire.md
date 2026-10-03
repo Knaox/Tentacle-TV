@@ -6,7 +6,7 @@ la garde : [`garde.md`](garde.md).
 Pour CHAQUE usage d'une API native de télécommande ou de focus sur le chemin
 Apple TV refondu : où il est (fichier:ligne), qui le traite (T1 à T7) et ce
 qu'il devient. Relevé sur 84f3cedd0 (avant toute extraction), recalé sur
-`56518fb10`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
+`3f231223d`. T8 le remet à jour après chaque fusion ; les lignes d'un fichier
 qu'une tâche vient de toucher sont celles de main au moment du recalage.
 
 ## Comment il est fait
@@ -30,7 +30,7 @@ qu'une tâche vient de toucher sont celles de main au moment du recalage.
   `useFocusEffect`, `useIsFocused`, `gestureEnabled`) ; le Retour
   (`useBackLayer`), le bus de la télécommande, les Modals (`onRequestClose`),
   les défilements, `.focus()`. Commentaires exclus.
-- **776 occurrences dans 192 fichiers**, chacune lue et classée ; un
+- **772 occurrences dans 193 fichiers**, chacune lue et classée ; un
   script vérifie qu'aucune n'est sans ligne ci-dessous.
 - **Ce que le relevé ne voit pas** et que la lecture a retrouvé : les
   décisions prises PAR le magasin de focus, sans API native visible (annexe C),
@@ -69,13 +69,13 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 | Tâche | fichiers | EXTRAIRE | MIXTE | ADAPTATEUR | DÉJÀ | RESTE | VUE | HORS | ANCIENNE |
 |---|---|---|---|---|---|---|---|---|---|
 | T1 | 6 | — | — | 11 | 13 | 5 | — | — | — |
-| T3 | 21 | 17 | 12 | 55 | — | 2 | 28 | — | 6 |
+| T3 | 21 | 17 | 12 | 55 | 1 | 2 | 28 | — | 6 |
 | T4 | 18 | 10 | 15 | 22 | 5 | 11 | 16 | 1 | — |
 | T5 | 19 | 39 | 31 | 43 | — | — | 3 | 3 | 20 |
-| T6 | 11 | 10 | 9 | — | — | — | 20 | — | — |
-| T7 | 35 | 21 | 9 | 13 | — | 2 | 44 | 1 | 1 |
+| T6 | 12 | — | — | 7 | 4 | 4 | 20 | — | — |
+| T7 | 35 | 21 | 8 | 13 | — | 2 | 44 | 1 | 1 |
 | pas concernés | 82 | — | — | — | — | — | — | 135 | 143 |
-| **total** | 192 | 97 | 76 | 144 | 18 | 20 | 111 | 140 | 170 |
+| **total** | 193 | 87 | 66 | 151 | 23 | 24 | 111 | 140 | 170 |
 
 ## T1 — le socle : intentions, traduction, entrée unique
 
@@ -150,9 +150,9 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 - L5, 56, 64, 79 · NativeFocusSection · **ADAPTATEUR** · la porte des vues vers la section native `TentacleFocusSection` (raté par le relevé : `{...binding?.native}` L66) ; `reveal` est déclaratif (VUE)
 
 #### `redesign/focus/FocusTarget.tsx` — garde : `no-native-press`
-- L2, 115, 120, 121, 123–126, 133 · Pressable, onPressIn/Out, onLongPress, delayLongPress, onFocus/onBlur · **ADAPTATEUR** · la SEULE porte des vues vers le focus natif (OK, appui long natif à `LONG_PRESS_THRESHOLD_MS` de tv-core, focus, flou) ; raté par le relevé : `{...binding?.native}` L118
-- L16, 54, 66, 68, 69, 78, 81, 84, 91 · onLongPress (prop), onFocus/onBlur (relais) · **VUE** · relais vers la vue et le port
-- L108–112 · garde anti-clic fantôme · **EXTRAIRE** · T6 · « un OK qui n'a pas commencé ici ne valide pas » : une règle → `cards/` ou `input/` (le câblage la pose par `phantomPressGuard`)
+- L2, 114, 119, 120, 122–125, 132 · Pressable, onPressIn/Out, onLongPress, delayLongPress, onFocus/onBlur · **ADAPTATEUR** · la SEULE porte des vues vers le focus natif (OK, appui long natif à `LONG_PRESS_THRESHOLD_MS` de tv-core, focus, flou) — exception PERMANENTE de la garde (porte des vues) ; raté par le relevé : `{...binding?.native}`
+- L17, 55, 67, 69, 70, 79, 82, 85, 91 · onLongPress (prop), onFocus/onBlur (relais) · **VUE** · relais vers la vue et le port
+- L88 · `guard.blur()` · **DÉJÀ** · T6 · FAIT (0bb4c4b6c) : la garde anti-clic fantôme est la machine de tv-core (`usePressGuard`) ; ce `.blur()` n'est pas un focus natif (faux positif du relevé)
 
 #### `redesign/focus/nativeFocusSection.ts` — garde : `no-native-focus-calls`, `no-platform-branch`
 - L1, 26, 27, 31, 32 · requireNativeComponent, UIManager, Platform.OS/isTV · **ADAPTATEUR** · détection et montage de la section native → `platform/tvos/focus/`
@@ -337,9 +337,12 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 
 ## T6 — panneaux, cartes, appui maintenu ; surimpressions
 
-> Règles pures fusionnées (tv-core `cards/`, `panels/`, `titles/seasonsSheet`), branchement à venir. Couches « menu » des panneaux, filets d'entrée, garde anti-clic fantôme, `useChoiceEntry`, raccourci Lecture/Pause des saisons, surimpressions (arbitrage). `sheetFocus.ts` n'a AUCUNE occurrence au relevé : tout y passe par le magasin (annexe C).
+> Fait (3f231223d) : règles dans tv-core (`cards/`, `panels/`, `titles/seasonsSheet`) et applicateurs dans `platform/tvos/panels/` (grand panneau, verrou d'entrée des listes en Modal) ; la garde anti-clic fantôme de `FocusTarget` est la machine de tv-core ; Menu des panneaux par l'entrée unique ; équivalence prouvée par le banc `panels-trace`. Surimpressions : arbitrage T6.
 >
-> 11 fichiers.
+> 12 fichiers.
+
+#### `platform/tvos/panels/useChoiceEntry.ts`
+- L36 · setTimeout(`CHOICE_ENTRY_RELEASE_MS`) · **ADAPTATEUR** · FAIT (e4279f28c) : le verrou d'entrée d'une liste en Modal ; règle et durée dans tv-core (`createChoiceEntry`)
 
 #### `redesign/cards/CardShell.tsx`
 - L34, 50, 71 · `onLongPress` (prop transmise à `FocusTarget form="card"`) · **VUE** · relais ; l'appui long n'est pas une API native ici : c'est le minuteur JS de Pressable (`delayLongPress` = 550 ms de tv-core, posé par FocusTarget), armé à l'`onPressIn` natif ; le `longSelect` d'UIKit (0,5 s) part sur le bus mais n'est pas écouté
@@ -361,27 +364,26 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 - L81 · onLongPress (prop) · **VUE** · appui long d'une carte, relayé
 
 #### `redesign/screens/overlays/ScreenErrorView.tsx`
-- L36, 45, 66 · canGoBack (prop) · **VUE** · pas de croix si faux
+- L37, 46, 67 · canGoBack (prop) · **VUE** · pas de croix si faux
 
 #### `redesignWiring/overlays/ScreenErrorRedesign.tsx`
-- L51 · canGoBack={false} · **EXTRAIRE** · à la racine de l'app : pas de croix
-- L61, 64, 73, 76 · canGoBack()/goBack · **MIXTE** · croix seulement si la pile peut reculer, et elle recule d'un écran (règle) ; application — bug 3
+- L53 · canGoBack={false} · **DÉJÀ** · FAIT (8c215b94a) : l'entrée et la croix sont décidées par tv-core (`panels/overlayFocus`, `SCREEN_ERROR_FOCUS`) ; à la racine, pas de croix
+- L63, 66, 75, 78 · canGoBack()/goBack · **RESTE** · la pile : la croix paraît si la pile peut reculer et recule d'un écran (bug 3 des écrans, non corrigé)
 
 #### `redesignWiring/sheet/ActionSheetRedesign.tsx`
-- L7, 73 · `useBackLayer("menu", !closing, requestClose)` · **EXTRAIRE** · couche « menu » dès l'appui maintenu, éteinte pendant la sortie ; Retour joue la sortie puis `onClose`
-- L63 · `setTimeout` (`useElapsed`, `ENTRY_WAIT_MS` = 1 200) · **EXTRAIRE** · filet : note encore inconnue après 1,2 s → présenter sur le premier picto ; l'entrée est ensuite figée
-- L95 · `Modal … onRequestClose` · **MIXTE** · ne présenter qu'une fois l'entrée décidée (règle) ; Modal native (application)
+- L10 · `useBackLayers` · **DÉJÀ** · FAIT (e7514a67f) : les couches du Retour du panneau viennent de tv-core (`panelBackLayers`)
+- L64 · setTimeout(ms) (`useElapsed`, `SHEET_ENTRY_WAIT_MS`) · **ADAPTATEUR** · FAIT (7eb2aa6e4) : le filet d'entrée lit sa durée dans tv-core, l'adaptateur ne fait que compter
+- L99 · `Modal visible={panelPresented(…)} onRequestClose={onMenu}` · **ADAPTATEUR** · FAIT : la présentation est décidée par tv-core (`panelPresented`), Menu passe par l'entrée unique (`withMenuIntent`)
 
 #### `redesignWiring/vigie/AbsentSheetRedesign.tsx`
-- L10, 84 · `useBackLayer("menu", true, requestClose)` · **EXTRAIRE** · couche « menu » toute la vie du panneau ; Retour joue la sortie
-- L98 · `setTimeout` (`ENTRY_WAIT_MS` = 900) · **EXTRAIRE** · filet : état inconnu après 0,9 s → présenter ; entrée = premier picto, sinon la croix
-- L107 · `Modal … onRequestClose` · **MIXTE** · présentation selon l'entrée (règle) ; Modal native (application)
+- L12 · `useBackLayers` · **DÉJÀ** · FAIT (e7514a67f) : couches du Retour par tv-core (`panelBackLayers`)
+- L99 · setTimeout(`ABSENT_SHEET_ENTRY_WAIT_MS`) · **ADAPTATEUR** · FAIT : la durée du filet vient de tv-core (`absentSheetEntry`)
+- L111 · `Modal visible={panelPresented(…)} onRequestClose={onMenu}` · **ADAPTATEUR** · FAIT : présentation par tv-core, Menu par l'entrée unique
 
 #### `redesignWiring/vigie/SeasonsSheetRedesign.tsx`
-- L9, 106 · `useBackLayer("menu", !closing, requestClose)` · **EXTRAIRE** · couche « menu » ; Retour ferme tout de suite si la feuille n'est pas présentée, sinon joue la sortie
-- L12, 158 · `useRemoteEvents` (appui `playPause`, `!long`) · **MIXTE** · un appui simple sur Lecture/Pause = « demander » (`seasonsShortcut`, d'après la clé focalisée), feuille présentée et hors sortie (règle) ; la traduction bouton/maintien faite sur place (L159-160) revient à T1 → contexte « panneau » de `remote/contexts`
-- L113 · `setTimeout` (`ENTRY_WAIT_MS` = 1 500) · **EXTRAIRE** · filet : saisons inconnues après 1,5 s → présenter ; entrée = saison choisie, sinon 1ʳᵉ à cocher, sinon « Demander »
-- L164 · `FadingModal … onRequestClose onExited` · **MIXTE** · présenter une fois l'entrée décidée, s'effacer au `closing`, `onClose` puis la réponse en fin de fondu (règle) ; Modal native (application)
+- L30 · `useBackLayers` · **DÉJÀ** · FAIT (4c8740955) : couches du Retour par tv-core
+- L121 · setTimeout(`SEASONS_SHEET_ENTRY_WAIT_MS`) · **ADAPTATEUR** · FAIT : cibles, entrée et présentation dans tv-core (`titles/seasonsSheet`) ; Lecture/Pause passe par `useRemoteContext` (00880373c)
+- L166 · `FadingModal value={panelPresented(…)} onRequestClose={onMenu}` · **ADAPTATEUR** · FAIT : présentation par tv-core, Menu par l'entrée unique
 
 ## T7 — les écrans
 
@@ -484,8 +486,7 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 - L33 · `FadingModal onRequestClose={onClose}` · **ADAPTATEUR** · Modal native : piège le focus, reçoit Menu (`onRequestClose` = signal `menu`)
 
 #### `redesignWiring/settings/settingsFocus.tsx` — garde : `no-focus-guides`
-- L2, 27, 29, 31 · TVFocusGuideView destinations · **ADAPTATEUR** · guide natif de la colonne d'onglets ; la décision (destination = onglet AFFICHÉ) est dans `useActiveTabDestination` (L52-62)
-- L104 · setTimeout RELEASE_AFTER_MS · **MIXTE** · dans une liste en Modal, seule la valeur retenue est focalisable jusqu'au 1er focus ou 800 ms au plus (règle, commune aux réglages, filtres, Vigie et feuille d'actions : `useChoiceEntry`) ; verrous `isTVSelectable` (application)
+- L2, 26, 28, 30 · TVFocusGuideView destinations · **ADAPTATEUR** · guide natif de la colonne d'onglets ; la destination (l'onglet AFFICHÉ) est décidée par `useActiveTabDestination` ; `useChoiceEntry` n'est plus ici qu'un réexport de `platform/tvos/panels` (T6, e4279f28c)
 
 #### `redesignWiring/settings/SettingsRedesign.tsx`
 - L10, 39 · useBackLayer("menu") · **EXTRAIRE** · Retour annule d'abord un déplacement d'entrée en cours dans l'onglet Navigation
@@ -613,7 +614,7 @@ intentions (`useRemoteIntents`, `useRemoteContext`) :
 - `platform/tvos/focus/useBeyondEdge.ts:56` — « au-delà du bord » (T3, déplacé ; seul usage : `redesignWiring/home/useHomeHero.ts:130`) ;
 - `redesignWiring/home/useHeroRotation.ts:80` — tout geste relance la rotation, un maintien la suspend (T3, arbitrage ; règle : tv-core `hero/rotation`) ;
 - `redesignWiring/trailer/TrailerRedesign.tsx:69` — tout geste rallume le chrome (T7) ;
-- `redesignWiring/vigie/SeasonsSheetRedesign.tsx:158` — Lecture/Pause simple = « demander » (T6 : contexte « panneau »).
+- ~~`redesignWiring/vigie/SeasonsSheetRedesign.tsx`~~ — FAIT (00880373c) : Lecture/Pause passe par `useRemoteContext` (contexte « panneau »).
 
 ## Annexe C — le second cercle : décisions prises PAR le magasin de focus
 
@@ -637,7 +638,7 @@ qui doit rejoindre tv-core comme les autres.
 | `redesignWiring/nav/useRailArrange.ts` | 117, 173, 204 | T4 |
 | `redesignWiring/nav/useRailState.ts` | 129 | T4 |
 | `redesignWiring/overlays/OfflineRedesign.tsx` | 43, 44 | T6 |
-| `redesignWiring/overlays/ScreenErrorRedesign.tsx` | 48, 59, 60, 72 | T6 |
+| `redesignWiring/overlays/ScreenErrorRedesign.tsx` | 50, 61, 62, 74 | T6 |
 | `redesignWiring/pairing/loginFocus.ts` | 26 | T7 |
 | `redesignWiring/pairing/PairingRedesign.tsx` | 86, 87, 91, 94, 95 | T7 |
 | `redesignWiring/player/usePanelReturnFocus.ts` | 42 | T5 |
@@ -649,14 +650,13 @@ qui doit rejoindre tv-core comme les autres.
 | `redesignWiring/search/SearchRedesign.tsx` | 53, 54 | T7 |
 | `redesignWiring/search/useSystemKeyboard.ts` | 42, 68, 69 | T7 |
 | `redesignWiring/settings/ChoiceModal.tsx` | 26 | T7 |
-| `redesignWiring/settings/settingsFocus.tsx` | 46, 47, 81, 86, 88, 97 | T7 |
+| `redesignWiring/settings/settingsFocus.tsx` | 45, 46 | T7 |
 | `redesignWiring/settings/useNavigationSettings.ts` | 53, 55, 56, 111, 120, 124 | T7 |
-| `redesignWiring/sheet/ActionSheetRedesign.tsx` | 83 | T6 |
-| `redesignWiring/sheet/sheetFocus.ts` | 69, 70, 77, 102, 103, 109, 110, 116, 117, 126, 127, 128 | T6 |
-| `redesignWiring/vigie/AbsentSheetRedesign.tsx` | 104 | T6 |
+| `redesignWiring/sheet/ActionSheetRedesign.tsx` | 84 | T6 |
+| `redesignWiring/vigie/AbsentSheetRedesign.tsx` | 105 | T6 |
 | `redesignWiring/vigie/RequestsEntry.tsx` | 41, 42 | T4 |
 | `redesignWiring/vigie/RequestsPanel.tsx` | 54, 86, 91 | T4 |
-| `redesignWiring/vigie/SeasonsSheetRedesign.tsx` | 110, 126 | T6 |
+| `redesignWiring/vigie/SeasonsSheetRedesign.tsx` | 118, 130 | T6 |
 
 ## Annexe D — le natif : Objective-C et correctifs
 
@@ -684,7 +684,7 @@ Ils restent natifs : ce sont l'adaptateur, côté UIKit.
 **Panneaux et cartes (T6)**
 
 - `redesign/cards/CardShell.tsx:69` · `form="card"` · VUE · T6 · description ; `platform/tvos/focus/focusStore.ts:114-117` en tire `tvParallaxProperties` (`parallaxOf`). `MorphCard.tsx:75-83` n'a pas de `form` → pas de parallaxe.
-- `redesignWiring/sheet/sheetFocus.ts` (AUCUNE occurrence au relevé) · MIXTE · T6 · pose les verrous `isTVSelectable` (L70), la garde anti-clic fantôme (`GUARDED`, L47, 77 : échelle, pictos, croix) et les guides d'entrée `sheet:header/scale/actions` (L101-123) — tout passe par le magasin (`FocusExtras`), d'où l'absence au relevé.
+- `redesignWiring/sheet/sheetFocus.ts` — FAIT (7eb2aa6e4) : déplacé dans `platform/tvos/panels/sheetFocus.ts` et branché sur tv-core (`cards/sheetEntry`). Avant : (AUCUNE occurrence au relevé) · MIXTE · T6 · pose les verrous `isTVSelectable` (L70), la garde anti-clic fantôme (`GUARDED`, L47, 77 : échelle, pictos, croix) et les guides d'entrée `sheet:header/scale/actions` (L101-123) — tout passe par le magasin (`FocusExtras`), d'où l'absence au relevé.
 - `redesignWiring/sheet/ActionSheetRedesign.tsx:75, 80-83, 96` · `sheetEntryOf` / `firstPictoOf`, `useSheetFocus` · MIXTE · T6 · entrée sur l'échelle (note posée, sinon 5), sinon 1er picto, puis figée.
 - `redesignWiring/sheet/ActionSheetRedesign.tsx:86-92` · `rate` · EXTRAIRE · T6 · mode « Noter » : OK note puis ferme.
 - `redesignWiring/library/useLibrarySheets.ts:15-30, 121-126` · `sheetEntryKey`, `onSheetClear` · EXTRAIRE · T7 (arbitrage) · entrée = élément retenu, sinon le 1er (intervalle sur mesure : `sheet:from:prev`) ; « Effacer » disparu → nouvelle entrée. Fonctions pures.
