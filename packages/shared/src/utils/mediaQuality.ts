@@ -1,4 +1,5 @@
 import type { MediaItem, MediaStream } from "../types/media";
+import { TRANSCODE_TIERS, reservedAudioBitrate } from "./transcodeTarget";
 
 export type Resolution = "4K" | "FHD" | "HD" | "SD";
 export type SourceResolution = "4K" | "1080p" | "720p" | "SD";
@@ -41,7 +42,7 @@ export interface SourceQuality {
 
 export interface QualityPreset {
   /** Clé i18n stable (`original`, `quality1080p`, …) */
-  key: "original" | "quality1080pHigh" | "quality1080p" | "quality720p" | "quality480p";
+  key: "original" | "quality1080pHigh" | "quality1080p" | "quality720p" | "quality480p" | "quality360p";
   /** Débit max envoyé au serveur Jellyfin (bps). `null` = pas de cap (direct play). */
   bitrate: number | null;
   /** Largeur max pour le cap visuel (px). `null` = pas de redimensionnement. */
@@ -52,16 +53,16 @@ export interface QualityPreset {
 
 /**
  * Liste de REPLI, servie quand le débit de la source est inconnu — un barème
- * approximatif vaut mieux qu'un sélecteur vide. Dans tous les autres cas, c'est
- * `buildQualityLadder` (utils/qualityLadder) qui fait foi : ces débits-là
- * sont fixes et peuvent dépasser celui du fichier lu.
+ * approximatif vaut mieux qu'un sélecteur vide : les cibles des paliers
+ * (`TRANSCODE_TIERS`), audio compris. Dans tous les autres cas, c'est
+ * `buildQualityLadder` (utils/qualityLadder) qui fait foi.
  */
 export const QUALITY_PRESETS: readonly QualityPreset[] = [
-  { key: "original",     bitrate: null,        width: null, height: null },
-  { key: "quality1080p", bitrate: 30_000_000,  width: 1920, height: 1080 },
-  { key: "quality720p",  bitrate: 10_000_000,  width: 1280, height: 720 },
-  { key: "quality480p",  bitrate:  4_000_000,  width:  854, height: 480 },
-] as const;
+  { key: "original", bitrate: null, width: null, height: null },
+  ...TRANSCODE_TIERS.filter((t) => t.key !== "quality1080pHigh").map((t) => ({
+    key: t.key, bitrate: t.nominal + reservedAudioBitrate(t.height), width: t.width, height: t.height,
+  })),
+];
 
 export type QualityKey = QualityPreset["key"];
 

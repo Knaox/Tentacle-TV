@@ -21,6 +21,7 @@ export * from "./utils/mediaFacts";
 // La scène de la fiche : galerie de la vue plein écran et état de reprise.
 export * from "./utils/detailStage";
 export * from "./utils/qualityLadder";
+export * from "./utils/transcodeTarget";
 export * from "./utils/scrubStep";
 export * from "./utils/playbackRates";
 export * from "./utils/episodeCode";
