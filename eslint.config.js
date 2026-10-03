@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
+import { tvNavigationConfigs } from "./eslint/tvNavigation.mjs";
 
 /**
  * Configuration ESLint du monorepo — une seule, à la racine.
@@ -126,6 +127,14 @@ export default tseslint.config(
       ],
     },
   },
+
+  // La navigation TV, une seule source (docs/TV-NAVIGATION.md) : hors de
+  // l'adaptateur tvOS, le chemin refondu n'emploie aucune API native de
+  // télécommande ni de focus (`eslint/tvNavigation.mjs`). En AVERTISSEMENT
+  // pendant l'extraction : les exceptions (`eslint/tvNavigationExceptions.mjs`)
+  // fondent à chaque fusion, et la règle passera en erreur sur ce qui se
+  // justifie encore.
+  ...tvNavigationConfigs("warn"),
 
   // Gabarits qui portent du HTML dans une chaîne JavaScript : `<\/script>` y est
   // OBLIGATOIRE. Sans l'échappement, l'analyseur du document hôte referme la
