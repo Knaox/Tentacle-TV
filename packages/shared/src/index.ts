@@ -86,6 +86,9 @@ export * from "./serverLinks/serverLinksVerdict";
 export * from "./serverUpdate/serverUpdateContract";
 export * from "./serverUpdate/serverUpdateStatus";
 export * from "./serverUpdate/updateCommands";
+// Le tableau de bord d'administration : ce qui est À RÉGLER (bloquant, jamais
+// masquable) et les RECOMMANDATIONS (masquables par compte), en logique pure.
+export * from "./adminAttention/attentionModel";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
