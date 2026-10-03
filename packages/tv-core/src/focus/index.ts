@@ -15,7 +15,8 @@
  * - `groupEntry.ts` : l'entrée d'un groupe (le dernier visité, sinon le défaut) ;
  * - `restoreClaim.ts`, `keepWithin.ts` : la reprise après une restauration de
  *   la plateforme, la garde d'une surface plein écran ;
- * - `beyondEdge.ts` : un geste au-delà du bord. */
+ * - `beyondEdge.ts` : un geste au-delà du bord ;
+ * - les écrans (T7) : `detailFocus.ts` (la fiche). */
 export * from "./geometry";
 export * from "./sections";
 export * from "./sectionEntry";
@@ -28,3 +29,4 @@ export * from "./groupEntry";
 export * from "./restoreClaim";
 export * from "./keepWithin";
 export * from "./beyondEdge";
+export * from "./detailFocus";
