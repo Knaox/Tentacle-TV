@@ -1,0 +1,198 @@
+{
+  "domain": "ecrans",
+  "screen": "fiche",
+  "task": "T7",
+  "reference": "84f3cedd0",
+  "doc": "docs/tv-navigation/ecrans.md",
+  "scenarios": [
+    {
+      "id": "ec-fi-01",
+      "title": "Film : entrée sur Lecture, jamais sur la croix ; HAUT y mène depuis l'en-tête, BAS rend la dernière action ; Menu recule",
+      "rules": ["FI-1", "FI-2", "FI-3", "FI-13"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base"],
+        "stack": [{ "name": "Home" }, { "name": "MediaDetail", "params": { "itemId": "8691fdd93af7c11da75013ecc6a67ac0" } }]
+      },
+      "steps": [
+        { "do": "wait:2.5", "expect": { "focus": "detail:primary", "route": "MediaDetail" }, "why": "la croix, en haut à gauche, n'a jamais l'entrée" },
+        { "do": "up", "expect": { "focus": "detail:back", "label": "Retour" }, "why": "la bande detail:top rend HAUT à la croix" },
+        { "do": "down", "expect": { "focus": "detail:primary" }, "why": "BAS depuis la croix : la dernière cible de contenu" },
+        { "do": "right" },
+        { "do": "up", "expect": { "focus": "detail:back" } },
+        { "do": "down", "why": "la dernière action visitée (relevée), pas l'entrée" },
+        { "do": "menu", "settleMs": 1000, "expect": { "route": "Home", "stack": ["Home"] } }
+      ]
+    },
+    {
+      "id": "ec-fi-02",
+      "title": "Film : BAS de section en section jusqu'aux similaires, les bouts des rangées retiennent le focus, HAUT remonte à l'en-tête",
+      "rules": ["FI-7", "FI-13"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base"],
+        "stack": [{ "name": "Home" }, { "name": "MediaDetail", "params": { "itemId": "8691fdd93af7c11da75013ecc6a67ac0" } }]
+      },
+      "steps": [
+        { "do": "wait:2.5", "expect": { "focus": "detail:primary" } },
+        { "do": "down", "settleMs": 600 },
+        { "do": "left", "expect": { "unchanged": true }, "why": "le bout gauche d'une rangée retient le focus : la fiche n'a pas de rail" },
+        { "do": "down", "settleMs": 600 },
+        { "do": "down", "settleMs": 600 },
+        { "do": "down", "settleMs": 600 },
+        { "do": "right" },
+        { "do": "right" },
+        { "do": "up", "settleMs": 600 },
+        { "do": "up", "settleMs": 600 },
+        { "do": "up", "settleMs": 600 },
+        { "do": "up", "settleMs": 600 },
+        { "do": "up", "settleMs": 600 }
+      ]
+    },
+    {
+      "id": "ec-fi-03",
+      "title": "Série : les onglets entrent par la saison AFFICHÉE, les épisodes par l'épisode à reprendre à la 1re entrée, puis au plus proche ; OK change la saison et réarme",
+      "rules": ["FI-1", "FI-5", "FI-6", "FI-8"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base"],
+        "stack": [{ "name": "Home" }, { "name": "MediaDetail", "params": { "itemId": "29ee5c86d39a9e0dc425acfa34609fa1" } }]
+      },
+      "steps": [
+        { "do": "wait:3" },
+        { "do": "down", "settleMs": 600, "why": "l'onglet de la saison affichée (celle de l'épisode à suivre)" },
+        { "do": "down", "settleMs": 600, "why": "l'épisode à suivre (« À suivre »), première entrée" },
+        { "do": "up", "settleMs": 600, "why": "de nouveau la saison AFFICHÉE" },
+        { "do": "left" },
+        { "do": "left", "settleMs": 400 },
+        { "do": "down", "settleMs": 600, "why": "désarmée : l'épisode au plus proche de l'onglet quitté, plus l'épisode à suivre" },
+        { "do": "up", "settleMs": 600, "why": "toujours la saison affichée, jamais l'onglet quitté" },
+        { "do": "left", "settleMs": 400 },
+        { "do": "select", "settleMs": 2000, "why": "OK choisit la saison : l'entrée des épisodes se réarme" },
+        { "do": "down", "settleMs": 600, "why": "l'épisode d'ancrage de la nouvelle saison" },
+        { "do": "right" },
+        { "do": "right", "settleMs": 400 },
+        { "do": "up", "settleMs": 600 },
+        { "do": "down", "settleMs": 600, "why": "même visite, même saison : au plus proche" }
+      ]
+    },
+    {
+      "id": "ec-fi-04",
+      "title": "Série à 15 saisons : la bande calée sur la saison affichée ; les bouts de la bande retiennent le focus",
+      "rules": ["FI-5", "FI-7", "FI-8"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base"],
+        "stack": [{ "name": "Home" }, { "name": "MediaDetail", "params": { "itemId": "1e98cd83a1295aeb9336e87a46afe1d6" } }]
+      },
+      "steps": [
+        { "do": "wait:3" },
+        { "do": "down", "settleMs": 600 },
+        { "do": "holdleft:4", "settleMs": 600 },
+        { "do": "left", "expect": { "unchanged": true } },
+        { "do": "holdright:6", "settleMs": 600 },
+        { "do": "right", "expect": { "unchanged": true } }
+      ]
+    },
+    {
+      "id": "ec-fi-05",
+      "title": "Épisode ouvert depuis sa série : la pastille de la série RECULE sur la fiche de dessous",
+      "rules": ["FI-10", "FI-11"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base"],
+        "stack": [
+          { "name": "Home" },
+          { "name": "MediaDetail", "params": { "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453" } },
+          { "name": "MediaDetail", "params": { "itemId": "425337b52d897ae647dcba206585d35f" } }
+        ]
+      },
+      "steps": [
+        { "do": "wait:2.5", "expect": { "focus": "detail:primary" } },
+        { "do": "up", "settleMs": 500, "why": "la pastille « Série — S1E1 › » au-dessus des actions (relevé)" },
+        { "do": "select", "settleMs": 1500, "expect": { "stack": ["Home", "MediaDetail"] }, "why": "detailMove : la page juste dessous → back" }
+      ]
+    },
+    {
+      "id": "ec-fi-06",
+      "title": "Épisode ouvert seul : la pastille de la série REMPLACE la fiche de l'épisode ; un seul Retour ramène à l'accueil",
+      "rules": ["FI-10", "FI-11", "FI-13"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base"],
+        "stack": [{ "name": "Home" }, { "name": "MediaDetail", "params": { "itemId": "425337b52d897ae647dcba206585d35f" } }]
+      },
+      "steps": [
+        { "do": "wait:2.5" },
+        { "do": "up", "settleMs": 500 },
+        { "do": "select", "settleMs": 2000, "expect": { "route": "MediaDetail", "stack": ["Home", "MediaDetail"] } },
+        { "do": "menu", "settleMs": 1000, "expect": { "stack": ["Home"] } }
+      ]
+    },
+    {
+      "id": "ec-fi-07",
+      "title": "Un similaire, puis un autre : chaque fiche REMPLACE la précédente ; un seul Retour ramène avant la première",
+      "rules": ["FI-10", "FI-11", "FI-13"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base"],
+        "stack": [{ "name": "Home" }, { "name": "MediaDetail", "params": { "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f" } }]
+      },
+      "steps": [
+        { "do": "wait:2.5" },
+        { "do": "holddown:3", "settleMs": 800, "why": "jusqu'à la dernière rangée : les similaires" },
+        { "do": "select", "settleMs": 2500, "expect": { "route": "MediaDetail", "stack": ["Home", "MediaDetail"] } },
+        { "do": "holddown:3", "settleMs": 800 },
+        { "do": "select", "settleMs": 2500, "expect": { "stack": ["Home", "MediaDetail"] } },
+        { "do": "menu", "settleMs": 1000, "expect": { "stack": ["Home"] } }
+      ]
+    },
+    {
+      "id": "ec-fi-08",
+      "title": "Une personne du casting REMPLACE la fiche ; une affiche de sa filmographie la remplace à son tour",
+      "rules": ["FI-10", "FI-11", "PA-5"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base"],
+        "stack": [{ "name": "Home" }, { "name": "MediaDetail", "params": { "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f" } }]
+      },
+      "steps": [
+        { "do": "wait:2.5" },
+        { "do": "down", "settleMs": 600, "why": "la rangée du casting, sous l'en-tête d'un film sans saga" },
+        { "do": "select", "settleMs": 2500, "expect": { "route": "SearchBrowse", "stack": ["Home", "SearchBrowse"] } },
+        { "do": "select", "settleMs": 2500, "expect": { "route": "MediaDetail", "stack": ["Home", "MediaDetail"] } },
+        { "do": "menu", "settleMs": 1000, "expect": { "stack": ["Home"] } }
+      ]
+    },
+    {
+      "id": "ec-fi-09",
+      "title": "Fiche en erreur : entrée sur Réessayer ; HAUT vers la croix, BAS en revient",
+      "rules": ["FI-1", "FI-3"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base", "fail.item:fcfbd7a81518be2f40de85b0d1ccd46f"],
+        "stack": [{ "name": "Home" }, { "name": "MediaDetail", "params": { "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f" } }]
+      },
+      "steps": [
+        { "do": "wait:4", "expect": { "focus": "status:primary" } },
+        { "do": "up", "expect": { "focus": "detail:back" } },
+        { "do": "down", "expect": { "focus": "status:primary" } },
+        { "do": "menu", "settleMs": 1000, "expect": { "stack": ["Home"] } }
+      ]
+    },
+    {
+      "id": "ec-fi-10",
+      "title": "Fiche lente : la croix ne prend jamais l'entrée pendant le chargement ; Lecture la prend à l'arrivée",
+      "rules": ["FI-1", "FI-3"],
+      "start": {
+        "session": "paired",
+        "fixtures": ["base", "slow.item:fcfbd7a81518be2f40de85b0d1ccd46f:3000"],
+        "stack": [{ "name": "Home" }, { "name": "MediaDetail", "params": { "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f" } }]
+      },
+      "steps": [
+        { "do": "wait:1", "why": "en chargement : relevé (la croix verrouillée n'a pas le focus)" },
+        { "do": "wait:4", "expect": { "focus": "detail:primary" } }
+      ]
+    }
+  ]
+}
