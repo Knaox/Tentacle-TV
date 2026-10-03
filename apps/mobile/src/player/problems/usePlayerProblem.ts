@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "expo-router";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem, ProblemActionKey, QualityPreset } from "@tentacle-tv/shared";
+import { buildStreamUrl } from "@/hooks/usePlaybackInfoFetch";
 import { setManualOffline } from "@/offline/connectivityStore";
 import type { PlaybackFailureReport } from "./playbackFailure";
 import { nextVersionId } from "./playbackFailure";
@@ -49,12 +51,20 @@ export interface PlayerProblemArgs {
  */
 export function usePlayerProblem(args: PlayerProblemArgs) {
   const router = useRouter();
+  const client = useJellyfinClient();
+  // Le fichier lui-même (flux statique) : une conversion sert son maître HLS
+  // même quand le fichier a disparu du disque du serveur.
+  const sourceUrl = buildStreamUrl({
+    itemId: args.itemId, ms: { Id: args.mediaSourceId } as Parameters<typeof buildStreamUrl>[0]["ms"], directPlay: true,
+    ds: client.getDirectStreaming() ?? null, baseUrl: client.getBaseUrl(), accessToken: client.getAccessToken(), subIdx: -1,
+  });
   const failure = usePlaybackFailure({
     streamUrl: args.streamUrl,
     headers: args.headers,
     started: args.started,
     transcoding: !!args.streamUrl && !args.isDirectPlay,
     burningSubtitles: args.burnInSubIndex >= 0,
+    sourceUrl,
   });
   const { report, clear } = failure;
 
@@ -63,10 +73,12 @@ export function usePlayerProblem(args: PlayerProblemArgs) {
     if (args.negotiationError) report(args.negotiationError);
   }, [args.negotiationError, report]);
 
-  // La fiche n'a pas pu se lire : sans elle, rien ne se négocie.
+  // La fiche n'a pas pu se lire : sans elle, rien ne se négocie. Une RELECTURE
+  // ratée (la fiche déjà là) ne touche pas à une lecture qui tourne.
+  const itemMissing = !args.item && !!args.itemError;
   useEffect(() => {
-    if (args.itemError) report({ from: "request", error: args.itemError, target: "relayed", request: `GET /Items/${args.itemId}` });
-  }, [args.itemError, args.itemId, report]);
+    if (itemMissing) report({ from: "request", error: args.itemError, target: "relayed", request: `GET /Items/${args.itemId}` });
+  }, [itemMissing]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (args.missingUser) report({ from: "request", error: { status: 401 }, target: "tentacle" });
   }, [args.missingUser, report]);
@@ -87,8 +99,9 @@ export function usePlayerProblem(args: PlayerProblemArgs) {
   }, [args.qualityPresets, args.qualityKey]);
   const otherVersion = nextVersionId(args.item?.MediaSources, args.mediaSourceId);
 
+  const canLowerQuality = args.isDirectPlay || lowerTier;
   const problem = usePlaybackProblemModel(failure.diagnosed, {
-    canLowerQuality: args.isDirectPlay || lowerTier,
+    canLowerQuality,
     hasOtherVersion: otherVersion !== null,
     subtitlesActive: args.subtitleIndex >= 0,
   });
@@ -122,5 +135,5 @@ export function usePlayerProblem(args: PlayerProblemArgs) {
     }
   }, [clear, resetGuards, restart, retryTranscoded, otherVersion, router, args.itemId, leavePlayer]);
 
-  return { problem, diagnosing: failure.diagnosing, report, onAction };
+  return { problem, diagnosing: failure.diagnosing, report, onAction, canLowerQuality: lowerTier };
 }

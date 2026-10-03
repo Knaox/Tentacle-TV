@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import {
-  classifyProblem, describeProblem, problemDetails, probeStream, shouldProbeStream, withProbes,
+  classifyProblem, describeProblem, problemDetails, probeStream, shouldProbeSource, shouldProbeStream, withProbes,
   type ProblemAvailability, type ProblemCause, type ProblemContext, type ProblemDetail, type ProblemModel,
   type Reachability,
 } from "@tentacle-tv/shared";
@@ -22,6 +22,8 @@ export interface PlaybackFailureContext {
   burningSubtitles: boolean;
   /** Un fichier gardé sur l'appareil : rien à sonder sur le réseau. */
   local?: boolean;
+  /** Le fichier source (flux statique) : seul lui dit qu'il manque sur le disque du serveur. */
+  sourceUrl?: string | null;
 }
 
 export interface DiagnosedFailure {
@@ -80,16 +82,18 @@ export function usePlaybackFailure(context: PlaybackFailureContext) {
     const stream = !ctx.local && ctx.streamUrl && shouldProbeStream(full)
       ? probeStream(ctx.streamUrl, ctx.headers)
       : Promise.resolve(null);
-    void Promise.all([servers, stream]).then(([reachability, streamProbe]) => {
+    const source = ctx.sourceUrl && shouldProbeSource(full) ? probeStream(ctx.sourceUrl, ctx.headers) : Promise.resolve(null);
+    void Promise.all([servers, stream, source]).then(([reachability, streamProbe, sourceProbe]) => {
       if (seq.current !== id) return;
-      const probed = withProbes(full, reachability, streamProbe);
+      const probed = withProbes(full, reachability, streamProbe, sourceProbe);
       setDiagnosed({
         cause: classifyProblem(probed),
         context: ctx.local ? "offlinePlayback" : ctx.started ? "playbackStopped" : "playbackStart",
         details: problemDetails({
           ...facts,
           status: probed.status ?? facts.status,
-          stream: ctx.local ? "local" : ctx.transcoding ? "transcode" : "direct",
+          sourceStatus: sourceProbe?.status,
+          stream: ctx.local ? "local" : !ctx.streamUrl ? undefined : ctx.transcoding ? "transcode" : "direct",
           app: appLabel(),
         }),
       });

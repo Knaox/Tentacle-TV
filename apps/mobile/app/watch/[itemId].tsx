@@ -36,10 +36,12 @@ function offlineCause(manual: boolean, reason: OfflineReason): ProblemCause {
  * GELÉE pour la session (même fichier) — une source refetchée (position, vu)
  * changerait sa position de départ et rechargerait le média en pleine lecture.
  *
- * Hors ligne sans source locale, on le dit tout de suite, avec la cause (le
- * réseau de l'appareil, le serveur, Jellyfin, le mode hors ligne) — et, si la
- * lecture tournait, qu'elle s'est arrêtée : le lecteur serveur attendrait
- * vingt secondes une réponse qui ne viendra pas.
+ * Hors ligne sans source locale, AVANT d'ouvrir le lecteur, on le dit tout de
+ * suite, avec la cause (le réseau de l'appareil, le serveur, Jellyfin, le mode
+ * hors ligne) : le lecteur serveur attendrait vingt secondes une réponse qui ne
+ * viendra pas. Une lecture déjà ouverte, elle, n'est jamais démontée par une
+ * bascule hors ligne : un flux direct vers Jellyfin survit au serveur Tentacle
+ * muet, et si le flux cale, le lecteur le dit lui-même (cause, reprise).
  */
 export default function WatchRoute() {
   // `version` : la version choisie sur la fiche (`VERSION_QUERY_PARAM`), sinon celle de Jellyfin.
@@ -57,16 +59,16 @@ export default function WatchRoute() {
   // Le titre, pour habiller l'écran de chargement dès l'ouverture — la même
   // requête (et le même cache) que le lecteur ; rien hors ligne.
   const { data: item } = useMediaItem(itemId, { enabled: !offline });
-  // La lecture serveur tournait : une coupure ARRÊTE la lecture, elle ne l'empêche pas de démarrer.
+  // Le lecteur serveur est ouvert : il garde la main sur ses propres échecs.
   const streamed = useRef(false);
   const [retrying, setRetrying] = useState(false);
   const back = useCallback(() => backOrHome(router), [router]);
 
   const offlineModel = useMemo(() => describeProblem({
     cause: offlineCause(manual, reason),
-    context: streamed.current ? "playbackStopped" : "playbackStart",
+    context: "playbackStart",
     availability: { hasOfflineLibrary: hasLocalContent },
-  }), [manual, reason, hasLocalContent, offline]); // eslint-disable-line react-hooks/exhaustive-deps
+  }), [manual, reason, hasLocalContent]);
 
   const onOfflineAction = useCallback((key: ProblemActionKey) => {
     if (key === "goOnline") setManualOffline(false);
@@ -88,7 +90,7 @@ export default function WatchRoute() {
   if (frozen.current !== null) {
     return <LocalPlayerScreen itemId={itemId} localSource={frozen.current} />;
   }
-  if (offline) {
+  if (offline && !streamed.current) {
     return (
       <PlaybackProblemView
         model={offlineModel}

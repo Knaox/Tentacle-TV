@@ -19,6 +19,7 @@ import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import type { PlayerEngineHandle } from "../player/engine/types";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { AutoCapBadge } from "../components/player/AutoCapBadge";
+import { PlayerStallNotice } from "../components/player/PlayerStallNotice";
 import { PlayerLoadingScreen } from "../components/player/loading/PlayerLoadingScreen";
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
 import { PlaybackProblemView } from "../components/problems/PlaybackProblemView";
@@ -40,8 +41,8 @@ export function PlayerScreen({ itemId, version }: Props) {
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
-  // Tampon tenu à jour, plus lu ici : l'écran de chargement couvre l'ouverture.
-  const [, setIsBuffering] = useState(true);
+  // Le tampon : une lecture qui cale le dit (`PlayerStallNotice`).
+  const [isBuffering, setIsBuffering] = useState(true);
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
   const started = usePlaybackStarted(videoReady, currentTime);
@@ -85,19 +86,15 @@ export function PlayerScreen({ itemId, version }: Props) {
     });
   }, [itemId, pb.item?.Id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset videoReady when stream URL changes (avoids selectedTextTrack crash)
-  // Also clear retryingRef so the new stream can report errors.
-  // `fetchNonce` : une relance peut rendre une URL IDENTIQUE — sans lui, les
-  // gardes restaient armées et le lecteur tournait en spinner pour toujours.
+  // Nouveau flux (ou même URL relancée, `fetchNonce`) : gardes réarmées, sinon le
+  // lecteur tournait en spinner pour toujours (et selectedTextTrack plantait).
   useEffect(() => {
     setVideoReady(false);
     retryingRef.current = false;
   }, [pb.streamUrl, pb.fetchNonce]);
 
-  // La relance transcodée vise le lecteur système : un flux HLS h264/aac se
-  // lit partout, et c'est souvent le lecteur avancé qui vient d'échouer
-  // (bibliothèque absente, codec). La façade est prévenue, pour que les
-  // négociations suivantes (piste, palier) restent sur ce moteur.
+  // La relance transcodée vise le lecteur système (un HLS h264/aac se lit partout ; c'est
+  // souvent le lecteur avancé qui vient d'échouer) — la façade le retient pour la suite.
   const retryTranscoded = useCallback(() => {
     if (eng.engine === "mpv") eng.forceEngine("native", "fallback");
     pb.retry({ engine: "native" });
@@ -290,6 +287,8 @@ export function PlayerScreen({ itemId, version }: Props) {
 
       {/* Badge éphémère « Qualité réduite » — le message temporaire du cap. */}
       <AutoCapBadge active={pb.autoCapActive} />
+      <PlayerStallNotice buffering={isBuffering} started={started} paused={paused} transcoding={!pb.isDirectPlay}
+        canLowerQuality={failure.canLowerQuality} onLowerQuality={pb.lowerQuality} />
 
       {/* Jusqu'à ce que la lecture AVANCE : l'écran de chargement, au-dessus
           des contrôles, puis un fondu. */}

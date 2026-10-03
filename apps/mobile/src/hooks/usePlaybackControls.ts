@@ -130,5 +130,22 @@ export function usePlaybackControls({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPlaybackInfo, onRetry]);
 
-  return { changeAudio, changeSubtitle, changeQuality, retry, restart };
+  /**
+   * Un palier plus bas, à la position — le geste d'une connexion trop lente
+   * (lecture qui cale) : le serveur convertit, le débit baisse. `false` s'il
+   * n'y a plus de palier en dessous.
+   */
+  const lowerQuality = useCallback((): boolean => {
+    const degraded = quality.degradeOneTier();
+    if (!degraded) return false;
+    onRetry();
+    fetchPlaybackInfo({
+      maxBitrate: degraded.bitrate ?? 0, maxWidth: degraded.width ?? 0, maxHeight: degraded.height ?? 0,
+      startTimeTicks: startTicks(),
+    });
+    return true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPlaybackInfo, quality, onRetry]);
+
+  return { changeAudio, changeSubtitle, changeQuality, retry, restart, lowerQuality };
 }
