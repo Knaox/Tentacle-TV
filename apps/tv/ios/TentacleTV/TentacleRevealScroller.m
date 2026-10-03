@@ -25,6 +25,11 @@
 //    d'une flèche maintenue reste au ressort : la première répétition vient
 //    ~470 ms plus tard, quand il a presque fini — la main passe sans à-coup.
 //
+//  La spécification est dans tv-core : `packages/tv-core/src/focus/reveal.ts`
+//  (`revealOffset`, `clampRevealOffset`, `layoutShift`) et `revealMotion.ts`
+//  (`revealBurstStep`, `burstTargetBase`, `unproposedStep`) — mêmes étapes,
+//  mêmes constantes ; leurs tests sont le cahier des charges des deux.
+//
 
 #import "TentacleRevealScroller+Private.h"
 

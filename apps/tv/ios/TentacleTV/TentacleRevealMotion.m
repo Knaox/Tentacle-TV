@@ -12,6 +12,10 @@
 //    arrive, un logo lu) est compensée dans le même montage : plus de recalage
 //    après coup. « Réduire les animations » : la page se pose aussitôt.
 //
+//  La spécification est dans tv-core : `packages/tv-core/src/focus/revealMotion.ts`
+//  (`springAt`, `springSettled`, `revealMove`, `revealSpringOf`) et `reveal.ts`
+//  (`layoutShift`) — mêmes formules, mêmes seuils.
+//
 
 #import "TentacleRevealScroller+Private.h"
 

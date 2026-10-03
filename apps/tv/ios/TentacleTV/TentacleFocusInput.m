@@ -19,6 +19,9 @@
 //  reconnaît jamais et n'empêche ni ne retarde rien — il note les flèches
 //  enfoncées et l'activité du pavé.
 //
+//  La spécification est dans tv-core : `packages/tv-core/src/focus/revealMotion.ts`
+//  (`isInputBurst`, `REVEAL_BURST.repeatAfterMs` et `swipeWindowMs`).
+//
 
 #import "TentacleFocusSection.h"
 

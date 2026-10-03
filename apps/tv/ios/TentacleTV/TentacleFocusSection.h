@@ -16,6 +16,10 @@
 //    (`focus/sections.ts`), traduite ici parce que la géométrie n'est juste
 //    qu'au moment même du geste.
 //
+//  Les décisions sont dans tv-core (`packages/tv-core/src/focus/` :
+//  `sections.ts`, `sectionEntry.ts`, `reveal.ts`, `revealMotion.ts`) ; ces
+//  fichiers natifs les APPLIQUENT au geste, pas à pas.
+//
 
 #import <React/RCTTVView.h>
 
