@@ -10,38 +10,33 @@ import fs from "node:fs";
 import path from "node:path";
 import { BenchError, CACHE_DIR, REPO, capture, duration, mainCheckout, note, step } from "./config.mjs";
 import { withLock } from "./checkout.mjs";
+import { normalizeSource } from "./nativeSource.mjs";
 
 // Ce qui entre dans le binaire (l'équivalent du lanceur, `launcher/nativeBuild.mjs`).
 const NATIVE_INPUTS = ["apps/tv/ios", "apps/tv/package.json", "apps/tv/react-native.config.js", "apps/tv/app.json", "apps/tv/assets/fonts"];
 const PRODUCT = "Build/Products/Debug-appletvsimulator/TentacleTV.app";
 const UTF8 = { LANG: "en_US.UTF-8", LC_ALL: "en_US.UTF-8" };
 
-/** « chemin empreinte-git » de chaque fichier natif du checkout, trié. */
-function nativeBlobs(checkout) {
-  if (checkout.dir === REPO) {
+/** Les fichiers natifs du checkout (chemins relatifs, triés), lus sur le disque. */
+function nativeFiles(checkout) {
+  const listing = checkout.dir === REPO
     // Le dossier courant : son état réel, modifications non commitées comprises.
-    const files = (capture("git", ["-C", REPO, "ls-files", "-z", "-co", "--exclude-standard", "--", ...NATIVE_INPUTS]) ?? "")
-      .split("\0").filter((file) => file && fs.existsSync(path.join(REPO, file))).sort();
-    const hashes = capture("git", ["-C", REPO, "hash-object", "--stdin-paths"], { input: files.join("\n") })?.trim().split("\n") ?? [];
-    return files.map((file, i) => `${file} ${hashes[i]}`);
-  }
-  // Un checkout de référence : son commit fait foi.
-  const tree = capture("git", ["-C", REPO, "ls-tree", "-r", "-z", checkout.sha, "--", ...NATIVE_INPUTS]) ?? "";
-  return tree.split("\0").filter(Boolean).map((line) => {
-    const [meta, file] = line.split("\t");
-    return `${file} ${meta.split(" ")[2]}`;
-  }).sort();
+    ? (capture("git", ["-C", REPO, "ls-files", "-z", "-co", "--exclude-standard", "--", ...NATIVE_INPUTS]) ?? "").split("\0")
+    // Un checkout de référence : les fichiers de son commit (extraits dans le cache).
+    : (capture("git", ["-C", REPO, "ls-tree", "-r", "-z", "--name-only", checkout.sha, "--", ...NATIVE_INPUTS]) ?? "").split("\0");
+  return listing.filter((file) => file && fs.existsSync(path.join(checkout.dir, file))).sort();
 }
 
 /**
- * L'empreinte du natif d'un checkout : ses fichiers natifs, l'installation
+ * L'empreinte du natif d'un checkout : le CODE de ses fichiers natifs, l'installation
  * pnpm du principal (que tous les checkouts empruntent : son lockfile et ses
  * correctifs) et la version de Xcode.
  */
 export function nativeFingerprint(checkout) {
   const main = mainCheckout();
   const hash = crypto.createHash("sha256");
-  for (const line of nativeBlobs(checkout)) hash.update(`${line}\n`);
+  // Le code seulement : un commentaire ou une indentation ne reconstruit rien (nativeSource).
+  for (const file of nativeFiles(checkout)) hash.update(`${file}\0`).update(normalizeSource(file, fs.readFileSync(path.join(checkout.dir, file)))).update("\0");
   for (const file of ["pnpm-lock.yaml", ...fs.readdirSync(path.join(main, "patches")).map((name) => `patches/${name}`)]) {
     hash.update(`${file}\0`).update(fs.readFileSync(path.join(main, file))).update("\0");
   }
