@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from "react";
+import { memo, useCallback, type ReactNode } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,8 @@ export function useRailCardWidth(): number {
 
 /** Un résultat de recherche est un `MediaItem` réduit : la carte n'en lit que ce qu'il porte. */
 export const asMediaItem = (item: SearchMediaItem): MediaItem => item as unknown as MediaItem;
+
+const hitKey = (hit: SearchItemHit) => hit.item.Id;
 
 /** L'en-tête d'une section : son titre, son compte, et « Tout voir » s'il y a plus. */
 export function SectionHeader({ title, count, onSeeAll }: { title: string; count?: number; onSeeAll?: () => void }) {
@@ -51,17 +53,19 @@ export function Section({ children, ...header }: { title: string; count?: number
 export const PosterRail = memo(function PosterRail({ hits, onOpen }: { hits: SearchItemHit[]; onOpen: (id: string) => void }) {
   const width = useRailCardWidth();
   const st = useThemedStyles(makeStyles);
+  const openCard = useCallback((item: MediaItem) => onOpen(item.Id), [onOpen]);
+  const renderItem = useCallback(({ item: hit }: { item: SearchItemHit }) => (
+    <MobileMediaCard item={asMediaItem(hit.item)} width={width} onPress={openCard} />
+  ), [width, openCard]);
   return (
     <FlatList
       horizontal
       data={hits}
-      keyExtractor={(hit) => hit.item.Id}
+      keyExtractor={hitKey}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={st.rail}
       keyboardShouldPersistTaps="handled"
-      renderItem={({ item: hit }) => (
-        <MobileMediaCard item={asMediaItem(hit.item)} width={width} onPress={() => onOpen(hit.item.Id)} />
-      )}
+      renderItem={renderItem}
     />
   );
 });

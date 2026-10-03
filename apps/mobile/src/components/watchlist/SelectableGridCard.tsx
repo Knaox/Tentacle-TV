@@ -11,8 +11,9 @@ export interface SelectableGridCardProps {
   /** La sélection multiple est ouverte : la case se montre, le tap coche. */
   selectable?: boolean;
   selected?: boolean;
-  onPress: () => void;
-  onLongPress?: () => void;
+  /** La carte rend son titre : l'appelant passe une fonction stable. */
+  onPress: (item: MediaItem) => void;
+  onLongPress?: (item: MediaItem) => void;
 }
 
 /**

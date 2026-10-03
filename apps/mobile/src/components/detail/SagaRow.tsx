@@ -38,14 +38,11 @@ const SagaRail = memo(function SagaRail({ view }: { view: SagaView }) {
     (_: unknown, index: number) => ({ length: width + GAP, offset: (width + GAP) * index, index }),
     [width],
   );
+  const openMedia = useCallback((id: string) => router.push(`/media/${id}`), [router]);
+  const openExternalHref = useCallback((pluginId: string, href: string) => openExternal({ pluginId }, href), [openExternal]);
   const renderItem = useCallback(({ item: entry }: { item: SagaEntry }) => (
-    <SagaColumn
-      entry={entry}
-      width={width}
-      onOpenMedia={(id) => router.push(`/media/${id}`)}
-      onOpenExternal={(pluginId, href) => openExternal({ pluginId }, href)}
-    />
-  ), [width, router, openExternal]);
+    <SagaColumn entry={entry} width={width} onOpenMedia={openMedia} onOpenExternal={openExternalHref} />
+  ), [width, openMedia, openExternalHref]);
 
   return (
     <View style={st.root}>
@@ -78,6 +75,7 @@ const SagaColumn = memo(function SagaColumn({ entry, width, onOpenMedia, onOpenE
   const st = useThemedStyles(makeStyles);
   const { rank, cue } = sagaLabel(t, entry);
   const current = entry.kind === "library" && entry.cue === "current";
+  const openCard = useCallback((it: MediaItem) => onOpenMedia(it.Id), [onOpenMedia]);
 
   return (
     // `flex: 1` : la colonne prend la hauteur de la cellule (la plus haute de
@@ -94,7 +92,7 @@ const SagaColumn = memo(function SagaColumn({ entry, width, onOpenMedia, onOpenE
         // Le film ouvert : inerte (on y est déjà), son affiche cerclée — un
         // liseré DANS l'affiche, qu'aucun conteneur ne peut rogner.
         <View pointerEvents={current ? "none" : "auto"} accessibilityState={current ? { selected: true } : undefined}>
-          <MobileMediaCard item={entry.item} width={width} onPress={() => onOpenMedia(entry.item.Id)} />
+          <MobileMediaCard item={entry.item} width={width} onPress={openCard} />
           {current && <View pointerEvents="none" style={[st.ring, { height: width * 1.5 }]} />}
         </View>
       )}

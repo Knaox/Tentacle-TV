@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -21,6 +21,7 @@ import { DetailFacts } from "./DetailFacts";
 import { SagaRow } from "./SagaRow";
 import { IncludedInRow } from "./IncludedInRow";
 import { makeMediaDetailStyles } from "../../screens/mediaDetailStyles";
+import { useOpenMedia } from "@/hooks/useOpenMedia";
 
 interface Props {
   item: MediaItem;
@@ -50,6 +51,10 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
   // Les cartes des rangées (collection, similaires) ouvrent la feuille des
   // cartes d'elles-mêmes ; les lignes d'épisode la reçoivent, en variante 16:9.
   const openSheet = useCardSheetOpener();
+  // Des rangées aux props stables : leurs cartes mémoïsées ne se re-rendent
+  // pas à chaque rendu de la fiche.
+  const openMedia = useOpenMedia();
+  const renderMediaCard = useCallback((c: MediaItem) => <MobileMediaCard item={c} onPress={openMedia} />, [openMedia]);
 
   return (
     <View>
@@ -89,8 +94,7 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
       {/* Collection (BoxSet) : son contenu, navigable — sans lui, la fiche d'une
           collection n'avait ni lecture ni rien à ouvrir. */}
       {collectionItems && collectionItems.length > 0 && (
-        <MediaRow title={t("collectionContent")} data={collectionItems}
-          renderItem={(c: MediaItem) => <MobileMediaCard item={c} onPress={() => router.push(`/media/${c.Id}`)} />} />
+        <MediaRow title={t("collectionContent")} data={collectionItems} renderItem={renderMediaCard} />
       )}
 
       {item.People && item.People.length > 0 && <CastRow people={item.People} />}
@@ -123,8 +127,7 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
       {item.Type === "Movie" && <SagaRow item={item} />}
       <IncludedInRow itemId={item.Id} />
       {similar && similar.length > 0 && (
-        <MediaRow title={t("recommendations")} data={similar}
-          renderItem={(s: MediaItem) => <MobileMediaCard item={s} onPress={() => router.push(`/media/${s.Id}`)} />} />
+        <MediaRow title={t("recommendations")} data={similar} renderItem={renderMediaCard} />
       )}
     </View>
   );

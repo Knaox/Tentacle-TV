@@ -98,9 +98,14 @@ export function SearchScreen() {
     return () => sub.remove();
   }, [browse]);
 
-  // Ouvrir un résultat, c'est retenir la requête qui y a mené.
+  // Ouvrir un résultat, c'est retenir la requête qui y a mené — la requête
+  // COURANTE, lue par une référence : des actions qui dépendraient de la
+  // frappe changeraient à chaque lettre, et tous les résultats mémoïsés
+  // (cartes comprises) se re-rendraient avec elles.
   const { push: pushRecent } = recents;
-  const remember = useCallback(() => pushRecent(query), [pushRecent, query]);
+  const queryRef = useRef(query);
+  useEffect(() => { queryRef.current = query; }, [query]);
+  const remember = useCallback(() => pushRecent(queryRef.current), [pushRecent]);
   const actions = useMemo<SearchActions>(() => ({
     openItem: (id) => { remember(); nav.openItem(id); },
     playItem: (id) => { remember(); nav.playItem(id); },

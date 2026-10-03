@@ -1,9 +1,9 @@
-import { memo, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   biographyParagraphs, creditRoleKey, type CreditRole, type FilmographyEntry, type FilmographyFacets,
-  type FilmographyKind, type SearchMediaItem,
+  type FilmographyKind, type MediaItem, type SearchMediaItem,
 } from "@tentacle-tv/shared";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { BrandSpinner } from "@/components/ui";
@@ -56,6 +56,7 @@ interface FilmographyProps {
  */
 export const PersonFilmography = memo(function PersonFilmography(props: FilmographyProps) {
   const { pending, entries, shown, facets, kind, role, onKind, onRole, onOpen } = props;
+  const openCard = useCallback((item: MediaItem) => onOpen(item.Id), [onOpen]);
   const { t } = useTranslation("media");
   const st = useThemedStyles(makeStyles);
   const { itemWidth, gutter, padding } = useGrid({ phoneColumns: 3, gutter: 12 });
@@ -93,7 +94,7 @@ export const PersonFilmography = memo(function PersonFilmography(props: Filmogra
         <View style={[st.grid, { paddingHorizontal: padding - spacing.screenPadding, gap: gutter }]}>
           {shown.map(({ item }) => (
             <View key={item.Id} style={{ width: itemWidth }}>
-              <MobileMediaCard item={asMediaItem(item)} width={itemWidth} onPress={() => onOpen(item.Id)} />
+              <MobileMediaCard item={asMediaItem(item)} width={itemWidth} onPress={openCard} />
             </View>
           ))}
         </View>

@@ -93,7 +93,7 @@ export function HomeScreen() {
   // L'appui long des cartes (affiches, recommandations) ouvre la feuille des
   // cartes de l'app (`CardSheetScope`) : rien à brancher ici.
   const renderCard = useCallback((item: MediaItem) => (
-    <MobileMediaCard item={item} onPress={() => handlePress(item)} />
+    <MobileMediaCard item={item} onPress={handlePress} />
   ), [handlePress]);
 
   const librariesById = useMemo(() => {

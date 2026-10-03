@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 export function useMultiSelect<T extends string>() {
   const [active, setActive] = useState(false);
@@ -24,5 +24,10 @@ export function useMultiSelect<T extends string>() {
 
   const enter = useCallback(() => setActive(true), []);
 
-  return { active, selected, count: selected.size, toggle, selectAll, clear, enter };
+  // Un objet stable tant que la sélection ne bouge pas : les gestionnaires
+  // des grilles en dépendent, et leurs cartes mémoïsées avec eux.
+  return useMemo(
+    () => ({ active, selected, count: selected.size, toggle, selectAll, clear, enter }),
+    [active, selected, toggle, selectAll, clear, enter],
+  );
 }

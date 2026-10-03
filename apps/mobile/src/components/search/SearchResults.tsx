@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -6,6 +6,7 @@ import type { ExternalSearchState } from "@tentacle-tv/api-client";
 import {
   foldForSearch,
   type ExternalSearchItem,
+  type MediaItem,
   type SearchItemHit,
   type SearchMediaItem,
   type SearchPersonHit,
@@ -57,6 +58,8 @@ export const SearchResults = memo(function SearchResults({ query, response, epis
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const { itemWidth, gutter, padding } = useGrid({ phoneColumns: 3, gutter: 12 });
+  const { openItem } = actions;
+  const openCard = useCallback((item: MediaItem) => openItem(item.Id), [openItem]);
 
   const r = response;
   const noLibrary = !!r && r.top === null && r.movies.length === 0 && r.series.length === 0
@@ -68,7 +71,7 @@ export const SearchResults = memo(function SearchResults({ query, response, epis
     <View style={[st.grid, { paddingHorizontal: padding, gap: gutter }]}>
       {hits.map((hit) => (
         <View key={hit.item.Id} style={{ width: itemWidth }}>
-          <MobileMediaCard item={asMediaItem(hit.item)} width={itemWidth} onPress={() => actions.openItem(hit.item.Id)} />
+          <MobileMediaCard item={asMediaItem(hit.item)} width={itemWidth} onPress={openCard} />
         </View>
       ))}
     </View>

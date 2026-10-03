@@ -72,10 +72,11 @@ export function FavoritesScreen() {
   const scrollerRef = useRef(scroller);
   const onControlsY = useSearchDock(scrollerRef, assist.focused);
 
+  const { active: selecting, toggle: toggleSelected } = selection;
   const handlePress = useCallback((item: MediaItem) => {
-    if (selection.active) selection.toggle(item.Id);
+    if (selecting) toggleSelected(item.Id);
     else router.push(`/media/${item.Id}`);
-  }, [router, selection]);
+  }, [router, selecting, toggleSelected]);
   // En sélection, l'appui long ne fait rien : il cocherait par mégarde.
   const handleLongPress = useCallback((item: MediaItem) => {
     if (!selection.active) openSheet?.(posterSheetTarget(item));
@@ -101,8 +102,8 @@ export function FavoritesScreen() {
           width={cardWidth}
           selectable={selection.active}
           selected={selection.selected.has(item.Id)}
-          onPress={() => handlePress(item)}
-          onLongPress={() => handleLongPress(item)}
+          onPress={handlePress}
+          onLongPress={handleLongPress}
         />
       ))}
     </View>

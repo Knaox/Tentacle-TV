@@ -1,8 +1,9 @@
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useResumeItems, useSearchDiscover } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { SeriesRatingScope } from "@/contexts/SeriesRatingContext";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -31,6 +32,10 @@ export const SearchHome = memo(function SearchHome({ recent, onPick, onRemove, o
   const { data: discover } = useSearchDiscover();
   const { data: resume } = useResumeItems();
   const resumeShown = useMemo(() => (resume ?? []).slice(0, 10), [resume]);
+  const openCard = useCallback((item: MediaItem) => onOpen(item.Id), [onOpen]);
+  const renderResume = useCallback(({ item }: { item: MediaItem }) => (
+    <MobileMediaCard item={item} width={width} onPress={openCard} />
+  ), [width, openCard]);
   const genres = discover?.genres ?? [];
 
   return (
@@ -86,7 +91,7 @@ export const SearchHome = memo(function SearchHome({ recent, onPick, onRemove, o
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={st.rail}
               keyboardShouldPersistTaps="handled"
-              renderItem={({ item }) => <MobileMediaCard item={item} width={width} onPress={() => onOpen(item.Id)} />}
+              renderItem={renderResume}
             />
           </SeriesRatingScope>
         </View>

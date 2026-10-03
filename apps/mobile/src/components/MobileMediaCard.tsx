@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from "react";
+import { memo, useCallback, useMemo, type ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import Animated from "react-native-reanimated";
@@ -21,14 +21,20 @@ import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
   item: MediaItem;
-  onPress: () => void;
+  /**
+   * L'appui : la carte rend SON titre. L'appelant passe une fonction stable
+   * (`useCallback`), jamais une fermeture par carte — sans quoi le `memo` de
+   * la carte cède à chaque rendu de la liste, et une grille qui défile
+   * re-rend toutes ses cartes montées à chaque pas.
+   */
+  onPress: (item: MediaItem) => void;
   /**
    * L'appui long. Absent : la feuille d'appui long de la portée (variante
    * `poster`) — toute affiche de la bibliothèque l'ouvre, sans qu'on ait à
    * la faire descendre de rangée en rangée. Une collection en sélection
    * multiple passe le sien.
    */
-  onLongPress?: () => void;
+  onLongPress?: (item: MediaItem) => void;
   width?: number;
   /** Un calque posé sur l'affiche (la case de sélection d'une collection). */
   overlay?: ReactNode;
@@ -80,7 +86,11 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   // que le web) : elle en porte donc la note, lot « +N » comme épisode isolé.
   const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
   const openSheet = useCardSheetOpener();
-  const handleLongPress = onLongPress ?? (openSheet ? () => openSheet(posterSheetTarget(item)) : undefined);
+  const handlePress = useCallback(() => onPress(item), [onPress, item]);
+  const handleLongPress = useMemo(() => {
+    if (onLongPress) return () => onLongPress(item);
+    return openSheet ? () => openSheet(posterSheetTarget(item)) : undefined;
+  }, [onLongPress, openSheet, item]);
   const posterUri = image.uri;
   // Une série incomplète (recherche seulement) le dit sous son affiche : son
   // appui long offre de demander ses saisons.
@@ -89,7 +99,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
 
   return (
     <PressableCard
-      onPress={onPress}
+      onPress={handlePress}
       onLongPress={handleLongPress}
       style={{ width: cardWidth }}
       accessibilityRole="button"

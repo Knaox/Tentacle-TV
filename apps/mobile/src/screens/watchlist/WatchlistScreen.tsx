@@ -67,10 +67,11 @@ export function WatchlistScreen() {
   const listRef = useRef<FlatList<MediaItem>>(null);
   const onControlsY = useSearchDock(listRef, assist.focused);
 
+  const { active: selecting, toggle: toggleSelected } = selection;
   const handlePress = useCallback((item: MediaItem) => {
-    if (selection.active) selection.toggle(item.Id);
+    if (selecting) toggleSelected(item.Id);
     else router.push(`/media/${item.Id}`);
-  }, [router, selection]);
+  }, [router, selecting, toggleSelected]);
   // En sélection, l'appui long ne fait rien : il cocherait par mégarde.
   const handleLongPress = useCallback((item: MediaItem) => {
     if (!selection.active) openSheet?.(posterSheetTarget(item));
@@ -106,8 +107,8 @@ export function WatchlistScreen() {
       width={itemWidth}
       selectable={selection.active}
       selected={selection.selected.has(item.Id)}
-      onPress={() => handlePress(item)}
-      onLongPress={() => handleLongPress(item)}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
     />
   ), [isList, styles.rowWrap, selection.active, selection.selected, pendingId, handlePress, handleLongPress, play, itemWidth]);
 

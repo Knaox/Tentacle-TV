@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter } from "expo-router";
 import type { ExternalSearchItem, SearchProvider } from "@tentacle-tv/shared";
 
@@ -51,5 +51,6 @@ export function useSearchNavigation({ modal = true }: { modal?: boolean } = {}) 
     openExternal(provider, item.href);
   }, [openExternal]);
 
-  return { openItem, playItem, openExternal, openExternalItem };
+  // Un objet stable : les résultats (mémoïsés) le reçoivent en props.
+  return useMemo(() => ({ openItem, playItem, openExternal, openExternalItem }), [openItem, playItem, openExternal, openExternalItem]);
 }
