@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "../components/TentacleLogo";
 import { isSessionExpired, setSessionExpired } from "../auth/sessionState";
 import { storeCredentials, attemptReAuth, loginIdentity } from "../auth/credentialManager";
+import { hasSession } from "../auth/authRoute";
 import { SubtleBackground } from "../components/auth/authStyles";
 import { AuthScreenFrame } from "../components/auth/AuthScreenFrame";
 import { AuthTextField } from "../components/auth/AuthTextField";
@@ -30,7 +31,9 @@ export function LoginScreen() {
   useEffect(() => {
     if (!isSessionExpired()) return;
     const storedToken = storage.getItem("tentacle_token");
-    if (!storedToken) return;
+    // Un jeton sans profil n'est pas une session : la garde renverrait aussitôt
+    // l'accueil ici, et la reprise reboucherait.
+    if (!storedToken || !hasSession({ token: storedToken, user: storage.getItem("tentacle_user") })) return;
 
     let cancelled = false;
     setReconnecting(true);
