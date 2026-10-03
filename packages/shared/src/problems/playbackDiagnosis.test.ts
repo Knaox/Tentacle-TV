@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { hlsFailure, mediaElementFailure } from "./engineErrors";
-import { collectPlaybackFailure, diagnosePlaybackFailure, type PlaybackFailureContext } from "./playbackDiagnosis";
+import { collectPlaybackFailure, diagnosePlaybackFailure, lowerQualityTier, type PlaybackFailureContext } from "./playbackDiagnosis";
 
 /**
  * La chaîne commune d'un échec de lecture : du signalement (moteur, requête,
@@ -64,9 +64,11 @@ describe("diagnostic d'un échec de lecture", () => {
   });
 
   it("la fiche introuvable, une lecture déjà commencée, un fichier local disparu", async () => {
+    // Le fichier source répondrait 404 lui aussi : il n'est pas interrogé.
+    vi.stubGlobal("fetch", vi.fn(async () => answer(404)));
     const gone = await diagnosePlaybackFailure(
       { from: "request", error: Object.assign(new Error("Media server API error 404"), { status: 404 }), target: "relayed", request: "GET /Items/1" },
-      { ...CTX, streamUrl: null, sourceUrl: null },
+      { ...CTX, streamUrl: null },
       ok,
     );
     expect(gone.cause).toBe("itemNotFound");
@@ -94,5 +96,14 @@ describe("diagnostic d'un échec de lecture", () => {
       ok,
     );
     expect(JSON.stringify(result.details)).not.toContain("secret");
+  });
+
+  it("« Qualité réduite » : de la lecture directe à la conversion, puis palier par palier", () => {
+    const presets = [
+      { key: "original", bitrate: null }, { key: "quality1080p", bitrate: 8e6 }, { key: "quality720p", bitrate: 4e6 },
+    ] as const;
+    expect(lowerQualityTier(presets, "original")).toBe("quality1080p");
+    expect(lowerQualityTier(presets, "quality1080p")).toBe("quality720p");
+    expect(lowerQualityTier(presets, "quality720p")).toBeNull();
   });
 });

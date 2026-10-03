@@ -68,6 +68,18 @@ export function nextVersionId(sources: readonly { Id?: string }[] | undefined, c
   return ids[(index + 1) % ids.length] ?? null;
 }
 
+/**
+ * « Qualité réduite » : le palier suivant qui impose un débit — depuis la
+ * lecture directe, c'est la conversion ; `null` s'il n'y en a plus.
+ */
+export function lowerQualityTier<K extends string>(
+  presets: readonly { key: K; bitrate: number | null }[],
+  currentKey: K,
+): K | null {
+  const index = presets.findIndex((preset) => preset.key === currentKey);
+  return presets.slice(index + 1).find((preset) => preset.bitrate != null)?.key ?? null;
+}
+
 /** Ce que le lecteur sait de sa lecture au moment de l'échec. */
 export interface PlaybackFailureContext {
   streamUrl: string | null;
@@ -123,7 +135,9 @@ export async function diagnosePlaybackFailure(
   const [reachability, streamProbe, sourceProbe] = await Promise.all([
     ctx.local ? null : env.probeServers(),
     !ctx.local && ctx.streamUrl && shouldProbeStream(full) ? probeStream(ctx.streamUrl, ctx.headers) : null,
-    ctx.sourceUrl && shouldProbeSource(full) ? probeStream(ctx.sourceUrl, ctx.headers) : null,
+    // Une requête en échec (la fiche, la négociation) dit déjà sa cause par son
+    // statut : la fiche introuvable n'est pas un fichier manquant.
+    report.from !== "request" && ctx.sourceUrl && shouldProbeSource(full) ? probeStream(ctx.sourceUrl, ctx.headers) : null,
   ]);
   const probed = withProbes(full, reachability, streamProbe, sourceProbe);
   return {
