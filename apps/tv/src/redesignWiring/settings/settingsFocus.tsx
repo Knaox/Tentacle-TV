@@ -1,11 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { StyleSheet, TVFocusGuideView, type View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import type { FocusGroupContainerProps } from "../../redesign/focus/focusBinding";
 import type { SettingsTab } from "../../redesign/screens/settings/settingsTypes";
 import type { FocusStore } from "../focus/focusStore";
 import { AutoFocusGuide } from "../focus/focusGuides";
-import { setFocusLocked } from "../focus/focusLocks";
 
 /**
  * Le focus des réglages, que la vue ne décide pas :
@@ -61,51 +60,10 @@ export function useActiveTabDestination(focus: FocusStore, tab: SettingsTab): Vi
   return useMemo(() => (node ? [node] : []), [node]);
 }
 
-/** Filet : si le premier focus tarde, les lignes se libèrent quand même. */
-const RELEASE_AFTER_MS = 800;
-
 /**
- * L'entrée de la liste de choix : la valeur retenue. Dans une `Modal`, aucune
- * préférence de focus n'est honorée — le contenu vit dans le contrôleur de la
- * modale, hors de la racine React que `hasTVPreferredFocus` et les
- * réclamations visent (`RCTTVView.rootView` y rend nil) : tvOS focalise
- * l'élément du haut. À l'ouverture, seule la valeur retenue est donc
- * focalisable (posé AVANT que la liste ne se rende) ; au premier focus posé,
- * les autres lignes le redeviennent. Rend un compteur qui change à la
- * libération : la liste se redessine pour la lire (les nœuds déjà montés
- * reçoivent aussi leur verrou directement). Une nouvelle entrée, liste
- * ouverte (l'élément focalisé a disparu), verrouille de nouveau : tvOS, qui
- * cherche un nouveau focus, n'en trouve qu'un. Commun aux listes en Modal
- * (réglages, feuille d'actions, filtres de la bibliothèque).
+ * L'entrée des listes en `Modal` (la valeur retenue, verrouillée seule
+ * focalisable jusqu'au premier focus) : la règle est dans tv-core
+ * (`panels/choiceEntry`), son application tvOS dans
+ * `platform/tvos/panels/useChoiceEntry`. Ré-exportée ici pour ses appelants.
  */
-export function useChoiceEntry(focus: FocusStore, keys: readonly string[], entryKey: string | null): number {
-  const [releases, setReleases] = useState(0);
-  const opened = useRef<string | null>(null);
-  const locked = useRef<string[]>([]);
-  if (opened.current !== entryKey) {
-    for (const key of locked.current) setFocusLocked(focus, key, false);
-    locked.current = entryKey ? keys.filter((key) => key !== entryKey) : [];
-    for (const key of locked.current) setFocusLocked(focus, key, true);
-    opened.current = entryKey;
-  }
-  useEffect(() => {
-    if (!entryKey) return undefined;
-    let done = false;
-    const release = () => {
-      if (done) return;
-      done = true;
-      for (const key of locked.current) setFocusLocked(focus, key, false);
-      locked.current = [];
-      setReleases((count) => count + 1);
-    };
-    const unsubscribe = focus.subscribe((key, focused) => {
-      if (focused && key === entryKey) release();
-    });
-    const timer = setTimeout(release, RELEASE_AFTER_MS);
-    return () => {
-      unsubscribe();
-      clearTimeout(timer);
-    };
-  }, [focus, entryKey]);
-  return releases;
-}
+export { useChoiceEntry } from "../../platform/tvos/panels/useChoiceEntry";
