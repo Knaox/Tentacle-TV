@@ -352,12 +352,16 @@ changent ni de nom ni de comportement.
   ouvert depuis les réglages » parmi les pages poussées (Retour → page
   précédente). Au SHA de référence, « Changer de serveur » appelle `unpair`,
   qui REMET la pile à `[PairCode]` : Menu sur l'accueil du jumelage quitte
-  l'application. Aucun chemin n'empile le jumelage.
-- **B2** (lu dans le code, à confirmer au banc) Deux Menu rapprochés sur le
-  menu d'une entrée : le second arrive pendant le fondu de sortie
-  (`onRequestClose` toujours branché) et rappelle `closeMenu` sans entrée
-  tenue — la redirection O2.6 est effacée. Après Monter / Descendre, le focus
-  reste sur la CASE au lieu de suivre l'entrée.
+  l'application. Aucun chemin n'empile le jumelage. Mesuré au banc (référence) :
+  « Changer de serveur » demande un second OK (« Confirmer — Changer de
+  serveur »), puis `[PairCode]`, focus « Afficher le code », Menu → sortie.
+  Épinglé : `jumelage-sortie#changer-de-serveur-puis-retour`.
+- **B2** (mesuré au banc, référence) Deux Menu rapprochés (60 ms) sur le menu
+  d'une entrée, après Monter : le premier ferme le menu, le second part à
+  l'ÉCRAN — rail ouvert, il envoie le focus au profil. La redirection vers
+  l'entrée déplacée (O2.6) n'a pas lieu. Lu dans le code : pendant le fondu, un
+  second `onRequestClose` efface aussi l'attente (`closeMenu` sans entrée
+  tenue). Épinglé : `organiser#monter-puis-double-retour`.
 - **B3** (théorique) Un appui pris par la portée dont la seule couche se
   désactive avant le relâchement, sur une page non poussée : l'appui est
   avalé, ni action ni sortie (R1.4).
@@ -366,6 +370,19 @@ changent ni de nom ni de comportement.
   profil, la pile `[Home, Library]` inchangée : c'est R2.1 / R2.2 (sur une
   page du rail, Retour ne dépile jamais — décidé le 2026-10-01) ; le 3e
   Retour quitte. Épinglé par `retour-pages#bibliotheque-retour-x3`.
+- **B6** (mesuré au banc, référence ; le carnet dit l'inverse) Rail de 24
+  entrées, BAS maintenu : le focus passe la dernière entrée, le profil, puis
+  BOUCLE sur Rechercher (le raccourci « sous le profil ») ; le carnet
+  (« La navigation — beaucoup de bibliothèques ») annonçait un arrêt sur la
+  dernière entrée. Épinglé : `defilement#rail-24-bibliotheques`.
+- **B7** (mesuré au banc, référence) Sous charge, l'accueil n'a pas d'entrée
+  tant qu'il charge (`entryKey` nul) : tvOS donne le focus au rail, et si ce
+  focus arrive plus de 600 ms après l'arrivée, il passe pour un geste de
+  l'utilisateur et l'accueil ne reprend pas le focus. Une bibliothèque a une
+  entrée de chargement (`pill:status`) : pas de course. Les scénarios du rail
+  partent donc d'une bibliothèque.
+- **B8** (mesuré au banc, référence) Réglages ouverts par `navigate` (et non
+  par le rail) ne prennent aucun focus.
 - **B4** Commentaires périmés, sans effet : `AppNavigator` (Player : « le Menu
   qu'un panneau ouvert doit consommer (usePreventRemove) »), `claimAfterRestore`
   (« la pile le réempile (usePreventRemove) »), en-tête de
