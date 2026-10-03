@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useJellyfinClient, useMediaItem, useTentacleConfig } from "@tentacle-tv/api-client";
 import { parseYouTubeId } from "@tentacle-tv/shared";
+import { trailerState } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
-import { FocusBindingProvider, type FocusBinding } from "../../redesign/focus/focusBinding";
+import { bindTrailerFocus, useTrailerChrome, useTrailerReturn } from "../../platform/tvos/screens/trailer";
+import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { TrailerView } from "../../redesign/screens/trailer/TrailerView";
 import { TrailerWebView, TRAILER_WEBVIEW_SUPPORTED } from "../../screens/trailer/TrailerWebView";
 import { detailBackdropUri } from "../detail/detailImages";
-import { useRemoteEvents } from "../remote/remoteEvents";
-import { useIdleChrome } from "./useIdleChrome";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
 
@@ -24,22 +24,17 @@ type Props = NativeStackScreenProps<RootStackParamList, "Trailer">;
  * de la vidéo aussi.
  *
  * Un échec se dit en une phrase (« indisponible »), puis l'écran rend la
- * fiche de lui-même (`UNAVAILABLE_RETURN_MS`) — le focus y retrouve
+ * fiche de lui-même (`TRAILER_UNAVAILABLE_RETURN_MS`) — le focus y retrouve
  * « Bande-annonce » : jamais un écran sans issue, ni un lecteur figé.
  *
  * Le chrome s'estompe trois secondes après le début de la lecture, et le
- * moindre geste de la télécommande le rallume (`useIdleChrome`) : la croix
+ * moindre geste de la télécommande le rallume (`useTrailerChrome`) : la croix
  * garde le focus tout du long, elle ne peut donc pas en être le signal. Tout
- * geste compte (`useRemoteEvents`) : un appui, ou un glisser sur le pavé
- * tactile — le seul signal qu'il émette ici, le focus n'ayant nulle part où
- * aller.
+ * geste compte, Retour excepté (il quitte) : un appui, ou un glisser sur le
+ * pavé tactile — le seul signal qu'il émette ici, le focus n'ayant nulle part
+ * où aller. Décidé par tv-core (`player/trailerChrome.ts`), posé par
+ * l'applicateur `platform/tvos/screens/trailer.ts`.
  */
-
-const CLOSE_KEY = "trailer:close";
-/** Le temps de lire la phrase de l'indisponible avant de rendre la fiche. */
-const UNAVAILABLE_RETURN_MS = 4_000;
-const ENTRY: FocusBinding = { native: { hasTVPreferredFocus: true } };
-const bindClose = (focusKey: string) => (focusKey === CLOSE_KEY ? ENTRY : undefined);
 
 export function TrailerRedesign({ route, navigation }: Props) {
   const { url, name, itemId } = route.params;
@@ -58,21 +53,15 @@ export function TrailerRedesign({ route, navigation }: Props) {
   // Sans identifiant YouTube ni serveur, rien à lire : l'écran le dit — et,
   // pour une vidéo hors YouTube, que c'est le téléviseur qui ne sait pas la lire.
   const canPlay = TRAILER_WEBVIEW_SUPPORTED && !!ytId && !!serverUrl;
-  const state = !canPlay || failed ? "unavailable" : loaded ? "playing" : "loading";
-  const { dimmed, wake } = useIdleChrome(state === "playing");
-
+  const state = trailerState({ canPlay, failed, loaded });
   const isFocused = useIsFocused();
+  const dimmed = useTrailerChrome(state === "playing", isFocused);
+
   const close = useCallback(() => navigation.goBack(), [navigation]);
   // Stables : le lecteur relance sa résolution quand ils changent.
   const onLoadEnd = useCallback(() => setLoaded(true), []);
   const onError = useCallback(() => setFailed(true), []);
-  useRemoteEvents(wake, isFocused);
-
-  useEffect(() => {
-    if (state !== "unavailable" || !isFocused) return;
-    const timer = setTimeout(close, UNAVAILABLE_RETURN_MS);
-    return () => clearTimeout(timer);
-  }, [state, isFocused, close]);
+  useTrailerReturn(state, isFocused, close);
 
   const video = canPlay && ytId && !failed ? (
     <TrailerWebView
@@ -86,7 +75,7 @@ export function TrailerRedesign({ route, navigation }: Props) {
   ) : undefined;
 
   return (
-    <FocusBindingProvider bind={bindClose}>
+    <FocusBindingProvider bind={bindTrailerFocus}>
       <TrailerView
         state={state}
         title={name || item?.Name || ""}

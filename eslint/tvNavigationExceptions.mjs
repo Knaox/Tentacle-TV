@@ -30,7 +30,6 @@ export const TV_NAV_EXCEPTIONS = [
   // T5 — le lecteur.
 
   // T7 — les écrans.
-  { file: "redesignWiring/trailer/TrailerRedesign.tsx", rules: ["no-focus-props"], owner: "T7", why: "entrée de la bande-annonce (hasTVPreferredFocus)" },
   { file: "redesign/screens/pairing/PairingField.tsx", rules: ["no-native-press"], owner: "T7", why: "une VUE qui ouvre le clavier système (.focus() / .blur() d'un TextInput)" },
 
   // Hors navigation — exceptions permanentes.
