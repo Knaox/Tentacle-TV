@@ -429,28 +429,11 @@
             "right",
             "right"
           ],
-          "settleMs": 800
-        },
-        {
-          "do": [
-            "right",
-            "right",
-            "right",
-            "right"
-          ],
-          "settleMs": 800
-        },
-        {
-          "do": [
-            "right",
-            "right",
-            "right"
-          ],
           "settleMs": 800,
           "expect": {
-            "focus": "similar:11"
+            "focus": "similar:4"
           },
-          "why": "Avatar, le dernier similaire"
+          "why": "Avatar, le dernier des cinq similaires (la rangée ne garde que ceux de la même bibliothèque)"
         },
         {
           "do": "select",
@@ -516,7 +499,7 @@
           "why": "un seul Retour : avant la PREMIÈRE fiche"
         }
       ],
-      "why": "« GTA VI : un large aperçu » → son douzième similaire, Avatar → le premier similaire d'Avatar : la seule chaîne de similaires de l'instantané. Appuis comptés, jamais maintenus : la case atteinte par un appui maintenu dépend de la vitesse"
+      "why": "« GTA VI : un large aperçu » → Avatar, le dernier de ses cinq similaires de la même bibliothèque → le premier similaire d'Avatar : la seule chaîne de similaires de l'instantané. Appuis comptés, jamais maintenus : la case atteinte par un appui maintenu dépend de la vitesse"
     },
     {
       "id": "fiche-personne-remplace",
