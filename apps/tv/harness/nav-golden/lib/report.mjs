@@ -38,6 +38,10 @@ function detailLines(result) {
   if (result.unstable?.start?.length) lines.push(`entrée instable : ${result.unstable.start.join(", ")}`);
   for (const n of (result.notes ?? []).slice(0, 4)) lines.push(`(note, non comptée) pas ${n.step} — ${n.field} : ${show(n.golden)} → ${show(n.observed)}`);
   if (result.error) lines.push(result.error);
+  if (result.firstAttempt) {
+    const d = result.firstAttempt.diffs[0];
+    lines.push(`1er essai : ${result.firstAttempt.status}${d ? ` — pas ${d.step} ${d.field} : référence ${show(d.golden)} · observé ${show(d.observed)}` : result.firstAttempt.error ? ` — ${result.firstAttempt.error}` : ""}`);
+  }
   if (result.reason) lines.push(result.reason);
   return lines;
 }
@@ -46,7 +50,7 @@ function detailLines(result) {
 export function printResult(result) {
   const time = `${result.durationMs ? ` (${duration(result.durationMs)})` : ""}${result.retried ? " [au 2e essai]" : ""}`;
   say(`  ${MARK[result.status] ?? "?"} ${result.suite.domain}/${result.suite.name}#${result.scenario.id}${time} — ${LABEL[result.status] ?? result.status}`);
-  if (result.status !== "ok" && result.status !== "recorded") for (const line of detailLines(result)) say(`      ${line}`);
+  if ((result.status !== "ok" && result.status !== "recorded") || result.firstAttempt) for (const line of detailLines(result)) say(`      ${line}`);
   return result;
 }
 
@@ -66,7 +70,7 @@ export function writeReport(mode, results, { session, startedAt }) {
     "",
     ...results.flatMap((r) => [
       `- ${MARK[r.status]} \`${r.suite.domain}/${r.suite.name}#${r.scenario.id}\` — ${r.scenario.title} — **${LABEL[r.status]}**${r.durationMs ? ` (${duration(r.durationMs)})` : ""}`,
-      ...(r.status === "ok" || r.status === "recorded" ? [] : detailLines(r).map((line) => `    - ${line}`)),
+      ...((r.status === "ok" || r.status === "recorded") && !r.firstAttempt ? [] : detailLines(r).map((line) => `    - ${line}`)),
     ]),
     "",
   ].join("\n");

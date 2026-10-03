@@ -162,10 +162,13 @@ export async function verifySuites(ctx, session, suites, { retries = 1, onResult
         continue;
       }
       let outcome = null;
+      let first = null;
       for (let attempt = 0; attempt <= retries && (!outcome || FAILED.has(outcome.status)); attempt++) {
+        if (outcome) first ??= { status: outcome.status, diffs: outcome.diffs ?? [], error: outcome.error };
         outcome = { ...(await verifyOnce(ctx, session, suite, scenario, entry)), retried: attempt > 0 };
       }
-      results.push(onResult({ suite, scenario, ...outcome }));
+      // Passé au 2e essai : le 1er reste dit (une instabilité, même rattrapée, se voit).
+      results.push(onResult({ suite, scenario, ...outcome, ...(first ? { firstAttempt: first } : {}) }));
     }
   }
   return results;
