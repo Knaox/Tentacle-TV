@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:24:40.428Z",
+  "recordedAt": "2026-10-03T05:41:56.991Z",
   "scenarios": {
     "jumelage-connexion-refusee": {
-      "hash": "5a6acc115262",
-      "durationMs": 64925,
+      "hash": "af5a52bad2c8",
+      "durationMs": 59787,
       "start": {
         "app": "foreground",
         "focus": "pairing:showCode",
@@ -121,7 +121,7 @@
           "writes": []
         },
         {
-          "do": "type:http://localhost:3107\n",
+          "do": "type:http://{backend}\n",
           "app": "foreground",
           "focus": "pairing:username",
           "label": "Nom d'utilisateur",
@@ -362,140 +362,9 @@
         }
       ]
     },
-    "jumelage-accueil": {
-      "hash": "64ae2394dfc4",
-      "durationMs": 23294,
-      "start": {
-        "app": "foreground",
-        "focus": "pairing:showCode",
-        "label": "Afficher le code de jumelage",
-        "frame": [
-          495,
-          673,
-          473,
-          68
-        ],
-        "groups": [],
-        "route": "PairCode",
-        "params": null,
-        "stack": [
-          "PairCode"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "wait:1",
-          "app": "foreground",
-          "focus": "pairing:showCode",
-          "label": "Afficher le code de jumelage",
-          "frame": [
-            495,
-            673,
-            473,
-            68
-          ],
-          "groups": [],
-          "route": "PairCode",
-          "params": null,
-          "stack": [
-            "PairCode"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "pairing:manual",
-          "label": "Configurer manuellement",
-          "frame": [
-            990,
-            673,
-            435,
-            68
-          ],
-          "groups": [],
-          "route": "PairCode",
-          "params": null,
-          "stack": [
-            "PairCode"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "pairing:lang:en",
-          "label": "English",
-          "frame": [
-            1076,
-            805,
-            131,
-            52
-          ],
-          "groups": [],
-          "route": "PairCode",
-          "params": null,
-          "stack": [
-            "PairCode"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "pairing:manual",
-          "label": "Configurer manuellement",
-          "frame": [
-            990,
-            673,
-            435,
-            68
-          ],
-          "groups": [],
-          "route": "PairCode",
-          "params": null,
-          "stack": [
-            "PairCode"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "left",
-          "app": "foreground",
-          "focus": "pairing:showCode",
-          "label": "Afficher le code de jumelage",
-          "frame": [
-            495,
-            673,
-            473,
-            68
-          ],
-          "groups": [],
-          "route": "PairCode",
-          "params": null,
-          "stack": [
-            "PairCode"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
     "jumelage-serveur-et-identifiants": {
-      "hash": "b0ea8a0a4cd3",
-      "durationMs": 43235,
+      "hash": "3cd648d84bbf",
+      "durationMs": 41988,
       "start": {
         "app": "foreground",
         "focus": "pairing:showCode",
@@ -641,7 +510,7 @@
           "writes": []
         },
         {
-          "do": "type:http://localhost:3107\n",
+          "do": "type:http://{backend}\n",
           "app": "foreground",
           "focus": "pairing:username",
           "label": "Nom d'utilisateur",
@@ -795,6 +664,137 @@
         },
         {
           "do": "menu",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            495,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "jumelage-accueil": {
+      "hash": "64ae2394dfc4",
+      "durationMs": 23294,
+      "start": {
+        "app": "foreground",
+        "focus": "pairing:showCode",
+        "label": "Afficher le code de jumelage",
+        "frame": [
+          495,
+          673,
+          473,
+          68
+        ],
+        "groups": [],
+        "route": "PairCode",
+        "params": null,
+        "stack": [
+          "PairCode"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            495,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "pairing:manual",
+          "label": "Configurer manuellement",
+          "frame": [
+            990,
+            673,
+            435,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:lang:en",
+          "label": "English",
+          "frame": [
+            1076,
+            805,
+            131,
+            52
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "pairing:manual",
+          "label": "Configurer manuellement",
+          "frame": [
+            990,
+            673,
+            435,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
           "app": "foreground",
           "focus": "pairing:showCode",
           "label": "Afficher le code de jumelage",
