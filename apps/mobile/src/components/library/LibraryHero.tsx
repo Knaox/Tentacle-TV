@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { runOnJS, useAnimatedReaction, type SharedValue } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { LibraryView } from "@tentacle-tv/shared";
@@ -35,10 +36,16 @@ export function collectionIcon(type?: string): "film" | "tv" | "layers" {
  * Changer de bibliothèque change l'ambiance en fondu (`transition`
  * d'expo-image : une seule image en mémoire, pas de calque en plus).
  *
- * L'image tourne lentement tant que l'onglet est devant et que le mouvement
- * n'est pas réduit ; derrière un autre écran, plus rien ne tourne.
+ * L'image tourne lentement tant que l'onglet est devant, que le héros est dans
+ * la vue (`inView`, `useHeroInView` : la grille l'a peut-être fait défiler
+ * plus haut) et que le mouvement n'est pas réduit ; sinon, plus rien ne
+ * tourne — ni image neuve à télécharger, ni fondu hors de la vue.
  */
-export const LibraryHero = memo(function LibraryHero({ library, topInset }: { library: LibraryView; topInset: number }) {
+export const LibraryHero = memo(function LibraryHero({ library, topInset, inView }: {
+  library: LibraryView;
+  topInset: number;
+  inView?: SharedValue<number>;
+}) {
   const { t } = useTranslation("common");
   const { t: tn } = useTranslation("nav");
   const theme = useTheme();
@@ -46,12 +53,20 @@ export const LibraryHero = memo(function LibraryHero({ library, topInset }: { li
   const client = useJellyfinClient();
   const items: RandomItem[] = (library as LibraryView & { _randomItems?: RandomItem[] })._randomItems ?? [];
   const [turn, setTurn] = useState(0);
+  const [visible, setVisible] = useState(true);
+  useAnimatedReaction(
+    () => (inView ? inView.value : 1),
+    (now, previous) => {
+      if (previous !== null && now !== previous) runOnJS(setVisible)(now === 1);
+    },
+    [inView],
+  );
 
   useFocusEffect(useCallback(() => {
-    if (items.length <= 1 || motion.isReducedMotion()) return;
+    if (!visible || items.length <= 1 || motion.isReducedMotion()) return;
     const timer = setInterval(() => setTurn((n) => n + 1), ROTATE_MS);
     return () => clearInterval(timer);
-  }, [items.length]));
+  }, [items.length, visible]));
 
   const item = items.length > 0 ? items[turn % items.length] : undefined;
   const url = item?.hasBackdrop

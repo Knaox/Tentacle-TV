@@ -9,6 +9,9 @@ import { ScopedSearchEmpty } from "@/components/search/ScopedSearchEmpty";
 import { SearchAssistPane } from "@/components/search/SearchAssistPane";
 import type { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { spacing } from "@/theme";
+import { useComposedEventHandler } from "react-native-reanimated";
+import { useHeroInView } from "@/components/hero/useHeroInView";
+import { LIBRARY_HERO_HEIGHT } from "@/components/library/LibraryHero";
 import { LibraryFilterBar, LibrarySheets } from "@/screens/library/LibraryFilterBar";
 import { useLibraryCatalogState } from "@/screens/library/useLibraryCatalogState";
 
@@ -53,6 +56,9 @@ export function LibraryCatalogView({
   const emptySearch = searching && !catalog.isLoading && totalCount === 0;
 
   const openItem = useCallback((item: MediaItem) => router.push(`/media/${item.Id}`), [router]);
+  // Le héros défilé hors de la vue cesse de tourner (image neuve, fondu).
+  const hero = useHeroInView(LIBRARY_HERO_HEIGHT);
+  const gridScroll = useComposedEventHandler([onScroll ?? null, hero.handler]);
   const resetAll = useCallback(() => {
     state.setSearchQuery("");
     state.advanced.onReset();
@@ -70,7 +76,7 @@ export function LibraryCatalogView({
 
   const header = (
     <View>
-      <LibraryHero library={library} topInset={topInset} />
+      <LibraryHero library={library} topInset={topInset} inView={hero.inView} />
       {capsule}
       <LibrarySearchRow state={state} libraryName={library.Name} onLayoutY={onSearchRowY} />
       {/* Pendant la frappe, les suggestions prennent la place des filtres et de la grille. */}
@@ -101,7 +107,7 @@ export function LibraryCatalogView({
         overrideItems={hideGrid ? NONE : state.platformActive ? state.platformFiltered : undefined}
         empty={hideGrid ? null : undefined}
         header={header}
-        onScroll={onScroll}
+        onScroll={gridScroll}
         topInset={topInset}
         bottomInset={bottomInset}
         filtered={state.isFiltered}
