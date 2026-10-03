@@ -30,8 +30,3 @@ export interface GroupEntryInput {
 export function groupEntryKey({ remember, last, isMounted, fallback }: GroupEntryInput): string | null {
   return remember && last && isMounted(last) ? last : fallback();
 }
-
-/** Le dernier élément visité, après un focus pris : seulement une clé du groupe. */
-export function rememberGroupFocus(last: string | null, focusedKey: string, owns: (key: string) => boolean): string | null {
-  return owns(focusedKey) ? focusedKey : last;
-}

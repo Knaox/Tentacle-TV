@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupEntryKey, rememberGroupFocus } from "./groupEntry";
+import { groupEntryKey } from "./groupEntry";
 
 const mountedOf = (...keys: string[]) => (key: string) => keys.includes(key);
 
@@ -22,11 +22,5 @@ describe("groupEntry — l'entrée d'un groupe", () => {
 
   it("aucune cible : null", () => {
     expect(groupEntryKey({ remember: true, last: null, isMounted: mountedOf(), fallback: () => null })).toBeNull();
-  });
-
-  it("seul un focus d'une clé du groupe devient le dernier visité", () => {
-    const owns = (key: string) => key.startsWith("episode:");
-    expect(rememberGroupFocus(null, "episode:2", owns)).toBe("episode:2");
-    expect(rememberGroupFocus("episode:2", "season:0", owns)).toBe("episode:2");
   });
 });

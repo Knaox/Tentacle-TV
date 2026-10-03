@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import { TVFocusGuideView, type View } from "react-native";
+import { groupEntryKey } from "@tentacle-tv/tv-core";
 import type { FocusGroupContainerProps } from "../../../redesign/focus/focusBinding";
 import type { FocusStore } from "./focusStore";
 
@@ -8,7 +9,8 @@ import type { FocusStore } from "./focusStore";
  * d'ailleurs, il atterrit sur la dernière clé du groupe qui l'a eu — ou,
  * `remember` coupé ou rien encore visité, sur l'entrée par défaut
  * (`fallback` : l'onglet de la saison affichée, l'épisode à reprendre, la
- * première carte, Lecture).
+ * première carte, Lecture). La décision est la règle de tv-core
+ * (`focus/groupEntry.ts`) ; le guide la pose comme destination.
  *
  * Sans lui, tvOS vise l'élément situé sous le point de départ : l'épisode sous
  * l'onglet choisi plutôt que celui à reprendre, l'onglet sous Lecture plutôt
@@ -50,8 +52,7 @@ export function createEntryGuide(store: FocusStore, options: EntryGuideOptions):
     const last = useRef<string | null>(null);
 
     const aim = useCallback(() => {
-      const visited = remember && last.current && store.node(last.current) ? last.current : null;
-      const key = visited ?? fallback();
+      const key = groupEntryKey({ remember, last: last.current, isMounted: (focusKey) => store.node(focusKey) !== null, fallback });
       const node = key ? store.node(key) : null;
       setTarget((prev) => (node ? (prev[0] === node ? prev : [node]) : NONE));
     }, []);
