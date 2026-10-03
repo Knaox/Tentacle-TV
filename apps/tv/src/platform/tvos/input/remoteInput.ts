@@ -78,3 +78,15 @@ export function subscribeNativeRemote(listener: NativeRemoteListener): () => voi
 export function receiveMenu(): IntentEvent | null {
   return tvosInput.receive({ name: "menu", phase: "up", at: Date.now() });
 }
+
+/**
+ * Pour `Modal.onRequestClose` (Menu dans une modale, qui a son propre
+ * contrôleur) : Menu passe d'abord par l'entrée unique, puis la modale se
+ * ferme comme avant — `onRequestClose={withMenuIntent(close)}`.
+ */
+export function withMenuIntent(close: () => void): () => void {
+  return () => {
+    receiveMenu();
+    close();
+  };
+}

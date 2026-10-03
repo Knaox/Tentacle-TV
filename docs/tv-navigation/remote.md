@@ -52,21 +52,47 @@ Ce que la télécommande a mais que l'app ne reçoit jamais : `TVOS_BINDINGS.sys
 (bouton TV, Menu maintenu, Siri, volume et alimentation, geste circulaire de
 l'anneau du pavé de 3e génération).
 
-## L'entrée unique tvOS (phase 2)
+## L'entrée unique tvOS — `apps/tv/src/platform/tvos/input/`
 
-Un seul abonnement natif pour le chemin refondu : `apps/tv/src/platform/tvos/input/`.
-Il lit chaque événement (`readTvosEvent`) et le donne à l'entrée commune
-(`createRemoteInput(TVOS_BINDINGS)`). Les écouteurs passent par lui :
+Un seul abonnement à `TVEventHandler` pour le chemin refondu
+(`remoteInput.ts`). Chaque événement natif est lu (`readTvosEvent`) et donné à
+l'entrée commune (`tvosInput = createRemoteInput(TVOS_BINDINGS)`), dans cet
+ordre : écouteurs bruts de la transition, observateurs, pile des contextes.
+L'abonnement naît avec le premier écouteur et part avec le dernier ; hors
+Apple TV, rien ne s'abonne. Tout s'importe de `platform/tvos/input` :
 
-- observer les intentions (réveil, relance) : un crochet d'observation ;
-- prendre une intention dans un contexte : un crochet d'inscription
-  (`kind`, `decide` pur, `apply`, actif tant que l'écran est devant) ;
-- les écouteurs d'avant (`redesignWiring/remote/remoteEvents.ts`) gardent
-  leur API le temps de migrer : elle est rebranchée sur l'entrée unique, sans
-  second abonnement.
+| Export | Signature | Usage |
+|---|---|---|
+| `useRemoteIntents` | `(listener: (event: IntentEvent) => void, enabled = true) => void` | VOIR passer chaque intention, sans la prendre (réveil, relance d'attente). Écouteur relu à chaque rendu ; `enabled` faux quand l'écran n'est pas devant. |
+| `useRemoteContext` | `<D>({ kind, name, active, decide, apply }) => () => void` | PRENDRE des intentions dans un contexte (`kind` : `keyboard` · `panel` · `player` · `screen`). `decide` PUR, `apply` au geste, tous deux relus à chaque rendu ; `active` suit l'écran. Rend `refresh`, à appeler quand l'état lu par `decide` change. |
+| `useTakenAhead` | `(intent: RemoteIntent) => boolean` | La décision anticipée : un contexte prendrait-il cette intention, maintenant ? |
+| `receiveMenu` | `() => IntentEvent \| null` | Menu, rendu par `MenuPressInterceptor` : il passe par l'entrée unique (`retour`). |
+| `withMenuIntent` | `(close: () => void) => () => void` | `Modal.onRequestClose={withMenuIntent(close)}` : Menu passe par l'entrée unique, puis la modale se ferme comme avant. |
+| `acquirePanGesture`, `usePanGesture` | `() => () => void`, `(enabled: boolean) => void` | Tenir le pan (au compteur, drapeau global du natif) ; ses événements arrivent en `drag`. |
+| `tvosInput` | `RemoteInput` | L'instance unique (essais, diagnostic). |
+| `subscribeNativeRemote` | `(listener: (event: HWEvent, at: number) => void) => () => void` | TRANSITION seulement : l'événement brut, pour `redesignWiring/remote/remoteEvents.ts`. |
 
-Les détails de l'API de l'adaptateur sont dans la section suivante, une fois
-la phase 2 livrée.
+`retour` n'est décidé par aucun contexte de cette pile : chaque écran le
+résout par SA pile de couches (`TV-NAVIGATION.md`, « Retour : la pile de
+chaque écran »).
+
+`redesignWiring/remote/remoteEvents.ts` garde son API (`useRemoteEvents`,
+`subscribeRemote`, `RemoteEvent`) le temps que ses écouteurs migrent : il n'a
+plus d'abonnement natif à lui et lit l'événement brut de l'entrée unique —
+mêmes événements, même date, même ordre. `lib/tvPanGesture.ts` réexporte la
+prise du pan pour la même raison.
+
+### Équivalences pour migrer un écouteur
+
+| Aujourd'hui | En intentions (tvOS) |
+|---|---|
+| `useRemoteEvents(fn)` « tout geste » | `useRemoteIntents(fn)` — mais Menu y passe désormais (`retour`), ce que `useRemoteEvents` ne voyait jamais : l'exclure pour rester identique |
+| `press` simple vers une direction, ou `swipe` (`isGestureToward`) | `directionOf(intent) === direction` |
+| `press` long, `phase: "down"` / `"up"` / `null` | `hold`, `phase: "start"` / `"end"` / `"update"` |
+| `press` `playPause`, non long | `{ type: "playPause" }` |
+| `pan` `began` / `changed` / `ended` | `drag` `start` / `move` / `end` |
+| `useTVRemote({ onAnyPress })` | `move` ou `select` (les seuls qui le déclenchent sur tvOS) |
+| `onKeyUp` de `useTVRemote` | tout appui (`traits.pressOnRelease`), la fin d'un maintien ; pour `longLeft` / `longRight`, aussi « sans phase » (`hold` `update`) |
 
 ## Relevé des points d'entrée (2026-10-03, SHA 84f3cedd0)
 
@@ -75,8 +101,8 @@ qui le migre vers les intentions :
 
 | Point d'entrée | Fichier | Ce qu'il lit | Tâche |
 |---|---|---|---|
-| L'abonnement partagé de la refonte | `redesignWiring/remote/remoteEvents.ts` | tout `TVEventHandler` → appui · glisser · pan | T1 |
-| La prise du pan | `lib/tvPanGesture.ts` | `TVEventControl` | T1 |
+| L'abonnement partagé de la refonte | `redesignWiring/remote/remoteEvents.ts` | tout `TVEventHandler` → appui · glisser · pan | T1 — FAIT : lit l'entrée unique |
+| La prise du pan | `lib/tvPanGesture.ts` | `TVEventControl` | T1 — FAIT : `platform/tvos/input/panGesture.ts` |
 | « Au-delà du bord » | `redesignWiring/remote/useBeyondEdge.ts` (accueil : `useHomeHero`) | glissers et appuis simples vers un bord | T3 (règle), T7 (accueil) |
 | Rotation du héros | `redesignWiring/home/useHeroRotation.ts` | tout geste ; un maintien la suspend | T7 |
 | Réveil de la bande-annonce | `redesignWiring/trailer/TrailerRedesign.tsx` | tout geste | T7 |
@@ -88,6 +114,7 @@ qui le migre vers les intentions :
 | Défilement au pavé | `hooks/useScrubGestures.ios.ts` | `useTVEventHandler` direct : `pan` | T5 |
 | Commandes du lecteur | `components/focus/useTVRemote.ts` via `useTVPlayerControls`, `useTVPlayerBack`… | `useTVEventHandler` : tout | T5 — partagé avec Android TV, qui n'est pas touché |
 | Reprise du focus du lecteur | `hooks/useFocusRecovery.ts` via `useTVPanelControls` | `TVEventHandler` (classe) : `focus`, `blur` | T5 — idem |
+| « Une touche annule le saut vers les résultats » | `components/search/useSearchSubmit.ts` (via `redesignWiring/search/useSystemKeyboard.ts`) | `useTVRemote({ onAnyPress })` : flèches et OK | T7 (adaptateur neuf ; le fichier, partagé avec Android TV, n'est pas touché) |
 | Capture du focus après le rail | `hooks/useContentFocusCapture.ts` (`TVNavChrome`) | flèches | hors lot : ancienne UI (Android TV) ; `TVNavChrome` ne rend rien sur les routes refondues |
 
 `parallax.ts` reste dans `redesignWiring/remote/` : c'est du rendu (l'inclinaison

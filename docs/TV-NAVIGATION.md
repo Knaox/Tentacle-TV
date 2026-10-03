@@ -132,15 +132,27 @@ Sur tvOS, deux intentions sont tranchées par le natif AVANT que le JS ne les vo
 D'où la règle : **`decide` est pur**, sans effet. On peut l'appeler sans geste
 (`contexts.resolve(intent)`) et poser le résultat comme ÉTAT natif, relu à
 chaque `subscribe` : guides de focus, `nextFocus*`, `hasTVPreferredFocus`,
-`isTVSelectable`, `MenuPressInterceptor.enabled` (= « `resolve({ type: "retour" })`
-n'est pas `null` »). Les autres intentions (`select`, `playPause`, `hold`,
-`swipe`, `drag`, `page`, et `retour` une fois pris) se décident au geste
+`isTVSelectable`, `MenuPressInterceptor.enabled`. Les autres intentions
+(`select`, `playPause`, `hold`, `swipe`, `drag`, `page`) se décident au geste
 (`dispatch`).
 
 Un comportement ne suppose jamais ces délais : il lit les faits de la plateforme
 dans la table (`TVOS_BINDINGS.traits` : `focusMovesBeforeIntent`,
 `pressOnRelease`, `announcedHolds`, `holdThresholdMs`, `backDecidedAhead`,
 `touchSurface`, `dragOnDemand`), jamais `Platform.OS`.
+
+### Retour : la pile de chaque écran
+
+`retour` est la seule intention qu'AUCUN contexte de la pile globale ne
+décide : l'appui Menu part d'un élément focalisé, donc d'UN écran, et c'est la
+pile de couches de cet écran qui le résout (`nav/backLayers`, qui suit la même
+règle que `contexts.ts` — `docs/tv-navigation/retour-rail.md`, T4). La portée
+du Retour de l'écran pose `MenuPressInterceptor.enabled` d'avance depuis SA
+pile ; au relâchement, elle fait passer Menu par l'entrée unique
+(`receiveMenu()` : les observateurs voient `retour`), puis applique la
+résolution de son écran. Une `Modal` fait de même :
+`onRequestClose={withMenuIntent(close)}`. Un contexte global qui déciderait
+`retour` doublerait l'action.
 
 ## La règle de rangement
 
