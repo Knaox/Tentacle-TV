@@ -1,61 +1,45 @@
 import { useEffect, useReducer, useRef, useState } from "react";
-import { Platform, TVFocusGuideView, type ViewStyle } from "react-native";
-import type { NavRailGeometry } from "../../redesign/nav/navGeometry";
-import { isNavKey, navKeyOf } from "../nav/useRailState";
-import type { RedesignScreenModel } from "./useRedesignScreen";
+import { StyleSheet, TVFocusGuideView } from "react-native";
+import {
+  RAIL_SHORTCUT_TARGETS, marksContentFocus, railLeftArmDelay, railShortcutZones, railShortcutsActive, type RailFrame,
+} from "@tentacle-tv/tv-core";
+import type { FocusStore } from "../focus/focusStore";
+import { TVOS_REMOTE_SUPPORTED } from "../input";
 
 /**
- * Les RACCOURCIS de la navigation (tvOS) : les réglages à portée de pouce,
- * même derrière trente bibliothèques. Trois guides invisibles aux bords des
- * capsules, posés seulement pendant que le focus est dans la navigation :
- *
- * - au-dessus du rail : HAUT depuis Rechercher mène au profil — la
- *   navigation BOUCLE ;
- * - au-dessous du profil : BAS depuis le profil mène à Rechercher ;
- * - à gauche : GAUCHE depuis n'importe quelle entrée mène au profil. Le rail
- *   est au bord de l'écran, GAUCHE n'y faisait rien : depuis le contenu,
- *   « gauche, gauche » ouvre ainsi les réglages en deux appuis. La légende
- *   du rail ouvert le dit (« ◀ Profil et réglages »).
- *
- * BAS depuis la dernière entrée rejoint le profil de lui-même (il est
- * dessous). Le guide de gauche ne s'arme qu'après un temps de focus dans le
- * rail : GAUCHE MAINTENU pour rejoindre le rail (le pavé répète l'appui)
- * doit s'arrêter sur l'entrée de la page, sans filer jusqu'au profil. La
- * Siri Remote n'émet pas la fin d'un appui maintenu sur une flèche
- * (`longLeft`) : on la devine au rythme du focus. Arrivé dans le rail au
- * milieu d'une rafale (le contenu avait le focus il y a moins de
- * `STREAM_MS` : la flèche est maintenue), le guide attend `ARM_AFTER_STREAM_MS`
- * — le temps de lâcher ; arrivé par un appui isolé, `ARM_AFTER_MS`. Mesuré
- * au simulateur : la répétition du pavé déplace le focus toutes les 150 à
- * 250 ms. Rien pendant l'organisation (menu ouvert, déplacement) : le pavé y
- * a d'autres rôles.
+ * Les RACCOURCIS de la navigation (tvOS) — l'applicateur de tv-core
+ * (`nav/railShortcuts`) : trois guides invisibles aux bords des capsules,
+ * posés seulement pendant que le focus est dans le rail, hors menu et
+ * déplacement — HAUT depuis Rechercher → le profil, BAS depuis le profil →
+ * Rechercher, GAUCHE → le profil une fois armé (`railLeftArmDelay`). La
+ * légende du rail ouvert le dit (« ◀ Profil et réglages »).
  */
 
-const ARM_AFTER_MS = 450;
-const ARM_AFTER_STREAM_MS = 1100;
-const STREAM_MS = 350;
-const PROFILE = navKeyOf("Settings");
-const SEARCH = navKeyOf("Search");
+export interface RailShortcutsProps {
+  focus: FocusStore;
+  railFocused: boolean;
+  heldKey: string | null;
+  movingKey: string | null;
+  railGeometry: RailFrame | null;
+}
 
-export function RailShortcuts({ screen }: { screen: RedesignScreenModel }) {
-  const { focus, railFocused, arrange, railGeometry } = screen;
-  const active = railFocused && arrange.heldKey === null && arrange.movingKey === null;
+export function RailShortcuts({ focus, railFocused, heldKey, movingKey, railGeometry }: RailShortcutsProps) {
+  const active = railShortcutsActive({ railFocused, heldKey, movingKey });
   const [armed, setArmed] = useState(false);
-  // Le dernier focus posé dans le contenu : une arrivée juste après lui
-  // vient d'une flèche maintenue.
+  // Le dernier focus posé dans le contenu : une arrivée juste après lui vient
+  // d'une flèche maintenue.
   const lastContentAt = useRef(0);
   useEffect(
     () =>
       focus.subscribe((key, focused) => {
-        if (focused && !isNavKey(key)) lastContentAt.current = Date.now();
+        if (focused && marksContentFocus(key)) lastContentAt.current = Date.now();
       }),
     [focus],
   );
   useEffect(() => {
     setArmed(false);
     if (!active) return undefined;
-    const inStream = Date.now() - lastContentAt.current < STREAM_MS;
-    const timer = setTimeout(() => setArmed(true), inStream ? ARM_AFTER_STREAM_MS : ARM_AFTER_MS);
+    const timer = setTimeout(() => setArmed(true), railLeftArmDelay(lastContentAt.current, Date.now()));
     return () => clearTimeout(timer);
   }, [active]);
 
@@ -64,34 +48,25 @@ export function RailShortcuts({ screen }: { screen: RedesignScreenModel }) {
   useEffect(
     () =>
       focus.subscribeNodes((key) => {
-        if (key === PROFILE || key === SEARCH) refresh();
+        if (key === RAIL_SHORTCUT_TARGETS.above || key === RAIL_SHORTCUT_TARGETS.below) refresh();
       }),
     [focus],
   );
 
-  if (Platform.OS !== "ios" || !active || !railGeometry) return null;
-  const profile = focus.node(PROFILE);
-  const search = focus.node(SEARCH);
-  const zones = zonesOf(railGeometry);
+  if (!TVOS_REMOTE_SUPPORTED || !active || !railGeometry) return null;
+  const above = focus.node(RAIL_SHORTCUT_TARGETS.above);
+  const below = focus.node(RAIL_SHORTCUT_TARGETS.below);
+  const left = focus.node(RAIL_SHORTCUT_TARGETS.left);
+  const zones = railShortcutZones(railGeometry);
   return (
     <>
-      {profile ? <TVFocusGuideView destinations={[profile]} style={zones.above} /> : null}
-      {search ? <TVFocusGuideView destinations={[search]} style={zones.below} /> : null}
-      {armed && profile ? <TVFocusGuideView destinations={[profile]} style={zones.left} /> : null}
+      {above ? <TVFocusGuideView destinations={[above]} style={[styles.zone, zones.above]} /> : null}
+      {below ? <TVFocusGuideView destinations={[below]} style={[styles.zone, zones.below]} /> : null}
+      {armed && left ? <TVFocusGuideView destinations={[left]} style={[styles.zone, zones.left]} /> : null}
     </>
   );
 }
 
-/** Les trois zones, sur la géométrie que la vue publie : le bloc des pages
- *  est centré, sa hauteur suit ses entrées. */
-function zonesOf(geometry: NavRailGeometry): Record<"above" | "below" | "left", ViewStyle> {
-  const { left, expandedWidth, strip, profile } = geometry;
-  return {
-    // Entre le haut de l'écran et le bloc des pages, sur sa largeur ouverte.
-    above: { position: "absolute", left, width: expandedWidth, top: 0, height: Math.max(0, strip.top - 4) },
-    // Entre le profil et le bas de l'écran.
-    below: { position: "absolute", left, width: expandedWidth, top: profile.bottom + 4, bottom: 0 },
-    // Entre le bord de l'écran et les capsules, sur toute la hauteur.
-    left: { position: "absolute", left: 0, width: left - 4, top: 0, bottom: 0 },
-  };
-}
+const styles = StyleSheet.create({
+  zone: { position: "absolute" },
+});

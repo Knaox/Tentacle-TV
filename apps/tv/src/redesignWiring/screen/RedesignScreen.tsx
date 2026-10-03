@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
+import { RailBridges } from "../../platform/tvos/back/RailBridges";
+import { RailShortcuts } from "../../platform/tvos/back/RailShortcuts";
 import { NavMenuModal } from "../nav/NavMenuModal";
-import { RailBridges } from "./RailBridges";
-import { RailShortcuts } from "./RailShortcuts";
 import { useRailBackLayers } from "./useRailBackLayers";
 import type { RedesignScreenModel } from "./useRedesignScreen";
 
@@ -16,7 +16,8 @@ import type { RedesignScreenModel } from "./useRedesignScreen";
  *   portée (`BackScope`) : sur une page du rail, le rail s'ouvre, puis
  *   Réglages, puis la sortie ; l'organisation du rail s'annule et se ferme ;
  * - les PONTS entre navigation et contenu (`RailBridges`), et les RACCOURCIS
- *   de la navigation vers le profil (`RailShortcuts`) ;
+ *   de la navigation vers le profil (`RailShortcuts`) — les applicateurs tvOS
+ *   (`platform/tvos/back/`) des règles de tv-core (`nav/railShortcuts`) ;
  * - le menu d'appui long d'une entrée (`NavMenuModal`, une Modal : son Menu
  *   part dans `onRequestClose`).
  */
@@ -28,8 +29,20 @@ export function RedesignScreen({ screen, children }: { screen: RedesignScreenMod
         {children}
         <NavMenuModal arrange={screen.arrange} focus={screen.focus} railWidth={screen.railGeometry?.expandedWidth} />
       </FocusBindingProvider>
-      <RailBridges screen={screen} />
-      <RailShortcuts screen={screen} />
+      <RailBridges
+        focus={screen.focus}
+        railFocused={screen.railFocused}
+        railKey={screen.railKey}
+        contentKey={screen.contentKey}
+        railGeometry={screen.railGeometry}
+      />
+      <RailShortcuts
+        focus={screen.focus}
+        railFocused={screen.railFocused}
+        heldKey={screen.arrange.heldKey}
+        movingKey={screen.arrange.movingKey}
+        railGeometry={screen.railGeometry}
+      />
     </View>
   );
 }

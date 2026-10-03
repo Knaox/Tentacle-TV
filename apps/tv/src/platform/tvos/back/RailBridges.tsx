@@ -1,58 +1,60 @@
 import { useEffect, useReducer } from "react";
-import { Platform, StyleSheet, TVFocusGuideView } from "react-native";
+import { StyleSheet, TVFocusGuideView } from "react-native";
+import { RAIL_HOME_KEY, navKeyOf, railBridge, railEntryTarget, type RailFrame } from "@tentacle-tv/tv-core";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { navKeyOf } from "../nav/useRailState";
-import type { RedesignScreenModel } from "./useRedesignScreen";
+import type { FocusStore } from "../focus/focusStore";
+import { TVOS_REMOTE_SUPPORTED } from "../input";
 
 /**
- * Les ponts de focus entre la navigation et le contenu (tvOS).
+ * Les PONTS de focus entre la navigation et le contenu (tvOS) — l'applicateur
+ * de `railBridge` (tv-core `nav/railShortcuts`) : un guide invisible sur la
+ * zone qu'il décide.
  *
- * Le moteur de focus de tvOS ne déplace le focus que vers une cible ALIGNÉE
- * dans la direction du geste. Or les entrées de la navigation sont peu
- * nombreuses, en haut et en bas de la barre : depuis une carte à mi-hauteur,
- * GAUCHE ne trouvait rien, et depuis « Accueil », DROITE non plus. D'où deux
- * guides invisibles, jamais montés ensemble :
+ * - contenu focalisé : la bande à gauche du contenu mène à l'entrée active du
+ *   rail, sinon à Accueil (`railEntryTarget`) ;
+ * - rail focalisé : la zone à droite du rail OUVERT rend le focus à la
+ *   dernière cible de contenu, sinon à l'entrée de l'écran.
  *
- * - contenu focalisé : une bande à gauche du contenu, sur toute la hauteur,
- *   qui mène à l'entrée ACTIVE de la navigation (comme la barre latérale de
- *   l'app TV d'Apple) ;
- * - navigation focalisée : la zone à droite de la barre OUVERTE, qui rend le
- *   focus au dernier élément de contenu qui l'avait (sinon à l'entrée).
- *
- * Chacun n'existe que pendant que le focus est de l'autre côté : posé sur la
- * navigation elle-même, le premier capterait ses HAUT et BAS.
+ * Jamais montés ensemble : posé sur la navigation elle-même, le premier
+ * capterait ses HAUT et BAS.
  */
 
 const N = TV_STAGE.nav;
 
-export function RailBridges({ screen }: { screen: RedesignScreenModel }) {
-  const { focus, railFocused, railKey, contentKey, railGeometry } = screen;
+export interface RailBridgesProps {
+  focus: FocusStore;
+  railFocused: boolean;
+  railKey: string;
+  /** La clé de contenu que viserait le retour au contenu. */
+  contentKey: () => string | null;
+  railGeometry: Pick<RailFrame, "left" | "expandedWidth"> | null;
+}
+
+export function RailBridges({ focus, railFocused, railKey, contentKey, railGeometry }: RailBridgesProps) {
   // Un guide vise un nœud : se redessiner quand l'entrée active arrive ou part.
   const [, refresh] = useReducer((n: number) => n + 1, 0);
   useEffect(() => {
-    const watched = new Set([navKeyOf(railKey), navKeyOf("Home")]);
+    const watched = new Set([navKeyOf(railKey), navKeyOf(RAIL_HOME_KEY)]);
     refresh();
     return focus.subscribeNodes((key) => {
       if (watched.has(key)) refresh();
     });
   }, [focus, railKey]);
 
-  if (Platform.OS !== "ios") return null;
+  if (!TVOS_REMOTE_SUPPORTED) return null;
 
-  if (railFocused) {
-    const key = contentKey();
-    const target = key ? focus.node(key) : null;
-    // Après les entrées de la barre ouverte, à la largeur qu'elle prend
-    // vraiment (celle de ses libellés) : jamais par-dessus elles.
-    const exitLeft = (railGeometry?.left ?? N.left) + (railGeometry?.expandedWidth ?? N.expandedWidth) + 12;
-    return target ? <TVFocusGuideView destinations={[target]} style={[styles.exit, { left: exitLeft }]} /> : null;
-  }
-  const entry = focus.node(navKeyOf(railKey)) ?? focus.node(navKeyOf("Home"));
-  return entry ? <TVFocusGuideView destinations={[entry]} style={styles.enter} /> : null;
+  const bridge = railBridge({
+    railFocused,
+    contentKey: railFocused ? contentKey() : null,
+    frame: railGeometry,
+    defaults: { left: N.left, expandedWidth: N.expandedWidth },
+    contentLeft: TV_STAGE.contentLeft,
+  });
+  const targetKey = bridge.kind === "exit" ? bridge.target : railEntryTarget(railKey, (key) => focus.node(key) !== null);
+  const target = targetKey ? focus.node(targetKey) : null;
+  return target ? <TVFocusGuideView destinations={[target]} style={[styles.zone, bridge.zone]} /> : null;
 }
 
 const styles = StyleSheet.create({
-  // Jusqu'au bord du contenu (`contentLeft`), sur toute la hauteur.
-  enter: { position: "absolute", left: 0, top: 0, bottom: 0, width: TV_STAGE.contentLeft - 20 },
-  exit: { position: "absolute", right: 0, top: 0, bottom: 0 },
+  zone: { position: "absolute" },
 });
