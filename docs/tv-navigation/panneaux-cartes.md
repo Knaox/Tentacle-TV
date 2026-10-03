@@ -465,7 +465,31 @@ format du banc T2, enregistrés sur 84f3cedd0, rejoués en `verify`) :
 | `fixtures.mjs` | `film-note-7`, `film-non-notable` (« The Uprising », premier des derniers ajouts de Films) |
 
 Enregistrés sur 84f3cedd0 en deux passages stables, puis `verify` sur l'arbre
-courant : 16 identiques (7 min 53 s). Le panneau d'un titre absent et la
+courant : 16 identiques (7 min 53 s). Sur l'Apple TV « Chambre » (AppleTV14,1,
+tvOS 26.6, app de test `com.tentacle.mobile.navtest`, faux backend par l'IP
+du Mac, `verify --device`) : 14 identiques aux références du simulateur
+(6 min 46 s) — l'appui maintenu RÉEL, la garde anti-clic fantôme (aucune
+écriture au relâchement), Menu et le focus rendu à la carte compris. pc-07 et
+pc-11 n'y ont pas été joués : ils valident une note, et la règle des essais
+sur l'appareil est de n'en valider aucune. L'app de l'utilisateur
+(`com.tentacle.mobile`) est restée intacte, vérifiée avant et après.
+
+**De 21 scénarios provisoires à 16.** La première liste (phase A, avant le
+format du banc) en comptait 21. Seize se jouent ; cinq sont tombés, tous
+du côté de Vigie, faute de données dans le jeu figé du banc :
+
+| Provisoire | Ce qu'il éprouvait | Pourquoi il est tombé | Ce qui le couvre |
+|---|---|---|---|
+| pc-15 | volet absent d'une saga, Vigie ouverte : panneau d'un titre absent | aucune saga à volet ABSENT dans l'instantané (les sagas y sont complètes ou vides) | `absentSheetEntry` (tests tv-core) et l'applicateur commun `useSheetFocus` (banc de traces, `sheetFocus`) |
+| pc-16 | volet absent, Vigie fermée : pas d'appui maintenu | même raison | `holdPanelOf` (`sagaAbsent` sans `requestable` → rien, tests tv-core) |
+| pc-17 | panneau d'un titre absent : « Demander » referme puis demande | la rangée « À demander » de la recherche exige une saisie au clavier système et des résultats Vigie que le faux backend ne rend pas de façon stable | `absentSheetEntry`, `MODAL_GAP_MS` (tests tv-core) ; aucune trace du panneau absent lui-même — reste à éprouver si le banc gagne un jeu de titres absents |
+| pc-18 | feuille des saisons : entrée, OK coche, « Toutes », BAS vers le pied, Retour | même raison (série absente de la recherche) | banc de traces, unité `seasons` (présentation, verrous, cocher, « Toutes », Menu, fermeture avant présentation, filet) |
+| pc-19 | feuille des saisons : Lecture/Pause demande | même raison | banc de traces, unité `seasons` (Lecture/Pause par l'entrée unique, maintien ignoré) |
+
+Les autres ont été gardés, renumérotés : l'ancien pc-20 (voile) est pc-16,
+l'ancien pc-21 (appui court) est pc-15 ; pc-09 (reco) ne vérifie plus
+« Toutes les plateformes », que le faux backend ne déclenche pas (constat 7)
+— l'ordre des pictos sous un filtre l'est au banc de traces (`sheetRows`). Le panneau d'un titre absent et la
 feuille des saisons (Vigie) ne sont éprouvés qu'au banc de traces : le jeu de
 données du banc ne porte ni saga à volet absent ni recherche « À demander »
 stable.
