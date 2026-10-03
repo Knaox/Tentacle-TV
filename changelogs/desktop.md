@@ -13,6 +13,16 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.25.4]
+<!-- Bloc nu pour les trois systèmes : macOS, Windows et Linux partent tous de la 1.25.3. -->
+### FR
+- **« Derniers ajouts », une carte par série** : les épisodes et les saisons d'une même série arrivés ensemble ne remplissent plus la rangée. Une seule carte, celle de la série, dit à la place de l'année ce qu'elle apporte — « 4 nouveaux épisodes », « Nouvelle saison · 8 épisodes », « Nouvelle série » — et s'ouvre sur la saison du dernier ajout. La rangée reste variée et va jusqu'à 20 cartes
+- Sur une affiche étroite, cette ligne passe sur deux lignes plutôt que de couper le nombre d'épisodes
+
+### EN
+- **"Latest additions", one card per series**: episodes and seasons of the same series that arrived together no longer fill the row. A single card, the series', says what it brings in place of the year — "4 new episodes", "New season · 8 episodes", "New series" — and opens on the season of the latest addition. The row stays varied and goes up to 20 cards
+- On a narrow poster, that line wraps onto two lines instead of cutting the episode count
+
 ## [1.25.3]
 <!-- Bloc nu : la Release Linux, qui part de la 1.25.1. macOS et Windows en sont restés à la 1.25.0 dans leurs boutiques (la 1.25.1 n'est sortie que sous Linux, la 1.25.2 qu'en TestFlight) : ils ont leurs blocs mac- et win-. -->
 ### FR
