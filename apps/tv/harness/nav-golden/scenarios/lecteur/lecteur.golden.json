@@ -1,0 +1,2132 @@
+{
+  "format": 1,
+  "domain": "lecteur",
+  "suite": "lecteur",
+  "reference": {
+    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
+    "label": "référence 84f3cedd0"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "b2ce573070a3d2e4",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-T5",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-03T02:40:15.770Z",
+  "scenarios": {
+    "lec-01": {
+      "hash": "f61fc0589241",
+      "durationMs": 54495,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:info @e86346a08c2bb2900795777307b0a32d",
+            "prefs:resolve",
+            "playback:start"
+          ]
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:stop"
+          ]
+        }
+      ]
+    },
+    "lec-02": {
+      "hash": "308631cc9c32",
+      "durationMs": 47392,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:info @e86346a08c2bb2900795777307b0a32d",
+            "prefs:resolve",
+            "playback:start"
+          ]
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "player:seekback",
+          "label": "Reculer de 10 s",
+          "frame": [
+            487,
+            896,
+            80,
+            80
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "player:seekforward",
+          "label": "Avancer de 30 s",
+          "frame": [
+            723,
+            896,
+            80,
+            80
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "player:scrub",
+          "label": "Déplacement",
+          "frame": [
+            833,
+            896,
+            80,
+            80
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "player:tracks",
+          "label": "Pistes",
+          "frame": [
+            987,
+            902,
+            188,
+            68
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "player:settings",
+          "label": "Réglages",
+          "frame": [
+            1205,
+            902,
+            228,
+            68
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "player:back",
+          "label": "Retour",
+          "frame": [
+            96,
+            67,
+            60,
+            60
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:stop"
+          ]
+        }
+      ]
+    },
+    "lec-03": {
+      "hash": "185e95515fc0",
+      "durationMs": 61036,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:info @e86346a08c2bb2900795777307b0a32d",
+            "prefs:resolve",
+            "playback:start"
+          ]
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "player:tracks",
+          "label": "Pistes",
+          "frame": [
+            987,
+            902,
+            188,
+            68
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "tracks:audio:1",
+          "label": "Français",
+          "frame": [
+            200,
+            468,
+            782,
+            95
+          ],
+          "groups": [
+            "tracks:panel"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "tracks:close",
+          "label": "Retour",
+          "frame": [
+            108,
+            438,
+            60,
+            60
+          ],
+          "groups": [
+            "tracks:back",
+            "tracks:panel"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "player:tracks",
+          "label": "Pistes",
+          "frame": [
+            987,
+            902,
+            188,
+            68
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:stop"
+          ]
+        }
+      ]
+    },
+    "lec-04": {
+      "hash": "01855fad8385",
+      "durationMs": 35952,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:info @e86346a08c2bb2900795777307b0a32d",
+            "prefs:resolve",
+            "playback:start"
+          ]
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "player:settings",
+          "label": "Réglages",
+          "frame": [
+            1205,
+            902,
+            228,
+            68
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "settings:quality:original",
+          "label": "Original",
+          "frame": [
+            200,
+            468,
+            782,
+            95
+          ],
+          "groups": [
+            "settings:panel"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "player:settings",
+          "label": "Réglages",
+          "frame": [
+            1205,
+            902,
+            228,
+            68
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "menu",
+            "wait:1",
+            "menu"
+          ],
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:stop"
+          ]
+        }
+      ]
+    },
+    "lec-05": {
+      "hash": "539314823413",
+      "durationMs": 62500,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:info @e86346a08c2bb2900795777307b0a32d",
+            "prefs:resolve",
+            "playback:start"
+          ]
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "player:scrub",
+          "label": "Déplacement",
+          "frame": [
+            833,
+            896,
+            80,
+            80
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:scrub",
+          "label": "Déplacement",
+          "frame": [
+            833,
+            896,
+            80,
+            80
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "player:scrub",
+          "label": "Déplacement",
+          "frame": [
+            833,
+            896,
+            80,
+            80
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "menu",
+            "wait:1",
+            "menu"
+          ],
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:stop"
+          ]
+        }
+      ]
+    },
+    "lec-06": {
+      "hash": "1c482b6a0688",
+      "durationMs": 56168,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:info @e86346a08c2bb2900795777307b0a32d",
+            "prefs:resolve",
+            "playback:start"
+          ]
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "holdright:2",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:1",
+            "menu"
+          ],
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:stop"
+          ]
+        }
+      ]
+    },
+    "lec-07": {
+      "hash": "a5d241f1d3fb",
+      "durationMs": 61125,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:info @e86346a08c2bb2900795777307b0a32d",
+            "prefs:resolve",
+            "playback:start"
+          ]
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "play",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Lecture",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Lecture",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Lecture",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "menu",
+            "wait:1",
+            "menu"
+          ],
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:stop"
+          ]
+        }
+      ]
+    },
+    "lec-08": {
+      "hash": "a1a67326f6c3",
+      "durationMs": 53685,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "prefs:resolve",
+            "playback:info @e86346a08c2bb2900795777307b0a32d",
+            "playback:start"
+          ]
+        },
+        {
+          "do": "wait:6",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "pan:400,0,1500",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            888,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:1",
+            "menu"
+          ],
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": [
+            0,
+            0,
+            1920,
+            1080
+          ],
+          "groups": [],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "playback:stop"
+          ]
+        }
+      ]
+    },
+    "lec-09": {
+      "hash": "fe736533328d",
+      "durationMs": 28025,
+      "start": {
+        "app": "foreground",
+        "focus": "resume:0",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          176,
+          673,
+          380,
+          287
+        ],
+        "groups": [
+          "section:resume"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            912,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "prefs:resolve",
+            "playback:info @e86346a08c2bb2900795777307b0a32d"
+          ]
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "player:playpause",
+          "label": "Pause",
+          "frame": [
+            597,
+            912,
+            96,
+            96
+          ],
+          "groups": [
+            "player:osd"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "loading:retry",
+          "label": "Réessayer",
+          "frame": [
+            96,
+            918,
+            243,
+            68
+          ],
+          "groups": [
+            "loading:screen"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "loading:retry",
+          "label": "Réessayer",
+          "frame": [
+            96,
+            918,
+            243,
+            68
+          ],
+          "groups": [
+            "loading:screen"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "loading:retry",
+          "label": "Réessayer",
+          "frame": [
+            96,
+            918,
+            243,
+            68
+          ],
+          "groups": [
+            "loading:screen"
+          ],
+          "route": "Player",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "Player"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            673,
+            380,
+            287
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}
