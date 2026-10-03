@@ -80,6 +80,12 @@ export * from "./help/trailerHint";
 // verdict — lu par la vue d'ensemble et par l'assistant d'installation.
 export * from "./serverLinks/serverLinksContract";
 export * from "./serverLinks/serverLinksVerdict";
+// La mise à jour du serveur Tentacle : le contrat de /api/admin/server-update
+// (miroir backend), ce que la carte du tableau de bord en dit (à jour,
+// conseillée, obligatoire) et la commande à copier — sans jamais parler à Docker.
+export * from "./serverUpdate/serverUpdateContract";
+export * from "./serverUpdate/serverUpdateStatus";
+export * from "./serverUpdate/updateCommands";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
