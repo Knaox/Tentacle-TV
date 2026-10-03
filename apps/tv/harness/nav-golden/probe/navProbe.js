@@ -14,7 +14,53 @@ const { LogBox, TVEventHandler } = require("react-native");
 // Les bandeaux de LogBox prennent le focus et masquent le haut de l'écran.
 LogBox.ignoreAllLogs(true);
 
-const state = { tag: null, seq: 0, at: Date.now(), keys: [] };
+const state = { tag: null, seq: 0, at: Date.now(), keys: [], reset: null };
+
+/** Base64 → texte (UTF-8), sans dépendance. */
+function fromBase64(text) {
+  const table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  const bytes = [];
+  let buffer = 0;
+  let bits = 0;
+  for (const char of String(text).replace(/[^A-Za-z0-9+/]/g, "")) {
+    buffer = (buffer << 6) | table.indexOf(char);
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((buffer >> bits) & 0xff);
+    }
+  }
+  return decodeURIComponent(bytes.map((b) => `%${b.toString(16).padStart(2, "0")}`).join(""));
+}
+
+/**
+ * L'Apple TV PHYSIQUE n'a pas de `simctl` : le banc y relance l'app de TEST
+ * (`com.tentacle.mobile.navtest`, jamais celle de l'utilisateur) avec des
+ * arguments `-navGoldenSession paired|none -navGoldenServer <url>
+ * [-navGoldenStorage <base64 JSON>]`. Avant que l'app ne lise son stockage, la
+ * sonde efface ses clés `tentacle_*` et pose la session du banc — dans le
+ * domaine de l'app de test seulement. Sans ces arguments (simulateur), rien.
+ */
+function resetForBench() {
+  const { Settings } = require("react-native");
+  const session = Settings.get("navGoldenSession");
+  if (typeof session !== "string") return;
+  const changes = {};
+  for (const key of Object.keys(Settings._settings || {})) {
+    if (key.startsWith("tentacle_") || key === "disclaimer_accepted") changes[key] = null;
+  }
+  changes.tentacle_language = "fr";
+  if (session === "paired") {
+    changes.tentacle_server_url = Settings.get("navGoldenServer");
+    changes.tentacle_token = "banc";
+    changes.tentacle_user = JSON.stringify({ Id: "banc-user", Name: "Knaoxtest" });
+  }
+  const extra = Settings.get("navGoldenStorage");
+  if (typeof extra === "string" && extra) Object.assign(changes, JSON.parse(fromBase64(extra)));
+  Settings.set(changes);
+  state.reset = { session, cleared: Object.keys(changes).length, at: Date.now() };
+}
+resetForBench();
 
 TVEventHandler.addListener((event) => {
   if (!event) return;

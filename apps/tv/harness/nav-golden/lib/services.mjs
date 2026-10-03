@@ -45,13 +45,14 @@ export function ensureBackend(ctx, snapshot) {
   return ensureService(ctx, "backend", {
     port,
     label: "Faux backend",
-    matches: (r) => r.snapshot === snapshot.hash && r.cwd === BENCH_DIR && r.code === codeHash("server"),
+    matches: (r) => r.snapshot === snapshot.hash && r.cwd === BENCH_DIR && r.code === codeHash("server") && r.lan === ctx.device,
     start: () => ({
       ...spawnDetached(node, [path.join(BENCH_DIR, "server/fakeServer.mjs")], {
-        cwd: BENCH_DIR, env: { PORT: String(port), SNAPSHOT_DIR: snapshot.dir }, log: path.join(ctx.logDir, "backend.log"),
+        cwd: BENCH_DIR, env: { PORT: String(port), SNAPSHOT_DIR: snapshot.dir, LISTEN_ALL: ctx.device ? "1" : "" }, log: path.join(ctx.logDir, "backend.log"),
       }),
       snapshot: snapshot.hash,
       code: codeHash("server"),
+      lan: ctx.device,
     }),
     ready: async () => (await httpJson(`http://127.0.0.1:${port}/__peek`))?.status === 200,
   });
@@ -64,15 +65,16 @@ export async function ensureMetro(ctx, checkout) {
   const record = await ensureService(ctx, "metro", {
     port,
     label: `Metro (${checkout.label})`,
-    matches: (r) => r.checkout === checkout.dir && r.code === codeHash("lib/metroConfig.cjs"),
+    matches: (r) => r.checkout === checkout.dir && r.code === codeHash("lib/metroConfig.cjs") && r.lan === ctx.device,
     start: () => ({
-      ...spawnDetached(node, [path.join(mainCheckout(), "apps/tv/node_modules/react-native/cli.js"), "start", "--port", String(port), "--config", path.join(BENCH_DIR, "lib/metroConfig.cjs")], {
+      ...spawnDetached(node, [path.join(mainCheckout(), "apps/tv/node_modules/react-native/cli.js"), "start", "--port", String(port), ...(ctx.device ? ["--host", "0.0.0.0"] : []), "--config", path.join(BENCH_DIR, "lib/metroConfig.cjs")], {
         cwd: appDir,
         env: { NAV_GOLDEN_CHECKOUT: checkout.dir, NAV_GOLDEN_MAIN: mainCheckout(), NAV_GOLDEN_WATCH: JSON.stringify(borrowedNodeModules(checkout.dir)) },
         log: path.join(ctx.logDir, "metro.log"),
       }),
       checkout: checkout.dir,
       code: codeHash("lib/metroConfig.cjs"),
+      lan: ctx.device,
       warmed: false,
     }),
     ready: async () => {
@@ -125,43 +127,56 @@ export function ensureCdpd(ctx) {
   });
 }
 
-/** L'agent compilé pour le simulateur, une fois par version de ses sources et de Xcode (cache de la machine). */
-async function agentProducts() {
+/**
+ * L'agent compilé une fois par version de ses sources et de Xcode (cache de
+ * la machine) : pour le simulateur sans signature, pour l'appareil signé par
+ * l'équipe du compte (profil créé au premier build).
+ */
+export async function agentProducts({ physical = false } = {}) {
   const hash = crypto.createHash("sha256");
   for (const file of ["AgentUITests.swift", "AgentHostApp.swift", "Agent.xcodeproj/project.pbxproj"]) hash.update(fs.readFileSync(path.join(ATV_REMOTE_DIR, file)));
   hash.update(capture("xcodebuild", ["-version"]) ?? "");
-  const dir = path.join(CACHE_DIR, "agent", hash.digest("hex").slice(0, 12));
+  const dir = path.join(CACHE_DIR, physical ? "agent-device" : "agent", hash.digest("hex").slice(0, 12));
   const find = () => fs.existsSync(path.join(dir, "Build/Products")) && fs.readdirSync(path.join(dir, "Build/Products")).find((f) => f.endsWith(".xctestrun"));
   if (find()) return path.join(dir, "Build/Products", find());
-  await withLock(`agent-${path.basename(dir)}`, async () => {
+  await withLock(`agent-${physical ? "device-" : ""}${path.basename(dir)}`, async () => {
     if (find()) return;
-    step("Agent XCUITest", "compilation pour le simulateur (une fois pour toute la machine)");
-    const log = path.join(dir, "build.log");
+    step("Agent XCUITest", `compilation pour ${physical ? "l'Apple TV physique" : "le simulateur"} (une fois pour toute la machine)`);
     fs.mkdirSync(dir, { recursive: true });
-    const out = capture("xcodebuild", ["-project", path.join(ATV_REMOTE_DIR, "Agent.xcodeproj"), "-scheme", "AgentUITests", "-destination", "generic/platform=tvOS Simulator", "-derivedDataPath", dir, "build-for-testing"], { cwd: ATV_REMOTE_DIR });
-    fs.writeFileSync(log, out ?? "échec");
-    if (!find()) throw new BenchError(`compilation de l'agent en échec — ${log}`);
+    const signing = physical ? [`DEVELOPMENT_TEAM=${process.env.NAV_GOLDEN_TEAM ?? "96K3M57W49"}`, "CODE_SIGN_STYLE=Automatic", "-allowProvisioningUpdates"] : [];
+    const out = capture("xcodebuild", ["-project", path.join(ATV_REMOTE_DIR, "Agent.xcodeproj"), "-scheme", "AgentUITests", "-destination", physical ? "generic/platform=tvOS" : "generic/platform=tvOS Simulator", "-derivedDataPath", dir, ...signing, "build-for-testing"], { cwd: ATV_REMOTE_DIR });
+    fs.writeFileSync(path.join(dir, "build.log"), out ?? "échec");
+    if (!find()) throw new BenchError(`compilation de l'agent en échec — ${path.join(dir, "build.log")}`);
   });
   return path.join(dir, "Build/Products", find());
 }
 
-/** L'agent qui appuie sur les touches, connecté au serveur de la place. */
-export async function ensureAgent(ctx, device) {
+/**
+ * L'agent qui appuie sur les touches, connecté au serveur de la place —
+ * au simulateur `device`, ou à l'Apple TV physique (`target.physical` :
+ * `{ udid, host, bundle }`, l'agent y vise l'app de TEST).
+ */
+export async function ensureAgent(ctx, target) {
   await ensureAgentServer(ctx);
   const connected = async () => (await httpJson(`http://127.0.0.1:${ctx.ports.agentHttp}/status`))?.json?.connected === true;
   const state = loadState(ctx.stateFile);
-  if (isAlive(state.agent) && state.agent.udid === device.udid && (await connected())) return state.agent;
+  if (isAlive(state.agent) && state.agent.udid === target.udid && (await connected())) return state.agent;
   if (isAlive(state.agent)) await stopProcess(state.agent);
-  const xctestrun = await agentProducts();
+  const physical = Boolean(target.physical);
+  const xctestrun = await agentProducts({ physical });
+  const destination = physical ? `platform=tvOS,id=${target.udid}` : `platform=tvOS Simulator,id=${target.udid}`;
+  const env = {
+    TEST_RUNNER_AGENT_HOST: physical ? target.host : "127.0.0.1",
+    TEST_RUNNER_AGENT_PORT: String(ctx.ports.agentTcp),
+    TEST_RUNNER_AGENT_BUNDLE: target.bundle ?? "com.tentacle.mobile",
+  };
   const record = {
-    ...spawnDetached("xcodebuild", ["test-without-building", "-xctestrun", xctestrun, "-destination", `platform=tvOS Simulator,id=${device.udid}`], {
-      cwd: ATV_REMOTE_DIR, env: { TEST_RUNNER_AGENT_HOST: "127.0.0.1", TEST_RUNNER_AGENT_PORT: String(ctx.ports.agentTcp) }, log: path.join(ctx.logDir, "agent.log"),
-    }),
-    udid: device.udid,
+    ...spawnDetached("xcodebuild", ["test-without-building", "-xctestrun", xctestrun, "-destination", destination], { cwd: ATV_REMOTE_DIR, env, log: path.join(ctx.logDir, "agent.log") }),
+    udid: target.udid,
   };
   saveState(ctx.stateFile, { ...loadState(ctx.stateFile), agent: record });
-  if (!(await waitFor(connected, { timeoutMs: 240_000, everyMs: 1000 }))) throw new BenchError(`l'agent XCUITest ne s'est pas connecté — journal : ${record.log}`);
-  step("Agent XCUITest", `connecté (simulateur ${device.name})`);
+  if (!(await waitFor(connected, { timeoutMs: 300_000, everyMs: 1000 }))) throw new BenchError(`l'agent XCUITest ne s'est pas connecté — journal : ${record.log}`);
+  step("Agent XCUITest", `connecté (${physical ? "Apple TV physique" : `simulateur ${target.name}`})`);
   return record;
 }
 

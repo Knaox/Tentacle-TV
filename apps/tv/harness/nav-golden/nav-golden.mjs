@@ -29,6 +29,7 @@ import { listDomains, selectSuites } from "./lib/scenarios.mjs";
 import { coldStart, prepare, sessionSummary } from "./lib/session.mjs";
 import { stopAll } from "./lib/services.mjs";
 import { findDevice } from "./lib/simulator.mjs";
+import { checkUserApp } from "./lib/device.mjs";
 import { loadSets } from "./server/fixtures.mjs";
 
 function parseArgs(argv) {
@@ -38,6 +39,7 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === "--no-erase") options.erase = false;
     else if (arg === "--sim-off") options.simOff = true;
+    else if (arg === "--device") options.device = true;
     else if (arg.startsWith("--")) {
       const [key, inline] = arg.slice(2).split("=");
       options[key] = inline ?? argv[++i];
@@ -75,7 +77,8 @@ async function runSuites(mode, options, targets) {
   const ctx = benchContext(options);
   const at = mode === "record" ? referenceOf(suites, options.at) : options.at ?? null;
   const count = suites.reduce((n, s) => n + s.scenarios.length, 0);
-  step(mode === "record" ? "Enregistrer" : "Vérifier", `${count} scénario(s) de ${[...new Set(suites.map((s) => s.domain))].join(", ")} — place ${ctx.ports.slot}, simulateur « ${ctx.sim} »`);
+  const where = ctx.device ? "Apple TV physique" : `simulateur « ${ctx.sim} »`;
+  step(mode === "record" ? "Enregistrer" : "Vérifier", `${count} scénario(s) de ${[...new Set(suites.map((s) => s.domain))].join(", ")} — place ${ctx.ports.slot}, ${where}`);
   const session = await prepare(ctx, { at, erase: options.erase !== false });
   sessionSummary(session);
   if (mode === "verify" && at === null && session.checkout.dirty) warn("le dossier courant a des modifications non commitées : elles sont rejouées telles quelles");
@@ -84,6 +87,7 @@ async function runSuites(mode, options, targets) {
     ? await recordSuites(ctx, session, suites, { repeat: Number(options.repeat ?? 2), onResult })
     : await verifySuites(ctx, session, suites, { onResult });
   const failing = writeReport(mode, results, { session, startedAt });
+  if (ctx.device) checkUserApp("après le passage");
   process.exitCode = failing ? 1 : 0;
 }
 
@@ -96,7 +100,7 @@ async function interactive(command, options, positional) {
     const obs = await coldStart(ctx, session, scenario.start ?? {});
     return say(JSON.stringify(obs, null, 2));
   }
-  if (!findDevice(ctx.sim)) throw new BenchError(`pas de simulateur « ${ctx.sim} » : « up » ou « start » d'abord`);
+  if (!ctx.device && !findDevice(ctx.sim)) throw new BenchError(`pas de simulateur « ${ctx.sim} » : « up » ou « start » d'abord`);
   const since = await journalSeq(ctx);
   let extra = 0;
   for (const gesture of command === "do" ? positional : []) {

@@ -12,6 +12,7 @@ import { ensureAgent, ensureBackend, ensureCdpd, ensureMetro } from "./services.
 import { describeDevice, ensureInstalled, ensureSimulator, findDevice, launchApp, resetAppState } from "./simulator.mjs";
 import { frozenSnapshot } from "./snapshot.mjs";
 import { settle } from "./observe.mjs";
+import { TEST_BUNDLE, checkUserApp, describePhysical, deviceIds, ensureDeviceApp, ensureDeviceInstalled, launchOnDevice, macIp } from "./device.mjs";
 
 /**
  * Un simulateur pris pour la première fois par cette place est EFFACÉ : un
@@ -39,6 +40,7 @@ export async function prepare(ctx, { at = null, erase = true } = {}) {
   const snapshot = await frozenSnapshot();
   const checkout = at ? await referenceCheckout(at) : currentCheckout();
   step("Code servi", checkout.label);
+  if (ctx.device) return preparePhysical(ctx, checkout, snapshot);
   const { fingerprint, app } = await ensureNativeApp(checkout);
   let device = ensureSimulator(ctx.sim);
   device = eraseOnce(ctx, device, { erase });
@@ -49,6 +51,24 @@ export async function prepare(ctx, { at = null, erase = true } = {}) {
   await ensureCdpd(ctx);
   await ensureAgent(ctx, device);
   return { checkout, snapshot, device, fingerprint, deviceInfo: describeDevice(device) };
+}
+
+/**
+ * L'Apple TV physique : l'app de TEST installée à côté de celle de
+ * l'utilisateur (vérifiée présente avant), Metro et faux backend sur l'IP du
+ * Mac, l'agent sur l'appareil.
+ */
+async function preparePhysical(ctx, checkout, snapshot) {
+  const { udid } = deviceIds();
+  checkUserApp("avant le passage");
+  const { fingerprint, app } = await ensureDeviceApp(checkout);
+  const state = loadState(ctx.stateFile);
+  if (ensureDeviceInstalled(app, fingerprint, state)) saveState(ctx.stateFile, { ...loadState(ctx.stateFile), installedDevice: state.installedDevice });
+  await ensureBackend(ctx, snapshot);
+  await ensureMetro(ctx, checkout);
+  await ensureCdpd(ctx);
+  await ensureAgent(ctx, { udid, physical: true, host: macIp(), bundle: TEST_BUNDLE });
+  return { checkout, snapshot, device: { udid, physical: true }, fingerprint, deviceInfo: describePhysical() };
 }
 
 /** Remet le faux backend à la base + les jeux du scénario. */
@@ -65,10 +85,15 @@ export async function applyFixtures(ctx, sets = []) {
  */
 export async function coldStart(ctx, session, start = {}) {
   await applyFixtures(ctx, start.fixtures ?? []);
-  resetAppState(session.device, {
-    metroPort: ctx.ports.metro, backendPort: ctx.ports.backend, session: start.session ?? "paired", storage: start.storage,
-  });
-  await launchApp(session.device, ctx.ports.metro);
+  if (session.device.physical) {
+    // L'app de TEST relancée ; la sonde remet son état à zéro sur ses arguments.
+    launchOnDevice(ctx, { session: start.session ?? "paired", storage: start.storage ?? {} });
+  } else {
+    resetAppState(session.device, {
+      metroPort: ctx.ports.metro, backendPort: ctx.ports.backend, session: start.session ?? "paired", storage: start.storage,
+    });
+    await launchApp(session.device, ctx.ports.metro);
+  }
   await agentRun(ctx, ["activate"]);
   const loaded = await waitFor(() => tryEvaluate(ctx, "globalThis.__navGolden ? globalThis.__navGolden.version : 0"), { timeoutMs: 180_000, everyMs: 500 });
   if (!loaded) throw new BenchError("la sonde du banc n'a pas paru dans l'app (paquet servi ? écran rouge ? voir le journal de Metro et console.log de la place)");

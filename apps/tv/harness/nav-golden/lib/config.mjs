@@ -91,8 +91,8 @@ export function benchContext(options) {
   return {
     ports: slotPorts(slot),
     sim,
-    // L'Apple TV physique (UDID xcodebuild) : le passage « appareil ».
-    device: options.device ?? process.env.NAV_GOLDEN_DEVICE ?? null,
+    // L'Apple TV physique (« Chambre », ou NAV_GOLDEN_DEVICE_UDID / _COREDEVICE) : le passage « appareil ».
+    device: options.device === true || process.env.NAV_GOLDEN_DEVICE === "1",
     stateFile: path.join(CACHE_DIR, "slots", `${slot}.json`),
     logDir: path.join(CACHE_DIR, "slots", `${slot}-logs`),
   };

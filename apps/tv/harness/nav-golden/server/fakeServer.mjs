@@ -110,8 +110,9 @@ async function handle(req, res) {
   return json(res, 404, { error: "banc : route non servie" });
 }
 
-// `localhost` du simulateur vise ::1 comme 127.0.0.1 : on écoute les deux.
-for (const host of ["127.0.0.1", "::1"]) {
+// `localhost` du simulateur vise ::1 comme 127.0.0.1 : on écoute les deux. Pour
+// l'Apple TV physique (LISTEN_ALL=1) : toutes les interfaces (`::`, double pile).
+for (const host of process.env.LISTEN_ALL === "1" ? ["::"] : ["127.0.0.1", "::1"]) {
   const server = http.createServer((req, res) => {
     handle(req, res).catch((error) => {
       log(`[erreur] ${req.method} ${req.url} : ${error.stack ?? error.message}`);
