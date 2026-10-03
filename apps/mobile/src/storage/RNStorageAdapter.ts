@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
+import { INSTALL_MARKER_KEY, shouldPurgeSecureKeys } from "./freshInstall";
 
 /**
  * ⚠️ Liste FERMÉE, et c'est le piège du fichier : `hydrate()` ne précharge que
@@ -100,8 +101,21 @@ export class RNStorageAdapter implements StorageAdapter {
       if (value != null) diskValues.set(key, value);
     }
 
+    // Le trousseau survit à la désinstallation : sur une installation neuve,
+    // ses clés sont celles de la précédente — purgées, jamais relues (cf.
+    // freshInstall.ts). Attendu : une suppression encore en vol croiserait le
+    // jeton qu'écrira la prochaine connexion.
+    const marker = await AsyncStorage.getItem(INSTALL_MARKER_KEY);
+    const purgeSecure = shouldPurgeSecureKeys({
+      marker,
+      serverUrl: diskValues.get("tentacle_server_url") ?? null,
+      user: diskValues.get("tentacle_user") ?? null,
+    });
+    if (purgeSecure && SecureStore) await this.purgeSecureKeys(SecureStore);
+    if (marker === null) AsyncStorage.setItem(INSTALL_MARKER_KEY, "1").catch(console.error);
+
     // Secure keys from SecureStore (if available)
-    if (SecureStore) {
+    if (SecureStore && !purgeSecure) {
       for (const key of SECURE_KEYS) {
         try {
           const value = await readSecure(SecureStore, key);
@@ -134,6 +148,12 @@ export class RNStorageAdapter implements StorageAdapter {
       this.persist(key, value);
     }
     this.pendingWrites.clear();
+  }
+
+  private async purgeSecureKeys(store: NonNullable<typeof SecureStore>): Promise<void> {
+    for (const key of SECURE_KEYS) {
+      await store.deleteItemAsync(key).catch(console.error);
+    }
   }
 
   getItem(key: string): string | null {
