@@ -194,6 +194,15 @@ ajouts 36, Déjà vus 16, Ma liste 1, Favoris 1, Pour vous : la page reco
 capturée. Tout se relit sur le faux backend de sa place
 (`curl localhost:310n/api/jellyfin/Users/x/Views`, `…/Items/<id>`).
 
+La base par défaut n'a PAS de réglages reco : `GET /api/preferences/reco` y
+répond sans `settings`, et la requête des réglages reco de l'app échoue
+(référence et code refactorisé de la même façon : l'équivalence tient, mais le
+chemin « réglages présents » n'est pas couvert). Un domaine qui en a besoin
+reprend la forme du jeu `focus/home` (`{ settings: { …, providerFilter },
+vigieAvailable }`) ; à basculer dans la base après le lot. De même, les routes
+que la base ne sert pas (`__unknown`) répondent 404 — l'app y suit ses chemins
+d'erreur, identiques des deux côtés.
+
 Jeux de la base (`base/<nom>`) : `serveur-coupe`, `serveur-muet`,
 `sante-en-erreur`, `vigie-off`, `vigie-bloque`, `vigie-ancien`,
 `vigie-vivant` (non déterministe), `vigie-vide`, `demandes-on`,
@@ -230,6 +239,7 @@ manquante se voit dans `GET localhost:310n/__unknown`.
 | Un pas | 0,5 à 1,5 s (attente de stabilité comprise) |
 | `record` de 3 scénarios (deux passages chacun) | 1 min 22 |
 | `verify` de 3 scénarios (bascule de Metro comprise) | 49 s |
+| `record` du socle : 21 scénarios, deux passages chacun (charge ~50) | 27 min 26 s |
 
 Compter ~12 s par scénario de 4 à 6 pas en `verify`, le double en `record`.
 
