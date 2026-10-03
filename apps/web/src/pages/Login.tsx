@@ -10,7 +10,7 @@ import { AuthField, PasswordField } from "../components/auth/AuthField";
 import { AuthButton, AuthTextButton } from "../components/auth/AuthButton";
 import { AuthAlert } from "../components/auth/AuthAlert";
 import { ForgotPasswordPanel } from "../components/auth/ForgotPasswordPanel";
-import { loginErrorMessage } from "../components/auth/loginError";
+import { loginErrorMessage, loginErrorText } from "../components/auth/loginError";
 
 export function Login() {
   const [username, setUsername] = useState("");
@@ -46,8 +46,8 @@ export function Login() {
     });
   };
 
-  const error = login.error ? loginErrorMessage(login.error.message) : null;
-  const errorText = error ? ("key" in error ? t(error.key) : error.text) : null;
+  const error = login.error ? loginErrorMessage(login.error) : null;
+  const errorText = error ? loginErrorText(error, t) : null;
   const badCredentials = !!error && "key" in error && error.key === "invalidCredentials";
 
   // Identifiants refusés : le curseur revient au mot de passe, sélectionné —

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Globe } from "lucide-react";
-import { verifyServer } from "@tentacle-tv/shared";
+import { describeProblem, verifyServer } from "@tentacle-tv/shared";
 import { recordFreshInstall } from "../whatsNew/freshInstall";
 import { AuthLayout } from "../components/auth/AuthLayout";
 import { AuthField } from "../components/auth/AuthField";
@@ -37,6 +37,11 @@ export function AppConnect({ onConnected }: AppConnectProps) {
       if (result.success) {
         localStorage.setItem("tentacle_server_url", result.url);
         onConnected();
+      } else if (result.cause) {
+        // La cause en mots de spectateur (certificat refusé, HTTP bloqué, pas un
+        // serveur Tentacle…) et quoi faire — comme le mobile.
+        const model = describeProblem({ cause: result.cause, context: "connect" });
+        setError([t(model.reasonKey), model.hintKey ? t(model.hintKey) : null].filter(Boolean).join(" "));
       } else {
         const key = result.errorKey ?? "serverNotFoundRetry";
         setError(t(key, result.errorParams));

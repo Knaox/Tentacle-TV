@@ -8,7 +8,7 @@ import { isDesktopApp } from "../../../desktop/bridge";
 import { AuthField, PasswordField } from "../../../components/auth/AuthField";
 import { AuthButton } from "../../../components/auth/AuthButton";
 import { AuthAlert } from "../../../components/auth/AuthAlert";
-import { loginErrorMessage } from "../../../components/auth/loginError";
+import { loginErrorMessage, loginErrorText } from "../../../components/auth/loginError";
 import { AuthScreen } from "./AuthScreen";
 import { AuthLinkRow } from "./AuthLinkRow";
 import { ForgotPasswordContent } from "./ForgotPasswordContent";
@@ -48,7 +48,7 @@ export function MirrorLogin() {
     });
   };
 
-  const error = login.error ? loginErrorMessage(login.error.message) : null;
+  const error = login.error ? loginErrorMessage(login.error) : null;
   const badCredentials = !!error && "key" in error && error.key === "invalidCredentials";
   useEffect(() => {
     if (badCredentials) passwordRef.current?.select();
@@ -106,7 +106,7 @@ export function MirrorLogin() {
           </div>
         </div>
 
-        {error && <AuthAlert tone="error">{"key" in error ? t(error.key) : error.text}</AuthAlert>}
+        {error && <AuthAlert tone="error">{loginErrorText(error, t)}</AuthAlert>}
 
         <AuthButton type="submit" loading={login.isPending} loadingLabel={t("signingIn")} disabled={incomplete}>
           {t("signIn")}
