@@ -71,6 +71,20 @@ export function holdPanelOf(source: HoldSource): HoldPanel | null {
   }
 }
 
+/** Le panneau d'une carte : ses pictos et sa note (`actions`), ou sa note seule (`rate` : « Noter » de la fiche). */
+export type SheetMode = "actions" | "rate";
+
+/** Les pictos ne paraissent que dans le grand panneau : réduit à la note, il ne résout pas la lecture. */
+export function sheetShowsActions(mode: SheetMode): boolean {
+  return mode === "actions";
+}
+
+/** OK sur un cran ferme le panneau réduit à la note ; dans le grand panneau, la note se pose
+ *  sous les yeux et le panneau reste ouvert. */
+export function ratingClosesSheet(mode: SheetMode): boolean {
+  return mode === "rate";
+}
+
 /** « Noter » de la fiche : la note d'un épisode est la sienne (vignette), celle d'un film,
  *  d'une série ou d'une collection, l'affiche. */
 export function rateTargetVariant(itemType: string): "poster" | "landscape" {

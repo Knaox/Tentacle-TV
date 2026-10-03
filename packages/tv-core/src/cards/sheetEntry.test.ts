@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   SHEET_GUIDE_MEMORY,
+  absentSheetEntry,
   firstPictoOf,
   sheetActionsTarget,
   sheetEntryNow,
@@ -66,6 +67,12 @@ describe("l'entrée du grand panneau", () => {
     expect(sheetEntryNow({ current: null, pending: true }, PICTOS, false)).toBeNull();
     expect(sheetEntryNow({ current: null, pending: true }, PICTOS, true)).toBe("sheet:action:play");
     expect(sheetEntryNow({ current: 8 }, PICTOS, true)).toBe("sheet:scale:8");
+  });
+
+  it("d'un titre absent : attend son état ou le filet, puis « Demander », sinon la croix", () => {
+    expect(absentSheetEntry([{ kind: "request" }], false, false)).toBeNull();
+    expect(absentSheetEntry([{ kind: "request" }], true, false)).toBe("sheet:action:request");
+    expect(absentSheetEntry([], false, true)).toBe("sheet:close");
   });
 
   it("verrouille toutes les cibles du panneau, croix comprise", () => {

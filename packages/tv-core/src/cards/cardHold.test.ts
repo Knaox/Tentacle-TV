@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { holdPanelOf, rateTargetVariant } from "./cardHold";
+import { holdPanelOf, rateTargetVariant, ratingClosesSheet, sheetShowsActions } from "./cardHold";
 
 const poster = { kind: "media", variant: "poster" };
 const landscape = { kind: "media", variant: "landscape" };
@@ -58,5 +58,17 @@ describe("« Noter » de la fiche", () => {
     expect(rateTargetVariant("Series")).toBe("poster");
     expect(rateTargetVariant("Movie")).toBe("poster");
     expect(rateTargetVariant("BoxSet")).toBe("poster");
+  });
+});
+
+describe("le panneau réduit à la note", () => {
+  it("n'a pas de pictos, et OK sur un cran le ferme", () => {
+    expect(sheetShowsActions("rate")).toBe(false);
+    expect(ratingClosesSheet("rate")).toBe(true);
+  });
+
+  it("le grand panneau garde ses pictos et reste ouvert quand on note", () => {
+    expect(sheetShowsActions("actions")).toBe(true);
+    expect(ratingClosesSheet("actions")).toBe(false);
   });
 });

@@ -58,6 +58,13 @@ export function sheetEntryNow(rating: SheetRating | null | undefined, actions: r
   return sheetEntryOf(rating, actions) ?? (waited ? firstPictoOf(actions) : null);
 }
 
+/** Le panneau d'un titre absent : présenté une fois l'état du titre su (le plus souvent déjà
+ *  là : la carte l'a lu pour son badge), ou au filet. Sans note, il entre par « Demander »,
+ *  sinon par la croix. */
+export function absentSheetEntry(actions: readonly SheetPicto[], known: boolean, waited: boolean): string | null {
+  return known || waited ? sheetEntryOf(null, actions) : null;
+}
+
 /** Toutes les cibles du panneau — infocalisables, sauf l'entrée, jusqu'au premier focus (`choiceEntry`). */
 export function sheetLockKeys(actions: readonly SheetPicto[]): string[] {
   return [...SCALE_FOCUS_KEYS, ...actions.map((action) => sheetActionKey(action.kind)), SHEET_CLOSE_KEY];
