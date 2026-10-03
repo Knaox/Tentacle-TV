@@ -1,14 +1,13 @@
 import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { OFFLINE_VEIL, OFFLINE_VEIL_FOCUS, OFFLINE_VEIL_KEYS } from "@tentacle-tv/tv-core";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { OfflineOverlay } from "../../redesign/screens/overlays/OfflineOverlay";
 import { useUnpairDevice } from "../../hooks/useUnpairDevice";
 import { useFocusStore } from "../focus/focusStore";
 import { TrapFocusGuide } from "../focus/focusGuides";
 import { useKeepFocusWithin } from "../focus/useKeepFocusWithin";
-
-const KEYS = ["offline:retry", "offline:unpair"] as const;
 
 /**
  * Le voile hors ligne de la refonte (Apple TV), monté par `OfflineBanner`
@@ -18,7 +17,8 @@ const KEYS = ["offline:retry", "offline:unpair"] as const;
  * reprise de ce qu'un écran d'en dessous réclamerait). Menu n'y est jamais
  * intercepté : monté hors des écrans, le panneau n'est sur le chemin d'aucun,
  * l'appui remonte jusqu'à l'application et renvoie à l'accueil de tvOS —
- * la règle qu'App Review vérifie.
+ * la règle qu'App Review vérifie. Ces décisions sont celles de tv-core
+ * (`panels/overlayFocus`) ; ce câblage les applique.
  *
  * « Déjumeler cet appareil » (double appui, tenu par la vue) est le
  * déjumelage commun (`unpairDevice`, origine `offline`) : rien n'y attend
@@ -40,8 +40,8 @@ function OfflineSurface({ onRetry }: { onRetry: () => void | Promise<unknown> })
 
   const store = useFocusStore();
   // Le piège naît avec le panneau : un groupe se lie dès son premier rendu.
-  useState(() => store.bind("offline:panel", { container: TrapFocusGuide }));
-  useKeepFocusWithin(store, KEYS, "offline:retry");
+  useState(() => store.bind(OFFLINE_VEIL.group, OFFLINE_VEIL_FOCUS.trapped ? { container: TrapFocusGuide } : null));
+  useKeepFocusWithin(store, OFFLINE_VEIL_KEYS, OFFLINE_VEIL_FOCUS.entry);
 
   const retry = useCallback(() => {
     setRetrying(true);

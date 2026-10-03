@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
+import { SCREEN_ERROR_FOCUS } from "@tentacle-tv/tv-core";
 import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { ScreenErrorView } from "../../redesign/screens/overlays/ScreenErrorView";
 import { routeRailKey, type RouteLike } from "../../navigation/routeRailKey";
@@ -24,8 +25,9 @@ import { useRedesignScreen } from "../screen/useRedesignScreen";
  * revient (`useBackFocus`).
  */
 
-const ENTRY = "screenError:retry";
-const BACK = { backKey: "screenError:back", barKey: "screenError:top", entryKey: ENTRY };
+/** L'entrée et la croix, décidées par tv-core (`panels/overlayFocus`). */
+const ENTRY = SCREEN_ERROR_FOCUS.entry;
+const BACK = { backKey: SCREEN_ERROR_FOCUS.back, barKey: SCREEN_ERROR_FOCUS.bar, entryKey: ENTRY };
 
 interface Props {
   error: Error | null;

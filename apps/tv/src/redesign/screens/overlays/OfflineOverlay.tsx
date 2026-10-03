@@ -2,6 +2,7 @@ import { memo, useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
+import { OFFLINE_VEIL, confirmBlur, confirmPress } from "@tentacle-tv/tv-core";
 import { BrandMark } from "../../brand/BrandMark";
 import { PillButton } from "../../controls/PillButton";
 import { FocusGroup } from "../../focus/FocusGroup";
@@ -21,8 +22,9 @@ import { ConfirmPill } from "../settings/ConfirmPill";
  * « Déjumeler cet appareil » se fait à DOUBLE appui, comme « Déconnexion »
  * dans les réglages : le premier arme (« Confirmer le déjumelage », et une
  * ligne dit ce qui va se passer), le second exécute, quitter le bouton
- * désarme. L'état armé est un état d'AFFICHAGE, local à la vue ;
- * `initialArmed` le pose à l'ouverture (banc).
+ * désarme — la règle de tv-core (`panels/confirmPress`). L'état armé est un
+ * état d'AFFICHAGE, local à la vue ; `initialArmed` le pose à l'ouverture
+ * (banc).
  *
  * Posé sur l'écran courant (l'accueil, le plus souvent), sous un voile
  * dense. Contrat : monté par l'app quand `useServerReachable` tombe ;
@@ -44,6 +46,9 @@ export interface OfflineOverlayProps {
   onUnpair?: () => void;
 }
 
+/** La seule action à double appui du voile. */
+const UNPAIR = "unpair";
+
 export const OfflineOverlay = memo(function OfflineOverlay({
   serverUrl,
   retrying = false,
@@ -53,25 +58,23 @@ export const OfflineOverlay = memo(function OfflineOverlay({
 }: OfflineOverlayProps) {
   const { t } = useTranslation(["common", "pairing"]);
   const backing = useNativeGlassBacking("strong");
-  const [armed, setArmed] = useState(initialArmed);
+  const [armedAction, setArmedAction] = useState<typeof UNPAIR | null>(initialArmed ? UNPAIR : null);
+  const armed = armedAction !== null;
 
   const pressUnpair = useCallback(() => {
-    if (!armed) {
-      setArmed(true);
-      return;
-    }
-    setArmed(false);
-    onUnpair?.();
-  }, [armed, onUnpair]);
+    const step = confirmPress(armedAction, UNPAIR);
+    setArmedAction(step.armed);
+    if (step.run) onUnpair?.();
+  }, [armedAction, onUnpair]);
 
   const leaveUnpair = useCallback((focused: boolean) => {
-    if (!focused) setArmed(false);
+    if (!focused) setArmedAction((current) => confirmBlur(current, UNPAIR));
   }, []);
 
   return (
     <Animated.View entering={FadeIn.duration(300)} style={styles.layer}>
       <View style={styles.veil} />
-      <FocusGroup focusKey="offline:panel" style={styles.panel}>
+      <FocusGroup focusKey={OFFLINE_VEIL.group} style={styles.panel}>
         <View style={[StyleSheet.absoluteFill, styles.base, backing]} />
         <GlassSurface radius={RADIUS} tone="strong" style={StyleSheet.absoluteFill} elevated />
         <BrandMark size={176} crying />
@@ -83,7 +86,7 @@ export const OfflineOverlay = memo(function OfflineOverlay({
             variant="primary"
             icon="refresh"
             label={retrying ? t("retrying") : t("retryConnection")}
-            focusKey="offline:retry"
+            focusKey={OFFLINE_VEIL.retry}
             onPress={retrying ? undefined : onRetry}
           />
           <ConfirmPill
@@ -92,7 +95,7 @@ export const OfflineOverlay = memo(function OfflineOverlay({
             tone="danger"
             armed={armed}
             armedLabel={t("pairing:tvUnpairConfirm")}
-            focusKey="offline:unpair"
+            focusKey={OFFLINE_VEIL.unpair}
             onPress={pressUnpair}
             onFocusChange={leaveUnpair}
           />

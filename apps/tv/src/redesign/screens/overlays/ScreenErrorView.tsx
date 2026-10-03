@@ -2,6 +2,7 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { SCREEN_ERROR_FOCUS } from "@tentacle-tv/tv-core";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { BrandMark } from "../../brand/BrandMark";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../color/artworkPalette";
@@ -56,7 +57,7 @@ export const ScreenErrorView = memo(function ScreenErrorView({
           <Text style={styles.title}>{t("tvScreenErrorTitle")}</Text>
           <Text style={styles.message}>{t("tvScreenErrorText")}</Text>
           <View style={styles.actions}>
-            <PillButton variant="primary" icon="refresh" label={t("retry")} focusKey="screenError:retry" onPress={onRetry} />
+            <PillButton variant="primary" icon="refresh" label={t("retry")} focusKey={SCREEN_ERROR_FOCUS.entry} onPress={onRetry} />
           </View>
           {detail ? (
             <Text style={styles.detail} numberOfLines={2}>{detail.slice(0, 160)}</Text>
@@ -64,8 +65,8 @@ export const ScreenErrorView = memo(function ScreenErrorView({
         </GlassSurface>
       </View>
       {canGoBack ? (
-        <FocusGroup focusKey="screenError:top" style={[styles.backBar, { left: nav ? TV_STAGE.contentLeft : TV_STAGE.safe.x }]}>
-          <BackButton focusKey="screenError:back" onPress={onBack} />
+        <FocusGroup focusKey={SCREEN_ERROR_FOCUS.bar} style={[styles.backBar, { left: nav ? TV_STAGE.contentLeft : TV_STAGE.safe.x }]}>
+          <BackButton focusKey={SCREEN_ERROR_FOCUS.back} onPress={onBack} />
         </FocusGroup>
       ) : null}
       {nav ? <NavRail {...nav} /> : null}
