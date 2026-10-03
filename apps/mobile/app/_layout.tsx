@@ -1,7 +1,7 @@
 import "react-native-reanimated";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { View, StyleSheet } from "react-native";
-import { Stack, useRouter, useSegments, SplashScreen } from "expo-router";
+import { Stack, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
@@ -14,7 +14,7 @@ import { ServerOutdatedBanner } from "@/components/ServerOutdatedBanner";
 import { TmdbKeyBanner } from "@/components/TmdbKeyBanner";
 import { useServerCompat } from "@/hooks/useServerCompat";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
-import { isSessionExpired } from "@/auth/sessionState";
+import { AuthRedirect } from "@/auth/AuthRedirect";
 import { OfflineShell } from "@/offline/OfflineShell";
 import { SessionMessageHost } from "@/session/SessionMessageHost";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
@@ -56,8 +56,6 @@ function ServerNoticeOverlay() {
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
-  const segments = useSegments();
-  const router = useRouter();
   const [fontsLoaded, fontError] = useAppFonts();
 
   // Hydrate storage, read persisted values, init i18n
@@ -113,35 +111,6 @@ export default function RootLayout() {
     }
   }, [ready, fontsLoaded, fontError]);
 
-  // Auth guard: redirect based on stored credentials
-  useEffect(() => {
-    if (!ready) return;
-
-    const inAuthGroup = segments[0] === "(auth)";
-    const url = storage.getItem("tentacle_server_url");
-    const token = storage.getItem("tentacle_token");
-    const disclaimerAccepted = storage.getItem("disclaimer_accepted") === "true";
-
-    if (!url) {
-      // No server URL yet — show disclaimer first (once), then server-setup
-      if (!disclaimerAccepted) {
-        const onDisclaimer = inAuthGroup && (segments as string[])[1] === "disclaimer";
-        if (!onDisclaimer) {
-          router.replace("/(auth)/disclaimer");
-        }
-      } else {
-        const onSetup = inAuthGroup && (segments as string[])[1] === "server-setup";
-        if (!onSetup) {
-          router.replace("/(auth)/server-setup");
-        }
-      }
-    } else if (url && !token && !inAuthGroup) {
-      router.replace("/(auth)/login");
-    } else if (url && token && inAuthGroup && !isSessionExpired()) {
-      router.replace("/(tabs)");
-    }
-  }, [ready, segments, router]);
-
   // Callback exposed to server-setup + changeServer flows
   const handleSetServerUrl = useCallback((url: string | null) => {
     if (url) {
@@ -151,11 +120,15 @@ export default function RootLayout() {
     }
     setServerUrl(url);
   }, []);
+  // Valeur stable : un objet neuf à chaque rendu faisait re-rendre tous ses
+  // consommateurs (cartes de recommandation, épisodes, accueil…).
+  const serverUrlValue = useMemo(() => ({ serverUrl, setServerUrl: handleSetServerUrl }), [serverUrl, handleSetServerUrl]);
 
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <ServerUrlContext.Provider value={{ serverUrl, setServerUrl: handleSetServerUrl }}>
+        <ServerUrlContext.Provider value={serverUrlValue}>
+          <AuthRedirect storage={storage} ready={ready} />
           <AppProviders storage={storage} uuid={uuid} serverUrl={serverUrl} storageReady={ready}>
             <ThemedShell showLoading={!ready || (!fontsLoaded && !fontError)} />
           </AppProviders>
@@ -171,24 +144,24 @@ export default function RootLayout() {
  */
 function ThemedShell({ showLoading }: { showLoading: boolean }) {
   const theme = useTheme();
+  const surface = theme.colors.surface.s0;
+  const screenOptions = useMemo(() => ({
+    headerShown: false,
+    gestureEnabled: true,
+    contentStyle: { backgroundColor: surface },
+    // Défaut app : portrait sur téléphone, libre sur tablette (iPad
+    // ET tablette Android). Déclaratif par écran via
+    // react-native-screens — `watch/[itemId]` force "all" pour que
+    // le téléphone tourne aussi dans le lecteur vidéo.
+    orientation: IS_TABLET_DEVICE ? "all" as const : "portrait_up" as const,
+  }), [surface]);
   return (
     <>
       <StatusBar style={theme.statusBarStyle} />
       {/* La feuille d'appui long des cartes, pour tous les écrans empilés (la
           recherche, modale, a la sienne). */}
       <CardSheetScope>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: true,
-            contentStyle: { backgroundColor: theme.colors.surface.s0 },
-            // Défaut app : portrait sur téléphone, libre sur tablette (iPad
-            // ET tablette Android). Déclaratif par écran via
-            // react-native-screens — `watch/[itemId]` force "all" pour que
-            // le téléphone tourne aussi dans le lecteur vidéo.
-            orientation: IS_TABLET_DEVICE ? "all" : "portrait_up",
-          }}
-        >
+        <Stack screenOptions={screenOptions}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
