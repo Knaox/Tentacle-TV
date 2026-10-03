@@ -47,6 +47,17 @@ export const useJellyfinClient = () => ({ getImageUrl: (id: string, type: string
 export const useTentacleConfig = () => ({ storage: { getItem: () => null } });
 export const useRecoCardHold = () => {};
 export const useMyTitles = () => ({ titles: (api.myTitles as unknown[]) ?? [], updatedAt: 0 });
+export const titleStateQueryKey = (provider: { pluginId?: string } | null, lang: string, key: string | null) =>
+  ["title-state", provider?.pluginId ?? "", lang, key ?? ""] as const;
+/** La lecture de l'état d'un titre : notée avec ce qu'elle demande, puis passée au `fetcher` de l'appelant. */
+export const loadTitleState = async (provider: { pluginId?: string }, key: string, lang: string, fetcher: (url: string) => Promise<unknown>) => {
+  note({ loadTitleState: { provider: provider.pluginId ?? null, key, lang } });
+  return fetcher("/bench/titles/state");
+};
+export const tentacleApiFetch = async (url: string) => {
+  note({ fetch: url });
+  return (api.query as { data?: unknown } | undefined)?.data ?? null;
+};
 export const useRequestTitleSeasons = () => mutation("requestSeasons");
 export const useSeasons = (seriesId?: string) => ({ data: seriesId ? api.librarySeasons : undefined, isError: false });
 export const useTitleSeasons = () => ({ answer: api.seasonsAnswer ?? null, failed: api.seasonsFailed === true });

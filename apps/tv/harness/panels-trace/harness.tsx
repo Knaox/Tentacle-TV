@@ -1,4 +1,5 @@
 import "./stubs/clock";
+import { runAbsentSheet } from "./units/absentSheet";
 import { runActionSheet } from "./units/actionSheet";
 import { runCardActions } from "./units/cardActions";
 import { runChoiceEntry } from "./units/choiceEntry";
@@ -25,6 +26,7 @@ const units: Record<string, unknown> = {
   cardActions: await runCardActions(),
   actionSheet: await runActionSheet(),
   seasons: await runSeasons(),
+  absentSheet: await runAbsentSheet(),
 };
 
 // Une sortie longue part par morceaux dans un tube : on ne quitte qu'une fois tout écrit.

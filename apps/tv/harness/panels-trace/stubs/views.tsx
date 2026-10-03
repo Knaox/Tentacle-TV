@@ -41,10 +41,33 @@ export const RATING_ENTRY = 5;
 export const scaleFocusKey = (score: number | null): string => `sheet:scale:${score ?? "remove"}`;
 export const SCALE_FOCUS_KEYS: readonly string[] = [...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(scaleFocusKey), scaleFocusKey(null)];
 
+/* Les cibles du grand panneau, montées seulement pour l'unité qui les relève
+   (`showSheetTargets`) : les unités plus anciennes gardent leur trace telle
+   qu'enregistrée. */
+let sheetTargets = false;
+export function showSheetTargets(on: boolean): void {
+  sheetTargets = on;
+}
+
+/** Une cible du grand panneau : sa liaison (verrou, garde, focus), tenue par un faux nœud ; elle s'efface au démontage. */
+function PanelKey({ k }: { k: string }) {
+  const binding = useFocusBinding(k);
+  const ref = binding?.ref as ((node: unknown) => void) | undefined;
+  useLayoutEffect(() => {
+    ref?.({ setNativeProps: (props: object) => note({ native: k, props }) });
+    return () => ref?.(null);
+  }, [ref, k]);
+  useLayoutEffect(() => () => void hosts.delete(`key:${k}`), [k]);
+  const native = binding?.native as { isTVSelectable?: boolean } | undefined;
+  hosts.set(`key:${k}`, { binding, selectable: native?.isTVSelectable ?? null, guard: binding?.phantomPressGuard === true });
+  return null;
+}
+
 /**
  * Le grand panneau : ses props notées ; monté déjà en sortie, il appelle
  * `onClosed` comme la vraie vue (sa présence part de zéro) ; sinon le banc
- * joue la fin de la sortie (`onClosed`).
+ * joue la fin de la sortie (`onClosed`). Ses cibles, quand l'unité les
+ * demande : la croix, l'échelle s'il y a une note, un picto par action.
  */
 export function ActionSheetView(props: Props) {
   hosts.set("sheet", props);
@@ -53,7 +76,10 @@ export function ActionSheetView(props: Props) {
     if (mountedClosing.current) (props.onClosed as (() => void) | undefined)?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return null;
+  if (!sheetTargets) return null;
+  const actions = (props.actions as Array<{ kind: string }> | undefined) ?? [];
+  const keys = ["sheet:close", ...(props.rating ? SCALE_FOCUS_KEYS : []), ...actions.map((a) => `sheet:action:${a.kind}`)];
+  return <>{keys.map((k) => <PanelKey key={k} k={k} />)}</>;
 }
 
 /** La feuille des saisons : ses clés de focus (celles de l'origine) et ses props. */

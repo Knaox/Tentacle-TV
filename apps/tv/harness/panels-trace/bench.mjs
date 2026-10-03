@@ -9,9 +9,10 @@
  * Les mêmes scénarios (`harness.tsx`, `units/`) montent les vrais modules de
  * chaque arbre — le verrou d'entrée, le focus du grand panneau, la garde
  * anti-clic fantôme, les pictos, l'échelle, le double appui, les actions
- * d'une carte, le cycle du grand panneau, la feuille des saisons — sur des
- * doublures (`stubs/`) : react-native, reanimated, i18n, navigation,
- * api-client, et quelques vues qui ne font que dessiner.
+ * d'une carte, le cycle du grand panneau, la feuille des saisons, le panneau
+ * d'un titre absent — sur des doublures (`stubs/`) : react-native,
+ * reanimated, i18n, navigation, api-client, react-query, et quelques vues qui
+ * ne font que dessiner.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -101,6 +102,7 @@ async function tracesOf(tree) {
     plugins: [treePlugin(tree)],
     alias: {
       "@tentacle-tv/api-client": join(STUBS, "api-client.ts"),
+      "@tanstack/react-query": join(STUBS, "react-query.ts"),
       "react-native": join(STUBS, "react-native.tsx"),
       "react-native-reanimated": join(STUBS, "reanimated.tsx"),
       "react-native-svg": join(STUBS, "svg.tsx"),

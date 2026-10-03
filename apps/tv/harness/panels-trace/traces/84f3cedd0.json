@@ -7392,6 +7392,1089 @@
      ]
     }
    ]
+  },
+  "absentSheet": {
+   "état su : entrée sur « Demander », la demande après la sortie": [
+    {
+     "step": "état su (offre)",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": false,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "la lecture de l'état",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": false,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": [
+      {
+       "loadTitleState": {
+        "provider": "seer",
+        "key": "movie:603",
+        "lang": "fr"
+       }
+      },
+      {
+       "fetch": "/bench/titles/state"
+      },
+      {
+       "read": {
+        "badge": {
+         "label": "Demandé par un autre",
+         "tone": "info"
+        },
+        "request": {
+         "mode": "direct",
+         "label": "Demander",
+         "href": null
+        }
+       }
+      }
+     ]
+    },
+    {
+     "step": "premier focus sur « Demander »",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": [
+      {
+       "native": "sheet:close",
+       "props": {
+        "isTVSelectable": true
+       }
+      }
+     ]
+    },
+    {
+     "step": "« Demander »",
+     "modal": true,
+     "closing": true,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "un autre picto : rien",
+     "modal": true,
+     "closing": true,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "fin de la sortie",
+     "modal": true,
+     "closing": true,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": [
+      {
+       "closed": true
+      },
+      {
+       "request": "movie:603"
+      }
+     ]
+    }
+   ],
+   "état en route : le filet de 900 ms, puis l'offre (entrée figée)": [
+    {
+     "step": "état en route",
+     "modal": false,
+     "closing": null,
+     "header": null,
+     "actions": null,
+     "rating": null,
+     "keys": {},
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "899 ms",
+     "modal": false,
+     "closing": null,
+     "header": null,
+     "actions": null,
+     "rating": null,
+     "keys": {},
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "900 ms",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · cards:notInLibrary",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "l'offre arrive",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "799 ms",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "800 ms : le verrou tombe",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    }
+   ],
+   "Menu dans la Modal, puis par la portée pendant la sortie": [
+    {
+     "step": "état su (offre)",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": false,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "Menu (Modal)",
+     "modal": true,
+     "closing": true,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": false,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "Menu (portée) pendant la sortie",
+     "modal": true,
+     "closing": true,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": false,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "fin de la sortie",
+     "modal": true,
+     "closing": true,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · Demandé par un autre",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [
+      {
+       "kind": "request",
+       "label": "Demander"
+      }
+     ],
+     "rating": null,
+     "keys": {
+      "sheet:action:request": {
+       "selectable": null,
+       "guard": true
+      },
+      "sheet:close": {
+       "selectable": false,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": [
+      {
+       "closed": true
+      }
+     ]
+    }
+   ],
+   "Menu par la portée pendant l'attente": [
+    {
+     "step": "état en route",
+     "modal": false,
+     "closing": null,
+     "header": null,
+     "actions": null,
+     "rating": null,
+     "keys": {},
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "Menu (portée)",
+     "modal": false,
+     "closing": null,
+     "header": null,
+     "actions": null,
+     "rating": null,
+     "keys": {},
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "900 ms",
+     "modal": true,
+     "closing": true,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · cards:notInLibrary",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": [
+      {
+       "closed": true
+      }
+     ]
+    }
+   ],
+   "déjà demandé par le compte : la croix, l'affiche qui arrive": [
+    {
+     "step": "sa demande en cours",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · requests:stateArriving",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg",
+      "arrival": {
+       "state": "arriving",
+       "percent": 42,
+       "etaSeconds": 600,
+       "at": 0,
+       "live": true
+      }
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": true,
+     "events": []
+    },
+    {
+     "step": "premier focus sur la croix",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · requests:stateArriving",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg",
+      "arrival": {
+       "state": "arriving",
+       "percent": 42,
+       "etaSeconds": 600,
+       "at": 0,
+       "live": true
+      }
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": true,
+     "events": []
+    },
+    {
+     "step": "l'app en arrière-plan",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · requests:stateArriving",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg",
+      "arrival": {
+       "state": "arriving",
+       "percent": 42,
+       "etaSeconds": 600,
+       "at": 0,
+       "live": false
+      }
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "la croix",
+     "modal": true,
+     "closing": true,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · requests:stateArriving",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg",
+      "arrival": {
+       "state": "arriving",
+       "percent": 42,
+       "etaSeconds": 600,
+       "at": 0,
+       "live": false
+      }
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "fin de la sortie",
+     "modal": true,
+     "closing": true,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · requests:stateArriving",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg",
+      "arrival": {
+       "state": "arriving",
+       "percent": 42,
+       "etaSeconds": 600,
+       "at": 0,
+       "live": false
+      }
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": [
+      {
+       "closed": true
+      }
+     ]
+    }
+   ],
+   "arrivé : rien à demander": [
+    {
+     "step": "arrivé, l'offre encore dite",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · requests:stateArrived",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg",
+      "arrival": {
+       "state": "arrived",
+       "percent": null,
+       "etaSeconds": null,
+       "at": 0,
+       "live": true
+      }
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    }
+   ],
+   "rien à dire du titre : la croix": [
+    {
+     "step": "état su sans offre",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · cards:notInLibrary",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    }
+   ],
+   "l'état échoue": [
+    {
+     "step": "échec",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · cards:notInLibrary",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    },
+    {
+     "step": "premier focus sur la croix",
+     "modal": true,
+     "closing": false,
+     "header": {
+      "shape": "poster",
+      "title": "Film absent",
+      "subtitle": "1999 · cards:notInLibrary",
+      "imageUri": "https://image.tmdb.org/t/p/w342/affiche.jpg"
+     },
+     "actions": [],
+     "rating": null,
+     "keys": {
+      "sheet:close": {
+       "selectable": null,
+       "guard": true
+      }
+     },
+     "takesMenu": true,
+     "query": {
+      "key": [
+       "title-state",
+       "seer",
+       "fr",
+       "movie:603"
+      ],
+      "staleTime": 60000,
+      "retry": 1
+     },
+     "live": false,
+     "events": []
+    }
+   ]
   }
  }
 }

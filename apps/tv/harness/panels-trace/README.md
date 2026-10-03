@@ -16,6 +16,7 @@ scénarios et relève une trace par unité :
 | `cardActions` | `useCardActions` | la note (posée, en attente, rien), le survol, la lecture, l'effet de chaque picto |
 | `actionSheet` | `ActionSheetRedesign` dans la portée du Retour | Modal présentée, sortie, fermeture, Menu pris d'avance, mode « Noter » |
 | `seasons` | `SeasonsSheetRedesign` dans la portée du Retour | présentation, verrous, cocher, Lecture/Pause, Menu, filet |
+| `absentSheet` | `AbsentSheetRedesign` dans la portée du Retour, ses cibles montées par la doublure de la vue | présentation (état su, filet de 900 ms), entrée et verrous, « Demander » après la sortie (noté, jamais envoyé), Menu par la Modal et par la portée, la croix, titre déjà demandé, arrivé, sans offre, en échec ; clé et options de la lecture de l'état |
 
 ```bash
 node apps/tv/harness/panels-trace/bench.mjs record   # 84f3cedd0 → traces/84f3cedd0.json
@@ -25,12 +26,17 @@ node apps/tv/harness/panels-trace/bench.mjs verify   # arbre courant : traces id
 Les doublures (`stubs/`) remplacent react-native (les vues natives notent leurs
 props, `TVEventHandler` reçoit des événements du banc), reanimated (animations
 instantanées), react-i18next (les clés), la navigation, l'api-client (l'état
-que pose le scénario, chaque écriture notée) et les vues qui ne font que
-dessiner — les mêmes pour les deux arbres. Une horloge factice joue les
-filets dans l'ordre.
+que pose le scénario, chaque écriture notée), react-query (`useQuery` rend
+l'état posé et inscrit ses options), le direct des demandes Vigie (éteint) et
+les vues qui ne font que dessiner — les mêmes pour les deux arbres. Une
+horloge factice joue les filets dans l'ordre.
 
 Contre-épreuve faite à la mise en place : `RATING_ENTRY` à 6, la garde
 anti-clic fantôme désarmée et le filet de la feuille des saisons à 1 400 ms
-font échouer `verify` (sheetFocus, ratingPanel, focusTarget, seasons).
+font échouer `verify` (sheetFocus, ratingPanel, focusTarget, seasons). Pour
+`absentSheet` (ajoutée ensuite, les neuf autres traces inchangées) : le filet
+du panneau absent à 950 ms, sa couche du Retour coupée pendant la sortie, la
+croix sortie des verrous d'entrée, l'entrée qui n'attend plus le filet — chacune
+fait échouer `verify` (absentSheet ; sheetFocus aussi pour les verrous).
 
 L'arbre de référence et les bundles vont dans `out/` (ignoré par git).
