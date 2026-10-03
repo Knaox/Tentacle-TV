@@ -10,16 +10,19 @@ export async function evaluate(ctx, expression, { timeoutMs = 15_000 } = {}) {
     method: "POST", body: { method: "Runtime.evaluate", params: { expression, returnByValue: true } }, timeoutMs,
   });
   const reply = res?.json;
+  // Deux apps candidates sur le Metro de la place : le démon refuse, le banc aussi.
+  if (res?.status === 409) throw new BenchError(reply?.message ?? "plusieurs cibles Hermes : relevé refusé");
   if (!reply || reply.error) throw new BenchError(`CDP : ${reply?.error ?? "pas de réponse du démon"}`);
   if (reply.exceptionDetails) throw new BenchError(`CDP : exception — ${JSON.stringify(reply.exceptionDetails).slice(0, 400)}`);
   return reply.result?.value;
 }
 
-/** Comme `evaluate`, `null` au lieu d'une erreur (app en plein démarrage). */
+/** Comme `evaluate`, `null` au lieu d'une erreur (app en plein démarrage) — sauf un refus d'ambiguïté, qui remonte. */
 export async function tryEvaluate(ctx, expression) {
   try {
     return await evaluate(ctx, expression, { timeoutMs: 4000 });
-  } catch {
+  } catch (error) {
+    if (/plusieurs cibles Hermes/.test(error.message)) throw error;
     return null;
   }
 }

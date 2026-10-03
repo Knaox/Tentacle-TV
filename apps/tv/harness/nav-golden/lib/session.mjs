@@ -3,7 +3,8 @@
 // premier usage, services de fond ; puis, avant chaque scénario, un
 // démarrage À FROID sur un état de l'app remis à zéro.
 import { execFileSync } from "node:child_process";
-import { BenchError, capture, note, sleep, step } from "./config.mjs";
+import { BUNDLE_ID, BenchError, capture, note, sleep, step } from "./config.mjs";
+import { ambiguityMessage } from "./cdpTarget.mjs";
 import { currentCheckout, referenceCheckout } from "./checkout.mjs";
 import { ensureNativeApp } from "./nativeApp.mjs";
 import { httpJson, loadState, saveState, waitFor } from "./processes.mjs";
@@ -48,7 +49,8 @@ export async function prepare(ctx, { at = null, erase = true } = {}) {
   if (ensureInstalled(device, app, fingerprint, state)) saveState(ctx.stateFile, { ...loadState(ctx.stateFile), installed: state.installed });
   await ensureBackend(ctx, snapshot);
   await ensureMetro(ctx, checkout);
-  await ensureCdpd(ctx);
+  // L'app du simulateur DE LA PLACE (RN-tvOS y donne le nom du simulateur à l'inspecteur).
+  await ensureCdpd(ctx, { appId: BUNDLE_ID, deviceName: device.name });
   await ensureAgent(ctx, device);
   return { checkout, snapshot, device, fingerprint, deviceInfo: describeDevice(device) };
 }
@@ -66,9 +68,32 @@ async function preparePhysical(ctx, checkout, snapshot) {
   if (ensureDeviceInstalled(app, fingerprint, state)) saveState(ctx.stateFile, { ...loadState(ctx.stateFile), installedDevice: state.installedDevice });
   await ensureBackend(ctx, snapshot);
   await ensureMetro(ctx, checkout);
-  await ensureCdpd(ctx);
+  // L'app de TEST seulement : l'app du simulateur de la place, reconnectée au même
+  // Metro, n'est jamais prise pour elle (passage de T5, 2026-10-03).
+  await ensureCdpd(ctx, { appId: TEST_BUNDLE });
   await ensureAgent(ctx, { udid, physical: true, host: macIp(), bundle: TEST_BUNDLE });
   return { checkout, snapshot, device: { udid, physical: true }, fingerprint, deviceInfo: describePhysical() };
+}
+
+/**
+ * Attend que le démon CDP tienne UNE cible, celle de l'app relevée. Deux
+ * candidates plus de 10 s d'affilée (pas le reste d'une app qu'on vient de
+ * relancer) : refus explicite — rien n'est fermé d'office.
+ */
+async function awaitSingleTarget(ctx) {
+  let ambiguousSince = null;
+  const found = await waitFor(async () => {
+    const target = (await httpJson(`http://127.0.0.1:${ctx.ports.cdp}/target`))?.json;
+    if (target?.state === "ambiguous") {
+      ambiguousSince ??= Date.now();
+      if (Date.now() - ambiguousSince > 10_000) throw new BenchError(ambiguityMessage(target, { appId: target.appId, metroPort: ctx.ports.metro }));
+      return null;
+    }
+    ambiguousSince = null;
+    return target?.state === "ready" && target.connected ? target : null;
+  }, { timeoutMs: 180_000, everyMs: 500 });
+  if (!found) throw new BenchError(`l'app n'est jamais apparue dans l'inspecteur du Metro ${ctx.ports.metro} (cible attendue : voir GET localhost:${ctx.ports.cdp}/target)`);
+  return found;
 }
 
 /** Remet le faux backend à la base + les jeux du scénario. */
@@ -95,6 +120,7 @@ export async function coldStart(ctx, session, start = {}) {
     await launchApp(session.device, ctx.ports.metro);
   }
   await agentRun(ctx, ["activate"]);
+  await awaitSingleTarget(ctx);
   const loaded = await waitFor(() => tryEvaluate(ctx, "globalThis.__navGolden ? globalThis.__navGolden.version : 0"), { timeoutMs: 180_000, everyMs: 500 });
   if (!loaded) throw new BenchError("la sonde du banc n'a pas paru dans l'app (paquet servi ? écran rouge ? voir le journal de Metro et console.log de la place)");
   // L'app passe parfois derrière l'accueil de tvOS (autres sessions, lanceur de tests) : on la ramène.

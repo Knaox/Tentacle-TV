@@ -115,15 +115,28 @@ export function ensureAgentServer(ctx) {
   });
 }
 
-export function ensureCdpd(ctx) {
+/**
+ * Le démon CDP de la place (`cdpDaemon.mjs`), qui ne suit QUE l'app relevée :
+ * `target.appId` (com.tentacle.mobile au simulateur, l'app de test sur
+ * l'appareil), et `target.deviceName` s'il est connu. Deux candidates : refus.
+ */
+export function ensureCdpd(ctx, target) {
   const { cdp, metro } = ctx.ports;
   return ensureService(ctx, "cdpd", {
     port: cdp,
     label: "Démon CDP",
-    start: () => spawnDetached(node, [path.join(ATV_REMOTE_DIR, "cdpd.mjs")], {
-      cwd: ATV_REMOTE_DIR, env: { CDPD_PORT: String(cdp), METRO_PORT: String(metro), AGENT_CONSOLE: path.join(ctx.logDir, "console.log") }, log: path.join(ctx.logDir, "cdpd.log"),
+    matches: (r) => r.appId === target.appId && (r.deviceName ?? null) === (target.deviceName ?? null) && r.code === codeHash("lib/cdpDaemon.mjs") && r.cwd === BENCH_DIR,
+    start: () => ({
+      ...spawnDetached(node, [path.join(BENCH_DIR, "lib/cdpDaemon.mjs")], {
+        cwd: BENCH_DIR,
+        env: { CDPD_PORT: String(cdp), METRO_PORT: String(metro), CDP_APP_ID: target.appId, CDP_DEVICE_NAME: target.deviceName ?? "", AGENT_CONSOLE: path.join(ctx.logDir, "console.log") },
+        log: path.join(ctx.logDir, "cdpd.log"),
+      }),
+      appId: target.appId,
+      deviceName: target.deviceName ?? null,
+      code: codeHash("lib/cdpDaemon.mjs"),
     }),
-    ready: async () => (await httpJson(`http://127.0.0.1:${cdp}/eval`, { method: "POST", body: "1" }))?.status === 200,
+    ready: async () => (await httpJson(`http://127.0.0.1:${cdp}/target`))?.status === 200,
   });
 }
 

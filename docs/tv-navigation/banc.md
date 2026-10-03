@@ -277,6 +277,14 @@ créneau à la fois : le demander au coordinateur, le rendre.
   l'app de TEST et pose la session du banc avant que l'app ne lise son
   stockage. Ses autres fichiers (caches) ne sont pas effacés, contrairement
   au simulateur.
+- **Une seule app relevée.** Le démon CDP de la place (`lib/cdpDaemon.mjs`)
+  ne suit que l'app attendue dans l'inspecteur de Metro : `com.tentacle.mobile`
+  sur le simulateur de la place (par son nom), `com.tentacle.mobile.navtest`
+  sur l'appareil. L'app du simulateur restée ouverte et reconnectée au Metro
+  relancé sur le réseau est donc écartée (passage de T5, où la sonde suivait
+  le simulateur pendant que les gestes partaient à l'appareil). S'il reste
+  plusieurs candidates plus de 10 s, le banc REFUSE de relever, avec leurs
+  noms — rien n'est fermé d'office : fermer l'app en trop, ou changer de place.
 - **L'agent XCUITest** d'`atv-remote` est compilé et signé pour l'appareil
   (cache de la machine) et vise `com.tentacle.mobile.navtest`
   (`TEST_RUNNER_AGENT_BUNDLE`) ; il se connecte au serveur de la place sur
@@ -350,6 +358,16 @@ l'app). « la sonde n'a pas paru » : écran rouge ou paquet en échec — lire
 `metro.log`. « port pris » : une autre session est sur cette place. Un
 service se relance seul quand son code change ; `down` puis la commande
 remet tout à neuf.
+
+## Tester le banc lui-même
+
+```bash
+node --test "apps/tv/harness/nav-golden/test/*.test.mjs"
+```
+
+Le choix de la cible Hermes et sa contre-épreuve : un faux inspecteur de Metro
+à deux apps candidates → refus (409, message nommant les deux) ; l'app du
+simulateur à côté de l'app de test → seule l'app de test suivie.
 
 ## Fichiers
 
