@@ -11,23 +11,20 @@
  *    « Noter », l'onglet d'une fiche). Sur tvOS, ce retour est natif : le
  *    contrôleur qui présentait la `Modal` restaure son focus.
  *
- * Retour est une couche « menu » de la pile du Retour (`nav/backLayers`),
+ * Retour est une couche « menu » de la pile du Retour (`nav/backResolve`),
  * active dès l'ouverture : un Retour parti avant que le panneau ne paraisse
  * le ferme aussi.
  */
+
+import type { BackLayerSpec } from "../nav/backResolve";
 
 export type PanelKind = "card" | "absent" | "seasons";
 
 /** Ce que fait Retour sur un panneau : le fermer. */
 export type PanelBackAction = "close";
 
-/** La couche du Retour d'un panneau, déclarée en pur (forme `BackLayerSpec` de `nav/backLayers`). */
-export interface PanelBackLayer {
-  id: string;
-  kind: "menu";
-  active: boolean;
-  action: PanelBackAction;
-}
+/** La couche du Retour d'un panneau, déclarée en pur. */
+export type PanelBackLayer = BackLayerSpec<PanelBackAction>;
 
 /**
  * Les couches du Retour d'un panneau. Le grand panneau et la feuille des

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { resolveBack } from "../nav/backResolve";
 import { MODAL_GAP_MS, closesAtOnce, panelBackLayers, panelPresented } from "./panelLifecycle";
 
 describe("le Retour d'un panneau", () => {
@@ -14,6 +15,13 @@ describe("le Retour d'un panneau", () => {
 
   it("reste active pendant la sortie du panneau d'un titre absent", () => {
     expect(panelBackLayers("absent", true)[0].active).toBe(true);
+  });
+
+  it("ferme le panneau ouvert avant que la page recule ; en sortie, sa couche ne prend plus Retour (une Modal présentée le reçoit encore elle-même)", () => {
+    expect(resolveBack(panelBackLayers("card", false), { pushed: true })).toEqual({ kind: "layer", id: "panel:card", action: "close" });
+    expect(resolveBack(panelBackLayers("card", true), { pushed: true })).toEqual({ kind: "pop" });
+    expect(resolveBack(panelBackLayers("seasons", true), { pushed: false })).toEqual({ kind: "exit" });
+    expect(resolveBack(panelBackLayers("absent", true), { pushed: false })).toEqual({ kind: "layer", id: "panel:absent", action: "close" });
   });
 });
 
