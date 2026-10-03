@@ -1,0 +1,255 @@
+# Banc de référence de la navigation Apple TV (nav-golden)
+
+L'extraction de la navigation vers `packages/tv-core` ne doit RIEN changer. Ce
+banc le prouve : chaque scénario est joué sur le code d'origine (la
+**référence**, `84f3cedd0` pour le lot d'octobre 2026) et son relevé est gardé ;
+après chaque refactorisation, on le rejoue et on compare, pas par pas.
+
+```bash
+# depuis n'importe quel dossier de travail du dépôt, sur SA place (0 à 9)
+node apps/tv/harness/nav-golden/nav-golden.mjs verify --slot 2            # tout
+node apps/tv/harness/nav-golden/nav-golden.mjs verify --slot 2 focus      # un domaine
+node apps/tv/harness/nav-golden/nav-golden.mjs record --slot 2 socle      # enregistrer (sur la référence)
+```
+
+Code de sortie 0 : tout est identique. 1 : un écart (ou un scénario non joué),
+détaillé dans le terminal et dans `apps/tv/harness/nav-golden/out/`.
+
+## Ce que le banc fait tourner
+
+- **L'app réelle**, au simulateur tvOS (et sur l'Apple TV physique, voir plus
+  bas) : la vraie navigation, de vrais appuis UIKit par l'agent XCUITest
+  d'`atv-remote` — jamais un composant isolé.
+- **Un faux backend** (`server/`) : faux Tentacle, faux Jellyfin (mode proxy),
+  faux Vigie. Ses données sont l'**instantané du banc UI** (compte de test,
+  `ui-bench/snapshot`, ignoré par git) FIGÉ par son empreinte dans le cache de
+  la machine — jamais la bibliothèque vivante : le focus ne varie pas.
+  `dataset.json` dit quelle empreinte le banc utilise ; une référence
+  enregistrée ne se rejoue que sur les mêmes données.
+- **Une sonde** (`probe/navProbe.js`), JAMAIS dans l'app : Metro la charge
+  avant `src/App` (l'enveloppe `lib/metroConfig.cjs` remplace l'import de
+  `./src/App` du point d'entrée par `probe/appEntry.js`, qui charge la sonde
+  puis l'App réelle). Elle écoute le focus NATIF (événements focus/blur que
+  RN-tvOS envoie pour chaque vue, avec son tag), dès la première image, et
+  remonte l'arbre React de la vue focalisée jusqu'à sa `focusKey`. Elle ne lit
+  aucun magasin de focus de l'app : la refactorisation peut les déplacer sans
+  aveugler le banc. Modals comprises.
+
+## La référence honnête : `record --at`
+
+`record` joue le code d'un COMMIT, quel que soit l'état du dossier d'où on le
+lance — la branche peut avoir déjà tout refactorisé :
+
+1. le commit est extrait (`git archive` : `apps/tv`, `packages`, la racine
+   utile) dans `~/Library/Caches/tentacle-nav-golden/checkouts/<sha>`, une fois
+   pour toute la machine ;
+2. il emprunte les node_modules du dossier principal (liens paquet par paquet ;
+   les liens `@tentacle-tv/*` restent relatifs : c'est le tv-core DE LA
+   RÉFÉRENCE qui est servi) ;
+3. Metro sert CE dossier-là (le banc relance Metro quand on passe de la
+   référence au dossier courant) ; un module tiers est toujours pris dans le
+   principal, pour la référence comme pour le code refactorisé ;
+4. le binaire natif est le même pour les deux s'ils ont le même natif : il est
+   rangé dans le cache sous l'**empreinte du natif** (fichiers natifs du
+   checkout, lockfile et correctifs du principal, version de Xcode) — un
+   changement natif ferait reconstruire, une fois.
+
+Sans `--at`, `record` prend la `reference` du fichier de scénarios. `verify`
+joue le dossier courant (ou `--at <rév>`), modifications non commitées
+comprises (le banc le signale).
+
+## Places, simulateurs, ressources
+
+Une **place** `n` par session : Metro `818n`, démon CDP `923n`, faux backend
+`310n`, agent XCUITest `875n` (TCP) et `876n` (HTTP), simulateur `nav-T<n>`
+(ou `--sim <nom|udid>`). Un port se force un par un (`NAV_GOLDEN_METRO`…).
+Le simulateur est créé neuf s'il manque ; un simulateur existant est
+**effacé** (`simctl erase`) au premier usage par la place — un clone peut
+porter une vraie session (`--no-erase` pour s'en passer, à ses risques).
+Il démarre SANS Simulator.app (la rouvrir renverrait les apps des autres
+sessions à l'accueil). Les services restent lancés entre deux commandes ;
+`down --slot n` les arrête, par PID (jamais `pkill -f`), `--sim-off` éteint le
+simulateur.
+
+Avant CHAQUE scénario : démarrage à froid — app tuée, ses préférences et
+fichiers effacés, session factice posée (faux backend, jeton bidon, compte de
+test en NOM seulement), faux backend remis à la base puis aux jeux du scénario.
+Aucun scénario ne dépend d'un autre.
+
+## Écrire un scénario
+
+Un fichier `scenarios/<domaine>/<nom>.json` — les `*.json` À LA RACINE du
+dossier du domaine ; les sous-dossiers ne sont pas lus (un domaine y range ce
+qui n'est pas un scénario du simulateur).
+
+```json
+{
+  "domain": "socle",
+  "reference": "84f3cedd0",
+  "defaults": { "settleMs": 0 },
+  "scenarios": [
+    {
+      "id": "socle-03",
+      "title": "Rail → Films → Retour",
+      "why": "facultatif : ce que le scénario garde",
+      "start": { "keys": ["left", "down", "down", "down", "down", "down"], "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba" },
+      "steps": [
+        { "do": "select", "settleMs": 800, "expect": { "route": "Library", "focus": "grid:0" } },
+        { "do": "menu", "expect": { "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba" }, "why": "facultatif" }
+      ]
+    }
+  ]
+}
+```
+
+**`start`** (tout facultatif) : `session` `paired` (défaut) | `none` (écran de
+jumelage) · `fixtures` : jeux de données `<domaine>/<jeu>` · `route` :
+`{ name, params, reset? }` — `navigationRef.navigate` depuis l'accueil (pile
+`[Home, route]`), ou `reset: true` (pile `[route]`) · `keys` : gestes
+d'approche · `focus` / `screen` : préconditions vérifiées après l'approche ·
+`storage` : clés de l'app posées avant le lancement (chaînes ; un JSON en
+chaîne).
+
+**`do`** : un geste, ou une liste de gestes (relevé seulement à la fin) —
+`up` `down` `left` `right` `select` `menu` `play` `home` · `hold:<s>` (OK
+maintenu) · `holdup|holddown|holdleft|holdright:<s>` · `wait:<s>` ·
+`type:<texte>` (clavier système) · `activate` (ramène l'app, sans relancer) ·
+`swipe:<dir>` et `pan:<dx>,<dy>[,<ms>]` (balayage et glissé, par le chemin JS
+de RN-tvOS — voir les limites) · `backend:<mode>=<valeur>` (change un mode du
+faux backend en cours de route, ex. `backend:health=down`).
+
+**`settleMs`** : attente minimale avant le relevé (fondus, entrées décidées
+après un délai) ; le banc attend de toute façon que le relevé soit STABLE
+(identique 500 ms d'affilée), au plus `timeoutMs` (8 s par défaut).
+
+**`expect`** — ce que l'auteur affirme, vérifié dès l'enregistrement :
+`focus` (clé) · `label` · `route` · `stack` (noms de la pile) · `params`
+(sous-ensemble) · `panel` `open|closed` (une Modal ouverte) · `writes` (liste
+exacte, `[]` = aucune) · `text` (un ou plusieurs textes montés dans l'écran
+courant ou une Modal ouverte — pas une visibilité stricte) · `frame`
+`[x, y, l, h]` (±2 pt, `null` pour ignorer une valeur) · `app`
+`foreground|background` · `storage` `{ clé: valeur }`.
+
+Écritures du faux backend : `watchlist:add|remove`, `favorite:add|remove`,
+`watched:add|remove`, `rating:<1-10>|remove`, `reco:feedback:<type>`,
+`vigie:request`, `playback:info|start|stop`, `prefs:<nom>`, sinon
+`<MÉTHODE> <chemin>`. Chaque écriture porte son item (`watchlist:add @<id>`) ;
+un attendu sans `@` ne compare que le genre.
+
+Pour trouver une clé ou un chemin, explorer l'app :
+
+```bash
+node …/nav-golden.mjs start --slot 2 socle/accueil-rail#socle-01   # démarrage à froid sur l'entrée d'un scénario
+node …/nav-golden.mjs do --slot 2 left down down select            # gestes, clé après chacun, relevé final
+node …/nav-golden.mjs obs --slot 2                                 # le relevé courant
+node …/nav-golden.mjs check                                        # validation, sans simulateur
+```
+
+## Ce que le banc relève, et compare
+
+Après chaque pas : `focus` (la `focusKey` de l'élément focalisé), `label`
+(son libellé d'accessibilité, sinon ses textes), `frame` (son cadre en points),
+`groups` (les clés des groupes qui l'entourent), `route`, `params`, `stack`,
+`panel` (la première clé de chaque Modal ouverte), `writes`, `app`, et `texts`
+/ `storage` quand le pas les demande.
+
+`verify` compare STRICTEMENT tout, sauf `frame` (±2 pt) ; `groups` et le
+composant d'une Modal sont signalés en note, jamais comptés (renommer un
+groupe ne change pas le comportement). `record` joue chaque scénario DEUX fois
+(`--repeat`) : un champ qui varie entre deux passages est marqué instable et
+ignoré par `verify` ; si c'est la clé, la route, la pile, la Modal ou les
+écritures, le scénario est dit **instable** (non fiable, à revoir).
+
+Statuts : `✓` identique · `●` enregistré · `✗` écart · `≠` attendu de l'auteur
+contredit · `~` identique mais le scénario a changé depuis sa référence
+(réenregistrer) · `∅` pas de référence · `≈` instable · `?` approche ratée ·
+`!` le banc n'a pas pu le jouer · `-` ignoré (`"skip": "<raison>"`).
+
+Un attendu contredit À L'ENREGISTREMENT n'empêche pas d'écrire la référence
+(elle dit ce que fait le code d'origine) : c'est l'auteur qui se trompe, ou un
+bug de la référence — à noter dans le rapport du domaine, jamais à corriger.
+
+## Jeux de données
+
+La base : l'instantané figé. Bibliothèques (ordre de `/Views`) : Animés
+`acf898949f3c87c958b3784cb05fd4d1`, Films `db4c1708cbb5dd1676284a40f2950aba`,
+Séries `d565273fd114d77bdf349a2896867069`. Reprendre 12, À suivre 12, Derniers
+ajouts 36, Déjà vus 16, Ma liste 1, Favoris 1, Pour vous : la page reco
+capturée. Tout se relit sur le faux backend de sa place
+(`curl localhost:310n/api/jellyfin/Users/x/Views`, `…/Items/<id>`).
+
+Jeux de la base (`base/<nom>`) : `serveur-coupe`, `serveur-muet`,
+`sante-en-erreur`, `vigie-off`, `vigie-bloque`, `vigie-ancien`,
+`vigie-vivant` (non déterministe), `vigie-vide`, `demandes-on`,
+`bandes-annonces-en-panne`. Liste : `nav-golden.mjs sets`.
+
+Le **point d'extension d'un domaine** : `scenarios/<domaine>/fixtures.mjs`.
+
+```js
+// Chaque jeu retouche la base ; un scénario le déclare : "fixtures": ["panneaux-cartes/film-note-7"].
+export default {
+  "film-note-7": (data) => data.rate("bc82e0bf6d59b1bf4586bb189ae305ae", 7),
+  "film-non-notable": { description: "aucun identifiant TMDB", apply: (data) => data.makeUnratable("…") },
+  "ma-liste-longue": (data) => data.setList("watchlist", ["…", "…", "…"]),
+  "parcourir": (data) => data.route("GET", /^\/api\/search\/person\//, (req, res, { json }) => json(res, 200, { items: [] })),
+};
+```
+
+`data` : `item(id)`, `patchItem(id, champs)`, `setUserData(id, champs)`,
+`addItem({ from, id, ...champs })`, `setLibraries([{ id, name, collectionType, items? }])`, `setList(nom, ids)` (Ma liste et favoris
+suivent les drapeaux `Likes` / `IsFavorite`), `rate(id, 1-10)`,
+`makeUnratable(id)`, `setDetail(id, { similar, saga… })`, `route(méthode,
+/regex/, (req, res, { url, body, data, json }) => …)`, `modes` (`health`,
+`vigie`, `vigieScenario`, `demandes`, `trailers`), `snapshot` (l'instantané
+brut, pour tout le reste). Le fichier est relu à chaque scénario. Une route
+manquante se voit dans `GET localhost:310n/__unknown`.
+
+## Durées (mesurées le 2026-10-03, Mac chargé, charge 13 à 30)
+
+| Étape | Durée |
+|---|---|
+| `up` à froid (simulateur créé, app installée, Metro, agent compilé) | 1 min 30 |
+| Bascule de Metro référence ↔ dossier courant (paquet compris) | 10 à 30 s |
+| Démarrage à froid d'un scénario | 7 à 10 s |
+| Un pas | 0,5 à 1,5 s (attente de stabilité comprise) |
+| `record` de 3 scénarios (deux passages chacun) | 1 min 22 |
+| `verify` de 3 scénarios (bascule de Metro comprise) | 49 s |
+
+Compter ~12 s par scénario de 4 à 6 pas en `verify`, le double en `record`.
+
+## Limites connues
+
+- **Balayage et glissé** : l'agent XCUITest n'a que des appuis (XCUIRemote).
+  `swipe:` et `pan:` passent par le chemin JS de RN-tvOS (les événements
+  `swipe*` / `pan` d'`onHWKeyEvent`) : ils éprouvent ce que l'app en fait,
+  pas le moteur de focus natif de tvOS, qu'un vrai balayage déplace comme des
+  flèches (avec élan). Le passage sur l'Apple TV physique dit les écarts.
+- **Appui maintenu** : `holdX:<s>` tient au plus ~11 s (XCTest).
+- `text` : un texte MONTÉ, pas forcément visible (une carte hors champ d'une
+  rangée compte) ; le cadre fait foi pour « hors champ ».
+- Les écrans gardés par la pile (react-native-screens) restent montés : la
+  sonde ne cherche les textes que dans la scène de la route courante.
+- La lecture vidéo : le faux Jellyfin ne sert pas de flux (le lecteur s'ouvre
+  sur une erreur de lecture) ; les traces du lecteur ont leur banc
+  (`apps/tv/harness/player-trace`, T5).
+- LogBox est muet dans le paquet du banc (ses bandeaux prendraient le focus).
+
+## Dépannage
+
+Journaux d'une place : `~/Library/Caches/tentacle-nav-golden/slots/<n>-logs/`
+(`metro.log`, `backend.log`, `agent.log`, `console.log` — la console JS de
+l'app). « la sonde n'a pas paru » : écran rouge ou paquet en échec — lire
+`metro.log`. « port pris » : une autre session est sur cette place. Un
+service se relance seul quand son code change ; `down` puis la commande
+remet tout à neuf.
+
+## Fichiers
+
+| Chemin | Rôle |
+|---|---|
+| `nav-golden.mjs` | La commande |
+| `lib/` | Checkouts, build natif en cache, simulateur, services, observation, comparaison, rapport |
+| `probe/` | La sonde et son point d'entrée (dans le paquet du banc seulement) |
+| `server/` | Le faux backend et ses jeux de données de base |
+| `scenarios/<domaine>/` | Scénarios, références (`*.golden.json`), jeux du domaine (`fixtures.mjs`) |
+| `dataset.json` | L'empreinte de l'instantané figé |
